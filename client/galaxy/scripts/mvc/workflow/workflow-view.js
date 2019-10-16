@@ -951,7 +951,6 @@ export default Backbone.View.extend({
         modal.$el.addClass("modal-tool-recommendation");
         modal.$el.find(".modal-header").attr("title", "The recommended tools are shown in the decreasing order of their scores predicted using machine learning analysis on workflows. A tool with a higher score (closer to 100%) may fit better as the following tool than a tool with a lower score. Please click on one of the following/recommended tools to have it on the workflow editor.");
         modal.$el.find(".modal-body").css("overflow", "auto");
-        
         modal.show();
         // fetch recommended tools
         Utils.request({
@@ -960,16 +959,17 @@ export default Backbone.View.extend({
             data: {"tool_sequence": tool_sequence},
             success: function(data) {
                 let predTemplate = "<div>";
-                let predicted_data = data.predicted_data;
-                let output_datatypes = predicted_data["o_extensions"];
-                let predicted_data_children = predicted_data.children;
-                if (predicted_data_children.length > 0) {
+                let predictedData = data.predicted_data;
+                let outputDatatypes = predictedData["o_extensions"];
+                let predictedDataChildren = predictedData.children;
+                let noRecommendationsMessage = "No tool recommendations";
+                if (predictedDataChildren.length > 0) {
                     let compatibleTools = {};
                     // filter results based on datatype compatibility
-                    for (const [index, name_obj] of predicted_data_children.entries()) {
-                        let input_datatypes = name_obj["i_extensions"];
-                        for (const out_t of output_datatypes.entries()) {
-                            for(const in_t of input_datatypes.entries()) {
+                    for (const [index, name_obj] of predictedDataChildren.entries()) {
+                        let inputDatatypes = name_obj["i_extensions"];
+                        for (const out_t of outputDatatypes.entries()) {
+                            for(const in_t of inputDatatypes.entries()) {
                                 if ((window.workflow_globals.app.isSubType(out_t[1], in_t[1]) === true) ||
                                      out_t[1] === "input" ||
                                      out_t[1] === "_sniff_" ||
@@ -981,19 +981,22 @@ export default Backbone.View.extend({
                         }
                     }
                     predTemplate += "<div>";
-                    if (Object.keys(compatibleTools).length > 0) {
+                    if (Object.keys(compatibleTools).length > 0 && predictedData["is_deprecated"] === false) {
                         for (let id in compatibleTools) {
                             predTemplate += "<i class='fa mr-1 fa-wrench'></i><a href='#' title='Click to open the tool' class='pred-tool panel-header-button' id=" + "'" + id + "'" + ">" + compatibleTools[id];
                             predTemplate += "</a></br>";
                         }
                     }
+                    else if (predictedData["is_deprecated"] === true) {
+                        predTemplate += predictedData["message"];
+                    }
                     else {
-                        predTemplate += "No tool recommendations";
+                        predTemplate += noRecommendationsMessage;
                     }
                     predTemplate += "</div>";
                 }
                 else {
-                    predTemplate += "No tool recommendations"; 
+                    predTemplate += noRecommendationsMessage; 
                 }
                 predTemplate += "</div>";
                 modal.$body.html(predTemplate);

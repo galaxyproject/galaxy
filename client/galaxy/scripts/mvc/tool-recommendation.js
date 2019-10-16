@@ -27,45 +27,47 @@ var ToolRecommendationView = Backbone.View.extend({
                         async: false
                     }).responseText
                 );
-                let ext_to_type = datatypes_mapping.ext_to_class_name;
-                let type_to_type = datatypes_mapping.class_to_classes;
-                let pred_data = data.predicted_data;
-                
-                if (data !== null && pred_data.children.length > 0) {
-                    let filtered_data = {};
+                let extToType = datatypes_mapping.ext_to_class_name;
+                let typeToType = datatypes_mapping.class_to_classes;
+                let predData = data.predicted_data;
+                if (data !== null && predData.children.length > 0) {
+                    let filteredData = {};
                     let compatibleTools = {};
-                    let filtered_children = [];
-                    let output_datatypes = pred_data["o_extensions"];
-                    for (const [index, name_obj] of pred_data.children.entries()) {
-                        let input_datatypes = name_obj["i_extensions"];
-                        for (const out_t of output_datatypes.entries()) {
-                            for(const in_t of input_datatypes.entries()) {
-                                let child = ext_to_type[out_t[1]];
-                                let parent = ext_to_type[in_t[1]];
-                                if (((type_to_type[child] && parent in type_to_type[child]) === true) ||
+                    let filteredChildren = [];
+                    let outputDatatypes = predData["o_extensions"];
+                    for (const [index, nameObj] of predData.children.entries()) {
+                        let inputDatatypes = nameObj["i_extensions"];
+                        for (const out_t of outputDatatypes.entries()) {
+                            for(const in_t of inputDatatypes.entries()) {
+                                let child = extToType[out_t[1]];
+                                let parent = extToType[in_t[1]];
+                                if (((typeToType[child] && parent in typeToType[child]) === true) ||
                                      out_t[1] === "input" ||
                                      out_t[1] === "_sniff_" ||
                                      out_t[1] === "input_collection") {
-                                    compatibleTools[name_obj["tool_id"]] = name_obj["name"];
+                                    compatibleTools[nameObj["tool_id"]] = nameObj["name"];
                                     break
                                 }
                             }
                         }
                     }
                     for (let id in compatibleTools) {
-                        for (const [index, name_obj] of pred_data.children.entries()) {
-                            if (name_obj["tool_id"] === id) {
-                                filtered_children.push(name_obj);
+                        for (const [index, nameObj] of predData.children.entries()) {
+                            if (nameObj["tool_id"] === id) {
+                                filteredChildren.push(nameObj);
                                 break
                             }
                         }
                     }
-                    filtered_data["o_extensions"] = pred_data["o_extensions"];
-                    filtered_data["name"] = pred_data["name"];
-                    filtered_data["children"] = filtered_children;
-                    if (filtered_children.length > 0) {
-                        self.$el.append("<div class='infomessagelarge'>You have used " + filtered_data.name + " tool. For further analysis, you could try using the following/recommended tools. The recommended tools are shown in the decreasing order of their scores predicted using machine learning analysis on workflows. A tool with a higher score (closer to 100%) may fit better as the following tool than a tool with a lower score. Please click on one of the following/recommended tools to open its definition. </div>");
-                        self.render_tree(filtered_data);
+                    filteredData["o_extensions"] = predData["o_extensions"];
+                    filteredData["name"] = predData["name"];
+                    filteredData["children"] = filteredChildren;
+                    if (filteredChildren.length > 0 && predData["is_deprecated"] === false) {
+                        self.$el.append("<div class='infomessagelarge'>You have used " + filteredData.name + " tool. For further analysis, you could try using the following/recommended tools. The recommended tools are shown in the decreasing order of their scores predicted using machine learning analysis on workflows. A tool with a higher score (closer to 100%) may fit better as the following tool than a tool with a lower score. Please click on one of the following/recommended tools to open its definition. </div>");
+                        self.render_tree(filteredData);
+                    }
+                    else if(predData["is_deprecated"] === true) {
+                        self.$el.append("<div class='warningmessagelarge'>You have used " + predData.name + " tool. " + predData["message"] + ". </div>");
                     }
                 }
             }

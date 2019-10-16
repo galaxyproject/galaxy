@@ -607,8 +607,8 @@
     the Galaxy host. This is ignored if the relevant container
     resolver isn't enabled, and will install on demand unless
     involucro_auto_init is set to false.
-    Sample default '<tool_dependency_dir>/involucro'
-:Default: ``None``
+    Value will be resolved with respect to '<tool_dependency_dir>'.
+:Default: ``involucro``
 :Type: str
 
 
@@ -844,7 +844,7 @@
     definition files. Galaxy ships with several basic interface tours
     enabled, though a different directory with custom tours can be
     specified here. The path is relative to the Galaxy root dir.  To
-    use an absolute path begin the path with '/'.  This is a comma
+    use an absolute path begin the path with '/'.  This is a comma-
     separated list.
 :Default: ``config/plugins/tours``
 :Type: str
@@ -858,7 +858,7 @@
     Webhooks directory: where to store webhooks - plugins to extend
     the Galaxy UI. By default none will be loaded.  Set to
     config/plugins/webhooks/demo to load Galaxy's demo webhooks.  To
-    use an absolute path begin the path with '/'.  This is a comma
+    use an absolute path begin the path with '/'.  This is a comma-
     separated list. Add test/functional/webhooks to this list to
     include the demo webhooks used to test the webhook framework.
 :Default: ``config/plugins/webhooks``
@@ -3793,6 +3793,72 @@
     unique session cookie shared by all subdomains.
 :Default: ``None``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_tool_recommendations``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Allow the display of tool recommendations in workflow editor and
+    after tool execution. If it is enabled and set to true, please
+    enable 'tool_recommendation_model_path' as well
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``tool_recommendation_model_path``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set remote path of the trained model (HDF5 file) for tool
+    recommendation. It is required to be set if
+    'enable_tool_recommendations' property is enabled and set to true.
+:Default: ``https://github.com/anuprulez/download_store/raw/tool_recommendation_model/tool_recommendation_model/tool_recommendation_model.hdf5``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_admin_tool_recommendations``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable tool recommendations to be set by Galaxy admins. If set to
+    true, 'admin_tool_recommendations_path' must be set as well which
+    takes the path of the additional list of tools to be recommended.
+    This is useful to promote new tools.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``admin_tool_recommendations_path``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set path to the additional tool preferences from Galaxy admins. It
+    has two blocks. One for listing deprecated tools which will be
+    removed from the recommendations and  another is for adding
+    additional tools to be recommended along side those from the deep
+    learning model.
+:Default: ``config/tool_recommendations_overwrite.yml``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``overwrite_model_recommendations``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Overwrite or append to the tool recommendations by the deep
+    learning model. When set to true, all the recommendations by the
+    deep learning model  are overwritten by the recommendations set by
+    an admin in a config file 'tool_recommendations_overwrite.yml'.
+    When set to false, the recommended tools  by admins and predicted
+    by the deep learning model are shown.
+:Default: ``false``
+:Type: bool
 
 
 

@@ -619,16 +619,31 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             return
         tool_sequence = payload.get('tool_sequence', "")
         self.enable_admin_tool_recommendations = trans.app.config.enable_admin_tool_recommendations
-        # collect tool recommendations if set by admin
+        self.overwrite_model_recommendations = trans.app.config.overwrite_model_recommendations
+        # collect tool recommendation preferences if set by admin
         if not self.admin_tool_recommendations_path:
-            if self.enable_admin_tool_recommendations is True or self.enable_admin_tool_recommendations == "true":
+            if self.enable_admin_tool_recommendations is True:
                 self.admin_tool_recommendations_path = os.path.join(os.getcwd(), trans.app.config.admin_tool_recommendations_path)
-                with open(self.admin_tool_recommendations_path) as admin_recommendations:
-                    self.admin_recommendations_list = json.loads(admin_recommendations.read())
-
+                self.deprecated_tools = dict()
+                self.admin_recommendations = dict()
+                try:
+                    with open(self.admin_tool_recommendations_path) as admin_recommendations:
+                        admin_recommendation_preferences = yaml.safe_load(admin_recommendations)
+                        if admin_recommendation_preferences:
+                            for tool_id in admin_recommendation_preferences:
+                                tool_info = admin_recommendation_preferences[tool_id]
+                                if 'is_deprecated' in tool_info[0]:
+                                    self.deprecated_tools[tool_id] = tool_info[0]["text_message"]
+                                else:
+                                    if tool_id not in self.admin_recommendations:
+                                        self.admin_recommendations[tool_id] = tool_info
+                except Exception as exp:
+                    pass
+        print(self.admin_recommendations)
+        print("---------------------------")
         # recreate the neural network model to be used for prediction
         if not self.tool_recommendation_model_path:
-            self.tool_recommendation_model_path = os.path.join(os.getcwd(), trans.app.config.tool_recommendation_model_path)
+            self.tool_recommendation_model_path = self.__download_model(trans)
             self.all_tools = dict()
             model_weights = list()
             counter_layer_weights = 0
@@ -647,6 +662,12 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             self.reverse_dictionary = dict((v, k) for k, v in self.model_data_dictionary.items())
             # set the list of compatible tools
             self.compatible_tools = json.loads(trained_model.get('compatible_tools').value)
+            self.tool_weights = json.loads(trained_model.get('class_weights').value)
+            self.tool_weights_sorted = dict()
+            # sort the tools' usage dictionary
+            tool_pos_sorted = [int(key) for key in self.tool_weights.keys()]
+            for k in tool_pos_sorted:
+                self.tool_weights_sorted[k] = self.tool_weights[str(k)]
             # iterate through all the attributes of the model to find weights of neural network layers
             for item in trained_model.keys():
                 if "weight_" in item:
@@ -666,6 +687,19 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     #
     # -- Helper methods --
     #
+
+    def __download_model(self, trans, download_local='database/'):
+        """
+        Download the model from remote server
+        """
+        url = trans.app.config.tool_recommendation_model_path
+        local_dir = os.path.join(os.getcwd(), download_local, 'tool_recommendation_model.hdf5')
+        # read model from remote
+        model_binary = requests.get(url)
+        # save model to a local directory
+        with open(local_dir, 'wb') as model_file:
+            model_file.write(model_binary.content)
+            return local_dir
 
     def __get_tool_extensions(self, trans, tool_id):
         """
@@ -695,8 +729,10 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         """
         to_show = 20
         last_compatible_tools = self.compatible_tools[last_tool_name].split(",")
-        # get the predicted tools
-        for child, score in zip(tool_ids, tool_scores):
+        prediction_data["is_deprecated"] = False
+        t_ids_scores = zip(tool_ids, tool_scores)
+        # form the payload of the predicted tools to be shown
+        for child, score in t_ids_scores:
             c_dict = dict()
             for t_id in self.all_tools:
                 # select the name and tool id if it is installed in Galaxy
@@ -708,13 +744,24 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                     c_dict["i_extensions"] = list(set(pred_input_extensions))
                     prediction_data["children"].append(c_dict)
                     break
-        # show only a few
+        # show only a few by the deep learning model
         prediction_data["children"] = prediction_data["children"][:to_show - 1]
-        # extend recommendations by adding a list of recommended tools set by the admin
-        if self.enable_admin_tool_recommendations is True or self.enable_admin_tool_recommendations == "true":
-            for item in self.admin_recommendations_list["tools"]:
-                if last_tool_name == item["tool_id"]:
-                    prediction_data["children"].extend(item["recommendations"])
+        # incorporate preferences set by admins
+        if self.enable_admin_tool_recommendations is True:
+            # filter out deprecated tools
+            t_ids_scores = [(tid, score) for tid, score in zip(tool_ids, tool_scores) if tid not in self.deprecated_tools]
+            # set the property if the last tool of the sequence is deprecated
+            if last_tool_name in self.deprecated_tools:
+                prediction_data["is_deprecated"] = True
+                prediction_data["message"] = self.deprecated_tools[last_tool_name]
+            # add the recommendations given by admins
+            for tool_id in self.admin_recommendations:
+                if last_tool_name == tool_id:
+                    admin_recommendations = self.admin_recommendations[tool_id]
+                    if self.overwrite_model_recommendations is True:
+                        prediction_data["children"] = admin_recommendations
+                    else:
+                        prediction_data["children"].extend(admin_recommendations)
                     break
         # get the root name for displaying after tool run
         for t_id in self.all_tools:
@@ -753,6 +800,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             # predict next tools for a test path
             prediction = self.loaded_model.predict(sample, verbose=0)
             prediction = np.reshape(prediction, (prediction.shape[1],))
+            # boost the predicted scores using tools' usage
+            weight_values = list(self.tool_weights_sorted.values())
+            prediction = prediction * weight_values
             # normalize the predicted scores with max and sort the predictions
             max_prediction = float(np.max(prediction))
             if max_prediction == 0.0:

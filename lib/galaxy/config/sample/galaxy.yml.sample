@@ -390,8 +390,8 @@ galaxy:
   # the Galaxy host. This is ignored if the relevant container resolver
   # isn't enabled, and will install on demand unless involucro_auto_init
   # is set to false.
-  # Sample default '<tool_dependency_dir>/involucro'
-  #involucro_path: null
+  # Value will be resolved with respect to '<tool_dependency_dir>'.
+  #involucro_path: involucro
 
   # Install involucro as needed to build Docker or Singularity
   # containers for tools. Ignored if relevant container resolver is not
@@ -500,14 +500,14 @@ galaxy:
   # definition files. Galaxy ships with several basic interface tours
   # enabled, though a different directory with custom tours can be
   # specified here. The path is relative to the Galaxy root dir.  To use
-  # an absolute path begin the path with '/'.  This is a comma separated
+  # an absolute path begin the path with '/'.  This is a comma-separated
   # list.
   #tour_config_dir: config/plugins/tours
 
   # Webhooks directory: where to store webhooks - plugins to extend the
   # Galaxy UI. By default none will be loaded.  Set to
   # config/plugins/webhooks/demo to load Galaxy's demo webhooks.  To use
-  # an absolute path begin the path with '/'.  This is a comma separated
+  # an absolute path begin the path with '/'.  This is a comma-separated
   # list. Add test/functional/webhooks to this list to include the demo
   # webhooks used to test the webhook framework.
   #webhooks_dir: config/plugins/webhooks
@@ -1838,22 +1838,6 @@ galaxy:
   # persistent_communication_rooms is a comma-separated list of rooms
   # that should be always available.
   #persistent_communication_rooms: null
-  
-  # Galaxy tool recommendation settings
-  #enable_tool_recommendations: false
-  
-  # Trained model (HDF5 file) path for tool recommendation.
-  # It is required to be set if 'enable_tool_recommendations' property is enabled and set to true.
-  #tool_recommendation_model_path: 'database/tool_recommendation_model.hdf5'
-  
-  # Enable tool recommendations to be set by Galaxy admins
-  # If set to true, 'admin_tool_recommendations_path' must be set as well
-  # which takes the path of the additional list of tools to be recommended
-  #enable_admin_tool_recommendations: false
-
-  # Additional tool recommendations from Galaxy admin
-  # They are shown along with the recommendations using deep learning trained model
-  #admin_tool_recommendations_path: 'database/admin_tool_recommendation.json'
 
   # Allow disabling pbkdf2 hashing of passwords for legacy situations.
   # This should normally be left enabled unless there is a specific
@@ -1866,4 +1850,35 @@ galaxy:
   # subdomain to the other. This root domain will be written in the
   # unique session cookie shared by all subdomains.
   #cookie_domain: null
+
+  # Allow the display of tool recommendations in workflow editor and
+  # after tool execution. If it is enabled and set to true, please
+  # enable 'tool_recommendation_model_path' as well
+  enable_tool_recommendations: true
+
+  # Set remote path of the trained model (HDF5 file) for tool
+  # recommendation. It is required to be set if
+  # 'enable_tool_recommendations' property is enabled and set to true.
+  tool_recommendation_model_path: https://github.com/anuprulez/download_store/raw/tool_recommendation_model/tool_recommendation_model/tool_recommendation_model.hdf5
+
+  # Enable tool recommendations to be set by Galaxy admins. If set to
+  # true, 'admin_tool_recommendations_path' must be set as well which
+  # takes the path of the additional list of tools to be recommended.
+  # This is useful to promote new tools.
+  enable_admin_tool_recommendations: true
+
+  # Set path to the additional tool preferences from Galaxy admins. It
+  # has two blocks. One for listing deprecated tools which will be
+  # removed from the recommendations and  another is for adding
+  # additional tools to be recommended along side those from the deep
+  # learning model.
+  admin_tool_recommendations_path: config/tool_recommendations_overwrite.yml
+
+  # Overwrite or append to the tool recommendations by the deep learning
+  # model. When set to true, all the recommendations by the deep
+  # learning model  are overwritten by the recommendations set by an
+  # admin in a config file 'tool_recommendations_overwrite.yml'. When
+  # set to false, the recommended tools  by admins and predicted by the
+  # deep learning model are shown.
+  #overwrite_model_recommendations: false
 
