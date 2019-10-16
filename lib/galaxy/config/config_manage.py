@@ -516,7 +516,7 @@ def _validate(args, app_desc):
     fp = tempfile.NamedTemporaryFile('w', delete=False, suffix=".yml")
 
     def _clean(p, k, v):
-        return k != 'reloadable'
+        return k not in ['reloadable', 'path_resolves_to']
 
     clean_schema = remap(app_desc.schema.raw_schema, _clean)
     ordered_dump(clean_schema, fp)
