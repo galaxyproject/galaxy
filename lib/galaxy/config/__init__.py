@@ -332,7 +332,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
                                               "sqlite:///%s?isolation_level=IMMEDIATE" % os.path.join(self.data_dir, "universe.sqlite"))
         self.database_engine_options = get_database_engine_options(kwargs)
         self.database_create_tables = string_as_bool(kwargs.get("database_create_tables", "True"))
-        self.database_query_profiling_proxy = string_as_bool(kwargs.get("database_query_profiling_proxy", "False"))
         self.database_encoding = kwargs.get("database_encoding", None)  # Create new databases with this encoding.
         self.thread_local_log = None
         if string_as_bool(kwargs.get("enable_per_request_sql_debugging", "False")):
@@ -341,15 +340,10 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         # Install database related configuration (if different).
         self.install_database_engine_options = get_database_engine_options(kwargs, model_prefix="install_")
 
-        # Where dataset files are stored
-        self.file_path = os.path.join(self.data_dir, self.file_path)
-        # new_file_path and legacy_home_dir can be overridden per destination in job_conf.
-        self.new_file_path = os.path.join(self.data_dir, self.new_file_path)
         override_tempdir = string_as_bool(kwargs.get("override_tempdir", "True"))
         if override_tempdir:
             tempfile.tempdir = self.new_file_path
         self.shared_home_dir = kwargs.get("shared_home_dir", None)
-        self.openid_consumer_cache_path = os.path.join(self.data_dir, self.openid_consumer_cache_path)
         self.cookie_path = kwargs.get("cookie_path", None)
         self.tool_path = os.path.join(self.root, self.tool_path)
         self.tool_data_path = os.path.join(self.root, self.tool_data_path)
@@ -417,9 +411,9 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             if len(ip.strip()) > 0
         ]
         self.template_path = os.path.join(self.root, kwargs.get("template_path", "templates"))
-        self.template_cache = os.path.join(self.data_dir, self.template_cache_path)
+        self.template_cache = self.template_cache_path
         self.job_queue_cleanup_interval = int(kwargs.get("job_queue_cleanup_interval", "5"))
-        self.cluster_files_directory = self.resolve_path(os.path.join(self.data_dir, self.cluster_files_directory))
+        self.cluster_files_directory = self.resolve_path(self.cluster_files_directory)
 
         # Fall back to legacy job_working_directory config variable if set.
         self.jobs_directory = os.path.join(self.data_dir, kwargs.get("jobs_directory", self.job_working_directory))
@@ -643,16 +637,13 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         if ie_dirs:
             self.visualization_plugins_directory += ",%s" % ie_dirs
 
-        self.proxy_session_map = os.path.join(self.data_dir, self.dynamic_proxy_session_map)
-        self.manage_dynamic_proxy = string_as_bool(kwargs.get("dynamic_proxy_manage", "True"))  # Set to false if being launched externally
+        self.proxy_session_map = self.dynamic_proxy_session_map
+        self.manage_dynamic_proxy = self.dynamic_proxy_manage  # Set to false if being launched externally
 
         # InteractiveTools propagator mapping file
         self.interactivetool_map = self.resolve_path(kwargs.get("interactivetools_map", os.path.join(self.data_dir, "interactivetools_map.sqlite")))
         self.interactivetool_prefix = kwargs.get("interactivetools_prefix", "interactivetool")
         self.interactivetools_enable = string_as_bool(kwargs.get('interactivetools_enable', False))
-
-        self.citation_cache_data_dir = os.path.join(self.data_dir, self.citation_cache_data_dir)
-        self.citation_cache_lock_dir = os.path.join(self.data_dir, self.citation_cache_lock_dir)
 
         self.containers_conf = parse_containers_config(self.containers_config_file)
 
