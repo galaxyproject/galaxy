@@ -1854,25 +1854,25 @@ galaxy:
   # Allow the display of tool recommendations in workflow editor and
   # after tool execution. If it is enabled and set to true, please
   # enable 'tool_recommendation_model_path' as well
-  enable_tool_recommendations: true
+  #enable_tool_recommendations: false
 
   # Set remote path of the trained model (HDF5 file) for tool
   # recommendation. It is required to be set if
   # 'enable_tool_recommendations' property is enabled and set to true.
-  tool_recommendation_model_path: https://github.com/anuprulez/download_store/raw/tool_recommendation_model/tool_recommendation_model/tool_recommendation_model.hdf5
+  #tool_recommendation_model_path: https://github.com/anuprulez/download_store/raw/tool_recommendation_model/tool_recommendation_model/tool_recommendation_model.hdf5
 
   # Enable tool recommendations to be set by Galaxy admins. If set to
   # true, 'admin_tool_recommendations_path' must be set as well which
   # takes the path of the additional list of tools to be recommended.
   # This is useful to promote new tools.
-  enable_admin_tool_recommendations: true
+  #enable_admin_tool_recommendations: false
 
   # Set path to the additional tool preferences from Galaxy admins. It
   # has two blocks. One for listing deprecated tools which will be
   # removed from the recommendations and  another is for adding
   # additional tools to be recommended along side those from the deep
   # learning model.
-  admin_tool_recommendations_path: config/tool_recommendations_overwrite.yml
+  #admin_tool_recommendations_path: config/tool_recommendations_overwrite.yml
 
   # Overwrite or append to the tool recommendations by the deep learning
   # model. When set to true, all the recommendations by the deep

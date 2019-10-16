@@ -5,6 +5,7 @@ from __future__ import absolute_import
 
 import io
 import json
+import yaml
 import logging
 import os
 
@@ -639,8 +640,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                                         self.admin_recommendations[tool_id] = tool_info
                 except Exception as exp:
                     pass
-        print(self.admin_recommendations)
-        print("---------------------------")
         # recreate the neural network model to be used for prediction
         if not self.tool_recommendation_model_path:
             self.tool_recommendation_model_path = self.__download_model(trans)
