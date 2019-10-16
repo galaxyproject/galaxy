@@ -28,10 +28,10 @@
     ]]>
     </command>
     <inputs>
-        <param name="infile" type="data" format="csv" label="csv file with for first columns: 'name', 'longitude', 'latitude' informations"/>
+        <!--param name="infile" type="data" format="csv" label="csv file with for first columns: 'name', 'longitude', 'latitude' informations"/-->
     </inputs>
     <outputs>
-        <data name="outfile" format="rdata" />
+        <!--data name="outfile" format="rdata" /-->
     </outputs>
     <tests>
     </tests>
