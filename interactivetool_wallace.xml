@@ -29,10 +29,10 @@
     ]]>
     </command>
     <inputs>
-        <param name="infile" type="data" format="tabular,txt,csv,rdata" label="text oriented (tabular or csv) or RData files"/>
+        <param name="infile" type="data" format="csv" label="csv file with for first columns: 'name', 'longitude', 'latitude' informations"/>
     </inputs>
     <outputs>
-        <data name="outfile" format="tabular,txt,csv,rdata" />
+        <data name="outfile" format="rdata" />
     </outputs>
     <tests>
     </tests>
