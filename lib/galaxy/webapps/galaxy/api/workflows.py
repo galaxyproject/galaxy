@@ -214,9 +214,13 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         """
         GET /api/workflows/{encoded_workflow_id}
 
-        Displays information needed to run a workflow from the command line.
+        :param  instance:                 true if fetch by Workflow ID instead of StoredWorkflow id, false
+                                          by default.
+        :type   instance:                 boolean
+
+        Displays information needed to run a workflow.
         """
-        stored_workflow = self.__get_stored_workflow(trans, id)
+        stored_workflow = self.__get_stored_workflow(trans, id, **kwd)
         if stored_workflow.importable is False and stored_workflow.user != trans.user and not trans.user_is_admin:
             if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:
                 message = "Workflow is neither importable, nor owned by or shared with current user"
@@ -233,9 +237,13 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         """
         GET /api/workflows/{encoded_workflow_id}/versions
 
+        :param  instance:                 true if fetch by Workflow ID instead of StoredWorkflow id, false
+                                          by default.
+        :type   instance:                 boolean
+
         Lists all versions of this workflow.
         """
-        stored_workflow = self.workflow_manager.get_stored_accessible_workflow(trans, workflow_id)
+        stored_workflow = self.workflow_manager.get_stored_accessible_workflow(trans, workflow_id, **kwds)
         return [{'version': i, 'update_time': str(w.update_time), 'steps': len(w.steps)} for i, w in enumerate(reversed(stored_workflow.workflows))]
 
     @expose_api
@@ -448,8 +456,12 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                         admin with the `default_workflow_export_format` config
                         option. Style can be specified as either 'ga' or 'format2' directly
                         to be explicit about which format to download.
+
+        :param  instance:                 true if fetch by Workflow ID instead of StoredWorkflow id, false
+                                          by default.
+        :type   instance:                 boolean
         """
-        stored_workflow = self.__get_stored_accessible_workflow(trans, workflow_id)
+        stored_workflow = self.__get_stored_accessible_workflow(trans, workflow_id, **kwd)
 
         style = kwd.get("style", "export")
         download_format = kwd.get('format')
@@ -521,6 +533,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         :type   id:      str
         :param  id:      the encoded id of the workflow to update
+        :param  instance:                 true if fetch by Workflow ID instead of StoredWorkflow id, false
+                                          by default.
+        :type   instance:                 boolean
         :type   payload: dict
         :param  payload: a dictionary containing any or all the
             * workflow   the json description of the workflow as would be
@@ -540,7 +555,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         :rtype:     dict
         :returns:   serialized version of the workflow
         """
-        stored_workflow = self.__get_stored_workflow(trans, id)
+        stored_workflow = self.__get_stored_workflow(trans, id, **kwds)
         workflow_dict = payload.get('workflow') or payload
         if workflow_dict:
             raw_workflow_description = self.__normalize_workflow(trans, workflow_dict)
@@ -1027,11 +1042,13 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             True
         )
 
-    def __get_stored_accessible_workflow(self, trans, workflow_id):
-        return self.workflow_manager.get_stored_accessible_workflow(trans, workflow_id)
+    def __get_stored_accessible_workflow(self, trans, workflow_id, **kwd):
+        instance = util.string_as_bool(kwd.get("instance", "false"))
+        return self.workflow_manager.get_stored_accessible_workflow(trans, workflow_id, by_stored_id=not instance)
 
-    def __get_stored_workflow(self, trans, workflow_id):
-        return self.workflow_manager.get_stored_workflow(trans, workflow_id)
+    def __get_stored_workflow(self, trans, workflow_id, **kwd):
+        instance = util.string_as_bool(kwd.get("instance", "false"))
+        return self.workflow_manager.get_stored_workflow(trans, workflow_id, by_stored_id=not instance)
 
     def __encode_invocation(self, invocation, **kwd):
         return self.workflow_manager.serialize_workflow_invocation(invocation, **kwd)

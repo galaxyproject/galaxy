@@ -5,6 +5,7 @@
         :busy="busy"
         headerMessage="Workflow invocations that are still being scheduled are displayed on this page."
         noInvocationsMessage="There are no scheduling workflow invocations to show currently."
+        :ownerGrid="false"
         >
     </invocations>
 </template>

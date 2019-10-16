@@ -12,6 +12,7 @@ import { jobMetricsStore } from "./jobMetricsStore";
 import { invocationStore } from "./invocationStore";
 import { userStore } from "./userStore";
 import { configStore } from "./configStore";
+import { workflowStore } from "./workflowStore";
 
 Vue.use(Vuex);
 
@@ -30,7 +31,8 @@ export function createStore() {
             jobMetrics: jobMetricsStore,
             invocations: invocationStore,
             user: userStore,
-            config: configStore
+            config: configStore,
+            workflows: workflowStore
         }
     });
 }
