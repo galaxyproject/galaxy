@@ -1,5 +1,3 @@
-import os
-
 from base import integration_util
 
 
@@ -22,4 +20,3 @@ class ConfigDefaultsTestCase(integration_util.IntegrationTestCase):
     def test_default_database_query_profiling_proxy(self):
         expect = self.get_default('database_query_profiling_proxy')
         assert expect == self._app.config.database_query_profiling_proxy
-
