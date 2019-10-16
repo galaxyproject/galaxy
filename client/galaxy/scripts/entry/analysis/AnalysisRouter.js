@@ -92,11 +92,11 @@ export const getAnalysisRouter = Galaxy =>
             return (Galaxy.user && Galaxy.user.id) || this.require_login.indexOf(name) == -1;
         },
 
-        _display_vue_helper: function(component, props = {}) {
+        _display_vue_helper: function(component, propsData = {}) {
             const instance = Vue.extend(component);
             const container = document.createElement("div");
             this.page.display(container);
-            return new instance({ store, props }).$mount(container);
+            return new instance({ store, propsData }).$mount(container);
         },
 
         show_tours: function(tour_id) {

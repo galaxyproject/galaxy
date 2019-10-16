@@ -2,7 +2,6 @@
     <invocations
         :invocationItems="invocationItems"
         :loading="loading"
-        :busy="busy"
         headerMessage="Your most recent workflow invocations are displayed on this page."
         noInvocationsMessage="There are no workflow invocations to show."
     >
@@ -10,7 +9,7 @@
 </template>
 
 <script>
-import Invocations from "components/admin/Invocations";
+import Invocations from "../Workflow/Invocations";
 import { getRecentInvocations } from "./UserServices";
 
 export default {
@@ -20,8 +19,7 @@ export default {
     data() {
         return {
             invocationItems: [],
-            loading: true,
-            busy: true
+            loading: true
         };
     },
     created() {
@@ -29,7 +27,6 @@ export default {
             .then(response => {
                 this.invocationItems = response.data;
                 this.loading = false;
-                this.busy = false;
             })
             .catch(this.handleError);
     },

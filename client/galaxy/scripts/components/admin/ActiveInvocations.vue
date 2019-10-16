@@ -2,7 +2,6 @@
     <invocations
         :invocationItems="invocationItems"
         :loading="loading"
-        :busy="busy"
         headerMessage="Workflow invocations that are still being scheduled are displayed on this page."
         noInvocationsMessage="There are no scheduling workflow invocations to show currently."
         :ownerGrid="false"
@@ -11,7 +10,7 @@
 </template>
 
 <script>
-import Invocations from "./Invocations";
+import Invocations from "../Workflow/Invocations";
 import { getActiveInvocations } from "./AdminServices";
 
 export default {
@@ -21,8 +20,7 @@ export default {
     data() {
         return {
             invocationItems: [],
-            loading: true,
-            busy: true
+            loading: true
         };
     },
     created() {
@@ -30,7 +28,6 @@ export default {
             .then(response => {
                 this.invocationItems = response.data;
                 this.loading = false;
-                this.busy = false;
             })
             .catch(this.handleError);
     },

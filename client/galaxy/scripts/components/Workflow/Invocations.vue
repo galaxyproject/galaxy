@@ -22,8 +22,7 @@
                 responsive
                 striped
                 caption-top
-                @row-clicked="showRowDetails"
-                :busy="busy"
+                :busy="loading"
             >
                 <template v-slot:table-caption>
                     These invocations are not finished scheduling - one or more steps are waiting on others steps to be
@@ -35,15 +34,28 @@
                         <workflow-invocation-state :invocationId="row.item.id" :provideContext="false" />
                     </b-card>
                 </template>
+                <template v-slot:cell(details)="data">
+                    <b-button
+                        v-b-tooltip.hover.bottom
+                        title="Show Invocation Details"
+                        class="btn-sm fa fa-plus"
+                        v-if="!data.detailsShowing"
+                        @click.stop="swapRowDetails(data)"
+                    />
+                    <b-button
+                        v-b-tooltip.hover.bottom
+                        title="Hide Invocation Details"
+                        class="btn-sm fa fa-minus"
+                        v-if="data.detailsShowing"
+                        @click.stop="swapRowDetails(data)"
+                    />
+                </template>
                 <template v-slot:cell(workflow_id)="data">
                     <div v-if="!ownerGrid || !getWorkflowByInstanceId(data.item.workflow_id)">
                         {{ data.item.workflow_id }}
                     </div>
                     <div v-else>
                         <workflow-dropdown :workflow="getWorkflowByInstanceId(data.item.workflow_id)" />
-                        <!--
-                        <a :href="editLink(data.item.workflow_id)">{{ getWorkflowByInstanceId(data.item.workflow_id).name }}</a>
-                        -->
                     </div>
                 </template>
                 <template v-slot:cell(history_id)="data">
@@ -64,7 +76,7 @@ import { getRootFromIndexLink } from "onload";
 import { WorkflowInvocationState } from "components/WorkflowInvocationState";
 import LoadingSpan from "components/LoadingSpan";
 import WorkflowDropdown from "components/Workflow/WorkflowDropdown";
-import HistoryDropdown from "components/HistoryDropdown";
+import HistoryDropdown from "components/History/HistoryDropdown";
 import { mapCacheActions } from "vuex-cache";
 import { mapGetters } from "vuex";
 
@@ -76,21 +88,21 @@ export default {
         HistoryDropdown
     },
     props: {
-        invocationItems: { type: Array, default: [] },
-        busy: { type: Boolean, default: true },
+        invocationItems: { type: Array, default: () => [] },
         loading: { type: Boolean, default: true },
         noInvocationsMessage: { type: String },
         headerMessage: { type: String, default: "" },
         ownerGrid: { type: Boolean, default: true }
     },
     data() {
-        let fields = [
+        const fields = [
+            { key: "details", label: "" },
             { key: "workflow_id", label: "Workflow" },
             { key: "history_id", label: "History" },
-            { key: "id", label: "Invocation ID", sortable: true },
+            { key: "id", label: "Invocation ID" },
             { key: "state" },
-            { key: "update_time", label: "Last Update", sortable: true },
-            { key: "create_time", label: "Invocation Time", sortable: true }
+            { key: "update_time", label: "Last Update" },
+            { key: "create_time", label: "Invocation Time" }
         ];
         return {
             invocationItemsModel: [],
@@ -126,10 +138,8 @@ export default {
                 };
             });
         },
-        showRowDetails(row, index, e) {
-            if (e.target.nodeName != "A") {
-                row._showDetails = !row._showDetails;
-            }
+        swapRowDetails(row) {
+            row.toggleDetails();
         },
         handleError(error) {
             console.error(error);

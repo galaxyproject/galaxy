@@ -11,9 +11,7 @@
         </b-link>
         <div class="dropdown-menu" aria-labelledby="history-dropdown">
             <a class="dropdown-item" :href="urlView">View</a>
-            <!--
             <a class="dropdown-item" href="#" @click="onSwitch">Switch To</a>
-            -->
             <a class="dropdown-item" :href="urlShowStructure">Structure</a>
             <a class="dropdown-item" :href="urlSharing">Sharing</a>
         </div>
@@ -21,7 +19,7 @@
 </template>
 <script>
 import { getAppRoot } from "onload/loadConfig";
-import jQuery from "jquery";
+import { getGalaxyInstance } from "app";
 
 export default {
     props: ["history"],
@@ -37,9 +35,8 @@ export default {
     },
     methods: {
         onSwitch: function() {
-            // this switches the history, but doesn't trigger a reload yet...
-            // extract as service from history-model?
-            jQuery.getJSON(`${getAppRoot()}history/set_as_current?id=${this.history.id}`);
+            const Galaxy = getGalaxyInstance();
+            Galaxy.currHistoryPanel.switchToHistory(this.history.id);
         }
     }
 };
