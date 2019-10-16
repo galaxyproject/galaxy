@@ -14,8 +14,8 @@
     </environment_variables>
     <command><![CDATA[
         mkdir -p /srv/shiny-server/external_data/ &&
-        echo $WILSON_LANDING_PAGE > /home/shiny/.Renviron &&
-        echo $WILSON_BLACKLIST_EXAMPLES >> /home/shiny/.Renviron &&
+        echo "WILSON_LANDING_PAGE=\$WILSON_LANDING_PAGE" > /home/shiny/.Renviron &&
+        echo "WILSON_BLACKLIST_EXAMPLES=\$WILSON_BLACKLIST_EXAMPLES" >> /home/shiny/.Renviron &&
         ln -s ${infile} /srv/shiny-server/external_data/input.clarion &&
         exec shiny-server 2>&1
     ]]>
