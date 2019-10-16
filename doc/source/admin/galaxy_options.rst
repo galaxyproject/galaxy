@@ -2853,8 +2853,8 @@
 :Description:
     Enable beta workflow modules that should not yet be considered
     part of Galaxy's stable API. (The module state definitions may
-    change and workflows built using  these modules may not function
-    in the future.)
+    change and workflows built using these modules may not function in
+    the future.)
 :Default: ``false``
 :Type: bool
 
@@ -3779,6 +3779,20 @@
     reason to disable it.
 :Default: ``true``
 :Type: bool
+
+
+~~~~~~~~~~~~~~~~~
+``cookie_domain``
+~~~~~~~~~~~~~~~~~
+
+:Description:
+    Tell Galaxy that multiple domains sharing the same root are
+    associated to this instance and wants to share the same session
+    cookie. This allow a user to stay logged in when passing from one
+    subdomain to the other. This root domain will be written in the
+    unique session cookie shared by all subdomains.
+:Default: ``None``
+:Type: str
 
 
 

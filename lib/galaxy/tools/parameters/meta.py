@@ -105,12 +105,9 @@ def expand_meta_parameters(trans, tool, incoming):
     execution).
     """
 
-    to_remove = []
-    for key in incoming.keys():
+    for key in list(incoming.keys()):
         if key.endswith("|__identifier__"):
-            to_remove.append(key)
-    for key in to_remove:
-        incoming.pop(key)
+            incoming.pop(key)
 
     # If we're going to multiply input dataset combinations
     # order matters, so the following reorders incoming

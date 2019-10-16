@@ -374,6 +374,8 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
             self.response.cookies[name]['httponly'] = True
         except CookieError as e:
             log.warning("Error setting httponly attribute in cookie '%s': %s" % (name, e))
+        if self.app.config.cookie_domain is not None:
+            self.response.cookies[name]['domain'] = self.app.config.cookie_domain
 
     def _authenticate_api(self, session_cookie):
         """

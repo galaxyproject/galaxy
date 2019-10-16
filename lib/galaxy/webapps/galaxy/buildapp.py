@@ -110,6 +110,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_client_route('/admin/users', 'admin')
     webapp.add_client_route('/admin/users/create', 'admin')
     webapp.add_client_route('/admin/display_applications', 'admin')
+    webapp.add_client_route('/admin/reset_metadata', 'admin')
     webapp.add_client_route('/admin/roles', 'admin')
     webapp.add_client_route('/admin/forms', 'admin')
     webapp.add_client_route('/admin/groups', 'admin')
@@ -1033,6 +1034,12 @@ def populate_api_routes(webapp, app):
                           controller='tool_shed_repositories',
                           action='uninstall_repository',
                           conditions=dict(method=["DELETE"]))
+
+    webapp.mapper.connect('reset_metadata_on_selected_installed_repositories',
+                          '/api/tool_shed_repositories/reset_metadata_on_selected_installed_repositories',
+                          controller='tool_shed_repositories',
+                          action='reset_metadata_on_selected_installed_repositories',
+                          conditions=dict(method=['POST']))
 
     # Galaxy API for tool shed features.
     webapp.mapper.resource('tool_shed_repository',

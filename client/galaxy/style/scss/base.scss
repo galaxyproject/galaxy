@@ -135,7 +135,6 @@ body {
 #right {
     @extend .position-absolute;
     @extend .h-100;
-    @extend .overflow-hidden;
 }
 #left {
     @extend .unified-panel;
@@ -155,7 +154,6 @@ body {
     }
 }
 #center {
-    @extend .overflow-hidden;
     left: $panel-width;
     right: $panel-width;
     .center-container {
