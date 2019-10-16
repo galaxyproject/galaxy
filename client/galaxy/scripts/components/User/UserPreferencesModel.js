@@ -1,4 +1,5 @@
 import { getGalaxyInstance } from "app";
+import _l from "utils/localization";
 
 export const getUserPreferencesModel = () => {
     const Galaxy = getGalaxyInstance();

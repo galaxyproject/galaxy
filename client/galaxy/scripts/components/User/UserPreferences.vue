@@ -3,7 +3,7 @@
         <h2>User preferences</h2>
         <p>You are logged in as <strong>{{ email }}</strong>.</p>
         <b-container fluid>
-            <b-row v-for="link in activeLinks" >
+            <b-row v-for="(link, index) in activeLinks" :key="index" >
                 <b-col cols="5" md="2" lg="1" class="pl-0 pr-0" >
                     <i :class="`fa fa-lg ${link.icon}`">
                     </i>
@@ -36,6 +36,7 @@
     import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
     import Vue from "vue";
     import BootstrapVue from "bootstrap-vue";
+    import $ from "jquery";
     Vue.use(BootstrapVue);
 
     export default {
@@ -103,6 +104,7 @@
                 Galaxy.page.router.push(`${getAppRoot()}custom_builds`);
             },
             makeDataPrivate() {
+                const Galaxy = getGalaxyInstance();
                 if (
                     confirm(
                         _l(
