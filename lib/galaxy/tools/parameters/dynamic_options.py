@@ -191,8 +191,10 @@ class DataMetaFilter(Filter):
         try:
             ref = _get_ref_data(other_values, self.ref_name)
         except KeyError:  # no such dataset
+            log.warn("could not filter by metadata: %s unknown" % self.ref_name)
             return []
         except ValueError:  # not a valid dataset
+            log.warn("could not filter by metadata: %s not a data or collection parameter" % self.ref_name)
             return []
 
         # get the metadata value.
@@ -659,20 +661,30 @@ class DynamicOptions:
 
     def get_fields(self, trans, other_values):
         if self.dataset_ref_name:
-            dataset = other_values.get(self.dataset_ref_name, None)
-            if not dataset or not hasattr(dataset, 'file_name'):
-                return []  # no valid dataset in history
-            # Ensure parsing dynamic options does not consume more than a megabyte worth memory.
-            path = dataset.file_name
-            if os.path.getsize(path) < 1048576:
-                with open(path) as fh:
-                    options = self.parse_file_fields(fh)
-            else:
-                # Pass just the first megabyte to parse_file_fields.
-                log.warning("Attempting to load options from large file, reading just first megabyte")
-                with open(path) as fh:
-                    contents = fh.read(1048576)
-                options = self.parse_file_fields(StringIO(contents))
+            try:
+                datasets = _get_ref_data(other_values, self.dataset_ref_name)
+            except KeyError:  # no such dataset
+                log.warn("could not create dynamic options from_dataset: %s unknown" % self.dataset_ref_name)
+                return []
+            except ValueError:  # not a valid dataset
+                log.warn("could not create dynamic options from_dataset: %s not a data or collection parameter" % self.dataset_ref_name)
+                return []
+
+            options = []
+            for dataset in datasets:
+                if not hasattr(dataset, 'file_name'):
+                    continue
+                # Ensure parsing dynamic options does not consume more than a megabyte worth memory.
+                path = dataset.file_name
+                if os.path.getsize(path) < 1048576:
+                    with open(path) as fh:
+                        options += self.parse_file_fields(fh)
+                else:
+                    # Pass just the first megabyte to parse_file_fields.
+                    log.warning("Attempting to load options from large file, reading just first megabyte")
+                    with open(path, 'r') as fh:
+                        contents = fh.read(1048576)
+                    options += self.parse_file_fields(StringIO(contents))
         elif self.tool_data_table:
             options = self.tool_data_table.get_fields()
         elif self.file_fields:
@@ -740,10 +752,10 @@ def _get_ref_data(other_values, ref_name):
     get the list of data sets from ref_name 
     
     - a KeyError is raised if no such element exists
-    - a ValueError is raised if the element is not of the type DatasetFilenameWrapper, HistoryDatasetAssociation, DatasetListWrapper, or HistoryDatasetCollectionAssociation
+    - a ValueError is raised if the element is not of the type DatasetFilenameWrapper, HistoryDatasetAssociation, DatasetListWrapper, HistoryDatasetCollectionAssociation, list
     """
     ref = other_values[ref_name]
-    if not isinstance(ref, (DatasetFilenameWrapper, HistoryDatasetAssociation, DatasetListWrapper, HistoryDatasetCollectionAssociation)):
+    if not isinstance(ref, (DatasetFilenameWrapper, HistoryDatasetAssociation, DatasetListWrapper, HistoryDatasetCollectionAssociation, list)):
         raise ValueError
     if isinstance(ref, (DatasetFilenameWrapper, HistoryDatasetAssociation)):
         ref = [ref]
