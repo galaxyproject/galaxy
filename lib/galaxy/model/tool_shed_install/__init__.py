@@ -79,11 +79,16 @@ class ToolShedRepository(object):
     def get_sharable_url(self, app):
         return common_util.get_tool_shed_repository_url(app, self.tool_shed, self.owner, self.name)
 
-    def get_shed_config_filename(self):
+    @property
+    def shed_config_filename(self):
         shed_config_filename = None
         if self.metadata:
             shed_config_filename = self.metadata.get('shed_config_filename', shed_config_filename)
         return shed_config_filename
+
+    @shed_config_filename.setter
+    def shed_config_filename(self, value):
+        self.metadata['shed_config_filename'] = value
 
     def get_shed_config_dict(self, app, default=None):
         """
@@ -380,11 +385,6 @@ class ToolShedRepository(object):
         if self.tool_shed_status:
             return asbool(self.tool_shed_status.get('revision_update', False))
         return False
-
-    def set_shed_config_filename(self, value):
-        self.metadata['shed_config_filename'] = value
-
-    shed_config_filename = property(get_shed_config_filename, set_shed_config_filename)
 
     def to_dict(self, view='collection', value_mapper=None):
         if value_mapper is None:
