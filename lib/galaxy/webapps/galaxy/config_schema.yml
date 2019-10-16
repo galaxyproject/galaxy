@@ -460,6 +460,7 @@ mapping:
 
       involucro_path:
         type: str
+        default: involucro
         required: false
         desc: |
           involucro is a tool used to build Docker or Singularity containers for tools from Conda
@@ -468,7 +469,7 @@ mapping:
           container resolver isn't enabled, and will install on demand unless
           involucro_auto_init is set to false.
 
-          Sample default '<tool_dependency_dir>/involucro'
+          Value will be resolved with respect to '<tool_dependency_dir>'.
 
       involucro_auto_init:
         type: bool
@@ -635,8 +636,8 @@ mapping:
           Interactive tour directory: where to store interactive tour definition files.
           Galaxy ships with several basic interface tours enabled, though a different
           directory with custom tours can be specified here. The path is relative to the
-          Galaxy root dir.  To use an absolute path begin the path with '/'.  This is a comma
-          separated list.
+          Galaxy root dir.  To use an absolute path begin the path with '/'.  This is a
+          comma-separated list.
 
       webhooks_dir:
         type: str
@@ -645,9 +646,9 @@ mapping:
         desc: |
           Webhooks directory: where to store webhooks - plugins to extend the Galaxy UI.
           By default none will be loaded.  Set to config/plugins/webhooks/demo to load Galaxy's
-          demo webhooks.  To use an absolute path begin the path with '/'.  This is a comma
-          separated list. Add test/functional/webhooks to this list to include the demo webhooks
-          used to test the webhook framework.
+          demo webhooks.  To use an absolute path begin the path with '/'.  This is a
+          comma-separated list. Add test/functional/webhooks to this list to include the demo
+          webhooks used to test the webhook framework.
 
       job_working_directory:
         type: str

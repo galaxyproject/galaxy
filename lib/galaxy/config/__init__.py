@@ -377,9 +377,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.user_tool_section_filters = listify(kwargs.get("user_tool_section_filters", []), do_strip=True)
         self.has_user_tool_filters = bool(self.user_tool_filters or self.user_tool_label_filters or self.user_tool_section_filters)
 
-        self.tour_config_dir = os.path.join(self.root, self.tour_config_dir)
-        self.webhooks_dirs = os.path.join(self.root, self.webhooks_dir)
-
         self.password_expiration_period = timedelta(days=int(kwargs.get("password_expiration_period", 0)))
 
         if self.shed_tool_data_path:
@@ -449,7 +446,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
                 with open(self.blacklist_file) as f:
                     self.blacklist_content = [line.rstrip() for line in f]
             except IOError:
-                log.error("CONFIGURATION ERROR: Can't open supplied blacklist file from path: " + str(self.blacklist_file))
+                log.error("CONFIGURATION ERROR: Can't open supplied blacklist file from path: %s", self.blacklist_file)
 
         self.persistent_communication_rooms = listify(kwargs.get("persistent_communication_rooms", []), do_strip=True)
         # The transfer manager and deferred job queue
@@ -512,7 +509,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             containers_resolvers_config_file = os.path.join(self.root, containers_resolvers_config_file)
         self.containers_resolvers_config_file = containers_resolvers_config_file
 
-        # tool_dependency_dir can be "none" (in old configs). If so, set it to schema default
+        # tool_dependency_dir can be "none" (in old configs). If so, set it to None
         if self.tool_dependency_dir and self.tool_dependency_dir.lower() == 'none':
             self.tool_dependency_dir = None
         if self.involucro_path is None:

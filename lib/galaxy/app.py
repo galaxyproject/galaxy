@@ -155,7 +155,7 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         # Tours registry
         self.tour_registry = ToursRegistry(self.config.tour_config_dir)
         # Webhooks registry
-        self.webhooks_registry = WebhooksRegistry(self.config.webhooks_dirs)
+        self.webhooks_registry = WebhooksRegistry(self.config.webhooks_dir)
         # Load security policy.
         self.security_agent = self.model.security_agent
         self.host_security_agent = galaxy.model.security.HostAgent(
