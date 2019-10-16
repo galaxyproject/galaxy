@@ -4,11 +4,11 @@
         <p>You are logged in as <strong>{{ email }}</strong>.</p>
         <b-container fluid>
             <b-row v-for="(link, index) in activeLinks" :key="index" >
-                <b-col cols="5" md="2" lg="1" class="pl-0 pr-0" >
+                <b-col cols="5" md="2" lg="1" class="pl-0 pr-0 pl-md-3" >
                     <i :class="`fa fa-lg ${link.icon}`">
                     </i>
                 </b-col>
-                <b-col cols="7" md="10" lg="11" class="pl-0 pr-0">
+                <b-col cols="7" md="10" lg="11" class="pl-0 pr-0 pl-md-3 pl-xl-0">
                     <div>
                         <a v-if="link.onclick" @click="link.onclick" href="javascript:void(0)"><b>{{link.title}}</b></a>
                         <a v-else :href="`${baseUrl}/${link.action}`"><b>{{link.title}}</b></a>
