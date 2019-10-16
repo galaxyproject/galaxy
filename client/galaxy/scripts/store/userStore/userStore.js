@@ -20,11 +20,6 @@ const getters = {
             }
         }
         return User.create(userProps);
-    },
-
-    hasUser(state, getters) {
-        const user = getters.currentUser;
-        return user && user.id;
     }
 };
 
