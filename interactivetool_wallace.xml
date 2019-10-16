@@ -29,10 +29,10 @@
     ]]>
     </command>
     <inputs>
-        <param name="infile" type="data" format="tabular,txt" label="Tabular in Clarion format"/>
+        <param name="infile" type="data" format="tabular,txt,csv,rdata" label="text oriented (tabular or csv) or RData files"/>
     </inputs>
     <outputs>
-        <!--data name="outfile" format="txt" /-->
+        <data name="outfile" format="tabular,txt,csv,rdata" />
     </outputs>
     <tests>
     </tests>
@@ -42,7 +42,7 @@
 
 
 
-`Wallace <https://github.molgen.mpg.de/loosolab/wilson-apps/wiki>`_ is a modular platform for reproducible modeling of species niches and distributions.
+`Wallace <https://wallaceecomod.github.io/>`_ is a flexible platform for reproducible modeling of species niches and distributions.
 
 .. class:: infomark
 
