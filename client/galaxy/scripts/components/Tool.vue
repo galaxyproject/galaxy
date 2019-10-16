@@ -26,6 +26,7 @@
 
 <script>
 import { getGalaxyInstance } from "app"; // FIXME:
+import ariaAlert from "utils/ariaAlert";
 
 export default {
     name: "Tool",
@@ -54,6 +55,7 @@ export default {
                     version: this.tool.version
                 });
             }
+            ariaAlert(`${this.tool.name} opened in galaxy center panel`);
         }
     },
     created() {}

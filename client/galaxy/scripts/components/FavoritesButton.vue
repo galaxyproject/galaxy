@@ -5,6 +5,8 @@
         v-b-tooltip.hover
         :title="tooltipText"
         href="javascript:void(0)"
+        role="button"
+        aria-label="Show favorite tools"
     >
         <span class="fa fa-star-o"></span>
     </a>
