@@ -6,8 +6,4 @@ export default class User {
     get isAnonymous() {
         return !this.email;
     }
-
-    static create(props = {}) {
-        return new User(props);
-    }
 }

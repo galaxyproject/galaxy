@@ -19,7 +19,7 @@ const getters = {
                 console.warn(err);
             }
         }
-        return User.create(userProps);
+        return new User(userProps);
     }
 };
 
