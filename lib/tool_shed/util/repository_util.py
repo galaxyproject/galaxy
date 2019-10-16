@@ -83,7 +83,7 @@ def check_or_update_tool_shed_status_for_installed_repository(app, repository):
 
 
 def create_or_update_tool_shed_repository(app, name, description, installed_changeset_revision, ctx_rev, repository_clone_url,
-                                          metadata_dict, status, current_changeset_revision=None, owner='', dist_to_shed=False):
+                                          status, metadata_dict=None, current_changeset_revision=None, owner='', dist_to_shed=False):
     """
     Update a tool shed repository record in the Galaxy database with the new information received.
     If a record defined by the received tool shed, repository name and owner does not exist, create
@@ -102,7 +102,7 @@ def create_or_update_tool_shed_repository(app, name, description, installed_chan
     tool_shed = get_tool_shed_from_clone_url(repository_clone_url)
     if not owner:
         owner = get_repository_owner_from_clone_url(repository_clone_url)
-    includes_datatypes = 'datatypes' in metadata_dict
+    includes_datatypes = 'datatypes' in (metadata_dict or {})
     if status in [app.install_model.ToolShedRepository.installation_status.DEACTIVATED]:
         deleted = True
         uninstalled = False
@@ -120,11 +120,12 @@ def create_or_update_tool_shed_repository(app, name, description, installed_chan
         tool_shed_repository.description = description
         tool_shed_repository.changeset_revision = current_changeset_revision
         tool_shed_repository.ctx_rev = ctx_rev
-        tool_shed_repository.metadata = metadata_dict
-        tool_shed_repository.includes_datatypes = includes_datatypes
         tool_shed_repository.deleted = deleted
         tool_shed_repository.uninstalled = uninstalled
         tool_shed_repository.status = status
+        if metadata_dict is not None:
+            tool_shed_repository.metadata = metadata_dict
+            tool_shed_repository.includes_datatypes = includes_datatypes
     else:
         log.debug("Adding new row for repository '%s' in the tool_shed_repository table, status set to '%s'." %
                   (str(name), str(status)))
@@ -136,7 +137,7 @@ def create_or_update_tool_shed_repository(app, name, description, installed_chan
                                                  installed_changeset_revision=installed_changeset_revision,
                                                  changeset_revision=current_changeset_revision,
                                                  ctx_rev=ctx_rev,
-                                                 metadata=metadata_dict,
+                                                 metadata=metadata_dict or {},
                                                  includes_datatypes=includes_datatypes,
                                                  dist_to_shed=dist_to_shed,
                                                  deleted=deleted,
