@@ -10,11 +10,14 @@ import re
 
 from six import StringIO
 
-import galaxy.tools
 from galaxy.model import (
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
     User
+)
+from galaxy.tools.wrappers import (
+    DatasetFilenameWrapper,
+    DatasetListWrapper
 )
 from galaxy.util import string_as_bool
 from . import validation
@@ -184,14 +187,13 @@ class DataMetaFilter(Filter):
             if self.multiple:
                 return dataset_value in file_value.split(self.separator)
             return file_value == dataset_value
-        ref = other_values.get(self.ref_name, None)
-        if isinstance(ref, HistoryDatasetCollectionAssociation):
-            ref = ref.to_hda_representative(multiple=True)
-        is_data = isinstance(ref, galaxy.tools.wrappers.DatasetFilenameWrapper)
-        is_data_list = isinstance(ref, galaxy.tools.wrappers.DatasetListWrapper) or isinstance(ref, list)
-        is_data_or_data_list = is_data or is_data_list
-        if not isinstance(ref, HistoryDatasetAssociation) and not is_data_or_data_list:
-            return []  # not a valid dataset
+
+        try:
+            ref = _get_ref_data(other_values, self.ref_name)
+        except KeyError:  # no such dataset
+            return []
+        except ValueError:  # not a valid dataset
+            return []
 
         # get the metadata value.
         # - for lists: (of data sets) and collections the meta data values of all
@@ -200,14 +202,10 @@ class DataMetaFilter(Filter):
         # in both cases only meta data that is set (i.e. differs from the no_value)
         # is considered
         meta_value = set()
-        if is_data_list:
-            for r in ref:
-                if not r.metadata.element_is_set(self.key):
-                    continue
-                _add_meta(meta_value, r.metadata.get(self.key))
-        else:
-            if ref.metadata.element_is_set(self.key):
-                _add_meta(meta_value, ref.metadata.get(self.key))
+        for r in ref:
+            if not r.metadata.element_is_set(self.key):
+                continue
+            _add_meta(meta_value, r.metadata.get(self.key))
         log.error("meta_value %s" % str(meta_value))
         # if no meta data value could be determined just return a copy
         # of the original options
@@ -473,7 +471,7 @@ class RemoveValueFilter(Filter):
                 data_ref = other_values.get(self.meta_ref)
                 if isinstance(data_ref, HistoryDatasetCollectionAssociation):
                     data_ref = data_ref.to_hda_representative()
-                if not isinstance(data_ref, HistoryDatasetAssociation) and not isinstance(data_ref, galaxy.tools.wrappers.DatasetFilenameWrapper):
+                if not isinstance(data_ref, HistoryDatasetAssociation) and not isinstance(data_ref, DatasetFilenameWrapper):
                     return options  # cannot modify options
                 value = data_ref.metadata.get(self.metadata_key, None)
         # Default to the second column (i.e. 1) since this used to work only on options produced by the data_meta filter
@@ -735,3 +733,20 @@ class DynamicOptions:
             return self.columns[column_spec]
         # Int?
         return int(column_spec)
+
+
+def _get_ref_data(other_values, ref_name):
+    """
+    get the list of data sets from ref_name 
+    
+    - a KeyError is raised if no such element exists
+    - a ValueError is raised if the element is not of the type DatasetFilenameWrapper, HistoryDatasetAssociation, DatasetListWrapper, or HistoryDatasetCollectionAssociation
+    """
+    ref = other_values[ref_name]
+    if not isinstance(ref, (DatasetFilenameWrapper, HistoryDatasetAssociation, DatasetListWrapper, HistoryDatasetCollectionAssociation)):
+        raise ValueError
+    if isinstance(ref, (DatasetFilenameWrapper, HistoryDatasetAssociation)):
+        ref = [ref]
+    elif isinstance(ref, HistoryDatasetCollectionAssociation):
+        ref = ref.to_hda_representative(multiple=True)
+    return ref
