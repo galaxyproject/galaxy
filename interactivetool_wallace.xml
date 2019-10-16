@@ -1,7 +1,7 @@
 <tool id="interactive_tool_wallace" tool_type="interactive" name="Wallace" version="0.1">
     <description>Webbased Interactive modeling of species niches and distributions</description>
     <requirements>
-        <container type="docker">quay.io/bgruening/wilson-app</container>
+        <container type="docker">ylebras/wallace-docker</container>
     </requirements>
     <entry_points>
         <entry_point name="Wallace visualisation of $infile.display_name" requires_domain="True">
@@ -32,18 +32,30 @@
         <param name="infile" type="data" format="tabular,txt" label="Tabular in Clarion format"/>
     </inputs>
     <outputs>
-        <data name="outfile" format="txt" />
+        <!--data name="outfile" format="txt" /-->
     </outputs>
     <tests>
     </tests>
     <help>
 <![CDATA[
 
+
+
+
 `Wallace <https://github.molgen.mpg.de/loosolab/wilson-apps/wiki>`_ is a modular platform for reproducible modeling of species niches and distributions.
 
 .. class:: infomark
 
+Example input file (TAB separated)::
 
+  "name"	"longitude"	"latitude"	"countryCode"
+  Accipiter striatus Vieillot, 1808	-60.291838	46.328137	CA
+  Accipiter striatus Vieillot, 1808	-114.58927	35.022485	US
+  Accipiter striatus Vieillot, 1808	-93.37406	30.00586	US
+  Accipiter striatus Vieillot, 1808	-79.336288	43.682218	CA
+  Accipiter striatus Vieillot, 1808	-109.156024	31.904185	US
+  Accipiter striatus Vieillot, 1808	-71.098031	42.297408	US
+  Accipiter striatus Vieillot, 1808	-110.927215	32.18203	US
 
 ]]>
     </help>
