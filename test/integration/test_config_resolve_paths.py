@@ -44,3 +44,4 @@ class ConfigResolvePathsTestCase(integration_util.IntegrationTestCase):
         schema_default = self.get_default('dynamic_proxy_session_map')
         expect = os.path.join(self.data_dir, schema_default)
         assert expect == self._app.config.proxy_session_map  # 'dynamic' previx is dropped
+
