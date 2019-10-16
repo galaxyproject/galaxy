@@ -158,7 +158,7 @@ class DataManager(object):
             # use shed_conf_file to determine tool_path
             shed_conf_file = elem.get("shed_conf_file", None)
             if shed_conf_file:
-                shed_conf = self.data_managers.app.toolbox.get_shed_config_dict_by_filename(shed_conf_file, None)
+                shed_conf = self.data_managers.app.toolbox.get_shed_config_dict_by_filename(os.path.abspath(shed_conf_file), None)
                 if shed_conf:
                     tool_path = shed_conf.get("tool_path", tool_path)
         assert path is not None, "A tool file path could not be determined:\n%s" % (util.xml_to_string(elem))
