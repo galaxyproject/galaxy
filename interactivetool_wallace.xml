@@ -24,7 +24,7 @@
         </environment_variable> <!-- FIXME: We should have a better way to get user's API key -->
     </environment_variables>
     <command><![CDATA[
-        ln -s '${infile}' /srv/shiny-server/data/inputdata.txt &&
+        ln -s '${infile}' /import/ &&
         /usr/bin/shiny-server.sh
     ]]>
     </command>
