@@ -143,6 +143,7 @@ class DataManager(object):
         self.guid = elem.get('guid', None)
         path = elem.get('tool_file', None)
         self.version = elem.get('version', self.version)
+        tool_shed_repository = None
         tool_shed_repository_id = None
         tool_guid = None
 
