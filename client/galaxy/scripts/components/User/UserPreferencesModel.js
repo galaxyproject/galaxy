@@ -11,7 +11,7 @@ export const getUserPreferencesModel = () => {
             url: `api/users/${Galaxy.user.id}/information/inputs`,
             icon: "fa-user",
             redirect: "user",
-            shouldRender: !config.use_remote_user,
+            shouldRender: !config.use_remote_user
         },
         password: {
             title: _l("Change password"),
@@ -20,7 +20,7 @@ export const getUserPreferencesModel = () => {
             url: `api/users/${Galaxy.user.id}/password/inputs`,
             submit_title: "Save password",
             redirect: "user",
-            shouldRender: !config.use_remote_user,
+            shouldRender: !config.use_remote_user
         },
         communication: {
             title: _l("Change communication settings"),
@@ -28,7 +28,7 @@ export const getUserPreferencesModel = () => {
             url: `api/users/${Galaxy.user.id}/communication/inputs`,
             icon: "fa-comments-o",
             redirect: "user",
-            shouldRender: !!config.enable_communication_server,
+            shouldRender: !!config.enable_communication_server
         },
         permissions: {
             title: _l("Set dataset permissions for new histories"),
@@ -42,7 +42,7 @@ export const getUserPreferencesModel = () => {
         make_data_private: {
             title: _l("Make all data private"),
             description: _l("Click here to make all data private."),
-            icon: "fa-lock",
+            icon: "fa-lock"
         },
         api_key: {
             title: _l("Manage API key"),
@@ -54,9 +54,7 @@ export const getUserPreferencesModel = () => {
         },
         cloud_auth: {
             title: _l("Manage Cloud Authorization"),
-            description: _l(
-                "Add or modify the configuration that grants Galaxy to access your cloud-based resources."
-            ),
+            description: _l("Add or modify the configuration that grants Galaxy to access your cloud-based resources."),
             icon: "fa-cloud",
             submit_title: "Create a new key",
             submit_icon: "fa-check"
@@ -68,17 +66,17 @@ export const getUserPreferencesModel = () => {
             icon: "fa-filter",
             submit_title: "Save filters",
             redirect: "user",
-            shouldRender: !!config.has_user_tool_filters,
+            shouldRender: !!config.has_user_tool_filters
         },
         custom_builds: {
             title: _l("Manage custom builds"),
             description: _l("Add or remove custom builds using history datasets."),
-            icon: "fa-cubes",
+            icon: "fa-cubes"
         },
         genomespace: {
             title: _l("Request GenomeSpace token"),
             description: _l("Requests token through OpenID."),
-            icon: "fa-openid",
+            icon: "fa-openid"
         },
         logout: {
             title: _l("Sign out"),
@@ -86,5 +84,5 @@ export const getUserPreferencesModel = () => {
             icon: "fa-sign-out",
             shouldRender: !!Galaxy.session_csrf_token
         }
-    }
-}
+    };
+};
