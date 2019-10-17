@@ -1,38 +1,34 @@
 <template>
-    <div>
+    <b-container fluid class="p-0">
         <h2>User preferences</h2>
         <p>
             You are logged in as <strong>{{ email }}</strong
             >.
         </p>
-        <b-container fluid>
-            <b-row v-for="(link, index) in activeLinks" :key="index">
-                <b-col cols="5" md="2" lg="1" class="pl-0 pr-0 pl-md-3">
-                    <i :class="`fa fa-lg ${link.icon}`"> </i>
-                </b-col>
-                <b-col cols="7" md="10" lg="11" class="pl-0 pr-0 pl-md-3 pl-xl-0">
-                    <div>
-                        <a v-if="link.onclick" @click="link.onclick" href="javascript:void(0)"
-                            ><b>{{ link.title }}</b></a
-                        >
-                        <a v-else :href="`${baseUrl}/${link.action}`"
-                            ><b>{{ link.title }}</b></a
-                        >
-                    </div>
-                    <div class="form-text text-muted">
-                        {{ link.description }}
-                    </div>
-                </b-col>
-            </b-row>
-        </b-container>
+        <b-row class="ml-3 mb-1" v-for="(link, index) in activeLinks" :key="index">
+            <i :class="`pref-icon pt-1 fa fa-lg ${link.icon}`"></i>
+            <div class="pref-content pr-1">
+                <div>
+                    <a v-if="link.onclick" @click="link.onclick" href="javascript:void(0)"
+                        ><b>{{ link.title }}</b></a
+                    >
+                    <a v-else :href="`${baseUrl}/${link.action}`"
+                        ><b>{{ link.title }}</b></a
+                    >
+                </div>
+                <div class="form-text text-muted">
+                    {{ link.description }}
+                </div>
+            </div>
+        </b-row>
         <p class="mt-2">
             You are using <strong>{{ diskUsage }}</strong> of disk space in this Galaxy instance.
-            {{ quotaUsageString }}
+            <span v-html="quotaUsageString"></span>
             Is your usage more than expected? See the
             <a href="https://galaxyproject.org/learn/managing-datasets/" target="_blank"><b>documentation</b></a> for
             tips on how to find all of the data in your account.
         </p>
-    </div>
+    </b-container>
 </template>
 
 <script>
@@ -46,6 +42,7 @@ import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import $ from "jquery";
+
 Vue.use(BootstrapVue);
 
 export default {
@@ -166,3 +163,12 @@ export default {
     }
 };
 </script>
+
+<style>
+.pref-content {
+    width: calc(100% - 40px);
+}
+.pref-icon {
+    width: 40px;
+}
+</style>
