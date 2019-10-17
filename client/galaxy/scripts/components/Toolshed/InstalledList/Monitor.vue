@@ -2,9 +2,7 @@
     <div class="installation-monitor">
         <div v-if="error" class="alert alert-danger" show>{{ error }}</div>
         <div v-else>
-            <span v-if="loading">
-                <loading-span message="Loading currently installing repositories" />
-            </span>
+            <loading-span v-if="loading" message="Loading currently installing repositories" />
             <div v-else>
                 <b-table sticky-header thead-class="installation-monitor-header" :items="items" :fields="fields">
                     <template v-slot:cell(name)="data">
