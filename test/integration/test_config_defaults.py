@@ -59,6 +59,19 @@ RESOLVE = {
     'shed_tool_data_path': 'tool_data_path',
     'builds_file_path': 'tool_data_path',
     'len_file_path': 'tool_data_path',
+    'shed_tool_config_file': 'mutable_config_dir',
+    'dependency_resolvers_config_file': 'config_dir',
+    'tool_sheds_config_file': 'config_dir',
+    'shed_tool_data_table_config': 'mutable_config_dir',
+    'object_store_config_file': 'config_dir',
+    'user_preferences_extra_conf_path': 'config_dir',
+    'oidc_config_file': 'config_dir',
+    'oidc_backends_config_file': 'config_dir',
+    'auth_config_file': 'config_dir',
+    'shed_data_manager_config_file': 'mutable_config_dir',
+    'job_resource_params_file': 'config_dir',
+    'workflow_resource_params_file': 'config_dir',
+    'workflow_schedulers_config_file': 'config_dir',
 }
 
 
@@ -92,20 +105,14 @@ DO_NOT_TEST = [
     'database_engine_option_max_overflow',  # overridden for tests running on non-sqlite databases
     'database_template',  # default value set for tests
     'tool_config_file',  # default not used; may or may not be testable
-    'shed_tool_config_file',  # broken: remove 'config/' prefix from schema
-    'dependency_resolvers_config_file',  # broken: remove 'config/' prefix from schema
     'conda_auto_init',  # broken: default overridden
-    'tool_sheds_config_file',  # broken: remove 'config/' prefix from schema
     'tool_data_table_config_path',  # broken: remove 'config/' prefix from schema
-    'shed_tool_data_table_config',  # broken: remove 'config/' prefix from schema
     'datatypes_config_file',  # broken: remove 'config/' prefix from schema
     'webhooks_dir',  # broken; also remove 'config/' prefix from schema
     'job_working_directory',  # broken; may or may not be able to test
     'template_cache_path',  # may or may not be able to test; may be broken
-    'object_store_config_file',  # broken: remove 'config/' prefix from schema
     'object_store_store_by',  # broken: default overridden
     'pretty_datetime_format',  # untestable; refactor config/__init__ to test
-    'user_preferences_extra_conf_path',  # broken: remove 'config/' prefix from schema
     'default_locale',  # broken
     'galaxy_infrastructure_url',  # broken
     'galaxy_infrastructure_web_port',  # broken
@@ -121,24 +128,17 @@ DO_NOT_TEST = [
     'use_remote_user',  # broken: default overridden
     'admin_users',  # may or may not be testable: special test value assigned
     'allow_user_deletion',  # broken: default overridden
-    'oidc_config_file',  # broken: remove 'config/' prefix from schema
-    'oidc_backends_config_file',  # broken: remove 'config/' prefix from schema
-    'auth_config_file',  # broken: remove 'config/' prefix from schema
     'api_allow_run_as',  # may or may not be testable: test value assigned
     'master_api_key',  # broken: default value assigned outside of config/
     'ftp_upload_purge',  # broken: default overridden
     'expose_dataset_path',  # broken: default overridden
     'data_manager_config_file',  # broken: remove 'config/' prefix from schema
-    'shed_data_manager_config_file',  # broken: remove 'config/' prefix from schema
     'galaxy_data_manager_data_path',  # broken: review config/, possibly refactor
     'job_config_file',  # broken: remove 'config/' prefix from schema
     'use_tasked_jobs',  # broken: default overridden
     'retry_metadata_internally',  # broken: default overridden
     'cleanup_job',  # broken: default overridden
-    'job_resource_params_file',  # broken: remove 'config/' prefix from schema
-    'workflow_resource_params_file',  # broken: remove 'config/' prefix from schema
     'workflow_resource_params_mapper',  # broken: remove 'config/' prefix from schema
-    'workflow_schedulers_config_file',  # broken: remove 'config/' prefix from schema
     'user_tool_filters',  # broken: default overridden
     'user_tool_section_filters',  # broken: default overridden
     'user_tool_label_filters',  # broken: default overridden
@@ -170,6 +170,7 @@ def get_config_data():
         return {
             'root_dir': DRIVER.app.config.root,
             'config_dir': DRIVER.app.config.config_dir,
+            'mutable_config_dir': DRIVER.app.config.mutable_config_dir,
             'data_dir': DRIVER.app.config.data_dir,
             'tool_data_path': DRIVER.app.config.tool_data_path,
         }
