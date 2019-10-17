@@ -1,10 +1,5 @@
 <template>
-    <div
-        class="upload-button"
-        v-b-tooltip.hover
-        title="Download from URL or upload files from disk"
-        @click="showUploadDialog"
-    >
+    <div class="upload-button">
         <div class="progress">
             <div
                 class="progress-bar progress-bar-notransition"
@@ -18,6 +13,10 @@
                 id="tool-panel-upload-button"
                 @click="showUploadDialog"
                 href="javascript:void(0)"
+                role="button"
+                v-b-tooltip.hover
+                aria-label="Download from URL or upload files from disk"
+                title="Download from URL or upload files from disk"
             >
                 <span class="fa fa-upload"></span>
             </a>
