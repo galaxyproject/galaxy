@@ -74,7 +74,7 @@ export class Services {
     }
     async getInstalledRepositories() {
         const Galaxy = getGalaxyInstance();
-        const url = `${getAppRoot()}api/tool_shed_repositories/?deleted=false&uninstalled=false`;
+        const url = `${getAppRoot()}api/tool_shed_repositories/?uninstalled=False`;
         try {
             const response = await axios.get(url);
             const incoming = response.data;
