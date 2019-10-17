@@ -49,13 +49,20 @@ SHED_TOOL_CONF_XML = """<?xml version="1.0"?>
 """
 
 # A fake ToolShedRepository constructed from a shed tool conf
-ToolConfRepository = namedtuple(
+_ToolConfRepository = namedtuple(
     'ToolConfRepository',
     (
         'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision',
-        'tool_dependencies_installed_or_in_error', 'repository_path'
+        'tool_dependencies_installed_or_in_error', 'repository_path', 'tool_path',
     )
 )
+
+
+class ToolConfRepository(_ToolConfRepository):
+
+    def get_tool_relative_path(self, *args, **kwargs):
+        # This is a somewhat public function, used by data_manager_manual for instance
+        return self.tool_path, self.repository_path
 
 
 class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
@@ -677,8 +684,8 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                   "in database. Tool will be loaded without install database."
             log.warning(msg, repository_name, repository_owner)
             # Figure out path to repository on disk given the tool shed info and the path to the tool contained in the repo
-            repository_path = os.path.join('repos', repository_owner, repository_name, installed_changeset_revision)
-            repository_base_dir = path[:path.index(repository_path) + len(repository_path)]
+            repository_path = os.path.join(tool_shed, 'repos', repository_owner, repository_name, installed_changeset_revision)
+            tool_path = path[:path.index(repository_path)]
             repository = ToolConfRepository(
                 tool_shed,
                 repository_name,
@@ -687,6 +694,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 installed_changeset_revision,
                 None,
                 repository_path,
+                tool_path
             )
             self.app.tool_shed_repository_cache.add_local_repository(repository)
         return repository

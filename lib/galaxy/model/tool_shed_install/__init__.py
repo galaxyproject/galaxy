@@ -111,6 +111,7 @@ class ToolShedRepository(object):
         return default
 
     def get_tool_relative_path(self, app):
+        # This is a somewhat public function, used by data_manager_manual for instance
         shed_conf_dict = self.get_shed_config_dict(app)
         tool_path = None
         relative_path = None
