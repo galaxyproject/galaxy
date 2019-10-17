@@ -95,14 +95,12 @@ export default Backbone.Model.extend({
         // check select_type_workflow_threshold option
         const Galaxy = getGalaxyInstance();
         var searchable = true;
-        if ( input_def.flavor == "workflow") {
+        if (input_def.flavor == "workflow") {
             if (Galaxy.config.select_type_workflow_threshold == -1) {
                 searchable = false;
-            }
-            else if (Galaxy.config.select_type_workflow_threshold == 0) {
+            } else if (Galaxy.config.select_type_workflow_threshold == 0) {
                 searchable = true;
-            }
-            else if (Galaxy.config.select_type_workflow_threshold < input_def.options.length) {
+            } else if (Galaxy.config.select_type_workflow_threshold < input_def.options.length) {
                 searchable = false;
             }
         }
