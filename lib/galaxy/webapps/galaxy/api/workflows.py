@@ -625,10 +625,10 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         self.overwrite_model_recommendations = trans.app.config.overwrite_model_recommendations
         # collect tool recommendation preferences if set by admin
         if not self.admin_tool_recommendations_path:
-            self.admin_tool_recommendations_path = os.path.join(os.getcwd(), trans.app.config.admin_tool_recommendations_path)
             self.deprecated_tools = dict()
             self.admin_recommendations = dict()
             try:
+                self.admin_tool_recommendations_path = os.path.join(os.getcwd(), trans.app.config.admin_tool_recommendations_path)
                 with open(self.admin_tool_recommendations_path) as admin_recommendations:
                     admin_recommendation_preferences = yaml.safe_load(admin_recommendations)
                     if admin_recommendation_preferences:
