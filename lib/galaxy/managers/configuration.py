@@ -90,6 +90,7 @@ class ConfigSerializer(base.ModelSerializer):
             'welcome_url'                       : _defaults_to(None),
             'show_welcome_with_login'           : _defaults_to(True),
             'cookie_domain'                     : _defaults_to(None),
+            'select_type_workflow_threshold'    : _defaults_to(self.app.config.select_type_workflow_threshold),
         }
 
 

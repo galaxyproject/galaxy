@@ -89,6 +89,21 @@ export default Backbone.Model.extend({
             radiobutton: Ui.RadioButton
         };
         var SelectClass = classes[input_def.display] || Ui.Select;
+        // use Select2 fields or regular select fields in workflow launch form?
+        // check select_type_workflow_threshold option
+        const Galaxy = getGalaxyInstance();
+        var searchable = true;
+        if ( input_def.flavor == "workflow") {
+            if (Galaxy.config.select_type_workflow_threshold == -1) {
+                searchable = false;
+            }
+            else if (Galaxy.config.select_type_workflow_threshold == 0) {
+                searchable = true;
+            }
+            else if (Galaxy.config.select_type_workflow_threshold < input_def.options.length) {
+                searchable = false;
+            }
+        }
         return new Ui.TextSelect({
             id: `field-${input_def.id}`,
             data: input_def.data,
@@ -100,7 +115,7 @@ export default Backbone.Model.extend({
             optional: input_def.optional,
             onchange: input_def.onchange,
             individual: input_def.individual,
-            searchable: input_def.flavor !== "workflow",
+            searchable: searchable,
             textable: input_def.textable,
             SelectClass: SelectClass
         });

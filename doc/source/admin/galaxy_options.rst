@@ -210,8 +210,6 @@
     Where dataset files are stored. It must be accessible at the same
     path on any cluster nodes that will run Galaxy jobs, unless using
     Pulsar.
-    Default value will be resolved to 'database/files' where
-    'database' is the default value of the 'data_dir' option).
 :Default: ``files``
 :Type: str
 
@@ -224,8 +222,6 @@
     Where temporary files are stored. It must be accessible at the
     same path on any cluster nodes that will run Galaxy jobs, unless
     using Pulsar.
-    Default value will be resolved to 'database/tmp' where 'database'
-    is the default value of the 'data_dir' option).
 :Default: ``tmp``
 :Type: str
 
@@ -607,8 +603,8 @@
     the Galaxy host. This is ignored if the relevant container
     resolver isn't enabled, and will install on demand unless
     involucro_auto_init is set to false.
-    Sample default '<tool_dependency_dir>/involucro'
-:Default: ``None``
+    Value will be resolved with respect to '<tool_dependency_dir>'.
+:Default: ``involucro``
 :Type: str
 
 
@@ -844,7 +840,7 @@
     definition files. Galaxy ships with several basic interface tours
     enabled, though a different directory with custom tours can be
     specified here. The path is relative to the Galaxy root dir.  To
-    use an absolute path begin the path with '/'.  This is a comma
+    use an absolute path begin the path with '/'.  This is a comma-
     separated list.
 :Default: ``config/plugins/tours``
 :Type: str
@@ -858,7 +854,7 @@
     Webhooks directory: where to store webhooks - plugins to extend
     the Galaxy UI. By default none will be loaded.  Set to
     config/plugins/webhooks/demo to load Galaxy's demo webhooks.  To
-    use an absolute path begin the path with '/'.  This is a comma
+    use an absolute path begin the path with '/'.  This is a comma-
     separated list. Add test/functional/webhooks to this list to
     include the demo webhooks used to test the webhook framework.
 :Default: ``config/plugins/webhooks``
@@ -886,7 +882,6 @@
 :Description:
     If using a cluster, Galaxy will write job scripts and
     stdout/stderr to this directory.
-    Value will be resolved with respect to <data_dir>.
 :Default: ``pbs``
 :Type: str
 
@@ -898,8 +893,6 @@
 :Description:
     Mako templates are compiled as needed and cached for reuse, this
     directory is used for the cache
-    Default value will be resolved to 'database/compiled_templates'
-    where 'database' is the default value of the 'data_dir' option).
 :Default: ``compiled_templates``
 :Type: str
 
@@ -975,8 +968,6 @@
     fetched from external sources such as https://doi.org/ by Galaxy -
     the following parameters can be used to control the caching used
     to store this information.
-    Default value will be resolved to 'database/citations/data' where
-    'database' is the default value of the 'data_dir' option).
 :Default: ``citations/data``
 :Type: str
 
@@ -990,8 +981,6 @@
     fetched from external sources such as https://doi.org/ by Galaxy -
     the following parameters can be used to control the caching used
     to store this information.
-    Default value will be resolved to 'database/citations/locks' where
-    'database' is the default value of the 'data_dir' option).
 :Default: ``citations/locks``
 :Type: str
 
@@ -1800,8 +1789,6 @@
 :Description:
     The NodeJS dynamic proxy can use an SQLite database or a JSON file
     for IPC, set that here.
-    Default value will be resolved to 'database/session_map.sqlite'
-    where 'database' is the default value of the 'data_dir' option).
 :Default: ``session_map.sqlite``
 :Type: str
 
@@ -3049,8 +3036,6 @@
 
 :Description:
     If OpenID is enabled, consumer cache directory to use.
-    Default value will be resolved to 'database/openid_consumer_cache'
-    where 'database' is the default value of the 'data_dir' option).
 :Default: ``openid_consumer_cache``
 :Type: str
 
@@ -3793,6 +3778,22 @@
     unique session cookie shared by all subdomains.
 :Default: ``None``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``select_type_workflow_threshold``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Due to performance considerations (select2 fields are pretty
+    'expensive' in terms of memory usage) Galaxy uses the regular
+    select fields for non-dataset selectors in the workflow run form.
+    use 0 in order to always use select2 fields, use -1 (default) in
+    order to always use the regular select fields, use any other
+    positive number as threshold (above threshold: regular select
+    fields will be used)
+:Default: ``-1``
+:Type: int
 
 
 
