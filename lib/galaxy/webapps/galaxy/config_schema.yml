@@ -2813,16 +2813,6 @@ mapping:
           Set remote path of the trained model (HDF5 file) for tool recommendation.
           It is required to be set if 'enable_tool_recommendations' property is enabled and set to true.
 
-      enable_admin_tool_recommendations:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Enable tool recommendations to be set by Galaxy admins.
-          If set to true, 'admin_tool_recommendations_path' must be set as well
-          which takes the path of the additional list of tools to be recommended.
-          This is useful to promote new tools.
-
       admin_tool_recommendations_path:
         type: str
         default: 'config/tool_recommendations_overwrite.yml'

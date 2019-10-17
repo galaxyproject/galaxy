@@ -443,10 +443,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
                 log.error("CONFIGURATION ERROR: Can't open supplied blacklist file from path: %s", self.blacklist_file)
 
         self.persistent_communication_rooms = listify(kwargs.get("persistent_communication_rooms", []), do_strip=True)
-        self.enable_tool_recommendations = string_as_bool(kwargs.get('enable_tool_recommendations', 'False'))
-        self.tool_recommendation_model_path = kwargs.get('tool_recommendation_model_path', None)
-        self.enable_admin_tool_recommendations = string_as_bool(kwargs.get('enable_admin_tool_recommendations', 'False'))
-        self.admin_tool_recommendations_path = kwargs.get('admin_tool_recommendations_path', None)
         # The transfer manager and deferred job queue
         self.enable_beta_job_managers = string_as_bool(kwargs.get('enable_beta_job_managers', 'False'))
         # These are not even beta - just experiments - don't use them unless

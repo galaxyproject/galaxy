@@ -210,8 +210,6 @@
     Where dataset files are stored. It must be accessible at the same
     path on any cluster nodes that will run Galaxy jobs, unless using
     Pulsar.
-    Default value will be resolved to 'database/files' where
-    'database' is the default value of the 'data_dir' option).
 :Default: ``files``
 :Type: str
 
@@ -224,8 +222,6 @@
     Where temporary files are stored. It must be accessible at the
     same path on any cluster nodes that will run Galaxy jobs, unless
     using Pulsar.
-    Default value will be resolved to 'database/tmp' where 'database'
-    is the default value of the 'data_dir' option).
 :Default: ``tmp``
 :Type: str
 
@@ -886,7 +882,6 @@
 :Description:
     If using a cluster, Galaxy will write job scripts and
     stdout/stderr to this directory.
-    Value will be resolved with respect to <data_dir>.
 :Default: ``pbs``
 :Type: str
 
@@ -898,8 +893,6 @@
 :Description:
     Mako templates are compiled as needed and cached for reuse, this
     directory is used for the cache
-    Default value will be resolved to 'database/compiled_templates'
-    where 'database' is the default value of the 'data_dir' option).
 :Default: ``compiled_templates``
 :Type: str
 
@@ -975,8 +968,6 @@
     fetched from external sources such as https://doi.org/ by Galaxy -
     the following parameters can be used to control the caching used
     to store this information.
-    Default value will be resolved to 'database/citations/data' where
-    'database' is the default value of the 'data_dir' option).
 :Default: ``citations/data``
 :Type: str
 
@@ -990,8 +981,6 @@
     fetched from external sources such as https://doi.org/ by Galaxy -
     the following parameters can be used to control the caching used
     to store this information.
-    Default value will be resolved to 'database/citations/locks' where
-    'database' is the default value of the 'data_dir' option).
 :Default: ``citations/locks``
 :Type: str
 
@@ -1800,8 +1789,6 @@
 :Description:
     The NodeJS dynamic proxy can use an SQLite database or a JSON file
     for IPC, set that here.
-    Default value will be resolved to 'database/session_map.sqlite'
-    where 'database' is the default value of the 'data_dir' option).
 :Default: ``session_map.sqlite``
 :Type: str
 
@@ -3049,8 +3036,6 @@
 
 :Description:
     If OpenID is enabled, consumer cache directory to use.
-    Default value will be resolved to 'database/openid_consumer_cache'
-    where 'database' is the default value of the 'data_dir' option).
 :Default: ``openid_consumer_cache``
 :Type: str
 
@@ -3817,19 +3802,6 @@
     'enable_tool_recommendations' property is enabled and set to true.
 :Default: ``https://github.com/anuprulez/download_store/raw/tool_recommendation_model/tool_recommendation_model/tool_recommendation_model.hdf5``
 :Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``enable_admin_tool_recommendations``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Enable tool recommendations to be set by Galaxy admins. If set to
-    true, 'admin_tool_recommendations_path' must be set as well which
-    takes the path of the additional list of tools to be recommended.
-    This is useful to promote new tools.
-:Default: ``false``
-:Type: bool
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
