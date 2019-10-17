@@ -72,27 +72,13 @@ export class Services {
             this._errorMessage(e);
         }
     }
-    async getInstalledRepositories() {
+    async getInstalledRepositories(options = {}) {
         const Galaxy = getGalaxyInstance();
         const url = `${getAppRoot()}api/tool_shed_repositories/?uninstalled=False`;
         try {
             const response = await axios.get(url);
-            const incoming = response.data;
-            const repositories = [];
-            const hash = {};
-            incoming.forEach(x => {
-                const hashCode = `${x.name}_${x.owner}`;
-                if (!hash[hashCode]) {
-                    hash[hashCode] = true;
-                    for (const url of Galaxy.config.tool_shed_urls) {
-                        if (url.includes(x.tool_shed)) {
-                            x.tool_shed_url = url;
-                            break;
-                        }
-                    }
-                    repositories.push(x);
-                }
-            });
+            const repositories = this._groupByNameOwner(response.data, options.filter);
+            this._fixToolshedUrls(repositories, Galaxy.config.tool_shed_urls);
             return repositories;
         } catch (e) {
             this._errorMessage(e);
@@ -137,6 +123,30 @@ export class Services {
         } catch (e) {
             this._errorMessage(e);
         }
+    }
+    _groupByNameOwner(incoming, filter) {
+        const hash = {};
+        const repositories = [];
+        incoming.forEach(x => {
+            const hashCode = `${x.name}_${x.owner}`;
+            if (!filter || filter(x)) {
+                if (!hash[hashCode]) {
+                    hash[hashCode] = true;
+                    repositories.push(x);
+                }
+            }
+        });
+        return repositories;
+    }
+    _fixToolshedUrls(incoming, urls) {
+        incoming.forEach(x => {
+            for (const url of urls) {
+                if (url.includes(x.tool_shed)) {
+                    x.tool_shed_url = url;
+                    break;
+                }
+            }
+        });
     }
     _formatCount(value) {
         if (value > 1000) return `>${Math.floor(value / 1000)}k`;

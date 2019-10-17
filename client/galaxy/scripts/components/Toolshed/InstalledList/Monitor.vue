@@ -58,25 +58,16 @@ export default {
         load() {
             this.loading = true;
             this.services
-                .getInstalledRepositories()
+                .getInstalledRepositories({
+                    filter: x => x.status !== "Installed"
+                })
                 .then(items => {
-                    this.items = this._getItems(items);
+                    this.items = items;
                     this.loading = false;
                 })
                 .catch(error => {
                     this.error = error;
                 });
-        },
-        _getItems(items) {
-            const hash = {};
-            return items.filter(x => {
-                const id = `${x.name}${x.owner}`;
-                if (!hash[id] && x.status !== "Installed") {
-                    hash[id] = true;
-                    return true;
-                }
-                return false;
-            });
         },
         onQuery(q) {
             this.$emit("onQuery", q);
