@@ -50,10 +50,12 @@
     "vue-router": "^3.0.2",
     "vue-rx": "^6.1.0",
     "vuex": "^3.1.0",
-    "vuex-cache": "^3.1.0"
+    "vuex-cache": "^3.1.0",
+    "webpack-dev-server": "^3.8.2"
   },
   "scripts": {
     "watch": "gulp && yarn run save-build-hash && yarn run webpack-watch",
+    "hotwatch": "webpack-dev-server --host 0.0.0.0 --port 8081",
     "build": "NODE_ENV=development gulp && yarn run webpack && yarn run save-build-hash",
     "build-production": "NODE_ENV=production gulp && yarn run webpack-production && yarn run save-build-hash",
     "build-production-maps": "NODE_ENV=production gulp && yarn run webpack-production-maps && yarn run save-build-hash",
