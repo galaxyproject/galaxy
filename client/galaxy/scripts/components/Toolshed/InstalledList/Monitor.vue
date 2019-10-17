@@ -26,9 +26,13 @@
     </div>
 </template>
 <script>
+import Vue from "vue";
+import BootstrapVue from "bootstrap-vue";
 import { getAppRoot } from "onload/loadConfig";
 import { Services } from "../services.js";
 import LoadingSpan from "components/LoadingSpan";
+
+Vue.use(BootstrapVue);
 
 export default {
     components: {
@@ -58,20 +62,23 @@ export default {
             this.services
                 .getInstalledRepositories()
                 .then(items => {
-                    const hash = {};
-                    this.items = items.filter(x => {
-                        const id = `${x.name}${x.owner}`;
-                        if (!hash[id] && x.status !== "Installed") {
-                            hash[id] = true;
-                            return true;
-                        }
-                        return false;
-                    });
+                    this.items = this._getItems(items);
                     this.loading = false;
                 })
                 .catch(error => {
                     this.error = error;
                 });
+        },
+        _getItems(items) {
+            const hash = {};
+            return items.filter(x => {
+                const id = `${x.name}${x.owner}`;
+                if (!hash[id] && x.status !== "Installed") {
+                    hash[id] = true;
+                    return true;
+                }
+                return false;
+            });
         },
         onQuery(q) {
             this.$emit("onQuery", q);
