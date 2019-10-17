@@ -137,6 +137,7 @@ class ToolShedRepositoryCache(object):
         # Repositories loaded from database
         self.repositories = []
         self.repos_by_tuple = defaultdict(list)
+        self.rebuild()
 
     def add_local_repository(self, repository):
         self.local_repositories.append(repository)
