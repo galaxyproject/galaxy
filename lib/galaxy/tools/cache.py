@@ -132,7 +132,9 @@ class ToolShedRepositoryCache(object):
 
     def __init__(self, app):
         self.app = app
+        # Contains ToolConfRepository objects created from shed_tool_conf.xml entries
         self.local_repositories = []
+        # Repositories loaded from database
         self.repositories = []
         self.repos_by_tuple = defaultdict(list)
 
