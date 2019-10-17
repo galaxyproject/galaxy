@@ -140,7 +140,6 @@ class DataManager(object):
         path = elem.get('tool_file', None)
         self.version = elem.get('version', self.version)
         tool_shed_repository = None
-        tool_shed_repository_id = None
         tool_guid = None
 
         if path is None:
@@ -154,7 +153,6 @@ class DataManager(object):
                                                        name=tool_shed_repository.name,
                                                        owner=tool_shed_repository.owner,
                                                        installed_changeset_revision=tool_shed_repository.installed_changeset_revision)
-            tool_shed_repository_id = self.data_managers.app.security.encode_id(tool_shed_repository.id)
             # use shed_conf_file to determine tool_path
             shed_conf_file = elem.get("shed_conf_file", None)
             if shed_conf_file:
@@ -165,7 +163,6 @@ class DataManager(object):
         self.load_tool(os.path.join(tool_path, path),
                        guid=tool_guid,
                        data_manager_id=self.id,
-                       tool_shed_repository_id=tool_shed_repository_id,
                        tool_shed_repository=tool_shed_repository)
         self.name = elem.get('name', self.tool.name)
         self.description = elem.get('description', self.tool.description)
