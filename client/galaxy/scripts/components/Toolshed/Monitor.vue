@@ -38,7 +38,7 @@ export default {
     },
     data() {
         return {
-            delay: 1000,
+            delay: 5000,
             loading: true,
             error: null,
             items: [],
