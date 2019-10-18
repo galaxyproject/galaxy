@@ -82,12 +82,10 @@ export default {
         onQuery(q) {
             this.$emit("onQuery", q);
         },
-        uninstallRepository: function(repo) {
-            this.services
-                .uninstallRepository(repo)
-                .catch(error => {
-                    this.error = error;
-                });
+        uninstallRepository: function(repository) {
+            this.services.uninstallRepository(repository).catch(error => {
+                this.error = error;
+            });
         }
     }
 };
