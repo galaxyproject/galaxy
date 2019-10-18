@@ -5,9 +5,9 @@
         </b-alert>
         <b-card v-if="showItems" title="Currently installing..." title-tag="h5">
             <b-table sticky-header thead-class="installation-monitor-header" :items="items" :fields="fields">
-                <template v-slot:cell(name)="data">
-                    <b-link @click="onQuery(data.value)">
-                        {{ data.value }}
+                <template v-slot:cell(name)="row">
+                    <b-link @click="onQuery(row.item.name)">
+                        {{ row.item.name }} ({{ row.item.owner }})
                     </b-link>
                 </template>
                 <template v-slot:cell(status)="row">
@@ -40,7 +40,7 @@ export default {
             loading: true,
             error: null,
             items: [],
-            fields: ["name", "owner", "status"]
+            fields: ["name", "status"]
         };
     },
     computed: {

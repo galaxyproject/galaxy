@@ -28,17 +28,16 @@ describe("Monitor", () => {
         );
     });
 
-    it("test installed list", async () => {
+    it("test monitor", async () => {
         const wrapper = mount(Monitor, {});
         await Vue.nextTick();
         const headers = wrapper.findAll("th");
-        expect(headers.length).to.equal(3);
+        expect(headers.length).to.equal(2);
         expect(headers.at(0).text()).to.equal("Name");
-        expect(headers.at(1).text()).to.equal("Owner");
-        expect(headers.at(2).text()).to.equal("Status");
+        expect(headers.at(1).text()).to.equal("Status");
         const cells = wrapper.findAll("td");
-        expect(cells.length).to.equal(6);
-        expect(cells.at(1).text()).to.equal("owner_0");
-        expect(cells.at(4).text()).to.equal("owner_1");
+        expect(cells.length).to.equal(4);
+        expect(cells.at(0).text()).to.equal("name_0 (owner_0)");
+        expect(cells.at(2).text()).to.equal("name_1 (owner_1)");
     });
 });
