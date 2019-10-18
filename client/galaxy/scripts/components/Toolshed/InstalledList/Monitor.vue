@@ -38,6 +38,7 @@ export default {
     },
     data() {
         return {
+            delay: 1000,
             loading: true,
             error: null,
             items: [],
@@ -54,7 +55,15 @@ export default {
         this.services = new Services({ root: this.root });
         this.load();
     },
+    destroyed() {
+        clearTimeout(this.timeout);
+    },
     methods: {
+        setTimeout() {
+            this.timeout = setTimeout(() => {
+                this.load();
+            }, this.delay);
+        },
         load() {
             this.loading = true;
             this.services
@@ -64,6 +73,7 @@ export default {
                 .then(items => {
                     this.items = items;
                     this.loading = false;
+                    this.setTimeout();
                 })
                 .catch(error => {
                     this.error = error;
