@@ -4281,6 +4281,7 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
         self.copied_from_history_dataset_collection_association = copied_from_history_dataset_collection_association
         self.implicit_output_name = implicit_output_name
         self.implicit_input_collections = implicit_input_collections
+
     @property
     def history_content_type(self):
         return "dataset_collection"
