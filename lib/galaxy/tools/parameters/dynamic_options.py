@@ -4,10 +4,10 @@ on the values of other parameters or other aspects of the current state)
 """
 import copy
 import logging
-from collections import OrderedDict
 import os
 import re
 from io import StringIO
+from collections import OrderedDict
 
 from galaxy.model import (
     HistoryDatasetAssociation,
