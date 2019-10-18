@@ -27,14 +27,12 @@ import BootstrapVue from "bootstrap-vue";
 import { getAppRoot } from "onload/loadConfig";
 import { Services } from "./services.js";
 import InstallationButton from "./RepositoryDetails/InstallationButton.vue";
-import LoadingSpan from "components/LoadingSpan";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
-        InstallationButton,
-        LoadingSpan
+        InstallationButton
     },
     data() {
         return {
