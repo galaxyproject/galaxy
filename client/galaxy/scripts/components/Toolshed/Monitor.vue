@@ -1,31 +1,39 @@
 <template>
-    <b-card v-if="showItems" title="Currently installing..." title-tag="h5">
-        <b-table sticky-header thead-class="installation-monitor-header" :items="items" :fields="fields">
-            <template v-slot:cell(name)="data">
-                <b-link @click="onQuery(data.value)">
-                    {{ data.value }}
-                </b-link>
-            </template>
-            <template v-slot:cell(status)="data">
-                <b-button class="btn-sm text-nowrap float-right" disabled variant="info">
-                    <span class="fa fa-spinner fa-spin mr-1"/>
-                    <span>{{ data.value }}</span>
-                </b-button>
-            </template>
-        </b-table>
-    </b-card>
+    <div>
+        <b-alert v-if="error" variant="danger" show>
+            {{ error }}
+        </b-alert>
+        <b-card v-if="showItems" title="Currently installing..." title-tag="h5">
+            <b-table sticky-header thead-class="installation-monitor-header" :items="items" :fields="fields">
+                <template v-slot:cell(name)="data">
+                    <b-link @click="onQuery(data.value)">
+                        {{ data.value }}
+                    </b-link>
+                </template>
+                <template v-slot:cell(status)="row">
+                    <InstallationButton
+                        class="float-right"
+                        :status="row.item.status"
+                        @onUninstall="uninstallRepository(row.item)"
+                    />
+                </template>
+            </b-table>
+        </b-card>
+    </div>
 </template>
 <script>
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { getAppRoot } from "onload/loadConfig";
 import { Services } from "./services.js";
+import InstallationButton from "./RepositoryDetails/InstallationButton.vue";
 import LoadingSpan from "components/LoadingSpan";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
+        InstallationButton,
         LoadingSpan
     },
     data() {
@@ -73,6 +81,13 @@ export default {
         },
         onQuery(q) {
             this.$emit("onQuery", q);
+        },
+        uninstallRepository: function(repo) {
+            this.services
+                .uninstallRepository(repo)
+                .catch(error => {
+                    this.error = error;
+                });
         }
     }
 };
