@@ -3804,6 +3804,17 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~
+``topk_recommendations``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set the number of predictions/recommendations to be made by the
+    model
+:Default: ``20``
+:Type: int
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``admin_tool_recommendations_path``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

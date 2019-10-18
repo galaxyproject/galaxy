@@ -451,6 +451,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.tool_recommendation_model_path = kwargs.get('tool_recommendation_model_path', None)
         self.admin_tool_recommendations_path = kwargs.get('admin_tool_recommendations_path', None)
         self.overwrite_model_recommendations = string_as_bool(kwargs.get('overwrite_model_recommendations', False))
+        self.topk_recommendations = int(kwargs.get('topk_recommendations', 20))
         workflow_resource_params_mapper = kwargs.get("workflow_resource_params_mapper", None)
         if not workflow_resource_params_mapper:
             workflow_resource_params_mapper = None

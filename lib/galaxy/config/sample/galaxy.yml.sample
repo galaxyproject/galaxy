@@ -1846,6 +1846,10 @@ galaxy:
   # 'enable_tool_recommendations' property is enabled and set to true.
   #tool_recommendation_model_path: https://github.com/anuprulez/download_store/raw/tool_recommendation_model/tool_recommendation_model/tool_recommendation_model.hdf5
 
+  # Set the number of predictions/recommendations to be made by the
+  # model
+  #topk_recommendations: 20
+
   # Set path to the additional tool preferences from Galaxy admins. It
   # has two blocks. One for listing deprecated tools which will be
   # removed from the recommendations and  another is for adding
@@ -1859,5 +1863,5 @@ galaxy:
   # admin in a config file 'tool_recommendations_overwrite.yml'. When
   # set to false, the recommended tools  by admins and predicted by the
   # deep learning model are shown.
-  #overwrite_model_recommendations: true
+  #overwrite_model_recommendations: false
 
