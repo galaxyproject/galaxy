@@ -100,9 +100,8 @@ def test_add_repository_and_tool_conf_repository_to_repository_cache(tool_shed_r
     ('github.com', 'example', 'galaxyproject', '2', '1', 500, False),
     ('github.com', 'example', 'galaxyproject', '19', '18', None, True),
 ])
-def test_get_installed_repository(tool_shed_repository_cache, repos, tool_shed, tool_conf_repos, name, owner, changeset_revision, installed_changeset_revision, repository_id, repo_exists):
+def test_get_installed_repository(tool_shed_repository_cache, repos, tool_conf_repos, tool_shed, name, owner, changeset_revision, installed_changeset_revision, repository_id, repo_exists):
     tool_shed_repository_cache.rebuild()
-    print(tool_shed_repository_cache.local_repositories)
     repo = tool_shed_repository_cache.get_installed_repository(
         tool_shed=tool_shed,
         name=name,
