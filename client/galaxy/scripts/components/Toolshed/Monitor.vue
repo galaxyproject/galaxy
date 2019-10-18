@@ -8,7 +8,8 @@
             </template>
             <template v-slot:cell(status)="data">
                 <b-button class="btn-sm text-nowrap float-right" disabled variant="info">
-                    {{ data.value }}
+                    <span class="fa fa-spinner fa-spin mr-1"/>
+                    <span>{{ data.value }}</span>
                 </b-button>
             </template>
         </b-table>
