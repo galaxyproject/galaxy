@@ -8,7 +8,10 @@ import logging
 
 from galaxy.exceptions import ConfigurationError
 from galaxy.security.validate_user_input import transform_publicname
-from galaxy.util import string_as_bool
+from galaxy.util import (
+    string_as_bool,
+    unicodify
+)
 from ..providers import AuthProvider
 
 try:
@@ -74,12 +77,12 @@ class LDAP(AuthProvider):
     (formatted as specified).
     """
     plugin_type = 'ldap'
+    role_search_option = 'auto-register-roles'
 
     def __init__(self):
         super(LDAP, self).__init__()
         self.auto_create_roles_or_groups = False
         self.role_search_attribute = None
-        self.role_search_option = 'auto-register-roles'
 
     def check_config(self, username, email, options):
         ok = True
@@ -168,13 +171,13 @@ class LDAP(AuthProvider):
                 log.debug("LDAP authenticate: search attributes are %s", attrs)
                 if hasattr(attrs, 'has_key'):
                     for attr in attributes:
-                        if self.role_search_attribute and attr == self.role_search_attribute[1:-1]:  # strip brackets
+                        if self.role_search_attribute and attr == self.role_search_attribute[1:-1]:  # strip curly brackets
                             # keep role names as list
-                            params[self.role_search_option] = attrs[attr]
+                            params[self.role_search_option] = [unicodify(_) for _ in attrs[attr]]
                         elif attr == 'memberOf':
-                            params[attr] = attrs[attr]
+                            params[attr] = [unicodify(_) for _ in attrs[attr]]
                         elif attr in attrs:
-                            params[attr] = str(attrs[attr][0])
+                            params[attr] = unicodify(attrs[attr][0])
                         else:
                             params[attr] = ""
 
