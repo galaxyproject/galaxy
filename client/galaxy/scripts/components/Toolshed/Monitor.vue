@@ -3,12 +3,17 @@
         <b-alert v-if="error" variant="danger" show>
             {{ error }}
         </b-alert>
-        <b-card v-if="showItems" title="Currently installing..." title-tag="h5">
-            <b-table sticky-header thead-class="installation-monitor-header" :items="items" :fields="fields">
+        <b-card no-body v-if="showItems">
+            <h5 class="m-3">Currently installing...</h5>
+            <b-table
+                class="mx-3 mb-0"
+                sticky-header
+                thead-class="installation-monitor-header"
+                :items="items"
+                :fields="fields"
+            >
                 <template v-slot:cell(name)="row">
-                    <b-link @click="onQuery(row.item.name)">
-                        {{ row.item.name }} ({{ row.item.owner }})
-                    </b-link>
+                    <b-link @click="onQuery(row.item.name)"> {{ row.item.name }} ({{ row.item.owner }}) </b-link>
                 </template>
                 <template v-slot:cell(status)="row">
                     <InstallationButton
