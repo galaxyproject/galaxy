@@ -2,9 +2,9 @@
 Support for generating the options for a SelectToolParameter dynamically (based
 on the values of other parameters or other aspects of the current state)
 """
+from collections import OrderedDict
 import copy
 import logging
-from collections import OrderedDict
 import os
 import re
 
@@ -196,7 +196,6 @@ class DataMetaFilter(Filter):
         except ValueError:  # not a valid dataset
             log.warn("could not filter by metadata: %s not a data or collection parameter" % self.ref_name)
             return []
-
         # get the metadata value.
         # - for lists: (of data sets) and collections the meta data values of all
         #   elements is determined
@@ -749,8 +748,7 @@ class DynamicOptions:
 
 def _get_ref_data(other_values, ref_name):
     """
-    get the list of data sets from ref_name 
-    
+    get the list of data sets from ref_name
     - a KeyError is raised if no such element exists
     - a ValueError is raised if the element is not of the type DatasetFilenameWrapper, HistoryDatasetAssociation, DatasetListWrapper, HistoryDatasetCollectionAssociation, list
     """
