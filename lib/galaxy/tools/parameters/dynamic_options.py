@@ -3,8 +3,8 @@ Support for generating the options for a SelectToolParameter dynamically (based
 on the values of other parameters or other aspects of the current state)
 """
 import copy
-from collections import OrderedDict
 import logging
+from collections import OrderedDict
 import os
 import re
 from io import StringIO
