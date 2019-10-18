@@ -213,13 +213,13 @@ export var View = Backbone.View.extend({
             .append(
                 $("<div/>")
                     .addClass("portlet-header")
-                    .append($("<div/>").addClass("portlet-operations"))
                     .append(
                         $("<div/>")
                             .addClass("portlet-title")
                             .append($("<i/>").addClass("portlet-title-icon"))
                             .append($("<span/>").addClass("portlet-title-text"))
                     )
+                    .append($("<div/>").addClass("portlet-operations"))
             )
             .append(
                 $("<div/>")

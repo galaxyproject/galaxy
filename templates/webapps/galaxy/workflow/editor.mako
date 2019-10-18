@@ -232,6 +232,8 @@
 
     <div class="unified-panel-header" unselectable="on">
         <div class="unified-panel-header-inner">
+            <span class="sr-only">Workflow Editor&nbsp;</span>
+            ${h.to_unicode( stored.name ) | h}
             <div class="panel-header-buttons">
                 <a id="workflow-run-button" class="panel-header-button workflow-canvas-content" href="javascript:void(0)" role="button" title="Run" style="display: inline-block;" aria-label="Run">
                     <span class="fa fa-play"></span>
@@ -252,7 +254,6 @@
                     <span class="fa fa-cog"></span>
                 </a>
             </div>
-            ${h.to_unicode( stored.name ) | h}
         </div>
     </div>
     <div class="unified-panel-body" id="workflow-canvas-body">
@@ -269,7 +270,7 @@
             <div id="workflow-parameters-container">
             </div>
         </div>
-        <div class="workflow-overview workflow-canvas-content">
+        <div class="workflow-overview workflow-canvas-content" aria-hidden="true">
             <div style="position: relative; overflow: hidden; width: 100%; height: 100%; border-top: solid gray 1px; border-left: solid grey 1px;">
                 <div id="overview" style="position: absolute;">
                     <canvas width="0" height="0" style="background: white; width: 100%; height: 100%;" id="overview-canvas"></canvas>

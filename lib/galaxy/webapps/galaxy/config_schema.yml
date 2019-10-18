@@ -171,24 +171,20 @@ mapping:
       file_path:
         type: str
         default: files
+        path_resolves_to: data_dir
         required: false
         desc: |
           Where dataset files are stored. It must be accessible at the same path on any cluster
           nodes that will run Galaxy jobs, unless using Pulsar.
 
-          Default value will be resolved to 'database/files' where 'database' is the default value
-          of the 'data_dir' option).
-
       new_file_path:
         type: str
         default: tmp
+        path_resolves_to: data_dir
         required: false
         desc: |
           Where temporary files are stored. It must be accessible at the same path on any cluster
           nodes that will run Galaxy jobs, unless using Pulsar.
-
-          Default value will be resolved to 'database/tmp' where 'database' is the default value
-          of the 'data_dir' option).
 
       tool_config_file:
         type: any
@@ -460,6 +456,7 @@ mapping:
 
       involucro_path:
         type: str
+        default: involucro
         required: false
         desc: |
           involucro is a tool used to build Docker or Singularity containers for tools from Conda
@@ -468,7 +465,7 @@ mapping:
           container resolver isn't enabled, and will install on demand unless
           involucro_auto_init is set to false.
 
-          Sample default '<tool_dependency_dir>/involucro'
+          Value will be resolved with respect to '<tool_dependency_dir>'.
 
       involucro_auto_init:
         type: bool
@@ -635,8 +632,8 @@ mapping:
           Interactive tour directory: where to store interactive tour definition files.
           Galaxy ships with several basic interface tours enabled, though a different
           directory with custom tours can be specified here. The path is relative to the
-          Galaxy root dir.  To use an absolute path begin the path with '/'.  This is a comma
-          separated list.
+          Galaxy root dir.  To use an absolute path begin the path with '/'.  This is a
+          comma-separated list.
 
       webhooks_dir:
         type: str
@@ -645,9 +642,9 @@ mapping:
         desc: |
           Webhooks directory: where to store webhooks - plugins to extend the Galaxy UI.
           By default none will be loaded.  Set to config/plugins/webhooks/demo to load Galaxy's
-          demo webhooks.  To use an absolute path begin the path with '/'.  This is a comma
-          separated list. Add test/functional/webhooks to this list to include the demo webhooks
-          used to test the webhook framework.
+          demo webhooks.  To use an absolute path begin the path with '/'.  This is a
+          comma-separated list. Add test/functional/webhooks to this list to include the demo
+          webhooks used to test the webhook framework.
 
       job_working_directory:
         type: str
@@ -664,23 +661,20 @@ mapping:
       cluster_files_directory:
         type: str
         default: pbs
+        path_resolves_to: data_dir
         required: false
         desc: |
           If using a cluster, Galaxy will write job scripts and stdout/stderr to this
           directory.
 
-          Value will be resolved with respect to <data_dir>.
-
       template_cache_path:
         type: str
         default: compiled_templates
+        path_resolves_to: data_dir
         required: false
         desc: |
           Mako templates are compiled as needed and cached for reuse, this directory is
           used for the cache
-
-          Default value will be resolved to 'database/compiled_templates' where 'database' is the
-          default value of the 'data_dir' option).
 
       check_job_script_integrity:
         type: bool
@@ -728,26 +722,22 @@ mapping:
       citation_cache_data_dir:
         type: str
         default: citations/data
+        path_resolves_to: data_dir
         required: false
         desc: |
           Citation related caching.  Tool citations information maybe fetched from
           external sources such as https://doi.org/ by Galaxy - the following
           parameters can be used to control the caching used to store this information.
-
-          Default value will be resolved to 'database/citations/data' where 'database' is the
-          default value of the 'data_dir' option).
 
       citation_cache_lock_dir:
         type: str
         default: citations/locks
+        path_resolves_to: data_dir
         required: false
         desc: |
           Citation related caching.  Tool citations information maybe fetched from
           external sources such as https://doi.org/ by Galaxy - the following
           parameters can be used to control the caching used to store this information.
-
-          Default value will be resolved to 'database/citations/locks' where 'database' is the
-          default value of the 'data_dir' option).
 
       object_store_config_file:
         type: str
@@ -1337,13 +1327,11 @@ mapping:
       dynamic_proxy_session_map:
         type: str
         default: session_map.sqlite
+        path_resolves_to: data_dir
         required: false
         desc: |
           The NodeJS dynamic proxy can use an SQLite database or a JSON file for IPC,
           set that here.
-
-          Default value will be resolved to 'database/session_map.sqlite' where 'database' is the
-          default value of the 'data_dir' option).
 
       dynamic_proxy_bind_port:
         type: int
@@ -2260,12 +2248,10 @@ mapping:
       openid_consumer_cache_path:
         type: str
         default: openid_consumer_cache
+        path_resolves_to: data_dir
         required: false
         desc: |
           If OpenID is enabled, consumer cache directory to use.
-
-          Default value will be resolved to 'database/openid_consumer_cache' where 'database' is the
-          default value of the 'data_dir' option).
 
       enable_tool_tags:
         type: bool
@@ -2389,7 +2375,8 @@ mapping:
         default: config/shed_data_manager_conf.xml
         required: false
         desc: |
-          File where Tool Shed based Data Managers are configured.
+          File where Tool Shed based Data Managers are configured. This file will be created
+          automatically upon data manager installation.
 
       galaxy_data_manager_data_path:
         type: str

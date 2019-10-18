@@ -2963,7 +2963,7 @@ class RelabelFromFileTool(DatabaseOperationTool):
                 dce_object = dce.element_object
                 add_copied_value_to_new_elements(new_labels[i], dce_object)
         for key in new_elements.keys():
-            if not re.match(r"^[\w\-_]+$", key):
+            if not re.match(r"^[\w\- \.,]+$", key):
                 raise Exception("Invalid new colleciton identifier [%s]" % key)
         self._add_datasets_to_history(history, itervalues(new_elements))
         output_collections.create_collection(

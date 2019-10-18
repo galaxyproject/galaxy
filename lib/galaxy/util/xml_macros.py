@@ -269,7 +269,7 @@ def _xml_replace(query, targets, parent_map):
     current_index = matching_index
     for target in targets:
         current_index += 1
-        parent_el.insert(current_index, target)
+        parent_el.insert(current_index, deepcopy(target))
     parent_el.remove(query)
 
 
