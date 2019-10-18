@@ -9,17 +9,7 @@
                     <span class="installed-message text-muted">
                         {{ repositories.length }} repositories installed on this instance.
                     </span>
-                    <b-link id="popover-monitor">
-                        <span class="fa fa-angle-double-down" />
-                        Show installation queue.
-                    </b-link>
                 </div>
-                <b-popover target="popover-monitor" triggers="hover" placement="top" :show.sync="showMonitor">
-                    <template v-slot:title>
-                        Installation Monitor
-                    </template>
-                    <Monitor @onQuery="onQuery" />
-                </b-popover>
                 <b-table
                     id="repository-table"
                     striped
@@ -55,14 +45,12 @@ import BootstrapVue from "bootstrap-vue";
 import { getAppRoot } from "onload/loadConfig";
 import { Services } from "../services.js";
 import RepositoryDetails from "./Details.vue";
-import Monitor from "./Monitor";
 import LoadingSpan from "components/LoadingSpan";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
-        Monitor,
         LoadingSpan,
         RepositoryDetails
     },
@@ -84,7 +72,6 @@ export default {
             message: null,
             messageVariant: null,
             nRepositories: 0,
-            showMonitor: false,
             repositories: []
         };
     },
@@ -120,10 +107,6 @@ export default {
         },
         filtered(items) {
             this.nRepositories = items.length;
-        },
-        onQuery(q) {
-            this.showMonitor = false;
-            this.$emit("onQuery", q);
         }
     }
 };

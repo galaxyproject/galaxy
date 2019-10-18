@@ -1,5 +1,8 @@
 <template>
     <div class="overflow-auto h-100 p-1" @scroll="onScroll">
+        <p>
+            <Monitor @onQuery="setQuery" />
+        </p>
         <div v-if="error" class="alert alert-danger">{{ error }}</div>
         <div v-else>
             <b-input-group class="mb-3">
@@ -27,10 +30,13 @@
     </div>
 </template>
 <script>
+import Monitor from "./Monitor";
 import SearchList from "./SearchList/Index.vue";
 import InstalledList from "./InstalledList/Index.vue";
+
 export default {
     components: {
+        Monitor,
         SearchList,
         InstalledList
     },
