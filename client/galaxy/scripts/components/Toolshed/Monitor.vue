@@ -56,13 +56,19 @@ export default {
         this.load();
     },
     destroyed() {
-        clearTimeout(this.timeout);
+        this.clearTimeout();
     },
     methods: {
         setTimeout() {
+            this.clearTimeout();
             this.timeout = setTimeout(() => {
                 this.load();
             }, this.delay);
+        },
+        clearTimeout() {
+            if (this.timeout) {
+                clearTimeout(this.timeout);
+            }
         },
         load() {
             this.loading = true;
