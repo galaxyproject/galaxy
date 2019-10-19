@@ -103,6 +103,8 @@ def find_root(kwargs):
 
 
 class BaseAppConfiguration(object):
+
+
     def _set_config_base(self, config_kwargs):
         self.sample_config_dir = os.path.join(os.path.dirname(__file__), 'sample')
         self.config_file = find_config_file('galaxy')
@@ -143,6 +145,7 @@ class BaseAppConfiguration(object):
         log.debug("Configuration directory is %s", self.config_dir)
         log.debug("Data directory is %s", self.data_dir)
         log.debug("Mutable config directory is %s", self.mutable_config_dir)
+
 
     def _in_mutable_config_dir(self, path):
         return os.path.join(self.mutable_config_dir, path)

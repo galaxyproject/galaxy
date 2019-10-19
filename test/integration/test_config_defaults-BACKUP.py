@@ -39,7 +39,7 @@ OptionData = namedtuple('OptionData', 'key, expected, loaded')
 
 # Most of these (except root_dir) will go away once path_resolves_to is set in the schema
 RESOLVE = {
-    'sanitize_whitelist_file': 'root_dir',  # TODO WHY root?
+    'sanitize_whitelist_file': 'root_dir',
     'tool_data_path': 'root_dir',
     'involucro_path': 'root_dir',
     'tool_path': 'root_dir',
@@ -47,19 +47,19 @@ RESOLVE = {
     'shed_tool_data_path': 'tool_data_path',
     'builds_file_path': 'tool_data_path',
     'len_file_path': 'tool_data_path',
-    'shed_tool_config_file': 'mutable_config_dir',   # TODO breaks on jenkins
-    'dependency_resolvers_config_file': 'config_dir',   # TODO breaks on jenkins
-    'tool_sheds_config_file': 'config_dir',   # TODO breaks on jenkins
-    'shed_tool_data_table_config': 'mutable_config_dir',   # TODO breaks on jenkins
-    'object_store_config_file': 'config_dir',   # TODO breaks on jenkins
-    'user_preferences_extra_conf_path': 'config_dir',   # TODO breaks on jenkins
-    'oidc_config_file': 'config_dir',   # TODO breaks on jenkins
-    'oidc_backends_config_file': 'config_dir',   # TODO breaks on jenkins
-    'auth_config_file': 'config_dir',   # TODO breaks on jenkins
-    'shed_data_manager_config_file': 'mutable_config_dir',   # TODO breaks on jenkins
-    'job_resource_params_file': 'config_dir',   # TODO breaks on jenkins
-    'workflow_resource_params_file': 'config_dir',   # TODO breaks on jenkins
-    'workflow_schedulers_config_file': 'config_dir',   # TODO breaks on jenkins
+    'shed_tool_config_file': 'mutable_config_dir',
+    'dependency_resolvers_config_file': 'config_dir',
+    'tool_sheds_config_file': 'config_dir',
+    'shed_tool_data_table_config': 'mutable_config_dir',
+    'object_store_config_file': 'config_dir',
+    'user_preferences_extra_conf_path': 'config_dir',
+    'oidc_config_file': 'config_dir',
+    'oidc_backends_config_file': 'config_dir',
+    'auth_config_file': 'config_dir',
+    'shed_data_manager_config_file': 'mutable_config_dir',
+    'job_resource_params_file': 'config_dir',
+    'workflow_resource_params_file': 'config_dir',
+    'workflow_schedulers_config_file': 'config_dir',
 }
 
 CUSTOM = {
@@ -187,6 +187,4 @@ def get_key(option_data):
 
 @pytest.mark.parametrize('data', get_config_data(), ids=get_key)
 def test_config_option(data, driver):
-    print()
-    print(data.key, data.expected, data.loaded)
     assert data.expected == data.loaded
