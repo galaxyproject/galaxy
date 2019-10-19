@@ -356,7 +356,12 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.builds_file_path = os.path.join(self.tool_data_path, self.builds_file_path)
         self.len_file_path = os.path.join(self.tool_data_path, self.len_file_path)
         # Galaxy OIDC settings.
-        self.oidc_config = kwargs.get("oidc_config_file", self.oidc_config_file)
+
+        #self.oidc_config = kwargs.get("oidc_config_file", self.oidc_config_file)
+        self.oidc_config = self.oidc_config_file
+
+
+
         self.oidc_backends_config = kwargs.get("oidc_backends_config_file", self.oidc_backends_config_file)
         self.oidc = []
         self.integrated_tool_panel_config = os.path.join(self.mutable_config_dir, self.integrated_tool_panel_config)
@@ -738,7 +743,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             modules_mapping_files=[self._in_config_dir('environment_modules_mapping.yml')],
             object_store_config_file=[self._in_config_dir('object_store_conf.xml')],
             oidc_backends_config_file=[self._in_config_dir('oidc_backends_config.xml')],
-            oidc_config_file=[self._in_config_dir('oidc_config.xml')],
+            #oidc_config_file=[self._in_config_dir('oidc_config.xml')],
             shed_data_manager_config_file=[self._in_mutable_config_dir('shed_data_manager_conf.xml')],
             shed_tool_config_file=[self._in_mutable_config_dir('shed_tool_conf.xml')],
             shed_tool_data_table_config=[self._in_mutable_config_dir('shed_tool_data_table_conf.xml')],

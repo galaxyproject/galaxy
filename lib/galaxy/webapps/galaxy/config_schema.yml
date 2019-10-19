@@ -2212,6 +2212,7 @@ mapping:
       oidc_config_file:
         type: str
         default: oidc_config.xml
+        path_resolves_to: config_dir   # TODO debugging
         required: false
         desc: |
           Sets the path to OIDC configuration file.

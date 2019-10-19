@@ -190,7 +190,5 @@ def get_key(option_data):
 @pytest.mark.parametrize('data', get_config_data(), ids=get_key)
 def test_config_option(data, driver):
     expected = data.expected
-    if data.key == 'integrated_tool_panel_config':
-        expected = data.expected + 'FAIL'
     print(data.key, expected, data.loaded)
     assert expected == data.loaded
