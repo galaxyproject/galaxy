@@ -53,7 +53,7 @@ RESOLVE = {
     'shed_tool_data_table_config': 'mutable_config_dir',   # TODO breaks on jenkins
     'object_store_config_file': 'config_dir',   # TODO breaks on jenkins
     'user_preferences_extra_conf_path': 'config_dir',   # TODO breaks on jenkins
-    'oidc_config_file': 'config_dir',   # TODO breaks on jenkins
+#    'oidc_config_file': 'config_dir',   # TODO breaks on jenkins
     'oidc_backends_config_file': 'config_dir',   # TODO breaks on jenkins
     'auth_config_file': 'config_dir',   # TODO breaks on jenkins
     'shed_data_manager_config_file': 'mutable_config_dir',   # TODO breaks on jenkins
