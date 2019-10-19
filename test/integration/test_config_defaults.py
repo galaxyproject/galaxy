@@ -175,7 +175,7 @@ def get_config_data():
     parent_dirs = load_parent_dirs()  # called after DRIVER is setup
     items = ((k, v) for k, v in DRIVER.app.config.appschema.items() if k not in DO_NOT_TEST)
     for key, data in items:
-        if key != 'shed_tool_config_file':
+        if key != 'oidc_config_file':
             continue
         expected_value = get_expected(key, data, parent_dirs)
         loaded_value = getattr(DRIVER.app.config, key)
