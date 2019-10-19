@@ -175,8 +175,6 @@ def get_config_data():
     parent_dirs = load_parent_dirs()  # called after DRIVER is setup
     items = ((k, v) for k, v in DRIVER.app.config.appschema.items() if k not in DO_NOT_TEST)
     for key, data in items:
-        if key not in ['oidc_config_file', 'integrated_tool_panel_config']:
-            continue
         expected_value = get_expected(key, data, parent_dirs)
         loaded_value = getattr(DRIVER.app.config, key)
         data = OptionData(key=key, expected=expected_value, loaded=loaded_value)  # passed to test
