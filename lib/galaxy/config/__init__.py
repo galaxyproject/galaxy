@@ -124,12 +124,21 @@ class BaseAppConfiguration(object):
                 # Not an INI file
                 pass
         self.config_dir = config_kwargs.get('config_dir', os.path.dirname(self.config_file or os.getcwd()))
+
+        self._debug1 = config_kwargs.get('config_dir')
+        self._debug2 = self.config_file
+        self._debug3 = os.getcwd()
+        self._debug4 = os.path.dirname(os.path.dirname(self.config_file or os.getcwd()))
+
         self.data_dir = config_kwargs.get('data_dir', None)
         # mutable_config_dir is intentionally not configurable. You can
         # override individual mutable configs with config options, but they
         # should be considered Galaxy-controlled data files and will by default
         # just live in the data dir
         if running_from_source:
+
+            self._debug5 = running_from_source
+
             if self.data_dir is None:
                 self.data_dir = os.path.join(self.root, 'database')
             if self.config_file is None:

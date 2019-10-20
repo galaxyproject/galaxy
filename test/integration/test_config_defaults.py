@@ -203,3 +203,18 @@ def test_config(driver):
 def test_mutable_config(driver):
     assert DRIVER.app.config.mutable_config_dir == 'fail'
 
+def test_debug1(driver):
+    assert DRIVER.app.config._debug1 == 'fail'
+
+def test_debug2(driver):
+    assert DRIVER.app.config._debug2 == 'fail'
+
+def test_debug3(driver):
+    assert DRIVER.app.config._debug3 == 'fail'
+
+def test_debug4(driver):
+    assert DRIVER.app.config._debug4 == 'fail'
+
+def test_debug5(driver):
+    assert DRIVER.app.config._debug5 == 'fail'
+
