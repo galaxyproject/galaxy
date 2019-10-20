@@ -43,7 +43,7 @@ RESOLVE = {
     'tool_data_path': 'root_dir',
     'involucro_path': 'root_dir',
     'tool_path': 'root_dir',
-    'integrated_tool_panel_config': 'config_dir',
+    'integrated_tool_panel_config': 'mutable_config_dir',
     'shed_tool_data_path': 'tool_data_path',
     'builds_file_path': 'tool_data_path',
     'len_file_path': 'tool_data_path',
@@ -174,7 +174,10 @@ def get_config_data():
     create_driver()  # create + setup DRIVER
     parent_dirs = load_parent_dirs()  # called after DRIVER is setup
     items = ((k, v) for k, v in DRIVER.app.config.appschema.items() if k not in DO_NOT_TEST)
+
     for key, data in items:
+        if key not in ['oidc_config_file', 'oidc_backends_config_file', 'integrated_tool_panel_config']:
+            continue
         expected_value = get_expected(key, data, parent_dirs)
         loaded_value = getattr(DRIVER.app.config, key)
         data = OptionData(key=key, expected=expected_value, loaded=loaded_value)  # passed to test
@@ -184,9 +187,19 @@ def get_config_data():
 def get_key(option_data):
     return option_data.key
 
-
 @pytest.mark.parametrize('data', get_config_data(), ids=get_key)
 def test_config_option(data, driver):
-    expected = data.expected
+    expected = data.expected + 'fail'
     print(data.key, expected, data.loaded)
     assert expected == data.loaded
+
+
+def test_root(driver):
+    assert DRIVER.app.config.root == 'fail'
+
+def test_config(driver):
+    assert DRIVER.app.config.config_dir == 'fail'
+
+def test_mutable_config(driver):
+    assert DRIVER.app.config.mutable_config_dir == 'fail'
+

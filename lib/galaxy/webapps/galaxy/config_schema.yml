@@ -235,16 +235,6 @@ mapping:
 
           The value of this option will be resolved with respect to <config_dir>.
 
-      integrated_tool_panel_config:
-        type: str
-        default: integrated_tool_panel.xml
-        required: false
-        desc: |
-          File that contains the XML section and tool tags from all tool panel config
-          files integrated into a single file that defines the tool panel layout.  This
-          file can be changed by the Galaxy administrator to alter the layout of the
-          tool panel.  If not present, Galaxy will create it.
-
       tool_path:
         type: str
         default: tools
@@ -2209,10 +2199,14 @@ mapping:
         desc: |
           Enables and disables OpenID Connect (OIDC) support.
 
+
+
+
+
       oidc_config_file:
         type: str
         default: oidc_config.xml
-        path_resolves_to: config_dir   # TODO debugging
+        path_resolves_to: config_dir
         required: false
         desc: |
           Sets the path to OIDC configuration file.
@@ -2227,6 +2221,20 @@ mapping:
           Sets the path to OIDC backends configuration file.
 
           The value of this option will be resolved with respect to <config_dir>.
+
+      integrated_tool_panel_config:
+        type: str
+        default: integrated_tool_panel.xml
+        required: false
+        desc: |
+          File that contains the XML section and tool tags from all tool panel config
+          files integrated into a single file that defines the tool panel layout.  This
+          file can be changed by the Galaxy administrator to alter the layout of the
+          tool panel.  If not present, Galaxy will create it.
+
+
+
+
 
       auth_config_file:
         type: str

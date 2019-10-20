@@ -157,14 +157,11 @@ class BaseAppConfiguration(object):
         return os.path.join(self.sample_config_dir, path)
 
     def _parse_config_file_options(self, defaults, listify_defaults, config_kwargs):
-        log.debug('GROK THIS 1')
         for var, values in defaults.items():
-            print(var, values)
 
             if config_kwargs.get(var, None) is not None:
                 path = config_kwargs.get(var)
                 setattr(self, var + '_set', True)
-                log.debug('grok 2; {}'.format(var))
             else:
                 for value in values:
                     if os.path.exists(os.path.join(self.root, value)):
@@ -174,7 +171,8 @@ class BaseAppConfiguration(object):
                     path = values[-1]
                 setattr(self, var + '_set', False)
 
-            log.debug('to join: root: {}; path: {}'.format(self.root, path))
+            print('to join: root: {}; path: {}'.format(self.root, path))
+
             setattr(self, var, os.path.join(self.root, path))
 
         for var, values in listify_defaults.items():
