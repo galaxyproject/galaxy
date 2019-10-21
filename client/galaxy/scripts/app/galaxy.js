@@ -101,8 +101,8 @@ GalaxyApp.prototype._processOptions = function _processOptions(options) {
 
     this.options = {};
     for (const k in defaults) {
-        if (defaults.hasOwnProperty(k)) {
-            this.options[k] = options.hasOwnProperty(k) ? options[k] : defaults[k];
+        if (Object.prototype.hasOwnProperty.call(defaults, k)) {
+            this.options[k] = Object.prototype.hasOwnProperty.call(options, k) ? options[k] : defaults[k];
         }
     }
     return this;
@@ -126,7 +126,7 @@ GalaxyApp.prototype._patchGalaxy = function _patchGalaxy(patchWith) {
         // ...(for now) monkey patch any added attributes that the previous Galaxy may have had
         //TODO: move those attributes to more formal assignment in GalaxyApp
         for (const k in patchWith) {
-            if (patchWith.hasOwnProperty(k)) {
+            if (Object.prototype.hasOwnProperty.call(patchWith, k)) {
                 // this.debug( '\t patching in ' + k + ' to Galaxy:', this[ k ] );
                 this[k] = patchWith[k];
             }
@@ -136,7 +136,6 @@ GalaxyApp.prototype._patchGalaxy = function _patchGalaxy(patchWith) {
 
 /** set up the metrics logger (utils/metrics-logger) and pass loggerOptions */
 GalaxyApp.prototype._initLogger = function _initLogger(loggerOptions) {
-
     // default to console logging at the debug level if the debug flag is set
     if (this.config.debug) {
         loggerOptions.consoleLogger = loggerOptions.consoleLogger || console;

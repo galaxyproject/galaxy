@@ -526,7 +526,7 @@ var HistoryViewEdit = _super.extend(
             var $dropTarget = this._renderDropTarget();
             this.$list().before([this._renderDropTargetHelp(), $dropTarget]);
             for (var evName in dropHandlers) {
-                if (dropHandlers.hasOwnProperty(evName)) {
+                if (Object.prototype.hasOwnProperty.call(dropHandlers, evName)) {
                     $dropTarget.get(0).addEventListener(evName, dropHandlers[evName]);
                 }
             }
@@ -556,7 +556,7 @@ var HistoryViewEdit = _super.extend(
             this.dropTarget = false;
             var dropTarget = this.$(".history-drop-target").get(0);
             for (var evName in this._dropHandlers) {
-                if (this._dropHandlers.hasOwnProperty(evName)) {
+                if (Object.prototype.hasOwnProperty.call(this._dropHandlers, evName)) {
                     dropTarget.off(evName, this._dropHandlers[evName]);
                 }
             }

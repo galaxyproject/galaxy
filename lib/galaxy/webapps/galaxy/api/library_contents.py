@@ -20,10 +20,11 @@ from galaxy.managers.collections_util import (
 )
 from galaxy.model import (
     ExtendedMetadata,
-    ExtendedMetadataIndex
+    ExtendedMetadataIndex,
+    tags
 )
 from galaxy.web import expose_api
-from galaxy.web.base.controller import (
+from galaxy.webapps.base.controller import (
     BaseAPIController,
     HTTPBadRequest,
     url_for,
@@ -43,12 +44,12 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
     @expose_api
     def index(self, trans, library_id, **kwd):
         """
-        index( self, trans, library_id, **kwd )
-        * GET /api/libraries/{library_id}/contents:
-            Returns a list of library files and folders.
+        GET /api/libraries/{library_id}/contents:
 
-        .. note:: May be slow! Returns all content traversing recursively through all folders.
-        .. seealso:: :class:`galaxy.webapps.galaxy.api.FolderContentsController.index` for a non-recursive solution
+        Return a list of library files and folders.
+
+        .. note:: This endpoint is slow for large libraries. Returns all content traversing recursively through all folders.
+        .. seealso:: :class:`galaxy.webapps.galaxy.api.FolderContentsController.index` for a faster non-recursive solution
 
         :param  library_id: the encoded id of the library
         :type   library_id: str
@@ -99,7 +100,7 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         except NoResultFound:
             raise exceptions.RequestParameterInvalidException('No library found with the id provided.')
         except Exception as e:
-            raise exceptions.InternalServerError('Error loading from the database.' + str(e))
+            raise exceptions.InternalServerError('Error loading from the database.' + util.unicodify(e))
         if not (trans.user_is_admin or trans.app.security_agent.can_access_library(current_user_roles, library)):
             raise exceptions.RequestParameterInvalidException('No library found with the id provided.')
         encoded_id = 'F' + trans.security.encode_id(library.root_folder.id)
@@ -123,9 +124,9 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
     @expose_api
     def show(self, trans, id, library_id, **kwd):
         """
-        show( self, trans, id, library_id, **kwd )
-        * GET /api/libraries/{library_id}/contents/{id}
-            Returns information about library file or folder.
+        GET /api/libraries/{library_id}/contents/{id}
+
+        Returns information about library file or folder.
 
         :param  id:         the encoded id of the library item to return
         :type   id:         str
@@ -155,14 +156,17 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             rval['ldda_id'] = trans.security.encode_id(rval['ldda_id'])
             rval['folder_id'] = 'F' + str(trans.security.encode_id(rval['folder_id']))
             rval['parent_library_id'] = trans.security.encode_id(rval['parent_library_id'])
+
+            tag_manager = tags.GalaxyTagHandler(trans.sa_session)
+            rval['tags'] = tag_manager.get_tags_str(content.library_dataset_dataset_association.tags)
         return rval
 
     @expose_api
     def create(self, trans, library_id, payload, **kwd):
         """
-        create( self, trans, library_id, payload, **kwd )
-        * POST /api/libraries/{library_id}/contents:
-            create a new library file or folder
+        POST /api/libraries/{library_id}/contents:
+
+        Create a new library file or folder.
 
         To copy an HDA into a library send ``create_type`` of 'file' and
         the HDA's encoded id in ``from_hda_id`` (and optionally ``ldda_message``).
@@ -202,6 +206,8 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
                 description of the folder to create
             * tag_using_filename: (optional)
                 create tags on datasets using the file's original name
+            * tags: (optional)
+                create the given list of tags on datasets
 
         :returns:   a dictionary describing the new item unless ``from_hdca_id`` is supplied,
                     in that case a list of such dictionaries is returned.
@@ -226,11 +232,12 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             # security is checked in the downstream controller
             parent = self.get_library_folder(trans, folder_id, check_ownership=False, check_accessible=False)
         except Exception as e:
-            return str(e)
+            return util.unicodify(e)
         # The rest of the security happens in the library_common controller.
         real_folder_id = trans.security.encode_id(parent.id)
 
         payload['tag_using_filenames'] = util.string_as_bool(payload.get('tag_using_filenames', None))
+        payload['tags'] = util.listify(payload.get('tags', None))
 
         # are we copying an HDA to the library folder?
         #   we'll need the id and any message to attach, then branch to that private function
@@ -374,9 +381,10 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
     @expose_api
     def update(self, trans, id, library_id, payload, **kwd):
         """
-        update( self, trans, id, library_id, payload, **kwd )
-        * PUT /api/libraries/{library_id}/contents/{id}
-            create a ImplicitlyConvertedDatasetAssociation
+        PUT /api/libraries/{library_id}/contents/{id}
+
+        Create an ImplicitlyConvertedDatasetAssociation.
+
         .. seealso:: :class:`galaxy.model.ImplicitlyConvertedDatasetAssociation`
 
         :type   id:         str
@@ -412,9 +420,9 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
     @expose_api
     def delete(self, trans, library_id, id, **kwd):
         """
-        delete( self, trans, library_id, id, **kwd )
-        * DELETE /api/libraries/{library_id}/contents/{id}
-            delete the LibraryDataset with the given ``id``
+        DELETE /api/libraries/{library_id}/contents/{id}
+
+        Delete the LibraryDataset with the given ``id``.
 
         :type   id:     str
         :param  id:     the encoded id of the library dataset to delete
@@ -430,7 +438,6 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             * deleted:    if the library dataset was marked as deleted,
             * purged:     if the library dataset was purged
         """
-        # a request body is optional here
         purge = False
         if kwd.get('payload', None):
             purge = util.string_as_bool(kwd['payload'].get('purge', False))
@@ -480,5 +487,5 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             log.exception('library_contents API, delete: uncaught exception: %s, %s',
                           id, str(kwd))
             trans.response.status = 500
-            rval.update({'error': str(exc)})
+            rval.update({'error': util.unicodify(exc)})
         return rval

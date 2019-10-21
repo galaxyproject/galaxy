@@ -8,7 +8,7 @@ from galaxy.web import (
     legacy_expose_api,
     require_admin
 )
-from galaxy.web.base.controller import BaseAPIController
+from galaxy.webapps.base.controller import BaseAPIController
 
 log = logging.getLogger(__name__)
 

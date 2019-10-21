@@ -8,8 +8,8 @@ from galaxy import model
 from galaxy.exceptions import HandlerAssignmentError
 from galaxy.util import plugin_config
 from galaxy.util.monitors import Monitors
-from galaxy.web.stack.handlers import ConfiguresHandlers, HANDLER_ASSIGNMENT_METHODS
-from galaxy.web.stack.message import WorkflowSchedulingMessage
+from galaxy.web_stack.handlers import ConfiguresHandlers, HANDLER_ASSIGNMENT_METHODS
+from galaxy.web_stack.message import WorkflowSchedulingMessage
 
 log = logging.getLogger(__name__)
 
@@ -176,7 +176,7 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
     def __init_schedulers(self):
         config_file = self.app.config.workflow_schedulers_config_file
         use_default_scheduler = False
-        if not config_file:
+        if not config_file or (not os.path.exists(config_file) and not self.app.config.workflow_schedulers_config_file_set):
             log.info("No workflow schedulers plugin config file defined, using default scheduler.")
             use_default_scheduler = True
         elif not os.path.exists(config_file):

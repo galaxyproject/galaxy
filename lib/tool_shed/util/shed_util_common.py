@@ -405,7 +405,9 @@ def get_tool_panel_config_tool_path_install_dir(app, repository):
                                                   str(repository.name),
                                                   str(repository.installed_changeset_revision))
     # Get the relative tool installation paths from each of the shed tool configs.
-    shed_config_dict = repository.get_shed_config_dict(app)
+    shed_config_dict = None
+    if hasattr(repository, "get_shed_config_dict"):
+        shed_config_dict = repository.get_shed_config_dict(app)
     if not shed_config_dict:
         # Just pick a semi-random shed config.
         for shed_config_dict in app.toolbox.dynamic_confs(include_migrated_tool_conf=True):

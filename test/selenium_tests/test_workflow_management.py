@@ -1,3 +1,5 @@
+from base.populators import skip_if_github_down
+
 from .framework import (
     retry_assertion_during_transitions,
     selenium_test,
@@ -17,7 +19,7 @@ class WorkflowManagementTestCase(SeleniumTestCase):
         table_elements = self.workflow_index_table_elements()
         assert len(table_elements) == 1
 
-        new_workflow = table_elements[0].find_element_by_css_selector("a.btn.btn-secondary")
+        new_workflow = table_elements[0].find_element_by_css_selector(".workflow-dropdown")
         assert 'TestWorkflow1 (imported from uploaded file)' in new_workflow.text, new_workflow.text
 
     @selenium_test
@@ -83,31 +85,11 @@ class WorkflowManagementTestCase(SeleniumTestCase):
         self.workflow_index_search_for("searchforthis")
         self._assert_showing_n_workflows(1)
 
-    @selenium_test
-    def test_publishing_display(self):
-        self.workflow_index_open()
-        self._workflow_import_from_url()
-        self.workflow_index_rename("managementesttopublish")
-
-        published_column_index = 4
-
-        @retry_assertion_during_transitions
-        def assert_published_column_text_is(expected_text):
-            column_text = self.workflow_index_column_text(published_column_index)
-            self.assertEqual(expected_text, column_text)
-
-        assert_published_column_text_is("No")
-        self.workflow_index_click_option("Share")
-        self.workflow_sharing_click_publish()
-
-        self.workflow_index_open()
-        assert_published_column_text_is("Yes")
-        self.screenshot("workflow_manage_published")
-
     @retry_assertion_during_transitions
     def _assert_showing_n_workflows(self, n):
         self.assertEqual(len(self.workflow_index_table_elements()), n)
 
+    @skip_if_github_down
     def _workflow_import_from_url(self):
         self.workflow_index_click_import()
         url = "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test/base/data/test_workflow_1.ga"

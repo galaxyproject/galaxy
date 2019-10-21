@@ -544,6 +544,7 @@ class UploadDataset(Group):
         d_type = self.get_datatype(trans, context)
         dbkey = self.get_dbkey(context)
         tag_using_filenames = context.get('tag_using_filenames', False)
+        tags = context.get('tags', False)
         force_composite = asbool(context.get('force_composite', 'False'))
         writable_files = d_type.writable_files
         writable_files_offset = 0
@@ -564,6 +565,7 @@ class UploadDataset(Group):
             dataset.composite_files = {}
             dataset.uuid = None
             dataset.tag_using_filenames = None
+            dataset.tags = None
             # load metadata
             files_metadata = context.get(self.metadata_ref, {})
             metadata_name_substition_default_dict = dict((composite_file.substitute_name_with_metadata, d_type.metadata_spec[composite_file.substitute_name_with_metadata].default) for composite_file in d_type.composite_files.values() if composite_file.substitute_name_with_metadata)
@@ -629,6 +631,7 @@ class UploadDataset(Group):
                     dataset.ext = self.get_datatype_ext(trans, context[self.name][i], parent_context=context)
                     dataset.dbkey = self.get_dbkey(context[self.name][i], parent_context=context)
                     dataset.tag_using_filenames = tag_using_filenames
+                    dataset.tags = tags
                     rval.append(dataset)
             return rval
 

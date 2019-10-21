@@ -24,10 +24,10 @@ from base import populators  # noqa: I100,I202
 from base.api import UsesApiTestCaseMixin  # noqa: I100
 from base.driver_util import classproperty, DEFAULT_WEB_HOST, get_ip_address  # noqa: I100
 from base.testcase import FunctionalTestCase  # noqa: I100
-from galaxy_selenium import (  # noqa: I100,I201
+from galaxy.selenium import (  # noqa: I100,I201
     driver_factory,
 )
-from galaxy_selenium.navigates_galaxy import (  # noqa: I100
+from galaxy.selenium.navigates_galaxy import (  # noqa: I100
     NavigatesGalaxy,
     retry_during_transitions
 )
@@ -223,6 +223,8 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy, UsesApiTestCaseMixin
         Overriding this instead of setUp will ensure debug data such as screenshots and stack traces
         are dumped if there are problems with the setup and it will be re-ran on test retries.
         """
+        if self.ensure_registered:
+            self.login()
 
     def tearDown(self):
         exception = None
@@ -297,9 +299,6 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy, UsesApiTestCaseMixin
         self.driver.set_window_size(1280, 1000)
 
         self._setup_galaxy_logging()
-
-        if self.ensure_registered:
-            self.login()
 
     def _setup_galaxy_logging(self):
         self.home()

@@ -6,6 +6,6 @@ export function safeAssign(target, source = {}) {
         source = {};
     }
     Object.keys(source)
-        .filter(prop => target.hasOwnProperty(prop))
+        .filter(prop => Object.prototype.hasOwnProperty.call(target, prop))
         .forEach(prop => (target[prop] = source[prop]));
 }

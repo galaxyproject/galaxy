@@ -6,12 +6,13 @@ import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
-// import Utils from "utils/utils";
+import ariaAlert from "utils/ariaAlert";
 import Deferred from "utils/deferred";
 import Ui from "mvc/ui/ui-misc";
 import FormBase from "mvc/form/form-view";
 import Webhooks from "mvc/webhooks";
 import Citations from "components/Citations.vue";
+import xrefs from "components/xrefs.vue";
 import Vue from "vue";
 import axios from "axios";
 
@@ -124,6 +125,7 @@ export default FormBase.extend({
                         favorite_button.hide();
                         remove_favorite_button.show();
                         Galaxy.user.updateFavorites("tools", response.data);
+                        ariaAlert("added to favorites");
                     });
             }
         });
@@ -142,6 +144,7 @@ export default FormBase.extend({
                         remove_favorite_button.hide();
                         favorite_button.show();
                         Galaxy.user.updateFavorites("tools", response.data);
+                        ariaAlert("removed from favorites");
                     });
             }
         });
@@ -273,6 +276,17 @@ export default FormBase.extend({
             var vm = document.createElement("div");
             $el.append(vm);
             new citationInstance({
+                propsData: {
+                    id: options.id,
+                    source: "tools"
+                }
+            }).$mount(vm);
+        }
+        if (options.xrefs && options.xrefs.length) {
+            var xrefInstance = Vue.extend(xrefs);
+            vm = document.createElement("div");
+            $el.append(vm);
+            new xrefInstance({
                 propsData: {
                     id: options.id,
                     source: "tools"

@@ -248,7 +248,7 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
     def test_0095_verify_reserved_repository_name_handling(self):
         '''Check that reserved repository names are handled correctly.'''
         category = self.test_db_util.get_category_by_name('Test 0000 Basic Repository Features 1')
-        error_message = 'The term <b>repos</b> is a reserved word in the tool shed, so it cannot be used as a repository name.'
+        error_message = "The term 'repos' is a reserved word in the Tool Shed, so it cannot be used as a repository name."
         self.get_or_create_repository(name='repos',
                                       description=repository_description,
                                       long_description=repository_long_description,
@@ -261,7 +261,7 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         self.login(email='baduser@bx.psu.edu', username='repos')
         test_user_1 = self.test_db_util.get_user('baduser@bx.psu.edu')
         assert test_user_1 is None, 'Creating user with public name "repos" succeeded.'
-        error_message = 'The term <b>repos</b> is a reserved word in the tool shed, so it cannot be used as a public user name.'
+        error_message = "The term 'repos' is a reserved word in the Tool Shed, so it cannot be used as a public user name."
         self.check_for_strings(strings_displayed=[error_message])
 
     def test_0105_contact_repository_owner(self):

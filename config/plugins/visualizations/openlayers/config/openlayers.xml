@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE visualization SYSTEM "../../visualization.dtd">
+<visualization name="OpenLayers map">
+    <description>A viewer to show maps using OpenLayers from https://openlayers.org/</description>
+    <data_sources>
+        <data_source>
+            <model_class>HistoryDatasetAssociation</model_class>
+            <test test_attr="ext" result_type="datatype">geojson</test>
+           <test test_attr="ext" result_type="datatype">shp</test>
+            <to_param param_attr="id">dataset_id</to_param>
+        </data_source>
+    </data_sources>
+    <params>
+        <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
+    </params>
+    <entry_point entry_point_type="chart" src="script.js" css="ol.css"/>
+    <settings>
+        <input>
+            <label>Types of geometry</label>
+            <name>geometry_type</name>
+            <help>Select a geometry type.</help>
+            <type>select</type>
+            <display>radio</display>
+            <value>circle</value>
+            <data>
+                <data>
+                    <label>None</label>
+                    <value>None</value>
+                </data>
+                <data>
+                    <label>LineString</label>
+                    <value>LineString</value>
+                </data>
+                <data>
+                    <label>Circle</label>
+                    <value>Circle</value>
+                </data>
+                <data>
+                    <label>Polygon</label>
+                    <value>Polygon</value>
+                </data>
+            </data>
+        </input>
+        <input>
+            <name>geometry_color</name>
+            <label>Select a color for the geometry</label>
+            <type>color</type>
+            <value>#ec1515</value>
+        </input>
+        <input>
+            <label>Export map</label>
+            <name>export_map</name>
+            <help>Select to export</help>
+            <type>select</type>
+            <display>radio</display>
+            <value>no_export</value>
+            <data>
+                <data>
+                    <label>Export</label>
+                    <value>export</value>
+                </data>
+                <data>
+                    <label>Do not export</label>
+                    <value>no_export</value>
+                </data>
+            </data>
+        </input>
+        
+    </settings>
+</visualization>

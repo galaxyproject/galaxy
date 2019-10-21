@@ -27,14 +27,22 @@ const SidePanel = Backbone.View.extend({
         const self = this;
         const panel = this.view;
         const components = this.view.model.attributes || {};
-        this.$el.html(this._templatePanel(this.id));
-        _.each(components.buttons, button => {
-            self.$(".panel-header-buttons").append(button.$el);
-        });
-        this.$el.addClass(components.cls);
-        this.$(".panel-header-text").html(_.escape(components.title));
-        this.$(".unified-panel-body").append(panel.$el);
-        panel.render();
+
+        if (this.id === "left" && this.view && this.view.isVueWrapper) {
+            const node = document.createElement("div");
+            this.$el.replaceWith(node);
+
+            this.view.mountVueComponent(node);
+        } else {
+            this.$el.html(this._templatePanel(this.id));
+            _.each(components.buttons, button => {
+                self.$(".panel-header-buttons").append(button.$el);
+            });
+            this.$el.addClass(components.cls);
+            this.$(".panel-header-text").html(_.escape(components.title));
+            this.$(".unified-panel-body").append(panel.$el);
+            panel.render();
+        }
     },
 
     /** panel dom template. id is 'right' or 'left' */
@@ -113,36 +121,36 @@ const SidePanel = Backbone.View.extend({
     },
 
     show: function() {
-        if (!this.hidden) {
-            return;
+        if (this.hidden && !this.motionQueue) {
+            this.motionQueue = 2;
+            const animation = {};
+            const whichSide = this.id;
+            animation[whichSide] = 0;
+            this.$el
+                .css(whichSide, -this.saved_size)
+                .css("width", this.saved_size)
+                .animate(animation, "fast", () => this.motionQueue--);
+            animation[whichSide] = this.saved_size;
+            this.$center().animate(animation, "fast", () => this.motionQueue--);
+            this.hidden = false;
+            this.$toggleButton().removeClass("hidden");
         }
-        const self = this;
-        const animation = {};
-        const whichSide = this.id;
-        animation[whichSide] = 0;
-        self.$el
-            .css(whichSide, -this.saved_size)
-            .show()
-            .animate(animation, "fast", () => {
-                self.resize(self.saved_size);
-            });
-        self.hidden = false;
-        self.$toggleButton().removeClass("hidden");
         return this;
     },
 
     hide: function() {
-        if (this.hidden) {
-            return;
+        if (!this.hidden && !this.motionQueue) {
+            this.motionQueue = 2;
+            const animation = {};
+            const whichSide = this.id;
+            this.saved_size = this.$el.width();
+            animation[whichSide] = -this.saved_size;
+            this.$el.animate(animation, "fast", () => this.motionQueue--);
+            animation[whichSide] = 0;
+            this.$center().animate(animation, "fast", () => this.motionQueue--);
+            this.hidden = true;
+            this.$toggleButton().addClass("hidden");
         }
-        const animation = {};
-        const whichSide = this.id;
-        this.saved_size = this.$el.width();
-        animation[whichSide] = -this.saved_size;
-        this.$el.animate(animation, "fast");
-        this.$center().css(whichSide, 0);
-        this.hidden = true;
-        this.$toggleButton().addClass("hidden");
         return this;
     },
 
@@ -258,7 +266,7 @@ const CenterPanel = Backbone.View.extend({
     template: function() {
         return (
             '<div class="center-container">' +
-            '<iframe id="galaxy_main" name="galaxy_main" frameborder="0" class="center-frame" />' +
+            '<iframe id="galaxy_main" name="galaxy_main" frameborder="0" class="center-frame" title="galaxy main frame"/>' +
             '<div class="center-panel" />' +
             "</div>"
         );

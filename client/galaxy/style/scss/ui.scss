@@ -84,13 +84,6 @@ $ui-margin-horizontal-large: $margin-v * 2;
     cursor: pointer;
 }
 
-// tabs
-.tabbable {
-    .nav-item {
-        cursor: pointer;
-    }
-}
-
 // thumbnails
 .ui-thumbnails {
     .ui-thumbnails-item {
@@ -105,7 +98,7 @@ $ui-margin-horizontal-large: $margin-v * 2;
             height: 86px;
             font-size: 4em;
             padding: 20px 26px;
-            color: lighten($brand-primary, 10%);
+            color: $text-color;
         }
         .ui-thumbnails-text {
             word-wrap: break-word;
@@ -154,7 +147,6 @@ $ui-margin-horizontal-large: $margin-v * 2;
             font-style: italic;
         }
         .ui-form-backdrop {
-            display: none;
             z-index: 10;
             position: absolute;
             top: 0px;
@@ -200,6 +192,7 @@ $ui-margin-horizontal-large: $margin-v * 2;
         @extend .rounded;
         background: $portlet-bg-color;
         .portlet-title {
+            float: left;
             .portlet-title-text.collapsible {
                 cursor: pointer;
                 text-decoration: underline;
@@ -254,9 +247,9 @@ $ui-margin-horizontal-large: $margin-v * 2;
 
 // popovers
 .popover {
-    max-width: 700px;
+    max-width: 70%;
     .popover-header {
-        color: $brand-white;
+        color: $brand-light;
         background-color: $brand-primary;
         i {
             @extend .float-right;
@@ -423,9 +416,6 @@ $ui-margin-horizontal-large: $margin-v * 2;
             -webkit-appearance: none;
             -moz-border-radius: $border-radius-base;
             line-height: 1.5rem;
-            .select2-chosen {
-                white-space: normal;
-            }
             .select2-arrow {
                 display: none;
             }
@@ -477,13 +467,4 @@ $ui-margin-horizontal-large: $margin-v * 2;
     @extend .ui-dragover;
     border: 2px solid $state-success-bg;
     background: lighten($state-success-bg, 10%) !important;
-}
-
-// select2 adjustments
-.select2-drop-active,
-.select2-drop-above.select2-drop-active {
-    border: 1px solid $border-default-color;
-    .select2-search {
-        @extend .pt-1;
-    }
 }

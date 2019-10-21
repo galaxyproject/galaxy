@@ -4,6 +4,7 @@
 See doc/source/admin/grt.rst for more detailed usage information.
 """
 import argparse
+import io
 import json
 import logging
 import os
@@ -19,7 +20,10 @@ import galaxy
 import galaxy.app
 import galaxy.config
 from galaxy.objectstore import build_object_store_from_config
-from galaxy.util import hash_util
+from galaxy.util import (
+    hash_util,
+    unicodify
+)
 from galaxy.util.script import app_properties_from_args, populate_config_args
 
 sample_config = os.path.abspath(os.path.join(os.path.dirname(__file__), 'grt.yml.sample'))
@@ -142,7 +146,7 @@ def main(argv):
     blacklisted_tools = config['sanitization']['tools']
 
     annotate('export_jobs_start', 'Exporting Jobs')
-    handle_job = open(REPORT_BASE + '.jobs.tsv', 'w')
+    handle_job = io.open(REPORT_BASE + '.jobs.tsv', 'w', encoding='utf-8')
     handle_job.write('\t'.join(('id', 'tool_id', 'tool_version', 'state', 'create_time')) + '\n')
     for offset_start in range(last_job_sent, end_job_id, args.batch_size):
         logging.debug("Processing %s:%s", offset_start, min(end_job_id, offset_start + args.batch_size))
@@ -155,16 +159,15 @@ def main(argv):
                 continue
 
             try:
-                handle_job.write(str(job[0]))  # id
-                handle_job.write('\t')
-                handle_job.write(job[2])  # tool_id
-                handle_job.write('\t')
-                handle_job.write(job[3])  # tool_version
-                handle_job.write('\t')
-                handle_job.write(job[4])  # state
-                handle_job.write('\t')
-                handle_job.write(str(job[5]))  # create_time
-                handle_job.write('\n')
+                line = [
+                    str(job[0]),  # id
+                    job[2],  # tool_id
+                    job[3],  # tool_version
+                    job[4],  # state
+                    str(job[5])  # create_time
+                ]
+                cline = unicodify('\t'.join(line) + '\n')
+                handle_job.write(cline)
             except Exception:
                 logging.warning("Unable to write out a 'handle_job' row. Ignoring the row.", exc_info=True)
                 continue
@@ -177,7 +180,7 @@ def main(argv):
     annotate('export_jobs_end')
 
     annotate('export_datasets_start', 'Exporting Datasets')
-    handle_datasets = open(REPORT_BASE + '.datasets.tsv', 'w')
+    handle_datasets = io.open(REPORT_BASE + '.datasets.tsv', 'w', encoding='utf-8')
     handle_datasets.write('\t'.join(('job_id', 'dataset_id', 'extension', 'file_size', 'param_name', 'type')) + '\n')
     for offset_start in range(last_job_sent, end_job_id, args.batch_size):
         logging.debug("Processing %s:%s", offset_start, min(end_job_id, offset_start + args.batch_size))
@@ -241,18 +244,16 @@ def main(argv):
                 continue
 
             try:
-                handle_datasets.write(str(job[0]))
-                handle_datasets.write('\t')
-                handle_datasets.write(str(hda_id))
-                handle_datasets.write('\t')
-                handle_datasets.write(str(hdas[hda_id][1]))
-                handle_datasets.write('\t')
-                handle_datasets.write(round_to_2sd(datasets[dataset_id][0]))
-                handle_datasets.write('\t')
-                handle_datasets.write(str(job[2]))
-                handle_datasets.write('\t')
-                handle_datasets.write(str(filetype))
-                handle_datasets.write('\n')
+                line = [
+                    str(job[0]),  # Job ID
+                    str(hda_id),  # HDA ID
+                    str(hdas[hda_id][1]),  # Extension
+                    round_to_2sd(datasets[dataset_id][0]),  # File size
+                    job[2],  # Parameter name
+                    str(filetype)  # input/output
+                ]
+                cline = unicodify('\t'.join(line) + '\n')
+                handle_datasets.write(cline)
             except Exception:
                 logging.warning("Unable to write out a 'handle_datasets' row. Ignoring the row.", exc_info=True)
                 continue
@@ -260,7 +261,7 @@ def main(argv):
     annotate('export_datasets_end')
 
     annotate('export_metric_num_start', 'Exporting Metrics (Numeric)')
-    handle_metric_num = open(REPORT_BASE + '.metric_num.tsv', 'w')
+    handle_metric_num = io.open(REPORT_BASE + '.metric_num.tsv', 'w', encoding='utf-8')
     handle_metric_num.write('\t'.join(('job_id', 'plugin', 'name', 'value')) + '\n')
     for offset_start in range(last_job_sent, end_job_id, args.batch_size):
         logging.debug("Processing %s:%s", offset_start, min(end_job_id, offset_start + args.batch_size))
@@ -276,14 +277,15 @@ def main(argv):
                 continue
 
             try:
-                handle_metric_num.write(str(metric[0]))
-                handle_metric_num.write('\t')
-                handle_metric_num.write(metric[1])
-                handle_metric_num.write('\t')
-                handle_metric_num.write(metric[2])
-                handle_metric_num.write('\t')
-                handle_metric_num.write(str(metric[3]))
-                handle_metric_num.write('\n')
+                line = [
+                    str(metric[0]),  # job id
+                    metric[1],  # plugin
+                    metric[2],  # name
+                    str(metric[3])  # value
+                ]
+
+                cline = unicodify('\t'.join(line) + '\n')
+                handle_metric_num.write(cline)
             except Exception:
                 logging.warning("Unable to write out a 'handle_metric_num' row. Ignoring the row.", exc_info=True)
                 continue
@@ -303,7 +305,7 @@ def main(argv):
             os.unlink(REPORT_BASE + '.' + name + '.tsv')
 
     _times.append(('job_finish', time.time() - _start_time))
-    sha = hash_util.memory_bound_hexdigest(hash_util.sha256, REPORT_BASE + ".tar.gz")
+    sha = hash_util.memory_bound_hexdigest(hash_func=hash_util.sha256, path=REPORT_BASE + ".tar.gz")
     _times.append(('hash_finish', time.time() - _start_time))
 
     # Now serialize the individual report data.

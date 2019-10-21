@@ -53,10 +53,25 @@ class ToolsTestCase(api.ApiTestCase):
         assert "upload1" in tool_ids
 
     @skip_without_tool("cat1")
-    def test_search(self):
-        url = self._api_url("tools?q=cat")
-        get_response = get(url).json()
+    def test_search_cat(self):
+        url = self._api_url("tools")
+        payload = dict(q="concat")
+        get_response = get(url, payload).json()
         assert "cat1" in get_response
+
+    @skip_without_tool("trimmer")
+    def test_search_trimmer(self):
+        url = self._api_url("tools")
+        payload = dict(q="leading or trailing characters")
+        get_response = get(url, payload).json()
+        assert "trimmer" in get_response
+
+    @skip_without_tool("Grep1")
+    def test_search_grep(self):
+        url = self._api_url("tools")
+        payload = dict(q="Select lines that match an expression")
+        get_response = get(url, payload).json()
+        assert "Grep1" in get_response
 
     def test_no_panel_index(self):
         index = self._get("tools", data=dict(in_panel=False))
@@ -65,6 +80,15 @@ class ToolsTestCase(api.ApiTestCase):
         # returned.
         tool_ids = [_["id"] for _ in tools_index]
         assert "upload1" in tool_ids
+
+    @skip_without_tool("test_sam_to_bam_conversions")
+    def test_requirements(self):
+        requirements_response = self._get("tools/%s/requirements" % "test_sam_to_bam_conversions", admin=True)
+        self._assert_status_code_is_ok(requirements_response)
+        requirements = requirements_response.json()
+        assert len(requirements) == 1, requirements
+        requirement = requirements[0]
+        assert requirement['name'] == 'samtools', requirement
 
     @skip_without_tool("cat1")
     def test_show_repeat(self):
@@ -997,6 +1021,25 @@ class ToolsTestCase(api.ApiTestCase):
         for output in outputs:
             details = self.dataset_populator.get_history_dataset_details(history_id, dataset=output)
             assert details["state"] == "ok"
+
+    @skip_without_tool("qc_stdout")
+    @uses_test_history(require_new=False)
+    def test_qc_messages(self, history_id):
+        new_dataset1 = self.dataset_populator.new_dataset(history_id, content='123\n456\n789')
+        inputs = {
+            'input1': dataset_to_param(new_dataset1),
+            'quality': 3,
+        }
+        create = self._run("qc_stdout", history_id, inputs, wait_for_job=True, assert_ok=True)
+        assert "jobs" in create, create
+        job_id = create["jobs"][0]["id"]
+        details = self.dataset_populator.get_job_details(job_id, full=True).json()
+        assert "job_messages" in details, details
+        qc_message = details["job_messages"][0]
+        # assert qc_message["code_desc"] == "QC Metrics for Tool", qc_message
+        assert qc_message["desc"] == "QC: Matched on Quality of sample is 30%."
+        assert qc_message["match"] == "Quality of sample is 30%."
+        assert qc_message["error_level"] == 1.1
 
     @skip_without_tool("cat1")
     @uses_test_history(require_new=False)

@@ -9,6 +9,17 @@ scripts/scramble/archives
 .venv
 .venv3
 
+# Python build artifacts
+build
+dist
+lib/galaxy.egg-info
+.eggs
+
+# Generated static content
+lib/galaxy/web/framework/static/maps
+lib/galaxy/web/framework/static/scripts
+lib/galaxy/web/framework/static/style
+
 # Database stuff
 database/beaker_sessions
 database/citations
@@ -18,6 +29,7 @@ database/files
 database/jobs_directory
 database/job_working_directory
 database/pbs
+database/shed_tools
 database/test_errors
 database/tmp
 database/*.sqlite
@@ -72,6 +84,7 @@ job_metrics_conf.xml
 workflow_schedulers_conf.xml
 config/*
 config/plugins/interactive_environments/**/*.ini
+config/plugins/**/.cache
 !config/plugins
 static/welcome.html.*
 static/welcome.html
@@ -160,3 +173,6 @@ packages/*/*.egg-info
 .DS_Store
 *.rej
 *~
+
+# Plugin build artifacts -- TODO make this more generic as a part of the standard plugin interface
+config/plugins/visualizations/**/static/script.js

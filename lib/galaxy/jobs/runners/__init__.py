@@ -35,7 +35,8 @@ from galaxy.util import (
     ExecutionTimer,
     in_directory,
     ParamsWithSpecs,
-    shrink_stream_by_size
+    shrink_stream_by_size,
+    unicodify,
 )
 from galaxy.util.bunch import Bunch
 from galaxy.util.monitors import Monitors
@@ -131,6 +132,11 @@ class BaseJobRunner(object):
                 method(arg)
             except Exception:
                 log.exception("(%s) Unhandled exception calling %s" % (job_id, name))
+                if not isinstance(arg, JobState):
+                    job_state = JobState(job_wrapper=arg, job_destination={})
+                else:
+                    job_state = arg
+                self.work_queue.put((self.fail_job, job_state))
 
     # Causes a runner's `queue_job` method to be called from a worker thread
     def put(self, job_wrapper):
@@ -231,8 +237,8 @@ class BaseJobRunner(object):
                 stderr_file=stderr_file,
             )
         except Exception as e:
-            log.exception("(%s) Failure preparing job" % job_id)
-            job_wrapper.fail(str(e), exception=True)
+            log.exception("(%s) Failure preparing job", job_id)
+            job_wrapper.fail(unicodify(e), exception=True)
             return False
 
         if not job_wrapper.runner_command_line:
@@ -290,7 +296,7 @@ class BaseJobRunner(object):
         output_paths = {}
         for dataset_path in job_wrapper.get_output_fnames():
             path = dataset_path.real_path
-            if self.app.config.outputs_to_working_directory:
+            if job_wrapper.get_destination_configuration("outputs_to_working_directory", False):
                 path = dataset_path.false_path
             output_paths[dataset_path.dataset_id] = path
 
@@ -413,7 +419,8 @@ class BaseJobRunner(object):
             compute_tmp_directory = job_wrapper.tmp_directory()
 
         tool = job_wrapper.tool
-        tool_info = ToolInfo(tool.containers, tool.requirements, tool.requires_galaxy_python_environment, tool.docker_env_pass_through)
+        guest_ports = [ep.get('port') for ep in getattr(job_wrapper, 'interactivetools', [])]
+        tool_info = ToolInfo(tool.containers, tool.requirements, tool.requires_galaxy_python_environment, tool.docker_env_pass_through, guest_ports=guest_ports)
         job_info = JobInfo(
             compute_working_directory,
             compute_tool_directory,
@@ -423,11 +430,14 @@ class BaseJobRunner(object):
         )
 
         destination_info = job_wrapper.job_destination.params
-        return self.app.container_finder.find_container(
+        container = self.app.container_finder.find_container(
             tool_info,
             destination_info,
             job_info
         )
+        if container:
+            job_wrapper.set_container(container)
+        return container
 
     def _handle_runner_state(self, runner_state, job_state):
         try:
@@ -465,8 +475,12 @@ class BaseJobRunner(object):
             job = job_state.job_wrapper.get_job()
             exit_code = job_state.read_exit_code()
 
-            tool_stdout_path = os.path.join(job_wrapper.working_directory, "tool_stdout")
-            tool_stderr_path = os.path.join(job_wrapper.working_directory, "tool_stderr")
+            outputs_directory = os.path.join(job_wrapper.working_directory, "outputs")
+            if not os.path.exists(outputs_directory):
+                outputs_directory = job_wrapper.working_directory
+
+            tool_stdout_path = os.path.join(outputs_directory, "tool_stdout")
+            tool_stderr_path = os.path.join(outputs_directory, "tool_stderr")
             # TODO: These might not exist for running jobs at the upgrade to 19.XX, remove that
             # assumption in 20.XX.
             if os.path.exists(tool_stdout_path):
@@ -571,7 +585,7 @@ class JobState(object):
                     prefix = "(%s)" % self.job_wrapper.get_id_tag()
                 else:
                     prefix = "(%s/%s)" % (self.job_wrapper.get_id_tag(), self.job_id)
-                log.debug("%s Unable to cleanup %s: %s" % (prefix, file, str(e)))
+                log.debug("%s Unable to cleanup %s: %s" % (prefix, file, unicodify(e)))
 
 
 class AsynchronousJobState(JobState):
@@ -735,7 +749,7 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
                 if which_try == self.app.config.retry_job_output_collection:
                     stdout = ''
                     stderr = job_state.runner_states.JOB_OUTPUT_NOT_RETURNED_FROM_CLUSTER
-                    log.error('(%s/%s) %s: %s' % (galaxy_id_tag, external_job_id, stderr, str(e)))
+                    log.error('(%s/%s) %s: %s', galaxy_id_tag, external_job_id, stderr, unicodify(e))
                     collect_output_success = False
                 else:
                     time.sleep(1)

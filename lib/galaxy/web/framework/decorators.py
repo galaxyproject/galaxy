@@ -239,7 +239,7 @@ def expose_api(func, to_json=True, user_required=True, user_or_session_required=
             # error if anon and no session
             if not trans.galaxy_session and user_or_session_required:
                 return __api_error_response(trans, status_code=403, err_code=error_codes.USER_NO_API_KEY,
-                                            err_msg="API authentication required for this request")
+                                            err_msg="API authentication or Galaxy session required for this request")
 
         if trans.request.body:
             try:

@@ -4,6 +4,7 @@ import logging
 import operator
 import os
 import re
+from collections import OrderedDict
 from tempfile import NamedTemporaryFile
 
 import galaxy.model
@@ -27,7 +28,7 @@ from galaxy.tool_util.parser.output_collection_def import (
     ToolProvidedMetadataDatasetCollection,
 )
 from galaxy.util import (
-    odict
+    unicodify
 )
 
 DATASET_ID_TOKEN = "DATASET_ID"
@@ -193,7 +194,7 @@ class JobContext(ModelPersistenceContext):
         return self.app.tag_handler
 
     def find_files(self, output_name, collection, dataset_collectors):
-        filenames = odict.odict()
+        filenames = OrderedDict()
         for discovered_file in discover_files(output_name, self.tool_provided_metadata, dataset_collectors, self.job_working_directory, collection):
             filenames[discovered_file.path] = discovered_file
         return filenames
@@ -266,7 +267,7 @@ def collect_primary_datasets(job_context, output, input_ext):
         dataset_collectors = [DEFAULT_DATASET_COLLECTOR]
         if name in tool.outputs:
             dataset_collectors = [dataset_collector(description) for description in tool.outputs[name].dataset_collector_descriptions]
-        filenames = odict.odict()
+        filenames = OrderedDict()
         for discovered_file in discover_files(name, job_context.tool_provided_metadata, dataset_collectors, job_working_directory, outdata):
             filenames[discovered_file.path] = discovered_file
         for filename_index, (filename, discovered_file) in enumerate(filenames.items()):
@@ -283,7 +284,7 @@ def collect_primary_datasets(job_context, output, input_ext):
                 primary_output_assigned = True
                 continue
             if name not in primary_datasets:
-                primary_datasets[name] = odict.odict()
+                primary_datasets[name] = OrderedDict()
             visible = fields_match.visible
             ext = fields_match.ext
             if ext == "input":
@@ -512,7 +513,7 @@ def collect_extra_files(object_store, dataset, job_working_directory):
                     preserve_symlinks=True
                 )
     except Exception as e:
-        log.debug("Error in collect_associated_files: %s" % (e))
+        log.debug("Error in collect_associated_files: %s", unicodify(e))
 
     # Handle composite datatypes of auto_primary_file type
     if dataset.datatype.composite_type == 'auto_primary_file' and not dataset.has_data():
@@ -523,4 +524,4 @@ def collect_extra_files(object_store, dataset, job_working_directory):
                 object_store.update_from_file(dataset.dataset, file_name=temp_fh.name, create=True)
                 dataset.set_size()
         except Exception as e:
-            log.warning('Unable to generate primary composite file automatically for %s: %s', dataset.dataset.id, e)
+            log.warning('Unable to generate primary composite file automatically for %s: %s', dataset.dataset.id, unicodify(e))

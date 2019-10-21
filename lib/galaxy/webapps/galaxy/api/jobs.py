@@ -17,7 +17,7 @@ from galaxy.web import (
     expose_api,
     expose_api_anonymous,
 )
-from galaxy.web.base.controller import (
+from galaxy.webapps.base.controller import (
     BaseAPIController,
     UsesVisualizationMixin
 )
@@ -182,6 +182,8 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
         has_duplicate_inputs = False
         for job_input_assoc in job.input_datasets:
             input_dataset_instance = job_input_assoc.dataset
+            if input_dataset_instance is None:
+                continue
             if input_dataset_instance.get_total_size() == 0:
                 has_empty_inputs = True
             input_instance_id = input_dataset_instance.id

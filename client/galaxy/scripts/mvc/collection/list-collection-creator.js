@@ -59,7 +59,7 @@ var DatasetCollectionElementView = Backbone.View.extend(BASE_MVC.LoggableMixin).
         [
             '<a class="name" title="',
             _l("Click to rename"),
-            '" href="javascript:void(0)">',
+            '" href="javascript:void(0)" role="button">',
             "<%- element.name %>",
             "</a>",
             '<button class="discard btn btn-sm" title="',
@@ -249,7 +249,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
         /** add ids to dataset objs in initial list if none */
         _ensureElementIds: function() {
             this.workingElements.forEach(element => {
-                if (!element.hasOwnProperty("id")) {
+                if (!Object.prototype.hasOwnProperty.call(element, "id")) {
                     element.id = _.uniqueId();
                 }
             });
@@ -296,7 +296,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
             var existingNames = {};
             this.workingElements.forEach(element => {
                 var currName = element.name;
-                while (existingNames.hasOwnProperty(currName)) {
+                while (Object.prototype.hasOwnProperty.call(existingNames, currName)) {
                     currName = `${element.name} (${counter})`;
                     counter += 1;
                     if (counter >= SAFETY) {
@@ -522,9 +522,9 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
         createList: function(name) {
             if (!this.workingElements.length) {
                 var message = `${_l("No valid elements for final list")}. `;
-                message += `<a class="cancel-create" href="javascript:void(0);">${_l("Cancel")}</a> `;
+                message += `<a class="cancel-create" href="javascript:void(0);" role="button">${_l("Cancel")}</a> `;
                 message += _l("or");
-                message += ` <a class="reset" href="javascript:void(0);">${_l("start over")}</a>.`;
+                message += ` <a class="reset" href="javascript:void(0);" role="button">${_l("start over")}</a>.`;
                 this._showAlert(message);
                 return;
             }
@@ -778,11 +778,11 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
             header: _.template(
                 [
                     '<div class="main-help well clear">',
-                    '<a class="more-help" href="javascript:void(0);">',
+                    '<a class="more-help" href="javascript:void(0);" role="button">',
                     _l("More help"),
                     "</a>",
                     '<div class="help-content">',
-                    '<a class="less-help" href="javascript:void(0);">',
+                    '<a class="less-help" href="javascript:void(0);" role="button">',
                     _l("Less"),
                     "</a>",
                     "</div>",
@@ -801,13 +801,13 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
             middle: _.template(
                 [
                     '<div class="collection-elements-controls">',
-                    '<a class="reset" href="javascript:void(0);" ',
+                    '<a class="reset" href="javascript:void(0);" role="button" ',
                     'title="',
                     _l("Undo all reordering and discards"),
                     '">',
                     _l("Start over"),
                     "</a>",
-                    '<a class="clear-selected" href="javascript:void(0);" ',
+                    '<a class="clear-selected" href="javascript:void(0);" role="button" ',
                     'title="',
                     _l("De-select all selected datasets"),
                     '">',
@@ -852,10 +852,10 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
                     ' <span class="caret"></span>',
                     "</button>",
                     '<div class="dropdown-menu" role="menu">',
-                    '<a class="dropdown-item" href="#">',
+                    '<a class="dropdown-item" href="javascript:void(0)" role="button">',
                     _l("Create a <i>single</i> pair"),
                     "</a>",
-                    '<a class="dropdown-item" href="#">',
+                    '<a class="dropdown-item" href="javascript:void(0)" role="button">',
                     _l("Create a list of <i>unpaired</i> datasets"),
                     "</a>",
                     "</div>",
@@ -953,7 +953,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
                     '<li class="no-elements-left-message">',
                     _l("No elements left! "),
                     _l("Would you like to "),
-                    '<a class="reset" href="javascript:void(0)">',
+                    '<a class="reset" href="javascript:void(0)" role="button">',
                     _l("start over"),
                     "</a>?",
                     "</li>"
@@ -980,7 +980,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
                     _l("At least one element is needed for the collection"),
                     ". ",
                     _l("You may need to "),
-                    '<a class="cancel-create" href="javascript:void(0)">',
+                    '<a class="cancel-create" href="javascript:void(0)" role="button">',
                     _l("cancel"),
                     "</a> ",
                     _l("and reselect new elements"),

@@ -7,7 +7,7 @@ PROJECT_OWNER = PROJECT_USERAME = "galaxyproject"
 PROJECT_URL = "https://github.com/galaxyproject/galaxy"
 PROJECT_AUTHOR = 'Galaxy Project and Community'
 PROJECT_DESCRIPTION = 'Galaxy Datatype Framework and Datatypes'
-PROJECT_EMAIL = 'jmchilton@gmail.com'
+PROJECT_EMAIL = 'galaxy-committers@lists.galaxyproject.org'
 RAW_CONTENT_URL = "https://raw.github.com/%s/%s/master/" % (
     PROJECT_USERAME, PROJECT_NAME
 )

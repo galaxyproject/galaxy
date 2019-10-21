@@ -24,7 +24,8 @@ from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     get_headers,
-    iter_headers
+    iter_headers,
+    validate_tabular,
 )
 from galaxy.util import compression_utils
 from . import dataproviders
@@ -129,7 +130,7 @@ class TabularData(data.Text):
             out.append('</table>')
             out = "".join(out)
         except Exception as exc:
-            out = "Can't create peek %s" % str(exc)
+            out = "Can't create peek: %s" % util.unicodify(exc)
         return out
 
     def make_html_peek_header(self, dataset, skipchars=None, column_names=None, column_number_format='%s', column_parameter_alias=None, **kwargs):
@@ -175,7 +176,7 @@ class TabularData(data.Text):
             out.append('</tr>')
         except Exception as exc:
             log.exception('make_html_peek_header failed on HDA %s', dataset.id)
-            raise Exception("Can't create peek header %s" % str(exc))
+            raise Exception("Can't create peek header: %s" % util.unicodify(exc))
         return "".join(out)
 
     def make_html_peek_rows(self, dataset, skipchars=None, **kwargs):
@@ -206,7 +207,7 @@ class TabularData(data.Text):
                         out.append('</tr>')
         except Exception as exc:
             log.exception('make_html_peek_rows failed on HDA %s', dataset.id)
-            raise Exception("Can't create peek rows %s" % str(exc))
+            raise Exception("Can't create peek rows: %s" % util.unicodify(exc))
         return "".join(out)
 
     def display_peek(self, dataset):
@@ -730,6 +731,13 @@ class BaseVcf(Tabular):
         if exit_code != 0:
             raise Exception("Error merging VCF files: %s" % stderr)
 
+    def validate(self, dataset, **kwd):
+        def validate_row(row):
+            if len(row) < 8:
+                raise Exception("Not enough columns in row %s" % row.join("\t"))
+        validate_tabular(dataset.file_name, sep='\t', validate_row=validate_row, comment_designator="#")
+        return data.DatatypeValidation.validated()
+
     # Dataproviders
     @dataproviders.decorators.dataprovider_factory('genomic-region',
                                                    dataproviders.dataset.GenomicRegionDataProvider.settings)
@@ -780,7 +788,7 @@ class VcfGz(BaseVcf, binary.Binary):
         try:
             pysam.tabix_index(dataset.file_name, index=index_file.file_name, preset='vcf', force=True)
         except Exception as e:
-            raise Exception('Error setting VCF.gz metadata: %s' % (str(e)))
+            raise Exception('Error setting VCF.gz metadata: %s' % (util.unicodify(e)))
         dataset.metadata.tabix_index = index_file
 
 

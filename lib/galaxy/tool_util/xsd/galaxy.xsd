@@ -47,7 +47,9 @@ A ``data_source`` tool contains a few more relevant attributes.
         <xs:element name="macros" type="Macros" minOccurs="0"/>
         <xs:element name="edam_topics" type="EdamTopics" minOccurs="0"/>
         <xs:element name="edam_operations" type="EdamOperations" minOccurs="0"/>
+        <xs:element name="xrefs" type="xrefs" minOccurs="0" />
         <xs:element name="requirements" type="Requirements" minOccurs="0"/>
+        <xs:element name="entry_points" type="EntryPoints" minOccurs="0" maxOccurs="1" />
         <xs:element name="description" type="xs:string" minOccurs="0">
           <xs:annotation gxdocs:best_practices="tool-descriptions">
             <xs:documentation xml:lang="en"><![CDATA[The value is displayed in
@@ -186,7 +188,7 @@ automatically if profile is set to any version newer than ``16.01``, such as
         <xs:annotation>
           <xs:documentation xml:lang="en">This string specifies the minimum Python
 version that is able to fill the Cheetah sections of the tool. If unset defaults
-to 2.7 if the profile is older than 19.01, otherwise defaults to 3.5. Galaxy will 
+to 2.7 if the profile is older than 19.01, otherwise defaults to 3.5. Galaxy will
 attempt to convert Python statements in Cheetah sections using [future](http://python-future.org/)
 if Galaxy is run on Python 3 and ``python_template_version`` is below 3.</xs:documentation>
         </xs:annotation>
@@ -222,6 +224,74 @@ For more information, see https://planemo.readthedocs.io/en/latest/writing_advan
       <xs:element name="token" type="xs:anyType" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="xml" type="xs:anyType" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="EntryPoints">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+
+This is a container tag set for the ``entry_point`` tag that contains ``port`` and ``url`` tags
+described in greater detail below. ``entry_point``s describe InteractiveTool entry points
+to a tool.
+
+]]></xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="entry_point" type="EntryPoint" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="EntryPoint" mixed="true">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+
+This tag set is contained within the ``<entry_point>`` tag set. Access to entry point
+ports and urls are included in this tag set. These are used by InteractiveTools
+to provide access to graphical tools in real-time.
+
+```xml
+<entry_points>
+  <entry_point name="Example name">
+    <port>80</port>
+    <url>landing/${template_enabled}/index.html</url>
+  </entry_point>
+</entry_points>
+```
+
+]]></xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="port" type="EntryPointPort" minOccurs="1" maxOccurs="1"/>
+      <xs:element name="url" type="EntryPointURL" minOccurs="0" maxOccurs="1"/>
+    </xs:sequence>
+        <xs:attribute name="name" type="xs:string" use="required">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">This value defines the name of the entry point.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="requires_domain" type="PermissiveBoolean" default="false">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">This value declares if domain-based proxying is required. Default is False. Currently only works when True.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="EntryPointPort" mixed="true">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+
+This tag set is contained within the ``<entry_point>`` tag set. It contains the entry port.
+
+]]></xs:documentation>
+    </xs:annotation>
+  </xs:complexType>
+  <xs:complexType name="EntryPointURL" mixed="true">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+
+This tag set is contained within the ``<entry_point>`` tag set. It contains the entry URL.
+
+]]></xs:documentation>
+    </xs:annotation>
   </xs:complexType>
 
   <xs:complexType name="ToolAction">
@@ -715,6 +785,7 @@ specified and instead a series of assertions is made about the output.
             <!-- &#009; is XML escape code for tab -->
             <has_line line="chr7&#009;127471195&#009;127489808" />
             <has_n_columns n="3" />
+            <has_n_lines n="3" />
         </assert_contents>
     </output>
 </test>
@@ -1566,7 +1637,7 @@ many of the default assertion tags that come with Galaxy and examples of each
 can be found below.
 
 The implementation of these tags are simply Python functions defined in the
-[/lib/galaxy/tools/verify/asserts](https://github.com/galaxyproject/galaxy/tree/dev/lib/galaxy/tools/verify/asserts)
+[/lib/galaxy/tool_util/verify/asserts](https://github.com/galaxyproject/galaxy/tree/dev/lib/galaxy/tool_util/verify/asserts)
 module.
 ]]>
       </xs:documentation>
@@ -1598,6 +1669,12 @@ module.
       <xs:element name="has_line" type="xs:anyType">
         <xs:annotation>
           <xs:documentation><![CDATA[Asserts a line matching the specified string (``line``) appears in the output (e.g. ``<has_line line="A full example line." />``).]]>
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="has_n_lines" type="xs:anyType">
+        <xs:annotation>
+          <xs:documentation><![CDATA[Asserts that an output contains ``n`` lines, e.g. ``<has_n_lines n="3" />``.]]>
           </xs:documentation>
         </xs:annotation>
       </xs:element>
@@ -1787,7 +1864,7 @@ statement. A good example tool that demonstrates many conditional parameters is
     </param>
     <when value="tsv">
         <param name="input_table" type="data" format="tabular" label="Tabular File" argument="--input-fp"/>
-        <param name="process_obs_metadata" type="select" label="Process metadata associated with observations when converting" argument="--process-obs-metadata">
+        <param argument="--process-obs-metadata" type="select" label="Process metadata associated with observations when converting">
             <option value="" selected="true">Do Not process metadata</option>
             <option value="taxonomy">taxonomy</option>
             <option value="naive">naive</option>
@@ -2352,9 +2429,10 @@ rendered as a one line text box (if ``false``, the default) or a multi-line text
 
 If the parameter reflects just one command line argument of a certain tool, this
 tag should be set to that particular argument. It is rendered in parenthesis
-after the help section, and it will create the name attribute from the argument
-attribute by stripping the dashes (e.g. if ``argument="--sensitive"`` then
-``name="sensitive"`` is implicit).
+after the help section, and it will create the name attribute (if not given explicitly)
+from the argument attribute by stripping leading dashes and replacing all remaining
+dashes by underscores (e.g. if ``argument="--long-parameter"`` then
+``name="long_parameter"`` is implicit).
 
 ]]></xs:documentation>
           </xs:annotation>
@@ -3216,7 +3294,7 @@ validators is in the ``validator_types`` dictionary in
 [/lib/galaxy/tools/parameters/validation.py](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/tools/parameters/validation.py).
 Valid values include: ``expression``, ``regex``, ``in_range``, ``length``,
 ``metadata``, ``unspecified_build``, ``no_options``, ``empty_field``,
-``dataset_metadata_in_file``, 
+``dataset_metadata_in_file``,
 ``dataset_metadata_in_data_table``, ``dataset_metadata_not_in_data_table``,
 ``value_in_data_table``, ``value_not_in_data_table``,
 ``dataset_ok_validator``, ``dataset_metadata_in_range``]]></xs:documentation>
@@ -3495,7 +3573,7 @@ is the ``none`` preset.</xs:documentation>
   <xs:complexType name="Filter">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[Optionally contained within an
-``<options>`` tag set - filter out values obtained from a locally stored file (e.g.
+``<options>`` tag set - modify (e.g. remove, add, sort, ...) the list of values obtained from a locally stored file (e.g.
 a tool data table) or a dataset in the current history.
 
 ### Examples
@@ -3598,19 +3676,39 @@ demonstrates splitting up strings into multiple values.
     <xs:attribute name="type" type="FilterType" use="required">
       <xs:annotation>
         <xs:documentation xml:lang="en"><![CDATA[
+Currently the following filters are defined:
+
+* ``static_value`` filter options for which the entry in a given ``column`` of the referenced file based on equality to the ``value`` attribute of the filter. 
+* ``regexp`` similar to the ``static_value`` filter, but checks if the regular expression given by ``value`` matches the entry.
+* ``param_value`` filter options for which the entry in a given ``column`` of the referenced file based on properties of another input parameter specified by ``ref``. This property is by default the value of the parameter, but also the values of another attribute (``ref_attribute``) of the parameter can be used, e.g. the extension of a data input.
+* ``data_meta`` If a ``column`` is given options are filtered for which the entry in this column ``column`` is equal to metadata of another input parameter specified by ``ref``. 
+If no ``column`` is given the metadata value of the referenced input is added to the options list (in this case the corresponding ``options`` tag must not have the ``from_data_table`` or ``from_dataset`` attributes). 
+In both cases the desired metadata is selected by ``key``.
+
+The above filters can be inverted by setting ``keep`` to true.
+
+* ``add_value``: add an option with a given ``name`` and ``value`` to the options. By default the new option is appended, with ``index`` the insertion position can be specified.
+* ``remove_value``: remove a value from the options. Either specified explicitly with ``value``, the value of another input specifified with ``ref``, or the metatdata ``key`` of another input ``meta_ref``.
+* ``unique_value``: remove options that have duplicate entries in the given ``column``.
+* ``sort_by``: sort options by the entries of a given ``column``.
+* ``multiple_splitter``: split the entries of the specified ``column``(s) in the referenced file using a ``separator``. Thereby the number of columns is increased. 
+
+Note that filters that are applyed after one of the latter two filters must not refer to 
+
 These values are defined in the module
 [/lib/galaxy/tools/parameters/dynamic_options.py](https://github.com/galaxyproject/galaxy/blob/master/lib/galaxy/tools/parameters/dynamic_options.py)
-in the ``filter_types`` dictionary. Currently defined values are: ``data_meta``,
-``param_value``, ``static_value``, ``unique_value``, ``multiple_splitter``,
-``attribute_value_splitter``, ``add_value``, ``remove_value``, and
-``sort_by``]]></xs:documentation>
+in the ``filter_types`` dictionary. 
+
+Deprecated filter types:
+
+* ``attribute_value_splitter`` 
+        ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="column" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Column targeted by this filter - this
-attribute is unused and invalid if ``type`` is ``add_value`` or ``remove_value``.
-This can be a column index or a column name.</xs:documentation>
+        <xs:documentation xml:lang="en">Column targeted by this filter given as column index or a column name. Invalid if ``type`` is ``add_value`` or ``remove_value``.
+</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="name" type="xs:string">
@@ -3652,7 +3750,7 @@ only used if ``multiple`` is set to ``true``.]]></xs:documentation>
       <xs:annotation>
         <xs:documentation xml:lang="en">If ``true``, keep columns matching the
 value, if ``false`` discard columns matching the value. Used when ``type`` is
-either ``static_value`` or ``param_value``.</xs:documentation>
+either ``static_value``, ``regexp`` or ``param_value``.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="value" type="xs:string">
@@ -3660,7 +3758,7 @@ either ``static_value`` or ``param_value``.</xs:documentation>
         <xs:documentation xml:lang="en">Target value of the operations - has
 slightly different meanings depending on ``type``. For instance when ``type`` is
 ``add_value`` it is the value to add to the list and when ``type`` is
-``static_value`` it is the value compared against.</xs:documentation>
+``static_value`` or ``regexp`` it is the value compared against.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="ref_attribute" type="xs:string">
@@ -4582,6 +4680,11 @@ variable instead of shell variable.
 define.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
+        <xs:attribute name="strip" type="PermissiveBoolean" default="false">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Whether to strip leading and trailing whitespace from the calculated value before exporting the environment variable.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
       </xs:extension>
     </xs:simpleContent>
   </xs:complexType>
@@ -5352,6 +5455,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="data_source"/>
       <xs:enumeration value="manage_data"/>
+      <xs:enumeration value="interactive"/>
       <xs:enumeration value="expression"/>
     </xs:restriction>
   </xs:simpleType>
@@ -5432,6 +5536,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
       <xs:enumeration value="data_meta"/>
       <xs:enumeration value="param_value"/>
       <xs:enumeration value="static_value"/>
+      <xs:enumeration value="regexp"/>
       <xs:enumeration value="unique_value"/>
       <xs:enumeration value="multiple_splitter"/>
       <xs:enumeration value="add_value"/>
@@ -5491,6 +5596,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
       <xs:enumeration value="fatal"/>
       <xs:enumeration value="warning"/>
       <xs:enumeration value="log"/>
+      <xs:enumeration value="qc"/>
     </xs:restriction>
   </xs:simpleType>
   <xs:simpleType name="RangeType">
@@ -5581,14 +5687,60 @@ A tool can have any number of EDAM operation references.
 ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
-        <xs:element name="edam_operation" minOccurs="0" maxOccurs="unbounded">
-          <xs:simpleType>
-            <xs:restriction base="xs:string">
-              <xs:pattern value="operation_[0-9]{4}"></xs:pattern>
-            </xs:restriction>
-          </xs:simpleType>
-        </xs:element>
-      </xs:sequence>
-    </xs:complexType>
+      <xs:element name="edam_operation" minOccurs="0" maxOccurs="unbounded">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:pattern value="operation_[0-9]{4}"></xs:pattern>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="xrefs">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Container tag set for the ``<xref>`` tags.
+A tool can refer multiple reference IDs.
+	
+```xml
+   <!-- Example: this tool is seqtk -->
+   <xrefs>
+	<xref type="bio.tools">seqtk</xref>
+   </xrefs>
+   <!-- https://bio.tools/seqtk -->
+```
+
+]]></xs:documentation>
+    </xs:annotation>
+      <xs:sequence>
+        <xs:element name="xref" type="xref" minOccurs="0" maxOccurs="unbounded">
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="xref">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">The ``xref`` element specifies reference
+information according to a catalog.</xs:documentation>
+    </xs:annotation>
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="type" type="xrefType" use="required">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Type of reference - currently ``bio.tools``
+is the only supported options.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:simpleType name="xrefType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Type of Reference.</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="bio.tools"/>
+      <!--xs:enumeration value="whatelse"/-->
+    </xs:restriction>
+  </xs:simpleType>
 
 </xs:schema>

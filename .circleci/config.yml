@@ -139,9 +139,6 @@ jobs:
     <<: *set_workdir
     steps:
       - *restore_repo_cache
-      - run: sudo apt-get update
-      # For uwsgi
-      - run: sudo apt-get install -y libpython3.5-dev
       - *install_tox
       - run: tox -e py35-first_startup
   validate_test_tools:
@@ -191,6 +188,7 @@ jobs:
       - run: cd client && yarn install --frozen-lockfile
       - *save_yarn_cache
       - run: cd client && yarn run eslint
+      - run: cd client && yarn run prettier-check
 workflows:
   version: 2
   get_code_and_test:

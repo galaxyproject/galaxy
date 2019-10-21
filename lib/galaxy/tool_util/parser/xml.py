@@ -3,14 +3,13 @@ import re
 import sys
 import traceback
 import uuid
+from collections import OrderedDict
 from math import isinf
 
 import packaging.version
 
 from galaxy.tool_util.deps import requirements
 from galaxy.util import string_as_bool, xml_text, xml_to_string
-from galaxy.util.odict import odict
-from .error_level import StdioErrorLevel
 from .interface import (
     InputSource,
     PageSource,
@@ -18,8 +17,6 @@ from .interface import (
     TestCollectionDef,
     TestCollectionOutputDef,
     ToolSource,
-    ToolStdioExitCode,
-    ToolStdioRegex,
 )
 from .output_actions import ToolOutputActionGroup
 from .output_collection_def import dataset_collector_descriptions_from_elem
@@ -29,9 +26,12 @@ from .output_objects import (
     ToolOutputCollection,
     ToolOutputCollectionStructure
 )
-from .util import (
+from .stdio import (
     aggressive_error_checks,
     error_on_exit_code,
+    StdioErrorLevel,
+    ToolStdioExitCode,
+    ToolStdioRegex,
 )
 
 
@@ -95,6 +95,12 @@ class XmlToolSource(ToolSource):
             return []
         return [edam_topic.text for edam_topic in edam_topics.findall("edam_topic")]
 
+    def parse_xrefs(self):
+        xrefs = self.root.find("xrefs")
+        if xrefs is None:
+            return []
+        return [dict(value=xref.text.strip(), reftype=xref.attrib['type']) for xref in xrefs.findall("xref") if xref.get("type")]
+
     def parse_description(self):
         return xml_text(self.root, "description")
 
@@ -135,6 +141,7 @@ class XmlToolSource(ToolSource):
             definition = {
                 "name": environment_variable_el.get("name"),
                 "template": environment_variable_el.text,
+                "strip": string_as_bool(environment_variable_el.get("strip", False)),
             }
             environment_variables.append(
                 definition
@@ -191,9 +198,27 @@ class XmlToolSource(ToolSource):
         parallelism = self.root.find("parallelism")
         parallelism_info = None
         if parallelism is not None and parallelism.get("method"):
-            from galaxy.jobs import ParallelismInfo
             return ParallelismInfo(parallelism)
         return parallelism_info
+
+    def parse_interactivetool(self):
+        interactivetool_el = self.root.find("entry_points")
+        rtt = []
+        if interactivetool_el is None:
+            return rtt
+        for ep_el in interactivetool_el.findall("entry_point"):
+            port = ep_el.find("port")
+            assert port is not None, ValueError('A port is required for InteractiveTools')
+            port = port.text.strip()
+            url = ep_el.find("url")
+            if url is not None:
+                url = url.text.strip()
+            name = ep_el.get('name', None)
+            if name:
+                name = name.strip()
+            requires_domain = string_as_bool(ep_el.attrib.get("requires_domain", False))
+            rtt.append(dict(port=port, url=url, name=name, requires_domain=requires_domain))
+        return rtt
 
     def parse_hidden(self):
         hidden = xml_text(self.root, "hidden")
@@ -215,7 +240,6 @@ class XmlToolSource(ToolSource):
         for option_elem in root.findall("options"):
             if key in option_elem.attrib:
                 return string_as_bool(option_elem.get(key))
-
         return default
 
     @property
@@ -255,12 +279,12 @@ class XmlToolSource(ToolSource):
 
     def parse_outputs(self, tool):
         out_elem = self.root.find("outputs")
-        outputs = odict()
-        output_collections = odict()
+        outputs = OrderedDict()
+        output_collections = OrderedDict()
         if out_elem is None:
             return outputs, output_collections
 
-        data_dict = odict()
+        data_dict = OrderedDict()
 
         def _parse(data_elem, **kwds):
             output_def = self._parse_output(data_elem, tool, **kwds)
@@ -949,6 +973,8 @@ class StdioParser(object):
             if err_level:
                 if (re.search("log", err_level, re.IGNORECASE)):
                     return_level = StdioErrorLevel.LOG
+                elif (re.search("qc", err_level, re.IGNORECASE)):
+                    return_level = StdioErrorLevel.QC
                 elif (re.search("warning", err_level, re.IGNORECASE)):
                     return_level = StdioErrorLevel.WARNING
                 elif (re.search("fatal_oom", err_level, re.IGNORECASE)):
@@ -1092,3 +1118,22 @@ class XmlInputSource(InputSource):
             case_page_source = XmlPageSource(case_elem)
             sources.append((value, case_page_source))
         return sources
+
+
+class ParallelismInfo(object):
+    """
+    Stores the information (if any) for running multiple instances of the tool in parallel
+    on the same set of inputs.
+    """
+
+    def __init__(self, tag):
+        self.method = tag.get('method')
+        if isinstance(tag, dict):
+            items = tag.items()
+        else:
+            items = tag.attrib.items()
+        self.attributes = dict([item for item in items if item[0] != 'method'])
+        if len(self.attributes) == 0:
+            # legacy basic mode - provide compatible defaults
+            self.attributes['split_size'] = 20
+            self.attributes['split_mode'] = 'number_of_parts'

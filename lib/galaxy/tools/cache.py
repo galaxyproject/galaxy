@@ -1,13 +1,9 @@
 import logging
 import os
-from threading import (
-    local,
-    Lock,
-)
+from collections import defaultdict
+from threading import Lock
 
-from sqlalchemy import inspect
-from sqlalchemy.orm.exc import DetachedInstanceError
-
+from galaxy.util import unicodify
 from galaxy.util.hash_util import md5_hash_file
 
 log = logging.getLogger(__name__)
@@ -56,7 +52,7 @@ class ToolCache(object):
                     if tool_id in self._new_tool_ids:
                         self._new_tool_ids.remove(tool_id)
         except Exception as e:
-            log.debug("Exception while checking tools to remove from cache: %s" % e)
+            log.debug("Exception while checking tools to remove from cache: %s", unicodify(e))
             # If by chance the file is being removed while calculating the hash or modtime
             # we don't want the thread to die.
             pass
@@ -136,57 +132,36 @@ class ToolShedRepositoryCache(object):
 
     def __init__(self, app):
         self.app = app
-        self.cache = local()
+        # Contains ToolConfRepository objects created from shed_tool_conf.xml entries
+        self.local_repositories = []
+        # Repositories loaded from database
+        self.repositories = []
+        self.repos_by_tuple = defaultdict(list)
+        self.rebuild()
 
     def add_local_repository(self, repository):
-        self.cache.repositories.append(repository)
-
-    @property
-    def tool_shed_repositories(self):
-        try:
-            repositories = self.cache.repositories
-        except AttributeError:
-            self.rebuild()
-            repositories = self.cache.repositories
-        tool_shed_repositories = [repo for repo in repositories if isinstance(repo, self.app.install_model.ToolShedRepository)]
-        if tool_shed_repositories and inspect(tool_shed_repositories[0]).detached:
-            self.rebuild()
-            repositories = self.cache.repositories
-        return repositories
+        self.local_repositories.append(repository)
+        self.repos_by_tuple[(repository.tool_shed, repository.owner, repository.name)].append(repository)
 
     def rebuild(self):
-        self.cache.repositories = self.app.install_model.context.current.query(self.app.install_model.ToolShedRepository).all()
+        self.repositories = self.app.install_model.context.current.query(self.app.install_model.ToolShedRepository).all()
+        repos_by_tuple = defaultdict(list)
+        for repository in self.repositories + self.local_repositories:
+            repos_by_tuple[(repository.tool_shed, repository.owner, repository.name)].append(repository)
+        self.repos_by_tuple = repos_by_tuple
 
     def get_installed_repository(self, tool_shed=None, name=None, owner=None, installed_changeset_revision=None, changeset_revision=None, repository_id=None):
-        try:
-            return self._get_installed_repository(tool_shed=tool_shed,
-                                                  name=name,
-                                                  owner=owner,
-                                                  installed_changeset_revision=installed_changeset_revision,
-                                                  changeset_revision=changeset_revision,
-                                                  repository_id=repository_id)
-        except DetachedInstanceError:
-            self.rebuild()
-            return self._get_installed_repository(tool_shed=tool_shed,
-                                                  name=name,
-                                                  owner=owner,
-                                                  installed_changeset_revision=installed_changeset_revision,
-                                                  changeset_revision=changeset_revision,
-                                                  repository_id=repository_id)
-
-    def _get_installed_repository(self, tool_shed=None, name=None, owner=None, installed_changeset_revision=None, changeset_revision=None, repository_id=None):
         if repository_id:
-            repos = [repo for repo in self.tool_shed_repositories if repo.id == repository_id]
+            repos = [repo for repo in self.repositories if repo.id == repository_id]
             if repos:
                 return repos[0]
             else:
                 return None
-        repos = [repo for repo in self.tool_shed_repositories if repo.tool_shed == tool_shed and repo.owner == owner and repo.name == name]
-        if installed_changeset_revision:
-            repos = [repo for repo in repos if repo.installed_changeset_revision == installed_changeset_revision]
-        if changeset_revision:
-            repos = [repo for repo in repos if repo.changeset_revision == changeset_revision]
-        if repos:
-            return repos[0]
-        else:
-            return None
+        repos = self.repos_by_tuple[(tool_shed, owner, name)]
+        for repo in repos:
+            if installed_changeset_revision and repo.installed_changeset_revision != installed_changeset_revision:
+                continue
+            if changeset_revision and repo.changeset_revision != changeset_revision:
+                continue
+            return repo
+        return None

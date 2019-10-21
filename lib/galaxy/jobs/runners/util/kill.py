@@ -1,4 +1,5 @@
 import os
+import signal
 import subprocess
 from platform import system
 from time import sleep
@@ -55,7 +56,7 @@ def __kill_posix(pid):
             return False
 
     if __check_pid():
-        for sig in [15, 9]:
+        for sig in [signal.SIGTERM, signal.SIGKILL]:
             try:
                 os.killpg(pid, sig)
             except OSError:

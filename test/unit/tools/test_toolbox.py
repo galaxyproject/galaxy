@@ -9,17 +9,14 @@ import routes
 from six import string_types
 
 from galaxy import model
+from galaxy.config_watchers import ConfigWatchers
 from galaxy.model import tool_shed_install
 from galaxy.model.tool_shed_install import mapping
 from galaxy.tools import ToolBox
 from galaxy.tools.cache import ToolCache
-from galaxy.webapps.galaxy.config_watchers import ConfigWatchers
-from .test_tool_loader import (
-    SIMPLE_MACRO,
-    SIMPLE_TOOL_WITH_MACRO
-)
 from .test_toolbox_filters import mock_trans
 from ..tools_support import UsesApp, UsesTools
+from ..unittest_utils.sample_data import SIMPLE_MACRO, SIMPLE_TOOL_WITH_MACRO
 
 log = logging.getLogger(__name__)
 
@@ -67,7 +64,7 @@ class BaseToolBoxTestCase(unittest.TestCase, UsesApp, UsesTools):
         self.app.reindex_tool_search = self.__reindex
         itp_config = os.path.join(self.test_directory, "integrated_tool_panel.xml")
         self.app.config.integrated_tool_panel_config = itp_config
-        self.app.watchers = ConfigWatchers(self.app, start_thread=False)
+        self.app.watchers = ConfigWatchers(self.app)
         self._toolbox = None
         self.config_files = []
 
@@ -241,7 +238,7 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
 
     def _try_until_no_errors(self, f):
         e = None
-        for i in range(30):
+        for i in range(40):
             try:
                 f()
                 return
@@ -373,6 +370,15 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
 
         # Assert tools merged in tool panel.
         assert len(self.toolbox._tool_panel) == 1
+
+    def test_get_section_by_label(self):
+        self._add_config(
+            """<toolbox><section id="tid" name="Completely unrelated"><label id="lab1" text="Label 1" /><label id="lab2" text="Label 2" /></section></toolbox>""")
+        assert len(self.toolbox._tool_panel) == 1
+        section = self.toolbox._tool_panel['tid']
+        tool_panel_section_key, section_by_label = self.toolbox.get_section(section_id='nope', new_label='Completely unrelated', create_if_needed=True)
+        assert section_by_label is section
+        assert tool_panel_section_key == 'tid'
 
     def test_get_tool_id(self):
         self._init_tool()
@@ -552,6 +558,11 @@ class SimplifiedToolBox(ToolBox):
         app.tool_cache = ToolCache() if not hasattr(app, 'tool_cache') else app.tool_cache
         app.job_config.get_tool_resource_parameters = lambda tool_id: None
         app.config.update_integrated_tool_panel = True
+        app.config.appschema = {
+            'tool_dependency_dir': {
+                'default': 'dependencies',
+            }
+        }
         config_files = test_case.config_files
         tool_root_dir = test_case.test_directory
         super(SimplifiedToolBox, self).__init__(
@@ -561,9 +572,6 @@ class SimplifiedToolBox(ToolBox):
         )
         # Need to start thread now for new reload callback to take effect
         self.app.watchers.start()
-
-    def handle_panel_update(self, section_dict):
-        self.create_section(section_dict)
 
 
 def reload_callback(test_case):

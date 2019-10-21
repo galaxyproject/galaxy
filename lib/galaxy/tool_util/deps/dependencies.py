@@ -12,7 +12,7 @@ class AppInfo(object):
         outputs_to_working_directory=False,
         container_image_cache_path=None,
         library_import_dir=None,
-        enable_beta_mulled_containers=False,
+        enable_mulled_containers=False,
         containers_resolvers_config_file=None,
         involucro_path=None,
         involucro_auto_init=True,
@@ -24,7 +24,7 @@ class AppInfo(object):
         self.outputs_to_working_directory = outputs_to_working_directory
         self.container_image_cache_path = container_image_cache_path
         self.library_import_dir = library_import_dir
-        self.enable_beta_mulled_containers = enable_beta_mulled_containers
+        self.enable_mulled_containers = enable_mulled_containers
         self.containers_resolvers_config_file = containers_resolvers_config_file
         self.involucro_path = involucro_path
         self.involucro_auto_init = involucro_auto_init
@@ -36,7 +36,7 @@ class ToolInfo(object):
     # variables they can consume (e.g. JVM options, license keys, etc..)
     # and add these to env_path_through
 
-    def __init__(self, container_descriptions=None, requirements=None, requires_galaxy_python_environment=False, env_pass_through=["GALAXY_SLOTS"]):
+    def __init__(self, container_descriptions=None, requirements=None, requires_galaxy_python_environment=False, env_pass_through=["GALAXY_SLOTS"], guest_ports=None):
         if container_descriptions is None:
             container_descriptions = []
         if requirements is None:
@@ -45,6 +45,7 @@ class ToolInfo(object):
         self.requirements = requirements
         self.requires_galaxy_python_environment = requires_galaxy_python_environment
         self.env_pass_through = env_pass_through
+        self.guest_ports = guest_ports
 
 
 class JobInfo(object):

@@ -1,5 +1,6 @@
 import logging
 import tempfile
+from collections import OrderedDict
 from functools import total_ordering
 
 from six import string_types, text_type
@@ -7,7 +8,6 @@ from six.moves import shlex_quote
 
 from galaxy import exceptions
 from galaxy.model.none_like import NoneDataset
-from galaxy.util import odict
 from galaxy.util.object_wrapper import wrap_with_safe_string
 
 log = logging.getLogger(__name__)
@@ -17,12 +17,6 @@ log = logging.getLogger(__name__)
 # remote ComputeEnvironments (such as one used by Pulsar) determine what values to
 # rewrite or transfer...
 PATH_ATTRIBUTES = ["path"]
-
-
-# ... by default though - don't rewrite anything (if no ComputeEnviornment
-# defined or ComputeEnvironment doesn't supply a rewriter).
-def DEFAULT_PATH_REWRITER(x):
-    return x
 
 
 class ToolParameterValueWrapper(object):
@@ -138,29 +132,38 @@ class SelectToolParameterWrapper(ToolParameterValueWrapper):
         Only applicable for dynamic_options selects, which have more than simple 'options' defined (name, value, selected).
         """
 
-        def __init__(self, input, value, other_values, path_rewriter):
+        def __init__(self, input, value, other_values, compute_environment):
             self._input = input
             self._value = value
             self._other_values = other_values
             self._fields = {}
-            self._path_rewriter = path_rewriter
+            self._compute_environment = compute_environment
 
         def __getattr__(self, name):
             if name not in self._fields:
                 self._fields[name] = self._input.options.get_field_by_name_for_value(name, self._value, None, self._other_values)
             values = map(str, self._fields[name])
-            if name in PATH_ATTRIBUTES:
+            if name in PATH_ATTRIBUTES and self._compute_environment:
                 # If we infer this is a path, rewrite it if needed.
-                values = map(self._path_rewriter, values)
+                new_values = []
+                for value in values:
+                    rewrite_value = self._compute_environment.unstructured_path_rewrite(value)
+                    if rewrite_value:
+                        new_values.append(rewrite_value)
+                    else:
+                        new_values.append(value)
+
+                values = new_values
+
             return self._input.separator.join(values)
 
-    def __init__(self, input, value, other_values={}, path_rewriter=None):
+    def __init__(self, input, value, other_values={}, compute_environment=None):
         self.input = input
         self.value = value
         self.input.value_label = input.value_to_display_text(value)
         self._other_values = other_values
-        self._path_rewriter = path_rewriter or DEFAULT_PATH_REWRITER
-        self.fields = self.SelectToolParameterFieldWrapper(input, value, other_values, self._path_rewriter)
+        self.compute_environment = compute_environment
+        self.fields = self.SelectToolParameterFieldWrapper(input, value, other_values, self.compute_environment)
 
     def __eq__(self, other):
         if isinstance(other, string_types):
@@ -201,15 +204,24 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
         of a Metadata Collection.
         """
 
-        def __init__(self, metadata):
-            self.metadata = metadata
+        def __init__(self, dataset, compute_environment=None):
+            self.dataset = dataset
+            self.metadata = dataset.metadata
+            self.compute_environment = compute_environment
 
         def __getattr__(self, name):
             rval = self.metadata.get(name, None)
             if name in self.metadata.spec:
                 if rval is None:
                     rval = self.metadata.spec[name].no_value
-                rval = self.metadata.spec[name].param.to_safe_string(rval)
+                metadata_param = self.metadata.spec[name].param
+                from galaxy.model.metadata import FileParameter
+                rval = metadata_param.to_safe_string(rval)
+                if isinstance(metadata_param, FileParameter) and self.compute_environment:
+                    rewrite = self.compute_environment.input_metadata_rewrite(self.dataset, rval)
+                    if rewrite is not None:
+                        rval = rewrite
+
                 # Store this value, so we don't need to recalculate if needed
                 # again
                 setattr(self, name, rval)
@@ -234,7 +246,7 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
         def items(self):
             return iter((k, self.get(k)) for k, v in self.metadata.items())
 
-    def __init__(self, dataset, datatypes_registry=None, tool=None, name=None, dataset_path=None, identifier=None):
+    def __init__(self, dataset, datatypes_registry=None, tool=None, name=None, compute_environment=None, identifier=None, io_type="input"):
         if not dataset:
             try:
                 # TODO: allow this to work when working with grouping
@@ -248,15 +260,28 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
             # Should we name this .value to maintain consistency with most other ToolParameterValueWrapper?
             self.unsanitized = dataset
             self.dataset = wrap_with_safe_string(dataset, no_wrap_classes=ToolParameterValueWrapper)
-            self.metadata = self.MetadataWrapper(dataset.metadata)
+            self.metadata = self.MetadataWrapper(dataset, compute_environment)
             if hasattr(dataset, 'tags'):
                 self.groups = {tag.user_value.lower() for tag in dataset.tags if tag.user_tname == 'group'}
             else:
                 # May be a 'FakeDatasetAssociation'
                 self.groups = set()
+        self.compute_environment = compute_environment
+        # TODO: lazy initialize this...
+        self.__io_type = io_type
+        if self.__io_type == "input":
+            path_rewrite = compute_environment and dataset and compute_environment.input_path_rewrite(dataset)
+            if path_rewrite:
+                self.false_path = path_rewrite
+            else:
+                self.false_path = None
+        else:
+            path_rewrite = compute_environment and compute_environment.output_path_rewrite(dataset)
+            if path_rewrite:
+                self.false_path = path_rewrite
+            else:
+                self.false_path = None
         self.datatypes_registry = datatypes_registry
-        self.false_path = getattr(dataset_path, "false_path", None)
-        self.false_extra_files_path = getattr(dataset_path, "false_extra_files_path", None)
         self._element_identifier = identifier
 
     @property
@@ -290,26 +315,30 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
         if self.false_path is not None and key == 'file_name':
             # Path to dataset was rewritten for this job.
             return self.false_path
-        elif self.false_extra_files_path is not None and key == 'extra_files_path':
-            # Path to extra files was rewritten for this job.
-            return self.false_extra_files_path
         elif key == 'extra_files_path':
-            try:
-                # Assume it is an output and that this wrapper
-                # will be set with correct "files_path" for this
-                # job.
-                return self.files_path
-            except AttributeError:
-                # Otherwise, we have an input - delegate to model and
-                # object store to find the static location of this
-                # directory.
+            if self.__io_type == "input":
+                path_rewrite = self.compute_environment and self.compute_environment.input_extra_files_rewrite(self.unsanitized)
+            else:
+                path_rewrite = self.compute_environment and self.compute_environment.output_extra_files_rewrite(self.unsanitized)
+            if path_rewrite:
+                return path_rewrite
+            else:
                 try:
-                    return self.unsanitized.extra_files_path
-                except exceptions.ObjectNotFound:
-                    # NestedObjectstore raises an error here
-                    # instead of just returning a non-existent
-                    # path like DiskObjectStore.
-                    raise
+                    # Assume it is an output and that this wrapper
+                    # will be set with correct "files_path" for this
+                    # job.
+                    return self.files_path
+                except AttributeError:
+                    # Otherwise, we have an input - delegate to model and
+                    # object store to find the static location of this
+                    # directory.
+                    try:
+                        return self.unsanitized.extra_files_path
+                    except exceptions.ObjectNotFound:
+                        # NestedObjectstore raises an error here
+                        # instead of just returning a non-existent
+                        # path like DiskObjectStore.
+                        raise
         else:
             return getattr(self.dataset, key)
 
@@ -320,13 +349,8 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
 
 class HasDatasets(object):
 
-    def _dataset_wrapper(self, dataset, dataset_paths, **kwargs):
-        wrapper_kwds = kwargs.copy()
-        if dataset and dataset_paths:
-            real_path = dataset.file_name
-            if real_path in dataset_paths:
-                wrapper_kwds["dataset_path"] = dataset_paths[real_path]
-        return DatasetFilenameWrapper(dataset, **wrapper_kwds)
+    def _dataset_wrapper(self, dataset, **kwargs):
+        return DatasetFilenameWrapper(dataset, **kwargs)
 
     def paths_as_file(self, sep="\n"):
         contents = sep.join(map(str, self))
@@ -340,7 +364,7 @@ class DatasetListWrapper(list, ToolParameterValueWrapper, HasDatasets):
     """
     """
 
-    def __init__(self, job_working_directory, datasets, dataset_paths=[], **kwargs):
+    def __init__(self, job_working_directory, datasets, **kwargs):
         self._dataset_elements_cache = {}
         if not isinstance(datasets, list):
             datasets = [datasets]
@@ -350,7 +374,7 @@ class DatasetListWrapper(list, ToolParameterValueWrapper, HasDatasets):
                 element = dataset
                 dataset = element.dataset_instance
                 kwargs["identifier"] = element.element_identifier
-            return self._dataset_wrapper(dataset, dataset_paths, **kwargs)
+            return self._dataset_wrapper(dataset, **kwargs)
 
         list.__init__(self, map(to_wrapper, datasets))
         self.job_working_directory = job_working_directory
@@ -392,11 +416,10 @@ class DatasetListWrapper(list, ToolParameterValueWrapper, HasDatasets):
 
 class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
 
-    def __init__(self, job_working_directory, has_collection, dataset_paths=[], **kwargs):
+    def __init__(self, job_working_directory, has_collection, **kwargs):
         super(DatasetCollectionWrapper, self).__init__()
         self.job_working_directory = job_working_directory
         self._dataset_elements_cache = {}
-        self.dataset_paths = dataset_paths
         self.kwargs = kwargs
 
         if has_collection is None:
@@ -419,7 +442,7 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
         self.collection = collection
 
         elements = collection.elements
-        element_instances = odict.odict()
+        element_instances = OrderedDict()
 
         element_instance_list = []
         for dataset_collection_element in elements:
@@ -427,9 +450,9 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
             element_identifier = dataset_collection_element.element_identifier
 
             if dataset_collection_element.is_collection:
-                element_wrapper = DatasetCollectionWrapper(job_working_directory, dataset_collection_element, dataset_paths, **kwargs)
+                element_wrapper = DatasetCollectionWrapper(job_working_directory, dataset_collection_element, **kwargs)
             else:
-                element_wrapper = self._dataset_wrapper(element_object, dataset_paths, identifier=element_identifier, **kwargs)
+                element_wrapper = self._dataset_wrapper(element_object, identifier=element_identifier, **kwargs)
 
             element_instances[element_identifier] = element_wrapper
             element_instance_list.append(element_wrapper)
@@ -443,7 +466,7 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
             wrappers = []
             for element in self.collection.dataset_elements:
                 if any([t for t in element.dataset_instance.tags if t.user_tname.lower() == 'group' and t.value.lower() == group]):
-                    wrappers.append(self._dataset_wrapper(element.element_object, self.dataset_paths, identifier=element.element_identifier, **self.kwargs))
+                    wrappers.append(self._dataset_wrapper(element.element_object, identifier=element.element_identifier, **self.kwargs))
             self._dataset_elements_cache[group] = wrappers
         return self._dataset_elements_cache[group]
 

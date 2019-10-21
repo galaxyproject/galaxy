@@ -1,7 +1,7 @@
 Finding and improving slow Galaxy code
 --------------------------------------
 
-This is a short howto on how one can find slow code in galaxy (but this
+This is a short howto on how one can find slow code in Galaxy (but this
 should apply to other projects as well).
 
 I will walk through how I have improved the tool form building speed in
@@ -20,11 +20,11 @@ Identifying a rough entrypoint for profiling the code
 
 If you know the part in the UI that is slow, you can identify the
 corresponding API endpoint (assuming the backend is slow) by looking at
-the network tab in Chrome's javascript console while doing the operation
-that is slow. When I clicked on hisat2 in the tool menu, I saw that
+the network tab in Chrome's JavaScript console while doing the operation
+that is slow. When I clicked on HISAT2 in the tool menu, I saw that
 there was a GET request to
 http://127.0.0.1:8080/api/tools/toolshed.g2.bx.psu.edu/repos/iuc/hisat2/hisat2/2.0.5.2/build?tool\_version=2.0.5.2
-that took 3 seconds to complete. Looking into `galaxy's API
+that took 3 seconds to complete. Looking into `Galaxy's API
 documentation <https://docs.galaxyproject.org/en/master/api/api.html#galaxy.webapps.galaxy.api.tools.ToolsController.build>`__
 we can match this URL to the actual code in
 `lib/galaxy/webapps/galaxy/api/tools.py <https://github.com/galaxyproject/galaxy/blob/release_17.05/lib/galaxy/webapps/galaxy/api/tools.py#L89>`__.
@@ -34,13 +34,13 @@ Profiling
 
 I like the profilehooks library, which provides a decorator for
 profiling specific functions like our ``build`` function. To use it,
-install profilehooks into galaxy's python environment ( sourcing
-galaxy's virtualenv and running ``pip install profilehooks`` should be
+install profilehooks into Galaxy's Python environment ( sourcing
+Galaxy's virtualenv and running ``pip install profilehooks`` should be
 enough) and import the profile function at the top of the file that
 contains the function you would like to profile
 (``from profilehooks import profile``), and then add an additional
 ``@profile`` decorator just above the ``build`` function. You can now
-start galaxy, hit the API endpoint a few times and shut down galaxy
+start Galaxy, hit the API endpoint a few times and shut down galaxy
 again. You should see profilehooks output in your logs. This is the
 output I saw
 
@@ -94,7 +94,7 @@ output I saw
       13308    0.088    0.000    1.651    0.000 visitors.py:304(replacement_traverse)
 
 I loaded the tool form 4 times, as you can see on the second line of the
-output (ncalls=4). The table is sorted by the cumulative time that the
+output (``ncalls=4``). The table is sorted by the cumulative time that the
 functions ran while ``build`` was being evaluated.
 
 Optimizing the slow function calls

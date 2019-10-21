@@ -9,11 +9,12 @@ from galaxy import (
     util
 )
 from galaxy.managers import folders
+from galaxy.model import tags
 from galaxy.web import (
     expose_api,
     expose_api_anonymous
 )
-from galaxy.web.base.controller import BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems
+from galaxy.webapps.base.controller import BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems
 
 log = logging.getLogger(__name__)
 
@@ -81,13 +82,13 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
         for content_item in self._load_folder_contents(trans, folder, deleted):
             return_item = {}
             encoded_id = trans.security.encode_id(content_item.id)
-            update_time = content_item.update_time.strftime("%Y-%m-%d %I:%M %p")
             create_time = content_item.create_time.strftime("%Y-%m-%d %I:%M %p")
 
             if content_item.api_type == 'folder':
                 encoded_id = 'F' + encoded_id
                 can_modify = is_admin or (trans.user and trans.app.security_agent.can_modify_library_item(current_user_roles, folder))
                 can_manage = is_admin or (trans.user and trans.app.security_agent.can_manage_library_item(current_user_roles, folder))
+                update_time = content_item.update_time.strftime("%Y-%m-%d %I:%M %p")
                 return_item.update(dict(can_modify=can_modify, can_manage=can_manage))
                 if content_item.description:
                     return_item.update(dict(description=content_item.description))
@@ -98,26 +99,34 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
                 #  Access rights are checked on the dataset level, not on the ld or ldda level to maintain consistency
                 dataset = content_item.library_dataset_dataset_association.dataset
                 is_unrestricted = trans.app.security_agent.dataset_is_public(dataset)
-                if trans.user and trans.app.security_agent.dataset_is_private_to_user(trans, dataset):
+                if not is_unrestricted and trans.user and trans.app.security_agent.dataset_is_private_to_user(trans, dataset):
                     is_private = True
                 else:
                     is_private = False
 
                 # Can user manage the permissions on the dataset?
                 can_manage = is_admin or (trans.user and trans.app.security_agent.can_manage_dataset(current_user_roles, content_item.library_dataset_dataset_association.dataset))
-
-                nice_size = util.nice_size(int(content_item.library_dataset_dataset_association.get_size()))
+                raw_size = int(content_item.library_dataset_dataset_association.get_size())
+                nice_size = util.nice_size(raw_size)
+                update_time = content_item.library_dataset_dataset_association.update_time.strftime("%Y-%m-%d %I:%M %p")
 
                 library_dataset_dict = content_item.to_dict()
                 encoded_ldda_id = trans.security.encode_id(content_item.library_dataset_dataset_association.id)
+
+                tag_manager = tags.GalaxyTagHandler(trans.sa_session)
+                ldda_tags = tag_manager.get_tags_str(content_item.library_dataset_dataset_association.tags)
+
                 return_item.update(dict(file_ext=library_dataset_dict['file_ext'],
                                         date_uploaded=library_dataset_dict['date_uploaded'],
+                                        update_time=update_time,
                                         is_unrestricted=is_unrestricted,
                                         is_private=is_private,
                                         can_manage=can_manage,
                                         state=library_dataset_dict['state'],
                                         file_size=nice_size,
-                                        ldda_id=encoded_ldda_id))
+                                        raw_size=raw_size,
+                                        ldda_id=encoded_ldda_id,
+                                        tags=ldda_tags))
                 if content_item.library_dataset_dataset_association.message:
                     return_item.update(dict(message=content_item.library_dataset_dataset_association.message))
 
@@ -248,8 +257,9 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
     @expose_api
     def create(self, trans, encoded_folder_id, payload, **kwd):
         """
-        * POST /api/folders/{encoded_id}/contents
-            create a new library file from an HDA
+        POST /api/folders/{encoded_id}/contents
+
+        Create a new library file from an HDA.
 
         :param  encoded_folder_id:      the encoded id of the folder to import dataset(s) to
         :type   encoded_folder_id:      an encoded id string
@@ -287,7 +297,8 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
                 return self._copy_hdca_to_library_folder(trans, self.hda_manager, decoded_hdca_id, encoded_folder_id_16, ldda_message)
         except Exception as exc:
             # TODO handle exceptions better within the mixins
-            if 'not accessible to the current user' in str(exc) or 'You are not allowed to access this dataset' in str(exc):
+            exc_message = util.unicodify(exc)
+            if 'not accessible to the current user' in exc_message or 'You are not allowed to access this dataset' in exc_message:
                 raise exceptions.ItemAccessibilityException('You do not have access to the requested item')
             else:
                 log.exception(exc)
@@ -295,7 +306,7 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
 
     def __decode_library_content_id(self, trans, encoded_folder_id):
         """
-        Identifies whether the id provided is properly encoded
+        Identify whether the id provided is properly encoded
         LibraryFolder.
 
         :param  encoded_folder_id:  encoded id of Galaxy LibraryFolder

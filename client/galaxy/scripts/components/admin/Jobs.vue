@@ -110,20 +110,18 @@
                 @row-clicked="showRowDetails"
                 :busy="busy"
             >
-                <template slot="table-caption">
+                <template v-slot:table-caption>
                     Unfinished Jobs: These jobs are unfinished and have had their state updated in the previous
                     {{ cutoffDisplay }} seconds.
                 </template>
-                <!-- Enable cell formatting for the command line column -->
-                <span slot="html" slot-scope="data" v-html="data.value" />
-                <template slot="HEAD_selected">
+                <template v-slot:head(selected)="{ rowSelected }">
                     <b-form-checkbox
                         v-model="allSelected"
                         :indeterminate="indeterminate"
                         @change="toggleAll"
                     ></b-form-checkbox>
                 </template>
-                <template slot="selected" slot-scope="data">
+                <template v-slot:cell(selected)="data">
                     <b-form-checkbox
                         v-model="selectedStopJobIds"
                         :checked="allSelected"
@@ -131,12 +129,12 @@
                         :value="data.item['job_info']['id']"
                     ></b-form-checkbox>
                 </template>
-                <template slot="job_info" slot-scope="data">
+                <template v-slot:cell(job_info)="data">
                     <b-link :href="data.value['info_url']" target="galaxy_main">
                         {{ data.value["id"] }}
                     </b-link>
                 </template>
-                <template slot="row-details" slot-scope="row">
+                <template v-slot:row-details="row">
                     <b-card>
                         <h5>Command Line</h5>
                         <pre
@@ -160,17 +158,15 @@
                 @row-clicked="showRowDetails"
                 :busy="busy"
             >
-                <template slot="table-caption">
+                <template v-slot:table-caption>
                     Recent Jobs: These jobs have completed in the previous {{ cutoffDisplay }} seconds.
                 </template>
-                <!-- Enable cell formatting for the command line column -->
-                <span slot="html" slot-scope="data" v-html="data.value" />
-                <template slot="job_info" slot-scope="data">
+                <template v-slot:cell(job_info)="data">
                     <b-link :href="data.value['info_url']" target="galaxy_main">
                         {{ data.value["id"] }}
                     </b-link>
                 </template>
-                <template slot="row-details" slot-scope="row">
+                <template v-slot:row-details="row">
                     <b-card>
                         <h5>Command Line</h5>
                         <pre

@@ -2,7 +2,6 @@
 Job runner plugin for executing jobs on the local system via the command line.
 """
 import datetime
-import errno
 import logging
 import os
 import subprocess
@@ -15,9 +14,13 @@ from galaxy.job_execution.output_collect import default_exit_code_file
 from galaxy.util import (
     asbool,
 )
-from ..runners import (
+from . import (
     BaseJobRunner,
     JobState
+)
+from .util.process_groups import (
+    check_pg,
+    kill_pg
 )
 
 log = logging.getLogger(__name__)
@@ -92,6 +95,10 @@ class LocalJobRunner(BaseJobRunner):
             stdout_file = tempfile.NamedTemporaryFile(mode='wb+', suffix='_stdout', dir=job_wrapper.working_directory)
             stderr_file = tempfile.NamedTemporaryFile(mode='wb+', suffix='_stderr', dir=job_wrapper.working_directory)
             log.debug('(%s) executing job script: %s' % (job_id, command_line))
+            # The preexec_fn argument of Popen() is used to call os.setpgrp() in
+            # the child process just before the child is executed. This will set
+            # the PGID of the child process to its PID (i.e. ensures that it is
+            # the root of its own process group instead of Galaxy's one).
             proc = subprocess.Popen(args=command_line,
                                     shell=True,
                                     cwd=job_wrapper.working_directory,
@@ -108,12 +115,14 @@ class LocalJobRunner(BaseJobRunner):
                 job_wrapper.set_job_destination(job_wrapper.job_destination, proc.pid)
                 job_wrapper.change_state(model.Job.states.RUNNING)
 
+                self._handle_container(job_wrapper, proc)
+
                 terminated = self.__poll_if_needed(proc, job_wrapper, job_id)
+                proc.wait()  # reap
                 if terminated:
                     return
-
-                proc.wait()
-
+                elif check_pg(proc.pid):
+                    kill_pg(proc.pid)
             finally:
                 with self._proc_lock:
                     self._procs.remove(proc)
@@ -156,21 +165,11 @@ class LocalJobRunner(BaseJobRunner):
             log.warning("stop_job(): %s: no PID in database for job, unable to stop" % job.id)
             return
         pid = int(pid)
-        if not self._check_pid(pid):
-            log.warning("stop_job(): %s: PID %d was already dead or can't be signaled" % (job.id, pid))
+        if not check_pg(pid):
+            log.warning("stop_job(): %s: Process group %d was already dead or can't be signaled" % (job.id, pid))
             return
-        for sig in [15, 9]:
-            try:
-                os.killpg(pid, sig)
-            except OSError as e:
-                log.warning("stop_job(): %s: Got errno %s when attempting to signal %d to PID %d: %s" % (job.id, errno.errorcode[e.errno], sig, pid, e.strerror))
-                return  # give up
-            sleep(2)
-            if not self._check_pid(pid):
-                log.debug("stop_job(): %s: PID %d successfully killed with signal %d" % (job.id, pid, sig))
-                return
-        else:
-            log.warning("stop_job(): %s: PID %d refuses to die after signaling TERM/KILL" % (job.id, pid))
+        log.debug('stop_job(): %s: Terminating process group %d', job.id, pid)
+        kill_pg(pid)
 
     def recover(self, job, job_wrapper):
         # local jobs can't be recovered
@@ -181,7 +180,8 @@ class LocalJobRunner(BaseJobRunner):
         with self._proc_lock:
             for proc in self._procs:
                 proc.terminated_by_shutdown = True
-                self._terminate(proc)
+                kill_pg(proc.pid)
+                proc.wait()  # reap
 
     def _fail_job_local(self, job_wrapper, message):
         job_destination = job_wrapper.job_destination
@@ -202,23 +202,15 @@ class LocalJobRunner(BaseJobRunner):
     def _prepare_job_local(self, job_wrapper):
         return self.prepare_job(job_wrapper, include_metadata=self._embed_metadata(job_wrapper))
 
-    def _check_pid(self, pid):
-        try:
-            os.kill(pid, 0)
-            return True
-        except OSError as e:
-            if e.errno == errno.ESRCH:
-                log.debug("_check_pid(): PID %d is dead" % pid)
-            else:
-                log.warning("_check_pid(): Got errno %s when attempting to check PID %d: %s" % (errno.errorcode[e.errno], pid, e.strerror))
-            return False
+    def _handle_container(self, job_wrapper, proc):
+        if not job_wrapper.tool.produces_entry_points:
+            return
 
-    def _terminate(self, proc):
-        os.killpg(proc.pid, 15)
-        sleep(1)
-        if proc.poll() is None:
-            os.killpg(proc.pid, 9)
-        return proc.wait()  # reap
+        while check_pg(proc.pid):
+            if job_wrapper.check_for_entry_points(check_already_configured=False):
+                return
+
+            sleep(0.5)
 
     def __poll_if_needed(self, proc, job_wrapper, job_id):
         # Only poll if needed (i.e. job limits are set)
@@ -227,15 +219,16 @@ class LocalJobRunner(BaseJobRunner):
 
         job_start = datetime.datetime.now()
         i = 0
+        pgid = proc.pid
         # Iterate until the process exits, periodically checking its limits
-        while proc.poll() is None:
+        while check_pg(pgid):
             i += 1
             if (i % 20) == 0:
                 limit_state = job_wrapper.check_limits(runtime=datetime.datetime.now() - job_start)
                 if limit_state is not None:
                     job_wrapper.fail(limit_state[1])
-                    log.debug('(%s) Terminating process group' % job_id)
-                    self._terminate(proc)
+                    log.debug('(%s) Terminating process group %d', job_id, pgid)
+                    kill_pg(pgid)
                     return True
             else:
                 sleep(DEFAULT_POOL_SLEEP_TIME)

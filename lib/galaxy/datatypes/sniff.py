@@ -163,6 +163,11 @@ def iter_headers(fname_or_file_prefix, sep, count=60, comment_designator=None):
             break
 
 
+def validate_tabular(fname_or_file_prefix, validate_row, sep, comment_designator=None):
+    for row in iter_headers(fname_or_file_prefix, sep, count=-1, comment_designator=comment_designator):
+        validate_row(row)
+
+
 def get_headers(fname_or_file_prefix, sep, count=60, comment_designator=None):
     """
     Returns a list with the first 'count' lines split by 'sep', ignoring lines
@@ -659,7 +664,7 @@ def handle_compressed_file(
                 os.close(fd)
                 os.remove(uncompressed)
                 compressed_file.close()
-                raise IOError('Problem uncompressing %s data, please try retrieving the data uncompressed: %s' % (compressed_type, e))
+                raise IOError('Problem uncompressing %s data, please try retrieving the data uncompressed: %s' % (compressed_type, util.unicodify(e)))
             if not chunk:
                 break
             os.write(fd, chunk)

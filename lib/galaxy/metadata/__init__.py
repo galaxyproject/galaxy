@@ -83,8 +83,12 @@ class MetadataCollectionStrategy(object):
         dataset.metadata.from_JSON_dict(metadata_output_path, path_rewriter=path_rewriter)
 
     def _metadata_results_from_file(self, dataset, filename_results_code):
-        with open(filename_results_code, "r") as f:
-            rval, rstring = json.load(f)
+        try:
+            with open(filename_results_code, "r") as f:
+                rval, rstring = json.load(f)
+        except (OSError, IOError):
+            rval = False
+            rstring = "Metadata results could not be read from '%s'" % filename_results_code
 
         if not rval:
             log.debug('setting metadata externally failed for %s %s: %s' % (dataset.__class__.__name__, dataset.id, rstring))
@@ -103,6 +107,7 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
                                 config_file=None, datatypes_config=None,
                                 job_metadata=None, compute_tmp_dir=None,
                                 include_command=True, max_metadata_value_size=0,
+                                validate_outputs=False,
                                 kwds=None):
         assert job_metadata, "setup_external_metadata must be supplied with job_metadata path"
         kwds = kwds or {}
@@ -130,10 +135,12 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
             _initialize_metadata_inputs(dataset, _metadata_path, tmp_dir, kwds)
 
             outputs[name] = {
-                "filename_override": _get_filename_override(output_fnames, dataset.file_name)
+                "filename_override": _get_filename_override(output_fnames, dataset.file_name),
+                "validate": validate_outputs,
             }
 
         metadata_params_path = os.path.join(metadata_dir, "params.json")
+        datatypes_config = os.path.relpath(datatypes_config, tmp_dir)
         metadata_params = {
             "job_metadata": job_relative_path(job_metadata),
             "datatypes_config": datatypes_config,
@@ -221,6 +228,7 @@ class JobExternalOutputMetadataWrapper(MetadataCollectionStrategy):
                                 config_file=None, datatypes_config=None,
                                 job_metadata=None, compute_tmp_dir=None,
                                 include_command=True, max_metadata_value_size=0,
+                                validate_outputs=False,
                                 kwds=None):
         kwds = kwds or {}
         tmp_dir = _init_tmp_dir(tmp_dir)

@@ -1,4 +1,4 @@
-"""Integration tests for the CLI shell plugins and runners."""
+"""Integration tests for the Kubernetes runner."""
 # Tested on docker for mac 18.06.1-ce-mac73 using the default kubernetes setup
 import collections
 import json
@@ -7,6 +7,8 @@ import string
 import subprocess
 import tempfile
 import time
+
+import pytest
 
 from base import integration_util  # noqa: I100,I202
 from base.populators import skip_without_tool
@@ -90,9 +92,35 @@ def job_config(jobs_directory):
             <param id="k8s_config_path">$k8s_config_path</param>
             <param id="k8s_galaxy_instance_id">gx-short-id</param>
         </plugin>
+        <plugin id="k8s_walltime_short" type="runner" load="galaxy.jobs.runners.kubernetes:KubernetesJobRunner">
+            <param id="k8s_persistent_volume_claims">jobs-directory-claim:$jobs_directory,tool-directory-claim:$tool_directory</param>
+            <param id="k8s_config_path">$k8s_config_path</param>
+            <param id="k8s_galaxy_instance_id">gx-short-id</param>
+            <param id="k8s_walltime_limit">10</param>
+        </plugin>
+        <plugin id="k8s_no_cleanup" type="runner" load="galaxy.jobs.runners.kubernetes:KubernetesJobRunner">
+            <param id="k8s_persistent_volume_claims">jobs-directory-claim:$jobs_directory,tool-directory-claim:$tool_directory</param>
+            <param id="k8s_config_path">$k8s_config_path</param>
+            <param id="k8s_galaxy_instance_id">gx-short-id</param>
+            <param id="k8s_cleanup_job">never</param>
+        </plugin>
     </plugins>
     <destinations default="k8s_destination">
         <destination id="k8s_destination" runner="k8s">
+            <param id="limits_cpu">1.9</param>
+            <param id="limits_memory">10M</param>
+            <param id="docker_enabled">true</param>
+            <param id="docker_default_container_id">busybox:ubuntu-14.04</param>
+            <env id="SOME_ENV_VAR">42</env>
+        </destination>
+        <destination id="k8s_destination_walltime_short" runner="k8s_walltime_short">
+            <param id="limits_cpu">1.9</param>
+            <param id="limits_memory">10M</param>
+            <param id="docker_enabled">true</param>
+            <param id="docker_default_container_id">busybox:ubuntu-14.04</param>
+            <env id="SOME_ENV_VAR">42</env>
+        </destination>
+        <destination id="k8s_destination_no_cleanup" runner="k8s_no_cleanup">
             <param id="limits_cpu">1.9</param>
             <param id="limits_memory">10M</param>
             <param id="docker_enabled">true</param>
@@ -104,12 +132,14 @@ def job_config(jobs_directory):
     </destinations>
     <tools>
         <tool id="upload1" destination="local_dest"/>
+        <tool id="create_2" destination="k8s_destination_walltime_short"/>
+        <tool id="galaxy_slots_and_memory" destination="k8s_destination_no_cleanup"/>
     </tools>
 </job_conf>
 """)
     job_conf_str = job_conf_template.substitute(jobs_directory=jobs_directory,
                                                 tool_directory=TOOL_DIR,
-                                                k8s_config_path=os.environ.get('GALAXY_TEST_KUBE_CONFIG_PATH', '~/.kube/config'),
+                                                k8s_config_path=integration_util.k8s_config_path(),
                                                 )
     with tempfile.NamedTemporaryFile(suffix="_kubernetes_integration_job_conf.xml", mode="w", delete=False) as job_conf:
         job_conf.write(job_conf_str)
@@ -159,7 +189,6 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
         config["default_job_shell"] = '/bin/sh'
         # Disable tool dependency resolution.
         config["tool_dependency_dir"] = "none"
-        config["enable_beta_mulled_containers"] = "true"
 
     @skip_without_tool("job_environment_default")
     def test_job_environment(self):
@@ -208,8 +237,10 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
 
             # Wait for job to be cancelled in kubernetes
             time.sleep(2)
-            status = json.loads(subprocess.check_output(['kubectl', 'get', 'job', external_id, '-o', 'json']))
-            assert 'active' not in status['status']
+            # The default job config removes jobs, didn't find a better way to check that the job doesn't exist anymore
+            with pytest.raises(subprocess.CalledProcessError) as excinfo:
+                subprocess.check_output(['kubectl', 'get', 'job', external_id, '-o', 'json'], stderr=subprocess.STDOUT)
+            assert "not found" in excinfo.value.output.decode()
 
     @skip_without_tool('job_properties')
     def test_exit_code_127(self):
@@ -244,7 +275,7 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
 
     @skip_without_tool('galaxy_slots_and_memory')
     def test_slots_and_memory(self):
-        self.dataset_populator.run_tool(
+        running_response = self.dataset_populator.run_tool(
             'galaxy_slots_and_memory',
             {},
             self.history_id,
@@ -255,3 +286,26 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
         MEM = '10'
         MEM_PER_SLOT = '5'
         assert [CPU, MEM, MEM_PER_SLOT] == dataset_content.split('\n'), dataset_content
+
+        # Tool is mapped to destination without cleanup, make sure job still exists in kubernetes API
+        job_dict = running_response["jobs"][0]
+        job = self.galaxy_interactor.get("jobs/%s" % job_dict['id'], admin=True).json()
+        external_id = job['external_id']
+        status = json.loads(subprocess.check_output(['kubectl', 'get', 'job', external_id, '-o', 'json']))
+        assert 'active' not in status['status']
+
+    @skip_without_tool('create_2')
+    def test_walltime_limit(self):
+        running_response = self.dataset_populator.run_tool(
+            'create_2',
+            {'sleep_time': 60},
+            self.history_id,
+            assert_ok=False
+        )
+        result = self.dataset_populator.wait_for_tool_run(run_response=running_response,
+                                                          history_id=self.history_id,
+                                                          assert_ok=False).json()
+        details = self.dataset_populator.get_job_details(result['jobs'][0]['id'], full=True).json()
+        assert details['state'] == 'error'
+        hda_details = self.dataset_populator.get_history_dataset_details(self.history_id, assert_ok=False)
+        assert hda_details['misc_info'] == 'Job was active longer than specified deadline'

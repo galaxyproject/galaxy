@@ -94,10 +94,7 @@ var HistoryViewColumn = Backbone.View.extend(baseMVC.LoggableMixin).extend({
         if (columnRight < viewLeft) {
             return false;
         }
-        if (columnLeft > viewRight) {
-            return false;
-        }
-        return true;
+        return columnLeft <= viewRight;
     },
 
     /** shortcut to the panel */
@@ -220,19 +217,19 @@ var HistoryViewColumn = Backbone.View.extend(baseMVC.LoggableMixin).extend({
                     </button>
                     <div class="dropdown-menu" role="menu">
                         <% if( !data.history.deleted ){ %>
-                            <a class="dropdown-item" href="javascript:void(0);" class="copy-history">
+                            <a class="dropdown-item copy-history" href="javascript:void(0);">
                                 ${_l("Copy")}
                             </a>
-                            <a class="dropdown-item" href="javascript:void(0);" class="delete-history">
+                            <a class="dropdown-item delete-history" href="javascript:void(0);">
                                 ${_l("Delete")}
                             </a>
                         <% } else /* if is deleted */ { %>
-                            <a class="dropdown-item" href="javascript:void(0);" class="undelete-history">
+                            <a class="dropdown-item undelete-history" href="javascript:void(0);">
                                 ${_l("Undelete")}
                             </a>
                         <% } %>
                         <% if( data.view.purgeAllowed ){ %>
-                            <a class="dropdown-item" href="javascript:void(0);" class="purge-history">
+                            <a class="dropdown-item purge-history" href="javascript:void(0);">
                                 ${_l("Purge")}
                             </a>
                         <% } %>
@@ -438,8 +435,7 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
         // if sent two strings (and possibly details as 'options'), use those as message and title
         if (_.isString(model) && _.isString(xhr)) {
             var message = model;
-            var title = xhr;
-            return ERROR_MODAL.errorModal(message, title, options);
+            return ERROR_MODAL.errorModal(message, xhr, options);
         }
         // bad gateway
         // TODO: possibly to global handler
@@ -600,15 +596,13 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
             return this.sortedColumns();
         }
         return this.sortedColumns().filter((column, index) => {
-            var filtered = column.currentHistory || _.every(filters.map(filter => filter.call(column)));
-            return filtered;
+            return column.currentHistory || _.every(filters.map(filter => filter.call(column)));
         });
     },
 
     /** return array of Columns sorted to match the collection */
     sortedColumns: function() {
-        var sorted = this.collection.map((history, index) => this.columnMap[history.id]);
-        return sorted;
+        return this.collection.map((history, index) => this.columnMap[history.id]);
     },
 
     // ------------------------------------------------------------------------ render

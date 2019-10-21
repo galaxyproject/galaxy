@@ -24,12 +24,12 @@ from galaxy.visualization.data_providers.phyloviz import PhylovizDataProvider
 from galaxy.visualization.genomes import decode_dbkey
 from galaxy.visualization.genomes import GenomeRegion
 from galaxy.visualization.plugins import registry
-from galaxy.web.base.controller import (
+from galaxy.web.framework.helpers import grids, time_ago
+from galaxy.webapps.base.controller import (
     BaseUIController,
     SharableMixin,
     UsesVisualizationMixin
 )
-from galaxy.web.framework.helpers import grids, time_ago
 
 log = logging.getLogger(__name__)
 

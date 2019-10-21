@@ -14,6 +14,7 @@ import json
 import logging
 import os
 import sys
+import traceback
 
 from six.moves import cPickle
 from sqlalchemy.orm import clear_mappers
@@ -21,12 +22,25 @@ from sqlalchemy.orm import clear_mappers
 import galaxy.model.mapping  # need to load this before we unpickle, in order to setup properties assigned by the mappers
 from galaxy.model.custom_types import total_size
 from galaxy.tool_util.provided_metadata import parse_tool_provided_metadata
-from galaxy.util import stringify_dictionary_keys
+from galaxy.util import (
+    stringify_dictionary_keys,
+    unicodify,
+)
 
 logging.basicConfig()
 log = logging.getLogger(__name__)
 
-galaxy.model.Job()  # this looks REAL stupid, but it is REQUIRED in order for SA to insert parameters into the classes defined by the mappers --> it appears that instantiating ANY mapper'ed class would suffice here
+
+def set_validated_state(dataset_instance):
+    from galaxy.datatypes.data import validate
+    datatype_validation = validate(dataset_instance)
+
+    dataset_instance.validated_state = datatype_validation.state
+    dataset_instance.validated_state_message = datatype_validation.message
+
+    # Set special metadata property that will reload this on server side.
+    setattr(dataset_instance.metadata, "__validated_state__", datatype_validation.state)
+    setattr(dataset_instance.metadata, "__validated_state_message__", datatype_validation.message)
 
 
 def set_meta_with_tool_provided(dataset_instance, file_dict, set_meta_kwds, datatypes_registry, max_metadata_value_size):
@@ -71,7 +85,9 @@ def set_metadata():
 
 def set_metadata_portable():
     import galaxy.model
-    galaxy.model.metadata.MetadataTempFile.tmp_dir = tool_job_working_directory = os.path.abspath(os.getcwd())
+    tool_job_working_directory = os.path.abspath(os.getcwd())
+    metadata_tmp_files_dir = os.path.join(tool_job_working_directory, "metadata")
+    galaxy.model.metadata.MetadataTempFile.tmp_dir = metadata_tmp_files_dir
 
     metadata_params_path = os.path.join("metadata", "params.json")
     try:
@@ -116,11 +132,13 @@ def set_metadata_portable():
                 if galaxy.datatypes.metadata.MetadataTempFile.is_JSONified_value(metadata_file_override):
                     metadata_file_override = galaxy.datatypes.metadata.MetadataTempFile.from_JSON(metadata_file_override)
                 setattr(dataset.metadata, metadata_name, metadata_file_override)
+            if output_dict.get("validate", False):
+                set_validated_state(dataset)
             set_meta(dataset, file_dict)
             dataset.metadata.to_JSON_dict(filename_out)  # write out results of set_meta
             json.dump((True, 'Metadata has been set successfully'), open(filename_results_code, 'wt+'))  # setting metadata has succeeded
-        except Exception as e:
-            json.dump((False, str(e)), open(filename_results_code, 'wt+'))  # setting metadata has failed somehow
+        except Exception:
+            json.dump((False, traceback.format_exc()), open(filename_results_code, 'wt+'))  # setting metadata has failed somehow
 
     write_job_metadata(tool_job_working_directory, job_metadata, set_meta, tool_provided_metadata)
 
@@ -176,7 +194,7 @@ def set_metadata_legacy():
             dataset.metadata.to_JSON_dict(filename_out)  # write out results of set_meta
             json.dump((True, 'Metadata has been set successfully'), open(filename_results_code, 'wt+'))  # setting metadata has succeeded
         except Exception as e:
-            json.dump((False, str(e)), open(filename_results_code, 'wt+'))  # setting metadata has failed somehow
+            json.dump((False, unicodify(e)), open(filename_results_code, 'wt+'))  # setting metadata has failed somehow
 
     write_job_metadata(tool_job_working_directory, job_metadata, set_meta, tool_provided_metadata)
 
@@ -193,7 +211,7 @@ def validate_and_load_datatypes_config(datatypes_config):
         sys.exit(1)
     import galaxy.datatypes.registry
     datatypes_registry = galaxy.datatypes.registry.Registry()
-    datatypes_registry.load_datatypes(root_dir=galaxy_root, config=datatypes_config)
+    datatypes_registry.load_datatypes(root_dir=galaxy_root, config=datatypes_config, use_build_sites=False, use_converters=False, use_display_applications=False)
     galaxy.model.set_datatypes_registry(datatypes_registry)
     return datatypes_registry
 
