@@ -43,6 +43,7 @@ def tool_conf_repos(tool_shed_repository_cache):
             tool_path='../shed_tools',
         )
         tool_shed_repository_cache.add_local_repository(repo)
+    return tool_shed_repository_cache.local_repositories
 
 
 def create_repo(app, changeset, installed_changeset, config_filename=None):

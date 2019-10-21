@@ -1,6 +1,6 @@
 import pytest
 
-from conftest import create_repo
+from .conftest import create_repo
 
 
 def test_empty_repo_cache(tool_shed_repository_cache):
