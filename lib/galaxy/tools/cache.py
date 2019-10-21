@@ -1,10 +1,7 @@
 import logging
 import os
 from collections import defaultdict
-from threading import (
-    local,
-    Lock,
-)
+from threading import Lock
 
 from galaxy.util import unicodify
 from galaxy.util.hash_util import md5_hash_file
@@ -135,45 +132,32 @@ class ToolShedRepositoryCache(object):
 
     def __init__(self, app):
         self.app = app
-        self.cache = local()
+        # Contains ToolConfRepository objects created from shed_tool_conf.xml entries
+        self.local_repositories = []
+        # Repositories loaded from database
+        self.repositories = []
+        self.repos_by_tuple = defaultdict(list)
+        self.rebuild()
 
     def add_local_repository(self, repository):
-        self.cache.repositories.append(repository)
-        self.cache.repos_by_tuple[(repository.tool_shed, repository.owner, repository.name)].append(repository)
-
-    @property
-    def tool_shed_repositories(self):
-        try:
-            repositories = self.cache.repositories
-        except AttributeError:
-            self.rebuild()
-            repositories = self.cache.repositories
-        return repositories
-
-    @property
-    def tool_shed_repos_by_tuple(self):
-        try:
-            return self.cache.repos_by_tuple
-        except AttributeError:
-            self.rebuild()
-            return self.cache.repos_by_tuple
+        self.local_repositories.append(repository)
+        self.repos_by_tuple[(repository.tool_shed, repository.owner, repository.name)].append(repository)
 
     def rebuild(self):
-        repositories = self.app.install_model.context.current.query(self.app.install_model.ToolShedRepository).all()
-        self.cache.repositories = repositories
+        self.repositories = self.app.install_model.context.current.query(self.app.install_model.ToolShedRepository).all()
         repos_by_tuple = defaultdict(list)
-        for repository in repositories:
+        for repository in self.repositories + self.local_repositories:
             repos_by_tuple[(repository.tool_shed, repository.owner, repository.name)].append(repository)
-        self.cache.repos_by_tuple = repos_by_tuple
+        self.repos_by_tuple = repos_by_tuple
 
     def get_installed_repository(self, tool_shed=None, name=None, owner=None, installed_changeset_revision=None, changeset_revision=None, repository_id=None):
         if repository_id:
-            repos = [repo for repo in self.tool_shed_repositories if repo.id == repository_id]
+            repos = [repo for repo in self.repositories if repo.id == repository_id]
             if repos:
                 return repos[0]
             else:
                 return None
-        repos = self.tool_shed_repos_by_tuple[(tool_shed, owner, name)]
+        repos = self.repos_by_tuple[(tool_shed, owner, name)]
         for repo in repos:
             if installed_changeset_revision and repo.installed_changeset_revision != installed_changeset_revision:
                 continue

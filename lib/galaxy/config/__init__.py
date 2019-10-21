@@ -757,7 +757,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             tool_sheds_config_file=[self._in_config_dir('tool_sheds_conf.xml')],
             user_preferences_extra_conf_path=[self._in_config_dir('user_preferences_extra_conf.yml')],
             workflow_resource_params_file=[self._in_config_dir('workflow_resource_params_conf.xml')],
-            workflow_schedulers_config_file=[self._in_config_dir('config/workflow_schedulers_conf.xml')],
+            workflow_schedulers_config_file=[self._in_config_dir('workflow_schedulers_conf.xml')],
         )
         listify_defaults = {
             'tool_data_table_config_path': [

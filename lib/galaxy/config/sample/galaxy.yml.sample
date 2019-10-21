@@ -1552,7 +1552,8 @@ galaxy:
   # does not exist).
   #data_manager_config_file: config/data_manager_conf.xml
 
-  # File where Tool Shed based Data Managers are configured.
+  # File where Tool Shed based Data Managers are configured. This file
+  # will be created automatically upon data manager installation.
   #shed_data_manager_config_file: config/shed_data_manager_conf.xml
 
   # Directory to store Data Manager based tool-data; defaults to

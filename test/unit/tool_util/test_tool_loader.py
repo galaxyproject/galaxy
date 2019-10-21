@@ -86,6 +86,35 @@ def test_loader():
         assert xml.findall("inputs")[1].find("input").get("name") == "second_input"
         assert xml.findall("inputs")[2].find("input").get("name") == "third_input"
 
+    # Test nested macro with yield statements
+
+    with TestToolDirectory() as tool_dir:
+        tool_dir.write("""
+<tool>
+    <macros>
+        <macro name="paired_options">
+            <when value="paired">
+                <yield />
+            </when>
+            <when value="paired_collection">
+                <yield />
+            </when>
+        </macro>
+        <macro name="single_or_paired_general">
+            <conditional name="library">
+                <expand macro="paired_options">
+                    <yield />
+                </expand>
+            </conditional>
+        </macro>
+    </macros>
+    <inputs>
+        <expand macro="single_or_paired_general"></expand>
+    </inputs>
+</tool>
+""")
+        xml = tool_dir.load()
+
     # Test recursive macro applications.
     with TestToolDirectory() as tool_dir:
         tool_dir.write('''
