@@ -39,6 +39,17 @@ Configuration options NOT tested:
 OptionData = namedtuple('OptionData', 'key, expected, loaded')
 
 
+# Configuration properties that are paths should be absolute paths, by default resolved w.r.t root.
+PATH_CONFIG_PROPERTIES = [
+    # For now, these include base config properties
+    'root',
+    'config_file',
+    'config_dir',
+    'mutable_config_dir',
+    'data_dir',
+]
+
+
 # Most of these (except root_dir) will go away once path_resolves_to is set in the schema
 RESOLVE = {
     'sanitize_whitelist_file': 'root_dir',
@@ -51,7 +62,14 @@ RESOLVE = {
     'len_file_path': 'tool_data_path',
 }
 
+
+def expected_default_config_dir(value):
+    # expected absolute path to the default config dir (when NO galaxy.yml provided)
+    return os.path.join(DRIVER.app.config.root, 'lib', 'galaxy', 'config', 'sample')
+
+
 CUSTOM = {
+    'config_dir': expected_default_config_dir,
     'password_expiration_period': timedelta,
     'toolbox_filter_base_modules': listify,
     'mulled_channels': listify,
@@ -62,9 +80,9 @@ CUSTOM = {
     'persistent_communication_rooms': listify,
 }
 
+
 # TODO: split into (1) do not test; and (2) todo: fix and test
 DO_NOT_TEST = [
-    'config_dir',  # value overridden for testing
     'data_dir',  # value overridden for testing
     'new_file_path',  # value overridden for testing
     'logging',  # mapping loaded in config/
@@ -182,6 +200,11 @@ def get_config_data():
         yield pytest.param(data)
 
 
+def get_path_data():
+    for key in PATH_CONFIG_PROPERTIES:
+        yield key
+
+
 def get_key(option_data):
     return option_data.key
 
@@ -189,3 +212,10 @@ def get_key(option_data):
 @pytest.mark.parametrize('data', get_config_data(), ids=get_key)
 def test_config_option(data, driver):
     assert data.expected == data.loaded
+
+
+@pytest.mark.parametrize('data', get_path_data())
+def test_is_path_absolute(data, driver):
+    path = getattr(DRIVER.app.config, data)
+    if path:
+        assert os.path.isabs(path)
