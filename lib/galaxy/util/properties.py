@@ -81,6 +81,10 @@ def load_app_properties(
     else:
         properties = {'__file__': None}
 
+    # update from kwds
+    if kwds:
+        properties.update(kwds)
+
     # update from env
     override_prefix = "%sOVERRIDE_" % config_prefix
     for key in os.environ:
@@ -91,10 +95,6 @@ def load_app_properties(
             config_key = key[len(config_prefix):].lower()
             if config_key not in properties:
                 properties[config_key] = os.environ[key]
-
-    # update from kwds
-    if kwds:
-        properties.update(kwds)
 
     return properties
 
