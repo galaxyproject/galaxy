@@ -3,7 +3,7 @@
         <b-alert v-if="error" variant="danger" show>
             {{ error }}
         </b-alert>
-        <b-card no-body v-if="showItems">
+        <b-card no-body v-if="showItems" class="my-2">
             <h5 class="m-3">Currently installing...</h5>
             <b-table
                 class="mx-3 mb-0"
@@ -30,8 +30,8 @@
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { getAppRoot } from "onload/loadConfig";
-import { Services } from "./services.js";
-import InstallationButton from "./RepositoryDetails/InstallationButton.vue";
+import { Services } from "../services.js";
+import InstallationButton from "../RepositoryDetails/InstallationButton";
 
 Vue.use(BootstrapVue);
 
