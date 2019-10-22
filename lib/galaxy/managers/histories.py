@@ -221,7 +221,9 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
         #: ..note: this is a custom view for newer (2016/3) UI and should be considered volatile
         self.add_view('dev-detailed', [
             'contents_url',
+            'empty',
             'size',
+            'nice_size',
             'user_id',
             'create_time',
             'update_time',
@@ -232,6 +234,7 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
             # 'contents_states',
             'contents_active',
             'hid_counter',
+            'non_ready_jobs'
         ], include_keys_from='summary')
 
     # assumes: outgoing to json.dumps and sanitized
@@ -393,4 +396,6 @@ class HistoryFilters(sharable.SharableModelFilters, deletable.PurgableFiltersMix
             # history specific
             'name'          : {'op': ('eq', 'contains', 'like')},
             'genome_build'  : {'op': ('eq', 'contains', 'like')},
+            'create_time'   : {'op': ('le', 'ge', 'gt', 'lt'), 'val': self.parse_date},
+            'update_time'   : {'op': ('le', 'ge', 'gt', 'lt'), 'val': self.parse_date},
         })
