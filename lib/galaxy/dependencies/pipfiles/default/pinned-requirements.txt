@@ -3,7 +3,6 @@
 adal==1.2.1
 amqp==2.4.2
 appdirs==1.4.3
-asn1crypto==0.24.0
 avro==1.8.1 ; python_version < '3'
 azure-common==1.1.14
 azure-cosmosdb-nspkg==2.0.2
