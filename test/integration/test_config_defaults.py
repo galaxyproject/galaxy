@@ -113,9 +113,6 @@ DO_NOT_TEST = [
     'template_cache_path',  # may or may not be able to test; may be broken
     'object_store_store_by',  # broken: default overridden
     'pretty_datetime_format',  # untestable; refactor config/__init__ to test
-    'default_locale',  # broken
-    'galaxy_infrastructure_url',  # broken
-    'galaxy_infrastructure_web_port',  # broken
     'chunk_upload_size',  # broken: default overridden
     'monitor_thread_join_timeout',  # broken: default overridden
     'heartbeat_log',  # untestable; refactor config/__init__ to test
@@ -134,7 +131,7 @@ DO_NOT_TEST = [
     'expose_dataset_path',  # broken: default overridden
     'data_manager_config_file',  # broken: remove 'config/' prefix from schema
     'galaxy_data_manager_data_path',  # broken: review config/, possibly refactor
-    'job_config_file',  # broken: remove 'config/' prefix from schema
+    'job_config_file',  # overridden with None for testing
     'use_tasked_jobs',  # broken: default overridden
     'retry_metadata_internally',  # broken: default overridden
     'cleanup_job',  # broken: default overridden
@@ -143,7 +140,6 @@ DO_NOT_TEST = [
     'user_tool_section_filters',  # broken: default overridden
     'user_tool_label_filters',  # broken: default overridden
     'amqp_internal_connection',  # may or may not be testable; refactor config/
-    'migrated_tools_config',  # needs more work (should work)
 ]
 
 

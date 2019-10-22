@@ -227,6 +227,7 @@ mapping:
       migrated_tools_config:
         type: str
         default: migrated_tools_conf.xml
+        path_resolves_to: config_dir
         required: false
         desc: |
           Tool config maintained by tool migration scripts.  If you use the migration
