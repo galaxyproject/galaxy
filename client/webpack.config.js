@@ -19,7 +19,7 @@ let buildconfig = {
         generic: ["polyfills", "bundleEntries", "entry/generic"]
     },
     output: {
-        path: path.join(__dirname, "../", "static/scripts/bundled"),
+        path: path.join(__dirname, "../", "lib/galaxy/web/framework/static/scripts/bundled"),
         publicPath: "/static/scripts/bundled/",
         filename: "[name].bundled.js",
         chunkFilename: "[name].chunk.js"
@@ -159,10 +159,23 @@ let buildconfig = {
                         options: { sourceMap: true }
                     },
                     {
+                        loader: 'postcss-loader',
+                        options: {
+                            plugins: function () {
+                                return [
+                                    require('autoprefixer')
+                                ];
+                            }
+                        }
+                    },
+                    {
                         loader: "sass-loader",
                         options: { 
                             sourceMap: true,
-                            includePaths: ["galaxy/style/scss"]
+                            includePaths: [
+                                "galaxy/style/scss", 
+                                path.resolve(__dirname, './node_modules') 
+                            ]
                         }
                     }
                 ]

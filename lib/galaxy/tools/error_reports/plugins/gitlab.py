@@ -35,15 +35,18 @@ class GitLabPlugin(BaseGitPlugin):
         self.git_default_repo_owner = kwargs.get('gitlab_default_repo_owner', False)
         self.git_default_repo_name = kwargs.get('gitlab_default_repo_name', False)
         self.git_default_repo_only = string_as_bool(kwargs.get('gitlab_default_repo_only', True))
+        self.gitlab_use_proxy = string_as_bool(kwargs.get('gitlab_allow_proxy', True))
 
         try:
             import gitlab
 
             session = requests.Session()
-            session.proxies = {
-                'https': os.environ.get('https_proxy'),
-                'http': os.environ.get('http_proxy'),
-            }
+            if self.gitlab_use_proxy:
+                session.proxies = {
+                    'https': os.environ.get('https_proxy'),
+                    'http': os.environ.get('http_proxy'),
+                }
+
             self.gitlab = gitlab.Gitlab(
                 # Allow running against GL enterprise deployments
                 kwargs.get('gitlab_base_url', 'https://gitlab.com'),
@@ -88,6 +91,10 @@ class GitLabPlugin(BaseGitPlugin):
                 # Find the repo inside the ToolShed
                 ts_repourl = self._get_gitrepo_from_ts(job, ts_url)
 
+                # Remove .git from the repository URL if this was specified
+                if ts_repourl.endswith(".git"):
+                    ts_repourl = ts_repourl[:-4]
+
                 log.info("GitLab error reporting - Determine ToolShed Repository URL: %s", ts_repourl)
 
                 # Determine the GitLab project URL and the issue cache key
@@ -113,10 +120,35 @@ class GitLabPlugin(BaseGitPlugin):
                 # Generate the error message
                 error_message = self._generate_error_message(dataset, job, kwargs)
 
+                # Determine the user to assign to the issue
+                gl_userid = None
+                if len(gl_project.commits.list()) > 0:
+                    gl_username = gl_project.commits.list()[0].attributes['author_name']
+                    if not self.redact_user_details_in_bugreport:
+                        log.debug("GitLab error reporting - Last commiter username: %s" % gl_username)
+                    if gl_username not in self.git_username_id_cache:
+                        log.debug("GitLab error reporting - Last Committer user ID: %d" %
+                                  self.gitlab.users.list(username=gl_username)[0].get_id())
+                        self.git_username_id_cache[gl_username] = self.gitlab.users.list(username=gl_username)[
+                            0].get_id()
+                    gl_userid = self.git_username_id_cache.get(gl_username, None)
+
                 log.info(error_title in self.issue_cache[issue_cache_key])
                 if error_title not in self.issue_cache[issue_cache_key]:
-                    # Create a new issue.
-                    self._create_issue(issue_cache_key, error_title, error_message, gl_project)
+                    try:
+                        # Create a new issue.
+                        self._create_issue(issue_cache_key, error_title, error_message, gl_project, gl_userid=gl_userid)
+                    except gitlab.GitlabOwnershipError:
+                        gitlab_projecturl = "/".join([self.git_default_repo_owner, self.git_default_repo_name])
+                        gitlab_urlencodedpath = urllib.quote_plus(gitlab_projecturl)
+                        # Make sure we are always logged in, then retrieve the GitLab project if it isn't cached.
+                        self.gitlab.auth()
+                        if gitlab_projecturl not in self.git_project_cache:
+                            self.git_project_cache[gitlab_projecturl] = self.gitlab.projects.get(gitlab_urlencodedpath)
+                        gl_project = self.git_project_cache[gitlab_projecturl]
+
+                        # Submit issue to default project
+                        self._create_issue(issue_cache_key, error_title, error_message, gl_project, gl_userid=gl_userid)
                 else:
                     # Add a comment to an issue...
                     self._append_issue(issue_cache_key, error_title, error_message, gitlab_urlencodedpath=gitlab_urlencodedpath)
@@ -161,12 +193,20 @@ class GitLabPlugin(BaseGitPlugin):
             log.error("GitLab error reporting - No connection to GitLab. Cannot report error to GitLab.")
             return ('Internal Error.', 'danger')
 
-    def _create_issue(self, issue_cache_key, error_title, error_mesage, project, **kwargs):
-        # Create the issue on GitLab
-        issue = project.issues.create({
+    def _create_issue(self, issue_cache_key, error_title, error_message, project, **kwargs):
+        # Set payload for the issue
+        issue_data = {
             'title': error_title,
-            'description': error_mesage
-        })
+            'description': error_message
+        }
+
+        # Assign the user to the issue
+        gl_userid = kwargs.get("gl_userid", None)
+        if gl_userid is not None:
+            issue_data['assignee_ids'] = [gl_userid]
+
+        # Create the issue on GitLab
+        issue = project.issues.create(issue_data)
         self.issue_cache[issue_cache_key][error_title] = issue.iid
 
     def _append_issue(self, issue_cache_key, error_title, error_message, **kwargs):

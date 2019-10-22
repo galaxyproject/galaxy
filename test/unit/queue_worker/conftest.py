@@ -3,6 +3,11 @@ import tempfile
 
 import pytest
 
+try:
+    import psycopg2
+except ImportError:
+    psycopg2 = None
+
 from galaxy.util import which
 from ..unittest_utils import galaxy_mock
 
@@ -57,6 +62,8 @@ def database_app(request):
     if request.param == 'postgres_app':
         if not which('initdb'):
             pytest.skip("initdb must be on PATH for postgresql fixture")
+        if not psycopg2:
+            pytest.skip("psycopg2 must be installed for postgresql fixture")
     if request.param == 'sqlite_rabbitmq_app':
         if not os.environ.get('GALAXY_TEST_AMQP_INTERNAL_CONNECTION'):
             pytest.skip("rabbitmq tests will be skipped if GALAXY_TEST_AMQP_INTERNAL_CONNECTION env var is unset")

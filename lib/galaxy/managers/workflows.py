@@ -59,7 +59,7 @@ class WorkflowsManager(object):
     def __init__(self, app):
         self.app = app
 
-    def get_stored_workflow(self, trans, workflow_id):
+    def get_stored_workflow(self, trans, workflow_id, by_stored_id=True):
         """ Use a supplied ID (UUID or encoded stored workflow ID) to find
         a workflow.
         """
@@ -67,13 +67,19 @@ class WorkflowsManager(object):
             # see if they have passed in the UUID for a workflow that is attached to a stored workflow
             workflow_uuid = uuid.UUID(workflow_id)
             workflow_query = trans.sa_session.query(trans.app.model.StoredWorkflow).filter(and_(
-                trans.app.model.StoredWorkflow.latest_workflow_id == trans.app.model.Workflow.id,
+                trans.app.model.StoredWorkflow.id == trans.app.model.Workflow.stored_workflow_id,
                 trans.app.model.Workflow.uuid == workflow_uuid
             ))
-        else:
+        elif by_stored_id:
             workflow_id = decode_id(self.app, workflow_id)
             workflow_query = trans.sa_session.query(trans.app.model.StoredWorkflow).\
                 filter(trans.app.model.StoredWorkflow.id == workflow_id)
+        else:
+            workflow_id = decode_id(self.app, workflow_id)
+            workflow_query = trans.sa_session.query(trans.app.model.StoredWorkflow).filter(and_(
+                trans.app.model.StoredWorkflow.id == trans.app.model.Workflow.stored_workflow_id,
+                trans.app.model.Workflow.id == workflow_id
+            ))
         stored_workflow = workflow_query.options(joinedload('annotations'),
                                                  joinedload('tags'),
                                                  subqueryload('latest_workflow').joinedload('steps').joinedload('*')).first()
@@ -81,11 +87,11 @@ class WorkflowsManager(object):
             raise exceptions.ObjectNotFound("No such workflow found.")
         return stored_workflow
 
-    def get_stored_accessible_workflow(self, trans, workflow_id):
+    def get_stored_accessible_workflow(self, trans, workflow_id, by_stored_id=True):
         """ Get a stored workflow from a encoded stored workflow id and
         make sure it accessible to the user.
         """
-        stored_workflow = self.get_stored_workflow(trans, workflow_id)
+        stored_workflow = self.get_stored_workflow(trans, workflow_id, by_stored_id=by_stored_id)
 
         # check to see if user has permissions to selected workflow
         if stored_workflow.user != trans.user and not trans.user_is_admin and not stored_workflow.published:
@@ -188,7 +194,7 @@ class WorkflowsManager(object):
         trans.sa_session.flush()
         return workflow_invocation_step
 
-    def build_invocations_query(self, trans, stored_workflow_id=None, history_id=None, user_id=None):
+    def build_invocations_query(self, trans, stored_workflow_id=None, history_id=None, user_id=None, include_terminal=True):
         """Get invocations owned by the current user."""
         sa_session = trans.sa_session
         invocations_query = sa_session.query(model.WorkflowInvocation)
@@ -212,6 +218,11 @@ class WorkflowsManager(object):
         if history_id is not None:
             invocations_query = invocations_query.filter(
                 model.WorkflowInvocation.table.c.history_id == history_id
+            )
+
+        if not include_terminal:
+            invocations_query = invocations_query.filter(
+                model.WorkflowInvocation.table.c.state.in_(model.WorkflowInvocation.non_terminal_states)
             )
 
         return [inv for inv in invocations_query if self.check_security(trans,
@@ -387,6 +398,9 @@ class WorkflowContentsManager(UsesAnnotations):
         # Create new workflow from source data
         workflow = model.Workflow()
         workflow.name = name
+
+        if 'report' in data:
+            workflow.reports_config = data['report']
 
         # Assume no errors until we find a step that has some
         workflow.has_errors = False
@@ -580,6 +594,7 @@ class WorkflowContentsManager(UsesAnnotations):
         data['name'] = workflow.name
         data['steps'] = {}
         data['upgrade_messages'] = {}
+        data['report'] = workflow.reports_config
         input_step_types = set(workflow.input_step_types)
         # For each step, rebuild the form and encode the state
         for step in workflow.steps:

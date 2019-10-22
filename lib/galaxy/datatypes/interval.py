@@ -11,6 +11,7 @@ from six.moves.urllib.parse import quote_plus
 
 from galaxy import util
 from galaxy.datatypes import metadata
+from galaxy.datatypes.data import DatatypeValidation
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
@@ -269,9 +270,8 @@ class Interval(Tabular):
             ret_val.append((site_name, link))
         return ret_val
 
-    def validate(self, dataset):
+    def validate(self, dataset, **kwd):
         """Validate an interval file using the bx GenomicIntervalReader"""
-        errors = list()
         c, s, e, t = dataset.metadata.chromCol, dataset.metadata.startCol, dataset.metadata.endCol, dataset.metadata.strandCol
         c, s, e, t = int(c) - 1, int(s) - 1, int(e) - 1, int(t) - 1
         with open(dataset.file_name, "r") as infile:
@@ -286,9 +286,9 @@ class Interval(Tabular):
                 try:
                     next(reader)
                 except ParseError as e:
-                    errors.append(e)
+                    return DatatypeValidation.invalid(util.unicodify(e))
                 except StopIteration:
-                    return errors
+                    return DatatypeValidation.valid()
 
     def repair_methods(self, dataset):
         """Return options for removing errors along with a description"""

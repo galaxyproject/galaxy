@@ -10,6 +10,7 @@ class LibraryLandingTestCase(SeleniumTestCase):
     requires_admin = True
 
     def setup_with_driver(self):
+        super(LibraryLandingTestCase, self).setup_with_driver()
         self.admin_login()
         self.libraries_open()
 
@@ -17,9 +18,9 @@ class LibraryLandingTestCase(SeleniumTestCase):
     def test_create_new_close(self):
         num_displayed_libraries = self._num_displayed_libraries()
         self.libraries_index_click_create_new()
-        self.wait_for_selector_visible(".ui-modal")
+        self.wait_for_selector_visible(".new-row")
         self.screenshot("libraries_new")
-        close_button = self.wait_for_selector_clickable("#button-1")
+        close_button = self.wait_for_selector_clickable(".cancel_library_btn")
         close_button.click()
         self.wait_for_overlays_cleared()
         assert self._num_displayed_libraries() == num_displayed_libraries
@@ -52,11 +53,6 @@ class LibraryLandingTestCase(SeleniumTestCase):
         save_button.click()
 
         self._search_for_only_with_name(new_name)
-
-    @selenium_test
-    def test_help(self):
-        help_link = self.wait_for_selector_clickable(".library-help-button")
-        self.assertEqual(help_link.get_attribute("href"), "https://galaxyproject.org/data-libraries/screen/list-of-libraries/")
 
     @selenium_test
     def test_sorting(self):

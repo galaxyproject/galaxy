@@ -1,5 +1,6 @@
+from collections import OrderedDict
+
 from galaxy import model
-from galaxy.util.odict import odict
 from .type_description import COLLECTION_TYPE_DESCRIPTION_FACTORY
 
 
@@ -34,7 +35,7 @@ class CollectionBuilder(object):
 
     def __init__(self, collection_type_description):
         self._collection_type_description = collection_type_description
-        self._current_elements = odict()
+        self._current_elements = OrderedDict()
 
     def replace_elements_in_collection(self, template_collection, replacement_dict):
         self._current_elements = self._replace_elements_in_collection(
@@ -43,7 +44,7 @@ class CollectionBuilder(object):
         )
 
     def _replace_elements_in_collection(self, template_collection, replacement_dict):
-        elements = odict()
+        elements = OrderedDict()
         for element in template_collection.elements:
             if element.is_collection:
                 collection_builder = CollectionBuilder(
@@ -77,7 +78,7 @@ class CollectionBuilder(object):
     def build_elements(self):
         elements = self._current_elements
         if self._nested_collection:
-            new_elements = odict()
+            new_elements = OrderedDict()
             for identifier, element in elements.items():
                 new_elements[identifier] = element.build()
             elements = new_elements

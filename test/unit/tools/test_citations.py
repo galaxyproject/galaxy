@@ -1,7 +1,3 @@
-import tempfile
-from contextlib import contextmanager
-from shutil import rmtree
-
 from galaxy.managers.citations import (
     BibtexCitation,
     CitationCollection,
@@ -23,8 +19,7 @@ EXAMPLE_BIBTEX_CITATION = """<citation type="bibtex">@article{goecks2010galaxy,
 def test_parse_citation():
     xml_text = EXAMPLE_BIBTEX_CITATION
     citation_elem = parse_xml_string(xml_text)
-    with temp_directory() as test_directory:
-        citation = parse_citation(citation_elem, test_directory, None)
+    citation = parse_citation(citation_elem, None)
     bibtex = citation.to_bibtex()
     assert "title={Galaxy" in bibtex
 
@@ -41,16 +36,7 @@ def test_citation_collection():
     assert len(citation_collection) == 2
 
 
-@contextmanager
-def temp_directory():
-    base_path = tempfile.mkdtemp()
-    try:
-        yield base_path
-    finally:
-        rmtree(base_path)
-
-
 class QuickBibtexCitation(BibtexCitation):
 
     def __init__(self, raw_bibtex):
-        self._set_raw_bibtex(raw_bibtex)
+        self.raw_bibtex = raw_bibtex

@@ -18,7 +18,7 @@ SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 TEST_FILE_DIR = '%s/../../lib/galaxy/datatypes/test' % SCRIPT_DIRECTORY
 TestData = collections.namedtuple('UploadDatatypesData', 'path datatype uploadable')
 GALAXY_ROOT = os.path.abspath('%s/../../' % SCRIPT_DIRECTORY)
-DATATYPES_CONFIG = os.path.join(GALAXY_ROOT, 'config/datatypes_conf.xml.sample')
+DATATYPES_CONFIG = os.path.join(GALAXY_ROOT, 'lib/galaxy/config/sample/datatypes_conf.xml.sample')
 PARENT_SNIFFER_MAP = {'fastqsolexa': 'fastq'}
 
 

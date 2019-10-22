@@ -51,9 +51,11 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
         except Exception:
             traceback.print_exc()
             sys.exit(1)
-    # Call app's shutdown method when the interpeter exits, this cleanly stops
-    # the various Galaxy application daemon threads
-    app.application_stack.register_postfork_function(atexit.register, app.shutdown)
+
+    if kwargs.get('register_shutdown_at_exit', True):
+        # Call app's shutdown method when the interpeter exits, this cleanly stops
+        # the various Galaxy application daemon threads
+        app.application_stack.register_postfork_function(atexit.register, app.shutdown)
     # Create the universe WSGI application
     webapp = GalaxyWebApplication(app, session_cookie='galaxysession', name='galaxy')
 
@@ -101,16 +103,20 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
 
     webapp.add_client_route('/admin/data_tables', 'admin')
     webapp.add_client_route('/admin/data_types', 'admin')
+    webapp.add_client_route('/admin/jobs', 'admin')
+    webapp.add_client_route('/admin/invocations', 'admin')
     webapp.add_client_route('/admin/data_manager{path_info:.*}', 'admin')
     webapp.add_client_route('/admin/error_stack', 'admin')
     webapp.add_client_route('/admin/users', 'admin')
     webapp.add_client_route('/admin/users/create', 'admin')
     webapp.add_client_route('/admin/display_applications', 'admin')
+    webapp.add_client_route('/admin/reset_metadata', 'admin')
     webapp.add_client_route('/admin/roles', 'admin')
     webapp.add_client_route('/admin/forms', 'admin')
     webapp.add_client_route('/admin/groups', 'admin')
     webapp.add_client_route('/admin/repositories', 'admin')
     webapp.add_client_route('/admin/tool_versions', 'admin')
+    webapp.add_client_route('/admin/toolshed', 'admin')
     webapp.add_client_route('/admin/quotas', 'admin')
     webapp.add_client_route('/admin/form/{form_id}', 'admin')
     webapp.add_client_route('/admin/api_keys', 'admin')
@@ -146,7 +152,9 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_client_route('/workflows/create')
     webapp.add_client_route('/workflows/run')
     webapp.add_client_route('/workflows/import')
+    webapp.add_client_route('/workflows/invocations/report')
     webapp.add_client_route('/custom_builds')
+    webapp.add_client_route('/interactivetool_entry_points/list')
 
     # ==== Done
     # Indicate that all configuration settings have been provided
@@ -190,7 +198,7 @@ uwsgi_app_factory = uwsgi_app
 
 def postfork_setup():
     from galaxy.app import app
-    app.control_worker.bind_and_start()
+    app.queue_worker.bind_and_start()
     app.application_stack.log_startup()
 
 
@@ -230,6 +238,11 @@ def populate_api_routes(webapp, app):
                           "/api/histories/{history_id}/contents/{history_content_id}/permissions",
                           controller="history_contents",
                           action="update_permissions",
+                          conditions=dict(method=["PUT"]))
+    webapp.mapper.connect("history_contents_validate",
+                          "/api/histories/{history_id}/contents/{history_content_id}/validate",
+                          controller="history_contents",
+                          action="validate",
                           conditions=dict(method=["PUT"]))
     webapp.mapper.connect("history_contents_extra_files",
                           "/api/histories/{history_id}/contents/{history_content_id}/extra_files",
@@ -347,6 +360,7 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('/api/tools/{id:.+?}/test_data', action='test_data', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/diagnostics', action='diagnostics', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/citations', action='citations', controller="tools")
+    webapp.mapper.connect('/api/tools/{id:.+?}/xrefs', action='xrefs', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/download', action='download', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/requirements', action='requirements', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/install_dependencies', action='install_dependencies', controller="tools", conditions=dict(method=["POST"]))
@@ -356,6 +370,9 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('/api/tools/{id:.+?}', action='show', controller="tools")
     webapp.mapper.resource('tool', 'tools', path_prefix='/api')
     webapp.mapper.resource('dynamic_tools', 'dynamic_tools', path_prefix='/api')
+
+    webapp.mapper.connect('/api/entry_points', action='index', controller="tool_entry_points")
+    webapp.mapper.connect('/api/entry_points/{id:.+?}/access', action='access_entry_point', controller="tool_entry_points")
 
     webapp.mapper.connect('/api/dependency_resolvers/clean', action="clean", controller="tool_dependencies", conditions=dict(method=["POST"]))
     webapp.mapper.connect('/api/dependency_resolvers/dependency', action="manager_dependency", controller="tool_dependencies", conditions=dict(method=["GET"]))
@@ -503,6 +520,14 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('/api/datasets/{dataset_id}/converted/{ext}', controller='datasets', action='converted')
     webapp.mapper.connect('/api/datasets/{dataset_id}/permissions', controller='datasets', action='update_permissions', conditions=dict(method=["PUT"]))
 
+    webapp.mapper.connect(
+        'list_invocations',
+        '/api/invocations',
+        controller='workflows',
+        action='index_invocations',
+        conditions=dict(method=['GET'])
+    )
+
     # API refers to usages and invocations - these mean the same thing but the
     # usage routes should be considered deprecated.
     invoke_names = {
@@ -519,52 +544,48 @@ def populate_api_routes(webapp, app):
             conditions=dict(method=['GET'])
         )
         webapp.mapper.connect(
-            'list_invocations',
-            '/api/invocations',
-            controller='workflows',
-            action='index_invocations',
-            conditions=dict(method=['GET'])
-        )
-
-        webapp.mapper.connect(
-            'workflow_%s_contents' % name,
-            '/api/workflows/{workflow_id}/%s/{invocation_id}' % noun,
-            controller='workflows',
-            action='show_invocation',
-            conditions=dict(method=['GET'])
-        )
-
-        webapp.mapper.connect(
-            'cancel_workflow_%s' % name,
-            '/api/workflows/{workflow_id}/%s/{invocation_id}' % noun,
-            controller='workflows',
-            action='cancel_invocation',
-            conditions=dict(method=['DELETE'])
-        )
-
-        webapp.mapper.connect(
-            'workflow_%s_step' % name,
-            '/api/workflows/{workflow_id}/%s/{invocation_id}/steps/{step_id}' % noun,
-            controller='workflows',
-            action='invocation_step',
-            conditions=dict(method=['GET'])
-        )
-
-        webapp.mapper.connect(
-            'workflow_%s_step_update' % name,
-            '/api/workflows/{workflow_id}/%s/{invocation_id}/steps/{step_id}' % noun,
-            controller='workflows',
-            action='update_invocation_step',
-            conditions=dict(method=['PUT'])
-        )
-
-        webapp.mapper.connect(
             'workflow_%s' % name,
             '/api/workflows/{workflow_id}/%s' % noun,
             controller='workflows',
             action='invoke',
             conditions=dict(method=['POST'])
         )
+
+    def connect_invocation_endpoint(endpoint_name, endpoint_suffix, action, conditions=None):
+        # /api/invocations/<invocation_id>
+        # /api/workflows/<workflow_id>/invocations/<invocation_id>
+        # /api/workflows/<workflow_id>/usage/<invocation_id> (deprecated)
+        conditions = conditions or dict(method=['GET'])
+        webapp.mapper.connect(
+            'workflow_invocation_%s' % endpoint_name,
+            '/api/workflows/{workflow_id}/invocations/{invocation_id}' + endpoint_suffix,
+            controller='workflows',
+            action=action,
+            conditions=conditions,
+        )
+        webapp.mapper.connect(
+            'workflow_usage_%s' % endpoint_name,
+            '/api/workflows/{workflow_id}/usage/{invocation_id}' + endpoint_suffix,
+            controller='workflows',
+            action=action,
+            conditions=conditions,
+        )
+        webapp.mapper.connect(
+            'invocation_%s' % endpoint_name,
+            '/api/invocations/{invocation_id}' + endpoint_suffix,
+            controller='workflows',
+            action=action,
+            conditions=conditions,
+        )
+
+    connect_invocation_endpoint('show', '', action='show_invocation')
+    connect_invocation_endpoint('show_report', '/report', action='show_invocation_report')
+    connect_invocation_endpoint('jobs_summary', '/jobs_summary', action='invocation_jobs_summary')
+    connect_invocation_endpoint('step_jobs_summary', '/step_jobs_summary', action='invocation_step_jobs_summary')
+    connect_invocation_endpoint('cancel', '', action='cancel_invocation', conditions=dict(method=['DELETE']))
+    connect_invocation_endpoint('show_step', '/steps/{step_id}', action='invocation_step')
+    connect_invocation_endpoint('update_step', '/steps/{step_id}', action='update_invocation_step', conditions=dict(method=['PUT']))
+
     # ============================
     # ===== AUTHENTICATE API =====
     # ============================
@@ -889,6 +910,11 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('resume', '/api/jobs/{id}/resume', controller='jobs', action='resume', conditions=dict(method=['PUT']))
     webapp.mapper.connect('job_error', '/api/jobs/{id}/error', controller='jobs', action='error', conditions=dict(method=['POST']))
     webapp.mapper.connect('common_problems', '/api/jobs/{id}/common_problems', controller='jobs', action='common_problems', conditions=dict(method=['GET']))
+    # Job metrics and parameters by job id or dataset id (for slightly different accessibility checking)
+    webapp.mapper.connect('metrics', '/api/jobs/{job_id}/metrics', controller='jobs', action='metrics', conditions=dict(method=['GET']))
+    webapp.mapper.connect('dataset_metrics', '/api/datasets/{dataset_id}/metrics', controller='jobs', action='metrics', conditions=dict(method=['GET']))
+    webapp.mapper.connect('parameters_display', '/api/jobs/{job_id}/parameters_display', controller='jobs', action='parameters_display', conditions=dict(method=['GET']))
+    webapp.mapper.connect('dataset_parameters_display', '/api/datasets/{dataset_id}/parameters_display', controller='jobs', action='parameters_display', conditions=dict(method=['GET']))
 
     # Job files controllers. Only for consumption by remote job runners.
     webapp.mapper.resource('file',
@@ -954,6 +980,12 @@ def populate_api_routes(webapp, app):
                           action='search',
                           conditions=dict(method=["GET", "POST"]))
 
+    webapp.mapper.connect('tool_shed_request',
+                          '/api/tool_shed/request',
+                          controller='toolshed',
+                          action='request',
+                          conditions=dict(method=["GET"]))
+
     webapp.mapper.connect('tool_shed_status',
                           '/api/tool_shed/status',
                           controller='toolshed',
@@ -1001,6 +1033,12 @@ def populate_api_routes(webapp, app):
                           controller='tool_shed_repositories',
                           action='uninstall_repository',
                           conditions=dict(method=["DELETE"]))
+
+    webapp.mapper.connect('reset_metadata_on_selected_installed_repositories',
+                          '/api/tool_shed_repositories/reset_metadata_on_selected_installed_repositories',
+                          controller='tool_shed_repositories',
+                          action='reset_metadata_on_selected_installed_repositories',
+                          conditions=dict(method=['POST']))
 
     # Galaxy API for tool shed features.
     webapp.mapper.resource('tool_shed_repository',

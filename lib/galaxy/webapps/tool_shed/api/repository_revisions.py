@@ -4,7 +4,7 @@ from sqlalchemy import and_
 
 from galaxy import util
 from galaxy import web
-from galaxy.web.base.controller import BaseAPIController, HTTPBadRequest
+from galaxy.webapps.base.controller import BaseAPIController, HTTPBadRequest
 from tool_shed.capsule import capsule_manager
 from tool_shed.util import metadata_util
 from tool_shed.util import repository_util

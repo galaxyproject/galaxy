@@ -71,13 +71,13 @@ steps:
       position: "right"
 
     - title: "Tool search bar"
-      element: '#tool-search-query'
+      element: '.tool-search-query'
       intro: "You can search for tools by keywords."
       position: "right"
       textinsert: 'filter'
 
     - title: "Tool categories"
-      element: '#title_filter > a'
+      element: '.toolSectionTitle'
       intro: "Tools are grouped into categories to make them easier to find."
       position: "right"
 

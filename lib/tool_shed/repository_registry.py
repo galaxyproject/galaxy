@@ -147,10 +147,9 @@ class Registry(object):
             latest_installable_changeset_revision, is_level_one_certified = certified_level_one_tuple
             if is_level_one_certified:
                 certified_level_one_tuples.append(certified_level_one_tuple)
-                clause_list.append("%s=%d and %s='%s'" % (model.RepositoryMetadata.table.c.repository_id,
-                                                          repository.id,
-                                                          model.RepositoryMetadata.table.c.changeset_revision,
-                                                          latest_installable_changeset_revision))
+                clause_list.append(and_(
+                    model.RepositoryMetadata.table.c.repository_id == repository.id,
+                    model.RepositoryMetadata.table.c.changeset_revision == latest_installable_changeset_revision))
         return clause_list
 
     def get_certified_level_one_tuple(self, repository):

@@ -66,13 +66,13 @@ var Node = Backbone.Model.extend({
         output_terminal.force_datatype = datatype;
         output.force_datatype = datatype;
         if (datatype) {
-            this.post_job_actions['ChangeDatatypeAction' + outputName] = {
-                action_arguments: {newtype: datatype},
+            this.post_job_actions["ChangeDatatypeAction" + outputName] = {
+                action_arguments: { newtype: datatype },
                 action_type: "ChangeDatatypeAction",
-                output_name: outputName,
+                output_name: outputName
             };
         } else {
-            delete this.post_job_actions['ChangeDatatypeAction' + outputName];
+            delete this.post_job_actions["ChangeDatatypeAction" + outputName];
         }
         this.markChanged();
         output_terminal.destroyInvalidConnections();
@@ -317,8 +317,7 @@ var Node = Backbone.Model.extend({
         var new_body = nodeView.newInputsDiv();
         var newTerminalViews = {};
         _.each(data.inputs, input => {
-            var terminalView = node.nodeView.addDataInput(input, new_body);
-            newTerminalViews[input.name] = terminalView;
+            newTerminalViews[input.name] = node.nodeView.addDataInput(input, new_body);
         });
         // Cleanup any leftover terminals
         _.each(_.difference(_.values(nodeView.terminalViews), _.values(newTerminalViews)), unusedView => {

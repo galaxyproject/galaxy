@@ -6,7 +6,7 @@ from six import string_types
 
 import galaxy.tools.parameters.basic
 import galaxy.tools.parameters.grouping
-from galaxy.tools.verify.interactor import ToolTestDescription
+from galaxy.tool_util.verify.interactor import ToolTestDescription
 from galaxy.util import (
     string_as_bool,
     unicodify,
@@ -24,7 +24,7 @@ log = logging.getLogger(__name__)
 @nottest
 def parse_tests(tool, tests_source):
     """
-    Build ToolTestBuilder objects for each "<test>" elements and
+    Build ToolTestDescription objects for each "<test>" elements and
     return default interactor (if any).
     """
     raw_tests_dict = tests_source.parse_tests_to_dict()

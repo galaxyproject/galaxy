@@ -356,14 +356,14 @@ def get_ids_of_tool_shed_repositories_being_installed(app, as_string=False):
     return installing_repository_ids
 
 
-def get_installed_repository(app, tool_shed=None, name=None, owner=None, changeset_revision=None, installed_changeset_revision=None, repository_id=None, refresh=False):
+def get_installed_repository(app, tool_shed=None, name=None, owner=None, changeset_revision=None, installed_changeset_revision=None, repository_id=None, refresh=False, from_cache=False):
     """
     Return a tool shed repository database record defined by the combination of a toolshed, repository name,
     repository owner and either current or originally installed changeset_revision.
     """
     # We store the port, if one exists, in the database.
     tool_shed = common_util.remove_protocol_from_tool_shed_url(tool_shed)
-    if hasattr(app, 'tool_shed_repository_cache'):
+    if from_cache and hasattr(app, 'tool_shed_repository_cache'):
         if refresh:
             app.tool_shed_repository_cache.rebuild()
         return app.tool_shed_repository_cache.get_installed_repository(tool_shed=tool_shed,
@@ -397,7 +397,7 @@ def get_installed_tool_shed_repository(app, id):
     if hasattr(app, 'tool_shed_repository_cache'):
         app.tool_shed_repository_cache.rebuild()
     repository_ids = [app.security.decode_id(i) for i in id]
-    rval = [get_installed_repository(app=app, repository_id=repo_id) for repo_id in repository_ids]
+    rval = [get_installed_repository(app=app, repository_id=repo_id, from_cache=False) for repo_id in repository_ids]
     if return_list:
         return rval
     return rval[0]
@@ -1047,7 +1047,7 @@ def validate_repository_name(app, name, user):
     if name in ['None', None, '']:
         return 'Enter the required repository name.'
     if name in ['repos']:
-        return "The term <b>%s</b> is a reserved word in the tool shed, so it cannot be used as a repository name." % name
+        return "The term '%s' is a reserved word in the Tool Shed, so it cannot be used as a repository name." % name
     check_existing = get_repository_by_name_and_owner(app, name, user.username)
     if check_existing is not None:
         if check_existing.deleted:

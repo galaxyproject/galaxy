@@ -263,15 +263,21 @@ var DatasetListItemEdit = _super.extend(
         /** Render an icon-button or popupmenu of links based on the applicable visualizations */
         _renderVisualizationsButton: function() {
             //TODO: someday - lazyload visualizations
-            var visualizations = this.model.get("visualizations");
-            if (this.model.isDeletedOrPurged() || !this.hasUser || !this.model.hasData() || _.isEmpty(visualizations)) {
+            const Galaxy = getGalaxyInstance();
+            const visualizations = this.model.get("visualizations");
+            if (
+                !Galaxy.config.visualizations_visible ||
+                this.model.isDeletedOrPurged() ||
+                !this.hasUser ||
+                !this.model.hasData() ||
+                _.isEmpty(visualizations)
+            ) {
                 return null;
             }
             if (!_.isObject(visualizations[0])) {
                 this.warn("Visualizations have been switched off");
                 return null;
             }
-
             if (visualizations.length >= 1) {
                 const dsid = this.model.get("id");
                 const url = getAppRoot() + "visualizations?dataset_id=" + dsid;
@@ -281,7 +287,6 @@ var DatasetListItemEdit = _super.extend(
                     classes: "visualization-link",
                     faIcon: "fa-bar-chart-o",
                     onclick: ev => {
-                        const Galaxy = getGalaxyInstance();
                         if (Galaxy.frame && Galaxy.frame.active) {
                             ev.preventDefault();
                             Galaxy.frame.add({ url: url, title: "Visualization" });
@@ -467,41 +472,8 @@ DatasetListItemEdit.prototype.templates = (() => {
             "dataset"
         )
     });
-
-    var visualizationsTemplate = BASE_MVC.wrapTemplate(
-        [
-            "<% if( visualizations.length === 1 ){ %>",
-            '<a class="visualization-link icon-btn" href="<%- visualizations[0].href %>"',
-            ' target="<%- visualizations[0].target %>" title="',
-            _l("Visualize in"),
-            ' <%- visualizations[0].html %>">',
-            '<span class="fa fa-bar-chart-o"></span>',
-            "</a>",
-
-            "<% } else { %>",
-            '<div class="visualizations-dropdown dropdown icon-btn">',
-            '<a data-toggle="dropdown" title="',
-            _l("Visualize"),
-            '">',
-            '<span class="fa fa-bar-chart-o"></span>',
-            "</a>",
-            '<ul class="dropdown-menu" role="menu">',
-            "<% _.each( visualizations, function( visualization ){ %>",
-            '<li><a class="visualization-link" href="<%- visualization.href %>"',
-            ' target="<%- visualization.target %>">',
-            "<%- visualization.html %>",
-            "</a></li>",
-            "<% }); %>",
-            "</ul>",
-            "</div>",
-            "<% } %>"
-        ],
-        "visualizations"
-    );
-
     return _.extend({}, _super.prototype.templates, {
-        warnings: warnings,
-        visualizations: visualizationsTemplate
+        warnings: warnings
     });
 })();
 

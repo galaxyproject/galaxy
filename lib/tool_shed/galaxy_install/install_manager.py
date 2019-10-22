@@ -10,7 +10,7 @@ from six import string_types
 from sqlalchemy import or_
 
 from galaxy import exceptions, util
-from galaxy.tools.deps import views
+from galaxy.tool_util.deps import views
 from tool_shed.galaxy_install.datatypes import custom_datatype_manager
 from tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
 from tool_shed.galaxy_install.repository_dependencies import repository_dependency_manager
@@ -722,11 +722,11 @@ class InstallRepositoryManager(object):
         install_repository_dependencies = install_options.get('install_repository_dependencies', False)
         install_resolver_dependencies = install_options.get('install_resolver_dependencies', False)
         install_tool_dependencies = install_options.get('install_tool_dependencies', False)
-        if install_tool_dependencies:
-            self.__assert_can_install_dependencies()
         new_tool_panel_section_label = install_options.get('new_tool_panel_section_label', '')
         tool_panel_section_mapping = install_options.get('tool_panel_section_mapping', {})
         shed_tool_conf = install_options.get('shed_tool_conf', None)
+        if install_tool_dependencies and self.app.tool_dependency_dir is None:
+            raise exceptions.ConfigDoesNotAllowException("Tool dependency installation is disabled in your configuration files.")
         if shed_tool_conf:
             # Get the tool_path setting.
             shed_conf_dict = self.tpm.get_shed_tool_conf_dict(shed_tool_conf)
@@ -891,7 +891,6 @@ class InstallRepositoryManager(object):
                                               shed_tool_conf=shed_tool_conf,
                                               reinstalling=reinstalling,
                                               tool_panel_section_mapping=tool_panel_section_mapping)
-            self.install_model.context.refresh(tool_shed_repository)
             metadata = tool_shed_repository.metadata
             if 'tools' in metadata and install_resolver_dependencies:
                 self.update_tool_shed_repository_status(tool_shed_repository,
@@ -899,8 +898,9 @@ class InstallRepositoryManager(object):
                 new_tools = [self.app.toolbox._tools_by_id.get(tool_d['guid'], None) for tool_d in metadata['tools']]
                 new_requirements = set([tool.requirements.packages for tool in new_tools if tool])
                 [self._view.install_dependencies(r) for r in new_requirements]
-                if self.app.config.use_cached_dependency_manager:
-                    [self.app.toolbox.dependency_manager.build_cache(r) for r in new_requirements]
+                dependency_manager = self.app.toolbox.dependency_manager
+                if dependency_manager.cached:
+                    [dependency_manager.build_cache(r) for r in new_requirements]
 
             if install_tool_dependencies and tool_shed_repository.tool_dependencies and 'tool_dependencies' in metadata:
                 work_dir = tempfile.mkdtemp(prefix="tmp-toolshed-itsr")
@@ -990,13 +990,6 @@ class InstallRepositoryManager(object):
             tool_shed_repository.error_message = str(error_message)
         self.install_model.context.add(tool_shed_repository)
         self.install_model.context.flush()
-
-    def __assert_can_install_dependencies(self):
-        if self.app.config.tool_dependency_dir is None:
-            no_tool_dependency_dir_message = "Tool dependencies can be automatically installed only if you set "
-            no_tool_dependency_dir_message += "the value of your 'tool_dependency_dir' setting in your Galaxy "
-            no_tool_dependency_dir_message += "configuration file (galaxy.ini) and restart your Galaxy server.  "
-            raise exceptions.ConfigDoesNotAllowException(no_tool_dependency_dir_message)
 
 
 class RepositoriesInstalledException(exceptions.RequestParameterInvalidException):

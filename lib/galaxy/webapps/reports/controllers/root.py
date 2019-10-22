@@ -1,6 +1,6 @@
 import logging
 
-from galaxy.web.base.controller import (
+from galaxy.webapps.base.controller import (
     BaseUIController,
     web
 )

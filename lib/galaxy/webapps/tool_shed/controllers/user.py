@@ -9,8 +9,8 @@ from galaxy import (
     web
 )
 from galaxy.security.validate_user_input import (
-    transform_publicname,
     validate_email,
+    validate_password,
     validate_publicname
 )
 from galaxy.web import url_for
@@ -153,7 +153,7 @@ class User(BaseUser):
         return trans.fill_template('/webapps/tool_shed/user/register.mako',
                                    cntrller=cntrller,
                                    email=email,
-                                   username=transform_publicname(trans, username),
+                                   username=username,
                                    subscribe_checked=subscribe_checked,
                                    show_user_prepopulate_form=show_user_prepopulate_form,
                                    use_panels=use_panels,
@@ -454,9 +454,9 @@ class User(BaseUser):
                                        active_view="user")
 
     def __validate(self, trans, email, password, confirm, username):
-        # If coming from the tool shed webapp, we'll require a public user name
-        if not username:
-            return "A public user name is required in the tool shed."
         if username in ['repos']:
-            return "The term <b>%s</b> is a reserved word in the tool shed, so it cannot be used as a public user name." % escape(username)
-        return super(User, self).__validate(trans, email, password, confirm, username)
+            return "The term '%s' is a reserved word in the Tool Shed, so it cannot be used as a public user name." % username
+        message = "\n".join([validate_email(trans, email),
+                             validate_password(trans, password, confirm),
+                             validate_publicname(trans, username)]).rstrip()
+        return message

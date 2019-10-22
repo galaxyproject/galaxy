@@ -1,6 +1,8 @@
 import json
 import logging
+import os
 import re
+from collections import OrderedDict
 from json import dumps
 
 from six import string_types
@@ -9,13 +11,12 @@ from galaxy import model
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.model import LibraryDatasetDatasetAssociation, WorkflowRequestInputParameter
 from galaxy.model.dataset_collections.builder import CollectionBuilder
+from galaxy.model.none_like import NoneDataset
 from galaxy.objectstore import ObjectStorePopulator
 from galaxy.tools.parameters import update_dataset_ids
 from galaxy.tools.parameters.basic import DataCollectionToolParameter, DataToolParameter, RuntimeValue
 from galaxy.tools.parameters.wrapped import WrappedParameters
 from galaxy.util import ExecutionTimer
-from galaxy.util.none_like import NoneDataset
-from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
 from galaxy.web import url_for
 
@@ -67,7 +68,7 @@ class DefaultToolAction(object):
         """
         if current_user_roles is None:
             current_user_roles = trans.get_current_user_roles()
-        input_datasets = odict()
+        input_datasets = OrderedDict()
         all_permissions = {}
 
         def record_permission(action, role_id):
@@ -336,7 +337,7 @@ class DefaultToolAction(object):
         # wrapped params are used by change_format action and by output.label; only perform this wrapping once, as needed
         wrapped_params = self._wrapped_params(trans, tool, incoming, inp_data)
 
-        out_data = odict()
+        out_data = OrderedDict()
         input_collections = dict((k, v[0][0]) for k, v in inp_dataset_collections.items())
         output_collections = OutputCollections(
             trans,
@@ -392,6 +393,10 @@ class DefaultToolAction(object):
                             break
 
                 data = app.model.HistoryDatasetAssociation(extension=ext, dataset=dataset, create_dataset=create_datasets, flush=False)
+                if create_datasets:
+                    from_work_dir = output.from_work_dir
+                    if from_work_dir is not None:
+                        data.dataset.created_from_basename = os.path.basename(from_work_dir)
                 if hidden is None:
                     hidden = output.hidden
                 if not hidden and dataset_collection_elements is not None:  # Mapping over a collection - hide datasets
@@ -513,9 +518,8 @@ class DefaultToolAction(object):
         add_datasets_timer = ExecutionTimer()
         # Add all the top-level (non-child) datasets to the history unless otherwise specified
         datasets_to_persist = []
-        for name in out_data.keys():
+        for name, data in out_data.items():
             if name not in child_dataset_names and name not in incoming:  # don't add children; or already existing datasets, i.e. async created
-                data = out_data[name]
                 datasets_to_persist.append(data)
         # Set HID and add to history.
         # This is brand new and certainly empty so don't worry about quota.
@@ -664,6 +668,7 @@ class DefaultToolAction(object):
 
     def _new_job_for_session(self, trans, tool, history):
         job = trans.app.model.Job()
+        job.galaxy_version = trans.app.config.version_major
         galaxy_session = None
 
         if hasattr(trans, "get_galaxy_session"):
@@ -673,7 +678,8 @@ class DefaultToolAction(object):
                 job.session_id = model.cached_id(galaxy_session)
         if trans.user is not None:
             job.user_id = model.cached_id(trans.user)
-        job.history_id = model.cached_id(history)
+        if history:
+            job.history_id = model.cached_id(history)
         job.tool_id = tool.id
         try:
             # For backward compatibility, some tools may not have versions yet.
@@ -818,7 +824,7 @@ class OutputCollections(object):
                     # We don't care about the repeat index, we just need to find the correct DataCollectionToolParameter
                 else:
                     key = group
-                if isinstance(data_param, odict):
+                if isinstance(data_param, OrderedDict):
                     data_param = data_param.get(key)
                 else:
                     data_param = data_param.inputs.get(key)
@@ -927,7 +933,7 @@ def get_ext_or_implicit_ext(hda):
 
 def determine_output_format(output, parameter_context, input_datasets, input_dataset_collections, random_input_ext, python_template_version='3'):
     """ Determines the output format for a dataset based on an abstract
-    description of the output (galaxy.tools.parser.ToolOutput), the parameter
+    description of the output (galaxy.tool_util.parser.ToolOutput), the parameter
     wrappers, a map of the input datasets (name => HDA), and the last input
     extensions in the tool form.
 

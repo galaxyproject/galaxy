@@ -1,3 +1,4 @@
+import errno
 import logging
 from xml.etree import ElementTree as XmlET
 
@@ -31,7 +32,19 @@ class ToolPanelManager(object):
         shed_tool_conf = shed_tool_conf_dict['config_filename']
         tool_path = shed_tool_conf_dict['tool_path']
         config_elems = []
-        tree, error_message = xml_util.parse_xml(shed_tool_conf)
+        # Ideally shed_tool_conf.xml would be created before the repo is cloned and added to the DB, but this is called
+        # from too many places to make it feasible at this time
+        try:
+            tree, error_message = xml_util.parse_xml(shed_tool_conf, check_exists=False)
+        except (OSError, IOError) as exc:
+            if (exc.errno == errno.ENOENT and shed_tool_conf_dict.get('create', None) is not None):
+                log.info('Creating shed tool config with default contents: %s', shed_tool_conf)
+                with open(shed_tool_conf, 'w') as fh:
+                    fh.write(shed_tool_conf_dict['create'])
+                tree, error_message = xml_util.parse_xml(shed_tool_conf)
+            else:
+                log.error('Unable to load shed tool config: %s', shed_tool_conf)
+                raise
         if tree:
             root = tree.getroot()
             for elem in root:
@@ -42,6 +55,8 @@ class ToolPanelManager(object):
             # Persist the altered shed_tool_config file.
             self.config_elems_to_xml_file(config_elems, shed_tool_conf, tool_path)
             self.app.wait_for_toolbox_reload(old_toolbox)
+        else:
+            log.error(error_message)
 
     def add_to_tool_panel(self, repository_name, repository_clone_url, changeset_revision, repository_tools_tups, owner,
                           shed_tool_conf, tool_panel_dict, new_install=True, tool_panel_section_mapping={}):

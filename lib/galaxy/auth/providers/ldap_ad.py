@@ -7,7 +7,11 @@ Created on 15/07/2014
 import logging
 
 from galaxy.exceptions import ConfigurationError
-from galaxy.util import string_as_bool
+from galaxy.security.validate_user_input import transform_publicname
+from galaxy.util import (
+    string_as_bool,
+    unicodify
+)
 from ..providers import AuthProvider
 
 try:
@@ -39,7 +43,7 @@ def _parse_ldap_options(options_unparsed):
         try:
             key, value = opt.split("=")
         except ValueError:
-            log.warning("LDAP authenticate: Invalid syntax '%s' inside <ldap-options> element. Syntax should be option1=value1,option2=value2" % opt)
+            log.warning("LDAP authenticate: Invalid syntax '%s' inside <ldap-options> element. Syntax should be option1=value1,option2=value2", opt)
             continue
 
         if not key.startswith(prefix):
@@ -73,12 +77,12 @@ class LDAP(AuthProvider):
     (formatted as specified).
     """
     plugin_type = 'ldap'
+    role_search_option = 'auto-register-roles'
 
     def __init__(self):
         super(LDAP, self).__init__()
         self.auto_create_roles_or_groups = False
         self.role_search_attribute = None
-        self.role_search_option = 'auto-register-roles'
 
     def check_config(self, username, email, options):
         ok = True
@@ -151,6 +155,8 @@ class LDAP(AuthProvider):
                 # setup search
                 attributes = [_.strip().format(**params)
                               for _ in options['search-fields'].split(',')]
+                if 'search-memberof-filter' in options:
+                    attributes.append('memberOf')
                 suser = l.search_ext_s(_get_subs(options, 'search-base', params),
                     ldap.SCOPE_SUBTREE,
                     _get_subs(options, 'search-filter', params), attributes,
@@ -161,15 +167,17 @@ class LDAP(AuthProvider):
                     log.warning('LDAP authenticate: search returned no results')
                     return (failure_mode, None)
                 dn, attrs = suser[0]
-                log.debug(("LDAP authenticate: dn is %s" % dn))
-                log.debug(("LDAP authenticate: search attributes are %s" % attrs))
+                log.debug("LDAP authenticate: dn is %s", dn)
+                log.debug("LDAP authenticate: search attributes are %s", attrs)
                 if hasattr(attrs, 'has_key'):
                     for attr in attributes:
-                        if self.role_search_attribute and attr == self.role_search_attribute[1:-1]:  # strip brackets
+                        if self.role_search_attribute and attr == self.role_search_attribute[1:-1]:  # strip curly brackets
                             # keep role names as list
-                            params[self.role_search_option] = attrs[attr]
+                            params[self.role_search_option] = [unicodify(_) for _ in attrs[attr]]
+                        elif attr == 'memberOf':
+                            params[attr] = [unicodify(_) for _ in attrs[attr]]
                         elif attr in attrs:
-                            params[attr] = str(attrs[attr][0])
+                            params[attr] = unicodify(attrs[attr][0])
                         else:
                             params[attr] = ""
 
@@ -177,7 +185,6 @@ class LDAP(AuthProvider):
                     raise ConfigurationError("Missing or mismatching LDAP parameters for %s. Make sure the %s is "
                                              "included in the 'search-fields'." %
                                              (self.role_search_option, self.role_search_attribute))
-                log.critical(params)
                 params['dn'] = dn
             except Exception:
                 log.exception('LDAP authenticate: search exception')
@@ -190,10 +197,10 @@ class LDAP(AuthProvider):
         See abstract method documentation.
         """
         if not options['redact_username_in_logs']:
-            log.debug("LDAP authenticate: email is %s" % email)
-            log.debug("LDAP authenticate: username is %s" % username)
+            log.debug("LDAP authenticate: email is %s", email)
+            log.debug("LDAP authenticate: username is %s", username)
 
-        log.debug("LDAP authenticate: options are %s" % options)
+        log.debug("LDAP authenticate: options are %s", options)
 
         failure_mode, params = self.ldap_search(email, username, options)
         if not params:
@@ -205,19 +212,24 @@ class LDAP(AuthProvider):
             if not self._authenticate(params, options):
                 return failure_mode, '', ''
 
+        # check whether the user is a member of a specified group/domain/...
+        if 'search-memberof-filter' in options:
+            search_filter = _get_subs(options, 'search-memberof-filter', params)
+            if not any(search_filter in ad_node_name for ad_node_name in params['memberOf']):
+                return failure_mode, '', ''
+
         attributes = {}
         if self.auto_create_roles_or_groups:
             attributes['roles'] = params[self.role_search_option]
         return (True,
                 _get_subs(options, 'auto-register-email', params),
-                _get_subs(options, 'auto-register-username', params),
+                transform_publicname(_get_subs(options, 'auto-register-username', params)),
                 attributes)
 
     def _authenticate(self, params, options):
         """
         Do the actual authentication by binding as the user to check their credentials
         """
-        import ldap
         try:
             l = ldap.initialize(_get_subs(options, 'server', params))
             l.protocol_version = 3
@@ -230,11 +242,10 @@ class LDAP(AuthProvider):
                 # The "Who am I?" extended operation is not supported by this LDAP server
                 pass
             else:
-                if not options['redact_username_in_logs']:
-                    log.debug("LDAP authenticate: whoami is %s", whoami)
-
                 if whoami is None:
                     raise RuntimeError('LDAP authenticate: anonymous bind')
+                if not options['redact_username_in_logs']:
+                    log.debug("LDAP authenticate: whoami is %s", whoami)
         except Exception:
             log.warning('LDAP authenticate: bind exception', exc_info=True)
             return False

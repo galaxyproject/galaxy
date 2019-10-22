@@ -22,7 +22,7 @@ from galaxy.util import (
     unicodify
 )
 from galaxy.web import expose_api_anonymous_and_sessionless
-from galaxy.web.base.controller import BaseAPIController
+from galaxy.webapps.base.controller import BaseAPIController
 
 log = logging.getLogger(__name__)
 

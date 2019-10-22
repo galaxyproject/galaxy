@@ -29,33 +29,34 @@ export function make_popupmenu(button_element, initial_options) {
         // Need setTimeouts so clicks don't interfere with each other
         setTimeout(() => {
             // Dynamically generate the wrapper holding all the selectable options of the menu.
-            var menu_element = $(`<ul class='dropdown-menu' id='${button_element.attr("id")}-menu'></ul>`);
+            var menu_element = $(`<div class="dropdown-menu" id="${button_element.attr("id")}-menu"/>`);
             var options = button_element.data("menu_options");
             if (_.size(options) <= 0) {
-                $("<li>No Options.</li>").appendTo(menu_element);
+                $('<div class="dropdown-item">No Options.</div>').appendTo(menu_element);
             }
             $.each(options, (k, v) => {
                 if (v) {
                     // Action can be either an anonymous function and a mapped dict.
                     const action = v.action || v;
                     const url = v.url || "javascript:void(0);";
-                    menu_element.append(
-                        $("<li></li>").append(
-                            $("<a>")
-                                .attr("href", url)
-                                .html(k)
-                                .click(action)
-                        )
-                    );
+                    const $a = $("<a>")
+                        .addClass("dropdown-item")
+                        .attr("href", url)
+                        .html(k)
+                        .click(action);
+                    if (v.class) {
+                        $a.addClass(v.class);
+                    }
+                    menu_element.append($a);
                 } else {
                     menu_element.append(
-                        $("<li></li>")
-                            .addClass("head")
-                            .append($("<a href='#'></a>").html(k))
+                        $("<div/>")
+                            .addClass("dropdown-item head")
+                            .append($("<a href='javascript:void(0)' role='button'></a>").html(k))
                     );
                 }
             });
-            var wrapper = $("<div class='popmenu-wrapper' style='position: absolute;left: 0; top: -1000;'></div>")
+            var wrapper = $("<div class='popmenu-wrapper' style='position: absolute;left: 0;'></div>")
                 .append(menu_element)
                 .appendTo("body");
 

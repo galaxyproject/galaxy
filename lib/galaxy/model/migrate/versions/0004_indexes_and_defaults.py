@@ -1,7 +1,8 @@
 """
 """
+from __future__ import print_function
+
 import logging
-import sys
 
 from sqlalchemy import (
     MetaData,
@@ -14,21 +15,17 @@ from galaxy.model.migrate.versions.util import (
 )
 
 log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
-handler = logging.StreamHandler(sys.stdout)
-format = "%(name)s %(levelname)s %(asctime)s %(message)s"
-formatter = logging.Formatter(format)
-handler.setFormatter(formatter)
-log.addHandler(handler)
-
 metadata = MetaData()
 
 
 def upgrade(migrate_engine):
+    print(__doc__)
     metadata.bind = migrate_engine
     metadata.reflect()
 
     User_table = Table("galaxy_user", metadata, autoload=True)
+    # The next add_index() calls are not needed any more after commit
+    # 7ee93c0995123b0f357abd649326295dfa06766c , but harmless
     add_index('ix_galaxy_user_deleted', User_table, 'deleted')
     add_index('ix_galaxy_user_purged', User_table, 'purged')
     # Set the default data in the galaxy_user table, but only for null values

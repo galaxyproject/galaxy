@@ -1,5 +1,6 @@
 import logging
 import math
+from collections import OrderedDict
 from json import dumps, loads
 
 from markupsafe import escape
@@ -8,7 +9,6 @@ from sqlalchemy.sql.expression import and_, false, func, null, or_, true
 
 from galaxy.model.item_attrs import get_foreign_key, UsesAnnotations, UsesItemRatings
 from galaxy.util import restore_text, sanitize_text, unicodify
-from galaxy.util.odict import odict
 from galaxy.web.framework import decorators, url_for
 
 
@@ -777,6 +777,27 @@ class DeletedColumn(GridColumn):
         return query
 
 
+class PurgedColumn(GridColumn):
+    """ Column that tracks and filters for items with purged attribute. """
+
+    def get_accepted_filters(self):
+        """ Returns a list of accepted filters for this column. """
+        accepted_filter_labels_and_vals = {"nonpurged" : "False", "purged" : "True", "all": "All"}
+        accepted_filters = []
+        for label, val in accepted_filter_labels_and_vals.items():
+            args = {self.key: val}
+            accepted_filters.append(GridColumnFilter(label, args))
+        return accepted_filters
+
+    def filter(self, trans, user, query, column_filter):
+        """Modify query to filter self.model_class by state."""
+        if column_filter == "All":
+            pass
+        elif column_filter in ["True", "False"]:
+            query = query.filter(self.model_class.purged == (column_filter == "True"))
+        return query
+
+
 class StateColumn(GridColumn):
     """
     Column that tracks and filters for items with state attribute.
@@ -852,7 +873,7 @@ class SharingStatusColumn(GridColumn):
 
     def get_accepted_filters(self):
         """ Returns a list of accepted filters for this column. """
-        accepted_filter_labels_and_vals = odict()
+        accepted_filter_labels_and_vals = OrderedDict()
         accepted_filter_labels_and_vals["private"] = "private"
         accepted_filter_labels_and_vals["shared"] = "shared"
         accepted_filter_labels_and_vals["accessible"] = "accessible"

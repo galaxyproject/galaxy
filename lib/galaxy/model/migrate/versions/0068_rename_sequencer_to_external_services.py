@@ -49,12 +49,8 @@ def upgrade(migrate_engine):
 
     # Add 'external_services_id' column to 'sample_dataset' table
     SampleDataset_table = Table("sample_dataset", metadata, autoload=True)
-    # SQLAlchemy Migrate has a bug when adding a column with both a ForeignKey and a index in SQLite
-    if migrate_engine.name != 'sqlite':
-        col = Column("external_service_id", Integer, ForeignKey("external_service.id", name='sample_dataset_external_services_id_fk'), index=True)
-    else:
-        col = Column("external_service_id", Integer, index=True)
-    add_column(col, SampleDataset_table, index_name="ix_sample_dataset_external_service_id")
+    col = Column("external_service_id", Integer, ForeignKey("external_service.id", name='sample_dataset_external_services_id_fk'), index=True)
+    add_column(col, SampleDataset_table, metadata, index_name="ix_sample_dataset_external_service_id")
 
     # populate the column
     cmd = "SELECT sample_dataset.id, request_type.sequencer_id " \
@@ -75,7 +71,7 @@ def upgrade(migrate_engine):
     # create the column as 'external_service_type_id'
     ExternalServices_table = Table("external_service", metadata, autoload=True)
     col = Column("external_service_type_id", TrimmedString(255))
-    add_column(col, ExternalServices_table)
+    add_column(col, ExternalServices_table, metadata)
 
     # populate this new column
     cmd = "UPDATE external_service SET external_service_type_id=sequencer_type_id"
@@ -107,7 +103,7 @@ def upgrade(migrate_engine):
             sequencer_id)
         migrate_engine.execute(cmd)
 
-    # drop the 'sequencer_id' column in the 'request_type' table
+    # TODO: Dropping a column used in a foreign key fails in MySQL, need to remove the FK first.
     drop_column('sequencer_id', 'request_type', metadata)
 
 
@@ -149,7 +145,7 @@ def downgrade(migrate_engine):
     # create the column 'sequencer_type_id'
     Sequencer_table = Table("sequencer", metadata, autoload=True)
     col = Column("sequencer_type_id", TrimmedString(255))  # should also have nullable=False
-    add_column(col, Sequencer_table)
+    add_column(col, Sequencer_table, metadata)
 
     # populate this new column
     cmd = "UPDATE sequencer SET sequencer_type_id=external_service_type_id"

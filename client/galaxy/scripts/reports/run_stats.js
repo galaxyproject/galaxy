@@ -178,9 +178,7 @@ export function create_chart(inp_data, name, time, title) {
             var m_x = margin.left;
             var m_y = margin.top + height;
             var l_x = m_x + width;
-            var l_y = m_y;
-
-            return `M${m_x} ${m_y} L ${l_x} ${l_y}`;
+            return `M${m_x} ${m_y} L ${l_x} ${m_y}`;
         });
 
     // Declare how high the y axis goes
@@ -212,9 +210,7 @@ export function create_chart(inp_data, name, time, title) {
             var axis = d3.select(`#y_${name}`).node();
             var left_pad = margin.left - axis.getBoundingClientRect().width - 5;
             var top_pad = margin.top + axis.getBoundingClientRect().height / 2 - 30;
-            var trans = `translate(${left_pad},${top_pad})rotate(-90)`;
-
-            return trans;
+            return `translate(${left_pad},${top_pad})rotate(-90)`;
         })
         .text("Number of Jobs");
 
@@ -625,9 +621,7 @@ export function create_histogram(inp_data, name, title) {
             var axis = d3.select(`#x_${name}`).node();
             var left_pad = margin.left + axis.getBoundingClientRect().width / 2 + 30;
             var top_pad = margin.top + height + axis.getBoundingClientRect().height + 10;
-            var trans = `translate(${left_pad},${top_pad})`;
-
-            return trans;
+            return `translate(${left_pad},${top_pad})`;
         })
         .text("ETA - hrs:mins");
 
@@ -654,9 +648,7 @@ export function create_histogram(inp_data, name, title) {
             var axis = d3.select(`#y_${name}`).node();
             var left_pad = margin.left - axis.getBoundingClientRect().width - 5;
             var top_pad = margin.top + axis.getBoundingClientRect().height / 2 - 30;
-            var trans = `translate(${left_pad},${top_pad})rotate(-90)`;
-
-            return trans;
+            return `translate(${left_pad},${top_pad})rotate(-90)`;
         })
         .text("Number of Jobs");
 

@@ -11,14 +11,14 @@
             @row-clicked="clicked"
             @filtered="filtered"
         >
-            <template slot="label" slot-scope="data">
+            <template v-slot:cell(label)="data">
                 <i v-if="data.item.isDataset" class="fa fa-file-o" /> <i v-else class="fa fa-folder" />
                 {{ data.value ? data.value : "-" }}
             </template>
-            <template slot="details" slot-scope="data">
+            <template v-slot:cell(details)="data">
                 {{ data.value ? data.value : "-" }}
             </template>
-            <template slot="time" slot-scope="data">
+            <template v-slot:cell(time)="data">
                 {{ data.value ? data.value : "-" }}
             </template>
         </b-table>
@@ -57,17 +57,20 @@ export default {
     data() {
         return {
             currentPage: 1,
-            fields: {
-                label: {
+            fields: [
+                {
+                    key: "label",
                     sortable: true
                 },
-                details: {
+                {
+                    key: "details",
                     sortable: true
                 },
-                time: {
+                {
+                    key: "time",
                     sortable: true
                 }
-            },
+            ],
             nItems: 0,
             perPage: 100
         };

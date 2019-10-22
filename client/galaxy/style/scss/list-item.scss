@@ -13,11 +13,11 @@ $vertical-gap: 8px;
 
 %help-text {
     font-weight: normal;
-    color: #555;
+    color: $gray-700;
 }
 
 .list-item {
-    border: 1px solid $border-default-color;
+    border: 1px solid $border-color;
 
     .vertical-spacing {
         @extend %vertical-spacing;
@@ -51,7 +51,7 @@ $vertical-gap: 8px;
     .help-text {
         @extend %help-text;
         font-weight: normal;
-        color: #555;
+        color: $gray-700;
     }
 
     .selector {
@@ -88,14 +88,14 @@ $vertical-gap: 8px;
             text-decoration: underline;
         }
         .subtitle {
-            color: #777;
+            color: $text-muted;
             font-size: 90%;
             a {
                 color: inherit;
             }
         }
         .state-description {
-            color: #777;
+            color: $text-muted;
             font-size: 90%;
             a {
                 color: inherit;
@@ -156,7 +156,7 @@ $vertical-gap: 8px;
             }
         }
         .subtitle {
-            color: #777;
+            color: $text-muted;
             font-size: 90%;
             a {
                 color: inherit;
@@ -225,7 +225,7 @@ $vertical-gap: 8px;
     background: white;
     padding: 4px;
     .list-items {
-        border: 1px solid $border-default-color;
+        border: 1px solid $border-color;
         border-radius: 3px;
         .list-item {
             &:first-child {

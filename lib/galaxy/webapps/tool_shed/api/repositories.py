@@ -28,7 +28,7 @@ from galaxy.web import (
     expose_api_anonymous_and_sessionless,
     expose_api_raw_anonymous_and_sessionless
 )
-from galaxy.web.base.controller import (
+from galaxy.webapps.base.controller import (
     BaseAPIController,
     HTTPBadRequest
 )
@@ -492,8 +492,8 @@ class RepositoriesController(BaseAPIController):
         if not conf.whoosh_index_dir:
             raise ConfigDoesNotAllowException('There is no directory for the search index specified. Please contact the administrator.')
         search_term = q.strip()
-        if len(search_term) < 3:
-            raise RequestParameterInvalidException('The search term has to be at least 3 characters long.')
+        if len(search_term) < 1:
+            raise RequestParameterInvalidException('The search term has to be at least one character long.')
 
         repo_search = RepoSearch()
 
@@ -502,12 +502,14 @@ class RepositoriesController(BaseAPIController):
                                        'repo_long_description_boost',
                                        'repo_homepage_url_boost',
                                        'repo_remote_repository_url_boost',
+                                       'categories_boost',
                                        'repo_owner_username_boost'])
         boosts = Boosts(float(conf.get('repo_name_boost', 0.9)),
                         float(conf.get('repo_description_boost', 0.6)),
                         float(conf.get('repo_long_description_boost', 0.5)),
                         float(conf.get('repo_homepage_url_boost', 0.3)),
                         float(conf.get('repo_remote_repository_url_boost', 0.2)),
+                        float(conf.get('categories_boost', 0.5)),
                         float(conf.get('repo_owner_username_boost', 0.3)))
 
         results = repo_search.search(trans,

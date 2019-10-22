@@ -39,7 +39,7 @@ from galaxy.web.framework import (
     helpers,
     url_for
 )
-from galaxy.web.stack import get_app_kwds
+from galaxy.web_stack import get_app_kwds
 
 log = logging.getLogger(__name__)
 
@@ -87,11 +87,16 @@ class WebApplication(base.WebApplication):
 
     def create_mako_template_lookup(self, galaxy_app, name):
         paths = []
+        # FIXME: should be os.path.join (galaxy_root, 'templates')?
+        if galaxy_app.config.template_path == './templates':
+            template_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'templates'))
+        else:
+            template_path = galaxy_app.config.template_path
         # First look in webapp specific directory
         if name is not None:
-            paths.append(os.path.join(galaxy_app.config.template_path, 'webapps', name))
+            paths.append(os.path.join(template_path, 'webapps', name))
         # Then look in root directory
-        paths.append(galaxy_app.config.template_path)
+        paths.append(template_path)
         # Create TemplateLookup with a small cache
         return mako.lookup.TemplateLookup(directories=paths,
                                           module_directory=galaxy_app.config.template_cache,
@@ -114,8 +119,8 @@ class WebApplication(base.WebApplication):
         Search for UI controllers in `package_name` and add
         them to the webapp.
         """
-        from galaxy.web.base.controller import BaseUIController
-        from galaxy.web.base.controller import ControllerUnavailable
+        from galaxy.webapps.base.controller import BaseUIController
+        from galaxy.webapps.base.controller import ControllerUnavailable
         package = import_module(package_name)
         controller_dir = package.__path__[0]
         for fname in os.listdir(controller_dir):
@@ -139,8 +144,8 @@ class WebApplication(base.WebApplication):
         Search for UI controllers in `package_name` and add
         them to the webapp.
         """
-        from galaxy.web.base.controller import BaseAPIController
-        from galaxy.web.base.controller import ControllerUnavailable
+        from galaxy.webapps.base.controller import BaseAPIController
+        from galaxy.webapps.base.controller import ControllerUnavailable
         package = import_module(package_name)
         controller_dir = package.__path__[0]
         for fname in os.listdir(controller_dir):
@@ -271,6 +276,14 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         t = Translations.load(dirname='locale', locales=locales, domain='ginga')
         self.template_context.update(dict(_=t.ugettext, n_=t.ugettext, N_=t.ungettext))
 
+    def set_cors_origin(self, origin=None):
+        if origin is None:
+            origin = self.request.headers.get("Origin", None)
+        if origin:
+            self.response.headers['Access-Control-Allow-Origin'] = origin
+        elif 'Access-Control-Allow-Origin' in self.response.headers:
+            del self.response.headers['Access-Control-Allow-Origin']
+
     def set_cors_headers(self):
         """Allow CORS requests if configured to do so by echoing back the request's
         'Origin' header (if any) as the response header 'Access-Control-Allow-Origin'
@@ -308,7 +321,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         origin = urlparse(origin_header).hostname
         # check against the list of allowed strings/regexp hostnames, echo original if cleared
         if is_allowed_origin(origin):
-            self.response.headers['Access-Control-Allow-Origin'] = origin_header
+            self.set_cors_origin(origin=origin_header)
             # TODO: see the to do on ALLOWED_METHODS above
             # self.response.headers[ 'Access-Control-Allow-Methods' ] = ', '.join( ALLOWED_METHODS )
 
@@ -361,6 +374,8 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
             self.response.cookies[name]['httponly'] = True
         except CookieError as e:
             log.warning("Error setting httponly attribute in cookie '%s': %s" % (name, e))
+        if self.app.config.cookie_domain is not None:
+            self.response.cookies[name]['domain'] = self.app.config.cookie_domain
 
     def _authenticate_api(self, session_cookie):
         """
@@ -431,14 +446,14 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
             # Decode the cookie value to get the session_key
             try:
                 session_key = self.security.decode_guid(secure_id)
+                if session_key:
+                    # Retrieve the galaxy_session id via the unique session_key
+                    galaxy_session = self.sa_session.query(self.app.model.GalaxySession) \
+                                                    .filter(and_(self.app.model.GalaxySession.table.c.session_key == session_key,
+                                                                 self.app.model.GalaxySession.table.c.is_valid == true())).options(joinedload("user")).first()
             except Exception:
                 # We'll end up creating a new galaxy_session
                 session_key = None
-            if session_key:
-                # Retrieve the galaxy_session id via the unique session_key
-                galaxy_session = self.sa_session.query(self.app.model.GalaxySession) \
-                                                .filter(and_(self.app.model.GalaxySession.table.c.session_key == session_key,
-                                                             self.app.model.GalaxySession.table.c.is_valid == true())).options(joinedload("user")).first()
         # If remote user is in use it can invalidate the session and in some
         # cases won't have a cookie set above, so we need to to check some
         # things now.
@@ -962,6 +977,10 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         return str(template)
 
 
+def default_url_path(path):
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), path))
+
+
 def build_native_uwsgi_app(paste_factory, config_section):
     """uwsgi can load paste factories with --ini-paste, but this builds non-paste uwsgi apps.
 
@@ -986,10 +1005,13 @@ def build_url_map(app, global_conf, local_conf):
     # Send to dynamic app by default
     urlmap["/"] = app
     # Define static mappings from config
-    urlmap["/static"] = Static(conf.get("static_dir", "./static/"), cache_time)
-    urlmap["/images"] = Static(conf.get("static_images_dir", "./static/images"), cache_time)
-    urlmap["/static/scripts"] = Static(conf.get("static_scripts_dir", "./static/scripts/"), cache_time)
-    urlmap["/static/style"] = Static(conf.get("static_style_dir", "./static/style/blue"), cache_time)
-    urlmap["/favicon.ico"] = Static(conf.get("static_favicon_dir", "./static/favicon.ico"), cache_time)
-    urlmap["/robots.txt"] = Static(conf.get("static_robots_txt", "./static/robots.txt"), cache_time)
+    urlmap["/static"] = Static(conf.get("static_dir", default_url_path("static/")), cache_time)
+    urlmap["/images"] = Static(conf.get("static_images_dir", default_url_path("static/images")), cache_time)
+    urlmap["/static/scripts"] = Static(conf.get("static_scripts_dir", default_url_path("static/scripts/")), cache_time)
+    urlmap["/static/style"] = Static(conf.get("static_style_dir", default_url_path("static/style/blue")), cache_time)
+    urlmap["/static/welcome.html"] = Static(conf.get("static_welcome_html", default_url_path("static/welcome.html")), cache_time)
+    urlmap["/favicon.ico"] = Static(conf.get("static_favicon_dir", default_url_path("static/favicon.ico")), cache_time)
+    urlmap["/robots.txt"] = Static(conf.get("static_robots_txt", default_url_path("static/robots.txt")), cache_time)
+    if 'static_local_dir' in conf:
+        urlmap["/static_local"] = Static(conf["static_local_dir"], cache_time)
     return urlmap, cache_time

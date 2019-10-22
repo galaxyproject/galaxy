@@ -57,7 +57,7 @@ def wrap_if_allowed(app, stack, wrap, name=None, args=None, kwargs=None):
 
     :type   app:    :class:`galaxy.web.framework.webapp.WebApplication` subclass
     :param  app:    application to wrap
-    :type   stack:  :class:`galaxy.web.stack.ApplicationStack` subclass
+    :type   stack:  :class:`galaxy.web_stack.ApplicationStack` subclass
     :param  stack:  instance of application stack implementing `allowed_middleware()` method
     :type   wrap:   types.FunctionType or types.LambdaType
     :param  wrap:   function to wrap application with

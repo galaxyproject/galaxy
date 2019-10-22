@@ -4,6 +4,7 @@ Manager and Serializer for Users.
 import logging
 import random
 import socket
+import time
 from datetime import datetime
 
 from markupsafe import escape
@@ -19,7 +20,12 @@ from galaxy.managers import (
     base,
     deletable
 )
-from galaxy.security.validate_user_input import validate_email, validate_password, validate_publicname
+from galaxy.security.validate_user_input import (
+    validate_email,
+    validate_password,
+    validate_publicname
+)
+from galaxy.util.hash_util import new_secure_hash
 from galaxy.web import url_for
 
 log = logging.getLogger(__name__)
@@ -108,10 +114,92 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             self.app.security_agent.user_set_default_permissions(user, default_access_private=permissions)
         return user
 
-    def delete(self, user):
-        user.deleted = True
-        self.session().add(user)
-        self.session().flush()
+    def delete(self, user, flush=True):
+        """Mark the given user deleted."""
+        if not self.app.config.allow_user_deletion:
+            raise exceptions.ConfigDoesNotAllowException('The configuration of this Galaxy instance does not allow admins to delete users.')
+        super(UserManager, self).delete(user, flush=flush)
+
+    def undelete(self, user, flush=True):
+        """Remove the deleted flag for the given user."""
+        if not self.app.config.allow_user_deletion:
+            raise exceptions.ConfigDoesNotAllowException('The configuration of this Galaxy instance does not allow admins to undelete users.')
+        if user.purged:
+            raise exceptions.ItemDeletionException('Purged user cannot be undeleted.')
+        super(UserManager, self).undelete(user, flush=flush)
+
+    def purge(self, user, flush=True):
+        """Purge the given user. They must have the deleted flag already."""
+        if not self.app.config.allow_user_deletion:
+            raise exceptions.ConfigDoesNotAllowException('The configuration of this Galaxy instance does not allow admins to delete or purge users.')
+        if not user.deleted:
+            raise exceptions.MessageException('User \'%s\' has not been deleted, so they cannot be purged.' % user.email)
+        private_role = self.app.security_agent.get_private_user_role(user)
+        # Delete History
+        for active_history in user.active_histories:
+            self.session().refresh(active_history)
+            for hda in active_history.active_datasets:
+                # Delete HistoryDatasetAssociation
+                hda.deleted = True
+                self.session().add(hda)
+            active_history.deleted = True
+            self.session().add(active_history)
+        # Delete UserGroupAssociations
+        for uga in user.groups:
+            self.session().delete(uga)
+        # Delete UserRoleAssociations EXCEPT FOR THE PRIVATE ROLE
+        for ura in user.roles:
+            if ura.role_id != private_role.id:
+                self.session().delete(ura)
+        # Delete UserAddresses
+        for address in user.addresses:
+            self.session().delete(address)
+        compliance_log = logging.getLogger('COMPLIANCE')
+        compliance_log.info('delete-user-event: %s' % user.username)
+        # Maybe there is some case in the future where an admin needs
+        # to prove that a user was using a server for some reason (e.g.
+        # a court case.) So we make this painfully hard to recover (and
+        # not immediately reversable) in line with GDPR, but still
+        # leave open the possibility to prove someone was part of the
+        # server just in case. By knowing the exact email + approximate
+        # time of deletion, one could run through hashes for every
+        # second of the surrounding days/weeks.
+        pseudorandom_value = str(int(time.time()))
+        # Replace email + username with a (theoretically) unreversable
+        # hash. If provided with the username we can probably re-hash
+        # to identify if it is needed for some reason.
+        #
+        # Deleting multiple times will re-hash the username/email
+        email_hash = new_secure_hash(user.email + pseudorandom_value)
+        uname_hash = new_secure_hash(user.username + pseudorandom_value)
+        # We must also redact username
+        for role in user.all_roles():
+            if self.app.config.redact_username_during_deletion:
+                role.name = role.name.replace(user.username, uname_hash)
+                role.description = role.description.replace(user.username, uname_hash)
+
+            if self.app.config.redact_email_during_deletion:
+                role.name = role.name.replace(user.email, email_hash)
+                role.description = role.description.replace(user.email, email_hash)
+            user.email = email_hash
+            user.username = uname_hash
+        # Redact user addresses as well
+        if self.app.config.redact_user_address_during_deletion:
+            user_addresses = self.session().query(self.app.model.UserAddress) \
+                .filter(self.app.model.UserAddress.user_id == user.id).all()
+            for addr in user_addresses:
+                addr.desc = new_secure_hash(addr.desc + pseudorandom_value)
+                addr.name = new_secure_hash(addr.name + pseudorandom_value)
+                addr.institution = new_secure_hash(addr.institution + pseudorandom_value)
+                addr.address = new_secure_hash(addr.address + pseudorandom_value)
+                addr.city = new_secure_hash(addr.city + pseudorandom_value)
+                addr.state = new_secure_hash(addr.state + pseudorandom_value)
+                addr.postal_code = new_secure_hash(addr.postal_code + pseudorandom_value)
+                addr.country = new_secure_hash(addr.country + pseudorandom_value)
+                addr.phone = new_secure_hash(addr.phone + pseudorandom_value)
+                self.session().add(addr)
+        # Purge the user
+        super(UserManager, self).purge(user, flush=flush)
 
     def _error_on_duplicate_email(self, email):
         """
@@ -150,25 +238,18 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         Do not pass trans to simply check if an existing user object is an admin user,
         pass trans when checking permissions.
         """
-        admin_emails = self._admin_emails()
         if user is None:
             # Anonymous session or master_api_key used, if master_api_key is detected
             # return True.
-            rval = bool(trans and trans.user_is_admin)
-            return rval
-        return bool(admin_emails and user.email in admin_emails)
-
-    def _admin_emails(self):
-        """
-        Return a list of admin email addresses from the config file.
-        """
-        return [email.strip() for email in self.app.config.get("admin_users", "").split(",")]
+            return trans and trans.user_is_admin
+        return self.app.config.is_admin_user(user)
 
     def admins(self, filters=None, **kwargs):
         """
         Return a list of admin Users.
         """
-        filters = self._munge_filters(self.model_class.email.in_(self._admin_emails()), filters)
+        admin_emails = self.app.config.admin_users_list
+        filters = self._munge_filters(self.model_class.email.in_(admin_emails), filters)
         return super(UserManager, self).list(filters=filters, **kwargs)
 
     def error_unless_admin(self, user, msg="Administrators only", **kwargs):
@@ -413,10 +494,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
                 return "Failed to produce password reset token. User not found."
 
     def get_reset_token(self, trans, email):
-        reset_user = trans.sa_session.query(self.app.model.User).filter(self.app.model.User.table.c.email == email).first()
-        if not reset_user:
-            # Perform a case-insensitive check only if the user wasn't found
-            reset_user = trans.sa_session.query(self.app.model.User).filter(func.lower(self.app.model.User.table.c.email) == func.lower(email)).first()
+        reset_user = trans.sa_session.query(self.app.model.User).filter(func.lower(self.app.model.User.table.c.email) == email.lower()).first()
         if reset_user:
             prt = self.app.model.PasswordResetToken(reset_user)
             trans.sa_session.add(prt)

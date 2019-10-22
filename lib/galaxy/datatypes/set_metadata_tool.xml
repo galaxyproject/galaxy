@@ -1,4 +1,4 @@
-<tool id="__SET_METADATA__" name="Set External Metadata" version="1.0.1" tool_type="set_metadata">
+<tool id="__SET_METADATA__" name="Set External Metadata" version="1.0.2" tool_type="set_metadata">
     <type class="SetMetadataTool" module="galaxy.tools"/>
     <requirements>
         <requirement type="package" version="1.5">bcftools</requirement>

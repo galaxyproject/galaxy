@@ -1,5 +1,5 @@
-galaxy\.webapps\.reports\.framework package
-===========================================
+galaxy.webapps.reports.framework package
+========================================
 
 .. automodule:: galaxy.webapps.reports.framework
     :members:
@@ -9,8 +9,8 @@ galaxy\.webapps\.reports\.framework package
 Submodules
 ----------
 
-galaxy\.webapps\.reports\.framework\.grids module
--------------------------------------------------
+galaxy.webapps.reports.framework.grids module
+---------------------------------------------
 
 .. automodule:: galaxy.webapps.reports.framework.grids
     :members:
