@@ -906,7 +906,8 @@ model.HistoryDatasetCollectionAssociation.table = Table(
     Column("implicit_output_name", Unicode(255), nullable=True),
     Column("job_id", ForeignKey("job.id"), index=True, nullable=True),
     Column("implicit_collection_jobs_id", ForeignKey("implicit_collection_jobs.id"), index=True, nullable=True),
-)
+    Column("create_time", DateTime, default=now),
+    Column("update_time", DateTime, default=now, onupdate=now))
 
 model.LibraryDatasetCollectionAssociation.table = Table(
     "library_dataset_collection_association", metadata,
