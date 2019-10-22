@@ -72,7 +72,7 @@ class DataManagers(object):
                 # File does not exist
                 return None
         except Exception:
-            log.error("Error loading data_manager", exc_info=True)
+            log.exception("Error loading data_manager")
             return None
         if add_manager:
             self.add_manager(data_manager)
@@ -145,7 +145,7 @@ class DataManager(object):
         if path is None:
             tool_elem = elem.find('tool')
             assert tool_elem is not None, "Error loading tool for data manager. Make sure that a tool_file attribute or a tool tag set has been defined:\n%s" % (util.xml_to_string(elem))
-            path = tool_elem.get("file", path)
+            path = tool_elem.get("file")
             tool_guid = tool_elem.get("guid", None)
             # need to determine repository info so that dependencies will work correctly
             tool_shed_repository = self.data_managers.app.toolbox.get_tool_repository_from_xml_item(tool_elem, path)
@@ -154,7 +154,7 @@ class DataManager(object):
                                                        owner=tool_shed_repository.owner,
                                                        installed_changeset_revision=tool_shed_repository.installed_changeset_revision)
             # use shed_conf_file to determine tool_path
-            shed_conf_file = elem.get("shed_conf_file", None)
+            shed_conf_file = elem.get("shed_conf_file")
             if shed_conf_file:
                 shed_conf = self.data_managers.app.toolbox.get_shed_config_dict_by_filename(os.path.abspath(shed_conf_file), None)
                 if shed_conf:
