@@ -1,0 +1,23 @@
+<tool id="ADJ-01" name="Adjust-Timestamps" version="1.0.0">
+  <description>Adjust timestamps so Speech to Text output matches timestamps of original file</description>
+    <requirements>
+        <requirement type="package" version="8.30">coreutils</requirement>
+    </requirements>
+  <command detect_errors="exit_code">$__tool_directory__/adjust_timestamps.py $stt_json $adj_json $output_json</command>
+   <inputs>
+   <!-- should be wave data type -->
+    <param name="stt_json" type="data" format="json" label="From Speech to Text" help="Speech to text output"/>
+    <param name="adj_json" type="data" format="json" label="From Remove Segments" help="List of kept segments"/>
+  </inputs>
+  <outputs>
+    <data format="json" name="output_json" />
+  </outputs>
+  <tests>
+  </tests>
+  <help>
+.. class:: infomark
+
+Adjust timestamps of speech to text json
+
+  </help>
+</tool>

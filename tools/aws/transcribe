@@ -39,8 +39,8 @@ else
     echo "Last seqNo used in previous jobs is $last_seqNo"
     seqNo=$((last_seqNo+1))
 fi
-
-job_name=${job_name_prefix}-${seqNo}
+random_num=$RANDOM
+job_name=${job_name_prefix}-${seqNo}-${random_num}
 log_file=${job_directory}/${job_name}.log
 echo "echo ${input_file} ${output_file} ${audio_format} ${s3_bucket} ${s3_directory} ${job_directory} ${job_name} >> $log_file 2>&1" # debug
 

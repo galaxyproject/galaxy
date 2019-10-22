@@ -4,10 +4,13 @@
 import json
 import math
 import os
+from pathlib import Path
 import subprocess
 import sys
 import time
 from shutil import copyfile
+
+sys.path.insert(0, os.path.abspath('../../../../../tools/amp_json_schema'))
 
 from segmentation_schema import SegmentationSchema
 
