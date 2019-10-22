@@ -293,8 +293,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
 
             'display_apps',
             'display_types',
-            # 'visualizations',
-            'viz_count',
+            'visualizations',
 
             'validated_state',
             'validated_state_message',
@@ -341,7 +340,6 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             'display_apps'  : self.serialize_display_apps,
             'display_types' : self.serialize_old_display_applications,
             'visualizations': self.serialize_visualization_links,
-            'viz_count'     : self.visualization_links_count,
 
             # 'url'   : url_for( 'history_content_typed', history_id=encoded_history_id, id=encoded_id, type="dataset" ),
             # TODO: this intermittently causes a routes.GenerationException - temp use the legacy route to prevent this
@@ -418,10 +416,6 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
                     display_apps.append(dict(label=display_label, links=app_links))
 
         return display_apps
-
-    def visualization_links_count(self, hda, key, trans=None, **context):
-        links = self.serialize_visualization_links(hda, key, trans)
-        return len(links)
 
     def serialize_visualization_links(self, hda, key, trans=None, **context):
         """
