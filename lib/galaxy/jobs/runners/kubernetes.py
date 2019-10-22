@@ -405,7 +405,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             # Check if job.obj['status'] is empty,
             # return job_state unchanged if this is the case
             # as probably this means that the k8s API server hasn't
-            # have time to fill in the object status since the
+            # had time to fill in the object status since the
             # job was created only too recently.
             if len(job.obj['status']) == 0:
                 return job_state
