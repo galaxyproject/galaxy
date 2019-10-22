@@ -180,7 +180,8 @@ class DataManager(object):
                                                              tool_shed=tool_shed,
                                                              name=repository_name,
                                                              owner=repository_owner,
-                                                             installed_changeset_revision=installed_changeset_revision)
+                                                             installed_changeset_revision=installed_changeset_revision,
+                                                             from_cache=True)
                 if tool_shed_repository is None:
                     log.warning('Could not determine tool shed repository from database. This should only ever happen when running tests.')
                     # we'll set tool_path manually here from shed_conf_file

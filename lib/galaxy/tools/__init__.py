@@ -332,7 +332,8 @@ class ToolBox(BaseGalaxyToolBox):
             tool_shed=tool_shed,
             name=name,
             owner=owner,
-            installed_changeset_revision=installed_changeset_revision
+            installed_changeset_revision=installed_changeset_revision,
+            from_cache=True,
         )
 
     def __build_tool_version_select_field(self, tools, tool_id, set_selected):
@@ -519,7 +520,8 @@ class Tool(Dictifiable):
                                                             name=self.repository_name,
                                                             owner=self.repository_owner,
                                                             installed_changeset_revision=self.installed_changeset_revision,
-                                                            repository_id=self.repository_id)
+                                                            repository_id=self.repository_id,
+                                                            from_cache=True)
 
     @property
     def produces_collections_with_unknown_structure(self):
