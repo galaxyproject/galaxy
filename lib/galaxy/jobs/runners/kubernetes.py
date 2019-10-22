@@ -402,14 +402,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                                                     namespace=self.runner_params['k8s_namespace'])
         if len(jobs.response['items']) == 1:
             job = Job(self._pykube_api, jobs.response['items'][0])
-            # Check if job.obj['status'] is empty,
-            # return job_state unchanged if this is the case
-            # as probably this means that the k8s API server hasn't
-            # had time to fill in the object status since the
-            # job was created only too recently.
-            if len(job.obj['status']) == 0:
-                return job_state
-
             job_destination = job_state.job_wrapper.job_destination
             succeeded = 0
             active = 0
@@ -428,6 +420,13 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             else:
                 max_pod_retries = 1
 
+            # Check if job.obj['status'] is empty,
+            # return job_state unchanged if this is the case
+            # as probably this means that the k8s API server hasn't
+            # had time to fill in the object status since the
+            # job was created only too recently.
+            if len(job.obj['status']) == 0:
+                return job_state            
             if 'succeeded' in job.obj['status']:
                 succeeded = job.obj['status']['succeeded']
             if 'active' in job.obj['status']:
