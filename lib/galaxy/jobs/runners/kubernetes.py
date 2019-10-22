@@ -426,7 +426,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             # had time to fill in the object status since the
             # job was created only too recently.
             if len(job.obj['status']) == 0:
-                return job_state            
+                return job_state
             if 'succeeded' in job.obj['status']:
                 succeeded = job.obj['status']['succeeded']
             if 'active' in job.obj['status']:
