@@ -80,7 +80,6 @@ export default {
             }
         },
         load() {
-            this.loading = true;
             this.services
                 .getInstalledRepositories({
                     filter: x => x.status !== "Installed"
