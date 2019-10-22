@@ -135,9 +135,9 @@ class DataManager(object):
 
     def load_from_element(self, elem, tool_path):
         assert elem.tag == 'data_manager', 'A data manager configuration must have a "data_manager" tag as the root. "%s" is present' % (elem.tag)
-        self.declared_id = elem.get('id', None)
-        self.guid = elem.get('guid', None)
-        path = elem.get('tool_file', None)
+        self.declared_id = elem.get('id')
+        self.guid = elem.get('guid')
+        path = elem.get('tool_file')
         self.version = elem.get('version', self.version)
         tool_shed_repository = None
         tool_guid = None
@@ -146,7 +146,7 @@ class DataManager(object):
             tool_elem = elem.find('tool')
             assert tool_elem is not None, "Error loading tool for data manager. Make sure that a tool_file attribute or a tool tag set has been defined:\n%s" % (util.xml_to_string(elem))
             path = tool_elem.get("file")
-            tool_guid = tool_elem.get("guid", None)
+            tool_guid = tool_elem.get("guid")
             # need to determine repository info so that dependencies will work correctly
             tool_shed_repository = self.data_managers.app.toolbox.get_tool_repository_from_xml_item(tool_elem, path)
             self.tool_shed_repository_info_dict = dict(tool_shed=tool_shed_repository.tool_shed,
