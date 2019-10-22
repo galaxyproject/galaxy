@@ -81,7 +81,7 @@ class ToolShedRepository(object):
 
     @property
     def shed_config_filename(self):
-        return self.metadata.get('shed_config_filename', None)
+        return self.metadata.get('shed_config_filename')
 
     @shed_config_filename.setter
     def shed_config_filename(self, value):
@@ -119,8 +119,7 @@ class ToolShedRepository(object):
 
     def guess_shed_config(self, app, default=None):
         tool_ids = []
-        metadata = self.metadata
-        for tool in metadata.get('tools', []):
+        for tool in self.metadata.get('tools', []):
             tool_ids.append(tool.get('guid'))
         for shed_tool_conf_dict in app.toolbox.dynamic_confs(include_migrated_tool_conf=True):
             name = shed_tool_conf_dict['config_filename']
@@ -440,8 +439,8 @@ class ToolShedRepository(object):
         dependencies.
         """
         rd_tups_of_repositories_needed_for_compiling_td = []
-        repository_dependencies = self.metadata.get('repository_dependencies', None)
-        rd_tups = repository_dependencies['repository_dependencies']
+        repository_dependencies = self.metadata.get('repository_dependencies', {})
+        rd_tups = repository_dependencies.get('repository_dependencies', [])
         for rd_tup in rd_tups:
             if len(rd_tup) == 6:
                 tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = rd_tup
