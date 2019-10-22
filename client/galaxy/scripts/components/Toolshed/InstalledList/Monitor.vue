@@ -24,6 +24,9 @@
                 </template>
             </b-table>
         </b-card>
+        <b-alert v-else variant="info" show>
+            Currently there are no installing repositories.
+        </b-alert>
     </div>
 </template>
 <script>
