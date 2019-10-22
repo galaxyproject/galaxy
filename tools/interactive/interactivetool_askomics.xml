@@ -1,15 +1,23 @@
-<tool id="interactive_tool_askomics" tool_type="interactive" name="AskOmics" version="0.2">
-    <description>AskOmics, a visual SPARQL query builder</description>
+<tool id="interactive_tool_askomics" tool_type="interactive" name="AskOmics" version="1.0">
+    <description>a visual SPARQL query builder</description>
     <requirements>
-        <container type="docker">askomics/askomics-ie:19.01.3</container>
+        <container type="docker">askomics/flaskomics-with-dependencies:3.1.1</container>
     </requirements>
     <entry_points>
         <entry_point name="AskOmics instance on $infile.display_name" requires_domain="True">
-            <port>6543</port>
-            <url>/login_api_gie?key=${__user_name__}</url>
+            <port>5000</port>
+            <url>/loginapikey/${__user_name__}</url>
         </entry_point>
     </entry_points>
     <environment_variables>
+        <!-- AskOmics user -->
+        <environment_variable name="CREATE_USER">true</environment_variable>
+        <environment_variable name="USER_FIRST_NAME">${__user_name__}</environment_variable>
+        <environment_variable name="USER_LAST_NAME">Galaxy</environment_variable>
+        <environment_variable name="USER_USERNAME">${__user_name__}</environment_variable>
+        <environment_variable name="USER_EMAIL">${__user_email__}</environment_variable>
+        <environment_variable name="USER_APIKEY">${__user_name__}</environment_variable>
+        <!-- Galaxy info -->
         <environment_variable name="GALAXY_URL">${__app__.config.galaxy_infrastructure_url}</environment_variable> <!-- FIXME: Warning: The use of __app__ is deprecated and will break backward compatibility in the near future -->
         <environment_variable name="GALAXY_API_KEY" strip="True">
             #if $__user__:
@@ -19,26 +27,25 @@
                 #end for
             #end if
         </environment_variable>
-        <environment_variable name="GALAXY_USER_NAME">${__user_name__}</environment_variable>
-        <environment_variable name="GALAXY_USER_EMAIL">${__user_email__}</environment_variable>
-        <environment_variable name="ASKOMICS_API_KEY">${__user_name__}</environment_variable><!--FIXME: use a random string instead of the username-->
+        <!-- AskOmics config -->
+        <environment_variable name="DEPMODE">prod</environment_variable>
+        <environment_variable name="MAX_CELERY_QUEUE">1</environment_variable>
+        <environment_variable name="ASKO_askomics_subtitle">Galaxy</environment_variable>
+        <environment_variable name="ASKO_askomics_footer_message">AskOmics Interactive Tool for Galaxy</environment_variable>
+        <environment_variable name="ASKO_askomics_data_directory">/tmp/askomics-it</environment_variable>
+        <environment_variable name="ASKO_askomics_database_path">/tmp/askomics-it/database.db</environment_variable>
+        <environment_variable name="ASKO_triplestore_load_url">http://localhost:5000</environment_variable>
+        <!-- Virtuoso config -->
+        <environment_variable name="SPARQL_UPDATE">true</environment_variable>
+        <!-- 
+        Update the following environment variables according to how much memory you want to allow to virtuoso
+        see https://github.com/askomics/flaskomics-docker-compose#configure-virtuoso for help
+         -->
+        <environment_variable name="VIRT_Parameters_NumberOfBuffers">85000</environment_variable>
+        <environment_variable name="VIRT_Parameters_MaxDirtyBuffers">65000</environment_variable>
     </environment_variables>
     <command><![CDATA[
         #import re
-
-        ## AskOmics configuration, don't change anything here
-        export ASKO_files_dir='/tmp/askomics-ie' &&
-        export ASKO_database_path='/tmp/askomics-ie/database.db' &&
-        export ASKO_load_url='http://localhost:6543' &&
-
-        ## Triplestore configuration. Update VIRT_Parameters_NumberOfBuffers and 
-        ## VIRT_Parameters_MaxDirtyBuffers according to https://github.com/askomics/askomics-docker-compose/tree/master/virtuoso#configuration
-        export SPARQL_UPDATE='true' &&
-        export VIRT_Parameters_NumberOfBuffers='10000'  &&
-        export VIRT_Parameters_MaxDirtyBuffers='6000'  &&
-        export VIRT_SPARQL_ResultSetMaxRows='100000' &&
-        export VIRT_SPARQL_MaxQueryCostEstimationTime='40000' &&
-        export VIRT_SPARQL_MaxQueryExecutionTime='40000' &&
 
         #set link_name = re.sub('[^\w_]', '_', $infile.element_identifier)
         #if $infile.ext == 'tabular':
@@ -52,11 +59,11 @@
         mkdir -p /import &&
         ln -s '$infile' '/import/$link_name' &&
 
-        bash /start.sh
+        /askomics/start_all.sh
     ]]>
     </command>
     <inputs>
-        <param name="infile" type="data" optional="true" format="tabular,gff,gff3,bed,interval" label="A dataset to load into AskOmics"/>
+        <param name="infile" type="data" optional="true" format="tabular,gff,gff3,interval" label="A dataset to load into AskOmics"/>
     </inputs>
     <outputs>
         <data name="outfile" format="txt" />
