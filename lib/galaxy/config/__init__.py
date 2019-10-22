@@ -283,7 +283,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         for key, value in kwargs.items():
             if key in self.appschema:
                 value = convert_datatype(key, value)
-                value = strip_deprecated_dir(key, value)
+                if value:
+                    value = strip_deprecated_dir(key, value)
                 self._raw_config[key] = value
 
     def _create_attributes_from_raw_config(self):
