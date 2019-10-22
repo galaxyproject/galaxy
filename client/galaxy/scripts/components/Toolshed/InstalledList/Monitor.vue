@@ -24,7 +24,7 @@
                 </template>
             </b-table>
         </b-card>
-        <b-alert v-else variant="info" show>
+        <b-alert v-if="showEmpty" variant="info" show>
             Currently there are no installing repositories.
         </b-alert>
     </div>
@@ -54,6 +54,9 @@ export default {
     computed: {
         showItems() {
             return this.items.length > 0;
+        },
+        showEmpty() {
+            return !this.loading && this.items.length === 0;
         }
     },
     created() {
