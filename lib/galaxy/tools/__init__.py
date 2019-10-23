@@ -10,6 +10,7 @@ import tempfile
 import threading
 from collections import OrderedDict
 from datetime import datetime
+from pathlib import Path
 from xml.etree import ElementTree
 
 import packaging.version
@@ -917,21 +918,17 @@ class Tool(Dictifiable):
     @property
     def _repository_dir(self):
         """If tool shed installed tool, the base directory of the repository installed."""
-        repository_dir = None
+        repository_base_dir = None
 
         if getattr(self, 'tool_shed', None):
-            repository_dir = self.tool_dir
-            while True:
-                repository_dir_name = os.path.basename(repository_dir)
-                if repository_dir_name == self.repository_name:
-                    break
+            tool_dir = Path(self.tool_dir)
+            for parent in tool_dir.parents:
+                if parent == self.repository_name:
+                    return str(parent)
+            else:
+                log.error("Problem finding repository dir for tool [%s]" % self.id)
 
-                parent_repository_dir = os.path.dirname(repository_dir)
-                if repository_dir == parent_repository_dir:
-                    log.error("Problem finding repository dir for tool [%s]" % self.id)
-                    repository_dir = None
-
-        return repository_dir
+        return repository_base_dir
 
     def test_data_path(self, filename):
         repository_dir = self._repository_dir
