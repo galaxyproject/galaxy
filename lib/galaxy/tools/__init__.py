@@ -10,7 +10,11 @@ import tempfile
 import threading
 from collections import OrderedDict
 from datetime import datetime
-from pathlib import Path
+try:
+    from pathlib import Path
+except ImportError:
+    # Use backport on python 2
+    from pathlib2 import Path
 from xml.etree import ElementTree
 
 import packaging.version
