@@ -87,6 +87,7 @@ class ToolShedRepositoriesController(BaseAPIController):
         return tool_shed_repository_dicts
 
     @expose_api
+    @require_admin
     def install_repository_revision(self, trans, payload, **kwd):
         """
         POST /api/tool_shed_repositories/install_repository_revision
@@ -141,6 +142,7 @@ class ToolShedRepositoriesController(BaseAPIController):
         return dict(status="ok", message=message)
 
     @expose_api
+    @require_admin
     def install_repository_revisions(self, trans, payload, **kwd):
         """
         POST /api/tool_shed_repositories/install_repository_revisions
@@ -220,6 +222,7 @@ class ToolShedRepositoriesController(BaseAPIController):
         return all_installed_tool_shed_repositories
 
     @expose_api
+    @require_admin
     def uninstall_repository(self, trans, id=None, **kwd):
         """
         DELETE /api/tool_shed_repositories/id
@@ -280,6 +283,7 @@ class ToolShedRepositoriesController(BaseAPIController):
         return tool_shed_url, name, owner, changeset_revision
 
     @expose_api
+    @require_admin
     def check_for_updates(self, trans, **kwd):
         '''
         GET /api/tool_shed_repositories/check_for_updates
