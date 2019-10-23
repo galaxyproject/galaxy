@@ -31,6 +31,11 @@
                 >
                     <template v-slot:cell(name)="row">
                         <b-link href="#" role="button" class="font-weight-bold" @click="row.toggleDetails">
+                            <div v-if="!asbool(row.item.tool_shed_status.latest_installable_revision)">
+                                <b-badge variant="danger" class="mb-2">
+                                    Newer version available!
+                                </b-badge>
+                            </div>
                             {{ row.item.name }}
                         </b-link>
                         <p>{{ row.item.description }}</p>
@@ -106,6 +111,9 @@ export default {
         this.load();
     },
     methods: {
+        asbool(value) {
+            return String(value).toLowerCase() == "true";
+        },
         load() {
             this.loading = true;
             this.services
