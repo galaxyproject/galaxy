@@ -519,7 +519,8 @@ class Tool(Dictifiable):
                                                             tool_shed=self.tool_shed,
                                                             name=self.repository_name,
                                                             owner=self.repository_owner,
-                                                            installed_changeset_revision=self.installed_changeset_revision)
+                                                            installed_changeset_revision=self.installed_changeset_revision,
+                                                            from_cache=True)
 
     @property
     def produces_collections_with_unknown_structure(self):
