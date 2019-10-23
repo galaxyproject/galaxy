@@ -4,6 +4,7 @@
         <span v-if="showDropdown" class="dropdown">
             <b-link id="dropdownToolshedUrl" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                 {{ toolshedUrl }}
+                <span class="fa fa-caret-down" />
             </b-link>
             <div class="dropdown-menu" aria-labelledby="dropdownToolshedUrl">
                 <a
@@ -44,3 +45,8 @@ export default {
     }
 };
 </script>
+<style scoped>
+span.dropdown {
+    display: inline-block;
+}
+</style>

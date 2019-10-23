@@ -49,13 +49,20 @@ SHED_TOOL_CONF_XML = """<?xml version="1.0"?>
 """
 
 # A fake ToolShedRepository constructed from a shed tool conf
-ToolConfRepository = namedtuple(
+_ToolConfRepository = namedtuple(
     'ToolConfRepository',
     (
         'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision',
-        'tool_dependencies_installed_or_in_error',
+        'tool_dependencies_installed_or_in_error', 'repository_path', 'tool_path',
     )
 )
+
+
+class ToolConfRepository(_ToolConfRepository):
+
+    def get_tool_relative_path(self, *args, **kwargs):
+        # This is a somewhat public function, used by data_manager_manual for instance
+        return self.tool_path, self.repository_path
 
 
 class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
@@ -624,7 +631,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                     # In that case recreating the tool will correct the cached version.
                     from_cache = False
             if guid and not from_cache:  # tool was not in cache and is a tool shed tool
-                tool_shed_repository = self.get_tool_repository_from_xml_item(item, path)
+                tool_shed_repository = self.get_tool_repository_from_xml_item(item.elem, concrete_path)
                 if tool_shed_repository:
                     if hasattr(tool_shed_repository, 'deleted'):
                         # The shed tool is in the install database
@@ -659,14 +666,14 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         except Exception:
             log.exception("Error reading tool from path: %s", path)
 
-    def get_tool_repository_from_xml_item(self, item, path):
-        tool_shed = item.elem.find("tool_shed").text
-        repository_name = item.elem.find("repository_name").text
-        repository_owner = item.elem.find("repository_owner").text
-        installed_changeset_revision_elem = item.elem.find("installed_changeset_revision")
+    def get_tool_repository_from_xml_item(self, elem, path):
+        tool_shed = elem.find("tool_shed").text
+        repository_name = elem.find("repository_name").text
+        repository_owner = elem.find("repository_owner").text
+        installed_changeset_revision_elem = elem.find("installed_changeset_revision")
         if installed_changeset_revision_elem is None:
             # Backward compatibility issue - the tag used to be named 'changeset_revision'.
-            installed_changeset_revision_elem = item.elem.find("changeset_revision")
+            installed_changeset_revision_elem = elem.find("changeset_revision")
         installed_changeset_revision = installed_changeset_revision_elem.text
         repository = self._get_tool_shed_repository(tool_shed=tool_shed,
                                                     name=repository_name,
@@ -676,8 +683,18 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             msg = "Attempted to load tool shed tool, but the repository with name '%s' from owner '%s' was not found " \
                   "in database. Tool will be loaded without install database."
             log.warning(msg, repository_name, repository_owner)
+            # Figure out path to repository on disk given the tool shed info and the path to the tool contained in the repo
+            repository_path = os.path.join(tool_shed, 'repos', repository_owner, repository_name, installed_changeset_revision)
+            tool_path = path[:path.index(repository_path)]
             repository = ToolConfRepository(
-                tool_shed, repository_name, repository_owner, installed_changeset_revision, installed_changeset_revision, None,
+                tool_shed,
+                repository_name,
+                repository_owner,
+                installed_changeset_revision,
+                installed_changeset_revision,
+                None,
+                repository_path,
+                tool_path
             )
             self.app.tool_shed_repository_cache.add_local_repository(repository)
         return repository
