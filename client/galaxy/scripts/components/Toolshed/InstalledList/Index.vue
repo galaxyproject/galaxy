@@ -118,7 +118,7 @@ export default {
     methods: {
         isLatest(item) {
             const value = item.tool_shed_status && item.tool_shed_status.latest_installable_revision;
-            return String(value).toLowerCase() == "true";
+            return String(value).toLowerCase() != "false";
         },
         load() {
             this.loading = true;
