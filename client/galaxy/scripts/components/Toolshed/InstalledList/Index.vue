@@ -37,9 +37,9 @@
                                     Newer version available!
                                 </b-badge>
                             </div>
-                            {{ row.item.name }}
+                            <div class="name">{{ row.item.name }}</div>
                         </b-link>
-                        <p>{{ row.item.description }}</p>
+                        <div>{{ row.item.description }}</div>
                     </template>
                     <template slot="row-details" slot-scope="row">
                         <RepositoryDetails :repo="row.item" />
