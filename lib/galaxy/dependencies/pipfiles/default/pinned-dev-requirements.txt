@@ -28,7 +28,7 @@ more-itertools==5.0.0
 nose==1.3.7
 nosehtml==0.4.5
 packaging==19.2
-pathlib2==2.3.2 ; python_version < '3'
+pathlib2==2.3.2 ; python_version < '3.6'
 pathtools==0.1.2
 pluggy==0.13.0
 port-for==0.4

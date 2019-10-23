@@ -67,6 +67,7 @@ for env in $ENVS; do
                 -e "s/^\(monotonic==[^ ;]\{1,\}\).*$/\1/" \
                 -e "s/^\(more-itertools==[^ ;]\{1,\}\).*$/\1/" \
                 -e "s/^\(paste==[^ ;]\{1,\}\).*$/\1/" \
+                -e "s/^\(pathlib2==[^ ;]\{1,\}\).*$/\1 ; python_version < '3.6'/" \
                 -e "s/^\(py2-ipaddress==[^ ;]\{1,\}\).*$/\1 ; python_version < '3'/" \
                 -e "s/^\(pyinotify==[^ ;]\{1,\}\).*$/\1 ; sys_platform != 'win32' and sys_platform != 'darwin' and sys_platform != 'sunos5'/" \
                 -e "s/^\(python-dateutil==[^ ;]\{1,\}\).*$/\1/" \
