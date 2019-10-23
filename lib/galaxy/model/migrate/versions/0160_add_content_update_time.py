@@ -9,7 +9,7 @@ import logging
 
 from sqlalchemy import Column, DateTime, DDL, MetaData, Table
 
-from galaxy.model.migrate.versions.util import add_column, drop_column
+from galaxy.model.migrate.versions.util import add_column
 
 log = logging.getLogger(__name__)
 metadata = MetaData()
