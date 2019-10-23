@@ -96,7 +96,7 @@ export default {
             nRepositories: 0,
             repositories: [],
             showMonitor: false,
-            sortBy: 'name'
+            sortBy: "name"
         };
     },
     computed: {
