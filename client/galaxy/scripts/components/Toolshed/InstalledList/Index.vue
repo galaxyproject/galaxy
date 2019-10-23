@@ -32,7 +32,7 @@
                 >
                     <template v-slot:cell(name)="row">
                         <b-link href="#" role="button" class="font-weight-bold" @click="row.toggleDetails">
-                            <div v-if="!asbool(row.item.tool_shed_status.latest_installable_revision)">
+                            <div v-if="!isLatest(row.item)">
                                 <b-badge variant="danger" class="mb-2">
                                     Newer version available!
                                 </b-badge>
@@ -83,7 +83,7 @@ export default {
                     sortable: true,
                     sortByFormatted: (value, key, item) => {
                         let prefix = "a_";
-                        if (this.asbool(item.tool_shed_status.latest_installable_revision)) {
+                        if (this.isLatest(item)) {
                             prefix = "b_";
                         }
                         return `${prefix}_${value}`;
@@ -120,7 +120,8 @@ export default {
         this.load();
     },
     methods: {
-        asbool(value) {
+        isLatest(item) {
+            const value = item.tool_shed_status && item.tool_shed_status.latest_installable_revision;
             return String(value).toLowerCase() == "true";
         },
         load() {
