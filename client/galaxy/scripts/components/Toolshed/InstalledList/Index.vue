@@ -82,10 +82,7 @@ export default {
                     key: "name",
                     sortable: true,
                     sortByFormatted: (value, key, item) => {
-                        let prefix = "a_";
-                        if (this.isLatest(item)) {
-                            prefix = "b_";
-                        }
+                        let prefix = this.isLatest(item) ? "b" : "a";
                         return `${prefix}_${value}`;
                     }
                 },
