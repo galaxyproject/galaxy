@@ -108,8 +108,6 @@ DO_NOT_TEST = [
     'pretty_datetime_format',  # untestable; refactor config/__init__ to test
     'user_preferences_extra_conf_path',  # broken: remove 'config/' prefix from schema
     'default_locale',  # broken
-    'galaxy_infrastructure_url',  # broken
-    'galaxy_infrastructure_web_port',  # broken
     'chunk_upload_size',  # broken: default overridden
     'monitor_thread_join_timeout',  # broken: default overridden
     'heartbeat_log',  # untestable; refactor config/__init__ to test
