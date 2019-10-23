@@ -25,6 +25,7 @@
                     id="repository-table"
                     striped
                     :fields="fields"
+                    :sortBy="sortBy"
                     :items="repositories"
                     :filter="filter"
                     @filtered="filtered"
@@ -79,7 +80,14 @@ export default {
             fields: [
                 {
                     key: "name",
-                    sortable: true
+                    sortable: true,
+                    sortByFormatted: (value, key, item) => {
+                        let prefix = "a_";
+                        if (this.asbool(item.tool_shed_status.latest_installable_revision)) {
+                            prefix = "b_";
+                        }
+                        return `${prefix}_${value}`;
+                    }
                 },
                 {
                     key: "owner",
@@ -91,7 +99,8 @@ export default {
             messageVariant: null,
             nRepositories: 0,
             repositories: [],
-            showMonitor: false
+            showMonitor: false,
+            sortBy: 'name'
         };
     },
     computed: {
