@@ -1,5 +1,5 @@
-import sys
 import io
+import sys
 
 
 def assert_has_size(output_bytes, value, delta=0):
@@ -7,4 +7,3 @@ def assert_has_size(output_bytes, value, delta=0):
     output_temp = io.BytesIO(output_bytes)
     output_size = sys.getsizeof(output_temp)
     assert abs(output_size - int(value)) <= int(delta), "Expected file size was %s, actual file size was %s (difference of %s accepted)" % (value, output_size, delta)
-
