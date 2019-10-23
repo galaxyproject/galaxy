@@ -280,6 +280,18 @@ class ToolShedRepositoriesController(BaseAPIController):
 
         return tool_shed_url, name, owner, changeset_revision
 
+    @expose_api
+    def check_for_updates(self, trans, **kwd):
+        '''
+        GET /api/tool_shed_repositories/check_for_updates
+        Check for updates to the specified repository, or all installed repositories.
+
+        :param id: the encoded repository id
+        '''
+        repository_id = kwd.get('id', None)
+        message, status = repository_util.check_for_updates(self.app, trans.install_model, repository_id)
+        return {'status': status, 'message': message}
+
     @web.expose_api
     @web.require_admin
     def reset_metadata_on_selected_installed_repositories(self, trans, **kwd):
