@@ -327,18 +327,19 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.gid = os.getgid()  # if running under newgrp(1) we'll need to fix the group of data created on the cluster
 
         self.version_major = VERSION_MAJOR
+
         # Database related configuration
         self.check_migrate_databases = kwargs.get('check_migrate_databases', True)
-        self.database_connection = kwargs.get("database_connection",
-                                              "sqlite:///%s?isolation_level=IMMEDIATE" % os.path.join(self.data_dir, "universe.sqlite"))
+        if not self.database_connection:  # Provide default if not supplied by user
+            db_path = os.path.join(self.data_dir, 'universe.sqlite')
+            self.database_connection = 'sqlite:///%s?isolation_level=IMMEDIATE' % db_path
         self.database_engine_options = get_database_engine_options(kwargs)
-        self.database_create_tables = string_as_bool(kwargs.get("database_create_tables", "True"))
-        self.database_encoding = kwargs.get("database_encoding", None)  # Create new databases with this encoding.
+        self.database_create_tables = string_as_bool(kwargs.get('database_create_tables', 'True'))
+        self.database_encoding = kwargs.get('database_encoding')  # Create new databases with this encoding
         self.thread_local_log = None
-        if string_as_bool(kwargs.get("enable_per_request_sql_debugging", "False")):
+        if self.enable_per_request_sql_debugging:
             self.thread_local_log = threading.local()
-
-        # Install database related configuration (if different).
+        # Install database related configuration (if different)
         self.install_database_engine_options = get_database_engine_options(kwargs, model_prefix="install_")
 
         override_tempdir = string_as_bool(kwargs.get("override_tempdir", "True"))
@@ -570,27 +571,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             if section.startswith('server:'):
                 self.server_names.append(section.replace('server:', '', 1))
 
-        # Default URL (with schema http/https) of the Galaxy instance within the
-        # local network - used to remotely communicate with the Galaxy API.
-        web_port = kwargs.get("galaxy_infrastructure_web_port", None)
-        self.galaxy_infrastructure_web_port = web_port
-        galaxy_infrastructure_url = kwargs.get('galaxy_infrastructure_url', None)
-        galaxy_infrastructure_url_set = True
-        if galaxy_infrastructure_url is None:
-            # Still provide a default but indicate it was not explicitly set
-            # so dependending on the context a better default can be used (
-            # request url in a web thread, Docker parent in IE stuff, etc...)
-            galaxy_infrastructure_url = "http://localhost"
-            web_port = self.galaxy_infrastructure_web_port
-            if web_port:
-                galaxy_infrastructure_url += ":%s" % (web_port)
-            galaxy_infrastructure_url_set = False
-        if "HOST_IP" in galaxy_infrastructure_url:
-            galaxy_infrastructure_url = string.Template(galaxy_infrastructure_url).safe_substitute({
-                'HOST_IP': socket.gethostbyname(socket.gethostname())
-            })
-        self.galaxy_infrastructure_url = galaxy_infrastructure_url
-        self.galaxy_infrastructure_url_set = galaxy_infrastructure_url_set
+        self._set_galaxy_infrastructure_url(kwargs)
 
         # Asynchronous execution process pools - limited functionality for now, attach_to_pools is designed to allow
         # webless Galaxy server processes to attach to arbitrary message queues (e.g. as job handlers) so they do not
@@ -611,7 +592,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             self.amqp_internal_connection = "sqlalchemy+" + self.database_connection
         else:
             self.amqp_internal_connection = "sqlalchemy+sqlite:///%s?isolation_level=IMMEDIATE" % os.path.join(self.data_dir, "control.sqlite")
-        self.pretty_datetime_format = expand_pretty_datetime_format(kwargs.get('pretty_datetime_format', '$locale (UTC)'))
+        self.pretty_datetime_format = expand_pretty_datetime_format(self.pretty_datetime_format)
         try:
             with open(self.user_preferences_extra_conf_path, 'r') as stream:
                 self.user_preferences_extra = yaml.safe_load(stream)
@@ -619,8 +600,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             if self.user_preferences_extra_conf_path_set:
                 log.warning('Config file (%s) could not be found or is malformed.' % self.user_preferences_extra_conf_path)
             self.user_preferences_extra = {'preferences': {}}
-
-        self.default_locale = kwargs.get('default_locale', None)
 
         # Experimental: This will not be enabled by default and will hide
         # nonproduction code.
@@ -703,6 +682,16 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
                 'filename': kwargs['log_destination'],
                 'filters': ['stack']
             }
+
+    def _set_galaxy_infrastructure_url(self, kwargs):
+        # indicate if this was not set explicitly, so dependending on the context a better default
+        # can be used (request url in a web thread, Docker parent in IE stuff, etc.)
+        self.galaxy_infrastructure_url_set = kwargs.get('galaxy_infrastructure_url') is not None
+
+        if "HOST_IP" in self.galaxy_infrastructure_url:
+            self.galaxy_infrastructure_url = string.Template(self.galaxy_infrastructure_url).safe_substitute({
+                'HOST_IP': socket.gethostbyname(socket.gethostname())
+            })
 
     @property
     def admin_users(self):

@@ -47,10 +47,9 @@ mapping:
         type: str
         required: false
         desc: |
-          By default, Galaxy uses a SQLite database at 'database/universe.sqlite'.  You
+          By default, Galaxy uses a SQLite database at '<data_dir>/universe.sqlite'.  You
           may use a SQLAlchemy connection string to specify an external database
-          instead.  This string takes many options which are explained in detail in the
-          config file documentation.
+          instead.
 
           Sample default 'sqlite:///<data_dir>/universe.sqlite?isolation_level=IMMEDIATE'
 
@@ -991,7 +990,7 @@ mapping:
           Format string used when showing date and time information.
           The string may contain:
           - the directives used by Python time.strftime() function (see
-            https://docs.python.org/library/time.html#time.strftime ),
+            https://docs.python.org/library/time.html#time.strftime),
           - $locale (complete format string for the server locale),
           - $iso8601 (complete format string as specified by ISO 8601 international
             standard).
