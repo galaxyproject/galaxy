@@ -8,8 +8,8 @@
                 @change="setQuery"
                 @keydown.esc="setQuery()"
             />
-            <b-input-group-append>
-                <b-btn :disabled="!queryInput" @click="setQuery()">
+            <b-input-group-append v-b-tooltip.hover title="clear search (esc)">
+                <b-btn @click="setQuery()">
                     <i class="fa fa-times" />
                 </b-btn>
             </b-input-group-append>
