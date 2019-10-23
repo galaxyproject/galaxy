@@ -110,7 +110,7 @@ class BaseAppConfiguration(object):
         self.global_conf = config_kwargs.get('global_conf', None)
         self.global_conf_parser = configparser.ConfigParser()
         if not self.config_file and self.global_conf and "__file__" in self.global_conf:
-            self.config_file = self.global_conf['__file__']
+            self.config_file = os.path.join(self.root, self.global_conf['__file__'])
         if self.config_file is None:
             log.warning("No Galaxy config file found, running from current working directory: %s", os.getcwd())
         else:
@@ -283,7 +283,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         for key, value in kwargs.items():
             if key in self.appschema:
                 value = convert_datatype(key, value)
-                value = strip_deprecated_dir(key, value)
+                if value:
+                    value = strip_deprecated_dir(key, value)
                 self._raw_config[key] = value
 
     def _create_attributes_from_raw_config(self):

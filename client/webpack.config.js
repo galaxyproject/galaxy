@@ -11,211 +11,229 @@ const libsBase = path.join(scriptsBase, "libs");
 const styleBase = path.join(__dirname, "galaxy/style");
 const imageBase = path.join(__dirname, "../static/style");
 
-let buildconfig = {
-    entry: {
-        login: ["polyfills", "bundleEntries", "entry/login"],
-        analysis: ["polyfills", "bundleEntries", "entry/analysis"],
-        admin: ["polyfills", "bundleEntries", "entry/admin"],
-        generic: ["polyfills", "bundleEntries", "entry/generic"]
-    },
-    output: {
-        path: path.join(__dirname, "../", "lib/galaxy/web/framework/static/scripts/bundled"),
-        publicPath: "/static/scripts/bundled/",
-        filename: "[name].bundled.js",
-        chunkFilename: "[name].chunk.js"
-    },
-    resolve: {
-        extensions: ["*", ".js", ".json", ".vue", ".scss"],
-        modules: [scriptsBase, "node_modules", styleBase, imageBase],
-        alias: {
-            jquery$: `${libsBase}/jquery.custom.js`,
-            jqueryVendor$: `${libsBase}/jquery/jquery.js`,
-            storemodern$: "store/dist/store.modern.js"
-        }
-    },
-    optimization: {
-        splitChunks: {
-            cacheGroups: {
-                styles: {
-                    name: "base",
-                    chunks: "all",
-                    test: m => m.constructor.name == "CssModule",
-                    priority: -5
-                },
-                libs: {
-                    name: "libs",
-                    test: /node_modules[\\/](?!(handsontable|pikaday|moment)[\\/])|galaxy\/scripts\/libs/,
-                    chunks: "all",
-                    priority: -10
+module.exports = (env = {}, argv = {}) => {
+
+    // environment name based on -d, -p, webpack flag
+    const targetEnv = argv.mode || "development";
+
+    let buildconfig = {
+        entry: {
+            login: ["polyfills", "bundleEntries", "entry/login"],
+            analysis: ["polyfills", "bundleEntries", "entry/analysis"],
+            admin: ["polyfills", "bundleEntries", "entry/admin"],
+            generic: ["polyfills", "bundleEntries", "entry/generic"]
+        },
+        output: {
+            path: path.join(__dirname, "../", "lib/galaxy/web/framework/static/scripts/bundled"),
+            publicPath: "/static/scripts/bundled/",
+            filename: "[name].bundled.js",
+            chunkFilename: "[name].chunk.js"
+        },
+        resolve: {
+            extensions: ["*", ".js", ".json", ".vue", ".scss"],
+            modules: [scriptsBase, "node_modules", styleBase, imageBase],
+            alias: {
+                jquery$: `${libsBase}/jquery.custom.js`,
+                jqueryVendor$: `${libsBase}/jquery/jquery.js`,
+                storemodern$: "store/dist/store.modern.js",
+                // client-side application config
+                config$: path.join(__dirname, "galaxy", "config", targetEnv) + ".js"
+            }
+        },
+        optimization: {
+            splitChunks: {
+                cacheGroups: {
+                    styles: {
+                        name: "base",
+                        chunks: "all",
+                        test: m => m.constructor.name == "CssModule",
+                        priority: -5
+                    },
+                    libs: {
+                        name: "libs",
+                        test: /node_modules[\\/](?!(handsontable|pikaday|moment)[\\/])|galaxy\/scripts\/libs/,
+                        chunks: "all",
+                        priority: -10
+                    }
                 }
             }
-        }
-    },
-    module: {
-        rules: [
-            {
-                test: /\.vue$/,
-                loader: "vue-loader"
-            },
-            {
-                test: /\.js$/,
-                // Pretty sure we don't want anything except node_modules here
-                exclude: [
-                    /(node_modules\/(?!(handsontable)\/)|bower_components)/,
-                    libsBase
-                ],
-                loader: "babel-loader",
-                options: {
-                    cacheDirectory: true,
-                    cacheCompression: false,
-                    presets: [
-                        ["@babel/preset-env", { modules: false }]
+        },
+        module: {
+            rules: [
+                {
+                    test: /\.vue$/,
+                    loader: "vue-loader"
+                },
+                {
+                    test: /\.js$/,
+                    // Pretty sure we don't want anything except node_modules here
+                    exclude: [
+                        /(node_modules\/(?!(handsontable)\/)|bower_components)/,
+                        libsBase
                     ],
-                    plugins: [
-                        "transform-vue-template",
-                        "@babel/plugin-syntax-dynamic-import"
-                    ],
-                    ignore: [
-                        "i18n.js",
-                        "utils/localization.js",
-                        "nls/*"
-                    ]
-                }
-            },
-            {
-                test: `${libsBase}/jquery.custom.js`,
-                use: [
-                    {
-                        loader: "expose-loader",
-                        options: "jQuery"
-                    },
-                    {
-                        loader: "expose-loader",
-                        options: "$"
-                    }
-                ]
-            },
-            {
-                test: require.resolve("underscore"),
-                use: [
-                    {
-                        loader: "expose-loader",
-                        options: "_"
-                    },
-                    {
-                        loader: "expose-loader",
-                        options: "underscore"
-                    }
-                ]
-            },
-            {
-                test: /\.(png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot)(\?.*$|$)/,
-                use: {
-                    loader: "file-loader",
+                    loader: "babel-loader",
                     options: {
-                        outputPath: "assets",
-                        publicPath: "../scripts/bundled/assets/"
+                        cacheDirectory: true,
+                        cacheCompression: false,
+                        presets: [
+                            ["@babel/preset-env", { modules: false }]
+                        ],
+                        plugins: [
+                            "transform-vue-template",
+                            "@babel/plugin-syntax-dynamic-import"
+                        ],
+                        ignore: [
+                            "i18n.js",
+                            "utils/localization.js",
+                            "nls/*"
+                        ]
                     }
-                }
-            },
-            // Alternative to setting window.bundleEntries
-            // Just import "bundleEntries" in any endpoint that needs
-            // access to these globals, or even-better, make
-            // more endpoints and skip the global altogether
-            {
-                test: `${scriptsBase}/bundleEntries`,
-                use: [
-                    {
-                        loader: "expose-loader",
-                        options: "bundleEntries"
-                    }
-                ]
-            },
-            {
-                test: `${scriptsBase}/onload/loadConfig.js`,
-                use: [
-                    {
-                        loader: "expose-loader",
-                        options: "config"
-                    }
-                ]
-            },
-            {
-                test: /\.css$/,
-                use: [
-                    MiniCssExtractPlugin.loader,
-                    {
-                        loader: "css-loader",
-                        options: { sourceMap: true }
-                    }
-                ]
-            },
-            {
-                test: /\.scss$/,
-                use: [
-                    MiniCssExtractPlugin.loader,
-                    {
-                        loader: "css-loader",
-                        options: { sourceMap: true }
-                    },
-                    {
-                        loader: "sass-loader",
-                        options: { 
-                            sourceMap: true,
-                            includePaths: [
-                                "galaxy/style/scss", 
-                                path.resolve(__dirname, './node_modules') 
-                            ]
+                },
+                {
+                    test: `${libsBase}/jquery.custom.js`,
+                    use: [
+                        {
+                            loader: "expose-loader",
+                            options: "jQuery"
+                        },
+                        {
+                            loader: "expose-loader",
+                            options: "$"
+                        }
+                    ]
+                },
+                {
+                    test: require.resolve("underscore"),
+                    use: [
+                        {
+                            loader: "expose-loader",
+                            options: "_"
+                        },
+                        {
+                            loader: "expose-loader",
+                            options: "underscore"
+                        }
+                    ]
+                },
+                {
+                    test: /\.(png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot)(\?.*$|$)/,
+                    use: {
+                        loader: "file-loader",
+                        options: {
+                            outputPath: "assets",
+                            publicPath: "../scripts/bundled/assets/"
                         }
                     }
-                ]
-            },
-            {
-                test: /\.(txt|tmpl)$/,
-                loader: "raw-loader"
-            }
-        ]
-    },
-    node: {
-        setImmediate: false
-    },
-    resolveLoader: {
-        alias: {
-            // since we support both requirejs i18n and non-requirejs and both use a similar syntax,
-            // use an alias so we can just use one file
-            i18n: "amdi18n-loader"
-        }
-    },
-    plugins: [
-        // this plugin allows using the following keys/globals in scripts (w/o req'ing them first)
-        // and webpack will automagically require them in the bundle for you
-        new webpack.ProvidePlugin({
-            $: `${libsBase}/jquery.custom.js`,
-            jQuery: `${libsBase}/jquery.custom.js`,
-            _: "underscore",
-            Backbone: "backbone",
-            Galaxy: ["app", "monitor"]
-        }),
-        new VueLoaderPlugin(),
-        new MiniCssExtractPlugin({
-            filename: "[name].css",
-            sourceMap: true
-        }),
-        // https://github.com/webpack-contrib/mini-css-extract-plugin/issues/141
-        new OptimizeCssAssetsPlugin({
-            cssProcessorOptions: {
-                map: {
-                    inline: false,
-                    annotation: true
+                },
+                // Alternative to setting window.bundleEntries
+                // Just import "bundleEntries" in any endpoint that needs
+                // access to these globals, or even-better, make
+                // more endpoints and skip the global altogether
+                {
+                    test: `${scriptsBase}/bundleEntries`,
+                    use: [
+                        {
+                            loader: "expose-loader",
+                            options: "bundleEntries"
+                        }
+                    ]
+                },
+                {
+                    test: `${scriptsBase}/onload/loadConfig.js`,
+                    use: [
+                        {
+                            loader: "expose-loader",
+                            options: "config"
+                        }
+                    ]
+                },
+                {
+                    test: /\.css$/,
+                    use: [
+                        MiniCssExtractPlugin.loader,
+                        {
+                            loader: "css-loader",
+                            options: { sourceMap: true }
+                        }
+                    ]
+                },
+                {
+                    test: /\.scss$/,
+                    use: [
+                        MiniCssExtractPlugin.loader,
+                        {
+                            loader: "css-loader",
+                            options: { sourceMap: true }
+                        },
+                        {
+                            loader: 'postcss-loader',
+                            options: {
+                                plugins: function () {
+                                    return [
+                                        require('autoprefixer')
+                                    ];
+                                }
+                            }
+                        },
+                        {
+                            loader: "sass-loader",
+                            options: {
+                                sourceMap: true,
+                                includePaths: [
+                                    "galaxy/style/scss",
+                                    path.resolve(__dirname, './node_modules')
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    test: /\.(txt|tmpl)$/,
+                    loader: "raw-loader"
                 }
+            ]
+        },
+        node: {
+            setImmediate: false
+        },
+        resolveLoader: {
+            alias: {
+                // since we support both requirejs i18n and non-requirejs and both use a similar syntax,
+                // use an alias so we can just use one file
+                i18n: "amdi18n-loader"
             }
-        }),
-        new DuplicatePackageCheckerPlugin()
-    ]
-};
+        },
+        plugins: [
+            // this plugin allows using the following keys/globals in scripts (w/o req'ing them first)
+            // and webpack will automagically require them in the bundle for you
+            new webpack.ProvidePlugin({
+                $: `${libsBase}/jquery.custom.js`,
+                jQuery: `${libsBase}/jquery.custom.js`,
+                _: "underscore",
+                Backbone: "backbone",
+                Galaxy: ["app", "monitor"]
+            }),
+            new VueLoaderPlugin(),
+            new MiniCssExtractPlugin({
+                filename: "[name].css",
+                sourceMap: true
+            }),
+            // https://github.com/webpack-contrib/mini-css-extract-plugin/issues/141
+            new OptimizeCssAssetsPlugin({
+                cssProcessorOptions: {
+                    map: {
+                        inline: false,
+                        annotation: true
+                    }
+                }
+            }),
+            new DuplicatePackageCheckerPlugin()
+        ]
+    };
 
-if (process.env.GXY_BUILD_SOURCEMAPS || process.env.NODE_ENV == "development") {
-    buildconfig.devtool = "source-map";
+    if (process.env.GXY_BUILD_SOURCEMAPS || process.env.NODE_ENV == "development") {
+        buildconfig.devtool = "source-map";
+    }
+
+    return buildconfig;
 }
-
-module.exports = buildconfig;

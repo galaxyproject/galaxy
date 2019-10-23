@@ -3,7 +3,7 @@
         <b-alert v-if="error" variant="danger" show>
             {{ error }}
         </b-alert>
-        <b-card no-body v-if="showItems">
+        <b-card no-body v-if="showItems" class="my-2">
             <h5 class="m-3">Currently installing...</h5>
             <b-table
                 class="mx-3 mb-0"
@@ -24,14 +24,17 @@
                 </template>
             </b-table>
         </b-card>
+        <b-alert v-if="showEmpty" variant="info" show>
+            Currently there are no installing repositories.
+        </b-alert>
     </div>
 </template>
 <script>
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { getAppRoot } from "onload/loadConfig";
-import { Services } from "./services.js";
-import InstallationButton from "./RepositoryDetails/InstallationButton.vue";
+import { Services } from "../services.js";
+import InstallationButton from "../RepositoryDetails/InstallationButton";
 
 Vue.use(BootstrapVue);
 
@@ -51,6 +54,9 @@ export default {
     computed: {
         showItems() {
             return this.items.length > 0;
+        },
+        showEmpty() {
+            return !this.loading && this.items.length === 0;
         }
     },
     created() {
@@ -74,7 +80,6 @@ export default {
             }
         },
         load() {
-            this.loading = true;
             this.services
                 .getInstalledRepositories({
                     filter: x => x.status !== "Installed"

@@ -891,7 +891,6 @@ class InstallRepositoryManager(object):
                                               shed_tool_conf=shed_tool_conf,
                                               reinstalling=reinstalling,
                                               tool_panel_section_mapping=tool_panel_section_mapping)
-            self.install_model.context.refresh(tool_shed_repository)
             metadata = tool_shed_repository.metadata
             if 'tools' in metadata and install_resolver_dependencies:
                 self.update_tool_shed_repository_status(tool_shed_repository,

@@ -1,4 +1,4 @@
-"""The module describes the ``cpuinfo`` job metrics plugin."""
+"""The module describes the ``hostname`` job metrics plugin."""
 import logging
 
 from . import InstrumentPlugin
