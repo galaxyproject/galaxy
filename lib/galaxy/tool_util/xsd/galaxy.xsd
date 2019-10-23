@@ -1742,6 +1742,12 @@ module.
       </xs:element>
       <xs:element name="has_archive_member" type="AssertHasArchiveMember">
       </xs:element>
+      <xs:element name="has_size" type="xs:anyType">
+        <xs:annotation>
+          <xs:documentation><![CDATA[Asserts the specified output has a size of the specified value (e.g. ``<has_size value="10000">``).]]>
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
     </xs:choice>
   </xs:group>
   <xs:complexType name="AssertHasH5Keys">
