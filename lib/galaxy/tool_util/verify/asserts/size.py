@@ -1,7 +1,3 @@
-import io
-import sys
-
-
 def assert_has_size(output_bytes, value, delta=0):
     """Asserts the specified output has a size of the specified value"""
     output_size = len(output_bytes)
