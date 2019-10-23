@@ -40,3 +40,8 @@ export default {
     }
 };
 </script>
+<style scoped>
+span.dropdown {
+    display: inline-block;
+}
+</style>
