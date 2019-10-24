@@ -261,7 +261,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
 
         def convert_datatype(key, value):
             datatype = self.appschema[key].get('type')
-            if datatype in type_converters:
+            # check for `not None` explicitly (value can be falsy)
+            if value is not None and datatype in type_converters:
                 return type_converters[datatype](value)
             return value
 
@@ -278,7 +279,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
                     return value[len(ignore):]
             return value
 
-        type_converters = {'bool': string_as_bool, 'int': int, 'float': float}
+        type_converters = {'bool': string_as_bool, 'int': int, 'float': float, 'str': str}
 
         for key, value in kwargs.items():
             if key in self.appschema:
