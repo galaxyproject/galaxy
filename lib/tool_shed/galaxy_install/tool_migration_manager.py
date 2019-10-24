@@ -586,7 +586,7 @@ class ToolMigrationManager(object):
                 irm.update_tool_shed_repository_status(tool_shed_repository,
                                                        self.app.install_model.ToolShedRepository.installation_status.INSTALLED)
             else:
-                log.error('Error attempting to clone repository %s: %s', str(tool_shed_repository.name), str(error_message))
+                log.error('Error attempting to clone repository %s: %s', tool_shed_repository.name, error_message)
                 irm.update_tool_shed_repository_status(tool_shed_repository,
                                                        self.app.install_model.ToolShedRepository.installation_status.ERROR,
                                                        error_message=error_message)

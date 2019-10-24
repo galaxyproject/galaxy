@@ -180,7 +180,7 @@ def create_repo_info_dict(app, repository_clone_url, changeset_revision, ctx_rev
         if repository_metadata:
             metadata = repository_metadata.metadata
             if metadata:
-                tool_shed_url = str(web.url_for('/', qualified=True)).rstrip('/')
+                tool_shed_url = web.url_for('/', qualified=True).rstrip('/')
                 rb = tool_shed.dependencies.repository.relation_builder.RelationBuilder(app, repository, repository_metadata, tool_shed_url)
                 # Get a dictionary of all repositories upon which the contents of the received repository depends.
                 repository_dependencies = rb.get_repository_dependencies_for_changeset_revision()
@@ -202,14 +202,13 @@ def create_repo_info_dict(app, repository_clone_url, changeset_revision, ctx_rev
                 requirements_dict['changeset_revision'] = changeset_revision
                 new_tool_dependencies[dependency_key] = requirements_dict
         tool_dependencies = new_tool_dependencies
-    # Cast unicode to string, with the exception of description, since it is free text and can contain special characters.
-    repo_info_dict[str(repository.name)] = (repository.description,
-                                            str(repository_clone_url),
-                                            str(changeset_revision),
-                                            str(ctx_rev),
-                                            str(repository_owner),
-                                            repository_dependencies,
-                                            tool_dependencies)
+    repo_info_dict[repository.name] = (repository.description,
+                                       repository_clone_url,
+                                       changeset_revision,
+                                       ctx_rev,
+                                       repository_owner,
+                                       repository_dependencies,
+                                       tool_dependencies)
     return repo_info_dict
 
 
@@ -951,9 +950,9 @@ def set_repository_attributes(app, repository, status, error_message, deleted, u
             clone_dir = os.path.abspath(relative_install_dir)
             try:
                 shutil.rmtree(clone_dir)
-                log.debug("Removed repository installation directory: %s" % str(clone_dir))
+                log.debug("Removed repository installation directory: %s", clone_dir)
             except Exception as e:
-                log.debug("Error removing repository installation directory %s: %s" % (str(clone_dir), str(e)))
+                log.debug("Error removing repository installation directory %s: %s", clone_dir, util.unicodify(e))
     repository.error_message = error_message
     repository.status = status
     repository.deleted = deleted
