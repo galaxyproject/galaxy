@@ -107,7 +107,7 @@ class BaseAppConfiguration(object):
         self.sample_config_dir = os.path.join(os.path.dirname(__file__), 'sample')
         self.config_file = find_config_file('galaxy')
         # Parse global_conf and save the parser
-        self.global_conf = config_kwargs.get('global_conf', None)
+        self.global_conf = config_kwargs.get('global_conf')
         self.global_conf_parser = configparser.ConfigParser()
         if not self.config_file and self.global_conf and "__file__" in self.global_conf:
             self.config_file = os.path.join(self.root, self.global_conf['__file__'])
@@ -122,7 +122,7 @@ class BaseAppConfiguration(object):
                 # Not an INI file
                 pass
         self.config_dir = config_kwargs.get('config_dir', os.path.dirname(self.config_file or os.getcwd()))
-        self.data_dir = config_kwargs.get('data_dir', None)
+        self.data_dir = config_kwargs.get('data_dir')
         # mutable_config_dir is intentionally not configurable. You can
         # override individual mutable configs with config options, but they
         # should be considered Galaxy-controlled data files and will by default
@@ -155,7 +155,7 @@ class BaseAppConfiguration(object):
 
     def _parse_config_file_options(self, defaults, listify_defaults, config_kwargs):
         for var, values in defaults.items():
-            if config_kwargs.get(var, None) is not None:
+            if config_kwargs.get(var) is not None:
                 path = config_kwargs.get(var)
                 setattr(self, var + '_set', True)
             else:
@@ -170,7 +170,7 @@ class BaseAppConfiguration(object):
 
         for var, values in listify_defaults.items():
             paths = []
-            if config_kwargs.get(var, None) is not None:
+            if config_kwargs.get(var) is not None:
                 paths = listify(config_kwargs.get(var))
                 setattr(self, var + '_set', True)
             else:
@@ -345,11 +345,11 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         override_tempdir = string_as_bool(kwargs.get("override_tempdir", "True"))
         if override_tempdir:
             tempfile.tempdir = self.new_file_path
-        self.shared_home_dir = kwargs.get("shared_home_dir", None)
-        self.cookie_path = kwargs.get("cookie_path", None)
+        self.shared_home_dir = kwargs.get("shared_home_dir")
+        self.cookie_path = kwargs.get("cookie_path")
         self.tool_path = os.path.join(self.root, self.tool_path)
         self.tool_data_path = os.path.join(self.root, self.tool_data_path)
-        if not running_from_source and kwargs.get("tool_data_path", None) is None:
+        if not running_from_source and kwargs.get("tool_data_path") is None:
             self.tool_data_path = os.path.join(self.data_dir, "tool-data")
         self.builds_file_path = os.path.join(self.tool_data_path, self.builds_file_path)
         self.len_file_path = os.path.join(self.tool_data_path, self.len_file_path)
@@ -358,7 +358,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.oidc_backends_config = kwargs.get("oidc_backends_config_file", self.oidc_backends_config_file)
         self.oidc = []
         self.integrated_tool_panel_config = os.path.join(self.mutable_config_dir, self.integrated_tool_panel_config)
-        integrated_tool_panel_tracking_directory = kwargs.get('integrated_tool_panel_tracking_directory', None)
+        integrated_tool_panel_tracking_directory = kwargs.get('integrated_tool_panel_tracking_directory')
         if integrated_tool_panel_tracking_directory:
             self.integrated_tool_panel_tracking_directory = os.path.join(self.root, integrated_tool_panel_tracking_directory)
         else:
@@ -422,7 +422,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         if self.preserve_python_environment not in ["legacy_only", "legacy_and_local", "always"]:
             log.warning("preserve_python_environment set to unknown value [%s], defaulting to legacy_only")
             self.preserve_python_environment = "legacy_only"
-        self.nodejs_path = kwargs.get("nodejs_path", None)
+        self.nodejs_path = kwargs.get("nodejs_path")
         # Older default container cache path, I don't think anyone is using it anymore and it wasn't documented - we
         # should probably drop the backward compatiblity to save the path check.
         self.container_image_cache_path = os.path.join(self.data_dir, kwargs.get("container_image_cache_path", "container_images"))
@@ -430,7 +430,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             self.container_image_cache_path = self.resolve_path(kwargs.get("container_image_cache_path", os.path.join(self.data_dir, "container_cache")))
         self.output_size_limit = int(kwargs.get('output_size_limit', 0))
         # activation_email was used until release_15.03
-        activation_email = kwargs.get('activation_email', None)
+        activation_email = kwargs.get('activation_email')
         self.email_from = kwargs.get('email_from', activation_email)
         self.myexperiment_target_url = kwargs.get('my_experiment_target_url', 'www.myexperiment.org')
 
@@ -451,7 +451,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         # you want yours tools to be broken in the future.
         self.enable_beta_tool_formats = string_as_bool(kwargs.get('enable_beta_tool_formats', 'False'))
 
-        workflow_resource_params_mapper = kwargs.get("workflow_resource_params_mapper", None)
+        workflow_resource_params_mapper = kwargs.get("workflow_resource_params_mapper")
         if not workflow_resource_params_mapper:
             workflow_resource_params_mapper = None
         elif ":" not in workflow_resource_params_mapper:
@@ -472,7 +472,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             trust_jupyter_notebook_conversion = string_as_bool(kwargs.get('trust_ipython_notebook_conversion', False))
         self.trust_jupyter_notebook_conversion = trust_jupyter_notebook_conversion
         # Configuration for the message box directly below the masthead.
-        self.blog_url = kwargs.get('blog_url', None)
+        self.blog_url = kwargs.get('blog_url')
         self.user_library_import_symlink_whitelist = listify(kwargs.get('user_library_import_symlink_whitelist', []), do_strip=True)
         self.user_library_import_dir_auto_creation = string_as_bool(kwargs.get('user_library_import_dir_auto_creation', False)) if self.user_library_import_dir else False
         # Searching data libraries
@@ -500,7 +500,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             self.config_dict["conda_mapping_files"] = conda_mapping_files
 
         self.enable_mulled_containers = string_as_bool(kwargs.get('enable_mulled_containers', 'True'))
-        containers_resolvers_config_file = kwargs.get('containers_resolvers_config_file', None)
+        containers_resolvers_config_file = kwargs.get('containers_resolvers_config_file')
         if containers_resolvers_config_file:
             containers_resolvers_config_file = os.path.join(self.root, containers_resolvers_config_file)
         self.containers_resolvers_config_file = containers_resolvers_config_file
@@ -528,26 +528,26 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.object_store_cache_path = self.resolve_path(kwargs.get("object_store_cache_path", os.path.join(self.data_dir, "object_store_cache")))
 
         # Handle AWS-specific config options for backward compatibility
-        if kwargs.get('aws_access_key', None) is not None:
-            self.os_access_key = kwargs.get('aws_access_key', None)
-            self.os_secret_key = kwargs.get('aws_secret_key', None)
-            self.os_bucket_name = kwargs.get('s3_bucket', None)
+        if kwargs.get('aws_access_key') is not None:
+            self.os_access_key = kwargs.get('aws_access_key')
+            self.os_secret_key = kwargs.get('aws_secret_key')
+            self.os_bucket_name = kwargs.get('s3_bucket')
             self.os_use_reduced_redundancy = kwargs.get('use_reduced_redundancy', False)
         else:
-            self.os_access_key = kwargs.get('os_access_key', None)
-            self.os_secret_key = kwargs.get('os_secret_key', None)
-            self.os_bucket_name = kwargs.get('os_bucket_name', None)
+            self.os_access_key = kwargs.get('os_access_key')
+            self.os_secret_key = kwargs.get('os_secret_key')
+            self.os_bucket_name = kwargs.get('os_bucket_name')
             self.os_use_reduced_redundancy = kwargs.get('os_use_reduced_redundancy', False)
-        self.os_host = kwargs.get('os_host', None)
-        self.os_port = kwargs.get('os_port', None)
+        self.os_host = kwargs.get('os_host')
+        self.os_port = kwargs.get('os_port')
         self.os_is_secure = string_as_bool(kwargs.get('os_is_secure', True))
         self.os_conn_path = kwargs.get('os_conn_path', '/')
         self.object_store_cache_size = float(kwargs.get('object_store_cache_size', -1))
-        self.distributed_object_store_config_file = kwargs.get('distributed_object_store_config_file', None)
+        self.distributed_object_store_config_file = kwargs.get('distributed_object_store_config_file')
         if self.distributed_object_store_config_file is not None:
             self.distributed_object_store_config_file = os.path.join(self.root, self.distributed_object_store_config_file)
-        self.irods_root_collection_path = kwargs.get('irods_root_collection_path', None)
-        self.irods_default_resource = kwargs.get('irods_default_resource', None)
+        self.irods_root_collection_path = kwargs.get('irods_root_collection_path')
+        self.irods_default_resource = kwargs.get('irods_default_resource')
         # Heartbeat log file name override
         if self.global_conf is not None and 'heartbeat_log' in self.global_conf:
             self.heartbeat_log = self.global_conf['heartbeat_log']
@@ -608,7 +608,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         # This is for testing new library browsing capabilities.
         self.new_lib_browse = string_as_bool(kwargs.get('new_lib_browse', False))
         # Logging configuration with logging.config.configDict:
-        self.logging = kwargs.get('logging', None)
+        self.logging = kwargs.get('logging')
         # Statistics and profiling with statsd
         self.statsd_host = kwargs.get('statsd_host', '')
 
@@ -665,7 +665,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
                 'qualname': 'COMPLIANCE'
             }
 
-        log_destination = kwargs.get("log_destination", None)
+        log_destination = kwargs.get("log_destination")
         if log_destination == "stdout":
             LOGGING_CONFIG_DEFAULT['handlers']['console'] = {
                 'class': 'logging.StreamHandler',
@@ -838,7 +838,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         Parse a CSV list of strings/regexp of hostnames that should be allowed
         to use CORS and will be sent the Access-Control-Allow-Origin header.
         """
-        allowed_origin_hostnames = listify(kwargs.get('allowed_origin_hostnames', None))
+        allowed_origin_hostnames = listify(kwargs.get('allowed_origin_hostnames'))
         if not allowed_origin_hostnames:
             return None
 
