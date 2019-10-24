@@ -958,6 +958,7 @@ mapping:
         type: bool
         default: false
         required: false
+        reloadable: true
         desc: |
           Show a message box under the masthead.
 
@@ -972,6 +973,7 @@ mapping:
         type: str
         default: info
         required: false
+        reloadable: true
         desc: |
           Class of the message box under the masthead. Possible values are:
           'info' (the default), 'warning', 'error', 'done'.
