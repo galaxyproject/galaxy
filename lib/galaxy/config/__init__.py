@@ -608,7 +608,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             with open(self.user_preferences_extra_conf_path, 'r') as stream:
                 self.user_preferences_extra = yaml.safe_load(stream)
         except Exception:
-            if self.user_preferences_extra_conf_path_set:
+            if self.is_set('user_preferences_extra_conf_path'):
                 log.warning('Config file (%s) could not be found or is malformed.' % self.user_preferences_extra_conf_path)
             self.user_preferences_extra = {'preferences': {}}
 
@@ -725,6 +725,11 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             return re.sub(r"^([^:/?#]+:)?//(\w+):(\w+)", r"\1//\2", self.sentry_dsn)
         else:
             return None
+
+    def is_set(self, property):
+        if property not in self._raw_config:
+            raise Exception("Property does not exist: '%s'" % property)
+        return self._raw_config[property] != self.appschema[property].get('default')
 
     def parse_config_file_options(self, kwargs):
         """
@@ -1006,7 +1011,7 @@ class ConfiguresGalaxyMixin(object):
         # is in use, and warn if we suspect there to be problems.
         if self.config.shed_tool_config_file not in tool_configs:
             # This seems like the likely case for problems in older deployments
-            if self.config.tool_config_file_set and not self.config.shed_tool_config_file_set:
+            if self.config.is_set('tool_config_file') and not self.config.is_set('shed_tool_config_file'):
                 log.warning(
                     "The default shed tool config file (%s) has been added to the tool_config_file option, if this is "
                     "not the desired behavior, please set shed_tool_config_file to your primary shed-enabled tool "
@@ -1068,7 +1073,7 @@ class ConfiguresGalaxyMixin(object):
                                                         from_shed_config=from_shed_config)
         except (OSError, IOError) as exc:
             # Missing shed_tool_data_table_config is okay if it's the default
-            if exc.errno != errno.ENOENT or self.config.shed_tool_data_table_config_set:
+            if exc.errno != errno.ENOENT or self.config.is_set('shed_tool_data_table_config'):
                 raise
 
     def _configure_datatypes_registry(self, installed_repository_manager=None):

@@ -97,3 +97,27 @@ def test_update_raw_config_from_kwargs_falsy_not_none(mock_init):
 
     assert config._raw_config['property1'] == '0'  # updated
     assert type(config._raw_config['property1']) is str  # and converted to str
+
+
+def test_is_set(mock_init):
+    # if an option is set from kwargs, is_set() returns True, otherwise False
+    # Note: is_set() here means 'value is set by user', which includes setting to None.
+    config = GalaxyAppConfiguration(property1='b', property2=None, property4=False, property6='foo')
+
+    assert len(config._raw_config) == 6
+    assert config._raw_config['property1'] == 'b'
+    assert config._raw_config['property2'] is None
+    assert config._raw_config['property3'] == 1.0
+    assert config._raw_config['property4'] is False
+    assert config._raw_config['property5'] is None
+    assert config._raw_config['property6'] == 'foo'
+
+    assert config.is_set('property1')
+    assert config.is_set('property2')
+    assert not config.is_set('property3')
+    assert config.is_set('property4')
+    assert not config.is_set('property5')
+    assert config.is_set('property6')
+
+    with pytest.raises(Exception):
+        assert config.is_set('invalid property')

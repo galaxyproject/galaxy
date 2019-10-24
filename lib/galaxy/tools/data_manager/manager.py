@@ -33,14 +33,14 @@ class DataManagers(object):
             try:
                 self.load_from_xml(self.app.config.shed_data_manager_config_file, store_tool_path=True)
             except (OSError, IOError) as exc:
-                if exc.errno != errno.ENOENT or self.app.config.shed_data_manager_config_file_set:
+                if exc.errno != errno.ENOENT or self.app.config.is_set('shed_data_manager_config_file'):
                     raise
 
     def load_from_xml(self, xml_filename, store_tool_path=True):
         try:
             tree = util.parse_xml(xml_filename)
         except (IOError, OSError) as e:
-            if e.errno != errno.ENOENT or self.app.config.data_manager_config_file_set:
+            if e.errno != errno.ENOENT or self.app.config.is_set('data_manager_config_file'):
                 raise
             return  # default config option and it doesn't exist, which is fine
         except Exception as e:
