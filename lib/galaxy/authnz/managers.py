@@ -1,6 +1,5 @@
 
 import copy
-import importlib
 import json
 import logging
 import os
@@ -14,7 +13,6 @@ from cloudauthz import CloudAuthz
 from cloudauthz.exceptions import (
     CloudAuthzBaseException
 )
-
 from galaxy import exceptions
 from galaxy import model
 from galaxy.util import string_as_bool
@@ -27,6 +25,8 @@ from .psa_authnz import (
     Storage,
     Strategy
 )
+from six.moves import builtins
+
 
 log = logging.getLogger(__name__)
 
@@ -67,7 +67,7 @@ class AuthnzManager(object):
                     if child.get('Type') == "bool":
                         func = string_as_bool
                     else:
-                        func = getattr(importlib.import_module('__builtin__'), child.get('Type'))
+                        func = getattr(builtins, child.get('Type'))
                 except AttributeError:
                     log.error("The value of attribute `Type`, `{}`, is not a valid built-in type;"
                               " skipping this node").format(child.get('Type'))
