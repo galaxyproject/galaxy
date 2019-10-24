@@ -5,7 +5,7 @@
                 <b-link href="javascript:void(0)" role="button" class="font-weight-bold" @click="row.toggleDetails">
                     {{ row.item.name }}
                 </b-link>
-                <p>{{ row.item.description }}</p>
+                <div>{{ row.item.description }}</div>
             </template>
             <template v-slot:row-details="row">
                 <RepositoryDetails :repo="row.item" :toolshedUrl="toolshedUrl" />
