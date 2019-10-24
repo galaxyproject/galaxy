@@ -33,14 +33,6 @@ DATABASE = {
             'default_sqlite_file': 'universe.sqlite',
             'config_override': 'GALAXY_CONFIG_',
         },
-    "tool_shed":
-        {
-            'repo': 'galaxy/webapps/tool_shed/model/migrate',
-            'config_names': ['tool_shed', 'tool_shed_wsgi'],
-            'default_sqlite_file': 'community.sqlite',
-            'config_override': 'TOOL_SHED_CONFIG_',
-            'config_section': 'tool_shed',
-        },
     "install":
         {
             'repo': 'galaxy/model/tool_shed_install/migrate',
@@ -95,12 +87,6 @@ def get_config(argv, use_argparse=True, cwd=None):
     ...     p.add_section('app:main')
     ...     p.set('app:main', property, value)
     ...     with open(os.path.join(config_dir, 'config', path), 'w') as f: p.write(f)
-    >>> write_ini('tool_shed.ini', 'database_connection', 'sqlite:///pg/testdb1')
-    >>> config = get_config(['manage_db.py', 'tool_shed'], cwd=config_dir)
-    >>> config['repo'].endswith('galaxy/webapps/tool_shed/model/migrate')
-    True
-    >>> config['db_url']
-    'sqlite:///pg/testdb1'
     >>> write_ini('galaxy.ini', 'data_dir', '/moo')
     >>> config = get_config(['manage_db.py'], cwd=config_dir)
     >>> uri_with_env = os.getenv("GALAXY_TEST_DBURI", "sqlite:////moo/universe.sqlite?isolation_level=IMMEDIATE")
