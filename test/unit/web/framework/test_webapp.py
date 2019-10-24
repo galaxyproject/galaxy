@@ -58,7 +58,12 @@ class GalaxyWebTransaction_Headers_TestCase(unittest.TestCase):
         hostnames = config._parse_allowed_origin_hostnames({
             "allowed_origin_hostnames": r"/host\d{2}/,geocities.com,miskatonic.edu"
         })
-        self.assertTrue(isinstance(hostnames[0], re._pattern_type))
+        # re._pattern_type has been changed to re.Pattern in python 3.7
+        try:
+            Pattern = re.Pattern
+        except AttributeError:
+            Pattern = re._pattern_type
+        self.assertTrue(isinstance(hostnames[0], Pattern))
         self.assertTrue(isinstance(hostnames[1], str))
         self.assertTrue(isinstance(hostnames[2], str))
 

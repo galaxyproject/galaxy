@@ -75,6 +75,11 @@ class LibraryActions(object):
         cntrller = 'api'
         tool_id = 'upload1'
         message = None
+        file_type = kwd.get('file_type')
+        try:
+            upload_common.validate_datatype_extension(datatypes_registry=trans.app.datatypes_registry, ext=file_type)
+        except RequestParameterInvalidException as e:
+            return (400, util.unicodify(e))
         tool = trans.app.toolbox.get_tool(tool_id)
         state = tool.new_state(trans)
         populate_state(trans, tool.inputs, kwd, state.inputs)

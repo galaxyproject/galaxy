@@ -5,9 +5,22 @@
             <loading-span v-if="loading" message="Loading installed repositories" />
             <div v-else>
                 <b-alert :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
-                <div class="installed-message mt-3 mb-1 mx-1 text-muted">
-                    {{ repositories.length }} repositories installed on this instance.
+                <div class="m-1">
+                    <span class="installed-message text-muted">
+                        {{ repositories.length }} repositories installed on this instance.
+                    </span>
+                    <b-link @click="toggleMonitor">
+                        <span v-if="showMonitor">
+                            <span class="fa fa-angle-double-up" />
+                            <span>Hide installation progress.</span>
+                        </span>
+                        <span v-else>
+                            <span class="fa fa-angle-double-down" />
+                            <span>Show installation progress.</span>
+                        </span>
+                    </b-link>
                 </div>
+                <Monitor v-if="showMonitor" @onQuery="onQuery" />
                 <b-table
                     id="repository-table"
                     striped
@@ -42,14 +55,16 @@ import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { getAppRoot } from "onload/loadConfig";
 import { Services } from "../services.js";
-import RepositoryDetails from "./Details.vue";
 import LoadingSpan from "components/LoadingSpan";
+import Monitor from "./Monitor";
+import RepositoryDetails from "./Details";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
         LoadingSpan,
+        Monitor,
         RepositoryDetails
     },
     props: ["filter"],
@@ -70,7 +85,8 @@ export default {
             message: null,
             messageVariant: null,
             nRepositories: 0,
-            repositories: []
+            repositories: [],
+            showMonitor: false
         };
     },
     computed: {
@@ -103,8 +119,14 @@ export default {
                     this.error = error;
                 });
         },
-        filtered: function(items) {
+        filtered(items) {
             this.nRepositories = items.length;
+        },
+        toggleMonitor() {
+            this.showMonitor = !this.showMonitor;
+        },
+        onQuery(query) {
+            this.$emit("onQuery", query);
         }
     }
 };
