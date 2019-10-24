@@ -1,4 +1,3 @@
-
 import copy
 import json
 import logging
@@ -13,6 +12,8 @@ from cloudauthz import CloudAuthz
 from cloudauthz.exceptions import (
     CloudAuthzBaseException
 )
+from six.moves import builtins
+
 from galaxy import exceptions
 from galaxy import model
 from galaxy.util import string_as_bool
@@ -25,7 +26,6 @@ from .psa_authnz import (
     Storage,
     Strategy
 )
-from six.moves import builtins
 
 
 log = logging.getLogger(__name__)
