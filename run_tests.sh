@@ -13,7 +13,6 @@ cat <<EOF
                                     can be pytest selector
 '${0##*/} -integration (test_path)' for running all integration test scripts in the ./test/integration directory, test_path
                                     can be pytest selector
-'${0##*/} -toolshed (test_path)'    for running all the test scripts in the ./test/shed_functional/functional directory
 '${0##*/} -installed'               for running tests of Tool Shed installed tools
 '${0##*/} -main'                    for running tests of tools shipped with Galaxy
 '${0##*/} -framework'               for running through example tool tests testing framework features in test/functional/tools"
@@ -45,9 +44,6 @@ The main test types are as follows:
 - QUnit: These are JavaScript unit tests defined in client/galaxy/scripts/qunit.
 - Selenium: These are full stack tests meant to test the Galaxy UI with real
    browsers and are located in test/selenium_tests.
-- ToolShed: These are web tests that use the older Python web testing
-   framework twill to test ToolShed related functionality. These are
-   located in test/shed_functional.
 
 Python testing is currently a mix of nosetests and pytest, many tests when ran
 outside this script could be executed using either. pytest and Nose use slightly
@@ -391,17 +387,6 @@ do
               shift 2
           else
               selenium_script="./test/selenium_tests"
-              shift 1
-          fi
-          ;;
-      -t|-toolshed|--toolshed)
-          test_script="./test/shed_functional/functional_tests.py"
-          report_file="run_toolshed_tests.html"
-          if [ $# -gt 1 ]; then
-              toolshed_script=$2
-              shift 2
-          else
-              toolshed_script="./test/shed_functional/functional"
               shift 1
           fi
           ;;

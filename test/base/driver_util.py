@@ -39,7 +39,6 @@ from galaxy.tool_util.verify.interactor import GalaxyInteractorApi, verify_tool
 from galaxy.util import asbool, download_to_file
 from galaxy.util.properties import load_app_properties
 from galaxy.web import buildapp
-from galaxy.webapps.tool_shed.app import UniverseApplication as ToolshedUniverseApplication
 from .api_util import get_master_api_key, get_user_api_key
 from .instrument import StructuredTestDataPlugin
 from .nose_util import run
@@ -581,26 +580,6 @@ def build_galaxy_app(simple_kwargs):
     global install_context
     galaxy_context = app.model.context
     install_context = app.install_model.context
-
-    return app
-
-
-def build_shed_app(simple_kwargs):
-    """Build a Galaxy app object from a simple keyword arguments.
-
-    Construct paste style complex dictionary. Also setup "global" reference
-    to sqlalchemy database context for tool shed database.
-    """
-    log.info("Tool shed database connection: %s", simple_kwargs["database_connection"])
-    # TODO: Simplify global_conf to match Galaxy above...
-    simple_kwargs['__file__'] = 'tool_shed_wsgi.yml.sample'
-    simple_kwargs['global_conf'] = get_webapp_global_conf()
-
-    app = ToolshedUniverseApplication(**simple_kwargs)
-    log.info("Embedded Toolshed application started")
-
-    global tool_shed_context
-    tool_shed_context = app.model.context
 
     return app
 
