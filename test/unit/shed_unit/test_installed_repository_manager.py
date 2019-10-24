@@ -1,4 +1,5 @@
 from tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
+from tool_shed.util import repository_util
 from ..tools.test_toolbox import BaseToolBoxTestCase
 
 
@@ -18,6 +19,23 @@ class InstalledRepositoryManagerTestCase(BaseToolBoxTestCase):
         irm, repository = self._deactivate_repository()
         irm.activate_repository(repository)
         assert repository.status == self.app.install_model.ToolShedRepository.installation_status.INSTALLED
+
+    def test_create_or_update_tool_shed_repository(self):
+        repository = self._setup_repository()
+        new_repository = repository_util.create_or_update_tool_shed_repository(
+            app=self.app,
+            name=repository.name,
+            description=repository.description,
+            installed_changeset_revision=repository.installed_changeset_revision,
+            ctx_rev=repository.changeset_revision,
+            repository_clone_url='https://github.com/galaxyproject/example/test_tool/0.%s' % repository.installed_changeset_revision,  # not needed if owner is given
+            status=repository.status,
+            metadata_dict=None,
+            current_changeset_revision=str(int(repository.changeset_revision) + 1),
+            owner=repository.owner,
+            dist_to_shed=False
+        )
+        assert new_repository.changeset_revision == str(int(repository.changeset_revision) + 1)
 
     def _deactivate_repository(self):
         repository = self._setup_repository()
