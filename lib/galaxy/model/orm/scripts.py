@@ -49,7 +49,7 @@ def _read_model_arguments(argv, use_argparse=False):
         parser.add_argument('database', metavar='DATABASE', type=str,
                             default="galaxy",
                             nargs='?',
-                            help='database to target (galaxy, tool_shed, install)')
+                            help='database to target (galaxy, install)')
         populate_config_args(parser)
         args = parser.parse_args(argv[1:] if argv else [])
         return args.config_file, args.config_section, args.database
@@ -66,7 +66,7 @@ def _read_model_arguments(argv, use_argparse=False):
             argv.pop(pos)
             config_section = argv.pop(pos)
         if argv and (argv[-1] in DATABASE):
-            database = argv.pop()  # database name tool_shed, galaxy, or install.
+            database = argv.pop()  # database name galaxy, or install.
         else:
             database = 'galaxy'
         return config_file, config_section, database
