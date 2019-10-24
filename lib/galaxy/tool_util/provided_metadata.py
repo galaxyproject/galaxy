@@ -54,7 +54,7 @@ class BaseToolProvidedMetadata(object):
     def has_failed_outputs(self):
         """Determine if generation of any of the outputs failed.
 
-        If True, this method should also log information about at the first such failed output.
+        If True, this method should also log information about at least the first such failed output.
         """
         return False
 

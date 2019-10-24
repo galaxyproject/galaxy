@@ -332,10 +332,12 @@ class ToolEvaluator(object):
             # Write outputs to the working directory (for security purposes)
             # if desired.
             param_dict[name] = DatasetFilenameWrapper(hda, compute_environment=self.compute_environment, io_type="output")
-            try:
-                open(str(param_dict[name]), 'w').close()
-            except EnvironmentError:
-                pass  # May well not exist - e.g. Pulsar.
+            output_path = str(param_dict[name])
+            # Conditionally create empty output:
+            # - may already exist (e.g. symlink output)
+            # - parent directory might not exist (e.g. Pulsar)
+            if not os.path.exists(output_path) and os.path.exists(os.path.dirname(output_path)):
+                open(output_path, 'w').close()
 
             # Provide access to a path to store additional files
             # TODO: move compute path logic into compute environment, move setting files_path
