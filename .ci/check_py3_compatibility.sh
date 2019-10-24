@@ -17,7 +17,7 @@ xmlrpclib"
 
 ret=0
 for mod in $PYTHON2_ONLY_MODULES; do
-    $ACK " --type python \
+    $ACK --type python \
     --ignore-dir=.git \
     --ignore-dir=.tox \
     --ignore-dir=.venv \
@@ -28,7 +28,7 @@ for mod in $PYTHON2_ONLY_MODULES; do
     --ignore-dir=eggs \
     --ignore-dir=static/maps \
     --ignore-dir=static/scripts \
-    ^import $mod(\n|\.)|^from $mod import "
+    "^import $mod(\n|\.)|^from $mod import "
     if [ $? -eq 0 ]; then ret=1; fi
 done
 
