@@ -89,6 +89,7 @@ def create_or_update_tool_shed_repository(app, name, description, installed_chan
     If a record defined by the received tool shed, repository name and owner does not exist, create
     a new record with the received information.
     """
+    metadata_dict = metadata_dict if metadata_dict is not None else {}
     # The received value for dist_to_shed will be True if the ToolMigrationManager is installing a repository
     # that contains tools or datatypes that used to be in the Galaxy distribution, but have been moved
     # to the main Galaxy tool shed.
@@ -102,7 +103,7 @@ def create_or_update_tool_shed_repository(app, name, description, installed_chan
     tool_shed = get_tool_shed_from_clone_url(repository_clone_url)
     if not owner:
         owner = get_repository_owner_from_clone_url(repository_clone_url)
-    includes_datatypes = 'datatypes' in (metadata_dict or {})
+    includes_datatypes = 'datatypes' in metadata_dict
     if status in [app.install_model.ToolShedRepository.installation_status.DEACTIVATED]:
         deleted = True
         uninstalled = False
@@ -115,20 +116,17 @@ def create_or_update_tool_shed_repository(app, name, description, installed_chan
     tool_shed_repository = \
         get_installed_repository(app, tool_shed=tool_shed, name=name, owner=owner, installed_changeset_revision=installed_changeset_revision, refresh=True)
     if tool_shed_repository:
-        log.debug("Updating an existing row for repository '%s' in the tool_shed_repository table, status set to '%s'." %
-                  (str(name), str(status)))
+        log.debug("Updating an existing row for repository '%s' in the tool_shed_repository table, status set to '%s'.", name, status)
         tool_shed_repository.description = description
         tool_shed_repository.changeset_revision = current_changeset_revision
         tool_shed_repository.ctx_rev = ctx_rev
+        tool_shed_repository.metadata = metadata_dict
+        tool_shed_repository.includes_datatypes = includes_datatypes
         tool_shed_repository.deleted = deleted
         tool_shed_repository.uninstalled = uninstalled
         tool_shed_repository.status = status
-        if metadata_dict is not None:
-            tool_shed_repository.metadata = metadata_dict
-            tool_shed_repository.includes_datatypes = includes_datatypes
     else:
-        log.debug("Adding new row for repository '%s' in the tool_shed_repository table, status set to '%s'." %
-                  (str(name), str(status)))
+        log.debug("Adding new row for repository '%s' in the tool_shed_repository table, status set to '%s'.", name, status)
         tool_shed_repository = \
             app.install_model.ToolShedRepository(tool_shed=tool_shed,
                                                  name=name,
@@ -137,7 +135,7 @@ def create_or_update_tool_shed_repository(app, name, description, installed_chan
                                                  installed_changeset_revision=installed_changeset_revision,
                                                  changeset_revision=current_changeset_revision,
                                                  ctx_rev=ctx_rev,
-                                                 metadata=metadata_dict or {},
+                                                 metadata=metadata_dict,
                                                  includes_datatypes=includes_datatypes,
                                                  dist_to_shed=dist_to_shed,
                                                  deleted=deleted,
