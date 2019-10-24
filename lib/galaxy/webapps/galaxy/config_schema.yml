@@ -1558,9 +1558,9 @@ mapping:
         default: false
         required: false
         desc: |
-          Debug enables access to various config options useful for development and
-          debugging: use_lint, use_profile, use_printdebug and use_interactive.  It
-          also causes the files used by PBS/SGE (submission script, output, and error)
+          Debug enables access to various config options useful for development
+          and debugging: use_lint, use_profile, and use_printdebug.  It also
+          causes the files used by PBS/SGE (submission script, output, and error)
           to remain on disk after the job is complete.
 
       use_lint:
@@ -1583,14 +1583,6 @@ mapping:
         required: false
         desc: |
           Intercept print statements and show them on the returned page.
-
-      use_interactive:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Enable live debugging in your browser.  This should NEVER be enabled on a
-          public site.
 
       monitor_thread_join_timeout:
         type: int

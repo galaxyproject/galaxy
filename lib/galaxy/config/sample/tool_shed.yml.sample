@@ -177,8 +177,8 @@ tool_shed:
   # User authentication can be delegated to an upstream proxy server
   # (usually Apache).  The upstream proxy should set a REMOTE_USER
   # header in the request. Enabling remote user disables regular logins.
-  # For more information, see: https://galaxyproject.org/admin/config
-  # /apache-external-user-auth/
+  # For more information, see:
+  # https://galaxyproject.org/admin/config/apache-external-user-auth/
   #use_remote_user: false
 
   # If use_remote_user is enabled, anyone who can log in to the Galaxy
