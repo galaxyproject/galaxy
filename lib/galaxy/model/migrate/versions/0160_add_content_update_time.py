@@ -4,12 +4,13 @@ to update history.update_time when contents are changed.
 """
 from __future__ import print_function
 
-import datetime
 import logging
 
 from sqlalchemy import Column, DateTime, DDL, MetaData, Table
 
 from galaxy.model.migrate.versions.util import add_column, drop_column
+
+from galaxy.model.orm.now import now
 
 log = logging.getLogger(__name__)
 metadata = MetaData()
@@ -176,7 +177,6 @@ def build_drop_trigger(op, migrate_engine):
 
 
 def create_timestamps(metadata, table_name):
-    now = datetime.datetime.utcnow
     target_table = Table(table_name, metadata, autoload=True)
     if 'create_time' not in target_table.c:
         create_time_column = Column("create_time", DateTime, default=now)
