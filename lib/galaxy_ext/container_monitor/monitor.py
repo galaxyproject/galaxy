@@ -1,15 +1,16 @@
 import json
-import time
 import os
-import subprocess
 import socket
+import subprocess
 import sys
 import tempfile
+import time
 
 # insert *this* galaxy before all others on sys.path
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir)))
 
 from galaxy.tool_util.deps import docker_util
+
 
 def parse_ports(container_name, connection_configuration):
     while True:
@@ -23,6 +24,7 @@ def parse_ports(container_name, connection_configuration):
                 stdout_file.seek(0)
                 ports_raw = stdout_file.read()
                 return ports_raw
+
 
 def main():
     with open("container_config.json", "r") as f:
