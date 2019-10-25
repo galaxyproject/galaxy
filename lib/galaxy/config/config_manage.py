@@ -40,7 +40,7 @@ from galaxy.util.yaml_util import (
 
 DESCRIPTION = "Convert configuration files."
 
-APP_DESCRIPTION = """Application to target for operation (i.e. galaxy, tool_shed, or reports))"""
+APP_DESCRIPTION = """Application to target for operation (i.e. galaxy or reports))"""
 DRY_RUN_DESCRIPTION = """If this action modifies files, just print what would be the result and continue."""
 UNKNOWN_OPTION_MESSAGE = "Option [%s] not found in schema - either it is invalid or the Galaxy team hasn't documented it. If invalid, you should manually remove it. If the option is valid but undocumented, please file an issue with the Galaxy team."
 USING_SAMPLE_MESSAGE = "Path [%s] not a file, using sample."
@@ -330,14 +330,6 @@ GALAXY_APP = App(
     GALAXY_CONFIG_SCHEMA_PATH,
     'galaxy.webapps.galaxy.buildapp:uwsgi_app()',
 )
-SHED_APP = App(
-    ["tool_shed_wsgi.ini", "config/tool_shed.ini"],
-    "9009",
-    ["galaxy.webapps.tool_shed.buildapp:app_factory"],
-    "config/tool_shed.yml",
-    "lib/galaxy/webapps/tool_shed/config_schema.yml",
-    'galaxy.webapps.tool_shed.buildapp:uwsgi_app()',
-)
 REPORTS_APP = App(
     ["reports_wsgi.ini", "config/reports.ini"],
     "9001",
@@ -346,7 +338,7 @@ REPORTS_APP = App(
     "lib/galaxy/webapps/reports/config_schema.yml",
     'galaxy.webapps.reports.buildapp:uwsgi_app()',
 )
-APPS = {"galaxy": GALAXY_APP, "tool_shed": SHED_APP, "reports": REPORTS_APP}
+APPS = {"galaxy": GALAXY_APP, "reports": REPORTS_APP}
 
 
 def main(argv=None):
