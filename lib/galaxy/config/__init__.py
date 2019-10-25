@@ -365,16 +365,16 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         else:
             self.integrated_tool_panel_tracking_directory = None
         self.toolbox_filter_base_modules = listify(self.toolbox_filter_base_modules)
-        self.tool_filters = listify(kwargs.get("tool_filters", []), do_strip=True)
-        self.tool_label_filters = listify(kwargs.get("tool_label_filters", []), do_strip=True)
-        self.tool_section_filters = listify(kwargs.get("tool_section_filters", []), do_strip=True)
+        self.tool_filters = listify(self.tool_filters, do_strip=True)
+        self.tool_label_filters = listify(self.tool_label_filters, do_strip=True)
+        self.tool_section_filters = listify(self.tool_section_filters, do_strip=True)
 
-        self.user_tool_filters = listify(kwargs.get("user_tool_filters", []), do_strip=True)
-        self.user_tool_label_filters = listify(kwargs.get("user_tool_label_filters", []), do_strip=True)
-        self.user_tool_section_filters = listify(kwargs.get("user_tool_section_filters", []), do_strip=True)
+        self.user_tool_filters = listify(self.user_tool_filters, do_strip=True)
+        self.user_tool_label_filters = listify(self.user_tool_label_filters, do_strip=True)
+        self.user_tool_section_filters = listify(self.user_tool_section_filters, do_strip=True)
         self.has_user_tool_filters = bool(self.user_tool_filters or self.user_tool_label_filters or self.user_tool_section_filters)
 
-        self.password_expiration_period = timedelta(days=int(kwargs.get("password_expiration_period", 0)))
+        self.password_expiration_period = timedelta(days=int(self.password_expiration_period))
 
         if self.shed_tool_data_path:
             self.shed_tool_data_path = os.path.join(self.root, self.shed_tool_data_path)
@@ -382,7 +382,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             self.shed_tool_data_path = self.tool_data_path
 
         self.running_functional_tests = string_as_bool(kwargs.get('running_functional_tests', False))
-        self.enable_tool_shed_check = string_as_bool(kwargs.get('enable_tool_shed_check', False))
         if isinstance(self.hours_between_check, string_types):
             self.hours_between_check = float(self.hours_between_check)
         try:
@@ -402,10 +401,10 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         except Exception:
             self.hours_between_check = 12
         self.update_integrated_tool_panel = kwargs.get("update_integrated_tool_panel", True)
-        self.galaxy_data_manager_data_path = kwargs.get('galaxy_data_manager_data_path', self.tool_data_path)
+        self.galaxy_data_manager_data_path = kwargs.get('galaxy_data_manager_data_path', self.tool_data_path)  # TODO: schema default maybe?
         self.tool_secret = kwargs.get("tool_secret", "")
         self.metadata_strategy = kwargs.get("metadata_strategy", "directory")
-        self.use_remote_user = string_as_bool(kwargs.get("use_remote_user", "False")) or self.single_user
+        self.use_remote_user = self.use_remote_user or self.single_user
         self.fetch_url_whitelist_ips = [
             ipaddress.ip_network(unicodify(ip.strip()))  # If it has a slash, assume 127.0.0.1/24 notation
             if '/' in ip else
@@ -432,7 +431,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.output_size_limit = int(kwargs.get('output_size_limit', 0))
         # activation_email was used until release_15.03
         activation_email = kwargs.get('activation_email')
-        self.email_from = kwargs.get('email_from', activation_email)
+        self.email_from = self.email_from or activation_email
         self.myexperiment_target_url = kwargs.get('my_experiment_target_url', 'www.myexperiment.org')
 
         #  Get the disposable email domains blacklist file and its contents
@@ -445,7 +444,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             except IOError:
                 log.error("CONFIGURATION ERROR: Can't open supplied blacklist file from path: %s", self.blacklist_file)
 
-        self.persistent_communication_rooms = listify(kwargs.get("persistent_communication_rooms", []), do_strip=True)
+        self.persistent_communication_rooms = listify(self.persistent_communication_rooms, do_strip=True)
         # The transfer manager and deferred job queue
         self.enable_beta_job_managers = string_as_bool(kwargs.get('enable_beta_job_managers', 'False'))
         # These are not even beta - just experiments - don't use them unless
@@ -474,8 +473,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.trust_jupyter_notebook_conversion = trust_jupyter_notebook_conversion
         # Configuration for the message box directly below the masthead.
         self.blog_url = kwargs.get('blog_url')
-        self.user_library_import_symlink_whitelist = listify(kwargs.get('user_library_import_symlink_whitelist', []), do_strip=True)
-        self.user_library_import_dir_auto_creation = string_as_bool(kwargs.get('user_library_import_dir_auto_creation', False)) if self.user_library_import_dir else False
+        self.user_library_import_symlink_whitelist = listify(self.user_library_import_symlink_whitelist, do_strip=True)
+        self.user_library_import_dir_auto_creation = self.user_library_import_dir_auto_creation if self.user_library_import_dir else False
         # Searching data libraries
         self.ftp_upload_dir_template = kwargs.get('ftp_upload_dir_template', '${ftp_upload_dir}%s${ftp_upload_dir_identifier}' % os.path.sep)
         # Support older library-specific path paste option but just default to the new
@@ -500,7 +499,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             # self, populate config_dict
             self.config_dict["conda_mapping_files"] = conda_mapping_files
 
-        self.enable_mulled_containers = string_as_bool(kwargs.get('enable_mulled_containers', 'True'))
         containers_resolvers_config_file = kwargs.get('containers_resolvers_config_file')
         if containers_resolvers_config_file:
             containers_resolvers_config_file = os.path.join(self.root, containers_resolvers_config_file)
@@ -624,7 +622,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         # InteractiveTools propagator mapping file
         self.interactivetool_map = self.resolve_path(kwargs.get("interactivetools_map", os.path.join(self.data_dir, "interactivetools_map.sqlite")))
         self.interactivetool_prefix = kwargs.get("interactivetools_prefix", "interactivetool")
-        self.interactivetools_enable = string_as_bool(kwargs.get('interactivetools_enable', False))
 
         self.containers_conf = parse_containers_config(self.containers_config_file)
 
