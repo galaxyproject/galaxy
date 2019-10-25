@@ -1107,7 +1107,7 @@ mapping:
 
       mailing_lists_url:
         type: str
-        default: https://galaxyproject.org/mailing-lists
+        default: https://galaxyproject.org/mailing-lists/
         required: false
         desc: |
           The URL linked by the "Mailing Lists" link in the "Help" menu.

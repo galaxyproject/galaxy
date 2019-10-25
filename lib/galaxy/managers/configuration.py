@@ -29,67 +29,67 @@ class ConfigSerializer(base.ModelSerializer):
 
     def add_serializers(self):
         def _defaults_to(default):
-            return lambda i, k, **c: getattr(i, k, default)
+            return lambda item, key, **context: getattr(item, key, default)
 
         self.serializers = {
             # TODO: this is available from user data, remove
             'is_admin_user'                     : lambda *a, **c: False,
 
-            'brand'                             : _defaults_to(''),
+            'brand'                             : _defaults_to(self.app.config.brand or ''),
             # TODO: this doesn't seem right
-            'logo_url'                          : lambda i, k, **c: self.url_for(i.get(k, '/')),
-            'logo_src'                          : lambda i, k, **c: self.url_for('/static/favicon.png'),
-            'terms_url'                         : _defaults_to(''),
-            'myexperiment_target_url'           : _defaults_to("www.myexperiment.org"),
+            'logo_url'                          : lambda item, key, **context: self.url_for(item.get(key, '/')),
+            'logo_src'                          : lambda item, key, **context: self.url_for('/static/images/galaxyIcon_noText.png'),
+            'terms_url'                         : _defaults_to(self.app.config.terms_url or ''),
+            'myexperiment_target_url'           : _defaults_to(self.app.config.myexperiment_target_url),
             'wiki_url'                          : _defaults_to(self.app.config.wiki_url),
-            'search_url'                        : _defaults_to(self.app.config.wiki_url.rstrip("/") + "/search/"),
-            'mailing_lists'                     : _defaults_to(self.app.config.wiki_url.rstrip("/") + "/mailing-lists/"),
-            'screencasts_url'                   : _defaults_to("https://vimeo.com/galaxyproject"),
-            'genomespace_ui_url'                : _defaults_to(None),
+            'search_url'                        : _defaults_to(self.app.config.search_url),
+            'mailing_lists'                     : _defaults_to(self.app.config.mailing_lists_url),
+            'screencasts_url'                   : _defaults_to(self.app.config.screencasts_url),
+            'genomespace_ui_url'                : _defaults_to(self.app.config.genomespace_ui_url),
             'citation_url'                      : _defaults_to(self.app.config.citation_url),
             'support_url'                       : _defaults_to(self.app.config.support_url),
             'helpsite_url'                      : _defaults_to(self.app.config.helpsite_url),
             'lims_doc_url'                      : _defaults_to("https://usegalaxy.org/u/rkchak/p/sts"),
             'default_locale'                    : _defaults_to(self.app.config.default_locale),
-            'enable_openid'                     : _defaults_to(False),
-            'enable_communication_server'       : _defaults_to(False),
-            'communication_server_port'         : _defaults_to(None),
-            'communication_server_host'         : _defaults_to(None),
-            'persistent_communication_rooms'    : _defaults_to(None),
-            'allow_user_impersonation'          : _defaults_to(False),
-            'allow_user_creation'               : _defaults_to(False),
-            'use_remote_user'                   : _defaults_to(None),
-            'enable_oidc'                       : _defaults_to(False),
+            'enable_openid'                     : _defaults_to(self.app.config.enable_openid),
+            'enable_communication_server'       : _defaults_to(self.app.config.enable_communication_server),
+            'communication_server_port'         : _defaults_to(self.app.config.communication_server_port),
+            'communication_server_host'         : _defaults_to(self.app.config.communication_server_host),
+            'persistent_communication_rooms'    : _defaults_to(self.app.config.persistent_communication_rooms),
+            'allow_user_impersonation'          : _defaults_to(self.app.config.allow_user_impersonation),
+            'allow_user_creation'               : _defaults_to(False),  # schema default is True
+            'use_remote_user'                   : _defaults_to(None),  # schema default is False; or config.single_user
+            'enable_oidc'                       : _defaults_to(self.app.config.enable_oidc),
             'oidc'                              : _defaults_to(self.app.config.oidc),
-            'enable_quotas'                     : _defaults_to(False),
-            'remote_user_logout_href'           : _defaults_to(''),
-            'datatypes_disable_auto'            : _defaults_to(False),
-            'allow_user_dataset_purge'          : _defaults_to(False),
-            'ga_code'                           : _defaults_to(None),
-            'enable_unique_workflow_defaults'   : _defaults_to(False),
+            'enable_quotas'                     : _defaults_to(self.app.config.enable_quotas),
+            'remote_user_logout_href'           : _defaults_to(self.app.config.remote_user_logout_href or ''),
+            'datatypes_disable_auto'            : _defaults_to(self.app.config.datatypes_disable_auto),
+            'allow_user_dataset_purge'          : _defaults_to(False),  # schema default is True
+            'ga_code'                           : _defaults_to(self.app.config.ga_code),
+            'enable_unique_workflow_defaults'   : _defaults_to(self.app.config.enable_unique_workflow_defaults),
             'has_user_tool_filters'             : _defaults_to(False),
 
             # TODO: is there no 'correct' way to get an api url? controller='api', action='tools' is a hack
             # at any rate: the following works with path_prefix but is still brittle
             # TODO: change this to (more generic) upload_path and incorporate config.nginx_upload_path into building it
-            'nginx_upload_path'                 : lambda i, k, **c: getattr(i, k, False),
-            'chunk_upload_size'                 : _defaults_to(104857600),
-            'ftp_upload_site'                   : _defaults_to(None),
+            'nginx_upload_path'                 : lambda item, key, **context: getattr(item, key, False),
+            'chunk_upload_size'                 : _defaults_to(self.app.config.chunk_upload_size),
+            'ftp_upload_site'                   : _defaults_to(self.app.config.ftp_upload_site),
             'version_major'                     : _defaults_to(None),
-            'require_login'                     : _defaults_to(None),
-            'inactivity_box_content'            : _defaults_to(None),
-            'visualizations_visible'            : _defaults_to(True),
-            'interactivetools_enable'           : _defaults_to(False),
-            'message_box_content'               : _defaults_to(None),
-            'message_box_visible'               : _defaults_to(False),
-            'message_box_class'                 : _defaults_to('info'),
-            'server_startttime'                 : lambda i, k, **c: server_starttime,
-            'mailing_join_addr'                 : _defaults_to('galaxy-announce-join@bx.psu.edu'),
-            'server_mail_configured'            : lambda i, k, **c: True if getattr(i, 'smtp_server', False) else False,
-            'registration_warning_message'      : _defaults_to(None),
-            'welcome_url'                       : _defaults_to(None),
-            'show_welcome_with_login'           : _defaults_to(True),
-            'cookie_domain'                     : _defaults_to(None),
+            'require_login'                     : _defaults_to(self.app.config.require_login),
+            'inactivity_box_content'            : _defaults_to(self.app.config.inactivity_box_content),
+            'visualizations_visible'            : _defaults_to(self.app.config.visualizations_visible),
+            'interactivetools_enable'           : _defaults_to(self.app.config.interactivetools_enable),
+            'message_box_content'               : _defaults_to(self.app.config.message_box_content),
+            'message_box_visible'               : _defaults_to(self.app.config.message_box_visible),
+            'message_box_class'                 : _defaults_to(self.app.config.message_box_class),
+            'server_startttime'                 : lambda item, key, **context: server_starttime,
+            'mailing_join_addr'                 : _defaults_to('galaxy-announce-join@bx.psu.edu'),  # should this be the schema default?
+            'server_mail_configured'            : lambda item, key, **context: bool(getattr(item, 'smtp_server')),
+            'registration_warning_message'      : _defaults_to(self.app.config.registration_warning_message),
+            'welcome_url'                       : _defaults_to(self.app.config.welcome_url),
+            'show_welcome_with_login'           : _defaults_to(True),  # schema default is False
+            'cookie_domain'                     : _defaults_to(self.app.config.cookie_domain),
         }
 
 
@@ -100,7 +100,7 @@ class AdminConfigSerializer(ConfigSerializer):
         super(AdminConfigSerializer, self).add_serializers()
 
         def _defaults_to(default):
-            return lambda i, k, **c: getattr(i, k, default)
+            return lambda item, key, **context: getattr(item, key, default)
 
         self.serializers.update({
             # TODO: this is available from user serialization: remove
