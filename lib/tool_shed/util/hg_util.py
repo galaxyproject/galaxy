@@ -43,7 +43,7 @@ def clone_repository(repository_clone_url, repository_file_dir, ctx_rev=None):
     """
     cmd = ['hg', 'clone']
     if ctx_rev:
-        cmd.extend(['-r', ctx_rev])
+        cmd.extend(['-r', str(ctx_rev)])
     cmd.extend([repository_clone_url, repository_file_dir])
     # Make sure the destination path actually exists before attempting to clone
     if not os.path.exists(repository_file_dir):
@@ -404,7 +404,7 @@ def init_repository(repo_path):
 
 def changeset2rev(repo_path, changeset_revision):
     """
-    Return the revision number corresponding to a specified changeset revision.
+    Return the revision number (as an int) corresponding to a specified changeset revision.
     """
     try:
         rev = subprocess.check_output(['hg', 'id', '-r', changeset_revision, '-n'], stderr=subprocess.STDOUT, cwd=repo_path)
