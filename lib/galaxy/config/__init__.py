@@ -432,7 +432,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         # activation_email was used until release_15.03
         activation_email = kwargs.get('activation_email')
         self.email_from = self.email_from or activation_email
-        self.myexperiment_target_url = kwargs.get('my_experiment_target_url', 'www.myexperiment.org')
 
         #  Get the disposable email domains blacklist file and its contents
         self.blacklist_content = None
