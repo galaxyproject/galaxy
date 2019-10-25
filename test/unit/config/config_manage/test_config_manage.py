@@ -34,35 +34,6 @@ def test_reports_build_sample():
         config_dir.assert_is_yaml("config/reports.yml.sample")
 
 
-def test_shed_conversion_1607_sample():
-    with _config_directory("1607_root_samples") as config_dir:
-        config_dir.manage_cli(["convert", "tool_shed"])
-        config_dir.assert_not_exists("config/tool_shed.ini")
-        config_dir.assert_is_yaml("config/tool_shed.yml")
-        config_dir.assert_moved("config/tool_shed.ini", "config/tool_shed.ini.backup")
-
-
-def test_shed_build_sample():
-    with _config_directory("1607_root_samples") as config_dir:
-        config_dir.assert_not_exists("config/tool_shed.yml.sample")
-        config_dir.manage_cli(["build_sample_yaml", "tool_shed", "--add-comments"])
-        config_dir.assert_is_yaml("config/tool_shed.yml.sample")
-
-
-def test_shed_conversion_1607_prefix():
-    with _config_directory("1607_root_filters") as config_dir:
-        config_dir.manage_cli(["convert", "tool_shed"])
-        config_dir.assert_not_exists("config/tool_shed.ini")
-        config_dir.assert_is_yaml("config/tool_shed.yml")
-        config_dir.assert_moved("config/tool_shed.ini", "config/tool_shed.ini.backup")
-        with config_dir.open("config/tool_shed.yml") as f:
-            config = yaml.safe_load(f)
-        assert "uwsgi" in config
-        uwsgi_config = config["uwsgi"]
-        assert "module" not in uwsgi_config
-        assert uwsgi_config["mount"].startswith("/shed=galaxy.")
-
-
 def test_allow_library_path_paste_conversion():
     with _config_directory("1705_allow_path_paste") as config_dir:
         config_dir.manage_cli(["convert", "galaxy"])
