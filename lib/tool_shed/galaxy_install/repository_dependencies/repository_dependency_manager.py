@@ -310,7 +310,7 @@ class RepositoryDependencyInstallManager(object):
         try:
             raw_text = url_get(tool_shed_url, password_mgr=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
         except Exception:
-            log.exception("The URL\n%s\nraised the exception:\n%s\n", build_url(tool_shed_url, pathspec=pathspec, params=params))
+            log.exception("Error while trying to get URL: %s", build_url(tool_shed_url, pathspec=pathspec, params=params))
             return ''
         if len(raw_text) > 2:
             encoded_text = json.loads(raw_text)

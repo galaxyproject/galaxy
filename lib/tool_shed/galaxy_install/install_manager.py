@@ -461,7 +461,7 @@ class InstallRepositoryManager(object):
             raw_text = util.url_get(tool_shed_url, password_mgr=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
         except Exception:
             message = "Error attempting to retrieve installation information from tool shed "
-            message += "%s for revision %s of repository %s owned by %s:" % \
+            message += "%s for revision %s of repository %s owned by %s" % \
                 (tool_shed_url, changeset_revision, name, owner)
             log.exception(message)
             raise exceptions.InternalServerError(message)
