@@ -9,7 +9,7 @@
                     <span class="installed-message text-muted">
                         {{ repositories.length }} repositories installed on this instance.
                     </span>
-                    <b-link @click="toggleMonitor">
+                    <b-link @click="toggleMonitor" class="font-weight-bold">
                         <span v-if="showMonitor">
                             <span class="fa fa-angle-double-up" />
                             <span>Hide installation progress.</span>
@@ -25,15 +25,21 @@
                     id="repository-table"
                     striped
                     :fields="fields"
+                    :sortBy="sortBy"
                     :items="repositories"
                     :filter="filter"
                     @filtered="filtered"
                 >
                     <template v-slot:cell(name)="row">
                         <b-link href="#" role="button" class="font-weight-bold" @click="row.toggleDetails">
-                            {{ row.item.name }}
+                            <div v-if="!isLatest(row.item)">
+                                <b-badge variant="danger" class="mb-2">
+                                    Newer version available!
+                                </b-badge>
+                            </div>
+                            <div class="name">{{ row.item.name }}</div>
                         </b-link>
-                        <p>{{ row.item.description }}</p>
+                        <div>{{ row.item.description }}</div>
                     </template>
                     <template slot="row-details" slot-scope="row">
                         <RepositoryDetails :repo="row.item" />
@@ -74,7 +80,10 @@ export default {
             fields: [
                 {
                     key: "name",
-                    sortable: true
+                    sortable: true,
+                    sortByFormatted: (value, key, item) => {
+                        return `${this.isLatest(item)}_${value}`;
+                    }
                 },
                 {
                     key: "owner",
@@ -86,7 +95,8 @@ export default {
             messageVariant: null,
             nRepositories: 0,
             repositories: [],
-            showMonitor: false
+            showMonitor: false,
+            sortBy: "name"
         };
     },
     computed: {
@@ -106,6 +116,10 @@ export default {
         this.load();
     },
     methods: {
+        isLatest(item) {
+            const value = item.tool_shed_status && item.tool_shed_status.latest_installable_revision;
+            return String(value).toLowerCase() != "false";
+        },
         load() {
             this.loading = true;
             this.services

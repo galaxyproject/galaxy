@@ -190,14 +190,8 @@ class NicerConfigParser(ConfigParser):
 
 
 def _running_from_source():
-    try:
-        # is there a better way to do this?
-        assert os.path.exists('run.sh')
-        assert os.path.exists('lib/galaxy/__init__.py')
-        assert os.path.exists('scripts/common_startup.sh')
-        return True
-    except AssertionError:
-        return False
+    paths = ['run.sh', 'lib/galaxy/__init__.py', 'scripts/common_startup.sh']
+    return all(map(os.path.exists, paths))
 
 
 running_from_source = _running_from_source()

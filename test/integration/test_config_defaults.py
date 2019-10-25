@@ -47,19 +47,84 @@ PATH_CONFIG_PROPERTIES = [
     'config_dir',
     'mutable_config_dir',
     'data_dir',
+    'auth_config_file',
+    'blacklist_file',
+    'builds_file_path',
+    'citation_cache_data_dir',
+    'citation_cache_lock_dir',
+    'cluster_files_directory',
+    'containers_resolvers_config_file',
+    'data_manager_config_file',
+    'datatypes_config_file',
+    'dependency_resolvers_config_file',
+    'file_path',
+    'ftp_upload_dir',
+    'galaxy_data_manager_data_path',
+    'integrated_tool_panel_config',
+    'interactive_environment_plugins_directory',
+    'involucro_path',
+    'job_config_file',
+    'job_resource_params_file',
+    'job_working_directory',
+    'len_file_path',
+    'library_import_dir',
+    'migrated_tools_config',
+    'new_file_path',
+    'nginx_upload_job_files_path',
+    'nginx_upload_job_files_store',
+    'nginx_upload_path',
+    'object_store_config_file',
+    'oidc_backends_config_file',
+    'oidc_config_file',
+    'openid_consumer_cache_path',
+    'sanitize_whitelist_file',
+    'shed_data_manager_config_file',
+    'shed_tool_config_file',
+    'shed_tool_data_path',
+    'shed_tool_data_table_config',
+    'template_cache_path',
+    'tool_data_path',
+    'tool_dependency_cache_dir',
+    'tool_path',
+    'tool_sheds_config_file',
+    'user_preferences_extra_conf_path',
+    'webhooks_dir',
+    'workflow_resource_params_file',
+    'workflow_resource_params_mapper',
+    'workflow_schedulers_config_file',
 ]
+# TODO: fix or mark as not absolute (2 are lists):
+# - 'tool_config_file',
+# - 'tool_data_table_config_path',
+# - 'tool_dependency_dir',
+# - 'tool_test_data_directories',
+# - 'tour_config_dir',
+# - 'visualization_plugins_directory',
 
 
 # Most of these (except root_dir) will go away once path_resolves_to is set in the schema
 RESOLVE = {
-    'sanitize_whitelist_file': 'root_dir',
-    'tool_data_path': 'root_dir',
-    'involucro_path': 'root_dir',
-    'tool_path': 'root_dir',
-    'integrated_tool_panel_config': 'config_dir',
-    'shed_tool_data_path': 'tool_data_path',
+    'auth_config_file': 'config_dir',
     'builds_file_path': 'tool_data_path',
+    'dependency_resolvers_config_file': 'config_dir',
+    'integrated_tool_panel_config': 'config_dir',
+    'involucro_path': 'root_dir',
+    'job_resource_params_file': 'config_dir',
     'len_file_path': 'tool_data_path',
+    'object_store_config_file': 'config_dir',
+    'oidc_backends_config_file': 'config_dir',
+    'oidc_config_file': 'config_dir',
+    'sanitize_whitelist_file': 'root_dir',
+    'shed_data_manager_config_file': 'mutable_config_dir',
+    'shed_tool_config_file': 'mutable_config_dir',
+    'shed_tool_data_path': 'tool_data_path',
+    'shed_tool_data_table_config': 'mutable_config_dir',
+    'tool_data_path': 'root_dir',
+    'tool_path': 'root_dir',
+    'tool_sheds_config_file': 'config_dir',
+    'user_preferences_extra_conf_path': 'config_dir',
+    'workflow_resource_params_file': 'config_dir',
+    'workflow_schedulers_config_file': 'config_dir',
 }
 
 
@@ -83,68 +148,55 @@ CUSTOM = {
 
 # TODO: split into (1) do not test; and (2) todo: fix and test
 DO_NOT_TEST = [
-    'data_dir',  # value overridden for testing
-    'new_file_path',  # value overridden for testing
-    'logging',  # mapping loaded in config/
-    'dependency_resolution',  # nested properties
-    'job_config',  # no obvious testable defaults
-    'database_connection',  # untestable; refactor config/__init__ to test
-    'database_engine_option_pool_size',  # overridden for tests runnign on non-sqlite databases
-    'database_engine_option_max_overflow',  # overridden for tests running on non-sqlite databases
-    'database_template',  # default value set for tests
-    'tool_config_file',  # default not used; may or may not be testable
-    'shed_tool_config_file',  # broken: remove 'config/' prefix from schema
-    'dependency_resolvers_config_file',  # broken: remove 'config/' prefix from schema
-    'conda_auto_init',  # broken: default overridden
-    'tool_sheds_config_file',  # broken: remove 'config/' prefix from schema
-    'tool_data_table_config_path',  # broken: remove 'config/' prefix from schema
-    'shed_tool_data_table_config',  # broken: remove 'config/' prefix from schema
-    'datatypes_config_file',  # broken: remove 'config/' prefix from schema
-    'webhooks_dir',  # broken; also remove 'config/' prefix from schema
-    'job_working_directory',  # broken; may or may not be able to test
-    'template_cache_path',  # may or may not be able to test; may be broken
-    'object_store_config_file',  # broken: remove 'config/' prefix from schema
-    'object_store_store_by',  # broken: default overridden
-    'pretty_datetime_format',  # untestable; refactor config/__init__ to test
-    'user_preferences_extra_conf_path',  # broken: remove 'config/' prefix from schema
-    'default_locale',  # broken
-    'galaxy_infrastructure_url',  # broken
-    'galaxy_infrastructure_web_port',  # broken
-    'chunk_upload_size',  # broken: default overridden
-    'monitor_thread_join_timeout',  # broken: default overridden
-    'heartbeat_log',  # untestable; refactor config/__init__ to test
-    'statsd_host',  # broken: default overridden with empty string
-    'library_import_dir',  # broken: default overridden
-    'user_library_import_dir',  # broken: default overridden
-    'disable_library_comptypes',  # broken: default overridden with empty string
-    'tool_test_data_directories',  # untestable; refactor config/__init__ to test
-    'id_secret',  # broken: default overridden
-    'use_remote_user',  # broken: default overridden
     'admin_users',  # may or may not be testable: special test value assigned
     'allow_user_deletion',  # broken: default overridden
-    'oidc_config_file',  # broken: remove 'config/' prefix from schema
-    'oidc_backends_config_file',  # broken: remove 'config/' prefix from schema
-    'auth_config_file',  # broken: remove 'config/' prefix from schema
-    'api_allow_run_as',  # may or may not be testable: test value assigned
-    'master_api_key',  # broken: default value assigned outside of config/
-    'ftp_upload_purge',  # broken: default overridden
-    'expose_dataset_path',  # broken: default overridden
-    'data_manager_config_file',  # broken: remove 'config/' prefix from schema
-    'shed_data_manager_config_file',  # broken: remove 'config/' prefix from schema
-    'galaxy_data_manager_data_path',  # broken: review config/, possibly refactor
-    'job_config_file',  # broken: remove 'config/' prefix from schema
-    'use_tasked_jobs',  # broken: default overridden
-    'retry_metadata_internally',  # broken: default overridden
-    'cleanup_job',  # broken: default overridden
-    'job_resource_params_file',  # broken: remove 'config/' prefix from schema
-    'workflow_resource_params_file',  # broken: remove 'config/' prefix from schema
-    'workflow_resource_params_mapper',  # broken: remove 'config/' prefix from schema
-    'workflow_schedulers_config_file',  # broken: remove 'config/' prefix from schema
-    'user_tool_filters',  # broken: default overridden
-    'user_tool_section_filters',  # broken: default overridden
-    'user_tool_label_filters',  # broken: default overridden
     'amqp_internal_connection',  # may or may not be testable; refactor config/
+    'api_allow_run_as',  # may or may not be testable: test value assigned
+    'chunk_upload_size',  # broken: default overridden
+    'cleanup_job',  # broken: default overridden
+    'conda_auto_init',  # broken: default overridden
+    'data_dir',  # value overridden for testing
+    'data_manager_config_file',  # broken: remove 'config/' prefix from schema
+    'database_connection',  # untestable; refactor config/__init__ to test
+    'database_engine_option_max_overflow',  # overridden for tests running on non-sqlite databases
+    'database_engine_option_pool_size',  # overridden for tests runnign on non-sqlite databases
+    'database_template',  # default value set for tests
+    'datatypes_config_file',  # broken
+    'default_locale',  # broken
+    'dependency_resolution',  # nested properties
+    'disable_library_comptypes',  # broken: default overridden with empty string
+    'expose_dataset_path',  # broken: default overridden
+    'ftp_upload_purge',  # broken: default overridden
+    'galaxy_data_manager_data_path',  # broken: review config/, possibly refactor
+    'galaxy_infrastructure_url',  # broken
+    'galaxy_infrastructure_web_port',  # broken
+    'heartbeat_log',  # untestable; refactor config/__init__ to test
+    'id_secret',  # broken: default overridden
+    'job_config',  # no obvious testable defaults
+    'job_config_file',  # broken: remove 'config/' prefix from schema
+    'job_working_directory',  # broken; may or may not be able to test
+    'library_import_dir',  # broken: default overridden
+    'logging',  # mapping loaded in config/
+    'master_api_key',  # broken: default value assigned outside of config/
     'migrated_tools_config',  # needs more work (should work)
+    'monitor_thread_join_timeout',  # broken: default overridden
+    'new_file_path',  # value overridden for testing
+    'object_store_store_by',  # broken: default overridden
+    'pretty_datetime_format',  # untestable; refactor config/__init__ to test
+    'retry_metadata_internally',  # broken: default overridden
+    'statsd_host',  # broken: default overridden with empty string
+    'template_cache_path',  # may or may not be able to test; may be broken
+    'tool_config_file',  # default not used; may or may not be testable
+    'tool_data_table_config_path',  # broken: remove 'config/' prefix from schema
+    'tool_test_data_directories',  # untestable; refactor config/__init__ to test
+    'use_remote_user',  # broken: default overridden
+    'use_tasked_jobs',  # broken: default overridden
+    'user_library_import_dir',  # broken: default overridden
+    'user_tool_filters',  # broken: default overridden
+    'user_tool_label_filters',  # broken: default overridden
+    'user_tool_section_filters',  # broken: default overridden
+    'webhooks_dir',  # broken; also remove 'config/' prefix from schema
+    'workflow_resource_params_mapper',  # broken
 ]
 
 
@@ -171,6 +223,7 @@ def get_config_data():
         return {
             'root_dir': DRIVER.app.config.root,
             'config_dir': DRIVER.app.config.config_dir,
+            'mutable_config_dir': DRIVER.app.config.mutable_config_dir,
             'data_dir': DRIVER.app.config.data_dir,
             'tool_data_path': DRIVER.app.config.tool_data_path,
         }
