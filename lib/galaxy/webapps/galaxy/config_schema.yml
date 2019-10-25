@@ -105,6 +105,18 @@ mapping:
           template database. This will set that. This is probably only useful for testing but
           documentation is included here for completeness.
 
+      database_log_query_counts:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Log number of SQL queries executed and total time spent dispatching SQL statements for
+          each web request. If statsd is also enabled this information will be logged there as well.
+          This should be considered somewhat experimental, we are unsure of the performance costs of
+          running this in production. This is useful information for optimizing database interaction
+          performance. Similar information can be obtained on a per-request basis by enabling the
+          sql_debug middleware and adding sql_debug=1 to a request string.
+
       slow_query_log_threshold:
         type: float
         default: 0.0
