@@ -255,13 +255,6 @@ mapping:
         desc: |
           Intercept print statements and show them on the returned page.
 
-      use_interactive:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          NEVER enable this on a public site (even test or QA)
-
       admin_users:
         type: str
         required: false

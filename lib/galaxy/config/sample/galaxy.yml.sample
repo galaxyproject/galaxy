@@ -110,10 +110,8 @@ galaxy:
   #data_dir: null
 
   # By default, Galaxy uses a SQLite database at
-  # 'database/universe.sqlite'.  You may use a SQLAlchemy connection
-  # string to specify an external database instead.  This string takes
-  # many options which are explained in detail in the config file
-  # documentation.
+  # '<data_dir>/universe.sqlite'.  You may use a SQLAlchemy connection
+  # string to specify an external database instead.
   # Sample default
   # 'sqlite:///<data_dir>/universe.sqlite?isolation_level=IMMEDIATE'
   #database_connection: null
@@ -215,7 +213,9 @@ galaxy:
   # preferable. This file will be created automatically upon tool
   # installation, whereas Galaxy will fail to start if any files in
   # tool_config_file cannot be read.
-  #shed_tool_config_file: config/shed_tool_conf.xml
+  # The value of this option will be resolved with respect to
+  # <mutable_config_dir>.
+  #shed_tool_config_file: shed_tool_conf.xml
 
   # Enable / disable checking if any tools defined in the above non-shed
   # tool_config_files (i.e., tool_conf.xml) have been migrated from the
@@ -229,8 +229,8 @@ galaxy:
   # migration scripts to install tools that have been migrated to the
   # tool shed upon a new release, they will be added to this tool config
   # file.
-  # Default value will be resolved to 'config/migrated_tools_conf.xml'
-  # where 'config' is the default value of the 'config_dir' option).
+  # The value of this option will be resolved with respect to
+  # <config_dir>.
   #migrated_tools_config: migrated_tools_conf.xml
 
   # File that contains the XML section and tool tags from all tool panel
@@ -253,8 +253,8 @@ galaxy:
   # handling. If this option is set to none or an invalid path,
   # installing tools with dependencies from the Tool Shed or in Conda
   # will fail.
-  # Default value will be resolved to 'database/dependencies' where
-  # 'database' is the default value of the 'data_dir' option).
+  # The value of this option will be resolved with respect to
+  # <data_dir>.
   #tool_dependency_dir: dependencies
 
   # The dependency resolvers config file specifies an ordering and
@@ -264,7 +264,9 @@ galaxy:
   # Conda if available. See
   # https://github.com/galaxyproject/galaxy/blob/dev/doc/source/admin/dependency_resolvers.rst
   # for more information on these options.
-  #dependency_resolvers_config_file: config/dependency_resolvers_conf.xml
+  # The value of this option will be resolved with respect to
+  # <config_dir>.
+  #dependency_resolvers_config_file: dependency_resolvers_conf.xml
 
   # conda_prefix is the location on the filesystem where Conda packages
   # and environments are installed.
@@ -328,7 +330,9 @@ galaxy:
   # File containing the Galaxy Tool Sheds that should be made available
   # to install from in the admin interface (.sample used if default does
   # not exist).
-  #tool_sheds_config_file: config/tool_sheds_conf.xml
+  # The value of this option will be resolved with respect to
+  # <config_dir>.
+  #tool_sheds_config_file: tool_sheds_conf.xml
 
   # Monitor the tools and tool directories listed in any tool config
   # file specified in tool_config_file option.  If changes are found,
@@ -386,7 +390,8 @@ galaxy:
   # the Galaxy host. This is ignored if the relevant container resolver
   # isn't enabled, and will install on demand unless involucro_auto_init
   # is set to false.
-  # Value will be resolved with respect to '<tool_dependency_dir>'.
+  # The value of this option will be resolved with respect to
+  # <tool_dependency_dir>.
   #involucro_path: involucro
 
   # Install involucro as needed to build Docker or Singularity
@@ -430,7 +435,9 @@ galaxy:
   # these entries are automatically added to the following file, which
   # is parsed and applied to the ToolDataTableManager at server start
   # up.
-  #shed_tool_data_table_config: config/shed_tool_data_table_conf.xml
+  # The value of this option will be resolved with respect to
+  # <mutable_config_dir>.
+  #shed_tool_data_table_config: shed_tool_data_table_conf.xml
 
   # Directory where data used by tools is located.  See the samples in
   # that directory and the Galaxy Community Hub for help:
@@ -453,12 +460,15 @@ galaxy:
   # scenarios than the watchdog default.
   #watch_tool_data_dir: 'false'
 
-  # File containing old-style genome builds. Value will be resolved with
-  # respect to <tool_data_path>.
+  # File containing old-style genome builds.
+  # The value of this option will be resolved with respect to
+  # <tool_data_path>.
   #builds_file_path: shared/ucsc/builds.txt
 
   # Directory where chrom len files are kept, currently mainly used by
-  # trackster. Value will be resolved with respect to <tool_data_path>.
+  # trackster.
+  # The value of this option will be resolved with respect to
+  # <tool_data_path>.
   #len_file_path: shared/ucsc/chrom
 
   # Datatypes config file(s), defines what data (file) types are
@@ -511,8 +521,8 @@ galaxy:
   # Each job is given a unique empty directory as its current working
   # directory. This option defines in what parent directory those
   # directories will be created.
-  # Default value will be resolved to 'database/jobs_directory' where
-  # 'database' is the default value of the 'data_dir' option).
+  # The value of this option will be resolved with respect to
+  # <data_dir>.
   #job_working_directory: jobs_directory
 
   # If using a cluster, Galaxy will write job scripts and stdout/stderr
@@ -564,7 +574,9 @@ galaxy:
 
   # Configuration file for the object store If this is set and exists,
   # it overrides any other objectstore settings.
-  #object_store_config_file: config/object_store_conf.xml
+  # The value of this option will be resolved with respect to
+  # <config_dir>.
+  #object_store_config_file: object_store_conf.xml
 
   # What Dataset attribute is used to reference files in an ObjectStore
   # implementation, default is 'id' but can also be set to 'uuid' for
@@ -711,14 +723,16 @@ galaxy:
   # Format string used when showing date and time information. The
   # string may contain: - the directives used by Python time.strftime()
   # function (see
-  # https://docs.python.org/library/time.html#time.strftime ), - $locale
+  # https://docs.python.org/library/time.html#time.strftime), - $locale
   # (complete format string for the server locale), - $iso8601 (complete
   # format string as specified by ISO 8601 international   standard).
   #pretty_datetime_format: $locale (UTC)
 
   # Location of the configuration file containing extra user
   # preferences.
-  #user_preferences_extra_conf_path: config/user_preferences_extra_conf.yml
+  # The value of this option will be resolved with respect to
+  # <config_dir>.
+  #user_preferences_extra_conf_path: user_preferences_extra_conf.yml
 
   # Default localization for Galaxy UI. Allowed values are listed at the
   # end of client/galaxy/scripts/nls/locale.js. With the default value
@@ -864,8 +878,8 @@ galaxy:
   # prevent a class of attack called clickjacking
   # (https://www.owasp.org/index.php/Clickjacking).  If you configure a
   # proxy in front of Galaxy - please ensure this header remains intact
-  # to protect your users.  Uncomment and leave empty to not set the `X
-  # -Frame-Options` header.
+  # to protect your users.  Uncomment and leave empty to not set the
+  # `X-Frame-Options` header.
   #x_frame_options: SAMEORIGIN
 
   # nginx can also handle file uploads (user-to-Galaxy) via
@@ -1041,8 +1055,8 @@ galaxy:
   #trust_jupyter_notebook_conversion: false
 
   # Debug enables access to various config options useful for
-  # development and debugging: use_lint, use_profile, use_printdebug and
-  # use_interactive.  It also causes the files used by PBS/SGE
+  # development and debugging: use_lint, use_profile, and
+  # use_printdebug.  It also causes the files used by PBS/SGE
   # (submission script, output, and error) to remain on disk after the
   # job is complete.
   #debug: false
@@ -1055,10 +1069,6 @@ galaxy:
 
   # Intercept print statements and show them on the returned page.
   #use_printdebug: true
-
-  # Enable live debugging in your browser.  This should NEVER be enabled
-  # on a public site.
-  #use_interactive: false
 
   # When stopping Galaxy cleanly, how much time to give various
   # monitoring/polling threads to finish before giving up on joining
@@ -1458,15 +1468,21 @@ galaxy:
   #enable_oidc: false
 
   # Sets the path to OIDC configuration file.
-  #oidc_config_file: config/oidc_config.xml
+  # The value of this option will be resolved with respect to
+  # <config_dir>.
+  #oidc_config_file: oidc_config.xml
 
   # Sets the path to OIDC backends configuration file.
-  #oidc_backends_config_file: config/oidc_backends_config.xml
+  # The value of this option will be resolved with respect to
+  # <config_dir>.
+  #oidc_backends_config_file: oidc_backends_config.xml
 
   # XML config file that allows the use of different authentication
   # providers (e.g. LDAP) instead or in addition to local authentication
   # (.sample is used if default does not exist).
-  #auth_config_file: config/auth_conf.xml
+  # The value of this option will be resolved with respect to
+  # <config_dir>.
+  #auth_config_file: auth_conf.xml
 
   # Optional list of email addresses of API users who can make calls on
   # behalf of other users.
@@ -1554,7 +1570,9 @@ galaxy:
 
   # File where Tool Shed based Data Managers are configured. This file
   # will be created automatically upon data manager installation.
-  #shed_data_manager_config_file: config/shed_data_manager_conf.xml
+  # The value of this option will be resolved with respect to
+  # <mutable_config_dir>.
+  #shed_data_manager_config_file: shed_data_manager_conf.xml
 
   # Directory to store Data Manager based tool-data; defaults to
   # tool_data_path.
@@ -1680,39 +1698,38 @@ galaxy:
   #cleanup_job: always
 
   # When running DRMAA jobs as the Galaxy user
-  # (https://docs.galaxyproject.org/en/master/admin/cluster.html
-  # #submitting-jobs-as-the-real-user) this script is used to run the
-  # job script Galaxy generates for a tool execution.
+  # (https://docs.galaxyproject.org/en/master/admin/cluster.html#submitting-
+  # jobs-as-the-real-user) this script is used to run the job script
+  # Galaxy generates for a tool execution.
   # Example value 'sudo -E scripts/drmaa_external_runner.py
   # --assign_all_groups'
   #drmaa_external_runjob_script: null
 
   # When running DRMAA jobs as the Galaxy user
-  # (https://docs.galaxyproject.org/en/master/admin/cluster.html
-  # #submitting-jobs-as-the-real-user) this script is used to kill such
-  # jobs by Galaxy (e.g. if the user cancels the job).
+  # (https://docs.galaxyproject.org/en/master/admin/cluster.html#submitting-
+  # jobs-as-the-real-user) this script is used to kill such jobs by
+  # Galaxy (e.g. if the user cancels the job).
   # Example value 'sudo -E scripts/drmaa_external_killer.py'
   #drmaa_external_killjob_script: null
 
   # When running DRMAA jobs as the Galaxy user
-  # (https://docs.galaxyproject.org/en/master/admin/cluster.html
-  # #submitting-jobs-as-the-real-user) this script is used transfer
-  # permissions back and forth between the Galaxy user and the user that
-  # is running the job.
+  # (https://docs.galaxyproject.org/en/master/admin/cluster.html#submitting-
+  # jobs-as-the-real-user) this script is used transfer permissions back
+  # and forth between the Galaxy user and the user that is running the
+  # job.
   # Example value 'sudo -E scripts/external_chown_script.py'
   #external_chown_script: null
 
   # When running DRMAA jobs as the Galaxy user
-  # (https://docs.galaxyproject.org/en/master/admin/cluster.html
-  # #submitting-jobs-as-the-real-user) Galaxy can extract the user name
-  # from the email address (actually the local-part before the @) or the
-  # username which are both stored in the Galaxy data base. The latter
-  # option is particularly useful for installations that get the
-  # authentication from LDAP. Also, Galaxy can accept the name of a
-  # common system user (eg. galaxy_worker) who can run every job being
-  # submitted. This user should not be the same user running the galaxy
-  # system. Possible values are user_email (default), username or
-  # <common_system_user>
+  # (https://docs.galaxyproject.org/en/master/admin/cluster.html#submitting-
+  # jobs-as-the-real-user) Galaxy can extract the user name from the
+  # email address (actually the local-part before the @) or the username
+  # which are both stored in the Galaxy data base. The latter option is
+  # particularly useful for installations that get the authentication
+  # from LDAP. Also, Galaxy can accept the name of a common system user
+  # (eg. galaxy_worker) who can run every job being submitted. This user
+  # should not be the same user running the galaxy system. Possible
+  # values are user_email (default), username or <common_system_user>
   #real_system_username: user_email
 
   # File to source to set up the environment when running jobs.  By
@@ -1731,13 +1748,17 @@ galaxy:
   # These fields will be presented to users in the tool forms and allow
   # them to overwrite default job resources such as number of
   # processors, memory and walltime.
-  #job_resource_params_file: config/job_resource_params_conf.xml
+  # The value of this option will be resolved with respect to
+  # <config_dir>.
+  #job_resource_params_file: job_resource_params_conf.xml
 
   # Similar to the above parameter, workflows can describe parameters
   # used to influence scheduling of jobs within the workflow. This
   # requires both a description of the fields available (which defaults
   # to the definitions in job_resource_params_file if not set).
-  #workflow_resource_params_file: config/workflow_resource_params_conf.xml
+  # The value of this option will be resolved with respect to
+  # <config_dir>.
+  #workflow_resource_params_file: workflow_resource_params_conf.xml
 
   # This parameter describes how to map users and workflows to a set of
   # workflow resource parameter to present (typically input IDs from
@@ -1752,7 +1773,9 @@ galaxy:
 
   # Optional configuration file similar to `job_config_file` to specify
   # which Galaxy processes should schedule workflows.
-  #workflow_schedulers_config_file: config/workflow_schedulers_conf.xml
+  # The value of this option will be resolved with respect to
+  # <config_dir>.
+  #workflow_schedulers_config_file: workflow_schedulers_conf.xml
 
   # If using job concurrency limits (configured in job_config_file),
   # several extra database queries must be performed to determine the
