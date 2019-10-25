@@ -1240,7 +1240,7 @@ class JobWrapper(HasResourceParameters):
                         shutil.move(dataset_path.false_path, dataset_path.real_path)
                         log.debug("fail(): Moved %s to %s", dataset_path.false_path, dataset_path.real_path)
                     except (IOError, OSError) as e:
-                        log.error("fail(): Missing output file in working directory: %s", unicodify(e))
+                        log.debug("fail(): Missing output file in working directory: %s", unicodify(e))
             for dataset_assoc in job.output_datasets + job.output_library_datasets:
                 dataset = dataset_assoc.dataset
                 self.sa_session.refresh(dataset)
@@ -1591,7 +1591,15 @@ class JobWrapper(HasResourceParameters):
 
         outputs_to_working_directory = util.asbool(self.get_destination_configuration("outputs_to_working_directory", False))
         if outputs_to_working_directory and not self.__link_file_check():
-            for dataset_path in self.get_output_fnames():
+            if self.output_paths is None:
+                self.compute_outputs()
+            for (name, (_, dataset_path)) in self.output_hdas_and_paths.items():
+                if dataset_path.false_path and not os.path.exists(dataset_path.false_path):
+                    output = self.tool.find_output_def(name)
+                    if output and getattr(output, 'from_work_dir') is not None:
+                        # This doesn't actually have to be present, unfortunately we cannot distinguish between
+                        # NFS issues and missing outputs in this case.
+                        continue
                 try:
                     shutil.move(dataset_path.false_path, dataset_path.real_path)
                     log.debug("finish(): Moved %s to %s" % (dataset_path.false_path, dataset_path.real_path))
