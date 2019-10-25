@@ -1175,7 +1175,7 @@ class AdminToolshed(AdminGalaxy):
                                                                                          name=tool_shed_repository.name,
                                                                                          description=tool_shed_repository.description,
                                                                                          installed_changeset_revision=tool_shed_repository.installed_changeset_revision,
-                                                                                         changeset_revision=tool_shed_repository.ctx_rev,
+                                                                                         ctx_rev=tool_shed_repository.ctx_rev,
                                                                                          repository_clone_url=repository_clone_url,
                                                                                          status=trans.install_model.ToolShedRepository.installation_status.NEW,
                                                                                          metadata_dict=metadata,
