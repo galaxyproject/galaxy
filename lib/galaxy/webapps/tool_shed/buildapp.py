@@ -265,9 +265,9 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
         if asbool(conf.get('use_profile', False)):
             from paste.debug import profile
             app = wrap_if_allowed(app, stack, profile.ProfileMiddleware, args=(conf,))
-        # Not in interactive debug mode, just use the regular error middleware
-        import galaxy.web.framework.middleware.error
-        app = wrap_if_allowed(app, stack, galaxy.web.framework.middleware.error.ErrorMiddleware, args=(conf,))
+    # Error middleware
+    import galaxy.web.framework.middleware.error
+    app = wrap_if_allowed(app, stack, galaxy.web.framework.middleware.error.ErrorMiddleware, args=(conf,))
     return app
 
 
