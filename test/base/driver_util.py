@@ -49,7 +49,6 @@ DEFAULT_WEB_HOST = socket.gethostbyname('localhost')
 DEFAULT_CONFIG_PREFIX = "GALAXY"
 GALAXY_TEST_DIRECTORY = os.path.join(galaxy_root, "test")
 GALAXY_TEST_FILE_DIR = "test-data,https://github.com/galaxyproject/galaxy-test-data.git"
-TOOL_SHED_TEST_DATA = os.path.join(GALAXY_TEST_DIRECTORY, "shed_functional", "test_data")
 TEST_WEBHOOKS_DIR = os.path.join(galaxy_root, "test", "functional", "webhooks")
 FRAMEWORK_TOOLS_DIR = os.path.join(GALAXY_TEST_DIRECTORY, "functional", "tools")
 FRAMEWORK_UPLOAD_TOOL_CONF = os.path.join(FRAMEWORK_TOOLS_DIR, "upload_tool_conf.xml")
@@ -79,19 +78,7 @@ log = logging.getLogger("test_driver")
 # Global variables to pass database contexts around - only needed for older
 # Tool Shed twill tests that didn't utilize the API for such interactions.
 galaxy_context = None
-tool_shed_context = None
 install_context = None
-
-
-def setup_tool_shed_tmp_dir():
-    tool_shed_test_tmp_dir = os.environ.get('TOOL_SHED_TEST_TMP_DIR', None)
-    if tool_shed_test_tmp_dir is None:
-        tool_shed_test_tmp_dir = tempfile.mkdtemp()
-    # Here's the directory where everything happens.  Temporary directories are created within this directory to contain
-    # the hgweb.config file, the database, new repositories, etc.  Since the tool shed browses repository contents via HTTP,
-    # the full path to the temporary directroy wher eht repositories are located cannot contain invalid url characters.
-    os.environ['TOOL_SHED_TEST_TMP_DIR'] = tool_shed_test_tmp_dir
-    return tool_shed_test_tmp_dir
 
 
 def get_galaxy_test_tmp_dir():
@@ -107,10 +94,6 @@ def configure_environment():
     # no op remove if unused
     if 'HTTP_ACCEPT_LANGUAGE' not in os.environ:
         os.environ['HTTP_ACCEPT_LANGUAGE'] = DEFAULT_LOCALES
-
-    # Used by get_filename in tool shed's twilltestcase.
-    if "TOOL_SHED_TEST_FILE_DIR" not in os.environ:
-        os.environ["TOOL_SHED_TEST_FILE_DIR"] = TOOL_SHED_TEST_DATA
 
     os.environ["GALAXY_TEST_ENVIRONMENT_CONFIGURED"] = "1"
 
@@ -182,8 +165,7 @@ def setup_galaxy_config(
     if default_data_manager_config is not None:
         data_manager_config_file = "%s,%s" % (default_data_manager_config, data_manager_config_file)
     master_api_key = get_master_api_key()
-    cleanup_job = 'never' if ("GALAXY_TEST_NO_CLEANUP" in os.environ or
-                              "TOOL_SHED_TEST_NO_CLEANUP" in os.environ) else 'onsuccess'
+    cleanup_job = 'never' if ("GALAXY_TEST_NO_CLEANUP" in os.environ) else 'onsuccess'
 
     # Data Manager testing temp path
     # For storing Data Manager outputs and .loc files so that real ones don't get clobbered
@@ -424,7 +406,7 @@ def install_database_conf(db_path, default_merged=False):
 def database_files_path(test_tmpdir, prefix="GALAXY"):
     """Create a mock database/ directory like in GALAXY_ROOT.
 
-    Use prefix to default this if TOOL_SHED_TEST_DBPATH or
+    Use prefix to default this or
     GALAXY_TEST_DBPATH is set in the environment.
     """
     environ_var = "%s_TEST_DBPATH" % prefix
@@ -525,11 +507,8 @@ def serve_webapp(webapp, port=None, host=None):
 
 
 def cleanup_directory(tempdir):
-    """Clean up temporary files used by test unless GALAXY_TEST_NO_CLEANUP is set.
-
-    Also respect TOOL_SHED_TEST_NO_CLEANUP for legacy reasons.
-    """
-    skip_cleanup = "GALAXY_TEST_NO_CLEANUP" in os.environ or "TOOL_SHED_TEST_NO_CLEANUP" in os.environ
+    """Clean up temporary files used by test unless GALAXY_TEST_NO_CLEANUP is set."""
+    skip_cleanup = "GALAXY_TEST_NO_CLEANUP" in os.environ
     if skip_cleanup:
         log.info("GALAXY_TEST_NO_CLEANUP is on. Temporary files in %s" % tempdir)
         return
@@ -773,8 +752,7 @@ def launch_uwsgi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=No
 def launch_server(app, webapp_factory, kwargs, prefix=DEFAULT_CONFIG_PREFIX, config_object=None):
     """Launch a web server for a given app using supplied factory.
 
-    Consistently read either GALAXY_TEST_HOST and GALAXY_TEST_PORT or
-    TOOL_SHED_TEST_HOST and TOOL_SHED_TEST_PORT and ensure these are
+    Consistently read either GALAXY_TEST_HOST and GALAXY_TEST_PORT and ensure these are
     all set after this method has been called.
     """
     name = prefix.lower()
