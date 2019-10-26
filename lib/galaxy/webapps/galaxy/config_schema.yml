@@ -2320,11 +2320,12 @@ mapping:
 
       ftp_upload_dir_template:
         type: str
-        default: ${ftp_upload_dir}/${ftp_upload_dir_identifier}
         required: false
         desc: |
           Python string template used to determine an FTP upload directory for a
           particular user.
+
+          Defaults to '${ftp_upload_dir}/${ftp_upload_dir_identifier}'.
 
       ftp_upload_purge:
         type: bool
