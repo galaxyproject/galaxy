@@ -147,7 +147,7 @@ Extra options:
 
  --verbose_errors      Force some tests produce more verbose error reporting.
  --no_cleanup          Do not delete temp files for Python functional tests
-                       (-toolshed, -framework, etc...)
+                       (-framework, etc...)
  --debug               On python test error or failure invoke a pdb shell for
                        interactive debugging of the test
  --report_file         Path of HTML report to produce (for Python Galaxy
@@ -498,7 +498,7 @@ do
       -u|-unit|--unit)
           report_file="run_unit_tests.html"
           test_script="pytest"
-          unit_extra='--doctest-modules --ignore lib/galaxy/web/proxy/js/node_modules/ --ignore lib/galaxy/webapps/tool_shed/controllers --ignore lib/galaxy/jobs/runners/chronos.py --ignore lib/galaxy/webapps/tool_shed/model/migrate --ignore lib/galaxy/tools/bundled'
+          unit_extra='--doctest-modules --ignore lib/galaxy/web/proxy/js/node_modules/ --ignore lib/galaxy/jobs/runners/chronos.py --ignore lib/galaxy/webapps/tool_shed/model/migrate --ignore lib/galaxy/tools/bundled'
           if [ $# -gt 1 ]; then
               unit_extra="$unit_extra $2"
               shift 2
@@ -592,8 +592,6 @@ if [ -n "$framework_test" -o -n "$installed_test" -o -n "$migrated_test" -o -n "
     extra_args="test/functional/test_toolbox_pytest.py $selector $marker"
 elif [ -n "$selenium_test" ] ; then
     extra_args="$selenium_script -selenium"
-elif [ -n "$toolshed_script" ]; then
-    extra_args="$toolshed_script"
 elif [ -n "$api_script" ]; then
     extra_args="$api_script"
 elif [ -n "$section_id" ]; then
