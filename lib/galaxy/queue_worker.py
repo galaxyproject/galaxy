@@ -30,7 +30,7 @@ logging.getLogger('kombu').setLevel(logging.WARNING)
 log = logging.getLogger(__name__)
 
 
-def send_local_control_task(app, task, kwargs=None):
+def send_local_control_task(app, task, get_response=False, kwargs=None):
     """
     This sends a message to the process-local control worker, which is useful
     for one-time asynchronous tasks like recalculating user disk usage.
@@ -42,7 +42,7 @@ def send_local_control_task(app, task, kwargs=None):
                'kwargs': kwargs}
     routing_key = 'control.%s@%s' % (app.config.server_name, socket.gethostname())
     control_task = ControlTask(app.queue_worker)
-    control_task.send_task(payload, routing_key, local=True, get_response=False)
+    return control_task.send_task(payload, routing_key, local=True, get_response=get_response)
 
 
 def send_control_task(app, task, noop_self=False, get_response=False, routing_key='control.*', kwargs=None):
