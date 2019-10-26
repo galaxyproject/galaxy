@@ -90,7 +90,6 @@ PACKAGES = [
     'tool_shed.galaxy_install.tool_dependencies.recipe',
     'tool_shed.galaxy_install.tools',
     'tool_shed.galaxy_install.utility_containers',
-    'tool_shed.grids',
     'tool_shed.managers',
     'tool_shed.metadata',
     'tool_shed.repository_types',
