@@ -39,18 +39,7 @@ PACKAGES = [
     'galaxy.webapps.galaxy.controllers',
     'galaxy.webapps.reports',
     'galaxy.webapps.reports.controllers',
-    'galaxy.webapps.reports.framework',
-    'galaxy.webapps.tool_shed',
-    'galaxy.webapps.tool_shed.api',
-    'galaxy.webapps.tool_shed.controllers',
-    'galaxy.webapps.tool_shed.framework',
-    'galaxy.webapps.tool_shed.framework.middleware',
-    'galaxy.webapps.tool_shed.model',
-    'galaxy.webapps.tool_shed.model.migrate',
-    'galaxy.webapps.tool_shed.model.migrate.versions',
-    'galaxy.webapps.tool_shed.search',
-    'galaxy.webapps.tool_shed.security',
-    'galaxy.webapps.tool_shed.util',
+    'galaxy.webapps.reports.framework'
 ]
 ENTRY_POINTS = '''
         [console_scripts]
