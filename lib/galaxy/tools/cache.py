@@ -3,6 +3,8 @@ import os
 from collections import defaultdict
 from threading import Lock
 
+from sqlalchemy.orm import defer
+
 from galaxy.util import unicodify
 from galaxy.util.hash_util import md5_hash_file
 
@@ -144,7 +146,7 @@ class ToolShedRepositoryCache(object):
         self.repos_by_tuple[(repository.tool_shed, repository.owner, repository.name)].append(repository)
 
     def rebuild(self):
-        self.repositories = self.app.install_model.context.current.query(self.app.install_model.ToolShedRepository).all()
+        self.repositories = self.app.install_model.context.current.query(self.app.install_model.ToolShedRepository).options(defer(self.app.install_model.ToolShedRepository.metadata)).all()
         repos_by_tuple = defaultdict(list)
         for repository in self.repositories + self.local_repositories:
             repos_by_tuple[(repository.tool_shed, repository.owner, repository.name)].append(repository)
