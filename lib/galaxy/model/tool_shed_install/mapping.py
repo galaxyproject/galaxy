@@ -93,8 +93,7 @@ mapper(install_model.ToolShedRepository, install_model.ToolShedRepository.table,
                        tool_dependencies=relation(install_model.ToolDependency,
                                                   primaryjoin=(install_model.ToolShedRepository.table.c.id == install_model.ToolDependency.table.c.tool_shed_repository_id),
                                                   order_by=install_model.ToolDependency.table.c.name,
-                                                  backref='tool_shed_repository',
-                                                  lazy='joined'),
+                                                  backref='tool_shed_repository'),
                        required_repositories=relation(install_model.RepositoryRepositoryDependencyAssociation,
                                                       primaryjoin=(install_model.ToolShedRepository.table.c.id == install_model.RepositoryRepositoryDependencyAssociation.table.c.tool_shed_repository_id))))
 
