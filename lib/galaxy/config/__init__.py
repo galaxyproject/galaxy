@@ -466,11 +466,10 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.pbs_stage_path = kwargs.get('pbs_stage_path', "")
         self.sanitize_whitelist_file = os.path.join(self.root, self.sanitize_whitelist_file)
         self.allowed_origin_hostnames = self._parse_allowed_origin_hostnames(kwargs)
-        if "trust_jupyter_notebook_conversion" in kwargs:
-            trust_jupyter_notebook_conversion = string_as_bool(kwargs.get('trust_jupyter_notebook_conversion', False))
-        else:
-            trust_jupyter_notebook_conversion = string_as_bool(kwargs.get('trust_ipython_notebook_conversion', False))
-        self.trust_jupyter_notebook_conversion = trust_jupyter_notebook_conversion
+        if "trust_jupyter_notebook_conversion" not in kwargs:
+            # if option not set, check IPython-named alternative, falling back to schema default if not set either
+            _default = self.trust_jupyter_notebook_conversion
+            self.trust_jupyter_notebook_conversion = string_as_bool(kwargs.get('trust_ipython_notebook_conversion', _default))
         # Configuration for the message box directly below the masthead.
         self.blog_url = kwargs.get('blog_url')
         self.user_library_import_symlink_whitelist = listify(self.user_library_import_symlink_whitelist, do_strip=True)
