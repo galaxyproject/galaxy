@@ -1025,7 +1025,7 @@ def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', strip_null=Fals
     try:
         if isinstance(value, Exception):
             # This is for backwards compatibility for python 2, but works on python 3 as well
-            if value.args:
+            if len(value.args) == 1:
                 value = value.args[0]
         if isinstance(value, bytearray):
             value = bytes(value)
