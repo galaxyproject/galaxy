@@ -1171,17 +1171,17 @@ class AdminToolshed(AdminGalaxy):
                 suc.clean_dependency_relationships(trans, new_meta, tool_shed_repository, tool_shed_url)
             # The repository's status must be updated from 'Uninstalled' to 'New' when initiating reinstall
             # so the repository_installation_updater will function.
-            tool_shed_repository = repository_util.create_or_update_tool_shed_repository(trans.app,
-                                                                                         tool_shed_repository.name,
-                                                                                         tool_shed_repository.description,
-                                                                                         tool_shed_repository.installed_changeset_revision,
-                                                                                         tool_shed_repository.ctx_rev,
-                                                                                         repository_clone_url,
-                                                                                         trans.install_model.ToolShedRepository.installation_status.NEW,
-                                                                                         metadata,
-                                                                                         tool_shed_repository.changeset_revision,
-                                                                                         tool_shed_repository.owner,
-                                                                                         tool_shed_repository.dist_to_shed)
+            tool_shed_repository = repository_util.create_or_update_tool_shed_repository(app=trans.app,
+                                                                                         name=tool_shed_repository.name,
+                                                                                         description=tool_shed_repository.description,
+                                                                                         installed_changeset_revision=tool_shed_repository.installed_changeset_revision,
+                                                                                         ctx_rev=tool_shed_repository.ctx_rev,
+                                                                                         repository_clone_url=repository_clone_url,
+                                                                                         status=trans.install_model.ToolShedRepository.installation_status.NEW,
+                                                                                         metadata_dict=metadata,
+                                                                                         current_changeset_revision=tool_shed_repository.changeset_revision,
+                                                                                         owner=tool_shed_repository.owner,
+                                                                                         dist_to_shed=tool_shed_repository.dist_to_shed)
         ctx_rev = suc.get_ctx_rev(trans.app,
                                   tool_shed_url,
                                   tool_shed_repository.name,
@@ -1619,10 +1619,10 @@ class AdminToolshed(AdminGalaxy):
             else:
                 irm = install_manager.InstallRepositoryManager(trans.app)
                 install_dependencies, irmm_metadata_dict = irm.update_tool_shed_repository(
-                    repository,
-                    tool_shed_url,
-                    latest_ctx_rev,
-                    latest_changeset_revision,
+                    repository=repository,
+                    tool_shed_url=tool_shed_url,
+                    latest_ctx_rev=latest_ctx_rev,
+                    latest_changeset_revision=latest_changeset_revision,
                     install_new_dependencies=False
                 )
                 if install_dependencies == 'repository':
