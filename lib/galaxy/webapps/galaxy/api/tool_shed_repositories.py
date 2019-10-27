@@ -88,9 +88,9 @@ class ToolShedRepositoriesController(BaseAPIController):
 
     @expose_api
     @require_admin
-    def install_repository_revision(self, trans, payload, **kwd):
+    def install(self, trans, payload, **kwd):
         """
-        POST /api/tool_shed_repositories/install_repository_revision
+        POST /api/tool_shed_repositories
         Install a specified repository revision from a specified tool shed into Galaxy.
 
         :param key: the current Galaxy admin user's API key
@@ -213,7 +213,7 @@ class ToolShedRepositoriesController(BaseAPIController):
                                    install_resolver_dependencies=install_resolver_dependencies,
                                    install_tool_dependencies=install_tool_dependencies,
                                    shed_tool_conf=shed_tool_conf)
-            installed_tool_shed_repositories = self.install_repository_revision(trans, **current_payload)
+            installed_tool_shed_repositories = self.install(trans, **current_payload)
             if isinstance(installed_tool_shed_repositories, dict):
                 # We encountered an error.
                 return installed_tool_shed_repositories
@@ -223,7 +223,7 @@ class ToolShedRepositoriesController(BaseAPIController):
 
     @expose_api
     @require_admin
-    def uninstall_repository(self, trans, id=None, **kwd):
+    def uninstall(self, trans, id=None, **kwd):
         """
         DELETE /api/tool_shed_repositories/id
         DELETE /api/tool_shed_repositories/
