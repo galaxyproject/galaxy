@@ -76,7 +76,6 @@ PACKAGES = [
     'galaxy.workflow.resources',
     'galaxy.workflow.schedulers',
     'tool_shed',
-    'tool_shed.capsule',
     'tool_shed.dependencies',
     'tool_shed.dependencies.repository',
     'tool_shed.dependencies.tool',
