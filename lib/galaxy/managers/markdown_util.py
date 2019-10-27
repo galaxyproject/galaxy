@@ -76,6 +76,9 @@ def ready_galaxy_markdown_for_export(trans, internal_galaxy_markdown):
     """
     hdas_manager = HDAManager(trans.app)
     workflows_manager = WorkflowsManager(trans.app)
+    job_manager = JobManager(trans.app)
+    collection_manager = DatasetCollectionManager(trans.app)
+
     extra_rendering_data = {}
 
     def _remap(container, line):
@@ -118,7 +121,6 @@ def ready_galaxy_markdown_for_export(trans, internal_galaxy_markdown):
             stored_workflow = workflows_manager.get_stored_accessible_workflow(trans, encoded_id)
             ensure_rendering_data_for("workflows", encoded_id)["name"] = stored_workflow.name
         elif container == "history_dataset_collection_display":
-            collection_manager = DatasetCollectionManager(trans.app)
             hdca = collection_manager.get_dataset_collection_instance(trans, "history", encoded_id)
             hdca_serializer = HDCASerializer(trans.app)
             hdca_view = hdca_serializer.serialize_to_view(
@@ -128,11 +130,9 @@ def ready_galaxy_markdown_for_export(trans, internal_galaxy_markdown):
                 extra_rendering_data["history_dataset_collections"] = {}
             ensure_rendering_data_for("history_dataset_collections", encoded_id).update(hdca_view)
         elif container == "tool_stdout":
-            job_manager = JobManager(trans.app)
             job = job_manager.get_accessible_job(trans, object_id)
             ensure_rendering_data_for("jobs", encoded_id)["tool_stdout"] = job.tool_stdout or "*No Standard Output Available*"
         elif container == "tool_stderr":
-            job_manager = JobManager(trans.app)
             job = job_manager.get_accessible_job(trans, object_id)
             ensure_rendering_data_for("jobs", encoded_id)["tool_stderr"] = job.tool_stderr or "*No Standard Error Available*"
         return (line, False)
