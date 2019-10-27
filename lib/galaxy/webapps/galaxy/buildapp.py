@@ -954,6 +954,12 @@ def populate_api_routes(webapp, app):
                           action='request',
                           conditions=dict(method=["GET"]))
 
+    webapp.mapper.connect('tool_shed_repositories',
+                          '/api/tool_shed_repositories',
+                          controller='tool_shed_repositories',
+                          action='index',
+                          conditions=dict(method=['GET']))
+
     webapp.mapper.connect('install_repository',
                           '/api/tool_shed_repositories',
                           controller='tool_shed_repositories',
