@@ -89,7 +89,7 @@ def create_or_update_tool_shed_repository(app, name, description, installed_chan
     If a record defined by the received tool shed, repository name and owner does not exist, create
     a new record with the received information.
     """
-    metadata_dict = metadata_dict if metadata_dict is not None else {}
+    metadata_dict = metadata_dict or {}
     # The received value for dist_to_shed will be True if the ToolMigrationManager is installing a repository
     # that contains tools or datatypes that used to be in the Galaxy distribution, but have been moved
     # to the main Galaxy tool shed.
