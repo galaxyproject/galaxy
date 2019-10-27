@@ -498,10 +498,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             # self, populate config_dict
             self.config_dict["conda_mapping_files"] = conda_mapping_files
 
-        containers_resolvers_config_file = kwargs.get('containers_resolvers_config_file')
-        if containers_resolvers_config_file:
-            containers_resolvers_config_file = os.path.join(self.root, containers_resolvers_config_file)
-        self.containers_resolvers_config_file = containers_resolvers_config_file
+        if self.containers_resolvers_config_file:
+            self.containers_resolvers_config_file = os.path.join(self.root, self.containers_resolvers_config_file)
 
         # tool_dependency_dir can be "none" (in old configs). If so, set it to None
         if self.tool_dependency_dir and self.tool_dependency_dir.lower() == 'none':
