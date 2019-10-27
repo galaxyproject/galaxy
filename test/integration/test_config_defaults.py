@@ -167,6 +167,7 @@ DO_NOT_TEST = [
     'disable_library_comptypes',  # broken: default overridden with empty string
     'expose_dataset_path',  # broken: default overridden
     'ftp_upload_purge',  # broken: default overridden
+    'ftp_upload_dir_template',  # dynamically sets os.path.sep
     'galaxy_data_manager_data_path',  # broken: review config/, possibly refactor
     'galaxy_infrastructure_url',  # broken
     'galaxy_infrastructure_web_port',  # broken
