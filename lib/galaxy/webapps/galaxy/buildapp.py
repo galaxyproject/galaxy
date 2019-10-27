@@ -942,58 +942,16 @@ def populate_api_routes(webapp, app):
                      version=None,
                      image_file=None)
 
-    webapp.mapper.connect('tool_shed_contents',
-                          '/api/tool_shed/contents',
-                          controller='toolshed',
-                          action='show',
-                          conditions=dict(method=["GET"]))
-
-    webapp.mapper.connect('tool_shed_category_contents',
-                          '/api/tool_shed/category',
-                          controller='toolshed',
-                          action='category',
-                          conditions=dict(method=["GET"]))
-
-    webapp.mapper.connect('tool_shed_repository_details',
-                          '/api/tool_shed/repository',
-                          controller='toolshed',
-                          action='repository',
-                          conditions=dict(method=["GET"]))
-
-    webapp.mapper.connect('tool_sheds',
+    webapp.mapper.connect('tool_shed',
                           '/api/tool_shed',
                           controller='toolshed',
                           action='index',
                           conditions=dict(method=["GET"]))
 
-    webapp.mapper.connect('tool_shed_search',
-                          '/api/tool_shed/search',
-                          controller='toolshed',
-                          action='search',
-                          conditions=dict(method=["GET", "POST"]))
-
     webapp.mapper.connect('tool_shed_request',
                           '/api/tool_shed/request',
                           controller='toolshed',
                           action='request',
-                          conditions=dict(method=["GET"]))
-
-    webapp.mapper.connect('tool_shed_status',
-                          '/api/tool_shed/status',
-                          controller='toolshed',
-                          action='status',
-                          conditions=dict(method=["GET", "POST"]))
-
-    webapp.mapper.connect('shed_tool_json',
-                          '/api/tool_shed/tool_json',
-                          controller='toolshed',
-                          action='tool_json',
-                          conditions=dict(method=["GET"]))
-
-    webapp.mapper.connect('tool_shed_repository',
-                          '/api/tool_shed_repositories/:id/status',
-                          controller='tool_shed_repositories',
-                          action='status',
                           conditions=dict(method=["GET"]))
 
     webapp.mapper.connect('install_repository',
@@ -1002,23 +960,11 @@ def populate_api_routes(webapp, app):
                           action='install_repository_revision',
                           conditions=dict(method=['POST']))
 
-    webapp.mapper.connect('install_repository',
-                          '/api/tool_shed_repositories/install',
-                          controller='tool_shed_repositories',
-                          action='install',
-                          conditions=dict(method=['POST']))
-
     webapp.mapper.connect('check_for_updates',
                           '/api/tool_shed_repositories/check_for_updates',
                           controller='tool_shed_repositories',
                           action='check_for_updates',
                           conditions=dict(method=['GET']))
-
-    webapp.mapper.connect('tool_shed_repository',
-                          '/api/tool_shed_repositories',
-                          controller='tool_shed_repositories',
-                          action='uninstall_repository',
-                          conditions=dict(method=["DELETE"]))
 
     webapp.mapper.connect('tool_shed_repository',
                           '/api/tool_shed_repositories/{id}',
@@ -1032,20 +978,11 @@ def populate_api_routes(webapp, app):
                           action='reset_metadata_on_selected_installed_repositories',
                           conditions=dict(method=['POST']))
 
-    # Galaxy API for tool shed features.
-    webapp.mapper.resource('tool_shed_repository',
-                           'tool_shed_repositories',
-                           member={'repair_repository_revision': 'POST',
-                                   'exported_workflows': 'GET',
-                                   'import_workflow': 'POST',
-                                   'import_workflows': 'POST'},
-                           collection={'get_latest_installable_revision': 'POST',
-                                       'reset_metadata_on_installed_repositories': 'POST'},
-                           controller='tool_shed_repositories',
-                           name_prefix='tool_shed_repository_',
-                           path_prefix='/api',
-                           new={'install_repository_revision': 'POST'},
-                           parent_resources=dict(member_name='tool_shed_repository', collection_name='tool_shed_repositories'))
+    webapp.mapper.connect('reset_metadata_on_installed_repositories',
+                          '/api/tool_shed_repositories/reset_metadata_on_installed_repositories',
+                          controller='tool_shed_repositories',
+                          action='reset_metadata_on_installed_repositories',
+                          conditions=dict(method=['POST']))
 
     # ==== Trace/Metrics Logger
     # Connect logger from app
