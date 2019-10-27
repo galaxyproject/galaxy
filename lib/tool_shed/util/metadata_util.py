@@ -124,7 +124,7 @@ def get_metadata_revisions(app, repository, sort_revisions=True, reverse=False, 
         if repository_metadata.numeric_revision == -1 or repository_metadata.numeric_revision is None:
             try:
                 rev = hg_util.changeset2rev(repo_path, repository_metadata.changeset_revision)
-                repository_metadata.numeric_revision = int(rev)
+                repository_metadata.numeric_revision = rev
                 sa_session.add(repository_metadata)
                 sa_session.flush()
             except Exception:

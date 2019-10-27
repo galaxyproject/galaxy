@@ -468,7 +468,7 @@ def get_repo_info_dict(app, user, repository_id, changeset_revision):
         includes_tool_dependencies = False
         includes_tools_for_display_in_tool_panel = False
     repo_path = repository.repo_path(app)
-    ctx_rev = hg_util.changeset2rev(repo_path, changeset_revision)
+    ctx_rev = str(hg_util.changeset2rev(repo_path, changeset_revision))
     repo_info_dict = create_repo_info_dict(app=app,
                                            repository_clone_url=repository_clone_url,
                                            changeset_revision=changeset_revision,
