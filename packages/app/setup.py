@@ -80,7 +80,6 @@ PACKAGES = [
     'tool_shed.dependencies.repository',
     'tool_shed.dependencies.tool',
     'tool_shed.galaxy_install.datatypes',
-    'tool_shed.galaxy_install.grids',
     'tool_shed.galaxy_install.metadata',
     'tool_shed.galaxy_install.migrate',
     'tool_shed.galaxy_install.migrate.versions',
