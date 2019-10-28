@@ -4,7 +4,6 @@ import shutil
 
 from sqlalchemy import and_
 
-from galaxy import util
 from tool_shed.util import (
     hg_util,
     xml_util

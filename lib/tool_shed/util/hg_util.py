@@ -12,29 +12,6 @@ log = logging.getLogger(__name__)
 INITIAL_CHANGELOG_HASH = '000000000000'
 
 
-def add_changeset(repo_path, path_to_filename_in_archive):
-    try:
-        subprocess.check_output(['hg', 'add', path_to_filename_in_archive], stderr=subprocess.STDOUT, cwd=repo_path)
-    except Exception as e:
-        error_message = "Error adding '%s' to repository: %s" % (path_to_filename_in_archive, e)
-        if isinstance(e, subprocess.CalledProcessError):
-            error_message += "\nOutput was:\n%s" % e.output
-        raise Exception(error_message)
-
-
-def archive_repository_revision(app, repository, archive_dir, changeset_revision):
-    '''Create an un-versioned archive of a repository.'''
-    repo_path = repository.repo_path(app)
-    try:
-        subprocess.check_output(['hg', 'archive', '-r', changeset_revision, archive_dir], stderr=subprocess.STDOUT, cwd=repo_path)
-    except Exception as e:
-        error_message = "Error attempting to archive revision '%s' of repository '%s': %s" % (changeset_revision, repository.name, e)
-        if isinstance(e, subprocess.CalledProcessError):
-            error_message += "\nOutput was:\n%s" % e.output
-        log.exception(error_message)
-        raise Exception(error_message)
-
-
 def clone_repository(repository_clone_url, repository_file_dir, ctx_rev=None):
     """
     Clone the repository up to the specified changeset_revision.  No subsequent revisions will be
@@ -58,18 +35,6 @@ def clone_repository(repository_clone_url, repository_file_dir, ctx_rev=None):
         return False, error_message
 
 
-def commit_changeset(repo_path, full_path_to_changeset, username, message):
-    try:
-        subprocess.check_output(['hg', 'commit', '-u', username, '-m', message, full_path_to_changeset], stderr=subprocess.STDOUT, cwd=repo_path)
-    except Exception as e:
-        error_message = "Error committing '%s' to repository: %s" % (full_path_to_changeset, e)
-        if isinstance(e, subprocess.CalledProcessError):
-            if e.returncode == 1 and 'nothing changed' in e.output:
-                return
-            error_message += "\nOutput was:\n%s" % e.output
-        raise Exception(error_message)
-
-
 def copy_file_from_manifest(repo, changeset_revision, filename, dir):
     """
     Copy the latest version of the file named filename from the repository manifest to the directory
@@ -85,27 +50,6 @@ def copy_file_from_manifest(repo, changeset_revision, filename, dir):
             fh.close()
             return file_path
     return None
-
-
-def create_hgrc_file(app, repository):
-    # Since we support both http and https, we set `push_ssl` to False to
-    # override the default (which is True) in the Mercurial API.
-    # The hg purge extension purges all files and directories not being tracked
-    # by Mercurial in the current repository. It will remove unknown files and
-    # empty directories. This is not currently used because it is not supported
-    # in the Mercurial API.
-    repo_path = repository.repo_path(app)
-    hgrc_path = os.path.join(repo_path, '.hg', 'hgrc')
-    with open(hgrc_path, 'wb') as fp:
-        fp.write('[paths]\n')
-        fp.write('default = .\n')
-        fp.write('default-push = .\n')
-        fp.write('[web]\n')
-        fp.write('allow_push = %s\n' % repository.user.username)
-        fp.write('name = %s\n' % repository.name)
-        fp.write('push_ssl = false\n')
-        fp.write('[extensions]\n')
-        fp.write('hgext.purge=')
 
 
 def get_changectx_for_changeset(repo, changeset_revision, **kwd):

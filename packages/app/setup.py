@@ -85,10 +85,8 @@ PACKAGES = [
     'tool_shed.galaxy_install.tool_dependencies.recipe',
     'tool_shed.galaxy_install.tools',
     'tool_shed.metadata',
-    'tool_shed.repository_types',
     'tool_shed.tools',
     'tool_shed.util',
-    'tool_shed.utility_containers',
 ]
 ENTRY_POINTS = '''
         [console_scripts]
