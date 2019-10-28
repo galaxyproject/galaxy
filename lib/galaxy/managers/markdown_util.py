@@ -115,7 +115,7 @@ def ready_galaxy_markdown_for_export(trans, internal_galaxy_markdown):
         elif container == "history_dataset_info":
             hda = hdas_manager.get_accessible(object_id, trans.user)
             info = hda.info
-            extend_history_dataset_rendering_data("info", info, "*No Dataset Peek Available*")
+            extend_history_dataset_rendering_data("info", info, "*No Dataset Info Available*")
         elif container == "workflow_display":
             # TODO: should be workflow id...
             stored_workflow = workflows_manager.get_stored_accessible_workflow(trans, encoded_id)
