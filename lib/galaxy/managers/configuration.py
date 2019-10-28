@@ -73,6 +73,7 @@ class ConfigSerializer(base.ModelSerializer):
             'allow_user_dataset_purge'          : _defaults_to(False),  # schema default is True
             'ga_code'                           : _required_attribute,
             'enable_unique_workflow_defaults'   : _required_attribute,
+            'enable_beta_markdown_export'       : _required_attribute,
             'has_user_tool_filters'             : _defaults_to(False),
             # TODO: is there no 'correct' way to get an api url? controller='api', action='tools' is a hack
             # at any rate: the following works with path_prefix but is still brittle

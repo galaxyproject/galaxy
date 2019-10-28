@@ -1,6 +1,9 @@
 <template>
     <div class="markdown-wrapper">
         <div v-html="markdownRendered"></div>
+        <a :href="exportLink" class="markdown-export" v-if="effectiveExportLink">
+            <i class="fa fa-4x fa-download"></i>
+        </a>
     </div>
 </template>
 
@@ -27,7 +30,7 @@ const default_fence = md.renderer.rules.fence;
 const RENDER_FUNCTIONS = {
     history_dataset_display: (action, args, content) => {
         const history_dataset_id = args.history_dataset_id;
-        return `<div class='embedded-item display dataset'>
+        return `<div class='embedded-item display dataset' data-item-url="${getAppRoot()}dataset/get_item_content_async?id=${history_dataset_id}">
             <div class='title'>
                 <div style="float: left">
                 <a class="display_in_embed icon-button toggle-expand" title="Show Dataset content"></a>
@@ -38,10 +41,18 @@ const RENDER_FUNCTIONS = {
                 <a href="${getAppRoot()}dataset/imp?dataset_id=${history_dataset_id}" class="icon-button import" title="Import dataset"></a>
                 </div>
                 <a class="toggle-embed"><h4>Galaxy Dataset | <span class="render-name" history_dataset_id="${history_dataset_id}"></span</h4></a>
-                <input type="hidden" name="ajax-item-content-url" value="${getAppRoot()}dataset/get_item_content_async?id=${history_dataset_id}">
             </div>
             <div class='summary-content'>
             </div>
+            <div class='expanded-content'>
+                <div class='item-content'>
+                </div>
+            </div>
+        </div>`;
+    },
+    history_dataset_embedded: (action, args, content) => {
+        const history_dataset_id = args.history_dataset_id;
+        return `<div class='embedded-item display expanded' data-item-url="${getAppRoot()}dataset/get_item_content_async?id=${history_dataset_id}">
             <div class='expanded-content'>
                 <div class='item-content'>
                 </div>
@@ -145,6 +156,10 @@ export default {
         readOnly: {
             type: Boolean,
             default: true
+        },
+        exportLink: {
+            type: String,
+            required: false
         }
     },
     data() {
@@ -155,6 +170,12 @@ export default {
             workflows: {},
             jobs: {}
         };
+    },
+    computed: {
+        effectiveExportLink() {
+            const Galaxy = getGalaxyInstance();
+            return Galaxy.config.enable_beta_markdown_export ? this.exportLink : null;
+        }
     },
     watch: {
         markdownConfig: function(mConfig, oldVal) {
@@ -215,5 +236,15 @@ export default {
 @import "embed_item";
 .toggle {
     display: none;
+}
+
+.markdown-export {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    z-index: 2000;
+    padding: 1rem;
+    color: gray;
+    opacity: 0.5;
 }
 </style>
