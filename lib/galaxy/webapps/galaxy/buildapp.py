@@ -973,6 +973,12 @@ def populate_api_routes(webapp, app):
                           conditions=dict(method=['POST']))
 
     webapp.mapper.connect('tool_shed_repository',
+                          '/api/tool_shed_repositories',
+                          controller='tool_shed_repositories',
+                          action='uninstall',
+                          conditions=dict(method=["DELETE"]))
+
+    webapp.mapper.connect('tool_shed_repository',
                           '/api/tool_shed_repositories/{id}',
                           controller='tool_shed_repositories',
                           action='uninstall',
