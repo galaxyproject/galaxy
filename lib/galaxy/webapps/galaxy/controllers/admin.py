@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from string import punctuation as PUNCTUATION
 
 import six
+from markupsafe import escape
 from sqlalchemy import and_, false, or_
 
 from galaxy import (
@@ -31,7 +32,6 @@ from tool_shed.util import (
     encoding_util,
     repository_util
 )
-from tool_shed.util.web_util import escape
 
 
 log = logging.getLogger(__name__)
