@@ -1018,21 +1018,20 @@ def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', strip_null=Fals
     >>> s = u'lâtín strìñg'; assert unicodify(s.encode('latin-1'), 'latin-1') == s
     >>> s = u'lâtín strìñg'; assert unicodify(s.encode('latin-1')) == u'l\ufffdt\ufffdn str\ufffd\ufffdg'
     >>> s = u'lâtín strìñg'; assert unicodify(s.encode('latin-1'), error='ignore') == u'ltn strg'
-    >>> assert unicodify(Exception(u'¼ cup of flour'.encode('latin-1')), error='ignore') == ' cup of flour'
+    >>> if PY2: assert unicodify(Exception(u'¼ cup of flour'.encode('latin-1')), error='ignore') == ' cup of flour'
     """
     if value is None:
         return value
     try:
-        if isinstance(value, Exception):
-            # This is for backwards compatibility for python 2, but works on python 3 as well
-            if len(value.args) == 1:
-                value = value.args[0]
         if isinstance(value, bytearray):
             value = bytes(value)
         elif not isinstance(value, string_types) and not isinstance(value, binary_type):
             # In Python 2, value is not an instance of basestring (i.e. str or unicode)
             # In Python 3, value is not an instance of bytes or str
-            value = text_type(value)
+            try:
+                value = text_type(value)
+            except Exception:
+                value = str(value)
         # Now in Python 2, value is an instance of basestring, but may be not unicode
         # Now in Python 3, value is an instance of bytes or str
         if not isinstance(value, text_type):
