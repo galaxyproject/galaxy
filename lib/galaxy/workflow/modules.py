@@ -701,7 +701,6 @@ class InputParameterModule(WorkflowModule):
         parameter_type_cond.test_param = input_parameter_type
         cases = []
 
-        log.info("optional value is %s " % optional)
         for param_type in ["text", "integer"]:
             if param_type == "text":
                 input_default_value = TextToolParameter(None, XML(
@@ -711,7 +710,6 @@ class InputParameterModule(WorkflowModule):
                     '''
                     % (parameter_def.get("default", "") or "")))
             elif param_type == "integer":
-                log.info("parameter_def is %s" % parameter_def)
                 input_default_value = IntegerToolParameter(None, XML(
                     '''
                     <param name="default" label="Default Value" value="%s">
@@ -729,7 +727,6 @@ class InputParameterModule(WorkflowModule):
             when_text.inputs = OrderedDict()
             when_text.inputs["optional"] = optional_cond
 
-            log.info("parameter_def is %s" % parameter_def)
             specify_default_checked = "default" in parameter_def
             specify_default = BooleanToolParameter(None, Element("param", name="specify_default", label="Specify a default value", type="boolean", checked=specify_default_checked))
             specify_default_cond = Conditional()
@@ -776,7 +773,7 @@ class InputParameterModule(WorkflowModule):
         parameter_kwds = {}
 
         if optional:
-            default_value = str(parameter_def.get("default", self.default_default_value))
+            default_value = parameter_def.get("default", self.default_default_value)
             parameter_kwds["value"] = default_value
 
         if "value" not in parameter_kwds and parameter_type in ["integer", "float"]:
@@ -858,7 +855,7 @@ class InputParameterModule(WorkflowModule):
 
     def _parse_state_into_dict(self):
         inputs = self.state.inputs
-        # 19.01/19.05 tool state...
+        # 19.0X tool state...
         rval = {}
         if "parameter_type" in inputs:
             rval.update({"parameter_type": inputs["parameter_type"], "optional": False})

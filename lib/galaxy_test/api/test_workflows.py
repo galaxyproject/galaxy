@@ -2176,19 +2176,13 @@ int_input:
 """, history_id=history_id, wait=True, assert_ok=True)
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             content = self.dataset_populator.get_history_dataset_content(history_id)
-            assert len(content.split("\n")) == 2, content
+            assert len(content.splitlines()) == 1, content
 
-            failed = False
-            try:
-                self._run_jobs(WORKFLOW_PARAMETER_INPUT_INTEGER_OPTIONAL, test_data="""
+            self._run_jobs(WORKFLOW_PARAMETER_INPUT_INTEGER_OPTIONAL, test_data="""
 data_input:
   value: 1.bed
   type: File
 """, history_id=history_id, wait=True, assert_ok=True)
-            except AssertionError as e:
-                print(e)
-                failed = True
-            assert not failed
 
     def test_run_with_validated_parameter_connection_default_values(self):
         with self.dataset_populator.test_history() as history_id:
@@ -2199,7 +2193,7 @@ data_input:
 """, history_id=history_id, wait=True, assert_ok=True)
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             content = self.dataset_populator.get_history_dataset_content(history_id)
-            assert len(content.split("\n")) == 4, content
+            assert len(content.splitlines()) == 3, content
 
     def test_run_with_validated_parameter_connection_invalid(self):
         with self.dataset_populator.test_history() as history_id:
