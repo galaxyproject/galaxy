@@ -982,6 +982,9 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         # meantime.
         return None
 
+    def galaxy_url(self):
+        return self.job_wrapper.get_destination_configuration("galaxy_infrastructure_url")
+
 
 class UnsupportedPulsarException(Exception):
 
