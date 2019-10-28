@@ -148,73 +148,6 @@ def create_or_update_tool_shed_repository(app, name, description, installed_chan
     return tool_shed_repository
 
 
-def create_repo_info_dict(app, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_name=None,
-                          repository=None, repository_metadata=None, tool_dependencies=None, repository_dependencies=None):
-    """
-    Return a dictionary that includes all of the information needed to install a repository into a local
-    Galaxy instance.  The dictionary will also contain the recursive list of repository dependencies defined
-    for the repository, as well as the defined tool dependencies.
-
-    This method is called from Galaxy under four scenarios:
-    1. During the tool shed repository installation process via the tool shed's get_repository_information()
-    method.  In this case both the received repository and repository_metadata will be objects, but
-    tool_dependencies and repository_dependencies will be None.
-    2. When getting updates for an installed repository where the updates include newly defined repository
-    dependency definitions.  This scenario is similar to 1. above. The tool shed's get_repository_information()
-    method is the caller, and both the received repository and repository_metadata will be objects, but
-    tool_dependencies and repository_dependencies will be None.
-    3. When a tool shed repository that was uninstalled from a Galaxy instance is being reinstalled with no
-    updates available.  In this case, both repository and repository_metadata will be None, but tool_dependencies
-    and repository_dependencies will be objects previously retrieved from the tool shed if the repository includes
-    definitions for them.
-    4. When a tool shed repository that was uninstalled from a Galaxy instance is being reinstalled with updates
-    available.  In this case, this method is reached via the tool shed's get_updated_repository_information()
-    method, and both repository and repository_metadata will be objects but tool_dependencies and
-    repository_dependencies will be None.
-    """
-    repo_info_dict = {}
-    repository = get_repository_by_name_and_owner(app, repository_name, repository_owner)
-    if app.name == 'tool_shed':
-        # We're in the tool shed.
-        repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(app,
-                                                                                 app.security.encode_id(repository.id),
-                                                                                 changeset_revision)
-        if repository_metadata:
-            metadata = repository_metadata.metadata
-            if metadata:
-                tool_shed_url = str(web.url_for('/', qualified=True)).rstrip('/')
-                rb = tool_shed.dependencies.repository.relation_builder.RelationBuilder(app, repository, repository_metadata, tool_shed_url)
-                # Get a dictionary of all repositories upon which the contents of the received repository depends.
-                repository_dependencies = rb.get_repository_dependencies_for_changeset_revision()
-                tool_dependencies = metadata.get('tool_dependencies', {})
-    if tool_dependencies:
-        new_tool_dependencies = {}
-        for dependency_key, requirements_dict in tool_dependencies.items():
-            if dependency_key in ['set_environment']:
-                new_set_environment_dict_list = []
-                for set_environment_dict in requirements_dict:
-                    set_environment_dict['repository_name'] = repository_name
-                    set_environment_dict['repository_owner'] = repository_owner
-                    set_environment_dict['changeset_revision'] = changeset_revision
-                    new_set_environment_dict_list.append(set_environment_dict)
-                new_tool_dependencies[dependency_key] = new_set_environment_dict_list
-            else:
-                requirements_dict['repository_name'] = repository_name
-                requirements_dict['repository_owner'] = repository_owner
-                requirements_dict['changeset_revision'] = changeset_revision
-                new_tool_dependencies[dependency_key] = requirements_dict
-        tool_dependencies = new_tool_dependencies
-    # Cast unicode to string, with the exception of description, since it is free text and can contain special characters.
-    repo_info_dict[str(repository.name)] = (repository.description,
-                                            str(repository_clone_url),
-                                            str(changeset_revision),
-                                            str(ctx_rev),
-                                            str(repository_owner),
-                                            repository_dependencies,
-                                            tool_dependencies)
-    return repo_info_dict
-
-
 def create_repository_admin_role(app, repository):
     """
     Create a new role with name-spaced name based on the repository name and its owner's public user
@@ -427,63 +360,6 @@ def get_prior_import_or_install_required_dict(app, tsr_ids, repo_info_dicts):
                 prior_import_or_install_ids = get_repository_ids_requiring_prior_import_or_install(app, tsr_ids, repository_dependencies)
                 prior_import_or_install_required_dict[encoded_repository_id] = prior_import_or_install_ids
     return prior_import_or_install_required_dict
-
-
-def get_repo_info_dict(app, user, repository_id, changeset_revision):
-    repository = get_repository_in_tool_shed(app, repository_id)
-    repository_clone_url = common_util.generate_clone_url_for_repository_in_tool_shed(user, repository)
-    repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(app,
-                                                                                      repository_id,
-                                                                                      changeset_revision)
-    if not repository_metadata:
-        # The received changeset_revision is no longer installable, so get the next changeset_revision
-        # in the repository's changelog.  This generally occurs only with repositories of type
-        # repository_suite_definition or tool_dependency_definition.
-        next_downloadable_changeset_revision = \
-            metadata_util.get_next_downloadable_changeset_revision(app, repository, changeset_revision)
-        if next_downloadable_changeset_revision and next_downloadable_changeset_revision != changeset_revision:
-            repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(app,
-                                                                                              repository_id,
-                                                                                              next_downloadable_changeset_revision)
-    if repository_metadata:
-        # For now, we'll always assume that we'll get repository_metadata, but if we discover our assumption
-        # is not valid we'll have to enhance the callers to handle repository_metadata values of None in the
-        # returned repo_info_dict.
-        metadata = repository_metadata.metadata
-        if 'tools' in metadata:
-            includes_tools = True
-        else:
-            includes_tools = False
-        includes_tools_for_display_in_tool_panel = repository_metadata.includes_tools_for_display_in_tool_panel
-        repository_dependencies_dict = metadata.get('repository_dependencies', {})
-        repository_dependencies = repository_dependencies_dict.get('repository_dependencies', [])
-        has_repository_dependencies, has_repository_dependencies_only_if_compiling_contained_td = \
-            get_repository_dependency_types(repository_dependencies)
-        if 'tool_dependencies' in metadata:
-            includes_tool_dependencies = True
-        else:
-            includes_tool_dependencies = False
-    else:
-        # Here's where we may have to handle enhancements to the callers. See above comment.
-        includes_tools = False
-        has_repository_dependencies = False
-        has_repository_dependencies_only_if_compiling_contained_td = False
-        includes_tool_dependencies = False
-        includes_tools_for_display_in_tool_panel = False
-    repo_path = repository.repo_path(app)
-    ctx_rev = hg_util.changeset2rev(repo_path, changeset_revision)
-    repo_info_dict = create_repo_info_dict(app=app,
-                                           repository_clone_url=repository_clone_url,
-                                           changeset_revision=changeset_revision,
-                                           ctx_rev=ctx_rev,
-                                           repository_owner=repository.user.username,
-                                           repository_name=repository.name,
-                                           repository=repository,
-                                           repository_metadata=repository_metadata,
-                                           tool_dependencies=None,
-                                           repository_dependencies=None)
-    return repo_info_dict, includes_tools, includes_tool_dependencies, includes_tools_for_display_in_tool_panel, \
-        has_repository_dependencies, has_repository_dependencies_only_if_compiling_contained_td
 
 
 def get_repo_info_tuple_contents(repo_info_tuple):
@@ -1037,28 +913,3 @@ def update_repository(app, trans, id, **kwds):
     else:
         message = None
     return repository, message
-
-
-def validate_repository_name(app, name, user):
-    """
-    Validate whether the given name qualifies as a new TS repo name.
-    Repository names must be unique for each user, must be at least two characters
-    in length and must contain only lower-case letters, numbers, and the '_' character.
-    """
-    if name in ['None', None, '']:
-        return 'Enter the required repository name.'
-    if name in ['repos']:
-        return "The term '%s' is a reserved word in the Tool Shed, so it cannot be used as a repository name." % name
-    check_existing = get_repository_by_name_and_owner(app, name, user.username)
-    if check_existing is not None:
-        if check_existing.deleted:
-            return 'You own a deleted repository named <b>%s</b>, please choose a different name.' % escape(name)
-        else:
-            return "You already own a repository named <b>%s</b>, please choose a different name." % escape(name)
-    if len(name) < 2:
-        return "Repository names must be at least 2 characters in length."
-    if len(name) > 80:
-        return "Repository names cannot be more than 80 characters in length."
-    if not(VALID_REPOSITORYNAME_RE.match(name)):
-        return "Repository names must contain only lower-case letters, numbers and underscore."
-    return ''
