@@ -5,35 +5,12 @@ import shutil
 from sqlalchemy import and_
 
 from galaxy import util
-from galaxy.web.form_builder import SelectField
 from tool_shed.util import (
     hg_util,
     xml_util
 )
 
 log = logging.getLogger(__name__)
-
-
-def build_tool_dependencies_select_field(app, tool_shed_repository, name, multiple=True, display='checkboxes',
-                                         uninstalled_only=False):
-    """
-    Generate a SelectField consisting of the current list of tool dependency ids
-    for an installed tool shed repository.
-    """
-    tool_dependencies_select_field = SelectField(name=name, multiple=multiple, display=display)
-    for tool_dependency in tool_shed_repository.tool_dependencies:
-        if uninstalled_only:
-            if tool_dependency.status not in [app.install_model.ToolDependency.installation_status.NEVER_INSTALLED,
-                                              app.install_model.ToolDependency.installation_status.UNINSTALLED]:
-                continue
-        else:
-            if tool_dependency.status in [app.install_model.ToolDependency.installation_status.NEVER_INSTALLED,
-                                          app.install_model.ToolDependency.installation_status.UNINSTALLED]:
-                continue
-        option_label = '%s version %s' % (str(tool_dependency.name), str(tool_dependency.version))
-        option_value = app.security.encode_id(tool_dependency.id)
-        tool_dependencies_select_field.add_option(option_label, option_value)
-    return tool_dependencies_select_field
 
 
 def create_or_update_tool_dependency(app, tool_shed_repository, name, version, type, status, set_status=True):
@@ -183,25 +160,6 @@ def get_tool_dependency_by_name_version_type_repository(app, repository, name, v
                                app.install_model.ToolDependency.table.c.version == version,
                                app.install_model.ToolDependency.table.c.type == type)) \
                   .first()
-
-
-def get_tool_dependency_ids(as_string=False, **kwd):
-    tool_dependency_id = kwd.get('tool_dependency_id', None)
-    if 'tool_dependency_ids' in kwd:
-        tool_dependency_ids = util.listify(kwd['tool_dependency_ids'])
-    elif 'id' in kwd:
-        tool_dependency_ids = util.listify(kwd['id'])
-    elif 'inst_td_ids' in kwd:
-        tool_dependency_ids = util.listify(kwd['inst_td_ids'])
-    elif 'uninstalled_tool_dependency_ids' in kwd:
-        tool_dependency_ids = util.listify(kwd['uninstalled_tool_dependency_ids'])
-    else:
-        tool_dependency_ids = []
-    if tool_dependency_id and tool_dependency_id not in tool_dependency_ids:
-        tool_dependency_ids.append(tool_dependency_id)
-    if as_string:
-        return ','.join(tool_dependency_ids)
-    return tool_dependency_ids
 
 
 def get_tool_dependency_install_dir(app, repository_name, repository_owner, repository_changeset_revision, tool_dependency_type,
