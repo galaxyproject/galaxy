@@ -174,4 +174,3 @@ def new_state(trans, tool, invalid=False):
             # FIXME: not all values should be an empty list
             state.inputs[input.name] = []
     return state
-
