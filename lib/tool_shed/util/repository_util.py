@@ -7,12 +7,10 @@ from markupsafe import escape
 from six.moves import configparser
 from six.moves.urllib.error import HTTPError
 from sqlalchemy import and_, false, or_
-from sqlalchemy.sql import select
 
-import tool_shed.util.metadata_util as metadata_util
 from galaxy import util
 from galaxy import web
-from tool_shed.util import basic_util, common_util, encoding_util, hg_util
+from tool_shed.util import basic_util, common_util, encoding_util
 
 
 log = logging.getLogger(__name__)

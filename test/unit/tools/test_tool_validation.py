@@ -53,17 +53,6 @@ def test_validate_tool_without_index():
         assert invalid_files_and_errors_tups[0][1].startswith('This file refers to a file named')
         assert not tool.params_with_missing_data_table_entry
         assert tool.params_with_missing_index_file
-        # copy a loc file
-        shutil.copy(BOWTIE2_INDICES, repo_dir)
-        tool, valid, message, sample_files = tv.handle_sample_files_and_load_tool_from_disk(repo_dir, None, full_path, repo_dir)
-        invalid_files_and_errors_tups = tv.check_tool_input_params(repo_dir=repo_dir,
-                                                                   tool_config_name=full_path,
-                                                                   tool=tool,
-                                                                   sample_files=sample_files)
-        # no parameters should be missing
-        assert len(invalid_files_and_errors_tups) == 0
-        assert not tool.params_with_missing_data_table_entry
-        assert not tool.params_with_missing_index_file
 
 
 @contextmanager
