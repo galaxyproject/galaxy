@@ -1,9 +1,6 @@
 import logging
 import os
 import subprocess
-import tempfile
-from datetime import datetime
-from time import gmtime
 
 from galaxy.util import unicodify
 from tool_shed.util import basic_util
