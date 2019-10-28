@@ -7,36 +7,9 @@ from galaxy import util
 from galaxy.datatypes.sniff import is_column_based
 from galaxy.util import checkers
 from galaxy.util.expressions import ExpressionContext
-from galaxy.web.form_builder import SelectField
 from tool_shed.util import basic_util
 
 log = logging.getLogger(__name__)
-
-
-def build_shed_tool_conf_select_field(app):
-    """Build a SelectField whose options are the keys in app.toolbox.shed_tool_confs."""
-    options = []
-    for dynamic_tool_conf_filename in app.toolbox.dynamic_conf_filenames():
-        if dynamic_tool_conf_filename.startswith('./'):
-            option_label = dynamic_tool_conf_filename.replace('./', '', 1)
-        else:
-            option_label = dynamic_tool_conf_filename
-        options.append((option_label, dynamic_tool_conf_filename))
-    select_field = SelectField(name='shed_tool_conf')
-    for option_tup in options:
-        select_field.add_option(option_tup[0], option_tup[1])
-    return select_field
-
-
-def build_tool_panel_section_select_field(app):
-    """Build a SelectField whose options are the sections of the current in-memory toolbox."""
-    options = []
-    for section_id, section_name in app.toolbox.get_sections():
-        options.append((section_name, section_id))
-    select_field = SelectField(name='tool_panel_section_id', field_id='tool_panel_section_select')
-    for option_tup in options:
-        select_field.add_option(option_tup[0], option_tup[1])
-    return select_field
 
 
 def copy_sample_file(app, filename, dest_path=None):
@@ -128,23 +101,6 @@ def generate_message_for_invalid_tools(app, invalid_file_tups, repository, metad
     return message
 
 
-def get_tool_path_install_dir(partial_install_dir, shed_tool_conf_dict, tool_dict, config_elems):
-    for elem in config_elems:
-        if elem.tag == 'tool':
-            if elem.get('guid') == tool_dict['guid']:
-                tool_path = shed_tool_conf_dict['tool_path']
-                relative_install_dir = os.path.join(tool_path, partial_install_dir)
-                return tool_path, relative_install_dir
-        elif elem.tag == 'section':
-            for section_elem in elem:
-                if section_elem.tag == 'tool':
-                    if section_elem.get('guid') == tool_dict['guid']:
-                        tool_path = shed_tool_conf_dict['tool_path']
-                        relative_install_dir = os.path.join(tool_path, partial_install_dir)
-                        return tool_path, relative_install_dir
-    return None, None
-
-
 def handle_missing_index_file(app, tool_path, sample_files, repository_tools_tups, sample_files_copied):
     """
     Inspect each tool to see if it has any input parameters that are dynamically
@@ -219,21 +175,3 @@ def new_state(trans, tool, invalid=False):
             state.inputs[input.name] = []
     return state
 
-
-def panel_entry_per_tool(tool_section_dict):
-    # Return True if tool_section_dict looks like this.
-    # {<Tool guid> :
-    #    [{ tool_config : <tool_config_file>,
-    #       id: <ToolSection id>,
-    #       version : <ToolSection version>,
-    #       name : <TooSection name>}]}
-    # But not like this.
-    # { id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}
-    if not tool_section_dict:
-        return False
-    if len(tool_section_dict) != 3:
-        return True
-    for k, v in tool_section_dict:
-        if k not in ['id', 'version', 'name']:
-            return True
-    return False
