@@ -8,7 +8,6 @@ from six.moves.urllib.error import HTTPError
 from sqlalchemy import and_, false, or_
 from sqlalchemy.sql import select
 
-import tool_shed.dependencies.repository
 import tool_shed.util.metadata_util as metadata_util
 from galaxy import util
 from galaxy import web
@@ -913,3 +912,28 @@ def update_repository(app, trans, id, **kwds):
     else:
         message = None
     return repository, message
+
+
+def validate_repository_name(app, name, user):
+    """
+    Validate whether the given name qualifies as a new TS repo name.
+    Repository names must be unique for each user, must be at least two characters
+    in length and must contain only lower-case letters, numbers, and the '_' character.
+    """
+    if name in ['None', None, '']:
+        return 'Enter the required repository name.'
+    if name in ['repos']:
+        return "The term '%s' is a reserved word in the Tool Shed, so it cannot be used as a repository name." % name
+    check_existing = get_repository_by_name_and_owner(app, name, user.username)
+    if check_existing is not None:
+        if check_existing.deleted:
+            return 'You own a deleted repository named <b>%s</b>, please choose a different name.' % escape(name)
+        else:
+            return "You already own a repository named <b>%s</b>, please choose a different name." % escape(name)
+    if len(name) < 2:
+        return "Repository names must be at least 2 characters in length."
+    if len(name) > 80:
+        return "Repository names cannot be more than 80 characters in length."
+    if not(VALID_REPOSITORYNAME_RE.match(name)):
+        return "Repository names must contain only lower-case letters, numbers and underscore."
+    return ''
