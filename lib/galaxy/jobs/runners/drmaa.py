@@ -335,6 +335,9 @@ class DRMAAJobRunner(AsynchronousJobRunner):
                     state = ajs.old_state
                 else:
                     continue
+            if ajs.running:
+                # TODO: stop checking at some point
+                ajs.job_wrapper.check_for_entry_points()
             if ajs.check_limits():
                 self.work_queue.put((self.fail_job, ajs))
                 continue

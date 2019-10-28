@@ -8,7 +8,13 @@ import logging
 import socket
 import sys
 import threading
+import time
 from inspect import ismodule
+try:
+    from math import inf
+except ImportError:
+    # python 2 doesn't have math.inf, but can use float('inf')
+    inf = float('inf')
 
 from kombu import (
     Consumer,
@@ -17,7 +23,6 @@ from kombu import (
 )
 from kombu.mixins import ConsumerProducerMixin
 from kombu.pools import (
-    connections,
     producers,
 )
 from six.moves import reload_module
@@ -29,7 +34,7 @@ logging.getLogger('kombu').setLevel(logging.WARNING)
 log = logging.getLogger(__name__)
 
 
-def send_local_control_task(app, task, kwargs=None):
+def send_local_control_task(app, task, get_response=False, kwargs=None):
     """
     This sends a message to the process-local control worker, which is useful
     for one-time asynchronous tasks like recalculating user disk usage.
@@ -41,7 +46,7 @@ def send_local_control_task(app, task, kwargs=None):
                'kwargs': kwargs}
     routing_key = 'control.%s@%s' % (app.config.server_name, socket.gethostname())
     control_task = ControlTask(app.queue_worker)
-    control_task.send_task(payload, routing_key, local=True, get_response=False)
+    return control_task.send_task(payload, routing_key, local=True, get_response=get_response)
 
 
 def send_control_task(app, task, noop_self=False, get_response=False, routing_key='control.*', kwargs=None):
@@ -117,6 +122,7 @@ class ControlTask(object):
                     reply_to=reply_to,
                     correlation_id=self.correlation_id,
                     retry=True,
+                    headers={'epoch': time.time()},
                 )
             if get_response:
                 with Consumer(self.connection, on_message=self.on_response, queues=callback_queue, no_ack=True):
@@ -328,6 +334,7 @@ class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):
         self.exchange_queue = None
         self.direct_queue = None
         self.control_queues = []
+        self.epoch = 0
 
     def send_control_task(self, task, noop_self=False, get_response=False, routing_key='control.*', kwargs=None):
         return send_control_task(app=self.app, task=task, noop_self=noop_self, get_response=get_response, routing_key=routing_key, kwargs=kwargs)
@@ -345,10 +352,7 @@ class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):
         log.info("Binding and starting galaxy control worker for %s", self.app.config.server_name)
         self.exchange_queue, self.direct_queue = galaxy.queues.control_queues_from_config(self.app.config)
         self.control_queues = [self.exchange_queue, self.direct_queue]
-        # Delete messages for the current workers' control queues on startup
-        with connections[self.connection].acquire(block=True) as conn:
-            for q in self.control_queues:
-                q(conn).delete()
+        self.epoch = time.time()
         self.start()
 
     def get_consumers(self, Consumer, channel):
@@ -362,8 +366,14 @@ class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):
             if body.get('noop', None) != self.app.config.server_name:
                 try:
                     f = self.task_mapping[body['task']]
-                    log.info("Instance '%s' received '%s' task, executing now.", self.app.config.server_name, body['task'])
-                    result = f(self.app, **body['kwargs'])
+                    if message.headers.get('epoch', inf) > self.epoch:
+                        # Message was created after QueueWorker was started, execute
+                        log.info("Instance '%s' received '%s' task, executing now.", self.app.config.server_name, body['task'])
+                        result = f(self.app, **body['kwargs'])
+                    else:
+                        # Message was created before QueueWorker was started, ack message but don't run task
+                        log.info("Instance '%s' received '%s' task from the past, discarding it", self.app.config.server_name, body['task'])
+                        result = 'NO_OP'
                 except Exception:
                     # this shouldn't ever throw an exception, but...
                     log.exception("Error running control task type: %s", body['task'])

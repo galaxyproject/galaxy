@@ -5,6 +5,7 @@ import tempfile
 from datetime import datetime
 from time import gmtime
 
+from galaxy.util import unicodify
 from tool_shed.util import basic_util
 
 log = logging.getLogger(__name__)
@@ -19,7 +20,7 @@ def clone_repository(repository_clone_url, repository_file_dir, ctx_rev=None):
     """
     cmd = ['hg', 'clone']
     if ctx_rev:
-        cmd.extend(['-r', ctx_rev])
+        cmd.extend(['-r', str(ctx_rev)])
     cmd.extend([repository_clone_url, repository_file_dir])
     # Make sure the destination path actually exists before attempting to clone
     if not os.path.exists(repository_file_dir):
@@ -28,9 +29,9 @@ def clone_repository(repository_clone_url, repository_file_dir, ctx_rev=None):
         subprocess.check_output(cmd, stderr=subprocess.STDOUT)
         return True, None
     except Exception as e:
-        error_message = 'Error cloning repository: %s' % e
+        error_message = 'Error cloning repository: %s' % unicodify(e)
         if isinstance(e, subprocess.CalledProcessError):
-            error_message += "\nOutput was:\n%s" % e.output
+            error_message += "\nOutput was:\n%s" % unicodify(e.output)
         log.error(error_message)
         return False, error_message
 
@@ -126,9 +127,9 @@ def pull_repository(repo_path, repository_clone_url, ctx_rev):
     try:
         subprocess.check_output(['hg', 'pull', '-r', ctx_rev, repository_clone_url], stderr=subprocess.STDOUT, cwd=repo_path)
     except Exception as e:
-        error_message = "Error pulling revision '%s': %s" % (ctx_rev, e)
+        error_message = "Error pulling revision '%s': %s" % (ctx_rev, unicodify(e))
         if isinstance(e, subprocess.CalledProcessError):
-            error_message += "\nOutput was:\n%s" % e.output
+            error_message += "\nOutput was:\n%s" % unicodify(e.output)
         raise Exception(error_message)
 
 
@@ -188,7 +189,7 @@ def update_repository(repo_path, ctx_rev=None):
     try:
         subprocess.check_output(cmd, stderr=subprocess.STDOUT, cwd=repo_path)
     except Exception as e:
-        error_message = 'Error updating repository: %s' % e
+        error_message = 'Error updating repository: %s' % unicodify(e)
         if isinstance(e, subprocess.CalledProcessError):
-            error_message += "\nOutput was:\n%s" % e.output
+            error_message += "\nOutput was:\n%s" % unicodify(e.output)
         raise Exception(error_message)

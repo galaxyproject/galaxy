@@ -120,10 +120,10 @@ class InstallToolDependencyManager(object):
             # There is currently only one fabric method.
             tool_dependency = self.install_and_build_package(install_environment, tool_dependency, actions_dict)
         except Exception as e:
-            log.exception('Error installing tool dependency %s version %s.', str(tool_dependency.name), str(tool_dependency.version))
+            log.exception('Error installing tool dependency %s version %s.', tool_dependency.name, tool_dependency.version)
             # Since there was an installation error, update the tool dependency status to Error. The remove_installation_path option must
             # be left False here.
-            error_message = '%s\n%s' % (self.format_traceback(), str(e))
+            error_message = '%s\n%s' % (self.format_traceback(), util.unicodify(e))
             tool_dependency = tool_dependency_util.set_tool_dependency_attributes(self.app,
                                                                                   tool_dependency=tool_dependency,
                                                                                   status=self.app.install_model.ToolDependency.installation_status.ERROR,
@@ -453,17 +453,17 @@ class InstallRepositoryManager(object):
         return None, None
 
     def __get_install_info_from_tool_shed(self, tool_shed_url, name, owner, changeset_revision):
-        params = dict(name=str(name),
-                      owner=str(owner),
-                      changeset_revision=str(changeset_revision))
+        params = dict(name=name,
+                      owner=owner,
+                      changeset_revision=changeset_revision)
         pathspec = ['api', 'repositories', 'get_repository_revision_install_info']
         try:
             raw_text = util.url_get(tool_shed_url, password_mgr=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
-        except Exception as e:
+        except Exception:
             message = "Error attempting to retrieve installation information from tool shed "
-            message += "%s for revision %s of repository %s owned by %s: %s" % \
-                (str(tool_shed_url), str(changeset_revision), str(name), str(owner), str(e))
-            log.warning(message)
+            message += "%s for revision %s of repository %s owned by %s" % \
+                (tool_shed_url, changeset_revision, name, owner)
+            log.exception(message)
             raise exceptions.InternalServerError(message)
         if raw_text:
             # If successful, the response from get_repository_revision_install_info will be 3
@@ -482,10 +482,10 @@ class InstallRepositoryManager(object):
         if not repository_revision_dict or not repo_info_dict:
             invalid_parameter_message = "No information is available for the requested repository revision.\n"
             invalid_parameter_message += "One or more of the following parameter values is likely invalid:\n"
-            invalid_parameter_message += "tool_shed_url: %s\n" % str(tool_shed_url)
-            invalid_parameter_message += "name: %s\n" % str(name)
-            invalid_parameter_message += "owner: %s\n" % str(owner)
-            invalid_parameter_message += "changeset_revision: %s\n" % str(changeset_revision)
+            invalid_parameter_message += "tool_shed_url: %s\n" % tool_shed_url
+            invalid_parameter_message += "name: %s\n" % name
+            invalid_parameter_message += "owner: %s\n" % owner
+            invalid_parameter_message += "changeset_revision: %s\n" % changeset_revision
             raise exceptions.RequestParameterInvalidException(invalid_parameter_message)
         repo_info_dicts = [repo_info_dict]
         return repository_revision_dict, repo_info_dicts
@@ -1110,8 +1110,7 @@ class InstallRepositoryManager(object):
         Update the status of a tool shed repository in the process of being installed into Galaxy.
         """
         tool_shed_repository.status = status
-        if error_message:
-            tool_shed_repository.error_message = str(error_message)
+        tool_shed_repository.error_message = error_message
         self.install_model.context.add(tool_shed_repository)
         self.install_model.context.flush()
 

@@ -146,9 +146,9 @@ class ToolMigrationManager(object):
                                 # Make sure all repository dependency records exist (as tool_shed_repository
                                 # table rows) in the Galaxy database.
                                 created_tool_shed_repositories = \
-                                    self.create_or_update_tool_shed_repository_records(name,
-                                                                                       changeset_revision,
-                                                                                       repository_dependencies_dict)
+                                    self.create_or_update_tool_shed_repository_records(name=name,
+                                                                                       changeset_revision=changeset_revision,
+                                                                                       repository_dependencies_dict=repository_dependencies_dict)
                                 # Order the repositories for proper installation.  This process is similar to the
                                 # process used when installing tool shed repositories, but does not handle managing
                                 # tool panel sections and other components since repository dependency definitions
@@ -192,8 +192,8 @@ class ToolMigrationManager(object):
                                                                                          installed_changeset_revision=changeset_revision,
                                                                                          ctx_rev=ctx_rev,
                                                                                          repository_clone_url=repository_clone_url,
-                                                                                         metadata_dict={},
                                                                                          status=self.app.install_model.ToolShedRepository.installation_status.NEW,
+                                                                                         metadata_dict={},
                                                                                          current_changeset_revision=None,
                                                                                          owner=self.repository_owner,
                                                                                          dist_to_shed=True)
@@ -586,7 +586,7 @@ class ToolMigrationManager(object):
                 irm.update_tool_shed_repository_status(tool_shed_repository,
                                                        self.app.install_model.ToolShedRepository.installation_status.INSTALLED)
             else:
-                log.error('Error attempting to clone repository %s: %s', str(tool_shed_repository.name), str(error_message))
+                log.error('Error attempting to clone repository %s: %s', tool_shed_repository.name, error_message)
                 irm.update_tool_shed_repository_status(tool_shed_repository,
                                                        self.app.install_model.ToolShedRepository.installation_status.ERROR,
                                                        error_message=error_message)

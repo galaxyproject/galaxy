@@ -2320,11 +2320,12 @@ mapping:
 
       ftp_upload_dir_template:
         type: str
-        default: ${ftp_upload_dir}/${ftp_upload_dir_identifier}
         required: false
         desc: |
           Python string template used to determine an FTP upload directory for a
           particular user.
+
+          Defaults to '${ftp_upload_dir}/${ftp_upload_dir_identifier}'.
 
       ftp_upload_purge:
         type: bool
@@ -2392,10 +2393,10 @@ mapping:
 
       galaxy_data_manager_data_path:
         type: str
-        default: tool-data
         required: false
         desc: |
-          Directory to store Data Manager based tool-data; defaults to tool_data_path.
+          Directory to store Data Manager based tool-data. Defaults to the value of the
+          <tool_data_path> option.
 
       job_config_file:
         type: str
