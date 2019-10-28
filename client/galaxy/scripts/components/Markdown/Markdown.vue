@@ -1,6 +1,9 @@
 <template>
     <div class="markdown-wrapper">
         <div v-html="markdownRendered"></div>
+        <a :href="exportLink" class="markdown-export" v-if="exportLink">
+            <i class="fa fa-4x fa-download"></i>
+        </a>
     </div>
 </template>
 
@@ -145,6 +148,10 @@ export default {
         readOnly: {
             type: Boolean,
             default: true
+        },
+        exportLink: {
+            type: String,
+            required: false
         }
     },
     data() {
@@ -215,5 +222,15 @@ export default {
 @import "embed_item";
 .toggle {
     display: none;
+}
+
+.markdown-export {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    z-index: 2000;
+    padding: 1rem;
+    color: gray;
+    opacity: 0.5;
 }
 </style>

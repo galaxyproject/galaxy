@@ -68,6 +68,9 @@ PATH_CONFIG_PROPERTIES = [
     'job_working_directory',
     'len_file_path',
     'library_import_dir',
+    'markdown_export_css',
+    'markdown_export_css_pages',
+    'markdown_export_css_invocation_reports',
     'migrated_tools_config',
     'new_file_path',
     'nginx_upload_job_files_path',
@@ -178,6 +181,9 @@ DO_NOT_TEST = [
     'job_working_directory',  # broken; may or may not be able to test
     'library_import_dir',  # broken: default overridden
     'logging',  # mapping loaded in config/
+    'markdown_export_css',  # default not used?
+    'markdown_export_css_pages',  # default not used?
+    'markdown_export_css_invocation_reports',  # default not used?
     'master_api_key',  # broken: default value assigned outside of config/
     'migrated_tools_config',  # needs more work (should work)
     'monitor_thread_join_timeout',  # broken: default overridden

@@ -2692,6 +2692,72 @@ mapping:
           the actual user, to remove the need to configure each user's environment
           individually.
 
+      markdown_export_css:
+        type: str
+        default: markdown_export.css
+        required: false
+        desc: |
+          CSS file to apply to all Markdown exports to PDF - currently used by
+          WeasyPrint during rendering an HTML export of the document to PDF.
+
+      markdown_export_css_pages:
+        type: str
+        default: markdown_export_pages.css
+        required: false
+        desc: |
+          CSS file to apply to "Galaxy Page" exports to PDF. Generally prefer 
+          markdown_export_css, but this is here for deployments that
+          would like to tailor different kinds of exports.
+
+      markdown_export_css_invocation_reports:
+        type: str
+        default: markdown_export_invocation_reports.css
+        required: false
+        desc: |
+          CSS file to apply to invocation report exports to PDF. Generally prefer 
+          markdown_export_css, but this is here for deployments that
+          would like to tailor different kinds of exports.
+
+      markdown_export_prologue:
+        type: str
+        default: ''
+        desc: |
+          Prologue Markdown/HTML to apply to markdown exports to PDF. Allowing
+          branded headers.
+
+      markdown_export_epilogue:
+        type: str
+        default: ''
+        desc: |
+          Prologue Markdown/HTML to apply to markdown exports to PDF. Allowing
+          branded footers.
+
+      markdown_export_prologue_pages:
+        type: str
+        default: ''
+        desc: |
+          Alternative to markdown_export_prologue that applies just to page exports.
+
+      markdown_export_prologue_invocation_reports:
+        type: str
+        default: ''
+        desc: |
+          Alternative to markdown_export_prologue that applies just to invocation report
+          exports.
+
+      markdown_export_epilogue_pages:
+        type: str
+        default: ''
+        desc: |
+          Alternative to markdown_export_epilogue that applies just to page exports.
+
+      markdown_export_epilogue_invocation_reports:
+        type: str
+        default: ''
+        desc: |
+          Alternative to markdown_export_epilogue that applies just to invocation report
+          exports.
+
       job_resource_params_file:
         type: str
         default: job_resource_params_conf.xml

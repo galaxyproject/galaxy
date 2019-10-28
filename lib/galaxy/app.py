@@ -15,10 +15,12 @@ from galaxy.config_watchers import ConfigWatchers
 from galaxy.containers import build_container_interfaces
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.folders import FolderManager
+from galaxy.managers.hdas import HDAManager
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.interactivetool import InteractiveToolManager
 from galaxy.managers.libraries import LibraryManager
 from galaxy.managers.tools import DynamicToolManager
+from galaxy.managers.workflows import WorkflowsManager
 from galaxy.model.database_heartbeat import DatabaseHeartbeat
 from galaxy.model.tags import GalaxyTagHandler
 from galaxy.queue_worker import GalaxyQueueWorker
@@ -100,6 +102,8 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         self.tag_handler = GalaxyTagHandler(self.model.context)
         self.dataset_collections_service = DatasetCollectionManager(self)
         self.history_manager = HistoryManager(self)
+        self.hda_manager = HDAManager(self)
+        self.workflow_manager = WorkflowsManager(self)
         self.dependency_resolvers_view = DependencyResolversView(self)
         self.test_data_resolver = test_data.TestDataResolver(file_dirs=self.config.tool_test_data_directories)
         self.library_folder_manager = FolderManager()

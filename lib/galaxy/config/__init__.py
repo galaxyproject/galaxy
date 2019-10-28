@@ -757,6 +757,9 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             user_preferences_extra_conf_path=[self._in_config_dir('user_preferences_extra_conf.yml')],
             workflow_resource_params_file=[self._in_config_dir('workflow_resource_params_conf.xml')],
             workflow_schedulers_config_file=[self._in_config_dir('workflow_schedulers_conf.xml')],
+            markdown_export_css=[self._in_config_dir('markdown_export.css')],
+            markdown_export_css_pages=[self._in_config_dir('markdown_export_pages.css')],
+            markdown_export_css_invocation_reports=[self._in_config_dir('markdown_export_invocation_reports.css')],
         )
         listify_defaults = {
             'tool_data_table_config_path': [
