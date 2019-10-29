@@ -11,7 +11,7 @@ from galaxy.tool_util.parser.interface import TestCollectionDef
 from galaxy.tools.data_manager.manager import DataManager
 from galaxy.tools.repositories import ValidationContext
 from galaxy.web import url_for
-from tool_shed import repository_types as rt_util
+from tool_shed import repository_type as rt_util
 from tool_shed.tools import tool_validator
 from tool_shed.util import (
     basic_util,
