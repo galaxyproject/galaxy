@@ -45,10 +45,13 @@ class BaseGitPlugin(ErrorPlugin):
     def _determine_ts_url(self, tool):
         if not tool.tool_shed or self.git_default_repo_only:
             return None
-        if tool.tool_shed not in self.ts_urls:
-            ts_url_request = requests.get('http://' + str(tool.tool_shed))
-            self.ts_urls[tool.tool_shed] = ts_url_request.url
-        return self.ts_urls[tool.tool_shed]
+        try:
+            if tool.tool_shed not in self.ts_urls:
+                ts_url_request = requests.get('http://' + str(tool.tool_shed))
+                self.ts_urls[tool.tool_shed] = ts_url_request.url
+            return self.ts_urls[tool.tool_shed]
+        except:
+            return None
 
     def _get_gitrepo_from_ts(self, job, ts_url):
         if not ts_url or self.git_default_repo_only:
