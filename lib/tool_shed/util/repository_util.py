@@ -3,6 +3,7 @@ import os
 import re
 import shutil
 
+from markupsafe import escape
 from six.moves import configparser
 from six.moves.urllib.error import HTTPError
 from sqlalchemy import and_, false, or_
@@ -12,8 +13,13 @@ import tool_shed.dependencies.repository
 import tool_shed.util.metadata_util as metadata_util
 from galaxy import util
 from galaxy import web
-from tool_shed.util import basic_util, common_util, encoding_util, hg_util
-from tool_shed.util.web_util import escape
+from galaxy.tool_shed.util import basic_util
+from galaxy.util.tool_shed import common_util, encoding_util
+from tool_shed.util.hg_util import (
+    changeset2rev,
+    create_hgrc_file,
+    init_repository,
+)
 
 log = logging.getLogger(__name__)
 
@@ -259,12 +265,12 @@ def create_repository(app, name, type, description, long_description, user_id, c
     if not os.path.exists(repository_path):
         os.makedirs(repository_path)
     # Create the local repository.
-    hg_util.init_repository(repo_path=repository_path)
+    init_repository(repo_path=repository_path)
     # Add an entry in the hgweb.config file for the local repository.
     lhs = "repos/%s/%s" % (repository.user.username, repository.name)
     app.hgweb_config_manager.add_entry(lhs, repository_path)
     # Create a .hg/hgrc file for the local repository.
-    hg_util.create_hgrc_file(app, repository)
+    create_hgrc_file(app, repository)
     flush_needed = False
     if category_ids:
         # Create category associations
@@ -468,7 +474,7 @@ def get_repo_info_dict(app, user, repository_id, changeset_revision):
         includes_tool_dependencies = False
         includes_tools_for_display_in_tool_panel = False
     repo_path = repository.repo_path(app)
-    ctx_rev = str(hg_util.changeset2rev(repo_path, changeset_revision))
+    ctx_rev = str(changeset2rev(repo_path, changeset_revision))
     repo_info_dict = create_repo_info_dict(app=app,
                                            repository_clone_url=repository_clone_url,
                                            changeset_revision=changeset_revision,
