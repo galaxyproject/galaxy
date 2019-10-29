@@ -135,8 +135,8 @@ class ToolEvaluator(object):
         param_dict["input"] = input
         param_dict['__datatypes_config__'] = param_dict['GALAXY_DATATYPES_CONF_FILE'] = os.path.join(job_working_directory, 'registry.xml')
         if self._history:
-            param_dict['__history_id'] = self.app.security.encode_id(self._history.id)
-        param_dict['__galaxy_url'] = self.compute_environment.galaxy_url()
+            param_dict['__history_id__'] = self.app.security.encode_id(self._history.id)
+        param_dict['__galaxy_url__'] = self.compute_environment.galaxy_url()
         param_dict.update(self.tool.template_macro_params)
         # All parameters go into the param_dict
         param_dict.update(incoming)

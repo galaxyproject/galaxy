@@ -10,8 +10,8 @@ NOTTHREE
         <!-- Avoid putting actual API keys in the command-line like this in production tools.
              Every effort should be made to consume these values as enviornment variables. -->
         <environment_variable name="GX_API" inject="api_key" />
-        <environment_variable name="GX_HISTORY_ID">$__history_id</environment_variable>
-        <environment_variable name="GX_URL">$__galaxy_url</environment_variable>
+        <environment_variable name="GX_HISTORY_ID">$__history_id__</environment_variable>
+        <environment_variable name="GX_URL">$__galaxy_url__</environment_variable>
     </environment_variables>
     <command>
         echo "\$INTVAR"  >  '$out_file1';
