@@ -105,10 +105,11 @@ def find_root(kwargs):
 class BaseAppConfiguration(object):
     def _set_config_base(self, config_kwargs):
         self.sample_config_dir = os.path.join(os.path.dirname(__file__), 'sample')
-        self.config_file = find_config_file('galaxy')
+        self.config_file = config_kwargs.get('config_file') or find_config_file('galaxy')
         # Parse global_conf and save the parser
         self.global_conf = config_kwargs.get('global_conf')
         self.global_conf_parser = configparser.ConfigParser()
+        print(config_kwargs)
         if not self.config_file and self.global_conf and "__file__" in self.global_conf:
             self.config_file = os.path.join(self.root, self.global_conf['__file__'])
 
@@ -201,6 +202,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
     deprecated_dirs = {'config_dir': 'config', 'data_dir': 'database'}
 
     def __init__(self, **kwargs):
+        self.root = find_root(kwargs)
         self._load_schema()  # Load schema from schema definition file
         self._load_config_from_schema()  # Load default propery values from schema
         self._validate_schema_paths()  # check that paths can be resolved
@@ -208,14 +210,13 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self._create_attributes_from_raw_config()  # Create attributes for LOADED properties
 
         self.config_dict = kwargs
-        self.root = find_root(kwargs)
         self._set_config_base(kwargs)  # must be called prior to _resolve_paths()
 
         self._resolve_paths(kwargs)  # Overwrite attributes (not _raw_config) w/resolved paths
         self._process_config(kwargs)  # Finish processing configuration
 
     def _load_schema(self):
-        self.schema = AppSchema(GALAXY_CONFIG_SCHEMA_PATH, GALAXY_APP_NAME)
+        self.schema = AppSchema(os.path.join(self.root, GALAXY_CONFIG_SCHEMA_PATH), GALAXY_APP_NAME)
         self.appschema = self.schema.app_schema
 
     def _load_config_from_schema(self):

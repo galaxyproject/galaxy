@@ -215,36 +215,38 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         # Must be initialized after job_config.
         self.workflow_scheduling_manager = scheduling_manager.WorkflowSchedulingManager(self)
 
-        # Must be initialized after any component that might make use of stack messaging is configured. Alternatively if
-        # it becomes more commonly needed we could create a prefork function registration method like we do with
-        # postfork functions.
-        self.application_stack.init_late_prefork()
+        if False:
 
-        self.containers = {}
-        if self.config.enable_beta_containers_interface:
-            self.containers = build_container_interfaces(
-                self.config.containers_config_file,
-                containers_conf=self.config.containers_conf
+            # Must be initialized after any component that might make use of stack messaging is configured. Alternatively if
+            # it becomes more commonly needed we could create a prefork function registration method like we do with
+            # postfork functions.
+            self.application_stack.init_late_prefork()
+
+            self.containers = {}
+            if self.config.enable_beta_containers_interface:
+                self.containers = build_container_interfaces(
+                    self.config.containers_config_file,
+                    containers_conf=self.config.containers_conf
+                )
+
+            self.interactivetool_manager = InteractiveToolManager(self)
+
+            # Configure handling of signals
+            handlers = {}
+            if self.heartbeat:
+                handlers[signal.SIGUSR1] = self.heartbeat.dump_signal_handler
+            self._configure_signal_handlers(handlers)
+
+            self.database_heartbeat = DatabaseHeartbeat(
+                application_stack=self.application_stack
             )
+            self.database_heartbeat.add_change_callback(self.watchers.change_state)
+            self.application_stack.register_postfork_function(self.database_heartbeat.start)
 
-        self.interactivetool_manager = InteractiveToolManager(self)
-
-        # Configure handling of signals
-        handlers = {}
-        if self.heartbeat:
-            handlers[signal.SIGUSR1] = self.heartbeat.dump_signal_handler
-        self._configure_signal_handlers(handlers)
-
-        self.database_heartbeat = DatabaseHeartbeat(
-            application_stack=self.application_stack
-        )
-        self.database_heartbeat.add_change_callback(self.watchers.change_state)
-        self.application_stack.register_postfork_function(self.database_heartbeat.start)
-
-        # Start web stack message handling
-        self.application_stack.register_postfork_function(self.application_stack.start)
-        self.celery_worker_thread = None
-        self.application_stack.register_postfork_function(get_celery_worker_thread, self.celery_app, self)
+            # Start web stack message handling
+            self.application_stack.register_postfork_function(self.application_stack.start)
+            self.celery_worker_thread = None
+            self.application_stack.register_postfork_function(get_celery_worker_thread, self.celery_app, self)
 
         self.model.engine.dispose()
 
