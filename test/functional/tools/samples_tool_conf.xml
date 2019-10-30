@@ -8,6 +8,7 @@
   <tool file="boolean_conditional.xml" />
   <tool file="composite.xml" />
   <tool file="environment_variables.xml" />
+  <tool file="environment_variables_inject.xml" />
   <tool file="code_file.xml" />
   <tool file="disambiguate_cond.xml" />
   <tool file="multi_repeats.xml"/>

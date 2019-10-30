@@ -7,28 +7,17 @@ ISTHREE
 #else#
 NOTTHREE
 #end if#</environment_variable>
-        <!-- Avoid putting actual API keys in the command-line like this in production tools.
-             Every effort should be made to consume these values as enviornment variables. -->
-        <environment_variable name="GX_API" inject="api_key" />
-        <environment_variable name="GX_HISTORY_ID">$__history_id__</environment_variable>
-        <environment_variable name="GX_URL">$__galaxy_url__</environment_variable>
     </environment_variables>
     <command>
-        echo "\$INTVAR"  >  '$out_file1';
-        echo "\$FORTEST" >> '$out_file1';
-        echo "\$IFTEST"  >> '$out_file1';
-        echo "\$GX_API"  >  '$out_file_api_key';
-        echo "\$GX_URL"  >  '$out_file_galaxy_url';
-        echo "\$GX_HISTORY_ID"  >'$out_file_history_id';
+        echo "\$INTVAR"  >  $out_file1;
+        echo "\$FORTEST" >> $out_file1;
+        echo "\$IFTEST"  >> $out_file1;
     </command>
     <inputs>
         <param name="inttest" value="1" type="integer" />
     </inputs>
     <outputs>
         <data name="out_file1" format="txt" />
-        <data name="out_file_api_key" format="txt" />
-        <data name="out_file_history_id" format="txt" />
-        <data name="out_file_galaxy_url" format="txt" />
     </outputs>
     <tests>
         <test>
@@ -38,21 +27,6 @@ NOTTHREE
                     <has_line line="2" />
                     <has_line line="moo" />
                     <has_line line="NOTTHREE" />
-                </assert_contents>
-            </output>
-            <output name="out_file_api_key">
-                <assert_contents>
-                    <has_line_matching expression="[0-9a-zA-Z]{32}" />
-                </assert_contents>
-            </output>
-            <output name="out_file_history_id">
-                <assert_contents>
-                    <has_line_matching expression="[0-9a-zA-Z]{16}" />
-                </assert_contents>
-            </output>
-            <output name="out_file_galaxy_url">
-                <assert_contents>
-                    <has_line_matching expression="https?.*" />
                 </assert_contents>
             </output>
         </test>
