@@ -48,9 +48,10 @@ def main():
                     host_ip = None
                 with open("container_runtime.json", "w") as f:
                     ports = docker_util.parse_port_text(ports_raw)
-                    for key in ports:
-                        if ports[key]['host'] == '0.0.0.0' and host_ip is not None:
-                            ports[key]['host'] = host_ip
+                    if host_ip is not None:
+                        for key in ports:
+                            if ports[key]['host'] == '0.0.0.0':
+                                ports[key]['host'] = host_ip
                     json.dump(ports, f)
                 break
             else:
