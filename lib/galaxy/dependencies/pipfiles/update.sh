@@ -55,22 +55,24 @@ for env in $ENVS; do
     # of this requirements file, needed for pipenv < 11.1.2
     sed -i.raw.orig -e 's/--hash[^[:space:]]*//g' -e 's/[[:space:]]*$//' pinned-requirements.txt pinned-dev-requirements.txt
     # Fix oscillating environment markers
-    sed -i.orig -e "s/^azure-storage-nspkg==\([^ ;]\{1,\}\).*$/azure-storage-nspkg==\1/" \
-                -e "s/^cffi==\([^ ;]\{1,\}\).*$/cffi==\1/" \
-                -e "s/^cmd2==\([^ ;]\{1,\}\).*$/cmd2==\1/" \
-                -e "s/^configparser==\([^ ;]\{1,\}\).*$/configparser==\1 ; python_version < '3.2'/" \
-                -e "s/^enum34==\([^ ;]\{1,\}\).*$/enum34==\1 ; python_version < '3.4'/" \
-                -e "s/^funcsigs==\([^ ;]\{1,\}\).*$/funcsigs==\1 ; python_version < '3.3'/" \
-                -e "s/^functools32==\([^ ;]\{1,\}\).*$/functools32==\1 ; python_version < '3.2'/" \
-                -e "s/^futures==\([^ ;]\{1,\}\).*$/futures==\1 ; python_version == '2.6' or python_version == '2.7'/" \
-                -e "s/^monotonic==\([^ ;]\{1,\}\).*$/monotonic==\1/" \
-                -e "s/^more-itertools==\([^ ;]\{1,\}\).*$/more-itertools==\1/" \
-                -e "s/^paste==\([^ ;]\{1,\}\).*$/paste==\1/" \
-                -e "s/^py2-ipaddress==\([^ ;]\{1,\}\).*$/py2-ipaddress==\1 ; python_version < '3'/" \
-                -e "s/^pyinotify==\([^ ;]\{1,\}\).*$/pyinotify==\1 ; sys_platform != 'win32' and sys_platform != 'darwin' and sys_platform != 'sunos5'/" \
-                -e "s/^python-dateutil==\([^ ;]\{1,\}\).*$/python-dateutil==\1/" \
-                -e "s/^subprocess32==\([^ ;]\{1,\}\).*$/subprocess32==\1 ; python_version < '3.0'/" \
-                -e "s/^typing==\([^ ;]\{1,\}\).*$/typing==\1 ; python_version < '3.5'/" \
+    sed -i.orig -e "s/^\(azure-storage-nspkg==[^ ;]\{1,\}\).*$/\1/" \
+                -e "s/^\(cffi==[^ ;]\{1,\}\).*$/\1/" \
+                -e "s/^\(cmd2==[^ ;]\{1,\}\).*$/\1/" \
+                -e "s/^\(configparser==[^ ;]\{1,\}\).*$/\1 ; python_version < '3.2'/" \
+                -e "s/^\(contextlib2==[^ ;]\{1,\}\).*$/\1 ; python_version < '3.5'/" \
+                -e "s/^\(enum34==[^ ;]\{1,\}\).*$/\1 ; python_version < '3.4'/" \
+                -e "s/^\(funcsigs==[^ ;]\{1,\}\).*$/\1 ; python_version < '3.3'/" \
+                -e "s/^\(functools32==[^ ;]\{1,\}\).*$/\1 ; python_version < '3.2'/" \
+                -e "s/^\(futures==[^ ;]\{1,\}\).*$/\1 ; python_version == '2.6' or python_version == '2.7'/" \
+                -e "s/^\(monotonic==[^ ;]\{1,\}\).*$/\1/" \
+                -e "s/^\(more-itertools==[^ ;]\{1,\}\).*$/\1/" \
+                -e "s/^\(paste==[^ ;]\{1,\}\).*$/\1/" \
+                -e "s/^\(pathlib2==[^ ;]\{1,\}\).*$/\1 ; python_version < '3.6'/" \
+                -e "s/^\(py2-ipaddress==[^ ;]\{1,\}\).*$/\1 ; python_version < '3'/" \
+                -e "s/^\(pyinotify==[^ ;]\{1,\}\).*$/\1 ; sys_platform != 'win32' and sys_platform != 'darwin' and sys_platform != 'sunos5'/" \
+                -e "s/^\(python-dateutil==[^ ;]\{1,\}\).*$/\1/" \
+                -e "s/^\(subprocess32==[^ ;]\{1,\}\).*$/\1 ; python_version < '3.0'/" \
+                -e "s/^\(typing==[^ ;]\{1,\}\).*$/\1 ; python_version < '3.5'/" \
                 pinned-requirements.txt pinned-dev-requirements.txt
     if ! grep '==' pinned-dev-requirements.txt ; then
         rm -f pinned-dev-requirements.txt

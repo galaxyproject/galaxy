@@ -420,6 +420,13 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             else:
                 max_pod_retries = 1
 
+            # Check if job.obj['status'] is empty,
+            # return job_state unchanged if this is the case
+            # as probably this means that the k8s API server hasn't
+            # had time to fill in the object status since the
+            # job was created only too recently.
+            if len(job.obj['status']) == 0:
+                return job_state
             if 'succeeded' in job.obj['status']:
                 succeeded = job.obj['status']['succeeded']
             if 'active' in job.obj['status']:

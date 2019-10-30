@@ -139,3 +139,14 @@ def test_kwargs_relative_path_old_prefix_empty_after_strip(mock_init):
     assert config.path1 == 'my-config/'  # stripped of old prefix, then resolved
     assert config.path2 == 'my-data/my-data-files'  # stripped of old prefix, then resolved
     assert config.path3 == 'my-other-files'  # no change
+
+
+def test_kwargs_set_to_null(mock_init):
+    # Expected: allow overriding with null, then resolve
+    # This is not a common scenario, but it does happen: one example is
+    # `job_config` set to `None` when testing
+    config = GalaxyAppConfiguration(path1=None)
+
+    assert config.path1 == 'my-config'  # resolved
+    assert config.path2 == 'my-data/my-data-files'  # resolved
+    assert config.path3 == 'my-other-files'  # no change

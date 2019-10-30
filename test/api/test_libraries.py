@@ -10,6 +10,9 @@ from base.populators import (
     TestsDatasets,
 )
 
+FILE_URL = 'https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed'
+FILE_MD5 = "37b59762b59fff860460522d271bc111"
+
 
 class LibrariesApiTestCase(api.ApiTestCase, TestsDatasets):
 
@@ -136,11 +139,22 @@ class LibrariesApiTestCase(api.ApiTestCase, TestsDatasets):
         assert dataset["file_size"] == 61, dataset
 
     def test_fetch_single_url_to_folder(self):
+        library, response = self._fetch_single_url_to_folder()
+        dataset = self.library_populator.get_library_contents_with_path(library["id"], "/4.bed")
+        assert dataset["file_size"] == 61, dataset
+
+    def test_fetch_single_url_with_invalid_datatype(self):
+        _, response = self._fetch_single_url_to_folder('xxx', assert_ok=False)
+        self._assert_status_code_is(response, 400)
+        assert response.json()['err_msg'] == "Requested extension 'xxx' unknown, cannot upload dataset."
+
+    def _fetch_single_url_to_folder(self, file_type='auto', assert_ok=True):
         history_id, library, destination = self._setup_fetch_to_folder("single_url")
         items = [{
             "src": "url",
-            "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed",
-            "MD5": "37b59762b59fff860460522d271bc111"
+            "url": FILE_URL,
+            "MD5": FILE_MD5,
+            "ext": file_type,
         }]
         targets = [{
             "destination": destination,
@@ -151,9 +165,23 @@ class LibrariesApiTestCase(api.ApiTestCase, TestsDatasets):
             "targets": json.dumps(targets),
             "validate_hashes": True
         }
-        self.dataset_populator.fetch(payload)
-        dataset = self.library_populator.get_library_contents_with_path(library["id"], "/4.bed")
-        assert dataset["file_size"] == 61, dataset
+        return library, self.dataset_populator.fetch(payload, assert_ok=assert_ok)
+
+    def test_legacy_upload_unknown_datatype(self):
+        library = self.library_populator.new_private_library("ForLegacyUpload")
+        folder_response = self._create_folder(library)
+        self._assert_status_code_is(folder_response, 200)
+        folder_id = folder_response.json()[0]['id']
+        payload = {
+            'folder_id': folder_id,
+            'create_type': 'file',
+            'file_type': 'xxx',
+            'upload_option': 'upload_file',
+            'files_0|url_paste': FILE_URL,
+        }
+        create_response = self._post("libraries/%s/contents" % library['id'], payload)
+        self._assert_status_code_is(create_response, 400)
+        assert create_response.json() == "Requested extension 'xxx' unknown, cannot upload dataset."
 
     def test_fetch_failed_validation(self):
         # Exception handling is really rough here - we should be creating a dataset in error instead

@@ -1,6 +1,6 @@
 /**
  * Qunit Tests
- * 
+ *
  * These legacy QUnit tests are interdependent and only execute as a single
  * package. A flaw in the previous node environment parameter-checking in the
  * old karma configs gave the illusion that they ran individually, but they do
@@ -12,6 +12,7 @@
 const baseKarmaConfig = require("./karma.config.base");
 
 const testFiles = [
+    "../../node_modules/@babel/polyfill/dist/polyfill.js",
     "qunit/test.js"
 ];
 
@@ -19,14 +20,16 @@ const assets = [
     "qunit/assets/*.css"
 ];
 
+let preprocessors = testFiles.reduce((result, path) => {
+    result[path] = ["webpack"];
+    return result;
+}, {});
+
 module.exports = function (config) {
 
-    let preprocessors = testFiles.reduce((result, path) => {
-        result[path] = ["webpack"];
-        return result;
-    }, {});
+    const baseConfig = baseKarmaConfig(config);
 
-    let settings = Object.assign({}, baseKarmaConfig, {
+    let settings = Object.assign({}, baseConfig, {
         files: testFiles.concat(assets),
         preprocessors: preprocessors,
         frameworks: ["polyfill", "qunit"],

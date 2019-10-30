@@ -11,3 +11,7 @@ export { standardInit } from "./standardInit";
 export { initializations$, addInitialization, prependInitialization, clearInitQueue } from "./initQueue";
 export { config$, set as setConfig, get as getConfig, getAppRoot } from "./loadConfig";
 export { getRootFromIndexLink } from "./getRootFromIndexLink";
+
+// Client-side configuration variables (based on environment)
+import config from "config";
+console.log("Configs:", config.name, config);
