@@ -36,7 +36,7 @@ from galaxy import util
 class TaskFormatter(logging.Formatter):
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super(TaskFormatter, self).__init__(*args, **kwargs)
         try:
             from celery._state import get_current_task
             self.get_current_task = get_current_task
