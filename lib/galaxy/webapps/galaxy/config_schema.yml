@@ -2284,7 +2284,7 @@ mapping:
           When false, the most recently added compatible item in the history will
           be used for each "Set at Runtime" input, independent of others in the workflow.
 
-      myexperiment_url:
+      myexperiment_target_url:
         type: str
         default: www.myexperiment.org:80
         required: false

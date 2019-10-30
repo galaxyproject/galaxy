@@ -743,7 +743,6 @@
     <datatype extension="sbml" type="galaxy.datatypes.xml:Sbml" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="spalndbnp" type="galaxy.datatypes.spaln:SpalnNuclDb" display_in_upload="true" />
     <datatype extension="spalndba" type="galaxy.datatypes.spaln:SpalnProtDb" display_in_upload="true" />
-    <datatype extension="dada2_derep" type="galaxy.datatypes.binary:RData" subclass="true" display_in_upload="true" />
     <datatype extension="dada2_dada" type="galaxy.datatypes.binary:RData" subclass="true" display_in_upload="true" />
     <datatype extension="dada2_errorrates" type="galaxy.datatypes.binary:RData" subclass="true" display_in_upload="true" />
     <datatype extension="dada2_mergepairs" type="galaxy.datatypes.binary:RData" subclass="true" display_in_upload="true" />
