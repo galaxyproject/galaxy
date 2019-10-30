@@ -6,7 +6,7 @@ from galaxy.util.getargspec import getfullargspec
 
 log = logging.getLogger(__name__)
 
-assertion_module_names = ['text', 'tabular', 'xml', 'hdf5', 'archive']
+assertion_module_names = ['text', 'tabular', 'xml', 'hdf5', 'archive', 'size']
 
 # Code for loading modules containing assertion checking functions, to
 # create a new module of assertion functions, create the needed python

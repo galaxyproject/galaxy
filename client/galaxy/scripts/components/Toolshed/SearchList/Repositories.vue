@@ -5,7 +5,7 @@
                 <b-link href="javascript:void(0)" role="button" class="font-weight-bold" @click="row.toggleDetails">
                     {{ row.item.name }}
                 </b-link>
-                <p>{{ row.item.description }}</p>
+                <div>{{ row.item.description }}</div>
             </template>
             <template v-slot:row-details="row">
                 <RepositoryDetails :repo="row.item" :toolshedUrl="toolshedUrl" />
@@ -14,16 +14,14 @@
         <div class="unavailable-message" v-if="noResultsFound">
             No matching repositories found.
         </div>
-        <div v-if="pageLoading">
-            <span class="fa fa-spinner fa-spin mb-4" />
-            <span class="loading-message">Loading repositories...</span>
-        </div>
+        <loading-span v-if="pageLoading" message="Loading repositories" />
     </div>
 </template>
 <script>
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { Services } from "../services.js";
+import LoadingSpan from "components/LoadingSpan";
 import RepositoryDetails from "../RepositoryDetails/Index.vue";
 
 Vue.use(BootstrapVue);
@@ -33,6 +31,7 @@ const LOADING = 1;
 const COMPLETE = 2;
 export default {
     components: {
+        LoadingSpan,
         RepositoryDetails
     },
     props: ["query", "scrolled", "toolshedUrl"],

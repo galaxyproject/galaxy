@@ -83,12 +83,13 @@ def check_or_update_tool_shed_status_for_installed_repository(app, repository):
 
 
 def create_or_update_tool_shed_repository(app, name, description, installed_changeset_revision, ctx_rev, repository_clone_url,
-                                          metadata_dict, status, current_changeset_revision=None, owner='', dist_to_shed=False):
+                                          status, metadata_dict=None, current_changeset_revision=None, owner='', dist_to_shed=False):
     """
     Update a tool shed repository record in the Galaxy database with the new information received.
     If a record defined by the received tool shed, repository name and owner does not exist, create
     a new record with the received information.
     """
+    metadata_dict = metadata_dict or {}
     # The received value for dist_to_shed will be True if the ToolMigrationManager is installing a repository
     # that contains tools or datatypes that used to be in the Galaxy distribution, but have been moved
     # to the main Galaxy tool shed.
@@ -115,8 +116,7 @@ def create_or_update_tool_shed_repository(app, name, description, installed_chan
     tool_shed_repository = \
         get_installed_repository(app, tool_shed=tool_shed, name=name, owner=owner, installed_changeset_revision=installed_changeset_revision, refresh=True)
     if tool_shed_repository:
-        log.debug("Updating an existing row for repository '%s' in the tool_shed_repository table, status set to '%s'." %
-                  (str(name), str(status)))
+        log.debug("Updating an existing row for repository '%s' in the tool_shed_repository table, status set to '%s'.", name, status)
         tool_shed_repository.description = description
         tool_shed_repository.changeset_revision = current_changeset_revision
         tool_shed_repository.ctx_rev = ctx_rev
@@ -126,8 +126,7 @@ def create_or_update_tool_shed_repository(app, name, description, installed_chan
         tool_shed_repository.uninstalled = uninstalled
         tool_shed_repository.status = status
     else:
-        log.debug("Adding new row for repository '%s' in the tool_shed_repository table, status set to '%s'." %
-                  (str(name), str(status)))
+        log.debug("Adding new row for repository '%s' in the tool_shed_repository table, status set to '%s'.", name, status)
         tool_shed_repository = \
             app.install_model.ToolShedRepository(tool_shed=tool_shed,
                                                  name=name,
@@ -181,7 +180,7 @@ def create_repo_info_dict(app, repository_clone_url, changeset_revision, ctx_rev
         if repository_metadata:
             metadata = repository_metadata.metadata
             if metadata:
-                tool_shed_url = str(web.url_for('/', qualified=True)).rstrip('/')
+                tool_shed_url = web.url_for('/', qualified=True).rstrip('/')
                 rb = tool_shed.dependencies.repository.relation_builder.RelationBuilder(app, repository, repository_metadata, tool_shed_url)
                 # Get a dictionary of all repositories upon which the contents of the received repository depends.
                 repository_dependencies = rb.get_repository_dependencies_for_changeset_revision()
@@ -203,14 +202,13 @@ def create_repo_info_dict(app, repository_clone_url, changeset_revision, ctx_rev
                 requirements_dict['changeset_revision'] = changeset_revision
                 new_tool_dependencies[dependency_key] = requirements_dict
         tool_dependencies = new_tool_dependencies
-    # Cast unicode to string, with the exception of description, since it is free text and can contain special characters.
-    repo_info_dict[str(repository.name)] = (repository.description,
-                                            str(repository_clone_url),
-                                            str(changeset_revision),
-                                            str(ctx_rev),
-                                            str(repository_owner),
-                                            repository_dependencies,
-                                            tool_dependencies)
+    repo_info_dict[repository.name] = (repository.description,
+                                       repository_clone_url,
+                                       changeset_revision,
+                                       ctx_rev,
+                                       repository_owner,
+                                       repository_dependencies,
+                                       tool_dependencies)
     return repo_info_dict
 
 
@@ -356,14 +354,14 @@ def get_ids_of_tool_shed_repositories_being_installed(app, as_string=False):
     return installing_repository_ids
 
 
-def get_installed_repository(app, tool_shed=None, name=None, owner=None, changeset_revision=None, installed_changeset_revision=None, repository_id=None, refresh=False):
+def get_installed_repository(app, tool_shed=None, name=None, owner=None, changeset_revision=None, installed_changeset_revision=None, repository_id=None, refresh=False, from_cache=False):
     """
     Return a tool shed repository database record defined by the combination of a toolshed, repository name,
     repository owner and either current or originally installed changeset_revision.
     """
     # We store the port, if one exists, in the database.
     tool_shed = common_util.remove_protocol_from_tool_shed_url(tool_shed)
-    if hasattr(app, 'tool_shed_repository_cache'):
+    if from_cache and hasattr(app, 'tool_shed_repository_cache'):
         if refresh:
             app.tool_shed_repository_cache.rebuild()
         return app.tool_shed_repository_cache.get_installed_repository(tool_shed=tool_shed,
@@ -397,7 +395,7 @@ def get_installed_tool_shed_repository(app, id):
     if hasattr(app, 'tool_shed_repository_cache'):
         app.tool_shed_repository_cache.rebuild()
     repository_ids = [app.security.decode_id(i) for i in id]
-    rval = [get_installed_repository(app=app, repository_id=repo_id) for repo_id in repository_ids]
+    rval = [get_installed_repository(app=app, repository_id=repo_id, from_cache=False) for repo_id in repository_ids]
     if return_list:
         return rval
     return rval[0]
@@ -470,7 +468,7 @@ def get_repo_info_dict(app, user, repository_id, changeset_revision):
         includes_tool_dependencies = False
         includes_tools_for_display_in_tool_panel = False
     repo_path = repository.repo_path(app)
-    ctx_rev = hg_util.changeset2rev(repo_path, changeset_revision)
+    ctx_rev = str(hg_util.changeset2rev(repo_path, changeset_revision))
     repo_info_dict = create_repo_info_dict(app=app,
                                            repository_clone_url=repository_clone_url,
                                            changeset_revision=changeset_revision,
@@ -952,9 +950,9 @@ def set_repository_attributes(app, repository, status, error_message, deleted, u
             clone_dir = os.path.abspath(relative_install_dir)
             try:
                 shutil.rmtree(clone_dir)
-                log.debug("Removed repository installation directory: %s" % str(clone_dir))
+                log.debug("Removed repository installation directory: %s", clone_dir)
             except Exception as e:
-                log.debug("Error removing repository installation directory %s: %s" % (str(clone_dir), str(e)))
+                log.debug("Error removing repository installation directory %s: %s", clone_dir, util.unicodify(e))
     repository.error_message = error_message
     repository.status = status
     repository.deleted = deleted

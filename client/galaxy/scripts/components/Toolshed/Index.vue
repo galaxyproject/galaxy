@@ -10,8 +10,8 @@
                     @change="setQuery"
                     @keydown.esc="setQuery()"
                 />
-                <b-input-group-append>
-                    <b-btn :disabled="!queryInput" @click="setQuery()">
+                <b-input-group-append v-b-tooltip.hover title="clear search (esc)">
+                    <b-btn @click="setQuery()">
                         <i class="fa fa-times" />
                     </b-btn>
                 </b-input-group-append>
@@ -21,7 +21,7 @@
                 <SearchList :query="query" :scrolled="scrolled" @onQuery="setQuery" @onError="setError" />
             </div>
             <div v-else>
-                <InstalledList :filter="queryInput" />
+                <InstalledList :filter="queryInput" @onQuery="setQuery" />
             </div>
         </div>
     </div>
@@ -29,6 +29,7 @@
 <script>
 import SearchList from "./SearchList/Index.vue";
 import InstalledList from "./InstalledList/Index.vue";
+
 export default {
     components: {
         SearchList,

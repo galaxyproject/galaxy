@@ -12,7 +12,10 @@ from galaxy.model.store.discover import (
     get_required_item,
     replace_request_syntax_sugar,
 )
-from galaxy.tools.actions.upload_common import validate_url
+from galaxy.tools.actions.upload_common import (
+    validate_datatype_extension,
+    validate_url,
+)
 from galaxy.util import (
     relpath,
 )
@@ -72,6 +75,8 @@ def validate_and_normalize_targets(trans, payload):
     def check_src(item):
         if "object_id" in item:
             raise RequestParameterInvalidException("object_id not allowed to appear in the request.")
+
+        validate_datatype_extension(datatypes_registry=trans.app.datatypes_registry, ext=item.get('ext'))
 
         # Normalize file:// URLs into paths.
         if item["src"] == "url" and item["url"].startswith("file://"):

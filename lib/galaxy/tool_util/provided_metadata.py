@@ -53,6 +53,8 @@ class BaseToolProvidedMetadata(object):
 
     def has_failed_outputs(self):
         """Determine if generation of any of the outputs failed.
+
+        If True, this method should also log information about at least the first such failed output.
         """
         return False
 
@@ -149,6 +151,7 @@ class LegacyToolProvidedMetadata(BaseToolProvidedMetadata):
         found_failed = False
         for meta in self.tool_provided_job_metadata:
             if meta.get("failed", False):
+                log.info("One or more tool outputs is marked as failed (%s)." % meta)
                 found_failed = True
 
         return found_failed
@@ -211,6 +214,7 @@ class ToolProvidedMetadata(BaseToolProvidedMetadata):
                 continue
 
             if meta.get("failed", False):
+                log.info("One or more tool outputs is marked as failed (%s)." % meta)
                 found_failed = True
 
         return found_failed

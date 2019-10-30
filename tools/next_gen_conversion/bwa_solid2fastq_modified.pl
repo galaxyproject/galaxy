@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl
 
 # Author: lh3
 # Note: Ideally, this script should be written in C. It is a bit slow at present.

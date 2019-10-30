@@ -14,11 +14,20 @@ from sqlalchemy.orm import eagerload_all
 from webob.compat import cgi_FieldStorage
 
 from galaxy import datatypes, util
-from galaxy.exceptions import ConfigDoesNotAllowException, ObjectInvalid
+from galaxy.exceptions import (
+    ConfigDoesNotAllowException,
+    ObjectInvalid,
+    RequestParameterInvalidException,
+)
 from galaxy.model import tags
 from galaxy.util import unicodify
 
 log = logging.getLogger(__name__)
+
+
+def validate_datatype_extension(datatypes_registry, ext):
+    if ext and ext not in ('auto', 'data') and not datatypes_registry.get_datatype_by_extension(ext):
+        raise RequestParameterInvalidException("Requested extension '%s' unknown, cannot upload dataset." % ext)
 
 
 def validate_url(url, ip_whitelist):

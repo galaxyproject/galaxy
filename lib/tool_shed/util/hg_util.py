@@ -5,6 +5,7 @@ import tempfile
 from datetime import datetime
 from time import gmtime
 
+from galaxy.util import unicodify
 from tool_shed.util import basic_util
 
 log = logging.getLogger(__name__)
@@ -16,7 +17,7 @@ def add_changeset(repo_path, path_to_filename_in_archive):
     try:
         subprocess.check_output(['hg', 'add', path_to_filename_in_archive], stderr=subprocess.STDOUT, cwd=repo_path)
     except Exception as e:
-        error_message = "Error adding '%s' to repository: %s" % (path_to_filename_in_archive, e)
+        error_message = "Error adding '%s' to repository: %s" % (path_to_filename_in_archive, unicodify(e))
         if isinstance(e, subprocess.CalledProcessError):
             error_message += "\nOutput was:\n%s" % e.output
         raise Exception(error_message)
@@ -28,9 +29,9 @@ def archive_repository_revision(app, repository, archive_dir, changeset_revision
     try:
         subprocess.check_output(['hg', 'archive', '-r', changeset_revision, archive_dir], stderr=subprocess.STDOUT, cwd=repo_path)
     except Exception as e:
-        error_message = "Error attempting to archive revision '%s' of repository '%s': %s" % (changeset_revision, repository.name, e)
+        error_message = "Error attempting to archive revision '%s' of repository '%s': %s" % (changeset_revision, repository.name, unicodify(e))
         if isinstance(e, subprocess.CalledProcessError):
-            error_message += "\nOutput was:\n%s" % e.output
+            error_message += "\nOutput was:\n%s" % unicodify(e.output)
         log.exception(error_message)
         raise Exception(error_message)
 
@@ -42,7 +43,7 @@ def clone_repository(repository_clone_url, repository_file_dir, ctx_rev=None):
     """
     cmd = ['hg', 'clone']
     if ctx_rev:
-        cmd.extend(['-r', ctx_rev])
+        cmd.extend(['-r', str(ctx_rev)])
     cmd.extend([repository_clone_url, repository_file_dir])
     # Make sure the destination path actually exists before attempting to clone
     if not os.path.exists(repository_file_dir):
@@ -51,9 +52,9 @@ def clone_repository(repository_clone_url, repository_file_dir, ctx_rev=None):
         subprocess.check_output(cmd, stderr=subprocess.STDOUT)
         return True, None
     except Exception as e:
-        error_message = 'Error cloning repository: %s' % e
+        error_message = 'Error cloning repository: %s' % unicodify(e)
         if isinstance(e, subprocess.CalledProcessError):
-            error_message += "\nOutput was:\n%s" % e.output
+            error_message += "\nOutput was:\n%s" % unicodify(e.output)
         log.error(error_message)
         return False, error_message
 
@@ -62,11 +63,11 @@ def commit_changeset(repo_path, full_path_to_changeset, username, message):
     try:
         subprocess.check_output(['hg', 'commit', '-u', username, '-m', message, full_path_to_changeset], stderr=subprocess.STDOUT, cwd=repo_path)
     except Exception as e:
-        error_message = "Error committing '%s' to repository: %s" % (full_path_to_changeset, e)
+        error_message = "Error committing '%s' to repository: %s" % (full_path_to_changeset, unicodify(e))
         if isinstance(e, subprocess.CalledProcessError):
-            if e.returncode == 1 and 'nothing changed' in e.output:
+            if e.returncode == 1 and 'nothing changed' in unicodify(e.output):
                 return
-            error_message += "\nOutput was:\n%s" % e.output
+            error_message += "\nOutput was:\n%s" % unicodify(e.output)
         raise Exception(error_message)
 
 
@@ -96,7 +97,7 @@ def create_hgrc_file(app, repository):
     # in the Mercurial API.
     repo_path = repository.repo_path(app)
     hgrc_path = os.path.join(repo_path, '.hg', 'hgrc')
-    with open(hgrc_path, 'wb') as fp:
+    with open(hgrc_path, 'w') as fp:
         fp.write('[paths]\n')
         fp.write('default = .\n')
         fp.write('default-push = .\n')
@@ -306,9 +307,9 @@ def pull_repository(repo_path, repository_clone_url, ctx_rev):
     try:
         subprocess.check_output(['hg', 'pull', '-r', ctx_rev, repository_clone_url], stderr=subprocess.STDOUT, cwd=repo_path)
     except Exception as e:
-        error_message = "Error pulling revision '%s': %s" % (ctx_rev, e)
+        error_message = "Error pulling revision '%s': %s" % (ctx_rev, unicodify(e))
         if isinstance(e, subprocess.CalledProcessError):
-            error_message += "\nOutput was:\n%s" % e.output
+            error_message += "\nOutput was:\n%s" % unicodify(e.output)
         raise Exception(error_message)
 
 
@@ -320,9 +321,9 @@ def remove_file(repo_path, selected_file, force=True):
     try:
         subprocess.check_output(cmd, stderr=subprocess.STDOUT, cwd=repo_path)
     except Exception as e:
-        error_message = "Error removing file '%s': %s" % (selected_file, e)
+        error_message = "Error removing file '%s': %s" % (selected_file, unicodify(e))
         if isinstance(e, subprocess.CalledProcessError):
-            error_message += "\nOutput was:\n%s" % e.output
+            error_message += "\nOutput was:\n%s" % unicodify(e.output)
         raise Exception(error_message)
 
 
@@ -382,9 +383,9 @@ def update_repository(repo_path, ctx_rev=None):
     try:
         subprocess.check_output(cmd, stderr=subprocess.STDOUT, cwd=repo_path)
     except Exception as e:
-        error_message = 'Error updating repository: %s' % e
+        error_message = 'Error updating repository: %s' % unicodify(e)
         if isinstance(e, subprocess.CalledProcessError):
-            error_message += "\nOutput was:\n%s" % e.output
+            error_message += "\nOutput was:\n%s" % unicodify(e.output)
         raise Exception(error_message)
 
 
@@ -395,21 +396,21 @@ def init_repository(repo_path):
     try:
         subprocess.check_output(['hg', 'init'], stderr=subprocess.STDOUT, cwd=repo_path)
     except Exception as e:
-        error_message = 'Error initializing repository: %s' % e
+        error_message = 'Error initializing repository: %s' % unicodify(e)
         if isinstance(e, subprocess.CalledProcessError):
-            error_message += "\nOutput was:\n%s" % e.output
+            error_message += "\nOutput was:\n%s" % unicodify(e.output)
         raise Exception(error_message)
 
 
 def changeset2rev(repo_path, changeset_revision):
     """
-    Return the revision number corresponding to a specified changeset revision.
+    Return the revision number (as an int) corresponding to a specified changeset revision.
     """
     try:
         rev = subprocess.check_output(['hg', 'id', '-r', changeset_revision, '-n'], stderr=subprocess.STDOUT, cwd=repo_path)
     except Exception as e:
-        error_message = "Error looking for changeset '%s': %s" % (changeset_revision, e)
+        error_message = "Error looking for changeset '%s': %s" % (changeset_revision, unicodify(e))
         if isinstance(e, subprocess.CalledProcessError):
-            error_message += "\nOutput was:\n%s" % e.output
+            error_message += "\nOutput was:\n%s" % unicodify(e.output)
         raise Exception(error_message)
     return int(rev.strip())

@@ -5,22 +5,41 @@
             <loading-span v-if="loading" message="Loading installed repositories" />
             <div v-else>
                 <b-alert :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
-                <div class="installed-message mt-3 mb-1 mx-1 text-muted">
-                    {{ repositories.length }} repositories installed on this instance.
+                <div class="m-1">
+                    <span class="installed-message text-muted">
+                        {{ repositories.length }} repositories installed on this instance.
+                    </span>
+                    <b-link @click="toggleMonitor" class="font-weight-bold">
+                        <span v-if="showMonitor">
+                            <span class="fa fa-angle-double-up" />
+                            <span>Hide installation progress.</span>
+                        </span>
+                        <span v-else>
+                            <span class="fa fa-angle-double-down" />
+                            <span>Show installation progress.</span>
+                        </span>
+                    </b-link>
                 </div>
+                <Monitor v-if="showMonitor" @onQuery="onQuery" />
                 <b-table
                     id="repository-table"
                     striped
                     :fields="fields"
+                    :sortBy="sortBy"
                     :items="repositories"
                     :filter="filter"
                     @filtered="filtered"
                 >
                     <template v-slot:cell(name)="row">
                         <b-link href="#" role="button" class="font-weight-bold" @click="row.toggleDetails">
-                            {{ row.item.name }}
+                            <div v-if="!isLatest(row.item)">
+                                <b-badge variant="danger" class="mb-2">
+                                    Newer version available!
+                                </b-badge>
+                            </div>
+                            <div class="name">{{ row.item.name }}</div>
                         </b-link>
-                        <p>{{ row.item.description }}</p>
+                        <div>{{ row.item.description }}</div>
                     </template>
                     <template slot="row-details" slot-scope="row">
                         <RepositoryDetails :repo="row.item" />
@@ -42,14 +61,16 @@ import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { getAppRoot } from "onload/loadConfig";
 import { Services } from "../services.js";
-import RepositoryDetails from "./Details.vue";
 import LoadingSpan from "components/LoadingSpan";
+import Monitor from "./Monitor";
+import RepositoryDetails from "./Details";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
         LoadingSpan,
+        Monitor,
         RepositoryDetails
     },
     props: ["filter"],
@@ -59,7 +80,10 @@ export default {
             fields: [
                 {
                     key: "name",
-                    sortable: true
+                    sortable: true,
+                    sortByFormatted: (value, key, item) => {
+                        return `${this.isLatest(item)}_${value}`;
+                    }
                 },
                 {
                     key: "owner",
@@ -70,7 +94,9 @@ export default {
             message: null,
             messageVariant: null,
             nRepositories: 0,
-            repositories: []
+            repositories: [],
+            showMonitor: false,
+            sortBy: "name"
         };
     },
     computed: {
@@ -90,6 +116,10 @@ export default {
         this.load();
     },
     methods: {
+        isLatest(item) {
+            const value = item.tool_shed_status && item.tool_shed_status.latest_installable_revision;
+            return String(value).toLowerCase() != "false";
+        },
         load() {
             this.loading = true;
             this.services
@@ -103,8 +133,14 @@ export default {
                     this.error = error;
                 });
         },
-        filtered: function(items) {
+        filtered(items) {
             this.nRepositories = items.length;
+        },
+        toggleMonitor() {
+            this.showMonitor = !this.showMonitor;
+        },
+        onQuery(query) {
+            this.$emit("onQuery", query);
         }
     }
 };
