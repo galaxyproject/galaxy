@@ -20,6 +20,7 @@ def skip_unless_environ(var):
 
 external_dependency_management = skip_unless_environ("GALAXY_TEST_INCLUDE_SLOW")
 
+
 @external_dependency_management
 def test_conda_resolution():
     base_path = mkdtemp()

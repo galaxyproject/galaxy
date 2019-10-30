@@ -29,6 +29,7 @@ def test_get_run_test():
     commands = get_run_test(' #!/bin/bash\npslScore 2> /dev/null || [[ "$?" == 255 ]]')
     assert commands['commands'] == [' #!/bin/bash && pslScore 2> /dev/null || [[ "$?" == 255 ]]']
 
+
 @external_dependency_management
 def test_get_anaconda_url():
     url = get_anaconda_url('samtools:1.7--1')

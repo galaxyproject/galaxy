@@ -1,5 +1,6 @@
-import tempfile
+import os
 import shutil
+import tempfile
 
 import pytest
 
@@ -41,4 +42,4 @@ def test_singularity_container_test(tmp_path):
         assert results['failed'][0]['imports'] == ['pyBigWig']
         assert 'yasm:1.3.0--0' in results['notest']
     finally:
-        rmtree(test_dir)
+        shutil.rmtree(test_dir)
