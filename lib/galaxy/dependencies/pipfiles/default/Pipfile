@@ -47,6 +47,7 @@ cwltool = "==1.0.20180721142728"
 ipaddress = {version = "*", markers = "python_version < '3.3'"}
 isa-rwval = "*"
 boltons = "*"
+celery = "*"
 Paste = "*"
 docutils = "*"
 Routes = "*"

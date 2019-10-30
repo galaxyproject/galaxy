@@ -33,6 +33,7 @@ bx-python==0.8.4
 bz2file==0.98 ; python_version < '3.3'
 cachecontrol==0.11.7
 cachetools==3.1.1
+celery==4.3.0
 certifi==2019.9.11
 cffi==1.13.1
 chardet==3.0.4
