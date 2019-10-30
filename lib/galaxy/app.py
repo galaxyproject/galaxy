@@ -21,7 +21,11 @@ from galaxy.managers.libraries import LibraryManager
 from galaxy.managers.tools import DynamicToolManager
 from galaxy.model.database_heartbeat import DatabaseHeartbeat
 from galaxy.model.tags import GalaxyTagHandler
-from galaxy.queue_worker import GalaxyQueueWorker
+from galaxy.queue_worker import (
+    GalaxyQueueWorker,
+    get_celery_app,
+    get_celery_worker_thread,
+)
 from galaxy.tool_util.deps.views import DependencyResolversView
 from galaxy.tool_util.verify import test_data
 from galaxy.tools.cache import (
@@ -78,7 +82,7 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         # queue_worker *can* be initialized with a queue, but here we don't
         # want to and we'll allow postfork to bind and start it.
         self.queue_worker = GalaxyQueueWorker(self)
-
+        self.celery_app = get_celery_app(self)
         self._configure_tool_shed_registry()
         self._configure_object_store(fsmon=True)
         # Setup the database engine and ORM
@@ -239,6 +243,8 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
 
         # Start web stack message handling
         self.application_stack.register_postfork_function(self.application_stack.start)
+        self.celery_worker_thread = None
+        self.application_stack.register_postfork_function(get_celery_worker_thread, self.celery_app, self)
 
         self.model.engine.dispose()
 
@@ -252,6 +258,11 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
     def shutdown(self):
         log.debug('Shutting down')
         exception = None
+        try:
+            self.celery_app.control.broadcast('shutdown')
+        except Exception as e:
+            exception = exception or e
+            log.exception("Failed to shutdown celery worker cleanly")
         try:
             self.queue_worker.shutdown()
         except Exception as e:

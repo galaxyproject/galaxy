@@ -1675,7 +1675,9 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 new_whitelist = sorted([tid for tid in tools_to_whitelist if tid in trans.app.toolbox.tools_by_id])
                 f.write("\n".join(new_whitelist))
             trans.app.config.sanitize_whitelist = new_whitelist
-            trans.app.queue_worker.send_control_task('reload_sanitize_whitelist', noop_self=True)
+            # trans.app.queue_worker.send_control_task('reload_sanitize_whitelist', noop_self=True)
+            trans.app.queue_worker.reload_sanitize_whitelist.delay()
+            # reload_sanitize_whitelist.delay()
             # dispatch a message to reload list for other processes
         return trans.fill_template('/webapps/galaxy/admin/sanitize_whitelist.mako',
                                    sanitize_all=trans.app.config.sanitize_all_html,

@@ -15,6 +15,10 @@ ALL_CONTROL = "control.*"
 galaxy_exchange = Exchange('galaxy_core_exchange', type='topic')
 
 
+def get_process_name(server_name):
+    return "{server_name}@{hostname}".format(server_name=server_name, hostname=socket.gethostname())
+
+
 def all_control_queues_for_declare(application_stack):
     """
     For in-memory routing (used by sqlalchemy-based transports), we need to be able to
@@ -30,8 +34,7 @@ def control_queues_from_config(config):
     Returns a Queue instance with the correct name and routing key for this
     galaxy process's config
     """
-    hostname = socket.gethostname()
-    process_name = "{server_name}@{hostname}".format(server_name=config.server_name, hostname=hostname)
+    process_name = get_process_name(server_name=config.server_name)
     exchange_queue = Queue("control.%s" % process_name, galaxy_exchange, routing_key='control.%s' % process_name)
     non_exchange_queue = Queue("control.%s" % process_name, routing_key='control.%s' % process_name)
     return exchange_queue, non_exchange_queue

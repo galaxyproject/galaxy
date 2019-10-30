@@ -9,6 +9,7 @@ import socket
 import sys
 import threading
 import time
+from collections import namedtuple
 from inspect import ismodule
 try:
     from math import inf
@@ -16,6 +17,7 @@ except ImportError:
     # python 2 doesn't have math.inf, but can use float('inf')
     inf = float('inf')
 
+from celery import Celery
 from kombu import (
     Consumer,
     Queue,
@@ -30,8 +32,60 @@ from six.moves import reload_module
 import galaxy.queues
 from galaxy import util
 
+
+class TaskFormatter(logging.Formatter):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        try:
+            from celery._state import get_current_task
+            self.get_current_task = get_current_task
+        except ImportError:
+            self.get_current_task = lambda: None
+
+    def format(self, record):
+        task = self.get_current_task()
+        if task and task.request:
+            record.__dict__.update(
+                task_id=task.request.id,
+                task_name=task.name,
+                worker_name=task.request.hostname,
+            )
+        else:
+            record.__dict__.setdefault('task_name', '')
+            record.__dict__.setdefault('task_id', '')
+            record.__dict__.setdefault('worker_name', '')
+        return super().format(record)
+
+
 logging.getLogger('kombu').setLevel(logging.WARNING)
 log = logging.getLogger(__name__)
+sh = logging.StreamHandler()
+sh.setFormatter(
+    TaskFormatter(
+        '[%(asctime)s: %(worker_name)s] - %(task_id)s - %(task_name)s - %(name)s - %(message)s'))
+log.addHandler(sh)
+
+
+celery_app = Celery()
+
+
+def get_celery_app(galaxy_app):
+    celeryconfig = namedtuple("CeleryConfig", 'name backend broker')(
+        name='tasks',
+        backend='db+postgresql://localhost/galaxy',
+        broker='pyamqp://localhost:5672/'
+    )
+    celery_app.config_from_object(celeryconfig)
+    return celery_app
+
+
+def get_celery_worker_thread(celery_app, galaxy_app):
+    worker = celery_app.Worker(pool='solo', hostname=galaxy.queues.get_process_name(galaxy_app.config.server_name))
+    thread = threading.Thread(target=worker.start)
+    thread.daemon = True
+    thread.start()
+    galaxy_app.celery_worker_thread = thread
 
 
 def send_local_control_task(app, task, get_response=False, kwargs=None):
@@ -218,9 +272,10 @@ def reload_display_application(app, **kwargs):
     app.datatypes_registry.reload_display_applications(display_application_ids)
 
 
-def reload_sanitize_whitelist(app):
-    log.debug("Executing reload sanitize whitelist control task.")
-    app.config.reload_sanitize_whitelist()
+# @celery_app.task
+# def reload_sanitize_whitelist(app):
+#     log.debug("Executing reload sanitize whitelist control task.")
+#     app.config.reload_sanitize_whitelist()
 
 
 def recalculate_user_disk_usage(app, **kwargs):
@@ -306,7 +361,7 @@ control_message_to_task = {
     'reload_tool_data_tables': reload_tool_data_tables,
     'reload_job_rules': reload_job_rules,
     'admin_job_lock': admin_job_lock,
-    'reload_sanitize_whitelist': reload_sanitize_whitelist,
+    # 'reload_sanitize_whitelist': reload_sanitize_whitelist,
     'recalculate_user_disk_usage': recalculate_user_disk_usage,
     'rebuild_toolbox_search_index': rebuild_toolbox_search_index,
     'reconfigure_watcher': reconfigure_watcher,
@@ -335,6 +390,10 @@ class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):
         self.direct_queue = None
         self.control_queues = []
         self.epoch = 0
+
+    @celery_app.task
+    def reload_sanitize_whitelist():
+        log.warning("Executing reload sanitize whitelist control task.")
 
     def send_control_task(self, task, noop_self=False, get_response=False, routing_key='control.*', kwargs=None):
         return send_control_task(app=self.app, task=task, noop_self=noop_self, get_response=get_response, routing_key=routing_key, kwargs=kwargs)
