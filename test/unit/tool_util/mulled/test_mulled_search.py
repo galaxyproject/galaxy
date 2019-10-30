@@ -1,8 +1,10 @@
 import pytest
 
 from galaxy.tool_util.deps.mulled.mulled_search import CondaSearch, get_package_hash, GitHubSearch, QuaySearch, run_command, singularity_search
+from ..test_conda_resolution import external_dependency_management
 
 
+@external_dependency_management
 def test_quay_search():
     t = QuaySearch("biocontainers")
     t.build_index()
@@ -12,6 +14,7 @@ def test_quay_search():
     assert {'version': u'2.2.0--0', 'package': u'bioconductor-gosemsim'} in search2
 
 
+@external_dependency_management
 @pytest.mark.skipif(run_command is None, reason="requires import from conda library")
 def test_conda_search():
     t = CondaSearch('bioconda')
@@ -23,6 +26,7 @@ def test_conda_search():
     assert search2['build'] == u'0'
 
 
+@external_dependency_management
 def test_github_search():
     t = GitHubSearch()
     search1 = t.process_json(t.get_json("adsfasdf"), "adsfasdf")
@@ -31,6 +35,7 @@ def test_github_search():
     assert {'path': u'recipes/bioconductor-gosemsim/build.sh', 'name': u'build.sh'} in search2
 
 
+@external_dependency_management
 def test_get_package_hash():
     package_hash1 = get_package_hash(['bamtools', 'samtools'], {})
     package_hash2 = get_package_hash(['bamtools', 'samtools'], {'bamtools': '2.4.0', 'samtools': '1.3.1'})
@@ -42,6 +47,7 @@ def test_get_package_hash():
     assert package_hash3['package_hash'] == 'mulled-v2-cde36934a4704f448af44bf01deeae8d2832ca2e'
 
 
+@external_dependency_management
 def test_singularity_search():
     sing1 = singularity_search('mulled-v2-0560a8046fc82aa4338588eca29ff18edab2c5aa')
     sing2 = singularity_search('mulled-v2-19fa9431f5863b2be81ff13791f1b00160ed0852')
