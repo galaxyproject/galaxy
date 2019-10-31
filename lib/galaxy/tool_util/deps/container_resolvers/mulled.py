@@ -235,12 +235,12 @@ def singularity_cached_container_description(targets, cache_directory, hash_func
     return container
 
 
-def targets_to_mulled_name(targets, hash_func, namespace):
+def targets_to_mulled_name(targets, hash_func, namespace, resolution_cache=None):
     name = None
     if len(targets) == 1:
         target = targets[0]
         target_version = target.version
-        tags = mulled_tags_for(namespace, target.package_name)
+        tags = mulled_tags_for(namespace, target.package_name, resolution_cache=resolution_cache)
 
         if not tags:
             return None
@@ -267,7 +267,7 @@ def targets_to_mulled_name(targets, hash_func, namespace):
             else:
                 repo_name = image_name
                 tag_prefix = None
-            tags = mulled_tags_for(namespace, repo_name, tag_prefix=tag_prefix)
+            tags = mulled_tags_for(namespace, repo_name, tag_prefix=tag_prefix, resolution_cache=resolution_cache)
             return tags
 
         if hash_func == "v2":
@@ -368,7 +368,7 @@ class MulledDockerContainerResolver(ContainerResolver):
         if len(targets) == 0:
             return None
 
-        name = targets_to_mulled_name(targets=targets, hash_func=self.hash_func, namespace=self.namespace)
+        name = targets_to_mulled_name(targets=targets, hash_func=self.hash_func, namespace=self.namespace, resolution_cache=resolution_cache)
         if name:
             container_id = "quay.io/%s/%s" % (self.namespace, name)
             if self.protocol:

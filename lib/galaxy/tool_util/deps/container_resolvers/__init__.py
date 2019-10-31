@@ -10,6 +10,7 @@ import six
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 
+
 class ResolutionCache(Bunch):
     """Simple cache for duplicated computation created once per set of requests (likely web request in Galaxy context).
 
