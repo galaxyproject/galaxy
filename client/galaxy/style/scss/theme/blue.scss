@@ -9,6 +9,12 @@ $brand-light: #f8f9fa;
 $brand-dark: #2c3143;
 $brand-toggle: gold;
 
+// Masthead colors
+$brand-masthead: $brand-dark;
+$brand-masthead-text: $brand-light;
+$brand-masthead-text-active: lighten($brand-light, 15%);
+$brand-masthead-text-hover: $brand-toggle;
+
 // Text colors
 $text-color: $brand-dark;
 $text-muted: lighten($text-color, 10%);

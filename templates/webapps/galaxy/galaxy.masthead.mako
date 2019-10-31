@@ -23,7 +23,7 @@
             'terms_url'                 : app.config.terms_url or '',
             'allow_user_creation'       : app.config.allow_user_creation,
             'logo_url'                  : h.url_for(app.config.logo_url),
-            'logo_src'                  : h.url_for( app.config.get( 'logo_src', '/static/images/galaxyIcon_noText.png' ) ),
+            'logo_src'                  : h.url_for( app.config.get( 'logo_src', '/static/favicon.png' ) ),
             'is_admin_user'             : trans.user_is_admin,
             'active_view'               : active_view,
             'ftp_upload_site'           : app.config.ftp_upload_site,
