@@ -394,16 +394,16 @@ body {
     .navbar-brand {
         @extend .position-absolute;
         @extend .font-weight-bold;
-        left: 0.3rem;
-        top: 0;
         font-family: verdana;
         font-size: 1.25rem;
+        left: 0.8rem;
+        line-height: 0rem;
         color: $brand-masthead-text-active;
         text-decoration: none;
         .navbar-brand-image {
             display: inline;
-            width: 26px;
-            margin-left: 0.35em;
+            height: 1.8rem;
+            margin-right: 0.3rem;
             border: none;
         }
         .navbar-brand-title {
