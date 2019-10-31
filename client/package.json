@@ -12,6 +12,7 @@
   "license": "AFL-3.0",
   "dependencies": {
     "@babel/polyfill": "^7.4.0",
+    "@fortawesome/vue-fontawesome": "^0.1.7",
     "@handsontable/vue": "^2.0.0-beta1",
     "@johmun/vue-tags-input": "^2.0.1",
     "@vue/test-utils": "1.0.0-beta.29",
