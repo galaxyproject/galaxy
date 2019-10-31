@@ -201,11 +201,21 @@ class DependencyManager(object):
         index = kwds.get('index')
         install = kwds.get('install', False)
         resolver_type = kwds.get('resolver_type')
+        container_type = kwds.get('container_type')
         require_exact = kwds.get('exact', False)
         return_null_dependencies = kwds.get('return_null', False)
 
         resolvable_requirements = requirements.resolvable
-        tool_info = ToolInfo(requirements=resolvable_requirements)
+
+        tool_info_kwds = dict(requirements=resolvable_requirements)
+        if 'tool_instance' in kwds:
+            tool = kwds['tool_instance']
+            tool_info_kwds['tool_id'] = tool.id
+            tool_info_kwds['tool_version'] = tool.version
+            tool_info_kwds['container_descriptions'] = tool.containers
+            tool_info_kwds['requires_galaxy_python_environment'] = tool.requires_galaxy_python_environment
+
+        tool_info = ToolInfo(**tool_info_kwds)
 
         for i, resolver in enumerate(self.dependency_resolvers):
 
@@ -215,22 +225,24 @@ class DependencyManager(object):
             if resolver_type is not None and resolver.resolver_type != resolver_type:
                 continue
 
+            if container_type is not None and getattr(resolver, "container_type", None) != container_type:
+                continue
+
             _requirement_to_dependency = OrderedDict([(k, v) for k, v in requirement_to_dependency.items() if not isinstance(v, NullDependency)])
 
             if len(_requirement_to_dependency) == len(resolvable_requirements):
                 # Shortcut - resolution complete.
                 break
 
-            if resolver.resolver_type.startswith('build_mulled') and not install:
-                # don't want to build images here
-                continue
-
             # Check requirements all at once
             all_unmet = len(_requirement_to_dependency) == 0
             if hasattr(resolver, "resolve_all"):
                 resolve = resolver.resolve_all
             elif isinstance(resolver, ContainerResolver):
-                if not resolver.resolver_type.startswith(('cached', 'explicit')) and not (search or install):
+                if not install and resolver.builds_on_resolution:
+                    # don't want to build images here
+                    continue
+                if not resolver.resolver_type.startswith(('cached', 'explicit', 'fallback')) and not (search or install):
                     # These would look up available containers using the quay API,
                     # we only want to do this if we search for containers
                     continue
@@ -246,7 +258,7 @@ class DependencyManager(object):
                                        **kwds)
                 if dependencies:
                     if isinstance(dependencies, ContainerDescription):
-                        dependencies = [ContainerDependency(dependencies, name=r.name, version=r.version) for r in resolvable_requirements]
+                        dependencies = [ContainerDependency(dependencies, name=r.name, version=r.version, container_resolver=resolver) for r in resolvable_requirements]
                     assert len(dependencies) == len(resolvable_requirements)
                     for requirement, dependency in zip(resolvable_requirements, dependencies):
                         log.debug(dependency.resolver_msg)

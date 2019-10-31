@@ -77,7 +77,6 @@ def list_docker_cached_mulled_images(namespace=None, hash_func="v2"):
         image = identifier_to_cached_target(identifier, hash_func, namespace=namespace)
         return image
 
-    # TODO: Sort on build ...
     raw_images = [output_line_to_image(_) for _ in filter(name_filter, images_and_versions)]
     return [i for i in raw_images if i is not None]
 
@@ -429,6 +428,7 @@ class BuildMulledDockerContainerResolver(ContainerResolver):
     resolver_type = "build_mulled"
     container_type = "docker"
     shell = '/bin/bash'
+    builds_on_resolution = True
 
     def __init__(self, app_info=None, namespace="local", hash_func="v2", auto_install=True, **kwds):
         super(BuildMulledDockerContainerResolver, self).__init__(app_info)
@@ -477,6 +477,7 @@ class BuildMulledSingularityContainerResolver(ContainerResolver):
     resolver_type = "build_mulled_singularity"
     container_type = "singularity"
     shell = '/bin/bash'
+    builds_on_resolution = True
 
     def __init__(self, app_info=None, hash_func="v2", auto_install=True, **kwds):
         super(BuildMulledSingularityContainerResolver, self).__init__(app_info)

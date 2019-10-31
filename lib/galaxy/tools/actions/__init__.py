@@ -59,6 +59,7 @@ class ToolAction(object):
 
 class DefaultToolAction(object):
     """Default tool action is to run an external command"""
+    produces_real_jobs = True
 
     def _collect_input_datasets(self, tool, param_values, trans, history, current_user_roles=None, dataset_collection_elements=None, collection_info=None):
         """

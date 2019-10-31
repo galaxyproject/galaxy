@@ -55,4 +55,12 @@
        a tool is run.
 
   -->
+
+  <!--
+  <fallback identifier="galaxy/galaxy:19.05" />
+  <fallback_singularity identifier="/path/to/singularity/container" />
+  -->
+  <!-- Specify a fallback container for tools/jobs that don't match the above
+       resolvers. -->
+
 </containers_resolvers>
