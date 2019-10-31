@@ -61,14 +61,21 @@ def _package_hash(target):
 CachedV2MulledImageMultiTarget.package_hash = _package_hash
 
 
-def list_docker_cached_mulled_images(namespace=None, hash_func="v2"):
-    command = build_docker_images_command(truncate=True, sudo=False, to_str=False)
-    try:
-        images_and_versions = unicodify(subprocess.check_output(command)).strip().splitlines()
-    except subprocess.CalledProcessError:
-        log.info("Call to `docker images` failed, configured container resolution may be broken")
-        return []
-    images_and_versions = [l.split()[0:2] for l in images_and_versions[1:]]
+def list_docker_cached_mulled_images(namespace=None, hash_func="v2", resolution_cache=None):
+    cache_key = "galaxy.tool_util.deps.container_resolvers.mulled:cached_images"
+    if resolution_cache is not None and cache_key in resolution_cache:
+        images_and_versions = resolution_cache.get(cache_key)
+    else:
+        command = build_docker_images_command(truncate=True, sudo=False, to_str=False)
+        try:
+            images_and_versions = unicodify(subprocess.check_output(command)).strip().splitlines()
+        except subprocess.CalledProcessError:
+            log.info("Call to `docker images` failed, configured container resolution may be broken")
+            return []
+        images_and_versions = [l.split()[0:2] for l in images_and_versions[1:]]
+        if resolution_cache is not None:
+            resolution_cache[cache_key] = images_and_versions
+
     name_filter = get_filter(namespace)
 
     def output_line_to_image(line):
@@ -189,11 +196,11 @@ def find_best_matching_cached_image(targets, cached_images, hash_func):
     return image
 
 
-def docker_cached_container_description(targets, namespace, hash_func="v2", shell=DEFAULT_CONTAINER_SHELL):
+def docker_cached_container_description(targets, namespace, hash_func="v2", shell=DEFAULT_CONTAINER_SHELL, resolution_cache=None):
     if len(targets) == 0:
         return None
 
-    cached_images = list_docker_cached_mulled_images(namespace, hash_func=hash_func)
+    cached_images = list_docker_cached_mulled_images(namespace, hash_func=hash_func, resolution_cache=resolution_cache)
     image = find_best_matching_cached_image(targets, cached_images, hash_func)
 
     container = None
@@ -300,7 +307,8 @@ class CachedMulledDockerContainerResolver(ContainerResolver):
             return None
 
         targets = mulled_targets(tool_info)
-        return docker_cached_container_description(targets, self.namespace, hash_func=self.hash_func, shell=self.shell)
+        resolution_cache = kwds.get("resolution_cache")
+        return docker_cached_container_description(targets, self.namespace, hash_func=self.hash_func, shell=self.shell, resolution_cache=resolution_cache)
 
     def __str__(self):
         return "CachedMulledDockerContainerResolver[namespace=%s]" % self.namespace
@@ -344,14 +352,15 @@ class MulledDockerContainerResolver(ContainerResolver):
         self.hash_func = hash_func
         self.auto_install = string_as_bool(auto_install)
 
-    def cached_container_description(self, targets, namespace, hash_func):
-        return docker_cached_container_description(targets, namespace, hash_func)
+    def cached_container_description(self, targets, namespace, hash_func, resolution_cache):
+        return docker_cached_container_description(targets, namespace, hash_func, resolution_cache)
 
     def pull(self, container):
         command = container.build_pull_command()
         shell(command)
 
     def resolve(self, enabled_container_types, tool_info, install=False, **kwds):
+        resolution_cache = kwds.get("resolution_cache")
         if tool_info.requires_galaxy_python_environment or self.container_type not in enabled_container_types:
             return None
 
@@ -373,7 +382,8 @@ class MulledDockerContainerResolver(ContainerResolver):
             if install and destination_for_container_type and not self.cached_container_description(
                     targets,
                     namespace=self.namespace,
-                    hash_func=self.hash_func
+                    hash_func=self.hash_func,
+                    resolution_cache=resolution_cache,
             ):
                 container = CONTAINER_CLASSES[self.container_type](container_description.identifier,
                                                                    self.app_info,
@@ -386,7 +396,8 @@ class MulledDockerContainerResolver(ContainerResolver):
                 container_description = self.cached_container_description(
                     targets,
                     namespace=self.namespace,
-                    hash_func=self.hash_func
+                    hash_func=self.hash_func,
+                    resolution_cache=resolution_cache,
                 )
             return container_description
 

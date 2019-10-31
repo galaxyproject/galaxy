@@ -7,7 +7,15 @@ from abc import (
 
 import six
 
+from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
+
+class ResolutionCache(Bunch):
+    """Simple cache for duplicated computation created once per set of requests (likely web request in Galaxy context).
+
+    This should not be assumed to be thread safe - resolution using a given cache should all occur
+    one resolution at a time in a single thread.
+    """
 
 
 @six.python_2_unicode_compatible
@@ -35,7 +43,7 @@ class ContainerResolver(Dictifiable):
             return default
 
     @abstractmethod
-    def resolve(self, enabled_container_types, tool_info, **kwds):
+    def resolve(self, enabled_container_types, tool_info, resolution_cache=None, **kwds):
         """Find a container matching all supplied requirements for tool.
 
         The supplied argument is a :class:`galaxy.tool_util.deps.containers.ToolInfo` description

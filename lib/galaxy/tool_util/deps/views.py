@@ -1,5 +1,6 @@
 from galaxy import exceptions
 from galaxy.util import asbool, listify
+from .container_resolvers import ResolutionCache
 from .dependencies import ToolInfo
 from .resolvers import (
     ContainerDependency,
@@ -321,7 +322,8 @@ class ContainerResolutionView(object):
     def resolve(self, **kwds):
         find_best_kwds = {
             'install': False,
-            'enabled_container_types': ['docker', 'singularity']
+            'enabled_container_types': ['docker', 'singularity'],
+            'resolution_cache': kwds.get("resolution_cache"),
         }
 
         if 'index' in kwds:
@@ -369,6 +371,7 @@ class ContainerResolutionView(object):
         rval = []
         resolve_kwds = kwds.copy()
         tool_ids = resolve_kwds.pop("tool_ids", None)
+        resolve_kwds["resolution_cache"] = ResolutionCache()
         if tool_ids is not None:
             tool_ids = listify(tool_ids)
         for tool_id, tool in self._app.toolbox.tools_by_id.items():
