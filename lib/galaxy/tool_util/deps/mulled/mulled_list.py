@@ -4,11 +4,7 @@ import argparse
 import logging
 from glob import glob
 
-try:
-    import requests
-except ImportError:
-    requests = None
-
+import requests
 try:
     from html.parser import HTMLParser
 except ImportError:  # python 2

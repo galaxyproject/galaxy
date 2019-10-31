@@ -41,8 +41,12 @@ for ((i=0; i<${#PACKAGE_DIRS[@]}; i++)); do
 
     cd "$package_dir"
     pip install -e .
+    # Install extras (if needed)
     if [ "$package_dir" = "util" ]; then
         pip install -e '.[template,jstree]'
+    fi
+    if [ "$package_dir" = "tool_util"]; then
+        pip install -e '.[condatesting]'
     fi
 
     if [[ "$run_tests" == "1" ]]; then

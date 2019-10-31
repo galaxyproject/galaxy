@@ -8,10 +8,7 @@ import threading
 import time
 
 import packaging.version
-try:
-    import requests
-except ImportError:
-    requests = None
+import requests
 
 MULLED_TAG_CACHE = collections.defaultdict(dict)
 
@@ -42,9 +39,6 @@ def quay_versions(namespace, pkg_name):
 
 
 def quay_repository(namespace, pkg_name):
-    if requests is None:
-        raise Exception("Requests library is unavailable, functionality not available.")
-
     assert namespace is not None
     assert pkg_name is not None
     url = 'https://quay.io/api/v1/repository/%s/%s' % (namespace, pkg_name)

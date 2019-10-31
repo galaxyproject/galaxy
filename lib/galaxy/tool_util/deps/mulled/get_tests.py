@@ -14,16 +14,24 @@ from io import BytesIO
 
 import requests
 import yaml
-from jinja2 import Template
-from jinja2.exceptions import UndefinedError
+try:
+    from jinja2 import Template
+    from jinja2.exceptions import UndefinedError
+except ImportError:
+    Template = None
+    UndefinedError = Exception
 
 from .util import split_container_name
+
+INSTALL_JINJA_EXCEPTION = "This mulled functionality required jinja2 but it is unavailable, install condatesting extras."
 
 
 def get_commands_from_yaml(yaml_content):
     """
     Parse tests from Conda's meta.yaml file contents
     """
+    if Template is None:
+        raise Exception(INSTALL_JINJA_EXCEPTION)
     package_tests = {}
 
     try:
