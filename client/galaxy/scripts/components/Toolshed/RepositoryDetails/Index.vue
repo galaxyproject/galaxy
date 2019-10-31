@@ -101,6 +101,12 @@ export default {
                 clearTimeout(this.timeout);
             }
         },
+        setTimeout() {
+            this.clearTimeout();
+            this.timeout = setTimeout(() => {
+                this.loadInstalledRepositories();
+            }, this.delay);
+        },
         load() {
             this.services
                 .getRepository(this.toolshedUrl, this.repo.id)
@@ -112,12 +118,6 @@ export default {
                     this.error = error;
                     this.loading = false;
                 });
-        },
-        listenInstalledRepositories() {
-            this.clearTimeout();
-            this.timeout = setTimeout(() => {
-                this.loadInstalledRepositories();
-            }, this.delay);
         },
         loadInstalledRepositories() {
             this.services
@@ -136,7 +136,7 @@ export default {
                     if (changed) {
                         this.repoTable = [...this.repoTable];
                     }
-                    this.listenInstalledRepositories();
+                    this.setTimeout();
                     this.loading = false;
                 })
                 .catch(error => {

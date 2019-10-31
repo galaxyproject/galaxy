@@ -21,7 +21,7 @@ QUnit.module("Masthead test", {
             citation_url: "citation_url",
             terms_url: "terms_url",
             logo_url: "logo_url",
-            logo_src: "../../../static/images/galaxyIcon_noText.png",
+            logo_src: "../../../static/favicon.png",
             is_admin_user: "is_admin_user",
             active_view: "analysis",
             ftp_upload_site: "ftp_upload_site",

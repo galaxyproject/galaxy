@@ -1,6 +1,6 @@
 <template>
     <div>
-        <loading-span v-if="loading" classes="mb-4 mr-1" message="Loading categories" />
+        <loading-span v-if="loading" message="Loading categories" />
         <b-table v-else striped :items="categories" :fields="fields">
             <template v-slot:cell(name)="data">
                 <b-link

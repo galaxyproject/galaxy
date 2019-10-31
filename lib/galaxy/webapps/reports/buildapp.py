@@ -11,17 +11,9 @@ from paste import httpexceptions
 import galaxy.model
 import galaxy.model.mapping
 import galaxy.web.framework.webapp
-from galaxy.util import (
-    asbool,
-    unicodify,
-)
+from galaxy.util import asbool
 from galaxy.util.properties import load_app_properties
-from galaxy.webapps.util import (
-    build_template_error_formatters,
-    MiddlewareWrapUnsupported,
-    wrap_if_allowed,
-    wrap_if_allowed_or_fail
-)
+from galaxy.webapps.util import wrap_if_allowed
 
 log = logging.getLogger(__name__)
 
@@ -121,23 +113,9 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
         if asbool(conf.get('use_printdebug', True)):
             from paste.debug import prints
             app = wrap_if_allowed(app, stack, prints.PrintDebugMiddleware, args=(conf,))
-    if debug and asbool(conf.get('use_interactive', False)):
-        # Interactive exception debugging, scary dangerous if publicly
-        # accessible, if not enabled we'll use the regular error printing
-        # middleware.
-        try:
-            from weberror import evalexception
-            app = wrap_if_allowed_or_fail(app, stack, evalexception.EvalException,
-                                          args=(conf,),
-                                          kwargs=dict(templating_formatters=build_template_error_formatters()))
-        except MiddlewareWrapUnsupported as exc:
-            log.warning(unicodify(exc))
-            import galaxy.web.framework.middleware.error
-            app = wrap_if_allowed(app, stack, galaxy.web.framework.middleware.error.ErrorMiddleware, args=(conf,))
-    else:
-        # Not in interactive debug mode, just use the regular error middleware
-        import galaxy.web.framework.middleware.error
-        app = wrap_if_allowed(app, stack, galaxy.web.framework.middleware.error.ErrorMiddleware, args=(conf,))
+    # Error middleware
+    import galaxy.web.framework.middleware.error
+    app = wrap_if_allowed(app, stack, galaxy.web.framework.middleware.error.ErrorMiddleware, args=(conf,))
     # Transaction logging (apache access.log style)
     if asbool(conf.get('use_translogger', True)):
         from paste.translogger import TransLogger

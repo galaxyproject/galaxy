@@ -11,10 +11,9 @@ from sqlalchemy import and_
 import tool_shed.util.shed_util_common as suc
 from galaxy import (
     exceptions,
-    util,
-    web
+    util
 )
-from galaxy.web import expose_api
+from galaxy.web import expose_api, require_admin, url_for
 from galaxy.webapps.base.controller import BaseAPIController
 from tool_shed.galaxy_install.install_manager import InstallRepositoryManager
 from tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
@@ -81,13 +80,14 @@ class ToolShedRepositoriesController(BaseAPIController):
         for tool_shed_repository in query.all():
             tool_shed_repository_dict = \
                 tool_shed_repository.to_dict(value_mapper=self.__get_value_mapper(trans, tool_shed_repository))
-            tool_shed_repository_dict['url'] = web.url_for(controller='tool_shed_repositories',
-                                                           action='show',
-                                                           id=trans.security.encode_id(tool_shed_repository.id))
+            tool_shed_repository_dict['url'] = url_for(controller='tool_shed_repositories',
+                                                       action='show',
+                                                       id=trans.security.encode_id(tool_shed_repository.id))
             tool_shed_repository_dicts.append(tool_shed_repository_dict)
         return tool_shed_repository_dicts
 
     @expose_api
+    @require_admin
     def install_repository_revision(self, trans, payload, **kwd):
         """
         POST /api/tool_shed_repositories/install_repository_revision
@@ -132,9 +132,9 @@ class ToolShedRepositoriesController(BaseAPIController):
 
         def to_dict(tool_shed_repository):
             tool_shed_repository_dict = tool_shed_repository.as_dict(value_mapper=self.__get_value_mapper(trans, tool_shed_repository))
-            tool_shed_repository_dict['url'] = web.url_for(controller='tool_shed_repositories',
-                                                           action='show',
-                                                           id=trans.security.encode_id(tool_shed_repository.id))
+            tool_shed_repository_dict['url'] = url_for(controller='tool_shed_repositories',
+                                                       action='show',
+                                                       id=trans.security.encode_id(tool_shed_repository.id))
             return tool_shed_repository_dict
         if installed_tool_shed_repositories:
             return list(map(to_dict, installed_tool_shed_repositories))
@@ -142,6 +142,7 @@ class ToolShedRepositoriesController(BaseAPIController):
         return dict(status="ok", message=message)
 
     @expose_api
+    @require_admin
     def install_repository_revisions(self, trans, payload, **kwd):
         """
         POST /api/tool_shed_repositories/install_repository_revisions
@@ -221,6 +222,7 @@ class ToolShedRepositoriesController(BaseAPIController):
         return all_installed_tool_shed_repositories
 
     @expose_api
+    @require_admin
     def uninstall_repository(self, trans, id=None, **kwd):
         """
         DELETE /api/tool_shed_repositories/id
@@ -280,8 +282,21 @@ class ToolShedRepositoriesController(BaseAPIController):
 
         return tool_shed_url, name, owner, changeset_revision
 
-    @web.expose_api
-    @web.require_admin
+    @expose_api
+    @require_admin
+    def check_for_updates(self, trans, **kwd):
+        '''
+        GET /api/tool_shed_repositories/check_for_updates
+        Check for updates to the specified repository, or all installed repositories.
+
+        :param id: the encoded repository id
+        '''
+        repository_id = kwd.get('id', None)
+        message, status = repository_util.check_for_updates(self.app, trans.install_model, repository_id)
+        return {'status': status, 'message': message}
+
+    @expose_api
+    @require_admin
     def reset_metadata_on_selected_installed_repositories(self, trans, **kwd):
         repository_ids = util.listify(kwd.get("repository_ids"))
         if repository_ids:
@@ -368,7 +383,7 @@ class ToolShedRepositoriesController(BaseAPIController):
             log.debug("Unable to locate tool_shed_repository record for id %s." % (str(id)))
             return {}
         tool_shed_repository_dict = tool_shed_repository.as_dict(value_mapper=self.__get_value_mapper(trans, tool_shed_repository))
-        tool_shed_repository_dict['url'] = web.url_for(controller='tool_shed_repositories',
-                                                       action='show',
-                                                       id=trans.security.encode_id(tool_shed_repository.id))
+        tool_shed_repository_dict['url'] = url_for(controller='tool_shed_repositories',
+                                                   action='show',
+                                                   id=trans.security.encode_id(tool_shed_repository.id))
         return tool_shed_repository_dict

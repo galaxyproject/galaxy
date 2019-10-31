@@ -857,17 +857,6 @@ class RepositoriesController(BaseAPIController):
                                                           id=encoded_repository_metadata_id)
             if 'tools' in repository_metadata.metadata:
                 repository_metadata_dict['valid_tools'] = repository_metadata.metadata['tools']
-            # Get the repo_info_dict for installing the repository.
-            repo_info_dict, \
-                includes_tools, \
-                includes_tool_dependencies, \
-                includes_tools_for_display_in_tool_panel, \
-                has_repository_dependencies, \
-                has_repository_dependencies_only_if_compiling_contained_td = \
-                repository_util.get_repo_info_dict(self.app,
-                                                   trans.user,
-                                                   id,
-                                                   changeset)
             return repository_metadata_dict
         else:
             log.debug("Unable to locate repository_metadata record for repository id %s and changeset_revision %s" %

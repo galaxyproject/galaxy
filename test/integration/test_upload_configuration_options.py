@@ -213,6 +213,18 @@ class AdminsCanPasteFilePathsTestCase(BaseUploadContentConfigurationTestCase):
         # Test regression where this was getting deleted in this mode.
         assert os.path.exists(path)
 
+    def test_admin_path_paste_libraries_link(self):
+        library = self.library_populator.new_private_library("pathpasteallowedlibraries")
+        path = "%s/1.txt" % TEST_DATA_DIRECTORY
+        assert os.path.exists(path)
+        payload, files = self.library_populator.create_dataset_request(library, upload_option="upload_paths", paths=path, link_data=True)
+        response = self.library_populator.raw_library_contents_create(library["id"], payload, files=files)
+        assert response.status_code == 200
+        assert os.path.exists(path)
+        self.library_populator.wait_on_library_dataset(library, response.json()[0])
+        # We should probably verify the linking, but this was enough for now to exhibit
+        # https://github.com/galaxyproject/galaxy/issues/8756
+
     def test_admin_fetch(self):
         path = os.path.join(TEST_DATA_DIRECTORY, "1.txt")
         elements = [{"src": "path", "path": path}]

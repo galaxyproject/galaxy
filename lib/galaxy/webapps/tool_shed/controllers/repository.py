@@ -1570,7 +1570,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             changeset_revision = metadata_util.get_next_downloadable_changeset_revision(trans.app, repository, after_changeset_revision=changeset_revision)
             repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(trans.app, repository_id, changeset_revision)
         repo_path = repository.repo_path(trans.app)
-        ctx_rev = hg_util.changeset2rev(repo_path, changeset_revision)
+        ctx_rev = str(hg_util.changeset2rev(repo_path, changeset_revision))
         repo_info_dict = repository_util.create_repo_info_dict(app=trans.app,
                                                                repository_clone_url=repository_clone_url,
                                                                changeset_revision=changeset_revision,
