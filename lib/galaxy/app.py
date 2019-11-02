@@ -151,7 +151,7 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         self.visualizations_registry = VisualizationsRegistry(
             self,
             directories_setting=self.config.visualization_plugins_directory,
-            template_cache_dir=self.config.template_cache)
+            template_cache_dir=self.config.template_cache_path)
         # Tours registry
         self.tour_registry = ToursRegistry(self.config.tour_config_dir)
         # Webhooks registry

@@ -101,7 +101,7 @@ class ToolShedAppConfiguration(BaseAppConfiguration):
         self.allow_user_creation = string_as_bool(kwargs.get("allow_user_creation", "True"))
         self.allow_user_deletion = string_as_bool(kwargs.get("allow_user_deletion", "False"))
         self.template_path = resolve_path(kwargs.get("template_path", "templates"), self.root)
-        self.template_cache = resolve_path(kwargs.get("template_cache_path", "database/compiled_templates/community"), self.root)
+        self.template_cache_path = resolve_path(kwargs.get("template_cache_path", "database/compiled_templates/community"), self.root)
         self.admin_users = kwargs.get("admin_users", "")
         self.admin_users_list = [u.strip() for u in self.admin_users.split(',') if u]
         self.mailing_join_addr = kwargs.get('mailing_join_addr', "galaxy-announce-join@bx.psu.edu")
@@ -206,7 +206,7 @@ class ToolShedAppConfiguration(BaseAppConfiguration):
                     raise ConfigurationError("Unable to create missing directory: %s\n%s" % (path, e))
         # Create the directories that it makes sense to create.
         for path in self.file_path, \
-            self.template_cache, \
+            self.template_cache_path, \
                 os.path.join(self.tool_data_path, 'shared', 'jars'):
             if path not in [None, False] and not os.path.isdir(path):
                 try:
