@@ -3,7 +3,7 @@
         <div class="unified-panel-header" unselectable="on">
             <div class="unified-panel-header-inner">
                 <span class="sr-only">Workflow Editor&nbsp;</span>
-                {{ name }}
+                {{ editorConfig["name"] }}
                 <div class="panel-header-buttons">
                     <a id="workflow-run-button" class="panel-header-button workflow-canvas-content" href="javascript:void(0)" role="button" title="Run" style="display: inline-block;" aria-label="Run">
                         <span class="fa fa-play"></span>
@@ -53,11 +53,17 @@
 </template>
 
 <script>
+
+import WorkflowView from "mvc/workflow/workflow-view";
+
 export default {
     props: {
-        name: {
-            type: String,
-        } 
+        editorConfig: {
+            type: Object,
+        }
+    },
+    mounted() {
+        new WorkflowView(this.editorConfig);
     }
 }
 </script>

@@ -41,8 +41,7 @@
         config.addInitialization(function(galaxy, config) {
             var editorConfig = ${h.dumps(self.editor_config)};
             console.log("workflow/editor.mako, editorConfig", editorConfig);
-            window.bundleEntries.mountWorkflowEditor($("#center")[0], editorConfig["name"]);
-            window.bundleEntries.workflow(editorConfig);
+            window.bundleEntries.mountWorkflowEditor(editorConfig);
         });
     </script>
 

@@ -10,7 +10,6 @@
 import $ from "jquery";
 import "bootstrap";
 export { getGalaxyInstance, setGalaxyInstance } from "app";
-import WorkflowView from "mvc/workflow/workflow-view";
 import { TracksterUIView } from "viz/trackster";
 export { TracksterUI } from "viz/trackster";
 import Circster from "viz/circster";
@@ -41,10 +40,6 @@ export function trackster(options) {
 
 export function circster(options) {
     new Circster.GalaxyApp(options);
-}
-
-export function workflow(options) {
-    new WorkflowView(options);
 }
 
 export function library(options) {
