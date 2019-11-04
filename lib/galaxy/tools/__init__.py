@@ -3097,12 +3097,89 @@ class FilterFromFileTool(DatabaseOperationTool):
         )
 
 
+class SplitCollectionByNumberTool(DatabaseOperationTool):
+    tool_type = 'split_collection_by_number'
+
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+        hdca = incoming["input"]
+        how_split = incoming["how"]['how_split']
+        number = incoming["how"]["num_collection"]
+        input_length = hdca.collection.element_count
+
+        if how_split == "maximum_elements":
+            iter_list = iter(hdca.collection.elements)
+            number_of_collections_out = input_length // number
+
+            # If the input collection is not completely divisible by the integer input, need one more collection out
+            if (input_length % number != 0):
+                number_of_collections_out += 1
+
+            for i in range(0, number_of_collections_out):
+                current_collection_elements = odict()
+
+                for j, dce in enumerate(iter_list, start=1):
+                    dce_object = dce.element_object
+                    element_identifier = dce.element_identifier
+
+                    if getattr(dce_object, "history_content_type", None) == "dataset":
+                        copied_value = dce_object.copy(force_flush=False)
+                    else:
+                        copied_value = dce_object.copy()
+
+                    current_collection_elements[element_identifier] = copied_value
+                    if (j >= number):
+                        break
+
+                self._add_datasets_to_history(history, itervalues(current_collection_elements))
+                output_collections.create_collection(
+                    self.outputs["output"], "output_{}".format(i), elements=current_collection_elements
+                )
+        else:
+            small = input_length // number
+            big = small + 1
+
+            # Number of each group:
+            num_big = input_length % number  # The remainder
+            num_small = number - num_big
+
+            result = []
+
+            # Build result:
+            for i in range(0, num_big):
+                result.append(hdca.collection.elements[i * big: i * big + big])
+
+            offset = num_big * big
+            for i in range(0, num_small):
+                result.append(hdca.collection.elements[offset + i * small: offset + i * small + small])
+
+            # Results to history
+            for i, collection in enumerate(result):
+                if len(collection) == 0:
+                    break
+                current_collection_elements = odict()
+
+                for dce in collection:
+                    dce_object = dce.element_object
+                    element_identifier = dce.element_identifier
+
+                    if getattr(dce_object, "history_content_type", None) == "dataset":
+                        copied_value = dce_object.copy(force_flush=False)
+                    else:
+                        copied_value = dce_object.copy()
+                    current_collection_elements[element_identifier] = copied_value
+
+                self._add_datasets_to_history(history, itervalues(current_collection_elements))
+                output_collections.create_collection(
+                    self.outputs["output"], "output_{}".format(i), elements=current_collection_elements
+                )
+
+
 # Populate tool_type to ToolClass mappings
 tool_types = {}
 for tool_class in [Tool, SetMetadataTool, OutputParameterJSONTool, ExpressionTool, InteractiveTool,
                    DataManagerTool, DataSourceTool, AsyncDataSourceTool,
                    UnzipCollectionTool, ZipCollectionTool, MergeCollectionTool, RelabelFromFileTool, FilterFromFileTool,
-                   BuildListCollectionTool, ExtractDatasetCollectionTool,
+                   BuildListCollectionTool, ExtractDatasetCollectionTool, SplitCollectionByNumberTool,
                    DataDestinationTool]:
     tool_types[tool_class.tool_type] = tool_class
 
