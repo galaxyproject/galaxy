@@ -61,3 +61,15 @@ export default {
     }
 }
 </script>
+
+<style scoped>
+    #center {
+        z-index: 0;
+    }
+    .workflow-report-content { display: none; }
+</style>
+
+<style>
+   canvas { position: absolute; z-index: 10; }
+   canvas.dragging { position: absolute; z-index: 1000; }
+</style>

@@ -49,21 +49,11 @@
 </%def>
 
 <%def name="stylesheets()">
-
     ## Include "base.css" for styling tool menu and forms (details)
     ${h.css("jquery-ui/smoothness/jquery-ui" )}
 
     ## But make sure styles for the layout take precedence
     ${parent.stylesheets()}
-
-    <style type="text/css">
-    #center {
-        z-index: 0;
-    }
-    canvas { position: absolute; z-index: 10; }
-    canvas.dragging { position: absolute; z-index: 1000; }
-    .workflow-report-content { display: none; }
-    </style>
 </%def>
 
 ## Render a tool in the tool panel
