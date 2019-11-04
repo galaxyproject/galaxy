@@ -98,6 +98,7 @@ export { panelManagement } from "onload/globalInits/panelManagement";
 export { mountMakoTags } from "components/Tags";
 export { mountJobMetrics } from "components/JobMetrics";
 export { mountJobParameters } from "components/JobParameters";
+export { mountWorkflowEditor } from "components/Workflow/Editor/mount";
 
 // Used in common.mako
 export { default as store } from "storemodern";
