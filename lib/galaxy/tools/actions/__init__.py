@@ -334,6 +334,7 @@ class DefaultToolAction(object):
 
         # Add the dbkey to the incoming parameters
         incoming["dbkey"] = input_dbkey
+        incoming["__input_ext"] = input_ext
         # wrapped params are used by change_format action and by output.label; only perform this wrapping once, as needed
         wrapped_params = self._wrapped_params(trans, tool, incoming, inp_data)
 

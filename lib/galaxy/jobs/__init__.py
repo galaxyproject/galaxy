@@ -1695,14 +1695,25 @@ class JobWrapper(HasResourceParameters):
         self.cleanup(delete_files=delete_files)
 
     def discover_outputs(self, job, inp_data, out_data, out_collections):
-        input_ext = 'data'
-        input_dbkey = '?'
-        for _, data in inp_data.items():
-            # For loop odd, but sort simulating behavior in galaxy.tools.actions
-            if not data:
-                continue
-            input_ext = data.ext
-            input_dbkey = data.dbkey or '?'
+        # Try to just recover input_ext and dbkey from job parameters (used and set in
+        # galaxy.tools.actions). Old jobs may have not set these in the job parameters
+        # before persisting them.
+        input_params = job.raw_param_dict()
+        input_ext = input_params.get("__input_ext")
+        input_dbkey = input_params.get("dbkey")
+        if input_ext is not None:
+            input_ext = loads(input_ext)
+            input_dbkey = loads(input_dbkey)
+        else:
+            # Legacy jobs without __input_ext.
+            input_ext = 'data'
+            input_dbkey = '?'
+            for _, data in inp_data.items():
+                # For loop odd, but sort simulating behavior in galaxy.tools.actions
+                if not data:
+                    continue
+                input_ext = data.ext
+                input_dbkey = data.dbkey or '?'
 
         # Create generated output children and primary datasets.
         tool_working_directory = self.tool_working_directory
