@@ -429,7 +429,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             if len(ip.strip()) > 0
         ]
         self.template_path = os.path.join(self.root, kwargs.get("template_path", "templates"))
-        self.template_cache = self.template_cache_path
         self.job_queue_cleanup_interval = int(kwargs.get("job_queue_cleanup_interval", "5"))
         self.cluster_files_directory = self.resolve_path(self.cluster_files_directory)
 
@@ -811,7 +810,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
                 except Exception as e:
                     raise ConfigurationError("Unable to create missing directory: %s\n%s" % (path, unicodify(e)))
         # Create the directories that it makes sense to create
-        for path in (self.new_file_path, self.template_cache, self.ftp_upload_dir,
+        for path in (self.new_file_path, self.template_cache_path, self.ftp_upload_dir,
                      self.library_import_dir, self.user_library_import_dir,
                      self.nginx_upload_store, self.object_store_cache_path):
             self._ensure_directory(path)
