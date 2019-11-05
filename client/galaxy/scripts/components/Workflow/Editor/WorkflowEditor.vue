@@ -48,6 +48,7 @@
                         role="button"
                         title="Report Syntax Help"
                         aria-label="Report Syntax Help"
+                        @click="showReportHelp"
                         v-show="mode == 'report'"
                     >
                         <span class="fa fa-question"></span>
@@ -107,6 +108,7 @@
 import WorkflowView from "mvc/workflow/workflow-view";
 import MarkdownEditor from "components/Markdown/MarkdownEditor";
 import { getAppRoot } from "onload/loadConfig";
+import { showReportHelp } from "./reportHelp";
 
 export default {
     components: { MarkdownEditor },
@@ -135,6 +137,9 @@ export default {
         },
         save() {
             this.workflowView.save_current_workflow();
+        },
+        showReportHelp() {
+            showReportHelp();
         }
     }
 };
