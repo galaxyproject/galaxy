@@ -4,6 +4,7 @@ import json
 import os
 import tarfile
 
+import pytest
 from base import api
 from base import rules_test_data
 from base.populators import (
@@ -1924,15 +1925,27 @@ class ToolsTestCase(api.ApiTestCase):
 
     @skip_without_tool("column_multi_param")
     def test_implicit_conversion_and_reduce(self):
-        sam_path = self.test_data_resolver.get_filename("1.fasta")
-        with open(sam_path, "r") as sam_fh:
-            sam_content = sam_fh.read()
         with self.dataset_populator.test_history() as history_id:
+            self._run_implicit_collection_and_reduce(history_id=history_id, param="1")
+
+    @skip_without_tool("column_multi_param")
+    def test_implicit_conversion_and_reduce_invalid_param(self):
+        with self.dataset_populator.test_history() as history_id:
+            with pytest.raises(AssertionError):
+                self._run_implicit_collection_and_reduce(history_id=history_id, param="X")
+        details = self.dataset_populator.get_history_dataset_details(history_id=history_id, hid=3, assert_ok=False)
+        assert details['state'] == "error"
+        assert "parameter 'col': an invalid option" in details['misc_info']
+
+    def _run_implicit_collection_and_reduce(self, history_id, param):
+        fasta_path = self.test_data_resolver.get_filename("1.fasta")
+        with open(fasta_path, "r") as fasta_fh:
+            fasta_content = fasta_fh.read()
             response = self.dataset_collection_populator.upload_collection(history_id, "list", elements=[
                 {
                     "name": "test0",
                     "src": "pasted",
-                    "paste_content": sam_content,
+                    "paste_content": fasta_content,
                     "ext": "fasta",
                 }
             ])
@@ -1940,7 +1953,7 @@ class ToolsTestCase(api.ApiTestCase):
             hdca_id = response.json()["outputs"][0]["id"]
             inputs = {
                 "input1": {'src': 'hdca', 'id': hdca_id},
-                "col": "1",
+                "col": param,
             }
             create = self._run("column_multi_param", history_id, inputs, assert_ok=True)
             jobs = create['jobs']
