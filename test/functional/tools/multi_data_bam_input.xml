@@ -1,0 +1,21 @@
+<tool id="multi_data_bam" name="multi_data_bam" version="0.1.0">
+  <command>
+echo '$input1[0].extension' > '$out1'
+  </command>
+  <inputs>
+    <param name="input1" type="data" format="bam" multiple="true" label="Data 1"/>
+  </inputs>
+  <outputs>
+    <data format="txt" name="out1" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="sam_with_header.sam" />
+      <output name="out1">
+        <assert_contents>
+          <has_line line="bam" />
+        </assert_contents>
+      </output>
+    </test>
+  </tests>
+</tool>
