@@ -24,7 +24,7 @@
     </param>
   </inputs>
   <outputs>
-    <data format="binary" name="out_file1" />
+    <data format="audio" name="out_file1" />
   </outputs>
   <tests>
   </tests>

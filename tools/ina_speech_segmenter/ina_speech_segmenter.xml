@@ -5,7 +5,7 @@
   <command detect_errors="exit_code">$__tool_directory__/ina_speech_segmenter_wrapper.py $input $json_out</command>
    <inputs>
    <!-- should be wave data type -->
-    <param name="input" type="data" format="binary" label="From dataset" help="An audio file"/>
+    <param name="input" type="data" format="audio" label="From dataset" help="An audio file"/>
   </inputs>
   <outputs>
     <data format="json" name="json_out" />

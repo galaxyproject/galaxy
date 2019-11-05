@@ -59,6 +59,49 @@ class Binary(data.Data):
         """Returns the mime type of the datatype"""
         return 'application/octet-stream'
 
+class Audio(Binary):
+    """Class describing a binary audio file"""
+    file_ext = "audio"
+
+    def sniff(self, filename):
+        mt = subprocess.check_output(['file', '--mime-type', filename])
+        return  mt.find("audio/")>=0
+    
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "Binary audio file"
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "Binary audio file (%s)" % (nice_size(dataset.get_size()))
+
+class Wav(Audio):
+    """Class describing a wave audio file"""
+    file_ext = "wav"
+
+    def sniff(self, filename):
+        mt = subprocess.check_output(['file', '--mime-type', filename])
+        return  mt.find("audio/wave")>=0 or mt.find("audio/wav")>=0 or mt.find("audio/x-wav")>=0 or mt.find("audio/x-pn-wav")>=0
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "Wave audio file"
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "Wave audio file (%s)" % (nice_size(dataset.get_size()))
 
 class Ab1(Binary):
     """Class describing an ab1 binary sequence file"""
