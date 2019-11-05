@@ -15,7 +15,6 @@ import async_save_text from "utils/async-save-text";
 import "ui/editable-text";
 
 import { hide_modal, show_message, show_modal } from "layout/modal";
-import { make_popupmenu } from "ui/popupmenu";
 
 // TODO; tie into Galaxy state?
 window.workflow_globals = window.workflow_globals || {};
@@ -88,6 +87,7 @@ export default Backbone.View.extend({
         var self = (window.workflow_globals.app = this);
         this.options = options;
         this.urls = (options && options.urls) || {};
+        const workflow_index = this.urls.workflow_index;
         this.reportsEditor = reportsEditor;
 
         // Clear search by clicking X button
@@ -329,64 +329,6 @@ export default Backbone.View.extend({
 
         // Load workflow definition
         this.load_workflow(self.options.id, self.options.version);
-        if (make_popupmenu) {
-            make_popupmenu($("#workflow-options-button"), {
-                "Save As": workflow_save_as,
-                "Edit Attributes": function() {
-                    self.workflow.clear_active_node();
-                },
-                "Auto Re-layout": layout_editor,
-                Download: {
-                    url: `${getAppRoot()}api/workflows/${self.options.id}/download?format=json-download`,
-                    action: function() {}
-                }
-            });
-        }
-
-        /******************************************** Issue 3000*/
-        function workflow_save_as() {
-            var body = $(
-                '<form><label style="display:inline-block; width: 100%;">Save as name: </label><input type="text" id="workflow_rename" style="width: 80%;" autofocus/>' +
-                    '<br><label style="display:inline-block; width: 100%;">Annotation: </label><input type="text" id="wf_annotation" style="width: 80%;" /></form>'
-            );
-            show_modal("Save As a New Workflow", body, {
-                OK: function() {
-                    var rename_name =
-                        $("#workflow_rename").val().length > 0
-                            ? $("#workflow_rename").val()
-                            : `SavedAs_${self.workflow.name}`;
-                    var rename_annotation = $("#wf_annotation").val().length > 0 ? $("#wf_annotation").val() : "";
-                    $.ajax({
-                        url: self.urls.workflow_save_as,
-                        type: "POST",
-                        data: {
-                            workflow_name: rename_name,
-                            workflow_annotation: rename_annotation,
-                            workflow_data: function() {
-                                return JSON.stringify(self.workflow.to_simple());
-                            }
-                        }
-                    })
-                        .done(id => {
-                            window.onbeforeunload = undefined;
-                            window.location = `${getAppRoot()}workflow/editor?id=${id}`;
-                            hide_modal();
-                        })
-                        .fail(() => {
-                            hide_modal();
-                            alert("Saving this workflow failed. Please contact this site's administrator.");
-                        });
-                },
-                Cancel: hide_modal
-            });
-        }
-
-        function layout_editor() {
-            self.workflow.layout();
-            self.workflow.fit_canvas_to_nodes();
-            self.scroll_to_nodes();
-            self.canvas_manager.draw_overview();
-        }
 
         // On load, set the size to the pref stored in local storage if it exists
         var overview_size = localStorage.getItem("overview-size");
@@ -780,6 +722,51 @@ export default Backbone.View.extend({
                 show_modal("Saving workflow failed.", response.err_msg, { Ok: hide_modal });
             }
         });
+    },
+
+    workflow_save_as: function() {
+        const self = this;
+        var body = $(
+            '<form><label style="display:inline-block; width: 100%;">Save as name: </label><input type="text" id="workflow_rename" style="width: 80%;" autofocus/>' +
+                '<br><label style="display:inline-block; width: 100%;">Annotation: </label><input type="text" id="wf_annotation" style="width: 80%;" /></form>'
+        );
+        show_modal("Save As a New Workflow", body, {
+            OK: function() {
+                var rename_name =
+                    $("#workflow_rename").val().length > 0
+                        ? $("#workflow_rename").val()
+                        : `SavedAs_${self.workflow.name}`;
+                var rename_annotation = $("#wf_annotation").val().length > 0 ? $("#wf_annotation").val() : "";
+                $.ajax({
+                    url: self.urls.workflow_save_as,
+                    type: "POST",
+                    data: {
+                        workflow_name: rename_name,
+                        workflow_annotation: rename_annotation,
+                        workflow_data: function() {
+                            return JSON.stringify(self.workflow.to_simple());
+                        }
+                    }
+                })
+                    .done(id => {
+                        window.onbeforeunload = undefined;
+                        window.location = `${getAppRoot()}workflow/editor?id=${id}`;
+                        hide_modal();
+                    })
+                    .fail(() => {
+                        hide_modal();
+                        alert("Saving this workflow failed. Please contact this site's administrator.");
+                    });
+            },
+            Cancel: hide_modal
+        });
+    },
+
+    layout_editor: function() {
+        this.workflow.layout();
+        this.workflow.fit_canvas_to_nodes();
+        this.scroll_to_nodes();
+        this.canvas_manager.draw_overview();
     },
 
     prebuildNode: function(type, title_text, content_id) {

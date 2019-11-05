@@ -72,6 +72,7 @@
                         role="button"
                         title="Workflow options"
                         aria-label="Workflow options"
+                        ref="save-button"
                         v-show="mode == 'canvas'"
                     >
                         <span class="fa fa-cog"></span>
@@ -105,10 +106,12 @@
 </template>
 
 <script>
+import $ from "jquery";
 import WorkflowView from "mvc/workflow/workflow-view";
 import MarkdownEditor from "components/Markdown/MarkdownEditor";
 import { getAppRoot } from "onload/loadConfig";
 import { showReportHelp } from "./reportHelp";
+import { make_popupmenu } from "ui/popupmenu";
 
 export default {
     components: { MarkdownEditor },
@@ -124,6 +127,17 @@ export default {
     },
     mounted() {
         this.workflowView = new WorkflowView(this.editorConfig, this.$refs["report-editor"]);
+        make_popupmenu($(this.$refs["save-button"]), {
+            "Save As": () => this.workflowView.workflow_save_as(),
+            "Edit Attributes": () => {
+                this.workflowView.workflow.clear_active_node();
+            },
+            "Auto Re-layout": () => this.workflowView.layout_editor(),
+            Download: {
+                url: `${getAppRoot()}api/workflows/${this.editorConfig.id}/download?format=json-download`,
+                action: function() {}
+            }
+        });
     },
     methods: {
         setMode(mode) {
