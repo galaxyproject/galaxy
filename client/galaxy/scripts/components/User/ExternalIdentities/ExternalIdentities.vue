@@ -122,7 +122,6 @@ export default {
             .forEach(function(idp) {
                 oidc_idps_icons[idp] = "fa fa-id-card";
             });
-
         return {
             items: [],
             showHelp: true,
@@ -170,7 +169,10 @@ export default {
             console.log(this.items);
         },
         onDisconnect(doomed) {
+<<<<<<< HEAD
             console.log(this.doomedItem);
+=======
+>>>>>>> dbca7769c9... Implement External Id disconnect UI
             this.doomedItem = doomed;
             if (doomed.id) {
                 if (this.items.length > 1) {
@@ -185,8 +187,8 @@ export default {
                     );
                 }
             } else {
-                this.removeItem(doomed);
-                this.doomedItem = null;
+                this.setError("Before disconnecting this identity, you need to set your account password, "
+                + "in order to avoid being locked out of your account.");
             }
         },
         disconnectID() {
@@ -241,6 +243,57 @@ export default {
         this.loadIdentities();
     }
 };
+
+/*
+    data() {
+
+        return {
+            login: null,
+            password: null,
+            url: null,
+            provider: null,
+            messageText: null,
+            messageVariant: null,
+            
+
+            allowUserCreation: galaxy.config.allow_user_creation,
+            session_csrf_token: galaxy.session_csrf_token,
+            
+        };
+    },
+    methods: {
+        toggleLogin: function() {
+            if (this.$root.toggleLogin) {
+                this.$root.toggleLogin();
+            }
+        },
+        submitGalaxyLogin: function(method) {
+            const rootUrl = getAppRoot();
+            axios
+                .post(`${rootUrl}user/login`, this.$data)
+                .then(response => {
+                    if (response.data.message && response.data.status) {
+                        alert(response.data.message);
+                    }
+                    if (response.data.expired_user) {
+                        window.location = `${rootUrl}root/login?expired_user=${response.data.expired_user}`;
+                    } else if (response.data.redirect) {
+                        window.location = encodeURI(response.data.redirect);
+                    } else {
+                        window.location = `${rootUrl}`;
+                    }
+                })
+                .catch(error => {
+                    this.messageVariant = "danger";
+                    const message = error.response.data && error.response.data.err_msg;
+                    this.messageText = message || "Login failed for an unknown reason.";
+                });
+        },
+        
+        */
+
+
+
 </script>
 
 <style lang="scss">

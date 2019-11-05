@@ -43,13 +43,9 @@ import DatasetEditAttributes from "mvc/dataset/dataset-edit-attributes";
 import Citations from "components/Citations.vue";
 import DisplayStructure from "components/DisplayStructured.vue";
 import { CloudAuth } from "components/User/CloudAuth";
-<<<<<<< HEAD
 import Vue from "vue";
 import { ExternalIdentities } from "components/User/ExternalIdentities";
 import store from "store";
-=======
-import { ExternalIdentities } from "components/User/ExternalIdentities";
->>>>>>> 8d96e34698... display connected external ids
 
 /** Routes */
 export const getAnalysisRouter = (Galaxy) =>

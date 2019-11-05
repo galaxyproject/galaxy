@@ -96,13 +96,14 @@ class AuthnzManager(object):
                     log.error("Could not find a node attribute 'name'; skipping the node '{}'.".format(child.tag))
                     continue
                 idp = child.get('name').lower()
+                print ('child idp: ', idp)
                 if idp in BACKENDS_NAME:
                     self.oidc_backends_config[idp] = self._parse_idp_config(child)
                     self.oidc_backends_implementation[idp] = 'psa'
                     self.app.config.oidc.append(idp)
-                elif idp == 'custos':
+                elif (idp == 'custos' or idp == 'cilogon'):
                     self.oidc_backends_config[idp] = self._parse_custos_config(child)
-                    self.oidc_backends_implementation[idp] = 'custos'
+                    self.oidc_backends_implementation[idp] = idp
                     self.app.config.oidc.append(idp)
                 else:
                     raise ParseError("Unknown provider specified")
@@ -112,6 +113,8 @@ class AuthnzManager(object):
             raise
         except ParseError as e:
             raise ParseError("Invalid configuration at `{}`: {} -- unable to continue.".format(config_file, e))
+        print ('\n\n\n\n\n\n\n\n\n\n\n\nOIDC configs: ')
+        print(self.oidc_backends_config)
 
     def _parse_idp_config(self, config_xml):
         rtv = {

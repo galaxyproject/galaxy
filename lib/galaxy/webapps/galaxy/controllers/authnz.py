@@ -5,6 +5,8 @@ OAuth 2.0 and OpenID Connect Authentication and Authorization Controller.
 from __future__ import absolute_import
 
 import logging
+import json
+import requests
 
 from galaxy import exceptions
 from galaxy import web
@@ -52,8 +54,39 @@ class OIDC(JSAppLauncher):
         else:
             raise exceptions.AuthenticationFailed(message)
 
+    def get_cilogon_token(self, cilogon_code):
+        cilogon_redirect_uri = "http://localhost:8080/authnz/cilogon/callback"
+        cilogon_client_id = "" #testing, change later
+        cilogon_client_secret = "" #testing, change later
+
+        data = {"grant_type" : "authorization_code",
+            "client_id" : cilogon_client_id,
+            "client_secret" : cilogon_client_secret,
+            "code" : cilogon_code,
+            "redirect_uri" : cilogon_redirect_uri}
+        
+        #heads = {"Content-Type": "text/plain"}
+        heads = {"Content-Type": "text/html; charset=utf-8"}
+        print("\n\n\n\n\n\n\n\ndata: ", data)
+        response = requests.post('https://cilogon.org/oauth2/token', json=data)#, headers=heads)
+
+        print(response)
+        print(response.text)
+        print(response.status_code)
+        print(response.content)
+
+        #token_response = requests.post('https://cilogon.org/oauth2/userinfo', params={"access_token" : cilogon_access_token})
+        #print(token_response)
+
+
     @web.expose
     def callback(self, trans, provider, **kwargs):
+<<<<<<< HEAD
+=======
+        if (provider == "cilogon"):
+            self.get_cilogon_token(kwargs.get('code'))
+
+>>>>>>> 15861a3789... Latest changes
         user = trans.user.username if trans.user is not None else 'anonymous'
         if not bool(kwargs):
             log.error("OIDC callback received no data for provider `{}` and user `{}`".format(provider, user))

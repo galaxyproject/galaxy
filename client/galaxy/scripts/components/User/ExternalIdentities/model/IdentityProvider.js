@@ -4,6 +4,7 @@ export class IdentityProvider {
     constructor(props = {}) {
         this.id = "";
         this.provider = "";
+        this.email = "";
         safeAssign(this, props);
     }
 
@@ -15,6 +16,10 @@ export class IdentityProvider {
 
     get text() {
         return this.provider;
+    }
+
+    get email() {
+        return this.email;
     }
 
     get value() {
