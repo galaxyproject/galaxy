@@ -293,23 +293,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                         kwargs['refresh_frames'] = ['history']
                 elif operation == "undelete":
                     status, message = self._list_undelete(trans, histories)
-                elif operation == "unshare":
-                    for history in histories:
-                        for husa in trans.sa_session.query(trans.app.model.HistoryUserShareAssociation) \
-                                                    .filter_by(history=history):
-                            trans.sa_session.delete(husa)
-                elif operation == "enable import via link":
-                    for history in histories:
-                        if not history.importable:
-                            self._make_item_importable(trans.sa_session, history)
-                elif operation == "disable import via link":
-                    if history_ids:
-                        histories = []
-                        for history_id in history_ids:
-                            history = self.history_manager.get_owned(self.decode_id(history_id), trans.user, current_history=trans.history)
-                            if history.importable:
-                                history.importable = False
-                            histories.append(history)
 
                 trans.sa_session.flush()
         # Render the list view
