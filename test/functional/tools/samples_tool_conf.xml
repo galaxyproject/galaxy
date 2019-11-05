@@ -90,7 +90,6 @@
   <tool file="multi_data_param.xml" />
   <tool file="multi_data_repeat.xml" />
   <tool file="multi_data_optional.xml" />
-  <tool file="multi_data_bam_input.xml"/>
   <tool file="paths_as_file.xml" />
   <tool file="param_text_option.xml" />
   <tool file="column_param.xml" />
