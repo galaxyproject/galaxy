@@ -11,7 +11,6 @@
                         href="javascript:void(0)"
                         role="button"
                         title="Run"
-                        style="display: inline-block;"
                         aria-label="Run"
                         v-show="mode == 'canvas'"
                     >
@@ -23,7 +22,6 @@
                         href="javascript:void(0)"
                         role="button"
                         title="Save"
-                        style="display: inline-block;"
                         aria-label="Save"
                         v-show="mode == 'canvas'"
                     >
@@ -70,7 +68,6 @@
                         href="javascript:void(0)"
                         role="button"
                         title="Workflow options"
-                        style="display: inline-block;"
                         aria-label="Workflow options"
                         v-show="mode == 'canvas'"
                     >
@@ -81,32 +78,19 @@
         </div>
         <div class="unified-panel-body" id="workflow-canvas-body" v-show="mode == 'canvas'">
             <div id="canvas-viewport" class="workflow-canvas-content">
-                <div id="canvas-container" style="position: absolute; width: 100%; height: 100%;"></div>
+                <div id="canvas-container"></div>
             </div>
-            <div
-                id="workflow-parameters-box"
-                style="display:none; position: absolute; right:0px; border: solid grey 1px; padding: 5px; background: #EEEEEE; z-index: 20000; overflow: auto; max-width: 300px; max-height: 300px;"
-            >
-                <div style="margin-bottom:5px;">
-                    <b>Workflow Parameters</b>
-                </div>
+            <div id="workflow-parameters-box">
+                <span class="workflow-parameters-box-title">
+                    Workflow Parameters
+                </span>
                 <div id="workflow-parameters-container"></div>
             </div>
             <div class="workflow-overview" v-show="mode == 'canvas'" aria-hidden="true">
-                <div
-                    style="position: relative; overflow: hidden; width: 100%; height: 100%; border-top: solid gray 1px; border-left: solid grey 1px;"
-                >
-                    <div id="overview" style="position: absolute;">
-                        <canvas
-                            width="0"
-                            height="0"
-                            style="background: white; width: 100%; height: 100%;"
-                            id="overview-canvas"
-                        ></canvas>
-                        <div
-                            id="overview-viewport"
-                            style="position: absolute; width: 0px; height: 0px; border: solid blue 1px; z-index: 10;"
-                        ></div>
+                <div class="workflow-overview-body">
+                    <div id="overview">
+                        <canvas width="0" height="0" id="overview-canvas"></canvas>
+                        <div id="overview-viewport"></div>
                     </div>
                 </div>
             </div>
@@ -157,6 +141,58 @@ export default {
 
 .workflow-report-body {
     display: flex;
+}
+
+.workflow-overview-body {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+    border-top: solid gray 1px;
+    border-left: solid grey 1px;
+}
+
+#canvas-container {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+
+#workflow-parameters-box {
+    display: none;
+    position: absolute;
+    right: 0px;
+    border: solid grey 1px;
+    padding: 5px;
+    background: #eeeeee;
+    z-index: 20000;
+    overflow: auto;
+    max-width: 300px;
+    max-height: 300px;
+}
+
+.workflow-parameters-box-title {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+#overview {
+    position: absolute;
+}
+
+#overview-canvas {
+    background: white;
+    width: 100%;
+    height: 100%;
+}
+
+#overview-viewport {
+    position: absolute;
+    width: 0px;
+    height: 0px;
+    border: solid blue 1px;
+    z-index: 10;
 }
 </style>
 
