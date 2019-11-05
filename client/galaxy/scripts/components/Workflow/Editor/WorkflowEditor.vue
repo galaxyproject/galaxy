@@ -12,6 +12,7 @@
                         role="button"
                         title="Run"
                         aria-label="Run"
+                        @click="navigateToRun"
                         v-show="mode == 'canvas'"
                     >
                         <span class="fa fa-play"></span>
@@ -104,6 +105,7 @@
 <script>
 import WorkflowView from "mvc/workflow/workflow-view";
 import MarkdownEditor from "components/Markdown/MarkdownEditor";
+import { getAppRoot } from "onload/loadConfig";
 
 export default {
     components: { MarkdownEditor },
@@ -126,6 +128,9 @@ export default {
         },
         onReportUpdate(markdown) {
             this.workflowView.report_changed(markdown);
+        },
+        navigateToRun() {
+            window.location = `${getAppRoot()}workflows/run?id=${this.editorConfig.id}`;
         }
     }
 };
