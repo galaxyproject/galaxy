@@ -1232,7 +1232,7 @@ class ColumnListParameter(SelectToolParameter):
             # Use representative dataset if a dataset collection is parsed
             if isinstance(dataset, trans.app.model.HistoryDatasetCollectionAssociation):
                 dataset = dataset.to_hda_representative()
-            if self.ref_input and self.ref_input.formats:
+            if isinstance(dataset, trans.app.model.HistoryDatasetAssociation) and self.ref_input and self.ref_input.formats:
                 target_ext, converted_dataset = dataset.find_conversion_destination(self.ref_input.formats)
                 if target_ext:
                     if not converted_dataset:
