@@ -183,58 +183,6 @@ export default Backbone.View.extend({
         this.options = options;
         this.urls = (options && options.urls) || {};
         this.reportsEditor = reportsEditor;
-        var workflow_index = self.urls.workflow_index;
-        var save_current_workflow = (eventObj, success_callback) => {
-            show_message("Saving workflow", "progress");
-            self.workflow.check_changes_in_active_form();
-            if (!self.workflow.has_changes) {
-                hide_modal();
-                if (success_callback) {
-                    success_callback();
-                }
-                return;
-            }
-            self.workflow.rectify_workflow_outputs();
-            Utils.request({
-                url: `${getAppRoot()}api/workflows/${self.options.id}`,
-                type: "PUT",
-                data: { workflow: self.workflow.to_simple() },
-                success: function(data) {
-                    var body = $("<div/>").text(data.message);
-                    if (data.errors) {
-                        body.addClass("warningmark");
-                        var errlist = $("<ul/>");
-                        $.each(data.errors, (i, v) => {
-                            $("<li/>")
-                                .text(v)
-                                .appendTo(errlist);
-                        });
-                        body.append(errlist);
-                    } else {
-                        body.addClass("donemark");
-                    }
-                    self.workflow.name = data.name;
-                    self.workflow.has_changes = false;
-                    self.workflow.stored = true;
-                    self.workflow.workflow_version = data.version;
-                    self.showWorkflowParameters();
-                    self.build_version_select();
-                    if (data.errors) {
-                        show_modal("Saving workflow", body, {
-                            Ok: hide_modal
-                        });
-                    } else {
-                        if (success_callback) {
-                            success_callback();
-                        }
-                        hide_modal();
-                    }
-                },
-                error: function(response) {
-                    show_modal("Saving workflow failed.", response.err_msg, { Ok: hide_modal });
-                }
-            });
-        };
 
         // Clear search by clicking X button
         $("#search-clear-btn").click(function() {
@@ -476,7 +424,6 @@ export default Backbone.View.extend({
         // Load workflow definition
         this.load_workflow(self.options.id, self.options.version);
         if (make_popupmenu) {
-            $("#workflow-save-button").click(() => save_current_workflow());
             $("#workflow-report-help-button").click(() => show_report_help());
             make_popupmenu($("#workflow-options-button"), {
                 "Save As": workflow_save_as,
@@ -888,6 +835,53 @@ export default Backbone.View.extend({
     report_changed(report_markdown) {
         this.workflow.has_changes = true;
         this.workflow.report.markdown = report_markdown;
+    },
+
+    save_current_workflow() {
+        const self = this;
+        show_message("Saving workflow", "progress");
+        self.workflow.check_changes_in_active_form();
+        if (!self.workflow.has_changes) {
+            hide_modal();
+            return;
+        }
+        self.workflow.rectify_workflow_outputs();
+        Utils.request({
+            url: `${getAppRoot()}api/workflows/${self.options.id}`,
+            type: "PUT",
+            data: { workflow: self.workflow.to_simple() },
+            success: function(data) {
+                var body = $("<div/>").text(data.message);
+                if (data.errors) {
+                    body.addClass("warningmark");
+                    var errlist = $("<ul/>");
+                    $.each(data.errors, (i, v) => {
+                        $("<li/>")
+                            .text(v)
+                            .appendTo(errlist);
+                    });
+                    body.append(errlist);
+                } else {
+                    body.addClass("donemark");
+                }
+                self.workflow.name = data.name;
+                self.workflow.has_changes = false;
+                self.workflow.stored = true;
+                self.workflow.workflow_version = data.version;
+                self.showWorkflowParameters();
+                self.build_version_select();
+                if (data.errors) {
+                    show_modal("Saving workflow", body, {
+                        Ok: hide_modal
+                    });
+                } else {
+                    hide_modal();
+                }
+            },
+            error: function(response) {
+                show_modal("Saving workflow failed.", response.err_msg, { Ok: hide_modal });
+            }
+        });
     },
 
     prebuildNode: function(type, title_text, content_id) {

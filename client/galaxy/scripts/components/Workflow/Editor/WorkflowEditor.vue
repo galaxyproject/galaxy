@@ -24,6 +24,7 @@
                         role="button"
                         title="Save"
                         aria-label="Save"
+                        @click="save"
                         v-show="mode == 'canvas'"
                     >
                         <span class="fa fa-floppy-o"></span>
@@ -131,6 +132,9 @@ export default {
         },
         navigateToRun() {
             window.location = `${getAppRoot()}workflows/run?id=${this.editorConfig.id}`;
+        },
+        save() {
+            this.workflowView.save_current_workflow();
         }
     }
 };
