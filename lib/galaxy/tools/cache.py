@@ -151,7 +151,9 @@ class ToolShedRepositoryCache(object):
     def rebuild(self):
         self.repositories = self.app.install_model.context.current.query(self.app.install_model.ToolShedRepository).options(
             defer(self.app.install_model.ToolShedRepository.metadata),
-            joinedload('tool_dependencies'),
+            joinedload('tool_dependencies').subqueryload('tool_shed_repository').options(
+                defer(self.app.install_model.ToolShedRepository.metadata)
+            ),
         ).all()
         repos_by_tuple = defaultdict(list)
         for repository in self.repositories + self.local_repositories:
