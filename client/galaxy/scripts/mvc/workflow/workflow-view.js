@@ -20,6 +20,25 @@ import { make_popupmenu } from "ui/popupmenu";
 // TODO; tie into Galaxy state?
 window.workflow_globals = window.workflow_globals || {};
 
+const DEFAULT_INVOCATION_REPORT = `
+# Workflow Execution Report
+
+## Workflow Inputs
+\`\`\`galaxy
+invocation_inputs()
+\`\`\`
+
+## Workflow Outputs
+\`\`\`galaxy
+invocation_outputs()
+\`\`\`
+
+## Workflow
+\`\`\`galaxy
+workflow_display()
+\`\`\`
+`;
+
 const reportHelp = `
 <div>
 <h3>Overview</h3>
@@ -159,10 +178,11 @@ function add_node_icon($to_el, nodeType) {
 
 // create form view
 export default Backbone.View.extend({
-    initialize: function(options) {
+    initialize: function(options, reportsEditor) {
         var self = (window.workflow_globals.app = this);
         this.options = options;
         this.urls = (options && options.urls) || {};
+        this.reportsEditor = reportsEditor;
         var workflow_index = self.urls.workflow_index;
         var save_current_workflow = (eventObj, success_callback) => {
             show_message("Saving workflow", "progress");
@@ -403,6 +423,9 @@ export default Backbone.View.extend({
                 success: function(data) {
                     self.reset();
                     self.workflow.from_simple(data, true);
+                    const report = data.report || {};
+                    const markdown = report.markdown || DEFAULT_INVOCATION_REPORT;
+                    self.reportsEditor.input = markdown;
                     self.workflow.has_changes = false;
                     self.workflow.fit_canvas_to_nodes();
                     self.scroll_to_nodes();
@@ -457,9 +480,7 @@ export default Backbone.View.extend({
                 () => (window.location = `${getAppRoot()}workflows/run?id=${self.options.id}`)
             );
             $("#workflow-save-button").click(() => save_current_workflow());
-            $("#workflow-report-button").click(() => edit_report());
             $("#workflow-report-help-button").click(() => show_report_help());
-            $("#workflow-canvas-button").click(() => edit_canvas());
             make_popupmenu($("#workflow-options-button"), {
                 "Save As": workflow_save_as,
                 "Edit Attributes": function() {
@@ -518,21 +539,11 @@ export default Backbone.View.extend({
             self.canvas_manager.draw_overview();
         }
 
-        function edit_report() {
-            $(".workflow-canvas-content").hide();
-            $(".workflow-report-content").show();
-        }
-
         function show_report_help() {
             const reportHelpBody = $(reportHelp);
             show_modal("Workflow Invocation Report Help", reportHelpBody, {
                 Ok: hide_modal
             });
-        }
-
-        function edit_canvas() {
-            $(".workflow-canvas-content").show();
-            $(".workflow-report-content").hide();
         }
 
         // On load, set the size to the pref stored in local storage if it exists
@@ -875,6 +886,11 @@ export default Backbone.View.extend({
         child = this.ext_to_type[child];
         parent = this.ext_to_type[parent];
         return this.type_to_type[child] && parent in this.type_to_type[child];
+    },
+
+    report_changed(report_markdown) {
+        this.workflow.has_changes = true;
+        this.workflow.report.markdown = report_markdown;
     },
 
     prebuildNode: function(type, title_text, content_id) {
