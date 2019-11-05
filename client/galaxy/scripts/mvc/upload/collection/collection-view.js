@@ -425,9 +425,7 @@ export default Backbone.View.extend({
             }
         } else {
             if (this.counter.running == 0) {
-                message = `You added ${
-                    this.counter.announce
-                } file(s) to the queue. Add more files or click 'Start' to proceed.`;
+                message = `You added ${this.counter.announce} file(s) to the queue. Add more files or click 'Start' to proceed.`;
             } else {
                 message = `Please wait...${this.counter.announce} out of ${this.counter.running} remaining.`;
             }

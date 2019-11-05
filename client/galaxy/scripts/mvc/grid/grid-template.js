@@ -68,9 +68,7 @@ export default {
                     '<div popupmenu="popup-global-actions">';
             }
             for (const action of options.global_actions) {
-                tmpl += `<li><a class="action-button use-target" target="${action.target}" href="${
-                    action.url_args
-                }" onclick="return false;" >${action.label}</a></li>`;
+                tmpl += `<li><a class="action-button use-target" target="${action.target}" href="${action.url_args}" onclick="return false;" >${action.label}</a></li>`;
             }
             if (show_popup) {
                 tmpl += "</div>";
@@ -110,9 +108,7 @@ export default {
             if (column.visible) {
                 tmpl += `<th id="${column.key}-header">`;
                 if (column.sortable) {
-                    tmpl += `<a href="javascript:void(0)" class="sort-link" sort_key="${column.key}">${
-                        column.label
-                    }</a>`;
+                    tmpl += `<a href="javascript:void(0)" class="sort-link" sort_key="${column.key}">${column.label}</a>`;
                 } else {
                     tmpl += column.label;
                 }
@@ -150,9 +146,7 @@ export default {
 
             // Item selection column
             if (options.show_item_checkboxes) {
-                tmpl += `<td style="width: 1.5em;"><input type="checkbox" name="id" value="${item.encode_id}" id="${
-                    item.encode_id
-                }" class="grid-row-select-checkbox" /></td>`;
+                tmpl += `<td style="width: 1.5em;"><input type="checkbox" name="id" value="${item.encode_id}" id="${item.encode_id}" class="grid-row-select-checkbox" /></td>`;
             }
 
             // Data columns
@@ -188,9 +182,7 @@ export default {
 
                     // Determine cell content
                     if (column.delayed) {
-                        tmpl += `<div class="delayed-value-${column.key}" data-id="${
-                            item.encode_id
-                        }" data-value="${value}"><span class="fa fa-spinner fa-spin"></span></div>`;
+                        tmpl += `<div class="delayed-value-${column.key}" data-id="${item.encode_id}" data-value="${value}"><span class="fa fa-spinner fa-spin"></span></div>`;
                     } else if (column.attach_popup && link) {
                         tmpl += `<div class="btn-group">
                                     <button class="btn btn-secondary use-target" target="${target}" href="${link}" onclick="return false;">${value}</button>
@@ -304,9 +296,7 @@ export default {
             // configure buttons for operations
             for (const operation of options.operations) {
                 if (operation.allow_multiple) {
-                    tmpl += `<input type="button" value="${
-                        operation.label
-                    }" class="operation-button action-button">&nbsp;`;
+                    tmpl += `<input type="button" value="${operation.label}" class="operation-button action-button">&nbsp;`;
                 }
             }
 
@@ -455,9 +445,7 @@ export default {
                         if (column.is_text) {
                             filter_value = JSON.stringify(filter_value);
                         }
-                        tmpl += `<input type="hidden" id="${column.key}" name="f-${
-                            column.key
-                        }" value="${filter_value}"/>`;
+                        tmpl += `<input type="hidden" id="${column.key}" name="f-${column.key}" value="${filter_value}"/>`;
                     }
                 }
             }
