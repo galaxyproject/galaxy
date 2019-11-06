@@ -547,8 +547,11 @@ class ToolEvaluator(object):
             environment_variable_template = environment_variable_def["template"]
             inject = environment_variable_def.get("inject")
             if inject == "api_key":
-                from galaxy.managers import api_keys
-                environment_variable_template = api_keys.ApiKeyManager(self.app).get_or_create_api_key(self._user)
+                if self._user:
+                    from galaxy.managers import api_keys
+                    environment_variable_template = api_keys.ApiKeyManager(self.app).get_or_create_api_key(self._user)
+                else:
+                    environment_variable_template = ""
                 is_template = False
             else:
                 is_template = True
