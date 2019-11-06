@@ -13,8 +13,6 @@ import requests
 
 log = logging.getLogger(__name__)
 
-# TODO: drop this in lieu of per-request cache?
-MULLED_TAG_CACHE = collections.defaultdict(dict)
 QUAY_REPOSITORY_API_ENDPOINT = 'https://quay.io/api/v1/repository'
 
 
@@ -85,27 +83,23 @@ def mulled_tags_for(namespace, image, tag_prefix=None, resolution_cache=None):
             return []
 
     cache_key = "galaxy.tool_util.deps.container_resolvers.mulled.util:tag_cache"
-    tag_cache = MULLED_TAG_CACHE
-    tag_cache_timeout = 300
     if resolution_cache is not None:
         if cache_key not in resolution_cache:
             resolution_cache[cache_key] = collections.defaultdict(dict)
         tag_cache = resolution_cache.get(cache_key)
-        tag_cache_timeout = 10000
+    else:
+        tag_cache = collections.defaultdict(dict)
 
     tags_cached = False
     if namespace in tag_cache:
         if image in tag_cache[namespace]:
-            tags, last_checked = tag_cache[namespace][image]
-            if not tags and time.time() - last_checked < tag_cache_timeout:
-                # it's possible we haven't seen the tags before, we check every 5 minutes
-                tags_cached = False
-            else:
-                tags_cached = True
+            tags = tag_cache[namespace][image]
+            tags_cached = True
+
     if not tags_cached:
         tags = quay_versions(namespace, image)
-        last_checked = time.time()
-        tag_cache[namespace][image] = (tags, last_checked)
+        tag_cache[namespace][image] = tags
+
     if tag_prefix is not None:
         tags = [t for t in tags if t.startswith(tag_prefix)]
     tags = version_sorted(tags)

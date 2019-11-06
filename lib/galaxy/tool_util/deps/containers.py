@@ -12,6 +12,7 @@ from .container_classes import (
     NULL_CONTAINER,
     SINGULARITY_CONTAINER_TYPE,
 )
+from .container_resolvers import ResolutionCache
 from .container_resolvers.explicit import (
     ExplicitContainerResolver,
     ExplicitSingularityContainerResolver,
@@ -122,6 +123,12 @@ class ContainerFinder(object):
 
         return NULL_CONTAINER
 
+    def resolution_cache(self):
+        cache = ResolutionCache()
+        if self.container_registry.mulled_resolution_cache is not None:
+            cache.mulled_resolution_cache = self.container_registry.mulled_resolution_cache
+        return cache
+
     def __overridden_container_id(self, container_type, destination_info):
         if not self.__container_type_enabled(container_type, destination_info):
             return None
@@ -187,6 +194,19 @@ class ContainerRegistry(object):
         self.enable_mulled_containers = app_info.enable_mulled_containers
         self.app_info = app_info
         self.container_resolvers = self.__build_container_resolvers(app_info)
+        self.mulled_resolution_cache = None
+        if app_info.mulled_resolution_cache_type:
+            # Do not want to make beaker a required dependency of container resolution, that doesn't make a lot
+            # of sense. We can inject this cache from galaxy-app if people would prefer to have imports somewhere
+            # else.
+            from beaker.cache import CacheManager
+            from beaker.util import parse_cache_config_options
+            cache_opts = {
+                'cache.type': app_info.mulled_resolution_cache_type,
+                'cache.data_dir': app_info.mulled_resolution_cache_data_dir,
+                'cache.lock_dir': app_info.mulled_resolution_cache_lock_dir,
+            }
+            self.mulled_resolution_cache = CacheManager(**parse_cache_config_options(cache_opts)).get_cache('mulled_resolution')
 
     def __build_container_resolvers(self, app_info):
         conf_file = getattr(app_info, 'containers_resolvers_config_file', None)

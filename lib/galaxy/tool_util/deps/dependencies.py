@@ -17,6 +17,10 @@ class AppInfo(object):
         involucro_path=None,
         involucro_auto_init=True,
         mulled_channels=DEFAULT_CHANNELS,
+        mulled_resolution_cache_type=None,
+        mulled_resolution_cache_data_dir=None,
+        mulled_resolution_cache_lock_dir=None,
+
     ):
         self.galaxy_root_dir = galaxy_root_dir
         self.default_file_path = default_file_path
@@ -29,6 +33,9 @@ class AppInfo(object):
         self.involucro_path = involucro_path
         self.involucro_auto_init = involucro_auto_init
         self.mulled_channels = mulled_channels
+        self.mulled_resolution_cache_type = mulled_resolution_cache_type
+        self.mulled_resolution_cache_data_dir = mulled_resolution_cache_data_dir
+        self.mulled_resolution_cache_lock_dir = mulled_resolution_cache_lock_dir
 
 
 class ToolInfo(object):

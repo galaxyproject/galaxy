@@ -236,10 +236,26 @@ def singularity_cached_container_description(targets, cache_directory, hash_func
 
 
 def targets_to_mulled_name(targets, hash_func, namespace, resolution_cache=None):
+    mulled_resolution_cache = None
+    if resolution_cache and hasattr(resolution_cache, 'mulled_resolution_cache'):
+        mulled_resolution_cache = resolution_cache.mulled_resolution_cache
+
     name = None
+
+    def cached_name(cache_key):
+        if mulled_resolution_cache:
+            if cache_key in mulled_resolution_cache:
+                return resolution_cache.get(cache_key)
+        return None
+
     if len(targets) == 1:
         target = targets[0]
         target_version = target.version
+        cache_key = "ns[%s]__single__%s__@__%s" % (namespace, target.package_name, target_version)
+        name = cached_name(cache_key)
+        if name:
+            return name
+
         tags = mulled_tags_for(namespace, target.package_name, resolution_cache=resolution_cache)
 
         if not tags:
@@ -277,6 +293,11 @@ def targets_to_mulled_name(targets, hash_func, namespace, resolution_cache=None)
         else:
             raise Exception("Unimplemented mulled hash_func [%s]" % hash_func)
 
+        cache_key = "ns[%s]__%s__%s" % (namespace, hash_func, base_image_name)
+        name = cached_name(cache_key)
+        if name:
+            return name
+
         tag = first_tag_if_available(base_image_name)
         if tag:
             if ":" in base_image_name:
@@ -288,6 +309,9 @@ def targets_to_mulled_name(targets, hash_func, namespace, resolution_cache=None)
                 # base_image_name of form <package_hash>, simply add build number
                 # as tag to fully qualify image.
                 name = "%s:%s" % (base_image_name, tag)
+
+    if name and mulled_resolution_cache:
+        mulled_resolution_cache.put(cache_key, name)
 
     return name
 

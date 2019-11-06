@@ -1,6 +1,5 @@
 from galaxy import exceptions
 from galaxy.util import asbool, listify
-from .container_resolvers import ResolutionCache
 from .dependencies import ToolInfo
 from .resolvers import (
     ContainerDependency,
@@ -372,7 +371,7 @@ class ContainerResolutionView(object):
         rval = []
         resolve_kwds = kwds.copy()
         tool_ids = resolve_kwds.pop("tool_ids", None)
-        resolve_kwds["resolution_cache"] = ResolutionCache()
+        resolve_kwds["resolution_cache"] = self._app.container_finder.resolution_cache()
         if tool_ids is not None:
             tool_ids = listify(tool_ids)
         for tool_id, tool in self._app.toolbox.tools_by_id.items():

@@ -766,6 +766,30 @@ mapping:
           external sources such as https://doi.org/ by Galaxy - the following
           parameters can be used to control the caching used to store this information.
 
+      mulled_resolution_cache_type:
+        type: str
+        default: file
+        required: false
+        desc: |
+          Mulled resolution caching. Mulled resolution uses external APIs of quay.io, these
+          requests are caching using this and the following parameters
+
+      mulled_resolution_cache_data_dir:
+        type: str
+        default: citations/data
+        path_resolves_to: data_dir
+        required: false
+        desc: |
+          Data directory used by beaker for caching mulled resolution requests.
+
+      mulled_resolution_cache_lock_dir:
+        type: str
+        default: citations/locks
+        path_resolves_to: data_dir
+        required: false
+        desc: |
+          Lock directory used by beaker for caching mulled resolution requests.
+
       object_store_config_file:
         type: str
         default: object_store_conf.xml

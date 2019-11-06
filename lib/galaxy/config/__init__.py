@@ -1032,6 +1032,9 @@ class ConfiguresGalaxyMixin(object):
             involucro_path=self.config.involucro_path,
             involucro_auto_init=self.config.involucro_auto_init,
             mulled_channels=self.config.mulled_channels,
+            mulled_resolution_cache_type=self.config.mulled_resolution_cache_type,
+            mulled_resolution_cache_data_dir=self.config.mulled_resolution_cache_data_dir,
+            mulled_resolution_cache_lock_dir=self.config.mulled_resolution_cache_lock_dir,
         )
         self.container_finder = containers.ContainerFinder(app_info)
         self._set_enabled_container_types()
