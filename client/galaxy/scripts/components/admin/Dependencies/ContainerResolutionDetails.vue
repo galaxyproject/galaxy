@@ -1,6 +1,6 @@
 <template>
     <b-card>
-        <div class="row">
+        <div class="row" v-if="includeToolContext">
             <div class="col">
                 <span v-if="singleTool || resolution.tool_ids.length == 1">Tool</span>
                 <span v-else>Tools</span>
@@ -66,6 +66,10 @@ export default {
         resolution: {
             type: Object,
             required: true
+        },
+        includeToolContext: {
+            type: Boolean,
+            default: true
         }
     },
     computed: {

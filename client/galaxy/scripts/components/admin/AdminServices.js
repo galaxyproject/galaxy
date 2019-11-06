@@ -110,3 +110,14 @@ export async function resolveContainersWithInstall(toolIds, params_) {
         rethrowSimple(e);
     }
 }
+
+export async function getTools() {
+    const params = {"in_panel": "false"};
+    const url = `${getAppRoot()}api/tools`;
+    try {
+        const response = await axios.get(url, { params: params });
+        return response.data;
+    } catch (e) {
+        rethrowSimple(e);
+    }
+}

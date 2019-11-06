@@ -10,6 +10,7 @@ import DataTypes from "components/admin/DataTypes.vue";
 import Jobs from "components/admin/Jobs.vue";
 import ActiveInvocations from "components/admin/ActiveInvocations.vue";
 import Landing from "components/admin/Dependencies/Landing.vue";
+import Tools from "components/admin/Tools.vue";
 import DataManagerView from "components/admin/DataManager/DataManagerView.vue";
 import DataManagerRouter from "components/admin/DataManager/DataManagerRouter.vue";
 import Register from "components/login/Register.vue";
@@ -42,6 +43,7 @@ export const getAdminRouter = (Galaxy, options) => {
             "(/)admin/jobs": "show_jobs",
             "(/)admin/invocations": "show_invocations",
             "(/)admin/toolbox_dependencies": "show_toolbox_dependencies",
+            "(/)admin/tools": "show_tools",
             "(/)admin/data_manager*path": "show_data_manager",
             "(/)admin(/)reset_metadata": "show_reset_metadata",
             "*notFound": "not_found"
@@ -135,6 +137,10 @@ export const getAdminRouter = (Galaxy, options) => {
 
         show_toolbox_dependencies: function() {
             this._display_vue_helper(Landing);
+        },
+
+        show_tools: function() {
+            this._display_vue_helper(Tools);
         },
 
         show_error_stack: function() {

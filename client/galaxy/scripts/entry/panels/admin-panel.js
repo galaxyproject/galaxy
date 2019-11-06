@@ -94,6 +94,12 @@ const AdminPanel = Backbone.View.extend({
                 title: _l("Tool Management"),
                 items: [
                     {
+                        title: _l("Manage"),
+                        url: "admin/tools",
+                        target: "__use_router__",
+                        id: "admin-link-manage-tools"
+                    },
+                    {
                         title: _l("Install and Uninstall"),
                         url: "admin/toolshed",
                         target: "__use_router__",
