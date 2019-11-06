@@ -261,32 +261,34 @@ def targets_to_mulled_name(targets, hash_func, namespace, resolution_cache=None)
             version, build = split_tag(tags[0])
             name = "%s:%s--%s" % (target.package_name, version, build)
     else:
-        def tags_if_available(image_name):
+        def first_tag_if_available(image_name):
             if ":" in image_name:
                 repo_name, tag_prefix = image_name.split(":", 2)
             else:
                 repo_name = image_name
                 tag_prefix = None
             tags = mulled_tags_for(namespace, repo_name, tag_prefix=tag_prefix, resolution_cache=resolution_cache)
-            return tags
+            return tags[0] if tags else None
 
         if hash_func == "v2":
             base_image_name = v2_image_name(targets)
-            tags = tags_if_available(base_image_name)
-            if tags:
-                if ":" in base_image_name:
-                    # base_image_name of form <package_hash>:<version_hash>, expand tag
-                    # to include build number in tag.
-                    name = "%s:%s" % (base_image_name.split(":")[0], tags[0])
-                else:
-                    # base_image_name of form <package_hash>, simply add build number
-                    # as tag to fully qualify image.
-                    name = "%s:%s" % (base_image_name, tags[0])
         elif hash_func == "v1":
             base_image_name = v1_image_name(targets)
-            tags = tags_if_available(base_image_name)
-            if tags:
-                name = "%s:%s" % (base_image_name, tags[0])
+        else:
+            raise Exception("Unimplemented mulled hash_func [%s]" % hash_func)
+
+        tag = first_tag_if_available(base_image_name)
+        if tag:
+            if ":" in base_image_name:
+                assert hash_func != "v1"
+                # base_image_name of form <package_hash>:<version_hash>, expand tag
+                # to include build number in tag.
+                name = "%s:%s" % (base_image_name.split(":")[0], tag)
+            else:
+                # base_image_name of form <package_hash>, simply add build number
+                # as tag to fully qualify image.
+                name = "%s:%s" % (base_image_name, tag)
+
     return name
 
 
