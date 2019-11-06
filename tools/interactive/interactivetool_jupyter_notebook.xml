@@ -5,7 +5,7 @@
     <entry_points>
         <entry_point name="Jupyter Interactive Tool" requires_domain="True">
             <port>8888</port>
-            <url>ipython/tree</url>
+            <url>ipython/lab</url>
         </entry_point>
     </entry_points>
     <environment_variables>
