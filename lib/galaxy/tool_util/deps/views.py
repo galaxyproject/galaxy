@@ -266,8 +266,13 @@ class DependencyResolversView(object):
         if 'install' in kwds:
             summary_kwds['install'] = asbool(kwds['install'])
 
+        tool_ids = pop_tool_ids(kwds)
+
         rval = []
         for tid, tool in self._app.toolbox.tools_by_id.items():
+            if tool_ids and tid not in tool_ids:
+                continue
+
             requirements = tool.tool_requirements
             status = self.get_requirements_status(tool_requirements_d={tid: requirements},
                                                   installed_tool_dependencies=tool.installed_tool_dependencies,
@@ -370,12 +375,12 @@ class ContainerResolutionView(object):
     def resolve_toolbox(self, **kwds):
         rval = []
         resolve_kwds = kwds.copy()
-        tool_ids = resolve_kwds.pop("tool_ids", None)
+        tool_ids = pop_tool_ids(resolve_kwds)
         resolve_kwds["resolution_cache"] = self._app.container_finder.resolution_cache()
         if tool_ids is not None:
             tool_ids = listify(tool_ids)
         for tool_id, tool in self._app.toolbox.tools_by_id.items():
-            if tool_ids is not None and tool_id in tool_ids:
+            if tool_ids is not None and tool_id not in tool_ids:
                 continue
 
             if tool.tool_action.produces_real_jobs:
@@ -389,3 +394,14 @@ class ContainerResolutionView(object):
     def _container_resolver(self, index):
         index = int(index)
         return self._container_resolvers[index]
+
+
+def pop_tool_ids(kwds):
+    tool_ids = None
+    if "tool_ids" in kwds:
+        tool_ids = listify(kwds.pop("tool_ids"))
+    if "tool_ids[]" in kwds:
+        tool_ids = listify(kwds.pop("tool_ids[]"))
+    if "tool_id" in kwds:
+        tool_ids = [kwds.pop("tool_id")]
+    return tool_ids
