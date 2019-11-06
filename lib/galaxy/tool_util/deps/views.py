@@ -238,9 +238,10 @@ class DependencyResolversView(object):
         if 'install' in kwds:
             summary_kwds['install'] = asbool(kwds['install'])
 
+        tool_ids_by_requirements = self.tool_ids_by_requirements
         statuses = {r: self.get_requirements_status(tool_requirements_d={tids[0]: r},
                                                 installed_tool_dependencies=self._app.toolbox.tools_by_id[tids[0]].installed_tool_dependencies, **summary_kwds)
-                for r, tids in self.tool_ids_by_requirements.items()}
+                for r, tids in tool_ids_by_requirements.items()}
         if kwds.get("for_json", False):
             # All public attributes of this class should be returning JSON - this is meant to mimic a restful API.
             rval = []
@@ -248,7 +249,7 @@ class DependencyResolversView(object):
                 item = {}
                 item["requirements"] = requirements.to_dict()
                 item["status"] = status
-                item["tool_ids"] = self.tool_ids_by_requirements[requirements]
+                item["tool_ids"] = tool_ids_by_requirements[requirements]
                 rval.append(item)
             statuses = rval
         return statuses
