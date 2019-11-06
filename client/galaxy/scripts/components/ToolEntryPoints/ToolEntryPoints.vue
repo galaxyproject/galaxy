@@ -25,7 +25,8 @@
             </ul>
         </div>
 
-        You may also access all active InteractiveTools from the <a :href="appRoot() + 'interactivetool_entry_points/list'"> User menu </a>.
+        You may also access all active InteractiveTools from the
+        <a :href="appRoot() + 'interactivetool_entry_points/list'">User menu</a>.
     </div>
 </template>
 
