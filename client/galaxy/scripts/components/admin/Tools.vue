@@ -3,13 +3,21 @@
         <div v-if="error" class="alert alert-danger" show>{{ error }}</div>
         <div v-else>
             <loading-span v-if="loading" :message="loadingMessage" />
-            <b-table id="manage-tools-table" striped :fields="fields" :items="items" @row-clicked="showRowDetails">
-                <template v-slot:cell(tool_id)="data">
-                    {{ data.item.tool.id }}
-                </template>
-                <template v-slot:cell(tool_version)="data">
-                    {{ data.item.tool.version }}
-                </template>
+            <!-- search header borrowed from WorkflowList.vue -->
+            <b-row class="mb-3">
+                <b-col cols="6">
+                    <b-input
+                        id="tool-search"
+                        class="m-1"
+                        name="query"
+                        placeholder="Search Tool IDs"
+                        autocomplete="off"
+                        type="text"
+                        v-model="filter"
+                    />
+                </b-col>
+            </b-row>
+            <b-table id="manage-tools-table" striped :fields="fields" :items="items" @row-clicked="showRowDetails" :filter="filter">
                 <template v-slot:cell(link)="data">
                     <b-button
                         v-b-tooltip.hover.bottom
@@ -45,8 +53,9 @@ export default {
             loading: true,
             loadingMessage: 'Loading available Galaxy tools...',
             error: null,
-            fields: [{ key: "tool_id", label: "ID" }, { key: "tool_version", label: "Version" }, { key: "link", label: "" }],
-            tools: []
+            fields: [{ key: "tool_id", label: "ID", sortable: true }, { key: "tool_version", label: "Version", sortable: true }, { key: "link", label: "" }],
+            tools: [],
+            filter: ""
         };
     },
     created() {
@@ -64,13 +73,14 @@ export default {
                     repo.owner = tool.tool_shed_repository.owner;
                     repo.name = tool.tool_shed_repository.name;
                 }
-                return { tool: tool, repo: repo, selected: false, _showDetails: false };
+                return { tool: tool, tool_id: tool.id, tool_version: tool.version, repo: repo, selected: false, _showDetails: false };
             });
         },
     },
     methods: {
         load() {
             this.loading = true;
+            this.filter = "";
             getTools()
                 .then(tools => {
                     this.tools = tools;
