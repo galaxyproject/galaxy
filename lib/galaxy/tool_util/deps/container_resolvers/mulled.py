@@ -236,6 +236,14 @@ def singularity_cached_container_description(targets, cache_directory, hash_func
 
 
 def targets_to_mulled_name(targets, hash_func, namespace, resolution_cache=None):
+    unresolved_cache_key = "galaxy.tool_util.deps.container_resolvers.mulled:unresolved"
+    if resolution_cache is not None:
+        if unresolved_cache_key not in resolution_cache:
+            resolution_cache[unresolved_cache_key] = set()
+        unresolved_cache = resolution_cache.get(unresolved_cache_key)
+    else:
+        unresolved_cache = set()
+
     mulled_resolution_cache = None
     if resolution_cache and hasattr(resolution_cache, 'mulled_resolution_cache'):
         mulled_resolution_cache = resolution_cache.mulled_resolution_cache
@@ -252,30 +260,31 @@ def targets_to_mulled_name(targets, hash_func, namespace, resolution_cache=None)
         target = targets[0]
         target_version = target.version
         cache_key = "ns[%s]__single__%s__@__%s" % (namespace, target.package_name, target_version)
+        if cache_key in unresolved_cache:
+            return None
         name = cached_name(cache_key)
         if name:
             return name
 
         tags = mulled_tags_for(namespace, target.package_name, resolution_cache=resolution_cache)
 
-        if not tags:
-            return None
+        if tags:
+            if target_version:
+                for tag in tags:
+                    if '--' in tag:
+                        version, build = split_tag(tag)
+                    else:
+                        version = tag
+                        build = None
+                    if version == target_version:
+                        name = "%s:%s" % (target.package_name, version)
+                        if build:
+                            name = "%s--%s" % (name, build)
+                        break
+            else:
+                version, build = split_tag(tags[0])
+                name = "%s:%s--%s" % (target.package_name, version, build)
 
-        if target_version:
-            for tag in tags:
-                if '--' in tag:
-                    version, build = split_tag(tag)
-                else:
-                    version = tag
-                    build = None
-                if version == target_version:
-                    name = "%s:%s" % (target.package_name, version)
-                    if build:
-                        name = "%s--%s" % (name, build)
-                    break
-        else:
-            version, build = split_tag(tags[0])
-            name = "%s:%s--%s" % (target.package_name, version, build)
     else:
         def first_tag_if_available(image_name):
             if ":" in image_name:
@@ -294,6 +303,8 @@ def targets_to_mulled_name(targets, hash_func, namespace, resolution_cache=None)
             raise Exception("Unimplemented mulled hash_func [%s]" % hash_func)
 
         cache_key = "ns[%s]__%s__%s" % (namespace, hash_func, base_image_name)
+        if cache_key in unresolved_cache:
+            return None
         name = cached_name(cache_key)
         if name:
             return name
@@ -312,6 +323,9 @@ def targets_to_mulled_name(targets, hash_func, namespace, resolution_cache=None)
 
     if name and mulled_resolution_cache:
         mulled_resolution_cache.put(cache_key, name)
+
+    if name is None:
+        unresolved_cache.add(name)
 
     return name
 
