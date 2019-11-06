@@ -129,6 +129,9 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
                                         tags=ldda_tags))
                 if content_item.library_dataset_dataset_association.message:
                     return_item.update(dict(message=content_item.library_dataset_dataset_association.message))
+                elif content_item.library_dataset_dataset_association.info:
+                    # There is no message but ldda info contains something so we display that instead.
+                    return_item.update(dict(message=content_item.library_dataset_dataset_association.info))
 
             # For every item include the default metadata
             return_item.update(dict(id=encoded_id,
