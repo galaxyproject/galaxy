@@ -5,7 +5,7 @@
         loading-message="Loading container resolution information"
     >
         <template v-slot:header>
-            <div>
+            <b-row class="m-1">
                 <b-form inline>
                     <b>Resolution:</b>
                     <label class="mr-sm-2" for="manage-container-type">Resolve containers of type</label>
@@ -23,8 +23,8 @@
                         :options="resolverTypeOptions"
                     ></b-form-select>
                 </b-form>
-            </div>
-            <div>
+            </b-row>
+            <b-row class="m-1">
                 <b-form inline>
                     <b>Filter:</b>
                     <label class="mr-sm-2" for="manage-filter-resolution">Resolution</label>
@@ -58,15 +58,16 @@
                         :options="resolverTypeOptions"
                     ></b-form-select>
                 </b-form>
-            </div>
+            </b-row>
         </template>
         <template v-slot:actions>
-            <div>
+            <b-row class="m-1">
                 <b-button class="mb-2 mr-sm-2 mb-sm-0" @click="installSelected">
                     <!-- v-bind:disabled="!hasSelection"  -->
+                    <span class="fa fa-plus" />
                     Attempt Build
                 </b-button>
-            </div>
+            </b-row>
         </template>
         <template v-slot:body>
             <b-table id="containers-table" striped :fields="fields" :items="items" @row-clicked="showRowDetails">

@@ -5,7 +5,7 @@
         loading-message="Loading tool requirement resolution information"
     >
         <template v-slot:header>
-            <div>
+            <b-row class="m-1">
                 <b-form inline>
                     <b>Resolution:</b>
                     <label class="mr-sm-2" for="manage-resolver-type">Using resolvers of type</label>
@@ -16,8 +16,8 @@
                         :options="resolverTypeOptions"
                     ></b-form-select>
                 </b-form>
-            </div>
-            <div>
+            </b-row>
+            <b-row class="m-1">
                 <b-form inline>
                     <b>Filter:</b>
                     <label class="mr-sm-2" for="manage-filter-resolution">Resolution</label>
@@ -31,7 +31,7 @@
                         <option value="resolved">Resolved</option>
                     </b-form-select>
                 </b-form>
-            </div>
+            </b-row>
         </template>
         <template v-slot:body>
             <b-table id="requirements-table" striped :fields="fields" :items="items" @row-clicked="showRowDetails">
@@ -56,22 +56,26 @@
             </b-table>
         </template>
         <template v-slot:actions>
-            <div>
-                <b-button @click="installSelected">
+            <b-row class="m-1">
+                <b-button class="m-1" @click="installSelected">
+                    <span class="fa fa-plus" />
                     <!-- v-bind:disabled="!hasSelection"  -->
                     Install
                 </b-button>
-                <b-button @click="uninstallSelected">
+                <b-button class="m-1" @click="uninstallSelected">
+                    <span class="fa fa-minus" />
                     <!-- v-bind:disabled="!hasSelection"  -->
                     Uninstall
                 </b-button>
-                <b-button @click="setExpandToolIds(true)" v-if="!expandToolIds">
+                <b-button class="m-1" @click="setExpandToolIds(true)" v-if="!expandToolIds">
+                    <span class="fa fa-chevron-down" />
                     Expand Tools
                 </b-button>
-                <b-button @click="setExpandToolIds(false)" v-if="expandToolIds">
+                <b-button class="m-1" @click="setExpandToolIds(false)" v-if="expandToolIds">
+                    <span class="fa fa-chevron-up" />
                     Group by Requirements
                 </b-button>
-            </div>
+            </b-row>
         </template>
     </dependency-index-wrapper>
 </template>
