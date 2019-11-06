@@ -1,5 +1,5 @@
 """
-API operations allowing clients to manage tool dependencies.
+API operations allowing clients to manage container resolution.
 """
 import logging
 
