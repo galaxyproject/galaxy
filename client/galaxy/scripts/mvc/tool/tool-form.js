@@ -125,16 +125,12 @@ const View = Backbone.View.extend({
         const options = form.model.attributes;
         var inputs = options.inputs;
         inputs.push({
-            name: `pja__-TEMPVAR_REPLACE-__EmailAction`,
+            name: `send_email_notification`,
             label: "Email notification",
             type: "boolean",
-            /*TODO: change value to pull from input*/
-            value: "true",
+            value: "false",
             ignore: "false",
-            help: _l("An email notification will be sent when the job has completed."),
-            payload: {
-                host: window.location.host
-            }
+            help: _l("This option allows notification by email when the job has completed.")
         });
         // build execute button
         const execute_button = new Ui.Button({
