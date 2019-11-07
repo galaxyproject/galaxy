@@ -1,4 +1,4 @@
-<tool id="interactive_tool_simple" name="interactivetool_simple" tool_type="interactive" version="0.1">
+<tool id="interactivetool_simple" name="interactivetool_simple" tool_type="interactive" version="0.1">
     <requirements>
         <container type="docker">galaxy/test-http-example:0.1</container>
     </requirements>

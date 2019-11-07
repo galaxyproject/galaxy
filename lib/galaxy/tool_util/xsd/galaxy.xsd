@@ -4670,6 +4670,21 @@ variable instead of shell variable.
 </command>
 ```
 
+### inject
+
+The Galaxy user's API key can be injected into an environment variable by setting ``inject``
+attribute to ``api_key`` (e.g. ``inject="api_key"``).
+
+```xml
+<environment_variables>
+    <environment_variable name="GALAXY_API_KEY" inject="api_key" />
+</environment_variables>
+```
+
+The framework allows setting this via environment variable and not via templating variables
+in order to discourage setting the actual values of these keys as command line arguments.
+On shared systems this provides some security by preventing a simple process listing command
+from exposing keys.
 ]]></xs:documentation>
     </xs:annotation>
     <xs:simpleContent>
@@ -4680,15 +4695,27 @@ variable instead of shell variable.
 define.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
+        <xs:attribute name="inject" type="EnvironmentVariableInject" gxdocs:added="19.09">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Special variable to inject into the environment variable. Currently 'api_key' is the only option and will cause the user's API key to be injected via this environment variable.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
         <xs:attribute name="strip" type="PermissiveBoolean" default="false">
-        <xs:annotation>
-          <xs:documentation xml:lang="en">Whether to strip leading and trailing whitespace from the calculated value before exporting the environment variable.</xs:documentation>
-        </xs:annotation>
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Whether to strip leading and trailing whitespace from the calculated value before exporting the environment variable.</xs:documentation>
+          </xs:annotation>
       </xs:attribute>
       </xs:extension>
     </xs:simpleContent>
   </xs:complexType>
-
+  <xs:simpleType name="EnvironmentVariableInject">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"></xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="api_key" />
+    </xs:restriction>
+  </xs:simpleType>
   <xs:complexType name="ConfigFiles">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[See

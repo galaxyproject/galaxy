@@ -33,6 +33,7 @@ from ..tools_support import UsesApp
 # To Test:
 # - param_file handling.
 TEST_TOOL_DIRECTORY = "/path/to/the/tool"
+TEST_GALAXY_URL = "http://mycool.galaxyproject.org:8456"
 
 
 class ToolEvaluatorTestCase(TestCase, UsesApp):
@@ -42,6 +43,7 @@ class ToolEvaluatorTestCase(TestCase, UsesApp):
         self.tool = MockTool(self.app)
         self.job = Job()
         self.job.history = History()
+        self.job.history.id = 42
         self.job.parameters = [JobParameter(name="thresh", value="4")]
         self.evaluator = ToolEvaluator(self.app, self.tool, self.job, self.test_directory)
 
@@ -64,6 +66,18 @@ class ToolEvaluatorTestCase(TestCase, UsesApp):
         self._set_compute_environment()
         command_line, extra_filenames, _ = self.evaluator.build()
         self.assertEqual(command_line, "prog1  4 5")
+
+    def test_eval_galaxy_url(self):
+        self.tool._command_line = "prog1 $__galaxy_url__"
+        self._set_compute_environment()
+        command_line, extra_filenames, _ = self.evaluator.build()
+        self.assertEqual(command_line, "prog1 %s" % TEST_GALAXY_URL)
+
+    def test_eval_history_id(self):
+        self.tool._command_line = "prog1 '$__history_id__'"
+        self._set_compute_environment()
+        command_line, extra_filenames, _ = self.evaluator.build()
+        self.assertEqual(command_line, "prog1 '%s'" % self.app.security.encode_id(42))
 
     def test_conditional_evaluation(self):
         select_xml = XML('''<param name="always_true" type="select"><option value="true">True</option></param>''')
@@ -260,6 +274,9 @@ class TestComputeEnvironment(SimpleComputeEnvironment):
 
     def tool_directory(self):
         return TEST_TOOL_DIRECTORY
+
+    def galaxy_url(self):
+        return TEST_GALAXY_URL
 
 
 class MockTool(object):

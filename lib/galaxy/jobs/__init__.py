@@ -2401,6 +2401,10 @@ class ComputeEnvironment(object):
     def tmp_directory(self):
         """Temp directory of target job - none if HOME should not be set."""
 
+    @abstractmethod
+    def galaxy_url(self):
+        """URL to access Galaxy API from for this compute environment."""
+
 
 class SimpleComputeEnvironment(object):
 
@@ -2454,6 +2458,9 @@ class SharedComputeEnvironment(SimpleComputeEnvironment):
 
     def tmp_directory(self):
         return self.job_wrapper.tmp_directory()
+
+    def galaxy_url(self):
+        return self.job_wrapper.get_destination_configuration("galaxy_infrastructure_url")
 
 
 class NoopQueue(object):

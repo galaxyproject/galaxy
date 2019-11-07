@@ -1,4 +1,4 @@
-<tool id="interactive_tool_two_entry_points" name="interactivetool_two_entry_points" tool_type="interactive" version="0.1">
+<tool id="interactivetool_two_entry_points" name="interactivetool_two_entry_points" tool_type="interactive" version="0.1">
     <requirements>
         <container type="docker">galaxy/test-http-example:0.1</container>
     </requirements>
