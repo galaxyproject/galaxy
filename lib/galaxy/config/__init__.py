@@ -353,6 +353,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.database_engine_options = get_database_engine_options(kwargs)
         self.database_create_tables = string_as_bool(kwargs.get('database_create_tables', 'True'))
         self.database_encoding = kwargs.get('database_encoding')  # Create new databases with this encoding
+        self.database_log_query_counts = string_as_bool(kwargs.get("database_log_query_counts", 'False'))
         self.thread_local_log = None
         if self.enable_per_request_sql_debugging:
             self.thread_local_log = threading.local()
@@ -922,7 +923,8 @@ def init_models_from_config(config, map_install_models=False, object_store=None,
         trace_logger=trace_logger,
         use_pbkdf2=config.get_bool('use_pbkdf2', True),
         slow_query_log_threshold=config.slow_query_log_threshold,
-        thread_local_log=config.thread_local_log
+        thread_local_log=config.thread_local_log,
+        log_query_counts=config.database_log_query_counts,
     )
     return model
 

@@ -84,7 +84,6 @@ from galaxy.tools.parameters.wrapped_json import json_wrap
 from galaxy.tools.test import parse_tests
 from galaxy.tools.toolbox import BaseGalaxyToolBox
 from galaxy.util import (
-    ExecutionTimer,
     in_directory,
     listify,
     Params,
@@ -1415,7 +1414,10 @@ class Tool(Dictifiable):
                 'Failure executing tool (cannot create multiple jobs when remapping existing job).')
 
         # Process incoming data
-        validation_timer = ExecutionTimer()
+        validation_timer = self.app.execution_timer_factory.get_timer(
+            'internals.galaxy.tools.validation',
+            'Validated and populated state for tool request',
+        )
         all_errors = []
         all_params = []
         for expanded_incoming in expanded_incomings:
@@ -1440,7 +1442,7 @@ class Tool(Dictifiable):
             all_params.append(params)
         unset_dataset_matcher_factory(request_context)
 
-        log.debug('Validated and populated state for tool request %s' % validation_timer)
+        log.info(validation_timer)
         return all_params, all_errors, rerun_remap_job_id, collection_info
 
     def handle_input(self, trans, incoming, history=None, use_cached_job=False):
