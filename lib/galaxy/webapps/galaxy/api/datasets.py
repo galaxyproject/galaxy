@@ -129,35 +129,28 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
         dataset = self.get_hda_or_ldda(trans, hda_ldda=hda_ldda, dataset_id=id)
 
         # Use data type to return particular type of data.
-        try:
-            if data_type == 'state':
-                rval = self._dataset_state(trans, dataset)
-            elif data_type == 'converted_datasets_state':
-                rval = self._converted_datasets_state(trans, dataset, kwd.get('chrom', None),
-                                                      is_true(kwd.get('retry', False)))
-            elif data_type == 'data':
-                rval = self._data(trans, dataset, **kwd)
-            elif data_type == 'features':
-                rval = self._search_features(trans, dataset, kwd.get('query'))
-            elif data_type == 'raw_data':
-                rval = self._raw_data(trans, dataset, provider, **kwd)
-            elif data_type == 'track_config':
-                rval = self.get_new_track_config(trans, dataset)
-            elif data_type == 'genome_data':
-                rval = self._get_genome_data(trans, dataset, kwd.get('dbkey', None))
+        if data_type == 'state':
+            rval = self._dataset_state(trans, dataset)
+        elif data_type == 'converted_datasets_state':
+            rval = self._converted_datasets_state(trans, dataset, kwd.get('chrom', None),
+                                                  is_true(kwd.get('retry', False)))
+        elif data_type == 'data':
+            rval = self._data(trans, dataset, **kwd)
+        elif data_type == 'features':
+            rval = self._search_features(trans, dataset, kwd.get('query'))
+        elif data_type == 'raw_data':
+            rval = self._raw_data(trans, dataset, provider, **kwd)
+        elif data_type == 'track_config':
+            rval = self.get_new_track_config(trans, dataset)
+        elif data_type == 'genome_data':
+            rval = self._get_genome_data(trans, dataset, kwd.get('dbkey', None))
+        else:
+            # Default: return dataset as dict.
+            if hda_ldda == 'hda':
+                return self.hda_serializer.serialize_to_view(dataset,
+                                                             view=kwd.get('view', 'detailed'), user=trans.user, trans=trans)
             else:
-                # Default: return dataset as dict.
-                if hda_ldda == 'hda':
-                    return self.hda_serializer.serialize_to_view(dataset,
-                                                                 view=kwd.get('view', 'detailed'), user=trans.user, trans=trans)
-                else:
-                    rval = dataset.to_dict()
-
-        except Exception:
-            msg = 'Error in dataset API at listing contents'
-            log.exception(msg)
-            trans.response.status = 500
-            rval = msg
+                rval = dataset.to_dict()
         return rval
 
     @web.expose_api
