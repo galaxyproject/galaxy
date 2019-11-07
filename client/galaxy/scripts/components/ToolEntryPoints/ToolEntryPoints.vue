@@ -58,9 +58,6 @@ export default {
         }
     },
     methods: {
-        appRoot: function() {
-            return getAppRoot();
-        },
         pollEntryPoints: function() {
             const onUpdate = entryPoints => {
                 this.entryPoints = entryPoints;
