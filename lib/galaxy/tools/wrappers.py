@@ -234,7 +234,7 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
         def items(self):
             return iter((k, self.get(k)) for k, v in self.metadata.items())
 
-    def __init__(self, dataset, datatypes_registry=None, tool=None, name=None, dataset_path=None, identifier=None):
+    def __init__(self, dataset, datatypes_registry=None, tool=None, name=None, dataset_path=None, identifier=None, formats=None):
         if not dataset:
             try:
                 # TODO: allow this to work when working with grouping
@@ -246,6 +246,10 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
             # Tool wrappers should not normally be accessing .dataset directly,
             # so we will wrap it and keep the original around for file paths
             # Should we name this .value to maintain consistency with most other ToolParameterValueWrapper?
+            if formats:
+                target_ext, converted_dataset = dataset.find_conversion_destination(formats)
+                if target_ext and converted_dataset:
+                    dataset = converted_dataset
             self.unsanitized = dataset
             self.dataset = wrap_with_safe_string(dataset, no_wrap_classes=ToolParameterValueWrapper)
             self.metadata = self.MetadataWrapper(dataset.metadata)

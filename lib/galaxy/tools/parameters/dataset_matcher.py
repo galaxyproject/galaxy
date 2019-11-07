@@ -109,7 +109,7 @@ class DatasetMatcher(object):
         self.filter_values = filter_values
 
     def valid_hda_match(self, hda, check_implicit_conversions=True):
-        """ Return False of this parameter can not be matched to the supplied
+        """ Return False if this parameter can not be matched to the supplied
         HDA, otherwise return a description of the match (either a
         HdaDirectMatch describing a direct match or a HdaImplicitMatch
         describing an implicit conversion.)
