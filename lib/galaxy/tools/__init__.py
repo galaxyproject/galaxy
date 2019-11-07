@@ -68,6 +68,7 @@ from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
     DataToolParameter,
     HiddenToolParameter,
+    ImplicitConversionRequired,
     SelectToolParameter,
     ToolParameter,
     workflow_building_modes,
@@ -83,7 +84,6 @@ from galaxy.tools.parameters.wrapped_json import json_wrap
 from galaxy.tools.test import parse_tests
 from galaxy.tools.toolbox import BaseGalaxyToolBox
 from galaxy.util import (
-    ExecutionTimer,
     in_directory,
     listify,
     Params,
@@ -1414,7 +1414,10 @@ class Tool(Dictifiable):
                 'Failure executing tool (cannot create multiple jobs when remapping existing job).')
 
         # Process incoming data
-        validation_timer = ExecutionTimer()
+        validation_timer = self.app.execution_timer_factory.get_timer(
+            'internals.galaxy.tools.validation',
+            'Validated and populated state for tool request',
+        )
         all_errors = []
         all_params = []
         for expanded_incoming in expanded_incomings:
@@ -1439,7 +1442,7 @@ class Tool(Dictifiable):
             all_params.append(params)
         unset_dataset_matcher_factory(request_context)
 
-        log.debug('Validated and populated state for tool request %s' % validation_timer)
+        log.info(validation_timer)
         return all_params, all_errors, rerun_remap_job_id, collection_info
 
     def handle_input(self, trans, incoming, history=None, use_cached_job=False):
@@ -2068,10 +2071,13 @@ class Tool(Dictifiable):
                     tool_dict['value'] = input.value_to_basic(state_inputs.get(input.name, initial_value), self.app, use_security=True)
                     tool_dict['default_value'] = input.value_to_basic(initial_value, self.app, use_security=True)
                     tool_dict['text_value'] = input.value_to_display_text(tool_dict['value'])
+                except ImplicitConversionRequired:
+                    tool_dict = input.to_dict(request_context)
+                    # This hack leads client to display a text field
+                    tool_dict['textable'] = True
                 except Exception:
                     tool_dict = input.to_dict(request_context)
                     log.exception("tools::to_json() - Skipping parameter expansion '%s'", input.name)
-                    pass
             if input_index >= len(group_inputs):
                 group_inputs.append(tool_dict)
             else:

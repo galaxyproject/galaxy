@@ -10,7 +10,7 @@ numpy<=1.16
 pycryptodome
 pysam
 social_auth_core
-SQLAlchemy==1.2
+SQLAlchemy
 sqlalchemy-migrate
 sqlalchemy-utils
 WebOb

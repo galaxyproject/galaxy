@@ -34,7 +34,8 @@ from galaxy.tools.special_tools import load_lib_tools
 from galaxy.tours import ToursRegistry
 from galaxy.util import (
     ExecutionTimer,
-    heartbeat
+    heartbeat,
+    StructuredExecutionTimer,
 )
 from galaxy.visualization.data_providers.registry import DataProviderRegistry
 from galaxy.visualization.genomes import Genomes
@@ -69,6 +70,7 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         self.config = config.Configuration(**kwargs)
         self.config.check()
         config.configure_logging(self.config)
+        self.execution_timer_factory = ExecutionTimerFactory(self.config)
         self.configure_fluent_log()
         # A lot of postfork initialization depends on the server name, ensure it is set immediately after forking before other postfork functions
         self.application_stack = application_stack_instance(app=self)
@@ -321,3 +323,36 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
     @property
     def is_job_handler(self):
         return (self.config.track_jobs_in_database and self.job_config.is_handler) or not self.config.track_jobs_in_database
+
+
+class StatsdStructuredExecutionTimer(StructuredExecutionTimer):
+
+    def __init__(self, galaxy_statsd_client, *args, **kwds):
+        self.galaxy_statsd_client = galaxy_statsd_client
+        super(StatsdStructuredExecutionTimer, self).__init__(*args, **kwds)
+
+    def to_str(self, **kwd):
+        self.galaxy_statsd_client.timing(self.timer_id, self.elapsed * 1000., kwd)
+        return super(StatsdStructuredExecutionTimer, self).to_str()
+
+
+class ExecutionTimerFactory(object):
+
+    def __init__(self, config):
+        statsd_host = getattr(config, "statsd_host", None)
+        if statsd_host:
+            from galaxy.web.framework.middleware.statsd import GalaxyStatsdClient
+            self.galaxy_statsd_client = GalaxyStatsdClient(
+                statsd_host,
+                getattr(config, 'statsd_port', 8125),
+                getattr(config, 'statsd_prefix', 'galaxy'),
+                getattr(config, 'statsd_influxdb', False),
+            )
+        else:
+            self.galaxy_statsd_client = None
+
+    def get_timer(self, *args, **kwd):
+        if self.galaxy_statsd_client:
+            return StatsdStructuredExecutionTimer(self.galaxy_statsd_client, *args, **kwd)
+        else:
+            return StructuredExecutionTimer(*args, **kwd)
