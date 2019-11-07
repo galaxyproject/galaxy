@@ -43,6 +43,7 @@ from galaxy.tool_util.loader import (
     raw_tool_xml_tree,
     template_macro_params
 )
+from galaxy.tool_util.output_checker import DETECTED_JOB_STATE
 from galaxy.tool_util.parser import (
     get_tool_source,
     get_tool_source_from_representation,
@@ -1748,7 +1749,7 @@ class Tool(Dictifiable):
     def exec_before_job(self, app, inp_data, out_data, param_dict={}):
         pass
 
-    def exec_after_process(self, app, inp_data, out_data, param_dict, job=None):
+    def exec_after_process(self, app, inp_data, out_data, param_dict, job=None, **kwds):
         pass
 
     def job_failed(self, job_wrapper, message, exception=False):
@@ -2419,7 +2420,7 @@ class SetMetadataTool(Tool):
                 history.id, job.user, incoming={'input1': hda}, overwrite=False
             )
 
-    def exec_after_process(self, app, inp_data, out_data, param_dict, job=None):
+    def exec_after_process(self, app, inp_data, out_data, param_dict, job=None, **kwds):
         working_directory = app.object_store.get_filename(
             job, base_dir='job_work', dir_only=True, obj_dir=True
         )
@@ -2503,17 +2504,13 @@ class DataManagerTool(OutputParameterJSONTool):
         if self.data_manager_id is None:
             self.data_manager_id = self.id
 
-    def exec_after_process(self, app, inp_data, out_data, param_dict, job=None, **kwds):
+    def exec_after_process(self, app, inp_data, out_data, param_dict, job=None, final_job_state=None, **kwds):
         assert self.allow_user_access(job.user), "You must be an admin to access this tool."
+        if final_job_state != DETECTED_JOB_STATE.OK:
+            return
         # run original exec_after_process
         super(DataManagerTool, self).exec_after_process(app, inp_data, out_data, param_dict, job=job, **kwds)
         # process results of tool
-        if job and job.state == job.states.ERROR:
-            return
-        # Job state may now be 'running' instead of previous 'error', but datasets are still set to e.g. error
-        for dataset in out_data.values():
-            if dataset.state != dataset.states.OK:
-                return
         data_manager_id = job.data_manager_association.data_manager_id
         data_manager = self.app.data_managers.get_manager(data_manager_id, None)
         assert data_manager is not None, "Invalid data manager (%s) requested. It may have been removed before the job completed." % (data_manager_id)

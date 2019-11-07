@@ -1638,7 +1638,7 @@ class JobWrapper(HasResourceParameters):
         # Certain tools require tasks to be completed after job execution
         # ( this used to be performed in the "exec_after_process" hook, but hooks are deprecated ).
         param_dict = self.get_param_dict(job)
-        self.tool.exec_after_process(self.app, inp_data, out_data, param_dict, job=job)
+        self.tool.exec_after_process(self.app, inp_data, out_data, param_dict, job=job, final_job_state=final_job_state)
         # Call 'exec_after_process' hook
         self.tool.call_hook('exec_after_process', self.app, inp_data=inp_data,
                             out_data=out_data, param_dict=param_dict,
