@@ -3,12 +3,12 @@
         <div v-if="error" class="alert alert-danger" show>{{ error }}</div>
         <div v-else>
             <slot name="header"></slot>
-            <slot name="actions"></slot>
             <loading-span v-if="loading" :message="loadingMessage" />
             <div v-else>
+                <slot name="actions"></slot>
                 <slot name="body"></slot>
+                <slot name="actions"></slot>
             </div>
-            <slot name="actions"></slot>
         </div>
     </div>
 </template>
