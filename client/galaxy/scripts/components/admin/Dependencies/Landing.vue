@@ -1,7 +1,9 @@
 <template>
     <div>
         <b-nav tabs>
-            <b-nav-item v-bind:active="mode == 'dependencies'" @click="setMode('dependencies')">Dependencies</b-nav-item>
+            <b-nav-item v-bind:active="mode == 'dependencies'" @click="setMode('dependencies')"
+                >Dependencies</b-nav-item
+            >
             <b-nav-item v-bind:active="mode == 'containers'" @click="setMode('containers')">Containers</b-nav-item>
             <b-nav-item v-bind:active="mode == 'unused'" @click="setMode('unused')">Unused</b-nav-item>
         </b-nav>
