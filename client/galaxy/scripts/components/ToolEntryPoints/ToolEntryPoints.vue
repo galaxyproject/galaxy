@@ -26,7 +26,7 @@
         </div>
 
         You may also access all active InteractiveTools from the
-        <a :href="appRoot() + 'interactivetool_entry_points/list'">User menu</a>.
+        <a :href="interactiveToolsLink">User menu</a>.
     </div>
 </template>
 
@@ -51,6 +51,11 @@ export default {
     },
     beforeDestroy: function() {
         clearPolling();
+    },
+    computed: {
+        interactiveToolsLink: function() {
+            return getAppRoot() + "interactivetool_entry_points/list";
+        }
     },
     methods: {
         appRoot: function() {
