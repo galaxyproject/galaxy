@@ -1582,14 +1582,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         def prepare_jobs_list(jobs):
             res = []
             for job in jobs:
-                delta = datetime.utcnow() - job.update_time
-                update_time = ""
-                if delta.days > 0:
-                    update_time = '%s hours ago' % (delta.days * 24 + int(delta.seconds / 60 / 60))
-                elif delta > timedelta(minutes=59):
-                    update_time = '%s hours ago' % int(delta.seconds / 60 / 60)
-                else:
-                    update_time = '%s minutes ago' % int(delta.seconds / 60)
                 inputs = ""
                 try:
                     inputs = ", ".join(['{} {}'.format(da.dataset.id, da.dataset.state) for da in job.input_datasets])
@@ -1601,7 +1593,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                         'info_url': "{}?jobid={}".format(web.url_for(controller="admin", action="job_info"), job.id)
                     },
                     'user': job.history.user.email if job.history and job.history.user else 'anonymous',
-                    'update_time': update_time,
+                    'update_time': job.update_time.isoformat(),
                     'tool_id': job.tool_id,
                     'state': job.state,
                     'input_dataset': inputs,
