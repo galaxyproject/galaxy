@@ -173,7 +173,6 @@ class BaseAppConfiguration(object):
         for var, values in defaults.items():
             if config_kwargs.get(var) is not None:
                 path = config_kwargs.get(var)
-                setattr(self, var + '_set', True)
             else:
                 for value in values:
                     if os.path.exists(os.path.join(self.root, value)):
@@ -181,14 +180,12 @@ class BaseAppConfiguration(object):
                         break
                 else:
                     path = values[-1]
-                setattr(self, var + '_set', False)
             setattr(self, var, os.path.join(self.root, path))
 
         for var, values in listify_defaults.items():
             paths = []
             if config_kwargs.get(var) is not None:
                 paths = listify(config_kwargs.get(var))
-                setattr(self, var + '_set', True)
             else:
                 for value in values:
                     for path in listify(value):
@@ -199,7 +196,6 @@ class BaseAppConfiguration(object):
                         break
                 else:
                     paths = listify(values[-1])
-                setattr(self, var + '_set', False)
             setattr(self, var, [os.path.join(self.root, x) for x in paths])
 
 
