@@ -194,10 +194,23 @@ class ToolDependenciesAPIController(BaseAPIController):
         Summarize requirements across toolbox (for Tool Management grid). This is an experiemental
         API particularly tied to the GUI - expect breaking changes until this notice is removed.
 
+        Container resolution via this API is especially experimental and the container resolution
+        API should be used to summarize this information instead in most cases.
+
         :type   index:    int
         :param  index:    index of the dependency resolver
         :type   tool_ids: str
         :param  tool_ids: tool_id to install dependency for
+        :type   resolver_type:  str
+        :param  resolver_type:  restrict to uninstall to specified resolver type
+        :type   include_containers: bool
+        :param  include_containers: include container resolvers in resolution
+        :type   container_type: str
+        :param  container_type: restrict to uninstall to specified container type
+        :type   index_by: str
+        :param  index_by: By default consider only context of requirements, group tools by requirements.
+                          Set this to 'tools' to summarize across all tools though. Tools may provide additional
+                          context for container resolution for instance.
 
         :rtype:     list
         :returns:   dictified descriptions of the dependencies, with attribute
@@ -224,19 +237,24 @@ class ToolDependenciesAPIController(BaseAPIController):
         :param  index:          index of the dependency resolver
         :type   tool_ids:       str
         :param  tool_ids:       tool_id to install dependency for
-        :type   container_type: str
-        :param  container_type: restrict to uninstall to specified container type
         :type   resolver_type:  str
         :param  resolver_type:  restrict to uninstall to specified resolver type
+        :type   include_containers: bool
+        :param  include_containers: include container resolvers in resolution
+        :type   container_type: str
+        :param  container_type: restrict to uninstall to specified container type
         """
         tools_by_id = trans.app.toolbox.tools_by_id.copy()
         tool_ids = payload.get("tool_ids")
         requirements = set([tools_by_id[tid].tool_requirements for tid in tool_ids])
         install_kwds = {}
-        if 'container_type' in payload:
-            install_kwds['container_type'] = payload['container_type']
-        if 'resolver_type' in kwds:
-            install_kwds['resolver_type'] = payload['resolver_type']
+        for source in [payload, kwds]:
+            if 'include_containers' in source:
+                install_kwds['include_containers'] = source['container_type']
+            if 'container_type' in kwds:
+                install_kwds['container_type'] = source['container_type']
+            if 'resolver_type' in source:
+                install_kwds['resolver_type'] = source['resolver_type']
         [self._view.install_dependencies(requirements=r, index=index, **install_kwds) for r in requirements]
 
     @expose_api
@@ -253,6 +271,8 @@ class ToolDependenciesAPIController(BaseAPIController):
         :param  index:          index of the dependency resolver
         :type   tool_ids:       str
         :param  tool_ids:       tool_id to install dependency for
+        :type   include_containers: bool
+        :param  include_containers: include container resolvers in resolution
         :type   container_type: str
         :param  container_type: restrict to uninstall to specified container type
         :type   resolver_type:  str
@@ -262,10 +282,13 @@ class ToolDependenciesAPIController(BaseAPIController):
         tool_ids = payload.get("tool_ids")
         requirements = set([tools_by_id[tid].tool_requirements for tid in tool_ids])
         install_kwds = {}
-        if 'container_type' in payload:
-            install_kwds['container_type'] = payload['container_type']
-        if 'resolver_type' in kwds:
-            install_kwds['resolver_type'] = payload['resolver_type']
+        for source in [payload, kwds]:
+            if 'include_containers' in source:
+                install_kwds['include_containers'] = source['container_type']
+            if 'container_type' in kwds:
+                install_kwds['container_type'] = source['container_type']
+            if 'resolver_type' in source:
+                install_kwds['resolver_type'] = source['resolver_type']
 
         [self._view.uninstall_dependencies(index=index, requirements=r, **install_kwds) for r in requirements]
 

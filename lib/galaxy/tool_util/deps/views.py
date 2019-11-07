@@ -228,6 +228,8 @@ class DependencyResolversView(object):
         summary_kwds = {}
         if 'index' in kwds:
             summary_kwds['index'] = int(kwds['index'])
+        if 'include_containers' in kwds:
+            summary_kwds['include_containers'] = asbool(kwds['include_containers'])
         if 'container_type' in kwds:
             summary_kwds['container_type'] = kwds['container_type']
         if 'resolver_type' in kwds:
@@ -257,6 +259,8 @@ class DependencyResolversView(object):
         summary_kwds = {}
         if 'index' in kwds:
             summary_kwds['index'] = int(kwds['index'])
+        if 'include_containers' in kwds:
+            summary_kwds['include_containers'] = asbool(kwds['include_containers'])
         if 'container_type' in kwds:
             summary_kwds['container_type'] = kwds['container_type']
         if 'resolver_type' in kwds:

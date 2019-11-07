@@ -201,6 +201,7 @@ class DependencyManager(object):
         index = kwds.get('index')
         install = kwds.get('install', False)
         resolver_type = kwds.get('resolver_type')
+        include_containers = kwds.get('include_containers', False)
         container_type = kwds.get('container_type')
         require_exact = kwds.get('exact', False)
         return_null_dependencies = kwds.get('return_null', False)
@@ -239,6 +240,8 @@ class DependencyManager(object):
             if hasattr(resolver, "resolve_all"):
                 resolve = resolver.resolve_all
             elif isinstance(resolver, ContainerResolver):
+                if not include_containers:
+                    continue
                 if not install and resolver.builds_on_resolution:
                     # don't want to build images here
                     continue

@@ -1,12 +1,12 @@
 <template>
     <div>
         <b-nav tabs>
-            <b-nav-item v-bind:active="mode == 'resolution'" @click="setMode('resolution')">Resolution</b-nav-item>
-            <b-nav-item v-bind:active="mode == 'container'" @click="setMode('container')">Container</b-nav-item>
+            <b-nav-item v-bind:active="mode == 'dependencies'" @click="setMode('dependencies')">Dependencies</b-nav-item>
+            <b-nav-item v-bind:active="mode == 'containers'" @click="setMode('containers')">Containers</b-nav-item>
             <b-nav-item v-bind:active="mode == 'unused'" @click="setMode('unused')">Unused</b-nav-item>
         </b-nav>
-        <resolution-index v-if="mode == 'resolution'" />
-        <container-index v-else-if="mode == 'container'" />
+        <resolution-index v-if="mode == 'dependencies'" />
+        <container-index v-else-if="mode == 'containers'" />
         <unused-index v-else-if="mode == 'unused'" />
     </div>
 </template>
@@ -24,7 +24,7 @@ export default {
     components: { ContainerIndex, ResolutionIndex, UnusedIndex },
     data: function() {
         return {
-            mode: "resolution"
+            mode: "dependencies"
         };
     },
     methods: {
