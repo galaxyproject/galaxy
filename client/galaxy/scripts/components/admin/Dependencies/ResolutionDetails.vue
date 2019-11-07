@@ -3,29 +3,75 @@
         <container-resolution-details :resolution="containerResolution" />
     </div>
     <b-card v-else>
-        <div>
-            <div v-if="singleTool">Tool: <tool-display :tool-id="resolution.tool_id" /></div>
-            <div v-else>Tools: <tools :tool-ids="resolution.tool_ids" :compact="false" /></div>
-            <div v-if="resolution.status.length == 0">
-                <i><b>No requirements to resolve, no explicit dependency resolution configured.</b></i>
+        <div class="row">
+            <div class="col">
+                <span v-if="singleTool">Tool</span>
+                <span v-else>Tools</span>
             </div>
-            <div v-else-if="!separateDetails">
-                <div>Requirements: <requirements :requirements="resolution.requirements" /></div>
-                <status-display :status="resolution.status[0]" :compact="false" :all-statuses="resolution.status" />
-                <div>
-                    Dependency Resolver:
+            <div class="col-8">
+                <div v-if="singleTool">
+                    <tool-display :tool-id="resolution.tool_id" />
+                </div>
+                <div v-else>
+                    <tools :tool-ids="resolution.tool_ids" :compact="false" />
+                </div>
+            </div>
+        </div>
+        <div class="row" v-if="resolution.status.length == 0">
+            <i><b>No requirements to resolve, no explicit dependency resolution configured.</b></i>
+        </div>
+        <span v-else-if="!separateDetails">
+            <div class="row">
+                <div class="col">
+                    Requirements
+                </div>
+                <div class="col-8">
+                    <requirements :requirements="resolution.requirements" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col">
+                    Status
+                </div>
+                <div class="col-8">
+                    <status-display :status="resolution.status[0]" :compact="false" :all-statuses="resolution.status" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col">
+                    Dependency Resolver
+                </div>
+                <div class="col-8">
                     <dependency-resolver :dependency-resolver="resolution.status[0].dependency_resolver" />
                 </div>
             </div>
-            <div v-else>
-                <div :key="index" v-for="(requirements, index) in resolution.requirements">
-                    Requirement: <requirement :requirement="resolution.requirements[index]" />
-                    <status-display :status="resolution.status[index]" :compact="false" />
-                    Dependency Resolver:
-                    <dependency-resolver :dependency-resolver="resolution.status[index].dependency_resolver" />
+        </span>
+        <div v-else>
+            <span :key="index" v-for="(requirements, index) in resolution.requirements">
+                <div class="row">
+                    <div class="col">
+                        <requirement :requirement="resolution.requirements[index]" />
+                    </div>
+                    <div class="col">
+                        <div class="row">
+                            <div class="col">
+                                Status
+                            </div>
+                            <div class="col">
+                                <status-display :status="resolution.status[index]" :compact="false" />
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col">
+                                Dependency Resolver
+                            </div>
+                            <div class="col">
+                                <dependency-resolver :dependency-resolver="resolution.status[index].dependency_resolver" />
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div></div>
-            </div>
+            </span>
         </div>
     </b-card>
 </template>
