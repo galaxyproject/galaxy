@@ -176,10 +176,7 @@ class CondorJobRunner(AsynchronousJobRunner):
             job_id = cjs.job_id
             galaxy_id_tag = cjs.job_wrapper.get_id_tag()
             try:
-                if os.stat(cjs.user_log).st_size == cjs.user_log_size:
-                    if cjs.job_wrapper.tool.tool_type == 'interactive':
-                        # If running, check for entry points...
-                        cjs.job_wrapper.check_for_entry_points()
+                if cjs.job_wrapper.tool.tool_type != 'interactive' and os.stat(cjs.user_log).st_size == cjs.user_log_size:
                     new_watched.append(cjs)
                     continue
                 s1, s4, s7, s5, s9, log_size = summarize_condor_log(cjs.user_log, job_id)
@@ -194,6 +191,10 @@ class CondorJobRunner(AsynchronousJobRunner):
                 cjs.fail_message = "Cluster could not complete job"
                 self.work_queue.put((self.fail_job, cjs))
                 continue
+
+            if job_running:
+                # If running, check for entry points...
+                cjs.job_wrapper.check_for_entry_points()
 
             if job_running and not cjs.running:
                 log.debug("(%s/%s) job is now running" % (galaxy_id_tag, job_id))
