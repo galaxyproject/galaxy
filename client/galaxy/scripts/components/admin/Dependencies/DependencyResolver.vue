@@ -17,6 +17,7 @@
                 A dependency resolver of type {{ dependencyResolver.resolver_type }} was used to resolve these
                 dependencies.
             </span>
+            <display-raw :object="dependencyResolver" />
         </span>
         <span v-else>
             no dependency resolver
@@ -24,7 +25,10 @@
     </span>
 </template>
 <script>
+import DisplayRaw from "./DisplayRaw";
+
 export default {
+    components: { DisplayRaw },
     props: {
         dependencyResolver: {
             type: Object

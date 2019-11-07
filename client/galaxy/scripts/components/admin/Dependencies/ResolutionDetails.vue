@@ -5,7 +5,7 @@
     <b-card v-else>
         <div class="row">
             <div class="col">
-                <span v-if="singleTool">Tool</span>
+                <span v-if="singleTool || resolution.tool_ids.length == 1">Tool</span>
                 <span v-else>Tools</span>
             </div>
             <div class="col-8">
@@ -66,7 +66,9 @@
                                 Dependency Resolver
                             </div>
                             <div class="col">
-                                <dependency-resolver :dependency-resolver="resolution.status[index].dependency_resolver" />
+                                <dependency-resolver
+                                    :dependency-resolver="resolution.status[index].dependency_resolver"
+                                />
                             </div>
                         </div>
                     </div>

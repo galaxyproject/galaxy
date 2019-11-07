@@ -5,7 +5,7 @@
                 <span class="fa fa-check text-success"></span>{{ status.dependency_type }}
                 <span v-if="mergedMultiple">(merged)</span>
             </b>
-            <span v-if="!compact">{{ description }}</span>
+            <span v-if="!compact">{{ description }} <display-raw :object="status"/></span>
         </span>
         <b v-else> <span class="fa fa-times text-danger"></span><i>unresolved</i> </b>
     </span>
@@ -34,7 +34,10 @@ function describeRequirement(status) {
     return `${prefix}${requirement}. `;
 }
 
+import DisplayRaw from "./DisplayRaw";
+
 export default {
+    components: { DisplayRaw },
     props: {
         status: {
             type: Object,

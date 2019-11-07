@@ -4,6 +4,7 @@
             {{ resolverType }}
             <span v-if="!compact">
                 <i>{{ description }}</i>
+                <display-raw :object="containerResolver" />
             </span>
         </span>
         <span v-else-if="compact"> </span>
@@ -13,10 +14,12 @@
     </span>
 </template>
 <script>
+import DisplayRaw from "./DisplayRaw";
+
 export const DESCRIPTION = {
     explicit:
         "This explicit container resolver looks for containers annotated as part of the tool description - independent of tool requirements and Galaxy configuration.",
-    mulled: "The mulled container resolver fetches pre-built Docker containers based on hashing a tool requirements.",
+    mulled: "The mulled container resolver fetches pre-built Docker containers based on hashing a tool's requirements.",
     mulled_singularity:
         "The mulled_singularity container resolver fetches pre-built Singularity containers based on hashing a tool requirements.",
     cached_mulled:
@@ -28,6 +31,7 @@ export const DESCRIPTION = {
 };
 
 export default {
+    components: { DisplayRaw },
     props: {
         containerResolver: {
             type: Object

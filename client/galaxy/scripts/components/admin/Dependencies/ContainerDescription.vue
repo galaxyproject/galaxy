@@ -5,6 +5,7 @@
             {{ containerDescription.identifier }}
             <span v-if="!compact">
                 <i>{{ description }}</i>
+                <display-raw :object="containerDescription" />
             </span>
         </span>
         <span v-else>
@@ -13,7 +14,10 @@
     </span>
 </template>
 <script>
+import DisplayRaw from "./DisplayRaw";
+
 export default {
+    components: { DisplayRaw },
     props: {
         containerDescription: {
             type: Object
