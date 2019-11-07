@@ -106,7 +106,10 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
         if new_tags is not None and new_tags != ldda.tags:
             self.tag_handler.delete_item_tags(item=ldda, user=trans.user)
             for tag in new_tags:
-                self.tag_handler.apply_item_tag(item=ldda, user=trans.user, name='name', value=tag)
+                new_tag = tag
+                if new_tag.startswith("name:"):
+                    new_tag = new_tag[5:]
+                self.tag_handler.apply_item_tag(item=ldda, user=trans.user, name='name', value=new_tag)
             changed = True
         if changed:
             ldda.update_parent_folder_update_times()
