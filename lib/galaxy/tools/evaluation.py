@@ -190,7 +190,8 @@ class ToolEvaluator(object):
                                        dataset_paths=input_dataset_paths,
                                        datatypes_registry=self.app.datatypes_registry,
                                        tool=self.tool,
-                                       name=input.name)
+                                       name=input.name,
+                                       formats=input.formats)
 
             elif isinstance(input, DataToolParameter):
                 # FIXME: We're populating param_dict with conversions when
