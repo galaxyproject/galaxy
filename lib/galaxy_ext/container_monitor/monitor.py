@@ -41,12 +41,17 @@ def main():
         try:
             ports_raw = parse_ports(container_name, connection_configuration)
             if ports_raw is not None:
-                host_ip = socket.gethostbyname(socket.gethostname())
+                try:
+                    host_ip = socket.gethostbyname(socket.gethostname())
+                except Exception:
+                    # doesn't work on OS X
+                    host_ip = None
                 with open("container_runtime.json", "w") as f:
-                    # Override the IPs
                     ports = docker_util.parse_port_text(ports_raw)
-                    for key in ports:
-                        ports[key]['host'] = host_ip
+                    if host_ip is not None:
+                        for key in ports:
+                            if ports[key]['host'] == '0.0.0.0':
+                                ports[key]['host'] = host_ip
                     json.dump(ports, f)
                 break
             else:
