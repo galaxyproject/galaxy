@@ -1,8 +1,8 @@
 import logging
 import os
 
-from tool_shed.util import common_util
-from tool_shed.util import repository_util
+from galaxy.tool_shed.util.repository_util import get_repository_for_dependency_relationship
+from galaxy.util.tool_shed.common_util import remove_protocol_from_tool_shed_url
 
 log = logging.getLogger(__name__)
 
@@ -68,12 +68,12 @@ class EnvManager(object):
         changeset_revision = elem.get('changeset_revision', None)
         if toolshed and repository_name and repository_owner and changeset_revision:
             # The protocol is not stored, but the port is if it exists.
-            toolshed = common_util.remove_protocol_from_tool_shed_url(toolshed)
-            repository = repository_util.get_repository_for_dependency_relationship(self.app,
-                                                                                    toolshed,
-                                                                                    repository_name,
-                                                                                    repository_owner,
-                                                                                    changeset_revision)
+            toolshed = remove_protocol_from_tool_shed_url(toolshed)
+            repository = get_repository_for_dependency_relationship(self.app,
+                                                                    toolshed,
+                                                                    repository_name,
+                                                                    repository_owner,
+                                                                    changeset_revision)
             if repository:
                 for sub_elem in elem:
                     tool_dependency_type = sub_elem.tag
