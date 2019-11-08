@@ -5,18 +5,18 @@ from sqlalchemy import false
 
 from galaxy import util
 from galaxy.tool_shed.galaxy_install.tools import tool_panel_manager
+from galaxy.tool_shed.metadata.metadata_generator import MetadataGenerator
+from galaxy.tool_shed.util.repository_util import get_installed_tool_shed_repository, get_repository_owner
+from galaxy.tool_shed.util.tool_util import generate_message_for_invalid_tools
 from galaxy.util import inflector
 from galaxy.util.tool_shed import common_util
 from galaxy.util.tool_shed import xml_util
 from galaxy.web.form_builder import SelectField
-from tool_shed.metadata import metadata_generator
-from tool_shed.util import repository_util
-from tool_shed.util import tool_util
 
 log = logging.getLogger(__name__)
 
 
-class InstalledRepositoryMetadataManager(metadata_generator.MetadataGenerator):
+class InstalledRepositoryMetadataManager(MetadataGenerator):
 
     def __init__(self, app, tpm=None, repository=None, changeset_revision=None, repository_clone_url=None,
                  shed_config_dict=None, relative_install_dir=None, repository_files_dir=None,
@@ -114,11 +114,11 @@ class InstalledRepositoryMetadataManager(metadata_generator.MetadataGenerator):
                     self.set_repository(repository)
                     self.reset_all_metadata_on_installed_repository()
                     if self.invalid_file_tups:
-                        message = tool_util.generate_message_for_invalid_tools(self.app,
-                                                                               self.invalid_file_tups,
-                                                                               repository,
-                                                                               None,
-                                                                               as_html=False)
+                        message = generate_message_for_invalid_tools(self.app,
+                                                                     self.invalid_file_tups,
+                                                                     repository,
+                                                                     None,
+                                                                     as_html=False)
                         log.debug(message)
                         unsuccessful_count += 1
                     else:
