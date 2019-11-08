@@ -6,8 +6,8 @@ from xml.etree import ElementTree
 
 from galaxy.util import xml_to_string
 from galaxy.util.renamed_temporary_file import RenamedTemporaryFile
-from tool_shed.galaxy_install.tools import tool_panel_manager
-from tool_shed.util import xml_util
+from galaxy.util.tool_shed.xml_util import parse_xml
+from . import tool_panel_manager
 
 log = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ class DataManagerHandler(object):
 
     @property
     def data_managers_path(self):
-        tree, error_message = xml_util.parse_xml(self.app.config.shed_data_manager_config_file)
+        tree, error_message = parse_xml(self.app.config.shed_data_manager_config_file)
         if tree:
             root = tree.getroot()
             return root.get('tool_path', None)
@@ -59,12 +59,12 @@ class DataManagerHandler(object):
                 repository_tools_by_guid[tool_tup[1]] = dict(tool_config_filename=tool_tup[0], tool=tool_tup[2])
             # Load existing data managers.
             try:
-                tree, error_message = xml_util.parse_xml(shed_data_manager_conf_filename, check_exists=False)
+                tree, error_message = parse_xml(shed_data_manager_conf_filename, check_exists=False)
             except (OSError, IOError) as exc:
                 if exc.errno == errno.ENOENT:
                     with open(shed_data_manager_conf_filename, 'w') as fh:
                         fh.write(SHED_DATA_MANAGER_CONF_XML)
-                    tree, error_message = xml_util.parse_xml(shed_data_manager_conf_filename)
+                    tree, error_message = parse_xml(shed_data_manager_conf_filename)
                 else:
                     raise
             if tree is None:
@@ -77,7 +77,7 @@ class DataManagerHandler(object):
             data_manager_config_has_changes = False
             relative_repo_data_manager_dir = os.path.join(shed_config_dict.get('tool_path', ''), relative_install_dir)
             repo_data_manager_conf_filename = os.path.join(relative_repo_data_manager_dir, repo_data_manager_conf_filename)
-            tree, error_message = xml_util.parse_xml(repo_data_manager_conf_filename)
+            tree, error_message = parse_xml(repo_data_manager_conf_filename)
             if tree is None:
                 return rval
             root = tree.getroot()
@@ -149,7 +149,7 @@ class DataManagerHandler(object):
         metadata_dict = repository.metadata
         if metadata_dict and 'data_manager' in metadata_dict:
             shed_data_manager_conf_filename = self.app.config.shed_data_manager_config_file
-            tree, error_message = xml_util.parse_xml(shed_data_manager_conf_filename)
+            tree, error_message = parse_xml(shed_data_manager_conf_filename)
             if tree:
                 root = tree.getroot()
                 assert root.tag == 'data_managers', 'The file provided (%s) for removing data managers from is not a valid data manager xml file.' % (shed_data_manager_conf_filename)

@@ -2,13 +2,13 @@ import errno
 import logging
 from xml.etree import ElementTree as XmlET
 
+from galaxy.tool_shed.util.basic_util import strip_path
+from galaxy.tool_shed.util.repository_util import get_repository_owner
+from galaxy.tool_shed.util.shed_util_common import get_tool_panel_config_tool_path_install_dir
 from galaxy.util import xml_to_string
 from galaxy.util.renamed_temporary_file import RenamedTemporaryFile
-from tool_shed.util import basic_util
-from tool_shed.util import common_util
-from tool_shed.util import repository_util
-from tool_shed.util import shed_util_common as suc
-from tool_shed.util import xml_util
+from galaxy.util.tool_shed.common_util import remove_protocol_and_user_from_clone_url
+from galaxy.util.tool_shed.xml_util import parse_xml
 
 log = logging.getLogger(__name__)
 
@@ -35,13 +35,13 @@ class ToolPanelManager(object):
         # Ideally shed_tool_conf.xml would be created before the repo is cloned and added to the DB, but this is called
         # from too many places to make it feasible at this time
         try:
-            tree, error_message = xml_util.parse_xml(shed_tool_conf, check_exists=False)
+            tree, error_message = parse_xml(shed_tool_conf, check_exists=False)
         except (OSError, IOError) as exc:
             if (exc.errno == errno.ENOENT and shed_tool_conf_dict.get('create', None) is not None):
                 log.info('Creating shed tool config with default contents: %s', shed_tool_conf)
                 with open(shed_tool_conf, 'w') as fh:
                     fh.write(shed_tool_conf_dict['create'])
-                tree, error_message = xml_util.parse_xml(shed_tool_conf)
+                tree, error_message = parse_xml(shed_tool_conf)
             else:
                 log.error('Unable to load shed tool config: %s', shed_tool_conf)
                 raise
@@ -168,7 +168,7 @@ class ToolPanelManager(object):
               name : <TooSection name>}]}
         """
         tool_panel_dict = {}
-        file_name = basic_util.strip_path(tool_config)
+        file_name = strip_path(tool_config)
         tool_section_dicts = self. generate_tool_section_dicts(tool_config=file_name,
                                                                tool_sections=tool_sections)
         tool_panel_dict[guid] = tool_section_dicts
@@ -185,7 +185,7 @@ class ToolPanelManager(object):
         """
         tool_panel_dict = {}
         shed_tool_conf, tool_path, relative_install_dir = \
-            suc.get_tool_panel_config_tool_path_install_dir(self.app, repository)
+            get_tool_panel_config_tool_path_install_dir(self.app, repository)
         metadata = repository.metadata
         # Create a dictionary of tool guid and tool config file name for each tool in the repository.
         guids_and_configs = {}
@@ -193,10 +193,10 @@ class ToolPanelManager(object):
             for tool_dict in metadata['tools']:
                 guid = tool_dict['guid']
                 tool_config = tool_dict['tool_config']
-                file_name = basic_util.strip_path(tool_config)
+                file_name = strip_path(tool_config)
                 guids_and_configs[guid] = file_name
         # Parse the shed_tool_conf file in which all of this repository's tools are defined and generate the tool_panel_dict.
-        tree, error_message = xml_util.parse_xml(shed_tool_conf)
+        tree, error_message = parse_xml(shed_tool_conf)
         if tree is None:
             return tool_panel_dict
         root = tree.getroot()
@@ -234,9 +234,9 @@ class ToolPanelManager(object):
         """Generate a list of ElementTree Element objects for each section or tool."""
         elem_list = []
         tool_elem = None
-        cleaned_repository_clone_url = common_util.remove_protocol_and_user_from_clone_url(repository_clone_url)
+        cleaned_repository_clone_url = remove_protocol_and_user_from_clone_url(repository_clone_url)
         if not owner:
-            owner = repository_util.get_repository_owner(cleaned_repository_clone_url)
+            owner = get_repository_owner(cleaned_repository_clone_url)
         tool_shed = cleaned_repository_clone_url.split('/repos/')[0].rstrip('/')
         for guid, tool_section_dicts in tool_panel_dict.items():
             for tool_section_dict in tool_section_dicts:
@@ -325,7 +325,7 @@ class ToolPanelManager(object):
             if shed_tool_conf == shed_tool_conf_dict['config_filename']:
                 return shed_tool_conf_dict
             else:
-                file_name = basic_util.strip_path(shed_tool_conf_dict['config_filename'])
+                file_name = strip_path(shed_tool_conf_dict['config_filename'])
                 if shed_tool_conf == file_name:
                     return shed_tool_conf_dict
 
@@ -405,7 +405,7 @@ class ToolPanelManager(object):
         shed_tool_conf = shed_tool_conf_dict['config_filename']
         tool_path = shed_tool_conf_dict['tool_path']
         config_elems = []
-        tree, error_message = xml_util.parse_xml(shed_tool_conf)
+        tree, error_message = parse_xml(shed_tool_conf)
         if tree:
             root = tree.getroot()
             for elem in root:
