@@ -12,14 +12,14 @@ from string import Template
 # TODO: eliminate the use of fabric here.
 from fabric.api import lcd, settings
 
+from galaxy.tool_shed.galaxy_install.tool_dependencies.env_manager import EnvManager
+from galaxy.tool_shed.util import basic_util, tool_dependency_util
 from galaxy.util import (
     asbool,
     download_to_file
 )
 from galaxy.util.compression_utils import CompressedFile
 from galaxy.util.template import fill_template
-from galaxy.tool_shed.galaxy_install.tool_dependencies.env_manager import EnvManager
-from tool_shed.util import basic_util, tool_dependency_util
 
 log = logging.getLogger(__name__)
 
