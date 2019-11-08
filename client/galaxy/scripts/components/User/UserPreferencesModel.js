@@ -24,6 +24,14 @@ export const getUserPreferencesModel = () => {
             redirect: "user",
             shouldRender: !config.use_remote_user,
         },
+        external_ids: {
+            title: _l("Manage Third-Party Identities"),
+            id: "manage-third-party-identities",
+            description: _l("Connect or disconnect access to your third-party identities."),
+            icon: "fa-id-card-o",
+            submit_title: "Disconnect identity",
+            submit_icon: "fa-trash"
+        },
         communication: {
             title: _l("Change Communication Settings"),
             id: "edit-preferences-communication",
@@ -34,7 +42,7 @@ export const getUserPreferencesModel = () => {
             shouldRender: !!config.enable_communication_server,
         },
         permissions: {
-            title: _l("Set Dataset Permissions for new Histories"),
+            title: _l("Set Dataset Permissions for New Histories"),
             id: "edit-preferences-permissions",
             description:
                 "Grant others default access to newly created histories. Changes made here will only affect histories created after these settings have been stored.",
@@ -44,7 +52,7 @@ export const getUserPreferencesModel = () => {
             redirect: "user",
         },
         make_data_private: {
-            title: _l("Make all Data Private"),
+            title: _l("Make All Data Private"),
             id: "edit-preferences-make-data-private",
             description: _l("Click here to make all data private."),
             icon: "fa-lock",
