@@ -65,8 +65,8 @@ PACKAGES = [
     'galaxy.tools.util.galaxyops',
     'galaxy.tool_shed',
     'galaxy.tool_shed.galaxy_install',
+    'galaxy.tool_shed.galaxy_install.datatypes',
     # TODO:
-    # 'galaxy.tool_shed.galaxy_install.datatypes',
     # 'galaxy.tool_shed.galaxy_install.grids',
     # 'galaxy.tool_shed.galaxy_install.metadata',
     # 'galaxy.tool_shed.galaxy_install.migrate',
