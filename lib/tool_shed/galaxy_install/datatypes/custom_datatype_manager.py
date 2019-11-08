@@ -1,8 +1,10 @@
 import logging
 import os
 
-from tool_shed.util import basic_util, hg_util, shed_util_common as suc
-from tool_shed.util import xml_util
+from galaxy.tool_shed.util.basic_util import strip_path
+from galaxy.tool_shed.util.hg_util import get_config_from_disk
+from galaxy.tool_shed.util.shed_util_common import DATATYPES_CONFIG_FILENAME
+from galaxy.util.tool_shed.xml_util import parse_xml
 
 log = logging.getLogger(__name__)
 
@@ -23,7 +25,7 @@ class CustomDatatypeLoader(object):
         occurring after the datatypes registry has been initialized, the registry's contents
         cannot be overridden by conflicting data types.
         """
-        tree, error_message = xml_util.parse_xml(datatypes_config)
+        tree, error_message = parse_xml(datatypes_config)
         if tree is None:
             return None, None
         datatypes_config_root = tree.getroot()
@@ -110,7 +112,7 @@ class CustomDatatypeLoader(object):
                 for converter in elem.findall('converter'):
                     converter_config = converter.get('file', None)
                     if converter_config:
-                        converter_config_file_name = basic_util.strip_path(converter_config)
+                        converter_config_file_name = strip_path(converter_config)
                         for root, dirs, files in os.walk(relative_install_dir):
                             if root.find('.hg') < 0:
                                 for name in files:
@@ -127,7 +129,7 @@ class CustomDatatypeLoader(object):
                 for display_app in elem.findall('display'):
                     display_config = display_app.get('file', None)
                     if display_config:
-                        display_config_file_name = basic_util.strip_path(display_config)
+                        display_config_file_name = strip_path(display_config)
                         for root, dirs, files in os.walk(relative_install_dir):
                             if root.find('.hg') < 0:
                                 for name in files:
@@ -154,7 +156,7 @@ class CustomDatatypeLoader(object):
         """
         metadata = repository.metadata
         repository_dict = None
-        datatypes_config = hg_util.get_config_from_disk(suc.DATATYPES_CONFIG_FILENAME, relative_install_dir)
+        datatypes_config = get_config_from_disk(DATATYPES_CONFIG_FILENAME, relative_install_dir)
         if datatypes_config:
             converter_path, display_path = \
                 self.alter_config_and_load_prorietary_datatypes(datatypes_config,

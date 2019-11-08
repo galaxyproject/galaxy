@@ -220,6 +220,7 @@ __all__ = (
     'can_eliminate_repository_dependency',
     'can_eliminate_tool_dependency',
     'clean_dependency_relationships',
+    'DATATYPES_CONFIG_FILENAME',
     'generate_tool_guid',
     'get_ctx_rev',
     'get_next_prior_import_or_install_required_dict_entry',
