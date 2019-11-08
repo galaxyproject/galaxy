@@ -77,7 +77,7 @@ PACKAGES = [
     'galaxy.tool_shed.galaxy_install.tools',
     # 'galaxy.tool_shed.galaxy_install.utility_containers',
     'galaxy.tool_shed.util',
-    # 'galaxy.tool_shed.metadata',
+    'galaxy.tool_shed.metadata',
     'galaxy.tool_shed.tools',
     'galaxy.tours',
     'galaxy.visualization',
