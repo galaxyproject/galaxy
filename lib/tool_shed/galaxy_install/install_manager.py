@@ -19,10 +19,16 @@ from galaxy.tool_shed.galaxy_install.tool_dependencies.recipe.recipe_manager imp
 from galaxy.tool_shed.galaxy_install.tool_dependencies.recipe.recipe_manager import TagManager
 from galaxy.tool_shed.galaxy_install.tools import data_manager, tool_panel_manager
 from galaxy.tool_shed.tools.data_table_manager import ShedToolDataTableManager
+from galaxy.tool_shed.util import (
+    basic_util,
+    hg_util,
+    repository_util,
+    shed_util_common as suc,
+    tool_dependency_util,
+    tool_util
+)
 from galaxy.tool_util.deps import views
-from tool_shed.util import basic_util, common_util, encoding_util, hg_util, repository_util
-from tool_shed.util import shed_util_common as suc, tool_dependency_util
-from tool_shed.util import tool_util, xml_util
+from galaxy.util.tool_shed import common_util, encoding_util, xml_util
 
 log = logging.getLogger(__name__)
 

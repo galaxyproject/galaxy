@@ -3,15 +3,15 @@ import tempfile
 
 from galaxy.tool_shed.galaxy_install.repository_dependencies import repository_dependency_manager
 from galaxy.tool_shed.galaxy_install.tools import tool_panel_manager
+from galaxy.tool_shed.util import basic_util
+from galaxy.tool_shed.util import hg_util
+from galaxy.tool_shed.util import repository_util
+from galaxy.tool_shed.util import shed_util_common as suc
+from galaxy.tool_shed.util import tool_dependency_util
+from galaxy.tool_shed.util.container_util import get_components_from_key
 from galaxy.util import unicodify
-from tool_shed.galaxy_install import install_manager
-from tool_shed.util import basic_util
-from tool_shed.util import common_util
-from tool_shed.util import container_util
-from tool_shed.util import hg_util
-from tool_shed.util import repository_util
-from tool_shed.util import shed_util_common as suc
-from tool_shed.util import tool_dependency_util
+from galaxy.util.tool_shed import common_util
+from . import install_manager
 
 log = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ class RepairRepositoryManager():
                     continue
                 # rd_key is something like: 'http://localhost:9009__ESEP__package_rdkit_2012_12__ESEP__test__ESEP__d635ffb9c665__ESEP__True'
                 # rd_val is something like: [['http://localhost:9009', 'package_numpy_1_7', 'test', 'cddd64ecd985', 'True']]
-                repository_components_tuple = container_util.get_components_from_key(rd_key)
+                repository_components_tuple = get_components_from_key(rd_key)
                 components_list = repository_util.extract_components_from_tuple(repository_components_tuple)
                 tool_shed, name, owner, changeset_revision = components_list[0:4]
                 installed_repository = repository_util.get_installed_repository(self.app,

@@ -15,19 +15,19 @@ from galaxy.tool_shed.galaxy_install.datatypes import custom_datatype_manager
 from galaxy.tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
 from galaxy.tool_shed.galaxy_install.tools import tool_panel_manager
 from galaxy.tool_shed.tools import data_table_manager
+from galaxy.tool_shed.util import (
+    shed_util_common as suc,
+    tool_util,
+)
+from galaxy.tool_shed.util.basic_util import remove_dir, strip_path
+from galaxy.tool_shed.util.hg_util import clone_repository, get_config_from_disk
+from galaxy.tool_shed.util.repository_util import create_or_update_tool_shed_repository
+from galaxy.tool_shed.util.tool_dependency_util import create_tool_dependency_objects
 from galaxy.tools.toolbox import ToolSection
 from galaxy.tools.toolbox.parser import ensure_tool_conf_item
-from tool_shed.galaxy_install import install_manager
-from tool_shed.util import (
-    basic_util,
-    common_util,
-    hg_util,
-    repository_util,
-    shed_util_common as suc,
-    tool_dependency_util,
-    tool_util,
-    xml_util
-)
+from galaxy.util.tool_shed import common_util
+from galaxy.util.tool_shed.xml_util import parse_xml
+from . import install_manager
 
 log = logging.getLogger(__name__)
 
@@ -67,12 +67,12 @@ class ToolMigrationManager(object):
         # Set the location where the repositories will be installed by retrieving the tool_path
         # setting from migrated_tools_config.
         try:
-            tree, error_message = xml_util.parse_xml(migrated_tools_config)
+            tree, error_message = parse_xml(migrated_tools_config)
         except (IOError, OSError) as exc:
             if exc.errno == errno.ENOENT:
                 with open(migrated_tools_config, 'w') as fh:
                     fh.write(MIGRATED_TOOLS_CONF_XML.format(shed_tools_dir=self.app.config.shed_tools_dir))
-                tree, error_message = xml_util.parse_xml(migrated_tools_config)
+                tree, error_message = parse_xml(migrated_tools_config)
             else:
                 raise
         if tree is None:
@@ -83,7 +83,7 @@ class ToolMigrationManager(object):
             log.debug("Repositories will be installed into configured tool_path location ", str(self.tool_path))
             # Parse tool_shed_install_config to check each of the tools.
             self.tool_shed_install_config = tool_shed_install_config
-            tree, error_message = xml_util.parse_xml(tool_shed_install_config)
+            tree, error_message = parse_xml(tool_shed_install_config)
             if tree is None:
                 log.error(error_message)
             else:
@@ -186,17 +186,17 @@ class ToolMigrationManager(object):
         if not self.__iscloned(clone_dir):
             repository_clone_url = os.path.join(self.tool_shed_url, 'repos', owner, name)
             ctx_rev = suc.get_ctx_rev(self.app, self.tool_shed_url, name, owner, changeset_revision)
-            tool_shed_repository = repository_util.create_or_update_tool_shed_repository(app=self.app,
-                                                                                         name=name,
-                                                                                         description=description,
-                                                                                         installed_changeset_revision=changeset_revision,
-                                                                                         ctx_rev=ctx_rev,
-                                                                                         repository_clone_url=repository_clone_url,
-                                                                                         status=self.app.install_model.ToolShedRepository.installation_status.NEW,
-                                                                                         metadata_dict={},
-                                                                                         current_changeset_revision=None,
-                                                                                         owner=self.repository_owner,
-                                                                                         dist_to_shed=True)
+            tool_shed_repository = create_or_update_tool_shed_repository(app=self.app,
+                                                                         name=name,
+                                                                         description=description,
+                                                                         installed_changeset_revision=changeset_revision,
+                                                                         ctx_rev=ctx_rev,
+                                                                         repository_clone_url=repository_clone_url,
+                                                                         status=self.app.install_model.ToolShedRepository.installation_status.NEW,
+                                                                         metadata_dict={},
+                                                                         current_changeset_revision=None,
+                                                                         owner=self.repository_owner,
+                                                                         dist_to_shed=True)
             return tool_shed_repository
         return None
 
@@ -232,7 +232,7 @@ class ToolMigrationManager(object):
         """Eliminate all entries in all non-shed-related tool panel configs for all tool config file names in the received tool_configs_to_filter."""
         for proprietary_tool_conf in self.proprietary_tool_confs:
             persist_required = False
-            tree, error_message = xml_util.parse_xml(proprietary_tool_conf)
+            tree, error_message = parse_xml(proprietary_tool_conf)
             if tree:
                 root = tree.getroot()
                 for elem in root:
@@ -294,13 +294,13 @@ class ToolMigrationManager(object):
     def get_guid(self, repository_clone_url, relative_install_dir, tool_config):
         if self.shed_config_dict.get('tool_path'):
             relative_install_dir = os.path.join(self.shed_config_dict['tool_path'], relative_install_dir)
-        tool_config_filename = basic_util.strip_path(tool_config)
+        tool_config_filename = strip_path(tool_config)
         for root, dirs, files in os.walk(relative_install_dir):
             if root.find('.hg') < 0 and root.find('hgrc') < 0:
                 if '.hg' in dirs:
                     dirs.remove('.hg')
                 for name in files:
-                    filename = basic_util.strip_path(name)
+                    filename = strip_path(name)
                     if filename == tool_config_filename:
                         full_path = str(os.path.abspath(os.path.join(root, name)))
                         tool = self.toolbox.load_tool(full_path, use_cached=False)
@@ -342,7 +342,7 @@ class ToolMigrationManager(object):
         tools_xml_file_path = os.path.abspath(os.path.join('scripts', 'migrate_tools', '%04d_tools.xml' % latest_tool_migration_script_number))
         # Parse the XML and load the file attributes for later checking against the integrated elements from self.proprietary_tool_confs.
         migrated_tool_configs = []
-        tree, error_message = xml_util.parse_xml(tools_xml_file_path)
+        tree, error_message = parse_xml(tools_xml_file_path)
         if tree is None:
             return []
         root = tree.getroot()
@@ -353,7 +353,7 @@ class ToolMigrationManager(object):
         # Parse each file in self.proprietary_tool_confs and generate the integrated list of tool panel Elements that contain them.
         tool_panel_elems = []
         for proprietary_tool_conf in self.proprietary_tool_confs:
-            tree, error_message = xml_util.parse_xml(proprietary_tool_conf)
+            tree, error_message = parse_xml(proprietary_tool_conf)
             if tree is None:
                 return []
             root = tree.getroot()
@@ -448,10 +448,10 @@ class ToolMigrationManager(object):
         if has_tool_dependencies:
             # All tool_dependency objects must be created before the tools are processed even if no
             # tool dependencies will be installed.
-            tool_dependencies = tool_dependency_util.create_tool_dependency_objects(self.app,
-                                                                                    tool_shed_repository,
-                                                                                    relative_install_dir,
-                                                                                    set_status=True)
+            tool_dependencies = create_tool_dependency_objects(self.app,
+                                                               tool_shed_repository,
+                                                               relative_install_dir,
+                                                               set_status=True)
         else:
             tool_dependencies = None
         if 'tools' in irmm_metadata_dict:
@@ -496,7 +496,7 @@ class ToolMigrationManager(object):
             irm.update_tool_shed_repository_status(tool_shed_repository,
                                                    self.app.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES)
             # Get the tool_dependencies.xml file from disk.
-            tool_dependencies_config = hg_util.get_config_from_disk('tool_dependencies.xml', repo_install_dir)
+            tool_dependencies_config = get_config_from_disk('tool_dependencies.xml', repo_install_dir)
             installed_tool_dependencies = itdm.install_specified_tool_dependencies(tool_shed_repository=tool_shed_repository,
                                                                                    tool_dependencies_config=tool_dependencies_config,
                                                                                    tool_dependencies=tool_dependencies,
@@ -514,7 +514,7 @@ class ToolMigrationManager(object):
             self.app.install_model.context.add(tool_shed_repository)
             self.app.install_model.context.flush()
             work_dir = tempfile.mkdtemp(prefix="tmp-toolshed-hrc")
-            datatypes_config = hg_util.get_config_from_disk(suc.DATATYPES_CONFIG_FILENAME, repo_install_dir)
+            datatypes_config = get_config_from_disk(suc.DATATYPES_CONFIG_FILENAME, repo_install_dir)
             # Load proprietary data types required by tools.  The value of override is not
             # important here since the Galaxy server will be started after this installation
             # completes.
@@ -539,7 +539,7 @@ class ToolMigrationManager(object):
             if display_path:
                 # Load proprietary datatype display applications
                 self.app.datatypes_registry.load_display_applications(self.app, installed_repository_dict=repository_dict)
-            basic_util.remove_dir(work_dir)
+            remove_dir(work_dir)
 
     def install_repository(self, repository_elem, tool_shed_repository, install_dependencies, is_repository_dependency=False):
         """Install a single repository, loading contained tools into the tool panel."""
@@ -574,7 +574,7 @@ class ToolMigrationManager(object):
             if not cloned_ok:
                 irm.update_tool_shed_repository_status(tool_shed_repository,
                                                        self.app.install_model.ToolShedRepository.installation_status.CLONING)
-                cloned_ok, error_message = hg_util.clone_repository(repository_clone_url, os.path.abspath(install_dir), ctx_rev)
+                cloned_ok, error_message = clone_repository(repository_clone_url, os.path.abspath(install_dir), ctx_rev)
             if cloned_ok and not is_installed:
                 self.handle_repository_contents(tool_shed_repository=tool_shed_repository,
                                                 repository_clone_url=repository_clone_url,

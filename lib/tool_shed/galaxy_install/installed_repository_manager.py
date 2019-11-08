@@ -14,12 +14,12 @@ from galaxy.tool_shed.galaxy_install.metadata.installed_repository_metadata_mana
 from galaxy.tool_shed.galaxy_install.repository_dependencies import repository_dependency_manager
 from galaxy.tool_shed.galaxy_install.tools import data_manager
 from galaxy.tool_shed.galaxy_install.tools import tool_panel_manager
-from tool_shed.util import common_util
-from tool_shed.util import container_util
-from tool_shed.util import repository_util
-from tool_shed.util import shed_util_common as suc
-from tool_shed.util import tool_dependency_util
-from tool_shed.util import xml_util
+from galaxy.tool_shed.util import repository_util
+from galaxy.tool_shed.util import shed_util_common as suc
+from galaxy.tool_shed.util import tool_dependency_util
+from galaxy.tool_shed.util.container_util import generate_repository_dependencies_key_for_repository
+from galaxy.util.tool_shed import common_util
+from galaxy.util.tool_shed.xml_util import parse_xml
 
 log = logging.getLogger(__name__)
 
@@ -43,7 +43,7 @@ class InstalledRepositoryManager(object):
 
         self.tool_trees = []
         for tool_config in self.tool_configs:
-            tree, error_message = xml_util.parse_xml(tool_config)
+            tree, error_message = parse_xml(tool_config)
             if error_message:
                 log.error(error_message)
             self.tool_trees.append(tree)
@@ -383,12 +383,12 @@ class InstalledRepositoryManager(object):
                 description = repository_dependencies.get('description', None)
                 # We need to add a root_key entry to one or both of installed_repository_dependencies dictionary and the
                 # missing_repository_dependencies dictionaries for proper display parsing.
-                root_key = container_util.generate_repository_dependencies_key_for_repository(repository.tool_shed,
-                                                                                              repository.name,
-                                                                                              repository.owner,
-                                                                                              repository.installed_changeset_revision,
-                                                                                              prior_installation_required,
-                                                                                              only_if_compiling_contained_td)
+                root_key = generate_repository_dependencies_key_for_repository(repository.tool_shed,
+                                                                               repository.name,
+                                                                               repository.owner,
+                                                                               repository.installed_changeset_revision,
+                                                                               prior_installation_required,
+                                                                               only_if_compiling_contained_td)
                 if installed_rd_tups:
                     installed_repository_dependencies['root_key'] = root_key
                     installed_repository_dependencies[root_key] = installed_rd_tups

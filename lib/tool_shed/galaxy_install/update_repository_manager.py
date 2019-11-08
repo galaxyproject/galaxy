@@ -6,11 +6,11 @@ import threading
 
 from sqlalchemy import false
 
-import tool_shed.util.shed_util_common as suc
 from galaxy import util
-from tool_shed.util import common_util
-from tool_shed.util import encoding_util
-from tool_shed.util import repository_util
+from galaxy.tool_shed.util.repository_util import get_tool_shed_status_for_installed_repository
+from galaxy.tool_shed.util.shed_util_common import clean_dependency_relationships
+from galaxy.util.tool_shed.common_util import get_tool_shed_url_from_tool_shed_registry
+from galaxy.util.tool_shed.encoding_util import tool_shed_decode
 
 log = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ class UpdateRepositoryManager(object):
     def get_update_to_changeset_revision_and_ctx_rev(self, repository):
         """Return the changeset revision hash to which the repository can be updated."""
         changeset_revision_dict = {}
-        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(self.app, str(repository.tool_shed))
+        tool_shed_url = get_tool_shed_url_from_tool_shed_registry(self.app, str(repository.tool_shed))
         params = dict(name=str(repository.name),
                       owner=str(repository.owner),
                       changeset_revision=str(repository.installed_changeset_revision))
@@ -40,7 +40,7 @@ class UpdateRepositoryManager(object):
         try:
             encoded_update_dict = util.url_get(tool_shed_url, password_mgr=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
             if encoded_update_dict:
-                update_dict = encoding_util.tool_shed_decode(encoded_update_dict)
+                update_dict = tool_shed_decode(encoded_update_dict)
                 includes_data_managers = update_dict.get('includes_data_managers', False)
                 includes_datatypes = update_dict.get('includes_datatypes', False)
                 includes_tools = update_dict.get('includes_tools', False)
@@ -85,7 +85,7 @@ class UpdateRepositoryManager(object):
             # has been deprecated in the Tool Shed.
             for repository in self.context.query(self.app.install_model.ToolShedRepository) \
                                           .filter(self.app.install_model.ToolShedRepository.table.c.deleted == false()):
-                tool_shed_status_dict = repository_util.get_tool_shed_status_for_installed_repository(self.app, repository)
+                tool_shed_status_dict = get_tool_shed_status_for_installed_repository(self.app, repository)
                 if tool_shed_status_dict:
                     if tool_shed_status_dict != repository.tool_shed_status:
                         repository.tool_shed_status = tool_shed_status_dict
@@ -110,13 +110,13 @@ class UpdateRepositoryManager(object):
         Tool Shed.  This happens when updating an installed repository to a new changeset revision.
         """
         repository.metadata = updated_metadata_dict
-        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(self.app, repository.tool_shed)
-        suc.clean_dependency_relationships(self.app, updated_metadata_dict, repository, tool_shed_url)
+        tool_shed_url = get_tool_shed_url_from_tool_shed_registry(self.app, repository.tool_shed)
+        clean_dependency_relationships(self.app, updated_metadata_dict, repository, tool_shed_url)
         # Update the repository.changeset_revision column in the database.
         repository.changeset_revision = updated_changeset_revision
         repository.ctx_rev = updated_ctx_rev
         # Update the repository.tool_shed_status column in the database.
-        tool_shed_status_dict = repository_util.get_tool_shed_status_for_installed_repository(self.app, repository)
+        tool_shed_status_dict = get_tool_shed_status_for_installed_repository(self.app, repository)
         if tool_shed_status_dict:
             repository.tool_shed_status = tool_shed_status_dict
         else:
