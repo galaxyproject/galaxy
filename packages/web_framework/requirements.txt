@@ -1,2 +1,4 @@
+babel
 galaxy-data
+mako
 paste
