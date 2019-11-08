@@ -138,9 +138,17 @@ class XmlToolSource(ToolSource):
 
         environment_variables = []
         for environment_variable_el in environment_variables_el.findall("environment_variable"):
+            template = environment_variable_el.text
+            inject = environment_variable_el.get("inject")
+            if inject:
+                assert not template, "Cannot specify inject and environment variable template."
+                assert inject in ["api_key"]
+            if template:
+                assert not inject, "Cannot specify inject and environment variable template."
             definition = {
                 "name": environment_variable_el.get("name"),
-                "template": environment_variable_el.text,
+                "template": template,
+                "inject": inject,
                 "strip": string_as_bool(environment_variable_el.get("strip", False)),
             }
             environment_variables.append(
