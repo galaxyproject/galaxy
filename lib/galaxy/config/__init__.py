@@ -1137,7 +1137,7 @@ class ConfiguresGalaxyMixin(object):
 
         if check_migrate_tools:
             # Alert the Galaxy admin to tools that have been moved from the distribution to the tool shed.
-            from tool_shed.galaxy_install.migrate.check import verify_tools
+            from galaxy.tool_shed.galaxy_install.migrate.check import verify_tools
             verify_tools(self, install_db_url, config_file, install_database_options)
 
         self.model = init_models_from_config(

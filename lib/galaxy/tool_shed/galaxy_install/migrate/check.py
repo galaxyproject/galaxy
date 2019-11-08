@@ -8,7 +8,7 @@ from migrate.versioning import repository, schema
 from sqlalchemy import create_engine, MetaData, Table
 
 from galaxy.util import get_executable
-from tool_shed.util import common_util
+from galaxy.util.tool_shed import common_util
 
 log = logging.getLogger(__name__)
 
