@@ -48,12 +48,12 @@ from galaxy.web_stack import (
     get_stack_facts,
     register_postfork_function
 )
+from galaxy.webapps.galaxy import GALAXY_CONFIG_SCHEMA_PATH
 from ..version import VERSION_MAJOR
 
 log = logging.getLogger(__name__)
 
 GALAXY_APP_NAME = 'galaxy'
-GALAXY_CONFIG_SCHEMA_PATH = 'lib/galaxy/webapps/galaxy/config_schema.yml'
 LOGGING_CONFIG_DEFAULT = {
     'disable_existing_loggers': False,
     'version': 1,

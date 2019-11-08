@@ -36,6 +36,7 @@ from galaxy.util.yaml_util import (
     ordered_dump,
     ordered_load,
 )
+from galaxy.webapps.galaxy import UWSGI_SCHEMA_PATH
 
 
 DESCRIPTION = "Convert configuration files."
@@ -50,7 +51,6 @@ UNHANDLED_FILTER_TYPE_MESSAGE = "Unhandled filter type encountered [%s] for sect
 NO_APP_MAIN_MESSAGE = "No app:main section found, using application defaults throughout."
 YAML_COMMENT_WRAPPER = TextWrapper(initial_indent="# ", subsequent_indent="# ")
 RST_DESCRIPTION_WRAPPER = TextWrapper(initial_indent="    ", subsequent_indent="    ")
-UWSGI_SCHEMA_PATH = "lib/galaxy/webapps/uwsgi_schema.yml"
 
 App = namedtuple(
     "App",
@@ -444,9 +444,8 @@ def _build_uwsgi_schema(args, app_desc):
         "desc": "uwsgi definition, see https://uwsgi-docs.readthedocs.io/en/latest/Options.html",
         "mapping": options
     }
-    path = os.path.join(args.galaxy_root, UWSGI_SCHEMA_PATH)
     contents = ordered_dump(schema)
-    _write_to_file(args, contents, path)
+    _write_to_file(args, contents, UWSGI_SCHEMA_PATH)
 
 
 def _find_config(args, app_desc):
