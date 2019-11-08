@@ -18,7 +18,6 @@ from tool_shed.util import (
     common_util,
     hg_util,
     metadata_util,
-    readme_util,
     repository_util,
     shed_util_common as suc,
     tool_dependency_util,
@@ -313,7 +312,7 @@ class MetadataGenerator(object):
             original_repository_metadata = self.repository.metadata
         else:
             original_repository_metadata = None
-        readme_file_names = readme_util.get_readme_file_names(str(self.repository.name))
+        readme_file_names = _get_readme_file_names(str(self.repository.name))
         if self.app.name == 'galaxy':
             # Shed related tool panel configs are only relevant to Galaxy.
             metadata_dict = {'shed_config_filename': self.shed_config_dict.get('config_filename')}
@@ -1109,3 +1108,14 @@ class MetadataGenerator(object):
             else:
                 metadata['invalid_repository_dependencies'] = repository_dependencies_dict
         return metadata
+
+
+def _get_readme_file_names(repository_name):
+    """Return a list of file names that will be categorized as README files for the received repository_name."""
+    readme_files = ['readme', 'read_me', 'install']
+    valid_filenames = ['%s.txt' % f for f in readme_files]
+    valid_filenames.extend(['%s.rst' % f for f in readme_files])
+    valid_filenames.extend(readme_files)
+    valid_filenames.append('%s.txt' % repository_name)
+    valid_filenames.append('%s.rst' % repository_name)
+    return valid_filenames
