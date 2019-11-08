@@ -12,14 +12,15 @@ from fabric import state
 from fabric.operations import _AttributeString
 from six.moves import queue
 
+from galaxy.tool_shed.galaxy_install.tool_dependencies.recipe import asynchronous_reader
+from galaxy.tool_shed.util.basic_util import INSTALLATION_LOG, NO_OUTPUT_TIMEOUT
+from galaxy.tool_shed.util.tool_dependency_util import set_tool_dependency_attributes
 from galaxy.util import (
     DATABASE_MAX_STRING_SIZE,
     DATABASE_MAX_STRING_SIZE_PRETTY,
     shrink_string_by_size,
     unicodify
 )
-from galaxy.tool_shed.galaxy_install.tool_dependencies.recipe import asynchronous_reader
-from tool_shed.util import basic_util, tool_dependency_util
 
 log = logging.getLogger(__name__)
 
@@ -115,7 +116,7 @@ class InstallEnvironment(object):
         """Handle a command and log the results."""
         command = str(cmd)
         output = self.handle_complex_command(command, job_name=job_name)
-        self.log_results(cmd, output, os.path.join(self.install_dir, basic_util.INSTALLATION_LOG))
+        self.log_results(cmd, output, os.path.join(self.install_dir, INSTALLATION_LOG))
         stdout = output.stdout
         stderr = output.stderr
         if len(stdout) > DATABASE_MAX_STRING_SIZE:
@@ -134,10 +135,10 @@ class InstallEnvironment(object):
                 # We have a problem if there was no stdout and no stderr.
                 error_message = "Unknown error occurred executing shell command %s, return_code: %s" % \
                     (str(cmd), str(output.return_code))
-            tool_dependency_util.set_tool_dependency_attributes(self.app,
-                                                                tool_dependency=tool_dependency,
-                                                                status=status,
-                                                                error_message=error_message)
+            set_tool_dependency_attributes(self.app,
+                                           tool_dependency=tool_dependency,
+                                           status=status,
+                                           error_message=error_message)
         if return_output:
             return output
         return output.return_code
@@ -216,18 +217,18 @@ class InstallEnvironment(object):
             # Sleep a bit before asking the readers again.
             time.sleep(.1)
             current_wait_time = time.time() - start_timer
-            if stdout_queue.empty() and stderr_queue.empty() and current_wait_time > basic_util.NO_OUTPUT_TIMEOUT:
+            if stdout_queue.empty() and stderr_queue.empty() and current_wait_time > NO_OUTPUT_TIMEOUT:
                 err_msg = "\nShutting down process id %s because it generated no output for the defined timeout period of %.1f seconds.\n" % \
-                          (pid, basic_util.NO_OUTPUT_TIMEOUT)
+                          (pid, NO_OUTPUT_TIMEOUT)
                 stderr_reader.lines.append(err_msg)
                 process_handle.kill()
                 break
         thread_lock.release()
         # Wait until each of the threads we've started terminate.  The following calls will block each thread
         # until it terminates either normally, through an unhandled exception, or until the timeout occurs.
-        stdio_thread.join(basic_util.NO_OUTPUT_TIMEOUT)
-        stdout_reader.join(basic_util.NO_OUTPUT_TIMEOUT)
-        stderr_reader.join(basic_util.NO_OUTPUT_TIMEOUT)
+        stdio_thread.join(NO_OUTPUT_TIMEOUT)
+        stdout_reader.join(NO_OUTPUT_TIMEOUT)
+        stderr_reader.join(NO_OUTPUT_TIMEOUT)
         # Close subprocess' file descriptors.
         self.close_file_descriptor(process_handle.stdout)
         self.close_file_descriptor(process_handle.stderr)
