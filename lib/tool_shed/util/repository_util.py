@@ -7,7 +7,6 @@ from sqlalchemy import false
 from sqlalchemy.sql import select
 
 import tool_shed.dependencies.repository
-import tool_shed.util.metadata_util as metadata_util
 from galaxy import util
 from galaxy import web
 from galaxy.tool_shed.util.repository_util import (
@@ -49,6 +48,10 @@ from tool_shed.util.hg_util import (
     create_hgrc_file,
     init_repository,
 )
+from tool_shed.util.metadata_util import (
+    get_next_downloadable_changeset_revision,
+    get_repository_metadata_by_changeset_revision,
+)
 
 log = logging.getLogger(__name__)
 
@@ -83,9 +86,9 @@ def create_repo_info_dict(app, repository_clone_url, changeset_revision, ctx_rev
     repository = get_repository_by_name_and_owner(app, repository_name, repository_owner)
     if app.name == 'tool_shed':
         # We're in the tool shed.
-        repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(app,
-                                                                                 app.security.encode_id(repository.id),
-                                                                                 changeset_revision)
+        repository_metadata = get_repository_metadata_by_changeset_revision(app,
+                                                                            app.security.encode_id(repository.id),
+                                                                            changeset_revision)
         if repository_metadata:
             metadata = repository_metadata.metadata
             if metadata:
@@ -203,19 +206,19 @@ def generate_sharable_link_for_repository_in_tool_shed(repository, changeset_rev
 def get_repo_info_dict(app, user, repository_id, changeset_revision):
     repository = get_repository_in_tool_shed(app, repository_id)
     repository_clone_url = common_util.generate_clone_url_for_repository_in_tool_shed(user, repository)
-    repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(app,
-                                                                                      repository_id,
-                                                                                      changeset_revision)
+    repository_metadata = get_repository_metadata_by_changeset_revision(app,
+                                                                        repository_id,
+                                                                        changeset_revision)
     if not repository_metadata:
         # The received changeset_revision is no longer installable, so get the next changeset_revision
         # in the repository's changelog.  This generally occurs only with repositories of type
         # repository_suite_definition or tool_dependency_definition.
         next_downloadable_changeset_revision = \
-            metadata_util.get_next_downloadable_changeset_revision(app, repository, changeset_revision)
+            get_next_downloadable_changeset_revision(app, repository, changeset_revision)
         if next_downloadable_changeset_revision and next_downloadable_changeset_revision != changeset_revision:
-            repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(app,
-                                                                                              repository_id,
-                                                                                              next_downloadable_changeset_revision)
+            repository_metadata = get_repository_metadata_by_changeset_revision(app,
+                                                                                repository_id,
+                                                                                next_downloadable_changeset_revision)
     if repository_metadata:
         # For now, we'll always assume that we'll get repository_metadata, but if we discover our assumption
         # is not valid we'll have to enhance the callers to handle repository_metadata values of None in the
@@ -283,7 +286,7 @@ def get_repositories_by_category(app, category_id, installable=False, sort_order
         repository_dict['metadata'] = {}
         for changeset, changehash in repository.installable_revisions(app):
             encoded_id = app.security.encode_id(repository.id)
-            metadata = metadata_util.get_repository_metadata_by_changeset_revision(app, encoded_id, changehash)
+            metadata = get_repository_metadata_by_changeset_revision(app, encoded_id, changehash)
             repository_dict['metadata']['%s:%s' % (changeset, changehash)] = metadata.to_dict(value_mapper=default_value_mapper)
         if installable:
             if len(repository.installable_revisions(app)):
