@@ -287,6 +287,14 @@ class LibrariesApiTestCase(api.ApiTestCase, TestsDatasets):
         self._assert_status_code_is(create_response, 200)
         self._assert_has_keys(create_response.json(), "name", "file_ext", "misc_info", "genome_build")
 
+    def test_update_dataset_tags(self):
+        ld = self._create_dataset_in_folder_in_library("ForTagtestDataset")
+        data = {"tags": ["#Lancelot", "name:Holy Grail", "blue"]}
+        create_response = self._patch("libraries/datasets/%s" % ld.json()["id"], data=data)
+        self._assert_status_code_is(create_response, 200)
+        self._assert_has_keys(create_response.json(), "tags")
+        assert create_response.json()["tags"] == "name:Lancelot, name:HolyGrail, blue"
+
     def test_invalid_update_dataset_in_folder(self):
         ld = self._create_dataset_in_folder_in_library("ForInvalidUpdateDataset")
         data = {'file_ext': 'nonexisting_type'}
