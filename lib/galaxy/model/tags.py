@@ -257,8 +257,9 @@ class TagHandler(object):
         Return a list of tag tuples (name, value) pairs derived from a string.
 
         >>> th = TagHandler("bridge_of_death")
-        >>> th.parse_tags(u"name:Lancelot of Camelot;#Holy Grail;blue")
-        [(u'name', u'LancelotofCamelot'), (u'name', u'HolyGrail'), (u'blue', None)]
+        >>> assert th.parse_tags("#ARTHUR") == [('name', 'ARTHUR')]
+        >>> tags = th.parse_tags("name:Lancelot of Camelot;#Holy Grail;blue")
+        >>> assert tags == [('name', 'LancelotofCamelot'), ('name', 'HolyGrail'), ('blue', None)]
         """
         # Gracefully handle None.
         if not tag_str:
@@ -276,8 +277,8 @@ class TagHandler(object):
         Method scrubs tag names and values as well.
 
         >>> th = TagHandler("bridge_of_death")
-        >>> th.parse_tags_list(["name:Lancelot of Camelot", "#Holy Grail", "blue"])
-        [('name', 'LancelotofCamelot'), ('name', 'HolyGrail'), ('blue', None)]
+        >>> tags = th.parse_tags_list(["name:Lancelot of Camelot", "#Holy Grail", "blue"])
+        >>> assert tags == [('name', 'LancelotofCamelot'), ('name', 'HolyGrail'), ('blue', None)]
         """
         name_value_pairs = []
         for raw_tag in tags_list:
