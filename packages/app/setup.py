@@ -74,7 +74,7 @@ PACKAGES = [
     # 'galaxy.tool_shed.galaxy_install.repository_dependencies',
     'galaxy.tool_shed.galaxy_install.tool_dependencies',
     'galaxy.tool_shed.galaxy_install.tool_dependencies.recipe',
-    # 'galaxy.tool_shed.galaxy_install.tools',
+    'galaxy.tool_shed.galaxy_install.tools',
     # 'galaxy.tool_shed.galaxy_install.utility_containers',
     'galaxy.tool_shed.util',
     # 'galaxy.tool_shed.metadata',

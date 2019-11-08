@@ -14,12 +14,12 @@ from galaxy.tool_shed.galaxy_install.tool_dependencies.recipe.env_file_builder i
 from galaxy.tool_shed.galaxy_install.tool_dependencies.recipe.install_environment import InstallEnvironment
 from galaxy.tool_shed.galaxy_install.tool_dependencies.recipe.recipe_manager import StepManager
 from galaxy.tool_shed.galaxy_install.tool_dependencies.recipe.recipe_manager import TagManager
+from galaxy.tool_shed.galaxy_install.tools import data_manager, tool_panel_manager
+from galaxy.tool_shed.tools.data_table_manager import ShedToolDataTableManager
 from galaxy.tool_util.deps import views
 from tool_shed.galaxy_install.datatypes import custom_datatype_manager
 from tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
 from tool_shed.galaxy_install.repository_dependencies import repository_dependency_manager
-from tool_shed.galaxy_install.tools import data_manager, tool_panel_manager
-from tool_shed.tools.data_table_manager import ShedToolDataTableManager
 from tool_shed.util import basic_util, common_util, encoding_util, hg_util, repository_util
 from tool_shed.util import shed_util_common as suc, tool_dependency_util
 from tool_shed.util import tool_util, xml_util

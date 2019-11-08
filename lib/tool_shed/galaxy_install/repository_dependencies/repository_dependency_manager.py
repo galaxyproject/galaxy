@@ -10,6 +10,7 @@ from six.moves.urllib.error import HTTPError
 from six.moves.urllib.parse import urlencode, urlparse
 from six.moves.urllib.request import Request, urlopen
 
+from galaxy.tool_shed.galaxy_install.tools import tool_panel_manager
 from galaxy.util import (
     asbool,
     build_url,
@@ -17,7 +18,6 @@ from galaxy.util import (
     unicodify,
     url_get,
 )
-from tool_shed.galaxy_install.tools import tool_panel_manager
 from tool_shed.util import common_util
 from tool_shed.util import container_util
 from tool_shed.util import encoding_util

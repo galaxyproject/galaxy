@@ -4,11 +4,11 @@ import os
 from sqlalchemy import false
 
 from galaxy import util
+from galaxy.tool_shed.galaxy_install.tools import tool_panel_manager
 from galaxy.util import inflector
 from galaxy.util.tool_shed import common_util
 from galaxy.util.tool_shed import xml_util
 from galaxy.web.form_builder import SelectField
-from tool_shed.galaxy_install.tools import tool_panel_manager
 from tool_shed.metadata import metadata_generator
 from tool_shed.util import repository_util
 from tool_shed.util import tool_util
