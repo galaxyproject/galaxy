@@ -4,9 +4,9 @@ import tempfile
 
 from galaxy.tool_util.deps.resolvers import NullDependency
 from galaxy.util import listify, url_get
-from tool_shed.galaxy_install.tool_dependencies.env_manager import EnvManager
-from tool_shed.galaxy_install.tool_dependencies.recipe.env_file_builder import EnvFileBuilder
-from tool_shed.galaxy_install.tool_dependencies.recipe.install_environment import InstallEnvironment
+from galaxy.tool_shed.galaxy_install.tool_dependencies.env_manager import EnvManager
+from galaxy.tool_shed.galaxy_install.tool_dependencies.recipe.env_file_builder import EnvFileBuilder
+from galaxy.tool_shed.galaxy_install.tool_dependencies.recipe.install_environment import InstallEnvironment
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
 from tool_shed.util import metadata_util

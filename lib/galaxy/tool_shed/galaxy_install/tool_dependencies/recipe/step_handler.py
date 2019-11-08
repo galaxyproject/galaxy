@@ -18,7 +18,7 @@ from galaxy.util import (
 )
 from galaxy.util.compression_utils import CompressedFile
 from galaxy.util.template import fill_template
-from tool_shed.galaxy_install.tool_dependencies.env_manager import EnvManager
+from galaxy.tool_shed.galaxy_install.tool_dependencies.env_manager import EnvManager
 from tool_shed.util import basic_util, tool_dependency_util
 
 log = logging.getLogger(__name__)

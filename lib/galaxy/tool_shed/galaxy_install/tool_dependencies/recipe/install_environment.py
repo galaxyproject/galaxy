@@ -18,7 +18,7 @@ from galaxy.util import (
     shrink_string_by_size,
     unicodify
 )
-from tool_shed.galaxy_install.tool_dependencies.recipe import asynchronous_reader
+from galaxy.tool_shed.galaxy_install.tool_dependencies.recipe import asynchronous_reader
 from tool_shed.util import basic_util, tool_dependency_util
 
 log = logging.getLogger(__name__)
