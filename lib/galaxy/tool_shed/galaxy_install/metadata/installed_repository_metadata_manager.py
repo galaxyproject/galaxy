@@ -110,7 +110,7 @@ class InstalledRepositoryMetadataManager(MetadataGenerator):
             unsuccessful_count = 0
             for repository_id in repository_ids:
                 try:
-                    repository = repository_util.get_installed_tool_shed_repository(self.app, repository_id)
+                    repository = get_installed_tool_shed_repository(self.app, repository_id)
                     self.set_repository(repository)
                     self.reset_all_metadata_on_installed_repository()
                     if self.invalid_file_tups:
@@ -162,7 +162,7 @@ class InstalledRepositoryMetadataManager(MetadataGenerator):
         owner = self.repository.owner
         if not owner:
             cleaned_repository_clone_url = common_util.remove_protocol_and_user_from_clone_url(clone_url)
-            owner = repository_util.get_repository_owner(cleaned_repository_clone_url)
+            owner = get_repository_owner(cleaned_repository_clone_url)
         guid_to_tool_elem_dict = {}
         for tool_config_filename, guid, tool in repository_tools_tups:
             guid_to_tool_elem_dict[guid] = self.tpm.generate_tool_elem(tool_shed,
