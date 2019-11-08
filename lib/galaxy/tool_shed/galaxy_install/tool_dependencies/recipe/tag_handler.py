@@ -2,17 +2,17 @@ import logging
 import os
 import tempfile
 
-from galaxy.tool_util.deps.resolvers import NullDependency
-from galaxy.util import listify, url_get
 from galaxy.tool_shed.galaxy_install.tool_dependencies.env_manager import EnvManager
 from galaxy.tool_shed.galaxy_install.tool_dependencies.recipe.env_file_builder import EnvFileBuilder
 from galaxy.tool_shed.galaxy_install.tool_dependencies.recipe.install_environment import InstallEnvironment
-from tool_shed.util import basic_util
-from tool_shed.util import common_util
-from tool_shed.util import metadata_util
-from tool_shed.util import repository_util
-from tool_shed.util import tool_dependency_util
-from tool_shed.util import xml_util
+from galaxy.tool_shed.util import tool_dependency_util
+from galaxy.tool_shed.util.basic_util import INSTALLATION_LOG, remove_dir
+from galaxy.tool_shed.util.metadata_util import get_updated_changeset_revisions_from_tool_shed
+from galaxy.tool_shed.util.repository_util import get_absolute_path_to_file_in_repository, get_repository_for_dependency_relationship
+from galaxy.tool_util.deps.resolvers import NullDependency
+from galaxy.util import listify, url_get
+from galaxy.util.tool_shed.common_util import get_tool_shed_url_from_tool_shed_registry, remove_protocol_from_tool_shed_url
+from galaxy.util.tool_shed.xml_util import parse_xml
 
 log = logging.getLogger(__name__)
 
@@ -68,7 +68,7 @@ class SyncDatabase(object):
             # the dependency if we're "running_functional_tests".  If we're not "running_functional_tests, we'll set
             # the tool dependency's installation status to ERROR.
             tool_dependency_installation_directory_contents = os.listdir(tool_dependency_install_dir)
-            if basic_util.INSTALLATION_LOG in tool_dependency_installation_directory_contents:
+            if INSTALLATION_LOG in tool_dependency_installation_directory_contents:
                 # Since this tool dependency's installation directory contains an installation log, we consider it to be
                 # installed.  In some cases the record may be missing from the database due to some activity outside of
                 # the control of the Tool Shed.  Since a new record was created for it and we don't know the state of the
@@ -91,12 +91,12 @@ class SyncDatabase(object):
                     (str(tool_dependency_install_dir),
                      str(tool_dependency_name),
                      str(tool_dependency_version),
-                     str(basic_util.INSTALLATION_LOG))
+                     str(INSTALLATION_LOG))
                 error_message += ' is missing.  This indicates an installation error so the tool dependency is being'
                 error_message += ' prepared for re-installation.'
                 log.error(error_message)
                 tool_dependency.status = app.install_model.ToolDependency.installation_status.NEVER_INSTALLED
-                basic_util.remove_dir(tool_dependency_install_dir)
+                remove_dir(tool_dependency_install_dir)
                 can_install_tool_dependency = True
             sa_session.add(tool_dependency)
             sa_session.flush()
@@ -240,7 +240,7 @@ class Repository(RecipeTag, SyncDatabase):
 
     def create_temporary_tool_dependencies_config(self, tool_shed_url, name, owner, changeset_revision):
         """Make a call to the tool shed to get the required repository's tool_dependencies.xml file."""
-        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(self.app, tool_shed_url)
+        tool_shed_url = get_tool_shed_url_from_tool_shed_registry(self.app, tool_shed_url)
         if tool_shed_url is None or name is None or owner is None or changeset_revision is None:
             message = "Unable to retrieve required tool_dependencies.xml file from the Tool Shed because one or more of the "
             message += "following required parameters is None: tool_shed_url: %s, name: %s, owner: %s, changeset_revision: %s " % \
@@ -284,7 +284,7 @@ class Repository(RecipeTag, SyncDatabase):
             os.makedirs(dependent_install_dir)
         required_tool_dependency_env_file_path = None
         if tool_dependencies_config:
-            required_td_tree, error_message = xml_util.parse_xml(tool_dependencies_config)
+            required_td_tree, error_message = parse_xml(tool_dependencies_config)
             if required_td_tree:
                 required_td_root = required_td_tree.getroot()
                 for required_td_elem in required_td_root:
@@ -372,11 +372,11 @@ class Repository(RecipeTag, SyncDatabase):
         required_repository_name = elem.attrib['name']
         required_repository_owner = elem.attrib['owner']
         default_required_repository_changeset_revision = elem.attrib['changeset_revision']
-        required_repository = repository_util.get_repository_for_dependency_relationship(self.app, tool_shed_url,
-                                                                                         required_repository_name,
-                                                                                         required_repository_owner,
-                                                                                         default_required_repository_changeset_revision)
-        tool_shed = common_util.remove_protocol_from_tool_shed_url(tool_shed_url)
+        required_repository = get_repository_for_dependency_relationship(self.app, tool_shed_url,
+                                                                         required_repository_name,
+                                                                         required_repository_owner,
+                                                                         default_required_repository_changeset_revision)
+        tool_shed = remove_protocol_from_tool_shed_url(tool_shed_url)
         tmp_filename = None
         if required_repository:
             required_repository_changeset_revision = required_repository.installed_changeset_revision
@@ -436,7 +436,7 @@ class Repository(RecipeTag, SyncDatabase):
                         message = "Unable to locate the repository directory for revision %s of installed repository %s owned by %s." % \
                             (str(required_repository.changeset_revision), str(required_repository.name), str(required_repository.owner))
                         raise Exception(message)
-                    tool_dependencies_config = repository_util.get_absolute_path_to_file_in_repository(repo_files_dir, 'tool_dependencies.xml')
+                    tool_dependencies_config = get_absolute_path_to_file_in_repository(repo_files_dir, 'tool_dependencies.xml')
                     if tool_dependencies_config:
                         config_to_use = tool_dependencies_config
                     else:
@@ -446,11 +446,11 @@ class Repository(RecipeTag, SyncDatabase):
                 else:
                     # Make a call to the tool shed to get the changeset revision to which the current value of required_repository_changeset_revision
                     # should be updated if it's not current.
-                    text = metadata_util.get_updated_changeset_revisions_from_tool_shed(app=self.app,
-                                                                                        tool_shed_url=tool_shed,
-                                                                                        name=required_repository_name,
-                                                                                        owner=required_repository_owner,
-                                                                                        changeset_revision=required_repository_changeset_revision)
+                    text = get_updated_changeset_revisions_from_tool_shed(app=self.app,
+                                                                          tool_shed_url=tool_shed,
+                                                                          name=required_repository_name,
+                                                                          owner=required_repository_owner,
+                                                                          changeset_revision=required_repository_changeset_revision)
                     if text:
                         updated_changeset_revisions = listify(text)
                         # The list of changeset revisions is in reverse order, so the newest will be first.
