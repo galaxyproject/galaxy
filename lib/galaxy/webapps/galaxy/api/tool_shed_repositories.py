@@ -13,11 +13,11 @@ from galaxy import (
     exceptions,
     util
 )
+from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
 from galaxy.tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
+from galaxy.tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
 from galaxy.web import expose_api, require_admin, url_for
 from galaxy.webapps.base.controller import BaseAPIController
-from tool_shed.galaxy_install.install_manager import InstallRepositoryManager
-from tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
 from tool_shed.util import (
     repository_util,
     tool_util

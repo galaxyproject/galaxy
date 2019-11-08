@@ -7,18 +7,16 @@ from sqlalchemy import or_
 
 import tool_shed.repository_types.util as rt_util
 from galaxy import util, web
+from galaxy.tool_shed.galaxy_install import install_manager
+from galaxy.tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
 from galaxy.tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
 from galaxy.tool_shed.galaxy_install.repository_dependencies import repository_dependency_manager
 from galaxy.tool_shed.galaxy_install.tools import tool_panel_manager
 from galaxy.tool_util.deps import views
 from galaxy.util import unicodify
 from galaxy.web.form_builder import CheckboxField
-from tool_shed.galaxy_install import (
-    dependency_display,
-    install_manager
-)
+from tool_shed.galaxy_install import dependency_display
 from tool_shed.galaxy_install.grids import admin_toolshed_grids
-from tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
 from tool_shed.util import (
     common_util,
     encoding_util,

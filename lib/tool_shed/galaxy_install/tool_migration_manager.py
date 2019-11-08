@@ -11,6 +11,7 @@ import threading
 from collections import OrderedDict
 
 from galaxy import util
+from galaxy.tool_shed.galaxy_install import install_manager
 from galaxy.tool_shed.galaxy_install.datatypes import custom_datatype_manager
 from galaxy.tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
 from galaxy.tool_shed.galaxy_install.tools import tool_panel_manager
@@ -27,7 +28,6 @@ from galaxy.tools.toolbox import ToolSection
 from galaxy.tools.toolbox.parser import ensure_tool_conf_item
 from galaxy.util.tool_shed import common_util
 from galaxy.util.tool_shed.xml_util import parse_xml
-from . import install_manager
 
 log = logging.getLogger(__name__)
 

@@ -6,7 +6,8 @@ import sys
 from six.moves import configparser
 
 import galaxy.config
-from tool_shed.galaxy_install import installed_repository_manager, tool_migration_manager
+from galaxy.tool_shed.galaxy_install import installed_repository_manager
+from tool_shed.galaxy_install import tool_migration_manager
 
 
 class MigrateToolsApplication(galaxy.config.ConfiguresGalaxyMixin):

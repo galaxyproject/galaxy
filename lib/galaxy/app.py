@@ -22,6 +22,7 @@ from galaxy.managers.tools import DynamicToolManager
 from galaxy.model.database_heartbeat import DatabaseHeartbeat
 from galaxy.model.tags import GalaxyTagHandler
 from galaxy.queue_worker import GalaxyQueueWorker
+from galaxy.tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
 from galaxy.tool_util.deps.views import DependencyResolversView
 from galaxy.tool_util.verify import test_data
 from galaxy.tools.cache import (
@@ -45,7 +46,6 @@ from galaxy.web.proxy import ProxyManager
 from galaxy.web_stack import application_stack_instance
 from galaxy.webhooks import WebhooksRegistry
 from tool_shed.galaxy_install import (
-    installed_repository_manager,
     update_repository_manager
 )
 
@@ -91,7 +91,7 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         self._configure_models(check_migrate_databases=self.config.check_migrate_databases, check_migrate_tools=check_migrate_tools, config_file=config_file)
 
         # Manage installed tool shed repositories.
-        self.installed_repository_manager = installed_repository_manager.InstalledRepositoryManager(self)
+        self.installed_repository_manager = InstalledRepositoryManager(self)
 
         self._configure_datatypes_registry(self.installed_repository_manager)
         galaxy.model.set_datatypes_registry(self.datatypes_registry)
