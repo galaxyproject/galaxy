@@ -42,7 +42,7 @@ class ConfigSerializer(base.ModelSerializer):
             'brand'                             : _required_attribute,
             # TODO: this doesn't seem right
             'logo_url'                          : lambda item, key, **context: self.url_for(item.get(key, '/')),
-            'logo_src'                          : lambda item, key, **context: self.url_for('/static/images/galaxyIcon_noText.png'),
+            'logo_src'                          : lambda item, key, **context: self.url_for('/static/favicon.png'),
             'terms_url'                         : _required_attribute,
             'myexperiment_target_url'           : _required_attribute,
             'wiki_url'                          : _required_attribute,
