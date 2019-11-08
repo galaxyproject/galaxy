@@ -254,8 +254,11 @@ class TagHandler(object):
 
     def parse_tags(self, tag_str):
         """
-        Returns a list of raw (tag-name, value) pairs derived from a string; method scrubs tag names and values as well.
-        Return value is a list of (tag_name, tag_value) tuples.
+        Return a list of tag tuples (name, value) pairs derived from a string.
+
+        >>> th = TagHandler("bridge_of_death")
+        >>> th.parse_tags(u"name:Lancelot of Camelot;#Holy Grail;blue")
+        [(u'name', u'LancelotofCamelot'), (u'name', u'HolyGrail'), (u'blue', None)]
         """
         # Gracefully handle None.
         if not tag_str:
@@ -265,9 +268,19 @@ class TagHandler(object):
         # Split tags based on separators.
         reg_exp = re.compile('[' + self.tag_separators + ']')
         raw_tags = reg_exp.split(tag_str)
-        # Extract name-value pairs.
+        return self.parse_tags_list(raw_tags)
+
+    def parse_tags_list(self, tags_list):
+        """
+        Return a list of tag tuples (name, value) pairs derived from a list.
+        Method scrubs tag names and values as well.
+
+        >>> th = TagHandler("bridge_of_death")
+        >>> th.parse_tags_list(["name:Lancelot of Camelot", "#Holy Grail", "blue"])
+        [('name', 'LancelotofCamelot'), ('name', 'HolyGrail'), ('blue', None)]
+        """
         name_value_pairs = []
-        for raw_tag in raw_tags:
+        for raw_tag in tags_list:
             nv_pair = self._get_name_value_pair(raw_tag)
             scrubbed_name = self._scrub_tag_name(nv_pair[0])
             scrubbed_value = self._scrub_tag_value(nv_pair[1])
