@@ -126,7 +126,7 @@
                         v-model="selectedStopJobIds"
                         :checked="allSelected"
                         :key="data.index"
-                        :value="data.item['job_info']['id']"
+                        :value="data.item['id']"
                     ></b-form-checkbox>
                 </template>
                 <template v-slot:cell(job_info)="data">
@@ -186,6 +186,11 @@
 import { getAppRoot } from "onload/loadConfig";
 import UtcDate from "components/UtcDate";
 import axios from "axios";
+
+function cancelJob(jobId, message) {
+    const url = `${getAppRoot()}api/jobs/${jobId}`;
+    return axios.delete(url, { data: { message: message } });
+}
 
 export default {
     components: { UtcDate },
@@ -249,8 +254,6 @@ export default {
             this.busy = true;
             let params = [];
             params.push(`cutoff=${this.cutoff}`);
-            params.push(`stop_msg=${this.stopMessage}`);
-            params.push(`stop=${this.selectedStopJobIds.join()}`);
             params = params.join("&");
             axios
                 .get(`${getAppRoot()}admin/jobs_list?${params}`)
@@ -275,9 +278,11 @@ export default {
             this.update();
         },
         onStopJobs() {
-            this.update();
-            this.selectedStopJobIds = [];
-            this.stopMessage = "";
+            axios.all(this.selectedStopJobIds.map(jobId => cancelJob(jobId, this.stopMessage))).then(res => {
+                this.update();
+                this.selectedStopJobIds = [];
+                this.stopMessage = "";
+            });
         },
         showRowDetails(row, index, e) {
             if (e.target.nodeName != "A") {
@@ -315,9 +320,7 @@ export default {
             return f;
         },
         toggleAll(checked) {
-            this.selectedStopJobIds = checked
-                ? this.jobsItemsModel.reduce((acc, j) => [...acc, j["job_info"]["id"]], [])
-                : [];
+            this.selectedStopJobIds = checked ? this.jobsItemsModel.reduce((acc, j) => [...acc, j["id"]], []) : [];
         },
         galaxyKwdToBootstrap(status) {
             let variant = "info";

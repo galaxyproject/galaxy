@@ -237,15 +237,13 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
 
         :type   id: string
         :param  id: Encoded job id
+        :type   message: string
+        :param  message: Stop message.
         """
+        payload = kwd.get("payload") or {}
         job = self.__get_job(trans, id)
-        if not job.finished:
-            job.mark_deleted(self.app.config.track_jobs_in_database)
-            trans.sa_session.flush()
-            self.app.job_manager.stop(job)
-            return True
-        else:
-            return False
+        message = payload.get("message", None)
+        return self.job_manager.stop(job, message=message)
 
     @expose_api
     def resume(self, trans, id, **kwd):
