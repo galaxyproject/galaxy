@@ -139,10 +139,7 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
                 val = validation.validate_and_sanitize_basestring(key, val)
                 validated_payload[key] = val
             if key in ('tags'):
-                if isinstance(val, list):
-                    val = validation.validate_and_sanitize_basestring_list(key, val)
-                else:
-                    val = validation.validate_and_sanitize_basestring(key, val)
+                val = validation.validate_and_sanitize_basestring_list(key, util.listify(val))
                 validated_payload[key] = val
         return validated_payload
 
