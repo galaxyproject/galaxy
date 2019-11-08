@@ -15,7 +15,7 @@ log = logging.getLogger(__name__)
 REPOSITORY_OWNER = 'devteam'
 # not valid for installed Galaxy, fix
 MIGRATE_DIR = os.path.abspath(os.path.join(
-    os.path.dirname(__file__), os.pardir, os.pardir, os.pardir, 'tool_shed', 'galaxy_install', 'migrate'))
+    os.path.dirname(__file__), os.pardir, os.pardir, os.pardir, 'galaxy', 'tool_shed', 'galaxy_install', 'migrate'))
 TOOL_MIGRATION_SCRIPTS_DIR = os.path.join(MIGRATE_DIR, 'scripts')
 TOOL_MIGRATION_VERSIONS_DIR = os.path.join(MIGRATE_DIR, 'versions')
 

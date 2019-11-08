@@ -5,9 +5,9 @@ import shutil
 from sqlalchemy import and_
 
 from galaxy import util
-from galaxy.web.form_builder import SelectField
 from galaxy.tool_shed.util.hg_util import get_config_from_disk
 from galaxy.util.tool_shed.xml_util import parse_xml
+from galaxy.web.form_builder import SelectField
 
 log = logging.getLogger(__name__)
 
