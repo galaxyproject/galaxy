@@ -6,24 +6,35 @@ import tempfile
 from sqlalchemy import and_
 
 from galaxy import util
+from galaxy.tool_shed.repository_type import (
+    REPOSITORY_DEPENDENCY_DEFINITION_FILENAME,
+    TOOL_DEPENDENCY_DEFINITION_FILENAME,
+)
+from galaxy.tool_shed.tools.tool_validator import ToolValidator
+from galaxy.tool_shed.util import (
+    shed_util_common as suc,
+    tool_dependency_util,
+    tool_util,
+)
+from galaxy.tool_shed.util.basic_util import remove_dir, strip_path
+from galaxy.tool_shed.util.hg_util import (
+    get_config_from_disk,
+    get_repo_for_repository,
+)
+from galaxy.tool_shed.util.metadata_util import get_updated_changeset_revisions_from_tool_shed
+from galaxy.tool_shed.util.repository_util import get_repository_for_dependency_relationship
 from galaxy.tool_util.loader_directory import looks_like_a_tool
 from galaxy.tool_util.parser.interface import TestCollectionDef
 from galaxy.tools.data_manager.manager import DataManager
 from galaxy.tools.repositories import ValidationContext
-from galaxy.web import url_for
-from tool_shed.repository_types import util as rt_util
-from tool_shed.tools import tool_validator
-from tool_shed.util import (
-    basic_util,
-    common_util,
-    hg_util,
-    metadata_util,
-    repository_util,
-    shed_util_common as suc,
-    tool_dependency_util,
-    tool_util,
-    xml_util
+from galaxy.util.tool_shed.common_util import (
+    generate_clone_url_for_installed_repository,
+    generate_clone_url_for_repository_in_tool_shed,
+    remove_protocol_and_user_from_clone_url,
+    remove_protocol_from_tool_shed_url,
 )
+from galaxy.util.tool_shed.xml_util import parse_xml
+from galaxy.web import url_for
 
 log = logging.getLogger(__name__)
 
@@ -44,7 +55,7 @@ class MetadataGenerator(object):
                 self.changeset_revision = changeset_revision
 
             if repository_clone_url is None and self.repository is not None:
-                self.repository_clone_url = common_util.generate_clone_url_for_installed_repository(self.app, self.repository)
+                self.repository_clone_url = generate_clone_url_for_installed_repository(self.app, self.repository)
             else:
                 self.repository_clone_url = repository_clone_url
             if shed_config_dict is None:
@@ -71,7 +82,7 @@ class MetadataGenerator(object):
                 self.changeset_revision = changeset_revision
             if repository_clone_url is None and self.repository is not None:
                 self.repository_clone_url = \
-                    common_util.generate_clone_url_for_repository_in_tool_shed(self.user, self.repository)
+                    generate_clone_url_for_repository_in_tool_shed(self.user, self.repository)
             else:
                 self.repository_clone_url = repository_clone_url
             if shed_config_dict is None:
@@ -94,8 +105,8 @@ class MetadataGenerator(object):
         self.invalid_file_tups = []
         self.sa_session = app.model.context.current
         self.NOT_TOOL_CONFIGS = [suc.DATATYPES_CONFIG_FILENAME,
-                                 rt_util.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME,
-                                 rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME,
+                                 REPOSITORY_DEPENDENCY_DEFINITION_FILENAME,
+                                 TOOL_DEPENDENCY_DEFINITION_FILENAME,
                                  suc.REPOSITORY_DATA_MANAGER_CONFIG_FILENAME]
 
     def generate_data_manager_metadata(self, repo_dir, data_manager_config_filename, metadata_dict,
@@ -123,7 +134,7 @@ class MetadataGenerator(object):
                                  'invalid_data_managers': invalid_data_managers,
                                  'error_messages': []}
         metadata_dict['data_manager'] = data_manager_metadata
-        tree, error_message = xml_util.parse_xml(data_manager_config_filename)
+        tree, error_message = parse_xml(data_manager_config_filename)
         if tree is None:
             # We are not able to load any data managers.
             data_manager_metadata['error_messages'].append(error_message)
@@ -193,7 +204,7 @@ class MetadataGenerator(object):
 
     def generate_datatypes_metadata(self, tv, repository_files_dir, datatypes_config, metadata_dict):
         """Update the received metadata_dict with information from the parsed datatypes_config."""
-        tree, error_message = xml_util.parse_xml(datatypes_config)
+        tree, error_message = parse_xml(datatypes_config)
         if tree is None:
             return metadata_dict
         root = tree.getroot()
@@ -237,7 +248,7 @@ class MetadataGenerator(object):
                         tool_config = sub_elem.attrib['file']
                         target_datatype = sub_elem.attrib['target_datatype']
                         # Parse the tool_config to get the guid.
-                        tool_config_path = hg_util.get_config_from_disk(tool_config, repository_files_dir)
+                        tool_config_path = get_config_from_disk(tool_config, repository_files_dir)
                         full_path = os.path.abspath(tool_config_path)
                         tool, valid, error_message = \
                             tv.load_tool_from_config(self.app.security.encode_id(self.repository.id), full_path)
@@ -287,7 +298,7 @@ class MetadataGenerator(object):
         return valid_tool_dependencies_dict
 
     def generate_guid_for_object(self, guid_type, obj_id, version):
-        tmp_url = common_util.remove_protocol_and_user_from_clone_url(self.repository_clone_url)
+        tmp_url = remove_protocol_and_user_from_clone_url(self.repository_clone_url)
         return '%s/%s/%s/%s' % (tmp_url, guid_type, obj_id, version)
 
     def generate_metadata_for_changeset_revision(self):
@@ -340,9 +351,9 @@ class MetadataGenerator(object):
                 files_dir = os.path.join(self.shed_config_dict['tool_path'], files_dir)
         # Create ValidationContext to load and validate tools, data tables and datatypes
         with ValidationContext.from_app(app=self.app, work_dir=work_dir) as validation_context:
-            tv = tool_validator.ToolValidator(validation_context)
+            tv = ToolValidator(validation_context)
             # Handle proprietary datatypes, if any.
-            datatypes_config = hg_util.get_config_from_disk(suc.DATATYPES_CONFIG_FILENAME, files_dir)
+            datatypes_config = get_config_from_disk(suc.DATATYPES_CONFIG_FILENAME, files_dir)
             if datatypes_config:
                 metadata_dict = self.generate_datatypes_metadata(tv,
                                                                  files_dir,
@@ -383,7 +394,7 @@ class MetadataGenerator(object):
                         dirs.remove('.hg')
                     for name in files:
                         # See if we have a repository dependencies defined.
-                        if name == rt_util.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
+                        if name == REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
                             path_to_repository_dependencies_config = os.path.join(root, name)
                             metadata_dict, error_message = \
                                 self.generate_repository_dependency_metadata(path_to_repository_dependencies_config,
@@ -401,7 +412,7 @@ class MetadataGenerator(object):
                         # See if we have a tool config.
                         elif looks_like_a_tool(os.path.join(root, name), invalid_names=self.NOT_TOOL_CONFIGS):
                             full_path = str(os.path.abspath(os.path.join(root, name)))  # why the str, seems very odd
-                            element_tree, error_message = xml_util.parse_xml(full_path)
+                            element_tree, error_message = parse_xml(full_path)
                             if element_tree is None:
                                 is_tool = False
                             else:
@@ -462,7 +473,7 @@ class MetadataGenerator(object):
                                                                                     exported_workflow_dict,
                                                                                     metadata_dict)
         # Handle any data manager entries
-        data_manager_config = hg_util.get_config_from_disk(suc.REPOSITORY_DATA_MANAGER_CONFIG_FILENAME, files_dir)
+        data_manager_config = get_config_from_disk(suc.REPOSITORY_DATA_MANAGER_CONFIG_FILENAME, files_dir)
         metadata_dict = self.generate_data_manager_metadata(files_dir,
                                                             data_manager_config,
                                                             metadata_dict,
@@ -471,18 +482,18 @@ class MetadataGenerator(object):
         if readme_files:
             metadata_dict['readme_files'] = readme_files
         # This step must be done after metadata for tools has been defined.
-        tool_dependencies_config = hg_util.get_config_from_disk(rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME, files_dir)
+        tool_dependencies_config = get_config_from_disk(TOOL_DEPENDENCY_DEFINITION_FILENAME, files_dir)
         if tool_dependencies_config:
             metadata_dict, error_message = \
                 self.generate_tool_dependency_metadata(tool_dependencies_config,
                                                        metadata_dict,
                                                        original_repository_metadata=original_repository_metadata)
             if error_message:
-                self.invalid_file_tups.append((rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME, error_message))
+                self.invalid_file_tups.append((TOOL_DEPENDENCY_DEFINITION_FILENAME, error_message))
         if invalid_tool_configs:
             metadata_dict['invalid_tools'] = invalid_tool_configs
         self.metadata_dict = metadata_dict
-        basic_util.remove_dir(work_dir)
+        remove_dir(work_dir)
 
     def generate_package_dependency_metadata(self, elem, valid_tool_dependencies_dict, invalid_tool_dependencies_dict):
         """
@@ -576,7 +587,7 @@ class MetadataGenerator(object):
         repository_dependencies_config.  This method is called from the tool shed as well as from Galaxy.
         """
         # Make sure we're looking at a valid repository_dependencies.xml file.
-        tree, error_message = xml_util.parse_xml(repository_dependencies_config)
+        tree, error_message = parse_xml(repository_dependencies_config)
         if tree is None:
             xml_is_valid = False
         else:
@@ -668,7 +679,7 @@ class MetadataGenerator(object):
                 outputs = []
                 for output in ttb.outputs:
                     name, file_name, extra = output
-                    outputs.append((name, basic_util.strip_path(file_name) if file_name else None))
+                    outputs.append((name, strip_path(file_name) if file_name else None))
                     if file_name not in required_files and file_name is not None:
                         required_files.append(file_name)
                 test_dict = dict(name=str(ttb.name),
@@ -714,7 +725,7 @@ class MetadataGenerator(object):
             original_valid_tool_dependencies_dict = original_repository_metadata.get('tool_dependencies', None)
         else:
             original_valid_tool_dependencies_dict = None
-        tree, error_message = xml_util.parse_xml(tool_dependencies_config)
+        tree, error_message = parse_xml(tool_dependencies_config)
         if tree is None:
             return metadata_dict, error_message
         root = tree.getroot()
@@ -896,7 +907,7 @@ class MetadataGenerator(object):
             # Default to the current tool shed.
             toolshed = str(url_for('/', qualified=True)).rstrip('/')
             repository_dependency_tup[0] = toolshed
-        toolshed = common_util.remove_protocol_from_tool_shed_url(toolshed)
+        toolshed = remove_protocol_from_tool_shed_url(toolshed)
         if self.app.name == 'galaxy':
             # We're in Galaxy.  We reach here when we're generating the metadata for a tool
             # dependencies package defined for a repository or when we're generating metadata
@@ -904,30 +915,30 @@ class MetadataGenerator(object):
             # the changeset_revision defined in the repository_elem (it may be outdated).  If
             # we're successful in locating an installed repository with the attributes defined
             # in the repository_elem, we know it is valid.
-            repository = repository_util.get_repository_for_dependency_relationship(self.app,
-                                                                                    toolshed,
-                                                                                    name,
-                                                                                    owner,
-                                                                                    changeset_revision)
+            repository = get_repository_for_dependency_relationship(self.app,
+                                                                    toolshed,
+                                                                    name,
+                                                                    owner,
+                                                                    changeset_revision)
             if repository:
                 return repository_dependency_tup, is_valid, error_message
             else:
                 # Send a request to the tool shed to retrieve appropriate additional changeset
                 # revisions with which the repository
                 # may have been installed.
-                text = metadata_util.get_updated_changeset_revisions_from_tool_shed(self.app,
-                                                                                    toolshed,
-                                                                                    name,
-                                                                                    owner,
-                                                                                    changeset_revision)
+                text = get_updated_changeset_revisions_from_tool_shed(self.app,
+                                                                      toolshed,
+                                                                      name,
+                                                                      owner,
+                                                                      changeset_revision)
                 if text:
                     updated_changeset_revisions = util.listify(text)
                     for updated_changeset_revision in updated_changeset_revisions:
-                        repository = repository_util.get_repository_for_dependency_relationship(self.app,
-                                                                                                toolshed,
-                                                                                                name,
-                                                                                                owner,
-                                                                                                updated_changeset_revision)
+                        repository = get_repository_for_dependency_relationship(self.app,
+                                                                                toolshed,
+                                                                                name,
+                                                                                owner,
+                                                                                updated_changeset_revision)
                         if repository:
                             return repository_dependency_tup, is_valid, error_message
                         if self.updating_installed_repository:
@@ -978,7 +989,7 @@ class MetadataGenerator(object):
                     log.debug(error_message)
                     is_valid = False
                     return repository_dependency_tup, is_valid, error_message
-                repo = hg_util.get_repo_for_repository(self.app, repository=repository)
+                repo = get_repo_for_repository(self.app, repository=repository)
 
                 # The received changeset_revision may be None since defining it in the dependency definition is optional.
                 # If this is the case, the default will be to set its value to the repository dependency tip revision.
