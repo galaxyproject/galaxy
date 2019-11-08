@@ -11,6 +11,9 @@ from six.moves.urllib.parse import urlencode, urlparse
 from six.moves.urllib.request import Request, urlopen
 
 from galaxy.tool_shed.galaxy_install.tools import tool_panel_manager
+from galaxy.tool_shed.util import repository_util
+from galaxy.tool_shed.util.container_util import get_components_from_key
+from galaxy.tool_shed.util.shed_util_common import get_ctx_rev
 from galaxy.util import (
     asbool,
     build_url,
@@ -18,11 +21,8 @@ from galaxy.util import (
     unicodify,
     url_get,
 )
-from tool_shed.util import common_util
-from tool_shed.util import container_util
-from tool_shed.util import encoding_util
-from tool_shed.util import repository_util
-from tool_shed.util import shed_util_common as suc
+from galaxy.util.tool_shed import common_util
+from galaxy.util.tool_shed import encoding_util
 
 log = logging.getLogger(__name__)
 
@@ -57,7 +57,7 @@ class RepositoryDependencyInstallManager(object):
                         if key in ['root_key', 'description']:
                             continue
                         d_repository = None
-                        repository_components_tuple = container_util.get_components_from_key(key)
+                        repository_components_tuple = get_components_from_key(key)
                         components_list = repository_util.extract_components_from_tuple(repository_components_tuple)
                         d_toolshed, d_name, d_owner, d_changeset_revision = components_list[0:4]
                         for tsr in tool_shed_repositories:
@@ -283,7 +283,7 @@ class RepositoryDependencyInstallManager(object):
         if not repository:
             tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(self.app, tool_shed)
             repository_clone_url = os.path.join(tool_shed_url, 'repos', owner, name)
-            ctx_rev = suc.get_ctx_rev(self.app, tool_shed_url, name, owner, changeset_revision)
+            ctx_rev = get_ctx_rev(self.app, tool_shed_url, name, owner, changeset_revision)
             repository = repository_util.create_or_update_tool_shed_repository(app=self.app,
                                                                                name=name,
                                                                                description=None,
@@ -353,7 +353,7 @@ class RepositoryDependencyInstallManager(object):
                         for key, val in repository_dependencies.items():
                             if key in ['root_key', 'description']:
                                 continue
-                            repository_components_tuple = container_util.get_components_from_key(key)
+                            repository_components_tuple = get_components_from_key(key)
                             components_list = repository_util.extract_components_from_tuple(repository_components_tuple)
                             # Skip listing a repository dependency if it is required only to compile a tool dependency
                             # defined for the dependent repository since in this case, the repository dependency is really
