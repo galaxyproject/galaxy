@@ -167,9 +167,9 @@ class MockAppConfig(Bunch):
         return self.dict()
 
     def __getattr__(self, name):
-        # Handle the automatic config file _set options
-        if name.endswith('_file_set'):
-            return False
+        # Handle the automatic [option]_set options: for tests, assume none are set
+        if name == 'is_set':
+            return lambda x: False
         return super(MockAppConfig, self).__getattr__(name)
 
     def __del__(self):
