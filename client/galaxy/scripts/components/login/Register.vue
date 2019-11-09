@@ -44,6 +44,9 @@
                     </b-card>
                 </b-form>
             </div>
+            <div v-if="terms_url" class="col">
+                <b-embed type="iframe" :src="terms_url" aspect="1by1" />
+            </div>
         </div>
     </div>
 </template>
@@ -71,6 +74,10 @@ export default {
             required: false
         },
         redirect: {
+            type: String,
+            required: false
+        },
+        terms_url: {
             type: String,
             required: false
         }
