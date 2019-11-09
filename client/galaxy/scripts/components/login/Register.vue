@@ -2,7 +2,7 @@
     <div class="container">
         <div class="row justify-content-md-center">
             <div class="col" :class="{ 'col-lg-6': !isAdmin }">
-                <b-alert :show="registration_warning_message" variant="danger">
+                <b-alert :show="showRegistrationWarning" variant="danger">
                     {{ registration_warning_message }}
                 </b-alert>
                 <b-alert :show="messageShow" :variant="messageVariant" v-html="messageText" />
@@ -100,6 +100,9 @@ export default {
     computed: {
         messageShow() {
             return this.messageText != null;
+        },
+        showRegistrationWarning() {
+            return this.registration_warning_message != null;
         }
     },
     methods: {
