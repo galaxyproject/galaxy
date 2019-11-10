@@ -124,7 +124,9 @@ def main():
             item = line.split("\t")[group_col]
         except IndexError:
             stop_err("The following line didn't have %s columns: %s" % (group_col + 1, line))
-
+        # in case of grouping by the last column the newline character needs to be removed
+        # removal of other white spaces seems also useful
+        item = item.strip()
         if ignorecase == 1:
             return item.lower()
         return item
