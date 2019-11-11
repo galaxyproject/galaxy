@@ -21,7 +21,7 @@ cat <<EOF
 '${0##*/} -data_managers -id data_manager_id'    for testing one Data Manager with id 'data_manager_id'
 '${0##*/} -unit'                    for running all unit tests (doctests and tests in test/unit)
 '${0##*/} -unit (test_path)'        for running unit tests on specified test path (use nosetest path)
-'${0##*/} -selenium'                for running all selenium web tests (in test/selenium_tests)
+'${0##*/} -selenium'                for running all selenium web tests (in lib/galaxy_test/selenium)
 '${0##*/} -selenium (test_path)'    for running specified selenium web tests (use nosetest path)
 
 This wrapper script largely serves as a point documentation and convenience -
@@ -44,7 +44,7 @@ The main test types are as follows:
    quickly test just a component or a few components of Galaxy's backend code.
 - QUnit: These are JavaScript unit tests defined in client/galaxy/scripts/qunit.
 - Selenium: These are full stack tests meant to test the Galaxy UI with real
-   browsers and are located in test/selenium_tests.
+   browsers and are located in lib/galaxy_test/selenium.
 - ToolShed: These are web tests that use the older Python web testing
    framework twill to test ToolShed related functionality. These are
    located in lib/tool_shed/test.
@@ -82,14 +82,14 @@ Run all selenium tests (Under Linux using Docker):
     GALAXY_TEST_SELENIUM_REMOTE=1 ./run_tests.sh -selenium
 
 Run a specific selenium test (under Linux or Mac OS X after installing geckodriver or chromedriver):
-    ./run_tests.sh -selenium test/selenium_tests/test_registration.py:RegistrationTestCase.test_reregister_username_fails
+    ./run_tests.sh -selenium lib/galaxy_test/selenium/test_registration.py:RegistrationTestCase.test_reregister_username_fails
 
 Run a selenium test against a running server while watching client (fastest iterating on client tests):
     ./run.sh & # run Galaxy on 8080
     make client-watch & # watch for client changes
     export GALAXY_TEST_EXTERNAL=http://localhost:8080/  # Target tests at server.
     . .venv/bin/activate # source the virtualenv so can skip run_tests.sh.
-    nosetests test/selenium_tests/test_workflow_editor.py:WorkflowEditorTestCase.test_data_input   
+    nosetests lib/galaxy_test/selenium/test_workflow_editor.py:WorkflowEditorTestCase.test_data_input
 
 Note About Selenium Tests:
 
@@ -395,7 +395,7 @@ do
               selenium_script=$2
               shift 2
           else
-              selenium_script="./test/selenium_tests"
+              selenium_script="./lib/galaxy_test/selenium"
               shift 1
           fi
           ;;
