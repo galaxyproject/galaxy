@@ -5,7 +5,10 @@ from sqlalchemy import and_
 
 import tool_shed.util.repository_util
 from galaxy import util
-from tool_shed.util import common_util
+from galaxy.util.tool_shed.common_util import (
+    get_tool_shed_url_from_tool_shed_registry,
+    parse_repository_dependency_tuple,
+)
 from tool_shed.util import hg_util
 
 log = logging.getLogger(__name__)
@@ -202,7 +205,7 @@ def get_repository_dependency_tups_from_repository_metadata(app, repository_meta
                     # ['http://localhost:9009', 'package_samtools_0_1_18', 'devteam', 'ef37fc635cb9', 'False', 'False']
                     for repository_dependency_tup in repository_dependency_tups:
                         toolshed, name, owner, changeset_revision, pir, oicct = \
-                            common_util.parse_repository_dependency_tuple(repository_dependency_tup)
+                            parse_repository_dependency_tuple(repository_dependency_tup)
                         repository = tool_shed.util.repository_util.get_repository_by_name_and_owner(app, name, owner)
                         if repository:
                             if deprecated_only:
@@ -301,7 +304,7 @@ def get_updated_changeset_revisions_from_tool_shed(app, tool_shed_url, name, own
     Get all appropriate newer changeset revisions for the repository defined by
     the received tool_shed_url / name / owner combination.
     """
-    tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(app, tool_shed_url)
+    tool_shed_url = get_tool_shed_url_from_tool_shed_registry(app, tool_shed_url)
     if tool_shed_url is None or name is None or owner is None or changeset_revision is None:
         message = "Unable to get updated changeset revisions from the Tool Shed because one or more of the following "
         message += "required parameters is None: tool_shed_url: %s, name: %s, owner: %s, changeset_revision: %s " % \
