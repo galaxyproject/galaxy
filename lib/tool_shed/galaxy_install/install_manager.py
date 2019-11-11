@@ -890,7 +890,7 @@ class InstallRepositoryManager(object):
         relative_clone_dir = repository_util.generate_tool_shed_repository_install_dir(repository_clone_url,
                                                                                        tool_shed_repository.installed_changeset_revision)
         relative_install_dir = os.path.join(relative_clone_dir, tool_shed_repository.name)
-        install_dir = os.path.join(tool_path, relative_install_dir)
+        install_dir = os.path.abspath(os.path.join(tool_path, relative_install_dir))
         log.info("Cloning repository '%s' at %s:%s", repository_clone_url, ctx_rev, tool_shed_repository.changeset_revision)
         if os.path.exists(install_dir):
             # May exist from a previous failed install attempt, just try updating instead of cloning.
