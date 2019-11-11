@@ -39,7 +39,7 @@ from galaxy.tool_util.verify.interactor import GalaxyInteractorApi, verify_tool
 from galaxy.util import asbool, download_to_file
 from galaxy.util.properties import load_app_properties
 from galaxy.web import buildapp
-from galaxy.webapps.tool_shed.app import UniverseApplication as ToolshedUniverseApplication
+from tool_shed.webapp.app import UniverseApplication as ToolshedUniverseApplication
 from .api_util import get_master_api_key, get_user_api_key
 from .instrument import StructuredTestDataPlugin
 from .nose_util import run

@@ -5,9 +5,9 @@ import time
 import galaxy.datatypes.registry
 import galaxy.quota
 import galaxy.tools.data
-import galaxy.webapps.tool_shed.model
 import tool_shed.repository_registry
 import tool_shed.repository_types.registry
+import tool_shed.webapp.model
 from galaxy import tools
 from galaxy.config import configure_logging
 from galaxy.model.tags import CommunityTagHandler
@@ -44,10 +44,10 @@ class UniverseApplication(object):
         else:
             db_url = "sqlite:///%s?isolation_level=IMMEDIATE" % self.config.database
         # Initialize the Tool Shed database and check for appropriate schema version.
-        from galaxy.webapps.tool_shed.model.migrate.check import create_or_verify_database
+        from tool_shed.webapp.model.migrate.check import create_or_verify_database
         create_or_verify_database(db_url, self.config.database_engine_options)
         # Set up the Tool Shed database engine and ORM.
-        from galaxy.webapps.tool_shed.model import mapping
+        from tool_shed.webapp.model import mapping
         self.model = mapping.init(self.config.file_path,
                                   db_url,
                                   self.config.database_engine_options)

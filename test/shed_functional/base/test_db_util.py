@@ -4,7 +4,7 @@ from sqlalchemy import and_, false, true
 
 import galaxy.model
 import galaxy.model.tool_shed_install
-import galaxy.webapps.tool_shed.model as model
+import tool_shed.webapp.model as model
 from base.driver_util import (  # noqa: I100,I201
     galaxy_context as ga_session,
     install_context as install_session,

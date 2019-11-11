@@ -24,7 +24,6 @@ from galaxy.tools.repositories import ValidationContext
 from galaxy.web.form_builder import CheckboxField, SelectField
 from galaxy.webapps.base.controller import BaseUIController
 from galaxy.webapps.reports.framework import grids
-from galaxy.webapps.tool_shed.util import ratings_util
 from tool_shed.capsule import capsule_manager
 from tool_shed.dependencies.repository import relation_builder
 from tool_shed.galaxy_install import dependency_display
@@ -48,6 +47,7 @@ from tool_shed.util import (
 )
 from tool_shed.util.web_util import escape
 from tool_shed.utility_containers import ToolShedUtilityContainerManager
+from tool_shed.webapp.util import ratings_util
 
 log = logging.getLogger(__name__)
 

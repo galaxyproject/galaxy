@@ -12,8 +12,8 @@ from routes.middleware import RoutesMiddleware
 from six.moves.urllib.parse import parse_qs
 
 import galaxy.web.framework.webapp
-import galaxy.webapps.tool_shed.model
-import galaxy.webapps.tool_shed.model.mapping
+import tool_shed.webapp.model
+import tool_shed.webapp.model.mapping
 from galaxy import util
 from galaxy.util import asbool
 from galaxy.util.properties import load_app_properties
@@ -32,12 +32,12 @@ def add_ui_controllers(webapp, app):
     them to the webapp.
     """
     from galaxy.webapps.base.controller import BaseUIController
-    import galaxy.webapps.tool_shed.controllers
-    controller_dir = galaxy.webapps.tool_shed.controllers.__path__[0]
+    import tool_shed.webapp.controllers
+    controller_dir = tool_shed.webapp.controllers.__path__[0]
     for fname in os.listdir(controller_dir):
         if not fname.startswith("_") and fname.endswith(".py"):
             name = fname[:-3]
-            module_name = "galaxy.webapps.tool_shed.controllers." + name
+            module_name = "tool_shed.webapp.controllers." + name
             module = __import__(module_name)
             for comp in module_name.split(".")[1:]:
                 module = getattr(module, comp)
@@ -60,7 +60,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
         app = kwargs.pop('app')
     else:
         try:
-            from galaxy.webapps.tool_shed.app import UniverseApplication
+            from tool_shed.webapp.app import UniverseApplication
             app = UniverseApplication(global_conf=global_conf, **kwargs)
         except Exception:
             import traceback
@@ -85,7 +85,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     # Enable 'hg clone' functionality on repos by letting hgwebapp handle the request
     webapp.add_route('/repos/*path_info', controller='hg', action='handle_request', path_info='/')
     # Add the web API.  # A good resource for RESTful services - https://routes.readthedocs.io/en/latest/restful.html
-    webapp.add_api_controllers('galaxy.webapps.tool_shed.api', app)
+    webapp.add_api_controllers('tool_shed.webapp.api', app)
     webapp.mapper.connect('api_key_retrieval',
                           '/api/authenticate/baseauth/',
                           controller='authenticate',
@@ -198,7 +198,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
                                  kwargs=kwargs)
     # Close any pooled database connections before forking
     try:
-        galaxy.webapps.tool_shed.model.mapping.metadata.bind.dispose()
+        tool_shed.webapp.model.mapping.metadata.bind.dispose()
     except Exception:
         log.exception("Unable to dispose of pooled tool_shed model database connections.")
     # Return
@@ -225,7 +225,7 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
     # protects Galaxy from improperly configured authentication in the
     # upstream server
     if asbool(conf.get('use_remote_user', False)):
-        from galaxy.webapps.tool_shed.framework.middleware.remoteuser import RemoteUser
+        from tool_shed.webapp.framework.middleware.remoteuser import RemoteUser
         app = wrap_if_allowed(app, stack, RemoteUser,
                               kwargs=dict(
                                   maildomain=conf.get('remote_user_maildomain', None),
