@@ -955,6 +955,9 @@ class InstallRepositoryManager(object):
             repo_files_dir = os.path.abspath(os.path.join(relative_install_dir, repository.name))
         repository_clone_url = os.path.join(tool_shed_url, 'repos', repository.owner, repository.name)
         log.info("Updating repository '%s' to %s:%s", repository.name, latest_ctx_rev, latest_changeset_revision)
+        if not os.path.exists(repo_files_dir):
+            log.debug("Repository directory '%s' does not exist, cloning repository instead of updating repository", repo_files_dir)
+            hg_util.clone_repository(repository_clone_url=repository_clone_url, repository_file_dir=repo_files_dir, ctx_rev=latest_ctx_rev)
         hg_util.pull_repository(repo_files_dir, repository_clone_url, latest_ctx_rev)
         hg_util.update_repository(repo_files_dir, latest_ctx_rev)
         # Remove old Data Manager entries
