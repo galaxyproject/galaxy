@@ -1,0 +1,4 @@
+galaxy-data
+nose
+pytest
+
