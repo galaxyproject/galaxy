@@ -87,13 +87,11 @@ class ToolShedRepository(object):
     def shed_config_filename(self, value):
         self.metadata['shed_config_filename'] = value
 
-    def get_shed_config_dict(self, app, default=None):
+    def get_shed_config_dict(self, app):
         """
         Return the in-memory version of the shed_tool_conf file, which is stored in the config_elems entry
         in the shed_tool_conf_dict.
         """
-        if default is None:
-            default = {}
 
         def _is_valid_shed_config_filename(filename):
             for shed_tool_conf_dict in app.toolbox.dynamic_confs(include_migrated_tool_conf=True):
@@ -102,12 +100,11 @@ class ToolShedRepository(object):
             return False
 
         if not self.shed_config_filename or not _is_valid_shed_config_filename(self.shed_config_filename):
-            self.guess_shed_config(app, default=default)
-        if self.shed_config_filename:
-            for shed_tool_conf_dict in app.toolbox.dynamic_confs(include_migrated_tool_conf=True):
-                if self.shed_config_filename == shed_tool_conf_dict['config_filename']:
-                    return shed_tool_conf_dict
-        return default
+            return self.guess_shed_config(app)
+        for shed_tool_conf_dict in app.toolbox.dynamic_confs(include_migrated_tool_conf=True):
+            if self.shed_config_filename == shed_tool_conf_dict['config_filename']:
+                return shed_tool_conf_dict
+        return {}
 
     def get_tool_relative_path(self, app):
         # This is a somewhat public function, used by data_manager_manual for instance
@@ -119,7 +116,7 @@ class ToolShedRepository(object):
             relative_path = os.path.join(self.tool_shed_path_name, 'repos', self.owner, self.name, self.installed_changeset_revision)
         return tool_path, relative_path
 
-    def guess_shed_config(self, app, default=None):
+    def guess_shed_config(self, app):
         tool_ids = []
         for tool in self.metadata.get('tools', []):
             tool_ids.append(tool.get('guid'))
@@ -148,7 +145,7 @@ class ToolShedRepository(object):
                 if os.path.exists(relative_path):
                     self.shed_config_filename = shed_tool_conf_dict['config_filename']
                     return shed_tool_conf_dict
-        return default
+        return {}
 
     @property
     def has_readme_files(self):
