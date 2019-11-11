@@ -1,6 +1,6 @@
 from contextlib import contextmanager
 
-from tool_shed.galaxy_install.tool_dependencies.recipe.env_file_builder import EnvFileBuilder
+from galaxy.tool_shed.galaxy_install.tool_dependencies.recipe.env_file_builder import EnvFileBuilder
 
 
 def test_env_file_builder():

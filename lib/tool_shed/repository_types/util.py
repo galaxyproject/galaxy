@@ -1,16 +1,16 @@
 import logging
 
+from galaxy.tool_shed.repository_type import (
+    REPOSITORY_DEPENDENCY_DEFINITION_FILENAME,
+    REPOSITORY_SUITE_DEFINITION,
+    TOOL_DEPENDENCY_DEFINITION,
+    TOOL_DEPENDENCY_DEFINITION_FILENAME,
+    types,
+    UNRESTRICTED,
+)
 from galaxy.web.form_builder import SelectField
 
 log = logging.getLogger(__name__)
-
-REPOSITORY_DEPENDENCY_DEFINITION_FILENAME = 'repository_dependencies.xml'
-REPOSITORY_SUITE_DEFINITION = 'repository_suite_definition'
-TOOL_DEPENDENCY_DEFINITION = 'tool_dependency_definition'
-TOOL_DEPENDENCY_DEFINITION_FILENAME = 'tool_dependencies.xml'
-UNRESTRICTED = 'unrestricted'
-
-types = [UNRESTRICTED, TOOL_DEPENDENCY_DEFINITION, REPOSITORY_SUITE_DEFINITION]
 
 
 def build_repository_type_select_field(trans, repository=None, name='repository_type'):
@@ -55,3 +55,15 @@ def generate_message_for_repository_type_change(app, repository):
         message += "not be added to this repository, consider setting its type to <b>%s</b>.<br/>" % \
             tool_dependency_definition_type_class.label
     return message
+
+
+__all__ = (
+    'build_repository_type_select_field',
+    'generate_message_for_repository_type_change',
+    'REPOSITORY_DEPENDENCY_DEFINITION_FILENAME',
+    'REPOSITORY_SUITE_DEFINITION',
+    'TOOL_DEPENDENCY_DEFINITION',
+    'TOOL_DEPENDENCY_DEFINITION_FILENAME',
+    'UNRESTRICTED',
+    'types',
+)

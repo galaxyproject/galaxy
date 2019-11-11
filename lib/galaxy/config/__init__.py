@@ -1100,13 +1100,13 @@ class ConfiguresGalaxyMixin(object):
         self.security = idencoding.IdEncodingHelper(id_secret=self.config.id_secret)
 
     def _configure_tool_shed_registry(self):
-        import tool_shed.tool_shed_registry
+        import galaxy.tool_shed.tool_shed_registry
 
         # Set up the tool sheds registry
         if os.path.isfile(self.config.tool_sheds_config_file):
-            self.tool_shed_registry = tool_shed.tool_shed_registry.Registry(self.config.tool_sheds_config_file)
+            self.tool_shed_registry = galaxy.tool_shed.tool_shed_registry.Registry(self.config.tool_sheds_config_file)
         else:
-            self.tool_shed_registry = tool_shed.tool_shed_registry.Registry()
+            self.tool_shed_registry = galaxy.tool_shed.tool_shed_registry.Registry()
 
     def _configure_models(self, check_migrate_databases=False, check_migrate_tools=False, config_file=None):
         """
@@ -1137,7 +1137,7 @@ class ConfiguresGalaxyMixin(object):
 
         if check_migrate_tools:
             # Alert the Galaxy admin to tools that have been moved from the distribution to the tool shed.
-            from tool_shed.galaxy_install.migrate.check import verify_tools
+            from galaxy.tool_shed.galaxy_install.migrate.check import verify_tools
             verify_tools(self, install_db_url, config_file, install_database_options)
 
         self.model = init_models_from_config(
