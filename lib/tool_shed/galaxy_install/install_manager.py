@@ -892,7 +892,13 @@ class InstallRepositoryManager(object):
         relative_install_dir = os.path.join(relative_clone_dir, tool_shed_repository.name)
         install_dir = os.path.join(tool_path, relative_install_dir)
         log.info("Cloning repository '%s' at %s:%s", repository_clone_url, ctx_rev, tool_shed_repository.changeset_revision)
-        cloned_ok, error_message = hg_util.clone_repository(repository_clone_url, os.path.abspath(install_dir), ctx_rev)
+        if os.path.exists(install_dir):
+            # May exist from a previous failed install attempt, just try updating instead of cloning.
+            hg_util.pull_repository(install_dir, repository_clone_url, ctx_rev)
+            hg_util.update_repository(install_dir, ctx_rev)
+            cloned_ok = True
+        else:
+            cloned_ok, error_message = hg_util.clone_repository(repository_clone_url, install_dir, ctx_rev)
         if cloned_ok:
             if reinstalling:
                 # Since we're reinstalling the repository we need to find the latest changeset revision to
