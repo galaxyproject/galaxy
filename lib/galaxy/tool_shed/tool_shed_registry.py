@@ -4,7 +4,8 @@ from collections import OrderedDict
 
 from six.moves.urllib import request as urlrequest
 
-from galaxy.util.tool_shed import common_util, xml_util
+from galaxy.util.tool_shed.common_util import remove_protocol_from_tool_shed_url
+from galaxy.util.tool_shed.xml_util import parse_xml
 
 log = logging.getLogger(__name__)
 
@@ -22,7 +23,7 @@ class Registry(object):
         self.tool_sheds_auth = OrderedDict()
         if config:
             # Parse tool_sheds_conf.xml
-            tree, error_message = xml_util.parse_xml(config)
+            tree, error_message = parse_xml(config)
             if tree is None:
                 log.warning("Unable to load references to tool sheds defined in file %s" % str(config))
                 return
@@ -57,9 +58,9 @@ class Registry(object):
         Following more what galaxy.demo_sequencer.controllers.common does might be more appropriate at
         some stage...
         """
-        url_sans_protocol = common_util.remove_protocol_from_tool_shed_url(url)
+        url_sans_protocol = remove_protocol_from_tool_shed_url(url)
         for shed_name, shed_url in self.tool_sheds.items():
-            shed_url_sans_protocol = common_util.remove_protocol_from_tool_shed_url(shed_url)
+            shed_url_sans_protocol = remove_protocol_from_tool_shed_url(shed_url)
             if url_sans_protocol.startswith(shed_url_sans_protocol):
                 return self.tool_sheds_auth[shed_name]
         log.debug("Invalid url '%s' received by tool shed registry's password_manager_for_url method." % str(url))
