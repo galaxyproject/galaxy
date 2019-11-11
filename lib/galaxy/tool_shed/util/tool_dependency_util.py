@@ -6,10 +6,8 @@ from sqlalchemy import and_
 
 from galaxy import util
 from galaxy.web.form_builder import SelectField
-from tool_shed.util import (
-    hg_util,
-    xml_util
-)
+from galaxy.tool_shed.util.hg_util import get_config_from_disk
+from galaxy.util.tool_shed.xml_util import parse_xml
 
 log = logging.getLogger(__name__)
 
@@ -73,8 +71,8 @@ def create_tool_dependency_objects(app, tool_shed_repository, relative_install_d
     if shed_config_dict.get('tool_path'):
         relative_install_dir = os.path.join(shed_config_dict.get('tool_path'), relative_install_dir)
     # Get the tool_dependencies.xml file from the repository.
-    tool_dependencies_config = hg_util.get_config_from_disk('tool_dependencies.xml', relative_install_dir)
-    tree, error_message = xml_util.parse_xml(tool_dependencies_config)
+    tool_dependencies_config = get_config_from_disk('tool_dependencies.xml', relative_install_dir)
+    tree, error_message = parse_xml(tool_dependencies_config)
     if tree is None:
         return tool_dependency_objects
     root = tree.getroot()
