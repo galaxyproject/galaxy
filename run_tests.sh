@@ -9,7 +9,7 @@ cat <<EOF
 '${0##*/} -id bbb'                  for testing one tool with id 'bbb' ('bbb' is the tool id)
 '${0##*/} -sid ccc'                 for testing one section with sid 'ccc' ('ccc' is the string after 'section::')
 '${0##*/} -list'                    for listing all the tool ids
-'${0##*/} -api (test_path)'         for running all the test scripts in the ./test/api directory, test_path
+'${0##*/} -api (test_path)'         for running all the test scripts in the ./lib/galaxy_test/api directory, test_path
                                     can be pytest selector
 '${0##*/} -integration (test_path)' for running all integration test scripts in the ./test/integration directory, test_path
                                     can be pytest selector
@@ -29,7 +29,7 @@ most tests shipped with Galaxy can be run with nosetests/pytest/yarn directly.
 
 The main test types are as follows:
 
-- API: These tests are located in test/api and test various aspects of the Galaxy
+- API: These tests are located in lib/galaxy_test/api and test various aspects of the Galaxy
    API and test general backend aspects of Galaxy using the API.
 - Integration: These tests are located in test/integration and test special
    configurations of Galaxy. All API tests assume a particular Galaxy configuration
@@ -63,7 +63,7 @@ Run all API tests:
     ./run_tests.sh -api
 
 The same test as above can be run using nosetests directly as follows:
-    pytest test/api
+    pytest lib/galaxy_test/api
 
 However when using pytest directly output options defined in this
 file aren't respected and a new Galaxy instance will be created for each
@@ -71,10 +71,10 @@ TestCase class (this scripts optimizes it so all tests can share a Galaxy
 instance).
 
 Run a full class of API tests:
-    ./run_tests.sh -api test/api/test_tools.py::ToolsTestCase
+    ./run_tests.sh -api lib/galaxy_test/api/test_tools.py::ToolsTestCase
 
 Run a specific API test:
-    ./run_tests.sh -api test/api/test_tools.py::ToolsTestCase::test_map_over_with_output_format_actions
+    ./run_tests.sh -api lib/galaxy_test/api/test_tools.py::ToolsTestCase::test_map_over_with_output_format_actions
 
 Run all selenium tests (Under Linux using Docker):
     # Start selenium chrome Docker container
@@ -381,7 +381,7 @@ do
               api_script=$2
               shift 2
           else
-              api_script="./test/api"
+              api_script="./lib/galaxy_test/api"
               shift 1
           fi
           ;;
