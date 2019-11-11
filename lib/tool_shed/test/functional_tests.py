@@ -10,9 +10,9 @@ import string
 import sys
 import tempfile
 
-galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
+galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir, os.path.pardir))
 # Need to remove this directory from sys.path
-sys.path[0:1] = [os.path.join(galaxy_root, "lib"), os.path.join(galaxy_root, "test")]
+sys.path[0:1] = [os.path.join(galaxy_root, "lib")]
 
 # This is for the tool shed application.
 from galaxy.web import buildapp as galaxybuildapp

@@ -13,7 +13,7 @@ cat <<EOF
                                     can be pytest selector
 '${0##*/} -integration (test_path)' for running all integration test scripts in the ./test/integration directory, test_path
                                     can be pytest selector
-'${0##*/} -toolshed (test_path)'    for running all the test scripts in the ./test/shed_functional/functional directory
+'${0##*/} -toolshed (test_path)'    for running all the test scripts in the ./lib/tool_shed/test directory
 '${0##*/} -installed'               for running tests of Tool Shed installed tools
 '${0##*/} -main'                    for running tests of tools shipped with Galaxy
 '${0##*/} -framework'               for running through example tool tests testing framework features in test/functional/tools"
@@ -47,7 +47,7 @@ The main test types are as follows:
    browsers and are located in test/selenium_tests.
 - ToolShed: These are web tests that use the older Python web testing
    framework twill to test ToolShed related functionality. These are
-   located in test/shed_functional.
+   located in lib/tool_shed/test.
 
 Python testing is currently a mix of nosetests and pytest, many tests when ran
 outside this script could be executed using either. pytest and Nose use slightly
@@ -244,7 +244,7 @@ GALAXY_TEST_HISTORY_ID          Some tests can target existing history ids, this
                                 so should be limited to debugging one off tests.
 TOOL_SHED_TEST_HOST             Host to use for shed server setup for testing.
 TOOL_SHED_TEST_PORT             Port to use for shed server setup for testing.
-TOOL_SHED_TEST_FILE_DIR         Defaults to test/shed_functional/test_data.
+TOOL_SHED_TEST_FILE_DIR         Defaults to lib/tool_shed/test/test_data.
 TOOL_SHED_TEST_TMP_DIR          Defaults to random /tmp directory - place for
                                 tool shed test server files to be placed.
 TOOL_SHED_TEST_OMIT_GALAXY      Do not launch a Galaxy server for tool shed
@@ -400,13 +400,13 @@ do
           fi
           ;;
       -t|-toolshed|--toolshed)
-          test_script="./test/shed_functional/functional_tests.py"
+          test_script="./lib/tool_shed/test/functional_tests.py"
           report_file="run_toolshed_tests.html"
           if [ $# -gt 1 ]; then
               toolshed_script=$2
               shift 2
           else
-              toolshed_script="./test/shed_functional/functional"
+              toolshed_script="./lib/tool_shed/test/functional"
               shift 1
           fi
           ;;
