@@ -16,6 +16,9 @@ from galaxy.web.formatting import expand_pretty_datetime_format
 
 log = logging.getLogger(__name__)
 
+ts_webapp_path = os.path.abspath(os.path.dirname(__file__))
+templates_path = os.path.join(ts_webapp_path, "templates")
+
 
 def resolve_path(path, root):
     """If 'path' is relative make absolute by prepending 'root'"""
@@ -100,7 +103,7 @@ class ToolShedAppConfiguration(BaseAppConfiguration):
         self.require_login = string_as_bool(kwargs.get("require_login", "False"))
         self.allow_user_creation = string_as_bool(kwargs.get("allow_user_creation", "True"))
         self.allow_user_deletion = string_as_bool(kwargs.get("allow_user_deletion", "False"))
-        self.template_path = resolve_path(kwargs.get("template_path", "templates"), self.root)
+        self.template_path = templates_path
         self.template_cache_path = resolve_path(kwargs.get("template_cache_path", "database/compiled_templates/community"), self.root)
         self.admin_users = kwargs.get("admin_users", "")
         self.admin_users_list = [u.strip() for u in self.admin_users.split(',') if u]
