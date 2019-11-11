@@ -2,10 +2,10 @@ from requests import delete
 
 from galaxy.exceptions import error_codes
 from galaxy_test.base.populators import DatasetPopulator
-from galaxy_test.driver import api
+from ._framework import ApiTestCase
 
 
-class BasePageApiTestCase(api.ApiTestCase):
+class BasePageApiTestCase(ApiTestCase):
 
     def _create_valid_page_with_slug(self, slug):
         page_request = self._test_page_payload(slug=slug)

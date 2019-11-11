@@ -1,8 +1,8 @@
 from galaxy_test.base.populators import DatasetPopulator
-from galaxy_test.driver import api
+from ._framework import ApiTestCase
 
 
-class TestProvenance(api.ApiTestCase):
+class TestProvenance(ApiTestCase):
 
     def setUp(self):
         super(TestProvenance, self).setUp()

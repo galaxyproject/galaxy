@@ -4,10 +4,10 @@ import tarfile
 from six import BytesIO
 
 from galaxy_test.base.populators import DatasetCollectionPopulator, DatasetPopulator, skip_if_github_down
-from galaxy_test.driver import api
+from ._framework import ApiTestCase
 
 
-class DatasetCollectionApiTestCase(api.ApiTestCase):
+class DatasetCollectionApiTestCase(ApiTestCase):
 
     def setUp(self):
         super(DatasetCollectionApiTestCase, self).setUp()

@@ -15,10 +15,10 @@ from galaxy_test.base.populators import (
     wait_on,
     wait_on_state,
 )
-from galaxy_test.driver import api
+from ._framework import ApiTestCase
 
 
-class JobsApiTestCase(api.ApiTestCase):
+class JobsApiTestCase(ApiTestCase):
 
     def setUp(self):
         super(JobsApiTestCase, self).setUp()

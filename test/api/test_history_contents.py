@@ -11,11 +11,11 @@ from galaxy_test.base.populators import (
     skip_without_tool,
     TestsDatasets,
 )
-from galaxy_test.driver import api
+from ._framework import ApiTestCase
 
 
 # TODO: Test anonymous access.
-class HistoryContentsApiTestCase(api.ApiTestCase, TestsDatasets):
+class HistoryContentsApiTestCase(ApiTestCase, TestsDatasets):
 
     def setUp(self):
         super(HistoryContentsApiTestCase, self).setUp()

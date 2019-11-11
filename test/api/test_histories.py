@@ -10,10 +10,10 @@ from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
 )
-from galaxy_test.driver import api
+from ._framework import ApiTestCase
 
 
-class HistoriesApiTestCase(api.ApiTestCase):
+class HistoriesApiTestCase(ApiTestCase):
 
     def setUp(self):
         super(HistoriesApiTestCase, self).setUp()

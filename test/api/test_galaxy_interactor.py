@@ -2,10 +2,10 @@
 
 from packaging.version import Version
 
-from galaxy_test.driver import api
+from ._framework import ApiTestCase
 
 
-class GalaxyInteractorBackwardCompatTestCase(api.ApiTestCase):
+class GalaxyInteractorBackwardCompatTestCase(ApiTestCase):
 
     def test_local_test_data_download(self):
         self.galaxy_interactor._target_galaxy_version = Version("18.09")

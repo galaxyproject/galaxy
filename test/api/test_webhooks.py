@@ -1,7 +1,7 @@
-from galaxy_test.driver import api
+from ._framework import ApiTestCase
 
 
-class WebhooksApiTestCase(api.ApiTestCase):
+class WebhooksApiTestCase(ApiTestCase):
 
     def setUp(self):
         super(WebhooksApiTestCase, self).setUp()

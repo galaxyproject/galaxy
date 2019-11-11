@@ -5,7 +5,7 @@ from galaxy_test.base.api_asserts import (
 from galaxy_test.base.populators import (
     LibraryPopulator
 )
-from galaxy_test.driver import api
+from ._framework import ApiTestCase
 
 TEST_KEYS_FOR_ALL_USERS = [
     'enable_unique_workflow_defaults',
@@ -24,7 +24,7 @@ TEST_KEYS_FOR_ADMIN_ONLY = [
 ]
 
 
-class ConfigurationApiTestCase(api.ApiTestCase):
+class ConfigurationApiTestCase(ApiTestCase):
 
     def setUp(self):
         super(ConfigurationApiTestCase, self).setUp()

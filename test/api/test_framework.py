@@ -1,9 +1,9 @@
 # This file doesn't test any API in particular but is meant to functionally
 # test the API framework itself.
-from galaxy_test.driver import api
+from ._framework import ApiTestCase
 
 
-class ApiFrameworkTestCase(api.ApiTestCase):
+class ApiFrameworkTestCase(ApiTestCase):
 
     # Next several tests test the API's run_as functionality.
     def test_user_cannont_run_as(self):

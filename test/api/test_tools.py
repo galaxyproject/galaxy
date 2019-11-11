@@ -17,7 +17,7 @@ from galaxy_test.base.populators import (
     skip_without_tool,
     uses_test_history,
 )
-from galaxy_test.driver import api
+from ._framework import ApiTestCase
 
 
 MINIMAL_TOOL = {
@@ -43,7 +43,7 @@ MINIMAL_TOOL_NO_ID = {
 }
 
 
-class ToolsTestCase(api.ApiTestCase):
+class ToolsTestCase(ApiTestCase):
 
     def setUp(self):
         super(ToolsTestCase, self).setUp()

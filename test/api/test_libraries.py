@@ -8,13 +8,13 @@ from galaxy_test.base.populators import (
     LibraryPopulator,
     TestsDatasets,
 )
-from galaxy_test.driver import api
+from ._framework import ApiTestCase
 
 FILE_URL = 'https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed'
 FILE_MD5 = "37b59762b59fff860460522d271bc111"
 
 
-class LibrariesApiTestCase(api.ApiTestCase, TestsDatasets):
+class LibrariesApiTestCase(ApiTestCase, TestsDatasets):
 
     def setUp(self):
         super(LibrariesApiTestCase, self).setUp()

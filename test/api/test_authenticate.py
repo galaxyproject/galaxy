@@ -2,13 +2,13 @@ import base64
 
 from requests import get
 
-from galaxy_test.driver import api
+from ._framework import ApiTestCase
 
 TEST_USER_EMAIL = "auth_user_test@bx.psu.edu"
 TEST_USER_PASSWORD = "testpassword1"
 
 
-class AuthenticationApiTestCase(api.ApiTestCase):
+class AuthenticationApiTestCase(ApiTestCase):
 
     def test_auth(self):
         self._setup_user(TEST_USER_EMAIL, TEST_USER_PASSWORD)

@@ -1,10 +1,10 @@
 from requests import delete
 
 from galaxy_test.base.populators import WorkflowPopulator
-from galaxy_test.driver import api
+from ._framework import ApiTestCase
 
 
-class SearchApiTestCase(api.ApiTestCase):
+class SearchApiTestCase(ApiTestCase):
 
     def test_search_workflows(self):
         workflow_populator = WorkflowPopulator(self.galaxy_interactor)

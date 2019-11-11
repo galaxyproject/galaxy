@@ -12,10 +12,10 @@ from galaxy_test.base.populators import (
     skip_without_datatype,
     uses_test_history,
 )
-from galaxy_test.driver import api
+from ._framework import ApiTestCase
 
 
-class ToolsUploadTestCase(api.ApiTestCase):
+class ToolsUploadTestCase(ApiTestCase):
 
     def setUp(self):
         super(ToolsUploadTestCase, self).setUp()

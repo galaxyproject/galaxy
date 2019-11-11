@@ -2,12 +2,12 @@ import time
 
 from requests import put
 
-from galaxy_test.driver import api
+from ._framework import ApiTestCase
 
 HIDDEN_DURING_UPLOAD_DATATYPE = "fli"
 
 
-class DatatypesApiTestCase(api.ApiTestCase):
+class DatatypesApiTestCase(ApiTestCase):
 
     def test_index(self):
         datatypes = self._index_datatypes()

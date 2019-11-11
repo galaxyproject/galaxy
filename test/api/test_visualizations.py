@@ -6,7 +6,7 @@ from requests import (
 )
 
 from galaxy_test.base.api_asserts import assert_has_keys
-from galaxy_test.driver import api
+from ._framework import ApiTestCase
 
 INDEX_KEYS = [
     'id', 'title', 'type', 'dbkey', 'url'
@@ -19,7 +19,7 @@ REVISION_KEYS = [
 ]
 
 
-class VisualizationsApiTestCase(api.ApiTestCase):
+class VisualizationsApiTestCase(ApiTestCase):
 
     def test_index_and_show(self):
         self._create_viz()  # to ensure on exists to index

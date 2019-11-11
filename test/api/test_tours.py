@@ -1,7 +1,7 @@
-from galaxy_test.driver import api
+from ._framework import ApiTestCase
 
 
-class TourApiTestCase(api.ApiTestCase):
+class TourApiTestCase(ApiTestCase):
 
     def test_index(self):
         response = self._get("tours")

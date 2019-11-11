@@ -30,7 +30,7 @@ from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_WITH_OUTPUT_COLLECTION_MAPPING,
     WORKFLOW_WITH_RULES_1,
 )
-from galaxy_test.driver import api
+from ._framework import ApiTestCase
 
 
 NESTED_WORKFLOW_AUTO_LABELS = """
@@ -75,7 +75,7 @@ steps:
 """
 
 
-class BaseWorkflowsApiTestCase(api.ApiTestCase):
+class BaseWorkflowsApiTestCase(ApiTestCase):
     # TODO: Find a new file for this class.
 
     def setUp(self):

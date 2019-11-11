@@ -7,7 +7,7 @@ from requests import (
 )
 
 from galaxy_test.base.populators import skip_without_tool
-from galaxy_test.driver import api
+from ._framework import ApiTestCase
 
 TEST_USER_EMAIL = "user_for_users_index_test@bx.psu.edu"
 TEST_USER_EMAIL_DELETE = "user_for_delete_test@bx.psu.edu"
@@ -15,7 +15,7 @@ TEST_USER_EMAIL_PURGE = "user_for_purge_test@bx.psu.edu"
 TEST_USER_EMAIL_UNDELETE = "user_for_undelete_test@bx.psu.edu"
 
 
-class UsersApiTestCase(api.ApiTestCase):
+class UsersApiTestCase(ApiTestCase):
 
     def test_index(self):
         self._setup_user(TEST_USER_EMAIL)

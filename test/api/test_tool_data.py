@@ -4,10 +4,10 @@ from __future__ import print_function
 
 import operator
 
-from galaxy_test.driver import api
+from ._framework import ApiTestCase
 
 
-class ToolDataApiTestCase(api.ApiTestCase):
+class ToolDataApiTestCase(ApiTestCase):
 
     def test_admin_only(self):
         index_response = self._get("tool_data", admin=False)

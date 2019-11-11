@@ -2,10 +2,10 @@ import json
 
 from requests import post
 
-from galaxy_test.driver import api
+from ._framework import ApiTestCase
 
 
-class ApiBatchTestCase(api.ApiTestCase):
+class ApiBatchTestCase(ApiTestCase):
 
     def _get_api_key(self, admin=False):
         return self.galaxy_interactor.api_key if not admin else self.galaxy_interactor.master_api_key

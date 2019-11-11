@@ -7,10 +7,10 @@ from galaxy_test.base.api_asserts import (
 from galaxy_test.base.populators import (
     DatasetPopulator,
 )
-from galaxy_test.driver import api
+from ._framework import ApiTestCase
 
 
-class RolesApiTestCase(api.ApiTestCase):
+class RolesApiTestCase(ApiTestCase):
 
     def setUp(self):
         super(RolesApiTestCase, self).setUp()
