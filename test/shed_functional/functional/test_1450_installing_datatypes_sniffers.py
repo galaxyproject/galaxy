@@ -1,4 +1,4 @@
-from shed_functional.base.twilltestcase import common, ShedTwillTestCase
+from ..base.twilltestcase import common, ShedTwillTestCase
 
 repository_name = 'proteomics_datatypes_1450'
 repository_description = "Proteomics datatypes"

@@ -1,6 +1,6 @@
 import os
 
-from shed_functional.base.twilltestcase import common, ShedTwillTestCase
+from ..base.twilltestcase import common, ShedTwillTestCase
 
 repository_name = 'freebayes_0010'
 repository_description = "Galaxy's freebayes tool"

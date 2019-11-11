@@ -1,6 +1,6 @@
 import os
 
-from shed_functional.base.twilltestcase import common, ShedTwillTestCase
+from ..base.twilltestcase import common, ShedTwillTestCase
 
 repository_name = 'filtering_0060'
 repository_description = "Galaxy's filtering tool for test 0060"

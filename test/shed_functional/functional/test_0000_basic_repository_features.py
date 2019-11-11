@@ -1,6 +1,6 @@
 import logging
 
-from shed_functional.base.twilltestcase import common, ShedTwillTestCase
+from ..base.twilltestcase import common, ShedTwillTestCase
 
 repository_name = 'filtering_0000'
 repository_description = "Galaxy's filtering tool for test 0000"

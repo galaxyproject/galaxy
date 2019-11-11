@@ -1,7 +1,7 @@
 import logging
 import os
 
-from shed_functional.base.twilltestcase import common, ShedTwillTestCase
+from ..base.twilltestcase import common, ShedTwillTestCase
 
 log = logging.getLogger(__name__)
 

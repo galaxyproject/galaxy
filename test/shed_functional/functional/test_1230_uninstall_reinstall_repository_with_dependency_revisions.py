@@ -1,4 +1,4 @@
-from shed_functional.base.twilltestcase import common, ShedTwillTestCase
+from ..base.twilltestcase import common, ShedTwillTestCase
 
 datatypes_repository_name = 'emboss_datatypes_0030'
 datatypes_repository_description = "Galaxy applicable data formats used by Emboss tools."

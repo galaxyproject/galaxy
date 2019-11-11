@@ -1,4 +1,4 @@
-from shed_functional.base.twilltestcase import common, ShedTwillTestCase
+from ..base.twilltestcase import common, ShedTwillTestCase
 
 datatypes_repository_name = 'blast_datatypes_0120'
 datatypes_repository_description = 'Galaxy applicable datatypes for BLAST'

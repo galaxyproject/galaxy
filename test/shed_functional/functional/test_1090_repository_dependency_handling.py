@@ -1,6 +1,6 @@
 import logging
 
-from shed_functional.base.twilltestcase import common, ShedTwillTestCase
+from ..base.twilltestcase import common, ShedTwillTestCase
 
 column_repository_name = 'column_maker_1085'
 column_repository_description = "Add column"

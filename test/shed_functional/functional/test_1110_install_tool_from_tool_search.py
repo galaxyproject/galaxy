@@ -1,4 +1,4 @@
-from shed_functional.base.twilltestcase import common, ShedTwillTestCase
+from ..base.twilltestcase import common, ShedTwillTestCase
 
 emboss_datatypes_repository_name = 'emboss_datatypes_0090'
 emboss_datatypes_repository_description = "Datatypes for emboss"
