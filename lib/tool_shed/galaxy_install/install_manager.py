@@ -693,6 +693,18 @@ class InstallRepositoryManager(object):
                                                                                            name,
                                                                                            owner,
                                                                                            changeset_revision)
+        if changeset_revision != repository_revision_dict['changeset_revision']:
+            # Demanded installation of a non-installable revision. Stop here if repository already installed.
+            repo = repository_util.get_installed_repository(
+                app=self.app,
+                tool_shed=tool_shed_url,
+                name=name,
+                owner=owner,
+                changeset_revision=repository_revision_dict['changeset_revision'],
+            )
+            if repo:
+                # Repo installed. Returning empty list indicated repo already installed.
+                return []
         installed_tool_shed_repositories = self.__initiate_and_install_repositories(
             tool_shed_url,
             repository_revision_dict,
@@ -718,7 +730,7 @@ class InstallRepositoryManager(object):
             includes_tools_for_display_in_tool_panel = repository_revision_dict['includes_tools_for_display_in_tool_panel']
         except KeyError:
             raise exceptions.InternalServerError("Tool shed response missing required parameter 'includes_tools_for_display_in_tool_panel'.")
-        # Get the information about the Galaxy components (e.g., tool pane section, tool config file, etc) that will contain the repository information.
+        # Get the information about the Galaxy components (e.g., tool panel section, tool config file, etc) that will contain the repository information.
         install_repository_dependencies = install_options.get('install_repository_dependencies', False)
         install_resolver_dependencies = install_options.get('install_resolver_dependencies', False)
         install_tool_dependencies = install_options.get('install_tool_dependencies', False)
