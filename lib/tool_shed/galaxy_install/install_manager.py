@@ -702,7 +702,7 @@ class InstallRepositoryManager(object):
                 owner=owner,
                 changeset_revision=repository_revision_dict['changeset_revision'],
             )
-            if repo:
+            if repo and repo.is_installed:
                 # Repo installed. Returning empty list indicated repo already installed.
                 return []
         installed_tool_shed_repositories = self.__initiate_and_install_repositories(
@@ -966,6 +966,8 @@ class InstallRepositoryManager(object):
         else:
             repo_files_dir = os.path.abspath(os.path.join(relative_install_dir, repository.name))
         repository_clone_url = os.path.join(tool_shed_url, 'repos', repository.owner, repository.name)
+        # Set a status, even though we're probably not cloning.
+        self.update_tool_shed_repository_status(repository, status=repository.installation_status.CLONING)
         log.info("Updating repository '%s' to %s:%s", repository.name, latest_ctx_rev, latest_changeset_revision)
         if not os.path.exists(repo_files_dir):
             log.debug("Repository directory '%s' does not exist, cloning repository instead of updating repository", repo_files_dir)
@@ -991,6 +993,7 @@ class InstallRepositoryManager(object):
                                                   persist=True)
         irmm.generate_metadata_for_changeset_revision()
         irmm_metadata_dict = irmm.get_metadata_dict()
+        self.update_tool_shed_repository_status(repository, status=repository.installation_status.INSTALLED)
         if 'tools' in irmm_metadata_dict:
             tool_panel_dict = irmm_metadata_dict.get('tool_panel_section', None)
             if tool_panel_dict is None:
