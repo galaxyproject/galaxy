@@ -3,7 +3,7 @@
         <container type="docker">quay.io/bgruening/docker-jupyter-notebook:pyiron</container>
     </requirements>
     <entry_points>
-        <entry_point name="PyIron" requires_domain="True">
+        <entry_point name="PyIron Workbench" requires_domain="True">
             <port>8888</port>
             <url>ipython/lab</url>
         </entry_point>
@@ -70,7 +70,7 @@
 
     </inputs>
     <outputs>
-        <data name="jupyter_notebook" format="ipynb" label="Executed Notebook"></data>
+        <data name="jupyter_notebook" format="ipynb" label="PyIron Workbench"></data>
     </outputs>
     <tests>
         <test expect_num_outputs="1">
