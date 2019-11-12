@@ -641,8 +641,11 @@
     <datatype extension="top" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true"/>
     <datatype extension="itp" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true"/>
     <datatype extension="mdp" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true"/>
+    <datatype extension="ndx" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true"/>
+    <datatype extension="xvg" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true"/>
     <datatype extension="xtc" type="galaxy.datatypes.binary:Xtc" display_in_upload="true"/>
     <datatype extension="cpt" type="galaxy.datatypes.binary:Cpt" display_in_upload="true"/>
+    <datatype extension="edr" type="galaxy.datatypes.binary:Edr" display_in_upload="true"/>
     <datatype extension="gro" type="galaxy.datatypes.tabular:Tabular" subclass="true" display_in_upload="true"/>
     <datatype extension="vel" type="galaxy.datatypes.binary:Vel" display_in_upload="true"/>
     <datatype extension="grd" type="galaxy.datatypes.molecules:grd" display_in_upload="true"/>
@@ -821,6 +824,7 @@
     <sniffer type="galaxy.datatypes.binary:Dcd"/>
     <sniffer type="galaxy.datatypes.binary:Xtc"/>
     <sniffer type="galaxy.datatypes.binary:Cpt"/>
+    <sniffer type="galaxy.datatypes.binary:Edr"/>
     <sniffer type="galaxy.datatypes.binary:Vel"/>
     <sniffer type="galaxy.datatypes.annotation:Augustus"/>
     <sniffer type="galaxy.datatypes.triples:Rdf"/>
