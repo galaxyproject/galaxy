@@ -957,7 +957,7 @@ class Trr(GmxBinary):
     """
 
     file_ext = "trr"
-    magic_number = 1993  # magic number reference: https://github.com/gromacs/gromacs/blob/1c6639f0636d2ffc3d665686756d77227c8ae6d1/src/gromacs/fileio/trrio.cpp
+    magic_number = 1993  # magic number reference: https://github.com/gromacs/gromacs/blob/master/src/gromacs/fileio/trrio.cpp
 
 
 class Cpt(GmxBinary):
@@ -974,7 +974,7 @@ class Cpt(GmxBinary):
     """
 
     file_ext = "cpt"
-    magic_number = 171817  # magic number reference: https://github.com/gromacs/gromacs/blob/cec211b2c835ba6e8ea849fb1bf67d7fc19693a4/src/gromacs/fileio/checkpoint.cpp
+    magic_number = 171817  # magic number reference: https://github.com/gromacs/gromacs/blob/master/src/gromacs/fileio/checkpoint.cpp
 
 
 class Xtc(GmxBinary):
@@ -991,7 +991,24 @@ class Xtc(GmxBinary):
     """
 
     file_ext = "xtc"
-    magic_number = 1995  # reference: https://github.com/gromacs/gromacs/blob/cec211b2c835ba6e8ea849fb1bf67d7fc19693a4/src/gromacs/fileio/xtcio.cpp
+    magic_number = 1995  # reference: https://github.com/gromacs/gromacs/blob/master/src/gromacs/fileio/xtcio.cpp
+
+
+class Edr(GmxBinary):
+    """
+    Class describing an edr file from the GROMACS suite
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('md.edr')
+    >>> Xtc().sniff(fname)
+    True
+    >>> fname = get_test_fname('md.trr')
+    >>> Xtc().sniff(fname)
+    False
+    """
+
+    file_ext = "edr"
+    magic_number = -55555  # reference: https://github.com/gromacs/gromacs/blob/master/src/gromacs/fileio/enxio.cpp
 
 
 class Biom2(H5):
