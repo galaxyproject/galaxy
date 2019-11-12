@@ -744,9 +744,13 @@ class InstallRepositoryManager(object):
             shed_conf_dict = self.tpm.get_shed_tool_conf_dict(shed_tool_conf)
             tool_path = shed_conf_dict['tool_path']
         else:
-            # Don't use migrated_tools_conf.xml.
+            # Don't use migrated_tools_conf.xml and prefer shed_tool_config_file.
             try:
-                shed_config_dict = self.app.toolbox.dynamic_confs(include_migrated_tool_conf=False)[0]
+                for shed_config_dict in self.app.toolbox.dynamic_confs(include_migrated_tool_conf=False):
+                    if shed_config_dict.get('config_filename') == self.app.config.shed_tool_config_file:
+                        break
+                else:
+                    shed_config_dict = self.app.toolbox.dynamic_confs(include_migrated_tool_conf=False)[0]
             except IndexError:
                 raise exceptions.RequestParameterMissingException("Missing required parameter 'shed_tool_conf'.")
             shed_tool_conf = shed_config_dict['config_filename']
