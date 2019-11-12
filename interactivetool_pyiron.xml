@@ -18,8 +18,8 @@
     </environment_variables>
     <command detect_errors="aggressive"><![CDATA[
         #import re
-        export GALAXY_WORKING_DIR=`pwd` &&
-        export PYIRONPROJECTPATHS = ${PWD} &&
+        export GALAXY_WORKING_DIR=\${PWD} &&
+        export PYIRONPROJECTPATHS=\${PWD} &&
 
         mkdir -p ./jupyter/outputs/ &&
         mkdir -p ./jupyter/data &&
