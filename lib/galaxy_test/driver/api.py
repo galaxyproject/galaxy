@@ -3,21 +3,21 @@ from contextlib import contextmanager
 
 from six.moves.urllib.parse import urlencode
 
-from .api_asserts import (
+from galaxy_test.base.api_asserts import (
     assert_error_code_is,
     assert_has_keys,
     assert_not_has_keys,
     assert_status_code_is,
     assert_status_code_is_ok,
 )
-from .api_util import (
+from galaxy_test.base.api_util import (
     ADMIN_TEST_USER,
     get_master_api_key,
     get_user_api_key,
     OTHER_USER,
     TEST_USER,
 )
-from .interactor import TestCaseGalaxyInteractor as BaseInteractor
+from galaxy_test.base.interactor import TestCaseGalaxyInteractor as BaseInteractor
 from .testcase import FunctionalTestCase
 
 

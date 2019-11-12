@@ -3,10 +3,9 @@
 import os
 import tempfile
 
-from base.populators import (
+from galaxy_test.base.populators import (
     skip_without_tool,
 )
-
 from .test_job_environments import BaseJobEnvironmentIntegrationTestCase
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))

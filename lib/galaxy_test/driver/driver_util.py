@@ -36,16 +36,16 @@ from galaxy.config import LOGGING_CONFIG_DEFAULT
 from galaxy.model import mapping
 from galaxy.model.tool_shed_install import mapping as toolshed_mapping
 from galaxy.tool_util.verify.interactor import GalaxyInteractorApi, verify_tool
-from galaxy.util import asbool, download_to_file
+from galaxy.util import asbool, download_to_file, galaxy_directory
 from galaxy.util.properties import load_app_properties
 from galaxy.web import buildapp
+from galaxy_test.base.api_util import get_master_api_key, get_user_api_key
+from galaxy_test.base.instrument import StructuredTestDataPlugin
+from galaxy_test.base.nose_util import run
 from tool_shed.webapp.app import UniverseApplication as ToolshedUniverseApplication
-from .api_util import get_master_api_key, get_user_api_key
-from .instrument import StructuredTestDataPlugin
-from .nose_util import run
 from .test_logging import logging_config_file
 
-galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
+galaxy_root = galaxy_directory()
 DEFAULT_WEB_HOST = socket.gethostbyname('localhost')
 DEFAULT_CONFIG_PREFIX = "GALAXY"
 GALAXY_TEST_DIRECTORY = os.path.join(galaxy_root, "test")

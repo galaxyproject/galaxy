@@ -1,6 +1,7 @@
-from base import api
-from base.populators import WorkflowPopulator
 from requests import delete
+
+from galaxy_test.base.populators import WorkflowPopulator
+from galaxy_test.driver import api
 
 
 class SearchApiTestCase(api.ApiTestCase):

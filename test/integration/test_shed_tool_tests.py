@@ -1,6 +1,5 @@
-from base import integration_util
-from base.populators import skip_if_toolshed_down
-
+from galaxy_test.base.populators import skip_if_toolshed_down
+from galaxy_test.driver import integration_util
 from .uses_shed import UsesShed
 
 

@@ -12,8 +12,8 @@ import sys
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir))
 sys.path[1:1] = [os.path.join(galaxy_root, "lib"), os.path.join(galaxy_root, "test")]
 
-from base import driver_util
-from base.api_util import get_master_api_key, get_user_api_key
+from galaxy_test.base.api_util import get_master_api_key, get_user_api_key
+from galaxy_test.driver import driver_util
 
 log = driver_util.build_logger()
 

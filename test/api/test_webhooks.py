@@ -1,13 +1,10 @@
-from base import api
-from base.driver_util import TEST_WEBHOOKS_DIR
-from galaxy.webhooks import WebhooksRegistry  # noqa: I201
+from galaxy_test.driver import api
 
 
 class WebhooksApiTestCase(api.ApiTestCase):
 
     def setUp(self):
         super(WebhooksApiTestCase, self).setUp()
-        self.webhooks_registry = WebhooksRegistry(TEST_WEBHOOKS_DIR)
 
     def test_get_all(self):
         response = self._get('webhooks')
