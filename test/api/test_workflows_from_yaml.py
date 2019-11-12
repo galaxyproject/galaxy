@@ -3,15 +3,14 @@ from __future__ import print_function
 import json
 import os
 
-from base.populators import uses_test_history
-from base.workflow_fixtures import (
+from galaxy_test.base.populators import uses_test_history
+from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_RUNTIME_PARAMETER_SIMPLE,
     WORKFLOW_SIMPLE_CAT_AND_RANDOM_LINES,
     WORKFLOW_SIMPLE_CAT_TWICE,
     WORKFLOW_WITH_OUTPUT_ACTIONS,
     WORKFLOW_WITH_OUTPUTS
 )
-
 from .test_workflows import BaseWorkflowsApiTestCase
 
 WORKFLOWS_DIRECTORY = os.path.abspath(os.path.dirname(__file__))

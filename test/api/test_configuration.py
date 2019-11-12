@@ -1,11 +1,11 @@
-from base import api
-from base.api_asserts import (
+from galaxy_test.base.api_asserts import (
     assert_has_keys,
     assert_not_has_keys,
 )
-from base.populators import (
+from galaxy_test.base.populators import (
     LibraryPopulator
 )
+from galaxy_test.driver import api
 
 TEST_KEYS_FOR_ALL_USERS = [
     'enable_unique_workflow_defaults',

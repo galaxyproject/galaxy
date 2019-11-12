@@ -1,13 +1,13 @@
 import json
 
-from base import api
-from base.api_asserts import (
+from galaxy_test.base.api_asserts import (
     assert_has_keys,
     assert_status_code_is,
 )
-from base.populators import (  # noqa: I100
+from galaxy_test.base.populators import (
     DatasetPopulator,
 )
+from galaxy_test.driver import api
 
 
 class RolesApiTestCase(api.ApiTestCase):

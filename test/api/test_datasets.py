@@ -2,11 +2,11 @@ from __future__ import print_function
 
 import textwrap
 
-from base import api
-from base.populators import (
+from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
 )
+from galaxy_test.driver import api
 
 
 class DatasetsApiTestCase(api.ApiTestCase):

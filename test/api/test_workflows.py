@@ -7,16 +7,16 @@ from uuid import uuid4
 
 from requests import delete, get, put
 
-from base import api  # noqa: I100,I202
-from base import rules_test_data  # noqa: I100
-from base.populators import (  # noqa: I100
+from galaxy.exceptions import error_codes
+from galaxy_test.base import rules_test_data
+from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
     skip_without_tool,
     wait_on,
     WorkflowPopulator
 )
-from base.workflow_fixtures import (  # noqa: I100
+from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_NESTED_REPLACEMENT_PARAMETER,
     WORKFLOW_NESTED_RUNTIME_PARAMETER,
     WORKFLOW_NESTED_SIMPLE,
@@ -30,7 +30,7 @@ from base.workflow_fixtures import (  # noqa: I100
     WORKFLOW_WITH_OUTPUT_COLLECTION_MAPPING,
     WORKFLOW_WITH_RULES_1,
 )
-from galaxy.exceptions import error_codes  # noqa: I201
+from galaxy_test.driver import api
 
 
 NESTED_WORKFLOW_AUTO_LABELS = """

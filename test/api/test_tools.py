@@ -5,9 +5,11 @@ import os
 import tarfile
 
 import pytest
-from base import api
-from base import rules_test_data
-from base.populators import (
+from requests import get
+from six import BytesIO
+
+from galaxy_test.base import rules_test_data
+from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
     LibraryPopulator,
@@ -15,8 +17,7 @@ from base.populators import (
     skip_without_tool,
     uses_test_history,
 )
-from requests import get
-from six import BytesIO
+from galaxy_test.driver import api
 
 
 MINIMAL_TOOL = {

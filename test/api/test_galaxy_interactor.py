@@ -2,7 +2,7 @@
 
 from packaging.version import Version
 
-from base import api   # noqa: I100,I202
+from galaxy_test.driver import api
 
 
 class GalaxyInteractorBackwardCompatTestCase(api.ApiTestCase):

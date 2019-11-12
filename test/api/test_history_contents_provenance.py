@@ -1,5 +1,5 @@
-from base import api
-from base.populators import DatasetPopulator
+from galaxy_test.base.populators import DatasetPopulator
+from galaxy_test.driver import api
 
 
 class TestProvenance(api.ApiTestCase):

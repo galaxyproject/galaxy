@@ -2,13 +2,13 @@ import json
 import time
 import unittest
 
-from base import api
-from base.populators import (
+from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
     LibraryPopulator,
     TestsDatasets,
 )
+from galaxy_test.driver import api
 
 FILE_URL = 'https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed'
 FILE_MD5 = "37b59762b59fff860460522d271bc111"

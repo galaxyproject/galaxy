@@ -1,7 +1,8 @@
 import yaml
-from base import rules_test_data
-from base.populators import load_data_dict
-from base.workflow_fixtures import (
+
+from galaxy_test.base import rules_test_data
+from galaxy_test.base.populators import load_data_dict
+from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_NESTED_REPLACEMENT_PARAMETER,
     WORKFLOW_NESTED_RUNTIME_PARAMETER,
     WORKFLOW_NESTED_SIMPLE,
@@ -14,7 +15,6 @@ from base.workflow_fixtures import (
     WORKFLOW_WITH_OLD_TOOL_VERSION,
     WORKFLOW_WITH_RULES_1,
 )
-
 from .framework import (
     managed_history,
     selenium_test,

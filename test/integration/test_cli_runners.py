@@ -6,10 +6,10 @@ import subprocess
 import tempfile
 import unittest
 
-from base import integration_util  # noqa: I100,I202
-from base.populators import skip_without_tool
-from base.ssh_util import generate_ssh_keys
-from .test_job_environments import BaseJobEnvironmentIntegrationTestCase  # noqa: I201
+from galaxy_test.base.populators import skip_without_tool
+from galaxy_test.base.ssh_util import generate_ssh_keys
+from galaxy_test.driver import integration_util
+from .test_job_environments import BaseJobEnvironmentIntegrationTestCase
 
 
 RemoteConnection = collections.namedtuple('remote_connection', ['hostname', 'username', 'password', 'port', 'private_key', 'public_key'])

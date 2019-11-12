@@ -6,9 +6,8 @@ from operator import itemgetter
 
 import requests
 
-from base import api  # noqa: I100,I202
-from base.api_asserts import assert_status_code_is_ok  # noqa: I100
-from base.populators import (  # noqa: I100
+from galaxy_test.base.api_asserts import assert_status_code_is_ok
+from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
     skip_without_tool,
@@ -16,6 +15,7 @@ from base.populators import (  # noqa: I100
     wait_on,
     wait_on_state,
 )
+from galaxy_test.driver import api
 
 
 class JobsApiTestCase(api.ApiTestCase):

@@ -6,11 +6,11 @@ from requests import (
     put
 )
 
-from base import api  # noqa: I100,I202
-from base.populators import (  # noqa: I100
+from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
 )
+from galaxy_test.driver import api
 
 
 class HistoriesApiTestCase(api.ApiTestCase):

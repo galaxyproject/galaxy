@@ -2,7 +2,7 @@ import time
 
 from requests import put
 
-from base import api  # noqa: I100,I202
+from galaxy_test.driver import api
 
 HIDDEN_DURING_UPLOAD_DATATYPE = "fli"
 

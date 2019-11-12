@@ -1,5 +1,4 @@
-from base.populators import flakey
-
+from galaxy_test.base.populators import flakey
 from .framework import (
     managed_history,
     selenium_test,
