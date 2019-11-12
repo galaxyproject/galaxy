@@ -931,13 +931,6 @@ def populate_api_routes(webapp, app):
     # ===== TOOLSHED =====
     # ====================
 
-    # Handle displaying tool help images and README file images contained in repositories installed from the tool shed.
-    webapp.add_route('/admin_toolshed/static/images/{repository_id}/{image_file:.+?}',
-                     controller='admin_toolshed',
-                     action='display_image_in_repository',
-                     repository_id=None,
-                     image_file=None)
-
     # Do the same but without a repository id
     webapp.add_route('/shed_tool_static/{shed}/{owner}/{repo}/{tool}/{version}/{image_file:.+?}',
                      controller='shed_tool_static',
