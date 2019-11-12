@@ -146,7 +146,7 @@
       <display file="igv/gff.xml" inherit="true"/>
       <!-- <display file="gbrowse/gbrowse_gff.xml" inherit="true" /> -->
     </datatype>
-    <datatype extension="gff3" type="galaxy.datatypes.interval:Gff3" display_in_upload="true" description="The GFF3 format addresses the most common extensions to GFF, while preserving backward compatibility with previous formats." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#GFF3"/>
+    <datatype extension="gff3" auto_compressed_types="gz,bz2" type="galaxy.datatypes.interval:Gff3" display_in_upload="true" description="The GFF3 format addresses the most common extensions to GFF, while preserving backward compatibility with previous formats." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#GFF3"/>
     <datatype extension="gif" type="galaxy.datatypes.images:Gif" mimetype="image/gif"/>
     <datatype extension="gmaj.zip" type="galaxy.datatypes.images:Gmaj" mimetype="application/zip"/>
     <datatype extension="graph_dot" type="galaxy.datatypes.data:Text" subclass="true"/>
