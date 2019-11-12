@@ -225,9 +225,10 @@ class UsesCreateAndUpdateTime(object):
 
 class WorkerProcess(UsesCreateAndUpdateTime):
 
-    def __init__(self, server_name, hostname):
+    def __init__(self, server_name, hostname, pid):
         self.server_name = server_name
         self.hostname = hostname
+        self.pid = pid
 
 
 def cached_id(galaxy_model_object):

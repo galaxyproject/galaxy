@@ -1,3 +1,4 @@
+import os
 import datetime
 import logging
 import socket
@@ -79,7 +80,7 @@ class DatabaseHeartbeat(object):
     def update_watcher_designation(self):
         worker_process = self.worker_process
         if not worker_process:
-            worker_process = WorkerProcess(server_name=self.server_name, hostname=self.hostname)
+            worker_process = WorkerProcess(server_name=self.server_name, hostname=self.hostname, pid=os.getpid())
         worker_process.update_time = now()
         self.sa_session.add(worker_process)
         self.sa_session.flush()
