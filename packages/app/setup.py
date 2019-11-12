@@ -66,8 +66,6 @@ PACKAGES = [
     'galaxy.tool_shed',
     'galaxy.tool_shed.galaxy_install',
     'galaxy.tool_shed.galaxy_install.datatypes',
-    # TODO:
-    # 'galaxy.tool_shed.galaxy_install.grids',
     'galaxy.tool_shed.galaxy_install.metadata',
     'galaxy.tool_shed.galaxy_install.migrate',
     'galaxy.tool_shed.galaxy_install.migrate.versions',
@@ -75,7 +73,6 @@ PACKAGES = [
     'galaxy.tool_shed.galaxy_install.tool_dependencies',
     'galaxy.tool_shed.galaxy_install.tool_dependencies.recipe',
     'galaxy.tool_shed.galaxy_install.tools',
-    # 'galaxy.tool_shed.galaxy_install.utility_containers',
     'galaxy.tool_shed.util',
     'galaxy.tool_shed.metadata',
     'galaxy.tool_shed.tools',

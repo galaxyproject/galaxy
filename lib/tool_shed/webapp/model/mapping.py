@@ -7,20 +7,20 @@ import logging
 from sqlalchemy import Boolean, Column, DateTime, desc, false, ForeignKey, Integer, MetaData, not_, String, Table, TEXT, true, UniqueConstraint
 from sqlalchemy.orm import backref, mapper, relation
 
-import galaxy.webapps.tool_shed.model
-import galaxy.webapps.tool_shed.util.hgweb_config
-import galaxy.webapps.tool_shed.util.shed_statistics as shed_statistics
+import tool_shed.webapp.model
+import tool_shed.webapp.util.hgweb_config
+import tool_shed.webapp.util.shed_statistics as shed_statistics
 from galaxy.model.base import ModelMapping
 from galaxy.model.custom_types import JSONType, TrimmedString
 from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.orm.now import now
-from galaxy.webapps.tool_shed.model import APIKeys, Category, Component, ComponentReview
-from galaxy.webapps.tool_shed.model import GalaxySession, Group, GroupRoleAssociation
-from galaxy.webapps.tool_shed.model import PasswordResetToken, Repository, RepositoryCategoryAssociation
-from galaxy.webapps.tool_shed.model import RepositoryMetadata, RepositoryRatingAssociation
-from galaxy.webapps.tool_shed.model import RepositoryReview, RepositoryRoleAssociation, Role
-from galaxy.webapps.tool_shed.model import Tag, User, UserGroupAssociation, UserRoleAssociation
-from galaxy.webapps.tool_shed.security import CommunityRBACAgent
+from tool_shed.webapp.model import APIKeys, Category, Component, ComponentReview
+from tool_shed.webapp.model import GalaxySession, Group, GroupRoleAssociation
+from tool_shed.webapp.model import PasswordResetToken, Repository, RepositoryCategoryAssociation
+from tool_shed.webapp.model import RepositoryMetadata, RepositoryRatingAssociation
+from tool_shed.webapp.model import RepositoryReview, RepositoryRoleAssociation, Role
+from tool_shed.webapp.model import Tag, User, UserGroupAssociation, UserRoleAssociation
+from tool_shed.webapp.security import CommunityRBACAgent
 
 log = logging.getLogger(__name__)
 metadata = MetaData()
@@ -318,7 +318,7 @@ def init(file_path, url, engine_options={}, create_tables=False):
     # Connect the metadata to the database.
     metadata.bind = engine
 
-    result = ModelMapping([galaxy.webapps.tool_shed.model], engine=engine)
+    result = ModelMapping([tool_shed.webapp.model], engine=engine)
 
     if create_tables:
         metadata.create_all()
@@ -328,5 +328,5 @@ def init(file_path, url, engine_options={}, create_tables=False):
     # Load local tool shed security policy
     result.security_agent = CommunityRBACAgent(result)
     result.shed_counter = shed_statistics.ShedCounter(result)
-    result.hgweb_config_manager = galaxy.webapps.tool_shed.util.hgweb_config.HgWebConfigManager()
+    result.hgweb_config_manager = tool_shed.webapp.util.hgweb_config.HgWebConfigManager()
     return result

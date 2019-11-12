@@ -12,9 +12,9 @@ from six.moves.configparser import ConfigParser
 sys.path.insert(1, os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir, 'lib'))
 sys.path.insert(1, os.path.join(os.path.dirname(__file__)))
 
-import galaxy.webapps.tool_shed.config as tool_shed_config
+import tool_shed.webapp.config as tool_shed_config
 from galaxy.security.idencoding import IdEncodingHelper
-from galaxy.webapps.tool_shed.model import mapping
+from tool_shed.webapp.model import mapping
 from bootstrap_util import admin_user_info  # noqa: I100,I201
 
 log = logging.getLogger(__name__)

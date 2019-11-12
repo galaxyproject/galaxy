@@ -35,7 +35,7 @@ DATABASE = {
         },
     "tool_shed":
         {
-            'repo': 'galaxy/webapps/tool_shed/model/migrate',
+            'repo': 'tool_shed/webapp/model/migrate',
             'config_names': ['tool_shed', 'tool_shed_wsgi'],
             'default_sqlite_file': 'community.sqlite',
             'config_override': 'TOOL_SHED_CONFIG_',
@@ -97,7 +97,7 @@ def get_config(argv, use_argparse=True, cwd=None):
     ...     with open(os.path.join(config_dir, 'config', path), 'w') as f: p.write(f)
     >>> write_ini('tool_shed.ini', 'database_connection', 'sqlite:///pg/testdb1')
     >>> config = get_config(['manage_db.py', 'tool_shed'], cwd=config_dir)
-    >>> config['repo'].endswith('galaxy/webapps/tool_shed/model/migrate')
+    >>> config['repo'].endswith('tool_shed/webapp/model/migrate')
     True
     >>> config['db_url']
     'sqlite:///pg/testdb1'

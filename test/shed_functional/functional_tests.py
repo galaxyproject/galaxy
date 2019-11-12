@@ -18,7 +18,7 @@ from base import driver_util
 
 # This is for the tool shed application.
 from galaxy.web import buildapp as galaxybuildapp
-from galaxy.webapps.tool_shed import buildapp as toolshedbuildapp
+from tool_shed.webapp import buildapp as toolshedbuildapp
 
 log = driver_util.build_logger()
 

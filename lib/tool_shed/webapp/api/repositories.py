@@ -32,7 +32,6 @@ from galaxy.webapps.base.controller import (
     BaseAPIController,
     HTTPBadRequest
 )
-from galaxy.webapps.tool_shed.search.repo_search import RepoSearch
 from tool_shed.capsule import capsule_manager
 from tool_shed.dependencies import attribute_handlers
 from tool_shed.metadata import repository_metadata_manager
@@ -47,6 +46,7 @@ from tool_shed.util import (
     repository_util,
     tool_util
 )
+from tool_shed.webapp.search.repo_search import RepoSearch
 
 log = logging.getLogger(__name__)
 
