@@ -438,7 +438,7 @@ var LibraryDatasetView = Backbone.View.extend({
             }
         }
         var new_info = this.$el.find(".input_dataset_misc_info").val();
-        if (typeof new_info !== "undefined" && new_info !== ld.get("misc_info")) {
+        if (typeof new_info !== "undefined" && new_info !== ld.get("misc_info").trim()) {
             ld.set("misc_info", new_info);
             is_changed = true;
         }
