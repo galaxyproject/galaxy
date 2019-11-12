@@ -1000,10 +1000,10 @@ class Edr(GmxBinary):
 
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname('md.edr')
-    >>> Xtc().sniff(fname)
+    >>> Edr().sniff(fname)
     True
     >>> fname = get_test_fname('md.trr')
-    >>> Xtc().sniff(fname)
+    >>> Edr().sniff(fname)
     False
     """
 
