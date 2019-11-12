@@ -1,6 +1,6 @@
 """Integration tests for user config options."""
 
-from base import integration_util
+from galaxy_test.driver import integration_util
 
 
 class _BaseUserExposeIntegerationTestCase(integration_util.IntegrationTestCase):

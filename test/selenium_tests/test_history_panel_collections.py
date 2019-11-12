@@ -1,8 +1,7 @@
 import time
 
-from base.api_asserts import assert_status_code_is
-from base.populators import flakey
-
+from galaxy_test.base.api_asserts import assert_status_code_is
+from galaxy_test.base.populators import flakey
 from .framework import (
     retry_assertion_during_transitions,
     selenium_test,

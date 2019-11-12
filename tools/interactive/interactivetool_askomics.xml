@@ -10,15 +10,8 @@
         </entry_point>
     </entry_points>
     <environment_variables>
-        <environment_variable name="GALAXY_URL">${__app__.config.galaxy_infrastructure_url}</environment_variable> <!-- FIXME: Warning: The use of __app__ is deprecated and will break backward compatibility in the near future -->
-        <environment_variable name="API_KEY" strip="True">
-            #if $__user__:
-                #for $api_key in $__user__.api_keys:
-                    ${api_key.key}
-                    #break
-                #end for
-            #end if
-        </environment_variable>
+        <environment_variable name="GALAXY_URL">$__galaxy_url__</environment_variable>
+        <environment_variable name="API_KEY" inject="api_key" />
     </environment_variables>
     <command><![CDATA[
         #import re

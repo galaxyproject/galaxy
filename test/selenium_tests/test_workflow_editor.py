@@ -1,6 +1,6 @@
 import json
 
-from base.workflow_fixtures import (
+from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_NESTED_SIMPLE,
     WORKFLOW_SIMPLE_CAT_TWICE,
     WORKFLOW_SIMPLE_MAPPING,
@@ -10,7 +10,6 @@ from base.workflow_fixtures import (
     WORKFLOW_WITH_RULES_1,
     WORKFLOW_WITH_RULES_2,
 )
-
 from .framework import (
     retry_assertion_during_transitions,
     selenium_test,

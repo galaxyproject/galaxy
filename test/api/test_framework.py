@@ -1,6 +1,6 @@
 # This file doesn't test any API in particular but is meant to functionally
 # test the API framework itself.
-from base import api
+from galaxy_test.driver import api
 
 
 class ApiFrameworkTestCase(api.ApiTestCase):

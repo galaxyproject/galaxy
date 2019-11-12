@@ -1,9 +1,10 @@
 import json
 import tarfile
 
-from base import api
-from base.populators import DatasetCollectionPopulator, DatasetPopulator, skip_if_github_down
 from six import BytesIO
+
+from galaxy_test.base.populators import DatasetCollectionPopulator, DatasetPopulator, skip_if_github_down
+from galaxy_test.driver import api
 
 
 class DatasetCollectionApiTestCase(api.ApiTestCase):

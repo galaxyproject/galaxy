@@ -10,6 +10,11 @@ import tempfile
 import threading
 from collections import OrderedDict
 from datetime import datetime
+try:
+    from pathlib import Path
+except ImportError:
+    # Use backport on python 2
+    from pathlib2 import Path
 from xml.etree import ElementTree
 
 import packaging.version
@@ -19,8 +24,6 @@ from six import itervalues, string_types
 from six.moves.urllib.parse import unquote_plus
 from webob.compat import cgi_FieldStorage
 
-import tool_shed.util.repository_util as repository_util
-import tool_shed.util.shed_util_common
 from galaxy import (
     exceptions,
     model
@@ -29,6 +32,8 @@ from galaxy.job_execution import output_collect
 from galaxy.managers.jobs import JobSearch
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model.tags import GalaxyTagHandler
+from galaxy.tool_shed.util.repository_util import get_installed_repository
+from galaxy.tool_shed.util.shed_util_common import set_image_paths
 from galaxy.tool_util.deps import (
     CachedDependencyManager,
 )
@@ -38,6 +43,7 @@ from galaxy.tool_util.loader import (
     raw_tool_xml_tree,
     template_macro_params
 )
+from galaxy.tool_util.output_checker import DETECTED_JOB_STATE
 from galaxy.tool_util.parser import (
     get_tool_source,
     get_tool_source_from_representation,
@@ -63,6 +69,7 @@ from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
     DataToolParameter,
     HiddenToolParameter,
+    ImplicitConversionRequired,
     SelectToolParameter,
     ToolParameter,
     workflow_building_modes,
@@ -78,7 +85,6 @@ from galaxy.tools.parameters.wrapped_json import json_wrap
 from galaxy.tools.test import parse_tests
 from galaxy.tools.toolbox import BaseGalaxyToolBox
 from galaxy.util import (
-    ExecutionTimer,
     in_directory,
     listify,
     Params,
@@ -96,9 +102,12 @@ from galaxy.util.template import (
     fill_template,
     refactoring_tool,
 )
+from galaxy.util.tool_shed.common_util import (
+    get_tool_shed_repository_url,
+    get_tool_shed_url_from_tool_shed_registry,
+)
 from galaxy.version import VERSION_MAJOR
 from galaxy.work.context import WorkRequestContext
-from tool_shed.util import common_util
 from .execute import (
     execute as execute_job,
     MappingParameters,
@@ -327,7 +336,7 @@ class ToolBox(BaseGalaxyToolBox):
         # Abstract toolbox doesn't have a dependency on the database, so
         # override _get_tool_shed_repository here to provide this information.
 
-        return repository_util.get_installed_repository(
+        return get_installed_repository(
             self.app,
             tool_shed=tool_shed,
             name=name,
@@ -515,12 +524,12 @@ class Tool(Dictifiable):
     def tool_shed_repository(self):
         # If this tool is included in an installed tool shed repository, return it.
         if self.tool_shed:
-            return repository_util.get_installed_repository(self.app,
-                                                            tool_shed=self.tool_shed,
-                                                            name=self.repository_name,
-                                                            owner=self.repository_owner,
-                                                            installed_changeset_revision=self.installed_changeset_revision,
-                                                            from_cache=True)
+            return get_installed_repository(self.app,
+                                            tool_shed=self.tool_shed,
+                                            name=self.repository_name,
+                                            owner=self.repository_owner,
+                                            installed_changeset_revision=self.installed_changeset_revision,
+                                            from_cache=True)
 
     @property
     def produces_collections_with_unknown_structure(self):
@@ -916,21 +925,17 @@ class Tool(Dictifiable):
     @property
     def _repository_dir(self):
         """If tool shed installed tool, the base directory of the repository installed."""
-        repository_dir = None
+        repository_base_dir = None
 
         if getattr(self, 'tool_shed', None):
-            repository_dir = self.tool_dir
-            while True:
-                repository_dir_name = os.path.basename(repository_dir)
-                if repository_dir_name == self.repository_name:
-                    break
+            tool_dir = Path(self.tool_dir)
+            for parent in tool_dir.parents:
+                if parent == self.repository_name:
+                    return str(parent)
+            else:
+                log.error("Problem finding repository dir for tool [%s]" % self.id)
 
-                parent_repository_dir = os.path.dirname(repository_dir)
-                if repository_dir == parent_repository_dir:
-                    log.error("Problem finding repository dir for tool [%s]" % self.id)
-                    repository_dir = None
-
-        return repository_dir
+        return repository_base_dir
 
     def test_data_path(self, filename):
         repository_dir = self._repository_dir
@@ -1242,7 +1247,7 @@ class Tool(Dictifiable):
             self.repository_owner = tool_shed_repository.owner
             self.changeset_revision = tool_shed_repository.changeset_revision
             self.installed_changeset_revision = tool_shed_repository.installed_changeset_revision
-            self.sharable_url = common_util.get_tool_shed_repository_url(
+            self.sharable_url = get_tool_shed_repository_url(
                 self.app, self.tool_shed, self.repository_owner, self.repository_name
             )
 
@@ -1279,7 +1284,7 @@ class Tool(Dictifiable):
         if help_text is not None:
             try:
                 if help_text.find('.. image:: ') >= 0 and (self.tool_shed_repository or self.repository_id):
-                    help_text = tool_shed.util.shed_util_common.set_image_paths(
+                    help_text = set_image_paths(
                         self.app, help_text, encoded_repository_id=self.repository_id, tool_shed_repository=self.tool_shed_repository, tool_id=self.old_id, tool_version=self.version
                     )
             except Exception:
@@ -1413,7 +1418,10 @@ class Tool(Dictifiable):
                 'Failure executing tool (cannot create multiple jobs when remapping existing job).')
 
         # Process incoming data
-        validation_timer = ExecutionTimer()
+        validation_timer = self.app.execution_timer_factory.get_timer(
+            'internals.galaxy.tools.validation',
+            'Validated and populated state for tool request',
+        )
         all_errors = []
         all_params = []
         for expanded_incoming in expanded_incomings:
@@ -1438,7 +1446,7 @@ class Tool(Dictifiable):
             all_params.append(params)
         unset_dataset_matcher_factory(request_context)
 
-        log.debug('Validated and populated state for tool request %s' % validation_timer)
+        log.info(validation_timer)
         return all_params, all_errors, rerun_remap_job_id, collection_info
 
     def handle_input(self, trans, incoming, history=None, use_cached_job=False):
@@ -1746,7 +1754,7 @@ class Tool(Dictifiable):
     def exec_before_job(self, app, inp_data, out_data, param_dict={}):
         pass
 
-    def exec_after_process(self, app, inp_data, out_data, param_dict, job=None):
+    def exec_after_process(self, app, inp_data, out_data, param_dict, job=None, **kwds):
         pass
 
     def job_failed(self, job_wrapper, message, exception=False):
@@ -2067,10 +2075,13 @@ class Tool(Dictifiable):
                     tool_dict['value'] = input.value_to_basic(state_inputs.get(input.name, initial_value), self.app, use_security=True)
                     tool_dict['default_value'] = input.value_to_basic(initial_value, self.app, use_security=True)
                     tool_dict['text_value'] = input.value_to_display_text(tool_dict['value'])
+                except ImplicitConversionRequired:
+                    tool_dict = input.to_dict(request_context)
+                    # This hack leads client to display a text field
+                    tool_dict['textable'] = True
                 except Exception:
                     tool_dict = input.to_dict(request_context)
                     log.exception("tools::to_json() - Skipping parameter expansion '%s'", input.name)
-                    pass
             if input_index >= len(group_inputs):
                 group_inputs.append(tool_dict)
             else:
@@ -2166,7 +2177,7 @@ class Tool(Dictifiable):
                             message += 'You can re-run the job with this tool version, which is a different version of the original tool. '
                 else:
                     new_tool_shed_url = '%s/%s/' % (tool.sharable_url, tool.changeset_revision)
-                    old_tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(self.app, tool_id.split('/repos/')[0])
+                    old_tool_shed_url = get_tool_shed_url_from_tool_shed_registry(self.app, tool_id.split('/repos/')[0])
                     old_tool_shed_url = '%s/view/%s/%s/' % (old_tool_shed_url, tool.repository_owner, tool.repository_name)
                     message = 'This job was run with <a href=\"%s\" target=\"_blank\">tool id \"%s\"</a>, version "%s", which is not available. ' % (old_tool_shed_url, tool_id, tool_version)
                     if len(tools) > 1:
@@ -2414,7 +2425,7 @@ class SetMetadataTool(Tool):
                 history.id, job.user, incoming={'input1': hda}, overwrite=False
             )
 
-    def exec_after_process(self, app, inp_data, out_data, param_dict, job=None):
+    def exec_after_process(self, app, inp_data, out_data, param_dict, job=None, **kwds):
         working_directory = app.object_store.get_filename(
             job, base_dir='job_work', dir_only=True, obj_dir=True
         )
@@ -2498,17 +2509,13 @@ class DataManagerTool(OutputParameterJSONTool):
         if self.data_manager_id is None:
             self.data_manager_id = self.id
 
-    def exec_after_process(self, app, inp_data, out_data, param_dict, job=None, **kwds):
+    def exec_after_process(self, app, inp_data, out_data, param_dict, job=None, final_job_state=None, **kwds):
         assert self.allow_user_access(job.user), "You must be an admin to access this tool."
+        if final_job_state != DETECTED_JOB_STATE.OK:
+            return
         # run original exec_after_process
         super(DataManagerTool, self).exec_after_process(app, inp_data, out_data, param_dict, job=job, **kwds)
         # process results of tool
-        if job and job.state == job.states.ERROR:
-            return
-        # Job state may now be 'running' instead of previous 'error', but datasets are still set to e.g. error
-        for dataset in out_data.values():
-            if dataset.state != dataset.states.OK:
-                return
         data_manager_id = job.data_manager_association.data_manager_id
         data_manager = self.app.data_managers.get_manager(data_manager_id, None)
         assert data_manager is not None, "Invalid data manager (%s) requested. It may have been removed before the job completed." % (data_manager_id)

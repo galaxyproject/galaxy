@@ -313,6 +313,9 @@ then
     docker --version
     echo "Launching docker container for testing with extra args ${DOCKER_RUN_EXTRA_ARGS}..."
     name=$(python -c 'import re; import uuid; print re.sub("-","",str(uuid.uuid4()))')
+    # Create a cache dir for pip, so it has the right owner
+    DOCKER_PIP_CACHE_DIR="$HOME"/.cache/docker_galaxy_pip
+    mkdir -p "$DOCKER_PIP_CACHE_DIR"
     _on_exit() {
         docker kill $name
     }
@@ -321,8 +324,10 @@ then
         -e "BUILD_NUMBER=$BUILD_NUMBER" \
         -e "GALAXY_TEST_DATABASE_TYPE=$db_type" \
         -e "LC_ALL=C" \
+        -e "PIP_CACHE_DIR=/pip_cache_dir" \
         --rm \
         --name=$name \
+        -v "$DOCKER_PIP_CACHE_DIR":/pip_cache_dir \
         -v "$(pwd)":/galaxy \
         -v "$(pwd)"/test/docker/base/run_test_wrapper.sh:/usr/local/bin/run_test_wrapper.sh "$DOCKER_IMAGE" "$@"
     exit $?
@@ -513,7 +518,7 @@ do
       -u|-unit|--unit)
           report_file="run_unit_tests.html"
           test_script="pytest"
-          unit_extra='--doctest-modules --ignore lib/galaxy/web/proxy/js/node_modules/ --ignore lib/galaxy/webapps/tool_shed/controllers --ignore lib/galaxy/jobs/runners/chronos.py --ignore lib/galaxy/webapps/tool_shed/model/migrate --ignore lib/galaxy/tools/bundled'
+          unit_extra='--doctest-modules --ignore lib/galaxy/web/proxy/js/node_modules/ --ignore lib/tool_shed/webapp/controllers --ignore lib/galaxy/jobs/runners/chronos.py --ignore lib/galaxy/webapps/tool_shed/model/migrate --ignore lib/galaxy/tools/bundled'
           if [ $# -gt 1 ]; then
               unit_extra="$unit_extra $2"
               shift 2

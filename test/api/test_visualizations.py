@@ -5,8 +5,8 @@ from requests import (
     put
 )
 
-from base import api  # noqa: I100,I202
-from base.api_asserts import assert_has_keys  # noqa: I100
+from galaxy_test.base.api_asserts import assert_has_keys
+from galaxy_test.driver import api
 
 INDEX_KEYS = [
     'id', 'title', 'type', 'dbkey', 'url'

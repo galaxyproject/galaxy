@@ -2,7 +2,7 @@ import base64
 
 from requests import get
 
-from base import api  # noqa: I100,I202
+from galaxy_test.driver import api
 
 TEST_USER_EMAIL = "auth_user_test@bx.psu.edu"
 TEST_USER_PASSWORD = "testpassword1"

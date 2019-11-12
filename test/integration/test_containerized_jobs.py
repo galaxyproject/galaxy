@@ -3,12 +3,11 @@
 import os
 import unittest
 
-from base import integration_util
-from base.populators import (
+from galaxy.tool_util.deps.commands import which
+from galaxy_test.base.populators import (
     DatasetPopulator,
 )
-
-from galaxy.tool_util.deps.commands import which
+from galaxy_test.driver import integration_util
 from .test_job_environments import RunsEnvironmentJobs
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))

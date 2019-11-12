@@ -1,19 +1,18 @@
 import json
 
-from base import api
-from base.constants import (
+from galaxy.tool_util.verify.test_data import TestDataResolver
+from galaxy_test.base.constants import (
     ONE_TO_SIX_ON_WINDOWS,
     ONE_TO_SIX_WITH_SPACES,
     ONE_TO_SIX_WITH_TABS,
 )
-from base.populators import (
+from galaxy_test.base.populators import (
     DatasetPopulator,
     skip_if_site_down,
     skip_without_datatype,
     uses_test_history,
 )
-
-from galaxy.tool_util.verify.test_data import TestDataResolver
+from galaxy_test.driver import api
 
 
 class ToolsUploadTestCase(api.ApiTestCase):

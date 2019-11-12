@@ -26,17 +26,17 @@ from whoosh.filedb.filestore import FileStorage
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
 
-import galaxy.webapps.tool_shed.model.mapping
+import tool_shed.webapp.model.mapping
 from galaxy.tool_util.loader_directory import load_tool_elements_from_path
 from galaxy.util import (
     directory_hash_id,
     pretty_print_time_interval,
     unicodify
 )
-from galaxy.webapps.tool_shed import config, model
-from galaxy.webapps.tool_shed.search.repo_search import schema as repo_schema
-from galaxy.webapps.tool_shed.search.tool_search import schema as tool_schema
-from galaxy.webapps.tool_shed.util.hgweb_config import HgWebConfigManager
+from tool_shed.webapp import config, model
+from tool_shed.webapp.search.repo_search import schema as repo_schema
+from tool_shed.webapp.search.tool_search import schema as tool_schema
+from tool_shed.webapp.util.hgweb_config import HgWebConfigManager
 
 if sys.version_info > (3,):
     long = int
@@ -225,7 +225,7 @@ def get_sa_session_and_needed_config_settings(path_to_tool_shed_config):
     db_con = config_settings.database_connection
     if not db_con:
         db_con = "sqlite:///%s?isolation_level=IMMEDIATE" % config_settings.database
-    model = galaxy.webapps.tool_shed.model.mapping.init(config_settings.file_path, db_con, engine_options={}, create_tables=False)
+    model = tool_shed.webapp.model.mapping.init(config_settings.file_path, db_con, engine_options={}, create_tables=False)
     return model.context.current, config_settings
 
 

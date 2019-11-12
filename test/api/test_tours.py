@@ -1,4 +1,4 @@
-from base import api
+from galaxy_test.driver import api
 
 
 class TourApiTestCase(api.ApiTestCase):

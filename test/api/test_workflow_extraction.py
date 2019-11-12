@@ -5,8 +5,7 @@ import operator
 from collections import namedtuple
 from json import dumps, loads
 
-from base.populators import skip_without_tool, summarize_instance_history_on_error
-
+from galaxy_test.base.populators import skip_without_tool, summarize_instance_history_on_error
 from .test_workflows import BaseWorkflowsApiTestCase
 
 

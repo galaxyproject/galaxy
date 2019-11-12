@@ -6,8 +6,8 @@ from requests import (
     put
 )
 
-from base import api  # noqa: I100,I202
-from base.populators import skip_without_tool
+from galaxy_test.base.populators import skip_without_tool
+from galaxy_test.driver import api
 
 TEST_USER_EMAIL = "user_for_users_index_test@bx.psu.edu"
 TEST_USER_EMAIL_DELETE = "user_for_delete_test@bx.psu.edu"

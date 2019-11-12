@@ -275,7 +275,6 @@ OPTION_ACTIONS = {
     'debug': _ProductionUnsafe(True),
     'serve_xss_vulnerable_mimetypes': _ProductionUnsafe(True),
     'use_printdebug': _ProductionUnsafe(True),
-    'use_interactive': _ProductionUnsafe(True),
     'id_secret': _ProductionUnsafe('USING THE DEFAULT IS NOT SECURE!'),
     'master_api_key': _ProductionUnsafe('changethis'),
     'external_service_type_config_file': _DeprecatedAndDroppedAction(),
@@ -336,8 +335,8 @@ SHED_APP = App(
     "9009",
     ["galaxy.webapps.tool_shed.buildapp:app_factory"],
     "config/tool_shed.yml",
-    "lib/galaxy/webapps/tool_shed/config_schema.yml",
-    'galaxy.webapps.tool_shed.buildapp:uwsgi_app()',
+    "lib/tool_shed/webapp/config_schema.yml",
+    'tool_shed.webapp.buildapp:uwsgi_app()',
 )
 REPORTS_APP = App(
     ["reports_wsgi.ini", "config/reports.ini"],

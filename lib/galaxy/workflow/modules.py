@@ -53,7 +53,7 @@ from galaxy.util.bunch import Bunch
 from galaxy.util.json import safe_loads
 from galaxy.util.rules_dsl import RuleSet
 from galaxy.util.template import fill_template
-from tool_shed.util import common_util
+from galaxy.util.tool_shed.common_util import get_tool_shed_url_from_tool_shed_registry
 
 log = logging.getLogger(__name__)
 
@@ -848,7 +848,7 @@ class ToolModule(WorkflowModule):
             if step.tool_id and step.tool_id != module.tool_id:  # This means the exact version of the tool is not installed. We inform the user.
                 old_tool_shed = step.tool_id.split("/repos/")[0]
                 if old_tool_shed not in tool_id:  # Only display the following warning if the tool comes from a different tool shed
-                    old_tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(trans.app, old_tool_shed)
+                    old_tool_shed_url = get_tool_shed_url_from_tool_shed_registry(trans.app, old_tool_shed)
                     if not old_tool_shed_url:  # a tool from a different tool_shed has been found, but the original tool shed has been deactivated
                         old_tool_shed_url = "http://" + old_tool_shed  # let's just assume it's either http, or a http is forwarded to https.
                     old_url = old_tool_shed_url + "/view/%s/%s/" % (module.tool.repository_owner, module.tool.repository_name)

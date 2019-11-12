@@ -105,6 +105,18 @@ mapping:
           template database. This will set that. This is probably only useful for testing but
           documentation is included here for completeness.
 
+      database_log_query_counts:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Log number of SQL queries executed and total time spent dispatching SQL statements for
+          each web request. If statsd is also enabled this information will be logged there as well.
+          This should be considered somewhat experimental, we are unsure of the performance costs of
+          running this in production. This is useful information for optimizing database interaction
+          performance. Similar information can be obtained on a per-request basis by enabling the
+          sql_debug middleware and adding sql_debug=1 to a request string.
+
       slow_query_log_threshold:
         type: float
         default: 0.0
@@ -1107,7 +1119,7 @@ mapping:
 
       mailing_lists_url:
         type: str
-        default: https://galaxyproject.org/mailing-lists
+        default: https://galaxyproject.org/mailing-lists/
         required: false
         desc: |
           The URL linked by the "Mailing Lists" link in the "Help" menu.
@@ -1558,9 +1570,9 @@ mapping:
         default: false
         required: false
         desc: |
-          Debug enables access to various config options useful for development and
-          debugging: use_lint, use_profile, use_printdebug and use_interactive.  It
-          also causes the files used by PBS/SGE (submission script, output, and error)
+          Debug enables access to various config options useful for development
+          and debugging: use_lint, use_profile, and use_printdebug.  It also
+          causes the files used by PBS/SGE (submission script, output, and error)
           to remain on disk after the job is complete.
 
       use_lint:
@@ -1583,14 +1595,6 @@ mapping:
         required: false
         desc: |
           Intercept print statements and show them on the returned page.
-
-      use_interactive:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Enable live debugging in your browser.  This should NEVER be enabled on a
-          public site.
 
       monitor_thread_join_timeout:
         type: int
@@ -2292,7 +2296,7 @@ mapping:
           When false, the most recently added compatible item in the history will
           be used for each "Set at Runtime" input, independent of others in the workflow.
 
-      myexperiment_url:
+      myexperiment_target_url:
         type: str
         default: www.myexperiment.org:80
         required: false
@@ -2328,11 +2332,12 @@ mapping:
 
       ftp_upload_dir_template:
         type: str
-        default: ${ftp_upload_dir}/${ftp_upload_dir_identifier}
         required: false
         desc: |
           Python string template used to determine an FTP upload directory for a
           particular user.
+
+          Defaults to '${ftp_upload_dir}/${ftp_upload_dir_identifier}'.
 
       ftp_upload_purge:
         type: bool
@@ -2400,10 +2405,10 @@ mapping:
 
       galaxy_data_manager_data_path:
         type: str
-        default: tool-data
         required: false
         desc: |
-          Directory to store Data Manager based tool-data; defaults to tool_data_path.
+          Directory to store Data Manager based tool-data. Defaults to the value of the
+          <tool_data_path> option.
 
       job_config_file:
         type: str

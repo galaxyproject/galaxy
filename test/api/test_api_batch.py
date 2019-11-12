@@ -2,7 +2,7 @@ import json
 
 from requests import post
 
-from base import api  # noqa: I100,I202
+from galaxy_test.driver import api
 
 
 class ApiBatchTestCase(api.ApiTestCase):

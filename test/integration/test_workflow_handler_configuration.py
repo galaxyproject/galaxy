@@ -4,11 +4,11 @@ import os
 import re
 from json import dumps
 
-from base import integration_util
-from base.populators import (
+from galaxy_test.base.populators import (
     DatasetPopulator,
     WorkflowPopulator,
 )
+from galaxy_test.driver import integration_util
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 WORKFLOW_HANDLER_CONFIGURATION_JOB_CONF = os.path.join(SCRIPT_DIRECTORY, "workflow_handler_configuration_job_conf.xml")

@@ -20,18 +20,18 @@ except ImportError:
     Display = None
 from six.moves.urllib.parse import urljoin
 
-from base import populators  # noqa: I100,I202
-from base.api import UsesApiTestCaseMixin  # noqa: I100
-from base.driver_util import classproperty, DEFAULT_WEB_HOST, get_ip_address  # noqa: I100
-from base.testcase import FunctionalTestCase  # noqa: I100
-from galaxy.selenium import (  # noqa: I100,I201
+from galaxy.selenium import (
     driver_factory,
 )
-from galaxy.selenium.navigates_galaxy import (  # noqa: I100
+from galaxy.selenium.navigates_galaxy import (
     NavigatesGalaxy,
     retry_during_transitions
 )
-from galaxy.util import asbool  # noqa: I201
+from galaxy.util import asbool
+from galaxy_test.base import populators
+from galaxy_test.driver.api import UsesApiTestCaseMixin
+from galaxy_test.driver.driver_util import classproperty, DEFAULT_WEB_HOST, get_ip_address
+from galaxy_test.driver.testcase import FunctionalTestCase
 
 DEFAULT_TIMEOUT_MULTIPLIER = 1
 DEFAULT_TEST_ERRORS_DIRECTORY = os.path.abspath("database/test_errors")

@@ -4,8 +4,8 @@ from sqlalchemy import and_, false, true
 
 import galaxy.model
 import galaxy.model.tool_shed_install
-import galaxy.webapps.tool_shed.model as model
-from base.driver_util import (  # noqa: I100,I201
+import tool_shed.webapp.model as model
+from galaxy_test.driver.driver_util import (
     galaxy_context as ga_session,
     install_context as install_session,
     tool_shed_context as sa_session

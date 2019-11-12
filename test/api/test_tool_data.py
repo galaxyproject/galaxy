@@ -4,7 +4,7 @@ from __future__ import print_function
 
 import operator
 
-from base import api
+from galaxy_test.driver import api
 
 
 class ToolDataApiTestCase(api.ApiTestCase):

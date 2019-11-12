@@ -14,11 +14,10 @@ galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pa
 # Need to remove this directory from sys.path
 sys.path[0:1] = [os.path.join(galaxy_root, "lib"), os.path.join(galaxy_root, "test")]
 
-from base import driver_util
-
 # This is for the tool shed application.
 from galaxy.web import buildapp as galaxybuildapp
-from galaxy.webapps.tool_shed import buildapp as toolshedbuildapp
+from galaxy_test.driver import driver_util
+from tool_shed.webapp import buildapp as toolshedbuildapp
 
 log = driver_util.build_logger()
 

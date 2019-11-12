@@ -379,9 +379,7 @@ WYMeditor.editor.prototype.dialog = function(dialogType, dialogFeatures, bodyHtm
                             ) {
                                 // User selected no text; create link from scratch and use default text.
                                 wym.insert(
-                                    `<a href='${returned_item_info.link}'>${item_info.singular} '${
-                                        returned_item_info.name
-                                    }'</a>`
+                                    `<a href='${returned_item_info.link}'>${item_info.singular} '${returned_item_info.name}'</a>`
                                 );
                             } else {
                                 // Link created from selected text; add href and title.

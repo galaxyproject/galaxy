@@ -2,15 +2,15 @@
   connection: local
   roles:
     - role: galaxyprojectdotorg.galaxy-os
+      become: true
       tags: image
-      sudo: yes
     - role: galaxyprojectdotorg.cloudman-database
-      sudo: yes
-      sudo_user: postgres
+      become: true
+      become_user: postgres
       tags: database
     - role: galaxyprojectdotorg.galaxy
-      sudo: yes
+      become: true
       tags: galaxy
     - role: galaxyprojectdotorg.galaxy-toolshed
-      sudo: yes
+      become: true
       tags: toolshed

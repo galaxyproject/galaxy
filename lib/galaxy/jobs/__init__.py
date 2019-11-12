@@ -1537,7 +1537,10 @@ class JobWrapper(HasResourceParameters):
         the output datasets based on stderr and stdout from the command, and
         the contents of the output files.
         """
-        finish_timer = util.ExecutionTimer()
+        finish_timer = self.app.execution_timer_factory.get_timer(
+            'internals.galaxy.jobs.job_wrapper_finish',
+            'job_wrapper.finish for job ${job_id} executed'
+        )
 
         # default post job setup
         self.sa_session.expunge_all()
@@ -1651,7 +1654,7 @@ class JobWrapper(HasResourceParameters):
         # Certain tools require tasks to be completed after job execution
         # ( this used to be performed in the "exec_after_process" hook, but hooks are deprecated ).
         param_dict = self.get_param_dict(job)
-        self.tool.exec_after_process(self.app, inp_data, out_data, param_dict, job=job)
+        self.tool.exec_after_process(self.app, inp_data, out_data, param_dict, job=job, final_job_state=final_job_state)
         # Call 'exec_after_process' hook
         self.tool.call_hook('exec_after_process', self.app, inp_data=inp_data,
                             out_data=out_data, param_dict=param_dict,
@@ -1687,22 +1690,33 @@ class JobWrapper(HasResourceParameters):
             # If job was composed of tasks, don't attempt to recollect statisitcs
             self._collect_metrics(job, job_metrics_directory)
         self.sa_session.flush()
-        log.debug('job %d ended (finish() executed in %s)' % (self.job_id, finish_timer))
         if job.state == job.states.ERROR:
             self._report_error()
         cleanup_job = self.cleanup_job
         delete_files = cleanup_job == 'always' or (job.state == job.states.OK and cleanup_job == 'onsuccess')
         self.cleanup(delete_files=delete_files)
+        log.debug(finish_timer.to_str(job_id=self.job_id, tool_id=job.tool_id))
 
     def discover_outputs(self, job, inp_data, out_data, out_collections):
-        input_ext = 'data'
-        input_dbkey = '?'
-        for _, data in inp_data.items():
-            # For loop odd, but sort simulating behavior in galaxy.tools.actions
-            if not data:
-                continue
-            input_ext = data.ext
-            input_dbkey = data.dbkey or '?'
+        # Try to just recover input_ext and dbkey from job parameters (used and set in
+        # galaxy.tools.actions). Old jobs may have not set these in the job parameters
+        # before persisting them.
+        input_params = job.raw_param_dict()
+        input_ext = input_params.get("__input_ext")
+        input_dbkey = input_params.get("dbkey")
+        if input_ext is not None:
+            input_ext = loads(input_ext)
+            input_dbkey = loads(input_dbkey)
+        else:
+            # Legacy jobs without __input_ext.
+            input_ext = 'data'
+            input_dbkey = '?'
+            for _, data in inp_data.items():
+                # For loop odd, but sort simulating behavior in galaxy.tools.actions
+                if not data:
+                    continue
+                input_ext = data.ext
+                input_dbkey = data.dbkey or '?'
 
         # Create generated output children and primary datasets.
         tool_working_directory = self.tool_working_directory
@@ -2441,6 +2455,10 @@ class ComputeEnvironment(object):
     def tmp_directory(self):
         """Temp directory of target job - none if HOME should not be set."""
 
+    @abstractmethod
+    def galaxy_url(self):
+        """URL to access Galaxy API from for this compute environment."""
+
 
 class SimpleComputeEnvironment(object):
 
@@ -2510,6 +2528,9 @@ class SharedComputeEnvironment(SimpleComputeEnvironment):
 
     def tmp_directory(self):
         return self.job_wrapper.tmp_directory()
+
+    def galaxy_url(self):
+        return self.job_wrapper.get_destination_configuration("galaxy_infrastructure_url")
 
 
 class NoopQueue(object):

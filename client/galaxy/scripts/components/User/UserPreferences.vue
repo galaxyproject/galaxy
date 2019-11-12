@@ -128,9 +128,7 @@ export default {
                 $.post(`${Galaxy.root}history/make_private`, { all_histories: true }, () => {
                     Galaxy.modal.show({
                         title: _l("Datasets are now private"),
-                        body: `All of your histories and datsets have been made private.  If you'd like to make all *future* histories private please use the <a href="${
-                            Galaxy.root
-                        }user/permissions">User Permissions</a> interface.`,
+                        body: `All of your histories and datsets have been made private.  If you'd like to make all *future* histories private please use the <a href="${Galaxy.root}user/permissions">User Permissions</a> interface.`,
                         buttons: {
                             Close: function() {
                                 Galaxy.modal.hide();

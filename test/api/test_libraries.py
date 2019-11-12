@@ -2,13 +2,13 @@ import json
 import time
 import unittest
 
-from base import api
-from base.populators import (
+from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
     LibraryPopulator,
     TestsDatasets,
 )
+from galaxy_test.driver import api
 
 FILE_URL = 'https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed'
 FILE_MD5 = "37b59762b59fff860460522d271bc111"
@@ -286,6 +286,14 @@ class LibrariesApiTestCase(api.ApiTestCase, TestsDatasets):
         create_response = self._patch("libraries/datasets/%s" % ld.json()["id"], data=data)
         self._assert_status_code_is(create_response, 200)
         self._assert_has_keys(create_response.json(), "name", "file_ext", "misc_info", "genome_build")
+
+    def test_update_dataset_tags(self):
+        ld = self._create_dataset_in_folder_in_library("ForTagtestDataset")
+        data = {"tags": ["#Lancelot", "name:Holy Grail", "blue"]}
+        create_response = self._patch("libraries/datasets/%s" % ld.json()["id"], data=data)
+        self._assert_status_code_is(create_response, 200)
+        self._assert_has_keys(create_response.json(), "tags")
+        assert create_response.json()["tags"] == "name:Lancelot, name:HolyGrail, blue"
 
     def test_invalid_update_dataset_in_folder(self):
         ld = self._create_dataset_in_folder_in_library("ForInvalidUpdateDataset")

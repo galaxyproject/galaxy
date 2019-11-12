@@ -3,12 +3,12 @@
 import time
 from json import dumps
 
-from base import integration_util
-from base.populators import (
+from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
     WorkflowPopulator,
 )
+from galaxy_test.driver import integration_util
 
 
 class MaximumWorkflowInvocationDurationTestCase(integration_util.IntegrationTestCase):

@@ -1,8 +1,8 @@
 from requests import delete
 
-from base import api  # noqa: I100,I202
-from base.populators import DatasetPopulator
-from galaxy.exceptions import error_codes  # noqa: I201
+from galaxy.exceptions import error_codes
+from galaxy_test.base.populators import DatasetPopulator
+from galaxy_test.driver import api
 
 
 class BasePageApiTestCase(api.ApiTestCase):

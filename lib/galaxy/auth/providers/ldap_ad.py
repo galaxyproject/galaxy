@@ -233,9 +233,13 @@ class LDAP(AuthProvider):
         try:
             l = ldap.initialize(_get_subs(options, 'server', params))
             l.protocol_version = 3
+            bind_user = _get_subs(options, 'bind-user', params)
             bind_password = _get_subs(options, 'bind-password', params)
-            l.simple_bind_s(_get_subs(
-                options, 'bind-user', params), bind_password)
+        except Exception:
+            log.exception('LDAP authenticate: initialize exception')
+            return False
+        try:
+            l.simple_bind_s(bind_user, bind_password)
             try:
                 whoami = l.whoami_s()
             except ldap.PROTOCOL_ERROR:
@@ -246,8 +250,8 @@ class LDAP(AuthProvider):
                     raise RuntimeError('LDAP authenticate: anonymous bind')
                 if not options['redact_username_in_logs']:
                     log.debug("LDAP authenticate: whoami is %s", whoami)
-        except Exception:
-            log.warning('LDAP authenticate: bind exception', exc_info=True)
+        except Exception as e:
+            log.info('LDAP authenticate: bind exception: %s', unicodify(e))
             return False
         log.debug('LDAP authentication successful')
         return True

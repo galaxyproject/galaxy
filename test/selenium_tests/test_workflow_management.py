@@ -1,5 +1,4 @@
-from base.populators import skip_if_github_down
-
+from galaxy_test.base.populators import skip_if_github_down
 from .framework import (
     retry_assertion_during_transitions,
     selenium_test,

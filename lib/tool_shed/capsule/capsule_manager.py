@@ -12,11 +12,11 @@ from sqlalchemy import and_, false
 
 import tool_shed.repository_types.util as rt_util
 from galaxy import web
+from galaxy.tool_shed.galaxy_install.repository_dependencies.repository_dependency_manager import RepositoryDependencyInstallManager
 from galaxy.util import asbool, build_url, CHUNK_SIZE
 from galaxy.util.path import safe_relpath
 from tool_shed.dependencies import attribute_handlers
 from tool_shed.dependencies.repository.relation_builder import RelationBuilder
-from tool_shed.galaxy_install.repository_dependencies.repository_dependency_manager import RepositoryDependencyInstallManager
 from tool_shed.metadata import repository_metadata_manager
 from tool_shed.util import (basic_util, commit_util, common_util, encoding_util,
     hg_util, metadata_util, repository_util, shed_util_common as suc, xml_util)

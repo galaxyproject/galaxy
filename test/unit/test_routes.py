@@ -20,7 +20,7 @@ class TestWebapp(WebApplication):
 
 
 def test_galaxy_routes():
-    test_config = Bunch(template_path="/tmp", template_cache="/tmp")
+    test_config = Bunch(template_path="/tmp", template_cache_path="/tmp")
     app = Bunch(config=test_config, security=object(), trace_logger=None)
     test_webapp = TestWebapp(app)
 

@@ -1,4 +1,4 @@
-<tool id="Grouping1" name="Group" version="2.1.3">
+<tool id="Grouping1" name="Group" version="2.1.4">
   <description>data by a column and perform aggregate operation on other columns.</description>
   <requirements>
     <requirement type="package" version="1.15.4">numpy</requirement>
