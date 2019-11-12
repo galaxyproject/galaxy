@@ -16,9 +16,6 @@
     <ul class="manage-table-actions">
         <li><a class="action-button" id="repository-${repository.id}-popup" class="menubutton">Repository Actions</a></li>
         <div popupmenu="repository-${repository.id}-popup">
-            %if workflow_name:
-                <li><a class="action-button" target="galaxy_main" href="${h.url_for( controller='admin_toolshed', action='import_workflow', workflow_name=tool_shed_encode( workflow_name ), repository_id=trans.security.encode_id( repository.id ) )}">Import workflow to Galaxy</a></li>
-            %endif
             %if repository.can_reinstall_or_activate:
                 <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='restore_repository', id=trans.security.encode_id( repository.id ) )}">Activate or reinstall repository</a>
             %endif

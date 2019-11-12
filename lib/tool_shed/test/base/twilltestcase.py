@@ -32,7 +32,6 @@ from galaxy.security import idencoding
 from galaxy.util import smart_str, unicodify
 from galaxy_test.driver.testcase import FunctionalTestCase
 from tool_shed.util import hg_util, xml_util
-from tool_shed.util.encoding_util import tool_shed_encode
 from . import common, test_db_util
 
 # Set a 10 minute timeout for repository installation.
@@ -829,11 +828,6 @@ class ShedTwillTestCase(FunctionalTestCase):
         strings_not_displayed = []
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
-    def display_all_workflows(self, strings_displayed=None, strings_not_displayed=None):
-        url = '/workflows/list'
-        self.visit_galaxy_url(url)
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-
     def display_galaxy_browse_repositories_page(self, strings_displayed=None, strings_not_displayed=None):
         url = '/admin_toolshed/browse_repositories'
         self.visit_galaxy_url(url)
@@ -867,14 +861,6 @@ class ShedTwillTestCase(FunctionalTestCase):
         strings_displayed.append(str(installed_repository.installed_changeset_revision))
         # Every place Galaxy's XXXX tool appears in attribute - need to quote.
         strings_displayed = [x.replace("'", "&#39;") for x in strings_displayed]
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-
-    def display_installed_workflow_image(self, repository, workflow_name, strings_displayed=None, strings_not_displayed=None):
-        params = {
-            'repository_id': self.security.encode_id(repository.id),
-            'workflow_name': tool_shed_encode(workflow_name)
-        }
-        self.visit_galaxy_url('/admin_toolshed/generate_workflow_image', params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def display_manage_repository_page(self, repository, changeset_revision=None, strings_displayed=None, strings_not_displayed=None):
@@ -1343,20 +1329,6 @@ class ShedTwillTestCase(FunctionalTestCase):
         self.submit_form('import_capsule', 'import_capsule_button')
         self.check_for_strings(strings_displayed_after_submit, strings_not_displayed_after_submit)
 
-    def import_workflow(self, repository, workflow_name, strings_displayed=None, strings_not_displayed=None):
-        if strings_displayed is None:
-            strings_displayed = []
-        if strings_not_displayed is None:
-            strings_not_displayed = []
-        params = {
-            'repository_id': self.security.encode_id(repository.id),
-            'workflow_name': tool_shed_encode(workflow_name)
-        }
-        self.visit_galaxy_url('/admin_toolshed/import_workflow', params=params)
-        if workflow_name not in strings_displayed:
-            strings_displayed.append(workflow_name)
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-
     def initiate_installation_process(self,
                                       install_tool_dependencies=False,
                                       install_repository_dependencies=True,
@@ -1541,19 +1513,6 @@ class ShedTwillTestCase(FunctionalTestCase):
         self.visit_galaxy_url('/tool_runner', params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
-    def load_workflow_image_in_tool_shed(self, repository, workflow_name, changeset_revision=None, strings_displayed=None, strings_not_displayed=None):
-        if not changeset_revision:
-            changeset_revision = self.get_repository_tip(repository)
-        metadata = self.get_repository_metadata_by_changeset_revision(repository, changeset_revision)
-        if not metadata:
-            raise AssertionError('Metadata not found for changeset revision %s.' % changeset_revision)
-        params = {
-            'repository_metadata_id': self.security.encode_id(metadata.id),
-            'workflow_name': tool_shed_encode(workflow_name)
-        }
-        self.visit_url('/repository/generate_workflow_image', params=params)
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-
     def manage_review_components(self, strings_displayed=None, strings_not_displayed=None):
         url = '/repository_review/manage_components'
         self.visit_url(url)
@@ -1568,16 +1527,6 @@ class ShedTwillTestCase(FunctionalTestCase):
             'changeset_revision': changeset_revision
         }
         self.visit_url('/repository/preview_tools_in_changeset', params=params)
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-
-    def preview_workflow_in_tool_shed(self, repository_name, owner, workflow_name, strings_displayed=None, strings_not_displayed=None):
-        repository = test_db_util.get_repository_by_name_and_owner(repository_name, owner)
-        metadata = self.get_repository_metadata(repository)
-        params = {
-            'workflow_name': tool_shed_encode(workflow_name),
-            'repository_metadata_id': self.security.encode_id(metadata[0].id)
-        }
-        self.visit_url('/repository/view_workflow', params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def reactivate_repository(self, installed_repository):
@@ -2016,14 +1965,6 @@ class ShedTwillTestCase(FunctionalTestCase):
         # Python's dict comparison recursively compares sorted key => value pairs and returns true if any key or value differs,
         # or if the number of keys differs.
         assert old_metadata == new_metadata, 'Metadata changed after reset on repository %s.' % repository.name
-
-    def view_installed_workflow(self, repository, workflow_name, strings_displayed=None, strings_not_displayed=None):
-        params = {
-            'repository_id': self.security.encode_id(repository.id),
-            'workflow_name': tool_shed_encode(workflow_name)
-        }
-        self.visit_galaxy_url('/admin_toolshed/view_workflow', params=params)
-        self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def visit_galaxy_url(self, url, params=None, doseq=False, allowed_codes=[200]):
         url = '%s%s' % (self.galaxy_url, url)

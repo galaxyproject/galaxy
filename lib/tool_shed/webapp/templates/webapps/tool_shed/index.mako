@@ -57,9 +57,6 @@
                             <div class="toolTitle">
                                 <a target="galaxy_main" href="${h.url_for( controller='repository', action='find_tools' )}">Search for valid tools</a>
                             </div>
-                            <div class="toolTitle">
-                                <a target="galaxy_main" href="${h.url_for( controller='repository', action='find_workflows' )}">Search for workflows</a>
-                            </div>
                         </div>
                         <div class="toolSectionPad"></div>
                         <div class="toolSectionTitle">
