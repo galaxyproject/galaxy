@@ -73,7 +73,7 @@ class ToolBoxSearch(object):
             writer.delete_by_term('id', tool_id)
         for tool_id in tool_cache._new_tool_ids:
             tool = tool_cache.get_tool_by_id(tool_id)
-            if tool:
+            if tool and tool.is_latest_version:
                 add_doc_kwds = self._create_doc(tool_id=tool_id, tool=tool, index_help=index_help)
                 writer.add_document(**add_doc_kwds)
         writer.commit()
