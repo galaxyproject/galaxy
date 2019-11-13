@@ -1376,27 +1376,6 @@ class AdminToolshed(AdminGalaxy):
                                                         message=message,
                                                         status=status))
 
-    @web.expose
-    @web.require_admin
-    def reset_to_install(self, trans, **kwd):
-        """An error occurred while cloning the repository, so reset everything necessary to enable another attempt."""
-        repository_id = kwd['id']
-        repository = repository_util.get_installed_tool_shed_repository(trans.app, repository_id)
-        if kwd.get('reset_repository', False):
-            repository_util.set_repository_attributes(trans.app,
-                                                      repository,
-                                                      status=trans.install_model.ToolShedRepository.installation_status.NEW,
-                                                      error_message=None,
-                                                      deleted=False,
-                                                      uninstalled=False,
-                                                      remove_from_disk=True)
-            new_kwd = {}
-            new_kwd['message'] = "You can now attempt to install the repository named <b>%s</b> again." % escape(str(repository.name))
-            new_kwd['status'] = "done"
-        return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                        action='manage_repository',
-                                                        id=repository_id))
-
     @web.json
     def tool_dependency_status_updates(self, trans, ids=None, status_list=None):
         # Avoid caching
