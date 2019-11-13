@@ -91,5 +91,5 @@ class WorkflowManagementTestCase(SeleniumTestCase):
     @skip_if_github_down
     def _workflow_import_from_url(self):
         self.workflow_index_click_import()
-        url = "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test/base/data/test_workflow_1.ga"
+        url = "https://raw.githubusercontent.com/galaxyproject/galaxy/release_19.09/test/base/data/test_workflow_1.ga"
         self.workflow_import_submit_url(url)
