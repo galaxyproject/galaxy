@@ -376,26 +376,6 @@
     </script>
 </%def>
 
-<%def name="tool_dependency_installation_updater()">
-    <%
-        can_update = False
-        if query.count():
-            # Get the first tool dependency to get to the tool shed repository.
-            tool_dependency = query[0]
-            tool_shed_repository = tool_dependency.tool_shed_repository
-            can_update = tool_shed_repository.tool_dependencies_being_installed or tool_shed_repository.missing_tool_dependencies
-    %>
-    %if can_update:
-        <script type="text/javascript">
-            config.addInitialization(function() {
-                console.log("common.mako, tool_dependency_installation_updater");
-                // Tool dependency installation status updater
-                tool_dependency_status_updater( [${ ",".join( [ '{"id" : "%s", "status" : "%s"}' % ( trans.security.encode_id( td.id ), td.status ) for td in query ] ) } ] );
-            });
-        </script>
-    %endif
-</%def>
-
 <%def name="repository_installation_updater()">
     <%
         can_update = False
