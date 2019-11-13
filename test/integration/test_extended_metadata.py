@@ -1,6 +1,6 @@
 """Integration tests for the Pulsar embedded runner."""
 
-from base import integration_util
+from galaxy_test.driver import integration_util
 
 TEST_TOOL_IDS = [
     "multi_output",
