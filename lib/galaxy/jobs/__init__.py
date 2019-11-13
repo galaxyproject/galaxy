@@ -1599,7 +1599,8 @@ class JobWrapper(HasResourceParameters):
                 os.unlink(version_filename)
 
         outputs_to_working_directory = util.asbool(self.get_destination_configuration("outputs_to_working_directory", False))
-        if outputs_to_working_directory and not self.__link_file_check():
+        if not extended_metadata and outputs_to_working_directory and not self.__link_file_check():
+            # output will be moved by job if metadata_strategy is extended_metadata, so skip moving here
             for dataset_path in self.get_output_fnames():
                 try:
                     shutil.move(dataset_path.false_path, dataset_path.real_path)
@@ -1617,7 +1618,6 @@ class JobWrapper(HasResourceParameters):
                         return self.fail("Job %s's output dataset(s) could not be read" % job.id)
 
         job_context = ExpressionContext(dict(stdout=job.stdout, stderr=job.stderr))
-        output_dataset_associations = job.output_datasets + job.output_library_datasets
         if extended_metadata:
             try:
                 import_options = store.ImportOptions(allow_dataset_object_edit=True, allow_edit=True)
@@ -1626,6 +1626,7 @@ class JobWrapper(HasResourceParameters):
             except Exception:
                 log.exception("problem importing job outputs. stdout [%s] stderr [%s]" % (job.stdout, job.stderr))
                 raise
+        output_dataset_associations = job.output_datasets + job.output_library_datasets
         for dataset_assoc in output_dataset_associations:
             context = self.get_dataset_finish_context(job_context, dataset_assoc)
             # should this also be checking library associations? - can a library item be added from a history before the job has ended? -
