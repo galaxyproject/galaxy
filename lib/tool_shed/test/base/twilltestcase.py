@@ -1587,9 +1587,9 @@ class ShedTwillTestCase(FunctionalTestCase):
         self.submit_form(form_no=1, button="reset_metadata_on_selected_repositories_button", **kwd)
 
     def reset_metadata_on_selected_installed_repositories(self, repository_ids):
-        self.visit_galaxy_url('/admin_toolshed/reset_metadata_on_selected_installed_repositories')
-        kwd = dict(repository_ids=repository_ids)
-        self.submit_form(form_no=1, button="reset_metadata_on_selected_repositories_button", **kwd)
+        api_key = get_master_api_key()
+        response = requests.post(self.galaxy_url + "/api/tool_shed_repositories/reset_metadata_on_selected_installed_repositories", data={'repository_ids': repository_ids, 'key': api_key})
+        assert response.status_code != 403, response.content
 
     def reset_repository_metadata(self, repository):
         params = {

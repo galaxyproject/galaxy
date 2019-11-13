@@ -1338,21 +1338,6 @@ class AdminToolshed(AdminGalaxy):
 
     @web.expose
     @web.require_admin
-    def reset_metadata_on_selected_installed_repositories(self, trans, **kwd):
-        irmm = InstalledRepositoryMetadataManager(trans.app)
-        if 'reset_metadata_on_selected_repositories_button' in kwd:
-            message, status = irmm.reset_metadata_on_selected_repositories(trans.user, **kwd)
-        else:
-            message = escape(kwd.get('message', ''))
-            status = kwd.get('status', 'done')
-        repositories_select_field = irmm.build_repository_ids_select_field()
-        return trans.fill_template('/admin/tool_shed_repository/reset_metadata_on_selected_repositories.mako',
-                                   repositories_select_field=repositories_select_field,
-                                   message=message,
-                                   status=status)
-
-    @web.expose
-    @web.require_admin
     def reset_repository_metadata(self, trans, id):
         """Reset all metadata on a single installed tool shed repository."""
         repository = repository_util.get_installed_tool_shed_repository(trans.app, id)
