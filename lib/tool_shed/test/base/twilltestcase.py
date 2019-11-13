@@ -3,9 +3,7 @@ from __future__ import print_function
 import logging
 import os
 import re
-import shutil
 import string
-import tarfile
 import tempfile
 import time
 from json import loads
@@ -594,24 +592,6 @@ class ShedTwillTestCase(FunctionalTestCase):
         self.visit_galaxy_url('/admin_toolshed/manage_repository', params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
-    def check_manifest(self, manifest_filepath, owner=None):
-        root, error_message = xml_util.parse_xml(manifest_filepath)
-        for elem in root.findall('repository'):
-            repository_name = elem.get('name')
-            manifest_owner = elem.get('username')
-            if owner is not None:
-                assert manifest_owner == owner, 'Expected repository %s to be owned by %s, but found %s' % \
-                    (elem.get('name'), owner, manifest_owner)
-            toolshed = elem.get('toolshed')
-            changeset_revision = elem.get('changeset_revision')
-            assert toolshed is None, 'Repository definition %s has a tool shed attribute %s.' % (repository_name, toolshed)
-            assert changeset_revision is None, 'Repository definition %s specifies a changeset revision %s.' % \
-                (repository_name, changeset_revision)
-            repository_archive = elem.find('archive').text
-            filepath, filename = os.path.split(manifest_filepath)
-            repository_path = os.path.join(filepath, repository_archive)
-            self.verify_repository_in_capsule(repository_path, repository_name, owner)
-
     def check_repository_changelog(self, repository, strings_displayed=None, strings_not_displayed=None):
         params = {
             'id': self.security.encode_id(repository.id)
@@ -973,41 +953,6 @@ class ShedTwillTestCase(FunctionalTestCase):
             'Repository <b>%s</b> has been created' % name,
         ]
 
-    def export_capsule(self, repository, aggressive=True, includes_dependencies=None):
-        # TODO: Remove this method and restore _exort_capsule as export_capsule
-        # after transient problem is fixed.
-        if not aggressive:
-            return self._export_capsule(repository, includes_dependencies=includes_dependencies)
-        else:
-            try:
-                return self._export_capsule(repository, includes_dependencies=includes_dependencies)
-            except Exception:
-                # Empirically this fails occasionally, we don't know
-                # why however.
-                time.sleep(1)
-                return self._export_capsule(repository, includes_dependencies=includes_dependencies)
-
-    def _export_capsule(self, repository, includes_dependencies=None):
-        params = {
-            'repository_id': self.security.encode_id(repository.id),
-            'changeset_revision': self.get_repository_tip(repository)
-        }
-        self.visit_url('/repository/export', params=params)
-        self.check_page_for_string("Repository '")
-        self.check_page_for_string("Export")
-        # Explicit check for True/False since None means we don't know if this
-        # includes dependencies and so we skip both checks...
-        if includes_dependencies is True:
-            self.check_page_for_string("Export repository dependencies?")
-        elif includes_dependencies is False:
-            self.check_page_for_string("No repository dependencies are defined for revision")
-        self.submit_form('export_repository', 'export_repository_button')
-        fd, capsule_filename = tempfile.mkstemp()
-        os.close(fd)
-        with open(capsule_filename, 'w') as f:
-            f.write(self.last_page())
-        return capsule_filename
-
     def fetch_repository_metadata(self, repository, strings_displayed=None, strings_not_displayed=None):
         url = '/api/repositories/%s/metadata' % self.security.encode_id(repository.id)
         self.visit_url(url)
@@ -1318,16 +1263,6 @@ class ShedTwillTestCase(FunctionalTestCase):
             tc.fv("user_access", "allow_push", '+%s' % username)
         tc.submit('user_access_button')
         self.check_for_strings(post_submit_strings_displayed, post_submit_strings_not_displayed)
-
-    def import_capsule(self, filename, strings_displayed=None, strings_not_displayed=None,
-                       strings_displayed_after_submit=[], strings_not_displayed_after_submit=[]):
-        url = '/repository/upload_capsule'
-        self.visit_url(url)
-        tc.formfile('upload_capsule', 'file_data', filename)
-        tc.submit('upload_capsule_button')
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-        self.submit_form('import_capsule', 'import_capsule_button')
-        self.check_for_strings(strings_displayed_after_submit, strings_not_displayed_after_submit)
 
     def initiate_installation_process(self,
                                       install_tool_dependencies=False,
@@ -1835,15 +1770,6 @@ class ShedTwillTestCase(FunctionalTestCase):
         tc.submit("upload_button")
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
-    def verify_capsule_contents(self, capsule_filepath, owner):
-        tar_object = tarfile.open(capsule_filepath, 'r:*')
-        extraction_path = tempfile.mkdtemp()
-        tar_object.extractall(extraction_path)
-        for root, dirs, files in os.walk(extraction_path):
-            if 'manifest.xml' in files:
-                self.check_manifest(os.path.join(root, 'manifest.xml'), owner=owner)
-        shutil.rmtree(extraction_path)
-
     def verify_installed_repositories(self, installed_repositories=[], uninstalled_repositories=[]):
         for repository_name, repository_owner in installed_repositories:
             galaxy_repository = test_db_util.get_installed_repository_by_name_owner(repository_name, repository_owner)
@@ -1916,17 +1842,6 @@ class ShedTwillTestCase(FunctionalTestCase):
         # We better have an entry like: <table comment_char="#" name="sam_fa_indexes"> in our parsed data_tables
         # or we know that the repository was not correctly installed!
         assert found, 'No entry for %s in %s.' % (required_data_table_entry, self.shed_tool_data_table_conf)
-
-    def verify_repository_in_capsule(self, repository_archive, repository_name, repository_owner):
-        repository_extraction_dir = tempfile.mkdtemp()
-        repository_tar_object = tarfile.open(repository_archive, 'r:*')
-        repository_tar_object.extractall(repository_extraction_dir)
-        for root, dirs, files in os.walk(repository_extraction_dir):
-            for filename in files:
-                if filename in ['tool_dependencies.xml', 'repository_dependencies.xml']:
-                    dependency_filepath = os.path.join(root, filename)
-                    self.check_exported_repository_dependency(dependency_filepath, repository_name, repository_owner)
-        shutil.rmtree(repository_extraction_dir)
 
     def verify_repository_reviews(self, repository, reviewer=None, strings_displayed=None, strings_not_displayed=None):
         changeset_revision = self.get_repository_tip(repository)

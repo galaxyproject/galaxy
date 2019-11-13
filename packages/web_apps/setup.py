@@ -41,7 +41,6 @@ PACKAGES = [
     'galaxy.webapps.reports.controllers',
     'galaxy.webapps.reports.framework',
     'tool_shed',
-    'tool_shed.capsule',
     'tool_shed.dependencies.repository',
     'tool_shed.dependencies.tool',
     'tool_shed.galaxy_install.grids',
