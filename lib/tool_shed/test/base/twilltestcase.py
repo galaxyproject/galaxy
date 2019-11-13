@@ -1575,11 +1575,10 @@ class ShedTwillTestCase(FunctionalTestCase):
         return tip_ctx.rev() < 0
 
     def reset_installed_repository_metadata(self, repository):
-        params = {
-            'id': self.security.encode_id(repository.id)
-        }
-        self.visit_galaxy_url('/admin_toolshed/reset_repository_metadata', params=params)
-        self.check_for_strings(['Metadata has been reset'])
+        encoded_id = self.security.encode_id(repository.id)
+        api_key = get_master_api_key()
+        response = requests.post(self.galaxy_url + "/api/tool_shed_repositories/reset_metadata_on_selected_installed_repositories", data={'repository_ids': [encoded_id], 'key': api_key})
+        assert response.status_code != 403, response.content
 
     def reset_metadata_on_selected_repositories(self, repository_ids):
         self.visit_url('/admin/reset_metadata_on_selected_repositories_in_tool_shed')

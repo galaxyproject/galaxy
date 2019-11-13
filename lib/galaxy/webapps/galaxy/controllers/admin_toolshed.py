@@ -8,7 +8,6 @@ from sqlalchemy import or_
 import tool_shed.repository_types.util as rt_util
 from galaxy import util, web
 from galaxy.tool_shed.galaxy_install import install_manager
-from galaxy.tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
 from galaxy.tool_shed.galaxy_install.repository_dependencies import repository_dependency_manager
 from galaxy.tool_shed.galaxy_install.tools import tool_panel_manager
 from galaxy.tool_util.deps import views
@@ -1335,46 +1334,6 @@ class AdminToolshed(AdminGalaxy):
                                    repo_info_dict=repo_info_dict,
                                    message=message,
                                    status=status)
-
-    @web.expose
-    @web.require_admin
-    def reset_repository_metadata(self, trans, id):
-        """Reset all metadata on a single installed tool shed repository."""
-        repository = repository_util.get_installed_tool_shed_repository(trans.app, id)
-        repository_clone_url = common_util.generate_clone_url_for_installed_repository(trans.app, repository)
-        tool_path, relative_install_dir = repository.get_tool_relative_path(trans.app)
-        if relative_install_dir:
-            original_metadata_dict = repository.metadata
-            irmm = InstalledRepositoryMetadataManager(app=trans.app,
-                                                      repository=repository,
-                                                      changeset_revision=repository.changeset_revision,
-                                                      repository_clone_url=repository_clone_url,
-                                                      shed_config_dict=repository.get_shed_config_dict(trans.app),
-                                                      relative_install_dir=relative_install_dir,
-                                                      repository_files_dir=None,
-                                                      resetting_all_metadata_on_repository=False,
-                                                      updating_installed_repository=False,
-                                                      persist=False)
-            irmm.generate_metadata_for_changeset_revision()
-            irmm_metadata_dict = irmm.get_metadata_dict()
-            if irmm_metadata_dict != original_metadata_dict:
-                repository.metadata = irmm_metadata_dict
-                irmm.update_in_shed_tool_config()
-                trans.install_model.context.add(repository)
-                trans.install_model.context.flush()
-                message = 'Metadata has been reset on repository <b>%s</b>.' % escape(repository.name)
-                status = 'done'
-            else:
-                message = 'Metadata did not need to be reset on repository <b>%s</b>.' % escape(repository.name)
-                status = 'done'
-        else:
-            message = 'Error locating installation directory for repository <b>%s</b>.' % escape(repository.name)
-            status = 'error'
-        return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                        action='manage_repository',
-                                                        id=id,
-                                                        message=message,
-                                                        status=status))
 
     @web.json
     def tool_dependency_status_updates(self, trans, ids=None, status_list=None):
