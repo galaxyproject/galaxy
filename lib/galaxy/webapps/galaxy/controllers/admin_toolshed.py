@@ -1164,27 +1164,6 @@ class AdminToolshed(AdminGalaxy):
                                    message=message,
                                    status=status)
 
-    @web.json
-    def tool_dependency_status_updates(self, trans, ids=None, status_list=None):
-        # Avoid caching
-        trans.response.headers['Pragma'] = 'no-cache'
-        trans.response.headers['Expires'] = '0'
-        # Create new HTML for any ToolDependency records whose status that has changed.
-        rval = []
-        if ids is not None and status_list is not None:
-            ids = util.listify(ids)
-            status_list = util.listify(status_list)
-            for tup in zip(ids, status_list):
-                id, status = tup
-                tool_dependency = trans.install_model.context.query(trans.install_model.ToolDependency).get(trans.security.decode_id(id))
-                if tool_dependency.status != status:
-                    rval.append(dict(id=id,
-                                     status=tool_dependency.status,
-                                     html_status=unicodify(trans.fill_template("admin/tool_shed_repository/tool_dependency_installation_status.mako",
-                                                                               tool_dependency=tool_dependency),
-                                                           'utf-8')))
-        return rval
-
     @web.expose
     @web.require_admin
     def uninstall_tool_dependencies(self, trans, **kwd):
