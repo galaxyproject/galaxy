@@ -178,16 +178,10 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
 
             # setup tool
             tool_as_dict = {}
-            tool_as_dict["stdio_exit_codes"] = list(map(lambda e: e.to_dict(), tool.stdio_exit_codes))
-            tool_as_dict["stdio_regexes"] = list(map(lambda r: r.to_dict(), tool.stdio_regexes))
-            tool_outputs = {}
-            for name, output in tool.outputs.items():
-                tool_outputs[name] = output.to_dict()
-            tool_as_dict["outputs"] = tool_outputs
-            tool_output_collections = {}
-            for name, output in tool.output_collections.items():
-                tool_output_collections[name] = output.to_dict()
-            tool_as_dict["output_collections"] = tool_output_collections
+            tool_as_dict["stdio_exit_codes"] = [e.to_dict() for e in tool.stdio_exit_codes]
+            tool_as_dict["stdio_regexes"] = [r.to_dict() for r in tool.stdio_regexes]
+            tool_as_dict["outputs"] = {name: output.to_dict() for name, output in tool.outputs.items()}
+            tool_as_dict["output_collections"] = {name: output.to_dict() for name, output in tool.output_collections.items()}
 
             # setup the rest
             metadata_params["tool"] = tool_as_dict
