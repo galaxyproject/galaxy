@@ -522,137 +522,6 @@ class AdminToolshed(AdminGalaxy):
 
     @web.expose
     @web.require_admin
-    def manage_repository_tool_dependencies(self, trans, **kwd):
-        message = escape(kwd.get('message', ''))
-        status = kwd.get('status', 'done')
-        tool_dependency_ids = tool_dependency_util.get_tool_dependency_ids(as_string=False, **kwd)
-        if tool_dependency_ids:
-            # We need a tool_shed_repository, so get it from one of the tool_dependencies.
-            tool_dependency = tool_dependency_util.get_tool_dependency(trans.app, tool_dependency_ids[0])
-            tool_shed_repository = tool_dependency.tool_shed_repository
-        else:
-            # The user must be on the manage_repository_tool_dependencies page and clicked the button to either install or uninstall a
-            # tool dependency, but they didn't check any of the available tool dependencies on which to perform the action.
-            repository_id = kwd.get('repository_id', None)
-            tool_shed_repository = repository_util.get_tool_shed_repository_by_id(trans.app, repository_id)
-        if 'operation' in kwd:
-            operation = kwd['operation'].lower()
-            if not tool_dependency_ids:
-                message = 'Select at least 1 tool dependency to %s.' % operation
-                kwd['message'] = message
-                kwd['status'] = 'error'
-                del kwd['operation']
-                return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                                action='manage_repository_tool_dependencies',
-                                                                **kwd))
-            if operation == 'browse':
-                return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                                action='browse_tool_dependency',
-                                                                **kwd))
-            elif operation == 'uninstall':
-                tool_dependencies_for_uninstallation = []
-                for tool_dependency_id in tool_dependency_ids:
-                    tool_dependency = tool_dependency_util.get_tool_dependency(trans.app, tool_dependency_id)
-                    if tool_dependency.status in [trans.install_model.ToolDependency.installation_status.INSTALLED,
-                                                  trans.install_model.ToolDependency.installation_status.ERROR]:
-                        tool_dependencies_for_uninstallation.append(tool_dependency)
-                if tool_dependencies_for_uninstallation:
-                    return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                                    action='uninstall_tool_dependencies',
-                                                                    **kwd))
-                else:
-                    message = 'No selected tool dependencies can be uninstalled, you may need to use the <b>Repair repository</b> feature.'
-                    status = 'error'
-            elif operation == "install":
-                if trans.app.toolbox.dependency_manager.uses_tool_shed_dependencies:
-                    tool_dependencies_for_installation = []
-                    for tool_dependency_id in tool_dependency_ids:
-                        tool_dependency = tool_dependency_util.get_tool_dependency(trans.app, tool_dependency_id)
-                        if tool_dependency.status in [trans.install_model.ToolDependency.installation_status.NEVER_INSTALLED,
-                                                      trans.install_model.ToolDependency.installation_status.UNINSTALLED]:
-                            tool_dependencies_for_installation.append(tool_dependency)
-                    if tool_dependencies_for_installation:
-                        self.initiate_tool_dependency_installation(trans,
-                                                                   tool_dependencies_for_installation,
-                                                                   message=message,
-                                                                   status=status)
-                    else:
-                        message = 'All selected tool dependencies are already installed.'
-                        status = 'error'
-                else:
-                    message = 'Set the value of your <b>tool_dependency_dir</b> setting in your Galaxy config file (galaxy.ini) '
-                    message += ' and restart your Galaxy server to install tool dependencies.'
-                    status = 'error'
-        installed_tool_dependencies_select_field = \
-            tool_dependency_util.build_tool_dependencies_select_field(trans.app,
-                                                                      tool_shed_repository=tool_shed_repository,
-                                                                      name='inst_td_ids',
-                                                                      uninstalled_only=False)
-        uninstalled_tool_dependencies_select_field = \
-            tool_dependency_util.build_tool_dependencies_select_field(trans.app,
-                                                                      tool_shed_repository=tool_shed_repository,
-                                                                      name='uninstalled_tool_dependency_ids',
-                                                                      uninstalled_only=True)
-        return trans.fill_template('/admin/tool_shed_repository/manage_repository_tool_dependencies.mako',
-                                   repository=tool_shed_repository,
-                                   installed_tool_dependencies_select_field=installed_tool_dependencies_select_field,
-                                   uninstalled_tool_dependencies_select_field=uninstalled_tool_dependencies_select_field,
-                                   message=message,
-                                   status=status)
-
-    @web.expose
-    @web.require_admin
-    def manage_tool_dependencies(self, trans, **kwd):
-        # This method is called when tool dependencies are being installed.  See the related manage_repository_tool_dependencies
-        # method for managing the tool dependencies for a specified installed tool shed repository.
-        message = escape(kwd.get('message', ''))
-        status = kwd.get('status', 'done')
-        tool_dependency_ids = tool_dependency_util.get_tool_dependency_ids(as_string=False, **kwd)
-        repository_id = kwd.get('repository_id', None)
-        if 'operation' in kwd:
-            operation = kwd['operation'].lower()
-            if not tool_dependency_ids:
-                message = 'Select at least 1 tool dependency to %s.' % operation
-                kwd['message'] = message
-                kwd['status'] = 'error'
-                del kwd['operation']
-                return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                                action='manage_tool_dependencies',
-                                                                **kwd))
-            if operation == 'browse':
-                return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                                action='browse_tool_dependency',
-                                                                **kwd))
-            elif operation == "install":
-                if trans.app.toolbox.dependency_manager.uses_tool_shed_dependencies:
-                    tool_dependencies_for_installation = []
-                    for tool_dependency_id in tool_dependency_ids:
-                        tool_dependency = tool_dependency_util.get_tool_dependency(trans.app, tool_dependency_id)
-                        if tool_dependency.status in [trans.install_model.ToolDependency.installation_status.NEVER_INSTALLED,
-                                                      trans.install_model.ToolDependency.installation_status.UNINSTALLED]:
-                            tool_dependencies_for_installation.append(tool_dependency)
-                    if tool_dependencies_for_installation:
-                        self.initiate_tool_dependency_installation(trans,
-                                                                   tool_dependencies_for_installation,
-                                                                   message=message,
-                                                                   status=status)
-                    else:
-                        kwd['message'] = 'All selected tool dependencies are already installed.'
-                        kwd['status'] = 'error'
-                else:
-                    message = 'Set the value of your <b>tool_dependency_dir</b> setting in your Galaxy config file (galaxy.ini) '
-                    message += ' and restart your Galaxy server to install tool dependencies.'
-                    kwd['message'] = message
-                    kwd['status'] = 'error'
-        return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                        action='manage_repository_tool_dependencies',
-                                                        tool_dependency_ids=tool_dependency_ids,
-                                                        repository_id=repository_id,
-                                                        message=message,
-                                                        status=status))
-
-    @web.expose
-    @web.require_admin
     def monitor_repository_installation(self, trans, **kwd):
         tsr_ids = common_util.get_tool_shed_repository_ids(**kwd)
         if not tsr_ids:
@@ -671,14 +540,6 @@ class AdminToolshed(AdminGalaxy):
                                    query=query,
                                    message=escape(kwd.get('message', '')),
                                    status=kwd.get('status'))
-
-    @web.json
-    @web.require_admin
-    def open_folder(self, trans, folder_path, repository_id):
-        # Avoid caching
-        trans.response.headers['Pragma'] = 'no-cache'
-        trans.response.headers['Expires'] = '0'
-        return suc.open_repository_files_folder(trans.app, folder_path, repository_id, is_admin=True)
 
     @web.expose
     @web.require_admin
@@ -959,38 +820,6 @@ class AdminToolshed(AdminGalaxy):
                                    requirements_status=requirements_status,
                                    message=message,
                                    status=status)
-
-    @web.expose
-    @web.require_admin
-    def purge_repository(self, trans, **kwd):
-        """Purge a "white ghost" repository from the database."""
-        repository_id = kwd.get('id', None)
-        new_kwd = {}
-        if repository_id is not None:
-            repository = repository_util.get_installed_tool_shed_repository(trans.app, repository_id)
-            if repository:
-                if repository.is_new:
-                    if kwd.get('purge_repository_button', False):
-                        irm = trans.app.installed_repository_manager
-                        purge_status, purge_message = irm.purge_repository(repository)
-                        if purge_status == 'ok':
-                            new_kwd['status'] = 'done'
-                        else:
-                            new_kwd['status'] = 'error'
-                        new_kwd['message'] = purge_message
-                    else:
-                        return trans.fill_template('admin/tool_shed_repository/purge_repository_confirmation.mako',
-                                                   repository=repository)
-                else:
-                    new_kwd['status'] = 'error'
-                    new_kwd['message'] = 'Repositories must have a <b>New</b> status in order to be purged.'
-            else:
-                new_kwd['status'] = 'error'
-                new_kwd['message'] = 'Cannot locate the database record for the repository with encoded id %s.' % str(repository_id)
-        else:
-            new_kwd['status'] = 'error'
-            new_kwd['message'] = 'Invalid repository id value "None" received for repository to be purged.'
-        return trans.fill_template('message.mako', **new_kwd)
 
     @web.expose
     @web.require_admin
