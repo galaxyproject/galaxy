@@ -42,6 +42,7 @@ from galaxy.model.custom_types import JSONType, MetadataType, TrimmedString, UUI
 from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.orm.now import now
 from galaxy.model.security import GalaxyRBACAgent
+from galaxy.model.triggers import install_timestamp_triggers
 
 log = logging.getLogger(__name__)
 
@@ -2855,6 +2856,7 @@ def init(file_path, url, engine_options=None, create_tables=False, map_install_m
     # Create tables if needed
     if create_tables:
         metadata.create_all()
+        install_timestamp_triggers(engine)
         # metadata.engine.commit()
 
     result.create_tables = create_tables
