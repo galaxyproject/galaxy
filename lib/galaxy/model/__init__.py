@@ -2369,6 +2369,7 @@ class Dataset(StorableObject, RepresentById):
             file_size=to_int(self.file_size),
             object_store_id=self.object_store_id,
             total_size=to_int(self.total_size),
+            created_from_basename=self.created_from_basename,
             uuid=str(self.uuid or '') or None,
             hashes=list(map(lambda h: h.serialize(id_encoder, serialization_options), self.hashes))
         )

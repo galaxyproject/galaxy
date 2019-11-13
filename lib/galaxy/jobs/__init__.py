@@ -1994,7 +1994,8 @@ class JobWrapper(HasResourceParameters):
     def get_dataset_finish_context(self, job_context, output_dataset_assoc):
         meta = {}
         tool_provided_metadata = self.get_tool_provided_job_metadata()
-        meta = tool_provided_metadata.get_dataset_meta(output_dataset_assoc.name, output_dataset_assoc.dataset.dataset.id)
+        dataset = output_dataset_assoc.dataset.dataset
+        meta = tool_provided_metadata.get_dataset_meta(output_dataset_assoc.name, dataset.id, dataset.uuid)
         if meta:
             return ExpressionContext(meta, job_context)
         return job_context
@@ -2046,6 +2047,7 @@ class JobWrapper(HasResourceParameters):
                                                                         config_file=config_file,
                                                                         datatypes_config=datatypes_config,
                                                                         job_metadata=job_metadata,
+                                                                        provided_metadata_style=self.tool.provided_metadata_style,
                                                                         object_store_conf=object_store_conf,
                                                                         tool=self.tool,
                                                                         job=job,

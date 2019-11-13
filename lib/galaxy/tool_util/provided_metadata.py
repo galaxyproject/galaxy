@@ -75,7 +75,7 @@ class BaseToolProvidedMetadata(object):
         """
         return []
 
-    def get_dataset_meta(self, output_name, dataset_id):
+    def get_dataset_meta(self, output_name, dataset_id, dataset_uuid):
         """Return primary dataset metadata for specified output.
         """
         return {}
@@ -127,14 +127,22 @@ class LegacyToolProvidedMetadata(BaseToolProvidedMetadata):
                             log.warning('(%s) Tool provided job dataset-specific metadata without specifying a dataset' % job_wrapper.job_id)
                             continue
                     else:
-                        match = re.match(r'dataset_(\d+)\.dat', dataset_basename)
-                        line['dataset_id'] = int(match.group(1))
+                        match = re.match(r'dataset_(.*)\.dat', dataset_basename)
+                        if match is None:
+                            raise Exception("processing tool_provided_metadata (e.g. galaxy.json) entry with invalid dataset name [%s]" % dataset_basename)
+                        dataset_id = match.group(1)
+                        if dataset_id.isdigit():
+                            line['dataset_id'] = dataset_id
+                        else:
+                            line['dataset_uuid'] = dataset_id
 
                 self.tool_provided_job_metadata.append(line)
 
-    def get_dataset_meta(self, output_name, dataset_id):
+    def get_dataset_meta(self, output_name, dataset_id, dataset_uuid):
         for meta in self.tool_provided_job_metadata:
-            if meta['type'] == 'dataset' and int(meta['dataset_id']) == dataset_id:
+            if meta['type'] == 'dataset' and 'dataset_id' in meta and int(meta['dataset_id']) == dataset_id:
+                return meta
+            if meta['type'] == 'dataset' and 'dataset_uuid' in meta and meta['dataset_uuid'] == dataset_uuid:
                 return meta
         return {}
 
@@ -177,7 +185,7 @@ class ToolProvidedMetadata(BaseToolProvidedMetadata):
         with open(meta_file, 'r') as f:
             self.tool_provided_job_metadata = json.load(f)
 
-    def get_dataset_meta(self, output_name, dataset_id):
+    def get_dataset_meta(self, output_name, dataset_id, dataset_uuid):
         return self.tool_provided_job_metadata.get(output_name, {})
 
     def get_new_dataset_meta_by_basename(self, output_name, basename):

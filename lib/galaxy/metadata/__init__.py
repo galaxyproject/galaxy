@@ -53,7 +53,7 @@ class MetadataCollectionStrategy(object):
                                 tmp_dir=None, dataset_files_path=None,
                                 output_fnames=None, config_root=None, use_bin=False,
                                 config_file=None, datatypes_config=None,
-                                job_metadata=None, compute_tmp_dir=None,
+                                job_metadata=None, provided_metadata_style=None, compute_tmp_dir=None,
                                 include_command=True, max_metadata_value_size=0,
                                 object_store_conf=None, tool=None, job=None,
                                 kwds=None):
@@ -112,7 +112,7 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
                                 tmp_dir=None, dataset_files_path=None,
                                 output_fnames=None, config_root=None, use_bin=False,
                                 config_file=None, datatypes_config=None,
-                                job_metadata=None, compute_tmp_dir=None,
+                                job_metadata=None, provided_metadata_style=None, compute_tmp_dir=None,
                                 include_command=True, max_metadata_value_size=0,
                                 validate_outputs=False,
                                 object_store_conf=None, tool=None, job=None,
@@ -154,6 +154,7 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
         datatypes_config = os.path.relpath(datatypes_config, tmp_dir)
         metadata_params = {
             "job_metadata": job_relative_path(job_metadata),
+            "provided_metadata_style": provided_metadata_style,
             "datatypes_config": datatypes_config,
             "max_metadata_value_size": max_metadata_value_size,
             "outputs": outputs,
@@ -291,7 +292,7 @@ class JobExternalOutputMetadataWrapper(MetadataCollectionStrategy):
                                 tmp_dir=None, dataset_files_path=None,
                                 output_fnames=None, config_root=None, use_bin=False,
                                 config_file=None, datatypes_config=None,
-                                job_metadata=None, compute_tmp_dir=None,
+                                job_metadata=None, provided_metadata_style=None, compute_tmp_dir=None,
                                 include_command=True, max_metadata_value_size=0,
                                 validate_outputs=False,
                                 object_store_conf=None, tool=None, job=None,
