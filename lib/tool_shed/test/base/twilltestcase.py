@@ -1580,10 +1580,9 @@ class ShedTwillTestCase(FunctionalTestCase):
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def update_tool_shed_status(self):
-        params = {
-            'all_installed_repositories': True
-        }
-        self.visit_galaxy_url('/admin_toolshed/update_tool_shed_status_for_installed_repository', params=params)
+        api_key = get_master_api_key()
+        response = requests.get(self.galaxy_url + "/api/tool_shed_repositories/check_for_updates?key=" + api_key)
+        assert response.status_code != 403, response.content
 
     def upload_file(self,
                     repository,
