@@ -1618,7 +1618,6 @@ class JobWrapper(HasResourceParameters):
                         return self.fail("Job %s's output dataset(s) could not be read" % job.id)
 
         job_context = ExpressionContext(dict(stdout=job.stdout, stderr=job.stderr))
-        output_dataset_associations = job.output_datasets + job.output_library_datasets
         if extended_metadata:
             try:
                 import_options = store.ImportOptions(allow_dataset_object_edit=True, allow_edit=True)
@@ -1627,6 +1626,7 @@ class JobWrapper(HasResourceParameters):
             except Exception:
                 log.exception("problem importing job outputs. stdout [%s] stderr [%s]" % (job.stdout, job.stderr))
                 raise
+        output_dataset_associations = job.output_datasets + job.output_library_datasets
         for dataset_assoc in output_dataset_associations:
             context = self.get_dataset_finish_context(job_context, dataset_assoc)
             # should this also be checking library associations? - can a library item be added from a history before the job has ended? -
