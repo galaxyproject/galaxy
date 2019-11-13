@@ -121,10 +121,9 @@ def main():
 
     def is_new_item(line):
         try:
-            item = line.split("\t")[group_col]
+            item = line.rstrip("\r\n").split("\t")[group_col]
         except IndexError:
             stop_err("The following line didn't have %s columns: %s" % (group_col + 1, line))
-
         if ignorecase == 1:
             return item.lower()
         return item
