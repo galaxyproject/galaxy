@@ -43,10 +43,6 @@
                         <td>${trans.app.shed_counter.invalid_versions_of_tools | h}</td>
                     </tr>
                     <tr>
-                        <td>Exported Galaxy workflows</td>
-                        <td>${trans.app.shed_counter.workflows | h}</td>
-                    </tr>
-                    <tr>
                         <td>Custom datatypes</td>
                         <td>${trans.app.shed_counter.custom_datatypes | h}</td>
                     </tr>

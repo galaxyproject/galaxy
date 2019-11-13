@@ -42,8 +42,7 @@ from tool_shed.util import (
     repository_util,
     search_util,
     shed_util_common as suc,
-    tool_util,
-    workflow_util
+    tool_util
 )
 from tool_shed.util.web_util import escape
 from tool_shed.utility_containers import ToolShedUtilityContainerManager
@@ -1077,9 +1076,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                     global_actions = [grids.GridAction("Browse valid repositories",
                                                        dict(controller='repository', action='browse_valid_categories')),
                                       grids.GridAction("Search for valid tools",
-                                                       dict(controller='repository', action='find_tools')),
-                                      grids.GridAction("Search for workflows",
-                                                       dict(controller='repository', action='find_workflows'))]
+                                                       dict(controller='repository', action='find_tools'))]
                     self.install_matched_repository_grid.global_actions = global_actions
                     install_url_args = dict(controller='repository', action='find_tools')
                     operations = [grids.GridOperation("Install", url_args=install_url_args, allow_multiple=True, async_compatible=False)]
@@ -1104,101 +1101,6 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                                    exact_matches_check_box=exact_matches_check_box,
                                    message=message,
                                    status=status)
-
-    @web.expose
-    def find_workflows(self, trans, **kwd):
-        message = escape(kwd.get('message', ''))
-        status = kwd.get('status', 'done')
-        common_util.handle_galaxy_url(trans, **kwd)
-        if 'operation' in kwd:
-            item_id = kwd.get('id', '')
-            if item_id:
-                operation = kwd['operation'].lower()
-                is_admin = trans.user_is_admin
-                if operation == "view_or_manage_repository":
-                    # The received id is a RepositoryMetadata id, so we have to get the repository id.
-                    repository_metadata = metadata_util.get_repository_metadata_by_id(trans.app, item_id)
-                    repository_id = trans.security.encode_id(repository_metadata.repository.id)
-                    repository = repository_util.get_repository_in_tool_shed(trans.app, repository_id)
-                    kwd['id'] = repository_id
-                    kwd['changeset_revision'] = repository_metadata.changeset_revision
-                    if trans.webapp.name == 'tool_shed' and (is_admin or repository.user == trans.user):
-                        a = 'manage_repository'
-                    else:
-                        a = 'view_repository'
-                    return trans.response.send_redirect(web.url_for(controller='repository',
-                                                                    action=a,
-                                                                    **kwd))
-                if operation == "install to galaxy":
-                    # We've received a list of RepositoryMetadata ids, so we need to build a list of associated Repository ids.
-                    encoded_repository_ids = []
-                    changeset_revisions = []
-                    for repository_metadata_id in util.listify(item_id):
-                        repository_metadata = metadata_util.get_repository_metadata_by_id(trans.app, item_id)
-                        encoded_repository_ids.append(trans.security.encode_id(repository_metadata.repository.id))
-                        changeset_revisions.append(repository_metadata.changeset_revision)
-                    new_kwd = {}
-                    new_kwd['repository_ids'] = encoded_repository_ids
-                    new_kwd['changeset_revisions'] = changeset_revisions
-                    return trans.response.send_redirect(web.url_for(controller='repository',
-                                                                    action='install_repositories_by_revision',
-                                                                    **new_kwd))
-            else:
-                # This can only occur when there is a multi-select grid with check boxes and an operation,
-                # and the user clicked the operation button without checking any of the check boxes.
-                return trans.show_error_message("No items were selected.")
-        if 'find_workflows_button' in kwd:
-            workflow_names = [item.lower() for item in util.listify(kwd.get('workflow_name', ''))]
-            exact_matches = kwd.get('exact_matches', '')
-            exact_matches_checked = CheckboxField.is_checked(exact_matches)
-            match_tuples = []
-            ok = True
-            if workflow_names:
-                ok, match_tuples = search_util.search_repository_metadata(trans.app,
-                                                                          exact_matches_checked,
-                                                                          workflow_names=workflow_names)
-            else:
-                ok, match_tuples = search_util.search_repository_metadata(trans.app,
-                                                                          exact_matches_checked,
-                                                                          workflow_names=[],
-                                                                          all_workflows=True)
-            if ok:
-                kwd['match_tuples'] = match_tuples
-                if trans.webapp.name == 'galaxy':
-                    # Our initial request originated from a Galaxy instance.
-                    global_actions = [grids.GridAction("Browse valid repositories",
-                                                       dict(controller='repository', action='browse_valid_repositories')),
-                                      grids.GridAction("Search for valid tools",
-                                                       dict(controller='repository', action='find_tools')),
-                                      grids.GridAction("Search for workflows",
-                                                       dict(controller='repository', action='find_workflows'))]
-                    self.install_matched_repository_grid.global_actions = global_actions
-                    install_url_args = dict(controller='repository', action='find_workflows')
-                    operations = [grids.GridOperation("Install", url_args=install_url_args, allow_multiple=True, async_compatible=False)]
-                    self.install_matched_repository_grid.operations = operations
-                    return self.install_matched_repository_grid(trans, **kwd)
-                else:
-                    kwd['message'] = "workflow name: <b>%s</b><br/>exact matches only: <b>%s</b>" % \
-                        (escape(basic_util.stringify(workflow_names)), str(exact_matches_checked))
-                    self.matched_repository_grid.title = "Repositories with matching workflows"
-                    return self.matched_repository_grid(trans, **kwd)
-            else:
-                message = "No search performed - each field must contain the same number of comma-separated items."
-                status = "error"
-        else:
-            exact_matches_checked = False
-            workflow_names = []
-        exact_matches_check_box = CheckboxField('exact_matches', value=exact_matches_checked)
-        return trans.fill_template('/webapps/tool_shed/repository/find_workflows.mako',
-                                   workflow_name=basic_util.stringify(workflow_names),
-                                   exact_matches_check_box=exact_matches_check_box,
-                                   message=message,
-                                   status=status)
-
-    @web.expose
-    def generate_workflow_image(self, trans, workflow_name, repository_metadata_id=None):
-        """Return an svg image representation of a workflow dictionary created when the workflow was exported."""
-        return workflow_util.generate_workflow_image(trans, workflow_name, repository_metadata_id=repository_metadata_id, repository_id=None)
 
     @web.expose
     def get_changeset_revision_and_ctx_rev(self, trans, **kwd):
@@ -2962,28 +2864,6 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                                    changeset_revision=changeset_revision,
                                    revision_label=revision_label,
                                    changeset_revision_select_field=changeset_revision_select_field,
-                                   message=message,
-                                   status=status)
-
-    @web.expose
-    def view_workflow(self, trans, workflow_name, repository_metadata_id, **kwd):
-        """Retrieve necessary information about a workflow from the database so that it can be displayed in an svg image."""
-        message = escape(kwd.get('message', ''))
-        status = kwd.get('status', 'done')
-        render_repository_actions_for = kwd.get('render_repository_actions_for', 'tool_shed')
-        if workflow_name:
-            workflow_name = encoding_util.tool_shed_decode(workflow_name)
-        repository_metadata = metadata_util.get_repository_metadata_by_id(trans.app, repository_metadata_id)
-        repository = repository_util.get_repository_in_tool_shed(trans.app, trans.security.encode_id(repository_metadata.repository_id))
-        changeset_revision = repository_metadata.changeset_revision
-        metadata = repository_metadata.metadata
-        return trans.fill_template("/webapps/tool_shed/repository/view_workflow.mako",
-                                   repository=repository,
-                                   render_repository_actions_for=render_repository_actions_for,
-                                   changeset_revision=changeset_revision,
-                                   repository_metadata_id=repository_metadata_id,
-                                   workflow_name=workflow_name,
-                                   metadata=metadata,
                                    message=message,
                                    status=status)
 

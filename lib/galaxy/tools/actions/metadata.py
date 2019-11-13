@@ -90,6 +90,7 @@ class SetMetadataToolAction(ToolAction):
         }
         validate_outputs = asbool(incoming.get("validate", False))
         cmd_line = external_metadata_wrapper.setup_external_metadata(output_datatasets_dict,
+                                                                     {},
                                                                      sa_session,
                                                                      exec_dir=None,
                                                                      tmp_dir=job_working_dir,
