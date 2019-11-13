@@ -8,6 +8,7 @@
                 :registration_warning_message="registration_warning_message"
                 :mailing_join_addr="mailing_join_addr"
                 :server_mail_configured="server_mail_configured"
+                :terms_url="terms_url"
             />
         </template>
     </div>
@@ -46,6 +47,10 @@ export default {
             required: false
         },
         welcome_url: {
+            type: String,
+            required: false
+        },
+        terms_url: {
             type: String,
             required: false
         },
