@@ -1354,34 +1354,6 @@ class ShedTwillTestCase(FunctionalTestCase):
             self.visit_galaxy_url('/admin_toolshed/install_repositories', params=params)
             return galaxy.util.listify(repository_ids)
 
-    def install_repositories_from_search_results(self, repositories, install_tool_dependencies=False,
-                                                 strings_displayed=None, strings_not_displayed=None, **kwd):
-        '''
-        Normally, it would be possible to check the appropriate boxes in the search results, and click the install button. This works
-        in a browser, but Twill manages to lose the 'toolshedgalaxyurl' cookie between one page and the next, so it's necessary to work
-        around this by explicitly visiting the prepare_for_install method on the Galaxy side.
-        '''
-        params = {
-            'tool_shed_url': self.url,
-            'repository_ids': ','.join(self.security.encode_id(repository.id) for repository in repositories),
-            'changeset_revisions': ','.join(self.get_repository_tip(repository) for repository in repositories)
-        }
-        self.visit_galaxy_url('/admin_toolshed/prepare_for_install', params=params)
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-        if 'install_tool_dependencies' in self.last_page():
-            form = tc.browser.get_form('select_tool_panel_section')
-            checkbox = form.find_control(id="install_tool_dependencies")
-            checkbox.disabled = False
-            if install_tool_dependencies:
-                checkbox.selected = True
-                kwd['install_tool_dependencies'] = 'True'
-            else:
-                checkbox.selected = False
-                kwd['install_tool_dependencies'] = 'False'
-        self.submit_form(1, 'select_tool_panel_section_button', **kwd)
-        repository_ids = self.initiate_installation_process()
-        self.wait_for_repository_installation(repository_ids)
-
     def install_repository(self, name, owner, category_name, install_resolver_dependencies=False, install_tool_dependencies=False,
                            install_repository_dependencies=True, changeset_revision=None,
                            strings_displayed=None, strings_not_displayed=None, preview_strings_displayed=None,
