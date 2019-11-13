@@ -1599,7 +1599,8 @@ class JobWrapper(HasResourceParameters):
                 os.unlink(version_filename)
 
         outputs_to_working_directory = util.asbool(self.get_destination_configuration("outputs_to_working_directory", False))
-        if outputs_to_working_directory and not self.__link_file_check():
+        if not extended_metadata and outputs_to_working_directory and not self.__link_file_check():
+            # output will be moved by job if metadata_strategy is extended_metadata, so skip moving here
             for dataset_path in self.get_output_fnames():
                 try:
                     shutil.move(dataset_path.false_path, dataset_path.real_path)
