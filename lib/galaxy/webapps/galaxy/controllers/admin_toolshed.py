@@ -57,17 +57,6 @@ class AdminToolshed(AdminGalaxy):
                                                         message=message,
                                                         status=status))
 
-    @web.expose
-    @web.require_admin
-    def browse_repository(self, trans, **kwd):
-        message = escape(kwd.get('message', ''))
-        status = kwd.get('status', 'done')
-        repository = repository_util.get_installed_tool_shed_repository(trans.app, kwd['id'])
-        return trans.fill_template('/admin/tool_shed_repository/browse_repository.mako',
-                                   repository=repository,
-                                   message=message,
-                                   status=status)
-
     @web.legacy_expose_api
     @web.require_admin
     def browse_repositories(self, trans, **kwd):
