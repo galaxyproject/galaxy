@@ -14,6 +14,7 @@ from xml.etree import ElementTree
 # Be sure to use Galaxy's vanilla pyparsing instead of the older version
 # imported by twill.
 import pyparsing  # noqa: F401
+import requests
 import twill
 import twill.commands as tc
 from mercurial import commands, hg, ui
@@ -30,6 +31,7 @@ import galaxy.util
 import tool_shed.webapp.util.hgweb_config
 from galaxy.security import idencoding
 from galaxy.util import smart_str, unicodify
+from galaxy_test.base.api_util import get_master_api_key
 from galaxy_test.driver.testcase import FunctionalTestCase
 from tool_shed.util import hg_util, xml_util
 from . import common, test_db_util
@@ -789,16 +791,10 @@ class ShedTwillTestCase(FunctionalTestCase):
         self.visit_galaxy_url('/user/create', params=params, allowed_codes=[200, 400])
 
     def deactivate_repository(self, installed_repository, strings_displayed=None, strings_not_displayed=None):
-        params = {
-            'id': self.security.encode_id(installed_repository.id)
-        }
-        self.visit_galaxy_url('/admin_toolshed/deactivate_or_uninstall_repository', params=params)
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-        form = tc.browser.get_form('deactivate_or_uninstall_repository')
-        self.set_form_value(form, {}, 'remove_from_disk', False)
-        tc.submit('deactivate_or_uninstall_repository_button')
-        strings_displayed = ['The repository named', 'has been deactivated']
-        self.check_for_strings(strings_displayed, strings_not_displayed=None)
+        encoded_id = self.security.encode_id(installed_repository.id)
+        api_key = get_master_api_key()
+        response = requests.delete(self.galaxy_url + "/api/tool_shed_repositories/" + encoded_id, data={'remove_from_disk': False, 'key': api_key})
+        assert response.status_code != 403, response.content
 
     def delete_files_from_repository(self, repository, filenames=[], strings_displayed=['were deleted from the repository'], strings_not_displayed=None):
         files_to_delete = []
@@ -1717,16 +1713,10 @@ class ShedTwillTestCase(FunctionalTestCase):
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def uninstall_repository(self, installed_repository, strings_displayed=None, strings_not_displayed=None):
-        params = {
-            'id': self.security.encode_id(installed_repository.id)
-        }
-        self.visit_galaxy_url('/admin_toolshed/deactivate_or_uninstall_repository', params=params)
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-        form = tc.browser.get_form('deactivate_or_uninstall_repository')
-        self.set_form_value(form, {}, 'remove_from_disk', True)
-        tc.submit('deactivate_or_uninstall_repository_button')
-        strings_displayed = ['The repository named', 'has been uninstalled']
-        self.check_for_strings(strings_displayed, strings_not_displayed=None)
+        encoded_id = self.security.encode_id(installed_repository.id)
+        api_key = get_master_api_key()
+        response = requests.delete(self.galaxy_url + "/api/tool_shed_repositories/" + encoded_id, data={'remove_from_disk': True, 'key': api_key})
+        assert response.status_code != 403, response.content
 
     def update_installed_repository(self, installed_repository, strings_displayed=None, strings_not_displayed=None):
         params = {
