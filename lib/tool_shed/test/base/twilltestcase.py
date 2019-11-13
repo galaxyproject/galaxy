@@ -1390,11 +1390,10 @@ class ShedTwillTestCase(FunctionalTestCase):
                              new_tool_panel_section_label='',
                              strings_displayed=None,
                              strings_not_displayed=None):
+        # TODO: strings_displayed unused now, go back and remove from caller.
         params = {
             'id': self.security.encode_id(installed_repository.id)
         }
-        self.visit_galaxy_url('/admin_toolshed/reselect_tool_panel_section', params=params)
-        self.check_for_strings(strings_displayed, strings_not_displayed=None)
         # Build the url that will simulate a filled-out form being submitted. Due to a limitation in twill, the reselect_tool_panel_section
         # form doesn't get parsed correctly.
         encoded_repository_id = self.security.encode_id(installed_repository.id)
