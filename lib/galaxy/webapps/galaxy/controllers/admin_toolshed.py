@@ -26,7 +26,6 @@ from tool_shed.util import (
     shed_util_common as suc,
     tool_dependency_util,
     tool_util,
-    workflow_util
 )
 from tool_shed.util.web_util import escape
 from .admin import AdminGalaxy
@@ -247,12 +246,6 @@ class AdminToolshed(AdminGalaxy):
 
     @web.expose
     @web.require_admin
-    def generate_workflow_image(self, trans, workflow_name, repository_id=None):
-        """Return an svg image representation of a workflow dictionary created when the workflow was exported."""
-        return workflow_util.generate_workflow_image(trans, workflow_name, repository_metadata_id=None, repository_id=repository_id)
-
-    @web.expose
-    @web.require_admin
     def view_tool_metadata(self, trans, repository_id, tool_id, **kwd):
         message = escape(kwd.get('message', ''))
         status = kwd.get('status', 'done')
@@ -341,36 +334,6 @@ class AdminToolshed(AdminGalaxy):
         raw_text = util.url_get(tool_shed_url, password_mgr=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
         repo_information_dict = json.loads(raw_text)
         return repo_information_dict
-
-    @web.expose
-    @web.require_admin
-    def import_workflow(self, trans, workflow_name, repository_id, **kwd):
-        """Import a workflow contained in an installed tool shed repository into Galaxy."""
-        message = str(escape(kwd.get('message', '')))
-        status = kwd.get('status', 'done')
-        if workflow_name:
-            workflow_name = encoding_util.tool_shed_decode(workflow_name)
-            repository = repository_util.get_tool_shed_repository_by_id(trans.app, repository_id)
-            if repository:
-                workflow, status, message = workflow_util.import_workflow(trans, repository, workflow_name)
-                if workflow:
-                    workflow_name = encoding_util.tool_shed_encode(str(workflow.name))
-                else:
-                    message += 'Unable to locate a workflow named <b>%s</b> within the installed tool shed repository named <b>%s</b>' % \
-                        (escape(str(workflow_name)), escape(str(repository.name)))
-                    status = 'error'
-            else:
-                message = 'Invalid repository id <b>%s</b> received.' % str(repository_id)
-                status = 'error'
-        else:
-            message = 'The value of workflow_name is required, but was not received.'
-            status = 'error'
-        return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
-                                                        action='view_workflow',
-                                                        workflow_name=workflow_name,
-                                                        repository_id=repository_id,
-                                                        message=message,
-                                                        status=status))
 
     @web.expose
     @web.require_admin
@@ -1669,23 +1632,3 @@ class AdminToolshed(AdminGalaxy):
                                                         action='repositories',
                                                         message=message,
                                                         status=status))
-
-    @web.expose
-    @web.require_admin
-    def view_workflow(self, trans, workflow_name=None, repository_id=None, **kwd):
-        """Retrieve necessary information about a workflow from the database so that it can be displayed in an svg image."""
-        message = escape(kwd.get('message', ''))
-        status = kwd.get('status', 'done')
-        if workflow_name:
-            workflow_name = encoding_util.tool_shed_decode(workflow_name)
-        repository = repository_util.get_tool_shed_repository_by_id(trans.app, repository_id)
-        changeset_revision = repository.changeset_revision
-        metadata = repository.metadata
-        return trans.fill_template("/admin/tool_shed_repository/view_workflow.mako",
-                                   repository=repository,
-                                   changeset_revision=changeset_revision,
-                                   repository_id=repository_id,
-                                   workflow_name=workflow_name,
-                                   metadata=metadata,
-                                   message=message,
-                                   status=status)

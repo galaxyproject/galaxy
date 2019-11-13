@@ -199,12 +199,10 @@
             <div popupmenu="repository-${repository.id}-popup">
                 <a class="action-button" target="galaxy_main" href="${h.url_for( controller='repository', action='browse_valid_categories' )}">Browse valid repositories</a>
                 <a class="action-button" target="galaxy_main" href="${h.url_for( controller='repository', action='find_tools' )}">Search for valid tools</a>
-                <a class="action-button" target="galaxy_main" href="${h.url_for( controller='repository', action='find_workflows' )}">Search for workflows</a>
             </div>
         %else:
             <li><a class="action-button" target="galaxy_main" href="${h.url_for( controller='repository', action='browse_valid_categories' )}">Browse valid repositories</a></li>
             <a class="action-button" target="galaxy_main" href="${h.url_for( controller='repository', action='find_tools' )}">Search for valid tools</a>
-            <li><a class="action-button" target="galaxy_main" href="${h.url_for( controller='repository', action='find_workflows' )}">Search for workflows</a></li>
         %endif
     </ul>
 </%def>
