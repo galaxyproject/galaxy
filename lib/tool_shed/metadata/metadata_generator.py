@@ -1064,7 +1064,7 @@ class MetadataGenerator(object):
                 self.set_changeset_revision(self.repository.changeset_revision)
             else:
                 self.set_changeset_revision(changeset_revision)
-            self.shed_config_dict = repository.get_shed_config_dict(self.app, {})
+            self.shed_config_dict = repository.get_shed_config_dict(self.app)
             self.metadata_dict = {'shed_config_filename': self.shed_config_dict.get('config_filename', None)}
         else:
             if relative_install_dir is None and self.repository is not None:
