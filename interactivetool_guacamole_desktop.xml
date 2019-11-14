@@ -1,13 +1,15 @@
 <tool id="interactive_tool_guacamole_desktop" tool_type="interactive" name="Ubuntu XFCE Desktop" version="0.1">
     <requirements>
-        <container type="docker">cyverse/ubuntu18-xfce-desktop</container>
+        <container type="docker">quay.io/bgruening/guacamole-desktop</container>
     </requirements>
     <entry_points>
         <entry_point name="Remote Desktop" requires_domain="True">
-            <port>8000</port>
+            <port>8080</port>
+            <url><![CDATA[?username=user&password=password]]></url>
         </entry_point>
     </entry_points>
-    <command><![CDATA[
+    <command detect_errors="exit_code"><![CDATA[
+        sudo chmod 667 /tmp/ -R &&
         sudo -E /startup.sh
     ]]>
     </command>
@@ -19,8 +21,7 @@
     <tests>
     </tests>
     <help>
-        Simple Ubuntu XFCE all-in-one desktop.
-        Username: "user"
-        Password: "password"
+        Simple Ubuntu XFCE all-in-one desktop. The Username is "user" and the Password is "password".
+        This image is based on the awesome work from CyVerse.
     </help>
 </tool>
