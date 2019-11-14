@@ -81,19 +81,6 @@ class ShedTwillTestCase(FunctionalTestCase):
             for check_str in strings_not_displayed:
                 self.check_string_not_in_page(check_str)
 
-    def check_history_for_exact_string(self, check_str, show_deleted=False):
-        """Looks for exact match to 'check_str' in history page"""
-        params = dict()
-        if show_deleted:
-            params['show_deleted'] = True
-        self.visit_url("/history", params=params)
-        try:
-            tc.find(check_str)
-        except Exception:
-            fname = self.write_temp_file(tc.browser.get_html())
-            errmsg = "no match to '%s'\npage content written to '%s'" % (check_str, fname)
-            raise AssertionError(errmsg)
-
     def check_page(self, strings_displayed, strings_displayed_count, strings_not_displayed):
         """Checks a page for strings displayed, not displayed and number of occurrences of a string"""
         for check_str in strings_displayed:
@@ -265,41 +252,6 @@ class ShedTwillTestCase(FunctionalTestCase):
         self.check_page_for_string("You have been logged out")
         tc.browser.cj.clear()
 
-    def new_history(self, name=None):
-        """Creates a new, empty history"""
-        params = dict()
-        if name:
-            params['name'] = name
-        self.visit_url("%s/history_new" % self.url, params=params)
-        self.check_page_for_string('New history created')
-        assert self.is_history_empty(), 'Creating new history did not result in an empty history.'
-
-    def refresh_form(self, control_name, value, form_no=0, form_id=None, form_name=None, **kwd):
-        """Handles Galaxy's refresh_on_change for forms without ultimately submitting the form"""
-        # control_name is the name of the form field that requires refresh_on_change, and value is
-        # the value to which that field is being set.
-        for i, f in enumerate(self.showforms()):
-            if i == form_no or (form_id is not None and f.id == form_id) or (form_name is not None and f.name == form_name):
-                break
-        formcontrols = self.get_form_controls(f)
-        try:
-            control = f.find_control(name=control_name)
-        except Exception:
-            log.debug('\n'.join(formcontrols))
-            # This assumes we always want the first control of the given name, which may not be ideal...
-            control = f.find_control(name=control_name, nr=0)
-        # Check for refresh_on_change attribute, submit a change if required
-        if 'refresh_on_change' in control.attrs.keys():
-            # Clear Control and set to proper value
-            control.clear()
-            tc.fv(f.name, control.name, value)
-            # Create a new submit control, allows form to refresh, instead of going to next page
-            control = ClientForm.SubmitControl('SubmitControl', '___refresh_grouping___', {'name': 'refresh_grouping'})
-            control.add_to_form(f)
-            control.fixup()
-            # Submit for refresh
-            tc.submit('___refresh_grouping___')
-
     def showforms(self):
         """Shows form, helpful for debugging new tests"""
         return tc.showforms()
@@ -431,13 +383,6 @@ class ShedTwillTestCase(FunctionalTestCase):
                 # Add conditions for other control types here when necessary.
                 pass
         tc.submit(button)
-
-    def switch_history(self, id='', name=''):
-        """Switches to a history in the current list of histories"""
-        params = dict(operation='switch', id=id)
-        self.visit_url("/history/list", params)
-        if name:
-            self.check_history_for_exact_string(name)
 
     def visit_url(self, url, params=None, doseq=False, allowed_codes=[200]):
         if params is None:

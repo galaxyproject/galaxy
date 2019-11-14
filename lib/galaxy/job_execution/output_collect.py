@@ -438,7 +438,8 @@ def collect_primary_datasets(job_context, output, input_ext):
             outdata.set_meta()
             outdata.set_peek()
             sa_session = job_context.sa_session
-            sa_session.add(outdata)
+            if sa_session:
+                sa_session.add(outdata)
 
     job_context.flush()
     return primary_datasets
