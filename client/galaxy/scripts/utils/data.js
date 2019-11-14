@@ -2,6 +2,8 @@ import $ from "jquery";
 import axios from "axios";
 import Vue from "vue";
 import DataDialog from "components/DataDialog/DataDialog.vue";
+import WorkflowDialog from "components/SelectionDialog/WorkflowDialog.vue";
+import DatasetCollectionDialog from "components/SelectionDialog/DatasetCollectionDialog.vue";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload/loadConfig";
 
@@ -41,13 +43,42 @@ export function dialog(callback, options = {}) {
             root: galaxy.root,
             host: host
         });
-        const instance = Vue.extend(DataDialog);
-        const vm = document.createElement("div");
-        $("body").append(vm);
-        new instance({
-            propsData: options
-        }).$mount(vm);
+        _mountSelectionDialog(DataDialog, options);
     });
+}
+
+/**
+ * Opens a modal dialog for workflow selection
+ * @param {function} callback - Result function called with selection
+ */
+export function workflowDialog(callback, options = {}) {
+    Object.assign(options, {
+        callback: callback
+    });
+    _mountSelectionDialog(WorkflowDialog, options);
+}
+
+/**
+ * Opens a modal dialog for dataset collection selection
+ * @param {function} callback - Result function called with selection
+ */
+export function datasetCollectionDialog(callback, options = {}) {
+    getCurrentGalaxyHistory().then(history_id => {
+        Object.assign(options, {
+            callback: callback,
+            history: history_id
+        });
+        _mountSelectionDialog(DatasetCollectionDialog, options);
+    });
+}
+
+function _mountSelectionDialog(clazz, options) {
+    const instance = Vue.extend(clazz);
+    const vm = document.createElement("div");
+    $("body").append(vm);
+    new instance({
+        propsData: options
+    }).$mount(vm);
 }
 
 /**
