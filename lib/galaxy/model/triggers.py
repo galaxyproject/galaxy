@@ -73,7 +73,7 @@ def get_install_trigger_sql(variant):
     return sql
 
 
-def build_pg_timestamp_func(fn_name, table_name, local_key='id', new_key='id', stamp='update_time'):
+def build_pg_timestamp_func(fn_name, table_name, local_key='id', new_key='id'):
     """creates a postgres timestamp trigger function"""
 
     tmpl = """
@@ -83,9 +83,9 @@ def build_pg_timestamp_func(fn_name, table_name, local_key='id', new_key='id', s
         AS $BODY$
             BEGIN
                 UPDATE {table_name}
-                SET {stamp} = (now() at time zone 'utc')
+                SET update_time = (now() at time zone 'utc')
                 WHERE {local_key} = NEW.{new_key}
-                AND {stamp} < (now() at time zone 'utc');
+                AND update_time < (now() at time zone 'utc');
                 RETURN NEW;
             END;
         $BODY$;

@@ -21,6 +21,7 @@ def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
     create_timestamps(metadata, "history_dataset_collection_association")
+    drop_timestamp_triggers(migrate_engine)
     install_timestamp_triggers(migrate_engine)
 
 
