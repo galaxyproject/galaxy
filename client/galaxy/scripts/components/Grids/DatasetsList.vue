@@ -5,7 +5,7 @@
             <loading-span v-if="loading" message="Loading datasets" />
             <div v-else>
                 <b-alert :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
-                <delayed-input class="mb-3" @onChange="load" />
+                <delayed-input class="mb-3" @onChange="load" placeholder="Search Datasets" />
                 <b-table id="dataset-table" striped :fields="fields" :items="rows"> </b-table>
                 <div v-if="showNotFound">
                     No matching entries found for: <span class="font-weight-bold">{{ this.filter }}</span
@@ -84,10 +84,8 @@ export default {
     methods: {
         load(query) {
             this.services
-                .getDatasets()
+                .getDatasets(query)
                 .then(datasets => {
-                    console.log(query);
-                    console.log(datasets);
                     this.rows = datasets;
                     this.loading = false;
                 })

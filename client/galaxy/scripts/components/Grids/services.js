@@ -6,8 +6,12 @@ export class Services {
         this.root = options.root;
     }
 
-    async getDatasets() {
-        const url = `${this.root}api/datasets`;
+    async getDatasets(query) {
+        let params = "";
+        if (query) {
+            params += `q=name-contains&qv=${query}`;
+        }
+        const url = `${this.root}api/datasets?${params}`;
         try {
             const response = await axios.get(url);
             return response.data;

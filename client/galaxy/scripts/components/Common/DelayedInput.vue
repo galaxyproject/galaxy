@@ -20,7 +20,7 @@ export default {
         placeholder: {
             type: String,
             required: false,
-            default: "Enter your search term here"
+            default: "Enter your search term here."
         },
         delay: {
             type: Number,
