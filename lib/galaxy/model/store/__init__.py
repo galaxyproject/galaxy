@@ -196,6 +196,7 @@ class ModelImportStore(object):
                         "file_size",
                         "object_store_id",
                         "total_size",
+                        "created_from_basename",
                         "uuid"
                     ]
 

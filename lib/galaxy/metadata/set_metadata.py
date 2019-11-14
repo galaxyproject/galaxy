@@ -98,11 +98,12 @@ def set_metadata_portable():
         raise Exception("Failed to find metadata/params.json from cwd [%s]" % tool_job_working_directory)
     datatypes_config = metadata_params["datatypes_config"]
     job_metadata = metadata_params["job_metadata"]
+    provided_metadata_style = metadata_params.get("provided_metadata_style")
     max_metadata_value_size = metadata_params.get("max_metadata_value_size") or 0
     outputs = metadata_params["outputs"]
 
     datatypes_registry = validate_and_load_datatypes_config(datatypes_config)
-    tool_provided_metadata = load_job_metadata(job_metadata)
+    tool_provided_metadata = load_job_metadata(job_metadata, provided_metadata_style)
 
     def set_meta(new_dataset_instance, file_dict):
         set_meta_with_tool_provided(new_dataset_instance, file_dict, set_meta_kwds, datatypes_registry, max_metadata_value_size)
@@ -198,7 +199,7 @@ def set_metadata_portable():
             extra_files_dir_name = "dataset_%s_files" % getattr(dataset.dataset, store_by)
             files_path = os.path.abspath(os.path.join(tool_job_working_directory, extra_files_dir_name))
             dataset.dataset.external_extra_files_path = files_path
-            file_dict = tool_provided_metadata.get_dataset_meta(output_name, dataset.dataset.id)
+            file_dict = tool_provided_metadata.get_dataset_meta(output_name, dataset.dataset.id, dataset.dataset.uuid)
             if 'ext' in file_dict:
                 dataset.extension = file_dict['ext']
             # Metadata FileParameter types may not be writable on a cluster node, and are therefore temporarily substituted with MetadataTempFiles
@@ -212,7 +213,7 @@ def set_metadata_portable():
             set_meta(dataset, file_dict)
 
             if extended_metadata_collection:
-                meta = tool_provided_metadata.get_dataset_meta(output_name, dataset.dataset.id)
+                meta = tool_provided_metadata.get_dataset_meta(output_name, dataset.dataset.id, dataset.dataset.uuid)
                 if meta:
                     context = ExpressionContext(meta, job_context)
                 else:
@@ -319,7 +320,7 @@ def set_metadata_legacy():
     datatypes_registry = validate_and_load_datatypes_config(datatypes_config)
 
     job_metadata = sys.argv.pop(1)
-    tool_provided_metadata = load_job_metadata(job_metadata)
+    tool_provided_metadata = load_job_metadata(job_metadata, None)
 
     def set_meta(new_dataset_instance, file_dict):
         set_meta_with_tool_provided(new_dataset_instance, file_dict, set_meta_kwds, datatypes_registry, max_metadata_value_size)
@@ -338,7 +339,7 @@ def set_metadata_legacy():
             dataset.dataset.external_filename = dataset_filename_override
             files_path = os.path.abspath(os.path.join(tool_job_working_directory, "dataset_%s_files" % (dataset.dataset.id)))
             dataset.dataset.external_extra_files_path = files_path
-            file_dict = tool_provided_metadata.get_dataset_meta(None, dataset.dataset.id)
+            file_dict = tool_provided_metadata.get_dataset_meta(None, dataset.dataset.id, dataset.dataset.uuid)
             if 'ext' in file_dict:
                 dataset.extension = file_dict['ext']
             # Metadata FileParameter types may not be writable on a cluster node, and are therefore temporarily substituted with MetadataTempFiles
@@ -373,8 +374,8 @@ def validate_and_load_datatypes_config(datatypes_config):
     return datatypes_registry
 
 
-def load_job_metadata(job_metadata):
-    return parse_tool_provided_metadata(job_metadata)
+def load_job_metadata(job_metadata, provided_metadata_style):
+    return parse_tool_provided_metadata(job_metadata, provided_metadata_style=provided_metadata_style)
 
 
 def write_job_metadata(tool_job_working_directory, job_metadata, set_meta, tool_provided_metadata):
