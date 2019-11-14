@@ -932,8 +932,10 @@ class Tool(Dictifiable):
 
         if getattr(self, 'tool_shed', None):
             tool_dir = Path(self.tool_dir)
+            if tool_dir.parts[-1] == self.repository_name:
+                return str(tool_dir)
             for parent in tool_dir.parents:
-                if parent == self.repository_name:
+                if parent.parts[-1] == self.repository_name:
                     return str(parent)
             else:
                 log.error("Problem finding repository dir for tool [%s]" % self.id)
