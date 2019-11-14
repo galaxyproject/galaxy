@@ -3,7 +3,7 @@
         <container type="docker">quay.io/bgruening/docker-jupyter-notebook:pyiron</container>
     </requirements>
     <entry_points>
-        <entry_point name="PyIron" requires_domain="True">
+        <entry_point name="PyIron Workbench" requires_domain="True">
             <port>8888</port>
             <url>ipython/lab</url>
         </entry_point>
@@ -14,10 +14,13 @@
         <environment_variable name="GALAXY_WEB_PORT">8080</environment_variable>
         <environment_variable name="GALAXY_URL">$__galaxy_url__</environment_variable>
         <environment_variable name="API_KEY" inject="api_key" />
+        <environment_variable name="PYIRONRESOURCEPATHS">/home/jovyan/resources</environment_variable>
     </environment_variables>
     <command detect_errors="aggressive"><![CDATA[
         #import re
-        export GALAXY_WORKING_DIR=`pwd` &&
+        export GALAXY_WORKING_DIR=\${PWD} &&
+        export PYIRONPROJECTPATHS=\${PWD} &&
+
         mkdir -p ./jupyter/outputs/ &&
         mkdir -p ./jupyter/data &&
 
@@ -26,6 +29,7 @@
 
         ## change into the directory where the notebooks are located
         cd ./jupyter/ &&
+        cp \${HOME}/examples/* ./ &&
         export PATH=/home/jovyan/.local/bin:\$PATH &&
 
         #if $mode.mode_select == 'scratch':
@@ -67,7 +71,7 @@
 
     </inputs>
     <outputs>
-        <data name="jupyter_notebook" format="ipynb" label="Executed Notebook"></data>
+        <data name="jupyter_notebook" format="ipynb" label="PyIron Workbench"></data>
     </outputs>
     <tests>
         <test expect_num_outputs="1">
