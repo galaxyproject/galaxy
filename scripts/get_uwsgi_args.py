@@ -99,7 +99,7 @@ def _get_uwsgi_args(cliargs, kwargs):
         'hook-master-start': ('unix_signal:2 gracefully_kill_them_all',
                               'unix_signal:15 gracefully_kill_them_all'),
         'py-call-osafterfork': True,
-        'cron': '-1 -1 -1 -1 -1 python scripts/tool_shed/build_ts_whoosh_index.py -c config/tool_shed.yml --config-section tool_shed',
+        'cron': '0 -1 -1 -1 -1 python scripts/tool_shed/build_ts_whoosh_index.py -c config/tool_shed.yml --config-section tool_shed',
     }
     __add_config_file_arg(args, config_file, cliargs.app)
     if not __arg_set('module', uwsgi_kwargs):
