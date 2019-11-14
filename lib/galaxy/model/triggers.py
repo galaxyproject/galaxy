@@ -8,6 +8,7 @@ from sqlalchemy import DDL
 def install_timestamp_triggers(engine):
     """Install update_time propagation triggers for history data tables"""
     sql = get_install_trigger_sql(engine.name)
+    drop_timestamp_triggers(engine)
     execute_statements(engine, sql)
 
 
