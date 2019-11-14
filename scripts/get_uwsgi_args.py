@@ -26,7 +26,7 @@ DEFAULT_ARGS = {
     '_all_': ('pythonpath', 'threads', 'buffer-size', 'http', 'static-map', 'static-safe', 'die-on-term', 'hook-master-start', 'enable-threads'),
     'galaxy': ('py-call-osafterfork',),
     'reports': (),
-    'tool_shed': (),
+    'tool_shed': ('cron',),
 }
 DEFAULT_PORTS = {
     'galaxy': 8080,
@@ -99,6 +99,7 @@ def _get_uwsgi_args(cliargs, kwargs):
         'hook-master-start': ('unix_signal:2 gracefully_kill_them_all',
                               'unix_signal:15 gracefully_kill_them_all'),
         'py-call-osafterfork': True,
+        'cron': '-1 -1 -1 -1 -1 python scripts/tool_shed/build_ts_whoosh_index.py -c config/tool_shed.yml --config-section tool_shed',
     }
     __add_config_file_arg(args, config_file, cliargs.app)
     if not __arg_set('module', uwsgi_kwargs):
