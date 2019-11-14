@@ -6,7 +6,11 @@
             <div v-else>
                 <b-alert :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
                 <delayed-input class="mb-3" @onChange="load" placeholder="Search Datasets" />
-                <b-table id="dataset-table" striped :fields="fields" :items="rows"> </b-table>
+                <b-table id="dataset-table" striped :fields="fields" :items="rows">
+                    <template v-slot:cell(tags)="row">
+                        <Tags :item="row.item" @input="onTags" />
+                    </template>
+                </b-table>
                 <div v-if="showNotFound">
                     No matching entries found for: <span class="font-weight-bold">{{ this.filter }}</span
                     >.
@@ -21,13 +25,15 @@
 <script>
 import { getAppRoot } from "onload/loadConfig";
 import { Services } from "./services.js";
-import DelayedInput from "components/Common/DelayedInput.vue";
-import LoadingSpan from "components/LoadingSpan.vue";
+import DelayedInput from "components/Common/DelayedInput";
+import Tags from "components/Common/Tags";
+import LoadingSpan from "components/LoadingSpan";
 
 export default {
     components: {
         LoadingSpan,
-        DelayedInput
+        DelayedInput,
+        Tags
     },
     data() {
         return {
@@ -93,6 +99,7 @@ export default {
                     this.error = error;
                 });
         },
+        onTags: function(item) {},
         onSuccess: function(message) {
             this.message = message;
             this.messageVariant = "success";
