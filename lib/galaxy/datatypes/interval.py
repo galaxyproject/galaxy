@@ -1732,10 +1732,12 @@ class GTrack(Interval):
         if not cols:
             return False
 
-        # for header, column_name in self.GTRACK_COLUMN_NAMES_MAPPING.items():
-        #     # if header in headers:
-        #     #     # WE ARE HERE!
-        #     #     # col_idx = cols.find(column_name)
+        for header, column_name in self.GTRACK_COLUMN_NAMES_MAPPING.items():
+            if header in headers:
+                mapped_column_name = headers[header]
+                # WE ARE HERE
+                col_idx = cols.index(mapped_column_name)
+                cols[col_idx] = column_name
 
         if any(std_column in cols for std_column in self.STD_COLUMNS):
             for line in data_lines[:-1]:
@@ -1745,24 +1747,20 @@ class GTrack(Interval):
 
         return False
 
-    # def _replace_column_name(self, header_line, column_line, column_name):
-    #     if header_line.lower().startswith(column_name):
-    #         value_column = header_line[len(column_name):].strip()
-    #         column_line = column_line.replace(value_column, self.GTRACK_COLUMN_NAMES_MAPPING[column_name])
-    #
-    #     return column_line
-
     @staticmethod
     def _parse_column_and_header_lines(hash_count_to_lines):
         headers = {}
         for line in hash_count_to_lines[2]:
-            header, value = line.split(':')
-            headers[header.lower().strip()] = value.lower().strip()
+            header, val = line.split(':', 1)
+            print header + ' : ' + val
+            headers[header.lower().strip()] = val.lower().strip()
 
         column_lines = hash_count_to_lines[3]
         column_line = column_lines[0] if column_lines else None
-        cols = column_line.lower().split('\t')
-
+        if column_line is not None:
+            cols = column_line.lower().split('\t')
+        else:
+            cols = None
         return cols, headers
 
     def set_meta(self, dataset, **kwd):
@@ -1772,7 +1770,7 @@ class GTrack(Interval):
 
         cols, headers = self._parse_column_and_header_lines(hash_count_to_lines)
         if self.SUBTYPE_URL in headers:
-            cols, headers  = self._update_cols_and_headers_from_subtype(
+            cols, headers = self._update_cols_and_headers_from_subtype(
                 cols, headers
             )
 
