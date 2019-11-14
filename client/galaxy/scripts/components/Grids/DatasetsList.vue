@@ -5,26 +5,12 @@
             <loading-span v-if="loading" message="Loading datasets" />
             <div v-else>
                 <b-alert :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
-                <b-row class="mb-3">
-                    <b-col cols="6">
-                        <b-input
-                            id="dataset-search"
-                            class="m-1"
-                            name="query"
-                            placeholder="Search Datasets"
-                            autocomplete="off"
-                            type="text"
-                            v-model="filter"
-                        />
-                    </b-col>
-                </b-row>
+                <delayed-input class="mb-3" @onChange="onChange" />
                 <b-table
                     id="dataset-table"
                     striped
                     :fields="fields"
                     :items="rows"
-                    :filter="filter"
-                    @filtered="filtered"
                 >
                 </b-table>
                 <div v-if="showNotFound">
@@ -41,11 +27,13 @@
 <script>
 import { getAppRoot } from "onload/loadConfig";
 import { Services } from "./services.js";
+import DelayedInput from "components/common/DelayedInput.vue";
 import LoadingSpan from "components/LoadingSpan.vue";
 
 export default {
     components: {
-        LoadingSpan
+        LoadingSpan,
+        DelayedInput
     },
     data() {
         return {
@@ -75,16 +63,15 @@ export default {
             loading: true,
             message: null,
             messageVariant: null,
-            nRows: 0,
             rows: []
         };
     },
     computed: {
         showNotFound() {
-            return this.nRows === 0 && this.filter;
+            return this.rows.length === 0 && this.filter;
         },
         showNotAvailable() {
-            return this.nRows === 0 && !this.filter;
+            return this.rows.length === 0 && !this.filter;
         },
         showMessage() {
             return !!this.message;
@@ -104,15 +91,14 @@ export default {
                 .then(datasets => {
                     console.log(datasets);
                     this.rows = datasets;
-                    this.nRows = this.rows.length;
                     this.loading = false;
                 })
                 .catch(error => {
                     this.error = error;
                 });
         },
-        filtered: function(items) {
-            this.nRows = items.length;
+        onChange: function(query) {
+            this.load();
         },
         onSuccess: function(message) {
             this.message = message;
