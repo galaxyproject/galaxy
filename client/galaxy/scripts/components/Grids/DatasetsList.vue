@@ -5,14 +5,8 @@
             <loading-span v-if="loading" message="Loading datasets" />
             <div v-else>
                 <b-alert :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
-                <delayed-input class="mb-3" @onChange="onChange" />
-                <b-table
-                    id="dataset-table"
-                    striped
-                    :fields="fields"
-                    :items="rows"
-                >
-                </b-table>
+                <delayed-input class="mb-3" @onChange="load" />
+                <b-table id="dataset-table" striped :fields="fields" :items="rows"> </b-table>
                 <div v-if="showNotFound">
                     No matching entries found for: <span class="font-weight-bold">{{ this.filter }}</span
                     >.
@@ -27,7 +21,7 @@
 <script>
 import { getAppRoot } from "onload/loadConfig";
 import { Services } from "./services.js";
-import DelayedInput from "components/common/DelayedInput.vue";
+import DelayedInput from "components/Common/DelayedInput.vue";
 import LoadingSpan from "components/LoadingSpan.vue";
 
 export default {
@@ -42,24 +36,29 @@ export default {
                 {
                     key: "name",
                     sortable: true
-                },{
+                },
+                {
                     key: "extension",
                     sortable: true
-                },{
+                },
+                {
                     key: "history_id",
                     sortable: true
-                },{
+                },
+                {
                     key: "tags",
                     sortable: true
-                },{
+                },
+                {
                     key: "state",
                     sortable: true
-                },{
+                },
+                {
                     key: "update_time",
                     sortable: true
                 }
             ],
-            filter: "",
+            query: "",
             loading: true,
             message: null,
             messageVariant: null,
@@ -68,10 +67,10 @@ export default {
     },
     computed: {
         showNotFound() {
-            return this.rows.length === 0 && this.filter;
+            return this.rows.length === 0 && this.query;
         },
         showNotAvailable() {
-            return this.rows.length === 0 && !this.filter;
+            return this.rows.length === 0 && !this.query;
         },
         showMessage() {
             return !!this.message;
@@ -83,12 +82,11 @@ export default {
         this.load();
     },
     methods: {
-        load() {
-            this.loading = true;
-            this.filter = "";
+        load(query) {
             this.services
                 .getDatasets()
                 .then(datasets => {
+                    console.log(query);
                     console.log(datasets);
                     this.rows = datasets;
                     this.loading = false;
@@ -96,9 +94,6 @@ export default {
                 .catch(error => {
                     this.error = error;
                 });
-        },
-        onChange: function(query) {
-            this.load();
         },
         onSuccess: function(message) {
             this.message = message;

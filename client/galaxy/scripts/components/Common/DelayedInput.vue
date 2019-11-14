@@ -1,7 +1,7 @@
 <template>
     <b-input-group>
         <b-input
-            :placeholder=placeholder
+            :placeholder="placeholder"
             v-model="queryInput"
             @input="delayQuery"
             @change="setQuery"
@@ -15,13 +15,12 @@
     </b-input-group>
 </template>
 <script>
-
 export default {
     props: {
         placeholder: {
             type: String,
             required: false,
-            default: "Enter your search term here."
+            default: "Enter your search term here"
         },
         delay: {
             type: Number,
@@ -52,10 +51,10 @@ export default {
                 this.setQuery(query);
             }
         },
-        setQuery(query) {
+        setQuery(queryNew) {
             this.clearTimer();
-            if (this.query !== this.queryInput) {
-                this.query = this.queryInput = query;
+            if (this.query !== this.queryInput || this.query !== queryNew) {
+                this.query = this.queryInput = queryNew;
                 this.$emit("onChange", this.query);
             }
         }
