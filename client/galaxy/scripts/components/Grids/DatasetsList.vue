@@ -1,11 +1,11 @@
 <template>
-    <div>
+    <div class="overflow-auto h-100" @scroll="onScroll">
         <div v-if="error" class="alert alert-danger" show>{{ error }}</div>
         <div v-else>
             <loading-span v-if="loading" message="Loading datasets" />
             <div v-else>
                 <b-alert :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
-                <delayed-input class="mb-3" @onChange="load" placeholder="Search Datasets" />
+                <delayed-input class="mb-3" @onChange="onQuery" placeholder="Search Datasets" />
                 <b-table
                     id="dataset-table"
                     striped
@@ -49,6 +49,7 @@ export default {
     data() {
         return {
             error: null,
+            scrolled: false,
             fields: [
                 {
                     key: "name",
@@ -59,10 +60,15 @@ export default {
                     sortable: true
                 },
                 {
-                    key: "tags"
+                    key: "tags",
+                    sortable: false
                 }
             ],
             query: "",
+            limit: 50,
+            offset: 0,
+            sortBy: "name",
+            sortDesc: false,
             loading: true,
             message: null,
             messageVariant: null,
@@ -86,21 +92,21 @@ export default {
         this.load();
     },
     methods: {
-        load(query, sortBy = "name", sortDesc = false) {
-            this.query = query;
+        load(concat = false) {
             this.services
-                .getDatasets(query, sortBy, sortDesc)
+                .getDatasets({
+                    query: this.query,
+                    sortBy: this.sortBy,
+                    sortDesc: this.sortDesc,
+                    offset: this.offset,
+                    limit: this.limit
+                })
                 .then(datasets => {
-                    this.rows = datasets;
-                    /*this.rows.forEach(item => {
-                        switch (item.state) {
-                            case "error":
-                                item._rowVariant = "danger";
-                                break;
-                            case "paused":
-                                item._rowVariant = "info";
-                        }
-                    });*/
+                    if (concat) {
+                        this.rows = this.rows.concat(datasets);
+                    } else {
+                        this.rows = datasets;
+                    }
                     this.loading = false;
                 })
                 .catch(error => {
@@ -108,8 +114,24 @@ export default {
                 });
         },
         onTags: function(item) {},
+        onQuery(query) {
+            this.query = query;
+            this.offset = 0;
+            this.load();
+        },
         onSort: function(item) {
-            this.load(this.query, item.sortBy, item.sortDesc);
+            this.sortBy = item.sortBy;
+            this.sortDesc = item.sortDesc;
+            this.offset = 0;
+            this.load();
+        },
+        onScroll({ target: { scrollTop, clientHeight, scrollHeight } }) {
+            if (scrollTop + clientHeight >= scrollHeight) {
+                if (this.offset + this.limit <= this.rows.length) {
+                    this.offset += this.limit;
+                    this.load(true);
+                }
+            }
         },
         onSuccess: function(message) {
             this.message = message;

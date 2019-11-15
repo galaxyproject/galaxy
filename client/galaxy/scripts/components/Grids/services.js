@@ -6,13 +6,23 @@ export class Services {
         this.root = options.root;
     }
 
-    async getDatasets(query, sortBy, sortDesc) {
-        const sortPrefix = sortDesc ? "-dsc" : "-asc";
-        let params = `order=${sortBy}${sortPrefix}`;
-        if (query) {
-            params += `&q=name-contains&qv=${query}`;
+    async getDatasets(options = {}) {
+        let params = "";
+        if (options.sortBy) {
+            const sortPrefix = options.sortDesc ? "-dsc" : "-asc";
+            params += `order=${options.sortBy}${sortPrefix}&`;
+        }
+        if (options.limit) {
+            params += `limit=${options.limit}&`;
+        }
+        if (options.offset) {
+            params += `offset=${options.offset}&`;
+        }
+        if (options.query) {
+            params += `q=name-contains&qv=${options.query}&`;
         }
         const url = `${this.root}api/datasets?${params}`;
+        console.log(url);
         try {
             const response = await axios.get(url);
             return response.data;
