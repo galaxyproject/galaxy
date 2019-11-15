@@ -2,7 +2,7 @@
     <div class="container">
         <div class="row justify-content-md-center">
             <div class="col" :class="{ 'col-lg-6': !isAdmin }">
-                <b-alert :show="showRegistrationWarning" variant="danger">
+                <b-alert :show="showRegistrationWarning" variant="info">
                     {{ registration_warning_message }}
                 </b-alert>
                 <b-alert :show="messageShow" :variant="messageVariant" v-html="messageText" />
