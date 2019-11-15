@@ -1109,7 +1109,7 @@ class ConfiguresGalaxyMixin(object):
                 log.warning(
                     "The default shed tool config file (%s) has been added to the tool_config_file option, if this is "
                     "not the desired behavior, please set shed_tool_config_file to your primary shed-enabled tool "
-                    "config file"
+                    "config file", self.config.shed_tool_config_file
                 )
             tool_configs.append(self.config.shed_tool_config_file)
         # The value of migrated_tools_config is the file reserved for containing only those tools that have been
