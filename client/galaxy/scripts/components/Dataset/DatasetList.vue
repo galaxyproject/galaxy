@@ -15,8 +15,7 @@
                     :items="rows"
                 >
                     <template v-slot:cell(name)="row">
-                        <span class="fa fa-check" />
-                        {{ row.item.name }}
+                        <DatasetName :item="row.item" />
                     </template>
                     <template v-slot:cell(tags)="row">
                         <Tags :item="row.item" @input="onTags" />
@@ -36,12 +35,14 @@
 <script>
 import { getAppRoot } from "onload/loadConfig";
 import { Services } from "./services.js";
+import DatasetName from "./DatasetName";
 import DelayedInput from "components/Common/DelayedInput";
 import Tags from "components/Common/Tags";
 import LoadingSpan from "components/LoadingSpan";
 
 export default {
     components: {
+        DatasetName,
         LoadingSpan,
         DelayedInput,
         Tags

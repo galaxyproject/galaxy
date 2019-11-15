@@ -22,7 +22,6 @@ export class Services {
             params += `q=name-contains&qv=${options.query}&`;
         }
         const url = `${this.root}api/datasets?${params}`;
-        console.log(url);
         try {
             const response = await axios.get(url);
             return response.data;

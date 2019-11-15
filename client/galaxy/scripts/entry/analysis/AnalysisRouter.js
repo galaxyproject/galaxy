@@ -19,7 +19,7 @@ import ToolForm from "mvc/tool/tool-form";
 import FormWrapper from "mvc/form/form-wrapper";
 import Sharing from "components/Sharing.vue";
 import UserPreferences from "components/User/UserPreferences.vue";
-import DatasetsList from "components/grids/DatasetsList.vue";
+import DatasetList from "components/Dataset/DatasetList.vue";
 import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
 import CustomBuilds from "mvc/user/user-custom-builds";
 import Tours from "mvc/tours";
@@ -250,7 +250,7 @@ export const getAnalysisRouter = Galaxy =>
         },
 
         show_datasets: function() {
-            this._display_vue_helper(DatasetsList);
+            this._display_vue_helper(DatasetList);
         },
 
         show_pages: function(action_id) {
