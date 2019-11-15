@@ -138,11 +138,15 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
             return asc('name')
         if order_by_string == 'name-dsc':
             return desc('name')
+        if order_by_string in ('extension', 'extension-asc'):
+            return asc('extension')
+        if order_by_string == 'extension-dsc':
+            return desc('extension')
         if default:
             return self.parse_order_by(default)
         # TODO: allow order_by None
         raise glx_exceptions.RequestParameterInvalidException('Unknown order_by', order_by=order_by_string,
-            available=['create_time', 'update_time', 'name', 'hid'])
+            available=['create_time', 'extension', 'update_time', 'name', 'hid'])
 
     # history specific methods
     def state_counts(self, history):

@@ -6,12 +6,17 @@ export class Services {
         this.root = options.root;
     }
 
-    async getDatasets(query) {
-        let params = "";
+    async getDatasets(query, sortBy, sortDesc) {
+        let sortAsc = "";
+        if (!sortDesc) {
+            sortAsc = "-asc";
+        }
+        let params = `order=${sortBy}${sortAsc}`;
         if (query) {
-            params += `q=name-contains&qv=${query}`;
+            params += `&q=name-contains&qv=${query}`;
         }
         const url = `${this.root}api/datasets?${params}`;
+        console.log(url);
         try {
             const response = await axios.get(url);
             return response.data;
