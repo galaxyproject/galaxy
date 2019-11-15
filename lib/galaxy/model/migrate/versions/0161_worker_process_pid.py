@@ -8,10 +8,10 @@ import logging
 
 from sqlalchemy import (
     Column,
+    Integer
     MetaData
 )
 
-from galaxy.model.custom_types import UUIDType
 from galaxy.model.migrate.versions.util import (
     add_column,
     drop_column
@@ -26,7 +26,7 @@ def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    pid_column = Column('pid', int)
+    pid_column = Column('pid', Integer)
     add_column(pid_column, 'worker_process', metadata)
 
 
