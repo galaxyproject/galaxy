@@ -261,7 +261,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
 
     def get_shed_config_dict_by_filename(self, filename, default=None):
         for shed_config_dict in self._dynamic_tool_confs:
-            if shed_config_dict['config_filename'] == filename:
+            if shed_config_dict['config_filename'] == os.path.abspath(filename):
                 return shed_config_dict
         return default
 

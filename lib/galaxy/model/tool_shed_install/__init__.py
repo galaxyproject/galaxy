@@ -85,7 +85,7 @@ class ToolShedRepository(object):
 
     @shed_config_filename.setter
     def shed_config_filename(self, value):
-        self.metadata['shed_config_filename'] = value
+        self.metadata['shed_config_filename'] = os.path.abspath(value)
 
     def get_shed_config_dict(self, app):
         """
