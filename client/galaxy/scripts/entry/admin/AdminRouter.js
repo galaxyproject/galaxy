@@ -14,6 +14,7 @@ import DataManagerRouter from "components/admin/DataManager/DataManagerRouter.vu
 import Register from "components/login/Register.vue";
 import ErrorStack from "components/admin/ErrorStack.vue";
 import DisplayApplications from "components/admin/DisplayApplications.vue";
+import ResetMetadata from "components/admin/ResetMetadata.vue";
 import Toolshed from "components/Toolshed/Index.vue";
 import Vue from "vue";
 import store from "store";
@@ -33,7 +34,6 @@ export const getAdminRouter = (Galaxy, options) => {
             "(/)admin(/)display_applications": "show_display_applications",
             "(/)admin(/)tool_versions": "show_tool_versions",
             "(/)admin(/)quotas": "show_quotas",
-            "(/)admin(/)repositories": "show_repositories",
             "(/)admin(/)forms": "show_forms",
             "(/)admin(/)form(/)(:form_id)": "show_form",
             "(/)admin/data_tables": "show_data_tables",
@@ -41,6 +41,7 @@ export const getAdminRouter = (Galaxy, options) => {
             "(/)admin/jobs": "show_jobs",
             "(/)admin/invocations": "show_invocations",
             "(/)admin/data_manager*path": "show_data_manager",
+            "(/)admin(/)reset_metadata": "show_reset_metadata",
             "*notFound": "not_found"
         },
 
@@ -83,10 +84,6 @@ export const getAdminRouter = (Galaxy, options) => {
 
         show_groups: function() {
             this._show_grid_view("admin/groups_list");
-        },
-
-        show_repositories: function() {
-            this._show_grid_view("admin_toolshed/browse_repositories");
         },
 
         show_toolshed: function() {
@@ -140,6 +137,10 @@ export const getAdminRouter = (Galaxy, options) => {
 
         show_display_applications: function() {
             this._display_vue_helper(DisplayApplications);
+        },
+
+        show_reset_metadata: function() {
+            this._display_vue_helper(ResetMetadata);
         },
 
         show_data_manager: function(path) {

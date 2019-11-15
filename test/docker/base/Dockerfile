@@ -71,16 +71,11 @@ RUN mkdir /etc/galaxy && cd /tmp/ansible && mkdir roles && \
 RUN cd $GALAXY_ROOT && \
     virtualenv -p /usr/bin/python3 $GALAXY_VIRTUAL_ENV_3 && \
     for VENV in $GALAXY_VIRTUAL_ENV_2 $GALAXY_VIRTUAL_ENV_3; do \
-        export GALAXY_VIRTUAL_ENV=$VENV && \
-        ./scripts/common_startup.sh && \
-        dev_requirements=./lib/galaxy/dependencies/dev-requirements.txt && \
-        [ -f $dev_requirements ] && $VENV/bin/pip install -r $dev_requirements; done
+        GALAXY_VIRTUAL_ENV=$VENV ./scripts/common_startup.sh --dev-wheels && \
+        $VENV/bin/pip install psycopg2-binary; done && \
+    rm -rf ~/.cache/pip
 
-RUN for VENV in $GALAXY_VIRTUAL_ENV_3 $GALAXY_VIRTUAL_ENV_2; do \
-        export GALAXY_VIRTUAL_ENV=$VENV && \
-        . $GALAXY_VIRTUAL_ENV/bin/activate && \
-        pip install psycopg2-binary; done && \
-    cd $GALAXY_ROOT && \
+RUN cd $GALAXY_ROOT && \
     echo "Prepopulating postgres database" && \
     su -c '/usr/lib/postgresql/${POSTGRES_MAJOR}/bin/pg_ctl -o "-F" start -D /opt/galaxy/db' postgres && \
     sleep 3 && \

@@ -10,7 +10,6 @@
 import $ from "jquery";
 import "bootstrap";
 export { getGalaxyInstance, setGalaxyInstance } from "app";
-import WorkflowView from "mvc/workflow/workflow-view";
 import { TracksterUIView } from "viz/trackster";
 export { TracksterUI } from "viz/trackster";
 import Circster from "viz/circster";
@@ -41,10 +40,6 @@ export function trackster(options) {
 
 export function circster(options) {
     new Circster.GalaxyApp(options);
-}
-
-export function workflow(options) {
-    new WorkflowView(options);
 }
 
 export function library(options) {
@@ -98,6 +93,7 @@ export { panelManagement } from "onload/globalInits/panelManagement";
 export { mountMakoTags } from "components/Tags";
 export { mountJobMetrics } from "components/JobMetrics";
 export { mountJobParameters } from "components/JobParameters";
+export { mountWorkflowEditor } from "components/Workflow/Editor/mount";
 
 // Used in common.mako
 export { default as store } from "storemodern";

@@ -2,10 +2,10 @@
 import os
 from tempfile import mkdtemp
 
-from base import integration_util
-from base.populators import (
+from galaxy_test.base.populators import (
     DatasetPopulator,
 )
+from galaxy_test.driver import integration_util
 
 GNUPLOT = {u'version': u'4.6', u'type': u'package', u'name': u'gnuplot'}
 

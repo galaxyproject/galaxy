@@ -621,7 +621,7 @@ model.Job.table = Table(
     Column("session_id", Integer, ForeignKey("galaxy_session.id"), index=True, nullable=True),
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True, nullable=True),
     Column("job_runner_name", String(255)),
-    Column("job_runner_external_id", String(255)),
+    Column("job_runner_external_id", String(255), index=True),
     Column("destination_id", String(255), nullable=True),
     Column("destination_params", JSONType, nullable=True),
     Column("object_store_id", TrimmedString(255), index=True),
@@ -2826,7 +2826,7 @@ model.WorkflowInvocation.update = _workflow_invocation_update
 
 def init(file_path, url, engine_options=None, create_tables=False, map_install_models=False,
         database_query_profiling_proxy=False, object_store=None, trace_logger=None, use_pbkdf2=True,
-        slow_query_log_threshold=0, thread_local_log=None):
+        slow_query_log_threshold=0, thread_local_log=None, log_query_counts=False):
     """Connect mappings to the database"""
     if engine_options is None:
         engine_options = {}
@@ -2837,7 +2837,7 @@ def init(file_path, url, engine_options=None, create_tables=False, map_install_m
     # Use PBKDF2 password hashing?
     model.User.use_pbkdf2 = use_pbkdf2
     # Load the appropriate db module
-    engine = build_engine(url, engine_options, database_query_profiling_proxy, trace_logger, slow_query_log_threshold, thread_local_log=thread_local_log)
+    engine = build_engine(url, engine_options, database_query_profiling_proxy, trace_logger, slow_query_log_threshold, thread_local_log=thread_local_log, log_query_counts=log_query_counts)
 
     # Connect the metadata to the database.
     metadata.bind = engine

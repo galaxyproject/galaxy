@@ -48,8 +48,8 @@ EXTRA_SERVER_MESSAGE = "Additional server section after [%s] encountered [%s], w
 MISSING_FILTER_TYPE_MESSAGE = "Missing filter type for section [%s], it will be ignored."
 UNHANDLED_FILTER_TYPE_MESSAGE = "Unhandled filter type encountered [%s] for section [%s]."
 NO_APP_MAIN_MESSAGE = "No app:main section found, using application defaults throughout."
-YAML_COMMENT_WRAPPER = TextWrapper(initial_indent="# ", subsequent_indent="# ")
-RST_DESCRIPTION_WRAPPER = TextWrapper(initial_indent="    ", subsequent_indent="    ")
+YAML_COMMENT_WRAPPER = TextWrapper(initial_indent="# ", subsequent_indent="# ", break_long_words=False)
+RST_DESCRIPTION_WRAPPER = TextWrapper(initial_indent="    ", subsequent_indent="    ", break_long_words=False)
 UWSGI_SCHEMA_PATH = "lib/galaxy/webapps/uwsgi_schema.yml"
 
 App = namedtuple(
@@ -275,7 +275,6 @@ OPTION_ACTIONS = {
     'debug': _ProductionUnsafe(True),
     'serve_xss_vulnerable_mimetypes': _ProductionUnsafe(True),
     'use_printdebug': _ProductionUnsafe(True),
-    'use_interactive': _ProductionUnsafe(True),
     'id_secret': _ProductionUnsafe('USING THE DEFAULT IS NOT SECURE!'),
     'master_api_key': _ProductionUnsafe('changethis'),
     'external_service_type_config_file': _DeprecatedAndDroppedAction(),
@@ -295,6 +294,7 @@ OPTION_ACTIONS = {
     'allow_library_path_paste': _RenameAction("allow_path_paste"),
     'trust_ipython_notebook_conversion': _RenameAction("trust_jupyter_notebook_conversion"),
     'enable_beta_tool_command_isolation': _DeprecatedAndDroppedAction(),
+    'enable_beta_ts_api_install': _DeprecatedAndDroppedAction(),
     'single_user': _ProductionUnsafe(True),
     'tool_submission_burst_threads': _DeprecatedAndDroppedAction(),
     'tool_submission_burst_at': _DeprecatedAndDroppedAction(),
@@ -335,8 +335,8 @@ SHED_APP = App(
     "9009",
     ["galaxy.webapps.tool_shed.buildapp:app_factory"],
     "config/tool_shed.yml",
-    "lib/galaxy/webapps/tool_shed/config_schema.yml",
-    'galaxy.webapps.tool_shed.buildapp:uwsgi_app()',
+    "lib/tool_shed/webapp/config_schema.yml",
+    'tool_shed.webapp.buildapp:uwsgi_app()',
 )
 REPORTS_APP = App(
     ["reports_wsgi.ini", "config/reports.ini"],
@@ -397,8 +397,9 @@ def _write_option_rst(args, rst, key, heading_level, option_value):
     option, value = _parse_option_value(option_value)
     desc = option["desc"]
     rst.write(":Description:\n")
-    rst.write("\n".join(RST_DESCRIPTION_WRAPPER.wrap(desc)))
-    rst.write("\n")
+    # Wrap and indent desc, replacing whitespaces with a space, except
+    # for double newlines which are replaced with a single newline.
+    rst.write("\n".join("\n".join(RST_DESCRIPTION_WRAPPER.wrap(_)) for _ in desc.split("\n\n")) + "\n")
     type = option.get("type", None)
     default = option.get("default", "*null*")
     if default is True:
@@ -514,7 +515,7 @@ def _validate(args, app_desc):
     fp = tempfile.NamedTemporaryFile('w', delete=False, suffix=".yml")
 
     def _clean(p, k, v):
-        return k != 'reloadable'
+        return k not in ['reloadable', 'path_resolves_to']
 
     clean_schema = remap(app_desc.schema.raw_schema, _clean)
     ordered_dump(clean_schema, fp)
@@ -723,8 +724,9 @@ def _write_option(args, f, key, option_value, as_comment=False, uwsgi_hack=False
     desc = option["desc"]
     comment = ""
     if desc and args.add_comments:
-        comment = "\n".join(YAML_COMMENT_WRAPPER.wrap(desc))
-        comment += "\n"
+        # Wrap and comment desc, replacing whitespaces with a space, except
+        # for double newlines which are replaced with a single newline.
+        comment += "\n".join("\n".join(YAML_COMMENT_WRAPPER.wrap(_)) for _ in desc.split("\n\n")) + "\n"
     as_comment_str = "#" if as_comment else ""
     if uwsgi_hack:
         if option.get("type", "str") == "bool":

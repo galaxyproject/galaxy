@@ -14,7 +14,6 @@ Subpackages
     galaxy.webapps.base
     galaxy.webapps.galaxy
     galaxy.webapps.reports
-    galaxy.webapps.tool_shed
 
 Submodules
 ----------

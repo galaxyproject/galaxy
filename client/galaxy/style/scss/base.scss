@@ -87,7 +87,6 @@ body {
     @extend .p-0;
     @extend .w-100;
     @extend .h-100;
-    @extend .overflow-hidden;
     @extend .position-absolute;
     background: $body-bg;
     color: $text-color;
@@ -135,7 +134,6 @@ body {
 #right {
     @extend .position-absolute;
     @extend .h-100;
-    @extend .overflow-hidden;
 }
 #left {
     @extend .unified-panel;
@@ -155,7 +153,6 @@ body {
     }
 }
 #center {
-    @extend .overflow-hidden;
     left: $panel-width;
     right: $panel-width;
     .center-container {
@@ -352,7 +349,7 @@ body {
 #masthead {
     @extend .p-0;
     @extend .mb-0;
-    background-color: $brand-dark;
+    background-color: $brand-masthead;
     height: $masthead-height;
     .navbar-nav {
         min-height: 100%;
@@ -363,23 +360,23 @@ body {
             display: flex;
             align-items: center;
             &.active {
-                background: darken($brand-dark, 10%);
+                background: darken($brand-masthead, 10%);
                 .nav-link {
-                    color: $white;
+                    color: $brand-masthead-text-active;
                 }
             }
             .nav-link {
                 cursor: pointer;
                 text-decoration: none;
-                color: $gray-300;
+                color: $brand-masthead-text;
                 &:hover {
-                    color: $brand-toggle;
+                    color: $brand-masthead-text-hover;
                 }
                 &.nav-icon {
                     font-size: 1.7em;
                 }
                 &.toggle {
-                    color: $brand-toggle;
+                    color: $brand-masthead-text-hover;
                 }
             }
             .nav-note {
@@ -388,7 +385,7 @@ body {
                 right: 0.4rem;
                 top: 0.7rem;
                 font-size: 0.7rem;
-                color: $brand-toggle;
+                color: $brand-masthead-text-hover;
                 width: 0;
             }
         }
@@ -396,20 +393,20 @@ body {
     .navbar-brand {
         @extend .position-absolute;
         @extend .font-weight-bold;
-        left: 0.3rem;
-        top: 0;
         font-family: verdana;
         font-size: 1.25rem;
-        color: $gray-300;
+        left: 0.8rem;
+        line-height: 0rem;
+        color: $brand-masthead-text-active;
         text-decoration: none;
         .navbar-brand-image {
             display: inline;
-            width: 26px;
-            margin-left: 0.35em;
+            height: 1.8rem;
+            margin-right: 0.3rem;
             border: none;
         }
         .navbar-brand-title {
-            color: $white;
+            color: $brand-masthead-text;
         }
     }
 }
@@ -1762,6 +1759,9 @@ div.toolSectionWrapper {
     max-height: 300px;
     min-width: 50px;
     min-height: 50px;
+}
+#input-choices-menu {
+    color: black;
 }
 
 /* For Vue */

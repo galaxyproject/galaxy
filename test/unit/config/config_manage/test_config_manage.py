@@ -60,7 +60,7 @@ def test_shed_conversion_1607_prefix():
         assert "uwsgi" in config
         uwsgi_config = config["uwsgi"]
         assert "module" not in uwsgi_config
-        assert uwsgi_config["mount"].startswith("/shed=galaxy.")
+        assert uwsgi_config["mount"].startswith("/shed=tool_shed.webapp")
 
 
 def test_allow_library_path_paste_conversion():

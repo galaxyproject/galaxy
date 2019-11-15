@@ -184,11 +184,12 @@ class VisualizationsRegistry(object):
         plugin_name = os.path.split(plugin_path)[1]
         # TODO: this is the standard/older way to config
         config_file = os.path.join(plugin_path, 'config', (plugin_name + '.xml'))
-        config = self.config_parser.parse_file(config_file)
-        # config file is required, otherwise skip this visualization
-        if config is not None:
-            plugin = self._build_plugin(plugin_name, plugin_path, config)
-            return plugin
+        if os.path.exists(config_file):
+            config = self.config_parser.parse_file(config_file)
+            if config is not None:
+                # config may be none if the visualization is disabled
+                plugin = self._build_plugin(plugin_name, plugin_path, config)
+                return plugin
         else:
             raise ObjectNotFound('Visualization XML not found: %s.' % config_file)
 

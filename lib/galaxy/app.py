@@ -22,6 +22,8 @@ from galaxy.managers.tools import DynamicToolManager
 from galaxy.model.database_heartbeat import DatabaseHeartbeat
 from galaxy.model.tags import GalaxyTagHandler
 from galaxy.queue_worker import GalaxyQueueWorker
+from galaxy.tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
+from galaxy.tool_shed.galaxy_install.update_repository_manager import UpdateRepositoryManager
 from galaxy.tool_util.deps.views import DependencyResolversView
 from galaxy.tool_util.verify import test_data
 from galaxy.tools.cache import (
@@ -34,7 +36,8 @@ from galaxy.tools.special_tools import load_lib_tools
 from galaxy.tours import ToursRegistry
 from galaxy.util import (
     ExecutionTimer,
-    heartbeat
+    heartbeat,
+    StructuredExecutionTimer,
 )
 from galaxy.visualization.data_providers.registry import DataProviderRegistry
 from galaxy.visualization.genomes import Genomes
@@ -43,10 +46,6 @@ from galaxy.web import url_for
 from galaxy.web.proxy import ProxyManager
 from galaxy.web_stack import application_stack_instance
 from galaxy.webhooks import WebhooksRegistry
-from tool_shed.galaxy_install import (
-    installed_repository_manager,
-    update_repository_manager
-)
 
 log = logging.getLogger(__name__)
 app = None
@@ -69,6 +68,7 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         self.config = config.Configuration(**kwargs)
         self.config.check()
         config.configure_logging(self.config)
+        self.execution_timer_factory = ExecutionTimerFactory(self.config)
         self.configure_fluent_log()
         # A lot of postfork initialization depends on the server name, ensure it is set immediately after forking before other postfork functions
         self.application_stack = application_stack_instance(app=self)
@@ -89,7 +89,7 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         self._configure_models(check_migrate_databases=self.config.check_migrate_databases, check_migrate_tools=check_migrate_tools, config_file=config_file)
 
         # Manage installed tool shed repositories.
-        self.installed_repository_manager = installed_repository_manager.InstalledRepositoryManager(self)
+        self.installed_repository_manager = InstalledRepositoryManager(self)
 
         self._configure_datatypes_registry(self.installed_repository_manager)
         galaxy.model.set_datatypes_registry(self.datatypes_registry)
@@ -136,7 +136,7 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         # Load Data Manager
         self.data_managers = DataManagers(self)
         # Load the update repository manager.
-        self.update_repository_manager = update_repository_manager.UpdateRepositoryManager(self)
+        self.update_repository_manager = UpdateRepositoryManager(self)
         # Load proprietary datatype converters and display applications.
         self.installed_repository_manager.load_proprietary_converters_and_display_applications()
         # Load datatype display applications defined in local datatypes_conf.xml
@@ -151,11 +151,11 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         self.visualizations_registry = VisualizationsRegistry(
             self,
             directories_setting=self.config.visualization_plugins_directory,
-            template_cache_dir=self.config.template_cache)
+            template_cache_dir=self.config.template_cache_path)
         # Tours registry
         self.tour_registry = ToursRegistry(self.config.tour_config_dir)
         # Webhooks registry
-        self.webhooks_registry = WebhooksRegistry(self.config.webhooks_dirs)
+        self.webhooks_registry = WebhooksRegistry(self.config.webhooks_dir)
         # Load security policy.
         self.security_agent = self.model.security_agent
         self.host_security_agent = galaxy.model.security.HostAgent(
@@ -321,3 +321,36 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
     @property
     def is_job_handler(self):
         return (self.config.track_jobs_in_database and self.job_config.is_handler) or not self.config.track_jobs_in_database
+
+
+class StatsdStructuredExecutionTimer(StructuredExecutionTimer):
+
+    def __init__(self, galaxy_statsd_client, *args, **kwds):
+        self.galaxy_statsd_client = galaxy_statsd_client
+        super(StatsdStructuredExecutionTimer, self).__init__(*args, **kwds)
+
+    def to_str(self, **kwd):
+        self.galaxy_statsd_client.timing(self.timer_id, self.elapsed * 1000., kwd)
+        return super(StatsdStructuredExecutionTimer, self).to_str()
+
+
+class ExecutionTimerFactory(object):
+
+    def __init__(self, config):
+        statsd_host = getattr(config, "statsd_host", None)
+        if statsd_host:
+            from galaxy.web.framework.middleware.statsd import GalaxyStatsdClient
+            self.galaxy_statsd_client = GalaxyStatsdClient(
+                statsd_host,
+                getattr(config, 'statsd_port', 8125),
+                getattr(config, 'statsd_prefix', 'galaxy'),
+                getattr(config, 'statsd_influxdb', False),
+            )
+        else:
+            self.galaxy_statsd_client = None
+
+    def get_timer(self, *args, **kwd):
+        if self.galaxy_statsd_client:
+            return StatsdStructuredExecutionTimer(self.galaxy_statsd_client, *args, **kwd)
+        else:
+            return StructuredExecutionTimer(*args, **kwd)

@@ -46,7 +46,7 @@ uwsgi:
 
   # The entry point which returns the web application (e.g. Galaxy,
   # Reports, etc.) that you are loading.
-  module: galaxy.webapps.tool_shed.buildapp:uwsgi_app()
+  module: tool_shed.webapp.buildapp:uwsgi_app()
 
   # Mount the web application (e.g. Galaxy, Reports, etc.) at the given
   # URL prefix. Cannot be used together with 'module:' above.
@@ -216,9 +216,6 @@ tool_shed:
   # Intercept print statements and show them on the returned page.
   #use_printdebug: true
 
-  # NEVER enable this on a public site (even test or QA)
-  #use_interactive: false
-
   # Administrative users - set this to a comma-separated list of valid
   # Tool Shed users (email addresses).  These users will have access to
   # the Admin section of the server, and will have access to create
@@ -304,9 +301,10 @@ tool_shed:
 
   # Enables GDPR Compliance mode. This makes several changes to the way
   # Galaxy logs and exposes data externally such as removing
-  # emails/usernames from logs and bug reports.  You are responsible for
-  # removing personal data from backups.  Please read the GDPR section
-  # under the special topics area of the admin documentation.
+  # emails/usernames from logs and bug reports.
+  # You are responsible for removing personal data from backups.
+  # Please read the GDPR section under the special topics area of the
+  # admin documentation.
   #enable_beta_gdpr: false
 
   # For help on configuring the Advanced proxy features, see:

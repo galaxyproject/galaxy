@@ -181,8 +181,6 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
     stored_list_grid = StoredWorkflowListGrid()
     published_list_grid = StoredWorkflowAllPublishedGrid()
 
-    __myexp_url = "www.myexperiment.org:80"
-
     @web.expose
     @web.require_login("use Galaxy workflows")
     def list_grid(self, trans, **kwargs):
@@ -708,7 +706,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         # Do request and get result.
         auth_header = base64.b64encode('%s:%s' % (myexp_username, myexp_password))
         headers = {"Content-type": "text/xml", "Accept": "text/xml", "Authorization": "Basic %s" % auth_header}
-        myexp_url = trans.app.config.get("myexperiment_url", self.__myexp_url)
+        myexp_url = trans.app.config.myexperiment_target_url
         conn = HTTPConnection(myexp_url)
         # NOTE: blocks web thread.
         conn.request("POST", "/workflow.xml", request, headers)

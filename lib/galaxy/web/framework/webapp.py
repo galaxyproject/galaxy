@@ -99,7 +99,7 @@ class WebApplication(base.WebApplication):
         paths.append(template_path)
         # Create TemplateLookup with a small cache
         return mako.lookup.TemplateLookup(directories=paths,
-                                          module_directory=galaxy_app.config.template_cache,
+                                          module_directory=galaxy_app.config.template_cache_path,
                                           collection_size=500)
 
     def handle_controller_exception(self, e, trans, **kwargs):
@@ -374,6 +374,8 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
             self.response.cookies[name]['httponly'] = True
         except CookieError as e:
             log.warning("Error setting httponly attribute in cookie '%s': %s" % (name, e))
+        if self.app.config.cookie_domain is not None:
+            self.response.cookies[name]['domain'] = self.app.config.cookie_domain
 
     def _authenticate_api(self, session_cookie):
         """

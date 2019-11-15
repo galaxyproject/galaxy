@@ -2,8 +2,8 @@ import os
 import string
 import tempfile
 
-from base.driver_util import FRAMEWORK_UPLOAD_TOOL_CONF
-from base.populators import DEFAULT_TIMEOUT
+from galaxy_test.base.populators import DEFAULT_TIMEOUT
+from galaxy_test.driver.driver_util import FRAMEWORK_UPLOAD_TOOL_CONF
 
 # Needs a longer timeout because of the conda_auto_install.
 CONDA_AUTO_INSTALL_JOB_TIMEOUT = DEFAULT_TIMEOUT * 3

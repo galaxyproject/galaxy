@@ -1,6 +1,12 @@
 <tool id="Cut1" name="Cut" version="1.0.2">
   <description>columns from a table</description>
-  <command interpreter="perl">cutWrapper.pl "${input}" "${columnList}" "${delimiter}" "${out_file1}"</command>
+  <command><![CDATA[
+perl '$__tool_directory__/cutWrapper.pl'
+'${input}'
+'${columnList}'
+${delimiter}
+'${out_file1}'
+  ]]></command>
   <inputs>
     <param name="columnList" type="text" value="c1,c2" label="Cut columns"/>
     <param name="delimiter" type="select" label="Delimited by">
@@ -12,10 +18,10 @@
       <option value="U">Underscore</option>
       <option value="P">Pipe</option>
     </param>
-    <param format="txt" name="input" type="data" label="From"/>
+    <param name="input" type="data" format="txt" label="From"/>
   </inputs>
   <outputs>
-    <data format="tabular" name="out_file1" >
+    <data name="out_file1" format="tabular">
       <actions>
         <conditional name="delimiter">
           <when value="T">
@@ -148,8 +154,7 @@
       <output name="out_file1" file="eq-cut.dat" />
     </test>
   </tests>
-  <help>
-
+  <help><![CDATA[
 .. class:: warningmark
 
 **WARNING: This tool breaks column assignments.** To re-establish column assignments run the tools and click on the pencil icon in the latest history item.
@@ -207,5 +212,5 @@ Input dataset (six columns: c1, c2, c3, c4, c5, and c6)::
 
    . . gene1
    . . gene2
-</help>
+  ]]></help>
 </tool>

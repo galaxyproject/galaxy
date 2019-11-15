@@ -16,21 +16,18 @@ from galaxy import (
 from galaxy.actions.admin import AdminActions
 from galaxy.exceptions import ActionInputError, MessageException
 from galaxy.model import tool_shed_install as install_model
+from galaxy.tool_shed.util.repository_util import get_ids_of_tool_shed_repositories_being_installed
 from galaxy.util import (
     nice_size,
     sanitize_text,
     url_get
 )
+from galaxy.util.tool_shed import common_util, encoding_util
 from galaxy.web import url_for
 from galaxy.web.framework.helpers import grids, time_ago
 from galaxy.web.params import QuotaParamParser
 from galaxy.webapps.base import controller
 from galaxy.webapps.base.controller import UsesQuotaMixin
-from tool_shed.util import (
-    common_util,
-    encoding_util,
-    repository_util
-)
 from tool_shed.util.web_util import escape
 
 
@@ -550,7 +547,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         status = kwd.get('status', 'done')
         settings = {
             'is_repo_installed': trans.install_model.context.query(trans.install_model.ToolShedRepository).first() is not None,
-            'installing_repository_ids': repository_util.get_ids_of_tool_shed_repositories_being_installed(trans.app, as_string=True),
+            'installing_repository_ids': get_ids_of_tool_shed_repositories_being_installed(trans.app, as_string=True),
             'is_tool_shed_installed': bool(trans.app.tool_shed_registry and trans.app.tool_shed_registry.tool_sheds)
         }
         return self._bootstrapped_client(trans, app_name='admin', settings=settings, message=message, status=status)
@@ -886,7 +883,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         status = util.restore_text(kwd.get('status', 'done'))
         migration_stages_dict = OrderedDict()
         # FIXME: this isn't valid in an installed context
-        migration_scripts_dir = os.path.abspath(os.path.join(trans.app.config.root, 'lib', 'tool_shed', 'galaxy_install', 'migrate', 'versions'))
+        migration_scripts_dir = os.path.abspath(os.path.join(trans.app.config.root, 'lib', 'galaxy', 'tool_shed', 'galaxy_install', 'migrate', 'versions'))
         modules = os.listdir(migration_scripts_dir)
         modules.sort()
         modules.reverse()
@@ -912,7 +909,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         message = escape(kwd.get('message', ''))
         status = kwd.get('status', 'done')
         is_repo_installed = trans.install_model.context.query(trans.install_model.ToolShedRepository).first() is not None
-        installing_repository_ids = repository_util.get_ids_of_tool_shed_repositories_being_installed(trans.app, as_string=True)
+        installing_repository_ids = get_ids_of_tool_shed_repositories_being_installed(trans.app, as_string=True)
         return trans.fill_template('/webapps/galaxy/admin/center.mako',
                                    is_repo_installed=is_repo_installed,
                                    installing_repository_ids=installing_repository_ids,

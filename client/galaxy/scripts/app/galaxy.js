@@ -7,6 +7,7 @@ import metricsLogger from "utils/metrics-logger";
 import addLogging from "utils/add-logging";
 import localize from "utils/localization";
 import { getGalaxyInstance } from "app";
+import { create, dialog } from "utils/data.js";
 
 // ============================================================================
 /** Base galaxy client-side application.
@@ -18,7 +19,6 @@ import { getGalaxyInstance } from "app";
  *          user        : the current user (as a mvc/user/user-model)
  */
 export function GalaxyApp(options = {}, bootstrapped = {}) {
-    // console.warn("GalaxyApp constructor", serverPath());
     this._init(options, bootstrapped);
 }
 
@@ -83,6 +83,12 @@ GalaxyApp.prototype._init = function(options, bootstrapped) {
     this._setUpListeners();
     this.trigger("ready", this);
 
+    /* These shouldn't probably be here, but they need to be right now for
+     * compatibility with external plugins */
+    this.data = {};
+    this.data.create = create;
+    this.data.dialog = dialog;
+
     return this;
 };
 
@@ -101,8 +107,8 @@ GalaxyApp.prototype._processOptions = function _processOptions(options) {
 
     this.options = {};
     for (const k in defaults) {
-        if (defaults.hasOwnProperty(k)) {
-            this.options[k] = options.hasOwnProperty(k) ? options[k] : defaults[k];
+        if (Object.prototype.hasOwnProperty.call(defaults, k)) {
+            this.options[k] = Object.prototype.hasOwnProperty.call(options, k) ? options[k] : defaults[k];
         }
     }
     return this;
@@ -126,7 +132,7 @@ GalaxyApp.prototype._patchGalaxy = function _patchGalaxy(patchWith) {
         // ...(for now) monkey patch any added attributes that the previous Galaxy may have had
         //TODO: move those attributes to more formal assignment in GalaxyApp
         for (const k in patchWith) {
-            if (patchWith.hasOwnProperty(k)) {
+            if (Object.prototype.hasOwnProperty.call(patchWith, k)) {
                 // this.debug( '\t patching in ' + k + ' to Galaxy:', this[ k ] );
                 this[k] = patchWith[k];
             }

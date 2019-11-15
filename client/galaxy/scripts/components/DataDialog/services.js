@@ -68,9 +68,7 @@ export class Services {
         } else if (record.type == "file") {
             record.src = "ldda";
             record.label = record.name;
-            record.download = `${this.host}${this.root}api/libraries/datasets/download/uncompressed?ld_ids=${
-                record.id
-            }`;
+            record.download = `${this.host}${this.root}api/libraries/datasets/download/uncompressed?ld_ids=${record.id}`;
             return record;
         }
     }

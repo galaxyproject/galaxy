@@ -957,7 +957,7 @@ class Trr(GmxBinary):
     """
 
     file_ext = "trr"
-    magic_number = 1993  # magic number reference: https://github.com/gromacs/gromacs/blob/1c6639f0636d2ffc3d665686756d77227c8ae6d1/src/gromacs/fileio/trrio.cpp
+    magic_number = 1993  # magic number reference: https://github.com/gromacs/gromacs/blob/cec211b2c835ba6e8ea849fb1bf67d7fc19693a4/src/gromacs/fileio/trrio.cpp
 
 
 class Cpt(GmxBinary):
@@ -992,6 +992,23 @@ class Xtc(GmxBinary):
 
     file_ext = "xtc"
     magic_number = 1995  # reference: https://github.com/gromacs/gromacs/blob/cec211b2c835ba6e8ea849fb1bf67d7fc19693a4/src/gromacs/fileio/xtcio.cpp
+
+
+class Edr(GmxBinary):
+    """
+    Class describing an edr file from the GROMACS suite
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('md.edr')
+    >>> Edr().sniff(fname)
+    True
+    >>> fname = get_test_fname('md.trr')
+    >>> Edr().sniff(fname)
+    False
+    """
+
+    file_ext = "edr"
+    magic_number = -55555  # reference: https://github.com/gromacs/gromacs/blob/cec211b2c835ba6e8ea849fb1bf67d7fc19693a4/src/gromacs/fileio/enxio.cpp
 
 
 class Biom2(H5):
@@ -1378,6 +1395,22 @@ class SQlite(Binary):
         except Exception:
             return False
 
+    def sniff_table_names(self, filename, table_names):
+        # All table names should be in the schema
+        try:
+            conn = sqlite.connect(filename)
+            c = conn.cursor()
+            tables_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+            result = c.execute(tables_query).fetchall()
+            result = [_[0] for _ in result]
+            for table_name in table_names:
+                if table_name not in result:
+                    return False
+            return True
+        except Exception as e:
+            log.warning('%s, sniff Exception: %s', self, e)
+        return False
+
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
             dataset.peek = "SQLite Database"
@@ -1439,20 +1472,9 @@ class GeminiSQLite(SQlite):
 
     def sniff(self, filename):
         if super(GeminiSQLite, self).sniff(filename):
-            gemini_table_names = ["gene_detailed", "gene_summary", "resources", "sample_genotype_counts", "sample_genotypes", "samples",
-                                  "variant_impacts", "variants", "version"]
-            try:
-                conn = sqlite.connect(filename)
-                c = conn.cursor()
-                tables_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
-                result = c.execute(tables_query).fetchall()
-                result = [_[0] for _ in result]
-                for table_name in gemini_table_names:
-                    if table_name not in result:
-                        return False
-                return True
-            except Exception as e:
-                log.warning('%s, sniff Exception: %s', self, e)
+            table_names = ["gene_detailed", "gene_summary", "resources", "sample_genotype_counts",
+                           "sample_genotypes", "samples", "variant_impacts", "variants", "version"]
+            return self.sniff_table_names(filename, table_names)
         return False
 
     def set_peek(self, dataset, is_multi_byte=False):
@@ -1514,20 +1536,8 @@ class CuffDiffSQlite(SQlite):
     def sniff(self, filename):
         if super(CuffDiffSQlite, self).sniff(filename):
             # These tables should be in any CuffDiff SQLite output.
-            cuffdiff_table_names = ['CDS', 'genes', 'isoforms', 'replicates',
-                                    'runInfo', 'samples', 'TSS']
-            try:
-                conn = sqlite.connect(filename)
-                c = conn.cursor()
-                tables_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
-                result = c.execute(tables_query).fetchall()
-                result = [_[0] for _ in result]
-                for table_name in cuffdiff_table_names:
-                    if table_name not in result:
-                        return False
-                return True
-            except Exception as e:
-                log.warning('%s, sniff Exception: %s', self, e)
+            table_names = ['CDS', 'genes', 'isoforms', 'replicates', 'runInfo', 'samples', 'TSS']
+            return self.sniff_table_names(filename, table_names)
         return False
 
     def set_peek(self, dataset, is_multi_byte=False):
@@ -1554,19 +1564,9 @@ class MzSQlite(SQlite):
 
     def sniff(self, filename):
         if super(MzSQlite, self).sniff(filename):
-            mz_table_names = ["DBSequence", "Modification", "Peaks", "Peptide", "PeptideEvidence", "Score", "SearchDatabase", "Source", "SpectraData", "Spectrum", "SpectrumIdentification"]
-            try:
-                conn = sqlite.connect(filename)
-                c = conn.cursor()
-                tables_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
-                result = c.execute(tables_query).fetchall()
-                result = [_[0] for _ in result]
-                for table_name in mz_table_names:
-                    if table_name not in result:
-                        return False
-                return True
-            except Exception as e:
-                log.warning('%s, sniff Exception: %s', self, e)
+            table_names = ["DBSequence", "Modification", "Peaks", "Peptide", "PeptideEvidence",
+                           "Score", "SearchDatabase", "Source", "SpectraData", "Spectrum", "SpectrumIdentification"]
+            return self.sniff_table_names(filename, table_names)
         return False
 
 
@@ -1589,19 +1589,90 @@ class BlibSQlite(SQlite):
 
     def sniff(self, filename):
         if super(BlibSQlite, self).sniff(filename):
-            blib_table_names = ['IonMobilityTypes', 'LibInfo', 'Modifications', 'RefSpectra', 'RefSpectraPeakAnnotations', 'RefSpectraPeaks', 'ScoreTypes', 'SpectrumSourceFiles']
-            try:
-                conn = sqlite.connect(filename)
-                c = conn.cursor()
-                tables_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
-                result = c.execute(tables_query).fetchall()
-                result = [_[0] for _ in result]
-                for table_name in blib_table_names:
-                    if table_name not in result:
-                        return False
-                return True
-            except Exception as e:
-                log.warning('%s, sniff Exception: %s', self, e)
+            table_names = ['IonMobilityTypes', 'LibInfo', 'Modifications', 'RefSpectra',
+                           'RefSpectraPeakAnnotations', 'RefSpectraPeaks', 'ScoreTypes', 'SpectrumSourceFiles']
+            return self.sniff_table_names(filename, table_names)
+        return False
+
+
+class DlibSQlite(SQlite):
+    """
+    Class describing a Proteomics Spectral Library Sqlite database
+    DLIBs only have the "entries", "metadata", and "peptidetoprotein" tables populated.
+    ELIBs have the rest of the tables populated too, such as "peptidequants" or "peptidescores".
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.dlib')
+    >>> DlibSQlite().sniff(fname)
+    True
+    >>> fname = get_test_fname('interval.interval')
+    >>> DlibSQlite().sniff(fname)
+    False
+    """
+    MetadataElement(name="dlib_version", default='1.8', param=MetadataParameter, desc="Dlib Version",
+                    readonly=True, visible=True, no_value='1.8')
+    file_ext = "dlib"
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        super(DlibSQlite, self).set_meta(dataset, overwrite=overwrite, **kwd)
+        try:
+            conn = sqlite.connect(dataset.file_name)
+            c = conn.cursor()
+            tables_query = "SELECT Value FROM metadata WHERE Key = 'version'"
+            version = c.execute(tables_query).fetchall()[0]
+            dataset.metadata.dlib_version = '%s' % (version)
+        except Exception as e:
+            log.warning('%s, set_meta Exception: %s', self, e)
+
+    def sniff(self, filename):
+        if super(DlibSQlite, self).sniff(filename):
+            table_names = ['entries', 'metadata', 'peptidetoprotein']
+            return self.sniff_table_names(filename, table_names)
+        return False
+
+
+class ElibSQlite(SQlite):
+    """
+    Class describing a Proteomics Chromatagram Library Sqlite database
+    DLIBs only have the "entries", "metadata", and "peptidetoprotein" tables populated.
+    ELIBs have the rest of the tables populated too, such as "peptidequants" or "peptidescores".
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.elib')
+    >>> ElibSQlite().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.dlib')
+    >>> ElibSQlite().sniff(fname)
+    False
+    """
+    MetadataElement(name="version", default='0.1.14', param=MetadataParameter, desc="Elib Version",
+                    readonly=True, visible=True, no_value='0.1.14')
+    file_ext = "elib"
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        super(ElibSQlite, self).set_meta(dataset, overwrite=overwrite, **kwd)
+        try:
+            conn = sqlite.connect(dataset.file_name)
+            c = conn.cursor()
+            tables_query = "SELECT Value FROM metadata WHERE Key = 'version'"
+            version = c.execute(tables_query).fetchall()[0]
+            dataset.metadata.dlib_version = '%s' % (version)
+        except Exception as e:
+            log.warning('%s, set_meta Exception: %s', self, e)
+
+    def sniff(self, filename):
+        if super(ElibSQlite, self).sniff(filename):
+            table_names = ['entries', 'fragmentquants', 'metadata', 'peptidelocalizations', 'peptidequants',
+                           'peptidescores', 'peptidetoprotein', 'proteinscores', 'retentiontimes']
+            if self.sniff_table_names(filename, table_names):
+                try:
+                    conn = sqlite.connect(filename)
+                    c = conn.cursor()
+                    row_query = "SELECT count(*) FROM peptidescores"
+                    count = c.execute(row_query).fetchone()[0]
+                    return int(count) > 0
+                except Exception as e:
+                    log.warning('%s, sniff Exception: %s', self, e)
         return False
 
 
@@ -1624,19 +1695,9 @@ class IdpDB(SQlite):
 
     def sniff(self, filename):
         if super(IdpDB, self).sniff(filename):
-            mz_table_names = ["About", "Analysis", "AnalysisParameter", "PeptideSpectrumMatch", "Spectrum", "SpectrumSource"]
-            try:
-                conn = sqlite.connect(filename)
-                c = conn.cursor()
-                tables_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
-                result = c.execute(tables_query).fetchall()
-                result = [_[0] for _ in result]
-                for table_name in mz_table_names:
-                    if table_name not in result:
-                        return False
-                return True
-            except Exception as e:
-                log.warning('%s, sniff Exception: %s', self, e)
+            table_names = ["About", "Analysis", "AnalysisParameter", "PeptideSpectrumMatch",
+                           "Spectrum", "SpectrumSource"]
+            return self.sniff_table_names(filename, table_names)
         return False
 
     def set_peek(self, dataset, is_multi_byte=False):
@@ -1676,14 +1737,9 @@ class GAFASQLite(SQlite):
             log.warning("%s, set_meta Exception: %s", self, e)
 
     def sniff(self, filename):
-        if super(GAFASQLite, self).sniff(filename):
-            gafa_table_names = frozenset(['gene', 'gene_family', 'gene_family_member', 'meta', 'transcript'])
-            conn = sqlite.connect(filename)
-            c = conn.cursor()
-            tables_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
-            results = c.execute(tables_query).fetchall()
-            found_table_names = frozenset(_[0] for _ in results)
-            return gafa_table_names <= found_table_names
+        if super(IdpDB, self).sniff(filename):
+            table_names = frozenset(['gene', 'gene_family', 'gene_family_member', 'meta', 'transcript'])
+            return self.sniff_table_names(filename, table_names)
         return False
 
 

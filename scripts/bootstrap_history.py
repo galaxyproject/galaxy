@@ -11,6 +11,7 @@ import re
 import string
 import sys
 import textwrap
+from collections import OrderedDict
 
 try:
     import requests
@@ -38,10 +39,11 @@ DEVTEAM = [
     "davebx", "martenson", "jmchilton",
     "tnabtaf", "natefoo", "jgoecks",
     "guerler", "jennaj", "nekrut", "jxtx",
-    "VJalili", "WilliamHolden", "Nerdinacan"
+    "VJalili", "WilliamHolden", "Nerdinacan",
+    "ic4f",
 ]
 
-TEMPLATE = string.Template("""
+TEMPLATE = """
 .. to_doc
 
 ${release}
@@ -57,9 +59,7 @@ Enhancements
 
 .. feature
 
-
 .. enhancement
-
 
 .. small_enhancement
 
@@ -76,7 +76,7 @@ Fixes
 
 .. include:: ${release}_prs.rst
 
-""")
+"""
 
 ANNOUNCE_TEMPLATE = string.Template("""
 ===========================================================
@@ -286,6 +286,16 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
     - [ ] Close this issue.
 """)
 
+GROUPPED_TAGS = OrderedDict([
+    ('area/visualizations', 'viz'),
+    ('area/datatypes', 'datatypes'),
+    ('area/tools', 'tools'),
+    ('area/workflows', 'workflows'),
+    ('area/client', 'ui'),
+    ('area/jobs', 'jobs'),
+    ('area/admin', 'admin'),
+])
+
 # https://api.github.com/repos/galaxyproject/galaxy/pulls?base=dev&state=closed
 # https://api.github.com/repos/galaxyproject/galaxy/pulls?base=release_15.07&state=closed
 # https://api.github.com/repos/galaxyproject/galaxy/compare/release_15.05...dev
@@ -334,7 +344,12 @@ def release_issue(argv):
 def do_release(argv):
     release_name = argv[2]
     release_file = _release_file(release_name + ".rst")
-    release_info = TEMPLATE.safe_substitute(release=release_name)
+    enhancement_targets = "\n\n".join([".. enhancement_tag_%s" % a for a in GROUPPED_TAGS.values()])
+    bug_targets = "\n\n".join([".. bug_tag_%s" % a for a in GROUPPED_TAGS.values()])
+    template = TEMPLATE
+    template = template.replace(".. enhancement", "%s\n\n.. enhancement" % enhancement_targets)
+    template = template.replace(".. bug", "%s\n\n.. bug" % bug_targets)
+    release_info = string.Template(template).safe_substitute(release=release_name)
     open(release_file, "w").write(release_info.encode("utf-8"))
     month = int(release_name.split(".")[1])
     month_name = calendar.month_name[month]
@@ -533,6 +548,8 @@ def main(argv):
 
     def extend_target(target, line, source=history):
         from_str = ".. %s\n" % target
+        if target not in source:
+            raise Exception("Failed to find target [%s] in source [%s]" % (target, source))
         return source.replace(from_str, from_str + line + "\n")
 
     ident = argv[1]
@@ -596,7 +613,8 @@ def main(argv):
         to_doc += "{0}_".format(short_rev)
 
     to_doc = wrap(to_doc)
-    history = extend_target(text_target, to_doc, history)
+    if text_target is not None:
+        history = extend_target(text_target, to_doc, history)
     if req and 'labels' in req:
         labels = req['labels']
         if 'area/datatypes' in labels:
@@ -671,13 +689,23 @@ def _text_target(github, pull_request, labels=None):
     elif is_feature:
         text_target = "feature"
     elif is_enhancement:
-        text_target = "enhancement"
+        for group_name in GROUPPED_TAGS.keys():
+            if group_name in labels:
+                text_target = "enhancement_tag_%s" % GROUPPED_TAGS[group_name]
+                break
+        else:
+            text_target = "enhancement"
     elif is_some_kind_of_enhancement:
         text_target = "small_enhancement"
     elif is_major:
         text_target = "major_bug"
     elif is_bug:
-        text_target = "bug"
+        for group_name in GROUPPED_TAGS.keys():
+            if group_name in labels:
+                text_target = "bug_tag_%s" % GROUPPED_TAGS[group_name]
+                break
+        else:
+            text_target = "bug"
     else:
         print("Logic problem, cannot determine section for %s" % _pr_to_str(pull_request))
         text_target = None

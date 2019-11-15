@@ -17,8 +17,8 @@ from sqlalchemy import and_, distinct, false, not_
 
 sys.path.insert(1, os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib'))
 
-import galaxy.webapps.tool_shed.config as tool_shed_config
-import galaxy.webapps.tool_shed.model.mapping
+import tool_shed.webapp.config as tool_shed_config
+import tool_shed.webapp.model.mapping
 from galaxy.util import (
     build_url,
     send_mail as galaxy_send_mail
@@ -158,7 +158,7 @@ class DeprecateRepositoriesApplication(object):
         if config.database_connection is False:
             config.database_connection = "sqlite:///%s?isolation_level=IMMEDIATE" % config.database
         # Setup the database engine and ORM
-        self.model = galaxy.webapps.tool_shed.model.mapping.init(config.file_path, config.database_connection, engine_options={}, create_tables=False)
+        self.model = tool_shed.webapp.model.mapping.init(config.file_path, config.database_connection, engine_options={}, create_tables=False)
         self.config = config
 
     @property

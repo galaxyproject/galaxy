@@ -123,7 +123,7 @@ class DependencyManager(object):
         plugin_source = None
         dependency_resolver_dicts = app_config.get("dependency_resolvers")
         if dependency_resolver_dicts is not None:
-            plugin_source = ('dict', dependency_resolver_dicts)
+            plugin_source = plugin_config.PluginConfigSource('dict', dependency_resolver_dicts)
         else:
             plugin_source = self.__build_dependency_resolvers_plugin_source(conf_file)
         self.dependency_resolvers = self.__parse_resolver_conf_plugins(plugin_source)
@@ -298,7 +298,7 @@ class DependencyManager(object):
         return plugin_source
 
     def __default_dependency_resolvers_source(self):
-        return ('dict', [
+        return plugin_config.PluginConfigSource('dict', [
             {"type": "tool_shed_packages"},
             {"type": "galaxy_packages"},
             {"type": "conda"},
