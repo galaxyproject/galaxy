@@ -26,7 +26,7 @@ def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    pid_column = Column('pid', int)
+    pid_column = Column('pid', Integer)
     add_column(pid_column, 'worker_process', metadata)
 
 
