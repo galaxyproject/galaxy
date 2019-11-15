@@ -8,6 +8,7 @@ import logging
 
 from sqlalchemy import (
     Column,
+    Integer
     MetaData
 )
 
