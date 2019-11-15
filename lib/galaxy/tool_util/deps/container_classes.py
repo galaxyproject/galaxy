@@ -178,7 +178,7 @@ class HasDockerLikeVolumes(object):
             if self.job_info.tool_directory:
                 defaults += ",$tool_directory:default_ro"
             if self.job_info.job_directory:
-                defaults += ",$job_directory:default_ro"
+                defaults += ",$job_directory:default_ro,$job_directory/outputs:rw"
             if self.job_info.tmp_directory is not None:
                 defaults += ",$tmp_directory:rw"
             if self.app_info.outputs_to_working_directory:
