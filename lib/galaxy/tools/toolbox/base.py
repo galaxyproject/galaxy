@@ -187,11 +187,12 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 return
             raise
         tool_path = tool_conf_source.parse_tool_path()
-        log.debug("Tool path for tool configuration %s is %s", config_filename, tool_path)
         parsing_shed_tool_conf = tool_conf_source.is_shed_tool_conf()
         if parsing_shed_tool_conf:
             # Keep an in-memory list of xml elements to enable persistence of the changing tool config.
             config_elems = []
+        tool_conf_type = 'shed tool' if parsing_shed_tool_conf else 'tool'
+        log.debug("Tool path for %s configuration %s is %s", tool_conf_type, config_filename, tool_path)
         tool_path = self.__resolve_tool_path(tool_path, config_filename)
         # Only load the panel_dict under certain conditions.
         load_panel_dict = not self._integrated_tool_panel_config_has_contents
