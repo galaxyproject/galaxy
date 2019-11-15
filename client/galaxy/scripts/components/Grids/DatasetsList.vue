@@ -59,8 +59,7 @@ export default {
                     sortable: true
                 },
                 {
-                    key: "tags",
-                    sortable: true
+                    key: "tags"
                 }
             ],
             query: "",

@@ -7,16 +7,12 @@ export class Services {
     }
 
     async getDatasets(query, sortBy, sortDesc) {
-        let sortAsc = "";
-        if (!sortDesc) {
-            sortAsc = "-asc";
-        }
-        let params = `order=${sortBy}${sortAsc}`;
+        const sortPrefix = sortDesc ? "-dsc" : "-asc";
+        let params = `order=${sortBy}${sortPrefix}`;
         if (query) {
             params += `&q=name-contains&qv=${query}`;
         }
         const url = `${this.root}api/datasets?${params}`;
-        console.log(url);
         try {
             const response = await axios.get(url);
             return response.data;
