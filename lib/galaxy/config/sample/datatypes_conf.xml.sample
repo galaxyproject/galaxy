@@ -613,7 +613,7 @@
       <converter file="mol_to_mol2_converter.xml" target_datatype="mol2"/>
       <converter file="mol_to_cml_converter.xml" target_datatype="cml"/>
     </datatype>
-    <datatype extension="mol2" type="galaxy.datatypes.molecules:MOL2" display_in_upload="false">
+    <datatype extension="mol2" type="galaxy.datatypes.molecules:MOL2" display_in_upload="true">
       <converter file="mol2_to_smi_converter.xml" target_datatype="smi"/>
       <converter file="mol2_to_sdf_converter.xml" target_datatype="sdf"/>
       <converter file="mol2_to_inchi_converter.xml" target_datatype="inchi"/>
