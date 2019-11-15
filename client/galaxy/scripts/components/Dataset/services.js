@@ -30,6 +30,20 @@ export class Services {
         }
     }
 
+    async copyDataset(dataset_id, history_id) {
+        const url = `${this.root}api/histories/${history_id}/contents`;
+        try {
+            const response = await axios.post(url, {
+                type: "dataset",
+                source: "hda",
+                content: dataset_id
+            });
+            return response.data;
+        } catch (e) {
+            this._errorMessage(e);
+        }
+    }
+
     async setHistory(id) {
         const url = `${this.root}history/set_as_current?id=${id}`;
         try {

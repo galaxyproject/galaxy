@@ -20,6 +20,14 @@
                     <template v-slot:cell(tags)="row">
                         <Tags :item="row.item" @input="onTags" />
                     </template>
+                    <template v-slot:cell(addto)="row">
+                        <b-button
+                            v-b-tooltip.hover.bottom
+                            title="Add to current History"
+                            class="dataset-add btn-sm btn-primary fa fa-plus"
+                            @click.stop="addToHistory(row.item)"
+                        />
+                    </template>
                 </b-table>
                 <div v-if="showNotFound">
                     No matching entries found for: <span class="font-weight-bold">{{ this.query }}</span
@@ -34,6 +42,7 @@
 </template>
 <script>
 import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import { Services } from "./services.js";
 import DatasetName from "./DatasetName";
 import DelayedInput from "components/Common/DelayedInput";
@@ -62,6 +71,11 @@ export default {
                 },
                 {
                     key: "tags",
+                    sortable: false
+                },
+                {
+                    key: "addto",
+                    label: "",
                     sortable: false
                 }
             ],
@@ -114,13 +128,27 @@ export default {
                     this.error = error;
                 });
         },
-        onTags: function(item) {},
+        addToHistory(dataset) {
+            const Galaxy = getGalaxyInstance();
+            const history = Galaxy.currHistoryPanel;
+            const dataset_id = dataset.id;
+            const history_id = history.model.id;
+            this.services
+                .copyDataset(dataset_id, history_id)
+                .then(response => {
+                    history.loadCurrentHistory();
+                })
+                .catch(error => {
+                    this.error = error;
+                });
+        },
+        onTags(item) {},
         onQuery(query) {
             this.query = query;
             this.offset = 0;
             this.load();
         },
-        onSort: function(item) {
+        onSort(item) {
             this.sortBy = item.sortBy;
             this.sortDesc = item.sortDesc;
             this.offset = 0;
@@ -134,11 +162,11 @@ export default {
                 }
             }
         },
-        onSuccess: function(message) {
+        onSuccess(message) {
             this.message = message;
             this.messageVariant = "success";
         },
-        onError: function(message) {
+        onError(message) {
             this.message = message;
             this.messageVariant = "danger";
         }
