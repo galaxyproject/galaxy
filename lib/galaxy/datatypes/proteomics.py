@@ -127,6 +127,13 @@ class PepXml(ProteomicsXml):
     root = "msms_pipeline_analysis"
 
 
+class MascotXML(ProteomicsXml):
+    """mzXML data"""
+    file_ext = "mascotxml"
+    blurb = "mascot Mass Spectrometry data"
+    root = "mascot_search_results"
+
+
 class MzML(ProteomicsXml):
     """mzML data"""
     edam_format = "format_3244"
