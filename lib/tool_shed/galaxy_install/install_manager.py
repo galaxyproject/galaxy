@@ -738,22 +738,12 @@ class InstallRepositoryManager(object):
             self.__assert_can_install_dependencies()
         new_tool_panel_section_label = install_options.get('new_tool_panel_section_label', '')
         tool_panel_section_mapping = install_options.get('tool_panel_section_mapping', {})
-        shed_tool_conf = install_options.get('shed_tool_conf', None)
+        shed_tool_conf = install_options.get('shed_tool_conf')
         if shed_tool_conf:
             # Get the tool_path setting.
             shed_config_dict = self.tpm.get_shed_tool_conf_dict(shed_tool_conf)
         else:
-            try:
-                dynamic_confs = self.app.toolbox.dynamic_confs(include_migrated_tool_conf=False)
-                # Pick the first tool config that doesn't set `is_shed_conf="false"` and that is not a migrated_tool_conf
-                shed_config_dict = dynamic_confs[0]
-                if self.app.config.shed_tool_config_file_set:
-                    # Use shed_tool_config_file if explicitly set
-                    for shed_config_dict in dynamic_confs:
-                        if shed_config_dict.get('config_filename') == self.app.config.shed_tool_config_file:
-                            break
-            except IndexError:
-                raise exceptions.RequestParameterMissingException("Missing required parameter 'shed_tool_conf'.")
+            shed_config_dict = self.app.toolbox.default_shed_tool_conf_dict()
         shed_tool_conf = shed_config_dict['config_filename']
         tool_path = shed_config_dict['tool_path']
         tool_panel_section_id = self.app.toolbox.find_section_id(install_options.get('tool_panel_section_id', ''))

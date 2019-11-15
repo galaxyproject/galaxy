@@ -92,19 +92,11 @@ class ToolShedRepository(object):
         Return the in-memory version of the shed_tool_conf file, which is stored in the config_elems entry
         in the shed_tool_conf_dict.
         """
-
-        def _is_valid_shed_config_filename(filename):
-            for shed_tool_conf_dict in app.toolbox.dynamic_confs(include_migrated_tool_conf=True):
-                if filename == shed_tool_conf_dict['config_filename']:
-                    return True
-            return False
-
-        if not self.shed_config_filename or not _is_valid_shed_config_filename(self.shed_config_filename):
-            return self.guess_shed_config(app)
-        for shed_tool_conf_dict in app.toolbox.dynamic_confs(include_migrated_tool_conf=True):
-            if self.shed_config_filename == shed_tool_conf_dict['config_filename']:
-                return shed_tool_conf_dict
-        return {}
+        if self.shed_config_filename:
+            shed_config_dict = app.toolbox.get_shed_config_dict_by_filename(self.shed_config_filename)
+            if shed_config_dict:
+                return shed_config_dict
+        return self.guess_shed_config(app)
 
     def get_tool_relative_path(self, app):
         # This is a somewhat public function, used by data_manager_manual for instance
@@ -144,7 +136,10 @@ class ToolShedRepository(object):
             if os.path.exists(relative_path):
                 self.shed_config_filename = shed_tool_conf_dict['config_filename']
                 return shed_tool_conf_dict
-        return {}
+        # Very last resort, get default shed_tool_config file for this instance
+        shed_tool_conf_dict = self.app.toolbox.default_shed_tool_conf_dict()
+        self.shed_config_filename = shed_tool_conf_dict['config_filename']
+        return shed_tool_conf_dict
 
     @property
     def has_readme_files(self):
