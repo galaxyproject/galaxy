@@ -1,7 +1,7 @@
 import datetime
 import logging
-import socket
 import os
+import socket
 import threading
 
 from galaxy.model import WorkerProcess

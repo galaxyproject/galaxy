@@ -8,7 +8,7 @@ import logging
 
 from sqlalchemy import (
     Column,
-    Integer
+    Integer,
     MetaData
 )
 
