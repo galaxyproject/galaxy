@@ -73,7 +73,11 @@ class InstalledRepositoryMetadataManager(MetadataGenerator):
                     load_relative_path = os.path.join(shed_conf_dict.get('tool_path'), relative_path)
                 guid = tool_dict.get('guid', None)
                 if relative_path and guid:
-                    tool = self.app.toolbox.load_tool(os.path.abspath(load_relative_path), guid=guid, use_cached=False)
+                    try:
+                        tool = self.app.toolbox.load_tool(os.path.abspath(load_relative_path), guid=guid, use_cached=False)
+                    except Exception:
+                        log.exception("Error while loading tool at path '%s'", load_relative_path)
+                        tool = None
                 else:
                     tool = None
                 if tool:

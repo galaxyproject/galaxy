@@ -521,6 +521,11 @@ class Tool(Dictifiable):
             return []
 
     @property
+    def is_latest_version(self):
+        tool_versions = self.tool_versions
+        return not tool_versions or self.version == self.tool_versions[-1]
+
+    @property
     def tool_shed_repository(self):
         # If this tool is included in an installed tool shed repository, return it.
         if self.tool_shed:
@@ -929,8 +934,10 @@ class Tool(Dictifiable):
 
         if getattr(self, 'tool_shed', None):
             tool_dir = Path(self.tool_dir)
+            if tool_dir.parts[-1] == self.repository_name:
+                return str(tool_dir)
             for parent in tool_dir.parents:
-                if parent == self.repository_name:
+                if parent.parts[-1] == self.repository_name:
                     return str(parent)
             else:
                 log.error("Problem finding repository dir for tool [%s]" % self.id)
@@ -2184,7 +2191,7 @@ class Tool(Dictifiable):
                         message += 'You can re-run the job with the selected <a href=\"%s\" target=\"_blank\">tool id \"%s\"</a> or choose another derivation of the tool. ' % (new_tool_shed_url, self.id)
                     else:
                         message += 'You can re-run the job with <a href=\"%s\" target=\"_blank\">tool id \"%s\"</a>, which is a derivation of the original tool. ' % (new_tool_shed_url, self.id)
-            if len(self.tool_versions) > 1 and tool_version != self.tool_versions[-1]:
+            if not self.is_latest_version:
                 message += 'There is a newer version of this tool available.'
         except Exception as e:
             raise exceptions.MessageException(unicodify(e))
