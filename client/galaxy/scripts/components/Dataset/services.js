@@ -30,6 +30,16 @@ export class Services {
         }
     }
 
+    async setHistory(id) {
+        const url = `${this.root}history/set_as_current?id=${id}`;
+        try {
+            const response = await axios.get(url);
+            return response.data;
+        } catch (e) {
+            this._errorMessage(e);
+        }
+    }
+
     _errorMessage(e) {
         let message = "Request failed.";
         if (e.response) {
