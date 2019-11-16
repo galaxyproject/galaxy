@@ -55,7 +55,7 @@ class UsesShed(object):
         config["conda_prefix"] = os.environ.get('GALAXY_TEST_CONDA_PREFIX') or os.path.join(cls.conda_tmp_prefix, 'conda')
 
     def reset_shed_tools(self):
-        shutil.rmtree(self._app.config.shed_tools_dir)
+        shutil.rmtree(self._app.config.shed_tools_dir, ignore_errors=True)
         os.makedirs(self._app.config.shed_tools_dir)
         with open(self._app.config.shed_tool_config_file, "w") as tool_conf_file:
             tool_conf_file.write(SHED_TOOL_CONF.substitute(shed_tools_path=self._app.config.shed_tools_dir))
