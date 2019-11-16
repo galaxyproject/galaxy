@@ -83,23 +83,15 @@ class ToolEvaluator:
         inp_data, out_data, out_collections = job.io_dicts()
 
         if get_special:
-
-            # Set up output dataset association for export history jobs. Because job
-            # uses a Dataset rather than an HDA or LDA, it's necessary to set up a
-            # fake dataset association that provides the needed attributes for
-            # preparing a job.
-            class FakeDatasetAssociation :
-                fake_dataset_association = True
-
-                def __init__(self, dataset=None):
-                    self.dataset = dataset
-                    self.file_name = dataset.file_name
-                    self.metadata = dict()
-
+            log.error("ToolEvaluator.set_compute_environment get_special() %s"%(get_special))
             special = get_special()
+            log.error("ToolEvaluator.set_compute_environment special %s"%(special))
             if special:
-                out_data["output_file"] = FakeDatasetAssociation(dataset=special.dataset)
+                log.error("ToolEvaluator.set_compute_environment special.dataset(.filename) %s %s"%(special.dataset, special.dataset.file_name))
+                log.error("ToolEvaluator.set_compute_environment out_data before %s"%(out_data))
+                out_data["output_file"] = special.fda
 
+        log.error("ToolEvaluator.set_compute_environment out_data %s" %(out_data))
         # These can be passed on the command line if wanted as $__user_*__
         incoming.update(model.User.user_template_environment(job.history and job.history.user))
 

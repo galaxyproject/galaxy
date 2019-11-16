@@ -1922,26 +1922,32 @@ class JobWrapper(HasResourceParameters):
         return [os.path.basename(str(fname)) for fname in self.get_output_fnames()]
 
     def get_output_fnames(self):
+        log.error("GET_OUTPUT_FNAMES")
         if self.output_paths is None:
             self.compute_outputs()
         return self.output_paths
 
     def get_output_path(self, dataset):
+        log.error("GET_OUTPUT_PATH")
         if self.output_paths is None:
             self.compute_outputs()
         for (hda, dataset_path) in self.output_hdas_and_paths.values():
+            log.error("GET_OUTPUT_PATH %s %s" %(hda,dataset))
             if hda == dataset:
                 return dataset_path
-        if getattr(dataset, "fake_dataset_association", False):
-            return dataset.file_name
+#         if getattr(dataset, "fake_dataset_association", False):
+#             log.error("GET_OUTPUT_PATH FAKE %s" %(dataset.file_name))
+#             return dataset.file_name
         raise KeyError("Couldn't find job output for [{}] in [{}]".format(dataset, self.output_hdas_and_paths.values()))
 
     def get_mutable_output_fnames(self):
+        log.error("GET_MUTABLE_OUTPUT_FNAME")
         if self.output_paths is None:
             self.compute_outputs()
         return [dsp for dsp in self.output_paths if dsp.mutable]
 
     def get_output_hdas_and_fnames(self):
+        log.error("GET_OUTPUT_HDAS_AND_FNAMES")
         if self.output_hdas_and_paths is None:
             self.compute_outputs()
         return self.output_hdas_and_paths
@@ -1950,6 +1956,8 @@ class JobWrapper(HasResourceParameters):
         dataset_path_rewriter = self.dataset_path_rewriter
 
         job = self.get_job()
+        log.error("JOB %s " %(job))
+        log.error("JOB DIR %s " %(dir(job)))
         # Job output datasets are combination of history, library, and jeha datasets.
         special = self.sa_session.query(model.JobExportHistoryArchive).filter_by(job=job).first()
         false_path = None
@@ -1957,6 +1965,8 @@ class JobWrapper(HasResourceParameters):
         results = []
         for da in job.output_datasets + job.output_library_datasets:
             da_false_path = dataset_path_rewriter.rewrite_dataset_path(da.dataset, 'output')
+            log.error("NORMAL da: %s" %(da))
+            log.error("NORMAL da.dataset %s -> da_false_path %s" %(da.dataset, da_false_path))
             mutable = da.dataset.dataset.external_filename is None
             dataset_path = DatasetPath(da.dataset.dataset.id, da.dataset.file_name, false_path=da_false_path, mutable=mutable)
             results.append((da.name, da.dataset, dataset_path))
@@ -1964,9 +1974,18 @@ class JobWrapper(HasResourceParameters):
         self.output_paths = [t[2] for t in results]
         self.output_hdas_and_paths = {t[0]: t[1:] for t in results}
         if special:
-            false_path = dataset_path_rewriter.rewrite_dataset_path(special, 'output')
+            false_path = dataset_path_rewriter.rewrite_dataset_path(special.dataset, 'output')
+            log.error("SPECIAL special %s" %(special))
+            log.error("SPECIAL special.dataset %s -> false_path %s" %(special.dataset, false_path))
             dsp = DatasetPath(special.dataset.id, special.dataset.file_name, false_path)
             self.output_paths.append(dsp)
+            log.error("SPECIAL DIR %s"%str(dir(special)))
+            log.error("SPECIAL JOB %s " %(special.job))
+            log.error("SPECIAL NAME %s"%str(special.export_name))
+            log.error("SPECIAL ... %s"%str(special.__dict__))
+
+            self.output_hdas_and_paths[ "output_file" ] = [special.fda, dsp]
+        log.error( "self.output_hdas_and_paths %s"% str(self.output_hdas_and_paths) )
         return self.output_paths
 
     def get_output_file_id(self, file):
