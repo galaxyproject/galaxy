@@ -263,11 +263,12 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             elif item_type == 'tool_dir':
                 self._load_tooldir_tag_set(item, panel_dict, tool_path, integrated_panel_dict, load_panel_dict=load_panel_dict)
 
-    def get_shed_config_dict_by_filename(self, filename, default=None):
+    def get_shed_config_dict_by_filename(self, filename):
+        filename = os.path.abspath(filename)
         for shed_config_dict in self._dynamic_tool_confs:
-            if shed_config_dict['config_filename'] == os.path.abspath(filename):
+            if shed_config_dict['config_filename'] == filename:
                 return shed_config_dict
-        return default
+        return None
 
     def update_shed_config(self, shed_conf):
         """  Update the in-memory descriptions of tools and write out the changes
