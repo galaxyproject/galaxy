@@ -34,7 +34,8 @@ class UsesShed(object):
         cls._test_driver.temp_directories.extend([cls.shed_tool_data_dir, cls.shed_tools_dir])
         shed_tool_config = os.path.join(cls.shed_tools_dir, 'shed_tool_conf.xml')
         config["tool_sheds_config_file"] = TOOL_SHEDS_CONF
-        config["tool_config_file"] = "%s,%s" % (FRAMEWORK_UPLOAD_TOOL_CONF, shed_tool_config)
+        config["tool_config_file"] = FRAMEWORK_UPLOAD_TOOL_CONF
+        config["shed_tool_config_file"] = shed_tool_config
         config["shed_data_manager_config_file"] = os.path.join(cls.shed_tool_data_dir, 'shed_data_manager_config_file')
         config["shed_tool_data_table_config"] = os.path.join(cls.shed_tool_data_dir, 'shed_data_table_conf.xml')
         config["shed_tool_data_path"] = cls.shed_tool_data_dir
