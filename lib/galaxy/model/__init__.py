@@ -1559,6 +1559,7 @@ class JobExternalOutputMetadata(RepresentById):
             return self.library_dataset_dataset_association
         return None
 
+
 # Set up output dataset association for export history jobs. Because job
 # uses a Dataset rather than an HDA or LDA, it's necessary to set up a
 # fake dataset association that provides the needed attributes for
@@ -1571,15 +1572,22 @@ class FakeDatasetAssociation (object):
         self.file_name = dataset.file_name
         self.metadata = dict()
 
+    def __eq__(self, other):
+        return isinstance(other, FakeDatasetAssociation) and self.dataset == other.dataset
+
+
 class JobExportHistoryArchive(RepresentById):
     def __init__(self, job=None, history=None, dataset=None, compressed=False,
                  history_attrs_filename=None):
         self.job = job
         self.history = history
         self.dataset = dataset
-        self.fda = FakeDatasetAssociation(dataset)
         self.compressed = compressed
         self.history_attrs_filename = history_attrs_filename
+
+    @property
+    def fda(self):
+        return FakeDatasetAssociation(self.dataset)
 
     @property
     def temp_directory(self):
