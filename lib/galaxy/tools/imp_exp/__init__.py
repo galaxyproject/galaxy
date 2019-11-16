@@ -87,6 +87,13 @@ class JobExportHistoryArchiveWrapper:
         # Use abspath because mkdtemp() does not, contrary to the documentation,
         # always return an absolute path.
         temp_output_dir = os.path.abspath(tempfile.mkdtemp())
+        jeha = self.sa_session.query(model.JobExportHistoryArchive).filter_by(job_id=self.job_id).first()
+	if jeha:
+            temp_output_dir = jeha.working_directory
+        else:
+            log.error("JobExportHistoryArchiveWrapper no such job")
+
+        log.error("JobExportHistoryArchiveWrapper temp_output_dir %s"%temp_output_dir)
 
         history = jeha.history
         history_attrs_filename = os.path.join(temp_output_dir, ATTRS_FILENAME_HISTORY)
