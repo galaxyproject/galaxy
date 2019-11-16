@@ -2,6 +2,7 @@ import errno
 import logging
 from xml.etree import ElementTree as XmlET
 
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.util import xml_to_string
 from galaxy.util.renamed_temporary_file import RenamedTemporaryFile
 from tool_shed.util import basic_util
@@ -328,6 +329,7 @@ class ToolPanelManager(object):
                 file_name = basic_util.strip_path(shed_tool_conf_dict['config_filename'])
                 if shed_tool_conf == file_name:
                     return shed_tool_conf_dict
+        raise RequestParameterInvalidException("Requested shed_tool_conf '%s' is not an active shed_tool_config_file" % shed_tool_conf)
 
     def handle_tool_panel_section(self, toolbox, tool_panel_section_id=None, new_tool_panel_section_label=None):
         """Return a ToolSection object retrieved from the current in-memory tool_panel."""
