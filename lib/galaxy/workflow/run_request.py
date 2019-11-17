@@ -387,8 +387,10 @@ def build_workflow_run_configs(
                     raise exceptions.RequestParameterInvalidException(
                         f"{step.label or step.order_index + 1}: {e.message_suffix}"
                     )
-                if (step.tool_inputs and step.tool_inputs["parameter_type"] != "field") or not isinstance(
-                    input_dict, dict
+                if (
+                    (step.tool_inputs and step.tool_inputs["parameter_type"] != "field")
+                    or not isinstance(input_dict, dict)
+                    or "id" not in input_dict
                 ):
                     continue
             try:
