@@ -373,7 +373,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         if 'from_path' in payload:
             from_path = payload.get('from_path')
-            payload["workflow"] = {"src": "from_path", "path": from_path}
+            object_id = payload.get("object_id")
+            workflow_src = {"src": "from_path", "path": from_path}
+            if object_id is not None:
+                workflow_src["object_id"] = object_id
+            payload["workflow"] = workflow_src
             return self.__api_import_new_workflow(trans, payload, **kwd)
 
         if 'shared_workflow_id' in payload:
