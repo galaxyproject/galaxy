@@ -366,7 +366,9 @@ def build_workflow_run_configs(
                 continue
             step = steps_by_id[key]
             if step.type == "parameter_input" and (
-                step.tool_inputs["parameter_type"] != "field" or not isinstance(input_dict, dict)
+                step.tool_inputs["parameter_type"] != "field"
+                or not isinstance(input_dict, dict)
+                or "id" not in input_dict
             ):
                 continue
             if "src" not in input_dict:
