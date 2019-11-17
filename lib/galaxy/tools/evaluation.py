@@ -83,15 +83,10 @@ class ToolEvaluator:
         inp_data, out_data, out_collections = job.io_dicts()
 
         if get_special:
-            log.error("ToolEvaluator.set_compute_environment get_special() %s"%(get_special))
             special = get_special()
-            log.error("ToolEvaluator.set_compute_environment special %s"%(special))
             if special:
-                log.error("ToolEvaluator.set_compute_environment special.dataset(.filename) %s %s"%(special.dataset, special.dataset.file_name))
-                log.error("ToolEvaluator.set_compute_environment out_data before %s"%(out_data))
                 out_data["output_file"] = special.fda
 
-        log.error("ToolEvaluator.set_compute_environment out_data %s" %(out_data))
         # These can be passed on the command line if wanted as $__user_*__
         incoming.update(model.User.user_template_environment(job.history and job.history.user))
 
