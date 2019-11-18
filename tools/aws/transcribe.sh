@@ -3,57 +3,50 @@
 # Script to run a aws transcribe job using aws-cli.
 
 # Usage:
-# transcribe $input_file $output_file $audio_format $s3_bucket $s3_directory $job_directory
+# transcribe $input_file $job_directory $output_file $audio_format $s3_bucket $s3_directory
 
 # TODO: shall we use ENV var for <S3_bucket> <s3_directory>, <job_directory>? 
 # The reason for it is to avoid passing parameter to script each time (although since the script is only called by Galaxy not a human, it probably doesn't matter);
 # the reason against it is that it makes the tool less flexible and more dependent.
 
 # record transcirbe command parameters
-input_file=$1
-output_file=$2
-audio_format=$3
-s3_bucket=$4
-s3_directory=$5
-job_directory=$6
+job_directory=$1
+input_file=$2
+output_file=$3
+audio_format=$4
+s3_bucket=$5
+s3_directory=$6
 
 # TODO 
 # Galaxy change binary input file extension to .dat for all media files, which means we can't infer audio format from file extension.
 # We could use file utility to extract MIME type to obtain audio format; for now We let user specify audio format as a parameter.
 
-# AWS Transcribe service requires a unique job name when submitting a job under the same account. 
-# In order to be able to run the same job multilpe times, we can suffix to the job name a seqNo, which increases by 1 each time a new job is submitted.
+# AWS Transcribe service requires a unique job name when submitting a job under the same account.
+# Suffixing to the job name with hostname and timestamp shall make the name unique enough in real case.
 # In addition, all AWS job related files should go to a designated directory $job_directory, and file names can be prefixed by the job_name. 
-# Assume the local job hisotry is preserved as long as the remote AWS history, seqNo can be inferred from the last seqNo used among the job json files.
-
-# find out the next seqNo to use by adding 1 to the largest seqNo used among the existing job json files
 job_name_prefix="AwsTranscribe"
-# use sed instead with regexp instead of cut to be more accurate and flexible (for ex, in case the job_directory path contains "-" which could mess up the matching pattern)
-#echo "ls ${job_directory}/${job_name_prefix}-*-request.json | sed 's|.*/||' | sed -e 's/${job_name_prefix}-//; s/-request.json//' | sort -rn | head -1"
-#last_seqNo=`ls ${job_directory}/${job_name_prefix}-*-request.json | sed 's|.*/||' | sed -e 's/${job_name_prefix}-//; s/-request.json//' | sort -rn | head -1`
-last_seqNo=`ls ${job_directory}/${job_name_prefix}-*-request.json | sed 's|.*/||' | cut -d "-" -f 2 | cut -d "." -f 1 | sort -rn | head -1`
-if [ -z $last_seqNo ]; then
-    echo "No previous job files found."
-    seqNo=1
-else
-    echo "Last seqNo used in previous jobs is $last_seqNo"
-    seqNo=$((last_seqNo+1))
-fi
-random_num=$RANDOM
-job_name=${job_name_prefix}-${seqNo}-${random_num}
+job_name_suffix=$(printf "%s-%s-%s" $(hostname -s) $(date +%Y%m%d%H%M%S) $$)
+job_name=${job_name_prefix}-${job_name_suffix}
 log_file=${job_directory}/${job_name}.log
+# create job_directory if not existing yet
+#if [ ! -d ${job_directory} ] 
+#then
+#    mkdir ${job_directory}
+#fi
 echo "echo ${input_file} ${output_file} ${audio_format} ${s3_bucket} ${s3_directory} ${job_directory} ${job_name} >> $log_file 2>&1" # debug
 
+# if s3_directory is empty or ends with "/" return it as is; otherwise append "/" at the end
+s3_path=`echo $s3_directory| sed -E 's|([^/])$|\1/|'`
 # upload media file from local Galaxy source file to S3 directory
-echo "Uploading ${input_file} to s3://${s3_bucket}/${s3_directory}/" >> $log_file 2>&1 
-aws s3 cp ${input_file} s3://${s3_bucket}/${s3_directory}/ >> $log_file 2>&1
+echo "Uploading ${input_file} to s3://${s3_bucket}/${s3_path}" >> $log_file 2>&1 
+aws s3 cp ${input_file} s3://${s3_bucket}/${s3_path} >> $log_file 2>&1
 
 # create json file in the aws directory, i.e. <job_directory>/<job_name>_request.json
 request_file=${job_directory}/${job_name}-request.json
 input_file_name=$(basename ${input_file})
-media_file_url="http://${s3_bucket}.s3.amazonaws.com/${s3_directory}/${input_file_name}"
+media_file_url="http://${s3_bucket}.s3.amazonaws.com/${s3_path}${input_file_name}"
 
-# use user specified bucket for output for easier access control
+# use user-specified bucket for output for easier access control
 jq -n "{ \"TranscriptionJobName\": \"${job_name}\", \"LanguageCode\": \"en-US\", \"MediaFormat\": \"${audio_format}\", \"Media\": { \"MediaFileUri\": \"${media_file_url}\" }, \"OutputBucketName\": \"${s3_bucket}\" }" > ${request_file}
  
 # submit transcribe job
