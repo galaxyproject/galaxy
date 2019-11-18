@@ -85,6 +85,7 @@ def _get_uwsgi_args(cliargs, kwargs):
     config_file = cliargs.config_file or kwargs.get('__file__')
     uwsgi_kwargs = load_app_properties(config_file=config_file, config_section='uwsgi')
     args = []
+    ts_cron_config_option = '' if config_file is None else '-c %s' % config_file
     defaults = {
         'pythonpath': 'lib',
         'threads': '4',
@@ -99,7 +100,7 @@ def _get_uwsgi_args(cliargs, kwargs):
         'hook-master-start': ('unix_signal:2 gracefully_kill_them_all',
                               'unix_signal:15 gracefully_kill_them_all'),
         'py-call-osafterfork': True,
-        'cron': '0 -1 -1 -1 -1 python scripts/tool_shed/build_ts_whoosh_index.py -c config/tool_shed.yml --config-section tool_shed',
+        'cron': '0 -1 -1 -1 -1 python scripts/tool_shed/build_ts_whoosh_index.py %s --config-section tool_shed -d' % ts_cron_config_option,
     }
     __add_config_file_arg(args, config_file, cliargs.app)
     if not __arg_set('module', uwsgi_kwargs):
