@@ -8756,6 +8756,7 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
     DEFAULT_POSITION = {"left": 0, "top": 0}
 
     def __init__(self):
+        self.position = WorkflowStep.DEFAULT_POSITION
         self.uuid = uuid4()
         self._input_connections_by_name = None
         self._inputs_by_name = None
