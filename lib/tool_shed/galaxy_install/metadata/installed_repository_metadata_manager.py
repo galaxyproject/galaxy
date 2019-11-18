@@ -155,7 +155,7 @@ class InstalledRepositoryMetadataManager(metadata_generator.MetadataGenerator):
         A tool shed repository is being updated so change the shed_tool_conf file.  Parse the config
         file to generate the entire list of config_elems instead of using the in-memory list.
         """
-        shed_conf_dict = self.repository.get_shed_config_dict(self.app)
+        shed_conf_dict = self.shed_config_dict or self.repository.get_shed_config_dict(self.app)
         shed_tool_conf = shed_conf_dict['config_filename']
         tool_path = shed_conf_dict['tool_path']
         self.tpm.generate_tool_panel_dict_from_shed_tool_conf_entries(self.repository)

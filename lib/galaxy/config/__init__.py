@@ -1097,28 +1097,27 @@ class ConfiguresGalaxyMixin(object):
         from galaxy.managers.tools import DynamicToolManager
         self.dynamic_tools_manager = DynamicToolManager(self)
         self._toolbox_lock = threading.RLock()
-        # Initialize the tools, making sure the list of tool configs includes automatically generated dynamic
-        # (shed-enabled) tool configs, which are created on demand.
-        tool_configs = self.config.tool_configs
-        # If the user has configured a shed tool config in tool_config_file this would add a second, but since we're not
-        # parsing them yet we don't know if that's the case. We'll assume that the standard shed_tool_conf.xml location
-        # is in use, and warn if we suspect there to be problems.
-        if self.config.shed_tool_config_file not in tool_configs:
-            # This seems like the likely case for problems in older deployments
-            if self.config.tool_config_file_set and not self.config.shed_tool_config_file_set:
-                log.warning(
-                    "The default shed tool config file (%s) has been added to the tool_config_file option, if this is "
-                    "not the desired behavior, please set shed_tool_config_file to your primary shed-enabled tool "
-                    "config file"
-                )
-            tool_configs.append(self.config.shed_tool_config_file)
+        # shed_tool_config_file has been set, add it to tool_configs
+        if self.config.shed_tool_config_file_set:
+            self.config.tool_configs.append(self.config.shed_tool_config_file)
         # The value of migrated_tools_config is the file reserved for containing only those tools that have been
         # eliminated from the distribution and moved to the tool shed. If migration checking is disabled, only add it if
         # it exists (since this may be an existing deployment where migrations were previously run).
         if ((self.config.check_migrate_tools or os.path.exists(self.config.migrated_tools_config))
-                and self.config.migrated_tools_config not in tool_configs):
-            tool_configs.append(self.config.migrated_tools_config)
-        self.toolbox = tools.ToolBox(tool_configs, self.config.tool_path, self)
+                and self.config.migrated_tools_config not in self.config.tool_configs):
+            self.config.tool_configs.append(self.config.migrated_tools_config)
+        self.toolbox = tools.ToolBox(self.config.tool_configs, self.config.tool_path, self)
+        # If no shed-enabled tool config file has been loaded, we append a default shed_tool_conf.xml
+        if not self.config.shed_tool_config_file_set and not self.toolbox.dynamic_confs():
+            # This seems like the likely case for problems in older deployments
+            if self.config.tool_config_file_set:
+                log.warning(
+                    "The default shed tool config file (%s) has been added to the tool_config_file option, if this is "
+                    "not the desired behavior, please set shed_tool_config_file to your primary shed-enabled tool "
+                    "config file", self.config.shed_tool_config_file
+                )
+            self.config.tool_configs.append(self.config.shed_tool_config_file)
+            self.toolbox._init_tools_from_config(self.config.shed_tool_config_file)
         galaxy_root_dir = os.path.abspath(self.config.root)
         file_path = os.path.abspath(getattr(self.config, "file_path"))
         app_info = AppInfo(
