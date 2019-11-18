@@ -43,7 +43,9 @@ from galaxy.webapps.tool_shed.util.hgweb_config import HgWebConfigManager
 if sys.version_info > (3,):
     long = int
 
-logging.basicConfig(level='DEBUG')
+log = logging.getLogger()
+log.setLevel(logging.DEBUG)
+log.addHandler(logging.StreamHandler(sys.stdout))
 
 
 def parse_arguments():
@@ -61,9 +63,9 @@ def parse_arguments():
     args.whoosh_index_dir = config.whoosh_index_dir
     args.file_path = config.file_path
     if args.debug:
-        print('Full options:')
+        log.debug('Full options:')
         for i in vars(args).items():
-            print('%s: %s' % i)
+            log.debug('%s: %s' % i)
     return args
 
 
@@ -123,17 +125,16 @@ def build_index(whoosh_index_dir, file_path, hgweb_config_dir, dburi, **kwargs):
                                            repo_name=unicodify(repo.get('name')),
                                            repo_id=repo.get('id'))
             tools_indexed += 1
-            print(tools_indexed, 'tools (', tool.get('id'), ')')
+            # log.debug(str(tools_indexed) + 'tools (' + tool.get('id') + ')')
 
         repos_indexed += 1
-        print(repos_indexed, 'repos (', repo.get('name'), ')')
+        # log.debug(str(repos_indexed) + ' repos (' + repo.get('name') + ')')
 
     tool_index_writer.commit()
     repo_index_writer.commit()
 
-    print("Toolbox index finished %s", execution_timer)
-    print("TOTAL repos indexed: ", repos_indexed)
-    print("TOTAL tools indexed: ", tools_indexed)
+    log.debug("Indexed repos: %s, tools: %s", repos_indexed, tools_indexed)
+    log.debug("Toolbox index finished %s", execution_timer)
 
     # Copy the built indexes if we were working in a tmp folder.
     if work_repo_dir is not whoosh_index_dir:
