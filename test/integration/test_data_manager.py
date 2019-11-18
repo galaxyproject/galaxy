@@ -7,7 +7,7 @@ from nose.plugins.skip import SkipTest
 
 from .uses_shed import CONDA_AUTO_INSTALL_JOB_TIMEOUT, UsesShed
 
-FETCH_TOOL_ID = 'toolshed.g2.bx.psu.edu/repos/devteam/data_manager_fetch_genome_dbkeys_all_fasta/data_manager_fetch_genome_all_fasta_dbkey/0.0.2'
+FETCH_TOOL_ID = 'toolshed.g2.bx.psu.edu/repos/devteam/data_manager_fetch_genome_dbkeys_all_fasta/data_manager_fetch_genome_all_fasta_dbkey/0.0.3'
 FETCH_GENOME_DBKEYS_ALL_FASTA_INPUT = {
     "dbkey_source|dbkey_source_selector": "new",
     "dbkey_source|dbkey": "NC_001617.1",
@@ -18,7 +18,7 @@ FETCH_GENOME_DBKEYS_ALL_FASTA_INPUT = {
     "reference_source|user_url": "https://raw.githubusercontent.com/galaxyproject/galaxy-test-data/master/NC_001617.1.fasta",
     "sorting|sort_selector": "as_is"
 }
-SAM_FASTA_ID = "toolshed.g2.bx.psu.edu/repos/devteam/data_manager_sam_fasta_index_builder/sam_fasta_index_builder/0.0.2"
+SAM_FASTA_ID = "toolshed.g2.bx.psu.edu/repos/devteam/data_manager_sam_fasta_index_builder/sam_fasta_index_builder/0.0.3"
 SAM_FASTA_INPUT = {"all_fasta_source": "NC_001617.1", "sequence_name": "", "sequence_id": ""}
 DATA_MANAGER_MANUAL_ID = 'toolshed.g2.bx.psu.edu/repos/iuc/data_manager_manual/data_manager_manual/0.0.2'
 DATA_MANAGER_MANUAL_INPUT = {
@@ -61,8 +61,8 @@ class DataManagerIntegrationTestCase(integration_util.IntegrationTestCase, UsesS
         """
         Test that we can install data managers, create a new dbkey, and use that dbkey in a downstream data manager.
         """
-        self.install_repository("devteam", "data_manager_fetch_genome_dbkeys_all_fasta", "b1bc53e9bbc5")
-        self.install_repository("devteam", "data_manager_sam_fasta_index_builder", "406896e00d0e", 'https://testtoolshed.g2.bx.psu.edu')
+        self.install_repository("devteam", "data_manager_fetch_genome_dbkeys_all_fasta", "14eb0fc65c62")
+        self.install_repository("devteam", "data_manager_sam_fasta_index_builder", "cc4ef4d38cf9")
         with self._different_user(email="%s@galaxy.org" % self.username):
             with self.dataset_populator.test_history() as history_id:
                 run_response = self.dataset_populator.run_tool(tool_id=FETCH_TOOL_ID,

@@ -3,8 +3,11 @@ import shutil
 import string
 import tempfile
 
+import pytest
 from base.driver_util import FRAMEWORK_UPLOAD_TOOL_CONF
 from base.populators import DEFAULT_TIMEOUT
+
+from galaxy.util import unicodify
 
 # Needs a longer timeout because of the conda_auto_install.
 CONDA_AUTO_INSTALL_JOB_TIMEOUT = DEFAULT_TIMEOUT * 3
@@ -93,7 +96,12 @@ class UsesShed(object):
         return create_response.json()
 
     def install_repository(self, owner, name, changeset, tool_shed_url='https://toolshed.g2.bx.psu.edu'):
-        return self.repository_operation(operation=self.install_repo_request, owner=owner, name=name, changeset=changeset, tool_shed_url=tool_shed_url)
+        try:
+            return self.repository_operation(operation=self.install_repo_request, owner=owner, name=name, changeset=changeset, tool_shed_url=tool_shed_url)
+        except AssertionError as e:
+            if "Error attempting to retrieve installation information from tool shed" in unicodify(e):
+                pytest.skip("Toolshed '%s' unavailable" % tool_shed_url)
+            raise
 
     def uninstall_repository(self, owner, name, changeset, tool_shed_url='https://toolshed.g2.bx.psu.edu'):
         return self.repository_operation(operation=self.delete_repo_request, owner=owner, name=name, changeset=changeset, tool_shed_url=tool_shed_url)
