@@ -1,4 +1,5 @@
 import json
+
 import requests
 import six
 from social_core.actions import do_auth, do_complete, do_disconnect
@@ -112,7 +113,7 @@ class PSAAuthnz(IdentityProvider):
             self._setup_idp(oidc_backend_config)
 
         # Secondary AuthZ with Google identities is currently supported
-        if provider is not "google":
+        if provider != "google":
             del self.config["SOCIAL_AUTH_SECONDARY_AUTH_PROVIDER"]
             del self.config["SOCIAL_AUTH_SECONDARY_AUTH_ENDPOINT"]
 
