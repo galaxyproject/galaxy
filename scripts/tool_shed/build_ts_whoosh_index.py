@@ -44,7 +44,6 @@ if sys.version_info > (3,):
     long = int
 
 log = logging.getLogger()
-log.setLevel(logging.DEBUG)
 log.addHandler(logging.StreamHandler(sys.stdout))
 
 
@@ -63,6 +62,7 @@ def parse_arguments():
     args.whoosh_index_dir = config.whoosh_index_dir
     args.file_path = config.file_path
     if args.debug:
+        log.setLevel(logging.DEBUG)
         log.debug('Full options:')
         for i in vars(args).items():
             log.debug('%s: %s' % i)
@@ -133,8 +133,8 @@ def build_index(whoosh_index_dir, file_path, hgweb_config_dir, dburi, **kwargs):
     tool_index_writer.commit()
     repo_index_writer.commit()
 
-    log.debug("Indexed repos: %s, tools: %s", repos_indexed, tools_indexed)
-    log.debug("Toolbox index finished %s", execution_timer)
+    log.info("Indexed repos: %s, tools: %s", repos_indexed, tools_indexed)
+    log.info("Toolbox index finished %s", execution_timer)
 
     # Copy the built indexes if we were working in a tmp folder.
     if work_repo_dir is not whoosh_index_dir:
