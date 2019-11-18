@@ -32,12 +32,10 @@ from galaxy.webapps.base.controller import (
     BaseAPIController,
     HTTPBadRequest
 )
-from tool_shed.capsule import capsule_manager
 from tool_shed.dependencies import attribute_handlers
 from tool_shed.metadata import repository_metadata_manager
 from tool_shed.repository_types import util as rt_util
 from tool_shed.util import (
-    basic_util,
     commit_util,
     encoding_util,
     hg_util,
@@ -278,87 +276,6 @@ class RepositoriesController(BaseAPIController):
                         'repository_id': trans.security.encode_id,
                         'user_id': trans.security.encode_id}
         return value_mapper
-
-    @web.legacy_expose_api
-    def import_capsule(self, trans, payload, **kwd):
-        """
-        POST /api/repositories/new/import_capsule
-        Import a repository capsule into the Tool Shed.
-
-        :param key: the user's API key
-
-        The following parameters are included in the payload.
-        :param tool_shed_url (required): the base URL of the Tool Shed into which the capsule should be imported.
-        :param capsule_file_name (required): the name of the capsule file.
-        """
-        # Get the information about the capsule to be imported from the payload.
-        tool_shed_url = payload.get('tool_shed_url', '')
-        if not tool_shed_url:
-            raise HTTPBadRequest(detail="Missing required parameter 'tool_shed_url'.")
-        capsule_file_name = payload.get('capsule_file_name', '')
-        if not capsule_file_name:
-            raise HTTPBadRequest(detail="Missing required parameter 'capsule_file_name'.")
-        capsule_file_path = os.path.abspath(capsule_file_name)
-        capsule_dict = dict(error_message='',
-                            encoded_file_path=None,
-                            status='ok',
-                            tar_archive=None,
-                            uploaded_file=None,
-                            capsule_file_name=None)
-        if os.path.getsize(os.path.abspath(capsule_file_name)) == 0:
-            log.debug('Your capsule file %s is empty.' % str(capsule_file_name))
-            return {}
-        try:
-            # Open for reading with transparent compression.
-            tar_archive = tarfile.open(capsule_file_path, 'r:*')
-        except tarfile.ReadError as e:
-            log.debug('Error opening capsule file %s: %s', capsule_file_name, util.unicodify(e))
-            return {}
-        irm = capsule_manager.ImportRepositoryManager(self.app,
-                                                      trans.request.host,
-                                                      trans.user,
-                                                      trans.user_is_admin)
-        capsule_dict['tar_archive'] = tar_archive
-        capsule_dict['capsule_file_name'] = capsule_file_name
-        capsule_dict = irm.extract_capsule_files(**capsule_dict)
-        capsule_dict = irm.validate_capsule(**capsule_dict)
-        status = capsule_dict.get('status', 'error')
-        if status == 'error':
-            log.debug('The capsule contents are invalid and cannot be imported:<br/>%s' %
-                      str(capsule_dict.get('error_message', '')))
-            return {}
-        encoded_file_path = capsule_dict.get('encoded_file_path', None)
-        if encoded_file_path is None:
-            log.debug('The capsule_dict %s is missing the required encoded_file_path entry.' % str(capsule_dict))
-            return {}
-        file_path = encoding_util.tool_shed_decode(encoded_file_path)
-        manifest_file_path = os.path.join(file_path, 'manifest.xml')
-        # The manifest.xml file has already been validated, so no error_message should be returned here.
-        repository_info_dicts, error_message = irm.get_repository_info_from_manifest(manifest_file_path)
-        # Determine the status for each exported repository archive contained within the capsule.
-        repository_status_info_dicts = irm.get_repository_status_from_tool_shed(repository_info_dicts)
-        # Generate a list of repository name / import results message tuples for display after the capsule is imported.
-        import_results_tups = []
-        # Only create repositories that do not yet exist and that the current user is authorized to create.  The
-        # status will be None for repositories that fall into the intersection of these 2 categories.
-        for repository_status_info_dict in repository_status_info_dicts:
-            # Add the capsule_file_name and encoded_file_path to the repository_status_info_dict.
-            repository_status_info_dict['capsule_file_name'] = capsule_file_name
-            repository_status_info_dict['encoded_file_path'] = encoded_file_path
-            import_results_tups = irm.create_repository_and_import_archive(repository_status_info_dict,
-                                                                           import_results_tups)
-        irm.check_status_and_reset_downloadable(import_results_tups)
-        basic_util.remove_dir(file_path)
-        # NOTE: the order of installation is defined in import_results_tups, but order will be lost
-        # when transferred to return_dict.
-        return_dict = {}
-        for import_results_tup in import_results_tups:
-            ok, name_owner, message = import_results_tup
-            name, owner = name_owner
-            key = 'Archive of repository "%s" owned by "%s"' % (str(name), str(owner))
-            val = message.replace('<b>', '"').replace('</b>', '"')
-            return_dict[key] = val
-        return return_dict
 
     @expose_api_raw_anonymous_and_sessionless
     def index(self, trans, deleted=False, owner=None, name=None, **kwd):
