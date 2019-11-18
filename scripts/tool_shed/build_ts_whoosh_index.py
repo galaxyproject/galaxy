@@ -29,6 +29,7 @@ import galaxy.webapps.tool_shed.model.mapping as ts_mapping
 from galaxy.tool_util.loader_directory import load_tool_elements_from_path
 from galaxy.util import (
     directory_hash_id,
+    ExecutionTimer,
     pretty_print_time_interval,
     unicodify
 )
@@ -95,6 +96,7 @@ def build_index(whoosh_index_dir, file_path, hgweb_config_dir, dburi, **kwargs):
     repos_indexed = 0
     tools_indexed = 0
 
+    execution_timer = ExecutionTimer()
     for repo in get_repos(sa_session, file_path, hgweb_config_dir, **kwargs):
 
         repo_index_writer.add_document(id=repo.get('id'),
@@ -128,6 +130,8 @@ def build_index(whoosh_index_dir, file_path, hgweb_config_dir, dburi, **kwargs):
 
     tool_index_writer.commit()
     repo_index_writer.commit()
+
+    print("Toolbox index finished %s", execution_timer)
     print("TOTAL repos indexed: ", repos_indexed)
     print("TOTAL tools indexed: ", tools_indexed)
 
