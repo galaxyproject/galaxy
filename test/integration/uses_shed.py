@@ -3,8 +3,11 @@ import shutil
 import string
 import tempfile
 
+import pytest
 from galaxy_test.base.populators import DEFAULT_TIMEOUT
 from galaxy_test.driver.driver_util import FRAMEWORK_UPLOAD_TOOL_CONF
+
+from galaxy.util import unicodify
 
 # Needs a longer timeout because of the conda_auto_install.
 CONDA_AUTO_INSTALL_JOB_TIMEOUT = DEFAULT_TIMEOUT * 3
@@ -34,7 +37,8 @@ class UsesShed(object):
         cls._test_driver.temp_directories.extend([cls.shed_tool_data_dir, cls.shed_tools_dir])
         shed_tool_config = os.path.join(cls.shed_tools_dir, 'shed_tool_conf.xml')
         config["tool_sheds_config_file"] = TOOL_SHEDS_CONF
-        config["tool_config_file"] = "%s,%s" % (FRAMEWORK_UPLOAD_TOOL_CONF, shed_tool_config)
+        config["tool_config_file"] = FRAMEWORK_UPLOAD_TOOL_CONF
+        config["shed_tool_config_file"] = shed_tool_config
         config["shed_data_manager_config_file"] = os.path.join(cls.shed_tool_data_dir, 'shed_data_manager_config_file')
         config["shed_tool_data_table_config"] = os.path.join(cls.shed_tool_data_dir, 'shed_data_table_conf.xml')
         config["shed_tool_data_path"] = cls.shed_tool_data_dir
@@ -55,7 +59,7 @@ class UsesShed(object):
         config["conda_prefix"] = os.environ.get('GALAXY_TEST_CONDA_PREFIX') or os.path.join(cls.conda_tmp_prefix, 'conda')
 
     def reset_shed_tools(self):
-        shutil.rmtree(self._app.config.shed_tools_dir)
+        shutil.rmtree(self._app.config.shed_tools_dir, ignore_errors=True)
         os.makedirs(self._app.config.shed_tools_dir)
         with open(self._app.config.shed_tool_config_file, "w") as tool_conf_file:
             tool_conf_file.write(SHED_TOOL_CONF.substitute(shed_tools_path=self._app.config.shed_tools_dir))
@@ -92,7 +96,12 @@ class UsesShed(object):
         return create_response.json()
 
     def install_repository(self, owner, name, changeset, tool_shed_url='https://toolshed.g2.bx.psu.edu'):
-        return self.repository_operation(operation=self.install_repo_request, owner=owner, name=name, changeset=changeset, tool_shed_url=tool_shed_url)
+        try:
+            return self.repository_operation(operation=self.install_repo_request, owner=owner, name=name, changeset=changeset, tool_shed_url=tool_shed_url)
+        except AssertionError as e:
+            if "Error attempting to retrieve installation information from tool shed" in unicodify(e):
+                pytest.skip("Toolshed '%s' unavailable" % tool_shed_url)
+            raise
 
     def uninstall_repository(self, owner, name, changeset, tool_shed_url='https://toolshed.g2.bx.psu.edu'):
         return self.repository_operation(operation=self.delete_repo_request, owner=owner, name=name, changeset=changeset, tool_shed_url=tool_shed_url)
