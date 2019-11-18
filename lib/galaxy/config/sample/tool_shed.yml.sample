@@ -78,9 +78,9 @@ uwsgi:
   # Ensure application threads will run if `threads` is unset.
   enable-threads: true
 
-  # The uwsgi-CRON driven task for rebuilding Toolshed search indexes.
-  # Override or remove if you want a finer control over these jobs.
-  cron: 0 -1 -1 -1 -1 python scripts/tool_shed/build_ts_whoosh_index.py -c config/tool_shed.yml --config-section tool_shed -d
+  # Task for rebuilding Toolshed search indexes using the uWSGI cron-
+  # like interface.
+  cron: 0 -1 -1 -1 -1 python scripts/tool_shed/build_ts_whoosh_index.py -c config/tool_shed.yml --config-section tool_shed
 
 tool_shed:
 

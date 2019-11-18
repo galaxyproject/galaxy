@@ -184,7 +184,7 @@ UWSGI_OPTIONS = OrderedDict([
 ])
 
 SHED_ONLY_UWSGI_OPTIONS = [('cron', {
-    'desc': """The uwsgi-CRON driven task for rebuilding Toolshed search indexes. Override or remove if you want a finer control over these jobs.""",
+    'desc': """Task for rebuilding Toolshed search indexes using the uWSGI cron-like interface.""",
     'default': "0 -1 -1 -1 -1 python scripts/tool_shed/build_ts_whoosh_index.py -c config/tool_shed.yml --config-section tool_shed",
     'type': 'str',
 })]
