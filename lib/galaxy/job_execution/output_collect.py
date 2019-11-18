@@ -377,6 +377,7 @@ def collect_primary_datasets(job_context, output, input_ext):
             designation = fields_match.designation
             if filename_index == 0 and extra_file_collector.assign_primary_output and output_index == 0:
                 new_outdata_name = fields_match.name or "%s (%s)" % (outdata.name, designation)
+                outdata.dataset.external_filename = None  # resets filename_override
                 # Move data from temp location to dataset location
                 job_context.object_store.update_from_file(outdata.dataset, file_name=filename, create=True)
                 primary_output_assigned = True

@@ -127,10 +127,10 @@ class LegacyToolProvidedMetadata(BaseToolProvidedMetadata):
                             log.warning('(%s) Tool provided job dataset-specific metadata without specifying a dataset' % job_wrapper.job_id)
                             continue
                     else:
-                        match = re.match(r'dataset_(.*)\.dat', dataset_basename)
+                        match = re.match(r'(galaxy_)?dataset_(.*)\.dat', dataset_basename)
                         if match is None:
                             raise Exception("processing tool_provided_metadata (e.g. galaxy.json) entry with invalid dataset name [%s]" % dataset_basename)
-                        dataset_id = match.group(1)
+                        dataset_id = match.group(2)
                         if dataset_id.isdigit():
                             line['dataset_id'] = dataset_id
                         else:
