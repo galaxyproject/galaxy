@@ -225,6 +225,12 @@ class UniProtXML(ProteomicsXml):
     root = "uniprot"
 
 
+class XquestXML(ProteomicsXml):
+    file_ext = "xquest.xml"
+    blurb = "XQuest XML file"
+    root = "xquest_results"
+
+
 class Mgf(Text):
     """Mascot Generic Format data"""
     edam_data = "data_2536"
