@@ -240,6 +240,7 @@ class ToolShedRepositoriesController(BaseAPIController):
                     'changeset_revision': Changeset revision to uninstall
                     'tool_shed_url'     : Tool Shed URL
         """
+        remove_from_disk = util.asbool(kwd.get('remove_from_disk', True))
         if id:
             try:
                 repository = get_tool_shed_repository_by_id(self.app, id)
@@ -259,9 +260,9 @@ class ToolShedRepositoriesController(BaseAPIController):
             if not repository:
                 raise HTTPBadRequest(detail="Repository not found")
         irm = InstalledRepositoryManager(app=self.app)
-        errors = irm.uninstall_repository(repository=repository, remove_from_disk=kwd.get('remove_from_disk', True))
+        errors = irm.uninstall_repository(repository=repository, remove_from_disk=remove_from_disk)
         if not errors:
-            action = 'removed' if kwd.get('remove_from_disk', True) else 'deactivated'
+            action = 'removed' if remove_from_disk else 'deactivated'
             return {'message': 'The repository named %s has been %s.' % (repository.name, action)}
         else:
             raise Exception('Attempting to uninstall tool dependencies for repository named %s resulted in errors: %s' % (repository.name, errors))

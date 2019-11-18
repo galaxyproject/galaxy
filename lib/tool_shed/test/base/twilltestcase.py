@@ -12,6 +12,7 @@ from xml.etree import ElementTree
 # Be sure to use Galaxy's vanilla pyparsing instead of the older version
 # imported by twill.
 import pyparsing  # noqa: F401
+import requests
 import twill
 import twill.commands as tc
 from mercurial import commands, hg, ui
@@ -28,6 +29,7 @@ import galaxy.util
 import tool_shed.webapp.util.hgweb_config
 from galaxy.security import idencoding
 from galaxy.util import smart_str, unicodify
+from galaxy_test.base.api_util import get_master_api_key
 from galaxy_test.driver.testcase import FunctionalTestCase
 from tool_shed.util import hg_util, xml_util
 from . import common, test_db_util
@@ -714,16 +716,10 @@ class ShedTwillTestCase(FunctionalTestCase):
         self.visit_galaxy_url('/user/create', params=params, allowed_codes=[200, 400])
 
     def deactivate_repository(self, installed_repository, strings_displayed=None, strings_not_displayed=None):
-        params = {
-            'id': self.security.encode_id(installed_repository.id)
-        }
-        self.visit_galaxy_url('/admin_toolshed/deactivate_or_uninstall_repository', params=params)
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-        form = tc.browser.get_form('deactivate_or_uninstall_repository')
-        self.set_form_value(form, {}, 'remove_from_disk', False)
-        tc.submit('deactivate_or_uninstall_repository_button')
-        strings_displayed = ['The repository named', 'has been deactivated']
-        self.check_for_strings(strings_displayed, strings_not_displayed=None)
+        encoded_id = self.security.encode_id(installed_repository.id)
+        api_key = get_master_api_key()
+        response = requests.delete(self.galaxy_url + "/api/tool_shed_repositories/" + encoded_id, data={'remove_from_disk': False, 'key': api_key})
+        assert response.status_code != 403, response.content
 
     def delete_files_from_repository(self, repository, filenames=[], strings_displayed=['were deleted from the repository'], strings_not_displayed=None):
         files_to_delete = []
@@ -1238,34 +1234,6 @@ class ShedTwillTestCase(FunctionalTestCase):
             self.visit_galaxy_url('/admin_toolshed/install_repositories', params=params)
             return galaxy.util.listify(repository_ids)
 
-    def install_repositories_from_search_results(self, repositories, install_tool_dependencies=False,
-                                                 strings_displayed=None, strings_not_displayed=None, **kwd):
-        '''
-        Normally, it would be possible to check the appropriate boxes in the search results, and click the install button. This works
-        in a browser, but Twill manages to lose the 'toolshedgalaxyurl' cookie between one page and the next, so it's necessary to work
-        around this by explicitly visiting the prepare_for_install method on the Galaxy side.
-        '''
-        params = {
-            'tool_shed_url': self.url,
-            'repository_ids': ','.join(self.security.encode_id(repository.id) for repository in repositories),
-            'changeset_revisions': ','.join(self.get_repository_tip(repository) for repository in repositories)
-        }
-        self.visit_galaxy_url('/admin_toolshed/prepare_for_install', params=params)
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-        if 'install_tool_dependencies' in self.last_page():
-            form = tc.browser.get_form('select_tool_panel_section')
-            checkbox = form.find_control(id="install_tool_dependencies")
-            checkbox.disabled = False
-            if install_tool_dependencies:
-                checkbox.selected = True
-                kwd['install_tool_dependencies'] = 'True'
-            else:
-                checkbox.selected = False
-                kwd['install_tool_dependencies'] = 'False'
-        self.submit_form(1, 'select_tool_panel_section_button', **kwd)
-        repository_ids = self.initiate_installation_process()
-        self.wait_for_repository_installation(repository_ids)
-
     def install_repository(self, name, owner, category_name, install_resolver_dependencies=False, install_tool_dependencies=False,
                            install_repository_dependencies=True, changeset_revision=None,
                            strings_displayed=None, strings_not_displayed=None, preview_strings_displayed=None,
@@ -1459,11 +1427,10 @@ class ShedTwillTestCase(FunctionalTestCase):
         return tip_ctx.rev() < 0
 
     def reset_installed_repository_metadata(self, repository):
-        params = {
-            'id': self.security.encode_id(repository.id)
-        }
-        self.visit_galaxy_url('/admin_toolshed/reset_repository_metadata', params=params)
-        self.check_for_strings(['Metadata has been reset'])
+        encoded_id = self.security.encode_id(repository.id)
+        api_key = get_master_api_key()
+        response = requests.post(self.galaxy_url + "/api/tool_shed_repositories/reset_metadata_on_selected_installed_repositories", data={'repository_ids': [encoded_id], 'key': api_key})
+        assert response.status_code != 403, response.content
 
     def reset_metadata_on_selected_repositories(self, repository_ids):
         self.visit_url('/admin/reset_metadata_on_selected_repositories_in_tool_shed')
@@ -1471,9 +1438,9 @@ class ShedTwillTestCase(FunctionalTestCase):
         self.submit_form(form_no=1, button="reset_metadata_on_selected_repositories_button", **kwd)
 
     def reset_metadata_on_selected_installed_repositories(self, repository_ids):
-        self.visit_galaxy_url('/admin_toolshed/reset_metadata_on_selected_installed_repositories')
-        kwd = dict(repository_ids=repository_ids)
-        self.submit_form(form_no=1, button="reset_metadata_on_selected_repositories_button", **kwd)
+        api_key = get_master_api_key()
+        response = requests.post(self.galaxy_url + "/api/tool_shed_repositories/reset_metadata_on_selected_installed_repositories", data={'repository_ids': repository_ids, 'key': api_key})
+        assert response.status_code != 403, response.content
 
     def reset_repository_metadata(self, repository):
         params = {
@@ -1597,16 +1564,10 @@ class ShedTwillTestCase(FunctionalTestCase):
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def uninstall_repository(self, installed_repository, strings_displayed=None, strings_not_displayed=None):
-        params = {
-            'id': self.security.encode_id(installed_repository.id)
-        }
-        self.visit_galaxy_url('/admin_toolshed/deactivate_or_uninstall_repository', params=params)
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-        form = tc.browser.get_form('deactivate_or_uninstall_repository')
-        self.set_form_value(form, {}, 'remove_from_disk', True)
-        tc.submit('deactivate_or_uninstall_repository_button')
-        strings_displayed = ['The repository named', 'has been uninstalled']
-        self.check_for_strings(strings_displayed, strings_not_displayed=None)
+        encoded_id = self.security.encode_id(installed_repository.id)
+        api_key = get_master_api_key()
+        response = requests.delete(self.galaxy_url + "/api/tool_shed_repositories/" + encoded_id, data={'remove_from_disk': True, 'key': api_key})
+        assert response.status_code != 403, response.content
 
     def update_installed_repository(self, installed_repository, strings_displayed=None, strings_not_displayed=None):
         params = {
