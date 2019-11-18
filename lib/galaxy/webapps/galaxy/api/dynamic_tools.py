@@ -57,7 +57,7 @@ class DynamicToolsController(BaseAPIController):
         :param uuid: the uuid to associate with the tool being created
         """
         dynamic_tool = self.app.dynamic_tools_manager.create_tool(
-            payload
+            trans, payload, allow_load=util.asbool(kwd.get("allow_load", True))
         )
         return dynamic_tool.to_dict()
 
