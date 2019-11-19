@@ -1,6 +1,7 @@
 """
 Classes encapsulating galaxy tools and tool configuration.
 """
+import itertools
 import json
 import logging
 import os
@@ -934,11 +935,9 @@ class Tool(Dictifiable):
 
         if getattr(self, 'tool_shed', None):
             tool_dir = Path(self.tool_dir)
-            if tool_dir.parts[-1] == self.repository_name:
-                return str(tool_dir)
-            for parent in tool_dir.parents:
-                if parent.stem == self.repository_name:
-                    return str(tool_dir)
+            for repo_dir in itertools.chain([tool_dir], tool_dir.parents):
+                if repo_dir.stem == self.repository_name:
+                    return str(repo_dir)
             else:
                 log.error("Problem finding repository dir for tool [%s]" % self.id)
 
