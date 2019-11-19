@@ -3,10 +3,11 @@
     <requirements>
         <requirement type="package" version="8.30">coreutils</requirement>
     </requirements>
-  <command detect_errors="exit_code">$__tool_directory__/../amp_json_schema/kaldi_local_to_schema.py $input $kalid_out $json_out</command>
+  <command detect_errors="exit_code">$__tool_directory__/../amp_json_schema/kaldi_local_to_schema.py $input $kalid_out $kalid_trans_out $json_out</command>
    <inputs>
    <!-- should be wave data type -->
     <param name="input" type="data" format="audio" label="From dataset" help="An audio file"/>
+    <param name="kalid_trans_out" type="data" format="txt" label="Transcript from Kaldi" help="An text file"/>
     <param name="kalid_out" type="data" format="json" label="From Kaldi" help="Output from Kaldi"/>
   </inputs>
   <outputs>

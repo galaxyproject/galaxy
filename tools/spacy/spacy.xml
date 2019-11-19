@@ -1,0 +1,21 @@
+<tool id="spacy-nlp" name="spaCy Natural Language Processing" version="1.0.0">
+  <description>Natural Language Processing</description>
+    <requirements>
+    </requirements>
+  <command detect_errors="exit_code">$__tool_directory__/spacy_wrapper.py $input $json_out</command>
+   <inputs>
+   <!-- should be wave data type -->
+    <param name="input" type="data" format="txt" label="From transcript" help="An transcript file"/>
+  </inputs>
+  <outputs>
+    <data format="json" name="json_out" />
+  </outputs>
+  <tests>
+  </tests>
+  <help>
+.. class:: infomark
+
+NLP
+
+  </help>
+</tool>

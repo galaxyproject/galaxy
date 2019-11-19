@@ -28,6 +28,9 @@
     <tool file="ina_speech_segmenter/remove_silence_music_speech.xml"/>
     <tool file="amp_json_schema/adjust_timestamps.xml"/>
   </section>
+  <section id="nlp" name="Natural Language Processing">
+    <tool file="spacy/spacy.xml"/>
+  </section>
   <section id="collection_operations" name="Collection Operations">
     <tool file="${model_tools_path}/unzip_collection.xml" labels="new" />
     <tool file="${model_tools_path}/zip_collection.xml" labels="new" />

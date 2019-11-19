@@ -7,13 +7,17 @@ from speech_to_text_schema import SpeechToText, SpeechToTextMedia, SpeechToTextR
 
 # Convert kaldi output to standardized json
 def main():
-	(media_file, kaldi_file, output_json_file) = sys.argv[1:4]
+	(media_file, kaldi_file, kaldi_transcript_file, output_json_file) = sys.argv[1:5]
+
+	result = SpeechToTextResult()
 
 	# Open the kaldi json
 	with open(kaldi_file) as json_file:
 		data = json.load(json_file)
 
-	result = SpeechToTextResult()
+	transcript = open(kaldi_transcript_file, "r")
+	
+	result.transcript = transcript.read()
 
 	# Get a list of words
 	words = data["words"]
