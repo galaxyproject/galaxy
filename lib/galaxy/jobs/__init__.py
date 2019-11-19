@@ -1342,22 +1342,25 @@ class JobWrapper(HasResourceParameters):
             log.warning("(%s) Ignoring state change from '%s' to '%s' for job "
                         "that is already terminal", job.id, job.state, state)
             return
-        for dataset_assoc in job.output_datasets + job.output_library_datasets:
-            dataset = dataset_assoc.dataset
-            if not job_supplied:
-                self.sa_session.refresh(dataset)
-            state_changed = dataset.raw_set_dataset_state(state)
-            if state_changed:
-                # Arguably a hack to get state changes to appear in the history panel because
-                # the history panel polls on hda.update_time and ignores hda.dataset.update_time.
-                # For those less pragmatic needing a more theoretically sound reason for the update,
-                # perhaps arguments can be made that the entity that is the HDA
-                # really should be described as updated since its effective state did change and its
-                # RESTful representation in the API does change as a result of the above dataset update.
-                dataset.update()
-            if info:
-                dataset.info = info
-            self.sa_session.add(dataset)
+
+        # Intentially breaking stuff. We are not updating any dataset states. A test must surely fail... 
+        #for dataset_assoc in job.output_datasets + job.output_library_datasets:
+        #    dataset = dataset_assoc.dataset
+        #    if not job_supplied:
+        #        self.sa_session.refresh(dataset)
+        #    state_changed = dataset.raw_set_dataset_state(state)
+        #    if state_changed:
+        #        # Arguably a hack to get state changes to appear in the history panel because
+        #        # the history panel polls on hda.update_time and ignores hda.dataset.update_time.
+        #        # For those less pragmatic needing a more theoretically sound reason for the update,
+        #        # perhaps arguments can be made that the entity that is the HDA
+        #        # really should be described as updated since its effective state did change and its
+        #        # RESTful representation in the API does change as a result of the above dataset update.
+        #        dataset.update()
+        #    if info:
+        #        dataset.info = info
+        #    self.sa_session.add(dataset)
+
         if info:
             job.info = info
         job.set_state(state)
