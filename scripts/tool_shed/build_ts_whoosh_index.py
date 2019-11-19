@@ -4,7 +4,7 @@ Run this script from the root folder, example:
 
 $ python scripts/tool_shed/build_ts_whoosh_index.py -c config/tool_shed.yml
 
-Make sure you adjusted your Toolshed config to:
+Make sure you adjust your Toolshed config to:
  * turn on searching with "toolshed_search_on"
  * specify "whoosh_index_dir" where the indexes will be placed
 
@@ -125,10 +125,8 @@ def build_index(whoosh_index_dir, file_path, hgweb_config_dir, dburi, **kwargs):
                                            repo_name=unicodify(repo.get('name')),
                                            repo_id=repo.get('id'))
             tools_indexed += 1
-            # log.debug(str(tools_indexed) + 'tools (' + tool.get('id') + ')')
 
         repos_indexed += 1
-        # log.debug(str(repos_indexed) + ' repos (' + repo.get('name') + ')')
 
     tool_index_writer.commit()
     repo_index_writer.commit()
