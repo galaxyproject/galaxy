@@ -1570,6 +1570,25 @@ class MzSQlite(SQlite):
         return False
 
 
+class PQP(SQlite):
+    """Class describing a Peptide query parameters file"""
+    file_ext = "pqp"
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        super(PQP, self).set_meta(dataset, overwrite=overwrite, **kwd)
+
+    def sniff(self, filename):
+        """
+        table definition according to https://github.com/grosenberger/OpenMS/blob/develop/src/openms/source/ANALYSIS/OPENSWATH/TransitionPQPFile.cpp#L264
+        for now VERSION GENE PEPTIDE_GENE_MAPPING are excluded, since
+        there is test data wo these tables, see also here https://github.com/OpenMS/OpenMS/issues/4365
+        """
+        table_names = ['COMPOUND', 'PEPTIDE', 'PEPTIDE_PROTEIN_MAPPING', 'PRECURSOR',
+                       'PRECURSOR_COMPOUND_MAPPING', 'PRECURSOR_PEPTIDE_MAPPING', 'PROTEIN',
+                       'TRANSITION', 'TRANSITION_PEPTIDE_MAPPING', 'TRANSITION_PRECURSOR_MAPPING']
+        return super(PQP, self).sniff(filename) and self.sniff_table_names(filename, table_names)
+
+
 class BlibSQlite(SQlite):
     """Class describing a Proteomics Spectral Library Sqlite database """
     MetadataElement(name="blib_version", default='1.8', param=MetadataParameter, desc="Blib Version",
