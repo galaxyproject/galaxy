@@ -102,7 +102,10 @@ def _get_uwsgi_args(cliargs, kwargs):
     }
     __add_config_file_arg(args, config_file, cliargs.app)
     if not __arg_set('module', uwsgi_kwargs):
-        __add_arg(args, 'module', 'galaxy.webapps.{app}.buildapp:uwsgi_app()'.format(app=cliargs.app))
+        if cliargs.app in ["tool_shed"]:
+            __add_arg(args, 'module', 'tool_shed.webapp.buildapp:uwsgi_app()')
+        else:
+            __add_arg(args, 'module', 'galaxy.webapps.{app}.buildapp:uwsgi_app()'.format(app=cliargs.app))
     # only include virtualenv if it's set/exists, otherwise this breaks conda-env'd Galaxy
     if not __arg_set('virtualenv', uwsgi_kwargs) and ('VIRTUAL_ENV' in os.environ or os.path.exists('.venv')):
         __add_arg(args, 'virtualenv', os.environ.get('VIRTUAL_ENV', '.venv'))
