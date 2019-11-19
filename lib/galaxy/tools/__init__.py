@@ -937,8 +937,8 @@ class Tool(Dictifiable):
             if tool_dir.parts[-1] == self.repository_name:
                 return str(tool_dir)
             for parent in tool_dir.parents:
-                if parent.parts[-1] == self.repository_name:
-                    return str(parent)
+                if parent.stem == self.repository_name:
+                    return str(tool_dir)
             else:
                 log.error("Problem finding repository dir for tool [%s]" % self.id)
 
