@@ -90,7 +90,7 @@ class ConfigSerializer(base.ModelSerializer):
             'registration_warning_message'      : _defaults_to(None),
             'welcome_url'                       : _defaults_to(None),
             'show_welcome_with_login'           : _defaults_to(True),
-            'python'                            : _defaults_to(list(sys.version_info)),
+            'python'                            : _defaults_to((sys.version_info.major, sys.version_info.minor)),
         }
 
 
