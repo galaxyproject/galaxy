@@ -8,6 +8,7 @@ Used by both the API and bootstrapped data.
 #   but doesn't have a model like them. It might be better in config.py or a
 #   totally new area, but I'm leaving it in managers for now for class consistency.
 import logging
+import sys
 
 from galaxy.managers import base
 from galaxy.web.framework.base import server_starttime
@@ -89,6 +90,7 @@ class ConfigSerializer(base.ModelSerializer):
             'registration_warning_message'      : _defaults_to(None),
             'welcome_url'                       : _defaults_to(None),
             'show_welcome_with_login'           : _defaults_to(True),
+            'python'                            : _defaults_to(list(sys.version_info)),
         }
 
 
