@@ -1426,11 +1426,14 @@ input1:
 class: GalaxyWorkflow
 inputs:
   input1: data
+  text_input: text
 outputs:
   wf_output_1:
     outputSource: input1
+  wf_output_param:
+    outputSource: text_input
 steps: []
-""", test_data={"input1": "hello world"}, history_id=history_id)
+""", test_data={"input1": "hello world", "text_input": {"value": "A text variable", "type": "raw"}}, history_id=history_id)
             workflow_id = summary.workflow_id
             invocation_id = summary.invocation_id
             invocation_response = self._get("workflows/%s/invocations/%s" % (workflow_id, invocation_id))
@@ -1439,6 +1442,9 @@ steps: []
             self._assert_has_keys(invocation , "id", "outputs", "output_collections")
             assert len(invocation["output_collections"]) == 0
             assert len(invocation["outputs"]) == 1
+            assert len(invocation["output_values"]) == 1
+            assert "wf_output_param" in invocation["output_values"]
+            assert invocation["output_values"]["wf_output_param"] == "A text variable", invocation["output_values"]
             output_content = self.dataset_populator.get_history_dataset_content(history_id, content_id=invocation["outputs"]["wf_output_1"]["id"])
             assert output_content == "hello world\n"
 
