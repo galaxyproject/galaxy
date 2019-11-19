@@ -78,7 +78,11 @@ class TestRepositoryInstallIntegrationTestCase(integration_util.IntegrationTestC
             shed_text = shed_config.read().replace(REVISION_4, REVISION_3)
         with open(self._app.config.shed_tool_config_file, 'w') as shed_config:
             shed_config.write(shed_text)
-        self._get('/api/tool_shed_repositories/check_for_updates', data={'id': response['id']}).json()
+        self._get(
+            '/api/tool_shed_repositories/check_for_updates',
+            data={'id': response['id']},
+            admin=True
+        ).json()
         # At this point things should look like there is minor update available
         repo_response = self._get("/api/tool_shed_repositories/%s" % response['id']).json()
         assert repo_response['tool_shed_status']['revision_update'] == 'True'

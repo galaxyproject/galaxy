@@ -4,10 +4,11 @@ import string
 import tempfile
 
 import pytest
+
+from galaxy.util import unicodify
 from galaxy_test.base.populators import DEFAULT_TIMEOUT
 from galaxy_test.driver.driver_util import FRAMEWORK_UPLOAD_TOOL_CONF
 
-from galaxy.util import unicodify
 
 # Needs a longer timeout because of the conda_auto_install.
 CONDA_AUTO_INSTALL_JOB_TIMEOUT = DEFAULT_TIMEOUT * 3
