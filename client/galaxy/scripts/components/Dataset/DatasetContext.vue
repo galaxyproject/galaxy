@@ -1,7 +1,5 @@
 <template>
     <div>
-        <span v-if="isError" class="fa fa-times-circle text-danger mr-1" />
-        <span v-if="isPaused" class="fa fa-pause text-info mr-1" />
         <b-button
             data-toggle="dropdown"
             id="dataset-name"
@@ -12,7 +10,7 @@
             class="dataset-add btn-sm btn-primary fa fa-gear"
         />
         <div class="dropdown-menu" aria-labelledby="dataset-name">
-            <a class="dropdown-item" href="#" @click="addToHistory">Copy dataset to current history</a>
+            <a class="dropdown-item" href="#" @click="addToHistory">Copy to History</a>
         </div>
     </div>
 </template>
@@ -31,14 +29,6 @@ export default {
     created() {
         this.root = getAppRoot();
         this.services = new Services({ root: this.root });
-    },
-    computed: {
-        isError() {
-            return this.item.state === "error";
-        },
-        isPaused() {
-            return this.item.state === "paused";
-        }
     },
     methods: {
         addToHistory() {
