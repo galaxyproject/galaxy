@@ -136,7 +136,7 @@ export default {
                     history.loadCurrentHistory();
                 })
                 .catch(error => {
-                    this.$emit("error", error);
+                    this.onError(error);
                 });
         },
         onShowDataset(item) {
@@ -147,7 +147,7 @@ export default {
                     Galaxy.currHistoryPanel.loadCurrentHistory();
                 })
                 .catch(error => {
-                    this.error = error;
+                    this.onError(error);
                 });
         },
         onTags(item) {
