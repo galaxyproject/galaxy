@@ -164,7 +164,7 @@ class ProteomicsXml(GenericXml):
         """ Determines whether the file is the correct XML type. """
         contents = file_prefix.string_io()
         while True:
-            line = contents.readline()
+            line = contents.readline().strip()
             if line is None or not line.startswith('<?'):
                 break
         # pattern match <root or <ns:root for any ns string
