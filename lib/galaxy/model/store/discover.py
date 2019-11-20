@@ -8,7 +8,10 @@ corresponding to files in other contexts.
 import abc
 import logging
 import os
-from collections import namedtuple
+from collections import (
+    namedtuple,
+    OrderedDict
+)
 
 import six
 
@@ -19,8 +22,7 @@ from galaxy.exceptions import (
 )
 from galaxy.model.dataset_collections import builder
 from galaxy.util import (
-    ExecutionTimer,
-    odict
+    ExecutionTimer
 )
 from galaxy.util.hash_util import HASH_NAME_MAP
 
@@ -55,6 +57,7 @@ class ModelPersistenceContext(object):
         tag_list=[],
         sources=[],
         hashes=[],
+        created_from_basename=None,
     ):
         sa_session = self.sa_session
 
@@ -115,6 +118,9 @@ class ModelPersistenceContext(object):
             hash_object.hash_function = hash_dict["hash_function"]
             hash_object.hash_value = hash_dict["hash_value"]
             primary_data.dataset.hashes.append(hash_object)
+
+        if created_from_basename is not None:
+            primary_data.created_from_basename = created_from_basename
 
         self.flush()
 
@@ -204,6 +210,7 @@ class ModelPersistenceContext(object):
 
             sources = discovered_file.match.sources
             hashes = discovered_file.match.hashes
+            created_from_basename = discovered_file.match.created_from_basename
 
             dataset = self.create_dataset(
                 ext=ext,
@@ -217,6 +224,7 @@ class ModelPersistenceContext(object):
                 tag_list=tag_list,
                 sources=sources,
                 hashes=hashes,
+                created_from_basename=created_from_basename,
             )
             log.debug(
                 "(%s) Created dynamic collection dataset for path [%s] with element identifier [%s] for output [%s] %s",
@@ -430,7 +438,7 @@ def persist_target_to_export_store(target_dict, export_store, object_store, work
 
 
 def persist_elements_to_hdca(model_persistence_context, elements, hdca, collector=None):
-    filenames = odict.odict()
+    filenames = OrderedDict()
 
     def add_to_discovered_files(elements, parent_identifiers=[]):
         for element in elements:
@@ -475,6 +483,8 @@ def persist_elements_to_folder(model_persistence_context, elements, library_fold
 
             sources = fields_match.sources
             hashes = fields_match.hashes
+            created_from_basename = fields_match.created_from_basename
+
             model_persistence_context.create_dataset(
                 ext=ext,
                 designation=designation,
@@ -487,6 +497,7 @@ def persist_elements_to_folder(model_persistence_context, elements, library_fold
                 link_data=link_data,
                 sources=sources,
                 hashes=hashes,
+                created_from_basename=created_from_basename,
             )
 
 
@@ -517,6 +528,8 @@ def persist_hdas(elements, model_persistence_context):
 
                 sources = fields_match.sources
                 hashes = fields_match.hashes
+                created_from_basename = fields_match.created_from_basename
+
                 dataset = model_persistence_context.create_dataset(
                     ext=ext,
                     designation=designation,
@@ -529,6 +542,7 @@ def persist_hdas(elements, model_persistence_context):
                     primary_data=primary_dataset,
                     sources=sources,
                     hashes=hashes,
+                    created_from_basename=created_from_basename,
                 )
                 dataset.raw_set_dataset_state('ok')
                 if not hda_id:
@@ -700,6 +714,10 @@ class JsonCollectedDatasetMatch(object):
     @property
     def hashes(self):
         return self.as_dict.get("hashes", [])
+
+    @property
+    def created_from_basename(self):
+        return self.as_dict.get("created_from_basename")
 
 
 class RegexCollectedDatasetMatch(JsonCollectedDatasetMatch):

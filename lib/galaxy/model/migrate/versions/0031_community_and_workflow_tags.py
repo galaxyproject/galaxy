@@ -50,11 +50,7 @@ def upgrade(migrate_engine):
     metadata.reflect()
 
     # Create user_id column in history_tag_association table.
-    # SQLAlchemy Migrate has a bug when adding a column with both a ForeignKey and a index in SQLite
-    if migrate_engine.name != 'sqlite':
-        c = Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True)
-    else:
-        c = Column("user_id", Integer, index=True)
+    c = Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True)
     add_column(c, 'history_tag_association', metadata, index_name='ix_history_tag_association_user_id')
 
     # Populate column so that user_id is the id of the user who owns the history (and, up to now, was the only person able to tag the history).
@@ -62,11 +58,7 @@ def upgrade(migrate_engine):
         "UPDATE history_tag_association SET user_id=( SELECT user_id FROM history WHERE history_tag_association.history_id = history.id )")
 
     # Create user_id column in history_dataset_association_tag_association table.
-    # SQLAlchemy Migrate has a bug when adding a column with both a ForeignKey and a index in SQLite
-    if migrate_engine.name != 'sqlite':
-        c = Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True)
-    else:
-        c = Column("user_id", Integer, index=True)
+    c = Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True)
     add_column(c, 'history_dataset_association_tag_association', metadata, index_name='ix_history_dataset_association_tag_association_user_id')
 
     # Populate column so that user_id is the id of the user who owns the history_dataset_association (and, up to now, was the only person able to tag the page).
@@ -74,12 +66,7 @@ def upgrade(migrate_engine):
         "UPDATE history_dataset_association_tag_association SET user_id=( SELECT history.user_id FROM history, history_dataset_association WHERE history_dataset_association.history_id = history.id AND history_dataset_association.id = history_dataset_association_tag_association.history_dataset_association_id)")
 
     # Create user_id column in page_tag_association table.
-    # SQLAlchemy Migrate has a bug when adding a column with both a ForeignKey and a index in SQLite
-    if migrate_engine.name != 'sqlite':
-        c = Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True)
-    else:
-        # Create user_id column in page_tag_association table.
-        c = Column("user_id", Integer, index=True)
+    c = Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True)
     add_column(c, 'page_tag_association', metadata, index_name='ix_page_tag_association_user_id')
 
     # Populate column so that user_id is the id of the user who owns the page (and, up to now, was the only person able to tag the page).

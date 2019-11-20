@@ -3,11 +3,11 @@ Contains OpenID provider functionality
 """
 import logging
 import os
+from collections import OrderedDict
 
 import six
 
 from galaxy.util import parse_xml, string_as_bool
-from galaxy.util.odict import odict
 
 
 log = logging.getLogger(__name__)
@@ -116,7 +116,7 @@ class OpenIDProviders(object):
     @classmethod
     def from_elem(cls, xml_root):
         oid_elem = xml_root
-        providers = odict()
+        providers = OrderedDict()
         for elem in oid_elem.findall('provider'):
             try:
                 provider = OpenIDProvider.from_file(os.path.join('lib/galaxy/openid', elem.get('file')))
@@ -130,7 +130,7 @@ class OpenIDProviders(object):
         if providers:
             self.providers = providers
         else:
-            self.providers = odict()
+            self.providers = OrderedDict()
         self._banned_identifiers = [provider.op_endpoint_url for provider in self.providers.values() if provider.never_associate_with_user]
 
     def __iter__(self):

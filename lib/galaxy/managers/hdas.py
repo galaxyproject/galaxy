@@ -295,12 +295,16 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             'display_types',
             'visualizations',
 
+            'validated_state',
+            'validated_state_message',
+
             # 'url',
             'download_url',
 
             'annotation',
 
-            'api_type'
+            'api_type',
+            'created_from_basename',
         ], include_keys_from='summary')
 
         self.add_view('extended', [
@@ -354,7 +358,8 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             # TODO: to DatasetAssociationSerializer
             'accessible'    : lambda i, k, user=None, **c: self.manager.is_accessible(i, user, **c),
             'api_type'      : lambda *a, **c: 'file',
-            'type'          : lambda *a, **c: 'file'
+            'type'          : lambda *a, **c: 'file',
+            'created_from_basename' : lambda i, k, **c: i.created_from_basename,
         })
 
     def serialize(self, hda, keys, user=None, **context):

@@ -8,7 +8,7 @@ from base.populators import (
     DatasetPopulator,
 )
 
-from galaxy.tools.deps.commands import which
+from galaxy.tool_util.deps.commands import which
 from .test_job_environments import RunsEnvironmentJobs
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
@@ -31,6 +31,15 @@ class MulledJobTestCases(object):
         assert "0.7.15-r1140" in output
 
 
+class ContainerizedIntegrationTestCase(integration_util.IntegrationTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        if not which(cls.container_type):
+            raise unittest.SkipTest("Executable '%s' not found on PATH" % cls.container_type)
+        super(ContainerizedIntegrationTestCase, cls).setUpClass()
+
+
 class DockerizedJobsIntegrationTestCase(integration_util.IntegrationTestCase, RunsEnvironmentJobs, MulledJobTestCases):
 
     framework_tool_and_types = True
@@ -48,7 +57,6 @@ class DockerizedJobsIntegrationTestCase(integration_util.IntegrationTestCase, Ru
         config["tool_dependency_dir"] = "none"
         config["conda_auto_init"] = False
         config["conda_auto_install"] = False
-        config["enable_beta_mulled_containers"] = "true"
 
     @classmethod
     def setUpClass(cls):

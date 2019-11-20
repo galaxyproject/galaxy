@@ -7,11 +7,11 @@ Lower level of visualization framework which does three main things:
 import logging
 import os
 import weakref
+from collections import OrderedDict
 
 from galaxy.exceptions import ObjectNotFound
 from galaxy.util import (
     config_directories_from_setting,
-    odict,
     parse_xml
 )
 from galaxy.visualization.plugins import (
@@ -66,7 +66,7 @@ class VisualizationsRegistry(object):
         self.additional_template_paths = []
         self.directories = []
         self.skip_bad_plugins = skip_bad_plugins
-        self.plugins = odict.odict()
+        self.plugins = OrderedDict()
         self.directories = config_directories_from_setting(directories_setting, app.config.root)
         self._load_configuration()
         self._load_plugins()
@@ -107,7 +107,7 @@ class VisualizationsRegistry(object):
         """
         Search ``self.directories`` for potential plugins, load them, and cache
         in ``self.plugins``.
-        :rtype:                 odict
+        :rtype:                 OrderedDict
         :returns:               ``self.plugins``
         """
         for plugin_path in self._find_plugins():
@@ -184,11 +184,14 @@ class VisualizationsRegistry(object):
         plugin_name = os.path.split(plugin_path)[1]
         # TODO: this is the standard/older way to config
         config_file = os.path.join(plugin_path, 'config', (plugin_name + '.xml'))
-        config = self.config_parser.parse_file(config_file)
-        # config file is required, otherwise skip this visualization
-        if config is not None:
-            plugin = self._build_plugin(plugin_name, plugin_path, config)
-            return plugin
+        if os.path.exists(config_file):
+            config = self.config_parser.parse_file(config_file)
+            if config is not None:
+                # config may be none if the visualization is disabled
+                plugin = self._build_plugin(plugin_name, plugin_path, config)
+                return plugin
+        else:
+            raise ObjectNotFound('Visualization XML not found: %s.' % config_file)
 
     def _build_plugin(self, plugin_name, plugin_path, config):
         # TODO: as builder not factory

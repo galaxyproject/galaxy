@@ -47,17 +47,15 @@ class UsesApiTestCaseMixin(object):
         self.master_api_key = get_master_api_key()
         self.galaxy_interactor = ApiTestInteractor(self)
 
-    def _setup_user(self, email, password=None):
+    def _setup_user(self, email, password=None, is_admin=True):
         self.galaxy_interactor.ensure_user_with_email(email, password=password)
-        users = self._get("users", admin=True).json()
+        users = self._get("users", admin=is_admin).json()
         user = [user for user in users if user["email"] == email][0]
         return user
 
-    def _setup_user_get_key(self, email):
-        self.galaxy_interactor.ensure_user_with_email(email)
-        users = self._get("users", admin=True).json()
-        user = [user for user in users if user["email"] == email][0]
-        return self._post("users/%s/api_key" % user["id"], admin=True).json()
+    def _setup_user_get_key(self, email, password=None, is_admin=True):
+        user = self._setup_user(email, password, is_admin)
+        return user, self._post("users/%s/api_key" % user["id"], admin=True).json()
 
     @contextmanager
     def _different_user(self, email=OTHER_USER):
@@ -68,7 +66,7 @@ class UsesApiTestCaseMixin(object):
         """
         original_api_key = self.user_api_key
         original_interactor_key = self.galaxy_interactor.api_key
-        new_key = self._setup_user_get_key(email)
+        user, new_key = self._setup_user_get_key(email)
         try:
             self.user_api_key = new_key
             self.galaxy_interactor.api_key = new_key

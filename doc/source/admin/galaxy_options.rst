@@ -1,3 +1,28 @@
+~~~~~~~~~~~~~~
+``config_dir``
+~~~~~~~~~~~~~~
+
+:Description:
+    The directory that will be prepended to relative paths in options
+    specifying other Galaxy config files (e.g. datatypes_config_file).
+    Defaults to the directory in which galaxy.yml is located.
+:Default: ``false``
+:Type: str
+
+
+~~~~~~~~~~~~
+``data_dir``
+~~~~~~~~~~~~
+
+:Description:
+    The directory that will be prepended to relative paths in options
+    specifying Galaxy data/cache directories and files (such as the
+    default SQLite database, file_path, etc.). Defaults to `database/`
+    if running Galaxy from source or `<config_dir>/data` otherwise.
+:Default: ``false``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~
 ``database_connection``
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -170,7 +195,7 @@
 :Description:
     Time to sleep between attempts if database_wait is enabled (in
     seconds).
-:Default: ``1``
+:Default: ``1.0``
 :Type: float
 
 
@@ -206,8 +231,28 @@
     Tool config files, defines what tools are available in Galaxy.
     Tools can be locally developed or installed from Galaxy tool
     sheds. (config/tool_conf.xml.sample will be used if left unset and
-    config/tool_conf.xml does not exist).
-:Default: ``config/tool_conf.xml,config/shed_tool_conf.xml``
+    config/tool_conf.xml does not exist). Can be a single file, a list
+    of files, or (for backwards compatibility) a comma-separated list
+    of files.
+:Default: ``config/tool_conf.xml``
+:Type: any
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~
+``shed_tool_config_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Tool config file for tools installed from the Galaxy Tool Shed.
+    Must be writable by Galaxy and generally should not be edited by
+    hand. In older Galaxy releases, this file was part of the
+    tool_config_file option. It is still possible to specify this file
+    (and other shed-enabled tool config files) in tool_config_file,
+    but in the standard case of a single shed-enabled tool config,
+    this option is preferable. This file will be created automatically
+    upon tool installation, whereas Galaxy will fail to start if any
+    files in tool_config_file cannot be read.
+:Default: ``config/shed_tool_conf.xml``
 :Type: str
 
 
@@ -222,7 +267,7 @@
     functionality is largely untested in modern Galaxy releases and
     has serious issues such as #7273 and the possibility of slowing
     down Galaxy startup, so the default and recommended value is
-    False.
+    false.
 :Default: ``false``
 :Type: bool
 
@@ -271,14 +316,13 @@
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Path to the directory in which tool dependencies are placed.  This
-    is used by the Tool Shed to install dependencies and can also be
-    used by administrators to manually install or link to
-    dependencies.  For details, see:
-    https://galaxyproject.org/admin/config/tool-dependencies Set the
-    string to None to explicitly disable tool dependency handling. If
+    Various dependency resolver configuration parameters will have
+    defaults set relative to this path, such as the default conda
+    prefix, default Galaxy packages path, legacy tool shed
+    dependencies path, and the dependency cache directory.  Set the
+    string to null to explicitly disable tool dependency handling. If
     this option is set to none or an invalid path, installing tools
-    with dependencies from the Tool Shed will fail.
+    with dependencies from the Tool Shed or in Conda will fail.
 :Default: ``database/dependencies``
 :Type: str
 
@@ -360,7 +404,7 @@
 ~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Set to True to instruct Galaxy to look for and install missing
+    Set to true to instruct Galaxy to look for and install missing
     tool dependencies before each job runs.
 :Default: ``false``
 :Type: bool
@@ -371,7 +415,7 @@
 ~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Set to True to instruct Galaxy to install Conda from the web
+    Set to true to instruct Galaxy to install Conda from the web
     automatically if it cannot find a local copy and conda_exec is not
     configured.
 :Default: ``true``
@@ -383,7 +427,7 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    You must set this to True if conda_prefix and
+    You must set this to true if conda_prefix and
     job_working_directory are not on the same volume, or some conda
     dependencies will fail to execute at job runtime. Conda will copy
     packages content instead of creating hardlinks or symlinks. This
@@ -402,10 +446,12 @@
     Certain dependency resolvers (namely Conda) take a considerable
     amount of time to build an isolated job environment in the
     job_working_directory if the job working directory is on a network
-    share.  Set the following option to True to cache the dependencies
-    in a folder. This option is beta and should only be used if you
+    share.  Set this option to true to cache the dependencies in a
+    folder. This option is beta and should only be used if you
     experience long waiting times before a job is actually submitted
-    to your cluster.
+    to your cluster.  This only affects tools where some requirements
+    can be resolved but not others, most modern best practice tools
+    can use prebuilt environments in the Conda directory.
 :Default: ``false``
 :Type: bool
 
@@ -428,7 +474,7 @@
 :Description:
     By default, when using a cached dependency manager, the
     dependencies are cached when installing new tools and when using
-    tools for the first time. Set this to False if you prefer
+    tools for the first time. Set this to false if you prefer
     dependencies to be cached only when installing new tools.
 :Default: ``true``
 :Type: bool
@@ -451,11 +497,11 @@
 ~~~~~~~~~~~~~~~
 
 :Description:
-    Set to True to enable monitoring of tools and tool directories
-    listed in any tool config file specified in tool_config_file
-    option. If changes are found, tools are automatically reloaded.
-    Watchdog ( https://pypi.org/project/watchdog/ ) must be installed
-    and available to Galaxy to use this option. Other options include
+    Monitor the tools and tool directories listed in any tool config
+    file specified in tool_config_file option.  If changes are found,
+    tools are automatically reloaded. Watchdog (
+    https://pypi.org/project/watchdog/ ) must be installed and
+    available to Galaxy to use this option. Other options include
     'auto' which will attempt to watch tools if the watchdog library
     is available but won't fail to load Galaxy if it is not and
     'polling' which will use a less efficient monitoring scheme that
@@ -469,9 +515,22 @@
 ~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Set to True to enable monitoring of dynamic job rules. If changes
-    are found, rules are automatically reloaded. Takes the same values
-    as the 'watch_tools' option.
+    Monitor dynamic job rules. If changes are found, rules are
+    automatically reloaded. Takes the same values as the 'watch_tools'
+    option.
+:Default: ``false``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~
+``watch_core_config``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Monitor a subset of options in the core configuration file (See
+    RELOADABLE_CONFIG_OPTIONS in lib/galaxy/config/__init__.py).  If
+    changes are found, modified options are automatically reloaded.
+    Takes the same values as the 'watch_tools' option.
 :Default: ``false``
 :Type: str
 
@@ -497,18 +556,18 @@
 :Type: bool
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``enable_beta_mulled_containers``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_mulled_containers``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Enable Galaxy to fetch Docker containers registered with quay.io
-    generated from tool requirements resolved through conda. These
+    Enable Galaxy to fetch containers registered with quay.io
+    generated from tool requirements resolved through Conda. These
     containers (when available) have been generated using mulled -
-    https://github.com/mulled . These containers are highly beta and
-    availability will vary by tool. This option will additionally only
-    be used for job destinations with Docker enabled.
-:Default: ``false``
+    https://github.com/mulled. Container availability will vary by
+    tool, this option will only be used for job destinations with
+    Docker or Singularity enabled.
+:Default: ``true``
 :Type: bool
 
 
@@ -520,7 +579,7 @@
     Container resolvers configuration (beta). Set up a file describing
     container resolvers to use when discovering containers for Galaxy.
     If this is set to None, the default containers loaded is
-    determined by enable_beta_mulled_containers.
+    determined by enable_mulled_containers.
 :Default: ````
 :Type: str
 
@@ -535,7 +594,7 @@
     `requirement`s. The following path is the location of involucro on
     the Galaxy host. This is ignored if the relevant container
     resolver isn't enabled, and will install on demand unless
-    involucro_auto_init is set to False.
+    involucro_auto_init is set to false.
 :Default: ``database/dependencies/involucro``
 :Type: str
 
@@ -660,10 +719,9 @@
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Set to True to enable monitoring of the tool_data and
-    shed_tool_data_path directories. If changes in tool data table
-    files are found, the tool data tables for that data manager are
-    automatically reloaded. Watchdog (
+    Monitor the tool_data and shed_tool_data_path directories. If
+    changes in tool data table files are found, the tool data tables
+    for that data manager are automatically reloaded. Watchdog (
     https://pypi.org/project/watchdog/ ) must be installed and
     available to Galaxy to use this option. Other options include
     'auto' which will attempt to use the watchdog library if it is
@@ -716,7 +774,7 @@
 :Description:
     Enable sniffing of compressed datatypes. This can be
     configured/overridden on a per-datatype basis in the
-    datatypes_conf.xml file. With this option set to False the
+    datatypes_conf.xml file. With this option set to false the
     compressed datatypes will be unpacked before sniffing.
 :Default: ``true``
 :Type: bool
@@ -767,7 +825,7 @@
 
 :Description:
     To run interactive environment containers in Docker Swarm mode (on
-    an existing swarm), set this option to True and set
+    an existing swarm), set this option to true and set
     `docker_connect_port` in the IE plugin config (ini) file(s) of any
     IE plugins you have enabled and ensure that you are not using any
     `docker run`-specific options in your plugins' `command_inject`
@@ -1099,9 +1157,9 @@
 ~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    User account activation feature global flag.  If set to "False",
-    the rest of the Account activation configuration is ignored and
-    user activation is disabled (i.e. accounts are active since
+    User account activation feature global flag.  If set to false, the
+    rest of the Account activation configuration is ignored and user
+    activation is disabled (i.e. accounts are active since
     registration). The activation is also not working in case the SMTP
     server is not defined.
 :Default: ``false``
@@ -1176,9 +1234,9 @@
     Galaxy can display data at various external browsers.  These
     options specify which browsers should be available.  URLs and
     builds available at these browsers are defined in the specified
-    files.  If use_remote_user = True, display application servers
-    will be denied access to Galaxy and so displaying datasets in
-    these sites will fail. display_servers contains a list of
+    files.  If use_remote_user is set to true, display application
+    servers will be denied access to Galaxy and so displaying datasets
+    in these sites will fail. display_servers contains a list of
     hostnames which should be allowed to bypass security to display
     datasets.  Please be aware that there are security implications if
     this is allowed.  More details (including required changes to the
@@ -1197,15 +1255,35 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    To disable the old-style display applications that are hardcoded
-    into datatype classes, set enable_old_display_applications =
-    False. This may be desirable due to using the new-style, XML-
-    defined, display applications that have been defined for many of
-    the datatypes that have the old-style. There is also a potential
-    security concern with the old-style applications, where a
-    malicious party could provide a link that appears to reference the
-    Galaxy server, but contains a redirect to a third-party server,
-    tricking a Galaxy user to access said site.
+    Set this to false to disable the old-style display applications
+    that are hardcoded into datatype classes. This may be desirable
+    due to using the new-style, XML-defined, display applications that
+    have been defined for many of the datatypes that have the old-
+    style. There is also a potential security concern with the old-
+    style applications, where a malicious party could provide a link
+    that appears to reference the Galaxy server, but contains a
+    redirect to a third-party server, tricking a Galaxy user to access
+    said site.
+:Default: ``true``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``interactivetools_enable``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable InteractiveTools.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``visualizations_visible``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Show visualization tab and list in masthead.
 :Default: ``true``
 :Type: bool
 
@@ -1576,7 +1654,7 @@
     For help on configuring the Advanced proxy features, see:
     https://docs.galaxyproject.org/en/master/admin/production.html
     Apache can handle file downloads (Galaxy-to-user) via
-    mod_xsendfile.  Set this to True to inform Galaxy that
+    mod_xsendfile.  Set this to true to inform Galaxy that
     mod_xsendfile is enabled upstream.
 :Default: ``false``
 :Type: bool
@@ -1697,9 +1775,9 @@
     other services based on Galaxy's session cookie.  It will attempt
     to do this by default though you do need to install node+npm and
     do an npm install from `lib/galaxy/web/proxy/js`.  It is generally
-    more robust to configure this externally, managing it however
-    Galaxy is managed.  If True, Galaxy will only launch the proxy if
-    it is actually going to be used (e.g. for Jupyter).
+    more robust to configure this externally, managing it in the same
+    way Galaxy itself is managed.  If true, Galaxy will only launch
+    the proxy if it is actually going to be used (e.g. for Jupyter).
 :Default: ``true``
 :Type: bool
 
@@ -1733,7 +1811,8 @@
 
 :Description:
     Set the port and IP for the dynamic proxy to bind to, this must
-    match the external configuration if dynamic_proxy_manage is False.
+    match the external configuration if dynamic_proxy_manage is set to
+    false.
 :Default: ``8800``
 :Type: int
 
@@ -1744,7 +1823,8 @@
 
 :Description:
     Set the port and IP for the dynamic proxy to bind to, this must
-    match the external configuration if dynamic_proxy_manage is False.
+    match the external configuration if dynamic_proxy_manage is set to
+    false.
 :Default: ``0.0.0.0``
 :Type: str
 
@@ -1837,7 +1917,7 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    If True, Galaxy will attempt to configure a simple root logger if
+    If true, Galaxy will attempt to configure a simple root logger if
     a "loggers" section does not appear in this configuration file.
 :Default: ``true``
 :Type: bool
@@ -1984,8 +2064,7 @@
     By default Galaxy will serve non-HTML tool output that may
     potentially contain browser executable JavaScript content as plain
     text.  This will for instance cause SVG datasets to not render
-    properly and so may be disabled by setting the following option to
-    True.
+    properly and so may be disabled by setting this option to true.
 :Default: ``false``
 :Type: bool
 
@@ -2011,12 +2090,11 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Set the following to True to use Jupyter nbconvert to build HTML
-    from Jupyter notebooks in Galaxy histories.  This process may
-    allow users to execute arbitrary code or serve arbitrary HTML.  If
-    enabled, Jupyter must be available and on Galaxy's PATH, to do
-    this run `pip install jinja2 pygments jupyter` in Galaxy's
-    virtualenv.
+    Set to true to use Jupyter nbconvert to build HTML from Jupyter
+    notebooks in Galaxy histories.  This process may allow users to
+    execute arbitrary code or serve arbitrary HTML.  If enabled,
+    Jupyter must be available and on Galaxy's PATH, to do this run
+    `pip install jinja2 pygments jupyter` in Galaxy's virtualenv.
 :Default: ``false``
 :Type: bool
 
@@ -2294,7 +2372,7 @@
     allowing admins to paste filesystem paths to files and directories
     in a box, and these paths will be added to a library.  For history
     uploads, this allows pasting in paths as URIs. (i.e. prefixed with
-    file://). Set to True to enable.  Please note the security
+    file://). Set to true to enable.  Please note the security
     implication that this will give Galaxy Admins access to anything
     your Galaxy user has access to.
 :Default: ``false``
@@ -2559,8 +2637,8 @@
 
 :Description:
     If your proxy and/or authentication source does not normalize
-    e-mail addresses or user names being passed to Galaxy - set the
-    following option to True to force these to lower case.
+    e-mail addresses or user names being passed to Galaxy - set this
+    option to true to force these to lower case.
 :Default: ``false``
 :Type: bool
 
@@ -2609,7 +2687,7 @@
 
 :Description:
     Show the site's welcome page (see welcome_url) alongside the login
-    page (even if require_login is True)
+    page (even if require_login is true).
 :Default: ``false``
 :Type: bool
 
@@ -2641,7 +2719,7 @@
 
 :Description:
     Allow administrators to log in as other users (useful for
-    debugging)
+    debugging).
 :Default: ``false``
 :Type: bool
 
@@ -2674,7 +2752,7 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    By default, users' data will be public, but setting this to True
+    By default, users' data will be public, but setting this to true
     will cause it to be private.  Does not affect existing users and
     data, only ones created after this option is set.  Users may still
     change their default back to public.
@@ -2687,14 +2765,14 @@
 ~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Expose user list.  Setting this to True will expose the user list
+    Expose user list.  Setting this to true will expose the user list
     to authenticated users.  This makes sharing datasets in smaller
     galaxy instances much easier as they can type a name/email and
     have the correct user show up. This makes less sense on large
     public Galaxy instances where that data shouldn't be exposed.  For
     semi-public Galaxies, it may make sense to expose just the
     username and not email, or vice versa.  If enable_beta_gdpr is set
-    to True, then this option will be overridden and set to False.
+    to true, then this option will be overridden and set to false.
 :Default: ``false``
 :Type: bool
 
@@ -2704,14 +2782,14 @@
 ~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Expose user list.  Setting this to True will expose the user list
+    Expose user list.  Setting this to true will expose the user list
     to authenticated users.  This makes sharing datasets in smaller
     galaxy instances much easier as they can type a name/email and
     have the correct user show up. This makes less sense on large
     public Galaxy instances where that data shouldn't be exposed.  For
     semi-public Galaxies, it may make sense to expose just the
     username and not email, or vice versa.  If enable_beta_gdpr is set
-    to True, then this option will be overridden and set to False.
+    to true, then this option will be overridden and set to false.
 :Default: ``false``
 :Type: bool
 
@@ -2750,17 +2828,6 @@
     read the GDPR section under the special topics area of the admin
     documentation.
 :Default: ``false``
-:Type: bool
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``enable_beta_ts_api_install``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Enable the new interface for installing tools from Tool Shed via
-    the API. Admin menu will list both if enabled.
-:Default: ``true``
 :Type: bool
 
 
@@ -3000,9 +3067,9 @@
     datasets are selected for "Set at Runtime" inputs from the history
     such that the same input will not be selected twice, unless there
     are more inputs than compatible datasets in the history. When
-    False, the most recently added compatible item in the history will
+    false, the most recently added compatible item in the history will
     be used for each "Set at Runtime" input, independent of others in
-    the Workflow
+    the workflow.
 :Default: ``false``
 :Type: bool
 
@@ -3013,7 +3080,7 @@
 
 :Description:
     The URL to the myExperiment instance being used (omit scheme but
-    include port)
+    include port).
 :Default: ``www.myexperiment.org:80``
 :Type: str
 
@@ -3073,8 +3140,8 @@
 ~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    This should be set to False to prevent Galaxy from deleting
-    uploaded FTP files as it imports them.
+    Set to false to prevent Galaxy from deleting uploaded FTP files as
+    it imports them.
 :Default: ``true``
 :Type: bool
 
@@ -3150,7 +3217,8 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    File where Tool Shed based Data Managers are configured.
+    File where Tool Shed based Data Managers are configured. This file
+    will be created automatically upon data manager installation.
 :Default: ``config/shed_data_manager_conf.xml``
 :Type: str
 
@@ -3183,6 +3251,45 @@
     job configuration file.
 :Default: ``config/job_conf.xml``
 :Type: str
+
+
+~~~~~~~~~~~~~~
+``job_config``
+~~~~~~~~~~~~~~
+
+:Description:
+    Description of job running configuration, can be embedded into
+    Galaxy configuration or loaded from an additional file with the
+    job_config_file option.
+:Default: ``None``
+:Type: map
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~
+``dependency_resolvers``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Rather than specifying a dependency_resolvers_config_file, the
+    definition of the resolvers to enable can be embedded into
+    Galaxy's config with this option. This has no effect if a
+    dependency_resolvers_config_file is used.
+:Default: ``None``
+:Type: seq
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~
+``dependency_resolution``
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Alternative representation of various dependency resolution
+    parameters. Takes the dictified version of a DependencyManager
+    object - so this is ideal for automating the configuration of
+    dependency resolution from one application that uses a
+    DependencyManager to another.
+:Default: ``None``
+:Type: map
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -3265,7 +3372,7 @@
     fail.  In these instances, you can choose to retry setting it
     internally or leave it in a failed state (since retrying
     internally may cause the Galaxy process to be unresponsive).  If
-    this option is set to False, the user will be given the option to
+    this option is set to false, the user will be given the option to
     retry externally, or set metadata manually (when possible).
 :Default: ``true``
 :Type: bool
@@ -3476,6 +3583,17 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``workflow_schedulers_config_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Optional configuration file similar to `job_config_file` to
+    specify which Galaxy processes should schedule workflows.
+:Default: ``config/workflow_schedulers_conf.xml``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~
 ``cache_user_job_count``
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -3485,7 +3603,7 @@
     several extra database queries must be performed to determine the
     number of jobs a user has dispatched to a given destination.  By
     default, these queries will happen for every job that is waiting
-    to run, but if cache_user_job_count is set to True, it will only
+    to run, but if cache_user_job_count is set to true, it will only
     happen once per iteration of the handler queue. Although better
     for performance due to reduced queries, the trade-off is a greater
     possibility that jobs will be dispatched past the configured

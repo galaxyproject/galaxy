@@ -5,15 +5,20 @@ from __future__ import print_function
 
 import logging
 
-from sqlalchemy import Column, MetaData, Table, TEXT
+from sqlalchemy import (
+    Column,
+    MetaData,
+    Table,
+    TEXT
+)
 
 log = logging.getLogger(__name__)
 metadata = MetaData()
 
 
 def upgrade(migrate_engine):
-    metadata.bind = migrate_engine
     print(__doc__)
+    metadata.bind = migrate_engine
     metadata.reflect()
     try:
         Library_table = Table("library", metadata, autoload=True)

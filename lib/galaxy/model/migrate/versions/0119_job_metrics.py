@@ -5,9 +5,20 @@ from __future__ import print_function
 
 import logging
 
-from sqlalchemy import Column, ForeignKey, Integer, MetaData, Numeric, Table, Unicode
+from sqlalchemy import (
+    Column,
+    ForeignKey,
+    Integer,
+    MetaData,
+    Numeric,
+    Table,
+    Unicode
+)
 
-from galaxy.model.migrate.versions.util import create_table, drop_table
+from galaxy.model.migrate.versions.util import (
+    create_table,
+    drop_table
+)
 
 log = logging.getLogger(__name__)
 metadata = MetaData()

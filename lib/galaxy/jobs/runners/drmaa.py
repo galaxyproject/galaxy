@@ -148,6 +148,8 @@ class DRMAAJobRunner(AsynchronousJobRunner):
 
         # Avoid a jt.exitCodePath for now - it's only used when finishing.
         native_spec = job_destination.params.get('nativeSpecification', None)
+        if native_spec is None:
+            native_spec = job_destination.params.get('native_specification', None)
         if native_spec is not None:
             jt['nativeSpecification'] = native_spec
 
@@ -333,6 +335,9 @@ class DRMAAJobRunner(AsynchronousJobRunner):
                     state = ajs.old_state
                 else:
                     continue
+            if ajs.running:
+                # TODO: stop checking at some point
+                ajs.job_wrapper.check_for_entry_points()
             if ajs.check_limits():
                 self.work_queue.put((self.fail_job, ajs))
                 continue

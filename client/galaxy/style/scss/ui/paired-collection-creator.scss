@@ -153,8 +153,6 @@
             margin-bottom: 17px;
             overflow: hidden;
             padding: 15px;
-            background: #f8f8f8;
-
             &:not(.expanded) {
                 // chosen to match alert - dependent on line height and .alert padding
                 max-height: 49px;

@@ -1,8 +1,12 @@
+import errno
 import logging
 import os
 import string
 import time
-from collections import namedtuple
+from collections import (
+    namedtuple,
+    OrderedDict
+)
 from errno import ENOENT
 from xml.etree.ElementTree import ParseError
 
@@ -10,9 +14,16 @@ from markupsafe import escape
 from six import iteritems
 from six.moves.urllib.parse import urlparse
 
-from galaxy.exceptions import MessageException, ObjectNotFound
-from galaxy.tools.deps import build_dependency_manager
-from galaxy.tools.loader_directory import looks_like_a_tool
+from galaxy.exceptions import (
+    ConfigurationError,
+    MessageException,
+    ObjectNotFound,
+)
+from galaxy.tool_util.deps import (
+    build_dependency_manager,
+    NullDependencyManager
+)
+from galaxy.tool_util.loader_directory import looks_like_a_tool
 from galaxy.util import (
     ExecutionTimer,
     listify,
@@ -22,7 +33,6 @@ from galaxy.util import (
 )
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
-from galaxy.util.odict import odict
 from .filters import FilterFactory
 from .integrated_panel import ManagesIntegratedToolPanelMixin
 from .lineages import LineageMap
@@ -37,14 +47,26 @@ from .tags import tool_tag_manager
 
 log = logging.getLogger(__name__)
 
+SHED_TOOL_CONF_XML = """<?xml version="1.0"?>
+<toolbox tool_path="{shed_tools_dir}">
+</toolbox>
+"""
+
 # A fake ToolShedRepository constructed from a shed tool conf
-ToolConfRepository = namedtuple(
+_ToolConfRepository = namedtuple(
     'ToolConfRepository',
     (
         'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision',
-        'tool_dependencies_installed_or_in_error',
+        'tool_dependencies_installed_or_in_error', 'repository_path', 'tool_path',
     )
 )
+
+
+class ToolConfRepository(_ToolConfRepository):
+
+    def get_tool_relative_path(self, *args, **kwargs):
+        # This is a somewhat public function, used by data_manager_manual for instance
+        return self.tool_path, self.repository_path
 
 
 class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
@@ -76,7 +98,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         # In-memory dictionary that defines the layout of the tool panel.
         self._tool_panel = ToolPanelElements()
         self._index = 0
-        self.data_manager_tools = odict()
+        self.data_manager_tools = OrderedDict()
         self._lineage_map = LineageMap(app)
         # Sets self._integrated_tool_panel and self._integrated_tool_panel_config_has_contents
         self._init_integrated_tool_panel(app.config)
@@ -98,13 +120,6 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             # Load self._tool_panel based on the order in self._integrated_tool_panel.
             self._load_tool_panel()
         self._save_integrated_tool_panel()
-
-    def handle_panel_update(self, section_dict):
-        """Extension-point for Galaxy-app specific reload logic.
-
-        This abstract representation of the toolbox shouldn't have details about
-        interacting with the rest of the Galaxy app or message queues, etc....
-        """
 
     def create_tool(self, config_file, tool_shed_repository=None, guid=None, **kwds):
         raise NotImplementedError()
@@ -161,12 +176,27 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
 
         """
         log.info("Parsing the tool configuration %s" % config_filename)
-        tool_conf_source = get_toolbox_parser(config_filename)
+        try:
+            tool_conf_source = get_toolbox_parser(config_filename)
+        except (OSError, IOError) as exc:
+            dynamic_confs = (self.app.config.shed_tool_config_file, self.app.config.migrated_tools_config)
+            if config_filename in dynamic_confs and exc.errno == errno.ENOENT:
+                log.info("Shed-enabled tool configuration file does not exist, but will be created on demand: %s",
+                         config_filename)
+                stcd = dict(config_filename=config_filename,
+                            tool_path=self.app.config.shed_tools_dir,
+                            config_elems=[],
+                            create=SHED_TOOL_CONF_XML.format(shed_tools_dir=self.app.config.shed_tools_dir))
+                self._dynamic_tool_confs.append(stcd)
+                return
+            raise
         tool_path = tool_conf_source.parse_tool_path()
         parsing_shed_tool_conf = tool_conf_source.is_shed_tool_conf()
         if parsing_shed_tool_conf:
             # Keep an in-memory list of xml elements to enable persistence of the changing tool config.
             config_elems = []
+        tool_conf_type = 'shed tool' if parsing_shed_tool_conf else 'tool'
+        log.debug("Tool path for %s configuration %s is %s", tool_conf_type, config_filename, tool_path)
         tool_path = self.__resolve_tool_path(tool_path, config_filename)
         # Only load the panel_dict under certain conditions.
         load_panel_dict = not self._integrated_tool_panel_config_has_contents
@@ -233,11 +263,12 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             elif item_type == 'tool_dir':
                 self._load_tooldir_tag_set(item, panel_dict, tool_path, integrated_panel_dict, load_panel_dict=load_panel_dict)
 
-    def get_shed_config_dict_by_filename(self, filename, default=None):
+    def get_shed_config_dict_by_filename(self, filename):
+        filename = os.path.abspath(filename)
         for shed_config_dict in self._dynamic_tool_confs:
             if shed_config_dict['config_filename'] == filename:
                 return shed_config_dict
-        return default
+        return None
 
     def update_shed_config(self, shed_conf):
         """  Update the in-memory descriptions of tools and write out the changes
@@ -268,7 +299,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 'id': section_id,
                 'version': '',
             }
-            self.handle_panel_update(section_dict)
+            self.create_section(section_dict)
             tool_section = self._tool_panel[tool_panel_section_key]
             self._save_integrated_tool_panel()
         else:
@@ -575,6 +606,21 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 confs.append(dynamic_tool_conf_dict)
         return confs
 
+    def default_shed_tool_conf_dict(self):
+        """If set, returns the first shed_tool_conf_dict corresponding to shed_tool_config_file, else the first dynamic conf."""
+        dynamic_confs = self.dynamic_confs(include_migrated_tool_conf=False)
+        # Pick the first tool config that doesn't set `is_shed_conf="false"` and that is not a migrated_tool_conf
+        try:
+            shed_config_dict = dynamic_confs[0]
+        except IndexError:
+            raise ConfigurationError("No shed_tool_conf file active")
+        if self.app.config.shed_tool_config_file in self.app.config.tool_configs:
+            # Use shed_tool_config_file if loaded
+            for shed_config_dict in dynamic_confs:
+                if shed_config_dict.get('config_filename') == self.app.config.shed_tool_config_file:
+                    break
+        return shed_config_dict
+
     def dynamic_conf_filenames(self, include_migrated_tool_conf=False):
         """ Return list of dynamic tool configuration filenames (shed_tools).
         These must be used with various dynamic tool configuration update
@@ -606,7 +652,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                     # In that case recreating the tool will correct the cached version.
                     from_cache = False
             if guid and not from_cache:  # tool was not in cache and is a tool shed tool
-                tool_shed_repository = self.get_tool_repository_from_xml_item(item, path)
+                tool_shed_repository = self.get_tool_repository_from_xml_item(item.elem, concrete_path)
                 if tool_shed_repository:
                     if hasattr(tool_shed_repository, 'deleted'):
                         # The shed tool is in the install database
@@ -641,15 +687,21 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         except Exception:
             log.exception("Error reading tool from path: %s", path)
 
-    def get_tool_repository_from_xml_item(self, item, path):
-        tool_shed = item.elem.find("tool_shed").text
-        repository_name = item.elem.find("repository_name").text
-        repository_owner = item.elem.find("repository_owner").text
-        installed_changeset_revision_elem = item.elem.find("installed_changeset_revision")
-        if installed_changeset_revision_elem is None:
-            # Backward compatibility issue - the tag used to be named 'changeset_revision'.
-            installed_changeset_revision_elem = item.elem.find("changeset_revision")
-        installed_changeset_revision = installed_changeset_revision_elem.text
+    def get_tool_repository_from_xml_item(self, elem, path):
+        tool_shed = elem.find("tool_shed").text
+        repository_name = elem.find("repository_name").text
+        repository_owner = elem.find("repository_owner").text
+        # The definition of `installed_changeset_revision` for a repository is that it has been cloned at <tool_path/toolshed/repos/owner/name/installed_changeset_revision>
+        # so if we load a tool it needs to be at a path that contains `installed_changeset_revision`.
+        path_to_installed_changeset_revision = os.path.join(tool_shed, 'repos', repository_owner, repository_name)
+        if path_to_installed_changeset_revision in path:
+            installed_changeset_revision = path[path.index(path_to_installed_changeset_revision) + len(path_to_installed_changeset_revision):].split(os.path.sep)[1]
+        else:
+            installed_changeset_revision_elem = elem.find("installed_changeset_revision")
+            if installed_changeset_revision_elem is None:
+                # Backward compatibility issue - the tag used to be named 'changeset_revision'.
+                installed_changeset_revision_elem = elem.find("changeset_revision")
+            installed_changeset_revision = installed_changeset_revision_elem.text
         repository = self._get_tool_shed_repository(tool_shed=tool_shed,
                                                     name=repository_name,
                                                     owner=repository_owner,
@@ -658,8 +710,18 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             msg = "Attempted to load tool shed tool, but the repository with name '%s' from owner '%s' was not found " \
                   "in database. Tool will be loaded without install database."
             log.warning(msg, repository_name, repository_owner)
+            # Figure out path to repository on disk given the tool shed info and the path to the tool contained in the repo
+            repository_path = os.path.join(tool_shed, 'repos', repository_owner, repository_name, installed_changeset_revision)
+            tool_path = path[:path.index(repository_path)]
             repository = ToolConfRepository(
-                tool_shed, repository_name, repository_owner, installed_changeset_revision, installed_changeset_revision, None,
+                tool_shed,
+                repository_name,
+                repository_owner,
+                installed_changeset_revision,
+                installed_changeset_revision,
+                None,
+                repository_path,
+                tool_path
             )
             self.app.tool_shed_repository_cache.add_local_repository(repository)
         return repository
@@ -1143,7 +1205,15 @@ class BaseGalaxyToolBox(AbstractToolBox):
         return looks_like_a_tool(path, enable_beta_formats=getattr(self.app.config, "enable_beta_tool_formats", False))
 
     def _init_dependency_manager(self):
-        self.dependency_manager = build_dependency_manager(self.app.config)
+        use_tool_dependency_resolution = getattr(self.app, "use_tool_dependency_resolution", True)
+        if not use_tool_dependency_resolution:
+            self.dependency_manager = NullDependencyManager()
+            return
+        app_config_dict = self.app.config.config_dict
+        conf_file = app_config_dict.get("dependency_resolvers_config_file")
+        default_tool_dependency_dir = os.path.join(self.app.config.data_dir, "dependencies")
+        self.dependency_manager = build_dependency_manager(app_config_dict=app_config_dict, conf_file=conf_file,
+                                                           default_tool_dependency_dir=default_tool_dependency_dir)
 
     def reload_dependency_manager(self):
         self._init_dependency_manager()

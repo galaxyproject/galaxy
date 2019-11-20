@@ -59,6 +59,11 @@ except ImportError:
     docutils_core = None
     docutils_html4css1 = None
 
+try:
+    import uwsgi
+except ImportError:
+    uwsgi = None
+
 from .inflection import English, Inflector
 from .logging import get_logger
 from .path import safe_contains, safe_makedirs, safe_relpath  # noqa: F401
@@ -1544,7 +1549,8 @@ def safe_str_cmp(a, b):
     return rv == 0
 
 
-galaxy_root_path = os.path.join(__path__[0], "..", "..", "..")
+galaxy_root_path = os.path.join(__path__[0], os.pardir, os.pardir, os.pardir)
+galaxy_samples_path = os.path.join(__path__[0], os.pardir, 'config', 'sample')
 
 
 def galaxy_directory():
@@ -1552,6 +1558,10 @@ def galaxy_directory():
     if os.path.basename(root_path) == "packages":
         root_path = os.path.abspath(os.path.join(root_path, ".."))
     return root_path
+
+
+def galaxy_samples_directory():
+    return os.path.abspath(galaxy_samples_path)
 
 
 def config_directories_from_setting(directories_setting, galaxy_root=galaxy_root_path):
@@ -1677,6 +1687,26 @@ def download_to_file(url, dest_file_path, timeout=30, chunk_size=2 ** 20):
             if not chunk:
                 break
             f.write(chunk)
+
+
+def get_executable():
+    exe = sys.executable
+    if exe.endswith('uwsgi'):
+        virtualenv = None
+        if uwsgi is not None:
+            for name in ('home', 'virtualenv', 'venv', 'pyhome'):
+                if name in uwsgi.opt:
+                    virtualenv = unicodify(uwsgi.opt[name])
+                    break
+        if virtualenv is None and 'VIRTUAL_ENV' in os.environ:
+            virtualenv = os.environ['VIRTUAL_ENV']
+        if virtualenv is not None:
+            exe = os.path.join(virtualenv, 'bin', 'python')
+        else:
+            exe = os.path.join(os.path.dirname(exe), 'python')
+            if not os.path.exists(exe):
+                exe = 'python'
+    return exe
 
 
 class ExecutionTimer(object):

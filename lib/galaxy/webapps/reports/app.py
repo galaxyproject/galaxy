@@ -4,7 +4,7 @@ import time
 
 import galaxy.model
 from galaxy.security import idencoding
-from galaxy.web.stack import application_stack_instance
+from galaxy.web_stack import application_stack_instance
 from . import config
 
 log = logging.getLogger(__name__)

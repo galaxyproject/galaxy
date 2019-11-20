@@ -20,7 +20,10 @@ from markupsafe import escape
 from six.moves.urllib.parse import quote_plus
 
 from galaxy.datatypes import metadata
-from galaxy.datatypes.data import Text
+from galaxy.datatypes.data import (
+    DatatypeValidation,
+    Text,
+)
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import build_sniff_from_prefix
 from galaxy.datatypes.tabular import Tabular
@@ -151,24 +154,17 @@ class GenomeGraphs(Tabular):
             out = "Can't create peek %s" % exc
         return out
 
-    def validate(self, dataset):
+    def validate(self, dataset, **kwd):
         """
         Validate a gg file - all numeric after header row
         """
-        errors = list()
         with open(dataset.file_name, "r") as infile:
             next(infile)  # header
             for i, row in enumerate(infile):
                 ll = row.strip().split('\t')[1:]  # first is alpha feature identifier
-                badvals = []
                 for j, x in enumerate(ll):
-                    try:
-                        x = float(x)
-                    except Exception:
-                        badvals.append('col%d:%s' % (j + 1, x))
-        if len(badvals) > 0:
-            errors.append('row %d, %s' % (' '.join(badvals)))
-            return errors
+                    x = float(x)
+        return DatatypeValidation.validated()
 
     def sniff_prefix(self, file_prefix):
         """

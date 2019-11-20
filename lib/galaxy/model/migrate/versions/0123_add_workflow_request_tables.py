@@ -5,10 +5,28 @@ from __future__ import print_function
 
 import logging
 
-from sqlalchemy import Column, ForeignKey, Integer, MetaData, String, Table, TEXT, Unicode
+from sqlalchemy import (
+    Column,
+    ForeignKey,
+    Integer,
+    MetaData,
+    String,
+    Table,
+    TEXT,
+    Unicode
+)
 
-from galaxy.model.custom_types import JSONType, TrimmedString, UUIDType
-from galaxy.model.migrate.versions.util import add_column, create_table, drop_column, drop_table
+from galaxy.model.custom_types import (
+    JSONType,
+    TrimmedString,
+    UUIDType
+)
+from galaxy.model.migrate.versions.util import (
+    add_column,
+    create_table,
+    drop_column,
+    drop_table
+)
 
 log = logging.getLogger(__name__)
 metadata = MetaData()
@@ -62,8 +80,8 @@ TABLES = [
 
 
 def upgrade(migrate_engine):
-    metadata.bind = migrate_engine
     print(__doc__)
+    metadata.bind = migrate_engine
     metadata.reflect()
 
     for table in TABLES:

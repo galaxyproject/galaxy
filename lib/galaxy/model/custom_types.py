@@ -242,7 +242,9 @@ class MutationList(MutationObj, list):
         self.changed()
 
     def extend(self, values):
-        list.extend(self, (MutationObj.coerce(self._key, v) for v in values))
+        if hasattr(self, '_key'):
+            values = (MutationObj.coerce(self._key, value) for value in values)
+        list.extend(self, values)
         self.changed()
 
     def pop(self, *args, **kw):
@@ -370,5 +372,5 @@ class TrimmedString(TypeDecorator):
     def process_bind_param(self, value, dialect):
         """Automatically truncate string values"""
         if self.impl.length and value is not None:
-            value = value[0:self.impl.length]
+            value = unicodify(value)[0:self.impl.length]
         return value

@@ -72,7 +72,11 @@ class InstalledRepositoryMetadataManager(metadata_generator.MetadataGenerator):
                     load_relative_path = os.path.join(shed_conf_dict.get('tool_path'), relative_path)
                 guid = tool_dict.get('guid', None)
                 if relative_path and guid:
-                    tool = self.app.toolbox.load_tool(os.path.abspath(load_relative_path), guid=guid, use_cached=False)
+                    try:
+                        tool = self.app.toolbox.load_tool(os.path.abspath(load_relative_path), guid=guid, use_cached=False)
+                    except Exception:
+                        log.exception("Error while loading tool at path '%s'", load_relative_path)
+                        tool = None
                 else:
                     tool = None
                 if tool:
@@ -151,7 +155,7 @@ class InstalledRepositoryMetadataManager(metadata_generator.MetadataGenerator):
         A tool shed repository is being updated so change the shed_tool_conf file.  Parse the config
         file to generate the entire list of config_elems instead of using the in-memory list.
         """
-        shed_conf_dict = self.repository.get_shed_config_dict(self.app)
+        shed_conf_dict = self.shed_config_dict or self.repository.get_shed_config_dict(self.app)
         shed_tool_conf = shed_conf_dict['config_filename']
         tool_path = shed_conf_dict['tool_path']
         self.tpm.generate_tool_panel_dict_from_shed_tool_conf_entries(self.repository)

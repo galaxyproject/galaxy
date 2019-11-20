@@ -7,7 +7,8 @@
             <register
                 :registration_warning_message="registration_warning_message"
                 :mailing_join_addr="mailing_join_addr"
-                :smtp_server="smtp_server"
+                :server_mail_configured="server_mail_configured"
+                :terms_url="terms_url"
             />
         </template>
     </div>
@@ -49,6 +50,10 @@ export default {
             type: String,
             required: false
         },
+        terms_url: {
+            type: String,
+            required: false
+        },
         registration_warning_message: {
             type: String,
             required: false
@@ -57,8 +62,8 @@ export default {
             type: String,
             required: false
         },
-        smtp_server: {
-            type: String,
+        server_mail_configured: {
+            type: Boolean,
             required: false
         }
     }

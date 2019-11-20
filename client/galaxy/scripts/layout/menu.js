@@ -22,7 +22,7 @@ function logoutClick() {
     });
 }
 
-var Collection = Backbone.Collection.extend({
+const Collection = Backbone.Collection.extend({
     model: Backbone.Model.extend({
         defaults: {
             visible: true,
@@ -38,7 +38,7 @@ var Collection = Backbone.Collection.extend({
         //
         // Chat server tab
         //
-        var extendedNavItem = new CommunicationServerView();
+        const extendedNavItem = new CommunicationServerView();
         this.add(extendedNavItem.render());
 
         //
@@ -66,24 +66,26 @@ var Collection = Backbone.Collection.extend({
         //
         // Visualization tab.
         //
-        this.add({
-            id: "visualization",
-            title: _l("Visualize"),
-            tooltip: _l("Visualize datasets"),
-            disabled: !Galaxy.user.id,
-            menu: [
-                {
-                    title: _l("Create Visualization"),
-                    url: "visualizations",
-                    target: "__use_router__"
-                },
-                {
-                    title: _l("Interactive Environments"),
-                    url: "visualization/gie_list",
-                    target: "galaxy_main"
-                }
-            ]
-        });
+        if (Galaxy.config.visualizations_visible) {
+            this.add({
+                id: "visualization",
+                title: _l("Visualize"),
+                tooltip: _l("Visualize datasets"),
+                disabled: !Galaxy.user.id,
+                menu: [
+                    {
+                        title: _l("Create Visualization"),
+                        url: "visualizations",
+                        target: "__use_router__"
+                    },
+                    {
+                        title: _l("Interactive Environments"),
+                        url: "visualization/gie_list",
+                        target: "galaxy_main"
+                    }
+                ]
+            });
+        }
 
         //
         // 'Shared Items' or Libraries tab.
@@ -129,9 +131,9 @@ var Collection = Backbone.Collection.extend({
             callback: function(webhooks) {
                 $(document).ready(() => {
                     webhooks.each(model => {
-                        var webhook = model.toJSON();
+                        const webhook = model.toJSON();
                         if (webhook.activate) {
-                            var obj = {
+                            const obj = {
                                 id: webhook.id,
                                 icon: webhook.config.icon,
                                 url: webhook.config.url,
@@ -172,7 +174,7 @@ var Collection = Backbone.Collection.extend({
         //
         // Help tab.
         //
-        var helpTab = {
+        const helpTab = {
             id: "help",
             title: _l("Help"),
             tooltip: _l("Support, contact, and community"),
@@ -232,7 +234,7 @@ var Collection = Backbone.Collection.extend({
         //
         // User tab.
         //
-        var userTab = {};
+        let userTab = {};
         if (!Galaxy.user.id) {
             if (options.allow_user_creation) {
                 userTab = {
@@ -279,27 +281,42 @@ var Collection = Backbone.Collection.extend({
                         onclick: logoutClick
                     },
                     {
-                        title: _l("Saved Datasets"),
+                        title: _l("Datasets"),
                         url: "datasets/list",
                         target: "__use_router__"
                     },
                     {
-                        title: _l("Saved Histories"),
+                        title: _l("Histories"),
                         url: "histories/list",
                         target: "__use_router__"
                     },
                     {
-                        title: _l("Saved Pages"),
-                        url: "pages/list",
+                        title: _l("Histories shared with me"),
+                        url: "histories/list_shared",
                         target: "__use_router__"
                     },
                     {
-                        title: _l("Saved Visualizations"),
-                        url: "visualizations/list",
+                        title: _l("Pages"),
+                        url: "pages/list",
                         target: "__use_router__"
                     }
                 ]
             };
+            if (Galaxy.config.visualizations_visible) {
+                userTab.menu.push({
+                    title: _l("Visualizations"),
+                    url: "visualizations/list",
+                    target: "__use_router__"
+                });
+            }
+            if (Galaxy.config.interactivetools_enable) {
+                userTab.menu[userTab.menu.length - 1].divider = true;
+                userTab.menu.push({
+                    title: _l("Active InteractiveTools"),
+                    url: "interactivetool_entry_points/list",
+                    target: "__use_router__"
+                });
+            }
         }
         this.add(userTab);
         return new $.Deferred().resolve().promise();
@@ -307,7 +324,7 @@ var Collection = Backbone.Collection.extend({
 });
 
 /** Masthead tab **/
-var Tab = Backbone.View.extend({
+const Tab = Backbone.View.extend({
     initialize: function(options) {
         this.model = options.model;
         this.setElement(this._template());
@@ -429,7 +446,7 @@ var Tab = Backbone.View.extend({
 
     /** Handle click event */
     _toggleClick: function(e) {
-        var model = this.model;
+        const model = this.model;
         e.preventDefault();
         $(".tooltip").hide();
         model.trigger("dispatch", m => {

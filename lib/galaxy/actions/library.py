@@ -75,6 +75,11 @@ class LibraryActions(object):
         cntrller = 'api'
         tool_id = 'upload1'
         message = None
+        file_type = kwd.get('file_type')
+        try:
+            upload_common.validate_datatype_extension(datatypes_registry=trans.app.datatypes_registry, ext=file_type)
+        except RequestParameterInvalidException as e:
+            return (400, util.unicodify(e))
         tool = trans.app.toolbox.get_tool(tool_id)
         state = tool.new_state(trans)
         populate_state(trans, tool.inputs, kwd, state.inputs)
@@ -249,6 +254,7 @@ class LibraryActions(object):
         uploaded_dataset.to_posix_lines = params.get('to_posix_lines', None)
         uploaded_dataset.space_to_tab = params.get('space_to_tab', None)
         uploaded_dataset.tag_using_filenames = params.get('tag_using_filenames', False)
+        uploaded_dataset.tags = params.get('tags', None)
         uploaded_dataset.purge_source = getattr(trans.app.config, 'ftp_upload_purge', True)
         if in_folder:
             uploaded_dataset.in_folder = in_folder

@@ -2,12 +2,11 @@
 <%
     ie_request.load_deploy_config()
 
-    # Make the dataset available inside the container
-    data_file = ie_request.volume('/input/file.' + hda.ext, hda.file_name, mode='ro')
-
     ie_request.launch(
-       image = trans.request.params.get('image_tag', None),
-       volumes = [data_file]
+        image = trans.request.params.get('image_tag', None),
+        env_override={
+            'dataset_hid': hda.hid
+        }
     )
 
     url = ie_request.url_template('${PROXY_URL}')

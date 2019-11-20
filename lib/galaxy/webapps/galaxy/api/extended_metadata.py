@@ -7,7 +7,7 @@ from galaxy import (
     managers,
     web
 )
-from galaxy.web.base.controller import (
+from galaxy.webapps.base.controller import (
     BaseAPIController,
     HTTPNotImplemented,
     UsesExtendedMetadataMixin,

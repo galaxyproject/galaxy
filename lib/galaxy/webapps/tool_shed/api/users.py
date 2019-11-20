@@ -10,7 +10,7 @@ from galaxy.security.validate_user_input import (
     validate_password,
     validate_publicname
 )
-from galaxy.web.base.controller import BaseAPIController
+from galaxy.webapps.base.controller import BaseAPIController
 
 log = logging.getLogger(__name__)
 

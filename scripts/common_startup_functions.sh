@@ -113,6 +113,10 @@ setup_python() {
             if [ "$CONDA_DEFAULT_ENV" != "$GALAXY_CONDA_ENV" ]; then
                 conda_activate
             fi
+            if [ "$CONDA_DEFAULT_ENV" = "base" ] || [ "$CONDA_DEFAULT_ENV" = "root" ]; then
+                echo "ERROR: Conda is in 'base' environment, refusing to continue"
+                exit 1
+            fi
         fi
     fi
 

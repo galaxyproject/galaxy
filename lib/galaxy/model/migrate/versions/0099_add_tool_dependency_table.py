@@ -5,21 +5,25 @@ from __future__ import print_function
 
 import datetime
 import logging
-import sys
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, MetaData, Table
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    MetaData,
+    Table
+)
 
 from galaxy.model.custom_types import TrimmedString
+from galaxy.model.migrate.versions.util import (
+    create_table,
+    drop_table
+)
 
-now = datetime.datetime.utcnow
 log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
-handler = logging.StreamHandler(sys.stdout)
-format = "%(name)s %(levelname)s %(asctime)s %(message)s"
-formatter = logging.Formatter(format)
-handler.setFormatter(formatter)
-log.addHandler(handler)
-
+now = datetime.datetime.utcnow
 metadata = MetaData()
 
 # New table to store information about cloned tool shed repositories.
@@ -36,19 +40,15 @@ ToolDependency_table = Table("tool_dependency", metadata,
 
 
 def upgrade(migrate_engine):
-    metadata.bind = migrate_engine
     print(__doc__)
+    metadata.bind = migrate_engine
     metadata.reflect()
-    try:
-        ToolDependency_table.create()
-    except Exception:
-        log.exception("Creating tool_dependency table failed.")
+
+    create_table(ToolDependency_table)
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
-    try:
-        ToolDependency_table.drop()
-    except Exception:
-        log.exception("Dropping tool_dependency table failed.")
+
+    drop_table(ToolDependency_table)

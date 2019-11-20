@@ -63,6 +63,8 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
             :type  file_ext:        str
             :param genome_build:    new ld's genome build
             :type  genome_build:    str
+            :param tags:            list of dataset tags
+            :type  tags:            list
         :type   payload: dict
 
         :returns:   the changed library dataset
@@ -100,7 +102,15 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
         if new_genome_build is not None and new_genome_build != ldda.dbkey:
             ldda.dbkey = new_genome_build
             changed = True
+        new_tags = new_data.get('tags', None)
+        if new_tags is not None and new_tags != ldda.tags:
+            self.tag_handler.delete_item_tags(item=ldda, user=trans.user)
+            tag_list = self.tag_handler.parse_tags_list(new_tags)
+            for tag in tag_list:
+                self.tag_handler.apply_item_tag(item=ldda, user=trans.user, name=tag[0], value=tag[1])
+            changed = True
         if changed:
+            ldda.update_parent_folder_update_times()
             trans.sa_session.add(ldda)
             trans.sa_session.flush()
         return changed
@@ -128,6 +138,9 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
                 if len(val) < MINIMUM_STRING_LENGTH:
                     raise RequestParameterInvalidException('%s must have at least length of %s' % (key, MINIMUM_STRING_LENGTH))
                 val = validation.validate_and_sanitize_basestring(key, val)
+                validated_payload[key] = val
+            if key in ('tags'):
+                val = validation.validate_and_sanitize_basestring_list(key, util.listify(val))
                 validated_payload[key] = val
         return validated_payload
 
@@ -223,6 +236,7 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
         rval['full_path'] = full_path
         rval['file_size'] = util.nice_size(int(ldda.get_size()))
         rval['date_uploaded'] = ldda.create_time.strftime("%Y-%m-%d %I:%M %p")
+        rval['update_time'] = ldda.update_time.strftime("%Y-%m-%d %I:%M %p")
         rval['can_user_modify'] = trans.user_is_admin or trans.app.security_agent.can_modify_library_item(current_user_roles, ld)
         rval['is_unrestricted'] = trans.app.security_agent.dataset_is_public(ldda.dataset)
         rval['tags'] = self.tag_handler.get_tags_str(ldda.tags)

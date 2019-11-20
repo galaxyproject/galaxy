@@ -14,7 +14,7 @@ mapping:
         desc: |
           Verbosity of console log messages.  Acceptable values can be found here:
           https://docs.python.org/library/logging.html#logging-levels
-      
+
       database_connection:
         type: str
         default: sqlite:///./database/community.sqlite?isolation_level=IMMEDIATE
@@ -24,35 +24,35 @@ mapping:
           may use a SQLAlchemy connection string to specify an external database
           instead.  This string takes many options which are explained in detail in the
           config file documentation.
-      
+
       hgweb_config_dir:
         type: str
         required: false
         desc: |
           Where the hgweb.config file is stored.
           The default is the Galaxy installation directory.
-      
+
       file_path:
         type: str
         default: database/community_files
         required: false
         desc: |
           Where Tool Shed repositories are stored.
-      
+
       new_file_path:
         type: str
         default: database/tmp
         required: false
         desc: |
           Where temporary files are stored.
-      
+
       builds_file_path:
         type: str
         default: tool-data/shared/ucsc/builds.txt
         required: false
         desc: |
           File containing old-style genome builds
-      
+
       pretty_datetime_format:
         type: str
         default: $locale (UTC)
@@ -65,7 +65,7 @@ mapping:
           - $locale (complete format string for the server locale),
           - $iso8601 (complete format string as specified by ISO 8601 international
             standard).
-      
+
       toolshed_search_on:
         type: bool
         default: true
@@ -76,7 +76,7 @@ mapping:
           you can generate search index and allow full text API searching over
           the repositories and tools within the Tool Shed given that you specify
           the following two config options.
-      
+
       whoosh_index_dir:
         type: str
         default: database/toolshed_whoosh_indexes
@@ -87,84 +87,91 @@ mapping:
           you can generate search index and allow full text API searching over
           the repositories and tools within the Tool Shed given that you specify
           the following two config options.
-      
+
       repo_name_boost:
         type: float
         default: 0.9
         required: false
         desc: |
           For searching repositories at /api/repositories:
-      
+
       repo_description_boost:
         type: float
         default: 0.6
         required: false
         desc: |
           For searching repositories at /api/repositories:
-      
+
       repo_long_description_boost:
         type: float
         default: 0.5
         required: false
         desc: |
           For searching repositories at /api/repositories:
-      
+
       repo_homepage_url_boost:
         type: float
         default: 0.3
         required: false
         desc: |
           For searching repositories at /api/repositories:
-      
+
       repo_remote_repository_url_boost:
         type: float
         default: 0.2
         required: false
         desc: |
           For searching repositories at /api/repositories:
-      
+
       repo_owner_username_boost:
         type: float
         default: 0.3
         required: false
         desc: |
           For searching repositories at /api/repositories:
-      
+
+      categories_boost:
+        type: float
+        default: 0.5
+        required: false
+        desc: |
+          For searching repositories at /api/repositories:
+
       tool_name_boost:
         type: float
         default: 1.2
         required: false
         desc: |
           For searching tools at /api/tools
-      
+
       tool_description_boost:
         type: float
         default: 0.6
         required: false
         desc: |
           For searching tools at /api/tools
-      
+
       tool_help_boost:
         type: float
         default: 0.4
         required: false
         desc: |
           For searching tools at /api/tools
-      
+
       tool_repo_owner_username:
         type: float
         default: 0.3
         required: false
         desc: |
           For searching tools at /api/tools
-      
+
       ga_code:
         type: str
         required: false
         desc: |
           You can enter tracking code here to track visitor's behavior
           through your Google Analytics account. Example: UA-XXXXXXXX-Y
-      
+
       id_secret:
         type: str
         default: changethisinproductiontoo
@@ -177,7 +184,7 @@ mapping:
           them access to others' sessions.
           One simple way to generate a value for this is with the shell command:
             python -c 'from __future__ import print_function; import time; print(time.time())' | md5sum | cut -f 1 -d ' '
-      
+
       use_remote_user:
         type: bool
         default: false
@@ -187,7 +194,7 @@ mapping:
           Apache).  The upstream proxy should set a REMOTE_USER header in the request.
           Enabling remote user disables regular logins.  For more information, see:
           https://galaxyproject.org/admin/config/apache-external-user-auth/
-      
+
       remote_user_secret:
         type: str
         default: changethisinproductiontoo
@@ -226,35 +233,35 @@ mapping:
         desc: |
           If use_remote_user is enabled, you can set this to a URL that will log your
           users out.
-      
+
       debug:
         type: bool
         default: false
         required: false
         desc: |
           Configuration for debugging middleware
-      
+
       use_lint:
         type: bool
         default: false
         required: false
         desc: |
           Check for WSGI compliance.
-      
+
       use_printdebug:
         type: bool
         default: true
         required: false
         desc: |
           Intercept print statements and show them on the returned page.
-      
+
       use_interactive:
         type: bool
         default: false
         required: false
         desc: |
           NEVER enable this on a public site (even test or QA)
-      
+
       admin_users:
         type: str
         required: false
@@ -263,7 +270,7 @@ mapping:
           users (email addresses).  These users will have access to the Admin section
           of the server, and will have access to create users, groups, roles,
           libraries, and more.
-      
+
       require_login:
         type: bool
         default: false
@@ -286,21 +293,21 @@ mapping:
         desc: |
           Allow administrators to delete accounts.
 
-      
+
       smtp_server:
         type: str
         default: smtp.your_tool_shed_server
         required: false
         desc: |
           For use by email messages sent from the Tool Shed.
-      
+
       email_from:
         type: str
         default: your_tool_shed_email@server
         required: false
         desc: |
           For use by email messages sent from the Tool Shed.
-      
+
       smtp_username:
         type: str
         required: false
@@ -308,7 +315,7 @@ mapping:
           If your SMTP server requires a username and password, you can provide them
           here (password in cleartext here, but if your server supports STARTTLS it
           will be sent over the network encrypted).
-      
+
       smtp_password:
         type: str
         required: false
@@ -316,28 +323,28 @@ mapping:
           If your SMTP server requires a username and password, you can provide them
           here (password in cleartext here, but if your server supports STARTTLS it
           will be sent over the network encrypted).
-      
+
       smtp_ssl:
         type: bool
         default: false
         required: false
         desc: |
           If your SMTP server requires SSL from the beginning of the connection
-      
+
       support_url:
         type: str
         default: https://galaxyproject.org/support/
         required: false
         desc: |
           The URL linked by the "Support" link in the "Help" menu.
-      
+
       mailing_join_addr:
         type: str
         default: galaxy-announce-join@bx.psu.edu
         required: false
         desc: |
           Address to join mailing list
-      
+
       use_heartbeat:
         type: bool
         default: true
@@ -345,34 +352,34 @@ mapping:
         desc: |
           Write thread status periodically to 'heartbeat.log' (careful, uses disk
            space rapidly!)
-      
+
       use_profile:
         type: bool
         default: true
         required: false
         desc: |
           Profiling middleware (cProfile based)
-      
+
       enable_galaxy_flavor_docker_image:
         type: bool
         default: false
         required: false
         desc: |
           Enable creation of Galaxy flavor Docker Image
-      
+
       message_box_visible:
         type: bool
         default: false
         required: false
         desc: |
           Show a message box under the masthead.
-      
+
       message_box_content:
         type: str
         required: false
         desc: |
           Show a message box under the masthead.
-      
+
       message_box_class:
         type: str
         default: info
@@ -380,49 +387,49 @@ mapping:
         desc: |
           Class of the message box under the masthead. Possible values are:
           'info' (the default), 'warning', 'error', 'done'.
-      
+
       static_enabled:
         type: bool
         default: true
         required: false
         desc: |
           Serving static files (needed if running standalone)
-      
+
       static_cache_time:
         type: int
         default: 360
         required: false
         desc: |
           Serving static files (needed if running standalone)
-      
+
       static_dir:
         type: str
         default: static/
         required: false
         desc: |
           Serving static files (needed if running standalone)
-      
+
       static_images_dir:
         type: str
         default: static/images
         required: false
         desc: |
           Serving static files (needed if running standalone)
-      
+
       static_favicon_dir:
         type: str
         default: static/favicon.ico
         required: false
         desc: |
           Serving static files (needed if running standalone)
-      
+
       static_scripts_dir:
         type: str
         default: static/scripts/
         required: false
         desc: |
           Serving static files (needed if running standalone)
-      
+
       static_style_dir:
         type: str
         default: static/style/blue

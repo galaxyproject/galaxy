@@ -1,3 +1,4 @@
+import errno
 import logging
 import xml.etree.ElementTree
 from collections import namedtuple
@@ -10,14 +11,31 @@ from galaxy.util import plugin_config, string_as_bool
 
 log = logging.getLogger(__name__)
 
+AUTH_CONF_XML = """<?xml version="1.0"?>
+<auth>
+    <authenticator>
+        <type>localdb</type>
+        <options>
+            <allow-password-change>true</allow-password-change>
+        </options>
+    </authenticator>
+</auth>
+"""
+
 Authenticator = namedtuple('Authenticator', ['plugin', 'filter_template', 'options'])
 
 
-def get_authenticators(auth_config_file):
+def get_authenticators(auth_config_file, auth_config_file_set):
     __plugins_dict = plugin_config.plugins_dict(galaxy.auth.providers, 'plugin_type')
     # parse XML
-    ct = xml.etree.ElementTree.parse(auth_config_file)
-    conf_root = ct.getroot()
+    try:
+        ct = xml.etree.ElementTree.parse(auth_config_file)
+        conf_root = ct.getroot()
+    except (OSError, IOError) as exc:
+        if exc.errno == errno.ENOENT and not auth_config_file_set:
+            conf_root = xml.etree.ElementTree.fromstring(AUTH_CONF_XML)
+        else:
+            raise
 
     authenticators = []
     # process authenticators

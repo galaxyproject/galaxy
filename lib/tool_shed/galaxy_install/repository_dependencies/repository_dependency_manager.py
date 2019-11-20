@@ -108,10 +108,10 @@ class RepositoryDependencyInstallManager(object):
                                 repository_dependency = self.get_repository_dependency_by_repository_id(install_model,
                                                                                                         required_repository.id)
                                 if not repository_dependency:
-                                    log.debug('Creating new repository_dependency record for installed revision %s of repository: %s owned by %s.' %
-                                              (str(required_repository.installed_changeset_revision),
-                                               str(required_repository.name),
-                                               str(required_repository.owner)))
+                                    log.debug('Creating new repository_dependency record for installed revision %s of repository: %s owned by %s.',
+                                              required_repository.installed_changeset_revision,
+                                              required_repository.name,
+                                              required_repository.owner)
                                     repository_dependency = install_model.RepositoryDependency(tool_shed_repository_id=required_repository.id)
                                     install_model.context.add(repository_dependency)
                                     install_model.context.flush()
@@ -165,6 +165,7 @@ class RepositoryDependencyInstallManager(object):
             if self.is_in_repo_info_dicts(repo_info_dict, repo_info_dicts) or install_repository_dependencies:
                 for name, repo_info_tuple in repo_info_dict.items():
                     can_update_db_record = False
+                    clear_metadata = True
                     description, \
                         repository_clone_url, \
                         changeset_revision, \
@@ -177,17 +178,24 @@ class RepositoryDependencyInstallManager(object):
                     repository_db_record, installed_changeset_revision = \
                         repository_util.repository_was_previously_installed(self.app, tool_shed_url, name, repo_info_tuple, from_tip=False)
                     if repository_db_record:
-                        if repository_db_record.status in [install_model.ToolShedRepository.installation_status.INSTALLED,
+                        if (installed_changeset_revision != changeset_revision
+                                and repository_db_record.status == install_model.ToolShedRepository.installation_status.INSTALLED):
+                            log.info(
+                                "Repository '%s' already present at revision %s, will be updated to revision %s",
+                                repository_db_record.name, installed_changeset_revision, changeset_revision)
+                            can_update_db_record = True
+                            clear_metadata = False
+                        elif repository_db_record.status in [install_model.ToolShedRepository.installation_status.INSTALLED,
                                                            install_model.ToolShedRepository.installation_status.CLONING,
                                                            install_model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS,
                                                            install_model.ToolShedRepository.installation_status.INSTALLING_REPOSITORY_DEPENDENCIES,
                                                            install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES,
                                                            install_model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES]:
-                            debug_msg = "Skipping installation of revision %s of repository '%s' because it was installed " % \
-                                (str(changeset_revision), str(repository_db_record.name))
-                            debug_msg += "with the (possibly updated) revision %s and its current installation status is '%s'." % \
-                                (str(installed_changeset_revision), str(repository_db_record.status))
-                            log.debug(debug_msg)
+                            info_msg = "Skipping installation of revision %s of repository '%s' because it was installed " % \
+                                (changeset_revision, repository_db_record.name)
+                            info_msg += "with the (possibly updated) revision %s and its current installation status is '%s'." % \
+                                (installed_changeset_revision, repository_db_record.status)
+                            log.info(info_msg)
                             can_update_db_record = False
                         else:
                             if repository_db_record.status in [install_model.ToolShedRepository.installation_status.ERROR,
@@ -201,7 +209,7 @@ class RepositoryDependencyInstallManager(object):
                             elif repository_db_record.status in [install_model.ToolShedRepository.installation_status.DEACTIVATED]:
                                 # The current tool shed repository is deactivated, so updating its database record
                                 # is not necessary - just activate it.
-                                log.debug("Reactivating deactivated tool_shed_repository '%s'." % str(repository_db_record.name))
+                                log.info("Reactivating deactivated tool_shed_repository '%s'." % str(repository_db_record.name))
                                 self.app.installed_repository_manager.activate_repository(repository_db_record)
                                 # No additional updates to the database record are necessary.
                                 can_update_db_record = False
@@ -232,6 +240,8 @@ class RepositoryDependencyInstallManager(object):
                                 tpm.handle_tool_panel_section(self.app.toolbox,
                                                               tool_panel_section_id=tool_panel_section_id,
                                                               new_tool_panel_section_label=new_tool_panel_section_label)
+                        metadata_dict = {} if clear_metadata else None
+                        current_changeset_revision = changeset_revision if clear_metadata else None
                         tool_shed_repository = \
                             repository_util.create_or_update_tool_shed_repository(app=self.app,
                                                                                   name=name,
@@ -239,9 +249,9 @@ class RepositoryDependencyInstallManager(object):
                                                                                   installed_changeset_revision=installed_changeset_revision,
                                                                                   ctx_rev=ctx_rev,
                                                                                   repository_clone_url=repository_clone_url,
-                                                                                  metadata_dict={},
                                                                                   status=install_model.ToolShedRepository.installation_status.NEW,
-                                                                                  current_changeset_revision=changeset_revision,
+                                                                                  metadata_dict=metadata_dict,
+                                                                                  current_changeset_revision=current_changeset_revision,
                                                                                   owner=repository_owner,
                                                                                   dist_to_shed=False)
                         if tool_shed_repository not in all_created_or_updated_tool_shed_repositories:
@@ -280,8 +290,8 @@ class RepositoryDependencyInstallManager(object):
                                                                                installed_changeset_revision=changeset_revision,
                                                                                ctx_rev=ctx_rev,
                                                                                repository_clone_url=repository_clone_url,
-                                                                               metadata_dict={},
                                                                                status=install_model.ToolShedRepository.installation_status.NEW,
+                                                                               metadata_dict={},
                                                                                current_changeset_revision=None,
                                                                                owner=owner,
                                                                                dist_to_shed=False)
@@ -299,8 +309,8 @@ class RepositoryDependencyInstallManager(object):
         pathspec = ['repository', 'get_repository_dependencies']
         try:
             raw_text = url_get(tool_shed_url, password_mgr=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
-        except Exception as e:
-            log.error("The URL\n%s\nraised the exception:\n%s\n", build_url(tool_shed_url, pathspec=pathspec, params=params), str(e))
+        except Exception:
+            log.exception("Error while trying to get URL: %s", build_url(tool_shed_url, pathspec=pathspec, params=params))
             return ''
         if len(raw_text) > 2:
             encoded_text = json.loads(raw_text)
@@ -467,13 +477,13 @@ class RepositoryDependencyInstallManager(object):
         will be set to the default NEW state.  This will enable the repository to be
         freshly installed.
         """
-        debug_msg = "Resetting tool_shed_repository '%s' for installation.\n" % str(repository.name)
+        debug_msg = "Resetting tool_shed_repository '%s' for installation.\n" % repository.name
         debug_msg += "The current state of the tool_shed_repository is:\n"
-        debug_msg += "deleted: %s\n" % str(repository.deleted)
-        debug_msg += "tool_shed_status: %s\n" % str(repository.tool_shed_status)
-        debug_msg += "uninstalled: %s\n" % str(repository.uninstalled)
-        debug_msg += "status: %s\n" % str(repository.status)
-        debug_msg += "error_message: %s\n" % str(repository.error_message)
+        debug_msg += "deleted: %s\n" % repository.deleted
+        debug_msg += "tool_shed_status: %s\n" % repository.tool_shed_status
+        debug_msg += "uninstalled: %s\n" % repository.uninstalled
+        debug_msg += "status: %s\n" % repository.status
+        debug_msg += "error_message: %s\n" % repository.error_message
         log.debug(debug_msg)
         repository.deleted = False
         repository.tool_shed_status = None

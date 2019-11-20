@@ -1,6 +1,7 @@
 import logging
 import tempfile
 
+from galaxy.util import unicodify
 from tool_shed.galaxy_install import install_manager
 from tool_shed.galaxy_install.repository_dependencies import repository_dependency_manager
 from tool_shed.galaxy_install.tools import tool_panel_manager
@@ -162,7 +163,7 @@ class RepairRepositoryManager():
             try:
                 self.app.installed_repository_manager.activate_repository(repository)
             except Exception as e:
-                error_message = "Error activating repository %s: %s" % (repository.name, str(e))
+                error_message = "Error activating repository %s: %s" % (repository.name, unicodify(e))
                 log.debug(error_message)
                 repair_dict[repository.name] = error_message
         elif repository.status not in [self.app.install_model.ToolShedRepository.installation_status.INSTALLED]:

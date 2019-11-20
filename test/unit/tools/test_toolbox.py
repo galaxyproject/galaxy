@@ -1,3 +1,4 @@
+import collections
 import json
 import logging
 import os
@@ -9,17 +10,14 @@ import routes
 from six import string_types
 
 from galaxy import model
+from galaxy.config_watchers import ConfigWatchers
 from galaxy.model import tool_shed_install
 from galaxy.model.tool_shed_install import mapping
 from galaxy.tools import ToolBox
 from galaxy.tools.cache import ToolCache
-from galaxy.webapps.galaxy.config_watchers import ConfigWatchers
-from .test_tool_loader import (
-    SIMPLE_MACRO,
-    SIMPLE_TOOL_WITH_MACRO
-)
 from .test_toolbox_filters import mock_trans
 from ..tools_support import UsesApp, UsesTools
+from ..unittest_utils.sample_data import SIMPLE_MACRO, SIMPLE_TOOL_WITH_MACRO
 
 log = logging.getLogger(__name__)
 
@@ -37,6 +35,11 @@ CONFIG_TEST_TOOL_VERSION_TEMPLATE = string.Template(
 )
 CONFIG_TEST_TOOL_VERSION_1 = CONFIG_TEST_TOOL_VERSION_TEMPLATE.safe_substitute(dict(version="1"))
 CONFIG_TEST_TOOL_VERSION_2 = CONFIG_TEST_TOOL_VERSION_TEMPLATE.safe_substitute(dict(version="2"))
+
+DEFAULT_TEST_REPO = collections.namedtuple(
+    'DEFAULT_TEST_REPO',
+    'tool_shed owner name changeset_revision installed_changeset_revision description status',
+)('github.com', 'galaxyproject', 'example', '1', '1', 'description', 'OK')
 
 
 class BaseToolBoxTestCase(unittest.TestCase, UsesApp, UsesTools):
@@ -67,7 +70,7 @@ class BaseToolBoxTestCase(unittest.TestCase, UsesApp, UsesTools):
         self.app.reindex_tool_search = self.__reindex
         itp_config = os.path.join(self.test_directory, "integrated_tool_panel.xml")
         self.app.config.integrated_tool_panel_config = itp_config
-        self.app.watchers = ConfigWatchers(self.app, start_thread=False)
+        self.app.watchers = ConfigWatchers(self.app)
         self._toolbox = None
         self.config_files = []
 
@@ -85,9 +88,9 @@ class BaseToolBoxTestCase(unittest.TestCase, UsesApp, UsesTools):
         if config_filename:
             metadata['shed_config_filename'] = config_filename
         repository = tool_shed_install.ToolShedRepository(metadata=metadata)
-        repository.tool_shed = "github.com"
-        repository.owner = "galaxyproject"
-        repository.name = "example"
+        repository.tool_shed = DEFAULT_TEST_REPO.tool_shed
+        repository.owner = DEFAULT_TEST_REPO.owner
+        repository.name = DEFAULT_TEST_REPO.name
         repository.changeset_revision = changeset
         repository.installed_changeset_revision = changeset
         repository.deleted = False
@@ -570,9 +573,6 @@ class SimplifiedToolBox(ToolBox):
         )
         # Need to start thread now for new reload callback to take effect
         self.app.watchers.start()
-
-    def handle_panel_update(self, section_dict):
-        self.create_section(section_dict)
 
 
 def reload_callback(test_case):

@@ -18,17 +18,18 @@ from six.moves.queue import (
 
 import galaxy.jobs
 from galaxy import model
+from galaxy.job_execution.output_collect import default_exit_code_file, read_exit_code_from
 from galaxy.jobs.command_factory import build_command
-from galaxy.jobs.output_checker import DETECTED_JOB_STATE
 from galaxy.jobs.runners.util.env import env_to_statement
 from galaxy.jobs.runners.util.job_script import (
     job_script,
     write_script
 )
-from galaxy.tools.deps.dependencies import (
+from galaxy.tool_util.deps.dependencies import (
     JobInfo,
     ToolInfo
 )
+from galaxy.tool_util.output_checker import DETECTED_JOB_STATE
 from galaxy.util import (
     DATABASE_MAX_STRING_SIZE,
     ExecutionTimer,
@@ -131,6 +132,11 @@ class BaseJobRunner(object):
                 method(arg)
             except Exception:
                 log.exception("(%s) Unhandled exception calling %s" % (job_id, name))
+                if not isinstance(arg, JobState):
+                    job_state = JobState(job_wrapper=arg, job_destination={})
+                else:
+                    job_state = arg
+                self.work_queue.put((self.fail_job, job_state))
 
     # Causes a runner's `queue_job` method to be called from a worker thread
     def put(self, job_wrapper):
@@ -413,7 +419,8 @@ class BaseJobRunner(object):
             compute_tmp_directory = job_wrapper.tmp_directory()
 
         tool = job_wrapper.tool
-        tool_info = ToolInfo(tool.containers, tool.requirements, tool.requires_galaxy_python_environment, tool.docker_env_pass_through)
+        guest_ports = [ep.get('port') for ep in getattr(job_wrapper, 'interactivetools', [])]
+        tool_info = ToolInfo(tool.containers, tool.requirements, tool.requires_galaxy_python_environment, tool.docker_env_pass_through, guest_ports=guest_ports)
         job_info = JobInfo(
             compute_working_directory,
             compute_tool_directory,
@@ -423,11 +430,14 @@ class BaseJobRunner(object):
         )
 
         destination_info = job_wrapper.job_destination.params
-        return self.app.container_finder.find_container(
+        container = self.app.container_finder.find_container(
             tool_info,
             destination_info,
             job_info
         )
+        if container:
+            job_wrapper.set_container(container)
+        return container
 
     def _handle_runner_state(self, runner_state, job_state):
         try:
@@ -545,7 +555,7 @@ class JobState(object):
                 self.job_file = JobState.default_job_file(files_dir, id_tag)
                 self.output_file = os.path.join(files_dir, 'galaxy_%s.o' % id_tag)
                 self.error_file = os.path.join(files_dir, 'galaxy_%s.e' % id_tag)
-                self.exit_code_file = os.path.join(files_dir, 'galaxy_%s.ec' % id_tag)
+                self.exit_code_file = default_exit_code_file(files_dir, id_tag)
             job_name = 'g%s' % id_tag
             if self.job_wrapper.tool.old_id:
                 job_name += '_%s' % self.job_wrapper.tool.old_id
@@ -557,27 +567,8 @@ class JobState(object):
     def default_job_file(files_dir, id_tag):
         return os.path.join(files_dir, 'galaxy_%s.sh' % id_tag)
 
-    @staticmethod
-    def default_exit_code_file(files_dir, id_tag):
-        return os.path.join(files_dir, 'galaxy_%s.ec' % id_tag)
-
     def read_exit_code(self):
-        try:
-            # This should be an 8-bit exit code, but read ahead anyway:
-            exit_code_str = open(self.exit_code_file, "r").read(32)
-        except Exception:
-            # By default, the exit code is 0, which typically indicates success.
-            exit_code_str = "0"
-
-        try:
-            # Decode the exit code. If it's bogus, then just use 0.
-            exit_code = int(exit_code_str)
-        except ValueError:
-            galaxy_id_tag = self.job_wrapper.get_id_tag()
-            log.warning("(%s) Exit code '%s' invalid. Using 0." % (galaxy_id_tag, exit_code_str))
-            exit_code = 0
-
-        return exit_code
+        return read_exit_code_from(self.exit_code_file, self.job_wrapper.get_id_tag())
 
     def cleanup(self):
         for file in [getattr(self, a) for a in self.cleanup_file_attributes if hasattr(self, a)]:

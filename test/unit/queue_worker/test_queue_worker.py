@@ -1,16 +1,21 @@
 import datetime
 import time
+try:
+    from math import inf
+except ImportError:
+    # python 2 doesn't have math.inf, but can use float('inf')
+    inf = float('inf')
 
 import pytest
 
+from galaxy.model.database_heartbeat import DatabaseHeartbeat
 from galaxy.queue_worker import (
     GalaxyQueueWorker,
     send_control_task,
     send_local_control_task,
 )
 from galaxy.queues import connection_from_config
-from galaxy.web.stack import application_stack_instance
-from galaxy.web.stack.database_heartbeat import DatabaseHeartbeat
+from galaxy.web_stack import application_stack_instance
 
 
 def bar(app, **kwargs):
@@ -27,7 +32,7 @@ def queue_worker_factory(request, database_app):
 
     def app_factory():
         app = setup_queue_worker_test(database_app())
-        request.addfinalizer(app.control_worker.shutdown)
+        request.addfinalizer(app.queue_worker.shutdown)
         request.addfinalizer(app.database_heartbeat.shutdown)
         return app
 
@@ -46,8 +51,8 @@ def setup_queue_worker_test(app):
     app.database_heartbeat = DatabaseHeartbeat(application_stack=app.application_stack, heartbeat_interval=10)
     app.database_heartbeat.start()
     time.sleep(0.2)
-    app.control_worker = GalaxyQueueWorker(app=app, task_mapping=control_message_to_task)
-    app.control_worker.bind_and_start()
+    app.queue_worker = GalaxyQueueWorker(app=app, task_mapping=control_message_to_task)
+    app.queue_worker.bind_and_start()
     time.sleep(0.5)
     return app
 
@@ -84,6 +89,14 @@ def test_send_local_control_task(queue_worker_factory):
     send_local_control_task(app=app, task='echo')
     wait_for_var(app, 'some_var', 'bar')
     assert len(app.tasks_executed) == 1
+
+
+def test_send_local_control_task_with_past_message(queue_worker_factory):
+    app = queue_worker_factory()
+    app.queue_worker.epoch = inf
+    response = send_local_control_task(app=app, task='echo', get_response=True)
+    assert len(app.tasks_executed) == 0
+    assert response == 'NO_OP'
 
 
 def test_send_local_control_task_with_non_target_listeners(queue_worker_factory):

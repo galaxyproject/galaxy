@@ -3,15 +3,14 @@ API for updating Galaxy Pages
 """
 import logging
 
-from galaxy import exceptions
+from galaxy.managers.base import get_object
 from galaxy.managers.pages import (
     PageManager,
     PageSerializer
 )
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import expose_api
-from galaxy.web.base.controller import (
+from galaxy.webapps.base.controller import (
     BaseAPIController,
     SharableItemSecurityMixin,
     SharableMixin
@@ -81,39 +80,10 @@ class PagesController(BaseAPIController, SharableItemSecurityMixin, UsesAnnotati
         :rtype:     dict
         :returns:   Dictionary return of the Page.to_dict call
         """
-        user = trans.get_user()
-
-        if not payload.get("title", None):
-            raise exceptions.ObjectAttributeMissingException("Page name is required")
-        elif not payload.get("slug", None):
-            raise exceptions.ObjectAttributeMissingException("Page id is required")
-        elif not self._is_valid_slug(payload["slug"]):
-            raise exceptions.ObjectAttributeInvalidException("Page identifier must consist of only lowercase letters, numbers, and the '-' character")
-        elif trans.sa_session.query(trans.app.model.Page).filter_by(user=user, slug=payload["slug"], deleted=False).first():
-            raise exceptions.DuplicatedSlugException("Page slug must be unique")
-
-        content = payload.get("content", "")
-        content = sanitize_html(content)
-
-        # Create the new stored page
-        page = trans.app.model.Page()
-        page.title = payload['title']
-        page.slug = payload['slug']
-        page_annotation = sanitize_html(payload.get("annotation", ""))
-        self.add_item_annotation(trans.sa_session, trans.get_user(), page, page_annotation)
-        page.user = user
-        # And the first (empty) page revision
-        page_revision = trans.app.model.PageRevision()
-        page_revision.title = payload['title']
-        page_revision.page = page
-        page.latest_revision = page_revision
-        page_revision.content = content
-        # Persist
-        session = trans.sa_session
-        session.add(page)
-        session.flush()
-
+        page = self.manager.create(trans, payload)
         rval = self.encode_all_ids(trans, page.to_dict(), True)
+        rval['content'] = page.latest_revision.content
+        self.manager.rewrite_content_for_export(trans, rval)
         return rval
 
     @expose_api
@@ -128,7 +98,7 @@ class PagesController(BaseAPIController, SharableItemSecurityMixin, UsesAnnotati
         :rtype:     dict
         :returns:   Dictionary with 'success' or 'error' element to indicate the result of the request
         """
-        page = self._get_page(trans, id)
+        page = get_object(trans, id, 'Page', check_ownership=True)
 
         # Mark a page as deleted
         page.deleted = True
@@ -147,22 +117,8 @@ class PagesController(BaseAPIController, SharableItemSecurityMixin, UsesAnnotati
         :rtype:     dict
         :returns:   Dictionary return of the Page.to_dict call with the 'content' field populated by the most recent revision
         """
-        page = self._get_page(trans, id)
-        self.security_check(trans, page, check_ownership=False, check_accessible=True)
+        page = get_object(trans, id, 'Page', check_ownership=False, check_accessible=True)
         rval = self.encode_all_ids(trans, page.to_dict(), True)
         rval['content'] = page.latest_revision.content
+        self.manager.rewrite_content_for_export(trans, rval)
         return rval
-
-    def _get_page(self, trans, id):  # Fetches page object and verifies security.
-        try:
-            page = trans.sa_session.query(trans.app.model.Page).get(trans.security.decode_id(id))
-        except Exception:
-            page = None
-
-        if not page:
-            raise exceptions.ObjectNotFound()
-
-        if page.user != trans.user and not trans.user_is_admin:
-            raise exceptions.ItemOwnershipException()
-
-        return page

@@ -1,5 +1,6 @@
 <template>
     <b-alert :variant="galaxyKwdToBootstrap" :show="showP" v-bind="$props">
+        <!-- @slot Message to display in alert -->
         <slot> {{ message }} </slot>
     </b-alert>
 </template>
@@ -7,21 +8,34 @@
 <script>
 export default {
     props: {
+        /**
+         * Message to display in the alert
+         */
         message: {
             type: String,
             default: ""
         },
+        /**
+         * Alias for variant, takes precedence if both are set
+         */
         status: {
             type: String,
             default: ""
         },
+        /**
+         * Alert type, one of done/success, info, warning, error/danger
+         */
         variant: {
             type: String,
             default: "done"
         },
+        /** Display a close button in the alert that allows it to be dismissed */
         dismissible: Boolean,
+        /** Label for the close button, for aria */
         dismissLabel: String,
+        /** If a number, number of seconds to show before dismissing */
         show: [Boolean, Number],
+        /** Should the alert fade out */
         fade: Boolean
     },
     computed: {

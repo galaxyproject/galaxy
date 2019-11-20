@@ -8,7 +8,7 @@ import string
 import sqlalchemy.orm.exc
 from sqlalchemy import and_, false, true
 
-import galaxy.tools.deps.requirements
+import galaxy.tool_util.deps.requirements
 from galaxy import util
 from galaxy.util import checkers
 from galaxy.web import url_for
@@ -231,7 +231,7 @@ def get_tool_shed_repo_requirements(app, tool_shed_url, repositories=None, repo_
 
 
 def get_requirements_from_tools(tools):
-    return {tool['id']: galaxy.tools.deps.requirements.ToolRequirements.from_list(tool['requirements']) for tool in tools}
+    return {tool['id']: galaxy.tool_util.deps.requirements.ToolRequirements.from_list(tool['requirements']) for tool in tools}
 
 
 def get_requirements_from_repository(repository):
@@ -406,12 +406,6 @@ def get_tool_panel_config_tool_path_install_dir(app, repository):
                                                   str(repository.installed_changeset_revision))
     # Get the relative tool installation paths from each of the shed tool configs.
     shed_config_dict = repository.get_shed_config_dict(app)
-    if not shed_config_dict:
-        # Just pick a semi-random shed config.
-        for shed_config_dict in app.toolbox.dynamic_confs(include_migrated_tool_conf=True):
-            if (repository.dist_to_shed and shed_config_dict['config_filename'] == app.config.migrated_tools_config) \
-                    or (not repository.dist_to_shed and shed_config_dict['config_filename'] != app.config.migrated_tools_config):
-                break
     shed_tool_conf = shed_config_dict['config_filename']
     tool_path = shed_config_dict['tool_path']
     return shed_tool_conf, tool_path, relative_install_dir

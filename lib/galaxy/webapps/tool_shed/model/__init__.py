@@ -163,9 +163,9 @@ class GalaxySession(object):
 
 class Repository(Dictifiable):
     dict_collection_visible_keys = ['id', 'name', 'type', 'remote_repository_url', 'homepage_url', 'description', 'user_id', 'private', 'deleted',
-                                    'times_downloaded', 'deprecated']
+                                    'times_downloaded', 'deprecated', 'create_time']
     dict_element_visible_keys = ['id', 'name', 'type', 'remote_repository_url', 'homepage_url', 'description', 'long_description', 'user_id', 'private',
-                                 'deleted', 'times_downloaded', 'deprecated']
+                                 'deleted', 'times_downloaded', 'deprecated', 'create_time', 'ratings', 'reviews', 'reviewers']
     file_states = Bunch(NORMAL='n',
                         NEEDS_MERGING='m',
                         MARKED_FOR_REMOVAL='r',
