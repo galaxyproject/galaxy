@@ -127,6 +127,10 @@ approaches on the Galaxy side, but some old tools using this syntax will not fun
 *In our testing these problems should affect only a very limited number of tools and the vast majority should
 work on Python 3 without a change.*
 
+GenomeSpace
+-----------
+The GenomeSpace project has `ended <http://www.genomespace.org/news/the-genomespace-project-is-ending>`__ on November 15, 2019 due to expiration of its NHGRI funding.
+Therefore the GenomeSpace Importer and Exporter Galaxy tools are hereby deprecated and will be removed in 20.01.
 
 Release Notes
 =============
