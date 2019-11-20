@@ -1,17 +1,11 @@
 <template>
     <div>
         <b-button
-            data-toggle="dropdown"
-            id="dataset-name"
-            aria-haspopup="true"
-            aria-expanded="false"
             v-b-tooltip.hover.bottom
-            title="Show dataset"
-            class="dataset-add btn-sm btn-primary fa fa-gear"
+            title="Add to current History"
+            class="dataset-add btn-sm btn-primary fa fa-plus"
+            @click.stop="addToHistory"
         />
-        <div class="dropdown-menu" aria-labelledby="dataset-name">
-            <a class="dropdown-item" href="#" @click="addToHistory">Copy to History</a>
-        </div>
     </div>
 </template>
 <script>
