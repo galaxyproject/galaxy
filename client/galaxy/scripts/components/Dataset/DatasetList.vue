@@ -15,10 +15,10 @@
                     :items="rows"
                 >
                     <template v-slot:cell(name)="row">
-                        <DatasetName :item="row.item" @show="onShow" />
+                        <DatasetName :item="row.item" @showDataset="onShowDataset" />
                     </template>
                     <template v-slot:cell(context)="row">
-                        <DatasetContext :item="row.item" />
+                        <DatasetContext :item="row.item" @addToHistory="onAddToHistory"/>
                     </template>
                     <template v-slot:cell(tags)="row">
                         <Tags :item="row.item" @input="onTags" />
@@ -125,7 +125,21 @@ export default {
                     this.error = error;
                 });
         },
-        onShow(item) {
+        onAddToHistory(item) {
+            const Galaxy = getGalaxyInstance();
+            const history = Galaxy.currHistoryPanel;
+            const dataset_id = item.id;
+            const history_id = history.model.id;
+            this.services
+                .copyDataset(dataset_id, history_id)
+                .then(response => {
+                    history.loadCurrentHistory();
+                })
+                .catch(error => {
+                    this.$emit("error", error);
+                });
+        },
+        onShowDataset(item) {
             const Galaxy = getGalaxyInstance();
             this.services
                 .setHistory(item.history_id)

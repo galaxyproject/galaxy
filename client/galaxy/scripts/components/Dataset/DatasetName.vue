@@ -25,7 +25,7 @@ export default {
     },
     methods: {
         showDataset(item) {
-            this.$emit("show", this.item);
+            this.$emit("showDataset", this.item);
         }
     }
 };
