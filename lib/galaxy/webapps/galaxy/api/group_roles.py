@@ -12,8 +12,8 @@ log = logging.getLogger(__name__)
 
 class GroupRolesAPIController(BaseAPIController):
 
-    @web.legacy_expose_api
     @web.require_admin
+    @web.legacy_expose_api
     def index(self, trans, group_id, **kwd):
         """
         GET /api/groups/{encoded_group_id}/roles
@@ -41,8 +41,8 @@ class GroupRolesAPIController(BaseAPIController):
             trans.response.status = 500
         return rval
 
-    @web.legacy_expose_api
     @web.require_admin
+    @web.legacy_expose_api
     def show(self, trans, id, group_id, **kwd):
         """
         GET /api/groups/{encoded_group_id}/roles/{encoded_role_id}
@@ -67,8 +67,8 @@ class GroupRolesAPIController(BaseAPIController):
             log.error(item + ": %s", unicodify(e))
         return item
 
-    @web.legacy_expose_api
     @web.require_admin
+    @web.legacy_expose_api
     def update(self, trans, id, group_id, **kwd):
         """
         PUT /api/groups/{encoded_group_id}/roles/{encoded_role_id}
@@ -99,8 +99,8 @@ class GroupRolesAPIController(BaseAPIController):
             log.error(item + ": %s", unicodify(e))
         return item
 
-    @web.legacy_expose_api
     @web.require_admin
+    @web.legacy_expose_api
     def delete(self, trans, id, group_id, **kwd):
         """
         DELETE /api/groups/{encoded_group_id}/roles/{encoded_role_id}

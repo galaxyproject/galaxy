@@ -61,8 +61,8 @@ class DynamicToolsController(BaseAPIController):
         )
         return dynamic_tool.to_dict()
 
-    @expose_api
     @web.require_admin
+    @expose_api
     def delete(self, trans, id, **kwd):
         """
         DELETE /api/dynamic_tools/{encoded_dynamic_tool_id|tool_uuid}

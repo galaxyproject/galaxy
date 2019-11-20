@@ -25,8 +25,8 @@ class ToolShedController(BaseAPIController):
             tool_sheds.append(dict(name=name, url=quote(url, '')))
         return tool_sheds
 
-    @expose_api
     @require_admin
+    @expose_api
     def request(self, trans, **params):
         """
         GET /api/tool_shed/request
