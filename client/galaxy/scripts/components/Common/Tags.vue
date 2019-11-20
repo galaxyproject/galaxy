@@ -14,9 +14,9 @@ export default {
         }
     },
     methods: {
-        onInput: function(tags) {
+        onInput(tags) {
             this.item.tags = tags;
-            this.$emit("input", item);
+            this.$emit("input", this.item);
         }
     }
 };

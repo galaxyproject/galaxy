@@ -54,6 +54,20 @@ export class Services {
         }
     }
 
+    async updateTags(item_id, item_class, item_tags) {
+        const url = `${this.root}api/tags`;
+        try {
+            const response = await axios.put(url, {
+                item_id: item_id,
+                item_class: item_class,
+                item_tags: item_tags
+            });
+            return response.data;
+        } catch (e) {
+            this._errorMessage(e);
+        }
+    }
+
     _errorMessage(e) {
         let message = "Request failed.";
         if (e.response) {

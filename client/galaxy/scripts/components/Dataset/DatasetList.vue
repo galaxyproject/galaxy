@@ -15,18 +15,13 @@
                     :items="rows"
                 >
                     <template v-slot:cell(name)="row">
-                        <DatasetName :item="row.item" />
+                        <DatasetName :item="row.item" @show="onShow" />
+                    </template>
+                    <template v-slot:cell(context)="row">
+                        <DatasetContext :item="row.item" />
                     </template>
                     <template v-slot:cell(tags)="row">
                         <Tags :item="row.item" @input="onTags" />
-                    </template>
-                    <template v-slot:cell(addto)="row">
-                        <b-button
-                            v-b-tooltip.hover.bottom
-                            title="Add to current History"
-                            class="dataset-add btn-sm btn-primary fa fa-plus"
-                            @click.stop="addToHistory(row.item)"
-                        />
                     </template>
                 </b-table>
                 <div v-if="showNotFound">
@@ -45,12 +40,14 @@ import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import { Services } from "./services.js";
 import DatasetName from "./DatasetName";
+import DatasetContext from "./DatasetContext";
 import DelayedInput from "components/Common/DelayedInput";
 import Tags from "components/Common/Tags";
 import LoadingSpan from "components/LoadingSpan";
 
 export default {
     components: {
+        DatasetContext,
         DatasetName,
         LoadingSpan,
         DelayedInput,
@@ -74,7 +71,7 @@ export default {
                     sortable: false
                 },
                 {
-                    key: "addto",
+                    key: "context",
                     label: "",
                     sortable: false
                 }
@@ -128,21 +125,22 @@ export default {
                     this.error = error;
                 });
         },
-        addToHistory(dataset) {
+        onShow(item) {
             const Galaxy = getGalaxyInstance();
-            const history = Galaxy.currHistoryPanel;
-            const dataset_id = dataset.id;
-            const history_id = history.model.id;
             this.services
-                .copyDataset(dataset_id, history_id)
-                .then(response => {
-                    history.loadCurrentHistory();
+                .setHistory(item.history_id)
+                .then(history => {
+                    Galaxy.currHistoryPanel.loadCurrentHistory();
                 })
                 .catch(error => {
                     this.error = error;
                 });
         },
-        onTags(item) {},
+        onTags(item) {
+            this.services.updateTags(item.id, "HistoryDatasetAssociation", item.tags).catch(error => {
+                this.onError(error);
+            });
+        },
         onQuery(query) {
             this.query = query;
             this.offset = 0;
