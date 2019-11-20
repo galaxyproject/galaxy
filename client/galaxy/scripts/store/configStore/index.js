@@ -1,8 +1,6 @@
 import { getConfig } from "./queries";
 
-const defaultConfigs = {
-    testVal: 'foo'
-}
+const defaultConfigs = {}
 
 const state = {
     config: Object.assign({}, defaultConfigs)
