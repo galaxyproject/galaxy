@@ -587,7 +587,7 @@ class ToolBox(AbstractToolBox):
             # TODO: uuid probably needed here...
             tool_source = get_tool_source(
                 config_file,
-                enable_beta_formats=getattr(self.app.config, "enable_beta_tool_formats", False),
+                enable_beta_formats=getattr(self.app.config, "enable_beta_tool_formats", True),
                 tool_location_fetcher=self.tool_location_fetcher,
                 strict_cwl_validation=strict_cwl_validation,
             )
