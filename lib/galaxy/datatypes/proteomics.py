@@ -53,6 +53,68 @@ class Wiff(Binary):
         return "\n".join(rval)
 
 
+@build_sniff_from_prefix
+class MzTab(Text):
+    """exchange format for proteomics and metabolomics results"""
+    edam_data = "data_3681"
+    file_ext = "mztab"
+    # section names (except MTD)
+    __sections = ["PRH", "PRT", "PEH", "PEP", "PSH", "PSM", "SMH", "SML", "COM"]
+    __version_re = r"([0-9]{1,2})(\.[0-9])?(\.[0-9])?$"
+
+    def __init__(self, **kwd):
+        super(MzTab, self).__init__(**kwd)
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        """Set the peek and blurb text"""
+        if not dataset.dataset.purged:
+            dataset.peek = data.get_file_peek(dataset.file_name)
+            dataset.blurb = 'mzTab Format'
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def sniff_prefix(self, file_prefix):
+        """ Determines whether the file is the correct type. """
+        has_version = False
+        has_mode = False
+        has_type = False
+
+        contents = file_prefix.string_io()
+        while True:
+            line = contents.readline().split("\t")
+            if line[0] == "MTD":
+                if line[1] == "mzTab-version" and re.match(self.__version_re, line) is not None:
+                    has_version = True
+                elif line[1] == "mzTab-mode" and line[2].lowercase() in ["complete", "summary"]:
+                    has_mode = True
+                elif line[1] == "mzTab-type" and line[2].lowercase() in ['quantification', 'identification']:
+                    has_type = True
+            elif not line[0] in self.__sections:
+                return False
+
+        return has_version and has_mode and has_type
+
+
+class MzTab2(MzTab):
+    """exchange format for proteomics and metabolomics results"""
+    file_ext = "mztab2"
+    __sections = ["SMH", "SML", "SFH", "SMF", "SEH", "SME", "COM"]
+    __version_re = r"([0-9]{1,2})(\.[0-9])?(\.[0-9])?-M$"
+
+    def __init__(self, **kwd):
+        super(MzTab2, self).__init__(**kwd)
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        """Set the peek and blurb text"""
+        if not dataset.dataset.purged:
+            dataset.peek = data.get_file_peek(dataset.file_name)
+            dataset.blurb = 'mzTab2 Format'
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+
 class PepXmlReport(Tabular):
     """pepxml converted to tabular report"""
     edam_data = "data_2536"
@@ -185,6 +247,12 @@ class TraML(ProteomicsXml):
     file_ext = "traml"
     blurb = "TraML transition list"
     root = "TraML"
+
+
+class TrafoXML(ProteomicsXml):
+    file_ext = "trafoxml"
+    blurb = "RT alignment tranformation"
+    root = "TrafoXML"
 
 
 class MzQuantML(ProteomicsXml):
