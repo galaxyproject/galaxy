@@ -12,9 +12,6 @@ export default {
     props: {
         item: Object
     },
-    data() {
-        return {};
-    },
     computed: {
         isError() {
             return this.item.state === "error";
