@@ -96,11 +96,11 @@
                                 <b-form-textarea v-show="form.file" :value="form.file" />
                             </b-form-group>
                             <b-form-group v-if="selectedDataSource === 'text'" label="Edit/Paste">
-                                <b-form-textarea v-model="form.text" />
+                                <b-form-textarea id="len-file-text-area" v-model="form.text" />
                             </b-form-group>
                         </div>
 
-                        <b-button type="submit" variant="primary" v-b-tooltip.bottom.hover title="Create new build">
+                        <b-button id="save" type="submit" variant="primary" v-b-tooltip.bottom.hover title="Create new build">
                             <i class="icon fa fa-save" /> Save
                         </b-button>
                     </b-form>
