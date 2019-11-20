@@ -482,7 +482,7 @@ class WorkflowContentsManager(UsesAnnotations):
             wf_dict = self._workflow_to_dict_export(trans, stored, workflow=workflow)
         else:
             raise exceptions.RequestParameterInvalidException('Unknown workflow style [%s]' % style)
-        if version:
+        if version is not None:
             wf_dict['version'] = version
         else:
             wf_dict['version'] = len(stored.workflows) - 1
@@ -979,6 +979,7 @@ class WorkflowContentsManager(UsesAnnotations):
         encode = self.app.security.encode_id
         sa_session = self.app.model.context
         item = stored.to_dict(view='element', value_mapper={'id': encode})
+        item['name'] = workflow.name
         item['url'] = url_for('workflow', id=item['id'])
         item['owner'] = stored.user.username
         inputs = {}
