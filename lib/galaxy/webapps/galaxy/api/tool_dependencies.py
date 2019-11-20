@@ -19,24 +19,24 @@ class ToolDependenciesAPIController(BaseAPIController):
         super(ToolDependenciesAPIController, self).__init__(app)
         self._view = views.DependencyResolversView(app)
 
-    @expose_api
     @require_admin
+    @expose_api
     def index(self, trans, **kwd):
         """
         GET /api/dependency_resolvers
         """
         return self._view.index()
 
-    @expose_api
     @require_admin
+    @expose_api
     def show(self, trans, id):
         """
         GET /api/dependency_resolvers/<id>
         """
         return self._view.show(id)
 
-    @expose_api
     @require_admin
+    @expose_api
     def update(self, trans):
         """
         PUT /api/dependency_resolvers
@@ -45,8 +45,8 @@ class ToolDependenciesAPIController(BaseAPIController):
         """
         return self._view.reload()
 
-    @expose_api
     @require_admin
+    @expose_api
     def resolver_dependency(self, trans, id, **kwds):
         """
         GET /api/dependency_resolvers/{index}/dependency
@@ -71,8 +71,8 @@ class ToolDependenciesAPIController(BaseAPIController):
         """
         return self._view.resolver_dependency(id, **kwds)
 
-    @expose_api
     @require_admin
+    @expose_api
     def install_dependency(self, trans, id=None, **kwds):
         """
         POST /api/dependency_resolvers/{index}/dependency
@@ -98,8 +98,8 @@ class ToolDependenciesAPIController(BaseAPIController):
         self._view.install_dependency(id, **kwds)
         return self._view.manager_dependency(**kwds)
 
-    @expose_api
     @require_admin
+    @expose_api
     def manager_dependency(self, trans, **kwds):
         """
         GET /api/dependency_resolvers/dependency
@@ -125,8 +125,8 @@ class ToolDependenciesAPIController(BaseAPIController):
         """
         return self._view.manager_dependency(**kwds)
 
-    @expose_api
     @require_admin
+    @expose_api
     def resolver_requirements(self, trans, id, **kwds):
         """
         GET /api/dependency_resolvers/{index}/requirements
@@ -144,8 +144,8 @@ class ToolDependenciesAPIController(BaseAPIController):
         """
         return self._view.resolver_requirements(id)
 
-    @expose_api
     @require_admin
+    @expose_api
     def manager_requirements(self, trans, **kwds):
         """
         GET /api/dependency_resolvers/requirements
@@ -163,8 +163,8 @@ class ToolDependenciesAPIController(BaseAPIController):
         """
         return self._view.manager_requirements()
 
-    @expose_api
     @require_admin
+    @expose_api
     def clean(self, trans, id=None, **kwds):
         """
         POST /api/dependency_resolvers/{index}/clean
