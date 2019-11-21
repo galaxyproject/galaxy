@@ -94,6 +94,13 @@ def test_galaxy_routes():
     )
 
     test_webapp.assert_maps(
+        "/api/invocations/0123abcdedf.tar.gz",
+        controller="workflows",
+        action="show_invocation",
+        format="tar.gz",
+    )
+
+    test_webapp.assert_maps(
         "/api/dependency_resolvers/dependency",
         controller="tool_dependencies",
         action="manager_dependency"

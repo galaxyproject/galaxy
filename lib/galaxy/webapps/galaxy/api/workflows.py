@@ -6,7 +6,8 @@ import hashlib
 import json
 import logging
 import os
-from typing import Any, Dict
+from tempfile import NamedTemporaryFile
+from typing import Any, Dict, Type
 
 import requests
 from gxformat2._yaml import ordered_dump
@@ -28,6 +29,11 @@ from galaxy.managers.workflows import (
     WorkflowUpdateOptions,
 )
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.model.store import (
+    BagArchiveModelExportStore,
+    ModelExportStore,
+    TarModelExportStore,
+)
 from galaxy.structured_app import StructuredApp
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
 from galaxy.tools import recommendations
@@ -939,16 +945,20 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         )
         return self.workflow_manager.serialize_workflow_invocations(invocations, **kwd)
 
-    @expose_api
+    @expose_api_raw
     def show_invocation(self, trans: GalaxyWebTransaction, invocation_id, **kwd):
         """
-        GET /api/workflows/{workflow_id}/invocations/{invocation_id}
-        GET /api/invocations/{invocation_id}
+        GET /api/workflows/{workflow_id}/invocations/{invocation_id}{.format}
+        GET /api/invocations/{invocation_id}{.format}
 
         Get detailed description of workflow invocation
 
         :param  invocation_id:      the invocation id (required)
         :type   invocation_id:      str
+
+        :param  format:             Defaults to json like a typical entry but allow exporting as tar.gz,
+                                    bagit.tar.gz
+        :type   format:             str
 
         :param  step_details:       fetch details about individual invocation steps
                                     and populate a steps attribute in the resulting
@@ -970,11 +980,37 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         """
         decoded_workflow_invocation_id = self.decode_id(invocation_id)
         workflow_invocation = self.workflow_manager.get_invocation(trans, decoded_workflow_invocation_id, eager=True)
-        if workflow_invocation:
+        if not workflow_invocation:
+            raise exceptions.ObjectNotFound()
+
+        download_format = kwd.get("format", "json")
+        if download_format == "json":
             step_details = util.string_as_bool(kwd.pop('step_details', 'False'))
             legacy_job_state = util.string_as_bool(kwd.pop('legacy_job_state', 'False'))
-            return self.__encode_invocation(workflow_invocation, step_details=step_details, legacy_job_state=legacy_job_state, **kwd)
-        return None
+            return format_return_as_json(self.__encode_invocation(workflow_invocation, step_details=step_details, legacy_job_state=legacy_job_state))
+        else:
+            export_store_class: Type[ModelExportStore]
+            export_store_class_kwds = {
+                "app": self.app,
+                "export_files": False,
+                "serialize_dataset_objects": False,
+            }
+            export_target = NamedTemporaryFile("wb").name
+            if download_format == "tar.gz":
+                export_store_class = TarModelExportStore
+                export_store_class_kwds["gzip"] = True
+            elif download_format.startswith("bag."):
+                bag_archiver = download_format[len("bag."):]
+                if bag_archiver not in ["zip", "tar", "tgz"]:
+                    raise exceptions.RequestParameterInvalidException("Unknown download format [%s]" % download_format)
+                export_store_class = BagArchiveModelExportStore
+                export_store_class_kwds["bag_archiver"] = bag_archiver
+            else:
+                raise exceptions.RequestParameterInvalidException("Unknown download format [%s]" % download_format)
+            export_store = export_store_class(export_target, **export_store_class_kwds)
+            with export_store:
+                export_store.export_workflow_invocation(workflow_invocation)
+            return export_target
 
     @expose_api
     def cancel_invocation(self, trans: ProvidesUserContext, invocation_id, **kwd):
