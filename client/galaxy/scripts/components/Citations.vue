@@ -1,19 +1,21 @@
 <template>
     <b-card>
-        <h4 slot="header" class="mb-0">
-            Citations
-            <b-button
-                v-if="viewRender"
-                @click="toggleViewRender"
-                title="Show all in BibTeX format."
-                class="citations-to-bibtex"
-            >
-                <i class="fa fa-pencil-square-o"></i> Show BibTeX
-            </b-button>
-            <b-button v-else @click="toggleViewRender" title="Return to formatted citation list.">
-                <i class="fa fa-times"></i> Hide BibTeX
-            </b-button>
-        </h4>
+        <template v-slot:header>
+            <h4 class="mb-0">
+                Citations
+                <b-button
+                    v-if="viewRender"
+                    @click="toggleViewRender"
+                    title="Show all in BibTeX format."
+                    class="citations-to-bibtex"
+                >
+                    <i class="fa fa-pencil-square-o"></i> Show BibTeX
+                </b-button>
+                <b-button v-else @click="toggleViewRender" title="Return to formatted citation list.">
+                    <i class="fa fa-times"></i> Hide BibTeX
+                </b-button>
+            </h4>
+        </template>
         <div v-if="source === 'histories'" class="infomessage">
             When writing up your analysis, remember to include all references that should be cited in order to
             completely describe your work. Also, please remember to

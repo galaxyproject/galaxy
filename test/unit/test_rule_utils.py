@@ -1,7 +1,7 @@
 import yaml
-from base import rules_test_data
 
 from galaxy.util import rules_dsl
+from galaxy_test.base import rules_test_data
 
 
 def test_rules():

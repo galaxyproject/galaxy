@@ -12,6 +12,7 @@ import SelectFtp from "mvc/ui/ui-select-ftp";
 import SelectGenomeSpace from "mvc/ui/ui-select-genomespace";
 import RulesEdit from "mvc/ui/ui-rules-edit";
 import ColorPicker from "mvc/ui/ui-color-picker";
+import DataPicker from "mvc/ui/ui-data-picker";
 
 // create form view
 export default Backbone.Model.extend({
@@ -37,7 +38,8 @@ export default Backbone.Model.extend({
         ftpfile: "_fieldFtp",
         upload: "_fieldUpload",
         rules: "_fieldRulesEdit",
-        genomespacefile: "_fieldGenomeSpace"
+        genomespacefile: "_fieldGenomeSpace",
+        data_dialog: "_fieldDialog"
     },
 
     /** Returns an input field for a given field type */
@@ -189,6 +191,15 @@ export default Backbone.Model.extend({
     _fieldColor: function(input_def) {
         return new ColorPicker({
             id: `field-${input_def.id}`,
+            onchange: input_def.onchange
+        });
+    },
+
+    /** Data dialog picker field */
+    _fieldDialog: function(input_def) {
+        return new DataPicker({
+            id: `field-${input_def.id}`,
+            multiple: input_def.multiple,
             onchange: input_def.onchange
         });
     },

@@ -181,7 +181,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
     def index_jobs_summary(self, trans, history_id, **kwd):
         """
         * GET /api/histories/{history_id}/jobs_summary
-            return detailed information about an HDA or HDCAs jobs
+            return job state summary info for jobs, implicit groups jobs for collections or workflow invocations
 
         Warning: We allow anyone to fetch job state information about any object they
         can guess an encoded ID for - it isn't considered protected data. This keeps
@@ -189,13 +189,13 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         efficient as possible.
 
         :type   history_id: str
-        :param  history_id: encoded id string of the HDA's or the HDCA's History
+        :param  history_id: encoded id string of the target history
         :type   ids:        str[]
         :param  ids:        the encoded ids of job summary objects to return - if ids
                             is specified types must also be specified and have same length.
         :type   types:      str[]
-        :param  types:      type of object represented by elements in the ids array - either
-                            Job or ImplicitCollectionJob.
+        :param  types:      type of object represented by elements in the ids array - any of
+                            Job, ImplicitCollectionJob, or WorkflowInvocation.
 
         :rtype:     dict[]
         :returns:   an array of job summary object dictionaries.
@@ -207,9 +207,9 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             # TODO: ...
             pass
         else:
-            ids = util.listify(ids)
+            ids = [self.app.security.decode_id(i) for i in util.listify(ids)]
             types = util.listify(types)
-        return [self.encode_all_ids(trans, s) for s in fetch_job_states(self.app, trans.sa_session, ids, types)]
+        return [self.encode_all_ids(trans, s) for s in fetch_job_states(trans.sa_session, ids, types)]
 
     @expose_api_anonymous
     def show_jobs_summary(self, trans, id, history_id, **kwd):

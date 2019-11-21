@@ -1,10 +1,10 @@
-#! /usr/bin/perl -w
+#! /usr/bin/env perl
 
 use strict;
 use warnings;
 
 # condenses all consecutive characters of one type
-# convert_characters.pl [input] [character] [output]
+# condense_characters.pl [input] [character] [output]
 
 die "Check arguments" unless @ARGV == 3;
 

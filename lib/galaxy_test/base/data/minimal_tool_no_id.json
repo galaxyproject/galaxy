@@ -1,0 +1,12 @@
+{
+    "name": "Minimal Tool",
+    "class": "GalaxyTool",
+    "version": "1.0.0",
+    "command": "echo 'Hello World 2' > $output1",
+    "inputs": [],
+    "outputs": {
+        "output1": {
+            "format": "txt"
+        }
+    }
+}

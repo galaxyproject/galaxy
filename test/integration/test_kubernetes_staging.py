@@ -15,10 +15,10 @@ import os
 import string
 import tempfile
 
-from base import integration_util  # noqa: I100,I202
-from base.populators import skip_without_tool
-from .test_containerized_jobs import EXTENDED_TIMEOUT, MulledJobTestCases  # noqa: I201
-from .test_job_environments import BaseJobEnvironmentIntegrationTestCase  # noqa: I201
+from galaxy_test.base.populators import skip_without_tool
+from galaxy_test.driver import integration_util
+from .test_containerized_jobs import EXTENDED_TIMEOUT, MulledJobTestCases
+from .test_job_environments import BaseJobEnvironmentIntegrationTestCase
 
 TOOL_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'tools'))
 AMQP_URL = os.environ.get("GALAXY_TEST_AMQP_URL", "amqp://guest:guest@localhost:5672//")

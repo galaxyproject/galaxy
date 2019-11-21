@@ -39,6 +39,7 @@ then
     export GALAXY_CONFIG_OVERRIDE_TOOL_CONFIG_FILE="test/functional/tools/samples_tool_conf.xml"
     export GALAXY_CONFIG_ENABLE_BETA_WORKFLOW_MODULES="true"
     export GALAXY_CONFIG_OVERRIDE_ENABLE_BETA_TOOL_FORMATS="true"
+    export GALAXY_CONFIG_INTERACTIVETOOLS_ENABLE="true"
     export GALAXY_CONFIG_OVERRIDE_WEBHOOKS_DIR="test/functional/webhooks"
 fi
 

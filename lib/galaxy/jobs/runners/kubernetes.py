@@ -420,6 +420,13 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             else:
                 max_pod_retries = 1
 
+            # Check if job.obj['status'] is empty,
+            # return job_state unchanged if this is the case
+            # as probably this means that the k8s API server hasn't
+            # had time to fill in the object status since the
+            # job was created only too recently.
+            if len(job.obj['status']) == 0:
+                return job_state
             if 'succeeded' in job.obj['status']:
                 succeeded = job.obj['status']['succeeded']
             if 'active' in job.obj['status']:
@@ -503,7 +510,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             job.api.raise_for_status(r)
 
     def __job_failed_due_to_walltime_limit(self, job):
-        conditions = job.obj['status']['conditions']
+        conditions = job.obj['status'].get('conditions') or []
         return any(True for c in conditions if c['type'] == 'Failed' and c['reason'] == 'DeadlineExceeded')
 
     def __job_failed_due_to_low_memory(self, job_state):
@@ -532,7 +539,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             jobs = Job.objects(self._pykube_api).filter(
                 selector="app=" + self.__produce_unique_k8s_job_name(job.get_id_tag()),
                 namespace=self.runner_params['k8s_namespace'])
-            if len(jobs.response['items']) >= 0:
+            if len(jobs.response['items']) > 0:
                 job_to_delete = Job(self._pykube_api, jobs.response['items'][0])
                 self.__cleanup_k8s_job(job_to_delete)
             # TODO assert whether job parallelism == 0

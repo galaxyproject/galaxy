@@ -157,7 +157,7 @@ class ToolDataTableManager(object):
                                                      from_shed_config=True)
         except Exception as e:
             error_message = 'Error attempting to parse file %s: %s' % (str(os.path.split(config_filename)[1]), util.unicodify(e))
-            log.debug(error_message)
+            log.debug(error_message, exc_info=True)
             table_elems = []
         if persist:
             # Persist Galaxy's version of the changed tool_data_table_conf.xml file.
@@ -382,20 +382,20 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                 filename = os.path.join(tool_data_path, filename)
             if self.tool_data_path_files.exists(filename):
                 found = True
-            elif self.tool_data_path_files.exists("%s.sample" % filename) and not from_shed_config:
-                log.info("Could not find tool data %s, reading sample" % filename)
-                filename = "%s.sample" % filename
-                found = True
             else:
                 # Since the path attribute can include a hard-coded path to a specific directory
                 # (e.g., <file path="tool-data/cg_crr_files.loc" />) which may not be the same value
                 # as self.tool_data_path, we'll parse the path to get the filename and see if it is
                 # in self.tool_data_path.
                 file_path, file_name = os.path.split(filename)
-                if file_path and file_path != self.tool_data_path:
+                if file_path != self.tool_data_path:
                     corrected_filename = os.path.join(self.tool_data_path, file_name)
                     if self.tool_data_path_files.exists(corrected_filename):
                         filename = corrected_filename
+                        found = True
+                    elif not from_shed_config and self.tool_data_path_files.exists("%s.sample" % corrected_filename):
+                        log.info("Could not find tool data %s, reading sample" % corrected_filename)
+                        filename = "%s.sample" % corrected_filename
                         found = True
 
             errors = []
@@ -683,7 +683,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                         if fields != values:
                             rval += line
 
-        with open(loc_file, 'wb') as writer:
+        with open(loc_file, 'w') as writer:
             writer.write(rval)
 
         return rval

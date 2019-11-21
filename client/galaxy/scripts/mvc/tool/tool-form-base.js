@@ -6,7 +6,7 @@ import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
-// import Utils from "utils/utils";
+import ariaAlert from "utils/ariaAlert";
 import Deferred from "utils/deferred";
 import Ui from "mvc/ui/ui-misc";
 import FormBase from "mvc/form/form-view";
@@ -125,6 +125,7 @@ export default FormBase.extend({
                         favorite_button.hide();
                         remove_favorite_button.show();
                         Galaxy.user.updateFavorites("tools", response.data);
+                        ariaAlert("added to favorites");
                     });
             }
         });
@@ -143,6 +144,7 @@ export default FormBase.extend({
                         remove_favorite_button.hide();
                         favorite_button.show();
                         Galaxy.user.updateFavorites("tools", response.data);
+                        ariaAlert("removed from favorites");
                     });
             }
         });

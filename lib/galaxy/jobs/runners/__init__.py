@@ -2,7 +2,6 @@
 Base classes for job runner plugins.
 """
 import datetime
-import logging
 import os
 import string
 import subprocess
@@ -39,10 +38,11 @@ from galaxy.util import (
     unicodify,
 )
 from galaxy.util.bunch import Bunch
+from galaxy.util.logging import get_logger
 from galaxy.util.monitors import Monitors
 from .state_handler_factory import build_state_handlers
 
-log = logging.getLogger(__name__)
+log = get_logger(__name__)
 
 STOP_SIGNAL = object()
 
@@ -129,7 +129,13 @@ class BaseJobRunner(object):
             except Exception:
                 name = 'unknown'
             try:
+                action_str = 'galaxy.jobs.runners.%s.%s' % (self.__class__.__name__.lower(), name)
+                action_timer = self.app.execution_timer_factory.get_timer(
+                    'internals.%s' % action_str,
+                    'job runner action %s for job ${job_id} executed' % (action_str)
+                )
                 method(arg)
+                log.trace(action_timer.to_str(job_id=job_id))
             except Exception:
                 log.exception("(%s) Unhandled exception calling %s" % (job_id, name))
                 if not isinstance(arg, JobState):
@@ -296,7 +302,7 @@ class BaseJobRunner(object):
         output_paths = {}
         for dataset_path in job_wrapper.get_output_fnames():
             path = dataset_path.real_path
-            if self.app.config.outputs_to_working_directory:
+            if job_wrapper.get_destination_configuration("outputs_to_working_directory", False):
                 path = dataset_path.false_path
             output_paths[dataset_path.dataset_id] = path
 
@@ -475,8 +481,12 @@ class BaseJobRunner(object):
             job = job_state.job_wrapper.get_job()
             exit_code = job_state.read_exit_code()
 
-            tool_stdout_path = os.path.join(job_wrapper.working_directory, "tool_stdout")
-            tool_stderr_path = os.path.join(job_wrapper.working_directory, "tool_stderr")
+            outputs_directory = os.path.join(job_wrapper.working_directory, "outputs")
+            if not os.path.exists(outputs_directory):
+                outputs_directory = job_wrapper.working_directory
+
+            tool_stdout_path = os.path.join(outputs_directory, "tool_stdout")
+            tool_stderr_path = os.path.join(outputs_directory, "tool_stderr")
             # TODO: These might not exist for running jobs at the upgrade to 19.XX, remove that
             # assumption in 20.XX.
             if os.path.exists(tool_stdout_path):

@@ -9,10 +9,6 @@ from six import string_types
 from galaxy import util
 from galaxy.tools.data import TabularToolDataTable
 from galaxy.util.template import fill_template
-from tool_shed.util import (
-    common_util,
-    repository_util
-)
 
 log = logging.getLogger(__name__)
 
@@ -75,8 +71,8 @@ class DataManagers(object):
             if e.errno == errno.ENOENT:
                 # File does not exist
                 return None
-        except Exception as e:
-            log.error("Error loading data_manager '%s':\n%s" % (e, util.xml_to_string(data_manager_elem)))
+        except Exception:
+            log.exception("Error loading data_manager")
             return None
         if add_manager:
             self.add_manager(data_manager)
@@ -139,69 +135,35 @@ class DataManager(object):
 
     def load_from_element(self, elem, tool_path):
         assert elem.tag == 'data_manager', 'A data manager configuration must have a "data_manager" tag as the root. "%s" is present' % (elem.tag)
-        self.declared_id = elem.get('id', None)
-        self.guid = elem.get('guid', None)
-        path = elem.get('tool_file', None)
+        self.declared_id = elem.get('id')
+        self.guid = elem.get('guid')
+        path = elem.get('tool_file')
         self.version = elem.get('version', self.version)
-        tool_shed_repository_id = None
+        tool_shed_repository = None
         tool_guid = None
 
         if path is None:
             tool_elem = elem.find('tool')
             assert tool_elem is not None, "Error loading tool for data manager. Make sure that a tool_file attribute or a tool tag set has been defined:\n%s" % (util.xml_to_string(elem))
-            path = tool_elem.get("file", None)
-            tool_guid = tool_elem.get("guid", None)
+            path = tool_elem.get("file")
+            tool_guid = tool_elem.get("guid")
             # need to determine repository info so that dependencies will work correctly
-            if hasattr(self.data_managers.app, 'tool_cache') and tool_guid in self.data_managers.app.tool_cache._tool_paths_by_id:
-                path = self.data_managers.app.tool_cache._tool_paths_by_id[tool_guid]
-                tool = self.data_managers.app.tool_cache.get_tool(path)
-                tool_shed_repository = tool.tool_shed_repository
-                self.tool_shed_repository_info_dict = dict(tool_shed=tool_shed_repository.tool_shed,
-                                                           name=tool_shed_repository.name,
-                                                           owner=tool_shed_repository.owner,
-                                                           installed_changeset_revision=tool_shed_repository.installed_changeset_revision)
-                tool_shed_repository_id = self.data_managers.app.security.encode_id(tool_shed_repository.id)
-                tool_path = ""
-            else:
-                tool_shed_url = tool_elem.find('tool_shed').text
-                # Handle protocol changes.
-                tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(self.data_managers.app, tool_shed_url)
-                # The protocol is not stored in the database.
-                tool_shed = common_util.remove_protocol_from_tool_shed_url(tool_shed_url)
-                repository_name = tool_elem.find('repository_name').text
-                repository_owner = tool_elem.find('repository_owner').text
-                installed_changeset_revision = tool_elem.find('installed_changeset_revision').text
-                self.tool_shed_repository_info_dict = dict(tool_shed=tool_shed,
-                                                           name=repository_name,
-                                                           owner=repository_owner,
-                                                           installed_changeset_revision=installed_changeset_revision)
-                tool_shed_repository = \
-                    repository_util.get_installed_repository(self.data_managers.app,
-                                                             tool_shed=tool_shed,
-                                                             name=repository_name,
-                                                             owner=repository_owner,
-                                                             installed_changeset_revision=installed_changeset_revision)
-                if tool_shed_repository is None:
-                    log.warning('Could not determine tool shed repository from database. This should only ever happen when running tests.')
-                    # we'll set tool_path manually here from shed_conf_file
-                    tool_shed_repository_id = None
-                    try:
-                        tool_path = util.parse_xml(elem.get('shed_conf_file')).getroot().get('tool_path', tool_path)
-                    except Exception as e:
-                        log.error('Error determining tool_path for Data Manager during testing: %s', e)
-                else:
-                    tool_shed_repository_id = self.data_managers.app.security.encode_id(tool_shed_repository.id)
-                # use shed_conf_file to determine tool_path
-                shed_conf_file = elem.get("shed_conf_file", None)
-                if shed_conf_file:
-                    shed_conf = self.data_managers.app.toolbox.get_shed_config_dict_by_filename(shed_conf_file, None)
-                    if shed_conf:
-                        tool_path = shed_conf.get("tool_path", tool_path)
+            tool_shed_repository = self.data_managers.app.toolbox.get_tool_repository_from_xml_item(tool_elem, path)
+            self.tool_shed_repository_info_dict = dict(tool_shed=tool_shed_repository.tool_shed,
+                                                       name=tool_shed_repository.name,
+                                                       owner=tool_shed_repository.owner,
+                                                       installed_changeset_revision=tool_shed_repository.installed_changeset_revision)
+            # use shed_conf_file to determine tool_path
+            shed_conf_file = elem.get("shed_conf_file")
+            if shed_conf_file:
+                shed_conf = self.data_managers.app.toolbox.get_shed_config_dict_by_filename(shed_conf_file)
+                if shed_conf:
+                    tool_path = shed_conf.get("tool_path", tool_path)
         assert path is not None, "A tool file path could not be determined:\n%s" % (util.xml_to_string(elem))
         self.load_tool(os.path.join(tool_path, path),
                        guid=tool_guid,
                        data_manager_id=self.id,
-                       tool_shed_repository_id=tool_shed_repository_id)
+                       tool_shed_repository=tool_shed_repository)
         self.name = elem.get('name', self.tool.name)
         self.description = elem.get('description', self.tool.description)
         self.undeclared_tables = util.asbool(elem.get('undeclared_tables', self.undeclared_tables))

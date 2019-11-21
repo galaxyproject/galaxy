@@ -26,7 +26,7 @@ def mock_init(monkeypatch):
     monkeypatch.setattr(GalaxyAppConfiguration, '_process_config', mock_process_config)
 
 
-def test_load_raw_config_from_schema(mock_init):
+def test_load_config_from_schema(mock_init):
     config = GalaxyAppConfiguration()
 
     assert len(config._raw_config) == 6
@@ -74,3 +74,26 @@ def test_update_raw_config_from_string_kwargs(mock_init):
     assert type(config._raw_config['property2']) is int
     assert type(config._raw_config['property3']) is float
     assert type(config._raw_config['property4']) is bool
+
+
+def test_update_raw_config_from_kwargs_with_none(mock_init):
+    # should be able to set to null regardless of property's datatype
+    config = GalaxyAppConfiguration(
+        property1=None, property2=None, property3=None, property4=None, property5=None, property6=None,
+    )
+
+    assert config._raw_config['property1'] is None
+    assert config._raw_config['property2'] is None
+    assert config._raw_config['property3'] is None
+    assert config._raw_config['property4'] is None
+    assert config._raw_config['property5'] is None
+    assert config._raw_config['property6'] is None
+
+
+def test_update_raw_config_from_kwargs_falsy_not_none(mock_init):
+    # if kwargs supplies a falsy value, it should not evaluate to null
+    # (ensures code is 'if value is not None' vs. 'if value')
+    config = GalaxyAppConfiguration(property1=0)
+
+    assert config._raw_config['property1'] == '0'  # updated
+    assert type(config._raw_config['property1']) is str  # and converted to str

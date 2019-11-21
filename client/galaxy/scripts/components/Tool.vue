@@ -9,9 +9,11 @@
                 :class="['tool-link', tool.id]"
             >
                 <span class="labels">
-                    <span v-for="(label, index) in tool.labels"
-                          :class="['badge', 'badge-primary', `badge-${label}`]"
-                          :key="index">
+                    <span
+                        v-for="(label, index) in tool.labels"
+                        :class="['badge', 'badge-primary', `badge-${label}`]"
+                        :key="index"
+                    >
                         {{ label }}
                     </span>
                 </span>
@@ -24,6 +26,7 @@
 
 <script>
 import { getGalaxyInstance } from "app"; // FIXME:
+import ariaAlert from "utils/ariaAlert";
 
 export default {
     name: "Tool",
@@ -52,6 +55,7 @@ export default {
                     version: this.tool.version
                 });
             }
+            ariaAlert(`${this.tool.name} opened in galaxy center panel`);
         }
     },
     created() {}

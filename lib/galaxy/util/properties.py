@@ -81,6 +81,10 @@ def load_app_properties(
     else:
         properties = {'__file__': None}
 
+    # update from kwds
+    if kwds:
+        properties.update(kwds)
+
     # update from env
     override_prefix = "%sOVERRIDE_" % config_prefix
     for key in os.environ:
@@ -91,10 +95,6 @@ def load_app_properties(
             config_key = key[len(config_prefix):].lower()
             if config_key not in properties:
                 properties[config_key] = os.environ[key]
-
-    # update from kwds
-    if kwds:
-        properties.update(kwds)
 
     return properties
 
@@ -190,14 +190,8 @@ class NicerConfigParser(ConfigParser):
 
 
 def _running_from_source():
-    try:
-        # is there a better way to do this?
-        assert os.path.exists('run.sh')
-        assert os.path.exists('lib/galaxy/__init__.py')
-        assert os.path.exists('scripts/common_startup.sh')
-        return True
-    except AssertionError:
-        return False
+    paths = ['run.sh', 'lib/galaxy/__init__.py', 'scripts/common_startup.sh']
+    return all(map(os.path.exists, paths))
 
 
 running_from_source = _running_from_source()

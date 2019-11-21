@@ -12,7 +12,6 @@ from gxformat2 import (
     ImportOptions,
     python_to_workflow,
 )
-from gxformat2.converter import ordered_load
 from six import string_types
 from sqlalchemy import and_
 from sqlalchemy.orm import joinedload, subqueryload
@@ -46,6 +45,7 @@ from galaxy.workflow.modules import (
 from galaxy.workflow.resources import get_resource_mapper_function
 from galaxy.workflow.steps import attach_ordered_steps
 from .base import decode_id
+from .executables import artifact_class
 
 log = logging.getLogger(__name__)
 
@@ -67,7 +67,7 @@ class WorkflowsManager(object):
             # see if they have passed in the UUID for a workflow that is attached to a stored workflow
             workflow_uuid = uuid.UUID(workflow_id)
             workflow_query = trans.sa_session.query(trans.app.model.StoredWorkflow).filter(and_(
-                trans.app.model.StoredWorkflow.latest_workflow_id == trans.app.model.Workflow.id,
+                trans.app.model.StoredWorkflow.id == trans.app.model.Workflow.stored_workflow_id,
                 trans.app.model.Workflow.uuid == workflow_uuid
             ))
         elif by_stored_id:
@@ -77,7 +77,7 @@ class WorkflowsManager(object):
         else:
             workflow_id = decode_id(self.app, workflow_id)
             workflow_query = trans.sa_session.query(trans.app.model.StoredWorkflow).filter(and_(
-                trans.app.model.StoredWorkflow.latest_workflow_id == trans.app.model.Workflow.id,
+                trans.app.model.StoredWorkflow.id == trans.app.model.Workflow.stored_workflow_id,
                 trans.app.model.Workflow.id == workflow_id
             ))
         stored_workflow = workflow_query.options(joinedload('annotations'),
@@ -194,7 +194,7 @@ class WorkflowsManager(object):
         trans.sa_session.flush()
         return workflow_invocation_step
 
-    def build_invocations_query(self, trans, stored_workflow_id=None, history_id=None, user_id=None):
+    def build_invocations_query(self, trans, stored_workflow_id=None, history_id=None, user_id=None, include_terminal=True):
         """Get invocations owned by the current user."""
         sa_session = trans.sa_session
         invocations_query = sa_session.query(model.WorkflowInvocation)
@@ -218,6 +218,11 @@ class WorkflowsManager(object):
         if history_id is not None:
             invocations_query = invocations_query.filter(
                 model.WorkflowInvocation.table.c.history_id == history_id
+            )
+
+        if not include_terminal:
+            invocations_query = invocations_query.filter(
+                model.WorkflowInvocation.table.c.state.in_(model.WorkflowInvocation.non_terminal_states)
             )
 
         return [inv for inv in invocations_query if self.check_security(trans,
@@ -270,12 +275,10 @@ class WorkflowContentsManager(UsesAnnotations):
                 raise exceptions.AdminRequiredException()
 
             workflow_path = as_dict.get("path")
-            with open(workflow_path, "r") as f:
-                as_dict = ordered_load(f)
             workflow_directory = os.path.normpath(os.path.dirname(workflow_path))
 
-        workflow_class = as_dict.get("class", None)
-        if workflow_class == "GalaxyWorkflow" or "$graph" in as_dict or "yaml_content" in as_dict:
+        workflow_class, as_dict, object_id = artifact_class(trans, as_dict)
+        if workflow_class == "GalaxyWorkflow" or "yaml_content" in as_dict:
             # Format 2 Galaxy workflow.
             galaxy_interface = Format2ConverterGalaxyInterface()
             import_options = ImportOptions()
@@ -477,7 +480,7 @@ class WorkflowContentsManager(UsesAnnotations):
             wf_dict = self._workflow_to_dict_export(trans, stored, workflow=workflow)
         else:
             raise exceptions.RequestParameterInvalidException('Unknown workflow style [%s]' % style)
-        if version:
+        if version is not None:
             wf_dict['version'] = version
         else:
             wf_dict['version'] = len(stored.workflows) - 1
@@ -974,6 +977,7 @@ class WorkflowContentsManager(UsesAnnotations):
         encode = self.app.security.encode_id
         sa_session = self.app.model.context
         item = stored.to_dict(view='element', value_mapper={'id': encode})
+        item['name'] = workflow.name
         item['url'] = url_for('workflow', id=item['id'])
         item['owner'] = stored.user.username
         inputs = {}

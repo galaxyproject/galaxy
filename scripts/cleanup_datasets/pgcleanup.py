@@ -304,7 +304,7 @@ class PurgesHDAs(object):
                           implicitly_converted_dataset_association.id AS id),
              deleted_icda_purged_child_hda_ids
           AS (     UPDATE history_dataset_association
-                      SET purged = true{update_time_sql}
+                      SET purged = true, deleted = true{update_time_sql}
                      FROM deleted_icda_ids
                     WHERE deleted_icda_ids.hda_id = history_dataset_association.id),
              metadata_file_events
@@ -437,7 +437,7 @@ class UpdateHDAPurgedFlag(Action):
     _action_sql = """
         WITH purged_hda_ids
           AS (     UPDATE history_dataset_association
-                      SET purged = true
+                      SET purged = true, deleted = true
                      FROM dataset
                         WHERE history_dataset_association.dataset_id = dataset.id
                           AND dataset.purged
@@ -575,7 +575,7 @@ class PurgeDeletedUsers(PurgesHDAs, RemovesMetadataFiles, Action):
                      FROM purged_history_ids),
              purged_hda_ids
           AS (     UPDATE history_dataset_association
-                      SET purged = true{update_time_sql}
+                      SET purged = true, deleted = true{update_time_sql}
                      FROM purged_history_ids
                     WHERE purged_history_ids.id = history_dataset_association.history_id
                           AND NOT history_dataset_association.purged
@@ -662,7 +662,7 @@ class PurgeDeletedHDAs(PurgesHDAs, RemovesMetadataFiles, RequiresDiskUsageRecalc
     _action_sql = """
         WITH purged_hda_ids
           AS (     UPDATE history_dataset_association
-                      SET purged = true{update_time_sql}
+                      SET purged = true, deleted = true{update_time_sql}
                     WHERE deleted{force_retry_sql}
                           AND update_time < (NOW() AT TIME ZONE 'utc' - interval '%(days)s days')
                 RETURNING id,
@@ -701,7 +701,7 @@ class PurgeHistorylessHDAs(PurgesHDAs, RemovesMetadataFiles, RequiresDiskUsageRe
     _action_sql = """
         WITH purged_hda_ids
           AS (     UPDATE history_dataset_association
-                      SET purged = true{update_time_sql}
+                      SET purged = true, deleted = true{update_time_sql}
                     WHERE history_id IS NULL{force_retry_sql}
                           AND update_time < (NOW() AT TIME ZONE 'utc' - interval '%(days)s days')
                 RETURNING id),
@@ -738,7 +738,7 @@ class PurgeErrorHDAs(PurgesHDAs, RemovesMetadataFiles, RequiresDiskUsageRecalcul
     _action_sql = """
         WITH purged_hda_ids
           AS (     UPDATE history_dataset_association
-                      SET purged = true{update_time_sql}
+                      SET purged = true, deleted = true{update_time_sql}
                      FROM dataset
                     WHERE history_dataset_association.dataset_id = dataset.id{force_retry_sql}
                           AND dataset.state = 'error'
@@ -781,7 +781,7 @@ class PurgeHDAsOfPurgedHistories(PurgesHDAs, RequiresDiskUsageRecalculation, Act
     _action_sql = """
         WITH purged_hda_ids
           AS (     UPDATE history_dataset_association
-                      SET purged = true{update_time_sql}
+                      SET purged = true, deleted = true{update_time_sql}
                      FROM history
                     WHERE history_dataset_association.history_id = history.id{force_retry_sql}
                           AND history.purged
@@ -832,7 +832,7 @@ class PurgeDeletedHistories(PurgesHDAs, RequiresDiskUsageRecalculation, Action):
                      FROM purged_history_ids),
              purged_hda_ids
           AS (     UPDATE history_dataset_association
-                      SET purged = true{update_time_sql}
+                      SET purged = true, deleted = true{update_time_sql}
                      FROM purged_history_ids
                     WHERE purged_history_ids.id = history_dataset_association.history_id
                           AND NOT history_dataset_association.purged

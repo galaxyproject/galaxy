@@ -51,9 +51,7 @@ export default {
                     '<div popupmenu="popup-global-actions">';
             }
             for (let action of options.global_actions) {
-                tmpl += `<li><a class="action-button use-target" target="${action.target}" href="${
-                    action.url_args
-                }" onclick="return false;" >${action.label}</a></li>`;
+                tmpl += `<li><a class="action-button use-target" target="${action.target}" href="${action.url_args}" onclick="return false;" >${action.label}</a></li>`;
             }
             if (show_popup) {
                 tmpl += "</div>";
@@ -131,9 +129,7 @@ export default {
 
             // Item selection column
             if (options.show_item_checkboxes) {
-                tmpl += `<td style="width: 1.5em;"><input type="checkbox" name="id" value="${item.encode_id}" id="${
-                    item.encode_id
-                }" class="grid-row-select-checkbox" /></td>`;
+                tmpl += `<td style="width: 1.5em;"><input type="checkbox" name="id" value="${item.encode_id}" id="${item.encode_id}" class="grid-row-select-checkbox" /></td>`;
             }
 
             // Data columns
@@ -288,9 +284,7 @@ export default {
             // configure buttons for operations
             for (let operation of options.operations) {
                 if (operation.allow_multiple) {
-                    tmpl += `<input type="button" value="${
-                        operation.label
-                    }" class="operation-button action-button">&nbsp;`;
+                    tmpl += `<input type="button" value="${operation.label}" class="operation-button action-button">&nbsp;`;
                 }
             }
 
@@ -439,9 +433,7 @@ export default {
                         if (column.is_text) {
                             filter_value = JSON.stringify(filter_value);
                         }
-                        tmpl += `<input type="hidden" id="${column.key}" name="f-${
-                            column.key
-                        }" value="${filter_value}"/>`;
+                        tmpl += `<input type="hidden" id="${column.key}" name="f-${column.key}" value="${filter_value}"/>`;
                     }
                 }
             }

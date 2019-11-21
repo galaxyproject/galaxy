@@ -18,14 +18,15 @@ import Router from "layout/router";
 import ToolForm from "mvc/tool/tool-form";
 import FormWrapper from "mvc/form/form-wrapper";
 import Sharing from "components/Sharing.vue";
-import UserPreferences from "mvc/user/user-preferences";
+import UserPreferences from "components/User/UserPreferences.vue";
+import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
 import CustomBuilds from "mvc/user/user-custom-builds";
 import Tours from "mvc/tours";
 import GridView from "mvc/grid/grid-view";
 import EntryPointGridView from "mvc/entrypoints/view";
 import GridShared from "mvc/grid/grid-shared";
-import Workflows from "mvc/workflow/workflow";
-import WorkflowImport from "components/WorkflowImport.vue";
+import WorkflowImport from "components/Workflow/WorkflowImport.vue";
+import WorkflowList from "components/Workflow/WorkflowList.vue";
 import HistoryImport from "components/HistoryImport.vue";
 import HistoryView from "components/HistoryView.vue";
 import WorkflowInvocationReport from "components/WorkflowInvocationReport.vue";
@@ -104,15 +105,17 @@ export const getAnalysisRouter = Galaxy =>
         },
 
         show_user: function() {
-            this.page.display(new UserPreferences.View());
+            const UserPreferencesInstance = Vue.extend(UserPreferences);
+            const vm = document.createElement("div");
+            this.page.display(vm);
+            new UserPreferencesInstance().$mount(vm);
         },
 
         show_user_form: function(form_id) {
             const Galaxy = getGalaxyInstance();
-            const model = new UserPreferences.Model({
-                user_id: Galaxy.params.id
-            });
-            this.page.display(new FormWrapper.View(_.extend(model.get(form_id), { active_tab: "user" })));
+            const model = getUserPreferencesModel();
+            model.user_id = Galaxy.params.id;
+            this.page.display(new FormWrapper.View(_.extend(model[form_id], { active_tab: "user" })));
         },
 
         show_interactivetool_list: function() {
@@ -307,7 +310,10 @@ export const getAnalysisRouter = Galaxy =>
         },
 
         show_workflows: function() {
-            this.page.display(new Workflows.View());
+            const workflowListInstance = Vue.extend(WorkflowList);
+            const vm = document.createElement("div");
+            this.page.display(vm);
+            new workflowListInstance().$mount(vm);
         },
 
         show_workflows_create: function() {

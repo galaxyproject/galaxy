@@ -48,11 +48,3 @@
 # Set the following value to false if Docker volumes between Galaxy server and Docker
 # container cannot or should not be used.
 #use_volumes = True
-
-# To run containers in Docker Swarm mode on (an existing swarm), set the
-# following option to True *and*:
-# - set docker_connect_port above. For Jupyter the # port should most likely be
-#   8888.
-# - If command_inject is uncommented and includes `--sig-proxy`, that option should
-#   be removed.
-#swarm_mode = False

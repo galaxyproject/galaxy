@@ -9,7 +9,7 @@ from six.moves import shlex_quote
 from .commands import argv_to_str
 
 DEFAULT_DOCKER_COMMAND = "docker"
-DEFAULT_SUDO = True
+DEFAULT_SUDO = False
 DEFAULT_SUDO_COMMAND = "sudo"
 DEFAULT_HOST = None
 DEFAULT_VOLUME_MOUNT_TYPE = "rw"
@@ -225,6 +225,12 @@ def _docker_prefix(
 
 
 def parse_port_text(port_text):
+    """
+
+    >>> slurm_ports = parse_port_text("8888/tcp -> 0.0.0.0:32769")
+    >>> slurm_ports[8888]['host']
+    '0.0.0.0'
+    """
     ports = None
     if port_text is not None:
         ports = {}

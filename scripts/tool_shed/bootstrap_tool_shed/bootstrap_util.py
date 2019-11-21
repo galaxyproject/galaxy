@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 from __future__ import print_function
 
 import optparse
@@ -10,7 +10,7 @@ from sqlalchemy.exc import OperationalError, ProgrammingError
 
 sys.path.insert(1, os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir, 'lib'))
 
-import galaxy.webapps.tool_shed.model.mapping as tool_shed_model
+import tool_shed.webapp.model.mapping as tool_shed_model
 from tool_shed.util import xml_util
 
 

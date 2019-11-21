@@ -18,12 +18,11 @@ import galaxy.web.framework.webapp
 from galaxy import util
 from galaxy.util import asbool
 from galaxy.util.properties import load_app_properties
-from galaxy.webapps.util import (
-    build_template_error_formatters,
-    MiddlewareWrapUnsupported,
-    wrap_if_allowed,
-    wrap_if_allowed_or_fail
-)
+from galaxy.web.framework.middleware.batch import BatchMiddleware
+from galaxy.web.framework.middleware.error import ErrorMiddleware
+from galaxy.web.framework.middleware.request_id import RequestIDMiddleware
+from galaxy.web.framework.middleware.xforwardedhost import XForwardedHostMiddleware
+from galaxy.webapps.util import wrap_if_allowed
 
 log = logging.getLogger(__name__)
 
@@ -104,11 +103,13 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_client_route('/admin/data_tables', 'admin')
     webapp.add_client_route('/admin/data_types', 'admin')
     webapp.add_client_route('/admin/jobs', 'admin')
+    webapp.add_client_route('/admin/invocations', 'admin')
     webapp.add_client_route('/admin/data_manager{path_info:.*}', 'admin')
     webapp.add_client_route('/admin/error_stack', 'admin')
     webapp.add_client_route('/admin/users', 'admin')
     webapp.add_client_route('/admin/users/create', 'admin')
     webapp.add_client_route('/admin/display_applications', 'admin')
+    webapp.add_client_route('/admin/reset_metadata', 'admin')
     webapp.add_client_route('/admin/roles', 'admin')
     webapp.add_client_route('/admin/forms', 'admin')
     webapp.add_client_route('/admin/groups', 'admin')
@@ -518,6 +519,14 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('/api/datasets/{dataset_id}/converted/{ext}', controller='datasets', action='converted')
     webapp.mapper.connect('/api/datasets/{dataset_id}/permissions', controller='datasets', action='update_permissions', conditions=dict(method=["PUT"]))
 
+    webapp.mapper.connect(
+        'list_invocations',
+        '/api/invocations',
+        controller='workflows',
+        action='index_invocations',
+        conditions=dict(method=['GET'])
+    )
+
     # API refers to usages and invocations - these mean the same thing but the
     # usage routes should be considered deprecated.
     invoke_names = {
@@ -534,60 +543,48 @@ def populate_api_routes(webapp, app):
             conditions=dict(method=['GET'])
         )
         webapp.mapper.connect(
-            'list_invocations',
-            '/api/invocations',
-            controller='workflows',
-            action='index_invocations',
-            conditions=dict(method=['GET'])
-        )
-
-        webapp.mapper.connect(
-            'workflow_%s_contents' % name,
-            '/api/workflows/{workflow_id}/%s/{invocation_id}' % noun,
-            controller='workflows',
-            action='show_invocation',
-            conditions=dict(method=['GET'])
-        )
-
-        webapp.mapper.connect(
-            'workflow_%s_report' % name,
-            '/api/workflows/{workflow_id}/%s/{invocation_id}/report' % noun,
-            controller='workflows',
-            action='show_invocation_report',
-            conditions=dict(method=['GET'])
-        )
-
-        webapp.mapper.connect(
-            'cancel_workflow_%s' % name,
-            '/api/workflows/{workflow_id}/%s/{invocation_id}' % noun,
-            controller='workflows',
-            action='cancel_invocation',
-            conditions=dict(method=['DELETE'])
-        )
-
-        webapp.mapper.connect(
-            'workflow_%s_step' % name,
-            '/api/workflows/{workflow_id}/%s/{invocation_id}/steps/{step_id}' % noun,
-            controller='workflows',
-            action='invocation_step',
-            conditions=dict(method=['GET'])
-        )
-
-        webapp.mapper.connect(
-            'workflow_%s_step_update' % name,
-            '/api/workflows/{workflow_id}/%s/{invocation_id}/steps/{step_id}' % noun,
-            controller='workflows',
-            action='update_invocation_step',
-            conditions=dict(method=['PUT'])
-        )
-
-        webapp.mapper.connect(
             'workflow_%s' % name,
             '/api/workflows/{workflow_id}/%s' % noun,
             controller='workflows',
             action='invoke',
             conditions=dict(method=['POST'])
         )
+
+    def connect_invocation_endpoint(endpoint_name, endpoint_suffix, action, conditions=None):
+        # /api/invocations/<invocation_id>
+        # /api/workflows/<workflow_id>/invocations/<invocation_id>
+        # /api/workflows/<workflow_id>/usage/<invocation_id> (deprecated)
+        conditions = conditions or dict(method=['GET'])
+        webapp.mapper.connect(
+            'workflow_invocation_%s' % endpoint_name,
+            '/api/workflows/{workflow_id}/invocations/{invocation_id}' + endpoint_suffix,
+            controller='workflows',
+            action=action,
+            conditions=conditions,
+        )
+        webapp.mapper.connect(
+            'workflow_usage_%s' % endpoint_name,
+            '/api/workflows/{workflow_id}/usage/{invocation_id}' + endpoint_suffix,
+            controller='workflows',
+            action=action,
+            conditions=conditions,
+        )
+        webapp.mapper.connect(
+            'invocation_%s' % endpoint_name,
+            '/api/invocations/{invocation_id}' + endpoint_suffix,
+            controller='workflows',
+            action=action,
+            conditions=conditions,
+        )
+
+    connect_invocation_endpoint('show', '', action='show_invocation')
+    connect_invocation_endpoint('show_report', '/report', action='show_invocation_report')
+    connect_invocation_endpoint('jobs_summary', '/jobs_summary', action='invocation_jobs_summary')
+    connect_invocation_endpoint('step_jobs_summary', '/step_jobs_summary', action='invocation_step_jobs_summary')
+    connect_invocation_endpoint('cancel', '', action='cancel_invocation', conditions=dict(method=['DELETE']))
+    connect_invocation_endpoint('show_step', '/steps/{step_id}', action='invocation_step')
+    connect_invocation_endpoint('update_step', '/steps/{step_id}', action='update_invocation_step', conditions=dict(method=['PUT']))
+
     # ============================
     # ===== AUTHENTICATE API =====
     # ============================
@@ -1036,6 +1033,12 @@ def populate_api_routes(webapp, app):
                           action='uninstall_repository',
                           conditions=dict(method=["DELETE"]))
 
+    webapp.mapper.connect('reset_metadata_on_selected_installed_repositories',
+                          '/api/tool_shed_repositories/reset_metadata_on_selected_installed_repositories',
+                          controller='tool_shed_repositories',
+                          action='reset_metadata_on_selected_installed_repositories',
+                          conditions=dict(method=['POST']))
+
     # Galaxy API for tool shed features.
     webapp.mapper.resource('tool_shed_repository',
                            'tool_shed_repositories',
@@ -1177,35 +1180,17 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
         if asbool(conf.get('use_profile', False)):
             from paste.debug import profile
             app = wrap_if_allowed(app, stack, profile.ProfileMiddleware, args=(conf,))
-    if debug and asbool(conf.get('use_interactive', False)):
-        # Interactive exception debugging, scary dangerous if publicly
-        # accessible, if not enabled we'll use the regular error printing
-        # middleware.
-        try:
-            from weberror import evalexception
-            app = wrap_if_allowed_or_fail(app, stack, evalexception.EvalException,
-                                          args=(conf,),
-                                          kwargs=dict(templating_formatters=build_template_error_formatters()))
-        except MiddlewareWrapUnsupported as exc:
-            log.warning(util.unicodify(exc))
-            import galaxy.web.framework.middleware.error
-            app = wrap_if_allowed(app, stack, galaxy.web.framework.middleware.error.ErrorMiddleware, args=(conf,))
-    else:
-        # Not in interactive debug mode, just use the regular error middleware
-        import galaxy.web.framework.middleware.error
-        app = wrap_if_allowed(app, stack, galaxy.web.framework.middleware.error.ErrorMiddleware, args=(conf,))
+    # Error middleware
+    app = wrap_if_allowed(app, stack, ErrorMiddleware, args=(conf,))
     # Transaction logging (apache access.log style)
     if asbool(conf.get('use_translogger', True)):
         from galaxy.web.framework.middleware.translogger import TransLogger
         app = wrap_if_allowed(app, stack, TransLogger)
     # X-Forwarded-Host handling
-    from galaxy.web.framework.middleware.xforwardedhost import XForwardedHostMiddleware
     app = wrap_if_allowed(app, stack, XForwardedHostMiddleware)
     # Request ID middleware
-    from galaxy.web.framework.middleware.request_id import RequestIDMiddleware
     app = wrap_if_allowed(app, stack, RequestIDMiddleware)
     # api batch call processing middleware
-    from galaxy.web.framework.middleware.batch import BatchMiddleware
     app = wrap_if_allowed(app, stack, BatchMiddleware, args=(webapp, {}))
     if asbool(conf.get('enable_per_request_sql_debugging', False)):
         from galaxy.web.framework.middleware.sqldebug import SQLDebugMiddleware

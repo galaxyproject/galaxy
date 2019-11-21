@@ -9,18 +9,11 @@
         </entry_point>
     </entry_points>
     <environment_variables>
-        <environment_variable name="HISTORY_ID" strip="True">${__app__.security.encode_id($jupyter_notebook.history_id)}</environment_variable> <!-- FIXME: Warning: The use of __app__ is deprecated and will break backward compatibility in the near future -->
-        <environment_variable name="REMOTE_HOST">${__app__.config.galaxy_infrastructure_url}</environment_variable> <!-- FIXME: Warning: The use of __app__ is deprecated and will break backward compatibility in the near future -->
+        <environment_variable name="HISTORY_ID">$__history_id__</environment_variable>
+        <environment_variable name="REMOTE_HOST">$__galaxy_url__</environment_variable>
         <environment_variable name="GALAXY_WEB_PORT">8080</environment_variable>
-        <environment_variable name="GALAXY_URL">${__app__.config.galaxy_infrastructure_url}</environment_variable> <!-- FIXME: Warning: The use of __app__ is deprecated and will break backward compatibility in the near future -->
-        <environment_variable name="API_KEY" strip="True">
-            #if $__user__:
-                #for $api_key in $__user__.api_keys:
-                    ${api_key.key}
-                    #break
-                #end for
-            #end if
-        </environment_variable> <!-- FIXME: We should have a better way to get user's API key -->
+        <environment_variable name="GALAXY_URL">$__galaxy_url__</environment_variable>
+        <environment_variable name="API_KEY" inject="api_key" />
     </environment_variables>
     <command detect_errors="aggressive"><![CDATA[
         #import re
@@ -39,7 +32,7 @@
             ## copy default notebook
             cp '$__tool_directory__/default_notebook.ipynb' ./ipython_galaxy_notebook.ipynb &&
             jupyter trust ./ipython_galaxy_notebook.ipynb &&
-            jupyter lab --no-browser --NotebookApp.shutdown_button=True &&
+            jupyter lab --allow-root --no-browser --NotebookApp.shutdown_button=True &&
             cp ./ipython_galaxy_notebook.ipynb '$jupyter_notebook'
 
         #else:
@@ -50,7 +43,7 @@
             #if $mode.run_it:
                 jupyter nbconvert --to notebook --execute --output ./ipython_galaxy_notebook.ipynb --allow-errors  ./*.ipynb &&
             #else:
-                jupyter lab --no-browser --NotebookApp.shutdown_button=True &&
+                jupyter lab --allow-root --no-browser --NotebookApp.shutdown_button=True &&
             #end if
             cp ./ipython_galaxy_notebook.ipynb '$jupyter_notebook'
         #end if
@@ -88,13 +81,13 @@
     The Jupyter Notebook is an open-source web application that allows you to create and share documents that contain live code, equations,
     visualizations and narrative text. Uses include: data cleaning and transformation, numerical simulation, statistical modeling, data visualization,
     machine learning, and much more.
-    
+
     Galaxy offers you to use Jupyter Notebooks directly in Galaxy accessing and interacting with Galaxy datasets as you like. A very common use-case is to
     do the heavy lifting and data reduction steps in Galaxy and the plotting and more `interactive` part on smaller datasets in Jupyter.
-    
+
     You can start with a new Jupyter notebook from scratch or load an already existing one, e.g. from your collegue and execute it on your dataset.
     If you have a defined input dataset you can even execute a Jupyter notebook in a workflow, given that the notebook is writing the output back to the history.
-    
+
     You can import data into the notebook via a predefined `get()` function and write results back to Galaxy with a `put()` function.
     </help>
 </tool>
