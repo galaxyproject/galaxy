@@ -83,7 +83,8 @@ new-version:
 release-local: commit-version release-artifacts new-version
 
 push-release:
-	git push $(UPSTREAM) dev
-	git push upstream $(UPSTREAM)/tags/galaxy-$(PROJECT_NAME)-$(VERSION)
+	# git push $(UPSTREAM) dev
+	# git push upstream $(UPSTREAM)/tags/galaxy-$(PROJECT_NAME)-$(VERSION)
+	echo "Makefile doesn't manually push release."
 
 release: release-local push-release
