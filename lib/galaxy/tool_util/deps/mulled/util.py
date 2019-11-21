@@ -79,8 +79,13 @@ def mulled_tags_for(namespace, image, tag_prefix=None):
 
 def split_tag(tag):
     """Split mulled image name into conda version and conda build."""
-    version = tag.split('--', 1)[0]
-    build = tag.split('--', 1)[1]
+    version_build = tag.split('--', 1)
+    version = version_build[0]
+    if len(version_build) == 1:
+        # shouldn't happen, but biocontainers/openjdk:8.0.112 has no build
+        build = None
+    else:
+        build = version_build[1]
     return version, build
 
 
