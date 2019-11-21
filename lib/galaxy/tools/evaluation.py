@@ -358,7 +358,7 @@ class ToolEvaluator(object):
             # TODO: path munging for cluster/dataset server relocatability
             store_by = getattr(hda.dataset.object_store, "store_by", "id")
             file_name = "dataset_%s_files" % getattr(hda.dataset, store_by)
-            param_dict[name].files_path = os.path.abspath(os.path.join(job_working_directory, file_name))
+            param_dict[name].files_path = os.path.abspath(os.path.join(job_working_directory, "working", file_name))
         for out_name, output in self.tool.outputs.items():
             if out_name not in param_dict and output.filters:
                 # Assume the reason we lack this output is because a filter
