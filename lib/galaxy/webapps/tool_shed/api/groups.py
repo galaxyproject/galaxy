@@ -143,7 +143,7 @@ class GroupsController(BaseAPIController):
                                     'ratings_mean': ratings_mean,
                                     'categories' : categories})
                 user_repos_count += 1
-            encoded_user_id = trans.app.security.encode_id(repo.user.id)
+            encoded_user_id = trans.app.security.encode_id(user.id)
             user_repos_url = web.url_for(controller='repository', action='browse_repositories_by_user', user_id=encoded_user_id)
             time_created = pretty_print_time_interval(user.create_time, True)
             member_dict = {'id': encoded_user_id, 'username': user.username, 'user_repos_url': user_repos_url, 'user_repos_count': user_repos_count, 'user_tools_count': 'unknown', 'time_created': time_created}
