@@ -20,7 +20,7 @@ def main():
     (input_file, json_file) = sys.argv[1:3]
 
     # Load English tokenizer, tagger, parser, NER and word vectors
-    nlp = spacy.load("en_core_web_sm")
+    nlp = spacy.load("en_core_web_lg")
 
     with open(input_file, 'r') as file:
         stt = SpeechToText().from_json(json.load(file))
