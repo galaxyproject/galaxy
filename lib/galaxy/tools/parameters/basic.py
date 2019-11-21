@@ -1582,10 +1582,10 @@ class BaseDataToolParameter(ToolParameter):
         """
         Build list of classes for supported data formats
         """
-        self.extensions = input_source.get('format', 'data').split(",")
+        self.extensions = [e.strip() for e in input_source.get('format', 'data').split(",") if e.strip()]
         formats = []
         if self.datatypes_registry:  # This may be None when self.tool.app is a ValidationContext
-            normalized_extensions = [extension.strip().lower() for extension in self.extensions]
+            normalized_extensions = [extension.lower() for extension in self.extensions]
             for extension in normalized_extensions:
                 datatype = self.datatypes_registry.get_datatype_by_extension(extension)
                 if datatype is not None:

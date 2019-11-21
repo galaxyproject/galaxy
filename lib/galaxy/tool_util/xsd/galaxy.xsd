@@ -2493,7 +2493,7 @@ valid when ``type`` is ``integer`` or ``float``.</xs:documentation>
 valid when ``type`` is ``integer`` or ``float``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="format" type="xs:string">
+        <xs:attribute name="format" type="DataFormats">
           <xs:annotation>
             <xs:documentation xml:lang="en">Only if ``type`` attribute value is
 ``data`` or ``data_collection`` - the list of supported data formats is
@@ -2648,6 +2648,12 @@ allow access to Python code to generate options for a select list. See
       </xs:element>
     </xs:choice>
   </xs:group>
+
+  <xs:simpleType name="DataFormats">
+      <xs:restriction base="xs:string">
+          <xs:pattern value="[\w+,]*\w+"/>
+      </xs:restriction>
+  </xs:simpleType>
 
   <xs:simpleType name="ParamType">
     <xs:annotation>
