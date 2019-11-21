@@ -38,8 +38,8 @@ class ToursController(BaseAPIController):
         """
         return self.app.tour_registry.tour_contents(tour_id)
 
-    @legacy_expose_api
     @require_admin
+    @legacy_expose_api
     def update_tour(self, trans, tour_id, **kwd):
         """
         This simply reloads tours right now.  It's a quick hack.

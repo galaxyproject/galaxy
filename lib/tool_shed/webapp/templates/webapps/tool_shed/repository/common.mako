@@ -299,12 +299,6 @@
                     else:
                         folder_label = "%s<i> - repository tools require handling of these dependencies</i>" % folder_label
                     col_span_str = 'colspan="4"'
-                elif folder.workflows:
-                    if folder.description:
-                        folder_label = "%s<i> - %s</i>" % ( folder_label, folder.description )
-                    else:
-                        folder_label = "%s<i> - click the name to view an SVG image of the workflow</i>" % folder_label
-                    col_span_str = 'colspan="4"'
                 elif folder.valid_data_managers:
                     if folder.description:
                         folder_label = "%s<i> - %s</i>" % ( folder_label, folder.description )
@@ -358,12 +352,6 @@
     %for invalid_tool in folder.invalid_tools:
         ${render_invalid_tool( invalid_tool, pad, my_row, row_counter, render_repository_actions_for=render_repository_actions_for )}
     %endfor
-    %if folder.workflows:
-        %for index, workflow in enumerate( folder.workflows ):
-            <% row_is_header = index == 0 %>
-            ${render_workflow( workflow, pad, my_row, row_counter, row_is_header, render_repository_actions_for=render_repository_actions_for )}
-        %endfor
-    %endif
     %if folder.datatypes:
         %for index, datatype in enumerate( folder.datatypes ):
             <% row_is_header = index == 0 %>
@@ -990,48 +978,6 @@
     %>
 </%def>
 
-<%def name="render_workflow( workflow, pad, parent, row_counter, row_is_header=False, render_repository_actions_for='tool_shed' )">
-    <%
-        from tool_shed.util.encoding_util import tool_shed_encode
-        encoded_id = trans.security.encode_id( workflow.id )
-        encoded_workflow_name = tool_shed_encode( workflow.workflow_name )
-        if trans.webapp.name == 'tool_shed':
-            encoded_repository_metadata_id = trans.security.encode_id( workflow.repository_metadata_id )
-            encoded_repository_id = None
-        else:
-            encoded_repository_metadata_id = None
-            encoded_repository_id = trans.security.encode_id( workflow.repository_id )
-        if row_is_header:
-            cell_type = 'th'
-        else:
-            cell_type = 'td'
-    %>
-    <tr class="datasetRow"
-        %if parent is not None:
-            parent="${parent}"
-        %endif
-        id="libraryItem-rw-${encoded_id}">
-        <${cell_type} style="padding-left: ${pad+20}px;">
-            %if row_is_header:
-                ${workflow.workflow_name | h}
-            %elif trans.webapp.name == 'tool_shed' and encoded_repository_metadata_id:
-                <a href="${h.url_for( controller='repository', action='view_workflow', workflow_name=encoded_workflow_name, repository_metadata_id=encoded_repository_metadata_id, render_repository_actions_for=render_repository_actions_for )}">${workflow.workflow_name | h}</a>
-            %elif trans.webapp.name == 'galaxy' and encoded_repository_id:
-                <a href="${h.url_for( controller='admin_toolshed', action='view_workflow', workflow_name=encoded_workflow_name, repository_id=encoded_repository_id )}">${workflow.workflow_name | h}</a>
-            %else:
-                ${workflow.workflow_name | h}
-            %endif
-        </${cell_type}>
-        <${cell_type}>${workflow.steps | h}</${cell_type}>
-        <${cell_type}>${workflow.format_version | h}</${cell_type}>
-        <${cell_type}>${workflow.annotation | h}</${cell_type}>
-    </tr>
-    <%
-        my_row = row_counter.count
-        row_counter.increment()
-    %>
-</%def>
-
 <%def name="render_dependency_status( dependency, prepare_for_install=False)">
     <td>${dependency['name'] | h}</td>
     <td>${dependency['version'] | h}</td>
@@ -1109,7 +1055,6 @@
 
         has_datatypes = metadata and 'datatypes' in metadata
         has_readme_files = metadata and 'readme_files' in metadata
-        has_workflows = metadata and 'workflows' in metadata
 
         datatypes_root_folder = containers_dict.get( 'datatypes', None )
         invalid_data_managers_root_folder = containers_dict.get( 'invalid_data_managers', None )
@@ -1125,9 +1070,8 @@
         tool_test_results_root_folder = containers_dict.get( 'tool_test_results', None )
         valid_data_managers_root_folder = containers_dict.get( 'valid_data_managers', None )
         valid_tools_root_folder = containers_dict.get( 'valid_tools', None )
-        workflows_root_folder = containers_dict.get( 'workflows', None )
 
-        has_contents = datatypes_root_folder or invalid_tools_root_folder or valid_tools_root_folder or workflows_root_folder
+        has_contents = datatypes_root_folder or invalid_tools_root_folder or valid_tools_root_folder
         has_dependencies = \
             invalid_repository_dependencies_root_folder or \
             invalid_tool_dependencies_root_folder or \
@@ -1238,13 +1182,6 @@
                     <% row_counter = RowCounter() %>
                     <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="invalid_data_managers">
                         ${render_folder( invalid_data_managers_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True, render_repository_actions_for=render_repository_actions_for )}
-                    </table>
-                %endif
-                %if workflows_root_folder:
-                    <p/>
-                    <% row_counter = RowCounter() %>
-                    <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="workflows">
-                        ${render_folder( workflows_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True, render_repository_actions_for=render_repository_actions_for )}
                     </table>
                 %endif
                 %if datatypes_root_folder:

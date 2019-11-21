@@ -57,9 +57,6 @@
                             <div class="toolTitle">
                                 <a target="galaxy_main" href="${h.url_for( controller='repository', action='find_tools' )}">Search for valid tools</a>
                             </div>
-                            <div class="toolTitle">
-                                <a target="galaxy_main" href="${h.url_for( controller='repository', action='find_workflows' )}">Search for workflows</a>
-                            </div>
                         </div>
                         <div class="toolSectionPad"></div>
                         <div class="toolSectionTitle">
@@ -128,9 +125,6 @@
                         </div>
                         <div class="toolTitle">
                             <a target="galaxy_main" href="${h.url_for( controller='repository', action='create_repository' )}">Create new repository</a>
-                        </div>
-                        <div class="toolTitle">
-                            <a target="galaxy_main" href="${h.url_for( controller='repository', action='upload_capsule' )}">Import repository capsule</a>
                         </div>
                         %if trans.app.config.enable_galaxy_flavor_docker_image:
                             <div class="toolTitle">

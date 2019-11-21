@@ -24,7 +24,6 @@ from galaxy.tools.repositories import ValidationContext
 from galaxy.web.form_builder import CheckboxField, SelectField
 from galaxy.webapps.base.controller import BaseUIController
 from galaxy.webapps.reports.framework import grids
-from tool_shed.capsule import capsule_manager
 from tool_shed.dependencies.repository import relation_builder
 from tool_shed.galaxy_install import dependency_display
 from tool_shed.metadata import repository_metadata_manager
@@ -42,8 +41,7 @@ from tool_shed.util import (
     repository_util,
     search_util,
     shed_util_common as suc,
-    tool_util,
-    workflow_util
+    tool_util
 )
 from tool_shed.util.web_util import escape
 from tool_shed.utility_containers import ToolShedUtilityContainerManager
@@ -936,73 +934,6 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         return trans.response.send_redirect(download_url)
 
     @web.expose
-    def export(self, trans, repository_id, changeset_revision, **kwd):
-        message = escape(kwd.get('message', ''))
-        status = kwd.get('status', 'done')
-        export_repository_dependencies = kwd.get('export_repository_dependencies', '')
-        repository = repository_util.get_repository_in_tool_shed(trans.app, repository_id)
-        if kwd.get('export_repository_button', False):
-            # We'll currently support only gzip-compressed tar archives.
-            export_repository_dependencies = CheckboxField.is_checked(export_repository_dependencies)
-            tool_shed_url = web.url_for('/', qualified=True)
-            erm = capsule_manager.ExportRepositoryManager(app=trans.app,
-                                                          user=trans.user,
-                                                          tool_shed_url=tool_shed_url,
-                                                          repository=repository,
-                                                          changeset_revision=changeset_revision,
-                                                          export_repository_dependencies=export_repository_dependencies,
-                                                          using_api=False)
-            repositories_archive, error_message = erm.export_repository()
-            repositories_archive_filename = os.path.basename(repositories_archive.name)
-            if error_message:
-                message = error_message
-                status = 'error'
-            else:
-                trans.response.set_content_type('application/x-gzip')
-                trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % (repositories_archive_filename)
-                opened_archive = open(repositories_archive.name)
-                # Make sure the file is removed from disk after the contents have been downloaded.
-                os.unlink(repositories_archive.name)
-                repositories_archive_path, file_name = os.path.split(repositories_archive.name)
-                basic_util.remove_dir(repositories_archive_path)
-                return opened_archive
-        repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(trans.app, repository_id, changeset_revision)
-        metadata = repository_metadata.metadata
-        toolshed_base_url = str(web.url_for('/', qualified=True)).rstrip('/')
-        # Initialize the repository dependency RelationBuilder.
-        rb = relation_builder.RelationBuilder(trans.app, repository, repository_metadata, toolshed_base_url)
-        # Work-around to ensure repositories that contain packages needed only for compiling
-        # a dependent package are included in the capsule.
-        rb.set_filter_dependencies_needed_for_compiling(False)
-        # Get a dictionary of all repositories upon which the contents of the current repository_metadata record depend.
-        repository_dependencies = rb.get_repository_dependencies_for_changeset_revision()
-        if repository_dependencies:
-            # Only display repository dependencies if they exist.
-            exclude = ['datatypes', 'invalid_repository_dependencies', 'invalid_tool_dependencies', 'invalid_tools',
-                       'readme_files', 'tool_dependencies', 'tools', 'workflows', 'data_manager']
-            tsucm = ToolShedUtilityContainerManager(trans.app)
-            containers_dict = tsucm.build_repository_containers(repository,
-                                                                changeset_revision,
-                                                                repository_dependencies,
-                                                                repository_metadata,
-                                                                exclude=exclude)
-            export_repository_dependencies_check_box = CheckboxField('export_repository_dependencies', value=True)
-        else:
-            containers_dict = None
-            export_repository_dependencies_check_box = None
-        revision_label = hg_util.get_revision_label(trans.app, repository, changeset_revision, include_date=True)
-        return trans.fill_template("/webapps/tool_shed/repository/export_repository.mako",
-                                   changeset_revision=changeset_revision,
-                                   containers_dict=containers_dict,
-                                   export_repository_dependencies_check_box=export_repository_dependencies_check_box,
-                                   repository=repository,
-                                   repository_metadata=repository_metadata,
-                                   revision_label=revision_label,
-                                   metadata=metadata,
-                                   message=message,
-                                   status=status)
-
-    @web.expose
     def export_via_api(self, trans, **kwd):
         """Return an exported gzip compressed repository archive file opened for reading."""
         encoded_repositories_archive_name = kwd.get('encoded_repositories_archive_name', None)
@@ -1077,9 +1008,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                     global_actions = [grids.GridAction("Browse valid repositories",
                                                        dict(controller='repository', action='browse_valid_categories')),
                                       grids.GridAction("Search for valid tools",
-                                                       dict(controller='repository', action='find_tools')),
-                                      grids.GridAction("Search for workflows",
-                                                       dict(controller='repository', action='find_workflows'))]
+                                                       dict(controller='repository', action='find_tools'))]
                     self.install_matched_repository_grid.global_actions = global_actions
                     install_url_args = dict(controller='repository', action='find_tools')
                     operations = [grids.GridOperation("Install", url_args=install_url_args, allow_multiple=True, async_compatible=False)]
@@ -1104,101 +1033,6 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                                    exact_matches_check_box=exact_matches_check_box,
                                    message=message,
                                    status=status)
-
-    @web.expose
-    def find_workflows(self, trans, **kwd):
-        message = escape(kwd.get('message', ''))
-        status = kwd.get('status', 'done')
-        common_util.handle_galaxy_url(trans, **kwd)
-        if 'operation' in kwd:
-            item_id = kwd.get('id', '')
-            if item_id:
-                operation = kwd['operation'].lower()
-                is_admin = trans.user_is_admin
-                if operation == "view_or_manage_repository":
-                    # The received id is a RepositoryMetadata id, so we have to get the repository id.
-                    repository_metadata = metadata_util.get_repository_metadata_by_id(trans.app, item_id)
-                    repository_id = trans.security.encode_id(repository_metadata.repository.id)
-                    repository = repository_util.get_repository_in_tool_shed(trans.app, repository_id)
-                    kwd['id'] = repository_id
-                    kwd['changeset_revision'] = repository_metadata.changeset_revision
-                    if trans.webapp.name == 'tool_shed' and (is_admin or repository.user == trans.user):
-                        a = 'manage_repository'
-                    else:
-                        a = 'view_repository'
-                    return trans.response.send_redirect(web.url_for(controller='repository',
-                                                                    action=a,
-                                                                    **kwd))
-                if operation == "install to galaxy":
-                    # We've received a list of RepositoryMetadata ids, so we need to build a list of associated Repository ids.
-                    encoded_repository_ids = []
-                    changeset_revisions = []
-                    for repository_metadata_id in util.listify(item_id):
-                        repository_metadata = metadata_util.get_repository_metadata_by_id(trans.app, item_id)
-                        encoded_repository_ids.append(trans.security.encode_id(repository_metadata.repository.id))
-                        changeset_revisions.append(repository_metadata.changeset_revision)
-                    new_kwd = {}
-                    new_kwd['repository_ids'] = encoded_repository_ids
-                    new_kwd['changeset_revisions'] = changeset_revisions
-                    return trans.response.send_redirect(web.url_for(controller='repository',
-                                                                    action='install_repositories_by_revision',
-                                                                    **new_kwd))
-            else:
-                # This can only occur when there is a multi-select grid with check boxes and an operation,
-                # and the user clicked the operation button without checking any of the check boxes.
-                return trans.show_error_message("No items were selected.")
-        if 'find_workflows_button' in kwd:
-            workflow_names = [item.lower() for item in util.listify(kwd.get('workflow_name', ''))]
-            exact_matches = kwd.get('exact_matches', '')
-            exact_matches_checked = CheckboxField.is_checked(exact_matches)
-            match_tuples = []
-            ok = True
-            if workflow_names:
-                ok, match_tuples = search_util.search_repository_metadata(trans.app,
-                                                                          exact_matches_checked,
-                                                                          workflow_names=workflow_names)
-            else:
-                ok, match_tuples = search_util.search_repository_metadata(trans.app,
-                                                                          exact_matches_checked,
-                                                                          workflow_names=[],
-                                                                          all_workflows=True)
-            if ok:
-                kwd['match_tuples'] = match_tuples
-                if trans.webapp.name == 'galaxy':
-                    # Our initial request originated from a Galaxy instance.
-                    global_actions = [grids.GridAction("Browse valid repositories",
-                                                       dict(controller='repository', action='browse_valid_repositories')),
-                                      grids.GridAction("Search for valid tools",
-                                                       dict(controller='repository', action='find_tools')),
-                                      grids.GridAction("Search for workflows",
-                                                       dict(controller='repository', action='find_workflows'))]
-                    self.install_matched_repository_grid.global_actions = global_actions
-                    install_url_args = dict(controller='repository', action='find_workflows')
-                    operations = [grids.GridOperation("Install", url_args=install_url_args, allow_multiple=True, async_compatible=False)]
-                    self.install_matched_repository_grid.operations = operations
-                    return self.install_matched_repository_grid(trans, **kwd)
-                else:
-                    kwd['message'] = "workflow name: <b>%s</b><br/>exact matches only: <b>%s</b>" % \
-                        (escape(basic_util.stringify(workflow_names)), str(exact_matches_checked))
-                    self.matched_repository_grid.title = "Repositories with matching workflows"
-                    return self.matched_repository_grid(trans, **kwd)
-            else:
-                message = "No search performed - each field must contain the same number of comma-separated items."
-                status = "error"
-        else:
-            exact_matches_checked = False
-            workflow_names = []
-        exact_matches_check_box = CheckboxField('exact_matches', value=exact_matches_checked)
-        return trans.fill_template('/webapps/tool_shed/repository/find_workflows.mako',
-                                   workflow_name=basic_util.stringify(workflow_names),
-                                   exact_matches_check_box=exact_matches_check_box,
-                                   message=message,
-                                   status=status)
-
-    @web.expose
-    def generate_workflow_image(self, trans, workflow_name, repository_metadata_id=None):
-        """Return an svg image representation of a workflow dictionary created when the workflow was exported."""
-        return workflow_util.generate_workflow_image(trans, workflow_name, repository_metadata_id=repository_metadata_id, repository_id=None)
 
     @web.expose
     def get_changeset_revision_and_ctx_rev(self, trans, **kwd):
@@ -1639,49 +1473,6 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         message = escape(kwd.get('message', ''))
         status = kwd.get('status', 'done')
         return trans.fill_template('/webapps/tool_shed/repository/help.mako', message=message, status=status, **kwd)
-
-    @web.expose
-    def import_capsule(self, trans, **kwd):
-        message = escape(kwd.get('message', ''))
-        status = kwd.get('status', 'done')
-        capsule_file_name = kwd.get('capsule_file_name', None)
-        encoded_file_path = kwd.get('encoded_file_path', None)
-        file_path = encoding_util.tool_shed_decode(encoded_file_path)
-        export_info_file_path = os.path.join(file_path, 'export_info.xml')
-        irm = capsule_manager.ImportRepositoryManager(trans.app,
-                                                      trans.request.host,
-                                                      trans.user,
-                                                      trans.user_is_admin)
-        export_info_dict = irm.get_export_info_dict(export_info_file_path)
-        manifest_file_path = os.path.join(file_path, 'manifest.xml')
-        # The manifest.xml file has already been validated, so no error_message should be returned here.
-        repository_info_dicts, error_message = irm.get_repository_info_from_manifest(manifest_file_path)
-        # Determine the status for each exported repository archive contained within the capsule.
-        repository_status_info_dicts = irm.get_repository_status_from_tool_shed(repository_info_dicts)
-        if 'import_capsule_button' in kwd:
-            # Generate a list of repository name / import results message tuples for display after the capsule is imported.
-            import_results_tups = []
-            # Only create repositories that do not yet exist and that the current user is authorized to create.  The
-            # status will be None for repositories that fall into the intersection of these 2 categories.
-            for repository_status_info_dict in repository_status_info_dicts:
-                # Add the capsule_file_name and encoded_file_path to the repository_status_info_dict.
-                repository_status_info_dict['capsule_file_name'] = capsule_file_name
-                repository_status_info_dict['encoded_file_path'] = encoded_file_path
-                import_results_tups = irm.create_repository_and_import_archive(repository_status_info_dict,
-                                                                               import_results_tups)
-            irm.check_status_and_reset_downloadable(import_results_tups)
-            basic_util.remove_dir(file_path)
-            return trans.fill_template('/webapps/tool_shed/repository/import_capsule_results.mako',
-                                       export_info_dict=export_info_dict,
-                                       import_results_tups=import_results_tups,
-                                       message=message,
-                                       status=status)
-        return trans.fill_template('/webapps/tool_shed/repository/import_capsule.mako',
-                                   encoded_file_path=encoded_file_path,
-                                   export_info_dict=export_info_dict,
-                                   repository_status_info_dicts=repository_status_info_dicts,
-                                   message=message,
-                                   status=status)
 
     @web.expose
     def index(self, trans, **kwd):
@@ -2639,36 +2430,6 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         return ''
 
     @web.expose
-    def upload_capsule(self, trans, **kwd):
-        message = escape(kwd.get('message', ''))
-        status = kwd.get('status', 'done')
-        url = kwd.get('url', '')
-        if 'upload_capsule_button' in kwd:
-            irm = capsule_manager.ImportRepositoryManager(trans.app,
-                                                          trans.request.host,
-                                                          trans.user,
-                                                          trans.user_is_admin)
-            capsule_dict = irm.upload_capsule(**kwd)
-            status = capsule_dict.get('status', 'error')
-            if status == 'error':
-                message = capsule_dict.get('error_message', '')
-            else:
-                capsule_dict = irm.extract_capsule_files(**capsule_dict)
-                capsule_dict = irm.validate_capsule(**capsule_dict)
-                status = capsule_dict.get('status', 'error')
-                if status == 'ok':
-                    return trans.response.send_redirect(web.url_for(controller='repository',
-                                                                    action='import_capsule',
-                                                                    **capsule_dict))
-                else:
-                    message = 'The capsule contents are invalid and cannot be imported:<br/>%s' % \
-                        str(capsule_dict.get('error_message', ''))
-        return trans.fill_template('/webapps/tool_shed/repository/upload_capsule.mako',
-                                   url=url,
-                                   message=message,
-                                   status=status)
-
-    @web.expose
     def view_changelog(self, trans, id, **kwd):
         message = escape(kwd.get('message', ''))
         status = kwd.get('status', 'done')
@@ -2962,28 +2723,6 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                                    changeset_revision=changeset_revision,
                                    revision_label=revision_label,
                                    changeset_revision_select_field=changeset_revision_select_field,
-                                   message=message,
-                                   status=status)
-
-    @web.expose
-    def view_workflow(self, trans, workflow_name, repository_metadata_id, **kwd):
-        """Retrieve necessary information about a workflow from the database so that it can be displayed in an svg image."""
-        message = escape(kwd.get('message', ''))
-        status = kwd.get('status', 'done')
-        render_repository_actions_for = kwd.get('render_repository_actions_for', 'tool_shed')
-        if workflow_name:
-            workflow_name = encoding_util.tool_shed_decode(workflow_name)
-        repository_metadata = metadata_util.get_repository_metadata_by_id(trans.app, repository_metadata_id)
-        repository = repository_util.get_repository_in_tool_shed(trans.app, trans.security.encode_id(repository_metadata.repository_id))
-        changeset_revision = repository_metadata.changeset_revision
-        metadata = repository_metadata.metadata
-        return trans.fill_template("/webapps/tool_shed/repository/view_workflow.mako",
-                                   repository=repository,
-                                   render_repository_actions_for=render_repository_actions_for,
-                                   changeset_revision=changeset_revision,
-                                   repository_metadata_id=repository_metadata_id,
-                                   workflow_name=workflow_name,
-                                   metadata=metadata,
                                    message=message,
                                    status=status)
 

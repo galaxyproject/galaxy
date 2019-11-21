@@ -282,14 +282,30 @@ class BaseDatasetPopulator(object):
         delete_response = self._delete("histories/%s/contents/%s" % (history_id, content_id))
         return delete_response
 
-    def create_tool(self, representation):
+    def create_tool_from_path(self, tool_path):
+        tool_directory = os.path.dirname(os.path.abspath(tool_path))
+        payload = dict(
+            src="from_path",
+            path=tool_path,
+            tool_directory=tool_directory,
+        )
+        return self._create_tool_raw(payload)
+
+    def create_tool(self, representation, tool_directory=None):
         if isinstance(representation, dict):
             representation = json.dumps(representation)
         payload = dict(
             representation=representation,
+            tool_directory=tool_directory,
         )
-        create_response = self._post("dynamic_tools", data=payload, admin=True)
-        assert create_response.status_code == 200, create_response
+        return self._create_tool_raw(payload)
+
+    def _create_tool_raw(self, payload):
+        try:
+            create_response = self._post("dynamic_tools", data=payload, admin=True)
+        except TypeError:
+            create_response = self._post("dynamic_tools", data=payload)
+        assert create_response.status_code == 200, create_response.json()
         return create_response.json()
 
     def list_dynamic_tools(self):

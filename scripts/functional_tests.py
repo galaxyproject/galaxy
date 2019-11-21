@@ -63,7 +63,7 @@ class SeleniumGalaxyTestDriver(driver_util.GalaxyTestDriver):
 
     @driver_util.classproperty
     def default_web_host(cls):
-        from selenium_tests.framework import default_web_host_for_selenium_tests
+        from galaxy_test.selenium.framework import default_web_host_for_selenium_tests
         return default_web_host_for_selenium_tests()
 
 
