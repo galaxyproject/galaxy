@@ -16,7 +16,6 @@ class SpeechToTextMedia:
 	filename = ""
 	duration = 0.00
 	def __init__(self, duration = 0.00, filename = ""):
-		print("setting duration " + str(duration))
 		self.duration = duration
 		self.filename = filename
 	@classmethod

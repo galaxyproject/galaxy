@@ -9,8 +9,11 @@ class EntityExtraction:
 		else:
 			 self.entities = entities
 
-	def addEntity(self, type, text, beginOffset, endOffset):
-		self.entities.append(EntityExtractionEntity(type, text, beginOffset, endOffset))
+	def addEntity(self, type, text, beginOffset, endOffset, scoreType = None, scoreValue = None):
+		entity = EntityExtractionEntity(type, text, beginOffset, endOffset)
+		if scoreType is not None and scoreValue is not None:
+			entity.score = EntityExtractionEntityScore(scoreType, scoreValue)
+		self.entities.append(entity)
 
 	@classmethod
 	def from_json(cls, json_data: dict):
@@ -26,12 +29,23 @@ class EntityExtractionMedia:
 	def from_json(cls, json_data: dict):
 		return cls(**json_data)
 
+class EntityExtractionEntityScore:
+	type = ""
+	scoreValue = 0.00
+	def __init__(self, type = None, scoreValue = None):
+		self.type = type
+		self.scoreValue = scoreValue
+	@classmethod
+	def from_json(cls, json_data: dict):
+		return cls(**json_data)
+
 class EntityExtractionEntity:
 	text = ""
 	type = None
 	beginOffset = None
 	endOffset = None
-	def __init__(self, type = None, text = None, beginOffset = None, endOffset = None):
+	score = None
+	def __init__(self, type = None, text = None, beginOffset = None, endOffset = None, score = None):
 		self.type = type
 		self.text = text
 		if beginOffset is not None and float(beginOffset) >= 0.00:

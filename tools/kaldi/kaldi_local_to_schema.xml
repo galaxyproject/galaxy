@@ -7,8 +7,8 @@
    <inputs>
    <!-- should be wave data type -->
     <param name="input" type="data" format="audio" label="From dataset" help="An audio file"/>
-    <param name="kalid_trans_out" type="data" format="txt" label="Transcript from Kaldi" help="An text file"/>
-    <param name="kalid_out" type="data" format="json" label="From Kaldi" help="Output from Kaldi"/>
+    <param name="kalid_trans_out" type="data" format="txt" label="Transcript from Kaldi" help="A text file"/>
+    <param name="kalid_out" type="data" format="json" label="Speech to Text Json From Kaldi" help="A json file"/>
   </inputs>
   <outputs>
     <data format="json" name="json_out" />
