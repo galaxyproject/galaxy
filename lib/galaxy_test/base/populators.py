@@ -20,6 +20,7 @@ from gxformat2 import (
     convert_and_import_workflow,
     ImporterGalaxyInterface,
 )
+from gxformat2._yaml import ordered_load
 from pkg_resources import resource_string
 from six import StringIO
 
@@ -849,7 +850,10 @@ class BaseWorkflowPopulator(object):
             params["style"] = style
         response = self._get("workflows/%s/download" % workflow_id, data=params)
         api_asserts.assert_status_code_is(response, 200)
-        return response.json()
+        if style != "format2":
+            return response.json()
+        else:
+            return ordered_load(response.text)
 
     def update_workflow(self, workflow_id, workflow_object):
         data = dict(

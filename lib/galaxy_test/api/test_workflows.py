@@ -515,6 +515,11 @@ test_data:
             if step['type'] == "tool":
                 self._assert_has_keys(step, "post_job_actions")
 
+    def test_export_format2(self):
+        uploaded_workflow_id = self.workflow_populator.simple_workflow("test_for_export_format2")
+        downloaded_workflow = self._download_workflow(uploaded_workflow_id, style="format2")
+        assert downloaded_workflow["class"] == "GalaxyWorkflow"
+
     def test_export_editor(self):
         uploaded_workflow_id = self.workflow_populator.simple_workflow("test_for_export")
         downloaded_workflow = self._download_workflow(uploaded_workflow_id, style="editor")
