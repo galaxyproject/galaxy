@@ -172,6 +172,7 @@ class MockAppConfig(Bunch):
         self.root = root
         self.tool_cache_data_dir = os.path.join(root, 'tool_cache')
         self.delay_tool_initialization = True
+        self.external_chown_script = None
 
         self.config_file = None
 
