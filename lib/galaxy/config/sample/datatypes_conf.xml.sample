@@ -258,6 +258,7 @@
     <datatype extension="ms2" type="galaxy.datatypes.proteomics:Ms2" display_in_upload="true"/>
     <datatype extension="mzq" type="galaxy.datatypes.proteomics:MzQuantML" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="mz.sqlite" type="galaxy.datatypes.binary:MzSQlite" mimetype="application/octet-stream" display_in_upload="true"/>
+    <datatype extension="osw" type="galaxy.datatypes.binary:OSW" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="pqp" type="galaxy.datatypes.binary:PQP" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="traml" type="galaxy.datatypes.proteomics:TraML" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="featurexml" type="galaxy.datatypes.proteomics:FeatureXML" mimetype="application/xml" display_in_upload="true"/>
@@ -791,6 +792,7 @@
     <sniffer type="galaxy.datatypes.binary:TwoBit"/>
     <sniffer type="galaxy.datatypes.binary:GeminiSQLite"/>
     <sniffer type="galaxy.datatypes.binary:MzSQlite"/>
+    <sniffer type="galaxy.datatypes.binary:OSW"/>
     <sniffer type="galaxy.datatypes.binary:PQP"/>
     <sniffer type="galaxy.datatypes.binary:IdpDB"/>
     <sniffer type="galaxy.datatypes.binary:ElibSQlite"/>

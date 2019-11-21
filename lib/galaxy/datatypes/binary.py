@@ -1589,6 +1589,20 @@ class PQP(SQlite):
         return super(PQP, self).sniff(filename) and self.sniff_table_names(filename, table_names)
 
 
+class OSW(PQP):
+    """Class describing OpenSwath output"""
+    file_ext = "osw"
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        super(OSW, self).set_meta(dataset, overwrite=overwrite, **kwd)
+
+    def sniff(self, filename):
+        # osw seems to be an extension of pqp (few tables are added)
+        # see also here https://github.com/OpenMS/OpenMS/issues/4365
+        table_names = ['FEATURE', 'FEATURE_MS1', 'FEATURE_MS2', 'FEATURE_TRANSITION', 'RUN']
+        return super(OSW, self).sniff(filename) and self.sniff_table_names(filename, table_names)
+
+
 class BlibSQlite(SQlite):
     """Class describing a Proteomics Spectral Library Sqlite database """
     MetadataElement(name="blib_version", default='1.8', param=MetadataParameter, desc="Blib Version",
