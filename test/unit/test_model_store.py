@@ -7,7 +7,32 @@ from galaxy import model
 from galaxy.model import store
 from galaxy.model.metadata import MetadataTempFile
 from galaxy.tools.imp_exp import unpack_tar_gz_archive
-from .tools.test_history_imp_exp import _create_datasets, _mock_app, Dummy
+from galaxy.util.bunch import Bunch
+from .data.test_galaxy_mapping import _invocation_for_workflow, _workflow_from_steps
+from .tools.test_history_imp_exp import _create_datasets, _mock_app as imp_exp_mock_app, Dummy
+
+
+def _mock_app(**kwd):
+    app = imp_exp_mock_app(**kwd)
+    app.workflow_contents_manager = Bunch()
+
+    def store_workflow_to_path(path, stored_workflow, workflow, **kwd):
+        with open(path, "w") as f:
+            f.write("MY COOL WORKFLOW!!!")
+
+    def read_workflow_from_path(app, user, path):
+        stored_workflow = model.StoredWorkflow()
+        stored_workflow.user = user
+        workflow = model.Workflow()
+        stored_workflow.latest_workflow = workflow
+        sa_session = app.model.context
+        sa_session.add_all((stored_workflow, workflow))
+        sa_session.flush()
+        return workflow
+
+    app.workflow_contents_manager.store_workflow_to_path = store_workflow_to_path
+    app.workflow_contents_manager.read_workflow_from_path = read_workflow_from_path
+    return app
 
 
 def test_import_export_history():
@@ -179,6 +204,31 @@ def test_import_export_library():
 
     assert len(new_root.folders) == 1
     assert len(new_root.datasets) == 1
+
+
+def test_import_export_invocation():
+    app = _mock_app()
+    export_kwds = {}
+    sa_session = app.model.context
+
+    u = model.User(email="collection@example.com", password="password")
+
+    workflow_1 = _workflow_from_steps(u, [])
+    sa_session.add(workflow_1)
+    workflow_invocation = _invocation_for_workflow(u, workflow_1)
+    sa_session.add(workflow_invocation)
+    sa_session.flush()
+
+    temp_directory = mkdtemp()
+    with store.DirectoryModelExportStore(temp_directory, app=app, **export_kwds) as export_store:
+        export_store.export_workflow_invocation(workflow_invocation)
+
+    h2 = model.History(user=u)
+    sa_session.add(h2)
+    sa_session.flush()
+
+    import_model_store = store.get_import_model_store_for_directory(temp_directory, app=app, user=u, import_options=store.ImportOptions())
+    import_model_store.perform_import(history=h2)
 
 
 def test_finalize_job_state():

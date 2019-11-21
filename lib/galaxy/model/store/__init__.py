@@ -35,6 +35,7 @@ ATTRS_FILENAME_IMPLICIT_COLLECTION_JOBS = 'implicit_collection_jobs_attrs.txt'
 ATTRS_FILENAME_COLLECTIONS = 'collections_attrs.txt'
 ATTRS_FILENAME_EXPORT = 'export_attrs.txt'
 ATTRS_FILENAME_LIBRARIES = 'libraries_attrs.txt'
+ATTRS_FILENAME_INVOCATIONS = 'invocation_attrs.txt'
 GALAXY_EXPORT_VERSION = "2"
 
 
@@ -199,6 +200,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         self._reassign_hids(object_import_tracker, history)
         self._import_jobs(object_import_tracker, history)
         self._import_implicit_collection_jobs(object_import_tracker)
+        self._import_workflow_invocations(object_import_tracker, history)
         self._flush()
 
     def _import_datasets(self, object_import_tracker, datasets_attrs, history, new_history, job):
@@ -641,6 +643,28 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 obj.hid = base + i
         self._flush()
 
+    def _import_workflow_invocations(self, object_import_tracker, history):
+        #
+        # Create jobs.
+        #
+
+        for object_key, workflow_path in self.workflow_paths():
+            workflow = self.app.workflow_contents_manager.read_workflow_from_path(self.app, self.user, workflow_path)
+            object_import_tracker.workflows_by_key[object_key] = workflow
+
+        invocations_attrs = self.invocations_properties()
+        for invocation_attrs in invocations_attrs:
+            assert not self.import_options.allow_edit
+            imported_invocation = model.WorkflowInvocation()
+            imported_invocation.user = self.user
+            imported_invocation.history = history
+            imported_invocation.workflow = object_import_tracker.workflows_by_key[invocation_attrs["workflow"]]
+            self._session_add(imported_invocation)
+            self._flush()
+
+            if object_key in invocation_attrs:
+                object_import_tracker.invocations_by_key[invocation_attrs[object_key]] = imported_invocation
+
     def _import_jobs(self, object_import_tracker, history):
         object_key = self.object_key
 
@@ -792,6 +816,8 @@ class ObjectImportTracker:
         self.hda_copied_from_sinks = {}
         self.hdca_copied_from_sinks = {}
         self.jobs_by_key = {}
+        self.invocations_by_key = {}
+        self.workflows_by_key = {}
         self.requires_hid = []
 
 
@@ -811,9 +837,7 @@ class BaseDirectoryImportModelStore(ModelImportStore):
         return os.path.exists(new_history_attributes)
 
     def new_history_properties(self):
-        new_history_attributes = os.path.join(self.archive_dir, ATTRS_FILENAME_HISTORY)
-        history_properties = load(open(new_history_attributes))
-        return history_properties
+        return self._read_list_if_exists(ATTRS_FILENAME_HISTORY, required=True)
 
     def datasets_properties(self):
         datasets_attrs_file_name = os.path.join(self.archive_dir, ATTRS_FILENAME_DATASETS)
@@ -827,34 +851,39 @@ class BaseDirectoryImportModelStore(ModelImportStore):
         return datasets_attrs
 
     def collections_properties(self):
-        collections_attrs_file_name = os.path.join(self.archive_dir, ATTRS_FILENAME_COLLECTIONS)
-        if os.path.exists(collections_attrs_file_name):
-            collections_attrs = load(open(collections_attrs_file_name))
-        else:
-            collections_attrs = []
-        return collections_attrs
+        return self._read_list_if_exists(ATTRS_FILENAME_COLLECTIONS)
 
     def library_properties(self):
-        libraries_attrs_file_name = os.path.join(self.archive_dir, ATTRS_FILENAME_LIBRARIES)
-        if os.path.exists(libraries_attrs_file_name):
-            libraries_attrs = load(open(libraries_attrs_file_name))
-        else:
-            libraries_attrs = []
-        return libraries_attrs
+        return self._read_list_if_exists(ATTRS_FILENAME_LIBRARIES)
 
     def jobs_properties(self):
-        jobs_attr_file_name = os.path.join(self.archive_dir, ATTRS_FILENAME_JOBS)
-        try:
-            return load(open(jobs_attr_file_name))
-        except FileNotFoundError:
-            return []
+        return self._read_list_if_exists(ATTRS_FILENAME_JOBS)
 
     def implicit_collection_jobs_properties(self):
-        implicit_collection_jobs_attrs_file_name = os.path.join(self.archive_dir, ATTRS_FILENAME_IMPLICIT_COLLECTION_JOBS)
-        try:
-            return load(open(implicit_collection_jobs_attrs_file_name))
-        except FileNotFoundError:
+        return self._read_list_if_exists(ATTRS_FILENAME_IMPLICIT_COLLECTION_JOBS)
+
+    def invocations_properties(self):
+        return self._read_list_if_exists(ATTRS_FILENAME_INVOCATIONS)
+
+    def workflow_paths(self):
+        workflows_directory = os.path.join(self.archive_dir, "workflows")
+        if not os.path.exists(workflows_directory):
             return []
+
+        for name in os.listdir(workflows_directory):
+            assert name.endswith(".gxwf.yml")
+            workflow_key = name[0:-len(".gxwf.yml")]
+            yield workflow_key, os.path.join(workflows_directory, name)
+
+    def _read_list_if_exists(self, file_name, required=False):
+        file_name = os.path.join(self.archive_dir, file_name)
+        if os.path.exists(file_name):
+            attrs = load(open(file_name))
+        else:
+            if required:
+                raise Exception("Failed to find file [%s] in model store archive" % file_name)
+            attrs = []
+        return attrs
 
 
 class DirectoryImportModelStore1901(BaseDirectoryImportModelStore):
@@ -1018,6 +1047,14 @@ class ModelExportStore(metaclass=abc.ABCMeta):
         """Export history to store."""
 
     @abc.abstractmethod
+    def export_library(self, history, include_hidden=False, include_deleted=False):
+        """Export library to store."""
+
+    @abc.abstractmethod
+    def export_workflow_invocation(self, workflow_invocation, include_hidden=False, include_deleted=False):
+        """Export workflow invocation to store."""
+
+    @abc.abstractmethod
     def add_dataset_collection(self, collection):
         """Add HDCA to export store."""
 
@@ -1073,6 +1110,7 @@ class DirectoryModelExportStore(ModelExportStore):
         self.included_collections = []
         self.included_libraries = []
         self.included_library_folders = []
+        self.included_invocations = []
         self.collection_datasets = {}
         self.collections_attrs = []
         self.dataset_id_to_path = {}
@@ -1223,6 +1261,9 @@ class DirectoryModelExportStore(ModelExportStore):
                 collect_datasets(folder)
 
         collect_datasets(library.root_folder)
+
+    def export_workflow_invocation(self, workflow_invocation, include_hidden=False, include_deleted=False):
+        self.included_invocations.append(workflow_invocation)
 
     def add_job_output_dataset_associations(self, job_id, name, dataset_instance):
         job_output_dataset_associations = self.job_output_dataset_associations
@@ -1411,6 +1452,28 @@ class DirectoryModelExportStore(ModelExportStore):
             icjs_attrs_filename = os.path.join(export_directory, ATTRS_FILENAME_IMPLICIT_COLLECTION_JOBS)
             with open(icjs_attrs_filename, 'w') as icjs_attrs_out:
                 icjs_attrs_out.write(json_encoder.encode(icjs_attrs))
+
+        invocations_attrs = []
+
+        for invocation in self.included_invocations:
+            invocation_attrs = invocation.serialize(self.security, self.serialization_options)
+
+            workflows_directory = os.path.join(export_directory, "workflows")
+            os.makedirs(workflows_directory)
+
+            workflow = invocation.workflow
+            workflow_key = self.serialization_options.get_identifier(self.security, workflow)
+            workflow_path = os.path.join(workflows_directory, workflow_key + ".gxwf.yml")
+            history = invocation.history
+            assert invocation_attrs
+            invocation_attrs["workflow"] = workflow_key
+
+            self.app.workflow_contents_manager.store_workflow_to_path(workflow_path, workflow.stored_workflow, workflow, user=history.user, history=history)
+            invocations_attrs.append(invocation_attrs)
+
+        invocations_attrs_filename = os.path.join(export_directory, ATTRS_FILENAME_INVOCATIONS)
+        with open(invocations_attrs_filename, 'w') as invocations_attrs_out:
+            dump(invocations_attrs, invocations_attrs_out)
 
         export_attrs_filename = os.path.join(export_directory, ATTRS_FILENAME_EXPORT)
         with open(export_attrs_filename, 'w') as export_attrs_out:

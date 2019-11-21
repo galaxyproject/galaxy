@@ -321,6 +321,22 @@ class WorkflowContentsManager(UsesAnnotations):
             dict_or_raw_description = RawWorkflowDescription(dict_or_raw_description)
         return dict_or_raw_description
 
+    def read_workflow_from_path(self, app, user, path):
+        from galaxy.work.context import WorkRequestContext
+        trans = WorkRequestContext(app=self.app, user=user)
+
+        as_dict = {"src": "from_path", "path": path}
+        workflow_class, as_dict, object_id = artifact_class(trans, as_dict)
+        assert workflow_class == "GalaxyWorkflow"
+        # Format 2 Galaxy workflow.
+        galaxy_interface = Format2ConverterGalaxyInterface()
+        import_options = ImportOptions()
+        import_options.deduplicate_subworkflows = True
+        as_dict = python_to_workflow(as_dict, galaxy_interface, workflow_directory=None, import_options=import_options)
+        raw_description = RawWorkflowDescription(as_dict, path)
+        workflow = self.build_workflow_from_raw_description(trans, raw_description)
+        return workflow
+
     def normalize_workflow_format(self, trans, as_dict):
         """Process incoming workflow descriptions for consumption by other methods.
 
@@ -583,6 +599,14 @@ class WorkflowContentsManager(UsesAnnotations):
 
     def _sync_stored_workflow(self, trans, stored_workflow):
         workflow_path = stored_workflow.from_path
+        self.store_workflow_to_path(trans, workflow_path, stored_workflow, stored_workflow.latest_workflow, trans=trans)
+
+    def store_workflow_to_path(self, workflow_path, stored_workflow, workflow, **kwd):
+        trans = kwd.get("trans")
+        if trans is None:
+            from galaxy.work.context import WorkRequestContext
+            trans = WorkRequestContext(app=self.app, user=kwd.get("user"), history=kwd.get("history"))
+
         workflow = stored_workflow.latest_workflow
         with open(workflow_path, "w") as f:
             if workflow_path.endswith(".ga"):

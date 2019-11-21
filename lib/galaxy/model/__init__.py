@@ -5696,6 +5696,11 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
             inputs.append(input_dataset_collection_assoc)
         return inputs
 
+    def serialize(self, id_encoder, serialization_options):
+        invocation_attrs = dict_for(self)
+        serialization_options.attach_identifier(id_encoder, self, invocation_attrs)
+        return invocation_attrs
+
     def to_dict(self, view='collection', value_mapper=None, step_details=False, legacy_job_state=False):
         rval = super().to_dict(view=view, value_mapper=value_mapper)
         if view == 'element':
