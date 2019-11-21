@@ -162,6 +162,9 @@ client-format: node-deps ## Reformat client code
 client-watch: node-deps ## A useful target for parallel development building.
 	cd client && yarn run watch
 
+client-hmr-server: node-deps ## Starts a webpack dev server for client development (HMR enabled)
+	cd client && yarn run hmr-server
+
 client-test: node-deps  ## Run JS unit tests via Karma
 	cd client && yarn run test
 

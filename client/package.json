@@ -55,7 +55,7 @@
   },
   "scripts": {
     "watch": "gulp && yarn run save-build-hash && yarn run webpack-watch",
-    "hotwatch": "webpack-dev-server --host 0.0.0.0 --port 8081",
+    "hmr-server": "webpack-dev-server --host 0.0.0.0 --port 8081",
     "build": "NODE_ENV=development gulp && yarn run webpack && yarn run save-build-hash",
     "build-production": "NODE_ENV=production gulp && yarn run webpack-production && yarn run save-build-hash",
     "build-production-maps": "NODE_ENV=production gulp && yarn run webpack-production-maps && yarn run save-build-hash",
