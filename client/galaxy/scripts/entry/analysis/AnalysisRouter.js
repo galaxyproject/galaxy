@@ -41,8 +41,10 @@ import DatasetError from "mvc/dataset/dataset-error";
 import DatasetEditAttributes from "mvc/dataset/dataset-edit-attributes";
 import Citations from "components/Citations.vue";
 import DisplayStructure from "components/DisplayStructured.vue";
-import Vue from "vue";
 import { CloudAuth } from "components/User/CloudAuth";
+
+import Vue from "vue";
+import store from "store";
 
 /** Routes */
 export const getAnalysisRouter = Galaxy =>
@@ -94,7 +96,7 @@ export const getAnalysisRouter = Galaxy =>
             const instance = Vue.extend(component);
             const container = document.createElement("div");
             this.page.display(container);
-            return new instance(props).$mount(container);
+            return new instance({ store, props }).$mount(container);
         },
 
         show_tours: function(tour_id) {

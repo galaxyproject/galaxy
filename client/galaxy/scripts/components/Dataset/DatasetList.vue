@@ -17,8 +17,11 @@
                     <template v-slot:cell(name)="row">
                         <DatasetName :item="row.item" @showDataset="onShowDataset" />
                     </template>
+                    <template v-slot:cell(history_id)="row">
+                        <DatasetHistory :item="row.item" @showDataset="onShowDataset" />
+                    </template>
                     <template v-slot:cell(context)="row">
-                        <DatasetContext :item="row.item" @addToHistory="onAddToHistory"/>
+                        <DatasetContext :item="row.item" @addToHistory="onAddToHistory" />
                     </template>
                     <template v-slot:cell(tags)="row">
                         <Tags :item="row.item" @input="onTags" />
@@ -40,14 +43,17 @@ import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import { Services } from "./services.js";
 import DatasetName from "./DatasetName";
+import DatasetHistory from "./DatasetHistory";
 import DatasetContext from "./DatasetContext";
 import DelayedInput from "components/Common/DelayedInput";
 import Tags from "components/Common/Tags";
 import LoadingSpan from "components/LoadingSpan";
+import { mapActions } from "vuex";
 
 export default {
     components: {
         DatasetContext,
+        DatasetHistory,
         DatasetName,
         LoadingSpan,
         DelayedInput,
@@ -64,6 +70,11 @@ export default {
                 },
                 {
                     key: "extension",
+                    sortable: true
+                },
+                {
+                    label: "History",
+                    key: "history_id",
                     sortable: true
                 },
                 {
@@ -99,11 +110,13 @@ export default {
         }
     },
     created() {
+        this.fetchHistories();
         this.root = getAppRoot();
         this.services = new Services({ root: this.root });
         this.load();
     },
     methods: {
+        ...mapActions(["fetchHistories"]),
         load(concat = false) {
             this.services
                 .getDatasets({
