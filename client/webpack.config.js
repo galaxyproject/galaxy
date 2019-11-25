@@ -228,7 +228,10 @@ module.exports = (env = {}, argv = {}) => {
                 }
             }),
             new DuplicatePackageCheckerPlugin()
-        ]
+        ],
+        devServer: {
+            hot: true,
+        }
     };
 
     if (process.env.GXY_BUILD_SOURCEMAPS || process.env.NODE_ENV == "development") {
