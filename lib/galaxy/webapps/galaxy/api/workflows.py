@@ -29,6 +29,7 @@ from galaxy.managers import (
 )
 from galaxy.managers.jobs import fetch_job_states, invocation_job_source_iter
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
 from galaxy.tools.parameters import populate_state
 from galaxy.tools.parameters.basic import workflow_building_modes
 from galaxy.util.sanitize_html import sanitize_html
@@ -47,7 +48,6 @@ from galaxy.workflow.modules import module_factory
 from galaxy.workflow.reports import generate_report_json
 from galaxy.workflow.run import invoke, queue_invoke
 from galaxy.workflow.run_request import build_workflow_run_configs
-from tool_shed.galaxy_install.install_manager import InstallRepositoryManager
 
 log = logging.getLogger(__name__)
 
@@ -382,7 +382,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         if 'from_path' in payload:
             from_path = payload.get('from_path')
-            payload["workflow"] = {"src": "from_path", "path": from_path}
+            object_id = payload.get("object_id")
+            workflow_src = {"src": "from_path", "path": from_path}
+            if object_id is not None:
+                workflow_src["object_id"] = object_id
+            payload["workflow"] = workflow_src
             return self.__api_import_new_workflow(trans, payload, **kwd)
 
         if 'shared_workflow_id' in payload:

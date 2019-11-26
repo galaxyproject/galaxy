@@ -16,6 +16,7 @@ from galaxy.jobs.manager import NoopManager
 from galaxy.model import mapping, tags
 from galaxy.security import idencoding
 from galaxy.tool_util.deps.containers import NullContainerFinder
+from galaxy.util import StructuredExecutionTimer
 from galaxy.util.bunch import Bunch
 from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.web_stack import ApplicationStack
@@ -80,6 +81,7 @@ class MockApp(object):
         self.job_manager = NoopManager()
         self.application_stack = ApplicationStack()
         self.auth_manager = AuthManager(self)
+        self.execution_timer_factory = Bunch(get_timer=StructuredExecutionTimer)
 
         def url_for(*args, **kwds):
             return "/mock/url"
@@ -128,6 +130,9 @@ class MockAppConfig(Bunch):
         self.object_store_config_file = ''
         self.object_store = 'disk'
         self.object_store_check_old_style = False
+        self.object_store_cache_path = '/tmp/cache'
+        self.umask = os.umask(0o77)
+        self.gid = os.getgid()
 
         self.user_activation_on = False
         self.new_user_dataset_access_role_default_private = False

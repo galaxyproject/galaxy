@@ -183,6 +183,12 @@ UWSGI_OPTIONS = OrderedDict([
     # }),
 ])
 
+SHED_ONLY_UWSGI_OPTIONS = [('cron', {
+    'desc': """Task for rebuilding Toolshed search indexes using the uWSGI cron-like interface.""",
+    'default': "0 -1 -1 -1 -1 python scripts/tool_shed/build_ts_whoosh_index.py -c config/tool_shed.yml --config-section tool_shed",
+    'type': 'str',
+})]
+
 DROP_OPTION_VALUE = object()
 
 
@@ -335,8 +341,8 @@ SHED_APP = App(
     "9009",
     ["galaxy.webapps.tool_shed.buildapp:app_factory"],
     "config/tool_shed.yml",
-    "lib/galaxy/webapps/tool_shed/config_schema.yml",
-    'galaxy.webapps.tool_shed.buildapp:uwsgi_app()',
+    "lib/tool_shed/webapp/config_schema.yml",
+    'tool_shed.webapp.buildapp:uwsgi_app()',
 )
 REPORTS_APP = App(
     ["reports_wsgi.ini", "config/reports.ini"],
@@ -647,6 +653,8 @@ def _replace_file(args, f, app_desc, from_path, to_path):
 
 
 def _build_sample_yaml(args, app_desc):
+    if app_desc.app_name in ["tool_shed"]:
+        UWSGI_OPTIONS.update(SHED_ONLY_UWSGI_OPTIONS)
     schema = app_desc.schema
     f = StringIO()
     for key, value in UWSGI_OPTIONS.items():

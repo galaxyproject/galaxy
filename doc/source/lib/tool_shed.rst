@@ -21,6 +21,7 @@ Subpackages
     tool_shed.tools
     tool_shed.util
     tool_shed.utility_containers
+    tool_shed.webapp
 
 Submodules
 ----------

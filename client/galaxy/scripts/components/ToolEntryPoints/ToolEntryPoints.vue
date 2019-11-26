@@ -25,12 +25,15 @@
             </ul>
         </div>
 
-        You may also access all active InteractiveTools from the User menu.
+        You may also access all active InteractiveTools from the
+        <a :href="interactiveToolsLink">User menu</a>.
     </div>
 </template>
 
 <script>
 import { clearPolling, pollUntilActive } from "mvc/entrypoints/poll";
+import { getAppRoot } from "onload/loadConfig";
+
 export default {
     props: {
         jobId: {
@@ -48,6 +51,11 @@ export default {
     },
     beforeDestroy: function() {
         clearPolling();
+    },
+    computed: {
+        interactiveToolsLink: function() {
+            return getAppRoot() + "interactivetool_entry_points/list";
+        }
     },
     methods: {
         pollEntryPoints: function() {

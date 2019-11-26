@@ -100,7 +100,8 @@ class OutputsToWorkingDirectoryPathRewriter(object):
             base_output_directory = os.path.abspath(self.working_directory)
             if self.outputs_directory_name is not None:
                 base_output_directory = os.path.join(base_output_directory, self.outputs_directory_name)
-            false_path = os.path.join(base_output_directory, "galaxy_dataset_%d.dat" % dataset.id)
+            # set false_path to uuid, no harm even if object store uses id
+            false_path = os.path.join(base_output_directory, "galaxy_dataset_%s.dat" % dataset.dataset.uuid)
             return false_path
         else:
             return None

@@ -1,10 +1,10 @@
 import os
 
-from base import integration_util  # noqa: I100,I202
-from base.populators import (
+from galaxy_test.base.populators import (
     DatasetPopulator,
 )
-from .test_containerized_jobs import (  # noqa: I201
+from galaxy_test.driver import integration_util
+from .test_containerized_jobs import (
     disable_dependency_resolution,
     MulledJobTestCases,
     skip_if_container_type_unavailable,

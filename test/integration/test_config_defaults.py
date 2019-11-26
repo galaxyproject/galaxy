@@ -3,9 +3,9 @@ from collections import namedtuple
 from datetime import timedelta
 
 import pytest
-from base.driver_util import GalaxyTestDriver
 
 from galaxy.util import listify
+from galaxy_test.driver.driver_util import GalaxyTestDriver
 
 
 """

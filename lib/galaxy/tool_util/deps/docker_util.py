@@ -225,6 +225,12 @@ def _docker_prefix(
 
 
 def parse_port_text(port_text):
+    """
+
+    >>> slurm_ports = parse_port_text("8888/tcp -> 0.0.0.0:32769")
+    >>> slurm_ports[8888]['host']
+    '0.0.0.0'
+    """
     ports = None
     if port_text is not None:
         ports = {}

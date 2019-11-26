@@ -26,20 +26,20 @@ import shutil
 import tempfile
 import unittest
 
-from base import integration_util
-from base.api_util import (
+from galaxy_test.base.api_util import (
     TEST_USER,
 )
-from base.constants import (
+from galaxy_test.base.constants import (
     ONE_TO_SIX_ON_WINDOWS,
     ONE_TO_SIX_WITH_SPACES,
     ONE_TO_SIX_WITH_TABS,
 )
-from base.populators import (
+from galaxy_test.base.populators import (
     DatasetPopulator,
     LibraryPopulator,
     skip_without_datatype,
 )
+from galaxy_test.driver import integration_util
 
 
 SCRIPT_DIR = os.path.normpath(os.path.dirname(__file__))

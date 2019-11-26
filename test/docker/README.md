@@ -3,7 +3,7 @@
 Setup Docker environment for use with testing using the following
 commands.
 
-    % cd test/base
+    % cd test/docker/base
     % docker build -t galaxy/testing-base .
 
 Alternatively, this can be fetched from [Dockerhub](https://hub.docker.com/).

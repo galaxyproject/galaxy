@@ -5,7 +5,7 @@
     #end for#
   </command>
   <inputs>
-    <param type="data" format="tabular" name="input1" label="Input 1" multiple="true" />
+    <param name="input1" type="data" format="tabular" label="Input 1" multiple="true" />
     <param name="col" type="data_column" data_ref="input1" label="Column to Use" />
   </inputs>
   <outputs>

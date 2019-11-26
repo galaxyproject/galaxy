@@ -7,6 +7,7 @@ from galaxy import exceptions
 from galaxy import model
 from galaxy.exceptions import DuplicatedIdentifierException
 from .base import ModelManager
+from .executables import artifact_class
 
 log = logging.getLogger(__name__)
 
@@ -37,23 +38,32 @@ class DynamicToolManager(ModelManager):
         )
         return dynamic_tool
 
-    def create_tool(self, tool_payload, allow_load=False):
-        if "representation" not in tool_payload:
-            raise exceptions.ObjectAttributeMissingException(
-                "A tool 'representation' is required."
-            )
+    def create_tool(self, trans, tool_payload, allow_load=True):
+        src = tool_payload.get("src", "representation")
+        is_path = src == "from_path"
 
-        representation = tool_payload["representation"]
-        if "class" not in representation:
-            raise exceptions.ObjectAttributeMissingException(
-                "Current tool representations require 'class'."
-            )
+        if is_path:
+            tool_format, representation, object_id = artifact_class(None, tool_payload)
+        else:
+            assert src == "representation"
+            if "representation" not in tool_payload:
+                raise exceptions.ObjectAttributeMissingException(
+                    "A tool 'representation' is required."
+                )
+
+            representation = tool_payload["representation"]
+            if "class" not in representation:
+                raise exceptions.ObjectAttributeMissingException(
+                    "Current tool representations require 'class'."
+                )
 
         enable_beta_formats = getattr(self.app.config, "enable_beta_tool_formats", False)
         if not enable_beta_formats:
             raise exceptions.ConfigDoesNotAllowException("Set 'enable_beta_tool_formats' in Galaxy config to create dynamic tools.")
 
         tool_format = representation["class"]
+        tool_directory = tool_payload.get("tool_directory", None)
+        tool_path = None
         if tool_format == "GalaxyTool":
             uuid = tool_payload.get("uuid", None)
             if uuid is None:
@@ -79,10 +89,12 @@ class DynamicToolManager(ModelManager):
                 tool_format=tool_format,
                 tool_id=tool_id,
                 tool_version=tool_version,
+                tool_path=tool_path,
+                tool_directory=tool_directory,
                 uuid=uuid,
                 value=value,
             )
-        self.app.toolbox.load_dynamic_tool(dynamic_tool)
+            self.app.toolbox.load_dynamic_tool(dynamic_tool)
         return dynamic_tool
 
     def list_tools(self, active=True):

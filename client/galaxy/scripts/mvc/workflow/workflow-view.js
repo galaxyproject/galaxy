@@ -16,103 +16,27 @@ import async_save_text from "utils/async-save-text";
 import "ui/editable-text";
 
 import { hide_modal, show_message, show_modal } from "layout/modal";
-import { make_popupmenu } from "ui/popupmenu";
 
 // TODO; tie into Galaxy state?
 window.workflow_globals = window.workflow_globals || {};
 
-const reportHelp = `
-<div>
-<h3>Overview</h3>
+const DEFAULT_INVOCATION_REPORT = `
+# Workflow Execution Report
 
-<p>
-    This document Markdown document will be used to generate a report
-    for invocations of this workflow. This document should be Markdown
-    with embedded command for extracting and displaying parts of the workflow,
-    its invocation metadata, its inputs and outputs, etc.. For an overview
-    of standard Markdown visit the <a href="https://commonmark.org/help/tutorial/">commonmark.org
-    tutorial</a>.
-</p>
+## Workflow Inputs
+\`\`\`galaxy
+invocation_inputs()
+\`\`\`
 
-<p>
-    The Galaxy extensions to Markdown are represented as code blocks, these blocks start
-    with the line <tt>\`\`\`galaxy</tt> and end with the line <tt>\`\`\`</tt> and have a
-    command with arguments that reference parts of the workflow in the middle.
-</p>
+## Workflow Outputs
+\`\`\`galaxy
+invocation_outputs()
+\`\`\`
 
-<h3>Workflow Commands</h3>
-
-<p>
-    These commands to do not take any arguments and reference the whole workflow. For
-    instance, the following example would display a representation of the workflow in the
-    resulting report:
-</p>
-
-<pre>
+## Workflow
 \`\`\`galaxy
 workflow_display()
 \`\`\`
-</pre>
-<dl>
-<dt><tt>workflow_display</tt></dt>
-<dd>Embed a description of the workflow itself in the resulting report.</dd>
-<dt><tt>invocation_inputs</tt></dt>
-<dd>Embed the labeled workflow inputs in the resulting report.</dd>
-<dt><tt>invocation_outputs</tt></dt>
-<dd>Embed the labeled workflow outputs in the resulting report.</dd>
-</dl>
-
-<h3>Step Commands</h3>
-
-<p>
-    These commands reference a workflow step label and refer to job corresponding
-    to that step. A current limitation is the report will break if these refer to
-    a collection mapping step, these must identify a single job. For instance, the
-    following example would show the job parameters the step labeled 'qc' was run
-    with:
-</p>
-
-<pre>
-\`\`\`galaxy
-job_parameters(step=qc)
-\`\`\`
-</pre>
-
-
-<dt><tt>tool_stderr</tt></dt>
-<dd>Embed the tool standard error stream for this step in the resulting report.</dd>
-<dt><tt>tool_stdout</tt></dt>
-<dd>Embed the tool standard output stream for this step in the resulting report.</dd>
-<dt><tt>job_metrics</tt></dt>
-<dd>Embed the job metrics for this step in the resulting report (if user has permission).</dd>
-<dt><tt>job_parameters</tt></dt>
-<dd>Embed the tool parameters for this step in the resulting report.</dd>
-
-<h3>Input/Output Commands</h3>
-
-<p>
-    These commands reference a workflow input or output by label. For instance, the
-    following example would display the dataset collection corresponding to output "Merged BAM":
-</p>
-
-<pre>
-\`\`\`galaxy
-history_dataset_collection_display(output="Merged Bam")
-\`\`\`
-</pre>
-
-<dt><tt>history_dataset_display</tt></dt>
-<dd>Embed a dataset description in the resulting report.</dd>
-<dt><tt>history_dataset_collection_display</tt></dt>
-<dd>Embed a dataset collection description in the resulting report.</dd>
-<dt><tt>history_dataset_as_image</tt></dt>
-<dd>Embed a dataset as an image in the resulting report - the dataset should be an image datatype.</dd>
-<dt><tt>history_dataset_peek</tt></dt>
-<dd>Embed Galaxy's metadata attribute 'peek' into the resulting report - this is datatype dependent metadata but usually this is a few lines from the start of a file.</dd>
-<dt><tt>history_dataset_info</tt></dt>
-<dd>Embed Galaxy's metadata attribute 'info' into the resulting report - this is datatype dependent metadata but usually this is the program output that generated the dataset.</dd>
-</dl>
-</div>
 `;
 
 // Reset tool search to start state.
@@ -160,62 +84,12 @@ function add_node_icon($to_el, nodeType) {
 
 // create form view
 export default Backbone.View.extend({
-    initialize: function(options) {
+    initialize: function(options, reportsEditor) {
         var self = (window.workflow_globals.app = this);
         this.options = options;
         this.urls = (options && options.urls) || {};
-        var workflow_index = self.urls.workflow_index;
-        var save_current_workflow = (eventObj, success_callback) => {
-            show_message("Saving workflow", "progress");
-            self.workflow.check_changes_in_active_form();
-            if (!self.workflow.has_changes) {
-                hide_modal();
-                if (success_callback) {
-                    success_callback();
-                }
-                return;
-            }
-            self.workflow.rectify_workflow_outputs();
-            Utils.request({
-                url: `${getAppRoot()}api/workflows/${self.options.id}`,
-                type: "PUT",
-                data: { workflow: self.workflow.to_simple() },
-                success: function(data) {
-                    var body = $("<div/>").text(data.message);
-                    if (data.errors) {
-                        body.addClass("warningmark");
-                        var errlist = $("<ul/>");
-                        $.each(data.errors, (i, v) => {
-                            $("<li/>")
-                                .text(v)
-                                .appendTo(errlist);
-                        });
-                        body.append(errlist);
-                    } else {
-                        body.addClass("donemark");
-                    }
-                    self.workflow.name = data.name;
-                    self.workflow.has_changes = false;
-                    self.workflow.stored = true;
-                    self.workflow.workflow_version = data.version;
-                    self.showWorkflowParameters();
-                    self.build_version_select();
-                    if (data.errors) {
-                        show_modal("Saving workflow", body, {
-                            Ok: hide_modal
-                        });
-                    } else {
-                        if (success_callback) {
-                            success_callback();
-                        }
-                        hide_modal();
-                    }
-                },
-                error: function(response) {
-                    show_modal("Saving workflow failed.", response.err_msg, { Ok: hide_modal });
-                }
-            });
-        };
+        const workflow_index = this.urls.workflow_index;
+        this.reportsEditor = reportsEditor;
 
         // Clear search by clicking X button
         $("#search-clear-btn").click(function() {
@@ -404,6 +278,9 @@ export default Backbone.View.extend({
                 success: function(data) {
                     self.reset();
                     self.workflow.from_simple(data, true);
+                    const report = data.report || {};
+                    const markdown = report.markdown || DEFAULT_INVOCATION_REPORT;
+                    self.reportsEditor.input = markdown;
                     self.workflow.has_changes = false;
                     self.workflow.fit_canvas_to_nodes();
                     self.scroll_to_nodes();
@@ -453,88 +330,6 @@ export default Backbone.View.extend({
 
         // Load workflow definition
         this.load_workflow(self.options.id, self.options.version);
-        if (make_popupmenu) {
-            $("#workflow-run-button").click(
-                () => (window.location = `${getAppRoot()}workflows/run?id=${self.options.id}`)
-            );
-            $("#workflow-save-button").click(() => save_current_workflow());
-            $("#workflow-report-button").click(() => edit_report());
-            $("#workflow-report-help-button").click(() => show_report_help());
-            $("#workflow-canvas-button").click(() => edit_canvas());
-            make_popupmenu($("#workflow-options-button"), {
-                "Save As": workflow_save_as,
-                "Edit Attributes": function() {
-                    self.workflow.clear_active_node();
-                },
-                "Auto Re-layout": layout_editor,
-                Download: {
-                    url: `${getAppRoot()}api/workflows/${self.options.id}/download?format=json-download`,
-                    action: function() {}
-                }
-            });
-        }
-
-        /******************************************** Issue 3000*/
-        function workflow_save_as() {
-            var body = $(
-                '<form><label style="display:inline-block; width: 100%;">Save as name: </label><input type="text" id="workflow_rename" style="width: 80%;" autofocus/>' +
-                    '<br><label style="display:inline-block; width: 100%;">Annotation: </label><input type="text" id="wf_annotation" style="width: 80%;" /></form>'
-            );
-            show_modal("Save As a New Workflow", body, {
-                OK: function() {
-                    var rename_name =
-                        $("#workflow_rename").val().length > 0
-                            ? $("#workflow_rename").val()
-                            : `SavedAs_${self.workflow.name}`;
-                    var rename_annotation = $("#wf_annotation").val().length > 0 ? $("#wf_annotation").val() : "";
-                    $.ajax({
-                        url: self.urls.workflow_save_as,
-                        type: "POST",
-                        data: {
-                            workflow_name: rename_name,
-                            workflow_annotation: rename_annotation,
-                            workflow_data: function() {
-                                return JSON.stringify(self.workflow.to_simple());
-                            }
-                        }
-                    })
-                        .done(id => {
-                            window.onbeforeunload = undefined;
-                            window.location = `${getAppRoot()}workflow/editor?id=${id}`;
-                            hide_modal();
-                        })
-                        .fail(() => {
-                            hide_modal();
-                            alert("Saving this workflow failed. Please contact this site's administrator.");
-                        });
-                },
-                Cancel: hide_modal
-            });
-        }
-
-        function layout_editor() {
-            self.workflow.layout();
-            self.workflow.fit_canvas_to_nodes();
-            self.scroll_to_nodes();
-            self.canvas_manager.draw_overview();
-        }
-
-        function edit_report() {
-            $(".workflow-canvas-content").hide();
-            $(".workflow-report-content").show();
-        }
-
-        function show_report_help() {
-            const reportHelpBody = $(reportHelp);
-            show_modal("Workflow Invocation Report Help", reportHelpBody, {
-                Ok: hide_modal
-            });
-        }
-
-        function edit_canvas() {
-            $(".workflow-canvas-content").show();
-            $(".workflow-report-content").hide();
-        }
 
         // On load, set the size to the pref stored in local storage if it exists
         var overview_size = localStorage.getItem("overview-size");
@@ -1006,6 +801,103 @@ export default Backbone.View.extend({
                 });
             }
         });
+    },
+
+    report_changed(report_markdown) {
+        this.workflow.has_changes = true;
+        this.workflow.report.markdown = report_markdown;
+    },
+
+    save_current_workflow() {
+        const self = this;
+        show_message("Saving workflow", "progress");
+        self.workflow.check_changes_in_active_form();
+        if (!self.workflow.has_changes) {
+            hide_modal();
+            return;
+        }
+        self.workflow.rectify_workflow_outputs();
+        Utils.request({
+            url: `${getAppRoot()}api/workflows/${self.options.id}`,
+            type: "PUT",
+            data: { workflow: self.workflow.to_simple() },
+            success: function(data) {
+                var body = $("<div/>").text(data.message);
+                if (data.errors) {
+                    body.addClass("warningmark");
+                    var errlist = $("<ul/>");
+                    $.each(data.errors, (i, v) => {
+                        $("<li/>")
+                            .text(v)
+                            .appendTo(errlist);
+                    });
+                    body.append(errlist);
+                } else {
+                    body.addClass("donemark");
+                }
+                self.workflow.name = data.name;
+                self.workflow.has_changes = false;
+                self.workflow.stored = true;
+                self.workflow.workflow_version = data.version;
+                self.showWorkflowParameters();
+                self.build_version_select();
+                if (data.errors) {
+                    show_modal("Saving workflow", body, {
+                        Ok: hide_modal
+                    });
+                } else {
+                    hide_modal();
+                }
+            },
+            error: function(response) {
+                show_modal("Saving workflow failed.", response.err_msg, { Ok: hide_modal });
+            }
+        });
+    },
+
+    workflow_save_as: function() {
+        const self = this;
+        var body = $(
+            '<form><label style="display:inline-block; width: 100%;">Save as name: </label><input type="text" id="workflow_rename" style="width: 80%;" autofocus/>' +
+                '<br><label style="display:inline-block; width: 100%;">Annotation: </label><input type="text" id="wf_annotation" style="width: 80%;" /></form>'
+        );
+        show_modal("Save As a New Workflow", body, {
+            OK: function() {
+                var rename_name =
+                    $("#workflow_rename").val().length > 0
+                        ? $("#workflow_rename").val()
+                        : `SavedAs_${self.workflow.name}`;
+                var rename_annotation = $("#wf_annotation").val().length > 0 ? $("#wf_annotation").val() : "";
+                $.ajax({
+                    url: self.urls.workflow_save_as,
+                    type: "POST",
+                    data: {
+                        workflow_name: rename_name,
+                        workflow_annotation: rename_annotation,
+                        workflow_data: function() {
+                            return JSON.stringify(self.workflow.to_simple());
+                        }
+                    }
+                })
+                    .done(id => {
+                        window.onbeforeunload = undefined;
+                        window.location = `${getAppRoot()}workflow/editor?id=${id}`;
+                        hide_modal();
+                    })
+                    .fail(() => {
+                        hide_modal();
+                        alert("Saving this workflow failed. Please contact this site's administrator.");
+                    });
+            },
+            Cancel: hide_modal
+        });
+    },
+
+    layout_editor: function() {
+        this.workflow.layout();
+        this.workflow.fit_canvas_to_nodes();
+        this.scroll_to_nodes();
+        this.canvas_manager.draw_overview();
     },
 
     prebuildNode: function(type, title_text, content_id) {
