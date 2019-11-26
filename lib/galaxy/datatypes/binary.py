@@ -1603,6 +1603,20 @@ class OSW(PQP):
         return super(OSW, self).sniff(filename) and self.sniff_table_names(filename, table_names)
 
 
+class SQmass(SQlite):
+    """Class describing a Sqmass database """
+    file_ext = "sqmass"
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        super(SQmass, self).set_meta(dataset, overwrite=overwrite, **kwd)
+
+    def sniff(self, filename):
+        if super(SQmass, self).sniff(filename):
+            table_names = ["CHROMATOGRAM", "PRECURSOR", "RUN", "SPECTRUM", "DATA", "PRODUCT", "RUN_EXTRA"]
+            return self.sniff_table_names(filename, table_names)
+        return False
+
+
 class BlibSQlite(SQlite):
     """Class describing a Proteomics Spectral Library Sqlite database """
     MetadataElement(name="blib_version", default='1.8', param=MetadataParameter, desc="Blib Version",
