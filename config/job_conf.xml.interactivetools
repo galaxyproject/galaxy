@@ -23,7 +23,7 @@
                'my-hostname' here is an arbritrary hostname that matches the IP address of your
                Galaxy host. Make sure this hostname ('my-hostname') is also set in your galaxy.yml file, e.g.
                `galaxy_infrastructure_url: http://my-hostname:8080`.
-              Note: XML does not allow double hyphen hence the line below has it escaped as &#45;
+              Note: XML does not allow double hyphens in comments, hence the line below has them escaped as &#45;
           -->
           <!-- <param id="docker_run_extra_arguments">&#45;&#45;add-host my-hostname:10.1.2.3</param> -->
 
