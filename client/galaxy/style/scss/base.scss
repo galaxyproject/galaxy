@@ -8,8 +8,16 @@
 @import "overrides.scss";
 
 // Fontawesome configuration.
-$fa-font-path: "../../../node_modules/font-awesome/fonts/";
-@import "../../../node_modules/font-awesome/scss/font-awesome.scss";
+//$fa-font-path: "../../../node_modules/font-awesome/fonts/";
+//@import "../../../node_modules/font-awesome/scss/font-awesome.scss";
+
+$fa-font-path: "../../../node_modules/@fortawesome/fontawesome-free/webfonts/";
+@import "../../../node_modules/@fortawesome/fontawesome-free/scss/fontawesome";
+@import "../../../node_modules/@fortawesome/fontawesome-free/scss/brands";
+@import "../../../node_modules/@fortawesome/fontawesome-free/scss/regular";
+@import "../../../node_modules/@fortawesome/fontawesome-free/scss/solid";
+@import "../../../node_modules/@fortawesome/fontawesome-free/scss/v4-shims";
+@import "../../../node_modules/@fortawesome/fontawesome-free/scss/_variables";
 
 @import "select2.scss";
 @import "jquery.rating.scss";

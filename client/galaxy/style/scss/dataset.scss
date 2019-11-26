@@ -1,5 +1,6 @@
 @import "sprite-history-states.scss";
 @import "sprite-history-buttons.scss";
+@import "~@fortawesome/fontawesome-free/scss/_variables";
 
 // ---------------------------------------------------------------------------- dataset states
 //.dataset .state-icon {
@@ -117,7 +118,7 @@
         background: $state-default-bg;
         .state-icon {
             &:before {
-                content: $fa-var-clock-o;
+                content: $fa-var-clock;
             }
         }
     }
@@ -143,7 +144,7 @@
         background: $state-default-bg;
         .state-icon {
             &:before {
-                content: $fa-var-trash-o;
+                content: $fa-var-trash;
             }
         }
     }
@@ -165,7 +166,7 @@
         background: $state-default-bg;
         .state-icon {
             &:before {
-                content: $fa-var-clock-o;
+                content: $fa-var-clock;
             }
         }
     }
