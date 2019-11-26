@@ -90,6 +90,22 @@
 
     You can import data into the notebook via a predefined `get()` function and write results back to Galaxy with a `put()` function.
 
-    The Climate version of the Jupyter Notebook offers a lot of preinstalled tools for climate science.
+    The Climate version of the Jupyter Notebook offers a lot of preinstalled tools for climate science. The list of packages is based on what is available 
+	on the [Pangeo](http://pangeo.io/) platform and [Pangeo stacks](https://pangeo-data.github.io/pangeo-stacks/).
+
+    - **Core scipy packages**: numpy, scipy, matplotlib, pandas, xarray, sparse and sympy
+    - **Data science**: scikit-image, scikit-learn, dask-ml, tensorflow, keras, pytorch-cpu, dask_labextension
+    - **Visualization**: holoviews, panel, geoviews, hvplot, geoviews, datashader, seaborn, altair, descartes, folium, vega, 
+	                     vega_datasets, palettable, cmocean,plotly, psy-maps, psy-reg, psyplot, psyplot-gui, psy-maps, psy-reg,
+						 geopy, branca
+	- **Geospatial**: iris, cartopy, basemap, basemap-data-hires, geopandas, rasterio, netcdf4, erddapy, pydap, h5py, h5netcdf, regionmask and rio-cogeo
+    - **Geoscience related**: climlab, metpy, satpy, gsw, eofs, esmpy, xesmf, windspharm, rasterstats, geojsoncontour
+	- **Climate related**: pyaerocom, cdo, cdsapi, cfgrib, cis. esmvaltool, nc-time-axis, nco
+	- **Intake related**: intake, intake-xarray, intake-esm, fsspec and intake-stac
+    - **zarr related**: zarr, numcodecs, python-blosc, lz4, gcsfs, s3fs, tiledb-py
+    - **jupyter related**: ipyleaflet, papermill, jupytext, ipydatawidgets, sidecar
+    - **xarray related**: xgcm, xrft, xhistogram, xlrd, xrviz, climpred, pytide, pyinterp
+    - **misc**: python-wget, prefect, requests, pillow, pip, nbgitpuller, pysplit, biopython, bioblend and galaxy-ie-helpers
+
     </help>
 </tool>
