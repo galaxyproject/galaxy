@@ -5,7 +5,7 @@
     <entry_points>
         <entry_point name="VCF io.bio visualisation of $infile.display_name" requires_domain="True">
             <port>80</port>
-            <url><![CDATA[/?bam=http://localhost/tmp/bamfile.bam&region=1]]></url>
+            <url><![CDATA[/?vcf=http://localhost/tmp/vcffile.vcf&region=1]]></url>
         </entry_point>
     </entry_points>
     <command><![CDATA[
@@ -33,7 +33,6 @@
 
         cp '${infile}' /input/vcffile.vcf &&
         ##cp '${infile.metadata.bam_index}' /input/vcffile.bam.bai &&
-        mkdir /var/log/supervisor/ &&
         head -n -2  /etc/supervisor.d/app.conf > /tmp/app.conf &&
         mv /tmp/app.conf /etc/supervisor.d/app.conf &&
 
