@@ -1,7 +1,6 @@
 import ipaddress
 import logging
 import os
-import shlex
 import socket
 import tempfile
 from collections import OrderedDict
@@ -23,6 +22,7 @@ from galaxy.util import (
     commands,
     unicodify
 )
+from galaxy.util.path import external_chown
 
 log = logging.getLogger(__name__)
 
@@ -320,22 +320,6 @@ def create_paramfile(trans, uploaded_datasets):
     """
     Create the upload tool's JSON "param" file.
     """
-    def _chown(path):
-        try:
-            # get username from email/username
-            pwent = trans.user.system_user_pwent(trans.app.config.real_system_username)
-            cmd = shlex.split(trans.app.config.external_chown_script)
-            cmd.extend([path, pwent[0], str(pwent[3])])
-        except Exception as e:
-            log.debug('Failed to construct command to change ownership %s' %
-                      unicodify(e))
-        log.debug('Changing ownership of {} with: {}'.format(path, ' '.join(cmd)))
-        try:
-            commands.execute(cmd)
-        except commands.CommandLineException as e:
-            log.warning('Changing ownership of uploaded file %s failed: %s',
-                        path, unicodify(e))
-
     tool_params = []
     json_file_path = None
     for uploaded_dataset in uploaded_datasets:
@@ -397,8 +381,10 @@ def create_paramfile(trans, uploaded_datasets):
             # TODO: This will have to change when we start bundling inputs.
             # Also, in_place above causes the file to be left behind since the
             # user cannot remove it unless the parent directory is writable.
-            if link_data_only == 'copy_files' and trans.app.config.external_chown_script:
-                _chown(uploaded_dataset.path)
+            if link_data_only == 'copy_files':
+                external_chown(uploaded_dataset.path,
+                               trans.user.system_user_pwent(trans.app.config.real_system_username),
+                               trans.app.config.external_chown_script, description="uploaded file")
         tool_params.append(params)
     with tempfile.NamedTemporaryFile(mode="w", prefix='upload_params_', delete=False) as fh:
         json_file_path = fh.name

@@ -8,7 +8,6 @@ import json
 import logging
 import os
 import pwd
-import shlex
 import shutil
 import string
 import sys
@@ -65,6 +64,7 @@ from galaxy.util import (
 )
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
+from galaxy.util.path import external_chown
 from galaxy.util.xml_macros import load
 from galaxy.web_stack.handlers import ConfiguresHandlers
 
@@ -2207,33 +2207,19 @@ class JobWrapper(HasResourceParameters):
             # The tool is unavailable, we try to move the outputs.
             return False
 
-    def _change_ownership(self, username, gid):
-        job = self.get_job()
-        external_chown_script = self.get_destination_configuration("external_chown_script", None)
-        if external_chown_script is not None:
-            cmd = shlex.split(external_chown_script)
-            cmd.extend([self.working_directory, username, str(gid)])
-            log.debug('({}) Changing ownership of working directory with: {}'.format(job.id, ' '.join(cmd)))
-            try:
-                commands.execute(cmd)
-            except commands.CommandLineException as e:
-                log.error('external script failed: %s' % unicodify(e))
-
     def change_ownership_for_run(self):
         job = self.get_job()
         external_chown_script = self.get_destination_configuration("external_chown_script", None)
-        if external_chown_script and job.user is not None:
-            try:
-                self._change_ownership(self.user_system_pwent[0], str(self.user_system_pwent[3]))
-            except Exception:
-                log.exception('({}) Failed to change ownership of {}, making world-writable instead'.format(job.id, self.working_directory))
-                os.chmod(self.working_directory, RWXRWXRWX)
+        if job.user is not None:
+            external_chown(self.working_directory, self.user_system_pwent,
+                           external_chown_script, description="working directory")
 
     def reclaim_ownership(self):
         job = self.get_job()
         external_chown_script = self.get_destination_configuration("external_chown_script", None)
-        if external_chown_script and job.user is not None:
-            self._change_ownership(self.galaxy_system_pwent[0], str(self.galaxy_system_pwent[3]))
+        if job.user is not None:
+            external_chown(self.working_directory, self.galaxy_system_pwent,
+                           external_chown_script, description="working directory")
 
     @property
     def user_system_pwent(self):

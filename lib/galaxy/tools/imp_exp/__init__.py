@@ -1,32 +1,17 @@
 import getpass
 import logging
 import os
-import shlex
 import shutil
-import subprocess
 import tempfile
 
 from galaxy import model
-from galaxy.util import unicodify
+from galaxy.model import store
+from galaxy.util.path import external_chown
 from galaxy.version import VERSION_MAJOR
 
 log = logging.getLogger(__name__)
 
 ATTRS_FILENAME_HISTORY = 'history_attrs.txt'
-
-
-def _chown(path, jeha, app, user):
-    try:
-        # get username from email/username
-        pwent = jeha.job.user.system_user_pwent(user)
-        cmd = shlex.split(app.config.external_chown_script)
-        cmd.extend([path, pwent[0], str(pwent[3])])
-        log.debug('Changing ownership of %s with: %s' % (path, ' '.join(cmd)))
-        p = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = p.communicate()
-        assert p.returncode == 0, stderr
-    except Exception as e:
-        log.warning('Changing ownership of uploaded file %s failed: %s', path, unicodify(e))
 
 
 class JobImportHistoryArchiveWrapper:
@@ -41,11 +26,10 @@ class JobImportHistoryArchiveWrapper:
         self.sa_session = self.app.model.context
 
     def setup_job(self, jiha, archive_source):
-        log.error("JobImportHistoryArchiveWrapper setup_job()")
-
-        if self.app.config.external_chown_script is not None:
-            _chown(archive_source, jiha, self.app, self.app.config.real_system_username)
-            _chown(jiha.archive_dir, jiha, self.app, self.app.config.real_system_username)
+        external_chown(archive_source, jiha.job.user.system_user_pwent(self.app.config.real_system_username),
+                       self.app.config.external_chown_script, "history import archive")
+        external_chown(jiha.archive_dir, jiha.job.user.system_user_pwent(self.app.config.real_system_username),
+                       self.app.config.external_chown_script, "history import archive directory")
 
     def cleanup_after_job(self):
         """ Set history, datasets, collections and jobs' attributes
@@ -64,10 +48,9 @@ class JobImportHistoryArchiveWrapper:
         new_history = None
         try:
             archive_dir = jiha.archive_dir
-            if self.app.config.external_chown_script is not None:
-                _chown(archive_dir, jiha, self.app, str(getpass.getuser()))
-
-            model_store = model.store.get_import_model_store_for_directory(archive_dir, app=self.app, user=user)
+            external_chown(archive_dir, jiha.job.user.system_user_pwent(getpass.getuser()),
+                           self.app.config.external_chown_script, "history import archive directory")
+            model_store = store.get_import_model_store_for_directory(archive_dir, app=self.app, user=user)
             job = jiha.job
             with model_store.target_history(default_history=job.history) as new_history:
 
@@ -118,10 +101,10 @@ class JobExportHistoryArchiveWrapper:
         jeha.history_attrs_filename = history_attrs_filename
 
         # symlink files on export, on worker files will tarred up in a dereferenced manner.
-        with model.store.DirectoryModelExportStore(temp_output_dir, app=app, export_files="symlink") as export_store:
+        with store.DirectoryModelExportStore(temp_output_dir, app=app, export_files="symlink") as export_store:
             export_store.export_history(history, include_hidden=include_hidden, include_deleted=include_deleted)
-        if app.config.external_chown_script is not None:
-            _chown(temp_output_dir, jeha, app, app.config.real_system_username)
+        external_chown(temp_output_dir, jeha.job.user.system_user_pwent(app.config.real_system_username),
+                       app.config.external_chown_script, "history export temporary directory")
 
         #
         # Create and return command line for running tool.
@@ -137,7 +120,8 @@ class JobExportHistoryArchiveWrapper:
         jeha = self.sa_session.query(model.JobExportHistoryArchive).filter_by(job_id=self.job_id).first()
         if not jeha:
             return
-        _chown(jeha.temp_directory, jeha, self.app, str(getpass.getuser()))
+        external_chown(jeha.temp_directory, jeha.job.user.system_user_pwent(getpass.getuser()),
+                       self.app.config.external_chown_script, "history export temporary directory")
         temp_dir = jeha.temp_directory
         try:
             shutil.rmtree(temp_dir)
