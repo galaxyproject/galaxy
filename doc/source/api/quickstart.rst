@@ -69,7 +69,7 @@ And now you've successfully used the API to request and select a history,
 browse the contents of that history, and then look at detailed information
 about a particular dataset.
 
-For a more comprehensive Data Library example, set the following option in your
+For a more comprehensive Data Library example, set the following options in your
 galaxy.yml as well, and restart galaxy again::
 
         admin_users: you@example.org
