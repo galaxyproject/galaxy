@@ -1,4 +1,4 @@
-<tool id="aws-comprehend" name="AWS Comprehend" version="1.0.2">
+<tool id="aws-comprehend" name="AWS Comprehend" version="1.0.0">
   <description>Entity extraction with AWS Comprehend</description>
     <requirements>
         <requirement type="package" version="1.14">aws-cli</requirement>
@@ -6,6 +6,8 @@
   <command detect_errors="exit_code">$__tool_directory__/aws_comprehend.py $input $output_file</command>
   <inputs>
     <param name="input" type="data" format="txt" label="From transcript" help="An transcript file"/>
+    <param name="bucketName" type="text" format="txt" label="S3 Bucket Name" help="An existing bucket name in AWS S3"/>
+    <param name="dataAccessRoleArn" type="text" format="txt" label="IAM Data Access Role" help="An AWS IAM role providing access from AWS comprehend to S3"/>
   </inputs>
   <outputs>
     <data format="json" name="output_file" />
