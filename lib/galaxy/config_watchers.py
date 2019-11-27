@@ -85,7 +85,7 @@ class ConfigWatchers(object):
             )
             self.tour_watcher.watch_directory(
                 self.app.config.tour_config_dir,
-                callback=lambda path: self.app.tour_registry.load_tours()
+                callback=lambda path: self.app.tour_registry.reload_tour(path)
             )
         self.active = True
 
