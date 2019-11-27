@@ -113,7 +113,7 @@ def download_from_s3(output_uri, base_uri):
         return None
 
 def run_comprehend_job(jobName, inputS3Uri, outputS3Uri, dataAccessRoleArn):
-    comprehend = boto3.client(service_name='comprehend', region_name='us-east-1')
+    comprehend = boto3.client(service_name='comprehend', region_name='us-east-2')
     print("input uri:" + inputS3Uri)
     response = comprehend.start_entities_detection_job(
         InputDataConfig={
@@ -127,7 +127,7 @@ def run_comprehend_job(jobName, inputS3Uri, outputS3Uri, dataAccessRoleArn):
         JobName=jobName,
         LanguageCode='en'
     )
-
+    
     status = ''
     output_uri = ''
 
@@ -136,6 +136,7 @@ def run_comprehend_job(jobName, inputS3Uri, outputS3Uri, dataAccessRoleArn):
             JobId=response['JobId']
         )
         if 'EntitiesDetectionJobProperties' in jobStatusResponse.keys():
+            print(jobStatusResponse)
             status = jobStatusResponse['EntitiesDetectionJobProperties']['JobStatus']
             output_uri = jobStatusResponse['EntitiesDetectionJobProperties']['OutputDataConfig']['S3Uri']
             print(status)
