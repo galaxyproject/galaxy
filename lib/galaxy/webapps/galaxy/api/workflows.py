@@ -9,6 +9,7 @@ import logging
 import os
 
 import requests
+from gxformat2._yaml import ordered_dump
 from markupsafe import escape
 from sqlalchemy import desc, false, or_, true
 from sqlalchemy.orm import joinedload
@@ -31,6 +32,8 @@ from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import (
     expose_api,
     expose_api_anonymous_and_sessionless,
+    expose_api_raw,
+    format_return_as_json,
 )
 from galaxy.webapps.base.controller import (
     BaseAPIController,
@@ -430,7 +433,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         invocation_response.update(rval)
         return invocation_response
 
-    @expose_api
+    @expose_api_raw
     def workflow_dict(self, trans, workflow_id, **kwd):
         """
         GET /api/workflows/{encoded_workflow_id}/download
@@ -461,7 +464,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 extension = "gxwf.json"
             trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy-Workflow-%s.%s"' % (sname, extension)
             trans.response.set_content_type('application/galaxy-archive')
-        return ret_dict
+
+        if style == "format2" and download_format != 'json-download':
+            return ordered_dump(ret_dict)
+        else:
+            return format_return_as_json(ret_dict, pretty=True)
 
     @expose_api
     def delete(self, trans, id, **kwd):
