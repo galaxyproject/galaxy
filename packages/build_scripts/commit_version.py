@@ -26,7 +26,7 @@ def main(argv):
         history = history.replace(".dev0", " (%s)" % today_str)
         open(history_path, "w").write(history)
         mod = open(mod_path, "r").read()
-        mod = re.sub(r"__version__ = '[\d\.]*\.dev0'",
+        mod = re.sub(r"__version__ = '[\d\.]*\.dev\d+'",
                     "__version__ = '%s'" % version,
                     mod)
         mod = open(mod_path, "w").write(mod)

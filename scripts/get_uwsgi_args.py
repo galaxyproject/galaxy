@@ -111,6 +111,16 @@ def _get_uwsgi_args(cliargs, kwargs):
     # only include virtualenv if it's set/exists, otherwise this breaks conda-env'd Galaxy
     if not __arg_set('virtualenv', uwsgi_kwargs) and ('VIRTUAL_ENV' in os.environ or os.path.exists('.venv')):
         __add_arg(args, 'virtualenv', os.environ.get('VIRTUAL_ENV', '.venv'))
+
+    # Client dev server for HMR
+    hmr_server = os.environ.get('GALAXY_CLIENT_DEV_SERVER', None)
+    if hmr_server:
+        # Something like this, which is the default in the package scripts
+        # route: ^/static/scripts/bundled/ http:127.0.0.1:8081
+        if hmr_server.lower() in ['1', 'true', 'default']:
+            hmr_server = "http:127.0.0.1:8081"
+        __add_arg(args, 'route', '^/static/scripts/bundled/ {hmr_server}'.format(hmr_server=hmr_server))
+
     for arg in DEFAULT_ARGS['_all_'] + DEFAULT_ARGS[cliargs.app]:
         if not __arg_set(arg, uwsgi_kwargs):
             __add_arg(args, arg, defaults[arg])

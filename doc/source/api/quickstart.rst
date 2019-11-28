@@ -69,11 +69,11 @@ And now you've successfully used the API to request and select a history,
 browse the contents of that history, and then look at detailed information
 about a particular dataset.
 
-For a more comprehensive Data Library example, set the following option in your
-galaxy.ini as well, and restart galaxy again::
+For a more comprehensive Data Library example, set the following options in your
+galaxy.yml as well, and restart galaxy again::
 
-        admin_users = you@example.org
-        library_import_dir = /path/to/some/directory
+        admin_users: you@example.org
+        library_import_dir: /path/to/some/directory
 
 In the directory you specified for 'library_import_dir', create some
 subdirectories, and put (or symlink) files to import into Galaxy into those
