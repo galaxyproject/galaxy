@@ -115,6 +115,33 @@ class MzTab2(MzTab):
             dataset.blurb = 'file purged from disk'
 
 
+@build_sniff_from_prefix
+class Kroenik(Tabular):
+    """ Kroenik (HardKloer sibling) files"""
+    file_ext = "kroenik"
+
+    def __init__(self, **kwd):
+        super(Kroenik, self).__init__(**kwd)
+        self.column_names = ["File", "First Scan", "Last Scan", "Num of Scans", "Charge", "Monoisotopic Mass", "Base Isotope Peak", "Best Intensity", "Summed Intensity", "First RTime", "Last RTime", "Best RTime", "Best Correlation", "Modifications"]
+
+    def display_peek(self, dataset):
+        """Returns formated html of peek"""
+        return self.make_html_table(dataset, column_names=self.column_names)
+
+    def sniff_prefix(self, file_prefix):
+        fh = file_prefix.string_io()
+        line = [_.strip() for _ in fh.readline().split("\t")]
+        if len(line) != len(self.column_names) or line != self.column_names:
+            return False
+        line = fh.readline().split("\t")
+        try:
+            [int(_) for _ in line[1:5]]
+            [float(_) for _ in line[5:13]]
+        except ValueError:
+            return False
+        return True
+
+
 class PepXmlReport(Tabular):
     """pepxml converted to tabular report"""
     edam_data = "data_2536"
