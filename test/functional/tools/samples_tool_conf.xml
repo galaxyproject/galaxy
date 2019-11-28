@@ -8,6 +8,7 @@
   <tool file="boolean_conditional.xml" />
   <tool file="composite.xml" />
   <tool file="environment_variables.xml" />
+  <tool file="environment_variables_inject.xml" />
   <tool file="code_file.xml" />
   <tool file="disambiguate_cond.xml" />
   <tool file="multi_repeats.xml"/>
@@ -166,8 +167,8 @@
   <tool file="multiple_versions_v01.xml" />
   <tool file="multiple_versions_v02.xml" />
 
-  <tool file="realtimetool_simple.xml" />
-  <tool file="realtimetool_two_entry_points.xml" />
+  <tool file="interactivetool_simple.xml" />
+  <tool file="interactivetool_two_entry_points.xml" />
 
   <!-- Tools interesting only for building up test workflows. -->
 

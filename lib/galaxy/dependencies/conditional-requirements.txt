@@ -1,6 +1,5 @@
 # These dependencies are only required when certain config options are set
 psycopg2-binary==2.7.4
-weberror==0.10.3
 mysqlclient
 fluent-logger
 raven
@@ -10,7 +9,7 @@ statsd
 docker
 azure-storage==0.32.0
 # PyRods not in PyPI
-python-ldap==2.4.44
+python-ldap==3.2.0
 python-pam
 galaxycloudrunner
 

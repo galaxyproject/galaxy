@@ -2,7 +2,7 @@
 
 import os
 
-from base import integration_util
+from galaxy_test.driver import integration_util
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 HANDLER_TEMPLATE_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "handler_template_job_conf.xml")
@@ -43,7 +43,6 @@ class BaseHandlerAssignmentMethodIntegrationTestCase(integration_util.Integratio
         config["job_config_file"] = os.path.join(cls.jobs_directory, "job_conf.xml")
         # Disable tool dependency resolution.
         config["tool_dependency_dir"] = "none"
-        config["enable_beta_mulled_containers"] = "true"
 
 
 class DBPreassignHandlerAssignmentMethodIntegrationTestCase(BaseHandlerAssignmentMethodIntegrationTestCase):

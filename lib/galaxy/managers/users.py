@@ -20,7 +20,11 @@ from galaxy.managers import (
     base,
     deletable
 )
-from galaxy.security.validate_user_input import validate_email, validate_password, validate_publicname
+from galaxy.security.validate_user_input import (
+    validate_email,
+    validate_password,
+    validate_publicname
+)
 from galaxy.util.hash_util import new_secure_hash
 from galaxy.web import url_for
 
@@ -234,25 +238,18 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         Do not pass trans to simply check if an existing user object is an admin user,
         pass trans when checking permissions.
         """
-        admin_emails = self._admin_emails()
         if user is None:
             # Anonymous session or master_api_key used, if master_api_key is detected
             # return True.
-            rval = bool(trans and trans.user_is_admin)
-            return rval
-        return bool(admin_emails and user.email in admin_emails)
-
-    def _admin_emails(self):
-        """
-        Return a list of admin email addresses from the config file.
-        """
-        return [email.strip() for email in self.app.config.get("admin_users", "").split(",")]
+            return trans and trans.user_is_admin
+        return self.app.config.is_admin_user(user)
 
     def admins(self, filters=None, **kwargs):
         """
         Return a list of admin Users.
         """
-        filters = self._munge_filters(self.model_class.email.in_(self._admin_emails()), filters)
+        admin_emails = self.app.config.admin_users_list
+        filters = self._munge_filters(self.model_class.email.in_(admin_emails), filters)
         return super(UserManager, self).list(filters=filters, **kwargs)
 
     def error_unless_admin(self, user, msg="Administrators only", **kwargs):
@@ -497,10 +494,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
                 return "Failed to produce password reset token. User not found."
 
     def get_reset_token(self, trans, email):
-        reset_user = trans.sa_session.query(self.app.model.User).filter(self.app.model.User.table.c.email == email).first()
-        if not reset_user:
-            # Perform a case-insensitive check only if the user wasn't found
-            reset_user = trans.sa_session.query(self.app.model.User).filter(func.lower(self.app.model.User.table.c.email) == func.lower(email)).first()
+        reset_user = trans.sa_session.query(self.app.model.User).filter(func.lower(self.app.model.User.table.c.email) == email.lower()).first()
         if reset_user:
             prt = self.app.model.PasswordResetToken(reset_user)
             trans.sa_session.add(prt)

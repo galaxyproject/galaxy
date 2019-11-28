@@ -97,7 +97,7 @@ const View = Backbone.View.extend({
     /** body template */
     _template: function() {
         return `
-            <nav id="masthead" class="navbar navbar-expand justify-content-center navbar-dark">
+            <nav id="masthead" class="navbar navbar-expand justify-content-center navbar-dark" role="navigation" aria-label="Main">
                 <a class="navbar-brand" aria-label="homepage">
                     <img alt="logo" class="navbar-brand-image"/>
                     <span class="navbar-brand-title"/>

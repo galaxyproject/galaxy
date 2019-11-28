@@ -8,6 +8,10 @@ import _ from "libs/underscore";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
 import Buttons from "mvc/ui/ui-buttons";
+import Vue from "vue";
+import ToolBox from "../../components/ToolBox.vue";
+import SidePanel from "../../components/SidePanel.vue";
+import { mountVueComponent } from "../../utils/mountVueComponent";
 
 const ToolPanel = Backbone.View.extend({
     initialize: function(page, options) {
@@ -30,9 +34,6 @@ const ToolPanel = Backbone.View.extend({
             tool_search: tool_search,
             tools: tools,
             layout: config.toolbox_in_panel
-        });
-        this.tool_panel_view = new Tools.ToolPanelView({
-            model: this.tool_panel
         });
 
         // add upload modal
@@ -80,29 +81,67 @@ const ToolPanel = Backbone.View.extend({
         this.setElement(this._template());
     },
 
-    render: function() {
-        // if there are tools, render panel and display everything
-        if (this.tool_panel.get("layout").size() > 0) {
-            this.$el.find(".toolMenu").replaceWith(this.tool_panel_view.$el);
-            this.tool_panel_view.render();
-        }
-        // build the dom for the workflow portion of the tool menu
-        // add internal workflow list
-        this.$("#internal-workflows").append(
-            this._templateAllWorkflow({
-                title: _l("All workflows"),
-                href: "workflows/list"
-            })
+    isVueWrapper: true,
+
+    mountVueComponent: function(el) {
+        return mountVueComponent(SidePanel)(
+            {
+                side: "left",
+                currentPanel: ToolBox,
+                currentPanelProperties: this.getProperties()
+            },
+            el
         );
-        _.each(this.stored_workflow_menu_entries, menu_entry => {
-            this.$("#internal-workflows").append(
-                this._templateWorkflowLink({
-                    title: menu_entry.stored_workflow.name,
-                    href: `workflows/run?id=${menu_entry.encoded_stored_workflow_id}`
-                })
-            );
+    },
+
+    getVueComponent: function() {
+        const SidePanelClass = Vue.extend(SidePanel);
+
+        return new SidePanelClass({
+            propsData: {
+                side: "left",
+                currentPanel: ToolBox,
+                currentPanelProperties: this.getProperties()
+            }
         });
     },
+
+    getProperties: function() {
+        const Galaxy = getGalaxyInstance();
+        const appRoot = getAppRoot();
+        return {
+            appRoot: getAppRoot(),
+            toolsTitle: _l("Tools"),
+            layout: _.map(this.tool_panel.get("layout").toJSON(), category => {
+                return {
+                    ...category,
+                    elems: _.map(category.elems, el => {
+                        return el.toJSON();
+                    })
+                };
+            }),
+
+            isUser: !!(Galaxy.user && Galaxy.user.id),
+
+            workflowsTitle: _l("Workflows"),
+            workflows: [
+                {
+                    title: _l("All workflows"),
+                    href: `${appRoot}workflows/list`,
+                    id: "list"
+                },
+                ...this.stored_workflow_menu_entries.map(menuEntry => {
+                    return {
+                        title: menuEntry["stored_workflow"]["name"],
+                        href: `${appRoot}workflows/run?id=${menuEntry["encoded_stored_workflow_id"]}`,
+                        id: menuEntry["encoded_stored_workflow_id"]
+                    };
+                })
+            ]
+        };
+    },
+
+    render: function() {},
 
     /** build a link to one tool */
     _templateTool: function(tool) {

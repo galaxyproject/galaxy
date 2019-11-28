@@ -618,6 +618,16 @@ class CollectionOutputYamlTestCase(BaseLoaderTestCase):
         assert len(output_collections) == 1
 
 
+class EnvironmentVariablesTestCase(BaseLoaderTestCase):
+    source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/environment_variables.xml")
+    source_contents = None
+
+    def test_tests(self):
+        tests_dict = self._tool_source.parse_tests_to_dict()
+        tests = tests_dict["tests"]
+        assert len(tests) == 1
+
+
 class ExpectationsTestCase(BaseLoaderTestCase):
     source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/detect_errors.xml")
     source_contents = None

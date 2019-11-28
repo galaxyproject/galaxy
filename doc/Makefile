@@ -51,10 +51,10 @@ source/api/api.rst: source/lib/galaxy.webapps.galaxy.api.rst
 	sed -i.bak -e 's/^galaxy\\\.webapps\\\.galaxy\\\.api\\\.//' $@
 	rm -f $@.bak
 
-source/api/ts_api.rst: source/lib/galaxy.webapps.tool_shed.api.rst
+source/api/ts_api.rst: source/lib/tool_shed.webapp.api.rst
 	printf "Tool Shed API\n=============\n" > $@
-	tail -n +11 source/lib/galaxy.webapps.tool_shed.api.rst >> $@
-	sed -i.bak -e 's/^galaxy\\\.webapps\\\.tool\\_shed\\\.api\\\.//' $@
+	tail -n +11 source/lib/tool_shed.webapp.api.rst >> $@
+	sed -i.bak -e 's/^tool_shed\\\.webapp\\\.api\\\.//' $@
 	rm -f $@.bak
 
 source/admin/config_logging_default_yaml.rst: ../lib/galaxy/config/__init__.py

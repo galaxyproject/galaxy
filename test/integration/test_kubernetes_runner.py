@@ -10,10 +10,10 @@ import time
 
 import pytest
 
-from base import integration_util  # noqa: I100,I202
-from base.populators import skip_without_tool
-from .test_containerized_jobs import MulledJobTestCases  # noqa: I201
-from .test_job_environments import BaseJobEnvironmentIntegrationTestCase  # noqa: I201
+from galaxy_test.base.populators import skip_without_tool
+from galaxy_test.driver import integration_util
+from .test_containerized_jobs import MulledJobTestCases
+from .test_job_environments import BaseJobEnvironmentIntegrationTestCase
 
 PERSISTENT_VOLUME_NAME = 'pv-galaxy-integration-test'
 PERSISTENT_VOLUME_CLAIM_NAME = 'galaxy-pvc-integration-test'
@@ -189,7 +189,6 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
         config["default_job_shell"] = '/bin/sh'
         # Disable tool dependency resolution.
         config["tool_dependency_dir"] = "none"
-        config["enable_beta_mulled_containers"] = "true"
 
     @skip_without_tool("job_environment_default")
     def test_job_environment(self):

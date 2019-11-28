@@ -3,6 +3,8 @@ Per-request SQL debugging middleware.
 """
 import logging
 
+from galaxy.model.orm.engine_factory import log_request_query_counts, reset_request_query_counts
+
 log = logging.getLogger(__name__)
 
 
@@ -19,4 +21,8 @@ class SQLDebugMiddleware(object):
             if galaxy.app.app.model.thread_local_log:
                 galaxy.app.app.model.thread_local_log.log = True
 
-        return self.application(environ, start_response)
+        try:
+            reset_request_query_counts()
+            return self.application(environ, start_response)
+        finally:
+            log_request_query_counts(environ.get("PATH_INFO"))

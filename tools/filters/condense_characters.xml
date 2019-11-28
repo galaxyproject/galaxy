@@ -1,6 +1,11 @@
 <tool id="Condense characters1" name="Condense" version="1.0.0">
   <description>consecutive characters</description>
-  <command interpreter="perl">condense_characters.pl $input $character $out_file1</command>
+  <command><![CDATA[
+perl '$__tool_directory__/condense_characters.pl'
+'$input'
+$character
+'$out_file1'
+  ]]></command>
   <inputs>
 <!--    <display>condense all consecutive $character from $input</display> -->
     <param name="character" type="select" label="Condense all consecutive">
@@ -12,10 +17,10 @@
       <option value="U">Underscores</option>
       <option value="P">Pipes</option>
     </param>
-    <param format="txt" name="input" type="data" label="in this Dataset"/>
+    <param name="input" type="data" format="txt" label="in this Dataset"/>
   </inputs>
   <outputs>
-    <data format="input" name="out_file1" metadata_source="input" />
+    <data name="out_file1" format_source="input" metadata_source="input" />
   </outputs>
   <tests>
     <test>
@@ -24,8 +29,7 @@
       <output name="out_file1" file="eq-condense.dat"/>
     </test>
   </tests>
-  <help>
-
+  <help><![CDATA[
 **What it does**
 
 This tool condenses all consecutive characters of a specified type.
@@ -43,6 +47,5 @@ This tool condenses all consecutive characters of a specified type.
 
     geneX,10,20
     geneY,5,12,15,9
-
-</help>
+  ]]></help>
 </tool>

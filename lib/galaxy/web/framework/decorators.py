@@ -55,7 +55,7 @@ def json(func, pretty=False):
         else:
             trans.response.set_content_type(JSON_CONTENT_TYPE)
         rval = func(self, trans, *args, **kwargs)
-        return _format_return_as_json(rval, jsonp_callback, pretty=(pretty or trans.debug))
+        return format_return_as_json(rval, jsonp_callback, pretty=(pretty or trans.debug))
 
     if not hasattr(func, '_orig'):
         call_and_format._orig = func
@@ -156,7 +156,7 @@ def legacy_expose_api(func, to_json=True, user_required=True):
         try:
             rval = func(self, trans, *args, **kwargs)
             if to_json:
-                rval = _format_return_as_json(rval, jsonp_callback, pretty=trans.debug)
+                rval = format_return_as_json(rval, jsonp_callback, pretty=trans.debug)
             return rval
         except paste.httpexceptions.HTTPException:
             raise  # handled
@@ -239,7 +239,7 @@ def expose_api(func, to_json=True, user_required=True, user_or_session_required=
             # error if anon and no session
             if not trans.galaxy_session and user_or_session_required:
                 return __api_error_response(trans, status_code=403, err_code=error_codes.USER_NO_API_KEY,
-                                            err_msg="API authentication required for this request")
+                                            err_msg="API authentication or Galaxy session required for this request")
 
         if trans.request.body:
             try:
@@ -281,7 +281,7 @@ def expose_api(func, to_json=True, user_required=True, user_or_session_required=
         try:
             rval = func(self, trans, *args, **kwargs)
             if to_json:
-                rval = _format_return_as_json(rval, jsonp_callback, pretty=trans.debug)
+                rval = format_return_as_json(rval, jsonp_callback, pretty=trans.debug)
             return rval
         except MessageException as e:
             traceback_string = format_exc()
@@ -307,7 +307,7 @@ def expose_api(func, to_json=True, user_required=True, user_or_session_required=
     return decorator
 
 
-def _format_return_as_json(rval, jsonp_callback=None, pretty=False):
+def format_return_as_json(rval, jsonp_callback=None, pretty=False):
     """
     Formats a return value as JSON or JSONP if `jsonp_callback` is present.
 

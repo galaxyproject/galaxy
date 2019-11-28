@@ -18,6 +18,7 @@ CREATE_VENV=1
 REPLACE_PIP=$SET_VENV
 COPY_SAMPLE_FILES=1
 SKIP_CLIENT_BUILD=${GALAXY_SKIP_CLIENT_BUILD:-0}
+CLIENT_DEV_SERVER=${GALAXY_CLIENT_DEV_SERVER:-0}
 NODE_VERSION=${GALAXY_NODE_VERSION:-"$(cat client/.node_version)"}
 
 for arg in "$@"; do
@@ -31,6 +32,11 @@ for arg in "$@"; do
     [ "$arg" = "--skip-samples" ] && COPY_SAMPLE_FILES=0
     [ "$arg" = "--skip-client-build" ] && SKIP_CLIENT_BUILD=1
 done
+
+# If a client dev server is being configured, skip the client build.
+if [ $CLIENT_DEV_SERVER -ne 0 ]; then
+    SKIP_CLIENT_BUILD=1
+fi
 
 SAMPLES="
     lib/tool_shed/scripts/bootstrap_tool_shed/user_info.xml.sample
@@ -204,8 +210,8 @@ if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
             echo "Skipping Galaxy client build because git is not in use and the client build state cannot be compared against local changes.  If you have made local modifications, then manual client builds will be required.  See ./client/README.md for more information."
             SKIP_CLIENT_BUILD=1
         else
-            # Check if anything has changed in client/ since the last build
-            if git diff --quiet "$(cat static/client_build_hash.txt)" -- client/; then
+            # Check if anything has changed in client/ or visualization plugins since the last build
+            if git diff --quiet "$(cat static/client_build_hash.txt)" -- client/ config/plugins/visualizations/; then
                 echo "The Galaxy client build is up to date and will not be rebuilt at this time."
                 SKIP_CLIENT_BUILD=1
             else

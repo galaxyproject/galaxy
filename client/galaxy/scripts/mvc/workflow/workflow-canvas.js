@@ -109,7 +109,7 @@ class CanvasManager {
         this.app.workflow.fit_canvas_to_nodes();
     }
     initZoomControls() {
-        var zoomControl = $('<div class="btn-group-horizontal"/>').css({
+        var zoomControl = $('<div class="btn-group-horizontal workflow-canvas-content"/>').css({
             position: "absolute",
             left: "1rem",
             bottom: "1rem",
@@ -259,7 +259,7 @@ class CanvasManager {
                 } catch (error) {
                     console.debug(error);
                 }
-                if (nodeId && this.app.workflow.nodes.hasOwnProperty(nodeId)) {
+                if (nodeId && Object.prototype.hasOwnProperty.call(this.app.workflow.nodes, nodeId)) {
                     this.app.workflow.nodes[nodeId].clone();
                 }
                 e.preventDefault();

@@ -1,42 +1,46 @@
 import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 
 /** Request repositories, categories etc from toolshed server **/
 export class Services {
     async getCategories(toolshedUrl) {
-        const paramString = `tool_shed_url=${toolshedUrl}&controller=categories`;
-        const url = `${getAppRoot()}api/tool_shed/request?${paramString}`;
+        const paramsString = `tool_shed_url=${toolshedUrl}&controller=categories`;
+        const url = `${getAppRoot()}api/tool_shed/request?${paramsString}`;
         try {
             const response = await axios.get(url);
             return response.data;
         } catch (e) {
-            return this._errorMessage(e);
+            this._errorMessage(e);
         }
     }
     async getRepositories(params) {
-        params["controller"] = "repositories";
-        const paramString = this._getParamString(params);
-        const url = `${getAppRoot()}api/tool_shed/request?${paramString}`;
+        const paramsString = this._getParamsString(params);
+        const url = `${getAppRoot()}api/tool_shed/request?controller=repositories&${paramsString}`;
         try {
             const response = await axios.get(url);
             const data = response.data;
             const incoming = data.hits.map(x => x.repository);
             incoming.forEach(x => {
+                x.owner = x.repo_owner_username;
                 x.times_downloaded = this._formatCount(x.times_downloaded);
                 x.repository_url = `${data.hostname}repository?repository_id=${x.id}`;
             });
             return incoming;
         } catch (e) {
-            return this._errorMessage(e);
+            this._errorMessage(e);
         }
     }
-    async getDetails(toolshedUrl, repository_id) {
-        const paramString = `tool_shed_url=${toolshedUrl}&id=${repository_id}&controller=repositories&action=metadata`;
-        const url = `${getAppRoot()}api/tool_shed/request?${paramString}`;
+    async getRepository(toolshedUrl, repositoryId) {
+        const paramsString = `tool_shed_url=${toolshedUrl}&id=${repositoryId}&controller=repositories&action=metadata`;
+        const url = `${getAppRoot()}api/tool_shed/request?${paramsString}`;
         try {
             const response = await axios.get(url);
             const data = response.data;
             const table = Object.keys(data).map(key => data[key]);
+            if (table.length === 0) {
+                throw "Repository does not contain any installable revisions.";
+            }
             table.sort((a, b) => b.numeric_revision - a.numeric_revision);
             table.forEach(x => {
                 if (Array.isArray(x.tools)) {
@@ -48,11 +52,40 @@ export class Services {
             });
             return table;
         } catch (e) {
-            return `${this._errorMessage(e)}, ${url}`;
+            this._errorMessage(e);
         }
     }
-    async getInstalledRepositories(repo) {
-        const paramsString = `name=${repo.name}&owner=${repo.repo_owner_username}`;
+    async getRepositoryByName(toolshedUrl, repositoryName, repositoryOwner) {
+        const params = `tool_shed_url=${toolshedUrl}&name=${repositoryName}&owner=${repositoryOwner}`;
+        const url = `${getAppRoot()}api/tool_shed/request?controller=repositories&${params}`;
+        try {
+            const response = await axios.get(url);
+            const length = response.data.length;
+            if (length > 0) {
+                const result = response.data[0];
+                result.repository_url = `${toolshedUrl}repository?repository_id=${result.id}`;
+                return result;
+            } else {
+                throw "Repository details not found.";
+            }
+        } catch (e) {
+            this._errorMessage(e);
+        }
+    }
+    async getInstalledRepositories(options = {}) {
+        const Galaxy = getGalaxyInstance();
+        const url = `${getAppRoot()}api/tool_shed_repositories/?uninstalled=False`;
+        try {
+            const response = await axios.get(url);
+            const repositories = this._groupByNameOwner(response.data, options.filter);
+            this._fixToolshedUrls(repositories, Galaxy.config.tool_shed_urls);
+            return repositories;
+        } catch (e) {
+            this._errorMessage(e);
+        }
+    }
+    async getInstalledRepositoriesByName(repositoryName, repositoryOwner) {
+        const paramsString = `name=${repositoryName}&owner=${repositoryOwner}`;
         const url = `${getAppRoot()}api/tool_shed_repositories?${paramsString}`;
         try {
             const response = await axios.get(url);
@@ -76,7 +109,7 @@ export class Services {
             const response = await axios.post(url, payload);
             return response.data;
         } catch (e) {
-            return this._errorMessage(e);
+            this._errorMessage(e);
         }
     }
     async uninstallRepository(params) {
@@ -88,8 +121,32 @@ export class Services {
             const response = await axios.delete(url);
             return response.data;
         } catch (e) {
-            return this._errorMessage(e);
+            this._errorMessage(e);
         }
+    }
+    _groupByNameOwner(incoming, filter) {
+        const hash = {};
+        const repositories = [];
+        incoming.forEach(x => {
+            const hashCode = `${x.name}_${x.owner}`;
+            if (!filter || filter(x)) {
+                if (!hash[hashCode]) {
+                    hash[hashCode] = true;
+                    repositories.push(x);
+                }
+            }
+        });
+        return repositories;
+    }
+    _fixToolshedUrls(incoming, urls) {
+        incoming.forEach(x => {
+            for (const url of urls) {
+                if (url.includes(x.tool_shed)) {
+                    x.tool_shed_url = url;
+                    break;
+                }
+            }
+        });
     }
     _formatCount(value) {
         if (value > 1000) return `>${Math.floor(value / 1000)}k`;
@@ -99,12 +156,18 @@ export class Services {
         let message = "Request failed.";
         if (e.response) {
             message = e.response.data.err_msg || `${e.response.statusText} (${e.response.status})`;
+        } else if (typeof e == "string") {
+            message = e;
         }
-        return message;
+        throw message;
     }
-    _getParamString(params) {
-        return Object.keys(params).reduce(function(previous, key) {
-            return `${previous}${key}=${params[key]}&`;
-        }, "");
+    _getParamsString(params) {
+        if (params) {
+            return Object.keys(params).reduce(function(previous, key) {
+                return `${previous}${key}=${params[key]}&`;
+            }, "");
+        } else {
+            return "";
+        }
     }
 }

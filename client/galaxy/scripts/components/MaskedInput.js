@@ -1,8 +1,8 @@
-import BInput from "bootstrap-vue/es/components/form-input/form-input";
+import { BFormInput } from "bootstrap-vue/src/components/form-input";
 import { createMask } from "imask";
 
 export default {
-    extends: BInput,
+    extends: BFormInput,
     props: {
         mask: {
             type: String,

@@ -7,7 +7,10 @@ from datetime import datetime, timedelta
 
 from markupsafe import escape
 from six.moves.urllib.parse import unquote
-from sqlalchemy import or_
+from sqlalchemy import (
+    func,
+    or_
+)
 from sqlalchemy.orm.exc import NoResultFound
 
 from galaxy import (
@@ -19,7 +22,6 @@ from galaxy.managers import users
 from galaxy.queue_worker import send_local_control_task
 from galaxy.security.validate_user_input import (
     validate_email,
-    validate_password,
     validate_publicname
 )
 from galaxy.web import expose_api_anonymous_and_sessionless
@@ -133,7 +135,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         if not login or not password:
             return self.message_exception(trans, "Please specify a username and password.")
         user = trans.sa_session.query(trans.app.model.User).filter(or_(
-            trans.app.model.User.table.c.email == login,
+            func.lower(trans.app.model.User.table.c.email) == login.lower(),
             trans.app.model.User.table.c.username == login
         )).first()
         log.debug("trans.app.config.auth_config_file: %s" % trans.app.config.auth_config_file)
@@ -225,7 +227,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
             # while sometimes, so we don't want to block on logout.
             send_local_control_task(trans.app,
                                     "recalculate_user_disk_usage",
-                                    {"user_id": trans.security.encode_id(trans.user.id)})
+                                    kwargs={"user_id": trans.security.encode_id(trans.user.id)})
         # Since logging an event requires a session, we'll log prior to ending the session
         trans.log_event("User logged out")
         trans.handle_user_logout(logout_all=logout_all)
@@ -306,12 +308,6 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         if message:
             return self.message_exception(trans, message)
         return {"message": "Reset link has been sent to your email."}
-
-    def __validate(self, trans, email, password, confirm, username):
-        message = "\n".join([validate_email(trans, email),
-                             validate_password(trans, password, confirm),
-                             validate_publicname(trans, username)]).rstrip()
-        return message
 
     def __get_redirect_url(self, redirect):
         if not redirect or redirect == "None":

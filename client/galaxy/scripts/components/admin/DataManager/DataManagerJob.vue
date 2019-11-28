@@ -15,7 +15,7 @@
                         class="mb-3"
                         id="data-manager-card"
                     >
-                        <template slot="header">
+                        <template v-slot:header>
                             <b-container>
                                 <b-row align-v="center">
                                     <b-col cols="auto">
@@ -30,9 +30,9 @@
                             </b-container>
                         </template>
                         <b-card v-for="(hda, i) in hdaInfo" :key="i" class="mb-4" :id="'data-card-' + i">
-                            <template slot="header">
+                            <template v-slot:header>
                                 <b-table :fields="fields" :items="[hda]" caption-top small stacked>
-                                    <template slot="table-caption">
+                                    <template v-slot:table-caption>
                                         <b-container>
                                             <b-row align-v="center">
                                                 <b-col cols="auto">
@@ -63,7 +63,7 @@
                                 hover
                                 striped
                             >
-                                <template slot="table-caption">
+                                <template v-slot:table-caption>
                                     Data Table: <b>{{ output[0] }}</b>
                                 </template>
                             </b-table>

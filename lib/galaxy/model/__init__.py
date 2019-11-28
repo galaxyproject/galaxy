@@ -508,58 +508,45 @@ class User(Dictifiable, RepresentById):
         HDAs in non-purged histories.
         """
         # maintain a list so that we don't double count
-        db_session = object_session(self)
-        return self._calculate_or_set_disk_usage(db_session, dryrun=True)
+        return self._calculate_or_set_disk_usage(dryrun=True)
 
     def calculate_and_set_disk_usage(self):
         """
         Calculates and sets user disk usage.
         """
-        db_session = object_session(self)
-        self._calculate_or_set_disk_usage(db_session, dryrun=False)
+        self._calculate_or_set_disk_usage(dryrun=False)
 
-    def _calculate_or_set_disk_usage(self, sa_session, dryrun=True):
+    def _calculate_or_set_disk_usage(self, dryrun=True):
         """
-        Utility to calculate (returning a value) or just set the disk usage
-        (returning None / applying immediately)
+        Utility to calculate and return the disk usage.  If dryrun is False,
+        the new value is set immediately.
         """
-
-        ctes = """
+        sql_calc = """
             WITH per_user_histories AS
             (
-                SELECT history.id as id
+                SELECT id
                 FROM history
-                WHERE history.user_id = :id
-                    AND history.purged = false
+                WHERE user_id = :id
+                    AND NOT purged
             ),
             per_hist_hdas AS (
-                SELECT DISTINCT history_dataset_association.dataset_id as id
+                SELECT DISTINCT dataset_id
                 FROM history_dataset_association
-                WHERE history_dataset_association.purged = false
-                    AND history_dataset_association.history_id in (SELECT id from per_user_histories)
+                WHERE NOT purged
+                    AND history_id IN (SELECT id FROM per_user_histories)
             )
-        """
-
-        sql_calc = """
-            SELECT sum(coalesce(dataset.total_size, coalesce(dataset.file_size, 0)))
+            SELECT SUM(COALESCE(dataset.total_size, dataset.file_size, 0))
             FROM dataset
             LEFT OUTER JOIN library_dataset_dataset_association ON dataset.id = library_dataset_dataset_association.dataset_id
-            WHERE dataset.id in (SELECT id from per_hist_hdas)
+            WHERE dataset.id IN (SELECT dataset_id FROM per_hist_hdas)
                 AND library_dataset_dataset_association.id IS NULL
         """
-
-        sql_update = """UPDATE galaxy_user
-                        SET disk_usage = (%s)
-                        WHERE id = :id""" % sql_calc
-        if dryrun:
-            r = sa_session.execute(ctes + sql_calc, {'id': self.id})
-            return r.fetchone()[0]
-        else:
-            r = sa_session.execute(ctes + sql_update, {'id': self.id})
-            sa_session.refresh(self)
-            # There is no RETURNING clause because sqlite does not support it, so
-            # we return None
-            return None
+        sa_session = object_session(self)
+        usage = sa_session.scalar(sql_calc, {'id': self.id})
+        if not dryrun:
+            self.set_disk_usage(usage)
+            sa_session.flush()
+        return usage
 
     @staticmethod
     def user_template_environment(user):
@@ -629,11 +616,13 @@ class DynamicTool(Dictifiable):
     dict_collection_visible_keys = ('id', 'tool_id', 'tool_format', 'tool_version', 'uuid', 'active', 'hidden')
     dict_element_visible_keys = ('id', 'tool_id', 'tool_format', 'tool_version', 'uuid', 'active', 'hidden')
 
-    def __init__(self, tool_format=None, tool_id=None, tool_version=None,
+    def __init__(self, tool_format=None, tool_id=None, tool_version=None, tool_path=None, tool_directory=None,
                  uuid=None, active=True, hidden=True, value=None):
         self.tool_format = tool_format
         self.tool_id = tool_id
         self.tool_version = tool_version
+        self.tool_path = tool_path
+        self.tool_directory = tool_directory
         self.active = active
         self.hidden = hidden
         self.value = value
@@ -946,7 +935,7 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
     def all_entry_points_configured(self):
         # consider an actual DB attribute for this.
         all_configured = True
-        for ep in self.realtimetool_entry_points:
+        for ep in self.interactivetool_entry_points:
             all_configured = ep.configured and all_configured
         return all_configured
 
@@ -2382,6 +2371,7 @@ class Dataset(StorableObject, RepresentById):
             file_size=to_int(self.file_size),
             object_store_id=self.object_store_id,
             total_size=to_int(self.total_size),
+            created_from_basename=self.created_from_basename,
             uuid=str(self.uuid or '') or None,
             hashes=list(map(lambda h: h.serialize(id_encoder, serialization_options), self.hashes))
         )
@@ -4484,14 +4474,15 @@ class UCI(object):
 
 class StoredWorkflow(HasTags, Dictifiable, RepresentById):
 
-    dict_collection_visible_keys = ['id', 'name', 'published', 'deleted']
-    dict_element_visible_keys = ['id', 'name', 'published', 'deleted']
+    dict_collection_visible_keys = ['id', 'name', 'create_time', 'published', 'deleted']
+    dict_element_visible_keys = ['id', 'name', 'create_time', 'published', 'deleted']
 
     def __init__(self):
         self.id = None
         self.user = None
         self.name = None
         self.slug = None
+        self.create_time = None
         self.published = False
         self.latest_workflow_id = None
         self.workflows = []
@@ -4579,6 +4570,21 @@ class Workflow(Dictifiable, RepresentById):
         for step in self.steps:
             for workflow_output in step.workflow_outputs:
                 yield workflow_output
+
+    def workflow_output_for(self, output_label):
+        target_output = None
+        for workflow_output in self.workflow_outputs:
+            if workflow_output.label == output_label:
+                target_output = workflow_output
+                break
+        return target_output
+
+    @property
+    def workflow_output_labels(self):
+        names = []
+        for workflow_output in self.workflow_outputs:
+            names.append(workflow_output.label)
+        return names
 
     @property
     def top_level_workflow(self):
@@ -4878,8 +4884,8 @@ class StoredWorkflowMenuEntry(RepresentById):
 
 
 class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
-    dict_collection_visible_keys = ['id', 'update_time', 'workflow_id', 'history_id', 'uuid', 'state']
-    dict_element_visible_keys = ['id', 'update_time', 'workflow_id', 'history_id', 'uuid', 'state']
+    dict_collection_visible_keys = ['id', 'update_time', 'create_time', 'workflow_id', 'history_id', 'uuid', 'state']
+    dict_element_visible_keys = ['id', 'update_time', 'create_time', 'workflow_id', 'history_id', 'uuid', 'state']
     states = Bunch(
         NEW='new',  # Brand new workflow invocation... maybe this should be same as READY
         READY='ready',  # Workflow ready for another iteration of scheduling.
@@ -4887,6 +4893,7 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         CANCELLED='cancelled',
         FAILED='failed',
     )
+    non_terminal_states = [states.NEW, states.READY]
 
     def __init__(self):
         self.subworkflow_invocations = []
@@ -4964,6 +4971,13 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
                 target_invocation_step = invocation_step
         return target_invocation_step
 
+    def step_invocation_for_label(self, label):
+        target_invocation_step = None
+        for invocation_step in self.steps:
+            if label == invocation_step.workflow_step.label:
+                target_invocation_step = invocation_step
+        return target_invocation_step
+
     @staticmethod
     def poll_unhandled_workflow_ids(sa_session):
         and_conditions = [
@@ -5000,10 +5014,17 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         return [wid for wid in query.all()]
 
     def add_output(self, workflow_output, step, output_object):
-        if step.type == 'parameter_input':
-            # TODO: these should be properly tracked.
-            return
-        if output_object.history_content_type == "dataset":
+        if not hasattr(output_object, "history_content_type"):
+            # assuming this is a simple type, just JSON-ify it and stick in the database. In the future
+            # I'd like parameter_inputs to have datasets and collections as valid parameter types so
+            # dispatch on actual object and not step type.
+            output_assoc = WorkflowInvocationOutputValue()
+            output_assoc.workflow_invocation = self
+            output_assoc.workflow_output = workflow_output
+            output_assoc.workflow_step = step
+            output_assoc.value = output_object
+            self.output_values.append(output_assoc)
+        elif output_object.history_content_type == "dataset":
             output_assoc = WorkflowInvocationOutputDatasetAssociation()
             output_assoc.workflow_invocation = self
             output_assoc.workflow_output = workflow_output
@@ -5019,6 +5040,47 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
             self.output_dataset_collections.append(output_assoc)
         else:
             raise Exception("Unknown output type encountered")
+
+    def get_output_object(self, label):
+        for output_dataset_assoc in self.output_datasets:
+            if output_dataset_assoc.workflow_output.label == label:
+                return output_dataset_assoc.dataset
+        for output_dataset_collection_assoc in self.output_dataset_collections:
+            if output_dataset_collection_assoc.workflow_output.label == label:
+                return output_dataset_collection_assoc.dataset_collection
+        # That probably isn't good.
+        workflow_output = self.workflow.workflow_output_for(label)
+        if workflow_output:
+            raise Exception("Failed to find workflow output named [%s], one was defined but none registered during execution." % label)
+        else:
+            raise Exception("Failed to find workflow output named [%s], workflow doesn't define output by that name - valid names are %s." % (label, self.workflow.workflow_output_labels))
+
+    def get_input_object(self, label):
+        for input_dataset_assoc in self.input_datasets:
+            if input_dataset_assoc.workflow_step.label == label:
+                return input_dataset_assoc.dataset
+        for input_dataset_collection_assoc in self.input_dataset_collections:
+            if input_dataset_collection_assoc.workflow_step.label == label:
+                return input_dataset_collection_assoc.dataset_collection
+        raise Exception("Failed to find input with label %s" % label)
+
+    @property
+    def output_associations(self):
+        outputs = []
+        for output_dataset_assoc in self.output_datasets:
+            outputs.append(output_dataset_assoc)
+        for output_dataset_collection_assoc in self.output_dataset_collections:
+            outputs.append(output_dataset_collection_assoc)
+        return outputs
+
+    @property
+    def input_associations(self):
+        inputs = []
+        for input_dataset_assoc in self.input_datasets:
+            inputs.append(input_dataset_assoc)
+        for input_dataset_collection_assoc in self.input_dataset_collections:
+            inputs.append(input_dataset_collection_assoc)
+        return inputs
 
     def to_dict(self, view='collection', value_mapper=None, step_details=False, legacy_job_state=False):
         rval = super(WorkflowInvocation, self).to_dict(view=view, value_mapper=value_mapper)
@@ -5084,27 +5146,42 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
 
             rval['outputs'] = outputs
             rval['output_collections'] = output_collections
+
+            output_values = {}
+            for output_param in self.output_values:
+                label = output_param.workflow_output.label
+                output_values[label] = output_param.value
+            rval['output_values'] = output_values
+
         return rval
 
     def update(self):
         self.update_time = galaxy.model.orm.now.now()
 
-    def add_input(self, content, step_id):
+    def add_input(self, content, step_id=None, step=None):
+        assert step_id is not None or step is not None
+
+        def attach_step(request_to_content):
+            if step_id is not None:
+                request_to_content.workflow_step_id = step_id
+            else:
+                request_to_content.workflow_step = step
+
         history_content_type = getattr(content, "history_content_type", None)
         if history_content_type == "dataset":
             request_to_content = WorkflowRequestToInputDatasetAssociation()
             request_to_content.dataset = content
-            request_to_content.workflow_step_id = step_id
+            attach_step(request_to_content)
             self.input_datasets.append(request_to_content)
         elif history_content_type == "dataset_collection":
             request_to_content = WorkflowRequestToInputDatasetCollectionAssociation()
             request_to_content.dataset_collection = content
-            request_to_content.workflow_step_id = step_id
+            attach_step(request_to_content)
             self.input_dataset_collections.append(request_to_content)
         else:
             request_to_content = WorkflowRequestInputStepParameter()
             request_to_content.parameter_value = content
-            request_to_content.workflow_step_id = step_id
+            attach_step(request_to_content)
             self.input_step_parameters.append(request_to_content)
 
     @property
@@ -5254,12 +5331,14 @@ class WorkflowRequestStepState(Dictifiable, RepresentById):
 class WorkflowRequestToInputDatasetAssociation(Dictifiable, RepresentById):
     """ Workflow step input dataset parameters.
     """
+    history_content_type = "dataset"
     dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'dataset_id', 'name']
 
 
 class WorkflowRequestToInputDatasetCollectionAssociation(Dictifiable, RepresentById):
     """ Workflow step input dataset collection parameters.
     """
+    history_content_type = "dataset_collection"
     dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'dataset_collection_id', 'name']
 
 
@@ -5271,12 +5350,19 @@ class WorkflowRequestInputStepParameter(Dictifiable, RepresentById):
 
 class WorkflowInvocationOutputDatasetAssociation(Dictifiable, RepresentById):
     """Represents links to output datasets for the workflow."""
+    history_content_type = "dataset"
     dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'dataset_id', 'name']
 
 
 class WorkflowInvocationOutputDatasetCollectionAssociation(Dictifiable, RepresentById):
     """Represents links to output dataset collections for the workflow."""
+    history_content_type = "dataset_collection"
     dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'dataset_collection_id', 'name']
+
+
+class WorkflowInvocationOutputValue(Dictifiable, RepresentById):
+    """Represents a link to a specified or computed workflow parameter."""
+    dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'value']
 
 
 class WorkflowInvocationStepOutputDatasetAssociation(Dictifiable, RepresentById):

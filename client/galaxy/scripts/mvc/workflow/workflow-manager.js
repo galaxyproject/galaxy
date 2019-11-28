@@ -202,7 +202,8 @@ class Workflow {
             };
             nodes[node.id] = node_data;
         });
-        return { steps: nodes };
+        const report = this.report;
+        return { steps: nodes, report: report };
     }
     from_simple(data, initialImport_) {
         var initialImport = initialImport_ === undefined ? true : initialImport_;
@@ -217,6 +218,7 @@ class Workflow {
         // First pass, nodes
         var using_workflow_outputs = false;
         wf.workflow_version = data.version;
+        wf.report = data.report || {};
         $.each(data.steps, (id, step) => {
             var node = wf.app.prebuildNode(step.type, step.name, step.content_id);
             // If workflow being copied into another, wipe UUID and let

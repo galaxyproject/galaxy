@@ -58,12 +58,12 @@ Labeling Structure
 ==================
 
 To allow for easy search, filtering, and general issue management every
-issue or PR (not tagged ``procedures`` or ``planning``) is *required* to
-have three labels which indicate the type, status, and focus area of the
-issue. Any issue without these three tags will be automatically have a
-``triage`` label applied indicating that it needs human intervention to
-be correctly tagged. These ``triage`` tagged issues will be regularly
-reviewed and tagged as appropriate.
+issue or PR (not tagged ``procedures`` or ``planning``) is expected to
+have two labels which indicate the type (``kind/``) and focus
+area (``area/``) of the issue. Any issue without these tags will
+automatically have a ``triage`` label applied indicating that it needs
+human intervention to be correctly tagged. These ``triage`` tagged
+issues will be regularly reviewed and tagged as appropriate.
 
 Kind Labels
 -----------
@@ -74,13 +74,14 @@ request/report to separate enhancements and new features from bugs, etc.
 -  ``kind/bug`` - something is broken, and it needs fixing
 -  ``kind/enhancement`` - polish to an existing feature or interface
 -  ``kind/feature`` - something brand new
--  ``kind/refactoring`` - refactoring of existing code, no functional
-   changes
+-  ``kind/refactoring`` - cleanup or refactoring of existing code, no
+   functional changes
 
 Status Labels
 -------------
 
-The ``status`` of an issue or PR should be tracked using the following
+The default ``status`` of an issue or PR is ``ready for review``. If that
+is not true the state should be communicated using the following
 labels:
 
 -  ``status/planning`` - the issue planning phase, this issue may
@@ -88,15 +89,6 @@ labels:
    to a work in progress
 -  ``status/WIP`` - this issue or PR is currently being worked on and in
    the case of a PR, it should not be merged until this tag is removed
--  ``status/review`` - PR is complete and ready for review, or when
-   applied to an issue it is thought to be resolved but needs
-   verification
-
-We use the same set of status tags for PRs and issues to keep things
-simple, but not every PR or issue needs to go through every state. For
-example, it'll be common for a PR to be submitted with the label
-'status/review', and get merged without needing to go through the rest
-of the states.
 
 Note that there are no ``status/complete``, ``status/wontfix``,
 ``status/duplicate``, or other terminal status indicators. This is
@@ -115,9 +107,9 @@ particular domain, as well as more organized release notes.
 - ``area/admin`` - Changes to admin functionality of the Galaxy webapp
 - ``area/API``
 - ``area/auth`` - Authentication and authorization
-- ``area/cleanup`` - General code cleanup
 - ``area/client-build``
 - ``area/compliance``
+- ``area/configuration`` - Galaxy's configuration system
 - ``area/cwl`` - changes related to supporting the common workflow language in Galaxy
 - ``area/database`` - Change requires a modification to Galaxy's database
 - ``area/dataset-collections``
@@ -178,11 +170,11 @@ special purpose.
    issue that only requires limited understanding of the larger Galaxy
    framework and ecosystem. This is useful for encouraging new
    contributors.
-   
+
 -  ``friendliness/intermediate`` can be used to indicate an advanced
    level issue that requires decent understanding of the larger Galaxy
    framework and system.
-         
+
 -  ``friendliness/unfriendly`` can be used to mark issues that require
    deep understanding of the framework and/or exquisite programming
    abilities.
@@ -198,15 +190,15 @@ special purpose.
    this should be applied to at most a couple dozen pull requests each
    release and is used to prioritize important items of note for the
    top of release notes sections.
-   
+
 -  ``merge`` tag used to indicate PR that only merges a change that has
    been previously added. Used to filter things out of release notes.
-   
+
 -  ``feature-request`` is used to indicate a request for change or feature.
 
 -  ``triage`` is a tag automatically added by a GalaxyBot to indicate that
    the issue needs to be evaluated and properly tagged.
-   
+
 -  ``hacktoberfest`` is a tag that encourages contributions to Galaxy codebase
    by including these issues in the `Hacktoberfest <https://hacktoberfest.digitalocean.com/>`__ event.
    Similar to ``friendliness/beginner`` tag in other characteristics.
@@ -215,17 +207,14 @@ special purpose.
 The Roadmap
 ===========
 
-We will maintain a single ``roadmap`` tagged meta-issue which will
+We will maintain a single ``roadmap`` GitHub project which will
 describe (at a very high level) the *current* major areas of focus for
-the project. This is similar to our PRIORITIES 2014/15 cards on Trello.
-Using `Task
-Lists <https://github.com/blog/1375-task-lists-in-gfm-issues-pulls-comments>`__,
-this issue will link to sub-issues which will go into much more detail,
-might have its own checklists to even more subcomponent cards, and so
-on.
+the project. This project will link to issues and PRs, which will go into
+much more detail and might link to other sub-issues, projects, or PRs.
 
-This ``roadmap`` issue will be assigned to every release milestone,
-forcing periodic review of the roadmap.
+This ``roadmap`` project is subject to periodic review every release.
+
+The current roadmap project is `here <https://github.com/galaxyproject/galaxy/projects/8>`__.
 
 Voting
 ======
@@ -241,7 +230,7 @@ Automation
 
 For now, we will rely on a few simple automation rules:
 
--  All issues, unless tagged ``procedures`` or ``planning`` will
+-  All PRs, unless tagged ``procedures`` or ``planning`` will
    automatically be tagged ``triage``, indicating that they require
    attention.
 

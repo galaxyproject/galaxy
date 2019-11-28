@@ -138,9 +138,17 @@ class XmlToolSource(ToolSource):
 
         environment_variables = []
         for environment_variable_el in environment_variables_el.findall("environment_variable"):
+            template = environment_variable_el.text
+            inject = environment_variable_el.get("inject")
+            if inject:
+                assert not template, "Cannot specify inject and environment variable template."
+                assert inject in ["api_key"]
+            if template:
+                assert not inject, "Cannot specify inject and environment variable template."
             definition = {
                 "name": environment_variable_el.get("name"),
-                "template": environment_variable_el.text,
+                "template": template,
+                "inject": inject,
                 "strip": string_as_bool(environment_variable_el.get("strip", False)),
             }
             environment_variables.append(
@@ -201,12 +209,12 @@ class XmlToolSource(ToolSource):
             return ParallelismInfo(parallelism)
         return parallelism_info
 
-    def parse_realtime(self):
-        realtimetool_el = self.root.find("entry_points")
+    def parse_interactivetool(self):
+        interactivetool_el = self.root.find("entry_points")
         rtt = []
-        if realtimetool_el is None:
+        if interactivetool_el is None:
             return rtt
-        for ep_el in realtimetool_el.findall("entry_point"):
+        for ep_el in interactivetool_el.findall("entry_point"):
             port = ep_el.find("port")
             assert port is not None, ValueError('A port is required for InteractiveTools')
             port = port.text.strip()

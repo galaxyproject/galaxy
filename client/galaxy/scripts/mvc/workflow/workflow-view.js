@@ -15,10 +15,28 @@ import async_save_text from "utils/async-save-text";
 import "ui/editable-text";
 
 import { hide_modal, show_message, show_modal } from "layout/modal";
-import { make_popupmenu } from "ui/popupmenu";
 
 // TODO; tie into Galaxy state?
 window.workflow_globals = window.workflow_globals || {};
+
+const DEFAULT_INVOCATION_REPORT = `
+# Workflow Execution Report
+
+## Workflow Inputs
+\`\`\`galaxy
+invocation_inputs()
+\`\`\`
+
+## Workflow Outputs
+\`\`\`galaxy
+invocation_outputs()
+\`\`\`
+
+## Workflow
+\`\`\`galaxy
+workflow_display()
+\`\`\`
+`;
 
 // Reset tool search to start state.
 function reset_tool_search(initValue) {
@@ -65,62 +83,12 @@ function add_node_icon($to_el, nodeType) {
 
 // create form view
 export default Backbone.View.extend({
-    initialize: function(options) {
+    initialize: function(options, reportsEditor) {
         var self = (window.workflow_globals.app = this);
         this.options = options;
         this.urls = (options && options.urls) || {};
-        var workflow_index = self.urls.workflow_index;
-        var save_current_workflow = (eventObj, success_callback) => {
-            show_message("Saving workflow", "progress");
-            self.workflow.check_changes_in_active_form();
-            if (!self.workflow.has_changes) {
-                hide_modal();
-                if (success_callback) {
-                    success_callback();
-                }
-                return;
-            }
-            self.workflow.rectify_workflow_outputs();
-            Utils.request({
-                url: `${getAppRoot()}api/workflows/${self.options.id}`,
-                type: "PUT",
-                data: { workflow: self.workflow.to_simple() },
-                success: function(data) {
-                    var body = $("<div/>").text(data.message);
-                    if (data.errors) {
-                        body.addClass("warningmark");
-                        var errlist = $("<ul/>");
-                        $.each(data.errors, (i, v) => {
-                            $("<li/>")
-                                .text(v)
-                                .appendTo(errlist);
-                        });
-                        body.append(errlist);
-                    } else {
-                        body.addClass("donemark");
-                    }
-                    self.workflow.name = data.name;
-                    self.workflow.has_changes = false;
-                    self.workflow.stored = true;
-                    self.workflow.workflow_version = data.version;
-                    self.showWorkflowParameters();
-                    self.build_version_select();
-                    if (data.errors) {
-                        show_modal("Saving workflow", body, {
-                            Ok: hide_modal
-                        });
-                    } else {
-                        if (success_callback) {
-                            success_callback();
-                        }
-                        hide_modal();
-                    }
-                },
-                error: function(response) {
-                    show_modal("Saving workflow failed.", response.err_msg, { Ok: hide_modal });
-                }
-            });
-        };
+        const workflow_index = this.urls.workflow_index;
+        this.reportsEditor = reportsEditor;
 
         // Clear search by clicking X button
         $("#search-clear-btn").click(function() {
@@ -309,6 +277,9 @@ export default Backbone.View.extend({
                 success: function(data) {
                     self.reset();
                     self.workflow.from_simple(data, true);
+                    const report = data.report || {};
+                    const markdown = report.markdown || DEFAULT_INVOCATION_REPORT;
+                    self.reportsEditor.input = markdown;
                     self.workflow.has_changes = false;
                     self.workflow.fit_canvas_to_nodes();
                     self.scroll_to_nodes();
@@ -358,68 +329,6 @@ export default Backbone.View.extend({
 
         // Load workflow definition
         this.load_workflow(self.options.id, self.options.version);
-        if (make_popupmenu) {
-            $("#workflow-run-button").click(
-                () => (window.location = `${getAppRoot()}workflows/run?id=${self.options.id}`)
-            );
-            $("#workflow-save-button").click(() => save_current_workflow());
-            make_popupmenu($("#workflow-options-button"), {
-                "Save As": workflow_save_as,
-                "Edit Attributes": function() {
-                    self.workflow.clear_active_node();
-                },
-                "Auto Re-layout": layout_editor,
-                Download: {
-                    url: `${getAppRoot()}api/workflows/${self.options.id}/download?format=json-download`,
-                    action: function() {}
-                }
-            });
-        }
-
-        /******************************************** Issue 3000*/
-        function workflow_save_as() {
-            var body = $(
-                '<form><label style="display:inline-block; width: 100%;">Save as name: </label><input type="text" id="workflow_rename" style="width: 80%;" autofocus/>' +
-                    '<br><label style="display:inline-block; width: 100%;">Annotation: </label><input type="text" id="wf_annotation" style="width: 80%;" /></form>'
-            );
-            show_modal("Save As a New Workflow", body, {
-                OK: function() {
-                    var rename_name =
-                        $("#workflow_rename").val().length > 0
-                            ? $("#workflow_rename").val()
-                            : `SavedAs_${self.workflow.name}`;
-                    var rename_annotation = $("#wf_annotation").val().length > 0 ? $("#wf_annotation").val() : "";
-                    $.ajax({
-                        url: self.urls.workflow_save_as,
-                        type: "POST",
-                        data: {
-                            workflow_name: rename_name,
-                            workflow_annotation: rename_annotation,
-                            workflow_data: function() {
-                                return JSON.stringify(self.workflow.to_simple());
-                            }
-                        }
-                    })
-                        .done(id => {
-                            window.onbeforeunload = undefined;
-                            window.location = `${getAppRoot()}workflow/editor?id=${id}`;
-                            hide_modal();
-                        })
-                        .fail(() => {
-                            hide_modal();
-                            alert("Saving this workflow failed. Please contact this site's administrator.");
-                        });
-                },
-                Cancel: hide_modal
-            });
-        }
-
-        function layout_editor() {
-            self.workflow.layout();
-            self.workflow.fit_canvas_to_nodes();
-            self.scroll_to_nodes();
-            self.canvas_manager.draw_overview();
-        }
 
         // On load, set the size to the pref stored in local storage if it exists
         var overview_size = localStorage.getItem("overview-size");
@@ -763,10 +672,109 @@ export default Backbone.View.extend({
         return this.type_to_type[child] && parent in this.type_to_type[child];
     },
 
+    report_changed(report_markdown) {
+        this.workflow.has_changes = true;
+        this.workflow.report.markdown = report_markdown;
+    },
+
+    save_current_workflow() {
+        const self = this;
+        show_message("Saving workflow", "progress");
+        self.workflow.check_changes_in_active_form();
+        if (!self.workflow.has_changes) {
+            hide_modal();
+            return;
+        }
+        self.workflow.rectify_workflow_outputs();
+        Utils.request({
+            url: `${getAppRoot()}api/workflows/${self.options.id}`,
+            type: "PUT",
+            data: { workflow: self.workflow.to_simple() },
+            success: function(data) {
+                var body = $("<div/>").text(data.message);
+                if (data.errors) {
+                    body.addClass("warningmark");
+                    var errlist = $("<ul/>");
+                    $.each(data.errors, (i, v) => {
+                        $("<li/>")
+                            .text(v)
+                            .appendTo(errlist);
+                    });
+                    body.append(errlist);
+                } else {
+                    body.addClass("donemark");
+                }
+                self.workflow.name = data.name;
+                self.workflow.has_changes = false;
+                self.workflow.stored = true;
+                self.workflow.workflow_version = data.version;
+                self.showWorkflowParameters();
+                self.build_version_select();
+                if (data.errors) {
+                    show_modal("Saving workflow", body, {
+                        Ok: hide_modal
+                    });
+                } else {
+                    hide_modal();
+                }
+            },
+            error: function(response) {
+                show_modal("Saving workflow failed.", response.err_msg, { Ok: hide_modal });
+            }
+        });
+    },
+
+    workflow_save_as: function() {
+        const self = this;
+        var body = $(
+            '<form><label style="display:inline-block; width: 100%;">Save as name: </label><input type="text" id="workflow_rename" style="width: 80%;" autofocus/>' +
+                '<br><label style="display:inline-block; width: 100%;">Annotation: </label><input type="text" id="wf_annotation" style="width: 80%;" /></form>'
+        );
+        show_modal("Save As a New Workflow", body, {
+            OK: function() {
+                var rename_name =
+                    $("#workflow_rename").val().length > 0
+                        ? $("#workflow_rename").val()
+                        : `SavedAs_${self.workflow.name}`;
+                var rename_annotation = $("#wf_annotation").val().length > 0 ? $("#wf_annotation").val() : "";
+                $.ajax({
+                    url: self.urls.workflow_save_as,
+                    type: "POST",
+                    data: {
+                        workflow_name: rename_name,
+                        workflow_annotation: rename_annotation,
+                        workflow_data: function() {
+                            return JSON.stringify(self.workflow.to_simple());
+                        }
+                    }
+                })
+                    .done(id => {
+                        window.onbeforeunload = undefined;
+                        window.location = `${getAppRoot()}workflow/editor?id=${id}`;
+                        hide_modal();
+                    })
+                    .fail(() => {
+                        hide_modal();
+                        alert("Saving this workflow failed. Please contact this site's administrator.");
+                    });
+            },
+            Cancel: hide_modal
+        });
+    },
+
+    layout_editor: function() {
+        this.workflow.layout();
+        this.workflow.fit_canvas_to_nodes();
+        this.scroll_to_nodes();
+        this.canvas_manager.draw_overview();
+    },
+
     prebuildNode: function(type, title_text, content_id) {
         var self = this;
-        var $f = $(`<div class='toolForm toolFormInCanvas' tabindex = '0' aria-label='Node ${title_text}'/>`);
-        var $title = $(`<div class='toolFormTitle unselectable'><span class='nodeTitle'>${title_text}</div></div>`);
+        var $f = $(`<div class='toolForm toolFormInCanvas'/>`);
+        var $title = $(
+            `<div class='toolFormTitle unselectable'><span class='nodeTitle'>${title_text}</span><span class="sr-only">&nbspNode</span></div>`
+        );
         add_node_icon($title.find(".nodeTitle"), type);
         $f.append($title);
         $f.css("left", $(window).scrollLeft() + 20);
@@ -785,8 +793,8 @@ export default Backbone.View.extend({
                 $("<a/>")
                     .attr({
                         "aria-label": "clone node",
-                        "role": "button",
-                        "href": "javascript:void(0)"
+                        role: "button",
+                        href: "javascript:void(0)"
                     })
                     .addClass("fa-icon-button fa fa-files-o node-clone")
                     .click(e => {
@@ -798,8 +806,8 @@ export default Backbone.View.extend({
             $("<a/>")
                 .attr({
                     "aria-label": "destroy node",
-                    "role": "button",
-                    "href": "javascript:void(0)"
+                    role: "button",
+                    href: "javascript:void(0)"
                 })
                 .addClass("fa-icon-button fa fa-times node-destroy")
                 .click(e => {
@@ -817,7 +825,7 @@ export default Backbone.View.extend({
             left: -o.left + p.width() / 2 - width / 2,
             top: -o.top + p.height() / 2 - height / 2
         });
-        buttons.prependTo($f.find(".toolFormTitle"));
+        buttons.appendTo($f.find(".toolFormTitle"));
         width += buttons.width() + 10;
         $f.css("width", width);
         $f.bind("dragstart", () => {

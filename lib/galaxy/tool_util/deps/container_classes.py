@@ -72,7 +72,7 @@ class Container(object):
         self.container_info = {}
 
     def prop(self, name, default):
-        destination_name = "docker_%s" % name
+        destination_name = "%s_%s" % (self.container_type, name)
         return self.destination_info.get(destination_name, default)
 
     @property
@@ -282,9 +282,15 @@ class DockerContainer(Container, HasDockerLikeVolumes):
             **docker_host_props
         )
         kill_command = docker_util.build_docker_simple_command("kill", container_name=self.container_name, **docker_host_props)
+        # Suppress standard error below in the kill command because it can cause jobs that otherwise would work
+        # to fail. Likely, in these cases the container has been stopped normally and so cannot be stopped again.
+        # A less hacky approach might be to check if the container is running first before trying to kill.
+        # https://stackoverflow.com/questions/34228864/stop-and-delete-docker-container-if-its-running
+        # Standard error is:
+        #    Error response from daemon: Cannot kill container: 2b0b961527574ebc873256b481bbe72e: No such container: 2b0b961527574ebc873256b481bbe72e
         return """
 _on_exit() {
-  %s
+  %s &> /dev/null
 }
 trap _on_exit 0
 %s\n%s""" % (kill_command, cache_command, run_command)

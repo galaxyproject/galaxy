@@ -252,6 +252,10 @@ class PopulatedDisplayApplicationLink(object):
                 return name
         raise ValueError("Unknown URL parameter name provided: %s" % url)
 
+    @property
+    def allow_cors(self):
+        return self.link.allow_cors
+
 
 class DisplayApplication(object):
     @classmethod

@@ -2,7 +2,7 @@
     <div class="container">
         <div class="row justify-content-md-center">
             <div class="col" :class="{ 'col-lg-6': !isAdmin }">
-                <b-alert :show="registration_warning_message" variant="danger">
+                <b-alert :show="showRegistrationWarning" variant="info">
                     {{ registration_warning_message }}
                 </b-alert>
                 <b-alert :show="messageShow" :variant="messageVariant" v-html="messageText" />
@@ -37,10 +37,15 @@
                         </b-card-body>
                         <b-card-footer v-if="!isAdmin">
                             Already have an account?
-                            <a id="login-toggle" href="javascript:void(0)" role="button" @click.prevent="toggleLogin">Log in here.</a>
+                            <a id="login-toggle" href="javascript:void(0)" role="button" @click.prevent="toggleLogin"
+                                >Log in here.</a
+                            >
                         </b-card-footer>
                     </b-card>
                 </b-form>
+            </div>
+            <div v-if="terms_url" class="col">
+                <b-embed type="iframe" :src="terms_url" aspect="1by1" />
             </div>
         </div>
     </div>
@@ -71,6 +76,10 @@ export default {
         redirect: {
             type: String,
             required: false
+        },
+        terms_url: {
+            type: String,
+            required: false
         }
     },
     data() {
@@ -91,6 +100,9 @@ export default {
     computed: {
         messageShow() {
             return this.messageText != null;
+        },
+        showRegistrationWarning() {
+            return this.registration_warning_message != null;
         }
     },
     methods: {

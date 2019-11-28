@@ -2,7 +2,6 @@
 Galaxy job handler, prepares, runs, tracks, and finishes Galaxy jobs
 """
 import datetime
-import logging
 import os
 import time
 from collections import defaultdict
@@ -29,11 +28,12 @@ from galaxy.jobs import (
 )
 from galaxy.jobs.mapper import JobNotReadyException
 from galaxy.util import unicodify
+from galaxy.util.logging import get_logger
 from galaxy.util.monitors import Monitors
 from galaxy.web_stack.handlers import HANDLER_ASSIGNMENT_METHODS
 from galaxy.web_stack.message import JobHandlerMessage
 
-log = logging.getLogger(__name__)
+log = get_logger(__name__)
 
 # States for running a job. These are NOT the same as data states
 JOB_WAIT, JOB_ERROR, JOB_INPUT_ERROR, JOB_INPUT_DELETED, JOB_READY, JOB_DELETED, JOB_ADMIN_DELETED, JOB_USER_OVER_QUOTA, JOB_USER_OVER_TOTAL_WALLTIME = 'wait', 'error', 'input_error', 'input_deleted', 'ready', 'deleted', 'admin_deleted', 'user_over_quota', 'user_over_total_walltime'
@@ -244,9 +244,14 @@ class JobHandlerQueue(Monitors):
         """
         Called repeatedly by `monitor` to process waiting jobs.
         """
+        monitor_step_timer = self.app.execution_timer_factory.get_timer(
+            'internal.galaxy.jobs.handlers.monitor_step',
+            'Job handler monitor step complete.'
+        )
         if self.__grab_query is not None:
             self.__grab_unhandled_jobs()
         self.__handle_waiting_jobs()
+        log.trace(monitor_step_timer.to_str())
 
     def __grab_unhandled_jobs(self):
         """

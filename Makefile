@@ -159,14 +159,22 @@ client-production-maps: node-deps ## Rebuild client-side artifacts for a product
 client-format: node-deps ## Reformat client code
 	cd client && yarn run prettier
 
-client-watch: node-deps ## A useful target for parallel development building.
+client-watch: node-deps ## A useful target for parallel development building.  See also client-dev-server.
 	cd client && yarn run watch
+
+client-dev-server: node-deps ## Starts a webpack dev server for client development (HMR enabled)
+	cd client && yarn run webpack-dev-server
 
 client-test: node-deps  ## Run JS unit tests via Karma
 	cd client && yarn run test
 
-client-eslint: node-deps  ## Run client linting
+client-eslint: node-deps # Run client linting
 	cd client && yarn run eslint
+
+client-format-check: node-deps # Run client formatting check
+	cd client && yarn run prettier-check
+
+client-lint: client-eslint client-format-check ## ES lint and check format of client
 
 client-test-watch: client ## Watch and run qunit tests on changes via Karma
 	cd client && yarn run test-watch

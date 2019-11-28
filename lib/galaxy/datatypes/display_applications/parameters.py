@@ -32,6 +32,7 @@ class DisplayApplicationParameter(object):
         self.strip = string_as_bool(elem.get('strip', 'False'))
         self.strip_https = string_as_bool(elem.get('strip_https', 'False'))
         self.allow_override = string_as_bool(elem.get('allow_override', 'False'))  # Passing query param app_<name>=<value> to dataset controller allows override if this is true.
+        self.allow_cors = string_as_bool(elem.get('allow_cors', 'False'))
 
     def get_value(self, other_values, dataset_hash, user_hash, trans):
         raise Exception('get_value() is unimplemented for DisplayApplicationDataParameter')

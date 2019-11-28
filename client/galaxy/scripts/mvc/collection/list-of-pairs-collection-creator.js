@@ -341,7 +341,7 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
         /** add ids to dataset objs in initial list if none */
         _ensureIds: function() {
             this.initialList.forEach(dataset => {
-                if (!dataset.hasOwnProperty("id")) {
+                if (!Object.prototype.hasOwnProperty.call(dataset, "id")) {
                     dataset.id = _.uniqueId();
                 }
             });

@@ -1,8 +1,10 @@
 <template>
     <b-card>
-        <h4 slot="header" class="mb-0">
-            References
-        </h4>
+        <template v-slot:header>
+            <h4 class="mb-0">
+                References
+            </h4>
+        </template>
         <table>
             <tr v-for="(xref, index) in xrefs" v-bind:key="index">
                 <th>- {{ xref.reftype }}:</th>

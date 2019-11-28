@@ -621,7 +621,7 @@ model.Job.table = Table(
     Column("session_id", Integer, ForeignKey("galaxy_session.id"), index=True, nullable=True),
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True, nullable=True),
     Column("job_runner_name", String(255)),
-    Column("job_runner_external_id", String(255)),
+    Column("job_runner_external_id", String(255), index=True),
     Column("destination_id", String(255), nullable=True),
     Column("destination_params", JSONType, nullable=True),
     Column("object_store_id", TrimmedString(255), index=True),
@@ -993,6 +993,7 @@ model.Workflow.table = Table(
     Column("name", TEXT),
     Column("has_cycles", Boolean),
     Column("has_errors", Boolean),
+    Column("reports_config", JSONType),
     Column("uuid", UUIDType, nullable=True))
 
 model.WorkflowStep.table = Table(
@@ -1131,6 +1132,15 @@ model.WorkflowInvocationOutputDatasetCollectionAssociation.table = Table(
     Column("workflow_step_id", Integer, ForeignKey("workflow_step.id", name='fk_wiodca_wsi')),
     Column("dataset_collection_id", Integer, ForeignKey("history_dataset_collection_association.id", name='fk_wiodca_dci'), index=True),
     Column("workflow_output_id", Integer, ForeignKey("workflow_output.id", name='fk_wiodca_woi')),
+)
+
+model.WorkflowInvocationOutputValue.table = Table(
+    "workflow_invocation_output_value", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id"), index=True),
+    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id")),
+    Column("workflow_output_id", Integer, ForeignKey("workflow_output.id"), index=True),
+    Column("value", JSONType),
 )
 
 model.WorkflowInvocationStepOutputDatasetAssociation.table = Table(
@@ -2268,7 +2278,7 @@ mapper(model.GenomeIndexToolData, model.GenomeIndexToolData.table, properties=di
 ))
 
 mapper(model.InteractiveToolEntryPoint, model.InteractiveToolEntryPoint.table, properties=dict(
-    job=relation(model.Job, backref=backref('realtimetool_entry_points', uselist=True), uselist=False)
+    job=relation(model.Job, backref=backref('interactivetool_entry_points', uselist=True), uselist=False)
 ))
 
 mapper(model.JobContainerAssociation, model.JobContainerAssociation.table, properties=dict(
@@ -2603,6 +2613,14 @@ simple_mapping(
 
 
 simple_mapping(
+    model.WorkflowInvocationOutputValue,
+    workflow_invocation=relation(model.WorkflowInvocation, backref="output_values"),
+    workflow_step=relation(model.WorkflowStep),
+    workflow_output=relation(model.WorkflowOutput),
+)
+
+
+simple_mapping(
     model.WorkflowInvocationStepOutputDatasetAssociation,
     workflow_invocation_step=relation(model.WorkflowInvocationStep, backref="output_datasets"),
     dataset=relation(model.HistoryDatasetAssociation),
@@ -2825,7 +2843,7 @@ model.WorkflowInvocation.update = _workflow_invocation_update
 
 def init(file_path, url, engine_options=None, create_tables=False, map_install_models=False,
         database_query_profiling_proxy=False, object_store=None, trace_logger=None, use_pbkdf2=True,
-        slow_query_log_threshold=0, thread_local_log=None):
+        slow_query_log_threshold=0, thread_local_log=None, log_query_counts=False):
     """Connect mappings to the database"""
     if engine_options is None:
         engine_options = {}
@@ -2836,7 +2854,7 @@ def init(file_path, url, engine_options=None, create_tables=False, map_install_m
     # Use PBKDF2 password hashing?
     model.User.use_pbkdf2 = use_pbkdf2
     # Load the appropriate db module
-    engine = build_engine(url, engine_options, database_query_profiling_proxy, trace_logger, slow_query_log_threshold, thread_local_log=thread_local_log)
+    engine = build_engine(url, engine_options, database_query_profiling_proxy, trace_logger, slow_query_log_threshold, thread_local_log=thread_local_log, log_query_counts=log_query_counts)
 
     # Connect the metadata to the database.
     metadata.bind = engine

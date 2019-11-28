@@ -18,6 +18,14 @@
         <tag>svg</tag>
         <use_panels>both</use_panels>
     </specs>
+    <settings>
+        <input>
+            <name>data_dialog</name>
+            <label>Some data selector</label>
+            <type>data_dialog</type>
+            <multiple>false</multiple>
+        </input>
+    </settings>
     <groups>
         <input>
             <name>x</name>

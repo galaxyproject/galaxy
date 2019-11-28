@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 '''This software extracts the seq, qual and ancillary information from an sff
 file, like the ones used by the 454 sequencer.
 

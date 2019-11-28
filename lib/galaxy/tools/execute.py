@@ -13,11 +13,11 @@ from galaxy import model
 from galaxy.model.dataset_collections.structure import get_structure, tool_output_to_structure
 from galaxy.tool_util.parser import ToolOutputCollectionPart
 from galaxy.tools.actions import filter_output, on_text_for_names, ToolExecutionCache
-from galaxy.util import ExecutionTimer
 
 log = logging.getLogger(__name__)
 
-EXECUTION_SUCCESS_MESSAGE = "Tool [%s] created job [%s] %s"
+SINGLE_EXECUTION_SUCCESS_MESSAGE = "Tool ${tool_id} created job ${job_id}"
+BATCH_EXECUTION_MESSAGE = "Executed ${job_count} job(s) for tool ${tool_id} request"
 
 
 class PartialJobExecution(Exception):
@@ -39,7 +39,10 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
     if rerun_remap_job_id:
         assert invocation_step is None
 
-    all_jobs_timer = ExecutionTimer()
+    all_jobs_timer = tool.app.execution_timer_factory.get_timer(
+        'internals.galaxy.tools.execute.job_batch', BATCH_EXECUTION_MESSAGE
+    )
+
     if invocation_step is None:
         execution_tracker = ToolExecutionTracker(trans, tool, mapping_params, collection_info)
     else:
@@ -47,7 +50,9 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
     execution_cache = ToolExecutionCache(trans)
 
     def execute_single_job(execution_slice, completed_job):
-        job_timer = ExecutionTimer()
+        job_timer = tool.app.execution_timer_factory.get_timer(
+            'internals.galaxy.tools.execute.job_single', SINGLE_EXECUTION_SUCCESS_MESSAGE
+        )
         params = execution_slice.param_combination
         if workflow_invocation_uuid:
             params['__workflow_invocation_uuid__'] = workflow_invocation_uuid
@@ -65,8 +70,7 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
             params['__validate_outputs__'] = True
         job, result = tool.handle_single_execution(trans, rerun_remap_job_id, execution_slice, history, execution_cache, completed_job, collection_info)
         if job:
-            message = EXECUTION_SUCCESS_MESSAGE % (tool.id, job.id, job_timer)
-            log.debug(message)
+            log.debug(job_timer.to_str(tool_id=tool.id, job_id=job.id))
             execution_tracker.record_success(execution_slice, job, result)
         else:
             execution_tracker.record_error(result)
@@ -102,7 +106,7 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
     else:
         execution_tracker.finalize_dataset_collections(trans)
 
-    log.debug("Executed %d job(s) for tool %s request: %s" % (job_count, tool.id, all_jobs_timer))
+    log.debug(all_jobs_timer.to_str(job_count=job_count, tool_id=tool.id))
     return execution_tracker
 
 

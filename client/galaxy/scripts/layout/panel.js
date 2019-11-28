@@ -27,14 +27,22 @@ const SidePanel = Backbone.View.extend({
         const self = this;
         const panel = this.view;
         const components = this.view.model.attributes || {};
-        this.$el.html(this._templatePanel(this.id));
-        _.each(components.buttons, button => {
-            self.$(".panel-header-buttons").append(button.$el);
-        });
-        this.$el.addClass(components.cls);
-        this.$(".panel-header-text").html(_.escape(components.title));
-        this.$(".unified-panel-body").append(panel.$el);
-        panel.render();
+
+        if (this.id === "left" && this.view && this.view.isVueWrapper) {
+            const node = document.createElement("div");
+            this.$el.replaceWith(node);
+
+            this.view.mountVueComponent(node);
+        } else {
+            this.$el.html(this._templatePanel(this.id));
+            _.each(components.buttons, button => {
+                self.$(".panel-header-buttons").append(button.$el);
+            });
+            this.$el.addClass(components.cls);
+            this.$(".panel-header-text").html(_.escape(components.title));
+            this.$(".unified-panel-body").append(panel.$el);
+            panel.render();
+        }
     },
 
     /** panel dom template. id is 'right' or 'left' */
@@ -258,7 +266,7 @@ const CenterPanel = Backbone.View.extend({
     template: function() {
         return (
             '<div class="center-container">' +
-            '<iframe id="galaxy_main" name="galaxy_main" frameborder="0" class="center-frame" />' +
+            '<iframe id="galaxy_main" name="galaxy_main" frameborder="0" class="center-frame" title="galaxy main frame"/>' +
             '<div class="center-panel" />' +
             "</div>"
         );
