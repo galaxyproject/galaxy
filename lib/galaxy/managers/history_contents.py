@@ -122,31 +122,18 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
     # order_by parsing - similar to FilterParser but not enough yet to warrant a class?
     def parse_order_by(self, order_by_string, default=None):
         """Return an ORM compatible order_by using the given string"""
-        if order_by_string in ('hid', 'hid-dsc'):
-            return desc('hid')
-        if order_by_string == 'hid-asc':
-            return asc('hid')
-        if order_by_string in ('create_time', 'create_time-dsc'):
-            return desc('create_time')
-        if order_by_string == 'create_time-asc':
-            return asc('create_time')
-        if order_by_string in ('update_time', 'update_time-dsc'):
-            return desc('update_time')
-        if order_by_string == 'update_time-asc':
-            return asc('update_time')
-        if order_by_string in ('name', 'name-asc'):
-            return asc('name')
-        if order_by_string == 'name-dsc':
-            return desc('name')
-        if order_by_string in ('extension', 'extension-asc'):
-            return asc('extension')
-        if order_by_string == 'extension-dsc':
-            return desc('extension')
+        available=['create_time', 'extension', 'hid', 'history_id', 'name', 'update_time']
+        for attribute in available:
+            attribute_dsc = '%s-dsc' % attribute
+            attribute_asc = '%s-asc' % attribute
+            if order_by_string in (attribute, attribute_dsc):
+                return desc(attribute)
+            if order_by_string == attribute_asc:
+                return asc(attribute)
         if default:
             return self.parse_order_by(default)
-        # TODO: allow order_by None
         raise glx_exceptions.RequestParameterInvalidException('Unknown order_by', order_by=order_by_string,
-            available=['create_time', 'extension', 'update_time', 'name', 'hid'])
+            available=available)
 
     # history specific methods
     def state_counts(self, history):
