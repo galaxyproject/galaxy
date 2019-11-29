@@ -51,14 +51,15 @@ class ToolInfo(object):
 class JobInfo(object):
 
     def __init__(
-        self, working_directory, tool_directory, job_directory, tmp_directory, job_directory_type
+        self, working_directory, tool_directory, job_directory, tmp_directory, home_directory, job_directory_type,
     ):
         self.working_directory = working_directory
-        self.job_directory = job_directory
         # Tool files may be remote staged - so this is unintuitively a property
         # of the job not of the tool.
         self.tool_directory = tool_directory
+        self.job_directory = job_directory
         self.tmp_directory = tmp_directory
+        self.home_directory = home_directory
         self.job_directory_type = job_directory_type  # "galaxy" or "pulsar"
 
 
