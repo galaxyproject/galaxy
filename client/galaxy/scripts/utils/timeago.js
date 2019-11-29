@@ -8,7 +8,7 @@ export function timeAgo(stamp) {
         let delta = now - seconds;
         const titles = ['second', 'minute', 'hour', 'day', 'month'];
         const dividers = [60, 60, 24, 30, 12];
-        for (let i = 0; i < dividers.length; i++) {
+        for (const i in dividers) {
             const title = titles[i];
             const divider = dividers[i];
             if (delta < divider) {
