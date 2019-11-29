@@ -6,8 +6,10 @@ from galaxy.datatypes.metadata import MetadataSpecCollection
 from galaxy.jobs.datasets import DatasetPath
 from galaxy.tools.parameters.basic import (
     DrillDownSelectToolParameter,
+    FloatToolParameter,
     IntegerToolParameter,
-    SelectToolParameter
+    SelectToolParameter,
+    TextToolParameter,
 )
 from galaxy.tools.wrappers import (
     DatasetFilenameWrapper,
@@ -83,17 +85,40 @@ def test_raw_object_wrapper():
     assert not false_wrapper
 
 
+def valuewrapper(tool, value, paramtype):
+    if paramtype == "integer":
+        parameter = IntegerToolParameter(tool, XML('<param name="blah" type="integer" value="10" min="0" />'))
+    elif paramtype == "text":
+        parameter = TextToolParameter(tool, XML('<param name="blah" type="text" value="10"/>'))
+    elif paramtype == "float":
+        parameter = FloatToolParameter(tool, XML('<param name="bla" type="float" value="10"/>'))
+    return InputValueWrapper(parameter, str(value))
+
+
 @with_mock_tool
-def test_input_value_wrapper(tool):
-    parameter = IntegerToolParameter(tool, XML('<param name="blah" type="integer" value="10" min="0" />'))
-    wrapper = InputValueWrapper(parameter, "5")
+def test_input_value_wrapper_comparison(tool):
+    wrapper = valuewrapper(tool, 5, "integer")
     assert str(wrapper) == "5"
     assert int(wrapper) == 5
-    assert wrapper == "5"
+    assert wrapper != "5"
     assert wrapper == 5
     assert wrapper == 5.0
     assert wrapper > 2
     assert wrapper < 10
+    assert wrapper < 5.1
+
+
+@with_mock_tool
+def test_input_value_wrapper_input_value_wrapper_comparison(tool):
+    wrapper = valuewrapper(tool, 5, "integer")
+    assert str(wrapper) == valuewrapper(tool, "5", "text")
+    assert int(wrapper) == valuewrapper(tool, "5", "integer")
+    assert wrapper != valuewrapper(tool, "5", "text")
+    assert wrapper == valuewrapper(tool, "5", "integer")
+    assert wrapper == valuewrapper(tool, "5", "float")
+    assert wrapper > valuewrapper(tool, "2", "integer")
+    assert wrapper < valuewrapper(tool, "10", "integer")
+    assert wrapper < valuewrapper(tool, "5.1", "float")
 
 
 def test_dataset_wrapper():
