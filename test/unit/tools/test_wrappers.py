@@ -100,7 +100,7 @@ def test_input_value_wrapper_comparison(tool):
     wrapper = valuewrapper(tool, 5, "integer")
     assert str(wrapper) == "5"
     assert int(wrapper) == 5
-    assert wrapper == "5"
+    assert wrapper != "5"
     assert wrapper == 5
     assert wrapper == 5.0
     assert wrapper > 2
@@ -113,7 +113,7 @@ def test_input_value_wrapper_input_value_wrapper_comparison(tool):
     wrapper = valuewrapper(tool, 5, "integer")
     assert str(wrapper) == valuewrapper(tool, "5", "text")
     assert int(wrapper) == valuewrapper(tool, "5", "integer")
-    assert wrapper == valuewrapper(tool, "5", "text")
+    assert wrapper != valuewrapper(tool, "5", "text")
     assert wrapper == valuewrapper(tool, "5", "integer")
     assert wrapper == valuewrapper(tool, "5", "float")
     assert wrapper > valuewrapper(tool, "2", "integer")

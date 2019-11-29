@@ -80,12 +80,16 @@ class InputValueWrapper(ToolParameterValueWrapper):
         self._other_values = other_values
 
     def __eq__(self, other):
-        if isinstance(other, string_types) or (isinstance(other, InputValueWrapper) and other.input.type == 'text'):
-            return str(self) == other
-        elif isinstance(other, (int, float)) or (isinstance(other, InputValueWrapper) and other.input.type in ('float', 'integer')):
-            return float(self) == other
-        else:
-            return self.value == other
+        return self.get_cast_value() == other
+
+    def get_cast_value(self):
+        cast = {
+            'text': str,
+            'integer': int,
+            'float': float,
+            'boolean': bool,
+        }
+        return cast.get(self.input.type, str)(self)
 
     def __ne__(self, other):
         return not self == other
@@ -108,12 +112,7 @@ class InputValueWrapper(ToolParameterValueWrapper):
         return getattr(self.value, key)
 
     def __gt__(self, other):
-        if isinstance(other, string_types) or (isinstance(other, InputValueWrapper) and other.input.type == 'text'):
-            return str(self) > other
-        elif isinstance(other, (int, float)) or (isinstance(other, InputValueWrapper) and other.input.type in ('float', 'integer')):
-            return float(self) > other
-        else:
-            return self.value > other
+        return self.get_cast_value() > other
 
     def __int__(self):
         return int(float(self))
