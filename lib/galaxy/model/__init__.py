@@ -616,11 +616,13 @@ class DynamicTool(Dictifiable):
     dict_collection_visible_keys = ('id', 'tool_id', 'tool_format', 'tool_version', 'uuid', 'active', 'hidden')
     dict_element_visible_keys = ('id', 'tool_id', 'tool_format', 'tool_version', 'uuid', 'active', 'hidden')
 
-    def __init__(self, tool_format=None, tool_id=None, tool_version=None,
+    def __init__(self, tool_format=None, tool_id=None, tool_version=None, tool_path=None, tool_directory=None,
                  uuid=None, active=True, hidden=True, value=None):
         self.tool_format = tool_format
         self.tool_id = tool_id
         self.tool_version = tool_version
+        self.tool_path = tool_path
+        self.tool_directory = tool_directory
         self.active = active
         self.hidden = hidden
         self.value = value
@@ -2369,6 +2371,7 @@ class Dataset(StorableObject, RepresentById):
             file_size=to_int(self.file_size),
             object_store_id=self.object_store_id,
             total_size=to_int(self.total_size),
+            created_from_basename=self.created_from_basename,
             uuid=str(self.uuid or '') or None,
             hashes=list(map(lambda h: h.serialize(id_encoder, serialization_options), self.hashes))
         )
@@ -5011,10 +5014,17 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         return [wid for wid in query.all()]
 
     def add_output(self, workflow_output, step, output_object):
-        if step.type == 'parameter_input':
-            # TODO: these should be properly tracked.
-            return
-        if output_object.history_content_type == "dataset":
+        if not hasattr(output_object, "history_content_type"):
+            # assuming this is a simple type, just JSON-ify it and stick in the database. In the future
+            # I'd like parameter_inputs to have datasets and collections as valid parameter types so
+            # dispatch on actual object and not step type.
+            output_assoc = WorkflowInvocationOutputValue()
+            output_assoc.workflow_invocation = self
+            output_assoc.workflow_output = workflow_output
+            output_assoc.workflow_step = step
+            output_assoc.value = output_object
+            self.output_values.append(output_assoc)
+        elif output_object.history_content_type == "dataset":
             output_assoc = WorkflowInvocationOutputDatasetAssociation()
             output_assoc.workflow_invocation = self
             output_assoc.workflow_output = workflow_output
@@ -5136,6 +5146,13 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
 
             rval['outputs'] = outputs
             rval['output_collections'] = output_collections
+
+            output_values = {}
+            for output_param in self.output_values:
+                label = output_param.workflow_output.label
+                output_values[label] = output_param.value
+            rval['output_values'] = output_values
+
         return rval
 
     def update(self):
@@ -5341,6 +5358,11 @@ class WorkflowInvocationOutputDatasetCollectionAssociation(Dictifiable, Represen
     """Represents links to output dataset collections for the workflow."""
     history_content_type = "dataset_collection"
     dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'dataset_collection_id', 'name']
+
+
+class WorkflowInvocationOutputValue(Dictifiable, RepresentById):
+    """Represents a link to a specified or computed workflow parameter."""
+    dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'value']
 
 
 class WorkflowInvocationStepOutputDatasetAssociation(Dictifiable, RepresentById):

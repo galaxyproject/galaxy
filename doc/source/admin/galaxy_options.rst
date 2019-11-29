@@ -112,6 +112,24 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``database_log_query_counts``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Log number of SQL queries executed and total time spent
+    dispatching SQL statements for each web request. If statsd is also
+    enabled this information will be logged there as well. This should
+    be considered somewhat experimental, we are unsure of the
+    performance costs of running this in production. This is useful
+    information for optimizing database interaction performance.
+    Similar information can be obtained on a per-request basis by
+    enabling the sql_debug middleware and adding sql_debug=1 to a
+    request string.
+:Default: ``false``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``slow_query_log_threshold``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -543,6 +561,19 @@
     RELOADABLE_CONFIG_OPTIONS in lib/galaxy/config/__init__.py).  If
     changes are found, modified options are automatically reloaded.
     Takes the same values as the 'watch_tools' option.
+:Default: ``false``
+:Type: str
+
+
+~~~~~~~~~~~~~~~
+``watch_tours``
+~~~~~~~~~~~~~~~
+
+:Description:
+    Monitor the interactive tours directory specified in the
+    'tour_config_dir' option. If changes are found, modified tours are
+    automatically reloaded. Takes the same values as the 'watch_tools'
+    option.
 :Default: ``false``
 :Type: str
 
@@ -1484,7 +1515,7 @@
 
 :Description:
     The URL linked by the "Mailing Lists" link in the "Help" menu.
-:Default: ``https://galaxyproject.org/mailing-lists``
+:Default: ``https://galaxyproject.org/mailing-lists/``
 :Type: str
 
 
@@ -3076,9 +3107,9 @@
 :Type: bool
 
 
-~~~~~~~~~~~~~~~~~~~~
-``myexperiment_url``
-~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``myexperiment_target_url``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
     The URL to the myExperiment instance being used (omit scheme but
@@ -3133,7 +3164,8 @@
 :Description:
     Python string template used to determine an FTP upload directory
     for a particular user.
-:Default: ``${ftp_upload_dir}/${ftp_upload_dir_identifier}``
+    Defaults to '${ftp_upload_dir}/${ftp_upload_dir_identifier}'.
+:Default: ``None``
 :Type: str
 
 
@@ -3232,9 +3264,9 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Directory to store Data Manager based tool-data; defaults to
-    tool_data_path.
-:Default: ``tool-data``
+    Directory to store Data Manager based tool-data. Defaults to the
+    value of the <tool_data_path> option.
+:Default: ``None``
 :Type: str
 
 
@@ -3469,9 +3501,9 @@
 
 :Description:
     When running DRMAA jobs as the Galaxy user
-    (https://docs.galaxyproject.org/en/master/admin/cluster.html#submitting-
-    jobs-as-the-real-user) this script is used to run the job script
-    Galaxy generates for a tool execution.
+    (https://docs.galaxyproject.org/en/master/admin/cluster.html
+    #submitting-jobs-as-the-real-user) this script is used to run the
+    job script Galaxy generates for a tool execution.
     Example value 'sudo -E scripts/drmaa_external_runner.py
     --assign_all_groups'
 :Default: ``None``
@@ -3484,9 +3516,9 @@
 
 :Description:
     When running DRMAA jobs as the Galaxy user
-    (https://docs.galaxyproject.org/en/master/admin/cluster.html#submitting-
-    jobs-as-the-real-user) this script is used to kill such jobs by
-    Galaxy (e.g. if the user cancels the job).
+    (https://docs.galaxyproject.org/en/master/admin/cluster.html
+    #submitting-jobs-as-the-real-user) this script is used to kill
+    such jobs by Galaxy (e.g. if the user cancels the job).
     Example value 'sudo -E scripts/drmaa_external_killer.py'
 :Default: ``None``
 :Type: str
@@ -3498,10 +3530,10 @@
 
 :Description:
     When running DRMAA jobs as the Galaxy user
-    (https://docs.galaxyproject.org/en/master/admin/cluster.html#submitting-
-    jobs-as-the-real-user) this script is used transfer permissions
-    back and forth between the Galaxy user and the user that is
-    running the job.
+    (https://docs.galaxyproject.org/en/master/admin/cluster.html
+    #submitting-jobs-as-the-real-user) this script is used transfer
+    permissions back and forth between the Galaxy user and the user
+    that is running the job.
     Example value 'sudo -E scripts/external_chown_script.py'
 :Default: ``None``
 :Type: str
@@ -3513,14 +3545,14 @@
 
 :Description:
     When running DRMAA jobs as the Galaxy user
-    (https://docs.galaxyproject.org/en/master/admin/cluster.html#submitting-
-    jobs-as-the-real-user) Galaxy can extract the user name from the
-    email address (actually the local-part before the @) or the
-    username which are both stored in the Galaxy data base. The latter
-    option is particularly useful for installations that get the
-    authentication from LDAP. Also, Galaxy can accept the name of a
-    common system user (eg. galaxy_worker) who can run every job being
-    submitted. This user should not be the same user running the
+    (https://docs.galaxyproject.org/en/master/admin/cluster.html
+    #submitting-jobs-as-the-real-user) Galaxy can extract the user
+    name from the email address (actually the local-part before the @)
+    or the username which are both stored in the Galaxy data base. The
+    latter option is particularly useful for installations that get
+    the authentication from LDAP. Also, Galaxy can accept the name of
+    a common system user (eg. galaxy_worker) who can run every job
+    being submitted. This user should not be the same user running the
     galaxy system. Possible values are user_email (default), username
     or <common_system_user>
 :Default: ``user_email``

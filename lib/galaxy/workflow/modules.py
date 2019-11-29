@@ -811,7 +811,7 @@ class ToolModule(WorkflowModule):
                 if not trans.user_is_admin:
                     raise exceptions.AdminRequiredException("Only admin users can create tools dynamically.")
                 dynamic_tool = trans.app.dynamic_tool_manager.create_tool(
-                    create_request, allow_load=False
+                    trans, create_request, allow_load=False
                 )
                 tool_uuid = dynamic_tool.uuid
         if tool_id is None and tool_uuid is None:

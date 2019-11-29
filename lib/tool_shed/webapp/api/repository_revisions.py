@@ -5,7 +5,6 @@ from sqlalchemy import and_
 from galaxy import util
 from galaxy import web
 from galaxy.webapps.base.controller import BaseAPIController, HTTPBadRequest
-from tool_shed.capsule import capsule_manager
 from tool_shed.util import metadata_util
 from tool_shed.util import repository_util
 
@@ -14,51 +13,6 @@ log = logging.getLogger(__name__)
 
 class RepositoryRevisionsController(BaseAPIController):
     """RESTful controller for interactions with tool shed repository revisions."""
-
-    @web.legacy_expose_api_anonymous
-    def export(self, trans, payload, **kwd):
-        """
-        POST /api/repository_revisions/export
-        Creates and saves a gzip compressed tar archive of a repository and optionally all of its repository dependencies.
-
-        The following parameters are included in the payload.
-        :param tool_shed_url (required): the base URL of the Tool Shed from which the Repository is to be exported
-        :param name (required): the name of the Repository
-        :param owner (required): the owner of the Repository
-        :param changeset_revision (required): the changeset_revision of the RepositoryMetadata object associated with the Repository
-        :param export_repository_dependencies (optional): whether to export repository dependencies - defaults to False
-        :param download_dir (optional): the local directory to which to download the archive - defaults to /tmp
-        """
-        tool_shed_url = payload.get('tool_shed_url', '')
-        if not tool_shed_url:
-            raise HTTPBadRequest(detail="Missing required parameter 'tool_shed_url'.")
-        tool_shed_url = tool_shed_url.rstrip('/')
-        name = payload.get('name', '')
-        if not name:
-            raise HTTPBadRequest(detail="Missing required parameter 'name'.")
-        owner = payload.get('owner', '')
-        if not owner:
-            raise HTTPBadRequest(detail="Missing required parameter 'owner'.")
-        changeset_revision = payload.get('changeset_revision', '')
-        if not changeset_revision:
-            raise HTTPBadRequest(detail="Missing required parameter 'changeset_revision'.")
-        export_repository_dependencies = payload.get('export_repository_dependencies', False)
-        # We'll currently support only gzip-compressed tar archives.
-        export_repository_dependencies = util.asbool(export_repository_dependencies)
-        # Get the repository information.
-        repository = repository_util.get_repository_by_name_and_owner(trans.app, name, owner)
-        if repository is None:
-            error_message = 'Cannot locate repository with name %s and owner %s,' % (str(name), str(owner))
-            log.debug(error_message)
-            return None, error_message
-        erm = capsule_manager.ExportRepositoryManager(app=trans.app,
-                                                      user=trans.user,
-                                                      tool_shed_url=tool_shed_url,
-                                                      repository=repository,
-                                                      changeset_revision=changeset_revision,
-                                                      export_repository_dependencies=export_repository_dependencies,
-                                                      using_api=True)
-        return erm.export_repository()
 
     def __get_value_mapper(self, trans):
         value_mapper = {'id' : trans.security.encode_id,

@@ -8,6 +8,7 @@ import pytest
 from requests import get
 from six import BytesIO
 
+from galaxy.util import galaxy_root_path
 from galaxy_test.base import rules_test_data
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
@@ -935,6 +936,21 @@ class ToolsTestCase(ApiTestCase):
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         output_content = self.dataset_populator.get_history_dataset_content(history_id)
         self.assertEqual(output_content, "Hello World\n")
+
+    def test_dynamic_tool_from_path(self):
+        # Create tool.
+        dynamic_tool_path = os.path.join(galaxy_root_path, "lib", "galaxy_test", "base", "data", "minimal_tool_no_id.json")
+        tool_response = self.dataset_populator.create_tool_from_path(dynamic_tool_path)
+        self._assert_has_keys(tool_response, "uuid")
+
+        # Run tool.
+        history_id = self.dataset_populator.new_history()
+        inputs = {}
+        self._run(history_id=history_id, inputs=inputs, tool_uuid=tool_response["uuid"])
+
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        output_content = self.dataset_populator.get_history_dataset_content(history_id)
+        self.assertEqual(output_content, "Hello World 2\n")
 
     def test_dynamic_tool_no_id(self):
         # Create tool.

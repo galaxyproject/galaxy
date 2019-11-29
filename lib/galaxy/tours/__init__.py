@@ -44,24 +44,29 @@ class ToursRegistry(object):
             if not os.path.exists(tour_path):
                 tour_path = os.path.join(tour_dir, tour_id + ".yml")
             if os.path.exists(tour_path):
-                break
-        if os.path.exists(tour_path):
-            return self._load_tour_from_path(tour_path)
-        else:
-            return None
+                return self._load_tour_from_path(tour_path)
 
     def load_tours(self):
         self.tours = {}
         for tour_dir in self.tour_directories:
             for filename in os.listdir(tour_dir):
-                if filename.endswith('.yaml') or filename.endswith('.yml'):
+                if self._is_yaml(filename):
                     self._load_tour_from_path(os.path.join(tour_dir, filename))
         return self.tours_by_id_with_description()
+
+    def reload_tour(self, path):
+        # We may safely assume that the path is within the tour directory
+        filename = os.path.basename(path)
+        if self._is_yaml(filename):
+            self._load_tour_from_path(path)
 
     def tour_contents(self, tour_id):
         # Extra format translation could happen here (like the previous intro_to_tour)
         # For now just return the loaded contents.
         return self.tours.get(tour_id, None)
+
+    def _is_yaml(self, filename):
+        return filename.endswith('.yaml') or filename.endswith('.yml')
 
     def _load_tour_from_path(self, tour_path):
         filename = os.path.basename(tour_path)

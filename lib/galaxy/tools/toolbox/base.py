@@ -14,7 +14,11 @@ from markupsafe import escape
 from six import iteritems
 from six.moves.urllib.parse import urlparse
 
-from galaxy.exceptions import MessageException, ObjectNotFound
+from galaxy.exceptions import (
+    ConfigurationError,
+    MessageException,
+    ObjectNotFound,
+)
 from galaxy.tool_util.deps import (
     build_dependency_manager,
     NullDependencyManager
@@ -187,11 +191,12 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 return
             raise
         tool_path = tool_conf_source.parse_tool_path()
-        log.debug("Tool path for tool configuration %s is %s", config_filename, tool_path)
         parsing_shed_tool_conf = tool_conf_source.is_shed_tool_conf()
         if parsing_shed_tool_conf:
             # Keep an in-memory list of xml elements to enable persistence of the changing tool config.
             config_elems = []
+        tool_conf_type = 'shed tool' if parsing_shed_tool_conf else 'tool'
+        log.debug("Tool path for %s configuration %s is %s", tool_conf_type, config_filename, tool_path)
         tool_path = self.__resolve_tool_path(tool_path, config_filename)
         # Only load the panel_dict under certain conditions.
         load_panel_dict = not self._integrated_tool_panel_config_has_contents
@@ -258,11 +263,12 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             elif item_type == 'tool_dir':
                 self._load_tooldir_tag_set(item, panel_dict, tool_path, integrated_panel_dict, load_panel_dict=load_panel_dict)
 
-    def get_shed_config_dict_by_filename(self, filename, default=None):
+    def get_shed_config_dict_by_filename(self, filename):
+        filename = os.path.abspath(filename)
         for shed_config_dict in self._dynamic_tool_confs:
             if shed_config_dict['config_filename'] == filename:
                 return shed_config_dict
-        return default
+        return None
 
     def update_shed_config(self, shed_conf):
         """  Update the in-memory descriptions of tools and write out the changes
@@ -600,6 +606,21 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 confs.append(dynamic_tool_conf_dict)
         return confs
 
+    def default_shed_tool_conf_dict(self):
+        """If set, returns the first shed_tool_conf_dict corresponding to shed_tool_config_file, else the first dynamic conf."""
+        dynamic_confs = self.dynamic_confs(include_migrated_tool_conf=False)
+        # Pick the first tool config that doesn't set `is_shed_conf="false"` and that is not a migrated_tool_conf
+        try:
+            shed_config_dict = dynamic_confs[0]
+        except IndexError:
+            raise ConfigurationError("No shed_tool_conf file active")
+        if self.app.config.shed_tool_config_file in self.app.config.tool_configs:
+            # Use shed_tool_config_file if loaded
+            for shed_config_dict in dynamic_confs:
+                if shed_config_dict.get('config_filename') == self.app.config.shed_tool_config_file:
+                    break
+        return shed_config_dict
+
     def dynamic_conf_filenames(self, include_migrated_tool_conf=False):
         """ Return list of dynamic tool configuration filenames (shed_tools).
         These must be used with various dynamic tool configuration update
@@ -670,11 +691,17 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         tool_shed = elem.find("tool_shed").text
         repository_name = elem.find("repository_name").text
         repository_owner = elem.find("repository_owner").text
-        installed_changeset_revision_elem = elem.find("installed_changeset_revision")
-        if installed_changeset_revision_elem is None:
-            # Backward compatibility issue - the tag used to be named 'changeset_revision'.
-            installed_changeset_revision_elem = elem.find("changeset_revision")
-        installed_changeset_revision = installed_changeset_revision_elem.text
+        # The definition of `installed_changeset_revision` for a repository is that it has been cloned at <tool_path/toolshed/repos/owner/name/installed_changeset_revision>
+        # so if we load a tool it needs to be at a path that contains `installed_changeset_revision`.
+        path_to_installed_changeset_revision = os.path.join(tool_shed, 'repos', repository_owner, repository_name)
+        if path_to_installed_changeset_revision in path:
+            installed_changeset_revision = path[path.index(path_to_installed_changeset_revision) + len(path_to_installed_changeset_revision):].split(os.path.sep)[1]
+        else:
+            installed_changeset_revision_elem = elem.find("installed_changeset_revision")
+            if installed_changeset_revision_elem is None:
+                # Backward compatibility issue - the tag used to be named 'changeset_revision'.
+                installed_changeset_revision_elem = elem.find("changeset_revision")
+            installed_changeset_revision = installed_changeset_revision_elem.text
         repository = self._get_tool_shed_repository(tool_shed=tool_shed,
                                                     name=repository_name,
                                                     owner=repository_owner,

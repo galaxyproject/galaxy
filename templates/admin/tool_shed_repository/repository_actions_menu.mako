@@ -19,9 +19,7 @@
             %if repository.can_reinstall_or_activate:
                 <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='restore_repository', id=trans.security.encode_id( repository.id ) )}">Activate or reinstall repository</a>
             %endif
-            %if in_error_state:
-                <a class="action-button" target="galaxy_main" href="${h.url_for( controller='admin_toolshed', action='reset_to_install', id=trans.security.encode_id( repository.id ), reset_repository=True )}">Reset to install</a>
-            %elif repository.can_install:
+            %if repository.can_install:
                 <a class="action-button" target="galaxy_main" href="${h.url_for( controller='admin_toolshed', action='manage_repository', id=trans.security.encode_id( repository.id ), operation='install' )}">Install</a>
             %elif can_administer:
                 <a class="action-button" target="galaxy_main" href="${h.url_for( controller='admin_toolshed', action='manage_repository', id=trans.security.encode_id( repository.id ) )}">Manage repository</a>

@@ -78,6 +78,10 @@ uwsgi:
   # Ensure application threads will run if `threads` is unset.
   enable-threads: true
 
+  # Task for rebuilding Toolshed search indexes using the uWSGI cron-
+  # like interface.
+  cron: 0 -1 -1 -1 -1 python scripts/tool_shed/build_ts_whoosh_index.py -c config/tool_shed.yml --config-section tool_shed
+
 tool_shed:
 
   # Verbosity of console log messages.  Acceptable values can be found

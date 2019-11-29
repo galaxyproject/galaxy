@@ -32,8 +32,8 @@ class DisplayApplicationsController(BaseAPIController):
             })
         return response
 
-    @legacy_expose_api
     @require_admin
+    @legacy_expose_api
     def reload(self, trans, payload={}, **kwd):
         """
         POST /api/display_applications/reload
