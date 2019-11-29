@@ -94,7 +94,7 @@ export default {
             limit: 50,
             offset: 0,
             sortBy: "update_time",
-            sortDesc: false,
+            sortDesc: true,
             loading: true,
             message: null,
             messageVariant: null,
