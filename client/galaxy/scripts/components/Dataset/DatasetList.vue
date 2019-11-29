@@ -67,6 +67,15 @@ export default {
                     sortable: true
                 },
                 {
+                    label: "History",
+                    key: "history_id",
+                    sortable: true
+                },
+                {
+                    key: "tags",
+                    sortable: false
+                },
+                {
                     key: "extension",
                     sortable: true
                 },
@@ -79,10 +88,6 @@ export default {
                     label: "Updated",
                     key: "update_time_ago",
                     sortable: true
-                },
-                {
-                    key: "tags",
-                    sortable: false
                 },
                 {
                     key: "context",
