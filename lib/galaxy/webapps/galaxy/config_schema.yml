@@ -434,6 +434,15 @@ mapping:
           in lib/galaxy/config/__init__.py).  If changes are found, modified options are
           automatically reloaded. Takes the same values as the 'watch_tools' option.
 
+      watch_tours:
+        type: str
+        default: 'false'
+        required: false
+        desc: |
+          Monitor the interactive tours directory specified in the 'tour_config_dir' option. If
+          changes are found, modified tours are automatically reloaded. Takes the same values as the
+          'watch_tools' option.
+
       legacy_eager_objectstore_initialization:
         type: bool
         default: false

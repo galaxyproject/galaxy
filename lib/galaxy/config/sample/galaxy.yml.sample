@@ -149,6 +149,16 @@ galaxy:
   # completeness.
   #database_template: null
 
+  # Log number of SQL queries executed and total time spent dispatching
+  # SQL statements for each web request. If statsd is also enabled this
+  # information will be logged there as well. This should be considered
+  # somewhat experimental, we are unsure of the performance costs of
+  # running this in production. This is useful information for
+  # optimizing database interaction performance. Similar information can
+  # be obtained on a per-request basis by enabling the sql_debug
+  # middleware and adding sql_debug=1 to a request string.
+  #database_log_query_counts: false
+
   # Slow query logging.  Queries slower than the threshold indicated
   # below will be logged to debug.  A value of '0' is disabled.  For
   # example, you would set this to .005 to log all queries taking longer
@@ -355,6 +365,12 @@ galaxy:
   # changes are found, modified options are automatically reloaded.
   # Takes the same values as the 'watch_tools' option.
   #watch_core_config: 'false'
+
+  # Monitor the interactive tours directory specified in the
+  # 'tour_config_dir' option. If changes are found, modified tours are
+  # automatically reloaded. Takes the same values as the 'watch_tools'
+  # option.
+  #watch_tours: 'false'
 
   # As of 18.09, Galaxy defaults to setting up the object store
   # configuration for output datasets during the job queue step in job
@@ -784,7 +800,7 @@ galaxy:
   #search_url: https://galaxyproject.org/search/
 
   # The URL linked by the "Mailing Lists" link in the "Help" menu.
-  #mailing_lists_url: https://galaxyproject.org/mailing-lists
+  #mailing_lists_url: https://galaxyproject.org/mailing-lists/
 
   # The URL linked by the "Videos" link in the "Help" menu.
   #screencasts_url: https://vimeo.com/galaxyproject
@@ -878,8 +894,8 @@ galaxy:
   # prevent a class of attack called clickjacking
   # (https://www.owasp.org/index.php/Clickjacking).  If you configure a
   # proxy in front of Galaxy - please ensure this header remains intact
-  # to protect your users.  Uncomment and leave empty to not set the
-  # `X-Frame-Options` header.
+  # to protect your users.  Uncomment and leave empty to not set the `X
+  # -Frame-Options` header.
   #x_frame_options: SAMEORIGIN
 
   # nginx can also handle file uploads (user-to-Galaxy) via
@@ -1516,7 +1532,7 @@ galaxy:
 
   # The URL to the myExperiment instance being used (omit scheme but
   # include port).
-  #myexperiment_url: www.myexperiment.org:80
+  #myexperiment_target_url: www.myexperiment.org:80
 
   # Enable Galaxy's "Upload via FTP" interface.  You'll need to install
   # and configure an FTP server (we've used ProFTPd since it can use
@@ -1538,7 +1554,8 @@ galaxy:
 
   # Python string template used to determine an FTP upload directory for
   # a particular user.
-  #ftp_upload_dir_template: ${ftp_upload_dir}/${ftp_upload_dir_identifier
+  # Defaults to '${ftp_upload_dir}/${ftp_upload_dir_identifier}'.
+  #ftp_upload_dir_template: null
 
   # Set to false to prevent Galaxy from deleting uploaded FTP files as
   # it imports them.
@@ -1574,9 +1591,9 @@ galaxy:
   # <mutable_config_dir>.
   #shed_data_manager_config_file: shed_data_manager_conf.xml
 
-  # Directory to store Data Manager based tool-data; defaults to
-  # tool_data_path.
-  #galaxy_data_manager_data_path: tool-data
+  # Directory to store Data Manager based tool-data. Defaults to the
+  # value of the <tool_data_path> option.
+  #galaxy_data_manager_data_path: null
 
   # To increase performance of job execution and the web interface, you
   # can separate Galaxy into multiple processes.  There are more than
@@ -1698,38 +1715,39 @@ galaxy:
   #cleanup_job: always
 
   # When running DRMAA jobs as the Galaxy user
-  # (https://docs.galaxyproject.org/en/master/admin/cluster.html#submitting-
-  # jobs-as-the-real-user) this script is used to run the job script
-  # Galaxy generates for a tool execution.
+  # (https://docs.galaxyproject.org/en/master/admin/cluster.html
+  # #submitting-jobs-as-the-real-user) this script is used to run the
+  # job script Galaxy generates for a tool execution.
   # Example value 'sudo -E scripts/drmaa_external_runner.py
   # --assign_all_groups'
   #drmaa_external_runjob_script: null
 
   # When running DRMAA jobs as the Galaxy user
-  # (https://docs.galaxyproject.org/en/master/admin/cluster.html#submitting-
-  # jobs-as-the-real-user) this script is used to kill such jobs by
-  # Galaxy (e.g. if the user cancels the job).
+  # (https://docs.galaxyproject.org/en/master/admin/cluster.html
+  # #submitting-jobs-as-the-real-user) this script is used to kill such
+  # jobs by Galaxy (e.g. if the user cancels the job).
   # Example value 'sudo -E scripts/drmaa_external_killer.py'
   #drmaa_external_killjob_script: null
 
   # When running DRMAA jobs as the Galaxy user
-  # (https://docs.galaxyproject.org/en/master/admin/cluster.html#submitting-
-  # jobs-as-the-real-user) this script is used transfer permissions back
-  # and forth between the Galaxy user and the user that is running the
-  # job.
+  # (https://docs.galaxyproject.org/en/master/admin/cluster.html
+  # #submitting-jobs-as-the-real-user) this script is used transfer
+  # permissions back and forth between the Galaxy user and the user that
+  # is running the job.
   # Example value 'sudo -E scripts/external_chown_script.py'
   #external_chown_script: null
 
   # When running DRMAA jobs as the Galaxy user
-  # (https://docs.galaxyproject.org/en/master/admin/cluster.html#submitting-
-  # jobs-as-the-real-user) Galaxy can extract the user name from the
-  # email address (actually the local-part before the @) or the username
-  # which are both stored in the Galaxy data base. The latter option is
-  # particularly useful for installations that get the authentication
-  # from LDAP. Also, Galaxy can accept the name of a common system user
-  # (eg. galaxy_worker) who can run every job being submitted. This user
-  # should not be the same user running the galaxy system. Possible
-  # values are user_email (default), username or <common_system_user>
+  # (https://docs.galaxyproject.org/en/master/admin/cluster.html
+  # #submitting-jobs-as-the-real-user) Galaxy can extract the user name
+  # from the email address (actually the local-part before the @) or the
+  # username which are both stored in the Galaxy data base. The latter
+  # option is particularly useful for installations that get the
+  # authentication from LDAP. Also, Galaxy can accept the name of a
+  # common system user (eg. galaxy_worker) who can run every job being
+  # submitted. This user should not be the same user running the galaxy
+  # system. Possible values are user_email (default), username or
+  # <common_system_user>
   #real_system_username: user_email
 
   # File to source to set up the environment when running jobs.  By
