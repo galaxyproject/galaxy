@@ -121,7 +121,7 @@ def set_metadata_portable():
             dataset.dataset.external_filename = dataset_filename_override
             store_by = metadata_params.get("object_store_store_by", "id")
             extra_files_dir_name = "dataset_%s_files" % getattr(dataset.dataset, store_by)
-            files_path = os.path.abspath(os.path.join(tool_job_working_directory, extra_files_dir_name))
+            files_path = os.path.abspath(os.path.join(tool_job_working_directory, "working", extra_files_dir_name))
             dataset.dataset.external_extra_files_path = files_path
             file_dict = tool_provided_metadata.get_dataset_meta(output_name, dataset.dataset.id)
             if 'ext' in file_dict:
@@ -179,7 +179,9 @@ def set_metadata_legacy():
         try:
             dataset = cPickle.load(open(filename_in, 'rb'))  # load DatasetInstance
             dataset.dataset.external_filename = dataset_filename_override
-            files_path = os.path.abspath(os.path.join(tool_job_working_directory, "dataset_%s_files" % (dataset.dataset.id)))
+            store_by = set_meta_kwds.get("object_store_store_by", "id")
+            extra_files_dir_name = "dataset_%s_files" % getattr(dataset.dataset, store_by)
+            files_path = os.path.abspath(os.path.join(tool_job_working_directory, "working", extra_files_dir_name))
             dataset.dataset.external_extra_files_path = files_path
             file_dict = tool_provided_metadata.get_dataset_meta(None, dataset.dataset.id)
             if 'ext' in file_dict:
