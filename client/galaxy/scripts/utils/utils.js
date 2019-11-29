@@ -260,10 +260,10 @@ export function roundToDecimalPlaces(number, numPlaces) {
 
 // calculate on import
 var kb = 1024;
-
 var mb = kb * kb;
 var gb = mb * kb;
 var tb = gb * kb;
+
 /**
  * Format byte size to string with units
  * @param{Integer}   size           - Size in bytes

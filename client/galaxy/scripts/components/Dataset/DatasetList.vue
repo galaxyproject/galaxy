@@ -78,6 +78,11 @@ export default {
                     sortable: true
                 },
                 {
+                    label: "Updated",
+                    key: "update_time_ago",
+                    sortable: true
+                },
+                {
                     key: "tags",
                     sortable: false
                 },
@@ -173,9 +178,9 @@ export default {
             this.offset = 0;
             this.load();
         },
-        onSort(item) {
-            this.sortBy = item.sortBy;
-            this.sortDesc = item.sortDesc;
+        onSort(props) {
+            this.sortBy = props.sortBy;
+            this.sortDesc = props.sortDesc;
             this.offset = 0;
             this.load();
         },
