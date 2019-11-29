@@ -3,11 +3,11 @@
  */
 export function timeAgo(stamp) {
     if (stamp) {
-        const seconds = Math.floor(new Date(stamp) / 1000);
         const now = Math.floor(Date.now() / 1000);
-        let delta = now - seconds;
+        const past = Math.floor(new Date(stamp) / 1000);
         const titles = ["second", "minute", "hour", "day", "month"];
         const dividers = [60, 60, 24, 30, 12];
+        let delta = now - past;
         for (const i in dividers) {
             const title = titles[i];
             const divider = dividers[i];
@@ -17,7 +17,8 @@ export function timeAgo(stamp) {
             }
             delta = Math.floor(delta / divider);
         }
-        return `${delta} years ago`;
+        const suffix = delta > 1 ? "s" : "";
+        return `${delta} year${suffix} ago`;
     } else {
         return "Unavailable";
     }
