@@ -8,10 +8,7 @@ import threading
 import time
 
 import packaging.version
-try:
-    import requests
-except ImportError:
-    requests = None
+import requests
 
 MULLED_TAG_CACHE = collections.defaultdict(dict)
 
@@ -36,15 +33,12 @@ def quay_versions(namespace, pkg_name):
         return []
 
     if 'tags' not in data:
-        raise Exception("Unexpected response from quay.io - not tags description found [%s]" % data)
+        raise Exception("Unexpected response from quay.io - no tags description found [%s]" % data)
 
     return [tag for tag in data['tags'] if tag != 'latest']
 
 
 def quay_repository(namespace, pkg_name):
-    if requests is None:
-        raise Exception("requets library is unavailable, functionality not available.")
-
     assert namespace is not None
     assert pkg_name is not None
     url = 'https://quay.io/api/v1/repository/%s/%s' % (namespace, pkg_name)
@@ -223,6 +217,15 @@ def v2_image_name(targets, image_build=None, name_override=None):
         return "mulled-v2-%s%s" % (package_hash.hexdigest(), suffix)
 
 
+def split_container_name(name):
+    """
+    Takes a container name (e.g. samtools:1.7--1) and returns a list (e.g. ['samtools', '1.7', '1'])
+    >>> split_container_name('samtools:1.7--1')
+    ['samtools', '1.7', '1']
+    """
+    return name.replace('--', ':').split(':')
+
+
 class PrintProgress(object):
     def __init__(self):
         self.thread = threading.Thread(target=self.progress)
@@ -252,6 +255,7 @@ __all__ = (
     "image_name",
     "mulled_tags_for",
     "quay_versions",
+    "split_container_name",
     "split_tag",
     "Target",
     "v1_image_name",
