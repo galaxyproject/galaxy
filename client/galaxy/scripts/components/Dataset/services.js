@@ -28,7 +28,7 @@ export class Services {
         const url = `${this.root}api/datasets?${params}`;
         try {
             const { data } = await axios.get(url);
-            data.forEach( d => {
+            data.forEach(d => {
                 d.update_time_ago = timeAgo(d.update_time);
             });
             return data;

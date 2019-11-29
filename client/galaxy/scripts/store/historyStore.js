@@ -27,7 +27,7 @@ const actions = {
 const mutations = {
     saveHistories: (state, { histories }) => {
         const historyDetailsById = {};
-        histories.forEach( x => {
+        histories.forEach(x => {
             historyDetailsById[x.id] = x;
         });
         state.historyDetailsById = historyDetailsById;
