@@ -8,7 +8,7 @@ from galaxy.datatypes import data
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import Text
 from galaxy.datatypes.sniff import build_sniff_from_prefix
-from galaxy.datatypes.tabular import Tabular
+from galaxy.datatypes.tabular import Tabular, TabularData
 from galaxy.datatypes.xml import GenericXml
 from galaxy.util import nice_size
 
@@ -179,6 +179,277 @@ class ProtXmlReport(Tabular):
     def display_peek(self, dataset):
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
+
+
+@build_sniff_from_prefix
+class Dta(TabularData):
+    """dta
+    The first line contains the singly protonated peptide mass (MH+) and the
+    peptide charge state separated by a space. Subsequent lines contain space
+    separated pairs of fragment ion m/z and intensity values.
+    """
+    file_ext = "dta"
+    comment_lines = 0
+
+    def set_meta(self, dataset, **kwd):
+        column_types = []
+        data_row = []
+        data_lines = 0
+        if dataset.has_data():
+            with open(dataset.file_name, 'r') as dtafile:
+                for line in dtafile:
+                    data_lines += 1
+
+        # Guess column types
+        for cell in data_row:
+            column_types.append(self.guess_type(cell))
+
+        # Set metadata
+        dataset.metadata.data_lines = data_lines
+        dataset.metadata.comment_lines = 0
+        dataset.metadata.column_types = ['float', 'float']
+        dataset.metadata.columns = 2
+        dataset.metadata.column_names = ['m/z', 'intensity']
+        dataset.metadata.delimiter = " "
+
+    def sniff_prefix(self, file_prefix):
+        has_data = False
+        for line in file_prefix.line_iterator():
+            line = line.strip().split(" ")
+            if len(line) != 2:
+                return False
+            try:
+                line = [float(_) for _ in line]
+            except ValueError:
+                return False
+            if not all(_ >= 0 for _ in line):
+                return False
+            has_data = True
+        return has_data
+
+
+@build_sniff_from_prefix
+class Dta2d(TabularData):
+    """
+    dta2d: files with three tab/space-separated columns.
+    The default format is: retention time (seconds) , m/z , intensity.
+    If the first line starts with '#', a different order is defined by the the
+    order of the keywords 'MIN' (retention time in minutes) or 'SEC' (retention
+    time in seconds), 'MZ', and 'INT'.
+    Example: '#MZ MIN INT'
+    The peaks of one retention time have to be in subsequent lines.
+
+    Note: sniffer detects
+        - tab separated with correct header and
+        - all space separated variants w/wo correct header
+        Since tab separated wo header would probably cover to much
+    """
+    file_ext = "dta2d"
+    comment_lines = 0
+
+    def _parse_header(self, line):
+        if len(line) != 3 or len(line[0]) < 3 or not line[0].startswith("#"):
+            return None
+        line[0] = line[0].lstrip("#")
+        line = [_.strip() for _ in line]
+        if 'MZ' not in line or 'INT' not in line or ('MIN' not in line and 'SEC' not in line):
+            return None
+        return line
+
+    def _parse_delimiter(self, line):
+        if len(line.split(" ")) == 3:
+            return " "
+        elif len(line.split("\t")) == 3:
+            return "\t"
+        return None
+
+    def _parse_dataline(self, line):
+        try:
+            line = [float(_) for _ in line]
+        except ValueError:
+            return False
+        if not all(_ >= 0 for _ in line):
+            return False
+        return True
+
+    def set_meta(self, dataset, **kwd):
+        data_lines = 0
+        delim = None
+        if dataset.has_data():
+            with open(dataset.file_name, 'r') as dtafile:
+                for line in dtafile:
+                    if delim is None:
+                        delim = self._parse_delimiter(line)
+                        dataset.metadata.column_names = self._parse_header(line.split(delim))
+                    data_lines += 1
+
+        # Set metadata
+        if delim is not None:
+            dataset.metadata.delimiter = delim
+
+        dataset.metadata.data_lines = data_lines
+        dataset.metadata.comment_lines = 0
+        dataset.metadata.column_types = ['float', 'float', 'float']
+        dataset.metadata.columns = 3
+        if dataset.metadata.column_names is None or dataset.metadata.column_names == []:
+            dataset.metadata.comment_lines += 1
+            dataset.metadata.data_lines -= 1
+            dataset.metadata.column_names = ['SEC', 'MZ', 'INT']
+
+    def sniff_prefix(self, file_prefix):
+        sep = None
+        header = None
+        for idx, line in enumerate(file_prefix.line_iterator()):
+            line = line.strip()
+            if sep is None:
+                sep = self._parse_delimiter(line)
+                if sep is None:
+                    return False
+            line = line.split(sep)
+            if len(line) != 3:
+                return False
+            if idx == 0:
+                header = self._parse_header(line)
+                if (header is None) and not self._parse_dataline(line):
+                    return False
+            elif not self._parse_dataline(line):
+                return False
+        if sep is None or (sep == '\t' and header is None):
+            return False
+        return True
+
+
+@build_sniff_from_prefix
+class Edta(TabularData):
+    """
+    Input text file containing tab, space or comma separated columns.
+    The separator between columns is checked in the first line in this order.
+
+    It supports three variants of this format.
+
+    1. Columns are: RT, MZ, Intensity A header is optional.
+    2. Columns are: RT, MZ, Intensity, Charge, <Meta-Data> columns{0,} A header is mandatory.
+    3. Columns are: (RT, MZ, Intensity, Charge){1,}, <Meta-Data> columns{0,}
+       Header is mandatory. First quadruplet is the consensus. All following
+       quadruplets describe the sub-features. This variant is discerned from
+       variant #2 by the name of the fifth column, which is required to be RT1
+       (or rt1). All other column names for sub-features are faithfully ignored.
+    """
+    file_ext = "edta"
+    comment_lines = 0
+
+    def _parse_delimiter(self, line):
+        if len(line.split(" ")) >= 3:
+            return " "
+        elif len(line.split("\t")) >= 3:
+            return "\t"
+        elif len(line.split(",")) >= 3:
+            return "\t"
+        return None
+
+    def _parse_type(self, line):
+        """
+        parse the type from the header line
+        types 1-3 as in the class docs, 0: type 1 wo/wrong header
+        """
+        if len(line) < 3:
+            return None
+        line = [_.lower().replace("/", "") for _ in line]
+        if len(line) == 3:
+            if line[0] == "rt" and line[1] == "mz" and (line[2] == "int" or line[2] == "intensity"):
+                return 1
+            else:
+                return 0
+        if line[0] != "rt" or line[1] != "mz" or (line[2] != "int" and line[2] != "intensity") or line[3] != "charge":
+            return None
+        if not line[4].startswith("rt"):
+            return 2
+        else:
+            return 3
+
+    def _parse_dataline(self, line, tpe):
+        if tpe == 2 or tpe == 3:
+            l = 4
+        else:
+            l = 3
+        try:
+            line = [float(_) for _ in line[:l]]
+        except ValueError:
+            return False
+        if not all(_ >= 0 for _ in line[:l]):
+            return False
+        return True
+
+    def _clean_header(self, line):
+        for idx, el in enumerate(line):
+            el = el.lower()
+            if el.startswith("rt"):
+                line[idx] = "RT"
+            elif el.startswith("int"):
+                line[idx] = "intensity"
+            elif el.startswith("mz"):
+                line[idx] = "m/z"
+            elif el.startswith("charge"):
+                line[idx] = "charge"
+            else:
+                break
+            if idx // 4 > 0:
+                line[idx] += str(idx // 4)
+        return line
+
+    def set_meta(self, dataset, **kwd):
+        data_lines = 0
+        delim = None
+        if dataset.has_data():
+            with open(dataset.file_name, 'r') as dtafile:
+                for idx, line in enumerate(dtafile):
+                    if idx == 0:
+                        delim = self._parse_delimiter(line)
+                        tpe = self._parse_type(line.split(delim))
+                        if tpe == 0:
+                            dataset.metadata.column_names = ["RT", "m/z", "intensity"]
+                        else:
+                            dataset.metadata.column_names = self._clean_header(line.split(delim))
+                    data_lines += 1
+
+        # Set metadata
+        if delim is not None:
+            dataset.metadata.delimiter = delim
+        for c in dataset.metadata.column_names:
+            if any(c.startswith(_) for _ in ["RT", "m/z", "intensity", "charge"]):
+                dataset.metadata.column_types.append("float")
+            else:
+                dataset.metadata.column_types.append("str")
+
+        dataset.metadata.data_lines = data_lines
+        dataset.metadata.comment_lines = 0
+        dataset.metadata.columns = len(dataset.metadata.column_names)
+        if tpe > 0:
+            dataset.metadata.comment_lines += 1
+            dataset.metadata.data_lines -= 1
+
+    def sniff_prefix(self, file_prefix):
+        sep = None
+        tpe = None
+        for idx, line in enumerate(file_prefix.line_iterator()):
+            line = line.strip("\r\n")
+            if sep is None:
+                sep = self._parse_delimiter(line)
+                if sep is None:
+                    return False
+            line = line.split(sep)
+
+            if idx == 0:
+                tpe = self._parse_type(line)
+                if tpe is None:
+                    return False
+                elif tpe == 0 and not self._parse_dataline(line, tpe):
+                    return False
+            elif not self._parse_dataline(line, tpe):
+                return False
+        if tpe is None or (tpe == 0 and sep == '\t'):
+            return False
+        return True
 
 
 class ProteomicsXml(GenericXml):
