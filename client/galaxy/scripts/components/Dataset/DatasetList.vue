@@ -2,38 +2,36 @@
     <div class="overflow-auto h-100" @scroll="onScroll">
         <div v-if="error" class="alert alert-danger" show>{{ error }}</div>
         <div v-else>
+            <b-alert :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
+            <delayed-input class="mb-3" @onChange="onQuery" placeholder="Search Datasets" />
+            <b-table
+                id="dataset-table"
+                striped
+                no-local-sorting
+                @sort-changed="onSort"
+                :fields="fields"
+                :items="rows"
+            >
+                <template v-slot:cell(name)="row">
+                    <DatasetName :item="row.item" @showDataset="onShowDataset" />
+                </template>
+                <template v-slot:cell(history_id)="row">
+                    <DatasetHistory :item="row.item" @showDataset="onShowDataset" />
+                </template>
+                <template v-slot:cell(context)="row">
+                    <DatasetContext :item="row.item" @addToHistory="onAddToHistory" />
+                </template>
+                <template v-slot:cell(tags)="row">
+                    <Tags :item="row.item" @input="onTags" />
+                </template>
+            </b-table>
             <loading-span v-if="loading" message="Loading datasets" />
-            <div v-else>
-                <b-alert :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
-                <delayed-input class="mb-3" @onChange="onQuery" placeholder="Search Datasets" />
-                <b-table
-                    id="dataset-table"
-                    striped
-                    no-local-sorting
-                    @sort-changed="onSort"
-                    :fields="fields"
-                    :items="rows"
-                >
-                    <template v-slot:cell(name)="row">
-                        <DatasetName :item="row.item" @showDataset="onShowDataset" />
-                    </template>
-                    <template v-slot:cell(history_id)="row">
-                        <DatasetHistory :item="row.item" @showDataset="onShowDataset" />
-                    </template>
-                    <template v-slot:cell(context)="row">
-                        <DatasetContext :item="row.item" @addToHistory="onAddToHistory" />
-                    </template>
-                    <template v-slot:cell(tags)="row">
-                        <Tags :item="row.item" @input="onTags" />
-                    </template>
-                </b-table>
-                <div v-if="showNotFound">
-                    No matching entries found for: <span class="font-weight-bold">{{ this.query }}</span
-                    >.
-                </div>
-                <div v-if="showNotAvailable">
-                    No datasets found.
-                </div>
+            <div v-if="showNotFound">
+                No matching entries found for: <span class="font-weight-bold">{{ this.query }}</span
+                >.
+            </div>
+            <div v-if="showNotAvailable">
+                No datasets found.
             </div>
         </div>
     </div>
@@ -95,7 +93,7 @@ export default {
             query: "",
             limit: 50,
             offset: 0,
-            sortBy: "name",
+            sortBy: "update_time",
             sortDesc: false,
             loading: true,
             message: null,
@@ -105,10 +103,10 @@ export default {
     },
     computed: {
         showNotFound() {
-            return this.rows.length === 0 && this.query;
+            return !this.loading && this.rows.length === 0 && this.query;
         },
         showNotAvailable() {
-            return this.rows.length === 0 && !this.query;
+            return !this.loading && this.rows.length === 0 && !this.query;
         },
         showMessage() {
             return !!this.message;
@@ -123,6 +121,7 @@ export default {
     methods: {
         ...mapActions(["fetchHistories"]),
         load(concat = false) {
+            this.loading = true;
             this.services
                 .getDatasets({
                     query: this.query,
