@@ -105,7 +105,7 @@ def test_input_value_wrapper_comparison(tool):
     assert wrapper == 5.0
     assert wrapper > 2
     assert wrapper < 10
-    assert wrapper <= 5.1
+    assert wrapper < 5.1
 
 
 @with_mock_tool
@@ -118,7 +118,7 @@ def test_input_value_wrapper_input_value_wrapper_comparison(tool):
     assert wrapper == valuewrapper(tool, "5", "float")
     assert wrapper > valuewrapper(tool, "2", "integer")
     assert wrapper < valuewrapper(tool, "10", "integer")
-    assert wrapper <= valuewrapper(tool, "5.1", "float")
+    assert wrapper < valuewrapper(tool, "5.1", "float")
 
 
 def test_dataset_wrapper():
