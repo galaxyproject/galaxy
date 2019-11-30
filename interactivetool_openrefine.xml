@@ -1,0 +1,64 @@
+<tool id="interactive_tool_openrefine" tool_type="interactive" name="openrefine" version="0.1">
+    <description>Working with messy data: cleaning it; transforming it from one format into another; and extending it with web services and external data.</description>
+    <requirements>
+        <container type="docker">ylebras/openrefine-docker</container>
+    </requirements>
+    <entry_points>
+        <entry_point name="Openrefine visualisation" requires_domain="True">
+            <port>80</port>
+            <url></url>
+        </entry_point>
+    </entry_points>
+    <environment_variables>
+
+        <environment_variable name="HISTORY_ID" strip="True">${__app__.security.encode_id($outfile.history_id)}</environment_variable> <!-- FIXME: Warning: The use of __app__ is deprecated and will break backward compatibility in the near future -->
+        <environment_variable name="REMOTE_HOST">${__app__.config.galaxy_infrastructure_url}</environment_variable> <!-- FIXME: Warning: The use of __app__ is deprecated and will break backward compatibility in the near future -->
+        <environment_variable name="GALAXY_WEB_PORT">8080</environment_variable>
+        <environment_variable name="GALAXY_URL">${__app__.config.galaxy_infrastructure_url}</environment_variable> <!-- FIXME: Warning: The use of __app__ is deprecated and will break backward compatibility in the near future -->
+        <environment_variable name="API_KEY" strip="True">
+            #if $__user__:
+                #for $api_key in $__user__.api_keys:
+                    ${api_key.key}
+                    #break
+                #end for
+            #end if
+        </environment_variable> <!-- FIXME: We should have a better way to get user's API key -->
+    </environment_variables>
+    <command><![CDATA[
+
+        /startup.sh
+
+    ]]>
+    </command>
+    <inputs>
+        <param name="infile" type="data" format="tabular" label="tabular file"/>
+    </inputs>
+    <outputs>
+        <data name="outfile" format="txt" />
+    </outputs>
+    <tests>
+    </tests>
+    <help>
+<![CDATA[
+
+
+
+
+`Openrefine <https://openrefine.org/>`_ (previously Google Refine) is a powerful tool for working with messy data: cleaning it; transforming it from one format into another; and extending it with web services and external data.
+
+.. class:: infomark
+
+Example input file (TAB separated)::
+
+  "name"	"longitude"	"latitude"	"countryCode"
+  Accipiter striatus Vieillot, 1808	-60.291838	46.328137	CA
+  Accipiter striatus Vieillot, 1808	-114.58927	35.022485	US
+  Accipiter striatus Vieillot, 1808	-93.37406	30.00586	US
+  Accipiter striatus Vieillot, 1808	-79.336288	43.682218	CA
+  Accipiter striatus Vieillot, 1808	-109.156024	31.904185	US
+  Accipiter striatus Vieillot, 1808	-71.098031	42.297408	US
+  Accipiter striatus Vieillot, 1808	-110.927215	32.18203	US
+
+]]>
+    </help>
+</tool>
