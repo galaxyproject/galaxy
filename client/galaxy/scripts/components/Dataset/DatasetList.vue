@@ -16,7 +16,7 @@
                     <DatasetName :item="row.item" @showDataset="onShowDataset" />
                 </template>
                 <template v-slot:cell(history_id)="row">
-                    <DatasetHistory :item="row.item" @showDataset="onShowDataset" />
+                    <DatasetHistory :item="row.item" />
                 </template>
                 <template v-slot:cell(context)="row">
                     <DatasetContext :item="row.item" @addToHistory="onAddToHistory" />
@@ -67,21 +67,16 @@ export default {
                     sortable: true
                 },
                 {
-                    label: "History",
-                    key: "history_id",
-                    sortable: true
-                },
-                {
                     key: "tags",
                     sortable: false
                 },
                 {
-                    key: "extension",
+                    label: "History",
+                    key: "history_id",
                     sortable: true
                 },
                 {
-                    label: "History",
-                    key: "history_id",
+                    key: "extension",
                     sortable: true
                 },
                 {
