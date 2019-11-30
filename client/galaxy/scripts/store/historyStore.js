@@ -1,4 +1,3 @@
-import Vue from "vue";
 import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 
