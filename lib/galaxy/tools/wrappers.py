@@ -83,6 +83,8 @@ class InputValueWrapper(ToolParameterValueWrapper):
         return cast.get(self.input.type, str)(self)
 
     def __eq__(self, other):
+        if self.input.type == 'boolean' and isinstance(other, string_types):
+            return str(self) == other
         return self._get_cast_value() == other
 
     def __ne__(self, other):
@@ -106,6 +108,8 @@ class InputValueWrapper(ToolParameterValueWrapper):
         return getattr(self.value, key)
 
     def __gt__(self, other):
+        if self.input.type == 'boolean' and isinstance(other, string_types):
+            return str(self) > other
         return self._get_cast_value() > other
 
     def __int__(self):
