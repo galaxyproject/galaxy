@@ -3,11 +3,11 @@
  */
 export function timeAgo(stamp) {
     if (stamp) {
-        const now = Math.floor(Date.now() / 1000);
-        const past = Math.floor(new Date(stamp) / 1000);
+        const now = Date.now();
+        const past = new Date(stamp);
         const titles = ["second", "minute", "hour", "day", "month"];
         const dividers = [60, 60, 24, 30, 12];
-        let delta = now - past;
+        let delta = Math.floor((now - past) / 1000);
         for (const i in dividers) {
             const title = titles[i];
             const divider = dividers[i];
