@@ -54,7 +54,6 @@
                     <template v-slot:cell(tags)="row">
                         <workflowtags :workflow="row.item" @onError="onError" />
                     </template>
-
                     <template v-slot:cell(bookmark)="row">
                         <b-form-checkbox v-model="row.item.show_in_tool_panel" @change="bookmarkWorkflow(row.item)" />
                     </template>
@@ -100,6 +99,11 @@ export default {
                 },
                 {
                     key: "tags",
+                    sortable: true
+                },
+                {
+                    label: "Created",
+                    key: "create_time_ago",
                     sortable: true
                 },
                 {

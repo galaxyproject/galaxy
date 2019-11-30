@@ -1,5 +1,6 @@
 import axios from "axios";
 import { getGalaxyInstance } from "app";
+import { timeAgo } from "utils/timeago";
 
 /** Workflow data request helper **/
 export class Services {
@@ -67,6 +68,7 @@ export class Services {
         const Galaxy = getGalaxyInstance();
         workflow.shared = workflow.owner !== Galaxy.user.get("username");
         workflow.description = "";
+        workflow.create_time_ago = timeAgo(workflow.create_time);
         if (workflow.annotations && workflow.annotations.length > 0) {
             const description = workflow.annotations[0].trim();
             if (description) {

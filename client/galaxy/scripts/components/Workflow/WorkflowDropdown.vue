@@ -9,6 +9,7 @@
         >
             <span :class="icon" />
             {{ workflow.name }}
+            <span class="fa fa-caret-down" />
         </b-link>
         <p>{{ workflow.description }}</p>
         <div v-if="workflow.shared" class="dropdown-menu" aria-labelledby="workflow-dropdown">
