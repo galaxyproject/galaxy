@@ -43,70 +43,7 @@ except ImportError:
     pass
 
 
-class HistoryDatasetAssociationListGrid(grids.Grid):
-    # Custom columns for grid.
-    class HistoryColumn(grids.GridColumn):
-        def get_value(self, trans, grid, hda):
-            return escape(hda.history.name)
-
-    class StatusColumn(grids.GridColumn):
-        def get_value(self, trans, grid, hda):
-            if hda.deleted:
-                return "deleted"
-            return ""
-
-        def get_accepted_filters(self):
-            """ Returns a list of accepted filters for this column. """
-            accepted_filter_labels_and_vals = {"Active" : "False", "Deleted" : "True", "All": "All"}
-            accepted_filters = []
-            for label, val in accepted_filter_labels_and_vals.items():
-                args = {self.key: val}
-                accepted_filters.append(grids.GridColumnFilter(label, args))
-            return accepted_filters
-
-    # Grid definition
-    title = "Saved Datasets"
-    model_class = model.HistoryDatasetAssociation
-    default_sort_key = "-update_time"
-    columns = [
-        grids.TextColumn("Name", key="name",
-                         # Link name to dataset's history.
-                         link=(lambda item: iff(item.history.deleted, None, dict(operation="switch", id=item.id))), filterable="advanced", attach_popup=True),
-        HistoryColumn("History", key="history", sortable=False,
-                      link=(lambda item: iff(item.history.deleted, None, dict(operation="switch_history", id=item.id)))),
-        grids.IndividualTagsColumn("Tags", key="tags", model_tag_association_class=model.HistoryDatasetAssociationTagAssociation, filterable="advanced", grid_name="HistoryDatasetAssocationListGrid"),
-        StatusColumn("Status", key="deleted", attach_popup=False),
-        grids.GridColumn("Last Updated", key="update_time", format=time_ago),
-    ]
-    columns.append(
-        grids.MulticolFilterColumn(
-            "Search",
-            cols_to_filter=[columns[0], columns[2]],
-            key="free-text-search", visible=False, filterable="standard")
-    )
-    operations = [
-        grids.GridOperation("Copy to current history", condition=(lambda item: not item.deleted), async_compatible=True),
-    ]
-    standard_filters = []
-    default_filter = dict(name="All", deleted="False", tags="All")
-    use_paging = True
-    num_rows_per_page = 50
-
-    def build_initial_query(self, trans, **kwargs):
-        # Show user's datasets that are not deleted, not in deleted histories, and not hidden.
-        # To filter HDAs by user, need to join model class/HDA and History table so that it is
-        # possible to filter by user. However, for dictionary-based filtering to work, need a
-        # primary table for the query.
-        return trans.sa_session.query(self.model_class).select_from(self.model_class.table.join(model.History.table)) \
-            .filter(model.History.user == trans.user) \
-            .filter(self.model_class.deleted == false()) \
-            .filter(model.History.deleted == false()) \
-            .filter(self.model_class.visible == true())
-
-
 class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesExtendedMetadataMixin):
-
-    stored_list_grid = HistoryDatasetAssociationListGrid()
 
     def __init__(self, app):
         super(DatasetInterface, self).__init__(app)
@@ -520,68 +457,6 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             permissions = {manage_permissions_action : [trans.app.security_agent.get_private_user_role(data.history.user)]}
             trans.app.security_agent.set_dataset_permission(data.dataset, permissions)
         return data, None
-
-    @web.expose
-    @web.json
-    @web.require_login("see all available datasets")
-    def list(self, trans, **kwargs):
-        """List all available datasets"""
-        status = message = None
-
-        if 'operation' in kwargs:
-            operation = kwargs['operation'].lower()
-            hda_ids = util.listify(kwargs.get('id', []))
-
-            # Display no message by default
-            status, message = None, None
-
-            # Load the hdas and ensure they all belong to the current user
-            hdas = []
-            for encoded_hda_id in hda_ids:
-                hda_id = self.decode_id(encoded_hda_id)
-                hda = trans.sa_session.query(model.HistoryDatasetAssociation).filter_by(id=hda_id).first()
-                if hda:
-                    # Ensure history is owned by current user
-                    if hda.history.user_id is not None and trans.user:
-                        assert trans.user.id == hda.history.user_id, "HistoryDatasetAssocation does not belong to current user"
-                    hdas.append(hda)
-                else:
-                    log.warning("Invalid history_dataset_association id '%r' passed to list", hda_id)
-
-            if hdas:
-                if operation == "switch" or operation == "switch_history":
-                    # Switch to a history that the HDA resides in.
-
-                    # Convert hda to histories.
-                    histories = []
-                    for hda in hdas:
-                        histories.append(hda.history)
-
-                    # Use history controller to switch the history. TODO: is this reasonable?
-                    status, message = trans.webapp.controllers['history']._list_switch(trans, histories)
-
-                    # Current history changed, refresh history frame; if switching to a dataset, set hda seek.
-                    kwargs['refresh_frames'] = ['history']
-                    if operation == "switch":
-                        hda_ids = [trans.security.encode_id(hda.id) for hda in hdas]
-                        # TODO: Highlighting does not work, has to be revisited
-                        trans.template_context['seek_hda_ids'] = hda_ids
-                elif operation == "copy to current history":
-                    #
-                    # Copy datasets to the current history.
-                    #
-
-                    target_histories = [trans.get_history()]
-
-                    # Reverse HDAs so that they appear in the history in the order they are provided.
-                    hda_ids.reverse()
-                    status, message = self._copy_datasets(trans, hda_ids, target_histories)
-
-                    # Current history changed, refresh history frame.
-                    kwargs['refresh_frames'] = ['history']
-
-        # Render the list view
-        return self.stored_list_grid(trans, status=status, message=message, **kwargs)
 
     @web.expose
     def imp(self, trans, dataset_id=None, **kwd):
