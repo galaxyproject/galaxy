@@ -2,9 +2,9 @@
  * Determines the time passed given a iso-timestamp
  */
 export function timeAgo(stamp) {
-    if (stamp) {
-        const now = Date.now();
-        const past = new Date(stamp);
+    const now = Date.now();
+    const past = new Date(stamp);
+    if (stamp && past <= now) {
         const titles = ["second", "minute", "hour", "day", "month"];
         const dividers = [60, 60, 24, 30, 12];
         let delta = Math.floor((now - past) / 1000);

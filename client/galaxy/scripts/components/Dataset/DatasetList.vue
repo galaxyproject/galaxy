@@ -13,13 +13,10 @@
                 :items="rows"
             >
                 <template v-slot:cell(name)="row">
-                    <DatasetName :item="row.item" @showDataset="onShowDataset" />
+                    <DatasetName :item="row.item" @showDataset="onShowDataset" @copyDataset="onCopyDataset" />
                 </template>
                 <template v-slot:cell(history_id)="row">
                     <DatasetHistory :item="row.item" />
-                </template>
-                <template v-slot:cell(context)="row">
-                    <DatasetContext :item="row.item" @addToHistory="onAddToHistory" />
                 </template>
                 <template v-slot:cell(tags)="row">
                     <Tags :item="row.item" @input="onTags" />
@@ -42,7 +39,6 @@ import { getGalaxyInstance } from "app";
 import { Services } from "./services.js";
 import DatasetName from "./DatasetName";
 import DatasetHistory from "./DatasetHistory";
-import DatasetContext from "./DatasetContext";
 import DelayedInput from "components/Common/DelayedInput";
 import Tags from "components/Common/Tags";
 import LoadingSpan from "components/LoadingSpan";
@@ -50,7 +46,6 @@ import { mapActions } from "vuex";
 
 export default {
     components: {
-        DatasetContext,
         DatasetHistory,
         DatasetName,
         LoadingSpan,
@@ -80,8 +75,8 @@ export default {
                     sortable: true
                 },
                 {
-                    label: "Updated",
-                    key: "update_time_ago",
+                    label: "Created",
+                    key: "create_time_ago",
                     sortable: true
                 },
                 {
@@ -93,7 +88,7 @@ export default {
             query: "",
             limit: 50,
             offset: 0,
-            sortBy: "update_time",
+            sortBy: "create_time",
             sortDesc: true,
             loading: true,
             message: null,
@@ -142,7 +137,7 @@ export default {
                     this.error = error;
                 });
         },
-        onAddToHistory(item) {
+        onCopyDataset(item) {
             const Galaxy = getGalaxyInstance();
             const history = Galaxy.currHistoryPanel;
             const dataset_id = item.id;

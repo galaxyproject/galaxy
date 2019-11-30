@@ -10,8 +10,8 @@ export class Services {
     async getDatasets(options = {}) {
         let params = "";
         if (options.sortBy) {
-            if (options.sortBy === "update_time_ago") {
-                options.sortBy = "update_time";
+            if (options.sortBy === "create_time_ago") {
+                options.sortBy = "create_time";
             }
             const sortPrefix = options.sortDesc ? "-dsc" : "-asc";
             params += `order=${options.sortBy}${sortPrefix}&`;
@@ -29,7 +29,7 @@ export class Services {
         try {
             const { data } = await axios.get(url);
             data.forEach(d => {
-                d.update_time_ago = timeAgo(d.update_time);
+                d.create_time_ago = timeAgo(d.create_time);
             });
             return data;
         } catch (e) {
