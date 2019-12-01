@@ -20,11 +20,11 @@
 exec /OpenRefine/refine -i 0.0.0.0 -m \$GALAXY_MEMORY_MB &
 
 ##Check if openrefine is up to work
-STATUS=\$(curl --include 'http://127.0.0.1:3333' 2>\&1)
+STATUS=\$(curl --include 'http://127.0.0.1:3333' 2>&1)
 while [[ \${STATUS} =~ "refused" ]]
 do
   echo "Waiting for openrefine: \$STATUS \n"
-  STATUS=\$(curl --include 'http://127.0.0.1:3333' 2>\&1)
+  STATUS=\$(curl --include 'http://127.0.0.1:3333' 2>&1)
   sleep 4
 done
 ]]>
