@@ -13,8 +13,8 @@
             <span class="fa fa-caret-down" />
         </b-link>
         <div class="dropdown-menu" aria-labelledby="dataset-dropdown">
-            <a class="dropdown-item" href="#" @click="showDataset">Show in History</a>
-            <a class="dropdown-item" href="#" @click="copyDataset">Copy to History</a>
+            <a class="dropdown-item" href="#" @click.stop="showDataset">Show in History</a>
+            <a class="dropdown-item" href="#" @click.stop="copyDataset">Copy to History</a>
         </div>
     </div>
 </template>
