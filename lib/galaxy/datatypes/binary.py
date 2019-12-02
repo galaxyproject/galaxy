@@ -58,7 +58,9 @@ class Binary(data.Data):
     def get_mime(self):
         """Returns the mime type of the datatype"""
         return 'application/octet-stream'
-
+##########################
+# AMP data types
+##########################
 class Audio(Binary):
     """Class describing a binary audio file"""
     file_ext = "audio"
@@ -80,6 +82,28 @@ class Audio(Binary):
             return dataset.peek
         except Exception:
             return "Binary audio file (%s)" % (nice_size(dataset.get_size()))
+
+class Video(Binary):
+    """Class describing a binary video file"""
+    file_ext = "video"
+
+    def sniff(self, filename):
+        mt = subprocess.check_output(['file', '--mime-type', filename])
+        return  mt.find("video/")>=0
+    
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "Binary video file"
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "Binary video file (%s)" % (nice_size(dataset.get_size()))
 
 class Wav(Audio):
     """Class describing a wave audio file"""
@@ -103,6 +127,9 @@ class Wav(Audio):
         except Exception:
             return "Wave audio file (%s)" % (nice_size(dataset.get_size()))
 
+##########################
+# End AMP data types
+##########################
 class Ab1(Binary):
     """Class describing an ab1 binary sequence file"""
     file_ext = "ab1"
