@@ -9,5 +9,5 @@ Development Documentation
   build_a_job_runner
   finding_and_improving_slow_code
   data_managers
-  data-types
+  data_types
   faq
