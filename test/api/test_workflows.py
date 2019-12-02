@@ -1278,6 +1278,10 @@ steps:
             )
             workflow_id = summary.workflow_id
             invocation_id = summary.invocation_id
+            downloaded_workflow = self._download_workflow(workflow_id)
+            assert "report" in downloaded_workflow
+            report_config = downloaded_workflow["report"]
+            assert "markdown" in report_config
             report_json = self.workflow_populator.workflow_report_json(workflow_id, invocation_id)
             assert "markdown" in report_json, "markdown not in report json %s" % report_json
             self._assert_has_keys(report_json , "markdown", "render_format")
