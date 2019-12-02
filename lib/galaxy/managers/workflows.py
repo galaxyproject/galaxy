@@ -810,6 +810,8 @@ class WorkflowContentsManager(UsesAnnotations):
         if workflow.uuid is not None:
             data['uuid'] = str(workflow.uuid)
         data['steps'] = {}
+        if workflow.reports_config:
+            data['report'] = workflow.reports_config
         # For each step, rebuild the form and encode the state
         for step in workflow.steps:
             # Load from database representation
