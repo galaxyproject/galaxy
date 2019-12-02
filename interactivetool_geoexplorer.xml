@@ -15,19 +15,23 @@
         <environment_variable name="GALAXY_WEB_PORT">8080</environment_variable>
         <environment_variable name="GALAXY_URL">$__galaxy_url__</environment_variable>
         <environment_variable name="API_KEY" inject="api_key" />
-        </environment_variable>
     </environment_variables>
     <command><![CDATA[
 
-        /usr/bin/shiny-server.sh
+        mkdir -p /srv/shiny-server/data/ &&
+        ln -s '$infile' /srv/shiny-server/data/inputdata.txt &&
+        mkdir -p /var/log/shiny-server &&
+        chown shiny.shiny /var/log/shiny-server &&
+
+        exec shiny-server >> /var/log/shiny-server.log 2>&1 
 
     ]]>
     </command>
     <inputs>
-        <param name="infile" type="data" format="csv" label="csv file"/>
+        <param name="infile" type="data" format="tabular,csv" label="csv file"/>
     </inputs>
     <outputs>
-        <!--data name="outfile" format="txt" /-->
+        <data name="outfile" format="txt" />
     </outputs>
     <tests>
     </tests>
