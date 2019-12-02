@@ -121,6 +121,13 @@ def test_input_value_wrapper_comparison(tool):
 
 
 @with_mock_tool
+def test_input_value_wrapper_comparison_optional(tool):
+    parameter = IntegerToolParameter(tool, XML('<param name="blah" type="integer" min="0" optional="true"/>'))
+    wrapper = InputValueWrapper(parameter, "")
+    assert wrapper == ""
+
+
+@with_mock_tool
 def test_input_value_wrapper_input_value_wrapper_comparison(tool):
     wrapper = valuewrapper(tool, 5, "integer")
     assert str(wrapper) == valuewrapper(tool, "5", "text")

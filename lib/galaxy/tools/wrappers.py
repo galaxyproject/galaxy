@@ -80,7 +80,12 @@ class InputValueWrapper(ToolParameterValueWrapper):
             'float': float,
             'boolean': bool,
         }
-        return cast.get(self.input.type, str)(self)
+        try:
+            return cast.get(self.input.type, str)(self)
+        except ValueError:
+            if self.input.optional:
+                return str(self)
+            raise
 
     def __eq__(self, other):
         if self.input.type == 'boolean' and isinstance(other, string_types):
