@@ -6,7 +6,7 @@
     <entry_points>
         <entry_point name="radiant visualisation" requires_domain="True">
             <port>3838</port>
-            <url>/sample-apps/STAT/</url>
+            <url>/sample-apps/STAT/inst/app</url>
         </entry_point>
     </entry_points>
     <environment_variables>
