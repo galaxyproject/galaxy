@@ -18,9 +18,7 @@
         </environment_variable>
     </environment_variables>
     <command><![CDATA[
-
         /usr/bin/shiny-server.sh
-
     ]]>
     </command>
     <inputs>
@@ -33,10 +31,6 @@
     </tests>
     <help>
 <![CDATA[
-
-
-
-
 `Radiant <https://radiant-rstats.github.io/docs/>`_ is an open-source platform-independent browser-based interface for business analytics in R. The application is based on the Shiny package and can be run locally or on a server. Radiant was developed by Vincent Nijs. Please use the issue tracker on GitHub to suggest enhancements or report problems: https://github.com/radiant-rstats/radiant/issues. For other questions and comments please use radiant@rady.ucsd.edu.
 Key features
 
@@ -45,7 +39,6 @@ Key features
 - Reproducible: Recreate results and share work with others as a state file or an Rmarkdown report
 - Programming: Integrate Radiant’s analysis functions with your own R-code
 - Context: Data and examples focus on business applications
-
 
 .. class:: infomark
 
