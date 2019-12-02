@@ -2,6 +2,8 @@ import os
 import tempfile
 from xml.etree.ElementTree import XML
 
+import pytest
+
 from galaxy.datatypes.metadata import MetadataSpecCollection
 from galaxy.jobs.datasets import DatasetPath
 from galaxy.tools.parameters.basic import (
@@ -122,8 +124,18 @@ def test_input_value_wrapper_comparison(tool):
 @with_mock_tool
 def test_input_value_wrapper_comparison_optional(tool):
     parameter = IntegerToolParameter(tool, XML('<param name="blah" type="integer" min="0" optional="true"/>'))
-    wrapper = InputValueWrapper(parameter, "")
-    assert wrapper == ""
+    wrapper = InputValueWrapper(parameter, None)
+    assert not wrapper
+    with pytest.raises(ValueError):
+        int(wrapper)
+    assert str(wrapper) == ""
+    assert wrapper == ""  # for backward-compatibility
+    parameter = IntegerToolParameter(tool, XML('<param name="blah" type="integer" min="0" optional="true"/>'))
+    wrapper = InputValueWrapper(parameter, 0)
+    assert wrapper == 0
+    assert int(wrapper) == 0
+    assert str(wrapper)
+    assert wrapper != ""  # for backward-compatibility, the correct way to check if an optional integer param is not empty is to use str(wrapper)
 
 
 @with_mock_tool
