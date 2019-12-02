@@ -63,6 +63,12 @@ Example input file (TAB separated)::
 ]]>
     </help>
     <citations>
-        <!--citation type="doi">10.1111/2041-210X.12945</citation-->
+           <citation type="bibtex">@misc{githubsurvey2018,
+           author       = {vnijs},
+           title        = {{Radiant - Business analytics using R and Shiny}},
+           publisher    = {Github},
+           url          = {https://github.com/vnijs/radiant}
+           }
+          }</citation>
     </citations>
 </tool>
