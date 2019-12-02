@@ -7,7 +7,6 @@ import sys
 from speech_to_text_schema import SpeechToText, SpeechToTextMedia, SpeechToTextResult, SpeechToTextScore, SpeechToTextWord
 
 def main():
-
 	(media_file, transcribe_file, output_json_file) = sys.argv[1:4]
 	
 	# Open the transcribe output

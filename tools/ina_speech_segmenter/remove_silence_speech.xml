@@ -1,17 +1,13 @@
-<tool id="ISS-2" name="Remove Segments" version="1.0.0">
-  <description>Create an audio file containing only speech, removing silence and music or silence and speech</description>
+<tool id="remove-speech" name="Remove Speech and Silence Segments" version="1.0.0">
+  <description>Create an audio file containing only music, removing silence and speech</description>
     <requirements>
     </requirements>
   <command detect_errors="exit_code">
-  $__tool_directory__/remove_silence_music_speech.py $input $input_segmentation_json $remove_type $binary_out $kept_segments_json</command>
+  $__tool_directory__/remove_silence_music_speech.py $input $input_segmentation_json speech $binary_out $kept_segments_json</command>
    <inputs>
    <!-- should be wave data type -->
     <param name="input" type="data" format="audio" label="From audio file" help="An audio file"/>
     <param name="input_segmentation_json" type="data" format="json" label="From segmentation" help="Segmentation json file"/>
-    <param name="remove_type" type="select" label="Segments to Remove" help="Select the type of segments to remove from the audio file.">
-      <option value="music">Music and Silence</option>
-      <option value="speech">Speech and Silence</option>
-    </param>
   </inputs>
   <outputs>
     <data format="audio" name="binary_out" />

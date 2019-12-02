@@ -1,0 +1,24 @@
+<tool id="remove-music" name="Remove Music and Silence Segments" version="1.0.0">
+  <description>Create an audio file containing only speech, removing silence and music</description>
+    <requirements>
+    </requirements>
+  <command detect_errors="exit_code">
+  $__tool_directory__/remove_silence_music_speech.py $input $input_segmentation_json music $binary_out $kept_segments_json</command>
+   <inputs>
+   <!-- should be wave data type -->
+    <param name="input" type="data" format="audio" label="From audio file" help="An audio file"/>
+    <param name="input_segmentation_json" type="data" format="json" label="From segmentation" help="Segmentation json file"/>
+  </inputs>
+  <outputs>
+    <data format="audio" name="binary_out" />
+    <data format="json" name="kept_segments_json" />
+  </outputs>
+  <tests>
+  </tests>
+  <help>
+.. class:: infomark
+
+Remove segments from an audio file
+
+  </help>
+</tool>
