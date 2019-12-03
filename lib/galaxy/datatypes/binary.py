@@ -105,6 +105,24 @@ class Video(Binary):
         except Exception:
             return "Binary video file (%s)" % (nice_size(dataset.get_size()))
 
+class Music(Binary):
+    """Class describing an audio music file"""
+    file_ext = "music"
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "Audio music file"
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "Audio music file (%s)" % (nice_size(dataset.get_size()))
+
 class Wav(Audio):
     """Class describing a wave audio file"""
     file_ext = "wav"

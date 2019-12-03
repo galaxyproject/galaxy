@@ -4,6 +4,7 @@
 
     <!-- AMP Data Types-->
     <datatype extension="video" type="galaxy.datatypes.binary:Video" subclass="True" display_in_upload="true"/>
+    <datatype extension="music" type="galaxy.datatypes.binary:Music" subclass="True" display_in_upload="true"/>
     <datatype extension="audio" type="galaxy.datatypes.binary:Audio" subclass="True" display_in_upload="true"/>
     <datatype extension="wav" type="galaxy.datatypes.binary:Wav" subclass="True" display_in_upload="true"/>
     <!-- END AMP Data Types-->
