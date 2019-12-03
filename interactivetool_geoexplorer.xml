@@ -43,9 +43,11 @@ App: http://www.davesteps.com/geoExploreR/
 
 .. class:: infomark
 
+**Input data file MUST have as longitude column clomun 2, and as latitude column, column 3**
+
 Example input file (TAB separated)::
 
-  "name"	"longitude"	"latitude"	"countryCode"
+  "name"	"x"	"y"	"countryCode"
   Accipiter striatus Vieillot, 1808	-60.291838	46.328137	CA
   Accipiter striatus Vieillot, 1808	-114.58927	35.022485	US
   Accipiter striatus Vieillot, 1808	-93.37406	30.00586	US
