@@ -1014,6 +1014,13 @@ mapping:
         desc: |
           Append "/{brand}" to the "Galaxy" text in the masthead.
 
+      brand_enabled:
+        type: bool
+        default: true
+        required: false
+        desc: |
+          Enables the brand text in the masthead.
+
       pretty_datetime_format:
         type: str
         default: $locale (UTC)

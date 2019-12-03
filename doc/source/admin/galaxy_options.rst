@@ -1359,6 +1359,16 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~
+``brand_enabled``
+~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enables the brand text in the masthead.
+:Default: ``true``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``pretty_datetime_format``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~

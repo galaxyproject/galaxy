@@ -736,6 +736,9 @@ galaxy:
   # Append "/{brand}" to the "Galaxy" text in the masthead.
   #brand: null
 
+  # Enables the brand text in the masthead.
+  #brand_enabled: true
+
   # Format string used when showing date and time information. The
   # string may contain: - the directives used by Python time.strftime()
   # function (see
