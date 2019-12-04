@@ -40,7 +40,7 @@ class ConfigSerializer(base.ModelSerializer):
             # TODO: this is available from user data, remove
             'is_admin_user'                     : lambda *a, **c: False,
             'brand'                             : _required_attribute,
-            'brand_enabled'                     : _defaults_to(True),
+            'brand_enabled'                     : _required_attribute,
             # TODO: this doesn't seem right
             'logo_url'                          : lambda item, key, **context: self.url_for(item.get(key, '/')),
             'logo_src'                          : lambda item, key, **context: self.url_for('/static/favicon.png'),
