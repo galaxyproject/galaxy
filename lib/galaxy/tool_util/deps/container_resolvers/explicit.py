@@ -8,6 +8,8 @@ from ..requirements import ContainerDescription
 
 log = logging.getLogger(__name__)
 
+DEFAULT_SHELL = "/bin/bash"
+
 
 class ExplicitContainerResolver(ContainerResolver):
     """Find explicit containers referenced in the tool description (e.g. tool XML file) if present."""
@@ -51,15 +53,29 @@ class ExplicitSingularityContainerResolver(ExplicitContainerResolver):
         return None
 
 
-class FallbackContainerResolver(ContainerResolver):
+class BaseAdminConfiguredContainerResolver(ContainerResolver):
+
+    def __init__(self, app_info=None, shell=DEFAULT_SHELL, **kwds):
+        super(BaseAdminConfiguredContainerResolver, self).__init__(app_info, **kwds)
+        self.shell = shell
+
+    def _container_description(self, identifier, container_type):
+        container_description = ContainerDescription(
+            identifier,
+            type=container_type,
+            shell=self.shell,
+        )
+        return container_description
+
+
+class FallbackContainerResolver(BaseAdminConfiguredContainerResolver):
     """Specify an explicit, identified container as a Docker container resolver."""
 
     resolver_type = "fallback"
     container_type = 'docker'
 
-    def __init__(self, app_info=None, shell="/bin/bash", identifier="", **kwds):
-        super(FallbackContainerResolver, self).__init__(app_info)
-        self.shell = shell
+    def __init__(self, app_info=None, identifier="", **kwds):
+        super(FallbackContainerResolver, self).__init__(app_info, **kwds)
         assert identifier, "fallback container resolver must be specified with non-empty identifier"
         self.identifier = identifier
 
@@ -69,11 +85,7 @@ class FallbackContainerResolver(ContainerResolver):
         return False
 
     def resolve(self, enabled_container_types, tool_info, **kwds):
-        container_description = ContainerDescription(
-            self.identifier,
-            type=self.container_type,
-            shell=self.shell,
-        )
+        container_description = self._container_description(self.identifier, self.container_type)
         if self._match(enabled_container_types, tool_info, container_description):
             return container_description
 
@@ -115,13 +127,36 @@ class RequiresGalaxyEnvironmentSingularityContainerResolver(RequiresGalaxyEnviro
     container_type = 'singularity'
 
 
-# TODO:
-# class MappingContainerResolver(FallbackContainerResolver):
-#
-#    resolver_type = "mapping"
-#
-#    def _match(self, enabled_container_types, tool_info, container_description):p
-#        pass
+class MappingContainerResolver(BaseAdminConfiguredContainerResolver):
+    resolver_type = "mapping"
+
+    def __init__(self, app_info=None, **kwds):
+        super(MappingContainerResolver, self).__init__(app_info, **kwds)
+        mappings = self.resolver_kwds["mappings"]
+        assert isinstance(mappings, list), "mapping container resolver must be specified with mapping list"
+        self.mappings = mappings
+
+    def resolve(self, enabled_container_types, tool_info, **kwds):
+        tool_id = tool_info.tool_id
+        # If resolving against dependencies and not a specific tool, skip over this resolver
+        if not tool_id:
+            return
+
+        tool_version = tool_info.tool_version
+
+        for mapping in self.mappings:
+            if mapping.get("tool_id") != tool_id:
+                continue
+
+            mapping_tool_version = mapping.get("tool_version")
+            if mapping_tool_version is not None and tool_version != mapping_tool_version:
+                continue
+
+            container_description = self._container_description(mapping["identifier"], mapping.get("container_type"))
+            if not self._container_type_enabled(container_description, enabled_container_types):
+                continue
+            return container_description
+
 
 __all__ = (
     "ExplicitContainerResolver",
@@ -130,6 +165,7 @@ __all__ = (
     "FallbackSingularityContainerResolver",
     "FallbackNoRequirementsContainerResolver",
     "FallbackNoRequirementsSingularityContainerResolver",
+    "MappingContainerResolver",
     "RequiresGalaxyEnvironmentContainerResolver",
     "RequiresGalaxyEnvironmentSingularityContainerResolver",
 )
