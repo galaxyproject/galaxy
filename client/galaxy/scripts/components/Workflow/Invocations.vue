@@ -37,14 +37,14 @@
                     <b-button
                         v-b-tooltip.hover.bottom
                         title="Show Invocation Details"
-                        class="btn-sm fa fa-plus"
+                        class="btn-sm fa fa-chevron-down"
                         v-if="!data.detailsShowing"
                         @click.stop="swapRowDetails(data)"
                     />
                     <b-button
                         v-b-tooltip.hover.bottom
                         title="Hide Invocation Details"
-                        class="btn-sm fa fa-minus"
+                        class="btn-sm fa fa-chevron-up"
                         v-if="data.detailsShowing"
                         @click.stop="swapRowDetails(data)"
                     />
