@@ -40,9 +40,9 @@ ResolvedContainerDescription = collections.namedtuple('ResolvedContainerDescript
 
 class ContainerFinder(object):
 
-    def __init__(self, app_info):
+    def __init__(self, app_info, mulled_resolution_cache=None):
         self.app_info = app_info
-        self.container_registry = ContainerRegistry(app_info)
+        self.container_registry = ContainerRegistry(app_info, mulled_resolution_cache=mulled_resolution_cache)
 
     def _enabled_container_types(self, destination_info):
         return [t for t in ALL_CONTAINER_TYPES if self.__container_type_enabled(t, destination_info)]
@@ -189,24 +189,12 @@ class NullContainerFinder(object):
 class ContainerRegistry(object):
     """Loop through enabled ContainerResolver plugins and find first match."""
 
-    def __init__(self, app_info):
+    def __init__(self, app_info, mulled_resolution_cache=None):
         self.resolver_classes = self.__resolvers_dict()
         self.enable_mulled_containers = app_info.enable_mulled_containers
         self.app_info = app_info
         self.container_resolvers = self.__build_container_resolvers(app_info)
-        self.mulled_resolution_cache = None
-        if app_info.mulled_resolution_cache_type:
-            # Do not want to make beaker a required dependency of container resolution, that doesn't make a lot
-            # of sense. We can inject this cache from galaxy-app if people would prefer to have imports somewhere
-            # else.
-            from beaker.cache import CacheManager
-            from beaker.util import parse_cache_config_options
-            cache_opts = {
-                'cache.type': app_info.mulled_resolution_cache_type,
-                'cache.data_dir': app_info.mulled_resolution_cache_data_dir,
-                'cache.lock_dir': app_info.mulled_resolution_cache_lock_dir,
-            }
-            self.mulled_resolution_cache = CacheManager(**parse_cache_config_options(cache_opts)).get_cache('mulled_resolution')
+        self.mulled_resolution_cache = mulled_resolution_cache
 
     def __build_container_resolvers(self, app_info):
         conf_file = getattr(app_info, 'containers_resolvers_config_file', None)

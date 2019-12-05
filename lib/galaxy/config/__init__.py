@@ -21,6 +21,8 @@ import time
 from datetime import timedelta
 
 import yaml
+from beaker.cache import CacheManager
+from beaker.util import parse_cache_config_options
 from six import string_types
 from six.moves import configparser
 
@@ -1032,11 +1034,16 @@ class ConfiguresGalaxyMixin(object):
             involucro_path=self.config.involucro_path,
             involucro_auto_init=self.config.involucro_auto_init,
             mulled_channels=self.config.mulled_channels,
-            mulled_resolution_cache_type=self.config.mulled_resolution_cache_type,
-            mulled_resolution_cache_data_dir=self.config.mulled_resolution_cache_data_dir,
-            mulled_resolution_cache_lock_dir=self.config.mulled_resolution_cache_lock_dir,
         )
-        self.container_finder = containers.ContainerFinder(app_info)
+        mulled_resolution_cache = None
+        if self.config.mulled_resolution_cache_type:
+            cache_opts = {
+                'cache.type': self.config.mulled_resolution_cache_type,
+                'cache.data_dir': self.config.mulled_resolution_cache_data_dir,
+                'cache.lock_dir': self.config.mulled_resolution_cache_lock_dir,
+            }
+            mulled_resolution_cache = CacheManager(**parse_cache_config_options(cache_opts)).get_cache('mulled_resolution')
+        self.container_finder = containers.ContainerFinder(app_info, mulled_resolution_cache=mulled_resolution_cache)
         self._set_enabled_container_types()
         index_help = getattr(self.config, "index_tool_help", True)
         self.toolbox_search = galaxy.tools.search.ToolBoxSearch(self.toolbox, index_help)
