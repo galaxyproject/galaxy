@@ -20,7 +20,7 @@ import FormWrapper from "mvc/form/form-wrapper";
 import Sharing from "components/Sharing.vue";
 import UserPreferences from "components/User/UserPreferences.vue";
 import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
-import CustomBuilds from "mvc/user/user-custom-builds";
+import CustomBuilds from "components/User/CustomBuilds.vue";
 import Tours from "mvc/tours";
 import GridView from "mvc/grid/grid-view";
 import EntryPointGridView from "mvc/entrypoints/view";
@@ -349,7 +349,10 @@ export const getAnalysisRouter = Galaxy =>
                 }, 500);
                 return;
             }
-            this.page.display(new CustomBuilds.View());
+            const customBuildsInstance = Vue.extend(CustomBuilds);
+            const vm = document.createElement("div");
+            this.page.display(vm);
+            new customBuildsInstance().$mount(vm);
         },
 
         show_dataset_edit_attributes: function() {
