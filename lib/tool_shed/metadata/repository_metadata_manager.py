@@ -748,12 +748,12 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
         ancestor_metadata_dict = None
         for changeset in self.repository.get_changesets_for_setting_metadata(self.app):
             work_dir = tempfile.mkdtemp(prefix="tmp-toolshed-ramorits")
-            ctx = repo.changectx(changeset)
+            ctx = repo[changeset]
             log.debug("Cloning repository changeset revision: %s", str(ctx.rev()))
             cloned_ok, error_message = hg_util.clone_repository(self.repository_clone_url, work_dir, str(ctx.rev()))
             if cloned_ok:
                 log.debug("Generating metadata for changset revision: %s", str(ctx.rev()))
-                self.set_changeset_revision(str(repo.changectx(changeset)))
+                self.set_changeset_revision(str(ctx))
                 self.set_repository_files_dir(work_dir)
                 self.generate_metadata_for_changeset_revision()
                 if self.metadata_dict:
@@ -812,7 +812,7 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
         encoded_repository_id = self.app.security.encode_id(self.repository.id)
         changeset_revisions_that_contain_tools = []
         for changeset in repo.changelog:
-            changeset_revision = str(repo.changectx(changeset))
+            changeset_revision = str(repo[changeset])
             repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(self.app,
                                                                                               encoded_repository_id,
                                                                                               changeset_revision)
@@ -969,7 +969,7 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
                 # critical, so we use the repo's changelog.
                 changeset_revisions = []
                 for changeset in repo.changelog:
-                    changeset_revision = str(repo.changectx(changeset))
+                    changeset_revision = str(repo[changeset])
                     if metadata_util.get_repository_metadata_by_changeset_revision(self.app, encoded_id, changeset_revision):
                         changeset_revisions.append(changeset_revision)
                 self.add_tool_versions(encoded_id, repository_metadata, changeset_revisions)

@@ -260,16 +260,16 @@ class Repository(Dictifiable):
 
     def is_new(self, app):
         repo = hg_util.get_repo_for_repository(app, repository=self)
-        tip_ctx = repo.changectx(repo.changelog.tip())
-        return tip_ctx.rev() < 0
+        tip_rev = repo.changelog.tiprev()
+        return tip_rev < 0
 
     def repo_path(self, app):
         return app.hgweb_config_manager.get_entry(os.path.join("repos", self.user.username, self.name))
 
     def revision(self, app):
         repo = hg_util.get_repo_for_repository(app, repository=self)
-        tip_ctx = repo.changectx(repo.changelog.tip())
-        return "%s:%s" % (str(tip_ctx.rev()), str(repo.changectx(repo.changelog.tip())))
+        tip_ctx = repo[repo.changelog.tip()]
+        return "%s:%s" % (str(tip_ctx.rev()), str(tip_ctx))
 
     def set_allow_push(self, app, usernames, remove_auth=''):
         allow_push = util.listify(self.allow_push(app))
@@ -294,7 +294,7 @@ class Repository(Dictifiable):
 
     def tip(self, app):
         repo = hg_util.get_repo_for_repository(app, repository=self)
-        return str(repo.changectx(repo.changelog.tip()))
+        return str(repo[repo.changelog.tip()])
 
     def to_dict(self, view='collection', value_mapper=None):
         rval = super(Repository, self).to_dict(view=view, value_mapper=value_mapper)

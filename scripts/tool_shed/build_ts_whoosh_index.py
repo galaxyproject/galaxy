@@ -193,7 +193,7 @@ def get_repos(sa_session, file_path, hgweb_config_dir, **kwargs):
         hg_repo = hg.repository(ui.ui(), repo_path)
         lineage = []
         for changeset in hg_repo.changelog:
-            lineage.append(str(changeset) + ":" + str(hg_repo.changectx(changeset)))
+            lineage.append(str(changeset) + ":" + str(hg_repo[changeset]))
         repo_lineage = str(lineage)
 
         #  Parse all the tools within repo for a separate index.
