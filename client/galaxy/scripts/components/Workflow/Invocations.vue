@@ -19,7 +19,6 @@
                 :items="invocationItemsComputed"
                 v-model="invocationItemsModel"
                 hover
-                responsive
                 striped
                 caption-top
                 :busy="loading"
