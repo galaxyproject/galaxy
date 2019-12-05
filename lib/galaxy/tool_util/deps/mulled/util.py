@@ -76,7 +76,7 @@ def mulled_tags_for(namespace, image, tag_prefix=None, resolution_cache=None):
     The result will be sorted so newest tags are first.
     """
     if resolution_cache is not None:
-        # Following check is pretty expensive against biocontainers... don't even both doing it
+        # Following check is pretty expensive against biocontainers... don't even bother doing it
         # if can't cache the response.
         if not _namespace_has_repo_name(namespace, image, resolution_cache):
             log.debug("skipping mulled_tags_for [%s] no repository" % image)
