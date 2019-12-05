@@ -761,9 +761,8 @@ def __parse_param_elem(param_elem, i=0):
     attrib = dict(param_elem.attrib)
     if 'values' in attrib:
         value = attrib['values'].split(',')
-    elif 'value' in attrib:
-        value = attrib['value']
-    else:
+    value = xml_text(param_elem, 'value')
+    if value == '':
         value = None
     children_elem = param_elem
     if children_elem is not None:
@@ -1048,7 +1047,12 @@ class XmlInputSource(InputSource):
         return self.input_elem
 
     def get(self, key, value=None):
-        return self.input_elem.get(key, value)
+        v = xml_text(self.input_elem, key)
+        if v == '':
+            return value
+        else:
+            return v
+        #return self.input_elem.get(key, value)
 
     def get_bool(self, key, default):
         return string_as_bool(self.get(key, default))
@@ -1076,7 +1080,7 @@ class XmlInputSource(InputSource):
         static_options = list()
         elem = self.input_elem
         for index, option in enumerate(elem.findall("option")):
-            value = option.get("value")
+            value = xml_text(option, "value")
             selected = string_as_bool(option.get("selected", False))
             static_options.append((option.text or value, value, selected))
         return static_options

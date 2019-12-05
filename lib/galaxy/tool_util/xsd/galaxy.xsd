@@ -828,6 +828,11 @@ be present in ``test`` definition.</xs:documentation>
       <xs:element name="section" type="TestSection" />
       <xs:element name="output" type="TestOutput" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="output_collection" type="TestOutputCollection"/>
+      <xs:element name="value" type="xs:string">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Documentation for help</xs:documentation>
+        </xs:annotation>
+      </xs:element>
       <xs:element name="assert_command" type="TestAssertions">
         <xs:annotation>
           <xs:documentation xml:lang="en">Describe assertions about the job's
@@ -2647,6 +2652,11 @@ allow access to Python code to generate options for a select list. See
       <xs:element name="options" type="ParamOptions"/>
       <xs:element name="validator" type="Validator" />
       <xs:element name="sanitizer" type="Sanitizer"/>
+      <xs:element name="value" type="xs:string">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Documentation for help</xs:documentation>
+        </xs:annotation>
+      </xs:element>
       <xs:element name="help" type="xs:string">
         <xs:annotation>
           <xs:documentation xml:lang="en">Documentation for help</xs:documentation>
