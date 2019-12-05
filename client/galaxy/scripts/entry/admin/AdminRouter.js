@@ -8,7 +8,7 @@ import Router from "layout/router";
 import DataTables from "components/admin/DataTables.vue";
 import DataTypes from "components/admin/DataTypes.vue";
 import Jobs from "components/admin/Jobs.vue";
-import Invocations from "components/admin/Invocations.vue";
+import ActiveInvocations from "components/admin/ActiveInvocations.vue";
 import DataManagerView from "components/admin/DataManager/DataManagerView.vue";
 import DataManagerRouter from "components/admin/DataManager/DataManagerRouter.vue";
 import Register from "components/login/Register.vue";
@@ -128,7 +128,7 @@ export const getAdminRouter = (Galaxy, options) => {
         },
 
         show_invocations: function() {
-            this._display_vue_helper(Invocations);
+            this._display_vue_helper(ActiveInvocations);
         },
 
         show_error_stack: function() {
