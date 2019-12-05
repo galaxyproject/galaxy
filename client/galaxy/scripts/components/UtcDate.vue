@@ -1,8 +1,8 @@
 <template>
     <span class="utc-time" v-if="mode == 'date'" :title="elapsedTime">
-        {{ full_date }}
+        {{ fullDate }}
     </span>
-    <span class="utc-time utc-time-elapsed" v-else :title="full_date">
+    <span class="utc-time utc-time-elapsed" v-else :title="fullDate">
         {{ elapsedTime }}
     </span>
 </template>
@@ -25,7 +25,7 @@ export default {
         elapsedTime: function() {
             return moment(moment.utc(this.date)).from(moment().utc());
         },
-        full_date: function() {
+        fullDate: function() {
             return moment.utc(this.date).format();
         }
     }
