@@ -56,7 +56,7 @@ aws transcribe start-transcription-job --cli-input-json file://${request_file} >
 # wait while job is running
 echo "Waiting for ${job_name} to finish ..." >> $log_file 2>&1
 # note: both AWS query and jq parsing returns field value with double quotes, which needs to be striped off when comparing to string literal
-while [ `aws transcribe get-transcription-job --transcription-job-name "${job_name}" --query "TranscriptionJob"."TranscriptionJobStatus" | sed -e 's/"//g'` = "IN_PROGRESS" ] 
+while [[ `aws transcribe get-transcription-job --transcription-job-name "${job_name}" --query "TranscriptionJob"."TranscriptionJobStatus" | sed -e 's/"//g'` = "IN_PROGRESS" ]] 
 do
     sleep 60s
 done
