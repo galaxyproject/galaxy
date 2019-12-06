@@ -8,7 +8,6 @@ from six.moves.urllib.parse import (
     quote_plus,
     unquote_plus
 )
-from sqlalchemy import false, true
 
 from galaxy import (
     datatypes,
@@ -29,7 +28,7 @@ from galaxy.util import (
 from galaxy.util.checkers import check_binary
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import form_builder
-from galaxy.web.framework.helpers import grids, iff, time_ago
+from galaxy.web.framework.helpers import iff
 from galaxy.webapps.base.controller import BaseUIController, ERROR, SUCCESS, url_for, UsesExtendedMetadataMixin
 
 log = logging.getLogger(__name__)
