@@ -477,7 +477,7 @@ const Tab = Backbone.View.extend({
             } else {
                 model.set("show_menu", true);
             }
-        } else {
+        } else { // covered
             if (this.$link.popover) {
                 this.$link.popover("dispose");
             }

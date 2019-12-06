@@ -8,6 +8,7 @@ import { getGalaxyInstance } from "app";
 import Masthead from "../components/Masthead.vue";
 import { mountVueComponent } from "../utils/mountVueComponent";
 import _ from "../libs/underscore";
+import { getAppRoot } from "onload/loadConfig";
 
 /** Masthead **/
 const View = Backbone.View.extend({
@@ -105,7 +106,9 @@ const View = Backbone.View.extend({
                 activeTab: this.activeView,
                 tabs: _.map(this.collection.models, el => {
                     return el.toJSON();
-                })
+                }),
+
+                appRoot: getAppRoot()
             },
             el
         );

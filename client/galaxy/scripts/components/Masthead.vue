@@ -9,31 +9,34 @@
 
                 <b-navbar-nav>
                     <template v-for="tab in tabs">
-                        <b-nav-item v-if="!tab.menu"
-                                    :active="tab.id === activeTab"
-                                    :class="{
-                                        active: tab.id === activeTab
-                                    }"
-                                    v-b-tooltip.hover.bottom
-                                    :title="tab.tooltip"
-                                    :style="{
-                                        visibility: tab.visible ? 'visible' : 'hidden',
-                                    }"
-                                    :id="tab.id" href="#"
+                            <b-nav-item v-if="!tab.menu"
+                                        :class="{
+                                            active: tab.id === activeTab,
+                                        }"
+                                        :active="!tab.disabled"
+                                        v-b-tooltip.hover.bottom :title="tab.tooltip"
+                                        @click="open(tab, $event)"
+                                        v-b-popover.manual.bottom="{id: tab.id, content: popoverNote, html: true}"
+                                        :style="{
+                                            visibility: tab.visible ? 'visible' : 'hidden',
+                                        }"
+                                        :id="tab.id" href="#"
 
-                                    :link-classes="[tab.icon && 'nav-icon', tab.icon && 'fa', tab.icon || '']"
-                        >
-                            {{ tab["title"] }}
-                        </b-nav-item>
+                                        :link-classes="[tab.icon && 'nav-icon', tab.icon && 'fa', tab.icon || '']"
+                            >
 
-                        <b-nav-item-dropdown v-else
-                                             :text="tab.title"
-                                             v-b-tooltip.hover.bottom
-                                             :title="tab.tooltip"
-                                             :style="{visibility: tab.visible ? 'visible' : 'hidden'}"
-                                             :id="tab.id" href="#">
-                            <b-dropdown-item v-for="item in tab.menu" href="#">{{ item["title"] }}</b-dropdown-item>
-                        </b-nav-item-dropdown>
+                                {{ tab["title"] }}
+                            </b-nav-item>
+
+                            <b-nav-item-dropdown v-else
+                                                 :text="tab.title"
+                                                 v-b-tooltip.hover.bottom :title="tab.tooltip"
+                                                 @show="open(tab, $event)"
+                                                 v-b-popover.manual.bottom="{id: tab.id, content: popoverNote, html: true}"
+                                                 :style="{visibility: tab.visible ? 'visible' : 'hidden'}"
+                                                 :id="tab.id" href="#">
+                                <b-dropdown-item v-for="item in tab.menu" href="#">{{ item["title"] }}</b-dropdown-item>
+                            </b-nav-item-dropdown>
                     </template>
                 </b-navbar-nav>
 
@@ -44,12 +47,14 @@
 
 <script>
     import { VBTooltip } from "bootstrap-vue";
+    import { VBPopover } from "bootstrap-vue";
     import { BNavbar, BNavbarBrand, BNavbarNav } from "bootstrap-vue";
 
     export default {
         name: "Masthead",
         directives: {
-            "v-b-tooltip": VBTooltip
+            "v-b-tooltip": VBTooltip,
+            "v-b-popover": VBPopover
         },
         props: {
             brandTitle: {
@@ -69,6 +74,9 @@
             },
             tabs: {
                 type: Array
+            },
+            appRoot: {
+                type: String,
             }
         },
         components: {
@@ -76,10 +84,32 @@
             BNavbarBrand,
             BNavbarNav,
         },
-        mounted() {
-            console.log(this.tabs);
-            console.log(this.activeTab);
+        data() {
+            return {
+            };
+        },
+        computed: {
+            popoverNote() {
+                return `Please <a href="${this.appRoot}login">login or register</a> to use this feature.`;
+            }
+        },
+        methods: {
+            open(tab, event) {
+                if (tab.disabled) {
+                    event.preventDefault();
 
+                    this.$root.$emit('bv::hide::tooltip');
+                    this.$root.$emit('bv::show::popover', tab.id);
+
+                    setTimeout(() => {
+                        this.$root.$emit('bv::hide::popover', tab.id);
+                    }, 3000);
+                } else {
+                    // TODO: action
+                }
+            },
+        },
+        mounted() {
             this.quotaMeter.setElement(this.$refs['quota-meter-container']);
             this.quotaMeter.render();
         }
@@ -87,12 +117,5 @@
 </script>
 
 <style scoped>
-    i.fa {
-        width: 100%;
-        height: 100%;
-    }
 
-    .icon > a {
-
-    }
 </style>
