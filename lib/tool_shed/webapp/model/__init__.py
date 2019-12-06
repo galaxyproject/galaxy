@@ -280,17 +280,18 @@ class Repository(Dictifiable):
                 if username not in allow_push:
                     allow_push.append(username)
         allow_push = '%s\n' % ','.join(allow_push)
-        repo = hg_util.get_repo_for_repository(app, repository=self)
         # Why doesn't the following work?
-        # repo.ui.setconfig( 'web', 'allow_push', allow_push )
-        lines = repo.opener('hgrc', 'rb').readlines()
-        fp = repo.opener('hgrc', 'wb')
-        for line in lines:
-            if line.startswith('allow_push'):
-                fp.write('allow_push = %s' % allow_push)
-            else:
-                fp.write(line)
-        fp.close()
+        # repo.ui.setconfig('web', 'allow_push', allow_push)
+        repo_dir = self.repo_path(app)
+        hgrc_file = hg_util.get_hgrc_path(repo_dir)
+        with open(hgrc_file, 'rb') as fh:
+            lines = fh.readlines()
+        with open(hgrc_file, 'wb') as fh:
+            for line in lines:
+                if line.startswith('allow_push'):
+                    fh.write('allow_push = %s' % allow_push)
+                else:
+                    fh.write(line)
 
     def tip(self, app):
         repo = hg_util.get_repo_for_repository(app, repository=self)
