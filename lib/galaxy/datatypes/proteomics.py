@@ -479,6 +479,13 @@ class ProteomicsXml(GenericXml):
             dataset.blurb = 'file purged from disk'
 
 
+class ParamXml(ProteomicsXml):
+    """store Parameters in XML formal"""
+    file_ext = "paramxml"
+    blurb = "parameters in xmls"
+    root = "parameters|PARAMETERS"
+
+
 class PepXml(ProteomicsXml):
     """pepXML data"""
     edam_format = "format_3655"

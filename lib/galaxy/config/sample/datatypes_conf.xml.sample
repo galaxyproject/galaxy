@@ -236,6 +236,7 @@
     <datatype extension="peptideprophet_pepxml" type="galaxy.datatypes.proteomics:PepXml" mimetype="application/xml" subclass="true"/>
     <datatype extension="interprophet_pepxml" type="galaxy.datatypes.proteomics:PepXml" mimetype="application/xml" subclass="true"/>
     <datatype extension="protxml" type="galaxy.datatypes.proteomics:ProtXML" mimetype="application/xml" display_in_upload="true"/>
+    <datatype extension="paramxml" type="galaxy.datatypes.proteomics:ParamXml" mimetype="application/xml" subclass="true" display_in_upload="true" />
     <datatype extension="qcml" type="galaxy.datatypes.xml:GenericXml" mimetype="application/xml" subclass="true" display_in_upload="true" description="Quality control data in XML format (https://code.google.com/p/qcml/)."/>
     <datatype extension="kroenik" type="galaxy.datatypes.proteomics:Kroenik" display_in_upload="true"/>
     <datatype extension="pepxml.tsv" type="galaxy.datatypes.proteomics:PepXmlReport" display_in_upload="true"/>
@@ -865,6 +866,7 @@
     <sniffer type="galaxy.datatypes.proteomics:MzQuantML"/>
     <sniffer type="galaxy.datatypes.proteomics:MzTab"/>
     <sniffer type="galaxy.datatypes.proteomics:MzTab2"/>
+    <sniffer type="galaxy.datatypes.proteomics:ParamXml"/>
     <sniffer type="galaxy.datatypes.proteomics:MzXML"/>
     <sniffer type="galaxy.datatypes.proteomics:NmrML"/>
     <sniffer type="galaxy.datatypes.proteomics:Kroenik"/>
