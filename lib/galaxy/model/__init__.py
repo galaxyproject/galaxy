@@ -5161,6 +5161,8 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
             output_values = {}
             for output_param in self.output_values:
                 label = output_param.workflow_output.label
+                if not label:
+                    continue
                 output_values[label] = output_param.value
             rval['output_values'] = output_values
 
