@@ -3,6 +3,7 @@ from __future__ import print_function
 
 import collections
 import hashlib
+import logging
 import sys
 import threading
 import time
@@ -10,7 +11,9 @@ import time
 import packaging.version
 import requests
 
-MULLED_TAG_CACHE = collections.defaultdict(dict)
+log = logging.getLogger(__name__)
+
+QUAY_REPOSITORY_API_ENDPOINT = 'https://quay.io/api/v1/repository'
 
 
 def create_repository(namespace, repo_name, oauth_token):
@@ -47,24 +50,56 @@ def quay_repository(namespace, pkg_name):
     return data
 
 
-def mulled_tags_for(namespace, image, tag_prefix=None):
+def _namespace_has_repo_name(namespace, repo_name, resolution_cache):
+    """
+    Get all quay containers in the biocontainers repo
+    """
+    cache_key = "galaxy.tool_util.deps.container_resolvers.mulled.util:namespace_repo_names"
+    if resolution_cache is not None and cache_key in resolution_cache:
+        repo_names = resolution_cache.get(cache_key)
+    else:
+        repos_parameters = {'public': 'true', 'namespace': namespace}
+        repos_headers = {'Accept-encoding': 'gzip', 'Accept': 'application/json'}
+        repos_response = requests.get(
+            QUAY_REPOSITORY_API_ENDPOINT, headers=repos_headers, params=repos_parameters, timeout=None)
+
+        repos = repos_response.json()['repositories']
+        repo_names = [r["name"] for r in repos]
+        if resolution_cache is not None:
+            resolution_cache[cache_key] = repo_names
+    return repo_name in repo_names
+
+
+def mulled_tags_for(namespace, image, tag_prefix=None, resolution_cache=None):
     """Fetch remote tags available for supplied image name.
 
     The result will be sorted so newest tags are first.
     """
+    if resolution_cache is not None:
+        # Following check is pretty expensive against biocontainers... don't even bother doing it
+        # if can't cache the response.
+        if not _namespace_has_repo_name(namespace, image, resolution_cache):
+            log.debug("skipping mulled_tags_for [%s] no repository" % image)
+            return []
+
+    cache_key = "galaxy.tool_util.deps.container_resolvers.mulled.util:tag_cache"
+    if resolution_cache is not None:
+        if cache_key not in resolution_cache:
+            resolution_cache[cache_key] = collections.defaultdict(dict)
+        tag_cache = resolution_cache.get(cache_key)
+    else:
+        tag_cache = collections.defaultdict(dict)
+
     tags_cached = False
-    if namespace in MULLED_TAG_CACHE:
-        if image in MULLED_TAG_CACHE[namespace]:
-            tags, last_checked = MULLED_TAG_CACHE[namespace][image]
-            if not tags and time.time() - last_checked < 300:
-                # it's possible we haven't seen the tags before, we check every 5 minutes
-                tags_cached = False
-            else:
-                tags_cached = True
+    if namespace in tag_cache:
+        if image in tag_cache[namespace]:
+            tags = tag_cache[namespace][image]
+            tags_cached = True
+
     if not tags_cached:
         tags = quay_versions(namespace, image)
-        last_checked = time.time()
-        MULLED_TAG_CACHE[namespace][image] = (tags, last_checked)
+        tag_cache[namespace][image] = tags
+
     if tag_prefix is not None:
         tags = [t for t in tags if t.startswith(tag_prefix)]
     tags = version_sorted(tags)

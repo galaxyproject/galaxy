@@ -143,6 +143,9 @@ class ToolRequirements(object):
     def __hash__(self):
         return sum([r.__hash__() for r in self.tool_requirements])
 
+    def to_dict(self):
+        return [r.to_dict() for r in self.tool_requirements]
+
 
 class ToolRequirementsException(Exception):
     pass
@@ -168,7 +171,7 @@ class ContainerDescription(object):
         self.resolve_dependencies = resolve_dependencies
         self.shell = shell
 
-    def to_dict(self):
+    def to_dict(self, *args, **kwds):
         return dict(
             identifier=self.identifier,
             type=self.type,
