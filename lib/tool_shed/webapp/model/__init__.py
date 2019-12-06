@@ -260,16 +260,16 @@ class Repository(Dictifiable):
 
     def is_new(self, app):
         repo = hg_util.get_repo_for_repository(app, repository=self)
-        tip_ctx = repo.changectx(repo.changelog.tip())
-        return tip_ctx.rev() < 0
+        tip_rev = repo.changelog.tiprev()
+        return tip_rev < 0
 
     def repo_path(self, app):
         return app.hgweb_config_manager.get_entry(os.path.join("repos", self.user.username, self.name))
 
     def revision(self, app):
         repo = hg_util.get_repo_for_repository(app, repository=self)
-        tip_ctx = repo.changectx(repo.changelog.tip())
-        return "%s:%s" % (str(tip_ctx.rev()), str(repo.changectx(repo.changelog.tip())))
+        tip_ctx = repo[repo.changelog.tip()]
+        return "%s:%s" % (str(tip_ctx.rev()), str(tip_ctx))
 
     def set_allow_push(self, app, usernames, remove_auth=''):
         allow_push = util.listify(self.allow_push(app))
@@ -280,21 +280,22 @@ class Repository(Dictifiable):
                 if username not in allow_push:
                     allow_push.append(username)
         allow_push = '%s\n' % ','.join(allow_push)
-        repo = hg_util.get_repo_for_repository(app, repository=self)
         # Why doesn't the following work?
-        # repo.ui.setconfig( 'web', 'allow_push', allow_push )
-        lines = repo.opener('hgrc', 'rb').readlines()
-        fp = repo.opener('hgrc', 'wb')
-        for line in lines:
-            if line.startswith('allow_push'):
-                fp.write('allow_push = %s' % allow_push)
-            else:
-                fp.write(line)
-        fp.close()
+        # repo.ui.setconfig('web', 'allow_push', allow_push)
+        repo_dir = self.repo_path(app)
+        hgrc_file = hg_util.get_hgrc_path(repo_dir)
+        with open(hgrc_file, 'rb') as fh:
+            lines = fh.readlines()
+        with open(hgrc_file, 'wb') as fh:
+            for line in lines:
+                if line.startswith('allow_push'):
+                    fh.write('allow_push = %s' % allow_push)
+                else:
+                    fh.write(line)
 
     def tip(self, app):
         repo = hg_util.get_repo_for_repository(app, repository=self)
-        return str(repo.changectx(repo.changelog.tip()))
+        return str(repo[repo.changelog.tip()])
 
     def to_dict(self, view='collection', value_mapper=None):
         rval = super(Repository, self).to_dict(view=view, value_mapper=value_mapper)

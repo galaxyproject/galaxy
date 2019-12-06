@@ -155,7 +155,7 @@ def get_next_downloadable_changeset_revision(app, repository, after_changeset_re
     found_after_changeset_revision = False
     repo = get_repo_for_repository(app, repository=repository)
     for changeset in repo.changelog:
-        changeset_revision = str(repo.changectx(changeset))
+        changeset_revision = str(repo[changeset])
         if found_after_changeset_revision:
             if changeset_revision in changeset_revisions:
                 return changeset_revision
@@ -293,7 +293,7 @@ def get_updated_changeset_revisions(app, name, owner, changeset_revision):
     for changeset in reversed_lower_upper_bounded_changelog(repo, changeset_revision, upper_bound_changeset_revision):
         # Make sure to exclude upper_bound_changeset_revision.
         if changeset != upper_bound_changeset_revision:
-            changeset_hashes.append(str(repo.changectx(changeset)))
+            changeset_hashes.append(str(repo[changeset]))
     if changeset_hashes:
         changeset_hashes_str = ','.join(changeset_hashes)
         return changeset_hashes_str

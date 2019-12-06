@@ -488,8 +488,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
             reviewed_revision_hashes = [review.changeset_revision for review in repository.reviews]
             reviews_dict = OrderedDict()
             for changeset in hg_util.get_reversed_changelog_changesets(repo):
-                ctx = repo.changectx(changeset)
-                changeset_revision = str(ctx)
+                changeset_revision = str(repo[changeset])
                 if changeset_revision in metadata_revision_hashes or changeset_revision in reviewed_revision_hashes:
                     rev, changeset_revision_label = hg_util.get_rev_label_from_changeset_revision(repo, changeset_revision)
                     if changeset_revision in reviewed_revision_hashes:
