@@ -14,6 +14,8 @@
                                     :class="{
                                         active: tab.id === activeTab
                                     }"
+                                    v-b-tooltip.hover.bottom
+                                    :title="tab.tooltip"
                                     :style="{
                                         visibility: tab.visible ? 'visible' : 'hidden',
                                     }"
@@ -26,6 +28,8 @@
 
                         <b-nav-item-dropdown v-else
                                              :text="tab.title"
+                                             v-b-tooltip.hover.bottom
+                                             :title="tab.tooltip"
                                              :style="{visibility: tab.visible ? 'visible' : 'hidden'}"
                                              :id="tab.id" href="#">
                             <b-dropdown-item v-for="item in tab.menu" href="#">{{ item["title"] }}</b-dropdown-item>
@@ -39,11 +43,14 @@
 </template>
 
 <script>
-    // import { VBTooltip } from "bootstrap-vue";
-    import { BNavbar, BNavbarBrand, BNavbarNav, BNavbarToggle } from "bootstrap-vue";
+    import { VBTooltip } from "bootstrap-vue";
+    import { BNavbar, BNavbarBrand, BNavbarNav } from "bootstrap-vue";
 
     export default {
-        name: "Masthead.vue",
+        name: "Masthead",
+        directives: {
+            "v-b-tooltip": VBTooltip
+        },
         props: {
             brandTitle: {
                 type: String

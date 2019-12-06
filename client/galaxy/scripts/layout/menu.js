@@ -353,7 +353,7 @@ const Tab = Backbone.View.extend({
                 visibility: (this.model.get("visible") && "visible") || "hidden"
             });
         this.model.set("url", this._formatUrl(this.model.get("url")));
-        this.$note
+        this.$note // TODO: port note
             .html(this.model.get("note") || "")
             .removeClass()
             .addClass("nav-note")
