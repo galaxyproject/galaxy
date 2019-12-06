@@ -122,7 +122,7 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
     # order_by parsing - similar to FilterParser but not enough yet to warrant a class?
     def parse_order_by(self, order_by_string, default=None):
         """Return an ORM compatible order_by using the given string"""
-        available=['create_time', 'extension', 'hid', 'history_id', 'name', 'update_time']
+        available = ['create_time', 'extension', 'hid', 'history_id', 'name', 'update_time']
         for attribute in available:
             attribute_dsc = '%s-dsc' % attribute
             attribute_asc = '%s-asc' % attribute
