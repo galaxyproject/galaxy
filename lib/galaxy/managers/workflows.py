@@ -912,9 +912,16 @@ class WorkflowContentsManager(UsesAnnotations):
 
             # All step outputs
             step_dict['outputs'] = []
-            if type(module) is ToolModule:
-                for output in module.get_data_outputs():
-                    step_dict['outputs'].append({'name': output['name'], 'type': output['extensions'][0]})
+            for output in module.get_all_outputs():
+                # for backward compatibility set 'type' to first extension for data outputs. This isn't
+                # used on re-import so backward compatibility isn't super important but in case someone
+                # is using this. 'extensions is obviously much more correct.
+                # So call what other API endpoints call 'type' - 'output_type' instead to do this.
+                output['output_type'] = output.pop('type')  # (e.g. data, collection, float)
+                extensions = output.get('extensions')
+                if extensions and len(extensions) > 0:
+                    output['type'] = extensions[0]  # (e.g. fasta, fastqsanger, input)
+                step_dict['outputs'].append(output)
 
             step_in = {}
             for step_input in step.inputs:
