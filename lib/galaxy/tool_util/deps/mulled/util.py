@@ -7,6 +7,7 @@ import sys
 import threading
 import time
 
+import dateutil.parser
 import packaging.version
 try:
     import requests
@@ -14,6 +15,7 @@ except ImportError:
     requests = None
 
 MULLED_TAG_CACHE = collections.defaultdict(dict)
+QUAY_VERSION = collections.namedtuple('QuayVersion', 'tag last_modified')
 
 
 def create_repository(namespace, repo_name, oauth_token):
@@ -38,7 +40,10 @@ def quay_versions(namespace, pkg_name):
     if 'tags' not in data:
         raise Exception("Unexpected response from quay.io - not tags description found [%s]" % data)
 
-    return [tag for tag in data['tags'] if tag != 'latest']
+    versions = (QUAY_VERSION(tag, dateutil.parser.parse(details['last_modified'])) for tag, details in data['tags'].items() if tag != 'latest')
+    # do a reverse sort by modification time
+    versions = sorted(versions, key=lambda v: v.last_modified, reverse=True)
+    return [v.tag for v in versions]
 
 
 def quay_repository(namespace, pkg_name):
@@ -79,14 +84,16 @@ def mulled_tags_for(namespace, image, tag_prefix=None):
 
 def split_tag(tag):
     """Split mulled image name into conda version and conda build."""
-    version = tag.split('--', 1)[0]
-    build = tag.split('--', 1)[1]
-    return version, build
+    if '--' in tag:
+        version = tag.split('--', 1)[0]
+        build = tag.split('--', 1)[1]
+        return version, build
+    return tag, None
 
 
 def version_sorted(elements):
     """Sort iterable based on loose description of "version" from newest to oldest."""
-    return sorted(elements, key=packaging.version.parse, reverse=True)
+    return sorted(elements, key=lambda x: packaging.version.parse(split_tag(x)[0]), reverse=True)
 
 
 Target = collections.namedtuple("Target", ["package_name", "version", "build"])
