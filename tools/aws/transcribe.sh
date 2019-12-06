@@ -68,7 +68,7 @@ cat $response_file >> $log_file 2>&1
 job_status=`jq '.TranscriptionJob.TranscriptionJobStatus' < $response_file | sed -e 's/"//g'`
 
 # if job succeeded, retrieve output file URL and download output file from the URL to galaxy output file location
-if [ ${job_status} = "COMPLETED" ]; then
+if [[ ${job_status} = "COMPLETED" ]]; then
 # since we use user defined bucket for transcribe output, its S3 location can be inferred following the naming pattern as below
 # and we don't need to use the provided URL in the response, as that would require using curl and would encounter permission issue for private files
 	transcript_file_uri=s3://${s3_bucket}/${job_name}.json
@@ -76,7 +76,7 @@ if [ ${job_status} = "COMPLETED" ]; then
     echo "Job ${job_name} completed in success!" >> $log_file 2>&1
     exit 0
 # otherwise print error message to the log and exit with error code
-elif [ ${job_status} = "FAILED" ]; then
+elif [[ ${job_status} = "FAILED" ]]; then
     echo "Job ${job_name} failed!" >> $log_file 2>&1
     exit 1
 else
