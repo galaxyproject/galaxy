@@ -108,7 +108,8 @@ const View = Backbone.View.extend({
                     return el.toJSON();
                 }),
 
-                appRoot: getAppRoot()
+                appRoot: getAppRoot(),
+                Galaxy: getGalaxyInstance(),
             },
             el
         );

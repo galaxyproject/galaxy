@@ -20,8 +20,9 @@
                                         :style="{
                                             visibility: tab.visible ? 'visible' : 'hidden',
                                         }"
-                                        :id="tab.id" href="#"
-
+                                        :id="tab.id"
+                                        :href="tab.url"
+                                        :target="tab.target"
                                         :link-classes="[tab.icon && 'nav-icon', tab.icon && 'fa', tab.icon || '']"
                             >
 
@@ -35,7 +36,13 @@
                                                  v-b-popover.manual.bottom="{id: tab.id, content: popoverNote, html: true}"
                                                  :style="{visibility: tab.visible ? 'visible' : 'hidden'}"
                                                  :id="tab.id" href="#">
-                                <b-dropdown-item v-for="item in tab.menu" href="#">{{ item["title"] }}</b-dropdown-item>
+                                <b-dropdown-item v-for="item in tab.menu"
+                                                 :href="item.url"
+                                                 :target="item.target"
+                                                 @click="open(item, $event)"
+                                >
+                                    {{ item["title"] }}
+                                </b-dropdown-item>
                             </b-nav-item-dropdown>
                     </template>
                 </b-navbar-nav>
@@ -77,6 +84,9 @@
             },
             appRoot: {
                 type: String,
+            },
+            Galaxy: {
+                type: Object,
             }
         },
         components: {
@@ -104,12 +114,23 @@
                     setTimeout(() => {
                         this.$root.$emit('bv::hide::popover', tab.id);
                     }, 3000);
-                } else {
-                    // TODO: action
+                } else if (!tab.menu) {
+                    event.preventDefault();
+
+                    if (tab.target === "__use_router__" && typeof this.Galaxy.page !== "undefined") {
+                        this.Galaxy.page.router.executeUseRouter(tab.url);
+                    } else {
+                        try {
+                            this.Galaxy.frame.add(tab);
+                        } catch (err) {
+                            console.warn("Missing frame element on galaxy instance", err);
+                        }
+                    }
                 }
             },
         },
         mounted() {
+            console.log(this.tabs);
             this.quotaMeter.setElement(this.$refs['quota-meter-container']);
             this.quotaMeter.render();
         }
