@@ -5,6 +5,10 @@ import Scratchbook from "layout/scratchbook";
 import QuotaMeter from "mvc/user/user-quotameter";
 import { getGalaxyInstance } from "app";
 
+import Masthead from "../components/Masthead.vue";
+import { mountVueComponent } from "../utils/mountVueComponent";
+import _ from "../libs/underscore";
+
 /** Masthead **/
 const View = Backbone.View.extend({
     initialize: function(options) {
@@ -36,7 +40,8 @@ const View = Backbone.View.extend({
             .fetch(this.options);
 
         // highlight initial active view
-        this.highlight(options.active_view);
+        this.activeView = options.active_view;
+        this.highlight(options.active_view); // covered
 
         // scratchbook
         Galaxy.frame = this.frame = new Scratchbook({
@@ -81,10 +86,29 @@ const View = Backbone.View.extend({
     },
 
     render: function() {
-        this.$navbarBrandTitle.html(`Galaxy ${(this.options.brand && `/ ${this.options.brand}`) || ""}`);
-        this.$navbarBrandLink.attr("href", this.options.logo_url);
-        this.$navbarBrandImage.attr("src", this.options.logo_src);
+        this.$navbarBrandTitle.html(`Galaxy ${(this.options.brand && `/ ${this.options.brand}`) || ""}`); // covered
+        this.$navbarBrandLink.attr("href", this.options.logo_url); // covered
+        this.$navbarBrandImage.attr("src", this.options.logo_src); // covered
         this.quotaMeter.render();
+
+
+        const el = document.createElement('div');
+        this.el.appendChild(el); // use this.el directly when feature parity is accomplished
+
+        mountVueComponent(Masthead)(
+            { // params
+                brandTitle: `Galaxy ${(this.options.brand && `/ ${this.options.brand}`) || ""}`,
+                brandLink:  this.options.logo_url,
+                brandImage: this.options.logo_src,
+
+                quotaMeter: this.quotaMeter,
+                activeTab: this.activeView,
+                tabs: _.map(this.collection.models, el => {
+                    return el.toJSON();
+                })
+            },
+            el
+        );
         return this;
     },
 
@@ -97,14 +121,16 @@ const View = Backbone.View.extend({
     /** body template */
     _template: function() {
         return `
-            <nav id="masthead" class="navbar navbar-expand justify-content-center navbar-dark" role="navigation" aria-label="Main">
-                <a class="navbar-brand" aria-label="homepage">
-                    <img alt="logo" class="navbar-brand-image"/>
-                    <span class="navbar-brand-title"/>
-                </a>
-                <ul class="navbar-nav"/>
-                <div class="quota-meter-container"/>
-            </nav>`;
+            <div>
+                <nav id="masthead" class="navbar navbar-expand justify-content-center navbar-dark" role="navigation" aria-label="Main">
+                    <a class="navbar-brand" aria-label="homepage">
+                        <img alt="logo" class="navbar-brand-image"/>
+                        <span class="navbar-brand-title"/>
+                    </a>
+                    <ul class="navbar-nav"/>
+                    <div class="quota-meter-container"/>
+                </nav>
+            </div>`;
     }
 });
 
