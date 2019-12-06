@@ -915,7 +915,7 @@ class WorkflowContentsManager(UsesAnnotations):
             for output in module.get_all_outputs():
                 # for backward compatibility set 'type' to first extension for data outputs. This isn't
                 # used on re-import so backward compatibility isn't super important but in case someone
-                # is using this. 'extensions is obviously much more correct.
+                # is using this. 'extensions' is obviously much more correct.
                 # So call what other API endpoints call 'type' - 'output_type' instead to do this.
                 output['output_type'] = output.pop('type')  # (e.g. data, collection, float)
                 extensions = output.get('extensions')
