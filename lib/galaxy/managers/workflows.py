@@ -39,7 +39,6 @@ from galaxy.web import url_for
 from galaxy.workflow.modules import (
     is_tool_module_type,
     module_factory,
-    ToolModule,
     WorkflowModuleInjector
 )
 from galaxy.workflow.resources import get_resource_mapper_function
