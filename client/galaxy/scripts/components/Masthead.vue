@@ -27,6 +27,7 @@
                             >
 
                                 {{ tab["title"] }}
+                                <div v-if="tab.show_note" class="nav-note-port">{{ tab["note"] }}</div>
                             </b-nav-item>
 
                             <b-nav-item-dropdown v-else
@@ -42,6 +43,7 @@
                                                  @click="open(item, $event)"
                                 >
                                     {{ item["title"] }}
+                                    <div v-if="tab.note" class="nav-note-port">{{ tab["note"] }}</div>
                                 </b-dropdown-item>
                             </b-nav-item-dropdown>
                     </template>
@@ -138,5 +140,10 @@
 </script>
 
 <style scoped>
-
+    .nav-note-port {
+        position: absolute;
+        bottom: .1rem;
+        font-size: .7rem;
+        color: gold;
+    }
 </style>

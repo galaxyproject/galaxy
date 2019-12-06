@@ -60,7 +60,7 @@ const Collection = Backbone.Collection.extend({
             tooltip: _l("Chain tools into workflows"),
             disabled: !Galaxy.user.id,
             url: "workflows/list",
-            target: "__use_router__"
+            target: "__use_router__",
         });
 
         //
@@ -353,7 +353,7 @@ const Tab = Backbone.View.extend({
                 visibility: (this.model.get("visible") && "visible") || "hidden"
             });
         this.model.set("url", this._formatUrl(this.model.get("url")));
-        this.$note // TODO: port note
+        this.$note
             .html(this.model.get("note") || "")
             .removeClass()
             .addClass("nav-note")
