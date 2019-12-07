@@ -36,6 +36,7 @@ from galaxy.tools.wrappers import (
 )
 from galaxy.util import (
     find_instance_nested,
+    listify,
     unicodify,
 )
 from galaxy.util.bunch import Bunch
@@ -258,6 +259,8 @@ class ToolEvaluator(object):
                 )
                 input_values[input.name] = wrapper
             elif isinstance(input, SelectToolParameter):
+                if input.multiple:
+                    value = listify(value)
                 input_values[input.name] = SelectToolParameterWrapper(
                     input, value, other_values=param_dict, path_rewriter=self.unstructured_path_rewriter)
             else:
