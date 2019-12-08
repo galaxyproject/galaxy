@@ -82,7 +82,7 @@ def mulled_tags_for(namespace, image, tag_prefix=None):
 
 def split_tag(tag):
     """Split mulled image name into conda version and conda build."""
-    return tag.split('--', 1)
+    return tag.rsplit('--', 1)
 
 
 def parse_tag(tag):
