@@ -86,7 +86,7 @@ def split_tag(tag):
 
 
 def parse_tag(tag):
-    """Split mulled image name into version and build number."""
+    """Decompose tag of mulled images into version, build string and build number."""
     version = tag
     build_string = "-1"
     if '--' in tag:
