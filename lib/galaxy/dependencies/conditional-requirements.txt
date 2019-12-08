@@ -1,5 +1,5 @@
 # These dependencies are only required when certain config options are set
-psycopg2-binary==2.7.4
+psycopg2-binary==2.8.4
 weberror==0.10.3
 mysqlclient
 fluent-logger
