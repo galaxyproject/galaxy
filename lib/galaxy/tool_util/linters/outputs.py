@@ -20,25 +20,26 @@ def lint_output(tool_xml, lint_ctx):
             lint_ctx.warn("Unknown element found in outputs [%s]" % output.tag)
             continue
         num_outputs += 1
-        output_attrib = output.attrib
-        if "name" not in output_attrib:
+        if "name" not in output.attrib:
             lint_ctx.warn("Tool output doesn't define a name - this is likely a problem.")
         else:
-            if not is_valid_cheetah_placeholder(output_attrib["name"]):
-                lint_ctx.warn("Tool output name [%s] is not a valid Cheetah placeholder.", output_attrib["name"])
+            if not is_valid_cheetah_placeholder(output.attrib["name"]):
+                lint_ctx.warn("Tool output name [%s] is not a valid Cheetah placeholder.", output.attrib["name"])
 
         if output.tag == "data":
             format_set = False
-            if "format" in output_attrib:
+            if "format" in output.attrib:
                 format_set = True
-                format = output_attrib["format"]
+                format = output.attrib["format"]
                 if format == "input":
                     lint_ctx.warn("Using format='input' on output data, format_source attribute is less ambiguous and should be used instead.")
-            elif "format_source" in output_attrib:
+            elif "format_source" in output.attrib:
+                format_set = True
+            elif "auto_format" in output.attrib and output.attrib["auto_format"]:
                 format_set = True
             if not format_set:
                 lint_ctx.warn("Tool data output doesn't define an output format.")
         elif output.tag == "collection":
-            if "type" not in output_attrib:
+            if "type" not in output.attrib:
                 lint_ctx.warn("Collection output with undefined 'type' found.")
     lint_ctx.info("%d outputs found.", num_outputs)
