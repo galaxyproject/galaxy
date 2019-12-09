@@ -23,13 +23,15 @@
                                         :id="tab.id"
                                         :href="tab.url"
                                         :target="tab.target"
-                                        :link-classes="[tab.icon && 'nav-icon', tab.icon && 'fa', tab.icon || '']"
-                            >
+                                        :link-classes="[
+                                            tab.toggle && 'toggle',
+                                            tab.icon && 'nav-icon',
+                                            tab.icon && 'fa',
+                                            tab.icon || ''
+                                        ]">
 
                                 {{ tab["title"] }}
-                                <div v-if="tab.show_note" class="nav-note-port">{{ tab["note"] }}</div>
                             </b-nav-item>
-
                             <b-nav-item-dropdown v-else
                                                  :text="tab.title"
                                                  v-b-tooltip.hover.bottom :title="tab.tooltip"
@@ -43,9 +45,9 @@
                                                  @click="open(item, $event)"
                                 >
                                     {{ item["title"] }}
-                                    <div v-if="tab.note" class="nav-note-port">{{ tab["note"] }}</div>
                                 </b-dropdown-item>
                             </b-nav-item-dropdown>
+                        <li v-if="tab.show_note" class="nav-note-port" :class="tab.note_cls">{{ tab["note"] }}</li>
                     </template>
                 </b-navbar-nav>
 
@@ -58,6 +60,7 @@
     import { VBTooltip } from "bootstrap-vue";
     import { VBPopover } from "bootstrap-vue";
     import { BNavbar, BNavbarBrand, BNavbarNav } from "bootstrap-vue";
+    import _ from "underscore";
 
     export default {
         name: "Masthead",
@@ -84,6 +87,9 @@
             tabs: {
                 type: Array
             },
+            frames: {
+                type: Object,
+            },
             appRoot: {
                 type: String,
             },
@@ -107,6 +113,10 @@
         },
         methods: {
             open(tab, event) {
+                if (tab.onclick) {
+                    return this.propogateClick(tab, event);
+                }
+
                 if (tab.disabled) {
                     event.preventDefault();
 
@@ -121,29 +131,80 @@
 
                     if (tab.target === "__use_router__" && typeof this.Galaxy.page !== "undefined") {
                         this.Galaxy.page.router.executeUseRouter(tab.url);
+                        this.activeTab = tab.id;
                     } else {
                         try {
                             this.Galaxy.frame.add(tab);
+                            this.activeTab = tab.id;
                         } catch (err) {
                             console.warn("Missing frame element on galaxy instance", err);
                         }
                     }
                 }
             },
+            propogateClick(tab, event) {
+                event.preventDefault();
+                tab.onclick();
+
+                if (tab.id === "enable-scratchbook") {
+                    _.each(this.tabs, (tab, i) => {
+                        if (tab.id === "enable-scratchbook") {
+                            tab.active = !tab.active;
+
+                            this.$set(this.tabs, i, {
+                                ...tab,
+                                toggle: tab.active,
+                                show_note: tab.active,
+                                note_cls: tab.active && "fa fa-check"
+                            });
+                        }
+                    });
+                }
+            },
+        },
+        created() {
+            _.each(this.tabs, tab => {
+                if (tab.onbeforeunload) {
+                    console.log(tab);
+                    document.addEventListener('beforeunload', () => {
+                        tab.onbeforeunload();
+                    });
+                }
+            });
         },
         mounted() {
             console.log(this.tabs);
             this.quotaMeter.setElement(this.$refs['quota-meter-container']);
             this.quotaMeter.render();
+
+            const idx = _.findIndex(this.tabs, { id: "show-scratchbook" });
+            this.frames
+                .on("add remove", () => {
+                    this.$set(this.tabs, idx, {
+                        ...this.tabs[idx],
+                        note: this.frames.length(),
+                        visible: this.frames.length() > 0
+                    });
+                })
+                .on("show hide", () => {
+                    this.$set(this.tabs, idx, {
+                        ...this.tabs[idx],
+                        toggle: this.frames.visible,
+                        icon: (this.frames.visible && "fa-eye") || "fa-eye-slash"
+                    });
+                });
         }
     }
 </script>
 
 <style scoped>
     .nav-note-port {
-        position: absolute;
-        bottom: .1rem;
+        position: relative;
+        font-weight: 700;
+        left: -0.4rem;
+        top: 0.7rem;
         font-size: .7rem;
         color: gold;
+        width: 0;
     }
 </style>

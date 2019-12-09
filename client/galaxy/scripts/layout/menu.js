@@ -60,7 +60,7 @@ const Collection = Backbone.Collection.extend({
             tooltip: _l("Chain tools into workflows"),
             disabled: !Galaxy.user.id,
             url: "workflows/list",
-            target: "__use_router__",
+            target: "__use_router__"
         });
 
         //
