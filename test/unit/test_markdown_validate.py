@@ -1,4 +1,4 @@
-from galaxy.managers.markdown_util import validate_galaxy_markdown
+from galaxy.managers.markdown_parse import validate_galaxy_markdown
 
 
 def assert_markdown_valid(markdown):
@@ -9,7 +9,7 @@ def assert_markdown_invalid(markdown, at_line=None):
     failed = False
     try:
         validate_galaxy_markdown(markdown)
-    except Exception as e:
+    except ValueError as e:
         failed = True
         if at_line is not None:
             assert "Invalid line %d" % (at_line + 1) in str(e)

@@ -19,59 +19,28 @@ from galaxy.managers.hdas import HDAManager
 from galaxy.managers.hdcas import HDCASerializer
 from galaxy.managers.jobs import JobManager
 from galaxy.managers.workflows import WorkflowsManager
+from .markdown_parse import GALAXY_MARKDOWN_FUNCTION_CALL_LINE, validate_galaxy_markdown
 
 log = logging.getLogger(__name__)
 
-GALAXY_FLAVORED_MARKDOWN_CONTAINERS = [
-    "history_dataset_display",
-    "history_dataset_collection_display",
-    "history_dataset_as_image",
-    "history_dataset_peek",
-    "history_dataset_info",
-    "workflow_display",
-    "job_metrics",
-    "job_parameters",
-    "tool_stderr",
-    "tool_stdout",
-]
-INVOCATION_SECTIONS = [
-    "invocation_inputs",
-    "invocation_outputs",
-]
-ALL_CONTAINER_TYPES = GALAXY_FLAVORED_MARKDOWN_CONTAINERS + INVOCATION_SECTIONS
-GALAXY_FLAVORED_MARKDOWN_CONTAINER_REGEX = "(%s)" % "|".join(ALL_CONTAINER_TYPES)
-
-ARG_VAL_REGEX = r'''[\w_\-]+|\"[^\"]+\"|\'[^\']+\''''
 ARG_VAL_CAPTURED_REGEX = r'''(?:([\w_\-]+)|\"([^\"]+)\"|\'([^\']+)\')'''
-FUNCTION_ARG = r'\s*\w+\s*=\s*(?:%s)\s*' % ARG_VAL_REGEX
-FUNCTION_CALL_LINE_TEMPLATE = r'\s*%s\s*\((?:' + FUNCTION_ARG + r')?\)\s*'
-GALAXY_MARKDOWN_FUNCTION_CALL_LINE = re.compile(FUNCTION_CALL_LINE_TEMPLATE % GALAXY_FLAVORED_MARKDOWN_CONTAINER_REGEX)
-
-BLOCK_FENCE_START = re.compile(r'```.*')
-BLOCK_FENCE_END = re.compile(r'```[\s]*')
-
 OUTPUT_LABEL_PATTERN = re.compile(r'output=\s*%s\s*' % ARG_VAL_CAPTURED_REGEX)
 INPUT_LABEL_PATTERN = re.compile(r'input=\s*%s\s*' % ARG_VAL_CAPTURED_REGEX)
 STEP_LABEL_PATTERN = re.compile(r'step=\s*%s\s*' % ARG_VAL_CAPTURED_REGEX)
 # STEP_OUTPUT_LABEL_PATTERN = re.compile(r'step_output=([\w_\-]+)/([\w_\-]+)')
 UNENCODED_ID_PATTERN = re.compile(r'(workflow_id|history_dataset_id|history_dataset_collection_id|job_id)=([\d]+)')
 ENCODED_ID_PATTERN = re.compile(r'(workflow_id|history_dataset_id|history_dataset_collection_id|job_id)=([a-z0-9]+)')
-GALAXY_FLAVORED_MARKDOWN_CONTAINER_LINE_PATTERN = re.compile(
-    r"```\s*galaxy\s*"
-)
 INVOCATION_SECTION_MARKDOWN_CONTAINER_LINE_PATTERN = re.compile(
     r"```\s*galaxy\s*"
 )
 GALAXY_FENCED_BLOCK = re.compile(r'^```\s*galaxy\s*(.*?)^```', re.MULTILINE ^ re.DOTALL)
 VALID_CONTAINER_START_PATTERN = re.compile(r"^```\s+[\w]+.*$")
-VALID_CONTAINER_END_PATTERN = re.compile(r"^```\s*$")
-WHITE_SPACE_ONLY_PATTERN = re.compile(r"^[\s]+$")
 
 
 def ready_galaxy_markdown_for_import(trans, external_galaxy_markdown):
     """Convert from encoded IDs to decoded numeric IDs for storing in the DB."""
 
-    validate_galaxy_markdown(external_galaxy_markdown, internal=False)
+    _validate(external_galaxy_markdown, internal=False)
 
     def _remap(container, line):
         id_match = re.search(ENCODED_ID_PATTERN, line)
@@ -269,55 +238,6 @@ history_dataset_collection_display(input=%s)
     return galaxy_markdown
 
 
-def validate_galaxy_markdown(galaxy_markdown, internal=True):
-    expecting_container_close_for = None
-    last_line_no = 0
-    function_calls = 0
-    for (line, fenced, open_fence, line_no) in _split_markdown_lines(galaxy_markdown):
-        last_line_no = line_no
-
-        def invalid_line(template, **kwd):
-            if "line" in kwd:
-                kwd["line"] = line.rstrip("\r\n")
-            raise MalformedContents("Invalid line %d: %s" % (line_no + 1, template.format(**kwd)))
-
-        expecting_container_close = expecting_container_close_for is not None
-        if not fenced and expecting_container_close:
-            invalid_line("[{line}] is not expected close line for [{expected_for}]", line=line, expected_for=expecting_container_close_for)
-            continue
-        elif not fenced:
-            continue
-        elif fenced and expecting_container_close and BLOCK_FENCE_END.match(line):
-            # reset
-            expecting_container_close_for = None
-            function_calls = 0
-        elif open_fence and GALAXY_FLAVORED_MARKDOWN_CONTAINER_LINE_PATTERN.match(line):
-            if expecting_container_close:
-                if not VALID_CONTAINER_END_PATTERN.match(line):
-                    invalid_line("Invalid command close line [{line}] for [{expected_for}]", line=line, expected_for=expecting_container_close_for)
-                # else closing container and we're done
-                expecting_container_close_for = None
-                function_calls = 0
-                continue
-
-            expecting_container_close_for = line
-            continue
-        elif fenced and line and expecting_container_close_for:
-            if GALAXY_MARKDOWN_FUNCTION_CALL_LINE.match(line):
-                function_calls += 1
-                if function_calls > 1:
-                    invalid_line("Only one Galaxy directive is allowed per fenced Galaxy block (```galaxy)")
-                continue
-            else:
-                invalid_line("Invalid embedded Galaxy markup line [{line}]", line=line)
-
-        # Markdown unrelated to Galaxy object containers.
-        continue
-
-    if expecting_container_close_for:
-        raise MalformedContents("Invalid line %d: %s" % (last_line_no, "close of block for [{expected_for}] expected".format(expected_for=expecting_container_close_for)))
-
-
 def _remap_galaxy_markdown_containers(func, markdown):
     new_markdown = markdown
 
@@ -362,24 +282,12 @@ def _remap_galaxy_markdown_calls(func, markdown):
     return _remap_galaxy_markdown_containers(_remap_container, markdown)
 
 
-def _split_markdown_lines(markdown):
-    """Yield lines of a markdown document line-by-line keeping track of fencing.
-
-    'Fenced' lines are code-like block (e.g. between ```) that shouldn't contain
-    Markdown markup.
-    """
-    block_fenced = False
-    indent_fenced = False
-    for line_number, line in enumerate(markdown.splitlines(True)):
-        open_fence_this_iteration = False
-        indent_fenced = line.startswith("    ") or (indent_fenced and WHITE_SPACE_ONLY_PATTERN.match(line))
-        if not block_fenced:
-            if BLOCK_FENCE_START.match(line):
-                open_fence_this_iteration = True
-                block_fenced = True
-        yield (line, block_fenced or indent_fenced, open_fence_this_iteration, line_number)
-        if not open_fence_this_iteration and BLOCK_FENCE_END.match(line):
-            block_fenced = False
+def _validate(*args, **kwds):
+    """Light wrapper around validate_galaxy_markdown to throw galaxy exceptions instead of ValueError."""
+    try:
+        return validate_galaxy_markdown(*args, **kwds)
+    except ValueError as e:
+        raise MalformedContents(str(e))
 
 
 __all__ = (
