@@ -11,7 +11,7 @@
                     <template v-for="tab in tabs">
                             <b-nav-item v-if="!tab.menu"
                                         :class="{
-                                            active: tab.id === activeTab,
+                                            active: tab.id === activeTab(),
                                         }"
                                         :active="!tab.disabled"
                                         v-b-tooltip.hover.bottom :title="tab.tooltip"
@@ -33,6 +33,9 @@
                                 {{ tab["title"] }}
                             </b-nav-item>
                             <b-nav-item-dropdown v-else
+                                                 :class="{
+                                                    active: tab.id === activeTab(),
+                                                 }"
                                                  :text="tab.title"
                                                  v-b-tooltip.hover.bottom :title="tab.tooltip"
                                                  @show="open(tab, $event)"
@@ -82,7 +85,7 @@
                 type: Object
             },
             activeTab: {
-                type: String,
+                type: Function,
             },
             tabs: {
                 type: Array
@@ -131,11 +134,9 @@
 
                     if (tab.target === "__use_router__" && typeof this.Galaxy.page !== "undefined") {
                         this.Galaxy.page.router.executeUseRouter(tab.url);
-                        this.activeTab = tab.id;
                     } else {
                         try {
                             this.Galaxy.frame.add(tab);
-                            this.activeTab = tab.id;
                         } catch (err) {
                             console.warn("Missing frame element on galaxy instance", err);
                         }
@@ -165,7 +166,6 @@
         created() {
             _.each(this.tabs, tab => {
                 if (tab.onbeforeunload) {
-                    console.log(tab);
                     document.addEventListener('beforeunload', () => {
                         tab.onbeforeunload();
                     });
@@ -173,7 +173,6 @@
             });
         },
         mounted() {
-            console.log(this.tabs);
             this.quotaMeter.setElement(this.$refs['quota-meter-container']);
             this.quotaMeter.render();
 

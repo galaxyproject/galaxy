@@ -103,7 +103,7 @@ const View = Backbone.View.extend({
                 brandImage: this.options.logo_src,
 
                 quotaMeter: this.quotaMeter,
-                activeTab: this.activeView,
+                activeTab: () => {return this.activeView},
                 tabs: _.map(this.collection.models, el => {
                     return el.toJSON();
                 }),
@@ -119,6 +119,7 @@ const View = Backbone.View.extend({
     },
 
     highlight: function(id) {
+        this.activeView = id;
         this.collection.forEach(function(model) {
             model.set("active", model.id == id);
         });
