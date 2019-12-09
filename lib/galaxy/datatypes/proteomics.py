@@ -611,6 +611,16 @@ class XquestSpecXML(ProteomicsXml):
     root = "xquest_spectra"
 
 
+class QCML(ProteomicsXml):
+    """qcml
+    https://github.com/OpenMS/OpenMS/blob/develop/share/OpenMS/SCHEMAS/mzQCML_0_0_5.xsd
+    https://github.com/OpenMS/OpenMS/blob/develop/share/OpenMS/SCHEMAS/qcML_0.0.7.xsd
+    """
+    file_ext = "qcml"
+    blurb = 'QualityAssessments to runs'
+    root = "qcML|MzQualityML)"
+
+
 class Mgf(Text):
     """Mascot Generic Format data"""
     edam_data = "data_2536"
