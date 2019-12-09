@@ -68,8 +68,8 @@ export default {
                     sortable: true
                 },
                 {
-                    label: "Created",
-                    key: "create_time_ago",
+                    label: "Updated",
+                    key: "update_time_ago",
                     sortable: true
                 },
                 {
@@ -81,7 +81,7 @@ export default {
             query: "",
             limit: 50,
             offset: 0,
-            sortBy: "create_time",
+            sortBy: "update_time",
             sortDesc: true,
             loading: true,
             message: null,
