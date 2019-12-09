@@ -466,8 +466,8 @@ class ProteomicsXml(GenericXml):
             if line is None or not line.startswith('<?'):
                 break
         # pattern match <root or <ns:root for any ns string
-        pattern = r'^<(\w*:)?%s' % self.root
-        return line is not None and re.match(pattern, line) is not None
+        pattern = r'<(\w*:)?%s' % self.root
+        return line is not None and re.search(pattern, line) is not None
 
     def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text"""
@@ -602,6 +602,13 @@ class XquestXML(ProteomicsXml):
     file_ext = "xquest.xml"
     blurb = "XQuest XML file"
     root = "xquest_results"
+
+
+class XquestSpecXML(ProteomicsXml):
+    """spec.xml"""
+    file_ext = "spec.xml"
+    blurb = 'xquest_spectra'
+    root = "xquest_spectra"
 
 
 class Mgf(Text):
