@@ -182,7 +182,8 @@
                     this.$set(this.tabs, idx, {
                         ...this.tabs[idx],
                         note: this.frames.length(),
-                        visible: this.frames.length() > 0
+                        visible: this.frames.length() > 0,
+                        show_note: this.frames.length() > 0,
                     });
                 })
                 .on("show hide", () => {
