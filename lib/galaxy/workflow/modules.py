@@ -51,6 +51,7 @@ from galaxy.tools.parameters.basic import (
 from galaxy.tools.parameters.grouping import (
     Conditional,
     ConditionalWhen,
+    Repeat,
 )
 from galaxy.tools.parameters.history_query import HistoryQuery
 from galaxy.tools.parameters.wrapped import make_dict_copy
@@ -814,10 +815,10 @@ class InputParameterModule(WorkflowModule):
             optional_cond.name = "optional"
             optional_cond.test_param = optional_value
 
-            when_text = ConditionalWhen()
-            when_text.value = param_type
-            when_text.inputs = OrderedDict()
-            when_text.inputs["optional"] = optional_cond
+            when_this_type = ConditionalWhen()
+            when_this_type.value = param_type
+            when_this_type.inputs = OrderedDict()
+            when_this_type.inputs["optional"] = optional_cond
 
             specify_default_checked = "default" in parameter_def
             specify_default = BooleanToolParameter(None, Element("param", name="specify_default", label="Specify a default value", type="boolean", checked=specify_default_checked))
@@ -849,7 +850,21 @@ class InputParameterModule(WorkflowModule):
             optional_cases = [when_true, when_false]
             optional_cond.cases = optional_cases
 
-            cases.append(when_text)
+            if param_type == "text":
+                # Repeats don't work - so use common separated list for now.
+                restrictions_list = parameter_def.get("restrictions")
+                if restrictions_list is None:
+                    restrictions_list = []
+                restriction_values = ",".join(restrictions_list)
+                restrictions = TextToolParameter(None, XML(
+                    '''
+                    <param name="restrictions" label="Restriction Value" value="%s" help="Comma-seperated list of potential values">
+                    </param>
+                        ''' % restriction_values))
+
+                when_this_type.inputs["restrictions"] = restrictions
+
+            cases.append(when_this_type)
 
         parameter_type_cond.cases = cases
         return OrderedDict([("parameter_definition", parameter_type_cond)])
@@ -860,6 +875,9 @@ class InputParameterModule(WorkflowModule):
         optional = parameter_def["optional"]
         if parameter_type not in ["text", "boolean", "integer", "float", "color"]:
             raise ValueError("Invalid parameter type for workflow parameters encountered.")
+        restrictions = parameter_type == "text" and parameter_def.get("restrictions")
+        if restrictions:
+            parameter_type = "select"
         parameter_class = parameter_types[parameter_type]
         parameter_kwds = {}
 
@@ -870,9 +888,11 @@ class InputParameterModule(WorkflowModule):
         if "value" not in parameter_kwds and parameter_type in ["integer", "float"]:
             parameter_kwds["value"] = str(0)
 
-        # TODO: Use a dict-based description from YAML tool source
-        element = Element("param", name="input", label=self.label, type=parameter_type, optional=optional, **parameter_kwds)
-        input = parameter_class(None, element)
+        if restrictions:
+            parameter_kwds["options"] = [{"value": r} for r in restrictions]
+
+        input_source = dict(name="input", label=self.label, type=parameter_type, optional=optional, **parameter_kwds)
+        input = parameter_class(None, input_source)
         return dict(input=input)
 
     def get_runtime_state(self):
@@ -913,6 +933,7 @@ class InputParameterModule(WorkflowModule):
             default_set = True
             default_value = state["default"]
             state["optional"] = True
+        restrictions = state.get("restrictions")
         state = {
             "parameter_definition": {
                 "parameter_type": state["parameter_type"],
@@ -921,6 +942,8 @@ class InputParameterModule(WorkflowModule):
                 }
             }
         }
+        if restrictions:
+            state["parameter_definition"]["restrictions"] = ",".join(restrictions)
         if default_set:
             state["parameter_definition"]["optional"]["specify_default"] = {}
             state["parameter_definition"]["optional"]["specify_default"]["specify_default"] = True
@@ -929,7 +952,8 @@ class InputParameterModule(WorkflowModule):
         return state
 
     def get_export_state(self):
-        return self._parse_state_into_dict()
+        export_state = self._parse_state_into_dict()
+        return export_state
 
     def _parse_state_into_dict(self):
         inputs = self.state.inputs
@@ -947,6 +971,9 @@ class InputParameterModule(WorkflowModule):
                     rval["default"] = optional_state["specify_default"]["default"]
             else:
                 optional = False
+            restriction_values = parameters_def.get("restrictions")
+            if restriction_values:
+                rval.update({"restrictions": [v.strip() for v in restriction_values.split(",")]})
             rval.update({"parameter_type": parameters_def["parameter_type"], "optional": optional})
         else:
             rval.update({"parameter_type": self.default_parameter_type, "optional": self.default_optional})

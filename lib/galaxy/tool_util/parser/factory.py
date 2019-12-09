@@ -10,7 +10,7 @@ from galaxy.tool_util.loader import load_tool_with_refereces
 from .cwl import CwlToolSource
 from .interface import InputSource
 from .xml import XmlInputSource, XmlToolSource
-from .yaml import YamlToolSource
+from .yaml import YamlInputSource, YamlToolSource
 from ..fetcher import ToolLocationFetcher
 
 log = logging.getLogger(__name__)
@@ -82,7 +82,10 @@ def get_input_source(content):
     consume using the tool input source interface.
     """
     if not isinstance(content, InputSource):
-        content = XmlInputSource(content)
+        if isinstance(content, dict):
+            content = YamlInputSource(content)
+        else:
+            content = XmlInputSource(content)
     return content
 
 

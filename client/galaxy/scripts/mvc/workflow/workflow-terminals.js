@@ -469,8 +469,13 @@ var InputParameterTerminal = BaseInputTerminal.extend({
     connect: function(connector) {
         BaseInputTerminal.prototype.connect.call(this, connector);
     },
+    effectiveType: function(parameterType) {
+        return parameterType == "select" ? "text" : parameterType;
+    },
     attachable: function(other) {
-        return new ConnectionAcceptable(this.type == other.attributes.type, "");
+        const effectiveThisType = this.effectiveType(this.type);
+        const effectiveOtherType = this.effectiveType(other.attributes.type);
+        return new ConnectionAcceptable(effectiveThisType == effectiveOtherType, "");
     }
 });
 
