@@ -179,7 +179,7 @@
                     </b-card>
                 </template>
             </b-table>
-            <b-modal ref="job-info-modal" scrollable ok-only @hidden="resetModalContents">
+            <b-modal ref="job-info-modal" scrollable hide-header ok-only @hidden="resetModalContents">
                 <div class="info-frame-container">
                     <iframe :src="selectedJobUrl"></iframe>
                 </div>
@@ -284,11 +284,11 @@ export default {
             this.selectedStopJobIds = [];
             this.stopMessage = "";
         },
-        clickJobInfo(id){
+        clickJobInfo(id) {
             this.selectedJobId = id;
-            this.$refs['job-info-modal'].show();
+            this.$refs["job-info-modal"].show();
         },
-        resetModalContents(){
+        resetModalContents() {
             this.selectedJobId = null;
         },
         showRowDetails(row, index, e) {
