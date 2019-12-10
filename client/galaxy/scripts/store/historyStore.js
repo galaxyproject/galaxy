@@ -4,12 +4,12 @@ import axios from "axios";
 
 const state = {
     historyDetailsById: {},
-    historiesById: {}
+    historyById: {}
 };
 
 const getters = {
     getHistoryById: state => historyId => {
-        return state.historiesById[historyId];
+        return state.historyById[historyId];
     },
     getHistoryNameById: state => historyId => {
         const details = state.historyDetailsById[historyId];
@@ -42,7 +42,7 @@ const mutations = {
         state.historyDetailsById = historyDetailsById;
     },
     saveHistoryForId: (state, { historyId, historyData }) => {
-        Vue.set(state.historiesById, historyId, historyData);
+        Vue.set(state.historyById, historyId, historyData);
     }
 };
 

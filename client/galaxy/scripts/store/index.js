@@ -34,8 +34,7 @@ export function createStore() {
             invocations: invocationStore,
             user: userStore,
             config: configStore,
-            workflows: workflowStore,
-            history: historyStore
+            workflows: workflowStore
         }
     });
 }
