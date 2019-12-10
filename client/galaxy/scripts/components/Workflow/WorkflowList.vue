@@ -58,7 +58,7 @@
                         <b-form-checkbox v-model="row.item.show_in_tool_panel" @change="bookmarkWorkflow(row.item)" />
                     </template>
                     <template v-slot:cell(create_time)="data">
-                        <UtcDate :date="data.value" mode="elapsed"/>
+                        <UtcDate :date="data.value" mode="elapsed" />
                     </template>
                     <template v-slot:cell(execute)="row">
                         <b-button

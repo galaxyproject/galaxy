@@ -15,7 +15,7 @@
                     <Tags :item="row.item" @input="onTags" />
                 </template>
                 <template v-slot:cell(update_time)="data">
-                    <UtcDate :date="data.value" mode="elapsed"/>
+                    <UtcDate :date="data.value" mode="elapsed" />
                 </template>
             </b-table>
             <loading-span v-if="loading" message="Loading datasets" />

@@ -9,10 +9,10 @@ describe("Dataset Name", () => {
         expect(state.at(0).text()).to.equal("name");
         const $linkShow = wrapper.find(".dropdown-item:first-child");
         $linkShow.trigger("click");
-        expect(wrapper.emitted().showDataset).to.be.an('array');
+        expect(wrapper.emitted().showDataset).to.be.an("array");
         const $linkCopy = wrapper.find(".dropdown-item:last-child");
         $linkCopy.trigger("click");
-        expect(wrapper.emitted().copyDataset).to.be.an('array');
+        expect(wrapper.emitted().copyDataset).to.be.an("array");
     });
     it("test dataset error", async () => {
         const wrapper = mount(DatasetName, { propsData: { item: { name: "name", state: "error" } } });
