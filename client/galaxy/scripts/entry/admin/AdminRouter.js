@@ -55,17 +55,13 @@ export const getAdminRouter = (Galaxy, options) => {
         },
 
         show_home: function() {
-            //this._display_vue_helper(AdminHome, {propsData: {opts: options}});
-            const instance = Vue.extend(AdminHome);
-            const vm = document.createElement("div");
-            this.page.display(vm);
-            new instance({
+            this._display_vue_helper(AdminHome, {
                 propsData: {
                     installingRepositoryIds: options.settings.installing_repository_ids,
                     isRepoInstalled: options.settings.is_repo_installed,
                     isToolShedInstalled: options.settings.is_tool_shed_installed
                 }
-            }).$mount(vm);
+            });
         },
 
         show_users: function() {
@@ -73,17 +69,14 @@ export const getAdminRouter = (Galaxy, options) => {
         },
 
         show_users_create: function() {
-            const instance = Vue.extend(Register);
-            const vm = document.createElement("div");
-            this.page.display(vm);
-            new instance({
+            this._display_vue_helper(Register, {
                 propsData: {
                     redirect: "/admin/users",
                     registration_warning_message: options.config.registration_warning_message,
                     mailing_join_addr: options.config.mailing_join_addr,
                     server_mail_configured: options.config.server_mail_configured
                 }
-            }).$mount(vm);
+            });
         },
 
         show_roles: function() {
