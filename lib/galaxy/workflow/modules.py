@@ -920,7 +920,7 @@ class InputParameterModule(WorkflowModule):
                 restrictions_list = parameter_def.get("restrictions") or parameter_def.get("suggestions")
                 if restrictions_list is None:
                     restrictions_list = []
-                restriction_values = ",".join(restrictions_list)
+                restriction_values = self._parameter_option_def_to_tool_form_str(restrictions_list)
                 restrictions_source = dict(name="restrictions", label="Restriction Values", value=restriction_values, help="Comman-separated list of potential all values")
                 restrictions = TextToolParameter(None, restrictions_source)
 
@@ -988,9 +988,26 @@ class InputParameterModule(WorkflowModule):
         except Exception:
             log.debug("Failed to generate options for text parameter, falling back to free text.", exc_info=True)
 
+        def _parameter_def_list_to_options(parameter_value):
+            options = []
+            for item in parameter_value:
+                option = {}
+                if isinstance(item, dict):
+                    value = item["value"]
+                    option["value"] = value
+                    if "label" in item:
+                        option["label"] = item["label"]
+                    else:
+                        option["label"] = value
+                else:
+                    option["value"] = item
+                    option["label"] = item
+                options.append(option)
+            return options
+
         if is_text and not restricted_inputs and parameter_def.get("restrictions"):
             restriction_values = parameter_def.get("restrictions")
-            parameter_kwds["options"] = [{"value": r} for r in restriction_values]
+            parameter_kwds["options"] = _parameter_def_list_to_options(restriction_values)
             restricted_inputs = True
 
         client_parameter_type = parameter_type
@@ -1008,7 +1025,7 @@ class InputParameterModule(WorkflowModule):
 
         if is_text and parameter_def.get("suggestions") is not None:
             suggestion_values = parameter_def.get("suggestions")
-            parameter_kwds["options"] = [{"value": r} for r in suggestion_values]
+            parameter_kwds["options"] = _parameter_def_list_to_options(suggestion_values)
 
         input_source = dict(name="input", label=self.label, type=client_parameter_type, optional=optional, **parameter_kwds)
         input = parameter_class(None, input_source)
@@ -1073,16 +1090,20 @@ class InputParameterModule(WorkflowModule):
         }
         state["parameter_definition"]["restrictions"] = {}
         state["parameter_definition"]["restrictions"]["how"] = restrictions_how
+
         if restrictions_how == "staticRestrictions":
-            state["parameter_definition"]["restrictions"]["restrictions"] = ",".join(restrictions)
+            state["parameter_definition"]["restrictions"]["restrictions"] = self._parameter_option_def_to_tool_form_str(restrictions)
         if restrictions_how == "staticSuggestions":
-            state["parameter_definition"]["restrictions"]["suggestions"] = ",".join(suggestions)
+            state["parameter_definition"]["restrictions"]["suggestions"] = self._parameter_option_def_to_tool_form_str(suggestions)
         if default_set:
             state["parameter_definition"]["optional"]["specify_default"] = {}
             state["parameter_definition"]["optional"]["specify_default"]["specify_default"] = True
             state["parameter_definition"]["optional"]["specify_default"]["default"] = default_value
         state = json.dumps(state)
         return state
+
+    def _parameter_option_def_to_tool_form_str(self, parameter_def):
+        return ",".join("%s:%s" % (o["value"], o["label"]) if isinstance(o, dict) else o for o in parameter_def)
 
     def get_export_state(self):
         export_state = self._parse_state_into_dict()
@@ -1106,6 +1127,18 @@ class InputParameterModule(WorkflowModule):
                 optional = False
             restrictions_cond_values = parameters_def.get("restrictions")
             if restrictions_cond_values:
+
+                def _string_to_parameter_def_option(str_value):
+                    items = []
+                    for option_part in str_value.split(","):
+                        option_part = option_part.strip()
+                        if ":" not in option_part:
+                            items.append(option_part)
+                        else:
+                            value, label = option_part.split(":", 1)
+                            items.append({"value": value, "label": label})
+                    return items
+
                 # how better be in here.
                 how = restrictions_cond_values["how"]
                 if how == "none":
@@ -1114,10 +1147,10 @@ class InputParameterModule(WorkflowModule):
                     rval["restrictOnConnections"] = True
                 elif how == "staticRestrictions":
                     restriction_values = restrictions_cond_values["restrictions"]
-                    rval.update({"restrictions": [v.strip() for v in restriction_values.split(",")]})
+                    rval.update({"restrictions": _string_to_parameter_def_option(restriction_values)})
                 elif how == "staticSuggestions":
                     suggestion_values = restrictions_cond_values["suggestions"]
-                    rval.update({"suggestions": [v.strip() for v in suggestion_values.split(",")]})
+                    rval.update({"suggestions": _string_to_parameter_def_option(suggestion_values)})
                 else:
                     log.warn("Unknown restriction conditional type encountered for workflow parameter.")
 
