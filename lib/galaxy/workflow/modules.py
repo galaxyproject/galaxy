@@ -969,17 +969,22 @@ class InputParameterModule(WorkflowModule):
                             static_options.append(input.get_options(self.trans, {}))
                     visit_input_values(tool_inputs, module.state.inputs, callback)
 
-                if static_options:
-                    # Intersection based on values.
+                options = None
+                if static_options and len(static_options) == 1:
+                    # If we are connected to a single option, just use it as is so order is preserved cleanly and such.
+                    options = [{"value": o[0], "label": o[1]} for o in static_options[0]]
+                elif static_options:
+                    # Intersection based on values of multiple option connections.
                     intxn_vals = set.intersection(*({option[1] for option in options} for options in static_options))
                     intxn_opts = {option for options in static_options for option in options if option[1] in intxn_vals}
                     d = defaultdict(set)  # Collapse labels with same values
                     for label, value, selected in intxn_opts:
                         d[value].add(label)
                     options = [{"label": ', '.join(label), "value": value, "selected": False} for value, label in d.items()]
-                    if options:
-                        parameter_kwds["options"] = options
-                        restricted_inputs = True
+
+                if options is not None:
+                    parameter_kwds["options"] = options
+                    restricted_inputs = True
         except Exception:
             log.debug("Failed to generate options for text parameter, falling back to free text.", exc_info=True)
 
