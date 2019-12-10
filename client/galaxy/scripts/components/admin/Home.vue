@@ -142,7 +142,6 @@ export default {
     methods: {
         useRouter: function(ev) {
             const Galaxy = getGalaxyInstance();
-            ev.preventDefault();
             Galaxy.router.push(ev.target.pathname);
         }
     },
