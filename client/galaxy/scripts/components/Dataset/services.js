@@ -1,5 +1,5 @@
 import axios from "axios";
-import { timeAgo } from "utils/timeago";
+import moment from "moment";
 
 /** Datasets request helper **/
 export class Services {
@@ -10,9 +10,6 @@ export class Services {
     async getDatasets(options = {}) {
         let params = "";
         if (options.sortBy) {
-            if (options.sortBy === "update_time_ago") {
-                options.sortBy = "update_time";
-            }
             const sortPrefix = options.sortDesc ? "-dsc" : "-asc";
             params += `order=${options.sortBy}${sortPrefix}&`;
         }
@@ -28,9 +25,6 @@ export class Services {
         const url = `${this.root}api/datasets?${params}`;
         try {
             const { data } = await axios.get(url);
-            data.forEach(d => {
-                d.update_time_ago = timeAgo(d.update_time);
-            });
             return data;
         } catch (e) {
             this._errorMessage(e);

@@ -14,6 +14,9 @@
                 <template v-slot:cell(tags)="row">
                     <Tags :item="row.item" @input="onTags" />
                 </template>
+                <template v-slot:cell(update_time)="data">
+                    <UtcDate :date="data.value" mode="elapsed"/>
+                </template>
             </b-table>
             <loading-span v-if="loading" message="Loading datasets" />
             <div v-if="showNotFound">
@@ -33,6 +36,7 @@ import { Services } from "./services.js";
 import DatasetName from "./DatasetName";
 import DatasetHistory from "./DatasetHistory";
 import DelayedInput from "components/Common/DelayedInput";
+import UtcDate from "components/UtcDate";
 import Tags from "components/Common/Tags";
 import LoadingSpan from "components/LoadingSpan";
 import { mapActions } from "vuex";
@@ -43,6 +47,7 @@ export default {
         DatasetName,
         LoadingSpan,
         DelayedInput,
+        UtcDate,
         Tags
     },
     data() {
@@ -69,7 +74,7 @@ export default {
                 },
                 {
                     label: "Updated",
-                    key: "update_time_ago",
+                    key: "update_time",
                     sortable: true
                 },
                 {
