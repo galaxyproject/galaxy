@@ -1611,8 +1611,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         if jobid is not None:
             job = trans.sa_session.query(trans.app.model.Job).get(jobid)
         return trans.fill_template('/webapps/reports/job_info.mako',
-                                   job=job,
-                                   message="<a href='jobs'>Back</a>")
+                                   job=job)
 
     @web.expose
     @web.require_admin
