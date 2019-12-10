@@ -132,9 +132,9 @@
                     ></b-form-checkbox>
                 </template>
                 <template slot="job_info" slot-scope="data">
-                    <b-button v-on:click="clickJobInfo(data.value.id)">
-                        {{ data.value["id"] }}
-                    </b-button>
+                    <b-link :href="data.value.info_url" v-on:click.prevent="clickJobInfo(data.value.id)">
+                        {{ data.value.id }}
+                    </b-link>
                 </template>
                 <template slot="row-details" slot-scope="row">
                     <b-card>
