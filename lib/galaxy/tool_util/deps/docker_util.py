@@ -149,14 +149,7 @@ def build_docker_run_command(
     if container_name:
         command_parts.extend(["--name", container_name])
     for volume in volumes:
-        # These are environment variable expansions so we don't quote these.
-        volume_str = str(volume)
-        if "$" not in volume_str:
-            volume_for_cmd_line = shlex_quote(volume_str)
-        else:
-            # e.g. $_GALAXY_JOB_TMP_DIR:$_GALAXY_JOB_TMP_DIR:rw so don't single quote.
-            volume_for_cmd_line = '"%s"' % volume_str
-        command_parts.extend(["-v", volume_for_cmd_line])
+        command_parts.extend(["-v", str(volume)])
     if volumes_from:
         command_parts.extend(["--volumes-from", shlex_quote(str(volumes_from))])
     if memory:

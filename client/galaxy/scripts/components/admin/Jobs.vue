@@ -166,6 +166,9 @@
                         {{ data.value["id"] }}
                     </b-link>
                 </template>
+                <template v-slot:cell(update_time)="data">
+                    <utc-date :date="data.value" mode="elapsed" />
+                </template>
                 <template v-slot:row-details="row">
                     <b-card>
                         <h5>Command Line</h5>
@@ -181,9 +184,11 @@
 
 <script>
 import { getAppRoot } from "onload/loadConfig";
+import UtcDate from "components/UtcDate";
 import axios from "axios";
 
 export default {
+    components: { UtcDate },
     data() {
         return {
             jobsItems: [],

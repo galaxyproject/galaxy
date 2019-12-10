@@ -39,7 +39,7 @@ def copy_file_from_manifest(repo, changeset_revision, filename, dir):
     to which dir refers.
     """
     for changeset in reversed_upper_bounded_changelog(repo, changeset_revision):
-        changeset_ctx = repo.changectx(changeset)
+        changeset_ctx = repo[changeset]
         fctx = get_file_context_from_ctx(changeset_ctx, filename)
         if fctx and fctx not in ['DELETED']:
             file_path = os.path.join(dir, filename)
@@ -53,7 +53,7 @@ def copy_file_from_manifest(repo, changeset_revision, filename, dir):
 def get_changectx_for_changeset(repo, changeset_revision, **kwd):
     """Retrieve a specified changectx from a repository."""
     for changeset in repo.changelog:
-        ctx = repo.changectx(changeset)
+        ctx = repo[changeset]
         if str(ctx) == changeset_revision:
             return ctx
     return None
@@ -75,7 +75,7 @@ def get_ctx_file_path_from_manifest(filename, repo, changeset_revision):
     """
     stripped_filename = basic_util.strip_path(filename)
     for changeset in reversed_upper_bounded_changelog(repo, changeset_revision):
-        manifest_ctx = repo.changectx(changeset)
+        manifest_ctx = repo[changeset]
         for ctx_file in manifest_ctx.files():
             ctx_file_name = basic_util.strip_path(ctx_file)
             if ctx_file_name == stripped_filename:
@@ -146,7 +146,7 @@ def reversed_lower_upper_bounded_changelog(repo, excluded_lower_bounds_changeset
         appending_started = False
     reversed_changelog = []
     for changeset in repo.changelog:
-        changeset_hash = str(repo.changectx(changeset))
+        changeset_hash = str(repo[changeset])
         if appending_started:
             reversed_changelog.insert(0, changeset)
         if changeset_hash == excluded_lower_bounds_changeset_revision and not appending_started:

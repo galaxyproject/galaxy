@@ -302,6 +302,11 @@ const Collection = Backbone.Collection.extend({
                         title: _l("Pages"),
                         url: "pages/list",
                         target: "__use_router__"
+                    },
+                    {
+                        title: _l("Workflow Invocations"),
+                        url: "workflows/invocations",
+                        target: "__use_router__"
                     }
                 ]
             };

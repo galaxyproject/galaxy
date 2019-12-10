@@ -44,7 +44,7 @@ class ToolVersionManager(object):
         # Get all ancestor guids of the received guid.
         current_child_guid = guid
         for changeset in hg_util.reversed_upper_bounded_changelog(repo, repository_metadata.changeset_revision):
-            ctx = repo.changectx(changeset)
+            ctx = repo[changeset]
             rm = metadata_util.get_repository_metadata_by_changeset_revision(self.app, repository_id, str(ctx))
             if rm:
                 parent_guid = rm.tool_versions.get(current_child_guid, None)
@@ -56,7 +56,7 @@ class ToolVersionManager(object):
         for changeset in hg_util.reversed_lower_upper_bounded_changelog(repo,
                                                                         repository_metadata.changeset_revision,
                                                                         repository.tip(self.app)):
-            ctx = repo.changectx(changeset)
+            ctx = repo[changeset]
             rm = metadata_util.get_repository_metadata_by_changeset_revision(self.app, repository_id, str(ctx))
             if rm:
                 tool_versions = rm.tool_versions

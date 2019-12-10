@@ -1,6 +1,7 @@
 import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
+import { rethrowSimple } from "utils/simple-error";
 
 /** Request repositories, categories etc from toolshed server **/
 export class Services {
@@ -11,7 +12,7 @@ export class Services {
             const response = await axios.get(url);
             return response.data;
         } catch (e) {
-            this._errorMessage(e);
+            rethrowSimple(e);
         }
     }
     async getRepositories(params) {
@@ -28,7 +29,7 @@ export class Services {
             });
             return incoming;
         } catch (e) {
-            this._errorMessage(e);
+            rethrowSimple(e);
         }
     }
     async getRepository(toolshedUrl, repositoryId) {
@@ -52,7 +53,7 @@ export class Services {
             });
             return table;
         } catch (e) {
-            this._errorMessage(e);
+            rethrowSimple(e);
         }
     }
     async getRepositoryByName(toolshedUrl, repositoryName, repositoryOwner) {
@@ -69,7 +70,7 @@ export class Services {
                 throw "Repository details not found.";
             }
         } catch (e) {
-            this._errorMessage(e);
+            rethrowSimple(e);
         }
     }
     async getInstalledRepositories(options = {}) {
@@ -81,7 +82,7 @@ export class Services {
             this._fixToolshedUrls(repositories, Galaxy.config.tool_shed_urls);
             return repositories;
         } catch (e) {
-            this._errorMessage(e);
+            rethrowSimple(e);
         }
     }
     async getInstalledRepositoriesByName(repositoryName, repositoryOwner) {
@@ -100,7 +101,7 @@ export class Services {
             });
             return result;
         } catch (e) {
-            this._errorMessage(e);
+            rethrowSimple(e);
         }
     }
     async installRepository(payload) {
@@ -109,7 +110,7 @@ export class Services {
             const response = await axios.post(url, payload);
             return response.data;
         } catch (e) {
-            this._errorMessage(e);
+            rethrowSimple(e);
         }
     }
     async uninstallRepository(params) {
@@ -121,7 +122,7 @@ export class Services {
             const response = await axios.delete(url);
             return response.data;
         } catch (e) {
-            this._errorMessage(e);
+            rethrowSimple(e);
         }
     }
     _groupByNameOwner(incoming, filter) {
@@ -151,15 +152,6 @@ export class Services {
     _formatCount(value) {
         if (value > 1000) return `>${Math.floor(value / 1000)}k`;
         return value;
-    }
-    _errorMessage(e) {
-        let message = "Request failed.";
-        if (e.response) {
-            message = e.response.data.err_msg || `${e.response.statusText} (${e.response.status})`;
-        } else if (typeof e == "string") {
-            message = e;
-        }
-        throw message;
     }
     _getParamsString(params) {
         if (params) {

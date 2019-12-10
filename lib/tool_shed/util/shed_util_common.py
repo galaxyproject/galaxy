@@ -332,8 +332,7 @@ def handle_email_alerts(app, host, repository, content_alert_str='', new_repo_al
             email_from = 'galaxy-no-reply@' + socket.getfqdn()
         else:
             email_from = 'galaxy-no-reply@' + host.split(':')[0]
-        tip_changeset = repo.changelog.tip()
-        ctx = repo.changectx(tip_changeset)
+        ctx = repo[repo.changelog.tip()]
         try:
             username = ctx.user().split()[0]
         except Exception:

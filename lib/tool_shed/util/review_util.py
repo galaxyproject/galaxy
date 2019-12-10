@@ -76,7 +76,7 @@ def get_previous_repository_reviews(app, repository, changeset_revision):
     reviewed_revision_hashes = [review.changeset_revision for review in repository.reviews]
     previous_reviews_dict = OrderedDict()
     for changeset in hg_util.reversed_upper_bounded_changelog(repo, changeset_revision):
-        previous_changeset_revision = str(repo.changectx(changeset))
+        previous_changeset_revision = str(repo[changeset])
         if previous_changeset_revision in reviewed_revision_hashes:
             previous_rev, previous_changeset_revision_label = \
                 hg_util.get_rev_label_from_changeset_revision(repo, previous_changeset_revision)
@@ -125,7 +125,7 @@ def has_previous_repository_reviews(app, repository, changeset_revision):
     repo = hg_util.get_repo_for_repository(app, repository=repository)
     reviewed_revision_hashes = [review.changeset_revision for review in repository.reviews]
     for changeset in hg_util.reversed_upper_bounded_changelog(repo, changeset_revision):
-        previous_changeset_revision = str(repo.changectx(changeset))
+        previous_changeset_revision = str(repo[changeset])
         if previous_changeset_revision in reviewed_revision_hashes:
             return True
     return False

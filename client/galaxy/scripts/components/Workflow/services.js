@@ -1,6 +1,7 @@
 import axios from "axios";
 import { getGalaxyInstance } from "app";
 import { timeAgo } from "utils/timeago";
+import { rethrowSimple } from "utils/simple-error";
 
 /** Workflow data request helper **/
 export class Services {
@@ -26,7 +27,7 @@ export class Services {
             this._addAttributes(createWorkflow);
             return createWorkflow;
         } catch (e) {
-            this._errorMessage(e);
+            rethrowSimple(e);
         }
     }
 
@@ -36,7 +37,7 @@ export class Services {
             const response = await axios.delete(url);
             return response.data;
         } catch (e) {
-            this._errorMessage(e);
+            rethrowSimple(e);
         }
     }
 
@@ -50,7 +51,7 @@ export class Services {
             });
             return workflows;
         } catch (e) {
-            this._errorMessage(e);
+            rethrowSimple(e);
         }
     }
 
@@ -60,7 +61,7 @@ export class Services {
             const response = await axios.put(url, data);
             return response.data;
         } catch (e) {
-            this._errorMessage(e);
+            rethrowSimple(e);
         }
     }
 
@@ -75,13 +76,5 @@ export class Services {
                 workflow.description = description;
             }
         }
-    }
-
-    _errorMessage(e) {
-        let message = "Request failed.";
-        if (e.response) {
-            message = e.response.data.err_msg || `${e.response.statusText} (${e.response.status})`;
-        }
-        throw message;
     }
 }

@@ -47,6 +47,7 @@ class WorkflowMarkdownGeneratorPlugin(WorkflowReportGeneratorPlugin):
         rval = {
             "render_format": "markdown",  # Presumably the frontend could render things other ways.
             "markdown": export_markdown,
+            "invocation_markdown": workflow_markdown,
         }
         rval.update(extra_rendering_data)
         return rval

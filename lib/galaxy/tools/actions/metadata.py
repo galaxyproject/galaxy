@@ -13,6 +13,7 @@ log = logging.getLogger(__name__)
 
 class SetMetadataToolAction(ToolAction):
     """Tool action used for setting external metadata on an existing dataset"""
+    produces_real_jobs = False
 
     def execute(self, tool, trans, incoming={}, set_output_hid=False, overwrite=True, history=None, job_params=None, **kwargs):
         """

@@ -73,7 +73,12 @@ class InputValueWrapper(ToolParameterValueWrapper):
         self.value = value
         self._other_values = other_values
 
-    def _get_cast_value(self):
+    def _get_cast_value(self, other):
+        if self.input.type == 'boolean' and isinstance(other, string_types):
+            return str(self)
+        # For backward compatibility, allow `$wrapper != ""` for optional non-text param
+        if self.input.optional and self.value is None and isinstance(other, string_types):
+            return str(self)
         cast = {
             'text': str,
             'integer': int,
@@ -83,7 +88,7 @@ class InputValueWrapper(ToolParameterValueWrapper):
         return cast.get(self.input.type, str)(self)
 
     def __eq__(self, other):
-        return self._get_cast_value() == other
+        return self._get_cast_value(other) == other
 
     def __ne__(self, other):
         return not self == other
@@ -106,7 +111,7 @@ class InputValueWrapper(ToolParameterValueWrapper):
         return getattr(self.value, key)
 
     def __gt__(self, other):
-        return self._get_cast_value() > other
+        return self._get_cast_value(other) > other
 
     def __int__(self):
         return int(float(self))
