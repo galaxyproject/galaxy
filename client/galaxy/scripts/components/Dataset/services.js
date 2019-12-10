@@ -1,5 +1,4 @@
 import axios from "axios";
-import moment from "moment";
 
 /** Datasets request helper **/
 export class Services {
