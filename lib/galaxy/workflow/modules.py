@@ -890,7 +890,7 @@ class InputParameterModule(WorkflowModule):
                 restrict_how_source["options"] = [
                     {"value": "none", "label": "Do not specify restrictions (default).", "selected": restrict_how_value == "none"},
                     {"value": "onConnections", "label": "Attempt restriction based on connections.", "selected": restrict_how_value == "onConnections"},
-                    {"value": "staticRestrictions", "label": "Provide list of restricted values.", "selected": restrict_how_value == "staticRestrictions"},
+                    {"value": "staticRestrictions", "label": "Provide list of all possible values.", "selected": restrict_how_value == "staticRestrictions"},
                     {"value": "staticSuggestions", "label": "Provide list of suggested values.", "selected": restrict_how_value == "staticSuggestions"},
                 ]
                 restrictions_cond = Conditional()
