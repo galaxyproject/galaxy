@@ -55,7 +55,7 @@ from galaxy.tools.parameters.grouping import (
 )
 from galaxy.tools.parameters.history_query import HistoryQuery
 from galaxy.tools.parameters.wrapped import make_dict_copy
-from galaxy.util import unicodify
+from galaxy.util import listify, unicodify
 from galaxy.util.bunch import Bunch
 from galaxy.util.json import safe_loads
 from galaxy.util.rules_dsl import RuleSet
@@ -587,6 +587,14 @@ def optional_param(optional):
     return optional_value
 
 
+def format_param(trans, formats):
+    formats_val = "" if not formats else ",".join(formats)
+    source = dict(type="text", label="Format(s)", name="format", value=formats_val, optional=True, options=formats, help="Leave empty to auto-generate filtered list at runtime based on connections.")
+    source["options"] = [{"value": v, "label": v} for v in trans.app.datatypes_registry.datatypes_by_extension.keys()]
+    format_value = TextToolParameter(None, source)
+    return format_value
+
+
 class InputModule(WorkflowModule):
     default_optional = False
 
@@ -641,9 +649,22 @@ class InputModule(WorkflowModule):
         else:
             optional = self.default_optional
         rval["optional"] = optional
+        if "format" in inputs:
+            formats = listify(inputs["format"])
+        else:
+            formats = None
+        if formats:
+            rval["format"] = formats
         return rval
 
     def step_state_to_tool_state(self, state):
+        state = safe_loads(state)
+        if "format" in state:
+            formats = state["format"]
+            if formats:
+                formats = ",".join(formats)
+                state["format"] = formats
+        state = json.dumps(state)
         return state
 
     def save_to_step(self, step):
@@ -672,9 +693,13 @@ class InputDataModule(InputModule):
     def get_runtime_inputs(self, connections=None):
         parameter_def = self._parse_state_into_dict()
         optional = parameter_def["optional"]
-        # TODO: extension from parameter_def
-        input_format = self.get_filter_set(connections)
-        input_param = DataToolParameter(None, Element("param", name="input", label=self.label, multiple=False, type="data", format=input_format, optional=str(optional)), self.trans)
+        formats = parameter_def.get("format")
+        if not formats:
+            formats = self.get_filter_set(connections)
+        else:
+            formats = ",".join(listify(formats))
+        data_src = dict(name="input", label=self.label, multiple=False, type="data", format=formats, optional=optional)
+        input_param = DataToolParameter(None, data_src, self.trans)
         return dict(input=input_param)
 
     def get_inputs(self):
@@ -682,6 +707,7 @@ class InputDataModule(InputModule):
         optional = parameter_def["optional"]
         inputs = OrderedDict()
         inputs["optional"] = optional_param(optional)
+        inputs["format"] = format_param(self.trans, parameter_def.get("format"))
         return inputs
 
 
@@ -695,27 +721,28 @@ class InputDataCollectionModule(InputModule):
         parameter_def = self._parse_state_into_dict()
         collection_type = parameter_def["collection_type"]
         optional = parameter_def["optional"]
-        # TODO: extensions...
-        input_collection_type = TextToolParameter(None, XML(
-            '''
-            <param name="collection_type" label="Collection type" type="text" value="%s">
-                <option value="list">List of Datasets</option>
-                <option value="paired">Dataset Pair</option>
-                <option value="list:paired">List of Dataset Pairs</option>
-            </param>
-            ''' % collection_type))
-
+        collection_type_source = dict(name="collection_type", label="Collection type", type="text", value=collection_type)
+        collection_type_source["options"] = [
+            {"value": "list", "label": "List of Datasets"},
+            {"value": "paired", "label": "Dataset Pair"},
+            {"value": "list:paired", "label": "List of Dataset Pairs"},
+        ]
+        input_collection_type = TextToolParameter(None, collection_type_source)
         inputs = OrderedDict()
         inputs["collection_type"] = input_collection_type
         inputs["optional"] = optional_param(optional)
+        inputs["format"] = format_param(self.trans, parameter_def.get("format"))
         return inputs
 
     def get_runtime_inputs(self, **kwds):
         parameter_def = self._parse_state_into_dict()
         collection_type = parameter_def["collection_type"]
         optional = parameter_def["optional"]
-        input_element = Element("param", name="input", label=self.label, type="data_collection", collection_type=collection_type, optional=str(optional))
-        input_param = DataCollectionToolParameter(None, input_element, self.trans)
+        formats = parameter_def.get("format")
+        collection_param_source = dict(name="input", label=self.label, type="data_collection", collection_type=collection_type, optional=optional)
+        if formats:
+            collection_param_source["format"] = ",".join(listify(formats))
+        input_param = DataCollectionToolParameter(None, collection_param_source, self.trans)
         return dict(input=input_param)
 
     def get_all_outputs(self, data_only=False):
