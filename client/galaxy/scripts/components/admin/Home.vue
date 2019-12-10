@@ -142,7 +142,7 @@ export default {
     methods: {
         useRouter: function(ev) {
             const Galaxy = getGalaxyInstance();
-            Galaxy.router.push(ev.target.pathname);
+            Galaxy.page.router.push(ev.target.pathname.slice(root.length));
         }
     },
     computed: {
