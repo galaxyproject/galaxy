@@ -9,16 +9,20 @@
         >
             <span v-if="isError" class="fa fa-times-circle text-danger mr-1" />
             <span v-if="isPaused" class="fa fa-pause text-info mr-1" />
-            {{ item.name }}
-            <span class="fa fa-caret-down" />
+            <span>{{ item.name }}</span>
         </b-link>
         <div class="dropdown-menu" aria-labelledby="dataset-dropdown">
-            <a class="dropdown-item" href="#" @click.stop="showDataset">Show in History</a>
-            <a class="dropdown-item" href="#" @click.stop="copyDataset">Copy to History</a>
+            <a class="dropdown-item" href="#" @click.prevent="showDataset">Show in History</a>
+            <a class="dropdown-item" href="#" @click.prevent="copyDataset">Copy to History</a>
         </div>
     </div>
 </template>
 <script>
+import Vue from "vue";
+import BootstrapVue from "bootstrap-vue";
+
+Vue.use(BootstrapVue);
+
 export default {
     props: {
         item: Object
