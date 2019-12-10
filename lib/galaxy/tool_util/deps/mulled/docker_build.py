@@ -2,10 +2,13 @@ import collections
 import logging
 import os
 import shlex
-import subprocess
 import tempfile
 from string import Template
 
+from galaxy.tool_util.deps.commands import (
+    execute,
+    shell_process,
+)
 from galaxy.tool_util.deps.mulled.mulled_build import DEFAULT_CHANNELS
 from galaxy.util import unicodify
 
@@ -21,111 +24,135 @@ $ENV_STATEMENTS""")
 DEFAULT_BUILDIMAGE = "continuumio/miniconda3:latest"
 DEFAULT_DESTINATION_IMAGE = "bgruening/busybox-bash:0.1"
 DEFAULT_EXTENDED_BASE_IMAGE = "bioconda/extended-base-image:latest"
-DOCKERFILE_INFO = collections.namedtuple("DockerfileInfo", "contents path repo build_command")
+IMAGE_INFO = collections.namedtuple("ImageInfo", "contents path repo build_command")
+# TODO: generalize to docker + singularity
+# TODO: enable tests in containers
+# TODO: add build context
+# TODO: cli
 
 
-def get_docker_info(contents, repo):
-    dockerfile_path = write_dockerfile(contents, repo)
-    CMD = ['docker', 'build', '-t', repo, os.path.dirname(dockerfile_path)]
-    return DOCKERFILE_INFO(contents=contents, path=dockerfile_path, repo=repo, build_command=CMD)
+class DockerContainerBuilder(object):
+    """Builds docker containers whose software is installed by Conda."""
 
+    first_stage_template = DOCKERFILE_INITIAL_BUILD
+    second_stage_template = DOCKERFILE_BUILD_TO_DESTINATION
+    recipe = 'Dockerfile'
+    container_type = 'docker'
+    run_prefix = "RUN "
 
-def write_dockerfile(contents, repo):
-    initial_build_dir = tempfile.mkdtemp(prefix="docker_build_%s" % shlex.quote(repo))
-    dockerfile_path = os.path.join(initial_build_dir, "Dockerfile") 
-    with open(dockerfile_path, "w") as dockerfile:
-        dockerfile.write(contents)
-    return dockerfile_path
+    def __init__(self, repo, target_args, builder_image=DEFAULT_BUILDIMAGE, preinstall='', channels=DEFAULT_CHANNELS, verbose=False, postinstall='', destination_image=None):
+        self.repo = repo
+        self.target_args = target_args
+        self.builder_image = builder_image
+        self.preinstall = preinstall
+        self.channels = channels
+        self.verbose = verbose
+        self.postinstall = postinstall
+        self.destination_image = destination_image
+        self.recipe_stage1 = None
+        self.recipe_stage2 = None
 
+    def build_command(self, path):
+        return ['docker', 'build', '-t', self.repo, os.path.dirname(path)]
 
-def build_image(dockerfile_info):
-    try:
-        subprocess.check_call(dockerfile_info.build_command, stderr=subprocess.STDOUT)
-    except Exception as e:
-        error_message = "Error building docker image"
-        if isinstance(e, subprocess.CalledProcessError):
-            error_message += "\nOutput was:\n%s" % e.output
-        raise Exception(error_message)
+    def run_command(self, image, command):
+        cmd = ['docker', "run", image]
+        cmd.extend(command)
+        return cmd
 
+    def exec_command(self, command, redirect_output=False):
+        if redirect_output:
+            p = shell_process(command)
+            stdout, stderr = p.communicate()
+            if p.returncode != 0:
+                raise Exception("Executing command '%s' failed with exit code %d" % (" ".join(command), p.returncode))
+        else:
+            return unicodify(execute(command))
 
-def run_in_container(image, command):
-    CMD = ['docker', "run", image]
-    CMD.extend(command)
-    return unicodify(subprocess.check_output(CMD, stderr=subprocess.STDOUT))
+    def write_recipe(self, recipe_contents):
+        initial_build_dir = tempfile.mkdtemp(prefix="%s_%s" % (self.container_type, shlex.quote(self.repo)))
+        recipe_path = os.path.join(initial_build_dir, self.recipe)
+        with open(recipe_path, "w") as recipe:
+            recipe.write(recipe_contents)
+        return recipe_path
 
+    def template_stage1(self):
+        if self.preinstall:
+            self.preinstall = "%s%s &&" % (self.run_prefix, self.preinstall)
+        if self.postinstall:
+            self.postinstall = "%s%s &&" % (self.run_prefix, self.postinstall)
+        if self.verbose:
+            verbose = '--verbose'
+        else:
+            verbose = ''
+        channels_args = " ".join(("-c %s" % c for c in self.channels))
+        recipe_contents = self.first_stage_template.substitute(
+            BUILDIMAGE=self.builder_image,
+            PREINSTALL=self.preinstall,
+            CHANNEL_ARGS=channels_args,
+            TARGET_ARGS=self.target_args,
+            VERBOSE=verbose,
+            POSTINSTALL=self.postinstall,
+        )
+        log.info("Building image for Dockerfile contents:\n%s", recipe_contents)
+        return recipe_contents
 
-def image_requires_extended_base(image):
-    output = run_in_container(image=image, command=[
-        "find",
-        "/opt/conda/pkgs",
-        "-name",
-        "meta.yaml",
-        "-exec",
-        "grep",
-        "extended-base: true",
-        "{}",
-        ";",
-    ])
-    return output.strip() == 'extended-base: true'
+    def build_info(self, template_function):
+        recipe_contents = template_function()
+        recipe_path = self.write_recipe(recipe_contents)
+        build_command = self.build_command(recipe_path)
+        return IMAGE_INFO(contents=recipe_contents, path=recipe_path, repo=self.repo, build_command=build_command)
 
+    def run_in_container(self, command):
+        return self.exec_command(self.run_command(self.repo, command))
 
-def collect_conda_env_vars(image):
-    original_variables = run_in_container(image=image, command=["bash", "-c", 'source activate base && env'])
-    new_variables = run_in_container(image=image, command=["bash", "-c", 'source activate /usr/local && env'])
-    original_variables = dict(line.split('=') for line in original_variables.splitlines())
-    new_variables = dict(line.split('=') for line in new_variables.splitlines())
-    new_keys = set(new_variables) - set(original_variables)
-    return {k: new_variables[k] for k in new_keys}
+    def image_requires_extended_base(self):
+        output = self.run_in_container(command=[
+            "find",
+            "/opt/conda/pkgs",
+            "-name",
+            "meta.yaml",
+            "-exec",
+            "grep",
+            "extended-base: true",
+            "{}",
+            ";",
+        ])
+        return output.strip() == 'extended-base: true'
 
+    def get_conda_env_vars(self):
+        original_variables = self.run_in_container(command=["bash", "-c", 'source activate base && env'])
+        new_variables = self.run_in_container(command=["bash", "-c", 'source activate /usr/local && env'])
+        original_variables = dict(line.split('=') for line in original_variables.splitlines())
+        new_variables = dict(line.split('=') for line in new_variables.splitlines())
+        new_keys = set(new_variables) - set(original_variables)
+        return {k: new_variables[k] for k in new_keys}
 
-def build_initial_docker_info(
-        repo,
-        target_args,
-        builder_image=DEFAULT_BUILDIMAGE,
-        preinstall='',
-        channels=DEFAULT_CHANNELS,
-        verbose=False,
-        postinstall=''):
-    """
-    Installs Conda packages using the official Miniconda Docker image.
-    """
-    if preinstall:
-        preinstall = "RUN %s &&" % preinstall
-    if postinstall:
-        postinstall = "RUN %s &&" % postinstall
-    if verbose:
-        verbose = '--verbose'
-    else:
-        verbose = ''
-    channels_args = " ".join(("-c %s" % c for c in channels))
-    dockerfile_contents = DOCKERFILE_INITIAL_BUILD.substitute(
-        BUILDIMAGE=builder_image,
-        PREINSTALL=preinstall,
-        CHANNEL_ARGS=channels_args,
-        TARGET_ARGS=target_args,
-        VERBOSE=verbose,
-        POSTINSTALL=postinstall,
-    )
-    log.info("Building image for following Dockerfile:\n%s", dockerfile_contents)
-    return get_docker_info(dockerfile_contents, repo)
+    def template_env_vars(self, env_vars):
+        return "\n".join(["ENV {k} {v}\n".format(k=k, v=v) for k, v in env_vars.items()])
 
+    def get_destination_image(self):
+        if self.destination_image:
+            return self.destination_image
+        else:
+            return DEFAULT_EXTENDED_BASE_IMAGE if self.image_requires_extended_base() else DEFAULT_DESTINATION_IMAGE
 
-def build_destination_docker_info(initial_dockerfile_info, destination_image, env_statements):
-    second_stage_contents = DOCKERFILE_BUILD_TO_DESTINATION.substitute(
-        DESTINATION_IMAGE=destination_image,
-        ENV_STATEMENTS=env_statements,
-    )
-    dockerfile_contents = "%s\n%s" % (initial_dockerfile_info.contents, second_stage_contents)
-    return get_docker_info(dockerfile_contents, initial_dockerfile_info.repo)
+    def template_stage2(self):
+        destination_image = self.get_destination_image()
+        conda_env_vars = self.get_conda_env_vars()
+        env_statements = self.template_env_vars(conda_env_vars)
+        second_stage_contents = self.second_stage_template.substitute(
+            DESTINATION_IMAGE=destination_image,
+            ENV_STATEMENTS=env_statements,
+        )
+        dockerfile_contents = "%s\n%s" % (self.recipe_stage1.contents, second_stage_contents)
+        return dockerfile_contents
 
+    def build_stage(self, stage):
+        return self.exec_command(stage.build_command, redirect_output=True)
 
-def get_destination_docker_info(dockerfile_info, destination_image=None):
-    env_vars = collect_conda_env_vars(dockerfile_info.repo)
-    env_statements = "\n".join(["ENV {k} {v}\n".format(k=k, v=v) for k, v in env_vars.items()])
-    if destination_image is None:
-        destination_image = DEFAULT_EXTENDED_BASE_IMAGE if image_requires_extended_base(dockerfile_info.repo) else DEFAULT_DESTINATION_IMAGE
-    return build_destination_docker_info(
-        initial_dockerfile_info=dockerfile_info,
-        destination_image=destination_image,
-        env_statements=env_statements,
-    )
+    def build_image(self):
+        self.recipe_stage1 = self.build_info(self.template_stage1)
+        self.build_stage(self.recipe_stage1)
+        self.recipe_stage2 = self.build_info(self.template_stage2)
+        self.build_stage(self.recipe_stage2)
