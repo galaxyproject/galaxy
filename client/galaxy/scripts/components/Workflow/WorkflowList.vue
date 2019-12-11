@@ -3,7 +3,7 @@
         <div v-if="error" class="alert alert-danger" show>{{ error }}</div>
         <div v-else>
             <span v-if="loading">
-                <span class="fa fa-spinner fa-spin" />
+                <font-awesome-icon icon="spinner" spin />
                 Loading workflows...
             </span>
             <div v-else>
@@ -80,18 +80,20 @@
     </div>
 </template>
 <script>
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
+import { faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { faUpload } from "@fortawesome/free-solid-svg-icons";
-
-library.add(faPlus);
-library.add(faUpload);
 
 import { getAppRoot } from "onload/loadConfig";
 import { Services } from "./services.js";
 import WorkflowTags from "./WorkflowTags.vue";
 import WorkflowDropdown from "./WorkflowDropdown.vue";
+
+library.add(faPlus);
+library.add(faUpload);
+library.add(faSpinner);
 
 export default {
     components: {
