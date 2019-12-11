@@ -10,8 +10,12 @@ from galaxy.tool_util.deps.commands import (
     shell_process,
 )
 from galaxy.tool_util.deps.docker_util import (
-    build_command,
-    command_list,
+    build_command as docker_build_command,
+    command_list as docker_command_list,
+)
+from galaxy.tool_util.deps.singularity_util import (
+    build_command as singularity_build_command,
+    command_list as singularity_command_list,
 )
 from galaxy.tool_util.deps.mulled.mulled_build import DEFAULT_CHANNELS
 from galaxy.util import unicodify
@@ -24,6 +28,24 @@ RUN conda install $CHANNEL_ARGS $TARGET_ARGS -p /usr/local --copy --yes $VERBOSE
 $POSTINSTALL""")
 DOCKERFILE_BUILD_TO_DESTINATION = Template("""FROM $DESTINATION_IMAGE
 COPY --from=0 /usr/local /usr/local
+$ENV_STATEMENTS""")
+SINGULARITY_INITIAL_BUILD = Template("""Bootstrap: docker
+From: $BUILDIMAGE
+Stage: build
+%post
+    $PREINSTALL
+    RUN conda install $CHANNEL_ARGS $TARGET_ARGS -p /usr/local --copy --yes $VERBOSE
+    $POSTINSTALL
+%test
+    true
+""")
+SINGULARITY_BUILD_TO_DESTINATION = Template("""Bootstrap: docker
+From: $DESTINATION_IMAGE
+Stage: final
+
+# install binary from stage one
+%files from build
+  /usr/local /usr/local
 $ENV_STATEMENTS""")
 DEFAULT_BUILDIMAGE = "continuumio/miniconda3:latest"
 DEFAULT_DESTINATION_IMAGE = "bgruening/busybox-bash:0.1"
@@ -57,11 +79,11 @@ class DockerContainerBuilder(object):
         self.recipe_stage2 = None
 
     def build_command(self, path):
-        return build_command(image=self.repo, docker_build_path=path)
+        return docker_build_command(image=self.repo, docker_build_path=path)
 
     def run_command(self, image, command):
         command.insert(0, image)
-        return command_list('run', command)
+        return docker_command_list('run', command)
 
     def exec_command(self, command, redirect_output=False):
         if redirect_output:
@@ -159,3 +181,22 @@ class DockerContainerBuilder(object):
         self.build_stage(self.recipe_stage1)
         self.recipe_stage2 = self.build_info(self.template_stage2)
         self.build_stage(self.recipe_stage2)
+
+
+class SingularityContainerBuilder(DockerContainerBuilder):
+
+    first_stage_template = SINGULARITY_INITIAL_BUILD
+    second_stage_template = SINGULARITY_BUILD_TO_DESTINATION
+    recipe = "singularity.sif"
+    container_type = "singularity"
+    run_prefix = ""
+
+    def build_command(self, path):
+        return singularity_build_command(self.repo, path)
+
+    def run_command(self, image, command):
+        command.insert(0, image)
+        return singularity_command_list('run', command)
+
+    def template_env_vars(self, env_vars):
+        return "%environment\n" + "\n".join(["    export {k}={v}\n".format(k=k, v=v) for k, v in env_vars.items()])

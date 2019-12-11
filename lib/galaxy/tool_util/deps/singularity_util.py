@@ -69,6 +69,18 @@ def build_singularity_run_command(
     return " ".join(command_parts)
 
 
+def command_list(command, command_args=[], **kwds):
+    """Return singularity command as an argv list."""
+    command_parts = _singularity_prefix(**kwds)
+    command_parts.append(command)
+    command_parts.extend(command_args)
+    return command_parts
+
+
+def build_command(image, build_path, **kwds):
+    return command_list("build", ["-t", image, build_path], **kwds)
+
+
 def _singularity_prefix(
     singularity_cmd=DEFAULT_SINGULARITY_COMMAND,
     sudo=DEFAULT_SUDO,
