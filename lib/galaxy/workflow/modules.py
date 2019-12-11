@@ -5,10 +5,6 @@ import json
 import logging
 import re
 from collections import defaultdict, OrderedDict
-from xml.etree.ElementTree import (
-    Element,
-    XML
-)
 
 from galaxy import (
     exceptions,
@@ -584,7 +580,8 @@ class InputProxy(object):
 
 
 def optional_param(optional):
-    optional_value = BooleanToolParameter(None, Element("param", name="optional", label="Optional", type="boolean", checked=optional))
+    bool_source = dict(name="optional", label="Optional", type="boolean", checked=optional)
+    optional_value = BooleanToolParameter(None, bool_source)
     return optional_value
 
 
@@ -804,41 +801,30 @@ class InputParameterModule(WorkflowModule):
         cases = []
 
         for param_type in ["text", "integer", "float"]:
+            default_source = dict(name="default", label="Default Value", type=parameter_type)
             if param_type == "text":
                 if parameter_type == "text":
                     default = parameter_def.get("default") or ""
                 else:
                     default = ""
-                input_default_value = TextToolParameter(None, XML(
-                    '''
-                    <param name="default" label="Default Value" value="%s">
-                    </param>
-                    '''
-                    % default))
+                default_source["value"] = default
+                input_default_value = TextToolParameter(None, default_source)
             elif param_type == "integer":
                 if parameter_type == "integer":
-                    default = str(parameter_def.get("default") or "0")
+                    default = parameter_def.get("default") or 0
                 else:
-                    default = "0"
-                input_default_value = IntegerToolParameter(None, XML(
-                    '''
-                    <param name="default" label="Default Value" value="%s">
-                    </param>
-                    '''
-                    % default))
+                    default = 0
+                default_source["value"] = default
+                input_default_value = IntegerToolParameter(None, default_source)
             elif param_type == "float":
                 if parameter_type == "float":
-                    default = str(parameter_def.get("default") or "0.0")
+                    default = parameter_def.get("default") or 0.0
                 else:
-                    default = "0.0"
-                input_default_value = FloatToolParameter(None, XML(
-                    '''
-                    <param name="default" label="Default Value" value="%s">
-                    </param>
-                    '''
-                    % default))
+                    default = 0.0
+                default_source["value"] = default
+                input_default_value = FloatToolParameter(None, default_source)
             # color parameter defaults?
-            optional_value = BooleanToolParameter(None, Element("param", name="optional", label="Optional", type="boolean", checked=optional))
+            optional_value = optional_param(optional)
             optional_cond = Conditional()
             optional_cond.name = "optional"
             optional_cond.test_param = optional_value
@@ -849,7 +835,8 @@ class InputParameterModule(WorkflowModule):
             when_this_type.inputs["optional"] = optional_cond
 
             specify_default_checked = "default" in parameter_def
-            specify_default = BooleanToolParameter(None, Element("param", name="specify_default", label="Specify a default value", type="boolean", checked=specify_default_checked))
+            specify_default_source = dict(name="specify_default", label="Specify a default value", type="boolean", checked=specify_default_checked)
+            specify_default = BooleanToolParameter(None, specify_default_source)
             specify_default_cond = Conditional()
             specify_default_cond.name = "specify_default"
             specify_default_cond.test_param = specify_default
