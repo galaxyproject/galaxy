@@ -165,7 +165,9 @@ class WorkflowModule(object):
         """
         from_tool_form = kwds.get("from_tool_form", False)
         if not from_tool_form:
-            state = self.step_state_to_tool_state(state)
+            # I've never seen state here be none except for unit tests so 'or {}' below may only be
+            # needed due to test bugs. Doesn't hurt anything though.
+            state = self.step_state_to_tool_state(state or {})
 
         self.state = DefaultToolState()
         inputs = self.get_inputs()
