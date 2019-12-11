@@ -173,35 +173,31 @@ QUnit.test("input type can accept any datatype", function(assert) {
 });
 
 QUnit.test("cannot accept when already connected", function(assert) {
-    var self = this;
     // If other is subtype but already connected, cannot accept
-    this.with_test_connector(function() {
-        assert.ok(!self.test_accept());
+    this.with_test_connector(() => {
+        assert.ok(!this.test_accept());
     });
 });
 
 QUnit.test("can accept already connected inputs if input is multiple", function(assert) {
-    var self = this;
     this.multiple();
-    this.with_test_connector(function() {
-        assert.ok(self.test_accept());
+    this.with_test_connector(() => {
+        assert.ok(this.test_accept());
     });
 });
 
 QUnit.test("cannot accept already connected inputs if input is multiple but datatypes don't match", function(assert) {
     var other = { node: {}, datatypes: ["binary"] }; // binary is not txt
 
-    var self = this;
     this.multiple();
-    this.with_test_connector(function() {
-        assert.ok(!self.test_accept(other));
+    this.with_test_connector(() => {
+        assert.ok(!this.test_accept(other));
     });
 });
 
 QUnit.test("can accept list collection for multiple input parameters if datatypes match", function(assert) {
-    var self = this;
     this.multiple();
-    assert.ok(self.test_accept());
+    assert.ok(this.test_accept());
 });
 
 QUnit.test("can accept list collection for empty multiple inputs", function(assert) {
@@ -212,9 +208,8 @@ QUnit.test("can accept list collection for empty multiple inputs", function(asse
             return new Terminals.CollectionTypeDescription("list");
         }
     };
-    var self = this;
     this.multiple();
-    assert.ok(self.test_accept(other));
+    assert.ok(this.test_accept(other));
 });
 
 QUnit.test("cannot accept list collection for multiple input if collection already connected", function(assert) {
@@ -225,10 +220,9 @@ QUnit.test("cannot accept list collection for multiple input if collection alrea
             return new Terminals.CollectionTypeDescription("list");
         }
     };
-    var self = this;
     this.multiple();
-    this.with_test_connector(function() {
-        assert.ok(!self.test_accept(other));
+    this.with_test_connector(() => {
+        assert.ok(!this.test_accept(other));
     });
 });
 
@@ -304,9 +298,7 @@ QUnit.module("Input collection terminal model test", {
 });
 
 QUnit.test("Collection output can connect to same collection input type", function(assert) {
-    var self = this;
-    var inputTerminal = self.input_terminal;
-    assert.ok(inputTerminal);
+    var inputTerminal = this.input_terminal;
     var outputTerminal = new Terminals.OutputCollectionTerminal({
         datatypes: "txt",
         collection_type: "list"
@@ -330,8 +322,7 @@ QUnit.test("Optiona collection output can not connect to required collection inp
 });
 
 QUnit.test("Collection output cannot connect to different collection input type", function(assert) {
-    var self = this;
-    var inputTerminal = self.input_terminal;
+    var inputTerminal = this.input_terminal;
     var outputTerminal = new Terminals.OutputCollectionTerminal({
         datatypes: "txt",
         collection_type: "paired"
