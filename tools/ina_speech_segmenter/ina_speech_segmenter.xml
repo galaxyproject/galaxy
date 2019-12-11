@@ -8,7 +8,7 @@
     <param name="input" type="data" format="audio" label="From dataset" help="An audio file"/>
   </inputs>
   <outputs>
-    <data format="json" name="json_out" />
+    <data format="segments" name="json_out" />
   </outputs>
   <tests>
   </tests>

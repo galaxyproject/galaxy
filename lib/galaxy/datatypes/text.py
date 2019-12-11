@@ -18,8 +18,7 @@ from galaxy.datatypes.sniff import build_sniff_from_prefix, iter_headers
 from galaxy.util import nice_size, string_as_bool
 
 log = logging.getLogger(__name__)
-
-
+     
 @build_sniff_from_prefix
 class Html(Text):
     """Class describing an html file"""
@@ -105,6 +104,59 @@ class Json(Text):
         except Exception:
             return "JSON file (%s)" % (nice_size(dataset.get_size()))
 
+
+######################
+## AMP Data Types
+######################
+@build_sniff_from_prefix
+class Segments(Json):
+    file_ext = "segments"
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.blurb = "Segments JavaScript Object Notation (JSON)"
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disc'
+
+    def get_mime(self):
+        """Returns the mime type of the datatype"""
+        return 'application/json'
+
+    def sniff_prefix(self, file_prefix):
+        """
+            Try to load the string with the json module. If successful it's a json file.
+        """
+        return self._looks_like_segments(file_prefix)
+
+    def _looks_like_segments(self, file_prefix):
+        # Pattern used by SequenceSplitLocations
+        if file_prefix.file_size < 50000 and not file_prefix.truncated:
+            # If the file is small enough - don't guess just check.
+            try:
+                # exclude simple types, must set format in these cases
+                item = json.loads(file_prefix.contents_header)
+                assert isinstance(item, (list, dict))
+                if 'segments' in item and 'media' in item:
+                    return True
+            except Exception:
+                return False
+        else:
+            start = file_prefix.string_io().read(100).strip()
+            if start:
+                return start.startswith("{\"segments\"")
+            return False
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "JSON file (%s)" % (nice_size(dataset.get_size()))
+       
+######################
+## END AMP Data Types
+######################
 
 @build_sniff_from_prefix
 class Ipynb(Json):

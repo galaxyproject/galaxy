@@ -3,10 +3,12 @@
   <registration converters_path="lib/galaxy/datatypes/converters" display_path="display_applications">
 
     <!-- AMP Data Types-->
-    <datatype extension="video" type="galaxy.datatypes.binary:Video" subclass="True" display_in_upload="true"/>
-    <datatype extension="music" type="galaxy.datatypes.binary:Music" subclass="True" display_in_upload="true"/>
-    <datatype extension="audio" type="galaxy.datatypes.binary:Audio" subclass="True" display_in_upload="true"/>
-    <datatype extension="wav" type="galaxy.datatypes.binary:Wav" subclass="True" display_in_upload="true"/>
+    <datatype extension="video" type="galaxy.datatypes.binary:Video" subclass="true" display_in_upload="true"/>
+    <datatype extension="music" type="galaxy.datatypes.binary:Music" subclass="true" display_in_upload="true"/>
+    <datatype extension="speech" type="galaxy.datatypes.binary:Speech" subclass="true" display_in_upload="true"/>
+    <datatype extension="audio" type="galaxy.datatypes.binary:Audio" subclass="true" display_in_upload="true"/>
+    <datatype extension="wav" type="galaxy.datatypes.binary:Wav" subclass="true" display_in_upload="true"/>
+    <datatype extension="segments" type="galaxy.datatypes.text:Segments" subclass="true" display_in_upload="true" />
     <!-- END AMP Data Types-->
 
     <datatype extension="ab1" type="galaxy.datatypes.binary:Ab1" mimetype="application/octet-stream" display_in_upload="true" description="A binary sequence file in 'ab1' format with a '.ab1' file extension.  You must manually select this 'File Format' when uploading the file." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Ab1"/>
@@ -734,6 +736,7 @@
     <sniffer type="galaxy.datatypes.binary:Audio"/>
     <sniffer type="galaxy.datatypes.binary:Video"/>
     <sniffer type="galaxy.datatypes.binary:Wav"/>
+    <sniffer type="galaxy.datatypes.text:Segments"/>
 
     <sniffer type="galaxy.datatypes.plant_tribes:PlantTribesKsComponents"/>
     <sniffer type="galaxy.datatypes.plant_tribes:Smat"/>
