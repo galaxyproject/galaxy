@@ -18,7 +18,7 @@
                 aria-label="Download from URL or upload files from disk"
                 title="Download from URL or upload files from disk"
             >
-                <span class="fa fa-upload"></span>
+                <font-awesome-icon icon="upload" />
             </a>
         </div>
     </div>
@@ -28,8 +28,14 @@
 import { VBTooltip } from "bootstrap-vue";
 import { getGalaxyInstance } from "app"; // FIXME:
 
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faUpload } from "@fortawesome/free-solid-svg-icons";
+library.add(faUpload);
+
 export default {
     name: "UploadButton",
+    components: { FontAwesomeIcon },
     directives: {
         "v-b-tooltip": VBTooltip
     },
