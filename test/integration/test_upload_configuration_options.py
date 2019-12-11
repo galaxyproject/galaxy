@@ -705,7 +705,7 @@ class ServerDirectoryValidUsageTestCase(BaseUploadContentConfigurationTestCase):
         return cls.temp_config_dir("server")
 
 
-class ServerDirectoryRestrictedToAdminsUsageTestCase(BaseUploadContentConfigurationTestCase):
+class UserServerDirectoryOffByDefaultTestCase(BaseUploadContentConfigurationTestCase):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -717,6 +717,36 @@ class ServerDirectoryRestrictedToAdminsUsageTestCase(BaseUploadContentConfigurat
         payload, files = self.library_populator.create_dataset_request(library, upload_option="upload_directory", server_dir="library")
         response = self.library_populator.raw_library_contents_create(library["id"], payload, files=files)
         assert response.status_code == 403, response.json()
+
+
+class UserServerDirectoryValidUsageTestCase(BaseUploadContentConfigurationTestCase):
+
+    @classmethod
+    def user_server_dir(cls):
+        return cls.temp_config_dir("user_library_import_dir")
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        user_server_dir = cls.user_server_dir()
+        os.makedirs(user_server_dir)
+        config["user_library_import_dir"] = os.path.join(user_server_dir)
+
+    def test_valid_user_server_dir_uploads_okay(self):
+        dir_to_import = 'library'
+        full_dir_path = os.path.join(self.user_server_dir(), TEST_USER, dir_to_import)
+        os.makedirs(full_dir_path)
+        file_content = "hello world\n"
+        with tempfile.NamedTemporaryFile(mode='w', dir=full_dir_path, delete=False) as fh:
+            fh.write(file_content)
+            file_to_import = fh.name
+
+        library_dataset = self.library_populator.new_library_dataset("serverdirupload", upload_option="upload_directory", server_dir=dir_to_import)
+        # Check the file is still there and was not modified
+        with open(file_to_import, 'r') as fh:
+            read_content = fh.read()
+        assert read_content == file_content
+
+        assert library_dataset["file_size"] == 12, library_dataset
 
 
 class FetchByPathTestCase(BaseUploadContentConfigurationTestCase):
