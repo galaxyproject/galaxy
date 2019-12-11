@@ -1520,20 +1520,9 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
     @web.expose
     @web.json
     @web.require_admin
-    def jobs_control(self, trans, job_lock=None, **kwd):
-        if job_lock is not None:
-            job_lock = True if job_lock == 'true' else False
-            trans.app.queue_worker.send_control_task('admin_job_lock', kwargs={'job_lock': job_lock}, get_response=True)
-        job_lock = trans.app.job_manager.job_lock
-        return {'job_lock': job_lock}
-
-    @web.expose
-    @web.json
-    @web.require_admin
     def jobs_list(self, trans, cutoff=180, **kwd):
         message = kwd.get('message', '')
         status = kwd.get('status', 'info')
-        job_lock = trans.app.job_manager.job_lock
         cutoff_time = datetime.utcnow() - timedelta(seconds=int(cutoff))
         jobs = trans.sa_session.query(trans.app.model.Job) \
                                .filter(and_(trans.app.model.Job.table.c.update_time < cutoff_time,
@@ -1576,8 +1565,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 'recent_jobs': prepare_jobs_list(recent_jobs),
                 'cutoff': cutoff,
                 'message': message,
-                'status': status,
-                'job_lock': job_lock}
+                'status': status}
 
     @web.expose
     @web.require_admin

@@ -16,6 +16,7 @@ from galaxy.managers.jobs import JobManager, JobSearch
 from galaxy.web import (
     expose_api,
     expose_api_anonymous,
+    require_admin,
 )
 from galaxy.webapps.base.controller import (
     BaseAPIController,
@@ -567,3 +568,23 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
         )
 
         return {'messages': messages}
+
+    @require_admin
+    @expose_api
+    def show_job_lock(self, trans, **kwd):
+        """
+        * GET /api/job_lock
+            return boolean indicating if job lock active.
+        """
+        return {"active": self.app.job_manager.job_lock}
+
+    @require_admin
+    @expose_api
+    def update_job_lock(self, trans, payload, **kwd):
+        """
+        * PUT /api/job_lock
+            return boolean indicating if job lock active.
+        """
+        job_lock = payload.get("active")
+        self.app.queue_worker.send_control_task('admin_job_lock', kwargs={'job_lock': job_lock}, get_response=True)
+        return {"active": self.app.job_manager.job_lock}

@@ -226,15 +226,7 @@ export default {
     },
     watch: {
         jobLock(newVal) {
-            axios
-                .get(`${getAppRoot()}admin/jobs_control?job_lock=${this.jobLock}`)
-                .then(response => {
-                    this.jobLock = response.data.job_lock;
-                    this.jobLockDisplay = response.data.job_lock;
-                })
-                .catch(error => {
-                    console.error(error);
-                });
+            this.handleJobLock(axios.put(`${getAppRoot()}api/job_lock`, { active: this.jobLock }));
         },
         selectedStopJobIds(newVal) {
             if (newVal.length === 0) {
@@ -250,6 +242,19 @@ export default {
         }
     },
     methods: {
+        initJobLock() {
+            this.handleJobLock(axios.get(`${getAppRoot()}api/job_lock`));
+        },
+        handleJobLock(axiosPromise) {
+            axiosPromise
+                .then(response => {
+                    this.jobLock = response.data.active;
+                    this.jobLockDisplay = response.data.active;
+                })
+                .catch(error => {
+                    console.error(error);
+                });
+        },
         update() {
             this.busy = true;
             let params = [];
@@ -263,8 +268,6 @@ export default {
                     this.cutoffDisplay = response.data.cutoff;
                     this.message = response.data.message;
                     this.status = response.data.status;
-                    this.jobLock = response.data.job_lock;
-                    this.jobLockDisplay = response.data.job_lock;
                     this.loading = false;
                     this.busy = false;
                 })
@@ -360,6 +363,7 @@ export default {
         }
     },
     created() {
+        this.initJobLock();
         this.update();
     }
 };
