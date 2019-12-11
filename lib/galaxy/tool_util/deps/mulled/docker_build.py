@@ -9,6 +9,10 @@ from galaxy.tool_util.deps.commands import (
     execute,
     shell_process,
 )
+from galaxy.tool_util.deps.docker_util import (
+    build_command,
+    command_list,
+)
 from galaxy.tool_util.deps.mulled.mulled_build import DEFAULT_CHANNELS
 from galaxy.util import unicodify
 
@@ -53,12 +57,11 @@ class DockerContainerBuilder(object):
         self.recipe_stage2 = None
 
     def build_command(self, path):
-        return ['docker', 'build', '-t', self.repo, os.path.dirname(path)]
+        return build_command(image=self.repo, docker_build_path=path)
 
     def run_command(self, image, command):
-        cmd = ['docker', "run", image]
-        cmd.extend(command)
-        return cmd
+        command.insert(0, image)
+        return command_list('run', command)
 
     def exec_command(self, command, redirect_output=False):
         if redirect_output:
