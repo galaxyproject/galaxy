@@ -39,7 +39,7 @@ QUnit.module("Input terminal model test", {
     beforeEach: function() {
         testApp.create();
         this.node = new Node(create_app(), {});
-        this.input = { extensions: ["txt"], multiple: false };
+        this.input = { extensions: ["txt"], multiple: false, optional: false };
         this.input_terminal = new Terminals.InputTerminal({ input: this.input });
         this.input_terminal.node = this.node;
     },
@@ -65,7 +65,7 @@ QUnit.module("Input terminal model test", {
         this.input_terminal.connectors = [];
     },
     test_accept: function(other) {
-        other = other || { node: {}, datatypes: ["txt"] };
+        other = other || { node: {}, datatypes: ["txt"], optional: false };
         if (!other.mapOver) {
             other.mapOver = function() {
                 return Terminals.NULL_COLLECTION_TYPE_DESCRIPTION;
@@ -148,6 +148,20 @@ QUnit.test("can accept inputs", function(assert) {
     // Other is data input module - always accept (currently - could be
     // more intelligent by looking at what else input is connected to.
     var other = { node: {}, datatypes: ["input"] };
+    assert.ok(this.test_accept(other));
+});
+
+QUnit.test("can't connect non-optional", function(assert) {
+    var other = { node: {}, datatypes: ["input"], optional: true };
+    assert.ok(!this.test_accept(other));
+});
+
+QUnit.test("multiple inputs can accept optional outputs regardless", function(assert) {
+    // Galaxy multiple inputs have an optional field but it is hard to resolve that
+    // completely until runtime.
+    var other = { node: {}, datatypes: ["input"], optional: true };
+    var self = this;
+    this.multiple();
     assert.ok(this.test_accept(other));
 });
 
@@ -302,6 +316,17 @@ QUnit.test("Collection output can connect to same collection input type", functi
         inputTerminal.canAccept(outputTerminal).canAccept,
         "Input terminal " + inputTerminal + " can not accept " + outputTerminal
     );
+});
+
+QUnit.test("Optiona collection output can not connect to required collection input", function(assert) {
+    var inputTerminal = this.input_terminal;
+    var outputTerminal = new Terminals.OutputCollectionTerminal({
+        datatypes: "txt",
+        collection_type: "list",
+        optional: true
+    });
+    outputTerminal.node = {};
+    assert.ok(!inputTerminal.canAccept(outputTerminal).canAccept);
 });
 
 QUnit.test("Collection output cannot connect to different collection input type", function(assert) {

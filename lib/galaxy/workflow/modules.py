@@ -677,11 +677,12 @@ class InputDataModule(InputModule):
     def get_all_outputs(self, data_only=False):
         parameter_def = self._parse_state_into_dict()
         format_def = parameter_def.get("format")
+        optional = parameter_def["optional"]
         if format_def is None:
             extensions = ['input']
         else:
             extensions = listify(format_def)
-        return [dict(name='output', extensions=extensions)]
+        return [dict(name='output', extensions=extensions, optional=optional)]
 
     def get_filter_set(self, connections=None):
         filter_set = []
@@ -750,12 +751,20 @@ class InputDataCollectionModule(InputModule):
         return dict(input=input_param)
 
     def get_all_outputs(self, data_only=False):
+        parameter_def = self._parse_state_into_dict()
+        format_def = parameter_def.get("format")
+        optional = parameter_def["optional"]
+        if format_def is None:
+            extensions = ['input']
+        else:
+            extensions = listify(format_def)
         return [
             dict(
                 name='output',
-                extensions=['input'],
+                extensions=extensions,
                 collection=True,
-                collection_type=self.state.inputs.get('collection_type', self.default_collection_type)
+                collection_type=parameter_def.get('collection_type', self.default_collection_type),
+                optional=optional,
             )
         ]
 
@@ -1040,6 +1049,7 @@ class InputParameterModule(WorkflowModule):
             name='output',
             label=self.label,
             type=parameter_def.get('parameter_type'),
+            optional=parameter_def['optional'],
             parameter=True,
         )]
 
@@ -1373,6 +1383,7 @@ class ToolModule(WorkflowModule):
                             label=prefixed_label,
                             multiple=input.multiple,
                             extensions=input.extensions,
+                            optional=input.optional,
                             input_type="dataset", ))
                     elif isinstance(input, DataCollectionToolParameter):
                         inputs.append(dict(
@@ -1381,6 +1392,7 @@ class ToolModule(WorkflowModule):
                             multiple=input.multiple,
                             input_type="dataset_collection",
                             collection_types=input.collection_types,
+                            optional=input.optional,
                             extensions=input.extensions,
                         ))
                     else:
@@ -1390,6 +1402,7 @@ class ToolModule(WorkflowModule):
                                 label=prefixed_label,
                                 multiple=False,
                                 input_type="parameter",
+                                optional=getattr(input, "optional", False),
                                 type=input_type,
                             )
                         )
@@ -1445,6 +1458,7 @@ class ToolModule(WorkflowModule):
                         name=name,
                         extensions=formats,
                         type=tool_output.output_type,
+                        optional=False,
                         **extra_kwds
                     )
                 )
