@@ -312,7 +312,7 @@ var BaseInputTerminal = Terminal.extend({
                 if (
                     firstOutput.isCollection ||
                     firstOutput.isMappedOver() ||
-                    firstOutput.datatypes.indexOf("input_collection") > 0
+                    firstOutput.datatypes.indexOf("input") > 0
                 ) {
                     return true;
                 } else {
@@ -359,7 +359,6 @@ var BaseInputTerminal = Terminal.extend({
                 if (
                     other_datatype == "input" ||
                     other_datatype == "_sniff_" ||
-                    other_datatype == "input_collection" ||
                     window.workflow_globals.app.isSubType(cat_outputs[other_datatype_i], thisDatatype)
                 ) {
                     return new ConnectionAcceptable(true, null);

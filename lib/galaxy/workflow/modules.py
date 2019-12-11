@@ -747,7 +747,7 @@ class InputDataCollectionModule(InputModule):
         return [
             dict(
                 name='output',
-                extensions=['input_collection'],
+                extensions=['input'],
                 collection=True,
                 collection_type=self.state.inputs.get('collection_type', self.default_collection_type)
             )
