@@ -75,7 +75,7 @@ def get_tool_source_from_representation(tool_format, tool_representation):
 
 
 def get_input_source(content):
-    """Wrap an XML element in a XmlInputSource if needed.
+    """Wrap dicts or XML elements as InputSource if needed.
 
     If the supplied content is already an InputSource object,
     it is simply returned. This allow Galaxy to uniformly
