@@ -450,6 +450,7 @@ def populate_api_routes(webapp, app):
                            collection={'sniffers': 'GET', 'mapping': 'GET', 'converters': 'GET', 'edam_data': 'GET', 'edam_formats': 'GET'},
                            parent_resources=dict(member_name='datatype', collection_name='datatypes'))
     webapp.mapper.resource('search', 'search', path_prefix='/api')
+    webapp.mapper.connect('/api/pages/{id}.pdf', action='show_pdf', controller="pages", conditions=dict(method=["GET"]))
     webapp.mapper.resource('page', 'pages', path_prefix="/api")
     webapp.mapper.connect('/api/pages/{id}/sharing', action='sharing', controller="pages", conditions=dict(method=["GET", "POST"]))
     webapp.mapper.resource('revision', 'revisions',
