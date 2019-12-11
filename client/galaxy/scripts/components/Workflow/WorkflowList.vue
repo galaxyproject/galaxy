@@ -23,11 +23,11 @@
                     <b-col>
                         <span class="float-right">
                             <b-button id="workflow-create" class="m-1" @click="createWorkflow">
-                                <span class="fa fa-plus" />
+                                <font-awesome-icon icon="plus"/>
                                 Create
                             </b-button>
                             <b-button id="workflow-import" class="m-1" @click="importWorkflow">
-                                <span class="fa fa-upload" />
+                                <font-awesome-icon icon="upload"/>
                                 Import
                             </b-button>
                         </span>
@@ -80,6 +80,14 @@
     </div>
 </template>
 <script>
+import { library } from '@fortawesome/fontawesome-svg-core'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { faPlus } from "@fortawesome/free-solid-svg-icons";
+import { faUpload } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faPlus)
+library.add(faUpload)
+
 import { getAppRoot } from "onload/loadConfig";
 import { Services } from "./services.js";
 import WorkflowTags from "./WorkflowTags.vue";
@@ -88,7 +96,8 @@ import WorkflowDropdown from "./WorkflowDropdown.vue";
 export default {
     components: {
         workflowtags: WorkflowTags,
-        workflowdropdown: WorkflowDropdown
+        workflowdropdown: WorkflowDropdown,
+        FontAwesomeIcon
     },
     data() {
         return {
