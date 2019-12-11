@@ -675,7 +675,13 @@ class InputDataModule(InputModule):
     name = "Input dataset"
 
     def get_all_outputs(self, data_only=False):
-        return [dict(name='output', extensions=['input'])]
+        parameter_def = self._parse_state_into_dict()
+        format_def = parameter_def.get("format")
+        if format_def is None:
+            extensions = ['input']
+        else:
+            extensions = listify(format_def)
+        return [dict(name='output', extensions=extensions)]
 
     def get_filter_set(self, connections=None):
         filter_set = []
