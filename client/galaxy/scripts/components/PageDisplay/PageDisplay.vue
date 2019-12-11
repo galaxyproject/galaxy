@@ -1,5 +1,5 @@
 <template>
-    <markdown :markdown-config="markdownConfig"> </markdown>
+    <markdown :markdown-config="markdownConfig" :exportLink="exportUrl"> </markdown>
 </template>
 
 <script>
@@ -17,20 +17,26 @@ export default {
             required: true
         }
     },
+    computed: {
+        dataUrl: function() {
+            return getAppRoot() + `api/pages/${this.pageId}`;
+        },
+        exportUrl: function() {
+            return this.dataUrl + ".pdf";
+        }
+    },
     data() {
         return {
             markdownConfig: {}
         };
     },
     created: function() {
-        const pageId = this.pageId;
-        const url = getAppRoot() + `api/pages/${pageId}`;
-        this.ajaxCall(url);
+        this.ajaxCall();
     },
     methods: {
-        ajaxCall: function(url) {
+        ajaxCall: function() {
             axios
-                .get(url)
+                .get(this.dataUrl)
                 .then(response => {
                     this.markdownConfig = { ...response.data, markdown: response.data.content };
                 })
