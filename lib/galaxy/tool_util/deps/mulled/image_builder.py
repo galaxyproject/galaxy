@@ -220,7 +220,7 @@ class SingularityContainerBuilder(DockerContainerBuilder):
 
     def run_command(self, command):
         command.insert(0, self.image)
-        return singularity_command_list('run', command)
+        return singularity_command_list('exec', command)
 
     def template_env_vars(self, env_vars):
         return "%environment\n" + "\n".join(["    export {k}={v}\n".format(k=k, v=v) for k, v in env_vars.items()])

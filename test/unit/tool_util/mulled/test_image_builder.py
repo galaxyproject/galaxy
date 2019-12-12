@@ -1,4 +1,7 @@
+import contextlib
 import os
+import shutil
+import tempfile
 
 import pytest
 
@@ -9,6 +12,15 @@ from galaxy.tool_util.deps.mulled.image_builder import (
     SingularityContainerBuilder,
 )
 from ..test_conda_resolution import external_dependency_management
+
+
+@pytest.fixture(scope="module")
+def artifcat_dir():
+    tempdir = tempfile.mkdtemp(prefix="GALAXY_PYTEST_MULLED_")
+    try:
+        yield tempdir
+    finally:
+        shutil.rmtree(tempdir)
 
 
 def test_build_stage1_info():
@@ -62,9 +74,9 @@ def test_build_stage1_variants(builder_class, repo, target_args, channels, prein
 
 @pytest.mark.parametrize("builder_class", [DockerContainerBuilder, SingularityContainerBuilder])
 @external_dependency_management
-def test_collect_env_vars(builder_class):
+def test_collect_env_vars(builder_class, artifcat_dir):
     repo = 'transtermhp'
-    builder = builder_class(repo=repo, target_args=repo)
+    builder = builder_class(repo=repo, target_args=repo, artifcat_dir=artifcat_dir)
     info = builder.build_info(builder.template_stage1)
     builder.build_stage(info)
     conda_env_vars = builder.get_conda_env_vars()
@@ -77,8 +89,8 @@ def test_collect_env_vars(builder_class):
     ('transtermhp', False),
     ('multiqc', True)
 ])
-def test_image_requires_extended_base(builder_class, image, expect_true):
-    builder = builder_class(repo=image, target_args=image)
+def test_image_requires_extended_base(builder_class, image, expect_true, artifcat_dir):
+    builder = builder_class(repo=image, target_args=image, artifcat_dir=artifcat_dir)
     info = builder.build_info(builder.template_stage1)
     builder.build_stage(info)
     assert builder.image_requires_extended_base() == expect_true
@@ -90,8 +102,8 @@ def test_image_requires_extended_base(builder_class, image, expect_true):
     ('transtermhp', DEFAULT_DESTINATION_IMAGE, 'ENV TRANSTERMHP /usr/local/data/expterm.dat'),
     ('multiqc', DEFAULT_EXTENDED_BASE_IMAGE, ''),
 ])
-def test_build_image(builder_class, target_args, destination_image, env_statements):
-    builder = builder_class(repo=target_args, target_args=target_args)
+def test_build_image(builder_class, target_args, destination_image, env_statements, artifcat_dir):
+    builder = builder_class(repo=target_args, target_args=target_args, artifcat_dir=artifcat_dir)
     builder.build_image()
     assert "FROM %s" % destination_image in builder.recipe_stage2.contents
     assert env_statements in builder.recipe_stage2.contents
