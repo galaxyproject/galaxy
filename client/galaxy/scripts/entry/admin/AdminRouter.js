@@ -9,6 +9,7 @@ import DataTables from "components/admin/DataTables.vue";
 import DataTypes from "components/admin/DataTypes.vue";
 import Jobs from "components/admin/Jobs.vue";
 import Invocations from "components/admin/Invocations.vue";
+import AdminHome from "components/admin/Home.vue";
 import DataManagerView from "components/admin/DataManager/DataManagerView.vue";
 import DataManagerRouter from "components/admin/DataManager/DataManagerRouter.vue";
 import Register from "components/login/Register.vue";
@@ -23,7 +24,7 @@ export const getAdminRouter = (Galaxy, options) => {
 
     return Router.extend({
         routes: {
-            "(/)admin(/)": "home",
+            "(/)admin(/)": "show_home",
             "(/)admin(/)users": "show_users",
             "(/)admin(/)users(/)create": "show_users_create",
             "(/)admin(/)roles": "show_roles",
@@ -53,10 +54,14 @@ export const getAdminRouter = (Galaxy, options) => {
             window.location.reload(); // = window.location.href;
         },
 
-        home: function() {
-            this.page
-                .$("#galaxy_main")
-                .prop("src", `${galaxyRoot}admin/center?message=${options.message}&status=${options.status}`);
+        show_home: function() {
+            this._display_vue_helper(AdminHome, {
+                propsData: {
+                    installingRepositoryIds: options.settings.installing_repository_ids,
+                    isRepoInstalled: options.settings.is_repo_installed,
+                    isToolShedInstalled: options.settings.is_tool_shed_installed
+                }
+            });
         },
 
         show_users: function() {
@@ -64,17 +69,14 @@ export const getAdminRouter = (Galaxy, options) => {
         },
 
         show_users_create: function() {
-            const instance = Vue.extend(Register);
-            const vm = document.createElement("div");
-            this.page.display(vm);
-            new instance({
+            this._display_vue_helper(Register, {
                 propsData: {
                     redirect: "/admin/users",
                     registration_warning_message: options.config.registration_warning_message,
                     mailing_join_addr: options.config.mailing_join_addr,
                     server_mail_configured: options.config.server_mail_configured
                 }
-            }).$mount(vm);
+            });
         },
 
         show_roles: function() {
