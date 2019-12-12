@@ -594,7 +594,7 @@ class MockObjectStore(object):
     def __init__(self):
         pass
 
-    def size(self, dataset):
+    def size(self, dataset, **kwargs):
         return 42
 
     def exists(self, *args, **kwds):

@@ -119,8 +119,18 @@ class Cloud(ObjectStore, CloudConfigMixin):
     def _get_connection(provider, credentials):
         log.debug("Configuring `{}` Connection".format(provider))
         if provider == "aws":
-            config = {"aws_access_key": credentials["access_key"],
-                      "aws_secret_key": credentials["secret_key"]}
+            access_key = credentials.get("access_key")
+            if access_key is None:
+                access_key = credentials.get("AccessKeyId")
+            secret_key = credentials.get("secret_key")
+            if secret_key is None:
+                secret_key = credentials.get("SecretAccessKey")
+            session_token = credentials.get("session_token")
+            if session_token is None:
+                session_token = credentials.get("SessionToken")
+            config = {"aws_access_key": access_key,
+                      "aws_secret_key": secret_key,
+                      "aws_session_token": session_token}
             connection = CloudProviderFactory().create_provider(ProviderList.AWS, config)
         elif provider == "azure":
             config = {"azure_subscription_id": credentials["subscription_id"],
@@ -373,7 +383,10 @@ class Cloud(ObjectStore, CloudConfigMixin):
         return rel_path
 
     def _get_cache_path(self, rel_path):
-        return os.path.abspath(os.path.join(self.staging_path, rel_path))
+        if self.dataset_staging_path is not None:
+            return self.dataset_staging_path
+        else:
+            return os.path.abspath(os.path.join(self.staging_path, rel_path))
 
     def _get_transfer_progress(self):
         return self.transfer_progress

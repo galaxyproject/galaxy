@@ -53,6 +53,19 @@ class ObjectStore(object):
         directory in which this object should be created, or `None` to specify
         the default directory.
 
+    :type user: User (lib/galaxy/model/__init__.py)
+    :param user: The user (object) whose dataset is being upload/download
+        to/from object store.
+
+    :type storage_media: A list of StorageMedia (lib/galaxy/model/__init__.py)
+    :param storage_media: A list of data persistence media from/to which a dataset
+        is pulled/pushed. If multiple storage media is available for a user,
+        object store chooses one based on `usage`, `order`, and `quota` attributes
+        of each storage media.
+        A recommended approach for getting a list of storage media available for
+        a user, or possibly associated with the dataset, is using the
+        `Dataset.get_storage_media` method.
+
     :type dir_only: boolean
     :param dir_only: If `True`, check only the path where the file identified
         by `obj` should be located, not the dataset itself. This option applies
@@ -81,6 +94,26 @@ class ObjectStore(object):
     :param obj_dir: Append a subdirectory named with the object's ID (e.g.
         000/obj.id)
     """
+
+    # Used for user-based objectstore.
+    # At job initiation, Objectstore decides at what
+    # _path_ on which _backend_ the result of job shall
+    # be persisted, considering only instance-level
+    # objectstore configuration and neglecting user's
+    # storage media.
+    # After job has completed, the resulting dataset is
+    # staged at a path depending on which _backend_
+    # was initially selected, before signaling objectstore
+    # to persist the dataset.
+    # For instance, if initially an S3 bucket was selected,
+    # the result of job execution is staged in S3 cache path
+    # as defined in the ObjectStore config.
+    #
+    # If user has defined a storage media, and that is
+    # chosen as the media where the result of job shall
+    # be persisted; then this variable is used to inform
+    # the media where the dataset is _staged_.
+    dataset_staging_path = None
 
     def __init__(self, config, config_dict={}, **kwargs):
         """
@@ -308,14 +341,14 @@ class DiskObjectStore(ObjectStore):
 
         This is regardless of whether or not the file exists.
         """
-        path = self._construct_path(obj, base_dir=base_dir, dir_only=dir_only, extra_dir=extra_dir,
-                                    extra_dir_at_root=extra_dir_at_root, alt_name=alt_name,
+        path = self._construct_path(obj, base_dir=base_dir, dir_only=dir_only,
+                                    extra_dir=extra_dir, extra_dir_at_root=extra_dir_at_root, alt_name=alt_name,
                                     obj_dir=False, old_style=True)
         # For backward compatibility: check the old style root path first;
         # otherwise construct hashed path.
         if not os.path.exists(path):
-            return self._construct_path(obj, base_dir=base_dir, dir_only=dir_only, extra_dir=extra_dir,
-                                        extra_dir_at_root=extra_dir_at_root, alt_name=alt_name)
+            return self._construct_path(obj, base_dir=base_dir, dir_only=dir_only,
+                                        extra_dir=extra_dir, extra_dir_at_root=extra_dir_at_root, alt_name=alt_name)
 
     # TODO: rename to _disk_path or something like that to avoid conflicts with
     # children that'll use the local_extra_dirs decorator, e.g. S3
@@ -534,9 +567,15 @@ class NestedObjectStore(ObjectStore):
         """Determine if the file for `obj` is ready to be used by any of the backends."""
         return self._call_method('file_ready', obj, False, False, **kwargs)
 
-    def create(self, obj, **kwargs):
+    def create(self, obj, ignore_media=False, **kwargs):
         """Create a backing file in a random backend."""
-        random.choice(list(self.backends.values())).create(obj, **kwargs)
+        if hasattr(obj, "active_storage_media_associations") and \
+                len(obj.active_storage_media_associations) > 0 and \
+                not ignore_media:
+            media = UserObjectStore(obj.active_storage_media_associations, self)
+            return media.call_method("create", obj, **kwargs)
+        else:
+            random.choice(list(self.backends.values())).create(obj, **kwargs)
 
     def empty(self, obj, **kwargs):
         """For the first backend that has this `obj`, determine if it is empty."""
@@ -577,12 +616,26 @@ class NestedObjectStore(ObjectStore):
         except AttributeError:
             return str(obj)
 
-    def _call_method(self, method, obj, default, default_is_exception,
-            **kwargs):
-        """Check all children object stores for the first one with the dataset."""
-        for key, store in self.backends.items():
-            if store.exists(obj, **kwargs):
-                return store.__getattribute__(method)(obj, **kwargs)
+    def _get_backend(self, obj, **kwargs):
+        """
+        Check all children object stores for the first one with the dataset;
+        it first checks storage media, if given, then evaluates other backends.
+        """
+        for key, backend in self.backends.items():
+            if backend.exists(obj, **kwargs):
+                return backend
+        return None
+
+    def _call_method(self, method, obj, default, default_is_exception, ignore_media=False, **kwargs):
+        if hasattr(obj, "active_storage_media_associations") and \
+                len(obj.active_storage_media_associations) > 0 and \
+                not ignore_media:
+            media = UserObjectStore(obj.active_storage_media_associations, self)
+            return media.call_method(method, obj, default, default_is_exception, **kwargs)
+
+        backend = self._get_backend(obj, **kwargs)
+        if backend is not None:
+            return backend.__getattribute__(method)(obj, **kwargs)
         if default_is_exception:
             raise default('objectstore, _call_method failed: %s on %s, kwargs: %s'
                           % (method, self._repr_object_for_exception(obj), str(kwargs)))
@@ -831,16 +884,110 @@ class HierarchicalObjectStore(NestedObjectStore):
         as_dict["backends"] = backends
         return as_dict
 
-    def exists(self, obj, **kwargs):
+    def exists(self, obj, ignore_media=False, **kwargs):
         """Check all child object stores."""
+        if hasattr(obj, "active_storage_media_associations") and \
+                len(obj.active_storage_media_associations) > 0 and \
+                not ignore_media:
+            media = UserObjectStore(obj.active_storage_media_associations, self)
+            return media.call_method("exists", obj, **kwargs)
         for store in self.backends.values():
             if store.exists(obj, **kwargs):
                 return True
         return False
 
-    def create(self, obj, **kwargs):
+    def create(self, obj, ignore_media=False, **kwargs):
         """Call the primary object store."""
-        self.backends[0].create(obj, **kwargs)
+        # very confusing why job is passed here, hence
+        # the following check is necessary because the
+        # `obj` object can be of either of the following
+        # types:
+        # - `galaxy.model.Dataset`
+        # - `galaxy.model.Job`
+        if hasattr(obj, "active_storage_media_associations") and \
+                len(obj.active_storage_media_associations) > 0 and \
+                not ignore_media:
+            media = UserObjectStore(obj.active_storage_media_associations, self)
+            return media.call_method("create", obj, **kwargs)
+        else:
+            self.backends[0].create(obj, **kwargs)
+
+
+class UserObjectStore(ObjectStore):
+    def __init__(self, media_associations, instance_wide_objectstore):
+        self.media_associations = media_associations
+        self.backends = {}
+        self.__configure_store()
+        self.instance_wide_objectstore = instance_wide_objectstore
+
+    def __configure_store(self):
+        for association in self.media_associations:
+            m = association.storage_media
+            categories = m.__class__.categories
+            if m.category == categories.LOCAL:
+                config = m.get_config(cache_path=m.cache_path, jobs_directory=m.jobs_directory)
+                self.backends[m.id] = DiskObjectStore(config=config, config_dict={"files_dir": m.path})
+            elif m.category == categories.AWS:
+                from .cloud import Cloud
+                config = {
+                    "provider": m.category,
+                    "auth": m.get_credentials(),
+                    "bucket": {
+                        "name": m.path
+                    },
+                    "cache": {
+                        "path": m.cache_path,
+                        "size": m.cache_size
+                    }
+                }
+
+                self.backends[m.id] = Cloud(
+                    config=m.get_config(cache_path=m.cache_path, jobs_directory=m.jobs_directory),
+                    config_dict=config
+                )
+            else:
+                raise Exception("Received a storage media with an un-recognized category type `{}`. "
+                                "Expected of the following categories: {}"
+                                .format(m.category, categories))
+
+    def __get_containing_media(self, obj, media, **kwargs):
+        """
+        Returns the first storage media that contains the object.
+        """
+        if media is None:
+            for key, backend in self.backends.items():
+                if backend.exists(obj, **kwargs):
+                    return backend
+        if hasattr(media, '__len__'):
+            if len(media) == 1 and self.backends[media[0].id].exists(obj, **kwargs):
+                return self.backends[media[0].id]
+            elif len(media) > 1:
+                for m in media:
+                    if self.backends[m.id].exists(obj, **kwargs):
+                        return self.backends[m.id]
+        return None
+
+    def __call_instance_wide_backend_method(self, method, obj, default, default_is_exception, ignore_media=True, **kwargs):
+        return self.instance_wide_objectstore.__getattribute__(method)(obj, default, default_is_exception, ignore_media=ignore_media, **kwargs)
+
+    def exists(self, obj, **kwargs):
+        for backend in self.backends.values():
+            if backend.exists(obj, **kwargs):
+                return True
+        return False
+
+    def size(self, obj, media=None, **kwargs):
+        backend = self.__get_containing_media(obj, media, **kwargs)
+        if backend is None:
+            return 0
+        else:
+            return backend.size(obj, **kwargs)
+
+    def call_method(self, method, obj, default=None, default_is_exception=False, **kwargs):
+        picked_media = obj.active_storage_media_associations[0].storage_media
+        backend = self.backends[picked_media.id]
+        rtv = backend.__getattribute__(method)(obj, **kwargs)
+        return rtv
 
 
 def type_to_object_store_class(store, fsmon=False):
@@ -1002,7 +1149,7 @@ class ObjectStorePopulator(object):
         self.object_store = app.object_store
         self.object_store_id = None
 
-    def set_object_store_id(self, data):
+    def set_object_store_id(self, data, **kwargs):
         # Create an empty file immediately.  The first dataset will be
         # created in the "default" store, all others will be created in
         # the same store as the first.

@@ -277,7 +277,7 @@ class MockObjectStore(object):
     def exists(self, *args, **kwargs):
         return True
 
-    def create(self, dataset):
+    def create(self, dataset, **kwargs):
         self.created_datasets.append(dataset)
         if self.first_create:
             self.first_create = False

@@ -602,6 +602,158 @@ class User(Dictifiable, RepresentById):
         return True
 
 
+class StorageMedia(object):
+    categories = Bunch(LOCAL="local",
+                       AWS="aws")
+
+    def __init__(self, user_id, category, path, authz_id, order, quota=0,
+                 usage=0, purgeable=True, jobs_directory=None, cache_path=None,
+                 cache_size=100, credentials=None, credentials_update_time=None):
+        """
+        Initializes a storage media.
+        :param user_id: the Galaxy user id for whom this storage media is defined.
+        :param category: is the type of this storage media, its value is a key from `categories` bunch.
+        :param path: a path in the storage media to be used. For instance, a path on a local disk, or bucket name
+        on AWS, or container name on Azure.
+        :param authz_id: the id of AuthZ record to be used to obtain authorization to the media.
+        :param order: A key which defines the hierarchical relation between this and other storage media defined
+        by the user. This key is used in Object Store to determine where to write to or read from a dataset. The
+        value of this parameter can be any integer (+/-) excluding 0, as 0 is the default storage configuration
+        of the Galaxy instance. For instance, if use has defined multiple storage media with the following orders:
+        -2, -1, 1, 2, 3, then object store tries read/write a dataset to a storage media (PM) in the following order:
+        PM_3, PM_2, PM_1, Instance ObjectStore Configuration, PM_-1, PM_-2. It fals from one storage media to another
+        if (a) storage media is not available, or (b) usage + dataset_size > quota.
+        :param quota: sets the maximum data size to be persisted on this storage media.
+        :param usage: sets the total size of the data Galaxy has persisted on the media.
+        """
+        self.user_id = user_id
+        self.usage = usage
+        self.order = order
+        self.category = category
+        self.quota = quota
+        self.path = path
+        self.authz_id = authz_id
+        self.deleted = False
+        self.purged = False
+        self.purgeable = purgeable
+        self.jobs_directory = jobs_directory
+        self.cache_path = cache_path
+        self.cache_size = cache_size
+        self.credentials = credentials
+        self.credentials_update_time = credentials_update_time
+
+    def associate_with_dataset(self, dataset):
+        qres = object_session(self).query(StorageMediaDatasetAssociation).join(Dataset)\
+            .filter(StorageMediaDatasetAssociation.table.c.dataset_id == dataset.id)\
+            .filter(StorageMediaDatasetAssociation.table.c.storage_media_id == self.id).all()
+        if len(qres) > 0:
+            log.error('An attempt to create a duplicate StorageMediaDatasetAssociation is blocked. A duplicated file'
+                      ', with the same or different file name as the original file, for the dataset with ID `{}` might'
+                      ' be uploaded to the storage media with ID `{}`.'.format(self.id, dataset.id))
+            return
+        association = StorageMediaDatasetAssociation(dataset, self)
+        object_session(self).add(association)
+        object_session(self).flush()
+
+    def is_purgeable(self):
+        if self.purgeable is False:
+            return False
+        for assoc in self.data_association:
+            if assoc.dataset.purgable is False:
+                return False
+        return True
+
+    def add_usage(self, amount):
+        self.usage = self.usage + amount
+
+    def get_config(self, cache_path, jobs_directory):
+        config = Bunch(
+            object_store_store_by="uuid",
+            object_store_config_file=None,
+            object_store_check_old_style=False,
+            object_store_cache_path=cache_path,
+            jobs_directory=jobs_directory,
+            file_path=self.path,
+            new_file_path=self.path,
+            umask=os.umask(0o77),
+            gid=os.getgid(),
+        )
+        return config
+
+    def refresh_credentials(self, authnz_manager=None, sa_session=None, flush=True):
+        if self.category == self.categories.LOCAL:
+            self.credentials = None
+            return
+
+        if authnz_manager is None:
+            raise Exception("`authnz_manager` is required to obtain credentials to sign requests to the StorageMedia.")
+
+        if sa_session is None:
+            sa_session = object_session(self)
+
+        # A possible improvement:
+        # The tokens returned by the following method are usually valid for
+        # a short period of time (e.g., 3600 seconds); hence, it might be
+        # good idea to re-use them within their lifetime.
+        if self.category == self.categories.AWS:
+            self.credentials = authnz_manager.get_cloud_access_credentials(self.authz, sa_session, self.user_id)
+            self.credentials_update_time = datetime.now()
+            if flush:
+                sa_session.flush()
+
+    def get_credentials(self):
+        try:
+            return self.credentials
+        except NameError:
+            return None
+
+    @staticmethod
+    def refresh_all_media_credentials(active_associations, authnz_manager, sa_session=None):
+        for association in active_associations:
+            association.storage_media.refresh_credentials(authnz_manager, sa_session)
+
+    @staticmethod
+    def choose_media_for_association(media, dataset_size=0, enough_quota_on_instance_level_media=True, history_shared=False):
+        if media is None or len(media) == 0:
+            return None
+
+        if history_shared:
+            log.debug("The history to which this dataset belongs to, is shared with another user, "
+                      "hence cannot choose a user's storage media.")
+            return None
+
+        i = len(media) - 1
+        media.sort(key=lambda p: p.order)
+        n = False
+        while i >= 0:
+            if n:
+                n = False
+                if enough_quota_on_instance_level_media:
+                    return None
+            if media[i].order == 1:
+                n = True
+            elif media[i].order == -1 and enough_quota_on_instance_level_media:
+                return None
+            if media[i].usage + dataset_size <= media[i].quota:
+                return media[i]
+            i -= 1
+        if n and enough_quota_on_instance_level_media:
+            return None
+
+        # TODO: instead of returning None, this should raise an exception saying
+        # that user does not have enough quota on any of its media.
+        return None
+
+
+class StorageMediaDatasetAssociation(object):
+    def __init__(self, dataset, storage_media, deleted=False, purged=False):
+        self.dataset_id = dataset.id
+        self.storage_media_id = storage_media.id
+        self.dataset_path_on_media = None
+        self.deleted = deleted
+        self.purged = purged
+
+
 class PasswordResetToken(object):
     def __init__(self, user, token=None):
         if token:
@@ -1647,7 +1799,13 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName, RepresentById):
             if set_hid:
                 dataset.hid = self._next_hid()
         if quota and self.user:
-            self.user.adjust_total_disk_usage(dataset.quota_amount(self.user))
+            if len(dataset.dataset.active_storage_media_associations) == 0:
+                self.user.adjust_total_disk_usage(dataset.quota_amount(self.user))
+            else:
+                for assoc in dataset.dataset.active_storage_media_associations:
+                    assoc.storage_media.add_usage(dataset.quota_amount(self.user))
+                    object_session(self).flush()
+
         dataset.history = self
         if genome_build not in [None, '?']:
             self.genome_build = genome_build
@@ -1662,9 +1820,18 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName, RepresentById):
         optimize = len(datasets) > 1 and parent_id is None and all_hdas and set_hid
         if optimize:
             self.__add_datasets_optimized(datasets, genome_build=genome_build)
-            if quota and self.user:
-                disk_usage = sum([d.get_total_size() for d in datasets])
-                self.user.adjust_total_disk_usage(disk_usage)
+            if self.user:
+                disk_usage = 0
+                for dataset in datasets:
+                    if len(dataset.dataset.active_storage_media_associations) == 0:
+                        disk_usage += dataset.get_total_size()
+                    else:
+                        for assoc in dataset.dataset.active_storage_media_associations:
+                            assoc.storage_media.add_usage(dataset.get_total_size())
+                            if flush:
+                                sa_session.flush()
+                if quota and disk_usage > 0:
+                    self.user.adjust_total_disk_usage(disk_usage)
             sa_session.add_all(datasets)
             if flush:
                 sa_session.flush()
@@ -2309,6 +2476,7 @@ class Dataset(StorableObject, RepresentById):
 
     def mark_deleted(self):
         self.deleted = True
+        self.storage_media_associations.deleted = True
 
     # FIXME: sqlalchemy will replace this
     def _delete(self):
@@ -2333,6 +2501,8 @@ class Dataset(StorableObject, RepresentById):
         # TODO: purge metadata files
         self.deleted = True
         self.purged = True
+        self.storage_media_associations.deleted = True
+        self.storage_media_associations.purged = True
 
     def get_access_roles(self, trans):
         roles = []
@@ -2571,8 +2741,8 @@ class DatasetInstance(object):
         return self.dataset.get_size()
 
     def set_size(self, **kwds):
-        """Sets and gets the size of the data on disk"""
-        return self.dataset.set_size(**kwds)
+        """Sets the size of the data on disk"""
+        self.dataset.set_size(**kwds)
 
     def get_total_size(self):
         return self.dataset.get_total_size()
@@ -3114,6 +3284,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         # Gets an HDA disk usage, if the user does not already
         #   have an association of the same dataset
         if not self.dataset.library_associations and not self.purged and not self.dataset.purged:
+            # FIXME: check the active storage media association of this dataset, and add to rval only if dataset is not stored on user's media.
             for hda in self.dataset.history_associations:
                 if hda.id == self.id:
                     continue

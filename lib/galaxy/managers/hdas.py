@@ -138,13 +138,20 @@ class HDAManager(datasets.DatasetAssociationManager,
         Purge this HDA and the dataset underlying it.
         """
         user = hda.history.user or None
+        model.StorageMedia.refresh_all_media_credentials(hda.dataset.active_storage_media_associations, self.app.authnz_manager)
         quota_amount_reduction = 0
         if user:
             quota_amount_reduction = hda.quota_amount(user)
         super(HDAManager, self).purge(hda, flush=flush)
         # decrease the user's space used
         if quota_amount_reduction:
-            user.adjust_total_disk_usage(-quota_amount_reduction)
+            if len(hda.dataset.active_storage_media_associations) == 0:
+                user.adjust_total_disk_usage(-quota_amount_reduction)
+            else:
+                for assoc in hda.dataset.active_storage_media_associations:
+                    assoc.storage_media.add_usage(-quota_amount_reduction)
+                    if flush:
+                        self.session().flush()
         return hda
 
     # .... states

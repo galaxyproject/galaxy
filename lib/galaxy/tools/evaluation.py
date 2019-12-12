@@ -337,6 +337,8 @@ class ToolEvaluator(object):
         for name, hda in output_datasets.items():
             # Write outputs to the working directory (for security purposes)
             # if desired.
+            model.StorageMedia.refresh_all_media_credentials(hda.dataset.active_storage_media_associations,
+                                                             self.app.authnz_manager)
             param_dict[name] = DatasetFilenameWrapper(hda, compute_environment=self.compute_environment, io_type="output")
             output_path = str(param_dict[name])
             # Conditionally create empty output:

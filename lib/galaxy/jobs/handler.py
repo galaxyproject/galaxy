@@ -558,7 +558,14 @@ class JobHandlerQueue(Monitors):
 
         if state == JOB_READY:
             state = self.__check_user_jobs(job, job_wrapper)
-        if state == JOB_READY and self.app.config.enable_quotas:
+        # If user has plugged a media, then they might have enough quota
+        # on their media; hence, we should not raise the "over quota" flag
+        # checking the default storage only. If their usage exceeds their
+        # total quota on all their media, ObjectStore raises appropriate
+        # exception(s).
+        if state == JOB_READY and self.app.config.enable_quotas and \
+                (job.user is not None and
+                 (job.user.active_storage_media is None or len(job.user.active_storage_media) == 0)):
             quota = self.app.quota_agent.get_quota(job.user)
             if quota is not None:
                 try:

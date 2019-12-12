@@ -75,6 +75,38 @@ model.User.table = Table(
     Column("active", Boolean, index=True, default=True, nullable=False),
     Column("activation_token", TrimmedString(64), nullable=True, index=True))
 
+model.StorageMedia.table = Table(
+    "storage_media", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("create_time", DateTime, default=now),
+    Column("update_time", DateTime, index=True, default=now, onupdate=now),
+    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
+    Column("usage", Numeric(15, 0), default=0),
+    Column("order", Integer),
+    Column("quota", Numeric(15, 0)),
+    Column("category", TEXT, nullable=False),
+    Column("path", TEXT, nullable=False),
+    Column("authz_id", Integer, ForeignKey("cloudauthz.id")),
+    Column("deleted", Boolean, index=True, default=False),
+    Column("purged", Boolean, index=True, default=False),
+    Column("purgeable", Boolean, default=True),
+    Column("jobs_directory", TEXT),
+    Column("cache_path", TEXT),
+    Column("cache_size", Integer),
+    Column("credentials", JSONType),
+    Column("credentials_update_time", DateTime))
+
+model.StorageMediaDatasetAssociation.table = Table(
+    "storage_media_dataset_association", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("dataset_id", Integer, ForeignKey("dataset.id"), index=True),
+    Column("storage_media_id", Integer, ForeignKey("storage_media.id"), index=True),
+    Column("create_time", DateTime, default=now),
+    Column("update_time", DateTime, default=now, onupdate=now),
+    Column("deleted", Boolean, index=True, default=False),
+    Column("purged", Boolean, index=True, default=False),
+    Column("dataset_path_on_media", TEXT))
+
 model.UserAddress.table = Table(
     "user_address", metadata,
     Column("id", Integer, primary_key=True),
@@ -1753,6 +1785,14 @@ simple_mapping(model.HistoryDatasetAssociation,
     _metadata=deferred(model.HistoryDatasetAssociation.table.c._metadata)
 )
 
+simple_mapping(model.StorageMediaDatasetAssociation,
+    dataset=relation(model.Dataset,
+        primaryjoin=(model.Dataset.table.c.id == model.StorageMediaDatasetAssociation.table.c.dataset_id), lazy=False),
+    storage_media=relation(
+        model.StorageMedia,
+        primaryjoin=(model.StorageMediaDatasetAssociation.table.c.storage_media_id == model.StorageMedia.table.c.id))
+)
+
 simple_mapping(model.Dataset,
     history_associations=relation(model.HistoryDatasetAssociation,
         primaryjoin=(model.Dataset.table.c.id == model.HistoryDatasetAssociation.table.c.dataset_id)),
@@ -1773,7 +1813,17 @@ simple_mapping(model.Dataset,
             (model.LibraryDatasetDatasetAssociation.table.c.deleted == false()))),
     tags=relation(model.DatasetTagAssociation,
         order_by=model.DatasetTagAssociation.table.c.id,
-        backref='datasets')
+        backref='datasets'),
+    storage_media_associations=relation(
+        model.StorageMediaDatasetAssociation,
+        primaryjoin=(model.Dataset.table.c.id == model.StorageMediaDatasetAssociation.table.c.dataset_id)),
+    active_storage_media_associations=relation(
+        model.StorageMediaDatasetAssociation,
+        primaryjoin=(
+            (model.Dataset.table.c.id == model.StorageMediaDatasetAssociation.table.c.dataset_id) &
+            (model.StorageMediaDatasetAssociation.table.c.deleted == false()) &
+            (model.StorageMediaDatasetAssociation.table.c.purged == false()))
+    )
 )
 
 mapper(model.DatasetHash, model.DatasetHash.table, properties=dict(
@@ -1922,6 +1972,30 @@ mapper(model.User, model.User.table, properties=dict(
         order_by=desc(model.APIKeys.table.c.create_time)),
     cloudauthzs=relation(model.CloudAuthz,
                          primaryjoin=model.CloudAuthz.table.c.user_id == model.User.table.c.id),
+    storage_media=relation(model.StorageMedia),
+    active_storage_media=relation(
+        model.StorageMedia,
+        primaryjoin=(
+            (model.StorageMedia.table.c.user_id == model.User.table.c.id) &
+            (model.StorageMedia.table.c.deleted == false()) &
+            (model.StorageMedia.table.c.purged == false())
+        ))
+))
+
+mapper(model.StorageMedia, model.StorageMedia.table, properties=dict(
+    user=relation(model.User),
+    data_association=relation(
+        model.StorageMediaDatasetAssociation,
+        primaryjoin=(model.StorageMediaDatasetAssociation.table.c.storage_media_id == model.StorageMedia.table.c.id),
+        lazy=False),
+    active_data_association=relation(
+        model.StorageMediaDatasetAssociation,
+        primaryjoin=((model.StorageMediaDatasetAssociation.table.c.storage_media_id == model.StorageMedia.table.c.id) &
+                     (model.StorageMediaDatasetAssociation.table.c.deleted == false()) &
+                     (model.StorageMediaDatasetAssociation.table.c.purged == false()))),
+    authz=relation(
+        model.CloudAuthz,
+        primaryjoin=(model.StorageMedia.table.c.authz_id == model.CloudAuthz.table.c.id))
 ))
 
 mapper(model.PasswordResetToken, model.PasswordResetToken.table,

@@ -15,6 +15,7 @@ from webob.compat import cgi_FieldStorage
 
 import galaxy.model
 from galaxy import util
+from galaxy.model import StorageMedia
 from galaxy.tool_util.parser import get_input_source as ensure_input_source
 from galaxy.util import (
     sanitize_param,
@@ -1267,6 +1268,7 @@ class ColumnListParameter(SelectToolParameter):
         if self.usecolnames:  # read first row - assume is a header with metadata useful for making good choices
             dataset = other_values.get(self.data_ref, None)
             try:
+                StorageMedia.refresh_all_media_credentials(dataset.active_storage_media_associations, self.app.authnz_manager, self.sa_session)
                 with open(dataset.get_file_name(), 'r') as f:
                     head = f.readline()
                 cnames = head.rstrip().split('\t')

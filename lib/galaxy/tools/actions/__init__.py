@@ -415,7 +415,7 @@ class DefaultToolAction(object):
             if not completed_job and trans.app.config.legacy_eager_objectstore_initialization:
                 # Must flush before setting object store id currently.
                 trans.sa_session.flush()
-                object_store_populator.set_object_store_id(data)
+                object_store_populator.set_object_store_id(data=data, user=trans.user)
 
             # This may not be neccesary with the new parent/child associations
             data.designation = name

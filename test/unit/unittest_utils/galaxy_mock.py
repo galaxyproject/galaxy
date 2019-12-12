@@ -81,6 +81,7 @@ class MockApp(object):
         self.job_manager = NoopManager()
         self.application_stack = ApplicationStack()
         self.auth_manager = AuthManager(self)
+        self.authnz_manager = MockAuthnzManager(None, None, None)
         self.execution_timer_factory = Bunch(get_timer=StructuredExecutionTimer)
 
         def url_for(*args, **kwds):
@@ -97,6 +98,15 @@ class MockApp(object):
         # TODO: If the tpm test case passes, does the operation really
         # need to wait.
         return True
+
+
+class MockAuthnzManager(object):
+
+    def __init__(self, app, oidc_config_file, oidc_backends_config_file):
+        pass
+
+    def get_cloud_access_credentials(self, cloudauthz, sa_session, user_id, request=None):
+        return None
 
 
 class MockLock(object):

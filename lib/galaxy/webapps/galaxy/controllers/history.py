@@ -967,7 +967,13 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 else:
                     # Only deal with datasets that have not been purged
                     for hda in history.activatable_datasets:
-                        if trans.app.security_agent.can_access_dataset(send_to_user.all_roles(), hda.dataset):
+                        if len(hda.dataset.storage_media_associations) > 0:
+                            send_to_err += "The dataset `{}` is persisted in a user-owned storage media, hence the history cannot be shared.".format(hda.name)
+                            can_change = {}
+                            cannot_change = {}
+                            no_change_needed = {}
+                            unique_no_change_needed = {}
+                        elif trans.app.security_agent.can_access_dataset(send_to_user.all_roles(), hda.dataset):
                             # The no_change_needed dictionary is a special case.  If both of can_change
                             # and cannot_change are empty, no_change_needed will used for sharing.  Otherwise
                             # unique_no_change_needed will be used for displaying, so we need to populate both.
@@ -1055,13 +1061,19 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 if not hda.deleted or hda.purged:
                     continue
                 if trans.user:
-                    trans.user.adjust_total_disk_usage(-hda.quota_amount(trans.user))
+                    if len(hda.dataset.active_storage_media_associations) == 0:
+                        trans.user.adjust_total_disk_usage(-hda.quota_amount(trans.user))
+                    else:
+                        for assoc in hda.dataset.active_storage_media_associations:
+                            assoc.storage_media.add_usage(-hda.quota_amount(trans.user))
+                            trans.sa_session.flush()
                 hda.purged = True
                 trans.sa_session.add(hda)
                 trans.log_event("HDA id %s has been purged" % hda.id)
                 trans.sa_session.flush()
                 if hda.dataset.user_can_purge:
                     try:
+                        model.StorageMedia.refresh_all_media_credentials(hda.dataset.active_storage_media_associations, self.app.authnz_manager, self.sa_session)
                         hda.dataset.full_delete()
                         trans.log_event("Dataset id %s has been purged upon the the purge of HDA id %s" % (hda.dataset.id, hda.id))
                         trans.sa_session.add(hda.dataset)

@@ -35,7 +35,7 @@ class CloudController(BaseAPIController):
         :param kwargs:
         :return: A list of cloud-based buckets user has defined.
         """
-        # TODO: This can be implemented leveraging PluggedMedia objects (part of the user-based object store project)
+        # TODO: This can be implemented leveraging StorageMedia objects (part of the user-based object store project)
         trans.response.status = 501
         return 'Not Implemented'
 

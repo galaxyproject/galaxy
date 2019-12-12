@@ -1050,6 +1050,58 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_user_based_object_store``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enables and disables the user-based object store feature.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``default_storage_media_jobs_directory``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Sets a base default jobs working directory for all users storage
+    media, where each storage media will have a sperate folder under
+    this path named with the media's encoded ID. This attribute is set
+    for each media independency in storage_media table; hence, admins
+    may modify records in that table to define user/media-specific
+    path.
+:Default: ``database/job_working_directory_storage_media``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``default_storage_media_cache_path``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Sets a base default cache path for all users storage media, where
+    each storage media will have a separate folder under this path
+    named with the media's encoded ID. This attribute is set for each
+    media independency in storage_media table; hence, admins may
+    modify records in that table to define user/media-specific path.
+:Default: ``database/storage_media_cache``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``default_storage_media_cache_size``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Sets a default cache size for all users storage media; in
+    Gigabytes. This attribute is set for each media independency in
+    storage_media table; hence, admins may modify records in that
+    table to define user/media-specific path.
+:Default: ``100``
+:Type: int
+
+
 ~~~~~~~~~~~~~~~
 ``smtp_server``
 ~~~~~~~~~~~~~~~

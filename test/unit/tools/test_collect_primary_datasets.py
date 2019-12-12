@@ -400,18 +400,18 @@ class MockObjectStore(object):
     def __init__(self):
         self.created_datasets = {}
 
-    def update_from_file(self, dataset, file_name, create):
+    def update_from_file(self, dataset, file_name, create, **kwargs):
         if create:
             self.created_datasets[dataset] = file_name
 
-    def size(self, dataset):
+    def size(self, dataset, **kwargs):
         path = self.created_datasets[dataset]
         return os.stat(path).st_size
 
     def exists(self, *args, **kwargs):
         return True
 
-    def get_filename(self, dataset):
+    def get_filename(self, dataset, **kwargs):
         return self.created_datasets[dataset]
 
     def assert_created_with_path(self, dataset, file_name):
