@@ -1389,7 +1389,7 @@ class ImplicitCollectionJobsJobAssociation(RepresentById):
 
 
 class PostJobAction(RepresentById):
-    def __init__(self, action_type, workflow_step, output_name=None, action_arguments=None):
+    def __init__(self, action_type, workflow_step=None, output_name=None, action_arguments=None):
         self.action_type = action_type
         self.output_name = output_name
         self.action_arguments = action_arguments
