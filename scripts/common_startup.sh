@@ -134,17 +134,18 @@ if [ $SET_VENV -eq 1 ]; then
 fi
 
 : ${GALAXY_WHEELS_INDEX_URL:="https://wheels.galaxyproject.org/simple"}
+: ${PYPI_INDEX_URL:="https://pypi.python.org/simple"}
 if [ $REPLACE_PIP -eq 1 ]; then
     pip install 'pip>=8.1'
 fi
 
 if [ $FETCH_WHEELS -eq 1 ]; then
-    pip install -r requirements.txt --index-url "${GALAXY_WHEELS_INDEX_URL}"
+    pip install -r requirements.txt --index-url "${GALAXY_WHEELS_INDEX_URL}" --extra-index-url "${PYPI_INDEX_URL}"
     GALAXY_CONDITIONAL_DEPENDENCIES=$(PYTHONPATH=lib python -c "import galaxy.dependencies; print '\n'.join(galaxy.dependencies.optional('$GALAXY_CONFIG_FILE'))")
     [ -z "$GALAXY_CONDITIONAL_DEPENDENCIES" ] || echo "$GALAXY_CONDITIONAL_DEPENDENCIES" | pip install -r /dev/stdin --index-url "${GALAXY_WHEELS_INDEX_URL}"
 fi
 
 if [ $FETCH_WHEELS -eq 1 -a $DEV_WHEELS -eq 1 ]; then
     dev_requirements='./lib/galaxy/dependencies/dev-requirements.txt'
-    [ -f $dev_requirements ] && pip install -r $dev_requirements --index-url "${GALAXY_WHEELS_INDEX_URL}"
+    [ -f $dev_requirements ] && pip install -r $dev_requirements --index-url "${GALAXY_WHEELS_INDEX_URL}" --extra-index-url "${PYPI_INDEX_URL}"
 fi
