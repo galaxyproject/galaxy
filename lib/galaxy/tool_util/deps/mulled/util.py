@@ -3,6 +3,7 @@ from __future__ import print_function
 
 import collections
 import hashlib
+import re
 import sys
 import threading
 import time
@@ -13,7 +14,9 @@ try:
 except ImportError:
     requests = None
 
+BUILD_NUMBER_REGEX = re.compile(r'\d+$')
 MULLED_TAG_CACHE = collections.defaultdict(dict)
+PARSED_TAG = collections.namedtuple('ParsedTag', 'tag version build_string build_number')
 
 
 def create_repository(namespace, repo_name, oauth_token):
@@ -38,7 +41,7 @@ def quay_versions(namespace, pkg_name):
     if 'tags' not in data:
         raise Exception("Unexpected response from quay.io - not tags description found [%s]" % data)
 
-    return [tag for tag in data['tags'] if tag != 'latest']
+    return [tag for tag in data['tags'].keys() if tag != 'latest']
 
 
 def quay_repository(namespace, pkg_name):
@@ -78,15 +81,33 @@ def mulled_tags_for(namespace, image, tag_prefix=None):
 
 
 def split_tag(tag):
-    """Split mulled image name into conda version and conda build."""
-    version = tag.split('--', 1)[0]
-    build = tag.split('--', 1)[1]
-    return version, build
+    """Split mulled image tag into conda version and conda build."""
+    return tag.rsplit('--', 1)
+
+
+def parse_tag(tag):
+    """Decompose tag of mulled images into version, build string and build number."""
+    version = tag
+    build_string = "-1"
+    if '--' in tag:
+        version, build_string = tag.rsplit('--', 1)
+    elif '-' in tag:
+        # Should be mulled multi-container image tag
+        version, build_string = tag.rsplit('-', 1)
+    build_number = int(BUILD_NUMBER_REGEX.search(tag).group(0))
+    return PARSED_TAG(tag=tag,
+                      version=packaging.version.parse(version),
+                      build_string=packaging.version.parse(build_string),
+                      build_number=build_number)
 
 
 def version_sorted(elements):
     """Sort iterable based on loose description of "version" from newest to oldest."""
-    return sorted(elements, key=packaging.version.parse, reverse=True)
+    elements = (parse_tag(tag) for tag in elements)
+    elements = sorted(elements, key=lambda tag: tag.build_string, reverse=True)
+    elements = sorted(elements, key=lambda tag: tag.build_number, reverse=True)
+    elements = sorted(elements, key=lambda tag: tag.version)
+    return [e.tag for e in elements]
 
 
 Target = collections.namedtuple("Target", ["package_name", "version", "build"])
