@@ -851,7 +851,7 @@ model.Task.table = Table(
 model.PostJobAction.table = Table(
     "post_job_action", metadata,
     Column("id", Integer, primary_key=True),
-    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True, nullable=False),
+    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True, nullable=True),
     Column("action_type", String(255), nullable=False),
     Column("output_name", String(255), nullable=True),
     Column("action_arguments", JSONType, nullable=True))
