@@ -15,12 +15,6 @@ jobs:
       with:
         path: /tmp/go
         key: singularity-351
-    - name: Cache tox dir
-      uses: actions/cache@v1
-      id: cache-tox
-      with:
-        path: .tox
-        key: tox
     - name: Set up Go 1.13
       uses: actions/setup-go@v1
       with:
@@ -65,6 +59,12 @@ jobs:
       with:
         path: /tmp/go
         key: singularity-351
+    - name: Cache tox dir
+      uses: actions/cache@v1
+      id: cache-tox
+      with:
+        path: .tox
+        key: tox
     - name: Install singularity
       run: 'cd /tmp/go/src/github.com/sylabs/singularity && sudo make -C builddir install'
     - uses: actions/checkout@v1
