@@ -25,7 +25,9 @@ log = logging.Logger(__name__)
 DOCKERFILE_INITIAL_BUILD = Template("""FROM $BUILDIMAGE
 $PREINSTALL
 RUN conda install $CHANNEL_ARGS $TARGET_ARGS -p /usr/local --copy --yes $VERBOSE
-$POSTINSTALL""")
+$POSTINSTALL
+RUN bash -c 'source activate base && env > /basic_env'
+RUN bash -c 'source activate /usr/local && env > /activated_env'""")
 DOCKERFILE_BUILD_TO_DESTINATION = Template("""FROM $DESTINATION_IMAGE
 COPY --from=0 /usr/local /usr/local
 $ENV_STATEMENTS""")
@@ -33,12 +35,14 @@ SINGULARITY_INITIAL_BUILD = Template("""Bootstrap: docker
 From: $BUILDIMAGE
 Stage: build
 %post
+    export PATH=/opt/conda/bin:$$PATH
     $PREINSTALL
-    /opt/conda/bin/conda install $CHANNEL_ARGS $TARGET_ARGS -p /usr/local --copy --yes $VERBOSE
+    conda install $CHANNEL_ARGS $TARGET_ARGS -p /usr/local --copy --yes $VERBOSE
     $POSTINSTALL
+    bash -c 'source activate base && env > /basic_env'
+    bash -c 'source activate /usr/local && env > /activated_env'
 %test
-    true
-""")
+    true""")
 SINGULARITY_BUILD_TO_DESTINATION = Template("""Bootstrap: docker
 From: $DESTINATION_IMAGE
 Stage: final
@@ -166,8 +170,8 @@ class DockerContainerBuilder(object):
         return output.strip() == 'extended-base: true'
 
     def get_conda_env_vars(self):
-        original_variables = self.run_in_container(command=["bash", "-c", 'source /opt/conda/bin/activate base && env'])
-        new_variables = self.run_in_container(command=["bash", "-c", 'source /opt/conda/bin/activate /usr/local && env'])
+        original_variables = self.run_in_container(command=["cat", "/basic_env"])
+        new_variables = self.run_in_container(command=["cat", "/activated_env"])
         original_variables = dict(line.split('=') for line in original_variables.splitlines())
         new_variables = dict(line.split('=') for line in new_variables.splitlines())
         new_keys = set(new_variables) - set(original_variables)

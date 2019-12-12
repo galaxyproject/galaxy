@@ -34,7 +34,7 @@ def test_build_stage1_info():
     assert build_command[2] == '-t'
     assert build_command[3] == repo
     assert os.path.exists(build_command[4])
-    assert info.contents == 'FROM continuumio/miniconda3:latest\n\nRUN conda install -c conda-forge -c bioconda transtermhp -p /usr/local --copy --yes \n'
+    assert info.contents == "FROM continuumio/miniconda3:latest\n\nRUN conda install -c conda-forge -c bioconda transtermhp -p /usr/local --copy --yes \n\nRUN bash -c 'source activate base && env > /basic_env'\nRUN bash -c 'source activate /usr/local && env > /activated_env'"
 
 
 def test_build_stage1_info_singularity():
@@ -49,7 +49,7 @@ def test_build_stage1_info_singularity():
     assert build_command[3].endswith("%s.sif" % repo)
     assert build_command[4].endswith('singularity.def')
     assert os.path.exists(build_command[4])
-    assert info.contents == 'Bootstrap: docker\nFrom: continuumio/miniconda3:latest\nStage: build\n%post\n    \n    /opt/conda/bin/conda install -c conda-forge -c bioconda transtermhp -p /usr/local --copy --yes \n    \n%test\n    true\n'
+    assert info.contents == "Bootstrap: docker\nFrom: continuumio/miniconda3:latest\nStage: build\n%post\n    export PATH=/opt/conda/bin:$PATH\n    \n    conda install -c conda-forge -c bioconda transtermhp -p /usr/local --copy --yes \n    \n    bash -c 'source activate base && env > /basic_env'\n    bash -c 'source activate /usr/local && env > /activated_env'\n%test\n    true"
 
 
 @pytest.mark.parametrize("builder_class", [DockerContainerBuilder, SingularityContainerBuilder])
