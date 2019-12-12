@@ -166,8 +166,8 @@ class DockerContainerBuilder(object):
         return output.strip() == 'extended-base: true'
 
     def get_conda_env_vars(self):
-        original_variables = self.run_in_container(command=["bash", "-c", 'source activate base && env'])
-        new_variables = self.run_in_container(command=["bash", "-c", 'source activate /usr/local && env'])
+        original_variables = self.run_in_container(command=["bash", "-c", 'source /opt/conda/bin/activate base && env'])
+        new_variables = self.run_in_container(command=["bash", "-c", 'source /opt/conda/bin/activate /usr/local && env'])
         original_variables = dict(line.split('=') for line in original_variables.splitlines())
         new_variables = dict(line.split('=') for line in new_variables.splitlines())
         new_keys = set(new_variables) - set(original_variables)
