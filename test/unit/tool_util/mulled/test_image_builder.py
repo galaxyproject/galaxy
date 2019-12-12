@@ -33,8 +33,9 @@ def test_build_stage1_info_singularity():
     assert isinstance(build_command, list)
     assert build_command[0] == 'singularity'
     assert build_command[1] == 'build'
-    assert build_command[2].endswith("%s.sif" % repo)
-    assert build_command[3].endswith('singularity.def')
+    assert build_command[2] == '--fakeroot'
+    assert build_command[3].endswith("%s.sif" % repo)
+    assert build_command[4].endswith('singularity.def')
     assert os.path.exists(build_command[3])
     assert info.contents == 'Bootstrap: docker\nFrom: continuumio/miniconda3:latest\nStage: build\n%post\n    \n    /opt/conda/bin/conda install -c conda-forge -c bioconda transtermhp -p /usr/local --copy --yes \n    \n%test\n    true\n'
 
