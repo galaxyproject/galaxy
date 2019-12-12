@@ -10,6 +10,7 @@ try:
 except ImportError:
     from galaxy.util.bunch import Bunch
     docker = Bunch(errors=Bunch(NotFound=None))
+from six.moves import shlex_quote
 
 from galaxy.containers import (
     Container,
@@ -104,7 +105,13 @@ class DockerVolume(ContainerVolume):
         return cls(**kwds)
 
     def __str__(self):
-        return ":".join(filter(lambda x: x is not None, (self.host_path, self.path, self.mode)))
+        volume_str = ":".join(filter(lambda x: x is not None, (self.host_path, self.path, self.mode)))
+        if "$" not in volume_str:
+            volume_for_cmd_line = shlex_quote(volume_str)
+        else:
+            # e.g. $_GALAXY_JOB_TMP_DIR:$_GALAXY_JOB_TMP_DIR:rw so don't single quote.
+            volume_for_cmd_line = '"%s"' % volume_str
+        return volume_for_cmd_line
 
     def to_native(self):
         host_path = self.host_path or self.path

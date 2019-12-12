@@ -29,6 +29,7 @@ from six.moves import reload_module
 
 import galaxy.queues
 from galaxy import util
+from galaxy.config import reload_config_options
 
 logging.getLogger('kombu').setLevel(logging.WARNING)
 log = logging.getLogger(__name__)
@@ -262,6 +263,16 @@ def reload_job_rules(app, **kwargs):
     log.debug("Job rules reloaded %s", reload_timer)
 
 
+def reload_core_config(app, **kwargs):
+    reload_config_options(app.config)
+
+
+def reload_tour(app, **kwargs):
+    path = kwargs.get('path')
+    app.tour_registry.reload_tour(path)
+    log.debug('Tour reloaded')
+
+
 def __job_rule_module_names(app):
     rules_module_names = set(['galaxy.jobs.rules'])
     if app.job_config.dynamic_params is not None:
@@ -310,6 +321,8 @@ control_message_to_task = {
     'recalculate_user_disk_usage': recalculate_user_disk_usage,
     'rebuild_toolbox_search_index': rebuild_toolbox_search_index,
     'reconfigure_watcher': reconfigure_watcher,
+    'reload_tour': reload_tour,
+    'reload_core_config': reload_core_config,
 }
 
 

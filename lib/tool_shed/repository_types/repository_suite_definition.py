@@ -29,7 +29,7 @@ class RepositorySuiteDefinition(TipOnly):
         else:
             changeset_revisions = repo.changelog
         for changeset in changeset_revisions:
-            ctx = repo.changectx(changeset)
+            ctx = repo[changeset]
             # Inspect all files in the changeset (in sorted order) to make sure there is only one and it
             # is named repository_dependencies.xml.
             files_changed_in_changeset = ctx.files()

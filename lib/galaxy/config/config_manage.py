@@ -272,6 +272,7 @@ class _RenameAction(_OptionAction):
 
 OPTION_ACTIONS = {
     'use_beaker_session': _DeprecatedAndDroppedAction(),
+    'use_interactive': _DeprecatedAndDroppedAction(),
     'session_type': _DeprecatedAndDroppedAction(),
     'session_data_dir': _DeprecatedAndDroppedAction(),
     'session_key': _DeprecatedAndDroppedAction(),

@@ -426,13 +426,16 @@ class BaseJobRunner(object):
 
         tool = job_wrapper.tool
         guest_ports = [ep.get('port') for ep in getattr(job_wrapper, 'interactivetools', [])]
-        tool_info = ToolInfo(tool.containers, tool.requirements, tool.requires_galaxy_python_environment, tool.docker_env_pass_through, guest_ports=guest_ports)
+        tool_id = tool.id
+        tool_version = tool.version
+        tool_info = ToolInfo(tool.containers, tool.requirements, tool.requires_galaxy_python_environment, tool.docker_env_pass_through, guest_ports=guest_ports, tool_id=tool_id, tool_version=tool_version)
         job_info = JobInfo(
-            compute_working_directory,
-            compute_tool_directory,
-            compute_job_directory,
-            compute_tmp_directory,
-            job_directory_type,
+            working_directory=compute_working_directory,
+            tool_directory=compute_tool_directory,
+            job_directory=compute_job_directory,
+            tmp_directory=compute_tmp_directory,
+            home_directory=job_wrapper.home_directory(),
+            job_directory_type=job_directory_type,
         )
 
         destination_info = job_wrapper.job_destination.params

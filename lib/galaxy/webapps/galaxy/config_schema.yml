@@ -434,6 +434,15 @@ mapping:
           in lib/galaxy/config/__init__.py).  If changes are found, modified options are
           automatically reloaded. Takes the same values as the 'watch_tools' option.
 
+      watch_tours:
+        type: str
+        default: 'false'
+        required: false
+        desc: |
+          Monitor the interactive tours directory specified in the 'tour_config_dir' option. If
+          changes are found, modified tours are automatically reloaded. Takes the same values as the
+          'watch_tools' option.
+
       legacy_eager_objectstore_initialization:
         type: bool
         default: false
@@ -756,6 +765,30 @@ mapping:
           Citation related caching.  Tool citations information maybe fetched from
           external sources such as https://doi.org/ by Galaxy - the following
           parameters can be used to control the caching used to store this information.
+
+      mulled_resolution_cache_type:
+        type: str
+        default: file
+        required: false
+        desc: |
+          Mulled resolution caching. Mulled resolution uses external APIs of quay.io, these
+          requests are caching using this and the following parameters
+
+      mulled_resolution_cache_data_dir:
+        type: str
+        default: citations/data
+        path_resolves_to: data_dir
+        required: false
+        desc: |
+          Data directory used by beaker for caching mulled resolution requests.
+
+      mulled_resolution_cache_lock_dir:
+        type: str
+        default: citations/locks
+        path_resolves_to: data_dir
+        required: false
+        desc: |
+          Lock directory used by beaker for caching mulled resolution requests.
 
       object_store_config_file:
         type: str

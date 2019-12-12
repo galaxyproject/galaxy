@@ -116,6 +116,12 @@ const AdminPanel = Backbone.View.extend({
                     },
                     {
                         title: _l("Manage Dependencies"),
+                        url: "admin/toolbox_dependencies",
+                        target: "__use_router__",
+                        id: "admin-link-manage-dependencies"
+                    },
+                    {
+                        title: _l("Manage Dependencies (legacy)"),
                         url: "admin/manage_tool_dependencies"
                     },
                     {

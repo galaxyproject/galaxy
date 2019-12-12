@@ -3,6 +3,7 @@ import os
 import re
 
 from markupsafe import escape
+from six.moves import configparser
 from sqlalchemy import false
 from sqlalchemy.sql import select
 
@@ -10,7 +11,6 @@ import tool_shed.dependencies.repository
 from galaxy import util
 from galaxy import web
 from galaxy.tool_shed.util.repository_util import (
-    change_repository_name_in_hgrc_file,
     check_for_updates,
     check_or_update_tool_shed_status_for_installed_repository,
     create_or_update_tool_shed_repository,
@@ -46,6 +46,7 @@ from galaxy.util.tool_shed import common_util
 from tool_shed.util.hg_util import (
     changeset2rev,
     create_hgrc_file,
+    get_hgrc_path,
     init_repository,
 )
 from tool_shed.util.metadata_util import (
@@ -401,6 +402,14 @@ def handle_role_associations(app, role, repository, **kwd):
     return associations_dict
 
 
+def change_repository_name_in_hgrc_file(hgrc_file, new_name):
+    config = configparser.ConfigParser()
+    config.read(hgrc_file)
+    config.set('web', 'name', new_name)
+    with open(hgrc_file, 'wb') as fh:
+        config.write(fh)
+
+
 def update_repository(app, trans, id, **kwds):
     """Update an existing ToolShed repository"""
     message = None
@@ -457,7 +466,7 @@ def update_repository(app, trans, id, **kwds):
         trans.app.hgweb_config_manager.change_entry(old_lhs, new_lhs, repo_dir)
 
         # Change the entry in the repository's hgrc file.
-        hgrc_file = os.path.join(repo_dir, '.hg', 'hgrc')
+        hgrc_file = get_hgrc_path(repo_dir)
         change_repository_name_in_hgrc_file(hgrc_file, kwds['name'])
 
         # Rename the repository's admin role to match the new repository name.

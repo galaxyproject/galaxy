@@ -35,7 +35,7 @@ MarkupSafe = "*"
 PyYAML = "*"
 SQLAlchemy = "*"
 SQLAlchemy-Utils = "*"
-Mercurial = {version = "<=3.7.3", markers = "python_version < '3'"}
+Mercurial = "*"
 nodeenv = "*"
 pycryptodome = "*"
 pyuwsgi = "*"

@@ -646,7 +646,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                 # to which we need to update.
                 update_to_changeset_hash = None
                 for changeset in repo.changelog:
-                    changeset_hash = str(repo.changectx(changeset))
+                    changeset_hash = str(repo[changeset])
                     hg_util.get_changectx_for_changeset(repo, changeset_hash)
                     if update_to_changeset_hash:
                         if changeset_hash == repository.tip(trans.app):
@@ -1114,8 +1114,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                     includes_tools = False
                     has_repository_dependencies = False
                     has_repository_dependencies_only_if_compiling_contained_td = False
-                    changeset_hash = str(repo.changectx(changeset))
-                    hg_util.get_changectx_for_changeset(repo, changeset_hash)
+                    changeset_hash = str(repo[changeset])
                     if update_to_changeset_hash:
                         update_to_repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(trans.app,
                                                                                                                     trans.security.encode_id(repository.id),
@@ -1376,7 +1375,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         repo = hg_util.get_repo_for_repository(trans.app, repository=repository)
         tool_version_dicts = []
         for changeset in repo.changelog:
-            current_changeset_revision = str(repo.changectx(changeset))
+            current_changeset_revision = str(repo[changeset])
             repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(trans.app,
                                                                                               trans.security.encode_id(repository.id),
                                                                                               current_changeset_revision)
@@ -2050,7 +2049,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                 for changeset in hg_util.reversed_lower_upper_bounded_changelog(repo,
                                                                                 lower_bound_changeset_revision,
                                                                                 changeset_revision):
-                    changeset_hashes.append(str(repo.changectx(changeset)))
+                    changeset_hashes.append(str(repo[changeset]))
                 if changeset_hashes:
                     changeset_hashes_str = ','.join(changeset_hashes)
                     return changeset_hashes_str
@@ -2437,7 +2436,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         repo = hg_util.get_repo_for_repository(trans.app, repository=repository)
         changesets = []
         for changeset in repo.changelog:
-            ctx = repo.changectx(changeset)
+            ctx = repo[changeset]
             if metadata_util.get_repository_metadata_by_changeset_revision(trans.app, id, str(ctx)):
                 has_metadata = True
             else:

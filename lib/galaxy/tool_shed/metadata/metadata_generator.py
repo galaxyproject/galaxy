@@ -994,7 +994,7 @@ class MetadataGenerator(object):
                 # The received changeset_revision may be None since defining it in the dependency definition is optional.
                 # If this is the case, the default will be to set its value to the repository dependency tip revision.
                 # This probably occurs only when handling circular dependency definitions.
-                tip_ctx = repo.changectx(repo.changelog.tip())
+                tip_ctx = repo[repo.changelog.tip()]
                 # Make sure the repo.changlog includes at least 1 revision.
                 if changeset_revision is None and tip_ctx.rev() >= 0:
                     changeset_revision = str(tip_ctx)
@@ -1009,7 +1009,7 @@ class MetadataGenerator(object):
                     # Find the specified changeset revision in the repository's changelog to see if it's valid.
                     found = False
                     for changeset in repo.changelog:
-                        changeset_hash = str(repo.changectx(changeset))
+                        changeset_hash = str(repo[changeset])
                         if changeset_hash == changeset_revision:
                             found = True
                             break

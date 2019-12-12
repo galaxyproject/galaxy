@@ -450,6 +450,7 @@
     <datatype extension="xlsx" type="galaxy.datatypes.binary:Xlsx" display_in_upload="true"/>
     <datatype extension="btwisted" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="cai" type="galaxy.datatypes.data:Text" subclass="true"/>
+    <datatype extension="cat_db" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="charge" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="checktrans" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="chips" type="galaxy.datatypes.data:Text" subclass="true"/>

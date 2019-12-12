@@ -6,8 +6,6 @@
     self.has_right_panel = hasattr( self, 'right_panel' )
     self.message_box_visible = app.config.message_box_visible
     self.show_inactivity_warning = False
-    if trans.webapp.name == 'galaxy' and trans.user:
-        self.show_inactivity_warning = ( ( trans.user.active is False ) and ( app.config.user_activation_on ) )
     self.overlay_visible=False
     self.active_view=None
     self.body_class=""
@@ -133,7 +131,7 @@
 
         ## relative href for site root
         <link rel="index" href="${ h.url_for( '/' ) }"/>
-        
+
         ${self.stylesheets()}
 
         ## Normally, we'd put all the javascripts at the bottom of the <body>
@@ -167,29 +165,29 @@
             </noscript>
         %endif
         <div id="everything">
-            
+
             ## Background displays first
             <div id="background"></div>
-            
+
             ## Layer iframes over backgrounds
             <div id="masthead" class="navbar navbar-fixed-top navbar-inverse">
                 ${self.masthead()}
             </div>
-            
+
             %if self.message_box_visible:
                 <div id="messagebox" class="panel-${app.config.message_box_class}-message" style="display:block">
                     ${app.config.message_box_content}
                 </div>
             %endif
-            
+
             %if self.show_inactivity_warning:
                 <div id="inactivebox" class="panel-warning-message">
                     ${app.config.inactivity_box_content} <a href="${h.url_for( controller='user', action='resend_verification' )}">Resend verification.</a>
                 </div>
             %endif
-            
+
             ${self.overlay(visible=self.overlay_visible)}
-            
+
             <div id="columns">
                 %if self.has_left_panel:
                     <div id="left">

@@ -214,9 +214,13 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         """
         GET /api/workflows/{encoded_workflow_id}
 
-        Displays information needed to run a workflow from the command line.
+        :param  instance:                 true if fetch by Workflow ID instead of StoredWorkflow id, false
+                                          by default.
+        :type   instance:                 boolean
+
+        Displays information needed to run a workflow.
         """
-        stored_workflow = self.__get_stored_workflow(trans, id)
+        stored_workflow = self.__get_stored_workflow(trans, id, **kwd)
         if stored_workflow.importable is False and stored_workflow.user != trans.user and not trans.user_is_admin:
             if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:
                 message = "Workflow is neither importable, nor owned by or shared with current user"
@@ -233,9 +237,13 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         """
         GET /api/workflows/{encoded_workflow_id}/versions
 
+        :param  instance:                 true if fetch by Workflow ID instead of StoredWorkflow id, false
+                                          by default.
+        :type   instance:                 boolean
+
         Lists all versions of this workflow.
         """
-        stored_workflow = self.workflow_manager.get_stored_accessible_workflow(trans, workflow_id)
+        stored_workflow = self.workflow_manager.get_stored_accessible_workflow(trans, workflow_id, **kwds)
         return [{'version': i, 'update_time': str(w.update_time), 'steps': len(w.steps)} for i, w in enumerate(reversed(stored_workflow.workflows))]
 
     @expose_api
@@ -448,8 +456,12 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                         admin with the `default_workflow_export_format` config
                         option. Style can be specified as either 'ga' or 'format2' directly
                         to be explicit about which format to download.
+
+        :param  instance:                 true if fetch by Workflow ID instead of StoredWorkflow id, false
+                                          by default.
+        :type   instance:                 boolean
         """
-        stored_workflow = self.__get_stored_accessible_workflow(trans, workflow_id)
+        stored_workflow = self.__get_stored_accessible_workflow(trans, workflow_id, **kwd)
 
         style = kwd.get("style", "export")
         download_format = kwd.get('format')
@@ -521,6 +533,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         :type   id:      str
         :param  id:      the encoded id of the workflow to update
+        :param  instance:                 true if fetch by Workflow ID instead of StoredWorkflow id, false
+                                          by default.
+        :type   instance:                 boolean
         :type   payload: dict
         :param  payload: a dictionary containing any or all the
             * workflow   the json description of the workflow as would be
@@ -540,7 +555,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         :rtype:     dict
         :returns:   serialized version of the workflow
         """
-        stored_workflow = self.__get_stored_workflow(trans, id)
+        stored_workflow = self.__get_stored_workflow(trans, id, **kwds)
         workflow_dict = payload.get('workflow') or payload
         if workflow_dict:
             raw_workflow_description = self.__normalize_workflow(trans, workflow_dict)
@@ -801,6 +816,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         :param  history_id:       an encoded history id to restrict query to
         :type   history_id:       str
 
+        :param  user_id:          an encoded user id to restrict query to, must be own id if not admin user
+        :type   user_id:          str
+
         :param  view:             level of detail to return per invocation 'element' or 'collection'.
         :type   view:             str
 
@@ -821,16 +839,27 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         else:
             history_id = None
 
+        encoded_user_id = kwd.get("user_id", None)
+        if encoded_user_id:
+            target_user_id = self.decode_id(encoded_user_id)
+        else:
+            target_user_id = None
+
         if not trans.user_is_admin:
             # We restrict the query to the current users' invocations
             user_id = trans.user.id
+            if target_user_id and user_id != target_user_id:
+                raise exceptions.AdminRequiredException("Only admins can index the invocations of others")
         else:
             # Get all invocation if user is admin
-            user_id = None
+            user_id = target_user_id
 
         include_terminal = util.string_as_bool(kwd.get("include_terminal", True))
+        limit = kwd.get("limit", None)
+        if limit is not None:
+            limit = int(limit)
         invocations = self.workflow_manager.build_invocations_query(
-            trans, stored_workflow_id=stored_workflow_id, history_id=history_id, user_id=user_id, include_terminal=include_terminal
+            trans, stored_workflow_id=stored_workflow_id, history_id=history_id, user_id=user_id, include_terminal=include_terminal, limit=limit
         )
         return self.workflow_manager.serialize_workflow_invocations(invocations, **kwd)
 
@@ -899,6 +928,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         workflow_invocation = self.workflow_manager.get_invocation(trans, decoded_workflow_invocation_id)
         generator_plugin_type = kwd.get("generator_plugin_type")
         runtime_report_config_json = kwd.get("runtime_report_config_json")
+        invocation_markdown = kwd.get("invocation_markdown", None)
+        if invocation_markdown:
+            runtime_report_config_json = {"markdown": invocation_markdown}
         return generate_report_json(
             trans, workflow_invocation, runtime_report_config_json=runtime_report_config_json, plugin_type=generator_plugin_type
         )
@@ -1010,11 +1042,13 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             True
         )
 
-    def __get_stored_accessible_workflow(self, trans, workflow_id):
-        return self.workflow_manager.get_stored_accessible_workflow(trans, workflow_id)
+    def __get_stored_accessible_workflow(self, trans, workflow_id, **kwd):
+        instance = util.string_as_bool(kwd.get("instance", "false"))
+        return self.workflow_manager.get_stored_accessible_workflow(trans, workflow_id, by_stored_id=not instance)
 
-    def __get_stored_workflow(self, trans, workflow_id):
-        return self.workflow_manager.get_stored_workflow(trans, workflow_id)
+    def __get_stored_workflow(self, trans, workflow_id, **kwd):
+        instance = util.string_as_bool(kwd.get("instance", "false"))
+        return self.workflow_manager.get_stored_workflow(trans, workflow_id, by_stored_id=not instance)
 
     def __encode_invocation(self, invocation, **kwd):
         return self.workflow_manager.serialize_workflow_invocation(invocation, **kwd)
