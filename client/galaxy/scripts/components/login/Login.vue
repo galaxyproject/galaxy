@@ -80,7 +80,10 @@ export default {
         const galaxy = getGalaxyInstance();
         const oidc_idps = galaxy.config.oidc;
         // Icons to use for each IdP
-        const oidc_idps_icons = { google: "https://developers.google.com/identity/images/btn_google_signin_light_normal_web.png", elixir: "https://elixir-europe.org/sites/default/files/images/login-button-orange.png" };
+        const oidc_idps_icons = {
+            google: "https://developers.google.com/identity/images/btn_google_signin_light_normal_web.png",
+            elixir: "https://elixir-europe.org/sites/default/files/images/login-button-orange.png"
+        };
         // Add default icons to IdPs without icons
         oidc_idps
             .filter(function(key) {
