@@ -85,7 +85,7 @@ def test_main_test_search():
 @external_dependency_management
 def test_hashed_test_search():
     tests = hashed_test_search('mulled-v2-0560a8046fc82aa4338588eca29ff18edab2c5aa:c17ce694dd57ab0ac1a2b86bb214e65fedef760e-0')
-    assert tests['commands'] == ['bamtools --help']
+    assert tests['commands'] == ['bamtools --help', 'samtools --help']
     assert tests['container'] == 'mulled-v2-0560a8046fc82aa4338588eca29ff18edab2c5aa:c17ce694dd57ab0ac1a2b86bb214e65fedef760e-0'
     assert tests['import_lang'] == 'python -c'
     assert tests['imports'] == []
