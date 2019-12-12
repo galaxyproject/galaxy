@@ -14,7 +14,7 @@ from galaxy.tool_util.deps.mulled.image_builder import (
 from ..test_conda_resolution import external_dependency_management
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def artifact_dir():
     tempdir = tempfile.mkdtemp(prefix="GALAXY_PYTEST_MULLED_")
     try:
@@ -48,7 +48,7 @@ def test_build_stage1_info_singularity():
     assert build_command[2] == '--fakeroot'
     assert build_command[3].endswith("%s.sif" % repo)
     assert build_command[4].endswith('singularity.def')
-    assert os.path.exists(build_command[3])
+    assert os.path.exists(build_command[4])
     assert info.contents == 'Bootstrap: docker\nFrom: continuumio/miniconda3:latest\nStage: build\n%post\n    \n    /opt/conda/bin/conda install -c conda-forge -c bioconda transtermhp -p /usr/local --copy --yes \n    \n%test\n    true\n'
 
 
