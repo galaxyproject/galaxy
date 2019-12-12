@@ -1,0 +1,52 @@
+name: Singularity Unit tests
+on: [push, pull_request]
+jobs:
+
+  build:
+    name: Build
+    runs-on: ubuntu-18.04
+    steps:
+
+    - name: Set up Go 1.12
+      uses: actions/setup-go@v1
+      with:
+        go-version: 1.12
+      id: go
+
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update && sudo apt-get install -y \
+          build-essential \
+          libssl-dev \
+          uuid-dev \
+          libgpgme11-dev \
+          squashfs-tools \
+          libseccomp-dev \
+          pkg-config
+    - name: Install Singularity
+      env:
+        SINGULARITY_VERSION: 3.2.1
+      run: |
+        export GOPATH=/tmp/go
+        mkdir -p $GOPATH
+        sudo mkdir -p /usr/local/var/singularity/mnt && \
+        mkdir -p $GOPATH/src/github.com/sylabs && \
+        cd $GOPATH/src/github.com/sylabs && \
+        wget -qO- https://github.com/sylabs/singularity/releases/download/v${SINGULARITY_VERSION}/singularity-${SINGULARITY_VERSION}.tar.gz | \
+        tar xzv && \
+        cd singularity && \
+        ./mconfig -p /usr/local && \
+        make -C builddir && \
+        sudo make -C builddir install
+
+    - uses: actions/checkout@v1
+      with:
+        fetch-depth: 1
+    - uses: actions/setup-python@v1
+      with:
+        python-version: '3.7'
+    - name: Install tox
+      run: pip install tox
+    - name: run tests
+      run: tox -e mulled
+      

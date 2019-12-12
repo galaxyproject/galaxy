@@ -13,11 +13,11 @@ from galaxy.tool_util.deps.docker_util import (
     build_command as docker_build_command,
     command_list as docker_command_list,
 )
+from galaxy.tool_util.deps.mulled.mulled_build import DEFAULT_CHANNELS
 from galaxy.tool_util.deps.singularity_util import (
     build_command as singularity_build_command,
     command_list as singularity_command_list,
 )
-from galaxy.tool_util.deps.mulled.mulled_build import DEFAULT_CHANNELS
 from galaxy.util import unicodify
 
 log = logging.Logger(__name__)
@@ -34,7 +34,7 @@ From: $BUILDIMAGE
 Stage: build
 %post
     $PREINSTALL
-    RUN conda install $CHANNEL_ARGS $TARGET_ARGS -p /usr/local --copy --yes $VERBOSE
+    /opt/conda/bin/conda install $CHANNEL_ARGS $TARGET_ARGS -p /usr/local --copy --yes $VERBOSE
     $POSTINSTALL
 %test
     true
@@ -66,7 +66,17 @@ class DockerContainerBuilder(object):
     container_type = 'docker'
     run_prefix = "RUN "
 
-    def __init__(self, repo, target_args, builder_image=DEFAULT_BUILDIMAGE, preinstall='', channels=DEFAULT_CHANNELS, verbose=False, postinstall='', destination_image=None):
+    def __init__(self,
+                 repo,
+                 target_args,
+                 builder_image=DEFAULT_BUILDIMAGE,
+                 preinstall='',
+                 channels=DEFAULT_CHANNELS,
+                 verbose=False,
+                 postinstall='',
+                 destination_image=None,
+                 artifact_dir=None,
+                 ):
         self.repo = repo
         self.target_args = target_args
         self.builder_image = builder_image
@@ -75,14 +85,19 @@ class DockerContainerBuilder(object):
         self.verbose = verbose
         self.postinstall = postinstall
         self.destination_image = destination_image
+        self._artifact_dir = artifact_dir
         self.recipe_stage1 = None
         self.recipe_stage2 = None
 
-    def build_command(self, path):
-        return docker_build_command(image=self.repo, docker_build_path=path)
+    @property
+    def image(self):
+        return self.repo
 
-    def run_command(self, image, command):
-        command.insert(0, image)
+    def build_command(self, path):
+        return docker_build_command(image=self.image, docker_build_path=path)
+
+    def run_command(self, command):
+        command.insert(0, self.image)
         return docker_command_list('run', command)
 
     def exec_command(self, command, redirect_output=False):
@@ -94,9 +109,14 @@ class DockerContainerBuilder(object):
         else:
             return unicodify(execute(command))
 
+    @property
+    def artifact_dir(self):
+        if self._artifact_dir is None:
+            self._artifact_dir = tempfile.mkdtemp(prefix="%s_%s" % (self.container_type, shlex.quote(self.repo)))
+        return self._artifact_dir
+
     def write_recipe(self, recipe_contents):
-        initial_build_dir = tempfile.mkdtemp(prefix="%s_%s" % (self.container_type, shlex.quote(self.repo)))
-        recipe_path = os.path.join(initial_build_dir, self.recipe)
+        recipe_path = os.path.join(self.artifact_dir, self.recipe)
         with open(recipe_path, "w") as recipe:
             recipe.write(recipe_contents)
         return recipe_path
@@ -129,7 +149,7 @@ class DockerContainerBuilder(object):
         return IMAGE_INFO(contents=recipe_contents, path=recipe_path, repo=self.repo, build_command=build_command)
 
     def run_in_container(self, command):
-        return self.exec_command(self.run_command(self.repo, command))
+        return self.exec_command(self.run_command(command))
 
     def image_requires_extended_base(self):
         output = self.run_in_container(command=[
@@ -187,15 +207,19 @@ class SingularityContainerBuilder(DockerContainerBuilder):
 
     first_stage_template = SINGULARITY_INITIAL_BUILD
     second_stage_template = SINGULARITY_BUILD_TO_DESTINATION
-    recipe = "singularity.sif"
+    recipe = "singularity.def"
     container_type = "singularity"
     run_prefix = ""
 
-    def build_command(self, path):
-        return singularity_build_command(self.repo, path)
+    @property
+    def image(self):
+        return os.path.join(self.artifact_dir, "%s.sif" % self.repo)
 
-    def run_command(self, image, command):
-        command.insert(0, image)
+    def build_command(self, path):
+        return singularity_build_command(self.image, path)
+
+    def run_command(self, command):
+        command.insert(0, self.image)
         return singularity_command_list('run', command)
 
     def template_env_vars(self, env_vars):

@@ -2,10 +2,11 @@ import os
 
 import pytest
 
-from galaxy.tool_util.deps.mulled.docker_build import (
+from galaxy.tool_util.deps.mulled.image_builder import (
     DEFAULT_DESTINATION_IMAGE,
     DEFAULT_EXTENDED_BASE_IMAGE,
     DockerContainerBuilder,
+    SingularityContainerBuilder,
 )
 
 
@@ -21,6 +22,20 @@ def test_build_stage1_info():
     assert build_command[3] == repo
     assert os.path.exists(build_command[4])
     assert info.contents == 'FROM continuumio/miniconda3:latest\n\nRUN conda install -c conda-forge -c bioconda transtermhp -p /usr/local --copy --yes \n'
+
+
+def test_build_stage1_info_singularity():
+    repo = 'transtermhp'
+    builder = SingularityContainerBuilder(repo=repo, target_args=repo)
+    info = builder.build_info(builder.template_stage1)
+    build_command = info.build_command
+    assert isinstance(build_command, list)
+    assert build_command[0] == 'singularity'
+    assert build_command[1] == 'build'
+    assert build_command[2].endswith("%s.sif" % repo)
+    assert build_command[3].endswith('singularity.def')
+    assert os.path.exists(build_command[3])
+    assert info.contents == 'Bootstrap: docker\nFrom: continuumio/miniconda3:latest\nStage: build\n%post\n    \n    /opt/conda/bin/conda install -c conda-forge -c bioconda transtermhp -p /usr/local --copy --yes \n    \n%test\n    true\n'
 
 
 @pytest.mark.parametrize('repo,target_args,channels,preinstall,postinstall,verbose', [
