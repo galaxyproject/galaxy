@@ -105,7 +105,7 @@ const AdminPanel = Backbone.View.extend({
                         enabled: this.settings.installing_repository_ids
                     },
                     {
-                        title: _l("Manage metadata"),
+                        title: _l("Manage Metadata"),
                         url: "admin/reset_metadata",
                         enabled: this.settings.is_repo_installed,
                         target: "__use_router__"
