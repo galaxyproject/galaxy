@@ -78,7 +78,7 @@ def command_list(command, command_args=[], **kwds):
 
 
 def build_command(image, build_path, **kwds):
-    return command_list("build", "--fakeroot", [image, build_path], **kwds)
+    return command_list("build", ["--fakeroot", image, build_path], **kwds)
 
 
 def _singularity_prefix(
