@@ -13,7 +13,7 @@ jobs:
       uses: actions/cache@v1
       id: cache-singularity-{{ env.SINGULARITY_VERSION }}
       with:
-        path: /tmp/go/src/github.com/sylabs/singularity
+        path: /tmp/go
         key: singularity-{{ env.SINGULARITY_VERSION }}
     - name: Cache tox dir
       uses: actions/cache@v1
@@ -63,7 +63,7 @@ jobs:
       uses: actions/cache@v1
       id: cache-singularity-{{ env.SINGULARITY_VERSION }}
       with:
-        path: /tmp/go/src/github.com/sylabs/singularity
+        path: /tmp/go
         key: singularity-{{ env.SINGULARITY_VERSION }}
     - name: Install singularity
       run: 'cd /tmp/go/src/github.com/sylabs/singularity && sudo make -C builddir install'
