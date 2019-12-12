@@ -130,8 +130,8 @@
                     ></b-form-checkbox>
                 </template>
                 <template v-slot:cell(job_info)="data">
-                    <b-link :href="data.value['info_url']" target="galaxy_main">
-                        {{ data.value["id"] }}
+                    <b-link :href="data.value.info_url" v-on:click.prevent="clickJobInfo(data.value.id)">
+                        {{ data.value.id }}
                     </b-link>
                 </template>
                 <template v-slot:row-details="row">
@@ -178,6 +178,11 @@
                     </b-card>
                 </template>
             </b-table>
+            <b-modal ref="job-info-modal" scrollable hide-header ok-only @hidden="resetModalContents">
+                <div class="info-frame-container">
+                    <iframe :src="selectedJobUrl"></iframe>
+                </div>
+            </b-modal>
         </div>
     </div>
 </template>
@@ -209,6 +214,7 @@ export default {
             jobLock: false,
             jobLockDisplay: false,
             selectedStopJobIds: [],
+            selectedJobId: null,
             allSelected: false,
             indeterminate: false,
             stopMessage: "",
@@ -278,6 +284,13 @@ export default {
             this.update();
             this.selectedStopJobIds = [];
             this.stopMessage = "";
+        },
+        clickJobInfo(id) {
+            this.selectedJobId = id;
+            this.$refs["job-info-modal"].show();
+        },
+        resetModalContents() {
+            this.selectedJobId = null;
         },
         showRowDetails(row, index, e) {
             if (e.target.nodeName != "A") {
@@ -354,6 +367,9 @@ export default {
             const f = this.jobsFields.slice(0);
             f.splice(2, 0, { key: "update_time", label: "Finished", sortable: true });
             return this.computeFields(f);
+        },
+        selectedJobUrl() {
+            return `${getAppRoot()}admin/job_info?jobid=${this.selectedJobId}`;
         }
     },
     created() {
@@ -367,5 +383,18 @@ export default {
 .break-word {
     white-space: pre-wrap;
     word-break: break-word;
+}
+.info-frame-container {
+    overflow: hidden;
+    padding-top: 100%;
+    position: relative;
+}
+.info-frame-container iframe {
+    border: 0;
+    height: 100%;
+    left: 0;
+    position: absolute;
+    top: 0;
+    width: 100%;
 }
 </style>
