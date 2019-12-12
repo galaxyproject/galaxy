@@ -102,7 +102,7 @@ class GitLabPlugin(BaseGitPlugin):
                 ts_repourl = self._get_gitrepo_from_ts(job, ts_url)
 
                 # Remove .git from the repository URL if this was specified
-                if ts_repourl.endswith(".git"):
+                if ts_repourl is not None and ts_repourl.endswith(".git"):
                     ts_repourl = ts_repourl[:-4]
 
                 log.info("GitLab error reporting - Determine ToolShed Repository URL: %s", ts_repourl)
