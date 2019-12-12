@@ -1,12 +1,20 @@
 name: Singularity Unit tests
 on: [push, pull_request]
+env:
+  GOPATH: '/tmp/go'
+  SINGULARITY_VERSION: 3.2.1
 jobs:
 
-  build:
+  setup_singularity:
     name: Build
     runs-on: ubuntu-18.04
     steps:
-
+    - name: Cache singularity build dir
+      uses: actions/cache@v1
+      id: cache-singularity
+      with:
+        path: /tmp/go/src/github.com/sylabs/singularity
+        key: singularity
     - name: Set up Go 1.12
       uses: actions/setup-go@v1
       with:
@@ -14,6 +22,7 @@ jobs:
       id: go
 
     - name: Install Dependencies
+      if: steps.cache-primes.outputs.cache-hit != 'true'
       run: |
         sudo apt-get update && sudo apt-get install -y \
           build-essential \
@@ -24,8 +33,7 @@ jobs:
           libseccomp-dev \
           pkg-config
     - name: Install Singularity
-      env:
-        SINGULARITY_VERSION: 3.2.1
+      if: steps.cache-primes.outputs.cache-hit != 'true'
       run: |
         export GOPATH=/tmp/go
         mkdir -p $GOPATH
@@ -38,6 +46,22 @@ jobs:
         ./mconfig -p /usr/local && \
         make -C builddir && \
         sudo make -C builddir install
+
+
+  test:
+    name: Test
+    runs-on: ubuntu-18.04
+    needs: setup_singularity
+    steps:
+    - name: Cache singularity build dir
+      uses: actions/cache@v1
+      id: cache-singularity
+      with:
+        path: /tmp/go/src/github.com/sylabs/singularity
+        key: singularity
+
+    - name: Install singularity
+      run: 'cd /tmp/go/src/github.com/sylabs/singularity && sudo make -C builddir install'
 
     - uses: actions/checkout@v1
       with:
