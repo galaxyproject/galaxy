@@ -137,10 +137,12 @@ class GitLabPlugin(BaseGitPlugin):
                     if not self.redact_user_details_in_bugreport:
                         log.debug("GitLab error reporting - Last commiter username: %s" % gl_username)
                     if gl_username not in self.git_username_id_cache:
-                        log.debug("GitLab error reporting - Last Committer user ID: %d" %
-                                  self.gitlab.users.list(username=gl_username)[0].get_id())
-                        self.git_username_id_cache[gl_username] = self.gitlab.users.list(username=gl_username)[
-                            0].get_id()
+                        gl_userquery = self.gitlab.users.list(username=gl_username)
+                        log.debug("GitLab error reporting - User list: %s" % gl_userquery)
+                        if len(gl_userquery) > 0:
+                            log.debug("GitLab error reporting - Last Committer user ID: %d" %
+                                      gl_userquery[0].get_id())
+                            self.git_username_id_cache[gl_username] = gl_userquery[0].get_id()
                     gl_userid = self.git_username_id_cache.get(gl_username, None)
 
                 log.info(error_title in self.issue_cache[issue_cache_key])
