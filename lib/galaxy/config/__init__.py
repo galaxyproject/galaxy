@@ -21,6 +21,8 @@ import time
 from datetime import timedelta
 
 import yaml
+from beaker.cache import CacheManager
+from beaker.util import parse_cache_config_options
 from six import string_types
 from six.moves import configparser
 
@@ -514,7 +516,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             self.config_dict["conda_mapping_files"] = conda_mapping_files
 
         if self.containers_resolvers_config_file:
-            self.containers_resolvers_config_file = os.path.join(self.root, self.containers_resolvers_config_file)
+            self.containers_resolvers_config_file = os.path.join(self.config_dir, self.containers_resolvers_config_file)
 
         # tool_dependency_dir can be "none" (in old configs). If so, set it to None
         if self.tool_dependency_dir and self.tool_dependency_dir.lower() == 'none':
@@ -866,7 +868,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
 Configuration = GalaxyAppConfiguration
 
 
-def reload_config_options(current_config, path=None):
+def reload_config_options(current_config):
     """ Reload modified reloadable config options """
     modified_config = read_properties_from_file(current_config.config_file)
     for option in current_config.reloadable_options:
@@ -998,28 +1000,27 @@ class ConfiguresGalaxyMixin(object):
         from galaxy.managers.tools import DynamicToolManager
         self.dynamic_tools_manager = DynamicToolManager(self)
         self._toolbox_lock = threading.RLock()
-        # Initialize the tools, making sure the list of tool configs includes automatically generated dynamic
-        # (shed-enabled) tool configs, which are created on demand.
-        tool_configs = self.config.tool_configs
-        # If the user has configured a shed tool config in tool_config_file this would add a second, but since we're not
-        # parsing them yet we don't know if that's the case. We'll assume that the standard shed_tool_conf.xml location
-        # is in use, and warn if we suspect there to be problems.
-        if self.config.shed_tool_config_file not in tool_configs:
-            # This seems like the likely case for problems in older deployments
-            if self.config.tool_config_file_set and not self.config.shed_tool_config_file_set:
-                log.warning(
-                    "The default shed tool config file (%s) has been added to the tool_config_file option, if this is "
-                    "not the desired behavior, please set shed_tool_config_file to your primary shed-enabled tool "
-                    "config file"
-                )
-            tool_configs.append(self.config.shed_tool_config_file)
+        # shed_tool_config_file has been set, add it to tool_configs
+        if self.config.shed_tool_config_file_set:
+            self.config.tool_configs.append(self.config.shed_tool_config_file)
         # The value of migrated_tools_config is the file reserved for containing only those tools that have been
         # eliminated from the distribution and moved to the tool shed. If migration checking is disabled, only add it if
         # it exists (since this may be an existing deployment where migrations were previously run).
         if ((self.config.check_migrate_tools or os.path.exists(self.config.migrated_tools_config))
-                and self.config.migrated_tools_config not in tool_configs):
-            tool_configs.append(self.config.migrated_tools_config)
-        self.toolbox = tools.ToolBox(tool_configs, self.config.tool_path, self)
+                and self.config.migrated_tools_config not in self.config.tool_configs):
+            self.config.tool_configs.append(self.config.migrated_tools_config)
+        self.toolbox = tools.ToolBox(self.config.tool_configs, self.config.tool_path, self)
+        # If no shed-enabled tool config file has been loaded, we append a default shed_tool_conf.xml
+        if not self.config.shed_tool_config_file_set and not self.toolbox.dynamic_confs():
+            # This seems like the likely case for problems in older deployments
+            if self.config.tool_config_file_set:
+                log.warning(
+                    "The default shed tool config file (%s) has been added to the tool_config_file option, if this is "
+                    "not the desired behavior, please set shed_tool_config_file to your primary shed-enabled tool "
+                    "config file", self.config.shed_tool_config_file
+                )
+            self.config.tool_configs.append(self.config.shed_tool_config_file)
+            self.toolbox._init_tools_from_config(self.config.shed_tool_config_file)
         galaxy_root_dir = os.path.abspath(self.config.root)
         file_path = os.path.abspath(getattr(self.config, "file_path"))
         app_info = AppInfo(
@@ -1034,7 +1035,15 @@ class ConfiguresGalaxyMixin(object):
             involucro_auto_init=self.config.involucro_auto_init,
             mulled_channels=self.config.mulled_channels,
         )
-        self.container_finder = containers.ContainerFinder(app_info)
+        mulled_resolution_cache = None
+        if self.config.mulled_resolution_cache_type:
+            cache_opts = {
+                'cache.type': self.config.mulled_resolution_cache_type,
+                'cache.data_dir': self.config.mulled_resolution_cache_data_dir,
+                'cache.lock_dir': self.config.mulled_resolution_cache_lock_dir,
+            }
+            mulled_resolution_cache = CacheManager(**parse_cache_config_options(cache_opts)).get_cache('mulled_resolution')
+        self.container_finder = containers.ContainerFinder(app_info, mulled_resolution_cache=mulled_resolution_cache)
         self._set_enabled_container_types()
         index_help = getattr(self.config, "index_tool_help", True)
         self.toolbox_search = galaxy.tools.search.ToolBoxSearch(self.toolbox, index_help)
@@ -1100,13 +1109,13 @@ class ConfiguresGalaxyMixin(object):
         self.security = idencoding.IdEncodingHelper(id_secret=self.config.id_secret)
 
     def _configure_tool_shed_registry(self):
-        import tool_shed.tool_shed_registry
+        import galaxy.tool_shed.tool_shed_registry
 
         # Set up the tool sheds registry
         if os.path.isfile(self.config.tool_sheds_config_file):
-            self.tool_shed_registry = tool_shed.tool_shed_registry.Registry(self.config.tool_sheds_config_file)
+            self.tool_shed_registry = galaxy.tool_shed.tool_shed_registry.Registry(self.config.tool_sheds_config_file)
         else:
-            self.tool_shed_registry = tool_shed.tool_shed_registry.Registry()
+            self.tool_shed_registry = galaxy.tool_shed.tool_shed_registry.Registry()
 
     def _configure_models(self, check_migrate_databases=False, check_migrate_tools=False, config_file=None):
         """
@@ -1137,7 +1146,7 @@ class ConfiguresGalaxyMixin(object):
 
         if check_migrate_tools:
             # Alert the Galaxy admin to tools that have been moved from the distribution to the tool shed.
-            from tool_shed.galaxy_install.migrate.check import verify_tools
+            from galaxy.tool_shed.galaxy_install.migrate.check import verify_tools
             verify_tools(self, install_db_url, config_file, install_database_options)
 
         self.model = init_models_from_config(

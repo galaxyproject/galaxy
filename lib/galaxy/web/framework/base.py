@@ -335,11 +335,11 @@ def _make_file(self, binary=None):
     # but for performance reasons it's way better to use Paste's tempfile than to
     # create a new one and copy.
     if six.PY2:
-        return tempfile.NamedTemporaryFile()
+        return tempfile.NamedTemporaryFile(delete=False)
     if self._binary_file or self.length >= 0:
-        return tempfile.NamedTemporaryFile("wb+")
+        return tempfile.NamedTemporaryFile("wb+", delete=False)
     else:
-        return tempfile.NamedTemporaryFile("w+", encoding=self.encoding, newline='\n')
+        return tempfile.NamedTemporaryFile("w+", encoding=self.encoding, newline='\n', delete=False)
 
 
 def _read_lines(self):

@@ -1,7 +1,5 @@
-from functools import partial
 from os.path import dirname
 
-from galaxy.config import reload_config_options
 from galaxy.queue_worker import job_rule_modules
 from galaxy.tools.toolbox.watcher import (
     get_tool_conf_watcher,
@@ -41,6 +39,7 @@ class ConfigWatchers(object):
             'watch_core_config',
             monitor_what_str='core config file'
         )
+        self.tour_watcher = get_watcher(app.config, 'watch_tours', monitor_what_str='tours')
 
     @property
     def watchers(self):
@@ -50,7 +49,8 @@ class ConfigWatchers(object):
                 self.tool_data_watcher,
                 self.tool_watcher,
                 self.job_rule_watcher,
-                self.core_config_watcher)
+                self.core_config_watcher,
+                self.tour_watcher)
 
     def change_state(self, active):
         if active:
@@ -79,7 +79,11 @@ class ConfigWatchers(object):
         if self.app.config.config_file:
             self.core_config_watcher.watch_file(
                 self.app.config.config_file,
-                callback=partial(reload_config_options, self.app.config)
+                callback=lambda path: self.app.queue_worker.send_control_task('reload_core_config')
+            )
+            self.tour_watcher.watch_directory(
+                self.app.config.tour_config_dir,
+                callback=lambda path: self.app.queue_worker.send_control_task('reload_tour', kwargs={'path': path})
             )
         self.active = True
 

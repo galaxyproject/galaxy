@@ -105,8 +105,9 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
         new_tags = new_data.get('tags', None)
         if new_tags is not None and new_tags != ldda.tags:
             self.tag_handler.delete_item_tags(item=ldda, user=trans.user)
-            for tag in new_tags:
-                self.tag_handler.apply_item_tag(item=ldda, user=trans.user, name='name', value=tag)
+            tag_list = self.tag_handler.parse_tags_list(new_tags)
+            for tag in tag_list:
+                self.tag_handler.apply_item_tag(item=ldda, user=trans.user, name=tag[0], value=tag[1])
             changed = True
         if changed:
             ldda.update_parent_folder_update_times()
@@ -139,7 +140,7 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
                 val = validation.validate_and_sanitize_basestring(key, val)
                 validated_payload[key] = val
             if key in ('tags'):
-                val = validation.validate_and_sanitize_basestring_list(key, val)
+                val = validation.validate_and_sanitize_basestring_list(key, util.listify(val))
                 validated_payload[key] = val
         return validated_payload
 

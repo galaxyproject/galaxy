@@ -64,9 +64,9 @@ class LmodDependencyResolver(DependencyResolver, MappableDependencyResolver):
             return NullDependency(version=version, name=name)
 
         if self.__has_module(name, version):
-            return LmodDependency(self, name, version, exact=True)
+            return LmodDependency(self, name, version, exact=True, dependency_resolver=self)
         elif self.versionless and self.__has_module(name, None):
-            return LmodDependency(self, name, None, exact=False)
+            return LmodDependency(self, name, None, exact=False, dependency_resolver=self)
 
         return NullDependency(version=version, name=name)
 
@@ -138,14 +138,15 @@ class AvailModuleChecker(object):
 class LmodDependency(Dependency):
     """Prepare the commands required to solve the dependency and add them to the script used to run a tool in Galaxy."""
 
-    dict_collection_visible_keys = Dependency.dict_collection_visible_keys + ['module_name', 'module_version']
+    dict_collection_visible_keys = Dependency.dict_collection_visible_keys + ['module_name', 'module_version', 'dependency_resolver']
     dependency_type = 'lmod'
 
-    def __init__(self, lmod_dependency_resolver, module_name, module_version=None, exact=True):
+    def __init__(self, lmod_dependency_resolver, module_name, module_version=None, exact=True, dependency_resolver=None):
         self.lmod_dependency_resolver = lmod_dependency_resolver
         self.module_name = module_name
         self.module_version = module_version
         self._exact = exact
+        self.dependency_resolver = dependency_resolver
 
     @property
     def name(self):

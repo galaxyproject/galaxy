@@ -11,6 +11,9 @@ import { tagStore } from "./tagStore";
 import { jobMetricsStore } from "./jobMetricsStore";
 import { invocationStore } from "./invocationStore";
 import { userStore } from "./userStore";
+import { configStore } from "./configStore";
+import { workflowStore } from "./workflowStore";
+import { historyStore } from "./historyStore";
 
 Vue.use(Vuex);
 
@@ -20,6 +23,7 @@ export function createStore() {
             createCache(),
             store => {
                 store.dispatch("user/$init", { store });
+                store.dispatch("config/$init", { store });
             }
         ],
         modules: {
@@ -27,7 +31,10 @@ export function createStore() {
             tags: tagStore,
             jobMetrics: jobMetricsStore,
             invocations: invocationStore,
-            user: userStore
+            user: userStore,
+            config: configStore,
+            workflows: workflowStore,
+            history: historyStore
         }
     });
 }

@@ -13,6 +13,7 @@ log = logging.getLogger(__name__)
 
 
 class BaseUploadToolAction(ToolAction):
+    produces_real_jobs = True
 
     def execute(self, tool, trans, incoming={}, history=None, **kwargs):
         trans.check_user_activation()

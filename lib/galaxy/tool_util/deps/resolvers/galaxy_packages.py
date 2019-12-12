@@ -22,10 +22,10 @@ log = logging.getLogger(__name__)
 
 
 class GalaxyPackageDependency(Dependency):
-    dict_collection_visible_keys = Dependency.dict_collection_visible_keys + ['script', 'path', 'version', 'name']
+    dict_collection_visible_keys = Dependency.dict_collection_visible_keys + ['script', 'path', 'version', 'name', 'dependency_resolver']
     dependency_type = 'galaxy_package'
 
-    def __init__(self, script, path, name, type, version, exact=True):
+    def __init__(self, script, path, name, type, version, exact=True, dependency_resolver=None):
         self.script = script
         self.path = path
         self.name = name
@@ -33,6 +33,7 @@ class GalaxyPackageDependency(Dependency):
         self.version = version
         self._exact = exact
         assert self.script is not None or self.path is not None
+        self.dependency_resolver = dependency_resolver
 
     @property
     def exact(self):
@@ -95,9 +96,9 @@ class BaseGalaxyPackageDependencyResolver(DependencyResolver, UsesToolDependency
     def _galaxy_package_dep(self, path, version, name, type, exact):
         script = join(path, 'env.sh')
         if exists(script):
-            return self.dependency_type(script, path, name, type, version, exact)
+            return self.dependency_type(script, path, name, type, version, exact, dependency_resolver=self)
         elif exists(join(path, 'bin')):
-            return self.dependency_type(None, path, name, type, version, exact)
+            return self.dependency_type(None, path, name, type, version, exact, dependency_resolver=self)
         return NullDependency(version=version, name=name)
 
 

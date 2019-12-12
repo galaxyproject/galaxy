@@ -13,6 +13,7 @@ log = logging.getLogger(__name__)
 
 class SetMetadataToolAction(ToolAction):
     """Tool action used for setting external metadata on an existing dataset"""
+    produces_real_jobs = False
 
     def execute(self, tool, trans, incoming={}, set_output_hid=False, overwrite=True, history=None, job_params=None, **kwargs):
         """
@@ -90,6 +91,7 @@ class SetMetadataToolAction(ToolAction):
         }
         validate_outputs = asbool(incoming.get("validate", False))
         cmd_line = external_metadata_wrapper.setup_external_metadata(output_datatasets_dict,
+                                                                     {},
                                                                      sa_session,
                                                                      exec_dir=None,
                                                                      tmp_dir=job_working_dir,

@@ -2,14 +2,14 @@ import os
 
 from mock import MagicMock
 
-from tool_shed.galaxy_install.install_manager import InstallRepositoryManager
-from tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
-from tool_shed.galaxy_install.update_repository_manager import UpdateRepositoryManager
-from tool_shed.util import (
-    common_util,
+from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
+from galaxy.tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
+from galaxy.tool_shed.galaxy_install.update_repository_manager import UpdateRepositoryManager
+from galaxy.tool_shed.util import (
     hg_util,
     repository_util,
 )
+from galaxy.util.tool_shed import common_util
 from ..tools.test_toolbox import (
     BaseToolBoxTestCase,
     DEFAULT_TEST_REPO

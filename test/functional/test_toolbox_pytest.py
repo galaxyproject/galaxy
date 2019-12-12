@@ -5,7 +5,8 @@ galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pa
 sys.path[1:1] = [os.path.join(galaxy_root, "lib"), os.path.join(galaxy_root, "test")]
 
 import pytest
-from base import driver_util
+
+from galaxy_test.driver import driver_util
 
 SKIPTEST = os.path.join(os.path.dirname(__file__), 'known_broken_tools.txt')
 TEST_PREFIX = 'TestForTool_'

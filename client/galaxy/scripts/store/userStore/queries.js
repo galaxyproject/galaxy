@@ -1,9 +1,8 @@
 import axios from "axios";
-import { getAppRoot } from "onload/loadConfig";
+import { prependPath } from "utils/redirect";
 
 export async function getCurrentUser() {
-    const root = getAppRoot();
-    const url = `${root}api/users/current`;
+    const url = prependPath("/api/users/current");
     const response = await axios.get(url);
     if (response.status != 200) {
         throw new Error(response);

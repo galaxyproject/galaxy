@@ -1134,6 +1134,15 @@ model.WorkflowInvocationOutputDatasetCollectionAssociation.table = Table(
     Column("workflow_output_id", Integer, ForeignKey("workflow_output.id", name='fk_wiodca_woi')),
 )
 
+model.WorkflowInvocationOutputValue.table = Table(
+    "workflow_invocation_output_value", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id"), index=True),
+    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id")),
+    Column("workflow_output_id", Integer, ForeignKey("workflow_output.id"), index=True),
+    Column("value", JSONType),
+)
+
 model.WorkflowInvocationStepOutputDatasetAssociation.table = Table(
     "workflow_invocation_step_output_dataset_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -2599,6 +2608,14 @@ simple_mapping(
     workflow_invocation=relation(model.WorkflowInvocation, backref="output_dataset_collections"),
     workflow_step=relation(model.WorkflowStep),
     dataset_collection=relation(model.HistoryDatasetCollectionAssociation),
+    workflow_output=relation(model.WorkflowOutput),
+)
+
+
+simple_mapping(
+    model.WorkflowInvocationOutputValue,
+    workflow_invocation=relation(model.WorkflowInvocation, backref="output_values"),
+    workflow_step=relation(model.WorkflowStep),
     workflow_output=relation(model.WorkflowOutput),
 )
 

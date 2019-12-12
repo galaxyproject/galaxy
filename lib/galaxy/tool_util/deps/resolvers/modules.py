@@ -84,9 +84,9 @@ class ModuleDependencyResolver(DependencyResolver, MappableDependencyResolver):
             return NullDependency(version=version, name=name)
 
         if self.__has_module(name, version):
-            return ModuleDependency(self, name, version, exact=True)
+            return ModuleDependency(self, name, version, exact=True, dependency_resolver=self)
         elif self.versionless and self.__has_module(name, None):
-            return ModuleDependency(self, name, None, exact=False)
+            return ModuleDependency(self, name, None, exact=False, dependency_resolver=self)
 
         return NullDependency(version=version, name=name)
 
@@ -183,14 +183,15 @@ class ModuleDependency(Dependency):
     Using Environment Modules' 'modulecmd' (specifically 'modulecmd sh load') to
     convert module specifications into shell expressions for inclusion in
     the script used to run a tool in Galaxy."""
-    dict_collection_visible_keys = Dependency.dict_collection_visible_keys + ['module_name', 'module_version']
+    dict_collection_visible_keys = Dependency.dict_collection_visible_keys + ['module_name', 'module_version', 'dependency_resolver']
     dependency_type = 'module'
 
-    def __init__(self, module_dependency_resolver, module_name, module_version=None, exact=True):
+    def __init__(self, module_dependency_resolver, module_name, module_version=None, exact=True, dependency_resolver=None):
         self.module_dependency_resolver = module_dependency_resolver
         self.module_name = module_name
         self.module_version = module_version
         self._exact = exact
+        self.dependency_resolver = dependency_resolver
 
     @property
     def name(self):

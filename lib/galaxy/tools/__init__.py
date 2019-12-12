@@ -1,6 +1,7 @@
 """
 Classes encapsulating galaxy tools and tool configuration.
 """
+import itertools
 import json
 import logging
 import os
@@ -24,8 +25,6 @@ from six import itervalues, string_types
 from six.moves.urllib.parse import unquote_plus
 from webob.compat import cgi_FieldStorage
 
-import tool_shed.util.repository_util as repository_util
-import tool_shed.util.shed_util_common
 from galaxy import (
     exceptions,
     model
@@ -34,6 +33,8 @@ from galaxy.job_execution import output_collect
 from galaxy.managers.jobs import JobSearch
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model.tags import GalaxyTagHandler
+from galaxy.tool_shed.util.repository_util import get_installed_repository
+from galaxy.tool_shed.util.shed_util_common import set_image_paths
 from galaxy.tool_util.deps import (
     CachedDependencyManager,
 )
@@ -102,9 +103,12 @@ from galaxy.util.template import (
     fill_template,
     refactoring_tool,
 )
+from galaxy.util.tool_shed.common_util import (
+    get_tool_shed_repository_url,
+    get_tool_shed_url_from_tool_shed_registry,
+)
 from galaxy.version import VERSION_MAJOR
 from galaxy.work.context import WorkRequestContext
-from tool_shed.util import common_util
 from .execute import (
     execute as execute_job,
     MappingParameters,
@@ -333,7 +337,7 @@ class ToolBox(BaseGalaxyToolBox):
         # Abstract toolbox doesn't have a dependency on the database, so
         # override _get_tool_shed_repository here to provide this information.
 
-        return repository_util.get_installed_repository(
+        return get_installed_repository(
             self.app,
             tool_shed=tool_shed,
             name=name,
@@ -518,15 +522,20 @@ class Tool(Dictifiable):
             return []
 
     @property
+    def is_latest_version(self):
+        tool_versions = self.tool_versions
+        return not tool_versions or self.version == self.tool_versions[-1]
+
+    @property
     def tool_shed_repository(self):
         # If this tool is included in an installed tool shed repository, return it.
         if self.tool_shed:
-            return repository_util.get_installed_repository(self.app,
-                                                            tool_shed=self.tool_shed,
-                                                            name=self.repository_name,
-                                                            owner=self.repository_owner,
-                                                            installed_changeset_revision=self.installed_changeset_revision,
-                                                            from_cache=True)
+            return get_installed_repository(self.app,
+                                            tool_shed=self.tool_shed,
+                                            name=self.repository_name,
+                                            owner=self.repository_owner,
+                                            installed_changeset_revision=self.installed_changeset_revision,
+                                            from_cache=True)
 
     @property
     def produces_collections_with_unknown_structure(self):
@@ -926,9 +935,9 @@ class Tool(Dictifiable):
 
         if getattr(self, 'tool_shed', None):
             tool_dir = Path(self.tool_dir)
-            for parent in tool_dir.parents:
-                if parent == self.repository_name:
-                    return str(parent)
+            for repo_dir in itertools.chain([tool_dir], tool_dir.parents):
+                if repo_dir.stem == self.repository_name:
+                    return str(repo_dir)
             else:
                 log.error("Problem finding repository dir for tool [%s]" % self.id)
 
@@ -1244,7 +1253,7 @@ class Tool(Dictifiable):
             self.repository_owner = tool_shed_repository.owner
             self.changeset_revision = tool_shed_repository.changeset_revision
             self.installed_changeset_revision = tool_shed_repository.installed_changeset_revision
-            self.sharable_url = common_util.get_tool_shed_repository_url(
+            self.sharable_url = get_tool_shed_repository_url(
                 self.app, self.tool_shed, self.repository_owner, self.repository_name
             )
 
@@ -1281,7 +1290,7 @@ class Tool(Dictifiable):
         if help_text is not None:
             try:
                 if help_text.find('.. image:: ') >= 0 and (self.tool_shed_repository or self.repository_id):
-                    help_text = tool_shed.util.shed_util_common.set_image_paths(
+                    help_text = set_image_paths(
                         self.app, help_text, encoded_repository_id=self.repository_id, tool_shed_repository=self.tool_shed_repository, tool_id=self.old_id, tool_version=self.version
                     )
             except Exception:
@@ -2174,14 +2183,14 @@ class Tool(Dictifiable):
                             message += 'You can re-run the job with this tool version, which is a different version of the original tool. '
                 else:
                     new_tool_shed_url = '%s/%s/' % (tool.sharable_url, tool.changeset_revision)
-                    old_tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(self.app, tool_id.split('/repos/')[0])
+                    old_tool_shed_url = get_tool_shed_url_from_tool_shed_registry(self.app, tool_id.split('/repos/')[0])
                     old_tool_shed_url = '%s/view/%s/%s/' % (old_tool_shed_url, tool.repository_owner, tool.repository_name)
                     message = 'This job was run with <a href=\"%s\" target=\"_blank\">tool id \"%s\"</a>, version "%s", which is not available. ' % (old_tool_shed_url, tool_id, tool_version)
                     if len(tools) > 1:
                         message += 'You can re-run the job with the selected <a href=\"%s\" target=\"_blank\">tool id \"%s\"</a> or choose another derivation of the tool. ' % (new_tool_shed_url, self.id)
                     else:
                         message += 'You can re-run the job with <a href=\"%s\" target=\"_blank\">tool id \"%s\"</a>, which is a derivation of the original tool. ' % (new_tool_shed_url, self.id)
-            if len(self.tool_versions) > 1 and tool_version != self.tool_versions[-1]:
+            if not self.is_latest_version:
                 message += 'There is a newer version of this tool available.'
         except Exception as e:
             raise exceptions.MessageException(unicodify(e))

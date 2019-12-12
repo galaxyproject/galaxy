@@ -58,9 +58,7 @@ def build_singularity_run_command(
     command_parts.append("-s")
     command_parts.append("exec")
     for volume in volumes:
-        command_parts.extend(["-B", shlex_quote(str(volume))])
-    if working_directory:
-        command_parts.extend(["--pwd", shlex_quote(working_directory)])
+        command_parts.extend(["-B", str(volume)])
     if home is not None:
         command_parts.extend(["--home", "%s:%s" % (home, home)])
     if run_extra_arguments:

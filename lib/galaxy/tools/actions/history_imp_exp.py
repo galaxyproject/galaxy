@@ -11,6 +11,7 @@ log = logging.getLogger(__name__)
 
 class ImportHistoryToolAction(ToolAction):
     """Tool action used for importing a history to an archive. """
+    produces_real_jobs = True
 
     def execute(self, tool, trans, incoming={}, set_output_hid=False, overwrite=True, history=None, **kwargs):
         #
@@ -67,6 +68,7 @@ class ImportHistoryToolAction(ToolAction):
 
 class ExportHistoryToolAction(ToolAction):
     """Tool action used for exporting a history to an archive. """
+    produces_real_jobs = True
 
     def execute(self, tool, trans, incoming={}, set_output_hid=False, overwrite=True, history=None, **kwargs):
         trans.check_user_activation()

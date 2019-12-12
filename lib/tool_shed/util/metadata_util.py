@@ -3,10 +3,14 @@ from operator import itemgetter
 
 from sqlalchemy import and_
 
-import tool_shed.util.repository_util
-from galaxy import util
-from tool_shed.util import common_util
-from tool_shed.util import hg_util
+from galaxy.tool_shed.util.hg_util import (
+    get_repo_for_repository,
+    INITIAL_CHANGELOG_HASH,
+    reversed_lower_upper_bounded_changelog,
+)
+from galaxy.tool_shed.util.repository_util import get_repository_by_name_and_owner
+from galaxy.util.tool_shed.common_util import parse_repository_dependency_tuple
+from tool_shed.util.hg_util import changeset2rev
 
 log = logging.getLogger(__name__)
 
@@ -63,7 +67,7 @@ def get_current_repository_metadata_for_changeset_revision(app, repository, chan
 def get_dependencies_for_metadata_revision(app, metadata):
     dependencies = []
     for shed, name, owner, changeset, prior, _ in metadata['repository_dependencies']:
-        required_repository = tool_shed.util.repository_util.get_repository_by_name_and_owner(app, name, owner)
+        required_repository = get_repository_by_name_and_owner(app, name, owner)
         updated_changeset = get_next_downloadable_changeset_revision(app, required_repository, changeset)
         if updated_changeset is None:
             continue
@@ -82,7 +86,7 @@ def get_latest_changeset_revision(app, repository):
     changeset_revisions = [revision[1] for revision in get_metadata_revisions(app, repository)]
     if changeset_revisions:
         return changeset_revisions[-1]
-    return hg_util.INITIAL_CHANGELOG_HASH
+    return INITIAL_CHANGELOG_HASH
 
 
 def get_latest_downloadable_changeset_revision(app, repository):
@@ -93,7 +97,7 @@ def get_latest_downloadable_changeset_revision(app, repository):
     changeset_revisions = [revision[1] for revision in get_metadata_revisions(app, repository)]
     if changeset_revisions:
         return changeset_revisions[-1]
-    return hg_util.INITIAL_CHANGELOG_HASH
+    return INITIAL_CHANGELOG_HASH
 
 
 def get_latest_repository_metadata(app, decoded_repository_id, downloadable=False):
@@ -123,7 +127,7 @@ def get_metadata_revisions(app, repository, sort_revisions=True, reverse=False, 
     for repository_metadata in metadata_revisions:
         if repository_metadata.numeric_revision == -1 or repository_metadata.numeric_revision is None:
             try:
-                rev = hg_util.changeset2rev(repo_path, repository_metadata.changeset_revision)
+                rev = changeset2rev(repo_path, repository_metadata.changeset_revision)
                 repository_metadata.numeric_revision = rev
                 sa_session.add(repository_metadata)
                 sa_session.flush()
@@ -149,9 +153,9 @@ def get_next_downloadable_changeset_revision(app, repository, after_changeset_re
         if changeset_revision == after_changeset_revision:
             return after_changeset_revision
     found_after_changeset_revision = False
-    repo = hg_util.get_repo_for_repository(app, repository=repository)
+    repo = get_repo_for_repository(app, repository=repository)
     for changeset in repo.changelog:
-        changeset_revision = str(repo.changectx(changeset))
+        changeset_revision = str(repo[changeset])
         if found_after_changeset_revision:
             if changeset_revision in changeset_revisions:
                 return changeset_revision
@@ -165,13 +169,13 @@ def get_previous_metadata_changeset_revision(app, repository, before_changeset_r
     """
     Return the changeset_revision in the repository changelog that has associated metadata prior to
     the changeset to which before_changeset_revision refers.  If there isn't one, return the hash value
-    of an empty repository changelog, hg_util.INITIAL_CHANGELOG_HASH.
+    of an empty repository changelog, INITIAL_CHANGELOG_HASH.
     """
     changeset_revisions = [revision[1] for revision in get_metadata_revisions(app, repository)]
     if len(changeset_revisions) == 1:
         changeset_revision = changeset_revisions[0]
         if changeset_revision == before_changeset_revision:
-            return hg_util.INITIAL_CHANGELOG_HASH
+            return INITIAL_CHANGELOG_HASH
         return changeset_revision
     previous_changeset_revision = None
     for changeset_revision in changeset_revisions:
@@ -180,7 +184,7 @@ def get_previous_metadata_changeset_revision(app, repository, before_changeset_r
                 return previous_changeset_revision
             else:
                 # Return the hash value of an empty repository changelog - note that this will not be a valid changeset revision.
-                return hg_util.INITIAL_CHANGELOG_HASH
+                return INITIAL_CHANGELOG_HASH
         else:
             previous_changeset_revision = changeset_revision
 
@@ -202,8 +206,8 @@ def get_repository_dependency_tups_from_repository_metadata(app, repository_meta
                     # ['http://localhost:9009', 'package_samtools_0_1_18', 'devteam', 'ef37fc635cb9', 'False', 'False']
                     for repository_dependency_tup in repository_dependency_tups:
                         toolshed, name, owner, changeset_revision, pir, oicct = \
-                            common_util.parse_repository_dependency_tuple(repository_dependency_tup)
-                        repository = tool_shed.util.repository_util.get_repository_by_name_and_owner(app, name, owner)
+                            parse_repository_dependency_tuple(repository_dependency_tup)
+                        repository = get_repository_by_name_and_owner(app, name, owner)
                         if repository:
                             if deprecated_only:
                                 if repository.deprecated:
@@ -279,38 +283,21 @@ def get_updated_changeset_revisions(app, name, owner, changeset_revision):
     Return a string of comma-separated changeset revision hashes for all available updates to the received changeset
     revision for the repository defined by the received name and owner.
     """
-    repository = tool_shed.util.repository_util.get_repository_by_name_and_owner(app, name, owner)
+    repository = get_repository_by_name_and_owner(app, name, owner)
     # Get the upper bound changeset revision.
     upper_bound_changeset_revision = get_next_downloadable_changeset_revision(app, repository, changeset_revision)
     # Build the list of changeset revision hashes defining each available update up to, but excluding
     # upper_bound_changeset_revision.
-    repo = hg_util.get_repo_for_repository(app, repository=repository)
+    repo = get_repo_for_repository(app, repository=repository)
     changeset_hashes = []
-    for changeset in hg_util.reversed_lower_upper_bounded_changelog(repo, changeset_revision, upper_bound_changeset_revision):
+    for changeset in reversed_lower_upper_bounded_changelog(repo, changeset_revision, upper_bound_changeset_revision):
         # Make sure to exclude upper_bound_changeset_revision.
         if changeset != upper_bound_changeset_revision:
-            changeset_hashes.append(str(repo.changectx(changeset)))
+            changeset_hashes.append(str(repo[changeset]))
     if changeset_hashes:
         changeset_hashes_str = ','.join(changeset_hashes)
         return changeset_hashes_str
     return ''
-
-
-def get_updated_changeset_revisions_from_tool_shed(app, tool_shed_url, name, owner, changeset_revision):
-    """
-    Get all appropriate newer changeset revisions for the repository defined by
-    the received tool_shed_url / name / owner combination.
-    """
-    tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(app, tool_shed_url)
-    if tool_shed_url is None or name is None or owner is None or changeset_revision is None:
-        message = "Unable to get updated changeset revisions from the Tool Shed because one or more of the following "
-        message += "required parameters is None: tool_shed_url: %s, name: %s, owner: %s, changeset_revision: %s " % \
-            (str(tool_shed_url), str(name), str(owner), str(changeset_revision))
-        raise Exception(message)
-    params = dict(name=name, owner=owner, changeset_revision=changeset_revision)
-    pathspec = ['repository', 'updated_changeset_revisions']
-    text = util.url_get(tool_shed_url, password_mgr=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
-    return text
 
 
 def is_downloadable(metadata_dict):

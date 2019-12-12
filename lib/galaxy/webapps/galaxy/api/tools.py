@@ -123,8 +123,8 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         tool = self._get_tool(id, tool_version=tool_version, user=trans.user)
         return tool.to_json(trans, kwd.get('inputs', kwd))
 
-    @expose_api
     @web.require_admin
+    @expose_api
     def test_data_path(self, trans, id, **kwd):
         """
         GET /api/tools/{tool_id}/test_data_path?tool_version={tool_version}
@@ -212,8 +212,8 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         result = [t.to_dict() for t in tool.tests]
         return safe_dumps(result, default=json_encodeify)
 
-    @expose_api
     @web.require_admin
+    @expose_api
     def reload(self, trans, id, **kwd):
         """
         GET /api/tools/{tool_id}/reload
@@ -225,8 +225,8 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
             raise exceptions.MessageException(message)
         return {'message': message}
 
-    @expose_api
     @web.require_admin
+    @expose_api
     def all_requirements(self, trans, **kwds):
         """
         GET /api/tools/all_requirements
@@ -235,8 +235,8 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
 
         return trans.app.toolbox.all_requirements
 
-    @expose_api
     @web.require_admin
+    @expose_api
     def requirements(self, trans, id, **kwds):
         """
         GET /api/tools/{tool_id}/requirements
@@ -246,8 +246,8 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         tool = self._get_tool(id, user=trans.user)
         return tool.tool_requirements_status
 
-    @expose_api
     @web.require_admin
+    @expose_api
     def install_dependencies(self, trans, id, **kwds):
         """
         POST /api/tools/{tool_id}/dependencies
@@ -272,8 +272,8 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         # _view.install_dependencies should return a dict with stdout, stderr and success status
         return tool.tool_requirements_status
 
-    @expose_api
     @web.require_admin
+    @expose_api
     def uninstall_dependencies(self, trans, id, **kwds):
         """
         DELETE /api/tools/{tool_id}/dependencies
@@ -289,8 +289,8 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         # TODO: rework resolver install system to log and report what has been done.
         return tool.tool_requirements_status
 
-    @expose_api
     @web.require_admin
+    @expose_api
     def build_dependency_cache(self, trans, id, **kwds):
         """
         POST /api/tools/{tool_id}/build_dependency_cache
@@ -304,8 +304,8 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         # TODO: Should also have a more meaningful return.
         return tool.tool_requirements_status
 
-    @expose_api
     @web.require_admin
+    @expose_api
     def diagnostics(self, trans, id, **kwd):
         """
         GET /api/tools/{tool_id}/diagnostics
@@ -407,8 +407,8 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         tool = self._get_tool(id, user=trans.user)
         return tool.xrefs
 
-    @web.legacy_expose_api_raw
     @web.require_admin
+    @web.legacy_expose_api_raw
     def download(self, trans, id, **kwds):
         tool_tarball = trans.app.toolbox.package_tool(trans, id)
         trans.response.set_content_type('application/x-gzip')
@@ -446,8 +446,8 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         create_payload.update(files_payload)
         return self._create(trans, create_payload, **kwd)
 
-    @expose_api
     @web.require_admin
+    @expose_api
     def error_stack(self, trans, **kwd):
         """
         GET /api/tools/error_stack
