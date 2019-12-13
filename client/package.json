@@ -117,7 +117,7 @@
     "karma-polyfill": "^1.0.0",
     "karma-qunit": "^1.2.1",
     "karma-webpack": "^4.0.0-rc.2",
-    "mini-css-extract-plugin": "^0.5.0",
+    "mini-css-extract-plugin": "^0.8.0",
     "mocha": "^5.2.0",
     "node-sass": "^4.13.0",
     "optimize-css-assets-webpack-plugin": "^5.0.1",
