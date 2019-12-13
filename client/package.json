@@ -134,9 +134,9 @@
     "vue-loader": "^15.7.0",
     "vue-styleguidist": "^3.11.4",
     "vue-template-compiler": "^2.6.10",
-    "webpack": "^4.29.6",
-    "webpack-cli": "^3.3.0",
-    "webpack-merge": "^4.2.1",
+    "webpack": "^4.41.2",
+    "webpack-cli": "^3.3.10",
+    "webpack-merge": "^4.2.2",
     "yaml-loader": "^0.5.0"
   }
 }
