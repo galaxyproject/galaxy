@@ -17,6 +17,10 @@
         <environment_variable name="API_KEY" inject="api_key" />
     </environment_variables>
     <command><![CDATA[
+        
+        mkdir -p /srv/shiny-server/data/ &&
+        ln -s '$infile' /srv/shiny-server/data/inputdata.txt &&
+
         mkdir -p /var/log/shiny-server &&
         chown shiny.shiny /var/log/shiny-server &&
 
