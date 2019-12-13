@@ -130,7 +130,7 @@
     "sass-loader": "^7.1.0",
     "sinon": "^4.1.2",
     "store": "^2.0.12",
-    "style-loader": "^0.23.1",
+    "style-loader": "^1.0.1",
     "vue-loader": "^15.7.0",
     "vue-styleguidist": "^3.11.4",
     "vue-template-compiler": "^2.6.10",
