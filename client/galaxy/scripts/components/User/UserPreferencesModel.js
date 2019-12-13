@@ -30,7 +30,8 @@ export const getUserPreferencesModel = () => {
             description: _l("Connect or disconnect access to your third-party identities."),
             icon: "fa-id-card-o",
             submit_title: "Disconnect identity",
-            submit_icon: "fa-trash"
+            submit_icon: "fa-trash",
+            shouldRender: config.enable_oidc
         },
         communication: {
             title: _l("Change Communication Settings"),

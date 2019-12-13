@@ -23,7 +23,6 @@
 </template>
 
 <script>
-
 export default {
     props: {
         credential: { type: Credential, required: true }

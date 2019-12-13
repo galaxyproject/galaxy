@@ -1,66 +1,119 @@
 <template>
     <section class="external-id">
         <header>
-            <b-alert dismissible fade variant="warning" :show="errorMessage !== null" @dismissed="errorMessage = null">
-                {{ errorMessage }}
-            </b-alert>
+            <b-alert
+                dismissible
+                fade
+                variant="warning"
+                :show="errorMessage !== null"
+                @dismissed="errorMessage = null"
+            >{{ errorMessage }}</b-alert>
 
             <hgroup class="external-id-title">
                 <h1>Manage External Identities</h1>
             </hgroup>
+
+            <p>
+                Users with existing Galaxy user accounts (e.g., via Galaxy username and password) can associate their
+                account with their 3rd party identities. For instance, if a user associates their Galaxy account with
+                their Google account, then they can login to Galaxy either using their Galaxy username and password, or
+                their Google account. Whichever method they use they will be assuming same Galaxy user account, hence
+                having access to the same histories, workflows, datasets, libraries, etc.
+            </p>
+
+            <p>
+                See more information, including a list of supported identity providers,
+                <a
+                    href="https://galaxyproject.org/authnz/use/oidc/"
+                >here</a>.
+            </p>
         </header>
 
-        <b-list-group class="external-id-key">
-            <ul class="operations">
-                <li  class="delete" v-for="item in filteredItems" v-bind:key="item">
-                    <button
-                        :key="item.id"
-                        :credential="credential"
-                        @click="onDisconnect(item)"
-                        aria-label="Disconnect External Identity"
-                        title="Disconnect External Identity"
-                    >
-                        <span>Disconnect External Identity</span>
-                    </button>
-                    {{ item.provider }}
-                </li>
-            </ul>
-        </b-list-group>
+        <div class="external-subheading" v-if="items.length">
+            <b-list-group class="external-id-key">
+                <h3>Connected External Identities</h3>
+                <ul class="operations">
+                    <li class="delete" v-for="item in filteredItems" v-bind:key="item">
+                        <button
+                            :key="item.id"
+                            @click="onDisconnect(item)"
+                            aria-label="Disconnect External Identity"
+                            title="Disconnect External Identity"
+                        >
+                            <span>Disconnect External Identity</span>
+                        </button>
+                        {{ item.provider.charAt(0).toUpperCase() + item.provider.slice(1) }} - {{ item.email }}
+                    </li>
+                </ul>
+            </b-list-group>
 
-        <b-modal
-            v-model="hasDoomed"
-            centered
-            id="disconnectIDModal"
-            ref="deleteModal"
-            title="Disconnect Identity?"
-            size="sm"
-            @ok="disconnectID"
-            @cancel="doomedItem = null"
-        >
-        </b-modal>
+            <b-modal
+                centered
+                id="disconnectIDModal"
+                ref="deleteModal"
+                title="Disconnect Identity?"
+                size="sm"
+                @ok="disconnectID"
+                @cancel="doomedItem = null"
+            ></b-modal>
+
+            <b-alert
+                dismissible
+                fade
+                variant="warning"
+                :show="errorMessage !== null"
+                @dismissed="errorMessage = null"
+            >{{ errorMessage }}</b-alert>
+        </div>
+
+        <div class="external-subheading" v-if="enable_oidc">
+            <h3>Connect Other External Identities</h3>
+            <b-button
+                v-for="idp in oidc_idps"
+                :key="idp"
+                class="d-block mt-3"
+                @click="submitOIDCLogin(idp)"
+            >
+                <i v-bind:class="oidc_idps_icons[idp]" />
+                Sign in with
+                {{ idp.charAt(0).toUpperCase() + idp.slice(1) }}
+            </b-button>
+        </div>
     </section>
 </template>
 
 <script>
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import ExternalIdKey from "./ExternalIdKey";
-import { Credential } from "./model";
-import svc from "./model/service";
+import { getGalaxyInstance } from "app";
+import svc from "./service";
 
 Vue.use(BootstrapVue);
 
 export default {
-    components: {
-        ExternalIdKey
-    },
     data() {
+        const galaxy = getGalaxyInstance();
+        const oidc_idps = galaxy.config.oidc;
+        // Icons to use for each IdP
+        const oidc_idps_icons = { google: "fa fa-google" };
+        // Add default icons to IdPs without icons
+        oidc_idps
+            .filter(function(key) {
+                return oidc_idps_icons[key] === undefined;
+            })
+            .forEach(function(idp) {
+                oidc_idps_icons[idp] = "fa fa-id-card";
+            });
+
         return {
             items: [],
             showHelp: true,
             loading: false,
             doomedItem: null,
-            errorMessage: null
+            errorMessage: null,
+            enable_oidc: galaxy.config.enable_oidc,
+            oidc_idps: oidc_idps,
+            oidc_idps_icons: oidc_idps_icons
         };
     },
     computed: {
@@ -106,23 +159,47 @@ export default {
                 // User must confirm that they want to disconnect the identity
                 this.$refs.deleteModal.show();
             } else {
-                this.removeItem(doomed);
-                this.doomedItem = null;
+                this.setError(
+                    "Before disconnecting this identity, you need to set your account password, " +
+                        "in order to avoid being locked out of your account."
+                );
             }
         },
         disconnectID() {
             // Called when the modal is closed with an "OK"
-            svc.disconnectIdentity() //here!!!!
-                .then(() => this.removeItem(this.doomedItem))
-                .catch(this.setError("Unable to disconnect external identity."))
+            svc.disconnectIdentity(this.doomedItem)
+                .then(() => {
+                    this.removeItem(this.doomedItem);
+                })
+                .catch(error => {
+                    if (error.data) {
+                        this.setError("Unable to disconnect external identity.");
+                    } else {
+                        this.removeItem(this.doomedItem);
+                    }
+                })
                 .finally(() => {
+                    this.removeItem(this.doomedItem);
                     this.doomedItem = null;
                 });
             console.log("after disconnectID");
             console.log(this.items);
         },
         removeItem(item) {
-            this.items = this.items.filter(o => o !== item);
+            this.items = this.items.filter(o => o != item);
+        },
+        submitOIDCLogin(idp) {
+            svc.saveIdentity(idp)
+                .then(response => {
+                    if (response.data.redirect_uri) {
+                        window.location = response.data.redirect_uri;
+                    }
+                })
+                .catch(error => {
+                    this.messageVariant = "danger";
+                    const message = error.response.data && error.response.data.err_msg;
+                    this.messageText = message || "Login failed for an unknown reason.";
+                });
         },
         setError(msg) {
             return err => {
@@ -145,9 +222,6 @@ export default {
 
 @import "scss/theme/blue.scss";
 @import "scss/mixins";
-
-// TODO: build reusable icon menu? Maybe make into a component?
-// The existing one has lots of reusability problems
 
 .operations {
     margin-bottom: 0;
@@ -194,7 +268,6 @@ export default {
         }
     }
 }
-
 
 // Single list item
 
@@ -251,7 +324,8 @@ export default {
     .operations {
         list-style-type: none;
 
-        .delete a, button {
+        .delete a,
+        button {
             @include fontawesome($fa-var-times);
         }
     }
