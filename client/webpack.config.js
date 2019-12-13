@@ -12,7 +12,6 @@ const styleBase = path.join(__dirname, "galaxy/style");
 const imageBase = path.join(__dirname, "../static/style");
 
 module.exports = (env = {}, argv = {}) => {
-
     // environment name based on -d, -p, webpack flag
     const targetEnv = argv.mode || "development";
 
@@ -36,8 +35,8 @@ module.exports = (env = {}, argv = {}) => {
                 jquery$: `${libsBase}/jquery.custom.js`,
                 jqueryVendor$: `${libsBase}/jquery/jquery.js`,
                 storemodern$: "store/dist/store.modern.js",
-                "popper.js": path.resolve(__dirname, 'node_modules/popper.js/'),
-                moment: path.resolve(__dirname, 'node_modules/moment'),
+                "popper.js": path.resolve(__dirname, "node_modules/popper.js/"),
+                moment: path.resolve(__dirname, "node_modules/moment"),
                 // client-side application config
                 config$: path.join(__dirname, "galaxy", "config", targetEnv) + ".js"
             }
@@ -69,26 +68,14 @@ module.exports = (env = {}, argv = {}) => {
                 {
                     test: /\.js$/,
                     // Pretty sure we don't want anything except node_modules here
-                    exclude: [
-                        /(node_modules\/(?!(handsontable)\/)|bower_components)/,
-                        libsBase
-                    ],
+                    exclude: [/(node_modules\/(?!(handsontable)\/)|bower_components)/, libsBase],
                     loader: "babel-loader",
                     options: {
                         cacheDirectory: true,
                         cacheCompression: false,
-                        presets: [
-                            ["@babel/preset-env", { modules: false }]
-                        ],
-                        plugins: [
-                            "transform-vue-template",
-                            "@babel/plugin-syntax-dynamic-import"
-                        ],
-                        ignore: [
-                            "i18n.js",
-                            "utils/localization.js",
-                            "nls/*"
-                        ]
+                        presets: [["@babel/preset-env", { modules: false }]],
+                        plugins: ["transform-vue-template", "@babel/plugin-syntax-dynamic-import"],
+                        ignore: ["i18n.js", "utils/localization.js", "nls/*"]
                     }
                 },
                 {
@@ -158,12 +145,10 @@ module.exports = (env = {}, argv = {}) => {
                             options: { sourceMap: true }
                         },
                         {
-                            loader: 'postcss-loader',
+                            loader: "postcss-loader",
                             options: {
-                                plugins: function () {
-                                    return [
-                                        require('autoprefixer')
-                                    ];
+                                plugins: function() {
+                                    return [require("autoprefixer")];
                                 }
                             }
                         },
@@ -172,10 +157,7 @@ module.exports = (env = {}, argv = {}) => {
                             options: {
                                 sourceMap: true,
                                 sassOptions: {
-                                    includePaths: [
-                                        "galaxy/style/scss",
-                                        path.resolve(__dirname, './node_modules')
-                                    ]
+                                    includePaths: ["galaxy/style/scss", path.resolve(__dirname, "./node_modules")]
                                 }
                             }
                         }
@@ -224,7 +206,7 @@ module.exports = (env = {}, argv = {}) => {
             new DuplicatePackageCheckerPlugin()
         ],
         devServer: {
-            hot: true,
+            hot: true
         }
     };
 
@@ -233,4 +215,4 @@ module.exports = (env = {}, argv = {}) => {
     }
 
     return buildconfig;
-}
+};
