@@ -112,7 +112,7 @@
                     Unfinished Jobs: These jobs are unfinished and have had their state updated in the previous
                     {{ cutoffDisplay }} seconds.
                 </template>
-                <template v-slot:head(selected)="{ rowSelected }">
+                <template v-slot:head(selected)>
                     <b-form-checkbox
                         v-model="allSelected"
                         :indeterminate="indeterminate"
