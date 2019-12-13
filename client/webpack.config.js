@@ -169,10 +169,12 @@ module.exports = (env = {}, argv = {}) => {
                             loader: "sass-loader",
                             options: {
                                 sourceMap: true,
-                                includePaths: [
-                                    "galaxy/style/scss",
-                                    path.resolve(__dirname, './node_modules')
-                                ]
+                                sassOptions: {
+                                    includePaths: [
+                                        "galaxy/style/scss",
+                                        path.resolve(__dirname, './node_modules')
+                                    ]
+                                }
                             }
                         }
                     ]
