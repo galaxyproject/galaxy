@@ -148,17 +148,7 @@ module.exports = (env = {}, argv = {}) => {
                     ]
                 },
                 {
-                    test: /\.css$/,
-                    use: [
-                        MiniCssExtractPlugin.loader,
-                        {
-                            loader: "css-loader",
-                            options: { sourceMap: true }
-                        }
-                    ]
-                },
-                {
-                    test: /\.scss$/,
+                    test: /\.(sa|sc|c)ss$/,
                     use: [
                         MiniCssExtractPlugin.loader,
                         {
