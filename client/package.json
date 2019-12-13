@@ -42,7 +42,7 @@
     "latex-parser": "^0.6.2",
     "latex-to-unicode-converter": "^0.5.2",
     "markdown-it": "^8.4.2",
-    "moment": "2.20.1",
+    "moment": "2.24.0",
     "popper.js": "^1.16.0",
     "pyre-to-regexp": "^0.0.5",
     "raven-js": "^3.27.0",
