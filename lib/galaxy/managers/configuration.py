@@ -95,6 +95,7 @@ class ConfigSerializer(base.ModelSerializer):
             'show_welcome_with_login'           : _defaults_to(True),  # schema default is False
             'cookie_domain'                     : _required_attribute,
             'python'                            : _defaults_to((sys.version_info.major, sys.version_info.minor)),
+            'select_type_workflow_threshold'    : _required_attribute,
         }
 
 

@@ -3829,4 +3829,20 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``select_type_workflow_threshold``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Due to performance considerations (select2 fields are pretty
+    'expensive' in terms of memory usage) Galaxy uses the regular
+    select fields for non-dataset selectors in the workflow run form.
+    use 0 in order to always use select2 fields, use -1 (default) in
+    order to always use the regular select fields, use any other
+    positive number as threshold (above threshold: regular select
+    fields will be used)
+:Default: ``-1``
+:Type: int
+
+
 
