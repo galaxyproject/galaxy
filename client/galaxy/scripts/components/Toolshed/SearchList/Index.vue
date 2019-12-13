@@ -49,7 +49,10 @@ export default {
             total: 0,
             error: null,
             tabCurrent: "true",
-            tabOptions: [{ text: "Search All", value: true }, { text: "Installed Only", value: false }]
+            tabOptions: [
+                { text: "Search All", value: true },
+                { text: "Installed Only", value: false }
+            ]
         };
     },
     created() {

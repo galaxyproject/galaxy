@@ -36,7 +36,10 @@ export default Backbone.View.extend({
         _.each([this.btnReset, this.btnBuild, this.btnClose], button => {
             this.$(".upload-buttons").prepend(button.$el);
         });
-        const dataTypeOptions = [{ id: "datasets", text: "Datasets" }, { id: "collections", text: "Collection(s)" }];
+        const dataTypeOptions = [
+            { id: "datasets", text: "Datasets" },
+            { id: "collections", text: "Collection(s)" }
+        ];
         this.dataType = "datasets";
         this.dataTypeView = new Select.View({
             css: "upload-footer-selection",

@@ -195,7 +195,10 @@ export default Backbone.Model.extend({
     _fieldBoolean: function(input_def) {
         return new Ui.RadioButton.View({
             id: `field-${input_def.id}`,
-            data: [{ label: "Yes", value: "true" }, { label: "No", value: "false" }],
+            data: [
+                { label: "Yes", value: "true" },
+                { label: "No", value: "false" }
+            ],
             onchange: input_def.onchange
         });
     },
