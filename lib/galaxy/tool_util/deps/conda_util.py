@@ -499,14 +499,23 @@ def cleanup_failed_install(conda_target, conda_context=None):
     cleanup_failed_install_of_environment(conda_target.install_environment, conda_context=conda_context)
 
 
-def best_search_result(conda_target, conda_context, channels_override=None, offline=False):
+def best_search_result(conda_target, conda_context, channels_override=None, offline=False, platform=None):
     """Find best "conda search" result for specified target.
 
     Return ``None`` if no results match.
     """
-    search_cmd = [conda_context.conda_exec, "search", "--full-name", "--json"]
+    search_cmd = []
+    conda_exec = conda_context.conda_exec
+    if isinstance(conda_exec, list):
+        # for CondaInDockerContext
+        search_cmd.extend(conda_exec)
+    else:
+        search_cmd.append(conda_exec)
+    search_cmd.extend(["search", "--full-name", "--json"])
     if offline:
         search_cmd.append("--offline")
+    if platform:
+        search_cmd.extend(['--platform', platform])
     if channels_override:
         search_cmd.append("--override-channels")
         for channel in channels_override:
@@ -518,6 +527,7 @@ def best_search_result(conda_target, conda_context, channels_override=None, offl
         res = commands.execute(search_cmd)
         res = unicodify(res)
         hits = json.loads(res).get(conda_target.package, [])
+        hits = sorted(hits, key=lambda hit: hit['build_number'], reverse=True)
         hits = sorted(hits, key=lambda hit: packaging.version.parse(hit['version']), reverse=True)
     except CommandLineException:
         log.error("Could not execute: '%s'", search_cmd)
