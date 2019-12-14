@@ -31,6 +31,7 @@ from .util import (
     build_target,
     conda_build_target_str,
     create_repository,
+    get_file_from_recipe_url,
     PrintProgress,
     quay_repository,
     v1_image_name,
@@ -252,6 +253,21 @@ def mull_targets(
 def context_from_args(args):
     verbose = "2" if not args.verbose else "3"
     return InvolucroContext(involucro_bin=args.involucro_path, verbose=verbose)
+
+
+class CondaInDockerContext(object):
+
+    @property
+    def conda_exec(self):
+        conda_image = CONDA_IMAGE or 'continuumio/miniconda3:latest'
+        return docker_command_list('run', [conda_image, 'conda'])
+
+    @property
+    def _override_channels_args(self):
+        override_channels_args = ['--override-channels']
+        for channel in DEFAULT_CHANNELS:
+            override_channels_args.extend(["--channel", channel])
+        return override_channels_args
 
 
 class InvolucroContext(installable.InstallableContext):
