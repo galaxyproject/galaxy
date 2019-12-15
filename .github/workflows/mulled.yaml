@@ -1,0 +1,27 @@
+name: Mulled Unit Tests
+on: [push, pull_request]
+jobs:
+
+  test:
+    name: Test
+    runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        python-version: [2.7, 3.7]
+    steps:
+    - name: Cache tox dir
+      uses: actions/cache@v1
+      id: cache-tox-mulled
+      with:
+        path: .tox/mulled
+        key: tox-mulled-${{ matrix.python-version }}
+    - uses: actions/checkout@v1
+      with:
+        fetch-depth: 1
+    - uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install tox
+      run: pip install tox
+    - name: run tests
+      run: tox -e mulled
