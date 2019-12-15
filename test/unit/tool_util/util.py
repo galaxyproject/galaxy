@@ -1,5 +1,16 @@
+import unittest
 from contextlib import contextmanager
 from os import environ
+
+
+def skip_unless_environ(var):
+    if var in environ:
+        return lambda func: func
+    template = "Environment variable %s not found, dependent test skipped."
+    return unittest.skip(template % var)
+
+
+external_dependency_management = skip_unless_environ("GALAXY_TEST_INCLUDE_SLOW")
 
 
 @contextmanager
