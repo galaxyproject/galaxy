@@ -96,6 +96,7 @@ uwsgi:
   # Ensure application threads will run if `threads` is unset.
   enable-threads: true
 
+  # uWSGI default umask
   # On some systems uWSGI has a default umask of 000, for Galaxy a 
   # somewhat safer default is chosen. If Galaxy submits jobs as real
   # user then all users needs to be able to read the files, i.e.

@@ -163,6 +163,11 @@ UWSGI_OPTIONS = OrderedDict([
         'default': True,
         'type': 'bool',
     }),
+    ('umask', {
+        'desc': """uWSGI default umask.""",
+        'default': '027',
+        'type': 'str',
+    }),
     # ('route-uri', {
     #     'default': '^/proxy/ goto:proxy'
     # }),
