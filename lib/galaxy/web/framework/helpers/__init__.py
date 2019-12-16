@@ -73,7 +73,7 @@ def css(*args):
 
 def dist_css(*args):
     """
-    Transition function 'js' helper -- this is the modern way where all bundled
+    Transition function 'css' helper -- this is the modern way where all bundled
     artifacts are in the unified 'dist'.
     """
     urls = (url_for("/static/dist/%s.css?v=%s" % (name, server_starttime)) for name in args)
