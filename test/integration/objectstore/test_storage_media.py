@@ -7,10 +7,10 @@ import os
 import random
 import string
 
-from base import integration_util  # noqa: I202
-from base.populators import (
+from galaxy_test.base.populators import (
     DatasetPopulator,
 )
+from galaxy_test.driver import integration_util
 from test_jobs import _get_datasets_files_in_path
 
 TEST_INPUT_FILES_CONTENT = "abc def 123 456"
@@ -93,7 +93,7 @@ class BaseUserBasedObjectStoreTestCase(integration_util.IntegrationTestCase):
     def get_files_count(directory):
         return sum(len(files) for _, _, files in os.walk(directory))
 
-    def plug_storage_media(self, category, path, order, quota="0.0", usage="0.0", authz_id=None):
+    def plug_storage_media(self, category, path, order, quota="0.0", usage="0.0"):
         payload = {
             "category": category,
             "path": path,
@@ -101,8 +101,6 @@ class BaseUserBasedObjectStoreTestCase(integration_util.IntegrationTestCase):
             "quota": quota,
             "usage": usage
         }
-        if authz_id is not None:
-            payload["authz_id"] = authz_id
         response = self._post(path="storage_media", data=payload)
         return json.loads(response.content)
 
@@ -113,7 +111,7 @@ class BaseUserBasedObjectStoreTestCase(integration_util.IntegrationTestCase):
         response = self._delete(path="storage_media/{}".format(id), data=payload)
         return json.loads(response.content)
 
-    def update_storage_media(self, media, path=None, order=None, quota=None, authz_id=None):
+    def update_storage_media(self, media, path=None, order=None, quota=None):
         payload = {}
         if path is not None:
             payload["path"] = path
@@ -121,8 +119,6 @@ class BaseUserBasedObjectStoreTestCase(integration_util.IntegrationTestCase):
             payload["order"] = order
         if quota is not None:
             payload["quota"] = quota
-        if authz_id is not None:
-            payload["authz_id"] = authz_id
         response = self._put(path="storage_media/{}".format(media.get("id")), data=payload)
         return json.loads(response.content)
 

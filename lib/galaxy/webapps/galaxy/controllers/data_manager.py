@@ -113,7 +113,6 @@ class DataManager(BaseUIController):
                                                     action='show_params',
                                                     dataset_id=trans.security.encode_id(hda.id))})
             try:
-                model.StorageMedia.refresh_all_media_credentials(hda.dataset.active_storage_media_associations, self.app.authnz_manager, self.sa_session)
                 data_manager_json = loads(open(hda.get_file_name()).read())
             except Exception as e:
                 data_manager_json = {}

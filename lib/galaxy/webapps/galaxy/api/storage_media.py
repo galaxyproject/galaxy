@@ -91,7 +91,6 @@ class StorageMediaController(BaseAPIController):
             order are tried prior and posterior to the default storage respectively. For instance, considering 3
             storage media, PM_1, PM_2, and PM_3 with the orders 2, 1, and -1 respectively; Galaxy tries the these
             storage media in the following order: PM_1, PM_2, Default, PM_3.
-            - credentials (Optional): It is a JSON object containing required credentials to access the storage media
              (e.g., access and secret key for an AWS S3 bucket).
             - quota (Optional): Disk quota, a limit that sets maximum data storage limit on this storage media.
             - usage (Optional): Sets the size of data persisted by Galaxy in this storage media.
@@ -133,17 +132,7 @@ class StorageMediaController(BaseAPIController):
         except ValueError:
             return "Expect a float number for the `usage` attribute, but received `{}`.".format(payload.get("usage"))
 
-        authz_id = None
-        if category in [trans.app.model.StorageMedia.categories.AWS]:
-            encoded_authz_id = payload.get("authz_id", None)
-            if encoded_authz_id is None:
-                missing_arguments.append("authz_id")
-            else:
-                try:
-                    authz_id = self.decode_id(encoded_authz_id)
-                except exceptions.MalformedId as e:
-                    return "Invalid `authz_id`. {}".format(e)
-        elif category != trans.app.model.StorageMedia.categories.LOCAL:
+        if category != trans.app.model.StorageMedia.categories.LOCAL:
             raise exceptions.RequestParameterInvalidException(
                 "Invalid category; received `{}`, expected either of the following categories {}.".format(
                     category,
@@ -155,7 +144,6 @@ class StorageMediaController(BaseAPIController):
                 order=order,
                 category=category,
                 path=path,
-                authz_id=authz_id,
                 quota=quota,
                 usage=usage,
                 purgeable=purgeable,
@@ -248,7 +236,7 @@ class StorageMediaController(BaseAPIController):
         except exceptions.MalformedId as e:
             raise e
         except Exception as e:
-            log.exception(msg_template.format("exception while updating the cloudauthz record with "
+            log.exception(msg_template.format("exception while updating the StorageMedia record with "
                                               "ID: `{}`.".format(decoded_id)))
             raise exceptions.InternalServerError('An unexpected error has occurred while responding '
                                                  'to the PUT request of the StorageMedia API.' + unicodify(e))

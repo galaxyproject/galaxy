@@ -115,8 +115,7 @@ class StorageMediaSerializer(base.ModelSerializer, deletable.PurgableSerializerM
             "order",
             "quota",
             "category",
-            "path",
-            "authz_id"
+            "path"
         ])
         self.add_view("detailed", [
             "id",
@@ -131,8 +130,7 @@ class StorageMediaSerializer(base.ModelSerializer, deletable.PurgableSerializerM
             "path",
             "deleted",
             "purged",
-            "purgeable",
-            "authz_id"
+            "purgeable"
         ])
 
     def add_serializers(self):
@@ -154,8 +152,7 @@ class StorageMediaSerializer(base.ModelSerializer, deletable.PurgableSerializerM
             "path"       : lambda i, k, **c: i.path,
             "deleted"    : lambda i, k, **c: i.deleted,
             "purged"     : lambda i, k, **c: i.purged,
-            "purgeable"  : lambda i, k, **c: i.purgeable,
-            "authz_id"   : lambda i, k, **c: self.app.security.encode_id(i.authz_id) if i.authz_id is not None else i.authz_id
+            "purgeable"  : lambda i, k, **c: i.purgeable
         })
 
 
@@ -168,25 +165,5 @@ class StorageMediaDeserializer(sharable.SharableModelDeserializer, deletable.Pur
         self.deserializers.update({
             "path": self.default_deserializer,
             "order": self.default_deserializer,
-            "quota": self.default_deserializer,
-            "authz_id": self.deserialize_and_validate_authz_id
+            "quota": self.default_deserializer
         })
-
-    def deserialize_and_validate_authz_id(self, item, key, val, **context):
-        try:
-            decoded_authz_id = self.app.security.decode_id(val)
-        except Exception:
-            log.debug("cannot decode authz_id `" + str(val) + "`")
-            raise exceptions.MalformedId("Invalid `authz_id` {}!".format(val))
-
-        trans = context.get("trans")
-        if trans is None:
-            log.debug("Not found expected `trans` when deserializing StorageMedia.")
-            raise exceptions.InternalServerError
-
-        try:
-            trans.app.authnz_manager.can_user_assume_authz(trans, decoded_authz_id)
-        except Exception as e:
-            raise e
-        item.authz_id = decoded_authz_id
-        return decoded_authz_id

@@ -86,15 +86,12 @@ model.StorageMedia.table = Table(
     Column("quota", Numeric(15, 0)),
     Column("category", TEXT, nullable=False),
     Column("path", TEXT, nullable=False),
-    Column("authz_id", Integer, ForeignKey("cloudauthz.id")),
     Column("deleted", Boolean, index=True, default=False),
     Column("purged", Boolean, index=True, default=False),
     Column("purgeable", Boolean, default=True),
     Column("jobs_directory", TEXT),
     Column("cache_path", TEXT),
-    Column("cache_size", Integer),
-    Column("credentials", JSONType),
-    Column("credentials_update_time", DateTime))
+    Column("cache_size", Integer))
 
 model.StorageMediaDatasetAssociation.table = Table(
     "storage_media_dataset_association", metadata,
@@ -1992,10 +1989,7 @@ mapper(model.StorageMedia, model.StorageMedia.table, properties=dict(
         model.StorageMediaDatasetAssociation,
         primaryjoin=((model.StorageMediaDatasetAssociation.table.c.storage_media_id == model.StorageMedia.table.c.id) &
                      (model.StorageMediaDatasetAssociation.table.c.deleted == false()) &
-                     (model.StorageMediaDatasetAssociation.table.c.purged == false()))),
-    authz=relation(
-        model.CloudAuthz,
-        primaryjoin=(model.StorageMedia.table.c.authz_id == model.CloudAuthz.table.c.id))
+                     (model.StorageMediaDatasetAssociation.table.c.purged == false())))
 ))
 
 mapper(model.PasswordResetToken, model.PasswordResetToken.table,

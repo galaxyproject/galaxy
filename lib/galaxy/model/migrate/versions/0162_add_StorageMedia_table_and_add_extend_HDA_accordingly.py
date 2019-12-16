@@ -29,15 +29,12 @@ StorageMediaTable = Table(
     Column("quota", Numeric(15, 0)),
     Column("category", TEXT, default="local"),
     Column("path", TEXT),
-    Column("authz_id", Integer, ForeignKey("cloudauthz.id")),
     Column("deleted", Boolean, index=True, default=False),
     Column("purged", Boolean, index=True, default=False),
     Column("purgeable", Boolean, default=True),
     Column("jobs_directory", TEXT),
     Column("cache_path", TEXT),
-    Column("cache_size", Integer),
-    Column("credentials", JSONType),
-    Column("credentials_update_time", DateTime))
+    Column("cache_size", Integer))
 
 StorageMediaDatasetAssociation = Table(
     "storage_media_dataset_association", metadata,

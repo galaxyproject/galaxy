@@ -603,19 +603,17 @@ class User(Dictifiable, RepresentById):
 
 
 class StorageMedia(object):
-    categories = Bunch(LOCAL="local",
-                       AWS="aws")
+    categories = Bunch(LOCAL="local")
 
-    def __init__(self, user_id, category, path, authz_id, order, quota=0,
+    def __init__(self, user_id, category, path, order, quota=0,
                  usage=0, purgeable=True, jobs_directory=None, cache_path=None,
-                 cache_size=100, credentials=None, credentials_update_time=None):
+                 cache_size=100):
         """
         Initializes a storage media.
         :param user_id: the Galaxy user id for whom this storage media is defined.
         :param category: is the type of this storage media, its value is a key from `categories` bunch.
         :param path: a path in the storage media to be used. For instance, a path on a local disk, or bucket name
         on AWS, or container name on Azure.
-        :param authz_id: the id of AuthZ record to be used to obtain authorization to the media.
         :param order: A key which defines the hierarchical relation between this and other storage media defined
         by the user. This key is used in Object Store to determine where to write to or read from a dataset. The
         value of this parameter can be any integer (+/-) excluding 0, as 0 is the default storage configuration
@@ -632,15 +630,12 @@ class StorageMedia(object):
         self.category = category
         self.quota = quota
         self.path = path
-        self.authz_id = authz_id
         self.deleted = False
         self.purged = False
         self.purgeable = purgeable
         self.jobs_directory = jobs_directory
         self.cache_path = cache_path
         self.cache_size = cache_size
-        self.credentials = credentials
-        self.credentials_update_time = credentials_update_time
 
     def associate_with_dataset(self, dataset):
         qres = object_session(self).query(StorageMediaDatasetAssociation).join(Dataset)\
@@ -679,38 +674,6 @@ class StorageMedia(object):
             gid=os.getgid(),
         )
         return config
-
-    def refresh_credentials(self, authnz_manager=None, sa_session=None, flush=True):
-        if self.category == self.categories.LOCAL:
-            self.credentials = None
-            return
-
-        if authnz_manager is None:
-            raise Exception("`authnz_manager` is required to obtain credentials to sign requests to the StorageMedia.")
-
-        if sa_session is None:
-            sa_session = object_session(self)
-
-        # A possible improvement:
-        # The tokens returned by the following method are usually valid for
-        # a short period of time (e.g., 3600 seconds); hence, it might be
-        # good idea to re-use them within their lifetime.
-        if self.category == self.categories.AWS:
-            self.credentials = authnz_manager.get_cloud_access_credentials(self.authz, sa_session, self.user_id)
-            self.credentials_update_time = datetime.now()
-            if flush:
-                sa_session.flush()
-
-    def get_credentials(self):
-        try:
-            return self.credentials
-        except NameError:
-            return None
-
-    @staticmethod
-    def refresh_all_media_credentials(active_associations, authnz_manager, sa_session=None):
-        for association in active_associations:
-            association.storage_media.refresh_credentials(authnz_manager, sa_session)
 
     @staticmethod
     def choose_media_for_association(media, dataset_size=0, enough_quota_on_instance_level_media=True, history_shared=False):

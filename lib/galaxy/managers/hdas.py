@@ -138,7 +138,6 @@ class HDAManager(datasets.DatasetAssociationManager,
         Purge this HDA and the dataset underlying it.
         """
         user = hda.history.user or None
-        model.StorageMedia.refresh_all_media_credentials(hda.dataset.active_storage_media_associations, self.app.authnz_manager)
         quota_amount_reduction = 0
         if user:
             quota_amount_reduction = hda.quota_amount(user)

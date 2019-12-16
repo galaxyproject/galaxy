@@ -1073,7 +1073,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 trans.sa_session.flush()
                 if hda.dataset.user_can_purge:
                     try:
-                        model.StorageMedia.refresh_all_media_credentials(hda.dataset.active_storage_media_associations, self.app.authnz_manager, self.sa_session)
                         hda.dataset.full_delete()
                         trans.log_event("Dataset id %s has been purged upon the the purge of HDA id %s" % (hda.dataset.id, hda.id))
                         trans.sa_session.add(hda.dataset)

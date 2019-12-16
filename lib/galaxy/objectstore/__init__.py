@@ -927,24 +927,6 @@ class UserObjectStore(ObjectStore):
             if m.category == categories.LOCAL:
                 config = m.get_config(cache_path=m.cache_path, jobs_directory=m.jobs_directory)
                 self.backends[m.id] = DiskObjectStore(config=config, config_dict={"files_dir": m.path})
-            elif m.category == categories.AWS:
-                from .cloud import Cloud
-                config = {
-                    "provider": m.category,
-                    "auth": m.get_credentials(),
-                    "bucket": {
-                        "name": m.path
-                    },
-                    "cache": {
-                        "path": m.cache_path,
-                        "size": m.cache_size
-                    }
-                }
-
-                self.backends[m.id] = Cloud(
-                    config=m.get_config(cache_path=m.cache_path, jobs_directory=m.jobs_directory),
-                    config_dict=config
-                )
             else:
                 raise Exception("Received a storage media with an un-recognized category type `{}`. "
                                 "Expected of the following categories: {}"
