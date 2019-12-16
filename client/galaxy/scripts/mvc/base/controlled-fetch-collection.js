@@ -32,7 +32,6 @@ var ControlledFetchCollection = Backbone.Collection.extend({
 
     /** build ajax data/parameters from options */
     _buildFetchOptions: function(options) {
-
         // note: we normally want options passed in to override the defaults built here
         // so most of these fns will generate defaults
         options = _.clone(options) || {};
