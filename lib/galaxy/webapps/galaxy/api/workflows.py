@@ -9,6 +9,7 @@ import logging
 import os
 
 import requests
+from gxformat2._yaml import ordered_dump
 from markupsafe import escape
 from sqlalchemy import desc, false, or_, true
 from sqlalchemy.orm import joinedload
@@ -22,13 +23,17 @@ from galaxy.managers import (
     histories,
     workflows
 )
+from galaxy.managers.jobs import fetch_job_states, invocation_job_source_iter
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
 from galaxy.tools.parameters import populate_state
 from galaxy.tools.parameters.basic import workflow_building_modes
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import (
     expose_api,
     expose_api_anonymous_and_sessionless,
+    expose_api_raw,
+    format_return_as_json,
 )
 from galaxy.webapps.base.controller import (
     BaseAPIController,
@@ -41,7 +46,6 @@ from galaxy.workflow.modules import module_factory
 from galaxy.workflow.reports import generate_report_json
 from galaxy.workflow.run import invoke, queue_invoke
 from galaxy.workflow.run_request import build_workflow_run_configs
-from tool_shed.galaxy_install.install_manager import InstallRepositoryManager
 
 log = logging.getLogger(__name__)
 
@@ -139,13 +143,14 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         if show_published:
             filter1 = or_(filter1, (trans.app.model.StoredWorkflow.published == true()))
         for wf in trans.sa_session.query(trans.app.model.StoredWorkflow).options(
+                joinedload("annotations")).options(
                 joinedload("latest_workflow").undefer("step_count").lazyload("steps")).options(
                 joinedload("tags")).filter(
                     filter1, trans.app.model.StoredWorkflow.table.c.deleted == false()).order_by(
                     desc(trans.app.model.StoredWorkflow.table.c.update_time)).all():
-
             item = wf.to_dict(value_mapper={'id': trans.security.encode_id})
             encoded_id = trans.security.encode_id(wf.id)
+            item['annotations'] = [x.annotation for x in wf.annotations]
             item['url'] = url_for('workflow', id=encoded_id)
             item['owner'] = wf.user.username
             item['number_of_steps'] = wf.latest_workflow.step_count
@@ -155,6 +160,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             rval.append(item)
         for wf_sa in trans.sa_session.query(model.StoredWorkflowUserShareAssociation).join(
                 model.StoredWorkflowUserShareAssociation.stored_workflow).options(
+                joinedload("stored_workflow").joinedload("annotations")).options(
                 joinedload("stored_workflow").joinedload("latest_workflow").undefer("step_count").lazyload("steps")).options(
                 joinedload("stored_workflow").joinedload("user")).options(
                 joinedload("stored_workflow").joinedload("tags")).filter(model.StoredWorkflowUserShareAssociation.user == trans.user).filter(
@@ -162,6 +168,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 desc(model.StoredWorkflow.update_time)).all():
             item = wf_sa.stored_workflow.to_dict(value_mapper={'id': trans.security.encode_id})
             encoded_id = trans.security.encode_id(wf_sa.stored_workflow.id)
+            item['annotations'] = [x.annotation for x in wf_sa.stored_workflow.annotations]
             item['url'] = url_for('workflow', id=encoded_id)
             item['slug'] = wf_sa.stored_workflow.slug
             item['owner'] = wf_sa.stored_workflow.user.username
@@ -207,9 +214,13 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         """
         GET /api/workflows/{encoded_workflow_id}
 
-        Displays information needed to run a workflow from the command line.
+        :param  instance:                 true if fetch by Workflow ID instead of StoredWorkflow id, false
+                                          by default.
+        :type   instance:                 boolean
+
+        Displays information needed to run a workflow.
         """
-        stored_workflow = self.__get_stored_workflow(trans, id)
+        stored_workflow = self.__get_stored_workflow(trans, id, **kwd)
         if stored_workflow.importable is False and stored_workflow.user != trans.user and not trans.user_is_admin:
             if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:
                 message = "Workflow is neither importable, nor owned by or shared with current user"
@@ -226,9 +237,13 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         """
         GET /api/workflows/{encoded_workflow_id}/versions
 
+        :param  instance:                 true if fetch by Workflow ID instead of StoredWorkflow id, false
+                                          by default.
+        :type   instance:                 boolean
+
         Lists all versions of this workflow.
         """
-        stored_workflow = self.workflow_manager.get_stored_accessible_workflow(trans, workflow_id)
+        stored_workflow = self.workflow_manager.get_stored_accessible_workflow(trans, workflow_id, **kwds)
         return [{'version': i, 'update_time': str(w.update_time), 'steps': len(w.steps)} for i, w in enumerate(reversed(stored_workflow.workflows))]
 
     @expose_api
@@ -369,7 +384,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         if 'from_path' in payload:
             from_path = payload.get('from_path')
-            payload["workflow"] = {"src": "from_path", "path": from_path}
+            object_id = payload.get("object_id")
+            workflow_src = {"src": "from_path", "path": from_path}
+            if object_id is not None:
+                workflow_src["object_id"] = object_id
+            payload["workflow"] = workflow_src
             return self.__api_import_new_workflow(trans, payload, **kwd)
 
         if 'shared_workflow_id' in payload:
@@ -422,7 +441,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         invocation_response.update(rval)
         return invocation_response
 
-    @expose_api
+    @expose_api_raw
     def workflow_dict(self, trans, workflow_id, **kwd):
         """
         GET /api/workflows/{encoded_workflow_id}/download
@@ -437,8 +456,12 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                         admin with the `default_workflow_export_format` config
                         option. Style can be specified as either 'ga' or 'format2' directly
                         to be explicit about which format to download.
+
+        :param  instance:                 true if fetch by Workflow ID instead of StoredWorkflow id, false
+                                          by default.
+        :type   instance:                 boolean
         """
-        stored_workflow = self.__get_stored_accessible_workflow(trans, workflow_id)
+        stored_workflow = self.__get_stored_accessible_workflow(trans, workflow_id, **kwd)
 
         style = kwd.get("style", "export")
         download_format = kwd.get('format')
@@ -453,7 +476,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 extension = "gxwf.json"
             trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy-Workflow-%s.%s"' % (sname, extension)
             trans.response.set_content_type('application/galaxy-archive')
-        return ret_dict
+
+        if style == "format2" and download_format != 'json-download':
+            return ordered_dump(ret_dict)
+        else:
+            return format_return_as_json(ret_dict, pretty=True)
 
     @expose_api
     def delete(self, trans, id, **kwd):
@@ -506,6 +533,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         :type   id:      str
         :param  id:      the encoded id of the workflow to update
+        :param  instance:                 true if fetch by Workflow ID instead of StoredWorkflow id, false
+                                          by default.
+        :type   instance:                 boolean
         :type   payload: dict
         :param  payload: a dictionary containing any or all the
             * workflow   the json description of the workflow as would be
@@ -525,7 +555,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         :rtype:     dict
         :returns:   serialized version of the workflow
         """
-        stored_workflow = self.__get_stored_workflow(trans, id)
+        stored_workflow = self.__get_stored_workflow(trans, id, **kwds)
         workflow_dict = payload.get('workflow') or payload
         if workflow_dict:
             raw_workflow_description = self.__normalize_workflow(trans, workflow_dict)
@@ -650,6 +680,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         # api encoded, id
         encoded_id = trans.security.encode_id(workflow_id)
         item = workflow.to_dict(value_mapper={'id': trans.security.encode_id})
+        item['annotations'] = [x.annotation for x in workflow.annotations]
         item['url'] = url_for('workflow', id=encoded_id)
         item['owner'] = workflow.user.username
         item['number_of_steps'] = len(workflow.latest_workflow.steps)
@@ -785,6 +816,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         :param  history_id:       an encoded history id to restrict query to
         :type   history_id:       str
 
+        :param  user_id:          an encoded user id to restrict query to, must be own id if not admin user
+        :type   user_id:          str
+
         :param  view:             level of detail to return per invocation 'element' or 'collection'.
         :type   view:             str
 
@@ -805,26 +839,37 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         else:
             history_id = None
 
+        encoded_user_id = kwd.get("user_id", None)
+        if encoded_user_id:
+            target_user_id = self.decode_id(encoded_user_id)
+        else:
+            target_user_id = None
+
         if not trans.user_is_admin:
             # We restrict the query to the current users' invocations
             user_id = trans.user.id
+            if target_user_id and user_id != target_user_id:
+                raise exceptions.AdminRequiredException("Only admins can index the invocations of others")
         else:
             # Get all invocation if user is admin
-            user_id = None
+            user_id = target_user_id
 
+        include_terminal = util.string_as_bool(kwd.get("include_terminal", True))
+        limit = kwd.get("limit", None)
+        if limit is not None:
+            limit = int(limit)
         invocations = self.workflow_manager.build_invocations_query(
-            trans, stored_workflow_id=stored_workflow_id, history_id=history_id, user_id=user_id
+            trans, stored_workflow_id=stored_workflow_id, history_id=history_id, user_id=user_id, include_terminal=include_terminal, limit=limit
         )
         return self.workflow_manager.serialize_workflow_invocations(invocations, **kwd)
 
     @expose_api
-    def show_invocation(self, trans, workflow_id, invocation_id, **kwd):
+    def show_invocation(self, trans, invocation_id, **kwd):
         """
         GET /api/workflows/{workflow_id}/invocations/{invocation_id}
-        Get detailed description of workflow invocation
+        GET /api/invocations/{invocation_id}
 
-        :param  workflow_id:        the workflow id (required)
-        :type   workflow_id:        str
+        Get detailed description of workflow invocation
 
         :param  invocation_id:      the invocation id (required)
         :type   invocation_id:      str
@@ -856,13 +901,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         return None
 
     @expose_api
-    def cancel_invocation(self, trans, workflow_id, invocation_id, **kwd):
+    def cancel_invocation(self, trans, invocation_id, **kwd):
         """
         DELETE /api/workflows/{workflow_id}/invocations/{invocation_id}
+        DELETE /api/invocations/{invocation_id}
         Cancel the specified workflow invocation.
-
-        :param  workflow_id:      the workflow id (required)
-        :type   workflow_id:      str
 
         :param  invocation_id:      the usage id (required)
         :type   invocation_id:      str
@@ -874,9 +917,10 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         return self.__encode_invocation(workflow_invocation, **kwd)
 
     @expose_api
-    def show_invocation_report(self, trans, workflow_id, invocation_id, **kwd):
+    def show_invocation_report(self, trans, invocation_id, **kwd):
         """
         GET /api/workflows/{workflow_id}/invocations/{invocation_id}/report
+        GET /api/invocations/{invocation_id}/report
 
         Get JSON summarizing invocation for reporting.
         """
@@ -884,17 +928,18 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         workflow_invocation = self.workflow_manager.get_invocation(trans, decoded_workflow_invocation_id)
         generator_plugin_type = kwd.get("generator_plugin_type")
         runtime_report_config_json = kwd.get("runtime_report_config_json")
+        invocation_markdown = kwd.get("invocation_markdown", None)
+        if invocation_markdown:
+            runtime_report_config_json = {"markdown": invocation_markdown}
         return generate_report_json(
             trans, workflow_invocation, runtime_report_config_json=runtime_report_config_json, plugin_type=generator_plugin_type
         )
 
     @expose_api
-    def invocation_step(self, trans, workflow_id, invocation_id, step_id, **kwd):
+    def invocation_step(self, trans, invocation_id, step_id, **kwd):
         """
         GET /api/workflows/{workflow_id}/invocations/{invocation_id}/steps/{step_id}
-
-        :param  workflow_id:        the workflow id (required)
-        :type   workflow_id:        str
+        GET /api/invocations/{invocation_id}/steps/{step_id}
 
         :param  invocation_id:      the invocation id (required)
         :type   invocation_id:      str
@@ -914,17 +959,63 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         )
         return self.__encode_invocation_step(trans, invocation_step)
 
+    @expose_api_anonymous_and_sessionless
+    def invocation_step_jobs_summary(self, trans, invocation_id, **kwd):
+        """
+        * GET /api/workflows/{workflow_id}/invocations/{invocation_id}/step_jobs_summary
+          GET /api/invocations/{invocation_id}/step_jobs_summary
+            return job state summary info aggregated across per step of the workflow invocation
+
+        Warning: We allow anyone to fetch job state information about any object they
+        can guess an encoded ID for - it isn't considered protected data. This keeps
+        polling IDs as part of state calculation for large histories and collections as
+        efficient as possible.
+
+        :param  invocation_id:    the invocation id (required)
+        :type   invocation_id:    str
+
+        :rtype:     dict[]
+        :returns:   an array of job summary object dictionaries for each step
+        """
+        decoded_invocation_id = self.decode_id(invocation_id)
+        ids = []
+        types = []
+        for (job_source_type, job_source_id, _) in invocation_job_source_iter(trans.sa_session, decoded_invocation_id):
+            ids.append(job_source_id)
+            types.append(job_source_type)
+        return [self.encode_all_ids(trans, s) for s in fetch_job_states(trans.sa_session, ids, types)]
+
+    @expose_api_anonymous_and_sessionless
+    def invocation_jobs_summary(self, trans, invocation_id, **kwd):
+        """
+        * GET /api/workflows/{workflow_id}/invocations/{invocation_id}/jobs_summary
+          GET /api/invocations/{invocation_id}/jobs_summary
+            return job state summary info aggregated across all current jobs of workflow invocation
+
+        Warning: We allow anyone to fetch job state information about any object they
+        can guess an encoded ID for - it isn't considered protected data. This keeps
+        polling IDs as part of state calculation for large histories and collections as
+        efficient as possible.
+
+        :param  invocation_id:    the invocation id (required)
+        :type   invocation_id:    str
+
+        :rtype:     dict
+        :returns:   a job summary object merged for all steps in workflow invocation
+        """
+        ids = [self.decode_id(invocation_id)]
+        types = ["WorkflowInvocation"]
+        return [self.encode_all_ids(trans, s) for s in fetch_job_states(trans.sa_session, ids, types)][0]
+
     @expose_api
-    def update_invocation_step(self, trans, workflow_id, invocation_id, step_id, payload, **kwd):
+    def update_invocation_step(self, trans, invocation_id, step_id, payload, **kwd):
         """
         PUT /api/workflows/{workflow_id}/invocations/{invocation_id}/steps/{step_id}
+        PUT /api/invocations/{invocation_id}/steps/{step_id}
+
         Update state of running workflow step invocation - still very nebulous
         but this would be for stuff like confirming paused steps can proceed
         etc....
-
-
-        :param  workflow_id:      the workflow id (required)
-        :type   workflow_id:      str
 
         :param  invocation_id:      the usage id (required)
         :type   invocation_id:      str
@@ -951,11 +1042,13 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             True
         )
 
-    def __get_stored_accessible_workflow(self, trans, workflow_id):
-        return self.workflow_manager.get_stored_accessible_workflow(trans, workflow_id)
+    def __get_stored_accessible_workflow(self, trans, workflow_id, **kwd):
+        instance = util.string_as_bool(kwd.get("instance", "false"))
+        return self.workflow_manager.get_stored_accessible_workflow(trans, workflow_id, by_stored_id=not instance)
 
-    def __get_stored_workflow(self, trans, workflow_id):
-        return self.workflow_manager.get_stored_workflow(trans, workflow_id)
+    def __get_stored_workflow(self, trans, workflow_id, **kwd):
+        instance = util.string_as_bool(kwd.get("instance", "false"))
+        return self.workflow_manager.get_stored_workflow(trans, workflow_id, by_stored_id=not instance)
 
     def __encode_invocation(self, invocation, **kwd):
         return self.workflow_manager.serialize_workflow_invocation(invocation, **kwd)

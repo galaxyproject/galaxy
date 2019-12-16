@@ -40,17 +40,19 @@ INVOCATION_SECTIONS = [
 ALL_CONTAINER_TYPES = GALAXY_FLAVORED_MARKDOWN_CONTAINERS + INVOCATION_SECTIONS
 GALAXY_FLAVORED_MARKDOWN_CONTAINER_REGEX = "(%s)" % "|".join(ALL_CONTAINER_TYPES)
 
-FUNCTION_ARG = r'\s*\w+\s*=\s*\w+\s*'
+ARG_VAL_REGEX = r'''[\w_\-]+|\"[^\"]+\"|\'[^\']+\''''
+ARG_VAL_CAPTURED_REGEX = r'''(?:([\w_\-]+)|\"([^\"]+)\"|\'([^\']+)\')'''
+FUNCTION_ARG = r'\s*\w+\s*=\s*(?:%s)\s*' % ARG_VAL_REGEX
 FUNCTION_CALL_LINE_TEMPLATE = r'\s*%s\s*\((?:' + FUNCTION_ARG + r')?\)\s*'
 GALAXY_MARKDOWN_FUNCTION_CALL_LINE = re.compile(FUNCTION_CALL_LINE_TEMPLATE % GALAXY_FLAVORED_MARKDOWN_CONTAINER_REGEX)
 
 BLOCK_FENCE_START = re.compile(r'```.*')
 BLOCK_FENCE_END = re.compile(r'```[\s]*')
 
-OUTPUT_LABEL_PATTERN = re.compile(r'output=([\w_\-]+)')
-INPUT_LABEL_PATTERN = re.compile(r'input=([\w_\-]+)')
+OUTPUT_LABEL_PATTERN = re.compile(r'output=\s*%s\s*' % ARG_VAL_CAPTURED_REGEX)
+INPUT_LABEL_PATTERN = re.compile(r'input=\s*%s\s*' % ARG_VAL_CAPTURED_REGEX)
+STEP_LABEL_PATTERN = re.compile(r'step=\s*%s\s*' % ARG_VAL_CAPTURED_REGEX)
 # STEP_OUTPUT_LABEL_PATTERN = re.compile(r'step_output=([\w_\-]+)/([\w_\-]+)')
-STEP_LABEL_PATTERN = re.compile(r'step=([\w_\-]+)')
 ID_PATTERN = re.compile(r'(workflow_id|history_dataset_id|history_dataset_collection_id|job_id)=([\d]+)')
 GALAXY_FLAVORED_MARKDOWN_CONTAINER_LINE_PATTERN = re.compile(
     r"```\s*galaxy\s*"
@@ -166,13 +168,13 @@ def resolve_invocation_markdown(trans, invocation, workflow_markdown):
                 if output_assoc.history_content_type == "dataset":
                     section_markdown += """#### Output Dataset: %s
 ```galaxy
-history_dataset_display(output=%s)
+history_dataset_display(output="%s")
 ```
 """ % (output_assoc.workflow_output.label, output_assoc.workflow_output.label)
                 else:
                     section_markdown += """#### Output Dataset Collection: %s
 ```galaxy
-history_dataset_collection_display(output=%s)
+history_dataset_collection_display(output="%s")
 ```
 """ % (output_assoc.workflow_output.label)
         elif container == "invocation_inputs":
@@ -183,7 +185,7 @@ history_dataset_collection_display(output=%s)
                 if input_assoc.history_content_type == "dataset":
                     section_markdown += """#### Input Dataset: %s
 ```galaxy
-history_dataset_display(input=%s)
+history_dataset_display(input="%s")
 ```
 """ % (input_assoc.workflow_step.label, input_assoc.workflow_step.label)
                 else:
@@ -205,17 +207,23 @@ history_dataset_collection_display(input=%s)
         output_match = re.search(OUTPUT_LABEL_PATTERN, line)
         input_match = re.search(INPUT_LABEL_PATTERN, line)
         step_match = re.search(STEP_LABEL_PATTERN, line)
+
+        def find_non_empty_group(match):
+            for group in match.groups():
+                if group:
+                    return group
+
         if output_match:
             target_match = output_match
-            name = output_match.group(1)
+            name = find_non_empty_group(target_match)
             ref_object = invocation.get_output_object(name)
         elif input_match:
             target_match = input_match
-            name = input_match.group(1)
+            name = find_non_empty_group(target_match)
             ref_object = invocation.get_input_object(name)
         elif step_match:
             target_match = step_match
-            name = step_match.group(1)
+            name = find_non_empty_group(target_match)
             ref_object_type = "job"
             ref_object = invocation.step_invocation_for_label(name).job
         else:
@@ -294,7 +302,8 @@ def _remap_galaxy_markdown_containers(func, markdown):
         from_markdown = new_markdown[searching_from:]
         match = re.search(GALAXY_FENCED_BLOCK, from_markdown)
         if match is not None:
-            (replacement, whole_block) = func(match.group(1))
+            replace = match.group(1)
+            (replacement, whole_block) = func(replace)
             if whole_block:
                 start_pos = match.start()
                 end_pos = match.end()
@@ -305,7 +314,7 @@ def _remap_galaxy_markdown_containers(func, markdown):
             end_pos = end_pos + searching_from
 
             new_markdown = new_markdown[:start_pos] + replacement + new_markdown[end_pos:]
-            searching_from = end_pos
+            searching_from = start_pos + len(replacement)
         else:
             break
 

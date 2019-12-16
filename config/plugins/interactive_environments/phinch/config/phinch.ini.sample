@@ -24,11 +24,3 @@ image = shiltemann/docker-phinch-galaxy:16.04
 # which ports it needs to connect. With this option you can specify the port number
 # inside your container to which Galaxy should connect the UI.
 #docker_connect_port = None
-
-# To run containers in Docker Swarm mode on (an existing swarm), set the
-# following option to True *and*:
-# - set docker_connect_port above. For shiltemann/docker-phinch-galaxy the port
-#   should most likely be 80.
-# - If command_inject is uncommented and includes `--sig-proxy`, that option should
-#   be removed.
-#swarm_mode = False

@@ -12,6 +12,7 @@ import SelectFtp from "mvc/ui/ui-select-ftp";
 import SelectGenomeSpace from "mvc/ui/ui-select-genomespace";
 import RulesEdit from "mvc/ui/ui-rules-edit";
 import ColorPicker from "mvc/ui/ui-color-picker";
+import DataPicker from "mvc/ui/ui-data-picker";
 
 // create form view
 export default Backbone.Model.extend({
@@ -37,7 +38,8 @@ export default Backbone.Model.extend({
         ftpfile: "_fieldFtp",
         upload: "_fieldUpload",
         rules: "_fieldRulesEdit",
-        genomespacefile: "_fieldGenomeSpace"
+        genomespacefile: "_fieldGenomeSpace",
+        data_dialog: "_fieldDialog"
     },
 
     /** Returns an input field for a given field type */
@@ -89,6 +91,19 @@ export default Backbone.Model.extend({
             radiobutton: Ui.RadioButton
         };
         var SelectClass = classes[input_def.display] || Ui.Select;
+        // use Select2 fields or regular select fields in workflow launch form?
+        // check select_type_workflow_threshold option
+        const Galaxy = getGalaxyInstance();
+        var searchable = true;
+        if (input_def.flavor == "workflow") {
+            if (Galaxy.config.select_type_workflow_threshold == -1) {
+                searchable = false;
+            } else if (Galaxy.config.select_type_workflow_threshold == 0) {
+                searchable = true;
+            } else if (Galaxy.config.select_type_workflow_threshold < input_def.options.length) {
+                searchable = false;
+            }
+        }
         return new Ui.TextSelect({
             id: `field-${input_def.id}`,
             data: input_def.data,
@@ -100,7 +115,7 @@ export default Backbone.Model.extend({
             optional: input_def.optional,
             onchange: input_def.onchange,
             individual: input_def.individual,
-            searchable: input_def.flavor !== "workflow",
+            searchable: searchable,
             textable: input_def.textable,
             SelectClass: SelectClass
         });
@@ -189,6 +204,15 @@ export default Backbone.Model.extend({
     _fieldColor: function(input_def) {
         return new ColorPicker({
             id: `field-${input_def.id}`,
+            onchange: input_def.onchange
+        });
+    },
+
+    /** Data dialog picker field */
+    _fieldDialog: function(input_def) {
+        return new DataPicker({
+            id: `field-${input_def.id}`,
+            multiple: input_def.multiple,
             onchange: input_def.onchange
         });
     },

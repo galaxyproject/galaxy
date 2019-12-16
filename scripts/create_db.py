@@ -24,7 +24,7 @@ sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pa
 from galaxy.model.migrate.check import create_or_verify_database as create_db
 from galaxy.model.orm.scripts import get_config
 from galaxy.model.tool_shed_install.migrate.check import create_or_verify_database as create_install_db
-from galaxy.webapps.tool_shed.model.migrate.check import create_or_verify_database as create_tool_shed_db
+from tool_shed.webapp.model.migrate.check import create_or_verify_database as create_tool_shed_db
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)

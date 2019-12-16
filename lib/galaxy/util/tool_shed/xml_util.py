@@ -11,16 +11,25 @@ from galaxy.util import (
 log = logging.getLogger(__name__)
 
 
-class Py27CommentedTreeBuilder(XmlET.TreeBuilder):
+class CommentedTreeBuilder(XmlET.TreeBuilder):
+
+    non_comment_seen = False
 
     def doctype(*args):
         # handle deprecation warning for XMLParsing a file with DOCTYPE
         pass
 
+    def start(self, tag, attrib):
+        if tag is not XmlET.Comment:
+            self.non_comment_seen = True
+        super(CommentedTreeBuilder, self).start(tag, attrib)
+
     def comment(self, data):
-        self.start(XmlET.Comment, {})
-        self.data(data)
-        self.end(XmlET.Comment)
+        if self.non_comment_seen:
+            # Cannot start XML file with comment
+            self.start(XmlET.Comment, {})
+            self.data(data)
+            self.end(XmlET.Comment)
 
 
 def create_and_write_tmp_file(elem):
@@ -76,15 +85,15 @@ def create_element(tag, attributes=None, sub_elements=None):
     return None
 
 
-def parse_xml(file_name):
+def parse_xml(file_name, check_exists=True):
     """Returns a parsed xml tree with comments intact."""
     error_message = ''
-    if not os.path.exists(file_name):
+    if check_exists and not os.path.exists(file_name):
         return None, "File does not exist %s" % str(file_name)
 
     with open(file_name, 'r') as fobj:
         try:
-            tree = XmlET.parse(fobj, parser=XmlET.XMLParser(target=Py27CommentedTreeBuilder()))
+            tree = XmlET.parse(fobj, parser=XmlET.XMLParser(target=CommentedTreeBuilder()))
         except Exception as e:
             error_message = "Exception attempting to parse %s: %s" % (str(file_name), str(e))
             log.exception(error_message)

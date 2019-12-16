@@ -41,10 +41,9 @@ The steps to install Galaxy mostly follow those of the [regular instructions](ht
 
 ### Disable the developer settings
 
-Two options are set in the sample `config/galaxy.yml` which should not be enabled on a production server. You should set both to `false`:
+Debugging options are set in the sample `config/galaxy.yml` which should not be enabled on a production server.  Check the following items:
 
 * `debug: false` - Disable middleware that loads the entire response in memory for displaying debugging information in the page.  If left enabled, the proxy server may timeout waiting for a response or your Galaxy process may run out of memory if it's serving large files.
-* `use_interactive: false` - Disables displaying and live debugging of tracebacks via the web.  Leaving it enabled will expose your configuration (database password, id_secret, etc.).
 * Disable `filter-with: gzip`.  Leaving the gzip filter enabled will cause UI failures because of the way templates are streamed once `debug` is set to `False`.  You will still be able (and are encouraged) to enable gzip in the proxy server.
 
 During deployment, you may run into problems with failed jobs.  By default, Galaxy removes files related to job execution. You can instruct Galaxy to keep files of failed jobs with: `cleanup_job: onsuccess`
@@ -75,11 +74,11 @@ postgresql:///mydatabase?host=/var/run/postgresql
 
 For more hints on available options for the database URL, see the [SQLAlchemy documentation](https://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls).
 
-#### Deprecated MySQL support
+#### MySQL database server (unsupported)
 
-Postgres database backend is more used and better tested, please use it if you can.
+Postgres database backend is far more used and better tested, please use it if you can.
 
-In the past Galaxy supported [MySQL](https://dev.mysql.com/) but currently there are nontrivial problems associated with it so expect amount of troubleshooting when using it.
+In the past Galaxy supported [MySQL](https://dev.mysql.com/), but currently there may be nontrivial problems associated with it, so expect some amount of troubleshooting when using it.
 
 Connection string example:
 ```

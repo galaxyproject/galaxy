@@ -243,10 +243,10 @@ var LibraryRowView = Backbone.View.extend({
                         </td>
                     <% } %>
                     <% if(library.get("description")) { %>
-                        <% if( (library.get("description")).length> 80 ) { %>
+                        <% if( (library.get("description")).length> 40 ) { %>
                             <td data-toggle="tooltip" data-placement="bottom"
                                 title="<%= _.escape(library.get("description")) %>">
-                                <%= _.escape(library.get("description")).substring(0, 80) + "..." %>
+                                <%= _.escape(library.get("description")).substring(0, 40) + "..." %>
                             </td>
                         <% } else { %>
                             <td><%= _.escape(library.get("description"))%></td>
@@ -255,10 +255,10 @@ var LibraryRowView = Backbone.View.extend({
                         <td></td>
                     <% } %>
                     <% if(library.get("synopsis")) { %>
-                        <% if( (library.get("synopsis")).length> 120 ) { %>
+                        <% if( (library.get("synopsis")).length> 40 ) { %>
                             <td data-toggle="tooltip" data-placement="bottom"
                                 title="<%= _.escape(library.get("synopsis")) %>">
-                                <%= _.escape(library.get("synopsis")).substring(0, 120) + "..." %>
+                                <%= _.escape(library.get("synopsis")).substring(0, 40) + "..." %>
                             </td>
                         <% } else { %>
                             <td><%= _.escape(library.get("synopsis"))%></td>

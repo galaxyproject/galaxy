@@ -29,7 +29,7 @@ function _filterDatasetJSON(datasetJSON, where, datasetsOnly) {
     //TODO: replace with _.matches (underscore 1.6.0)
     function matches(obj, toMatch) {
         for (var key in toMatch) {
-            if (toMatch.hasOwnProperty(key)) {
+            if (Object.prototype.hasOwnProperty.call(toMatch, key)) {
                 if (obj[key] !== toMatch[key]) {
                     return false;
                 }

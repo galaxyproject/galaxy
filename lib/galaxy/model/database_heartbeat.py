@@ -1,5 +1,6 @@
 import datetime
 import logging
+import os
 import socket
 import threading
 
@@ -20,6 +21,7 @@ class DatabaseHeartbeat(object):
         self.exit = threading.Event()
         self.thread = None
         self.active = False
+        self.pid = None
 
     @property
     def sa_session(self):
@@ -36,6 +38,7 @@ class DatabaseHeartbeat(object):
             self.thread.daemon = True
             self.active = True
             self.thread.start()
+            self.pid = os.getpid()
 
     def shutdown(self):
         self.active = False
@@ -81,6 +84,7 @@ class DatabaseHeartbeat(object):
         if not worker_process:
             worker_process = WorkerProcess(server_name=self.server_name, hostname=self.hostname)
         worker_process.update_time = now()
+        worker_process.pid = self.pid
         self.sa_session.add(worker_process)
         self.sa_session.flush()
         # We only want a single process watching the various config files on the file system.

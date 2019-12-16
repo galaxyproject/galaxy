@@ -1,5 +1,5 @@
 <template>
-    <textarea class="markdown-textarea" id="workflow-report-editor" :value="input" @input="update"> </textarea>
+    <textarea class="markdown-textarea" id="workflow-report-editor" v-model="input" @input="update"> </textarea>
 </template>
 
 <script>
@@ -31,7 +31,7 @@ export default {
 };
 </script>
 
-<style>
+<style scoped>
 .markdown-textarea {
     border: none;
     border-right: 1px solid #ccc;
@@ -42,8 +42,6 @@ export default {
     font-size: 14px;
     font-family: "Monaco", courier, monospace;
     padding: 20px;
-
     width: 100%;
-    height: 100%;
 }
 </style>

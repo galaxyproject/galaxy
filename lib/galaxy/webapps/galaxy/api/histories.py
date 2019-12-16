@@ -219,6 +219,9 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
     @expose_api_anonymous
     def citations(self, trans, history_id, **kwd):
         """
+        GET /api/histories/{id}/citations
+        Return all the citations for the tools used to produce the datasets in
+        the history.
         """
         history = self.manager.get_accessible(self.decode_id(history_id), trans.user, current_history=trans.history)
         tool_ids = set([])
@@ -256,8 +259,7 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
             rval.append(history_dict)
         return rval
 
-    # TODO: does this need to be anonymous_and_sessionless? Not just expose_api?
-    @expose_api_anonymous_and_sessionless
+    @expose_api
     def shared_with_me(self, trans, **kwd):
         """
         shared_with_me( self, trans, **kwd )
@@ -317,9 +319,6 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
             if archive_source:
                 archive_type = payload.get("archive_type", "url")
             elif hasattr(archive_file, "file"):
-                # archive_file.file is a TemporaryFile and will be deleted once it is closed.
-                # We prevent this by setting `delete` to `False`.
-                archive_file.file.delete = False
                 archive_source = payload["archive_file"].file.name
                 archive_type = "file"
             else:
@@ -443,7 +442,7 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
     @expose_api
     def archive_export(self, trans, id, **kwds):
         """
-        export_archive( self, trans, id, payload )
+        export_archive(self, trans, id, payload)
         * PUT /api/histories/{id}/exports:
             start job (if needed) to create history export for corresponding
             history.

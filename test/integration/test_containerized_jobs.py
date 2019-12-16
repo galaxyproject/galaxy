@@ -3,12 +3,11 @@
 import os
 import unittest
 
-from base import integration_util
-from base.populators import (
+from galaxy.tool_util.deps.commands import which
+from galaxy_test.base.populators import (
     DatasetPopulator,
 )
-
-from galaxy.tool_util.deps.commands import which
+from galaxy_test.driver import integration_util
 from .test_job_environments import RunsEnvironmentJobs
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
@@ -35,9 +34,20 @@ class ContainerizedIntegrationTestCase(integration_util.IntegrationTestCase):
 
     @classmethod
     def setUpClass(cls):
-        if not which(cls.container_type):
-            raise unittest.SkipTest("Executable '%s' not found on PATH" % cls.container_type)
+        skip_if_container_type_unavailable(cls)
         super(ContainerizedIntegrationTestCase, cls).setUpClass()
+
+
+def disable_dependency_resolution(config):
+    # Disable tool dependency resolution.
+    config["tool_dependency_dir"] = "none"
+    config["conda_auto_init"] = False
+    config["conda_auto_install"] = False
+
+
+def skip_if_container_type_unavailable(cls):
+    if not which(cls.container_type):
+        raise unittest.SkipTest("Executable '%s' not found on PATH" % cls.container_type)
 
 
 class DockerizedJobsIntegrationTestCase(integration_util.IntegrationTestCase, RunsEnvironmentJobs, MulledJobTestCases):
@@ -53,15 +63,11 @@ class DockerizedJobsIntegrationTestCase(integration_util.IntegrationTestCase, Ru
         cls.jobs_directory = cls._test_driver.mkdtemp()
         config["jobs_directory"] = cls.jobs_directory
         config["job_config_file"] = cls.job_config_file
-        # Disable tool dependency resolution.
-        config["tool_dependency_dir"] = "none"
-        config["conda_auto_init"] = False
-        config["conda_auto_install"] = False
+        disable_dependency_resolution(config)
 
     @classmethod
     def setUpClass(cls):
-        if not which(cls.container_type):
-            raise unittest.SkipTest("Executable '%s' not found on PATH" % cls.container_type)
+        skip_if_container_type_unavailable(cls)
         super(DockerizedJobsIntegrationTestCase, cls).setUpClass()
 
     def setUp(self):
@@ -109,6 +115,50 @@ class DockerizedJobsIntegrationTestCase(integration_util.IntegrationTestCase, Ru
         assert any([True for d in response if d['dependency_type'] == self.container_type])
 
 
+class MappingContainerResolverTestCase(integration_util.IntegrationTestCase):
+
+    framework_tool_and_types = True
+    container_type = 'docker'
+    job_config_file = DOCKERIZED_JOB_CONFIG_FILE
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        cls.jobs_directory = cls._test_driver.mkdtemp()
+        config["jobs_directory"] = cls.jobs_directory
+        config["job_config_file"] = cls.job_config_file
+        disable_dependency_resolution(config)
+        containers_resolvers_config_path = os.path.join(cls.jobs_directory, "container_resolvers.yml")
+        with open(containers_resolvers_config_path, "w") as f:
+            f.write("""
+- type: mapping
+  mappings:
+    - container_type: docker
+      tool_id: mulled_example_broken_no_requirements
+      identifier: 'quay.io/biocontainers/bwa:0.7.15--0'
+""")
+        config["containers_resolvers_config_file"] = containers_resolvers_config_path
+
+    @classmethod
+    def setUpClass(cls):
+        skip_if_container_type_unavailable(cls)
+        super(MappingContainerResolverTestCase, cls).setUpClass()
+
+    def setUp(self):
+        super(MappingContainerResolverTestCase, self).setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        self.history_id = self.dataset_populator.new_history()
+
+    def test_explicit_mapping(self):
+        self.dataset_populator.run_tool("mulled_example_broken_no_requirements", {}, self.history_id)
+        self.dataset_populator.wait_for_history(self.history_id, assert_ok=True)
+        output = self.dataset_populator.get_history_dataset_content(self.history_id, timeout=EXTENDED_TIMEOUT)
+        assert "0.7.15-r1140" in output
+
+
+# Singularity 2.4 in the official Vagrant issue has some problems running this test
+# case by default because subdirectories of /tmp don't bind correctly. Overridding
+# TMPDIR can fix this.
+# TMPDIR=/home/vagrant/tmp/ pytest test/integration/test_containerized_jobs.py::SingularityJobsIntegrationTestCase
 class SingularityJobsIntegrationTestCase(DockerizedJobsIntegrationTestCase):
 
     job_config_file = SINGULARITY_JOB_CONFIG_FILE

@@ -123,7 +123,7 @@ class DependencyManager(object):
         plugin_source = None
         dependency_resolver_dicts = app_config.get("dependency_resolvers")
         if dependency_resolver_dicts is not None:
-            plugin_source = ('dict', dependency_resolver_dicts)
+            plugin_source = plugin_config.PluginConfigSource('dict', dependency_resolver_dicts)
         else:
             plugin_source = self.__build_dependency_resolvers_plugin_source(conf_file)
         self.dependency_resolvers = self.__parse_resolver_conf_plugins(plugin_source)
@@ -201,11 +201,22 @@ class DependencyManager(object):
         index = kwds.get('index')
         install = kwds.get('install', False)
         resolver_type = kwds.get('resolver_type')
+        include_containers = kwds.get('include_containers', False)
+        container_type = kwds.get('container_type')
         require_exact = kwds.get('exact', False)
         return_null_dependencies = kwds.get('return_null', False)
 
         resolvable_requirements = requirements.resolvable
-        tool_info = ToolInfo(requirements=resolvable_requirements)
+
+        tool_info_kwds = dict(requirements=resolvable_requirements)
+        if 'tool_instance' in kwds:
+            tool = kwds['tool_instance']
+            tool_info_kwds['tool_id'] = tool.id
+            tool_info_kwds['tool_version'] = tool.version
+            tool_info_kwds['container_descriptions'] = tool.containers
+            tool_info_kwds['requires_galaxy_python_environment'] = tool.requires_galaxy_python_environment
+
+        tool_info = ToolInfo(**tool_info_kwds)
 
         for i, resolver in enumerate(self.dependency_resolvers):
 
@@ -215,22 +226,26 @@ class DependencyManager(object):
             if resolver_type is not None and resolver.resolver_type != resolver_type:
                 continue
 
+            if container_type is not None and getattr(resolver, "container_type", None) != container_type:
+                continue
+
             _requirement_to_dependency = OrderedDict([(k, v) for k, v in requirement_to_dependency.items() if not isinstance(v, NullDependency)])
 
             if len(_requirement_to_dependency) == len(resolvable_requirements):
                 # Shortcut - resolution complete.
                 break
 
-            if resolver.resolver_type.startswith('build_mulled') and not install:
-                # don't want to build images here
-                continue
-
             # Check requirements all at once
             all_unmet = len(_requirement_to_dependency) == 0
             if hasattr(resolver, "resolve_all"):
                 resolve = resolver.resolve_all
             elif isinstance(resolver, ContainerResolver):
-                if not resolver.resolver_type.startswith(('cached', 'explicit')) and not (search or install):
+                if not include_containers:
+                    continue
+                if not install and resolver.builds_on_resolution:
+                    # don't want to build images here
+                    continue
+                if not resolver.resolver_type.startswith(('cached', 'explicit', 'fallback')) and not (search or install):
                     # These would look up available containers using the quay API,
                     # we only want to do this if we search for containers
                     continue
@@ -246,7 +261,7 @@ class DependencyManager(object):
                                        **kwds)
                 if dependencies:
                     if isinstance(dependencies, ContainerDescription):
-                        dependencies = [ContainerDependency(dependencies, name=r.name, version=r.version) for r in resolvable_requirements]
+                        dependencies = [ContainerDependency(dependencies, name=r.name, version=r.version, container_resolver=resolver) for r in resolvable_requirements]
                     assert len(dependencies) == len(resolvable_requirements)
                     for requirement, dependency in zip(resolvable_requirements, dependencies):
                         log.debug(dependency.resolver_msg)
@@ -298,7 +313,7 @@ class DependencyManager(object):
         return plugin_source
 
     def __default_dependency_resolvers_source(self):
-        return ('dict', [
+        return plugin_config.PluginConfigSource('dict', [
             {"type": "tool_shed_packages"},
             {"type": "galaxy_packages"},
             {"type": "conda"},

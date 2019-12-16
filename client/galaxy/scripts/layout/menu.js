@@ -70,6 +70,7 @@ const Collection = Backbone.Collection.extend({
             this.add({
                 id: "visualization",
                 title: _l("Visualize"),
+                url: "javascript:void(0)",
                 tooltip: _l("Visualize datasets"),
                 disabled: !Galaxy.user.id,
                 menu: [
@@ -93,7 +94,7 @@ const Collection = Backbone.Collection.extend({
         this.add({
             id: "shared",
             title: _l("Shared Data"),
-            url: "library/index",
+            url: "javascript:void(0)",
             tooltip: _l("Access published resources"),
             menu: [
                 {
@@ -177,6 +178,7 @@ const Collection = Backbone.Collection.extend({
         const helpTab = {
             id: "help",
             title: _l("Help"),
+            url: "javascript:void(0)",
             tooltip: _l("Support, contact, and community"),
             menu: [
                 {
@@ -260,6 +262,7 @@ const Collection = Backbone.Collection.extend({
                 id: "user",
                 title: _l("User"),
                 cls: "loggedin-only",
+                url: "javascript:void(0)",
                 tooltip: _l("Account and saved data"),
                 menu: [
                     {
@@ -299,6 +302,11 @@ const Collection = Backbone.Collection.extend({
                     {
                         title: _l("Pages"),
                         url: "pages/list",
+                        target: "__use_router__"
+                    },
+                    {
+                        title: _l("Workflow Invocations"),
+                        url: "workflows/invocations",
                         target: "__use_router__"
                     }
                 ]
@@ -367,6 +375,8 @@ const Tab = Backbone.View.extend({
             .addClass(this.model.get("icon") && `nav-icon fa ${this.model.get("icon")}`)
             .addClass(this.model.get("menu") && "dropdown-toggle")
             .addClass(this.model.get("toggle") && "toggle")
+            .attr("id", this.model.get("menu") && `dropdown-button-${this.model.get("id")}`)
+            .attr("aria-haspopup", this.model.get("menu") && "true")
             .attr("target", this.model.get("target"))
             .attr("href", this.model.get("url"))
             .attr("title", this.model.get("tooltip"))
@@ -396,6 +406,8 @@ const Tab = Backbone.View.extend({
                 }
             });
             this.$menu.addClass("dropdown-menu");
+            this.$menu.attr("aria-labelledby", this.$menu.siblings(".dropdown-toggle").attr("id"));
+            this.$menu.attr("role", "menu");
             this.$link.append($("<b/>").addClass("caret"));
         }
         return this;
@@ -415,6 +427,7 @@ const Tab = Backbone.View.extend({
             .attr("href", options.url)
             .attr("target", options.target)
             .attr("class", options.class)
+            .attr("role", "menuitem")
             .html(options.title)
             .on("click", e => {
                 e.preventDefault();

@@ -1,4 +1,4 @@
-#! /usr/bin/perl -w
+#! /usr/bin/env perl
 
 use strict;
 use warnings;
@@ -14,6 +14,3 @@ my ($fh1,$file2) = tempfile();
 `sort $input2 > $file2`;
 `comm $mode $file1 $file2 > $out_file1`;
 `rm $file1 ; rm $file2`;
-
-
-

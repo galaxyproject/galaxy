@@ -43,6 +43,10 @@ workflow_building_modes = Bunch(DISABLED=False, ENABLED=True, USE_HISTORY=1)
 WORKFLOW_PARAMETER_REGULAR_EXPRESSION = re.compile(r'\$\{.+?\}')
 
 
+class ImplicitConversionRequired(Exception):
+    pass
+
+
 def contains_workflow_parameter(value, search=False):
     if not isinstance(value, string_types):
         return False
@@ -847,7 +851,10 @@ class SelectToolParameter(ToolParameter):
             return self.legal_values
 
     def from_json(self, value, trans, other_values={}, require_legal_value=True):
-        legal_values = self.get_legal_values(trans, other_values)
+        try:
+            legal_values = self.get_legal_values(trans, other_values)
+        except ImplicitConversionRequired:
+            return value
         if (not legal_values or not require_legal_value) and is_runtime_context(trans, other_values):
             if self.multiple:
                 # While it is generally allowed that a select value can be '',
@@ -916,7 +923,10 @@ class SelectToolParameter(ToolParameter):
         return value
 
     def get_initial_value(self, trans, other_values):
-        options = list(self.get_options(trans, other_values))
+        try:
+            options = list(self.get_options(trans, other_values))
+        except ImplicitConversionRequired:
+            return None
         if not options:
             return None
         value = [optval for _, optval, selected in options if selected]
@@ -1221,6 +1231,13 @@ class ColumnListParameter(SelectToolParameter):
             # Use representative dataset if a dataset collection is parsed
             if isinstance(dataset, trans.app.model.HistoryDatasetCollectionAssociation):
                 dataset = dataset.to_hda_representative()
+            if isinstance(dataset, trans.app.model.HistoryDatasetAssociation) and self.ref_input and self.ref_input.formats:
+                target_ext, converted_dataset = dataset.find_conversion_destination(self.ref_input.formats)
+                if target_ext:
+                    if not converted_dataset:
+                        raise ImplicitConversionRequired
+                    else:
+                        dataset = converted_dataset
             # Columns can only be identified if the dataset is ready and metadata is available
             if not hasattr(dataset, 'metadata') or \
                     not hasattr(dataset.metadata, 'columns') or \

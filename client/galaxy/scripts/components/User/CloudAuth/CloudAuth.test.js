@@ -19,16 +19,19 @@ localVue.filter("localize", value => _l(value));
 describe("CloudAuth component", () => {
     let stub, wrapper;
 
-    let mockSvc = {
+    const mockSvc = {
         listCredentials: async () => null
     };
 
     rewire.__Rewire__("svc", mockSvc);
 
     beforeEach(async () => {
-        let creds = listCredentials.map(Credential.create);
+        const creds = listCredentials.map(Credential.create);
         stub = sinon.stub(mockSvc, "listCredentials").resolves(creds);
-        wrapper = shallowMount(CloudAuth, { localVue });
+        /* https://github.com/vuejs/vue-test-utils/issues/829 for more info
+         * regarding the sync option used here.
+         */
+        wrapper = shallowMount(CloudAuth, { sync: false, localVue });
         await flushPromises();
     });
 
@@ -72,14 +75,14 @@ describe("CloudAuth component", () => {
             assert(wrapper.contains(CloudAuthItem));
             assert(results.length == 2, `Wrong number of items: ${results.length}`);
 
-            let button = wrapper.find("button[name=createNewKey]");
+            const button = wrapper.find("button[name=createNewKey]");
             assert(button);
             button.trigger("click");
 
             results = wrapper.vm.filteredItems;
             assert(results.length == 3, `Wrong number of items: ${results.length}`);
 
-            let blank = results.find(i => i.id == null);
+            const blank = results.find(i => i.id == null);
             assert(blank, "missing blank key");
             assert(blank.id == null);
         });

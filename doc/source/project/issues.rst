@@ -74,8 +74,8 @@ request/report to separate enhancements and new features from bugs, etc.
 -  ``kind/bug`` - something is broken, and it needs fixing
 -  ``kind/enhancement`` - polish to an existing feature or interface
 -  ``kind/feature`` - something brand new
--  ``kind/refactoring`` - refactoring of existing code, no functional
-   changes
+-  ``kind/refactoring`` - cleanup or refactoring of existing code, no
+   functional changes
 
 Status Labels
 -------------
@@ -107,9 +107,9 @@ particular domain, as well as more organized release notes.
 - ``area/admin`` - Changes to admin functionality of the Galaxy webapp
 - ``area/API``
 - ``area/auth`` - Authentication and authorization
-- ``area/cleanup`` - General code cleanup
 - ``area/client-build``
 - ``area/compliance``
+- ``area/configuration`` - Galaxy's configuration system
 - ``area/cwl`` - changes related to supporting the common workflow language in Galaxy
 - ``area/database`` - Change requires a modification to Galaxy's database
 - ``area/dataset-collections``

@@ -3,12 +3,12 @@
 import os
 
 import requests
-from base import api_asserts
-from base.populators import (
+
+from galaxy_test.base import api_asserts
+from galaxy_test.base.populators import (
     DatasetPopulator,
     wait_on,
 )
-
 from .test_containerized_jobs import ContainerizedIntegrationTestCase
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))

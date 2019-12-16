@@ -38,10 +38,17 @@
                         </b-card-footer>
                     </b-card>
                 </b-form>
-                <b-button v-for="idp in oidc_idps" :key="idp" class="d-block mt-3" @click="submitOIDCLogin(idp)">
-                    <i v-bind:class="oidc_idps_icons[idp]" /> Sign in with
-                    {{ idp.charAt(0).toUpperCase() + idp.slice(1) }}
-                </b-button>
+                <div v-for="idp in oidc_idps" :key="idp" style="margin:0.5em">
+                    <span v-if="oidc_idps_icons[idp]">
+                        <img v-bind:src="oidc_idps_icons[idp]" height="45" v-bind:alt="idp" />
+                    </span>
+                    <span v-else>
+                        <b-button class="d-block mt-3" @click="submitOIDCLogin(idp)">
+                            <i v-bind:class="oidc_idps_icons[idp]" /> Sign in with
+                            {{ idp.charAt(0).toUpperCase() + idp.slice(1) }}
+                        </b-button>
+                    </span>
+                </div>
             </div>
             <div v-if="show_welcome_with_login" class="col">
                 <b-embed type="iframe" :src="welcome_url" aspect="1by1" />
@@ -73,7 +80,10 @@ export default {
         const galaxy = getGalaxyInstance();
         const oidc_idps = galaxy.config.oidc;
         // Icons to use for each IdP
-        const oidc_idps_icons = { google: "fa fa-google" };
+        const oidc_idps_icons = {
+            google: "https://developers.google.com/identity/images/btn_google_signin_light_normal_web.png",
+            elixir: "https://elixir-europe.org/sites/default/files/images/login-button-orange.png"
+        };
         // Add default icons to IdPs without icons
         oidc_idps
             .filter(function(key) {

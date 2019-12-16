@@ -1,0 +1,42 @@
+<tool id="environment_variables_inject" name="environment_variables_inject" version="1.0.0">
+    <environment_variables>
+        <!-- Avoid putting actual API keys in the command-line like this in production tools.
+             Every effort should be made to consume these values as enviornment variables. -->
+        <environment_variable name="GX_API" inject="api_key" />
+        <environment_variable name="GX_HISTORY_ID">$__history_id__</environment_variable>
+        <environment_variable name="GX_URL">$__galaxy_url__</environment_variable>
+    </environment_variables>
+    <command>
+        echo "\$GX_API"         > '$out_file_api_key';
+        echo "\$GX_URL"         > '$out_file_galaxy_url';
+        echo "\$GX_HISTORY_ID"  > '$out_file_history_id'
+    </command>
+    <inputs>
+        <param name="inttest" value="1" type="integer" />
+    </inputs>
+    <outputs>
+        <data name="out_file_api_key" format="txt" />
+        <data name="out_file_history_id" format="txt" />
+        <data name="out_file_galaxy_url" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="inttest" value="2" />
+            <output name="out_file_api_key">
+                <assert_contents>
+                    <has_line_matching expression="[0-9a-zA-Z]{32}" />
+                </assert_contents>
+            </output>
+            <output name="out_file_history_id">
+                <assert_contents>
+                    <has_line_matching expression="[0-9a-zA-Z]{16}" />
+                </assert_contents>
+            </output>
+            <output name="out_file_galaxy_url">
+                <assert_contents>
+                    <has_line_matching expression="https?.*" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

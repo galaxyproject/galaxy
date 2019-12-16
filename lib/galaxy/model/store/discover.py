@@ -320,7 +320,8 @@ class UnusedPermissionProvider(PermissionProvider):
         This should only be called as part of job output collection where
         there should be a session available to initialize this from.
         """
-        raise NotImplementedError()
+        # TODO: what should this do in the sessionless context?
+        return
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -368,6 +369,15 @@ class SessionlessModelPersistenceContext(ModelPersistenceContext):
         library_folder.datasets.append(ld)
         ld.order_id = library_folder.item_count
         library_folder.item_count += 1
+
+    def get_library_folder(self, destination):
+        raise NotImplementedError()
+
+    def get_hdca(self, object_id):
+        raise NotImplementedError()
+
+    def create_hdca(name, structure):
+        raise NotImplementedError()
 
     def create_library_folder(self, parent_folder, name, description):
         nested_folder = galaxy.model.LibraryFolder(name=name, description=description, order_id=parent_folder.item_count)

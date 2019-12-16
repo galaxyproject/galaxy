@@ -81,7 +81,7 @@ var FolderRowView = Backbone.View.extend({
         if (container) {
             const str_tags = this.model.get("tags");
             if (typeof str_tags === "string") {
-                this.model.set({ tags: str_tags.split(', ') });
+                this.model.set({ tags: str_tags.split(", ") });
             }
             const { id, model_class, tags } = this.model.attributes;
             const storeKey = `${model_class}-${id}`;
@@ -268,10 +268,10 @@ var FolderRowView = Backbone.View.extend({
                         <a href="#folders/<%- content_item.id %>"><%- content_item.get("name") %></a>
                     </td>
                     <% if( content_item.get("description") ) { %>
-                        <% if( content_item.get("description").length> 80 ) { %>
+                        <% if( content_item.get("description").length > 40 ) { %>
                             <td data-toggle="tooltip" data-placement="auto"
                                 title='<%= _.escape(content_item.get("description")) %>'>
-                                <%= _.escape(content_item.get("description")).substring(0, 80) + "..." %>
+                                <%= _.escape(content_item.get("description")).substring(0, 40) + "..." %>
                             </td>
                         <% } else { %>
                             <td><%= _.escape(content_item.get("description"))%></td>
@@ -342,7 +342,16 @@ var FolderRowView = Backbone.View.extend({
                         <%- content_item.get("name") %>
                     <a>
                 </td>
-                <td><%- content_item.get("message") %></td>
+                <% if( content_item.get("message") ) { %>
+                    <% if( content_item.get("message").length > 40 ) { %>
+                        <td data-toggle="tooltip" data-placement="auto"
+                            title='<%= _.escape(content_item.get("message")) %>'>
+                            <%= _.escape(content_item.get("message")).substring(0, 40) + "..." %>
+                        </td>
+                    <% } else { %>
+                        <td><%= _.escape(content_item.get("message"))%></td>
+                    <% } %>
+                <% } %>
                 <td><div class="nametags"><!-- Nametags mount here --></div></td>
                 <td><%= _.escape(content_item.get("file_ext")) %></td>
                 <td><%= _.escape(content_item.get("file_size")) %></td>
@@ -433,10 +442,10 @@ var FolderRowView = Backbone.View.extend({
                     <%- content_item.get("name") %>
                 </td>
                 <% if( content_item.get("description") ) { %>
-                    <% if( content_item.get("description").length> 80 ) { %>
+                    <% if( content_item.get("description").length > 40 ) { %>
                         <td data-toggle="tooltip" data-placement="bottom"
                             title='<%= _.escape(content_item.get("description")) %>'>
-                            <%= _.escape(content_item.get("description")).substring(0, 80) + "..." %>
+                            <%= _.escape(content_item.get("description")).substring(0, 40) + "..." %>
                         </td>
                     <% } else { %>
                         <td><%= _.escape(content_item.get("description"))%></td>

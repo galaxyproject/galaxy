@@ -1,3 +1,4 @@
+import collections
 import json
 import logging
 import os
@@ -34,6 +35,11 @@ CONFIG_TEST_TOOL_VERSION_TEMPLATE = string.Template(
 )
 CONFIG_TEST_TOOL_VERSION_1 = CONFIG_TEST_TOOL_VERSION_TEMPLATE.safe_substitute(dict(version="1"))
 CONFIG_TEST_TOOL_VERSION_2 = CONFIG_TEST_TOOL_VERSION_TEMPLATE.safe_substitute(dict(version="2"))
+
+DEFAULT_TEST_REPO = collections.namedtuple(
+    'DEFAULT_TEST_REPO',
+    'tool_shed owner name changeset_revision installed_changeset_revision description status',
+)('github.com', 'galaxyproject', 'example', '1', '1', 'description', 'OK')
 
 
 class BaseToolBoxTestCase(unittest.TestCase, UsesApp, UsesTools):
@@ -82,9 +88,9 @@ class BaseToolBoxTestCase(unittest.TestCase, UsesApp, UsesTools):
         if config_filename:
             metadata['shed_config_filename'] = config_filename
         repository = tool_shed_install.ToolShedRepository(metadata=metadata)
-        repository.tool_shed = "github.com"
-        repository.owner = "galaxyproject"
-        repository.name = "example"
+        repository.tool_shed = DEFAULT_TEST_REPO.tool_shed
+        repository.owner = DEFAULT_TEST_REPO.owner
+        repository.name = DEFAULT_TEST_REPO.name
         repository.changeset_revision = changeset
         repository.installed_changeset_revision = changeset
         repository.deleted = False
@@ -238,7 +244,7 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
 
     def _try_until_no_errors(self, f):
         e = None
-        for i in range(30):
+        for i in range(40):
             try:
                 f()
                 return
@@ -558,6 +564,11 @@ class SimplifiedToolBox(ToolBox):
         app.tool_cache = ToolCache() if not hasattr(app, 'tool_cache') else app.tool_cache
         app.job_config.get_tool_resource_parameters = lambda tool_id: None
         app.config.update_integrated_tool_panel = True
+        app.config.appschema = {
+            'tool_dependency_dir': {
+                'default': 'dependencies',
+            }
+        }
         config_files = test_case.config_files
         tool_root_dir = test_case.test_directory
         super(SimplifiedToolBox, self).__init__(

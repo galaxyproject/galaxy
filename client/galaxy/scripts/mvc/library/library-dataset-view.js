@@ -117,7 +117,7 @@ var LibraryDatasetView = Backbone.View.extend({
         if (container) {
             const str_tags = this.model.get("tags");
             if (typeof str_tags === "string") {
-                this.model.set({ tags: str_tags.split(', ') });
+                this.model.set({ tags: str_tags.split(", ") });
             }
             const { id, model_class, tags } = this.model.attributes;
             const storeKey = `${model_class}-${id}`;
@@ -438,7 +438,7 @@ var LibraryDatasetView = Backbone.View.extend({
             }
         }
         var new_info = this.$el.find(".input_dataset_misc_info").val();
-        if (typeof new_info !== "undefined" && new_info !== ld.get("misc_info")) {
+        if (typeof new_info !== "undefined" && new_info !== ld.get("misc_info").trim()) {
             ld.set("misc_info", new_info);
             is_changed = true;
         }

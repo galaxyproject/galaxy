@@ -14,11 +14,20 @@ from sqlalchemy.orm import eagerload_all
 from webob.compat import cgi_FieldStorage
 
 from galaxy import datatypes, util
-from galaxy.exceptions import ConfigDoesNotAllowException, ObjectInvalid
+from galaxy.exceptions import (
+    ConfigDoesNotAllowException,
+    ObjectInvalid,
+    RequestParameterInvalidException,
+)
 from galaxy.model import tags
 from galaxy.util import unicodify
 
 log = logging.getLogger(__name__)
+
+
+def validate_datatype_extension(datatypes_registry, ext):
+    if ext and ext not in ('auto', 'data') and not datatypes_registry.get_datatype_by_extension(ext):
+        raise RequestParameterInvalidException("Requested extension '%s' unknown, cannot upload dataset." % ext)
 
 
 def validate_url(url, ip_whitelist):
@@ -282,8 +291,9 @@ def new_upload(trans, cntrller, uploaded_dataset, library_bunch=None, history=No
     if library_bunch:
         upload_target_dataset_instance = __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, state)
         if library_bunch.tags and not uploaded_dataset.tags:
-            for tag in library_bunch.tags:
-                trans.app.tag_handler.apply_item_tag(user=trans.user, item=upload_target_dataset_instance, name='name', value=tag)
+            new_tags = trans.app.tag_handler.parse_tags_list(library_bunch.tags)
+            for tag in new_tags:
+                trans.app.tag_handler.apply_item_tag(user=trans.user, item=upload_target_dataset_instance, name=tag[0], value=tag[1])
     else:
         upload_target_dataset_instance = __new_history_upload(trans, uploaded_dataset, history=history, state=state)
 

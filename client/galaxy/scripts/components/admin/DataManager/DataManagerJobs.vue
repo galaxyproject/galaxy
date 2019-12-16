@@ -42,7 +42,7 @@
             >
                 <!-- Enable cell formatting for the command line column -->
                 <span slot="html" slot-scope="data" v-html="data.value"> </span>
-                <template slot="actions" slot-scope="row">
+                <template v-slot:cell(actions)="row">
                     <b-button-group>
                         <b-button v-b-tooltip.hover title="Rerun" target="_top" :href="jobs[row.index]['runUrl']">
                             <span class="fa fa-refresh" />
@@ -64,11 +64,11 @@
                         </b-button>
                     </b-button-group>
                 </template>
-                <template slot="row-details" slot-scope="row">
+                <template v-slot:row-details="row">
                     <b-card>
                         <h5>Command Line</h5>
                         <pre class="code"><code class="command-line">{{ row.item.commandLine }}</code></pre>
-                        <template slot="footer">
+                        <template v-slot:footer>
                             <b-button class="mt-3" @click="row.toggleDetails">Hide Info</b-button>
                         </template>
                     </b-card>

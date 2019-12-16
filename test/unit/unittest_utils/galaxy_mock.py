@@ -16,6 +16,7 @@ from galaxy.jobs.manager import NoopManager
 from galaxy.model import mapping, tags
 from galaxy.security import idencoding
 from galaxy.tool_util.deps.containers import NullContainerFinder
+from galaxy.util import StructuredExecutionTimer
 from galaxy.util.bunch import Bunch
 from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.web_stack import ApplicationStack
@@ -80,6 +81,7 @@ class MockApp(object):
         self.job_manager = NoopManager()
         self.application_stack = ApplicationStack()
         self.auth_manager = AuthManager(self)
+        self.execution_timer_factory = Bunch(get_timer=StructuredExecutionTimer)
 
         def url_for(*args, **kwds):
             return "/mock/url"
@@ -109,20 +111,28 @@ class MockAppConfig(Bunch):
 
     def __init__(self, root=None, **kwargs):
         Bunch.__init__(self, **kwargs)
-        root = root or '/tmp'
+        if not root:
+            root = tempfile.mkdtemp()
+            self._remove_root = True
+        else:
+            self._remove_root = False
         self.security = idencoding.IdEncodingHelper(id_secret='6e46ed6483a833c100e68cc3f1d0dd76')
         self.database_connection = kwargs.get('database_connection', "sqlite:///:memory:")
         self.use_remote_user = kwargs.get('use_remote_user', False)
-        self.data_dir = '/tmp'
-        self.file_path = '/tmp'
-        self.jobs_directory = '/tmp'
-        self.new_file_path = '/tmp'
-        self.tool_data_path = '/tmp'
+        self.data_dir = os.path.join(root, 'database')
+        self.file_path = os.path.join(self.data_dir, 'files')
+        self.jobs_directory = os.path.join(self.data_dir, 'jobs_directory')
+        self.new_file_path = os.path.join(self.data_dir, 'tmp')
+        self.tool_data_path = os.path.join(root, 'tool-data')
+        self.tool_dependency_dir = None
         self.metadata_strategy = 'legacy'
 
         self.object_store_config_file = ''
         self.object_store = 'disk'
         self.object_store_check_old_style = False
+        self.object_store_cache_path = '/tmp/cache'
+        self.umask = os.umask(0o77)
+        self.gid = os.getgid()
 
         self.user_activation_on = False
         self.new_user_dataset_access_role_default_private = False
@@ -144,7 +154,6 @@ class MockAppConfig(Bunch):
         self.len_file_path = os.path.join('tool-data', 'shared', 'ucsc', 'chrom')
         self.builds_file_path = os.path.join('tool-data', 'shared', 'ucsc', 'builds.txt.sample')
 
-        self.migrated_tools_config = "/tmp/migrated_tools_conf.xml"
         self.preserve_python_environment = "always"
         self.enable_beta_gdpr = False
         self.legacy_eager_objectstore_initialization = True
@@ -165,6 +174,10 @@ class MockAppConfig(Bunch):
         if name.endswith('_file_set'):
             return False
         return super(MockAppConfig, self).__getattr__(name)
+
+    def __del__(self):
+        if self._remove_root:
+            shutil.rmtree(self.root)
 
 
 class MockWebapp(object):

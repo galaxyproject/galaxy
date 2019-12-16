@@ -5,14 +5,12 @@ import tempfile
 from contextlib import contextmanager
 
 from galaxy.tools.repositories import ValidationContext
+from galaxy.util import galaxy_directory
 from tool_shed.tools.tool_validator import ToolValidator
 from ..unittest_utils.galaxy_mock import MockApp
 
-CURRENT_DIR = os.path.dirname(__file__)
-BISMARK_TAR = os.path.join(CURRENT_DIR,
-                           '../../shed_functional/test_data/bismark/bismark.tar')
-BOWTIE2_INDICES = os.path.join(CURRENT_DIR,
-                               '../../shed_functional/test_data/bowtie2_loc_sample/bowtie2_indices.loc.sample')
+BISMARK_TAR = os.path.join(galaxy_directory(), 'lib/tool_shed/test/test_data/bismark/bismark.tar')
+BOWTIE2_INDICES = os.path.join(galaxy_directory(), 'lib/tool_shed/test/test_data/bowtie2_loc_sample/bowtie2_indices.loc.sample')
 
 
 def test_validate_valid_tool():

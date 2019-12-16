@@ -11,6 +11,7 @@ log = logging.getLogger(__name__)
 
 
 class ModelOperationToolAction(DefaultToolAction):
+    produces_real_jobs = False
 
     def check_inputs_ready(self, tool, trans, incoming, history, execution_cache=None, collection_info=None):
         if execution_cache is None:

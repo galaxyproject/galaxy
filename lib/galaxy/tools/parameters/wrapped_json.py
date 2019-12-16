@@ -32,23 +32,23 @@ def _json_wrap_input(input, value, handle_files="skip"):
         repeat_job_value = []
         for d in value:
             repeat_instance_job_value = {}
-            json_wrap(input.inputs, d, repeat_instance_job_value)
+            json_wrap(input.inputs, d, repeat_instance_job_value, handle_files=handle_files)
             repeat_job_value.append(repeat_instance_job_value)
         json_value = repeat_job_value
     elif input_type == "conditional":
         values = value
         current = values["__current_case__"]
         conditional_job_value = {}
-        json_wrap(input.cases[current].inputs, values, conditional_job_value)
+        json_wrap(input.cases[current].inputs, values, conditional_job_value, handle_files=handle_files)
         test_param = input.test_param
         test_param_name = test_param.name
-        test_value = _json_wrap_input(test_param, values[test_param_name])
+        test_value = _json_wrap_input(test_param, values[test_param_name], handle_files=handle_files)
         conditional_job_value[test_param_name] = test_value
         json_value = conditional_job_value
     elif input_type == "section":
         values = value
         section_job_value = {}
-        json_wrap(input.inputs, values, section_job_value)
+        json_wrap(input.inputs, values, section_job_value, handle_files=handle_files)
         json_value = section_job_value
     elif input_type == "data" and input.multiple:
         if handle_files == "paths":
