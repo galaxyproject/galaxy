@@ -166,8 +166,8 @@
                 <!-- Enable cell formatting for the command line column -->
                 <span slot="html" slot-scope="data" v-html="data.value" />
                 <template slot="job_info" slot-scope="data">
-                    <b-link :href="data.value['info_url']" target="galaxy_main">
-                        {{ data.value["id"] }}
+                    <b-link :href="data.value.info_url" v-on:click.prevent="clickJobInfo(data.value.id)">
+                        {{ data.value.id }}
                     </b-link>
                 </template>
                 <template slot="row-details" slot-scope="row">
