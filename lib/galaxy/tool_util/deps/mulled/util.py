@@ -6,8 +6,10 @@ import hashlib
 import logging
 import re
 import sys
+import tarfile
 import threading
 import time
+from io import BytesIO
 
 import packaging.version
 import requests
@@ -139,7 +141,7 @@ def version_sorted(elements):
     return [e.tag for e in elements]
 
 
-Target = collections.namedtuple("Target", ["package_name", "version", "build"])
+Target = collections.namedtuple("Target", ["package_name", "version", "build", "package"])
 
 
 def build_target(package_name, version=None, build=None, tag=None):
@@ -149,7 +151,7 @@ def build_target(package_name, version=None, build=None, tag=None):
         assert build is None
         version, build = split_tag(tag)
 
-    return Target(package_name, version, build)
+    return Target(package_name, version, build, package_name)
 
 
 def conda_build_target_str(target):
@@ -271,6 +273,12 @@ def v2_image_name(targets, image_build=None, name_override=None):
         if version_hash_str or build_suffix:
             suffix = ":%s%s" % (version_hash_str, build_suffix)
         return "mulled-v2-%s%s" % (package_hash.hexdigest(), suffix)
+
+
+def get_file_from_recipe_url(url):
+    """Downloads file at url and returns tarball"""
+    r = requests.get(url)
+    return tarfile.open(mode="r:bz2", fileobj=BytesIO(r.content))
 
 
 def split_container_name(name):
