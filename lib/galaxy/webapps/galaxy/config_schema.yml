@@ -1257,7 +1257,7 @@ mapping:
 
       static_style_dir:
         type: str
-        default: static/june_2007_style/blue
+        default: static/style
         required: false
         desc: |
           Serve static content, which must be enabled if you're not serving it via a
