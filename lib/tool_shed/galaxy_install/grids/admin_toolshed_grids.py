@@ -30,7 +30,7 @@ def generate_latest_revision_img_str(include_mouse_over=False):
         latest_revision_tip_str = 'class="icon-button" title="This is the latest installable revision of this repository"'
     else:
         latest_revision_tip_str = ''
-    return '<img src="%s/june_2007_style/blue/ok_small.png" %s/>' % (url_for('/static'), latest_revision_tip_str)
+    return '<img src="%s/style/blue/ok_small.png" %s/>' % (url_for('/static'), latest_revision_tip_str)
 
 
 def generate_revision_updates_img_str(include_mouse_over=False):
@@ -54,7 +54,7 @@ def generate_unknown_img_str(include_mouse_over=False):
         unknown_tip_str = 'class="icon-button" title="Unable to get information from the Tool Shed"'
     else:
         unknown_tip_str = ''
-    return '<img src="%s/june_2007_style/blue/question-octagon-frame.png" %s/>' % (url_for('/static'), unknown_tip_str)
+    return '<img src="%s/style/blue/question-octagon-frame.png" %s/>' % (url_for('/static'), unknown_tip_str)
 
 
 class InstalledRepositoryGrid(grids.Grid):

@@ -174,7 +174,8 @@ class Repository(Dictifiable):
 
     def __init__(self, id=None, name=None, type=None, remote_repository_url=None, homepage_url=None,
                  description=None, long_description=None, user_id=None, private=False,
-                 deleted=None, email_alerts=None, times_downloaded=0, deprecated=False):
+                 deleted=None, email_alerts=None, times_downloaded=0, deprecated=False,
+                 create_time=None):
         self.id = id
         self.name = name or "Unnamed repository"
         self.type = type
@@ -188,6 +189,7 @@ class Repository(Dictifiable):
         self.email_alerts = email_alerts
         self.times_downloaded = times_downloaded
         self.deprecated = deprecated
+        self.create_time = create_time
 
     @property
     def admin_role(self):
