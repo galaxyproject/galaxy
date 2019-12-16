@@ -22,7 +22,7 @@
         mkdir -p ./jupyter/data &&
 
         #set $cleaned_name = re.sub('[^\w\-\.]', '_', str($input.element_identifier))
-        ln -sf '$input' './jupyter/data/${cleaned_name}' &&
+        cp '$input' './jupyter/data/${cleaned_name}' &&
 
         ## change into the directory where the notebooks are located
         cd ./jupyter/ &&
