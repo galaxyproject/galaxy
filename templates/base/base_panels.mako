@@ -35,14 +35,9 @@
     <!--- base/base_panels.mako javascripts() -->
     ${h.dist_js(
         'libs.chunk',
-        'base.chunk'
+        'base.chunk',
+        'generic.bundled'
     )}
-    ${ javascript_entry() }
-</%def>
-
-<%def name="javascript_entry()">
-    <!-- base/base_panels.mako javascript_entry -->
-    ${ h.dist_js('generic.bundled')}
 </%def>
 
 <%def name="javascript_app()">

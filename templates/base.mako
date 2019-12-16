@@ -52,13 +52,9 @@
     ## TODO: remove when all libs are required directly in modules
     ${h.dist_js(
         'libs.chunk',
-        'base.chunk'
+        'base.chunk',
+        'generic.bundled'
     )}
-    ${self.javascript_entry()}
-</%def>
-
-<%def name="javascript_entry()">
-    ${h.dist_js('generic.bundled')}
 </%def>
 
 <%def name="javascript_app()">

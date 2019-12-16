@@ -53,7 +53,7 @@
 
     <body scroll="no" class="full-content">
         <div id="everything">
-            
+
             <div id="background"></div>
 
             %if self.galaxy_config['master']:
@@ -177,20 +177,15 @@
     <!-- galaxy.panels.mako javascripts -->
     ${h.dist_js(
         'libs.chunk',
-        'base.chunk'
+        'base.chunk',
+        'generic.bundled'
     )}
-    ${self.javascript_entry()}
-</%def>
-
-<%def name="javascript_entry()">
-    <!-- galaxy.panels.mako javascript_entry -->
-    ${h.dist_js('generic.bundled')}
 </%def>
 
 <%def name="javascript_app()">
     <!-- galaxy.panels.mako javascript_app -->
     <script type="text/javascript">
-    
+
         var galaxyConfig = ${ h.dumps( self.galaxy_config ) };
 
         ## TODO: Some visualizations (and more?) currently use this config, should be refactored.
