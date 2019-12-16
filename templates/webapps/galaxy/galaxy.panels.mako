@@ -175,16 +175,16 @@
 ## TODO: remove when all libs are required directly in modules
 <%def name="javascripts()">
     <!-- galaxy.panels.mako javascripts -->
-    ${h.js(
-        'bundled/libs.chunk',
-        'bundled/base.chunk'
+    ${h.dist_js(
+        'libs.chunk',
+        'base.chunk'
     )}
     ${self.javascript_entry()}
 </%def>
 
 <%def name="javascript_entry()">
     <!-- galaxy.panels.mako javascript_entry -->
-    ${h.js('bundled/generic.bundled')}
+    ${h.dist_js('generic.bundled')}
 </%def>
 
 <%def name="javascript_app()">

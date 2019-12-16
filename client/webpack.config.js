@@ -23,8 +23,8 @@ module.exports = (env = {}, argv = {}) => {
             generic: ["polyfills", "bundleEntries", "entry/generic"]
         },
         output: {
-            path: path.join(__dirname, "../", "lib/galaxy/web/framework/static/scripts/bundled"),
-            publicPath: "/static/scripts/bundled/",
+            path: path.join(__dirname, "../", "/static/dist"),
+            publicPath: "/static/dist/",
             filename: "[name].bundled.js",
             chunkFilename: "[name].chunk.js"
         },
@@ -110,7 +110,7 @@ module.exports = (env = {}, argv = {}) => {
                         loader: "file-loader",
                         options: {
                             outputPath: "assets",
-                            publicPath: "../scripts/bundled/assets/"
+                            publicPath: "../dist/assets/"
                         }
                     }
                 },

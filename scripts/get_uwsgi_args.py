@@ -120,7 +120,7 @@ def _get_uwsgi_args(cliargs, kwargs):
         # route: ^/static/scripts/bundled/ http:127.0.0.1:8081
         if hmr_server.lower() in ['1', 'true', 'default']:
             hmr_server = "http:127.0.0.1:8081"
-        __add_arg(args, 'route', '^/static/scripts/bundled/ {hmr_server}'.format(hmr_server=hmr_server))
+        __add_arg(args, 'route', '^/static/dist/ {hmr_server}'.format(hmr_server=hmr_server))
 
     for arg in DEFAULT_ARGS['_all_'] + DEFAULT_ARGS[cliargs.app]:
         if not __arg_set(arg, uwsgi_kwargs):
