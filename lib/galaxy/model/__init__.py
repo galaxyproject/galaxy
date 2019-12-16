@@ -605,7 +605,7 @@ class User(Dictifiable, RepresentById):
 class StorageMedia(object):
     categories = Bunch(LOCAL="local")
 
-    def __init__(self, user_id, category, path, order, quota=0,
+    def __init__(self, user_id, category, path,
                  usage=0, purgeable=True, jobs_directory=None, cache_path=None,
                  cache_size=100):
         """
@@ -614,21 +614,11 @@ class StorageMedia(object):
         :param category: is the type of this storage media, its value is a key from `categories` bunch.
         :param path: a path in the storage media to be used. For instance, a path on a local disk, or bucket name
         on AWS, or container name on Azure.
-        :param order: A key which defines the hierarchical relation between this and other storage media defined
-        by the user. This key is used in Object Store to determine where to write to or read from a dataset. The
-        value of this parameter can be any integer (+/-) excluding 0, as 0 is the default storage configuration
-        of the Galaxy instance. For instance, if use has defined multiple storage media with the following orders:
-        -2, -1, 1, 2, 3, then object store tries read/write a dataset to a storage media (PM) in the following order:
-        PM_3, PM_2, PM_1, Instance ObjectStore Configuration, PM_-1, PM_-2. It fals from one storage media to another
-        if (a) storage media is not available, or (b) usage + dataset_size > quota.
-        :param quota: sets the maximum data size to be persisted on this storage media.
         :param usage: sets the total size of the data Galaxy has persisted on the media.
         """
         self.user_id = user_id
         self.usage = usage
-        self.order = order
         self.category = category
-        self.quota = quota
         self.path = path
         self.deleted = False
         self.purged = False
@@ -676,7 +666,7 @@ class StorageMedia(object):
         return config
 
     @staticmethod
-    def choose_media_for_association(media, dataset_size=0, enough_quota_on_instance_level_media=True, history_shared=False):
+    def choose_media_for_association(media, history_shared=False):
         if media is None or len(media) == 0:
             return None
 
@@ -685,26 +675,8 @@ class StorageMedia(object):
                       "hence cannot choose a user's storage media.")
             return None
 
-        i = len(media) - 1
-        media.sort(key=lambda p: p.order)
-        n = False
-        while i >= 0:
-            if n:
-                n = False
-                if enough_quota_on_instance_level_media:
-                    return None
-            if media[i].order == 1:
-                n = True
-            elif media[i].order == -1 and enough_quota_on_instance_level_media:
-                return None
-            if media[i].usage + dataset_size <= media[i].quota:
-                return media[i]
-            i -= 1
-        if n and enough_quota_on_instance_level_media:
-            return None
-
-        # TODO: instead of returning None, this should raise an exception saying
-        # that user does not have enough quota on any of its media.
+        if len(media) == 1:
+            return media[0]
         return None
 
 

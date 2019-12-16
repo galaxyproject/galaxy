@@ -80,19 +80,9 @@ class StorageMediaController(BaseAPIController):
 
         :type  payload: dict
         :param payload: A dictionary structure containing the following keys:
-            - order: A key which defines the hierarchical relation between this and other storage media defined
-            by the user.
             - category: is the type of this storage media, its value is a key from `categories` bunch defined in the
             `StorageMedia` class.
             - path: a path in the storage media to be used (e.g., AWS S3 Bucket name).
-            - order : Sets the order of this storage media, it is an integer specifying the order in
-            which a storage media should be tried to persiste a dataset on. Order is relative to the default
-            Galaxy instance storage, which has a reserved order 0, where storage media with positive and negative
-            order are tried prior and posterior to the default storage respectively. For instance, considering 3
-            storage media, PM_1, PM_2, and PM_3 with the orders 2, 1, and -1 respectively; Galaxy tries the these
-            storage media in the following order: PM_1, PM_2, Default, PM_3.
-             (e.g., access and secret key for an AWS S3 bucket).
-            - quota (Optional): Disk quota, a limit that sets maximum data storage limit on this storage media.
             - usage (Optional): Sets the size of data persisted by Galaxy in this storage media.
         :rtype: dict
         :return: The newly created storage media.
@@ -103,13 +93,6 @@ class StorageMediaController(BaseAPIController):
                    " but received data of type '%s'." % str(type(payload))
 
         missing_arguments = []
-        order = payload.get("order")
-        if order is None:
-            missing_arguments.append("order")
-        try:
-            order = int(order)
-        except ValueError:
-            return 'Expect an integer value for `order` argument, but received: `{}`.'.format(order)
         category = payload.get("category")
         if category is None:
             missing_arguments.append("category")
@@ -119,14 +102,8 @@ class StorageMediaController(BaseAPIController):
         if len(missing_arguments) > 0:
             trans.response.status = 400
             return "The following required arguments are missing in the payload: %s" % missing_arguments
-        if order == 0:
-            return "The order `0` is reserved for default storage, choose a higher/lower order."
         purgeable = string_as_bool(payload.get("purgeable", True))
 
-        try:
-            quota = float(payload.get("quota", "0.0"))
-        except ValueError:
-            return "Expect a float number for the `quota` attribute, but received `{}`.".format(payload.get("quota"))
         try:
             usage = float(payload.get("usage", "0.0"))
         except ValueError:
@@ -141,10 +118,8 @@ class StorageMediaController(BaseAPIController):
         try:
             new_storage_media = self.storage_media_manager.create(
                 user_id=trans.user.id,
-                order=order,
                 category=category,
                 path=path,
-                quota=quota,
                 usage=usage,
                 purgeable=purgeable,
                 cache_size=trans.app.config.default_storage_media_cache_size)

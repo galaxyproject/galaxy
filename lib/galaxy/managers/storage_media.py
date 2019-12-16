@@ -112,8 +112,6 @@ class StorageMediaSerializer(base.ModelSerializer, deletable.PurgableSerializerM
             "model_class",
             "user_id",
             "usage",
-            "order",
-            "quota",
             "category",
             "path"
         ])
@@ -124,8 +122,6 @@ class StorageMediaSerializer(base.ModelSerializer, deletable.PurgableSerializerM
             "create_time",
             "update_time",
             "usage",
-            "order",
-            "quota",
             "category",
             "path",
             "deleted",
@@ -139,15 +135,13 @@ class StorageMediaSerializer(base.ModelSerializer, deletable.PurgableSerializerM
 
         # Arguments of the following lambda functions:
         # i  : an instance of galaxy.model.StorageMedia.
-        # k  : serialized dictionary key (e.g., "model_class", "order", "category", and "path").
+        # k  : serialized dictionary key (e.g., "model_class", "category", and "path").
         # **c: a dictionary containing "trans" and "user" objects.
         self.serializers.update({
             "id"         : lambda i, k, **c: self.app.security.encode_id(i.id),
             "model_class": lambda *a, **c: "StorageMedia",
             "user_id"    : lambda i, k, **c: self.app.security.encode_id(i.user_id),
             "usage"      : lambda i, k, **c: str(i.usage),
-            "order"      : lambda i, k, **c: i.order,
-            "quota"      : lambda i, k, **c: str(i.quota),
             "category"   : lambda i, k, **c: i.category,
             "path"       : lambda i, k, **c: i.path,
             "deleted"    : lambda i, k, **c: i.deleted,
@@ -163,7 +157,5 @@ class StorageMediaDeserializer(sharable.SharableModelDeserializer, deletable.Pur
     def add_deserializers(self):
         super(StorageMediaDeserializer, self).add_deserializers()
         self.deserializers.update({
-            "path": self.default_deserializer,
-            "order": self.default_deserializer,
-            "quota": self.default_deserializer
+            "path": self.default_deserializer
         })

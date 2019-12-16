@@ -954,11 +954,6 @@ class JobWrapper(HasResourceParameters):
 
     def __assign_media(self, job, dataset):
         if self.app.config.enable_user_based_object_store and job.user:
-            quota = self.app.quota_agent.get_quota(job.user)
-            eqi = True
-            if quota is not None:
-                usage = self.app.quota_agent.get_usage(user=job.user, history=job.history)
-                eqi = usage < quota
             all_user_media = job.user.active_storage_media
             if job.history is None:
                 is_history_shared = False
@@ -967,7 +962,6 @@ class JobWrapper(HasResourceParameters):
                     self.app.model.HistoryUserShareAssociation).filter_by(history_id=job.history.id).first() is not None
             selected_media = model.StorageMedia.choose_media_for_association(
                 all_user_media,
-                enough_quota_on_instance_level_media=eqi,
                 history_shared=is_history_shared)
             if selected_media is not None:
                 selected_media.associate_with_dataset(dataset)

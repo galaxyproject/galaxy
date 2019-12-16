@@ -25,8 +25,6 @@ StorageMediaTable = Table(
     Column("update_time", DateTime, default=now, onupdate=now),
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
     Column("usage", Numeric(15, 0), default=0),
-    Column("order", Integer),
-    Column("quota", Numeric(15, 0)),
     Column("category", TEXT, default="local"),
     Column("path", TEXT),
     Column("deleted", Boolean, index=True, default=False),
