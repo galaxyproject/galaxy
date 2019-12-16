@@ -73,10 +73,9 @@ Even Better Automatic Rebuilding (HMR)
 ======================================
 
 For even more rapid development you can use the webpack development server for
-HMR.  This technique allows swapping out of modules while the application is
-running without requiring a full page reload most of the time.  Upon editing
-and saving client files webpack will rebuild the necessary modules and then
-notify your web to update the page with your new code.
+Hot Module Replacement (HMR).  This technique allows swapping out of modules
+while the application is running without requiring a full page reload most of
+the time.
 
 Setting this up is a little more involved, but it is the fastest possible way
 to iterate when developing the client.  You'll need to start two separate
