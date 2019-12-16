@@ -162,8 +162,8 @@
                     Recent Jobs: These jobs have completed in the previous {{ cutoffDisplay }} seconds.
                 </template>
                 <template v-slot:cell(job_info)="data">
-                    <b-link :href="data.value['info_url']" target="galaxy_main">
-                        {{ data.value["id"] }}
+                    <b-link :href="data.value.info_url" v-on:click.prevent="clickJobInfo(data.value.id)">
+                        {{ data.value.id }}
                     </b-link>
                 </template>
                 <template v-slot:cell(update_time)="data">
