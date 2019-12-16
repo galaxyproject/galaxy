@@ -74,15 +74,16 @@ Even Better Automatic Rebuilding (HMR)
 
 For even more rapid development you can use the webpack development server for
 HMR.  This technique allows swapping out of modules while the application is
-running without requiring a full reload most of the time.  Upon editing and
-saving client files a file webpack will rebuild the necessary modules and your web browser
-will detect changes and automatically update the page with new code as it is
-saved.  Setting this up is a little more involved, but this is the fastest
-possible way to iterate when developing the client.  You'll need to start two
+running without requiring a full page reload most of the time.  Upon editing
+and saving client files webpack will rebuild the necessary modules and then
+notify your web to update the page with your new code.
+
+Setting this up is a little more involved, but it is the fastest possible way
+to iterate when developing the client.  You'll need to start two separate
 processes here.  The first command below starts a special webpack dev server
 after a client build, and the second starts a Galaxy server like usual, but
-with extra mappings that redirect client artifact requests to the special HMR
-server.
+with extra mappings that redirect client artifact requests to the mentioned
+webpack dev server.
 
     make client-dev-server
     GALAXY_CLIENT_DEV_SERVER=1 sh run.sh
