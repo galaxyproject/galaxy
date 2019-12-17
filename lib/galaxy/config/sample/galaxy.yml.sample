@@ -753,8 +753,11 @@ galaxy:
   # 'info' (the default), 'warning', 'error', 'done'.
   #message_box_class: info
 
-  # Append "/{brand}" to the "Galaxy" text in the masthead.
+  # Append "{brand}" text to the masthead.
   #brand: null
+
+  # Display the "Galaxy" text in the masthead.
+  #display_galaxy_brand: true
 
   # Format string used when showing date and time information. The
   # string may contain: - the directives used by Python time.strftime()
