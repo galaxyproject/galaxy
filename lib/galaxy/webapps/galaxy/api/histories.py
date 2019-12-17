@@ -77,6 +77,8 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
                     controls which set of properties to return
             keys:   comma separated strings, unused by default
                     keys/names of individual properties to return
+            all:    boolean, defaults to 'false', admin-only
+                    returns all histories, not just current user's
 
         If neither keys or views are sent, the default view (set of keys) is returned.
         If both a view and keys are sent, the key list and the view's keys are
@@ -144,8 +146,12 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
         filters = []
         # support the old default of not-returning/filtering-out deleted histories
         filters += self._get_deleted_filter(deleted, filter_params)
-        # users are limited to requesting only their own histories (here)
-        filters += [self.app.model.History.user == current_user]
+        # check if user is admin and optional parameter 'all' is True
+        admin = trans.user_is_admin
+        all_histories = util.string_as_bool(kwd.get('all', False))
+        if not (admin and all_histories):
+            # users are limited to requesting only their own histories (here)
+            filters += [self.app.model.History.user == current_user]
         # and any sent in from the query string
         filters += self.filters.parse_filters(filter_params)
 
