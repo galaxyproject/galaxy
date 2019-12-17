@@ -146,11 +146,16 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
         filters = []
         # support the old default of not-returning/filtering-out deleted histories
         filters += self._get_deleted_filter(deleted, filter_params)
-        # check if user is admin and optional parameter 'all' is True
+        # check if user is admin and get optional parameter 'all' 
         admin = trans.user_is_admin
         all_histories = util.string_as_bool(kwd.get('all', False))
-        if not (admin and all_histories):
-            # users are limited to requesting only their own histories (here)
+        # if parameter 'all' is true, throw exception is not admin
+        # else add current user filter to query (default behaviour)
+        if all_histories:
+            if not admin:
+                message = "Only admins can query all histories"
+                raise exceptions.AdminRequiredException(message)
+        else:
             filters += [self.app.model.History.user == current_user]
         # and any sent in from the query string
         filters += self.filters.parse_filters(filter_params)
