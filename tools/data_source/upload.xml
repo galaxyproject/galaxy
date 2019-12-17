@@ -24,6 +24,7 @@
         <filter type="sort_by" column="0"/>
         <filter type="add_value" name="Auto-detect" value="auto" index="0"/>
       </options>
+      <validator type="expression"><![CDATA[ tool.app.datatypes_registry.includes(value) ]]></validator>
     </param>
     <param name="file_count" type="hidden" value="auto" />
     <upload_dataset name="files" title="Specify Files for Dataset" file_type_name="file_type" metadata_ref="files_metadata">
