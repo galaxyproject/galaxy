@@ -1,4 +1,4 @@
-<tool id="multi_output_assign_primary" name="multi_output_assign_primary" version="0.1.0">
+<tool id="multi_output_assign_primary_ext_dbkey" name="multi_output_assign_primary" version="0.1.0">
   <command>
     echo "1" > sample1.hg38.tsv;
     echo "2" > sample2.hg19.csv;
@@ -8,9 +8,9 @@
     <param name="input" type="data" />
   </inputs>
   <outputs>
-	<data name="simple_dbkey_ext">
+    <data name="simple_dbkey_ext">
        <discover_datasets pattern="^(?P&lt;designation&gt;sample.)\.(?P&lt;dbkey&gt;[^.]+)\.(?P&lt;ext&gt;[^.]+)$" visible="true" format="txt" assign_primary_output="true" />
-	</data>
+    </data>
   </outputs>
   <tests>
     <test>
