@@ -1012,14 +1012,14 @@ mapping:
         type: str
         required: false
         desc: |
-          Append "/{brand}" to the "Galaxy" text in the masthead.
+          Append "{brand}" text to the masthead.
 
-      brand_enabled:
+      display_galaxy_brand:
         type: bool
         default: true
         required: false
         desc: |
-          Enables the brand text in the masthead.
+          Display the "Galaxy" text in the masthead.
 
       pretty_datetime_format:
         type: str

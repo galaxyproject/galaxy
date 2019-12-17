@@ -1354,17 +1354,17 @@
 ~~~~~~~~~
 
 :Description:
-    Append "/{brand}" to the "Galaxy" text in the masthead.
+    Append "{brand}" text to the masthead.
 :Default: ``None``
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~
-``brand_enabled``
-~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~
+``display_galaxy_brand``
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Enables the brand text in the masthead.
+    Display the "Galaxy" text in the masthead.
 :Default: ``true``
 :Type: bool
 

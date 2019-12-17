@@ -81,7 +81,7 @@ const View = Backbone.View.extend({
     },
 
     render: function() {
-        let brand = this.options.brand_enabled ? "Galaxy " : "";
+        let brand = this.options.display_galaxy_brand ? "Galaxy " : "";
         if (this.options.brand) {
             brand += this.options.brand;
         }
