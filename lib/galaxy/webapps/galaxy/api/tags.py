@@ -27,7 +27,7 @@ class TagsController(BaseAPIController, UsesTagsMixin):
         if item_class is None:
             raise MessageException("Please provide the item class (item_class).")
         if item_tags and len(item_tags) > 0:
-            item_tags = ",".join(item_tags).encode('utf-8')
+            item_tags = ",".join(item_tags)
         item = self._get_item(trans, item_class, trans.security.decode_id(item_id))
         user = trans.user
         self.get_tag_handler(trans).delete_item_tags(user, item)
