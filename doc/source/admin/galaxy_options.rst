@@ -1025,6 +1025,40 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``mulled_resolution_cache_type``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Mulled resolution caching. Mulled resolution uses external APIs of
+    quay.io, these requests are caching using this and the following
+    parameters
+:Default: ``file``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``mulled_resolution_cache_data_dir``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Data directory used by beaker for caching mulled resolution
+    requests.
+:Default: ``mulled/data``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``mulled_resolution_cache_lock_dir``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Lock directory used by beaker for caching mulled resolution
+    requests.
+:Default: ``mulled/locks``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``object_store_config_file``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

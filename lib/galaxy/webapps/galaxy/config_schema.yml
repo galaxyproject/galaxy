@@ -776,7 +776,7 @@ mapping:
 
       mulled_resolution_cache_data_dir:
         type: str
-        default: citations/data
+        default: mulled/data
         path_resolves_to: data_dir
         required: false
         desc: |
@@ -784,7 +784,7 @@ mapping:
 
       mulled_resolution_cache_lock_dir:
         type: str
-        default: citations/locks
+        default: mulled/locks
         path_resolves_to: data_dir
         required: false
         desc: |
