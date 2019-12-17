@@ -897,6 +897,8 @@ class SelectToolParameter(ToolParameter):
                         return []
                     else:
                         raise ValueError("parameter '%s': no option was selected for non optional parameter" % (self.name))
+            if is_runtime_value(value):
+                return None
             if value not in legal_values and require_legal_value:
                 raise ValueError("parameter '%s': an invalid option (%r) was selected (valid options: %s)" % (self.name, value, ",".join(legal_values)))
             return value

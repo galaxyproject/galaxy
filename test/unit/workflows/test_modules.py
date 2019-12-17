@@ -109,7 +109,7 @@ def test_data_collection_input_connections():
     assert len(outputs) == 1
     output = outputs[0]
     assert output["name"] == "output"
-    assert output["extensions"] == ["input_collection"]
+    assert output["extensions"] == ["input"]
     assert output["collection_type"] == "list:paired"
 
 

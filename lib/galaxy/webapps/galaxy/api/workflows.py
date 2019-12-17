@@ -551,6 +551,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                          annotation defaults to existing annotation
             * menu_entry optional boolean marking if the workflow should appear in the user's menu,
                          if not present, workflow menu entries are not modified
+            * from_tool_form True iff encoded state coming in is encoded for the tool form.
 
         :rtype:     dict
         :returns:   serialized version of the workflow
@@ -613,11 +614,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         """
         inputs = payload.get('inputs', {})
         trans.workflow_building_mode = workflow_building_modes.ENABLED
-        module = module_factory.from_dict(trans, payload)
+        module = module_factory.from_dict(trans, payload, from_tool_form=True)
         if 'tool_state' not in payload:
             module_state = {}
             populate_state(trans, module.get_inputs(), inputs, module_state, check=False)
-            module.recover_state(module_state)
+            module.recover_state(module_state, from_tool_form=True)
         return {
             'label'             : inputs.get('__label', ''),
             'annotation'        : inputs.get('__annotation', ''),
@@ -719,10 +720,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         # Fill in missing tool state for hand built so the workflow can run, default of this
         # should become True at some point in the future I imagine.
         fill_defaults = util.string_as_bool(payload.get("fill_defaults", False))
-
+        from_tool_form = payload.get("from_tool_form", False)
         return {
             'exact_tools': exact_tools,
             'fill_defaults': fill_defaults,
+            'from_tool_form': from_tool_form,
         }
 
     def __normalize_workflow(self, trans, as_dict):
