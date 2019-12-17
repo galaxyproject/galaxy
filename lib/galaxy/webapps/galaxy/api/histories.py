@@ -149,7 +149,7 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
         # check if user is admin and get optional parameter 'all' 
         admin = trans.user_is_admin
         all_histories = util.string_as_bool(kwd.get('all', False))
-        # if parameter 'all' is true, throw exception is not admin
+        # if parameter 'all' is true, throw exception if not admin
         # else add current user filter to query (default behaviour)
         if all_histories:
             if not admin:
