@@ -95,6 +95,10 @@ class GalaxyInternalMarkdownDirectiveHandler(object):
                 assert object_id is not None
                 hda = hda_manager.get_accessible(object_id, trans.user)
                 rval = self.handle_dataset_display(line, hda)
+            elif container == "history_dataset_embedded":
+                assert object_id is not None
+                hda = hda_manager.get_accessible(object_id, trans.user)
+                rval = self.handle_dataset_embedded(line, hda)
             elif container == "history_dataset_as_image":
                 assert object_id is not None
                 hda = hda_manager.get_accessible(object_id, trans.user)
@@ -198,6 +202,9 @@ class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHand
     def handle_dataset_display(self, line, hda):
         self.extend_history_dataset_rendering_data(hda, "name", hda.name, "")
 
+    def handle_dataset_embedded(self, line, hda):
+        self.extend_history_dataset_rendering_data(hda, "name", hda.name, "")
+
     def handle_dataset_peek(self, line, hda):
         self.extend_history_dataset_rendering_data(hda, "peek", hda.peek, "*No Dataset Peek Available*")
 
@@ -262,6 +269,16 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
         markdown += "**Dataset:** %s\n\n" % name
         markdown += self._display_dataset_content(hda)
         markdown += '\n---\n'
+        return (markdown, True)
+
+    def handle_dataset_embedded(self, line, hda):
+        datatype = hda.datatype
+        markdown = ""
+        # subtly different than below since no Contents: prefix and new lines and such.
+        if datatype is None:
+            markdown += "*cannot display - cannot format unknown datatype*\n\n"
+        else:
+            markdown += datatype.display_as_markdown(hda, self.markdown_formatting_helpers)
         return (markdown, True)
 
     def _display_dataset_content(self, hda, header="Contents"):

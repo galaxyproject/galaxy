@@ -15,7 +15,9 @@ export function render_embedded_items() {
         // Show embedded item.
         var show_embedded_item = function() {
             var ajax_url = container.find("input[type=hidden]").val();
-
+            if (!ajax_url) {
+                ajax_url = container.data("item-url");
+            }
             // Only get item content if it's not already there.
             var item_content = $.trim(container.find(".item-content").text());
             if (!item_content) {
@@ -57,7 +59,6 @@ export function render_embedded_items() {
             show_embedded_item();
             return false;
         });
-
         // Setup toggle contract.
         var toggle_contract = $(this).find(".toggle");
         toggle_contract.click(function() {
@@ -75,5 +76,8 @@ export function render_embedded_items() {
             }
             return false;
         });
+        if ($(this).hasClass("expanded")) {
+            show_embedded_item();
+        }
     });
 }

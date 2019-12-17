@@ -30,7 +30,7 @@ const default_fence = md.renderer.rules.fence;
 const RENDER_FUNCTIONS = {
     history_dataset_display: (action, args, content) => {
         const history_dataset_id = args.history_dataset_id;
-        return `<div class='embedded-item display dataset'>
+        return `<div class='embedded-item display dataset' data-item-url="${getAppRoot()}dataset/get_item_content_async?id=${history_dataset_id}">
             <div class='title'>
                 <div style="float: left">
                 <a class="display_in_embed icon-button toggle-expand" title="Show Dataset content"></a>
@@ -41,10 +41,18 @@ const RENDER_FUNCTIONS = {
                 <a href="${getAppRoot()}dataset/imp?dataset_id=${history_dataset_id}" class="icon-button import" title="Import dataset"></a>
                 </div>
                 <a class="toggle-embed"><h4>Galaxy Dataset | <span class="render-name" history_dataset_id="${history_dataset_id}"></span</h4></a>
-                <input type="hidden" name="ajax-item-content-url" value="${getAppRoot()}dataset/get_item_content_async?id=${history_dataset_id}">
             </div>
             <div class='summary-content'>
             </div>
+            <div class='expanded-content'>
+                <div class='item-content'>
+                </div>
+            </div>
+        </div>`;
+    },
+    history_dataset_embedded: (action, args, content) => {
+        const history_dataset_id = args.history_dataset_id;
+        return `<div class='embedded-item display expanded' data-item-url="${getAppRoot()}dataset/get_item_content_async?id=${history_dataset_id}">
             <div class='expanded-content'>
                 <div class='item-content'>
                 </div>
