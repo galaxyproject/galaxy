@@ -19,7 +19,7 @@
                 v-b-tooltip.hover
                 title="The creation of this dataset has been paused."
             />
-            <span>{{ item.name }}</span>
+            <span> {{ this.getName }}</span>
         </b-link>
         <div class="dropdown-menu" aria-labelledby="dataset-dropdown">
             <a class="dropdown-item" href="#" @click.prevent="showDataset">Show in History</a>
@@ -38,6 +38,9 @@ export default {
         item: Object
     },
     computed: {
+        getName() {
+            return this.item.name || "Unavailable";
+        },
         isError() {
             return this.item.state === "error";
         },
