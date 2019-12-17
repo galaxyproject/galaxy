@@ -39,5 +39,5 @@ class TagsController(BaseAPIController, UsesTagsMixin):
         Get an item based on type and id.
         """
         item_class = self.get_tag_handler(trans).item_tag_assoc_info[item_class_name].item_class
-        item = trans.sa_session.query(item_class).filter(item_class.id == id)[0]
+        item = trans.sa_session.query(item_class).filter(item_class.id == id)
         return item
