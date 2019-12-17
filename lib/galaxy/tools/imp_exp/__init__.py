@@ -2,7 +2,6 @@ import getpass
 import logging
 import os
 import shutil
-import tempfile
 
 from galaxy import model
 from galaxy.model import store
@@ -92,9 +91,8 @@ class JobExportHistoryArchiveWrapper:
         #
         # Create attributes/metadata files for export.
         #
-        # Use abspath because mkdtemp() does not, contrary to the documentation,
-        # always return an absolute path.
-        temp_output_dir = os.path.abspath(tempfile.mkdtemp())
+        jeha.dataset.create_extra_files_path()
+        temp_output_dir = jeha.dataset.extra_files_path
 
         history = jeha.history
         history_attrs_filename = os.path.join(temp_output_dir, ATTRS_FILENAME_HISTORY)
@@ -103,8 +101,6 @@ class JobExportHistoryArchiveWrapper:
         # symlink files on export, on worker files will tarred up in a dereferenced manner.
         with store.DirectoryModelExportStore(temp_output_dir, app=app, export_files="symlink") as export_store:
             export_store.export_history(history, include_hidden=include_hidden, include_deleted=include_deleted)
-        external_chown(temp_output_dir, jeha.job.user.system_user_pwent(app.config.real_system_username),
-                       app.config.external_chown_script, "history export temporary directory")
 
         #
         # Create and return command line for running tool.
@@ -113,17 +109,3 @@ class JobExportHistoryArchiveWrapper:
         if jeha.compressed:
             options += " -G"
         return "{} {}".format(options, temp_output_dir)
-
-    def cleanup_after_job(self):
-        """ Remove temporary directory and attribute files generated during setup for this job. """
-        # Get jeha for job.
-        jeha = self.sa_session.query(model.JobExportHistoryArchive).filter_by(job_id=self.job_id).first()
-        if not jeha:
-            return
-        external_chown(jeha.temp_directory, jeha.job.user.system_user_pwent(getpass.getuser()),
-                       self.app.config.external_chown_script, "history export temporary directory")
-        temp_dir = jeha.temp_directory
-        try:
-            shutil.rmtree(temp_dir)
-        except Exception as e:
-            log.debug('Error deleting directory containing attribute files ({}): {}'.format(temp_dir, e))

@@ -25,6 +25,9 @@ def create_archive(export_directory, out_file, gzip=False):
     except Exception as e:
         print('Error creating history archive: %s' % unicodify(e), file=sys.stderr)
         return 1
+    finally:
+        if os.path.exists(export_directory):
+            shutil.rmtree(export_directory, ignore_errors=True)
 
 
 def main(argv=None):
