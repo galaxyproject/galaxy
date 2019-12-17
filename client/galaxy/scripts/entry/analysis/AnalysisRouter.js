@@ -19,6 +19,7 @@ import ToolForm from "mvc/tool/tool-form";
 import FormWrapper from "mvc/form/form-wrapper";
 import Sharing from "components/Sharing.vue";
 import UserPreferences from "components/User/UserPreferences.vue";
+import DatasetList from "components/Dataset/DatasetList.vue";
 import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
 import CustomBuilds from "components/User/CustomBuilds.vue";
 import Tours from "mvc/tours";
@@ -41,8 +42,9 @@ import DatasetError from "mvc/dataset/dataset-error";
 import DatasetEditAttributes from "mvc/dataset/dataset-edit-attributes";
 import Citations from "components/Citations.vue";
 import DisplayStructure from "components/DisplayStructured.vue";
-import Vue from "vue";
 import { CloudAuth } from "components/User/CloudAuth";
+
+import Vue from "vue";
 import store from "store";
 
 /** Routes */
@@ -253,12 +255,7 @@ export const getAnalysisRouter = Galaxy =>
         },
 
         show_datasets: function() {
-            this.page.display(
-                new GridView({
-                    url_base: `${getAppRoot()}dataset/list`,
-                    active_tab: "user"
-                })
-            );
+            this._display_vue_helper(DatasetList);
         },
 
         show_pages: function(action_id) {
