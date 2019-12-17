@@ -11,6 +11,7 @@ DEV_RELEASE?=0
 VERSION?=$(shell DEV_RELEASE=$(DEV_RELEASE) python $(BUILD_SCRIPTS_DIR)/print_version_for_release.py $(SOURCE_DIR) $(DEV_RELEASE))
 PROJECT_NAME?="galaxy-$(shell basename $(CURDIR))"
 PROJECT_NAME:=$(subst _,-,$(PROJECT_NAME))
+BRANCH?=$(shell git rev-parse --abbrev-ref HEAD)
 TEST_DIR?=test
 TESTS?=$(SOURCE_DIR) $(TEST_DIR)
 
@@ -55,7 +56,9 @@ dist: clean
 	$(IN_VENV) python setup.py sdist bdist_wheel
 	ls -l dist
 
-lint-dist: dist
+_twine-exists: ; @which twine > /dev/null
+
+lint-dist: _twine-exists dist
 	$(IN_VENV) twine check dist/*
 
 _release-test-artifacts:
@@ -83,8 +86,8 @@ new-version:
 release-local: commit-version release-artifacts new-version
 
 push-release:
-	# git push $(UPSTREAM) dev
-	# git push upstream $(UPSTREAM)/tags/galaxy-$(PROJECT_NAME)-$(VERSION)
+	# git push $(UPSTREAM) $(BRANCH)
+	# git push upstream $(PROJECT_NAME)-$(VERSION)
 	echo "Makefile doesn't manually push release."
 
 release: release-local push-release
