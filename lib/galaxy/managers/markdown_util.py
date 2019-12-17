@@ -18,6 +18,7 @@ import os
 import re
 import shutil
 import tempfile
+from collections import OrderedDict
 
 import markdown
 import pkg_resources
@@ -26,7 +27,11 @@ from weasyprint import CSS, HTML
 
 from galaxy.exceptions import MalformedContents, MalformedId
 from galaxy.managers.hdcas import HDCASerializer
-from galaxy.managers.jobs import JobManager
+from galaxy.managers.jobs import (
+    JobManager,
+    summarize_job_metrics,
+    summarize_job_parameters,
+)
 from galaxy.model.item_attrs import get_item_annotation_str
 from galaxy.util.sanitize_html import sanitize_html
 from .markdown_parse import GALAXY_MARKDOWN_FUNCTION_CALL_LINE, validate_galaxy_markdown
@@ -332,10 +337,42 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
         return ("**Standard Error:** %s" % stderr, True)
 
     def handle_job_metrics(self, line, job):
-        return ("**Job Metrics**: this isn't implemented for PDF export yet", True)
+        job_metrics = summarize_job_metrics(self.trans, job)
+        metrics_by_plugin = OrderedDict()
+        for job_metric in job_metrics:
+            plugin = job_metric["plugin"]
+            if plugin not in metrics_by_plugin:
+                metrics_by_plugin[plugin] = OrderedDict()
+            metrics_by_plugin[plugin][job_metric["title"]] = job_metric["value"]
+        markdown = ""
+        for metric_plugin, metrics_for_plugin in metrics_by_plugin.items():
+            markdown += "**%s**\n\n" % metric_plugin
+            markdown += "|   |   |\n|---|--|\n"
+            for title, value in metrics_for_plugin.items():
+                markdown += "| %s | %s |\n" % (title, value)
+        return (markdown, True)
 
     def handle_job_parameters(self, line, job):
-        return ("**sJob Parameters**: - this isn't implemented for PDF export yet", True)
+        markdown = """
+| Input Parameter | Value |
+|-----------------|-------|
+"""
+        parameters = summarize_job_parameters(self.trans, job)["parameters"]
+        for parameter in parameters:
+            markdown += "| "
+            depth = parameter["depth"]
+            if depth > 1:
+                markdown += ">" * (parameter["depth"] - 1) + " "
+            markdown += parameter["text"]
+            markdown += " | "
+            value = parameter["value"]
+            if isinstance(value, list):
+                markdown += ", ".join(["%s: %s" % (p["hid"], p["name"]) for p in value])
+            else:
+                markdown += value
+            markdown += " |\n"
+
+        return (markdown, True)
 
 
 class MarkdownFormatHelpers(object):

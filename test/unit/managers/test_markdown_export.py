@@ -5,6 +5,7 @@ from contextlib import contextmanager
 import mock
 
 from galaxy import model
+from galaxy.managers.jobs import JobManager
 from galaxy.managers.markdown_util import (
     ready_galaxy_markdown_for_export,
     to_basic_markdown,
@@ -201,6 +202,49 @@ workflow_display(workflow_id=1)
         result = self._to_basic(example)
         assert "**Workflow:** My Cool Workflow\n" in result
         assert "**Steps:**\n" in result
+
+    def test_job_parameters(self):
+        job = model.Job()
+        job.id = 1
+        example = """# Example
+```galaxy
+job_parameters(job_id=1)
+```
+"""
+        parameters = [
+            {"text": "Num Lines", "value": "6", "depth": 1},
+            {"text": "Plot", "value": "coolselect", "depth": 2},
+            {"text": "Input Dataset", "value": [{"src": "hda", "hid": 5, "name": "Cool Data"}], "depth": 1},
+        ]
+        response = {"parameters": parameters}
+        with mock.patch.object(JobManager, 'get_accessible_job', return_value=job):
+            with mock.patch("galaxy.managers.markdown_util.summarize_job_parameters", return_value=response):
+                result = self._to_basic(example)
+        assert "| Num Lines |" in result
+        assert "| > Plot |" in result
+        assert "| Input Dataset | " in result
+        assert "| 5: Cool Data |\n" in result
+
+    def test_job_metrics(self):
+        job = model.Job()
+        job.id = 1
+        example = """# Example
+```galaxy
+job_metrics(job_id=1)
+```
+"""
+        metrics = [
+            {"plugin": "core", "title": "Cores Allocated", "value": 1},
+            {"plugin": "core", "title": "Job Start Time", "value": "2019-12-17 11:53:13"},
+            {"plugin": "env", "title": "GALAXY_HOME", "value": "/path/to/home"},
+        ]
+        with mock.patch.object(JobManager, 'get_accessible_job', return_value=job):
+            with mock.patch("galaxy.managers.markdown_util.summarize_job_metrics", return_value=metrics):
+                result = self._to_basic(example)
+        assert "**core**\n" in result
+        assert "**env**\n" in result
+        assert "| Cores Allocated | 1 |\n" in result
+        assert "| GALAXY_HOME | /path/to/home |\n" in result
 
     def _to_basic(self, example):
         return to_basic_markdown(self.trans, example)
