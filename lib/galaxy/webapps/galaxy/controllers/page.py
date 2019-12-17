@@ -333,6 +333,12 @@ class PageController(BaseUIController, SharableMixin,
                     'name'      : 'annotation',
                     'label'     : 'Annotation',
                     'help'      : 'A description of the page. The annotation is shown alongside published pages.'
+                }, {
+                    'name'      : 'content_format',
+                    'label'     : 'Content Format',
+                    'type'      : 'select',
+                    'options'   : [('HTML', 'html'), ('Markdown', 'markdown')],
+                    'help'      : 'Use the traditional rich HTML editor or the newer experimental Markdown editor to create the page content. The HTML editor has several known bugs, is unmaintained and pages created with it will be read-only in future releases of Galaxy.'
                 }]
             }
         else:
@@ -450,14 +456,6 @@ class PageController(BaseUIController, SharableMixin,
 
     @web.expose
     @web.require_login()
-    def save(self, trans, id, content):
-        id = self.decode_id(id)
-        page = trans.sa_session.query(model.Page).get(id)
-        assert page.user == trans.user
-        self.page_manager.save_new_revision(trans, page, {"content": content})
-
-    @web.expose
-    @web.require_login()
     def display(self, trans, id):
         id = self.decode_id(id)
         page = trans.sa_session.query(model.Page).get(id)
@@ -478,11 +476,17 @@ class PageController(BaseUIController, SharableMixin,
         # Security check raises error if user cannot access page.
         self.security_check(trans, page, False, True)
 
-        # Process page content.
-        processor = PageContentProcessor(trans, self._get_embed_html)
-        processor.feed(page.latest_revision.content)
-        # Output is string, so convert to unicode for display.
-        page_content = unicodify(processor.output(), 'utf-8')
+        latest_revision = page.latest_revision
+        if latest_revision.content_format == "html":
+            # Process page content.
+            processor = PageContentProcessor(trans, self._get_embed_html)
+            processor.feed(page.latest_revision.content)
+            # Output is string, so convert to unicode for display.
+            page_content = unicodify(processor.output(), 'utf-8')
+            template = "page/display.mako"
+        else:
+            page_content = trans.security.encode_id(page.id)
+            template = "page/display_markdown.mako"
 
         # Get rating data.
         user_item_rating = 0
@@ -494,7 +498,7 @@ class PageController(BaseUIController, SharableMixin,
                 user_item_rating = 0
         ave_item_rating, num_ratings = self.get_ave_item_rating_data(trans.sa_session, page)
 
-        return trans.fill_template_mako("page/display.mako", item=page,
+        return trans.fill_template_mako(template, item=page,
                                         item_data=page_content,
                                         user_item_rating=user_item_rating,
                                         ave_item_rating=ave_item_rating,

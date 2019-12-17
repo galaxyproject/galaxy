@@ -71,8 +71,10 @@
         %endif
         ## TODO: why is the default font size so small?
         <pre style="font-size: 135%">${ data_to_render | h }</pre>
+    %elif data.get_size() == 0:
+        <i>Dataset is empty.</i>
     %else:
-        <p align='center'>Cannot show dataset content</p>
+        <i>Problem displaying dataset content.</i>
     %endif
 </%def>
 

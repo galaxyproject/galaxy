@@ -36,6 +36,20 @@ printf('hello')
 job_metrics(job_id=THISFAKEID)
 ```
 """)
+    # assert multiple valid container is fine.
+    assert_markdown_valid("""
+```galaxy
+job_metrics(job_id=THISFAKEID)
+```
+
+Markdown between directives.
+
+```galaxy
+job_metrics(job_id=THISFAKEID)
+```
+
+""")
+
     # assert valid container is fine at end of document.
     assert_markdown_valid("""
 ```galaxy

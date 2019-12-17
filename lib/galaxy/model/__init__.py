@@ -5767,7 +5767,8 @@ class CloudAuthz(RepresentById):
 
 
 class Page(Dictifiable, RepresentById):
-    dict_element_visible_keys = ['id', 'title', 'latest_revision_id', 'slug', 'published', 'importable', 'deleted']
+    # username needed for slug generation
+    dict_element_visible_keys = ['id', 'title', 'latest_revision_id', 'slug', 'published', 'importable', 'deleted', 'username']
 
     def __init__(self):
         self.id = None
@@ -5787,14 +5788,20 @@ class Page(Dictifiable, RepresentById):
         rval['revision_ids'] = rev
         return rval
 
+    @property
+    def username(self):
+        return self.user.username
+
 
 class PageRevision(Dictifiable, RepresentById):
-    dict_element_visible_keys = ['id', 'page_id', 'title', 'content']
+    DEFAULT_CONTENT_FORMAT = 'html'
+    dict_element_visible_keys = ['id', 'page_id', 'title', 'content', 'content_format']
 
     def __init__(self):
         self.user = None
         self.title = None
         self.content = None
+        self.content_format = PageRevision.DEFAULT_CONTENT_FORMAT
 
     def to_dict(self, view='element'):
         rval = super(PageRevision, self).to_dict(view=view)

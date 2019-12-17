@@ -72,10 +72,11 @@ class PagesController(BaseAPIController, SharableItemSecurityMixin, UsesAnnotati
             Create a page and return dictionary containing Page summary
 
         :param  payload:    dictionary structure containing::
-            'slug'       = The title slug for the page URL, must be unique
-            'title'      = Title of the page
-            'content'    = HTML contents of the page
-            'annotation' = Annotation that will be attached to the page
+            'slug'           = The title slug for the page URL, must be unique
+            'title'          = Title of the page
+            'content'        = contents of the first page revision (type dependent on content_format)
+            'content_format' = 'html' or 'markdown'
+            'annotation'     = Annotation that will be attached to the page
 
         :rtype:     dict
         :returns:   Dictionary return of the Page.to_dict call
@@ -120,5 +121,6 @@ class PagesController(BaseAPIController, SharableItemSecurityMixin, UsesAnnotati
         page = get_object(trans, id, 'Page', check_ownership=False, check_accessible=True)
         rval = self.encode_all_ids(trans, page.to_dict(), True)
         rval['content'] = page.latest_revision.content
+        rval['content_format'] = page.latest_revision.content_format
         self.manager.rewrite_content_for_export(trans, rval)
         return rval
