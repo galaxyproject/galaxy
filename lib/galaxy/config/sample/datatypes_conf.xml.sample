@@ -239,6 +239,8 @@
     <datatype extension="paramxml" type="galaxy.datatypes.proteomics:ParamXml" mimetype="application/xml" subclass="true" display_in_upload="true" />
     <datatype extension="qcml" type="galaxy.datatypes.xml:GenericXml" mimetype="application/xml" subclass="true" display_in_upload="true" description="Quality control data in XML format (https://code.google.com/p/qcml/)."/>
     <datatype extension="kroenik" type="galaxy.datatypes.proteomics:Kroenik" display_in_upload="true"/>
+    <datatype extension="peplist" type="galaxy.datatypes.proteomics:PepList" display_in_upload="true"/>
+    <datatype extension="psms" type="galaxy.datatypes.proteomics:PSMS" display_in_upload="true"/>
     <datatype extension="pepxml.tsv" type="galaxy.datatypes.proteomics:PepXmlReport" display_in_upload="true"/>
     <datatype extension="protxml.tsv" type="galaxy.datatypes.proteomics:ProtXmlReport" display_in_upload="true"/>
     <datatype extension="mascotdat" type="galaxy.datatypes.proteomics:MascotDat" display_in_upload="false"/>
@@ -872,6 +874,8 @@
     <sniffer type="galaxy.datatypes.proteomics:MzXML"/>
     <sniffer type="galaxy.datatypes.proteomics:NmrML"/>
     <sniffer type="galaxy.datatypes.proteomics:Kroenik"/>
+    <sniffer type="galaxy.datatypes.proteomics:PepList"/>
+    <sniffer type="galaxy.datatypes.proteomics:PSMS"/>
     <sniffer type="galaxy.datatypes.proteomics:PepXml"/>
     <sniffer type="galaxy.datatypes.proteomics:ProtXML"/>
     <sniffer type="galaxy.datatypes.proteomics:SPLib"/>

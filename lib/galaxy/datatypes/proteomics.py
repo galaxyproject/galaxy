@@ -142,6 +142,58 @@ class Kroenik(Tabular):
         return True
 
 
+@build_sniff_from_prefix
+class PepList(Tabular):
+    """
+    Peplist file as used in OpenMS
+    https://github.com/OpenMS/OpenMS/blob/0fc8765670a0ad625c883f328de60f738f7325a4/src/openms/source/FORMAT/FileHandler.cpp#L432
+    """
+    file_ext = "peplist"
+
+    def __init__(self, **kwd):
+        super(PepList, self).__init__(**kwd)
+        self.column_names = ["m/z", "rt(min)", "snr", "charge", "intensity"]
+
+    def display_peek(self, dataset):
+        """Returns formated html of peek"""
+        return self.make_html_table(dataset, column_names=self.column_names)
+
+    def sniff_prefix(self, file_prefix):
+        fh = file_prefix.string_io()
+        line = [_.strip() for _ in fh.readline().split("\t")]
+        if len(line) == 5 and line == self.column_names:
+            return True
+        return False
+
+
+@build_sniff_from_prefix
+class PSMS(Tabular):
+    """
+    Percolator tab-delimited output (PSM level, .psms) as used in OpenMS
+    https://github.com/OpenMS/OpenMS/blob/0fc8765670a0ad625c883f328de60f738f7325a4/src/openms/source/FORMAT/FileHandler.cpp#L453
+    see also http://www.kojak-ms.org/docs/percresults.html
+
+    Note that the data rows can have more columns than the header line
+    since ProteinIds are listed tab-separated.
+    """
+    file_ext = "psms"
+
+    def __init__(self, **kwd):
+        super(PSMS, self).__init__(**kwd)
+        self.column_names = ["PSMId", "score", "q-value", "posterior_error_prob", "peptide", "proteinIds"]
+
+    def display_peek(self, dataset):
+        """Returns formated html of peek"""
+        return self.make_html_table(dataset, column_names=self.column_names)
+
+    def sniff_prefix(self, file_prefix):
+        fh = file_prefix.string_io()
+        line = [_.strip() for _ in fh.readline().split("\t")]
+        if len(line) == 6 and line == self.column_names:
+            return True
+        return False
+
+
 class PepXmlReport(Tabular):
     """pepxml converted to tabular report"""
     edam_data = "data_2536"
