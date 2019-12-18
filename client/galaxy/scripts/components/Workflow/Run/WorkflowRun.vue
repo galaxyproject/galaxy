@@ -113,6 +113,6 @@ export default {
         handleInvocations(invocations) {
             this.invocations = invocations;
         }
-    },
+    }
 };
 </script>

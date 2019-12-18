@@ -556,10 +556,7 @@ var View = Backbone.View.extend({
                     if ($.isArray(response) && response.length > 0) {
                         this.handleInvocations(response);
                     } else {
-                        // Probably handle this up a layer in
-                        this.$el.append(
-                            this._templateError(response, "Invalid success response. No invocations found.")
-                        );
+                        this.submissionErrorModal(job_def, response);
                     }
                 },
                 error: function(response) {
@@ -580,15 +577,7 @@ var View = Backbone.View.extend({
                         }
                     }
                     if (!input_found) {
-                        self.modal.show({
-                            title: _l("Workflow submission failed"),
-                            body: self._templateError(job_def, response && response.err_msg),
-                            buttons: {
-                                Close: function() {
-                                    self.modal.hide();
-                                }
-                            }
-                        });
+                        this.submissionErrorModal(job_def, response);
                     }
                 },
                 complete: function() {
@@ -629,6 +618,18 @@ var View = Backbone.View.extend({
             }
         }
         return true;
+    },
+
+    submissionErrorModal: function(job_def, response) {
+        this.modal.show({
+            title: _l("Workflow submission failed"),
+            body: this._templateError(job_def, response && response.err_msg),
+            buttons: {
+                Close: () => {
+                    this.modal.hide();
+                }
+            }
+        });
     },
 
     /** Templates */
