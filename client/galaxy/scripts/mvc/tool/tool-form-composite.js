@@ -7,7 +7,6 @@ import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import Utils from "utils/utils";
 import Deferred from "utils/deferred";
-import Ui from "mvc/ui/ui-misc";
 import Form from "mvc/form/form-view";
 import FormData from "mvc/form/form-data";
 import ToolFormBase from "mvc/tool/tool-form-base";
@@ -25,10 +24,10 @@ var View = Backbone.View.extend({
         if (options && options.active_tab) {
             this.active_tab = options.active_tab;
         }
-        // TODO: refactor header, and 'run' response handling out into WorkflowRun
+        this.setRunButtonStatus = options.setRunButtonStatus;
+        // TODO: refactor 'run' response handling out into WorkflowRun
         // so only steps needs to be passed in as the target element.
         this.setElement(options.el);
-        this.$header = this.$el.find(".ui-form-composite-header");
         this.$steps = this.$el.find(".ui-form-composite-steps");
         this._configure();
         this.render();
@@ -205,7 +204,6 @@ var View = Backbone.View.extend({
     render: function() {
         var self = this;
         this.deferred.reset();
-        this._renderHeader();
         this._renderParameters();
         this._renderHistory();
         this._renderUseCachedJob();
@@ -213,25 +211,6 @@ var View = Backbone.View.extend({
         _.each(this.steps, step => {
             self._renderStep(step);
         });
-    },
-
-    /** Render header */
-    _renderHeader: function() {
-        var self = this;
-        this.execute_btn = new Ui.Button({
-            id: "run-workflow",
-            icon: "fa-check",
-            title: _l("Run workflow"),
-            cls: "btn btn-primary",
-            onclick: function() {
-                self._execute();
-            }
-        });
-        this.$header
-            .addClass("h4")
-            .empty()
-            .append(`<b>Workflow: ${this.model.get("name")}<b>`)
-            .append(this.execute_btn.$el);
     },
 
     /** Render workflow parameters */
@@ -432,11 +411,8 @@ var View = Backbone.View.extend({
             }
             form.portlet[!self.show_progress ? "enable" : "disable"]();
             if (self.show_progress) {
-                self.execute_btn.model.set({
-                    wait: true,
-                    wait_text: "Preparing...",
-                    percentage: ((step.index + 1) * 100.0) / self.steps.length
-                });
+                const percentage = ((step.index + 1) * 100.0) / self.steps.length;
+                this.setRunButtonStatus(false, "Preparing...", percentage);
             }
             Galaxy.emit.debug("tool-form-composite::initialize()", `${step.index} : Workflow step state ready.`, step);
             window.setTimeout(() => {
@@ -516,14 +492,13 @@ var View = Backbone.View.extend({
     },
 
     /** Build remaining steps */
-    _execute: function() {
-        var self = this;
+    execute: function() {
         this.show_progress = true;
         this._enabled(false);
         this.deferred.execute(promise => {
             window.setTimeout(() => {
                 promise.resolve();
-                self._submit();
+                this._submit();
             }, 0);
         });
     },
@@ -656,11 +631,7 @@ var View = Backbone.View.extend({
 
     /** Set enabled/disabled state */
     _enabled: function(enabled) {
-        this.execute_btn.model.set({
-            wait: !enabled,
-            wait_text: "Sending...",
-            percentage: -1
-        });
+        this.setRunButtonStatus(enabled, "Sending...", -1);
         if (this.wp_form) {
             this.wp_form.portlet[enabled ? "enable" : "disable"]();
         }

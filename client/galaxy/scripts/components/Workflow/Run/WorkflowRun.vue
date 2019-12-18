@@ -21,7 +21,21 @@
                         it.
                     </b-alert>
                 </div>
-                <div class="ui-form-composite-header" ref="header"></div>
+                <!-- h4 as a class here looks odd but it was in the Backbone -->
+                <div class="ui-form-composite-header h4" ref="header">
+                    <b>Workflow: {{ workflowName }}</b>
+                    <wait-button
+                        title="Run Workflow"
+                        id="run-workflow"
+                        variant="primary"
+                        :disabled="!runButtonEnabled"
+                        :waiting="!runButtonEnabled"
+                        :waitText="runButtonWaitText"
+                        :percentage="runButtonPercentage"
+                        @click="execute"
+                    >
+                    </wait-button>
+                </div>
                 <div class="ui-form-composite-steps" ref="steps"></div>
             </div>
         </div>
@@ -32,6 +46,7 @@
 import _ from "underscore";
 import axios from "axios";
 
+import WaitButton from "components/WaitButton";
 import LoadingSpan from "components/LoadingSpan";
 import { getAppRoot } from "onload";
 import ToolFormComposite from "mvc/tool/tool-form-composite";
@@ -39,7 +54,8 @@ import { errorMessageAsString } from "utils/simple-error";
 
 export default {
     components: {
-        LoadingSpan
+        LoadingSpan,
+        WaitButton
     },
     props: {
         workflowId: { type: String }
@@ -49,7 +65,12 @@ export default {
             error: false,
             loading: true,
             hasUpgradeMessages: false,
-            hasStepVersionChanges: false
+            hasStepVersionChanges: false,
+            workflowName: "",
+            runForm: null,
+            runButtonEnabled: true,
+            runButtonWaitText: "",
+            runButtonPercentage: -1
         };
     },
     created() {
@@ -60,15 +81,27 @@ export default {
                 const runData = response.data;
                 this.hasUpgradeMessages = runData.has_upgrade_messages;
                 this.hasStepVersionChanges = runData.step_version_changes && runData.step_version_changes.length > 0;
+                this.workflowName = runData.name;
                 this.loading = false;
                 this.$nextTick(() => {
                     const el = this.$refs["run"];
-                    new ToolFormComposite.View(_.extend(runData, { el }));
+                    const formProps = { el, setRunButtonStatus: this.setRunButtonStatus };
+                    this.runForm = new ToolFormComposite.View(_.extend(runData, formProps));
                 });
             })
             .catch(response => {
                 this.error = errorMessageAsString(response);
             });
-    }
+    },
+    methods: {
+        execute() {
+            this.runForm.execute();
+        },
+        setRunButtonStatus(enabled, waitText, percentage) {
+            this.runButtonEnabled = enabled;
+            this.runButtonWaitText = waitText;
+            this.runButtonPercentage = percentage;
+        }
+    },
 };
 </script>
