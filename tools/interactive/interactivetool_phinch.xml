@@ -1,4 +1,4 @@
-<tool id="interactive_tool_pinch" tool_type="interactive" name="Phinch Visualisation" version="0.1">
+<tool id="interactive_tool_phinch" tool_type="interactive" name="Phinch Visualisation" version="0.1">
     <requirements>
         <container type="docker">shiltemann/docker-phinch-galaxy:16.04</container>
     </requirements>
@@ -11,12 +11,13 @@
         ## ToDo nginx, proxy.conf etc can be removed from the container
 
         #import os
-        #set $name = os.path.splitext(str($infile.display_name))[0]
+        #set $name = os.path.splitext(str($infile.display_name).replace(' ', '_'))[0]
         ## in case someone names the data testdata.
         rm /home/Phinch/data/testdata.biom | true &&
-        ln -s '$infile' /home/Phinch/data/${name}.biom &&
+        ln -s '$infile' '/home/Phinch/data/${name}.biom' &&
         cd /home/Phinch/data &&
         sed -i  "s/'REPLACE_ME'/'${name}.biom'/g" /home/Phinch/scripts/readFile.js &&
+        sed -i  "s/http/https/g" /home/Phinch/scripts/readFile.js &&
         ## keep it running
         cd /home/Phinch &&
         php -S 0.0.0.0:80 2>&1 > /var/log/phinch.log

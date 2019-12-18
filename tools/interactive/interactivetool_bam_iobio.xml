@@ -21,6 +21,8 @@
     sed -i "s@\"wss://services.iobio.io/bamstatsalive/\"@((window.location.protocol === \"https:\") ? \"wss://\" : \"ws://\") + window.location.host + \"/bamstatsalive/\"@" js/bam.iobio.js/bam.iobio.js &&
     sed -i "s@\"wss://services.iobio.io/samheader/\"@((window.location.protocol === \"https:\") ? \"wss://\" : \"ws://\") + window.location.host + \"/samheader/\"@" js/bam.iobio.js/bam.iobio.js &&
 
+    sed -i 's/deny all;//g' /etc/nginx/nginx.conf &&
+
         cp '${infile}' /input/bamfile.bam &&
         cp '${infile.metadata.bam_index}' /input/bamfile.bam.bai &&
         mkdir /var/log/supervisor/ &&
