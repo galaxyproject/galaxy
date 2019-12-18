@@ -25,14 +25,11 @@ var View = Backbone.View.extend({
         if (options && options.active_tab) {
             this.active_tab = options.active_tab;
         }
-        this.setElement(
-            $("<div/>")
-                .addClass("ui-form-composite")
-                .append((this.$message = $("<div/>").addClass("mb-4")))
-                .append((this.$header = $("<div/>")))
-                .append((this.$steps = $("<div/>")))
-        );
-        $("body").append(this.$el);
+        const $el = $(options.el);
+        $el.addClass("ui-form-composite")
+            .append((this.$message = $("<div/>").addClass("mb-4")))
+            .append((this.$header = $("<div/>")))
+            .append((this.$steps = $("<div/>")));
         this._configure();
         this.render();
     },
