@@ -21,8 +21,7 @@ def main(argv):
         old_version = StrictVersion(version)
         old_version_tuple = old_version.version
         new_version_tuple = list(old_version_tuple)
-        new_version_tuple[1] = old_version_tuple[1] + 1
-        new_version_tuple[2] = 0
+        new_version_tuple[2] = old_version_tuple[2] + 1
         new_version = ".".join(map(str, new_version_tuple))
         new_dev_version = 0
     else:
@@ -39,9 +38,9 @@ def main(argv):
             return history.replace(from_str, from_str + line + "\n")
 
         history = extend(".. to_doc", """
-    ---------------------
-    %s.dev0
-    ---------------------
+---------------------
+%s.dev0
+---------------------
 
 """ % new_version)
         open(history_path, "w").write(history)

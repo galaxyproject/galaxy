@@ -228,6 +228,7 @@ class WorkerProcess(UsesCreateAndUpdateTime):
     def __init__(self, server_name, hostname):
         self.server_name = server_name
         self.hostname = hostname
+        self.pid = None
 
 
 def cached_id(galaxy_model_object):
@@ -616,11 +617,13 @@ class DynamicTool(Dictifiable):
     dict_collection_visible_keys = ('id', 'tool_id', 'tool_format', 'tool_version', 'uuid', 'active', 'hidden')
     dict_element_visible_keys = ('id', 'tool_id', 'tool_format', 'tool_version', 'uuid', 'active', 'hidden')
 
-    def __init__(self, tool_format=None, tool_id=None, tool_version=None,
+    def __init__(self, tool_format=None, tool_id=None, tool_version=None, tool_path=None, tool_directory=None,
                  uuid=None, active=True, hidden=True, value=None):
         self.tool_format = tool_format
         self.tool_id = tool_id
         self.tool_version = tool_version
+        self.tool_path = tool_path
+        self.tool_directory = tool_directory
         self.active = active
         self.hidden = hidden
         self.value = value
@@ -1387,7 +1390,7 @@ class ImplicitCollectionJobsJobAssociation(RepresentById):
 
 
 class PostJobAction(RepresentById):
-    def __init__(self, action_type, workflow_step, output_name=None, action_arguments=None):
+    def __init__(self, action_type, workflow_step=None, output_name=None, action_arguments=None):
         self.action_type = action_type
         self.output_name = output_name
         self.action_arguments = action_arguments
@@ -2369,6 +2372,7 @@ class Dataset(StorableObject, RepresentById):
             file_size=to_int(self.file_size),
             object_store_id=self.object_store_id,
             total_size=to_int(self.total_size),
+            created_from_basename=self.created_from_basename,
             uuid=str(self.uuid or '') or None,
             hashes=list(map(lambda h: h.serialize(id_encoder, serialization_options), self.hashes))
         )
@@ -4655,6 +4659,15 @@ class WorkflowStep(RepresentById):
     def tool_uuid(self):
         return self.dynamic_tool and self.dynamic_tool.uuid
 
+    @property
+    def input_default_value(self):
+        tool_inputs = self.tool_inputs
+        tool_state = tool_inputs
+        default_value = tool_state.get("default")
+        if default_value:
+            default_value = json.loads(default_value)["value"]
+        return default_value
+
     def get_input(self, input_name):
         for step_input in self.inputs:
             if step_input.name == input_name:
@@ -5011,10 +5024,17 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         return [wid for wid in query.all()]
 
     def add_output(self, workflow_output, step, output_object):
-        if step.type == 'parameter_input':
-            # TODO: these should be properly tracked.
-            return
-        if output_object.history_content_type == "dataset":
+        if not hasattr(output_object, "history_content_type"):
+            # assuming this is a simple type, just JSON-ify it and stick in the database. In the future
+            # I'd like parameter_inputs to have datasets and collections as valid parameter types so
+            # dispatch on actual object and not step type.
+            output_assoc = WorkflowInvocationOutputValue()
+            output_assoc.workflow_invocation = self
+            output_assoc.workflow_output = workflow_output
+            output_assoc.workflow_step = step
+            output_assoc.value = output_object
+            self.output_values.append(output_assoc)
+        elif output_object.history_content_type == "dataset":
             output_assoc = WorkflowInvocationOutputDatasetAssociation()
             output_assoc.workflow_invocation = self
             output_assoc.workflow_output = workflow_output
@@ -5105,6 +5125,8 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
                             if output_step_type in ['data_input', 'data_collection_input']:
                                 src = "hda" if output_step_type == 'data_input' else 'hdca'
                                 for job_input in job.input_datasets:
+                                    if not job_input.dataset:
+                                        continue
                                     if job_input.name == step_input.input_name:
                                         inputs[str(step_input.output_step.order_index)] = {
                                             "id": job_input.dataset_id, "src": src,
@@ -5136,6 +5158,15 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
 
             rval['outputs'] = outputs
             rval['output_collections'] = output_collections
+
+            output_values = {}
+            for output_param in self.output_values:
+                label = output_param.workflow_output.label
+                if not label:
+                    continue
+                output_values[label] = output_param.value
+            rval['output_values'] = output_values
+
         return rval
 
     def update(self):
@@ -5341,6 +5372,11 @@ class WorkflowInvocationOutputDatasetCollectionAssociation(Dictifiable, Represen
     """Represents links to output dataset collections for the workflow."""
     history_content_type = "dataset_collection"
     dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'dataset_collection_id', 'name']
+
+
+class WorkflowInvocationOutputValue(Dictifiable, RepresentById):
+    """Represents a link to a specified or computed workflow parameter."""
+    dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'value']
 
 
 class WorkflowInvocationStepOutputDatasetAssociation(Dictifiable, RepresentById):
@@ -5731,7 +5767,8 @@ class CloudAuthz(RepresentById):
 
 
 class Page(Dictifiable, RepresentById):
-    dict_element_visible_keys = ['id', 'title', 'latest_revision_id', 'slug', 'published', 'importable', 'deleted']
+    # username needed for slug generation
+    dict_element_visible_keys = ['id', 'title', 'latest_revision_id', 'slug', 'published', 'importable', 'deleted', 'username']
 
     def __init__(self):
         self.id = None
@@ -5751,14 +5788,20 @@ class Page(Dictifiable, RepresentById):
         rval['revision_ids'] = rev
         return rval
 
+    @property
+    def username(self):
+        return self.user.username
+
 
 class PageRevision(Dictifiable, RepresentById):
-    dict_element_visible_keys = ['id', 'page_id', 'title', 'content']
+    DEFAULT_CONTENT_FORMAT = 'html'
+    dict_element_visible_keys = ['id', 'page_id', 'title', 'content', 'content_format']
 
     def __init__(self):
         self.user = None
         self.title = None
         self.content = None
+        self.content_format = PageRevision.DEFAULT_CONTENT_FORMAT
 
     def to_dict(self, view='element'):
         rval = super(PageRevision, self).to_dict(view=view)

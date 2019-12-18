@@ -1,6 +1,7 @@
 import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
+import { rethrowSimple } from "utils/simple-error";
 
 /** Request repositories, categories etc from toolshed server **/
 export class Services {
@@ -11,7 +12,7 @@ export class Services {
             const response = await axios.get(url);
             return response.data;
         } catch (e) {
-            this._errorMessage(e);
+            rethrowSimple(e);
         }
     }
     async getRepositories(params) {
@@ -28,7 +29,7 @@ export class Services {
             });
             return incoming;
         } catch (e) {
-            this._errorMessage(e);
+            rethrowSimple(e);
         }
     }
     async getRepository(toolshedUrl, repositoryId) {
@@ -52,7 +53,7 @@ export class Services {
             });
             return table;
         } catch (e) {
-            this._errorMessage(e);
+            rethrowSimple(e);
         }
     }
     async getRepositoryByName(toolshedUrl, repositoryName, repositoryOwner) {
@@ -69,33 +70,19 @@ export class Services {
                 throw "Repository details not found.";
             }
         } catch (e) {
-            this._errorMessage(e);
+            rethrowSimple(e);
         }
     }
-    async getInstalledRepositories() {
+    async getInstalledRepositories(options = {}) {
         const Galaxy = getGalaxyInstance();
-        const url = `${getAppRoot()}api/tool_shed_repositories/?deleted=false&uninstalled=false`;
+        const url = `${getAppRoot()}api/tool_shed_repositories/?uninstalled=False`;
         try {
             const response = await axios.get(url);
-            const incoming = response.data;
-            const repositories = [];
-            const hash = {};
-            incoming.forEach(x => {
-                const hashCode = `${x.name}_${x.owner}`;
-                if (!hash[hashCode]) {
-                    hash[hashCode] = true;
-                    for (const url of Galaxy.config.tool_shed_urls) {
-                        if (url.includes(x.tool_shed)) {
-                            x.tool_shed_url = url;
-                            break;
-                        }
-                    }
-                    repositories.push(x);
-                }
-            });
+            const repositories = this._groupByNameOwner(response.data, options.filter);
+            this._fixToolshedUrls(repositories, Galaxy.config.tool_shed_urls);
             return repositories;
         } catch (e) {
-            this._errorMessage(e);
+            rethrowSimple(e);
         }
     }
     async getInstalledRepositoriesByName(repositoryName, repositoryOwner) {
@@ -114,7 +101,7 @@ export class Services {
             });
             return result;
         } catch (e) {
-            this._errorMessage(e);
+            rethrowSimple(e);
         }
     }
     async installRepository(payload) {
@@ -123,7 +110,7 @@ export class Services {
             const response = await axios.post(url, payload);
             return response.data;
         } catch (e) {
-            this._errorMessage(e);
+            rethrowSimple(e);
         }
     }
     async uninstallRepository(params) {
@@ -135,25 +122,44 @@ export class Services {
             const response = await axios.delete(url);
             return response.data;
         } catch (e) {
-            this._errorMessage(e);
+            rethrowSimple(e);
         }
+    }
+    _groupByNameOwner(incoming, filter) {
+        const hash = {};
+        const repositories = [];
+        incoming.forEach(x => {
+            const hashCode = `${x.name}_${x.owner}`;
+            if (!filter || filter(x)) {
+                if (!hash[hashCode]) {
+                    hash[hashCode] = true;
+                    repositories.push(x);
+                }
+            }
+        });
+        return repositories;
+    }
+    _fixToolshedUrls(incoming, urls) {
+        incoming.forEach(x => {
+            for (const url of urls) {
+                if (url.includes(x.tool_shed)) {
+                    x.tool_shed_url = url;
+                    break;
+                }
+            }
+        });
     }
     _formatCount(value) {
         if (value > 1000) return `>${Math.floor(value / 1000)}k`;
         return value;
     }
-    _errorMessage(e) {
-        let message = "Request failed.";
-        if (e.response) {
-            message = e.response.data.err_msg || `${e.response.statusText} (${e.response.status})`;
-        } else if (typeof e == "string") {
-            message = e;
-        }
-        throw message;
-    }
     _getParamsString(params) {
-        return Object.keys(params).reduce(function(previous, key) {
-            return `${previous}${key}=${params[key]}&`;
-        }, "");
+        if (params) {
+            return Object.keys(params).reduce(function(previous, key) {
+                return `${previous}${key}=${params[key]}&`;
+            }, "");
+        } else {
+            return "";
+        }
     }
 }

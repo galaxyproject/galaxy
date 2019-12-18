@@ -598,6 +598,9 @@ var View = Backbone.View.extend({
                 if (!input_def.step_linked) {
                     if (this._isDataStep(step)) {
                         validated = input_value && input_value.values && input_value.values.length > 0;
+                        if (!validated && input_def.optional) {
+                            validated = true;
+                        }
                     } else {
                         validated =
                             input_def.optional ||

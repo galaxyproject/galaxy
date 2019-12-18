@@ -26,20 +26,20 @@ import shutil
 import tempfile
 import unittest
 
-from base import integration_util
-from base.api_util import (
+from galaxy_test.base.api_util import (
     TEST_USER,
 )
-from base.constants import (
+from galaxy_test.base.constants import (
     ONE_TO_SIX_ON_WINDOWS,
     ONE_TO_SIX_WITH_SPACES,
     ONE_TO_SIX_WITH_TABS,
 )
-from base.populators import (
+from galaxy_test.base.populators import (
     DatasetPopulator,
     LibraryPopulator,
     skip_without_datatype,
 )
+from galaxy_test.driver import integration_util
 
 
 SCRIPT_DIR = os.path.normpath(os.path.dirname(__file__))
@@ -212,6 +212,18 @@ class AdminsCanPasteFilePathsTestCase(BaseUploadContentConfigurationTestCase):
         assert response.status_code == 200
         # Test regression where this was getting deleted in this mode.
         assert os.path.exists(path)
+
+    def test_admin_path_paste_libraries_link(self):
+        library = self.library_populator.new_private_library("pathpasteallowedlibraries")
+        path = "%s/1.txt" % TEST_DATA_DIRECTORY
+        assert os.path.exists(path)
+        payload, files = self.library_populator.create_dataset_request(library, upload_option="upload_paths", paths=path, link_data=True)
+        response = self.library_populator.raw_library_contents_create(library["id"], payload, files=files)
+        assert response.status_code == 200
+        assert os.path.exists(path)
+        self.library_populator.wait_on_library_dataset(library, response.json()[0])
+        # We should probably verify the linking, but this was enough for now to exhibit
+        # https://github.com/galaxyproject/galaxy/issues/8756
 
     def test_admin_fetch(self):
         path = os.path.join(TEST_DATA_DIRECTORY, "1.txt")
@@ -705,7 +717,7 @@ class ServerDirectoryValidUsageTestCase(BaseUploadContentConfigurationTestCase):
         return cls.temp_config_dir("server")
 
 
-class ServerDirectoryRestrictedToAdminsUsageTestCase(BaseUploadContentConfigurationTestCase):
+class UserServerDirectoryOffByDefaultTestCase(BaseUploadContentConfigurationTestCase):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -717,6 +729,36 @@ class ServerDirectoryRestrictedToAdminsUsageTestCase(BaseUploadContentConfigurat
         payload, files = self.library_populator.create_dataset_request(library, upload_option="upload_directory", server_dir="library")
         response = self.library_populator.raw_library_contents_create(library["id"], payload, files=files)
         assert response.status_code == 403, response.json()
+
+
+class UserServerDirectoryValidUsageTestCase(BaseUploadContentConfigurationTestCase):
+
+    @classmethod
+    def user_server_dir(cls):
+        return cls.temp_config_dir("user_library_import_dir")
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        user_server_dir = cls.user_server_dir()
+        os.makedirs(user_server_dir)
+        config["user_library_import_dir"] = os.path.join(user_server_dir)
+
+    def test_valid_user_server_dir_uploads_okay(self):
+        dir_to_import = 'library'
+        full_dir_path = os.path.join(self.user_server_dir(), TEST_USER, dir_to_import)
+        os.makedirs(full_dir_path)
+        file_content = "hello world\n"
+        with tempfile.NamedTemporaryFile(mode='w', dir=full_dir_path, delete=False) as fh:
+            fh.write(file_content)
+            file_to_import = fh.name
+
+        library_dataset = self.library_populator.new_library_dataset("serverdirupload", upload_option="upload_directory", server_dir=dir_to_import)
+        # Check the file is still there and was not modified
+        with open(file_to_import, 'r') as fh:
+            read_content = fh.read()
+        assert read_content == file_content
+
+        assert library_dataset["file_size"] == 12, library_dataset
 
 
 class FetchByPathTestCase(BaseUploadContentConfigurationTestCase):

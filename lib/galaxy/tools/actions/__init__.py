@@ -59,6 +59,7 @@ class ToolAction(object):
 
 class DefaultToolAction(object):
     """Default tool action is to run an external command"""
+    produces_real_jobs = True
 
     def _collect_input_datasets(self, tool, param_values, trans, history, current_user_roles=None, dataset_collection_elements=None, collection_info=None):
         """
@@ -334,6 +335,7 @@ class DefaultToolAction(object):
 
         # Add the dbkey to the incoming parameters
         incoming["dbkey"] = input_dbkey
+        incoming["__input_ext"] = input_ext
         # wrapped params are used by change_format action and by output.label; only perform this wrapping once, as needed
         wrapped_params = self._wrapped_params(trans, tool, incoming, inp_data)
 
@@ -515,7 +517,10 @@ class DefaultToolAction(object):
                     handle_output(name, output)
                     log.info("Handled output named %s for tool %s %s" % (name, tool.id, handle_output_timer))
 
-        add_datasets_timer = ExecutionTimer()
+        add_datasets_timer = tool.app.execution_timer_factory.get_timer(
+            'internals.galaxy.tools.actions.add_datasets',
+            'Added output datasets to history',
+        )
         # Add all the top-level (non-child) datasets to the history unless otherwise specified
         datasets_to_persist = []
         for name, data in out_data.items():
@@ -531,7 +536,7 @@ class DefaultToolAction(object):
             child_dataset = out_data[child_name]
             parent_dataset.children.append(child_dataset)
 
-        log.info("Added output datasets to history %s" % add_datasets_timer)
+        log.info(add_datasets_timer)
         job_setup_timer = ExecutionTimer()
         # Create the job object
         job, galaxy_session = self._new_job_for_session(trans, tool, history)

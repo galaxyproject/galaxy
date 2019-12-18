@@ -297,6 +297,7 @@ var Node = Backbone.Model.extend({
                 if (node.type == "parameter_input") {
                     node.output_terminals[output.name].attributes.type = output.type;
                 }
+                node.output_terminals[output.name].optional = output.optional;
                 node.output_terminals[output.name].destroyInvalidConnections();
             }
         });

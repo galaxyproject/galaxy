@@ -1,6 +1,13 @@
 from contextlib import contextmanager
 from os import environ
 
+import pytest
+
+external_dependency_management = pytest.mark.skipif(
+    not environ.get('GALAXY_TEST_INCLUDE_SLOW'),
+    reason="GALAXY_TEST_INCLUDE_SLOW not set"
+)
+
 
 @contextmanager
 def modify_environ(values, keys_to_remove=None):

@@ -5,12 +5,12 @@ import os
 
 import yaml
 
-from base import integration_util  # noqa: I100,I202
-from base.populators import (  # noqa: I100
+from galaxy_test.base.populators import (
     DatasetPopulator,
     WorkflowPopulator,
 )
-from base.workflow_fixtures import WORKFLOW_SIMPLE_CAT_TWICE  # noqa: I100
+from galaxy_test.base.workflow_fixtures import WORKFLOW_SIMPLE_CAT_TWICE
+from galaxy_test.driver import integration_util
 
 
 class WorkflowSyncTestCase(integration_util.IntegrationTestCase):

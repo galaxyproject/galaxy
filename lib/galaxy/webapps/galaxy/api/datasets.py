@@ -110,6 +110,7 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
         """
         filter_params = self.parse_filter_params(kwd)
         filters = self.history_contents_filters.parse_filters(filter_params)
+        view = kwd.get('view', 'summary')
         order_by = self._parse_order_by(manager=self.history_contents_manager, order_by_string=kwd.get('order', 'create_time-dsc'))
         container = None
         if history_id:
@@ -117,7 +118,7 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
         contents = self.history_contents_manager.contents(
             container=container, filters=filters, limit=limit, offset=offset, order_by=order_by, user_id=trans.user.id,
         )
-        return [self.serializer_by_type[content.history_content_type].serialize_to_view(content, user=trans.user, trans=trans, view='summary') for content in contents]
+        return [self.serializer_by_type[content.history_content_type].serialize_to_view(content, user=trans.user, trans=trans, view=view) for content in contents]
 
     @web.legacy_expose_api_anonymous
     def show(self, trans, id, hda_ldda='hda', data_type=None, provider=None, **kwd):
@@ -129,33 +130,28 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
         dataset = self.get_hda_or_ldda(trans, hda_ldda=hda_ldda, dataset_id=id)
 
         # Use data type to return particular type of data.
-        try:
-            if data_type == 'state':
-                rval = self._dataset_state(trans, dataset)
-            elif data_type == 'converted_datasets_state':
-                rval = self._converted_datasets_state(trans, dataset, kwd.get('chrom', None),
-                                                      is_true(kwd.get('retry', False)))
-            elif data_type == 'data':
-                rval = self._data(trans, dataset, **kwd)
-            elif data_type == 'features':
-                rval = self._search_features(trans, dataset, kwd.get('query'))
-            elif data_type == 'raw_data':
-                rval = self._raw_data(trans, dataset, provider, **kwd)
-            elif data_type == 'track_config':
-                rval = self.get_new_track_config(trans, dataset)
-            elif data_type == 'genome_data':
-                rval = self._get_genome_data(trans, dataset, kwd.get('dbkey', None))
+        if data_type == 'state':
+            rval = self._dataset_state(trans, dataset)
+        elif data_type == 'converted_datasets_state':
+            rval = self._converted_datasets_state(trans, dataset, kwd.get('chrom', None),
+                                                  is_true(kwd.get('retry', False)))
+        elif data_type == 'data':
+            rval = self._data(trans, dataset, **kwd)
+        elif data_type == 'features':
+            rval = self._search_features(trans, dataset, kwd.get('query'))
+        elif data_type == 'raw_data':
+            rval = self._raw_data(trans, dataset, provider, **kwd)
+        elif data_type == 'track_config':
+            rval = self.get_new_track_config(trans, dataset)
+        elif data_type == 'genome_data':
+            rval = self._get_genome_data(trans, dataset, kwd.get('dbkey', None))
+        else:
+            # Default: return dataset as dict.
+            if hda_ldda == 'hda':
+                return self.hda_serializer.serialize_to_view(dataset,
+                                                             view=kwd.get('view', 'detailed'), user=trans.user, trans=trans)
             else:
-                # Default: return dataset as dict.
-                if hda_ldda == 'hda':
-                    return self.hda_serializer.serialize_to_view(dataset,
-                                                                 view=kwd.get('view', 'detailed'), user=trans.user, trans=trans)
-                else:
-                    rval = dataset.to_dict()
-
-        except Exception:
-            log.exception('Error in dataset API at listing contents')
-            trans.response.status = 500
+                rval = dataset.to_dict()
         return rval
 
     @web.expose_api

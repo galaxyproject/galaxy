@@ -1,10 +1,10 @@
 import time
 
-from base import integration_util
-from base.populators import (
+from galaxy_test.base.populators import (
     DatasetPopulator,
     WorkflowPopulator,
 )
+from galaxy_test.driver import integration_util
 
 
 class FailJobWhenToolUnavailableTestCase(integration_util.IntegrationTestCase):

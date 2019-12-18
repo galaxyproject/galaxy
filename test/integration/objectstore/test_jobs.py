@@ -3,10 +3,10 @@
 import os
 import string
 
-from base import integration_util  # noqa: I202
-from base.populators import (
+from galaxy_test.base.populators import (
     DatasetPopulator,
 )
+from galaxy_test.driver import integration_util
 
 DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE = string.Template("""<?xml version="1.0"?>
 <object_store type="hierarchical">

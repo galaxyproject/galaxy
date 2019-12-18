@@ -4,11 +4,11 @@ import collections
 import os
 import tempfile
 
-from base import integration_util
-from base.populators import (
+from galaxy_test.base.populators import (
     DatasetPopulator,
     skip_without_tool,
 )
+from galaxy_test.driver import integration_util
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 SIMPLE_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "simple_job_conf.xml")

@@ -1,6 +1,5 @@
 import os
 import shutil
-import unittest
 from tempfile import mkdtemp
 
 from galaxy.tool_util.deps import (
@@ -9,16 +8,10 @@ from galaxy.tool_util.deps import (
 )
 from galaxy.tool_util.deps.requirements import ToolRequirement
 from galaxy.tool_util.deps.resolvers.conda import CondaDependencyResolver
+from .util import external_dependency_management
 
 
-def skip_unless_environ(var):
-    if var in os.environ:
-        return lambda func: func
-    template = "Environment variable %s not found, dependent test skipped."
-    return unittest.skip(template % var)
-
-
-@skip_unless_environ("GALAXY_TEST_INCLUDE_SLOW")
+@external_dependency_management
 def test_conda_resolution():
     base_path = mkdtemp()
     try:
@@ -37,7 +30,7 @@ def test_conda_resolution():
         shutil.rmtree(base_path)
 
 
-@skip_unless_environ("GALAXY_TEST_INCLUDE_SLOW")
+@external_dependency_management
 def test_against_conda_prefix_regression():
     """Test that would fail if https://github.com/rtfd/readthedocs.org/issues/1902 regressed."""
 

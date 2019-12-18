@@ -4,10 +4,10 @@ import time
 
 import psutil
 
-from base import integration_util  # noqa: I202
-from base.populators import (
+from galaxy_test.base.populators import (
     DatasetPopulator,
 )
+from galaxy_test.driver import integration_util
 
 
 class LocalJobCancellationTestCase(integration_util.IntegrationTestCase):

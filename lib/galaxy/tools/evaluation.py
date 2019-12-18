@@ -35,6 +35,7 @@ from galaxy.tools.wrappers import (
 )
 from galaxy.util import (
     find_instance_nested,
+    listify,
     safe_makedirs,
     unicodify,
 )
@@ -69,7 +70,7 @@ class ToolEvaluator(object):
         incoming = self.tool.params_from_strings(incoming, self.app)
 
         # Full parameter validation
-        request_context = WorkRequestContext(app=self.app, user=job.history and job.history.user, history=job.history)
+        request_context = WorkRequestContext(app=self.app, user=self._user, history=self._history)
 
         def validate_inputs(input, value, context, **kwargs):
             value = input.from_json(value, request_context, context)
@@ -135,7 +136,9 @@ class ToolEvaluator(object):
 
         param_dict["input"] = input
         param_dict['__datatypes_config__'] = param_dict['GALAXY_DATATYPES_CONF_FILE'] = os.path.join(job_working_directory, 'registry.xml')
-
+        if self._history:
+            param_dict['__history_id__'] = self.app.security.encode_id(self._history.id)
+        param_dict['__galaxy_url__'] = self.compute_environment.galaxy_url()
         param_dict.update(self.tool.template_macro_params)
         # All parameters go into the param_dict
         param_dict.update(incoming)
@@ -190,7 +193,8 @@ class ToolEvaluator(object):
                                        compute_environment=self.compute_environment,
                                        datatypes_registry=self.app.datatypes_registry,
                                        tool=self.tool,
-                                       name=input.name)
+                                       name=input.name,
+                                       formats=input.formats)
 
             elif isinstance(input, DataToolParameter):
                 # FIXME: We're populating param_dict with conversions when
@@ -251,6 +255,8 @@ class ToolEvaluator(object):
                 )
                 input_values[input.name] = wrapper
             elif isinstance(input, SelectToolParameter):
+                if input.multiple:
+                    value = listify(value)
                 input_values[input.name] = SelectToolParameterWrapper(
                     input, value, other_values=param_dict, compute_environment=self.compute_environment)
             else:
@@ -332,10 +338,12 @@ class ToolEvaluator(object):
             # Write outputs to the working directory (for security purposes)
             # if desired.
             param_dict[name] = DatasetFilenameWrapper(hda, compute_environment=self.compute_environment, io_type="output")
-            try:
-                open(str(param_dict[name]), 'w').close()
-            except EnvironmentError:
-                pass  # May well not exist - e.g. Pulsar.
+            output_path = str(param_dict[name])
+            # Conditionally create empty output:
+            # - may already exist (e.g. symlink output)
+            # - parent directory might not exist (e.g. Pulsar)
+            if not os.path.exists(output_path) and os.path.exists(os.path.dirname(output_path)):
+                open(output_path, 'w').close()
 
             # Provide access to a path to store additional files
             # TODO: move compute path logic into compute environment, move setting files_path
@@ -343,7 +351,7 @@ class ToolEvaluator(object):
             # stuff together inconsistently with the way the rest of path rewriting works.
             store_by = getattr(hda.dataset.object_store, "store_by", "id")
             file_name = "dataset_%s_files" % getattr(hda.dataset, store_by)
-            param_dict[name].files_path = os.path.abspath(os.path.join(job_working_directory, file_name))
+            param_dict[name].files_path = os.path.abspath(os.path.join(job_working_directory, "working", file_name))
         for out_name, output in self.tool.outputs.items():
             if out_name not in param_dict and output.filters:
                 # Assume the reason we lack this output is because a filter
@@ -533,9 +541,19 @@ class ToolEvaluator(object):
             directory = self.local_working_directory
             environment_variable = environment_variable_def.copy()
             environment_variable_template = environment_variable_def["template"]
+            inject = environment_variable_def.get("inject")
+            if inject == "api_key":
+                if self._user:
+                    from galaxy.managers import api_keys
+                    environment_variable_template = api_keys.ApiKeyManager(self.app).get_or_create_api_key(self._user)
+                else:
+                    environment_variable_template = ""
+                is_template = False
+            else:
+                is_template = True
             fd, config_filename = tempfile.mkstemp(dir=directory)
             os.close(fd)
-            self.__write_workdir_file(config_filename, environment_variable_template, param_dict, strip=environment_variable_def.get("strip", False))
+            self.__write_workdir_file(config_filename, environment_variable_template, param_dict, is_template=is_template, strip=environment_variable_def.get("strip", False))
             config_file_basename = os.path.basename(config_filename)
             # environment setup in job file template happens before `cd $working_directory`
             environment_variable["value"] = '`cat "$_GALAXY_JOB_DIR/%s"`' % config_file_basename
@@ -621,3 +639,12 @@ class ToolEvaluator(object):
         compat.
         """
         return self.compute_environment.sep().join(args)
+
+    @property
+    def _history(self):
+        return self.job.history
+
+    @property
+    def _user(self):
+        history = self._history
+        return history and history.user

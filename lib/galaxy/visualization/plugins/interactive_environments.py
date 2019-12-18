@@ -199,7 +199,7 @@ class InteractiveEnvironmentRequest(object):
         }
 
         web_port = self.attr.galaxy_config.galaxy_infrastructure_web_port
-        conf_file['galaxy_web_port'] = web_port or self.attr.galaxy_config.guess_galaxy_port()
+        conf_file['galaxy_web_port'] = web_port
 
         if self.attr.viz_config.has_option("docker", "galaxy_url"):
             conf_file['galaxy_url'] = self.attr.viz_config.get("docker", "galaxy_url")

@@ -2,7 +2,6 @@
 Base classes for job runner plugins.
 """
 import datetime
-import logging
 import os
 import string
 import subprocess
@@ -39,10 +38,11 @@ from galaxy.util import (
     unicodify,
 )
 from galaxy.util.bunch import Bunch
+from galaxy.util.logging import get_logger
 from galaxy.util.monitors import Monitors
 from .state_handler_factory import build_state_handlers
 
-log = logging.getLogger(__name__)
+log = get_logger(__name__)
 
 STOP_SIGNAL = object()
 
@@ -129,7 +129,13 @@ class BaseJobRunner(object):
             except Exception:
                 name = 'unknown'
             try:
+                action_str = 'galaxy.jobs.runners.%s.%s' % (self.__class__.__name__.lower(), name)
+                action_timer = self.app.execution_timer_factory.get_timer(
+                    'internals.%s' % action_str,
+                    'job runner action %s for job ${job_id} executed' % (action_str)
+                )
                 method(arg)
+                log.trace(action_timer.to_str(job_id=job_id))
             except Exception:
                 log.exception("(%s) Unhandled exception calling %s" % (job_id, name))
                 if not isinstance(arg, JobState):
@@ -420,13 +426,16 @@ class BaseJobRunner(object):
 
         tool = job_wrapper.tool
         guest_ports = [ep.get('port') for ep in getattr(job_wrapper, 'interactivetools', [])]
-        tool_info = ToolInfo(tool.containers, tool.requirements, tool.requires_galaxy_python_environment, tool.docker_env_pass_through, guest_ports=guest_ports)
+        tool_id = tool.id
+        tool_version = tool.version
+        tool_info = ToolInfo(tool.containers, tool.requirements, tool.requires_galaxy_python_environment, tool.docker_env_pass_through, guest_ports=guest_ports, tool_id=tool_id, tool_version=tool_version)
         job_info = JobInfo(
-            compute_working_directory,
-            compute_tool_directory,
-            compute_job_directory,
-            compute_tmp_directory,
-            job_directory_type,
+            working_directory=compute_working_directory,
+            tool_directory=compute_tool_directory,
+            job_directory=compute_job_directory,
+            tmp_directory=compute_tmp_directory,
+            home_directory=job_wrapper.home_directory(),
+            job_directory_type=job_directory_type,
         )
 
         destination_info = job_wrapper.job_destination.params

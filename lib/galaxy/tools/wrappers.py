@@ -73,15 +73,22 @@ class InputValueWrapper(ToolParameterValueWrapper):
         self.value = value
         self._other_values = other_values
 
+    def _get_cast_value(self, other):
+        if self.input.type == 'boolean' and isinstance(other, string_types):
+            return str(self)
+        # For backward compatibility, allow `$wrapper != ""` for optional non-text param
+        if self.input.optional and self.value is None and isinstance(other, string_types):
+            return str(self)
+        cast = {
+            'text': str,
+            'integer': int,
+            'float': float,
+            'boolean': bool,
+        }
+        return cast.get(self.input.type, str)(self)
+
     def __eq__(self, other):
-        if isinstance(other, string_types):
-            return str(self) == other
-        elif isinstance(other, int):
-            return int(self) == other
-        elif isinstance(other, float):
-            return float(self) == other
-        else:
-            return super(InputValueWrapper, self) == other
+        return self._get_cast_value(other) == other
 
     def __ne__(self, other):
         return not self == other
@@ -104,14 +111,7 @@ class InputValueWrapper(ToolParameterValueWrapper):
         return getattr(self.value, key)
 
     def __gt__(self, other):
-        if isinstance(other, string_types):
-            return str(self) > other
-        elif isinstance(other, int):
-            return int(self) > other
-        elif isinstance(other, float):
-            return float(self) > other
-        else:
-            super(InputValueWrapper, self).__gt__(other)
+        return self._get_cast_value(other) > other
 
     def __int__(self):
         return int(float(self))
@@ -246,7 +246,7 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
         def items(self):
             return iter((k, self.get(k)) for k, v in self.metadata.items())
 
-    def __init__(self, dataset, datatypes_registry=None, tool=None, name=None, compute_environment=None, identifier=None, io_type="input"):
+    def __init__(self, dataset, datatypes_registry=None, tool=None, name=None, compute_environment=None, identifier=None, io_type="input", formats=None):
         if not dataset:
             try:
                 # TODO: allow this to work when working with grouping
@@ -258,6 +258,10 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
             # Tool wrappers should not normally be accessing .dataset directly,
             # so we will wrap it and keep the original around for file paths
             # Should we name this .value to maintain consistency with most other ToolParameterValueWrapper?
+            if formats:
+                target_ext, converted_dataset = dataset.find_conversion_destination(formats)
+                if target_ext and converted_dataset:
+                    dataset = converted_dataset
             self.unsanitized = dataset
             self.dataset = wrap_with_safe_string(dataset, no_wrap_classes=ToolParameterValueWrapper)
             self.metadata = self.MetadataWrapper(dataset, compute_environment)

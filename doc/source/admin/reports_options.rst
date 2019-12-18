@@ -4,8 +4,8 @@
 
 :Description:
     Verbosity of console log messages.  Acceptable values can be found
-    here: https://docs.python.org/2/library/logging.html#logging-
-    levels
+    here:
+    https://docs.python.org/2/library/logging.html#logging-levels
 :Default: ``DEBUG``
 :Type: str
 
@@ -70,16 +70,6 @@
 
 :Description:
     Check for WSGI compliance.
-:Default: ``false``
-:Type: bool
-
-
-~~~~~~~~~~~~~~~~~~~
-``use_interactive``
-~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    NEVER enable this on a public site (even test or QA)
 :Default: ``false``
 :Type: bool
 

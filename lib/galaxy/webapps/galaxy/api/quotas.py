@@ -26,8 +26,8 @@ log = logging.getLogger(__name__)
 
 
 class QuotaAPIController(BaseAPIController, AdminActions, UsesQuotaMixin, QuotaParamParser):
-    @web.legacy_expose_api
     @web.require_admin
+    @web.legacy_expose_api
     def index(self, trans, deleted='False', **kwd):
         """
         GET /api/quotas
@@ -50,8 +50,8 @@ class QuotaAPIController(BaseAPIController, AdminActions, UsesQuotaMixin, QuotaP
             rval.append(item)
         return rval
 
-    @web.legacy_expose_api
     @web.require_admin
+    @web.legacy_expose_api
     def show(self, trans, id, deleted='False', **kwd):
         """
         GET /api/quotas/{encoded_quota_id}
@@ -61,8 +61,8 @@ class QuotaAPIController(BaseAPIController, AdminActions, UsesQuotaMixin, QuotaP
         quota = self.get_quota(trans, id, deleted=util.string_as_bool(deleted))
         return quota.to_dict(view='element', value_mapper={'id': trans.security.encode_id, 'total_disk_usage': float})
 
-    @web.legacy_expose_api
     @web.require_admin
+    @web.legacy_expose_api
     def create(self, trans, payload, **kwd):
         """
         POST /api/quotas
@@ -82,8 +82,8 @@ class QuotaAPIController(BaseAPIController, AdminActions, UsesQuotaMixin, QuotaP
         item['message'] = message
         return item
 
-    @web.legacy_expose_api
     @web.require_admin
+    @web.legacy_expose_api
     def update(self, trans, id, payload, **kwd):
         """
         PUT /api/quotas/{encoded_quota_id}
@@ -120,8 +120,8 @@ class QuotaAPIController(BaseAPIController, AdminActions, UsesQuotaMixin, QuotaP
             messages.append(message)
         return '; '.join(messages)
 
-    @web.legacy_expose_api
     @web.require_admin
+    @web.legacy_expose_api
     def delete(self, trans, id, **kwd):
         """
         DELETE /api/quotas/{encoded_quota_id}
@@ -142,8 +142,8 @@ class QuotaAPIController(BaseAPIController, AdminActions, UsesQuotaMixin, QuotaP
             raise HTTPBadRequest(detail=util.unicodify(e))
         return message
 
-    @web.legacy_expose_api
     @web.require_admin
+    @web.legacy_expose_api
     def undelete(self, trans, id, **kwd):
         """
         POST /api/quotas/deleted/{encoded_quota_id}/undelete

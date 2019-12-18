@@ -42,7 +42,7 @@
                     @filtered="filtered"
                 >
                     <template v-slot:cell(name)="row">
-                        <workflowdropdown
+                        <WorkflowDropdown
                             :workflow="row.item"
                             @onAdd="onAdd"
                             @onRemove="onRemove"
@@ -52,13 +52,14 @@
                         />
                     </template>
                     <template v-slot:cell(tags)="row">
-                        <workflowtags :workflow="row.item" @onError="onError" />
+                        <WorkflowTags :workflow="row.item" @onError="onError" />
                     </template>
-
                     <template v-slot:cell(bookmark)="row">
                         <b-form-checkbox v-model="row.item.show_in_tool_panel" @change="bookmarkWorkflow(row.item)" />
                     </template>
-
+                    <template v-slot:cell(create_time)="data">
+                        <UtcDate :date="data.value" mode="elapsed" />
+                    </template>
                     <template v-slot:cell(execute)="row">
                         <b-button
                             v-b-tooltip.hover.bottom
@@ -84,11 +85,13 @@ import { getAppRoot } from "onload/loadConfig";
 import { Services } from "./services.js";
 import WorkflowTags from "./WorkflowTags.vue";
 import WorkflowDropdown from "./WorkflowDropdown.vue";
+import UtcDate from "components/UtcDate";
 
 export default {
     components: {
-        workflowtags: WorkflowTags,
-        workflowdropdown: WorkflowDropdown
+        UtcDate,
+        WorkflowTags,
+        WorkflowDropdown
     },
     data() {
         return {
@@ -100,6 +103,11 @@ export default {
                 },
                 {
                     key: "tags",
+                    sortable: true
+                },
+                {
+                    label: "Created",
+                    key: "create_time",
                     sortable: true
                 },
                 {

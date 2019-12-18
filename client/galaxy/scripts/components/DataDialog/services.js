@@ -53,7 +53,7 @@ export class Services {
     getRecord(record) {
         record.details = record.extension || record.description;
         record.time = record.update_time || record.create_time;
-        record.isDataset = this.isDataset(record);
+        record.isLeaf = this.isDataset(record);
         if (record.time) {
             record.time = record.time.substring(0, 16).replace("T", " ");
         }
@@ -68,9 +68,7 @@ export class Services {
         } else if (record.type == "file") {
             record.src = "ldda";
             record.label = record.name;
-            record.download = `${this.host}${this.root}api/libraries/datasets/download/uncompressed?ld_ids=${
-                record.id
-            }`;
+            record.download = `${this.host}${this.root}api/libraries/datasets/download/uncompressed?ld_ids=${record.id}`;
             return record;
         }
     }

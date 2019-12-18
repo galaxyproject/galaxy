@@ -12,8 +12,8 @@ uwsgi:
   buffer-size: 16384
 
   # Number of web server (worker) processes to fork after the
-  # application has loaded. If this is set to greater than 1, thunder-
-  # lock likely should be enabled below.
+  # application has loaded. If this is set to greater than 1,
+  # thunder-lock likely should be enabled below.
   processes: 1
 
   # Number of threads for each web server process.
@@ -52,8 +52,8 @@ uwsgi:
   # URL prefix. Cannot be used together with 'module:' above.
   #mount: /galaxy=galaxy.webapps.galaxy.buildapp:uwsgi_app()
 
-  # Make uWSGI rewrite PATH_INFO and SCRIPT_NAME according to mount-
-  # points. Set this to true if a URL prefix is used.
+  # Make uWSGI rewrite PATH_INFO and SCRIPT_NAME according to
+  # mount-points. Set this to true if a URL prefix is used.
   manage-script-name: false
 
   # It is usually a good idea to set this to ``true`` if processes is
@@ -77,6 +77,13 @@ uwsgi:
 
   # Ensure application threads will run if `threads` is unset.
   enable-threads: true
+
+  # uWSGI default umask. On some systems uWSGI has a default umask of
+  # 000, for Galaxy a somewhat safer default is chosen. If Galaxy
+  # submits jobs as real user then all users needs to be able to read
+  # the files, i.e. the the umask needs to be '022' or the Galaxy users
+  # need to be in the same group as the Galaxy system user
+  umask: 027
 
 reports:
 
@@ -105,9 +112,6 @@ reports:
 
   # Check for WSGI compliance.
   #use_lint: false
-
-  # NEVER enable this on a public site (even test or QA)
-  #use_interactive: false
 
   # Write thread status periodically to 'heartbeat.log' (careful, uses
   # disk space rapidly!)

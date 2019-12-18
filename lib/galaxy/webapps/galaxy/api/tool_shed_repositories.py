@@ -8,21 +8,28 @@ from paste.httpexceptions import (
 )
 from sqlalchemy import and_
 
-import tool_shed.util.shed_util_common as suc
 from galaxy import (
     exceptions,
-    util,
-    web
+    util
 )
-from galaxy.web import expose_api
+from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
+from galaxy.tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
+from galaxy.tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
+from galaxy.tool_shed.util.repository_util import (
+    check_for_updates,
+    get_installed_repository,
+    get_installed_tool_shed_repository,
+    get_tool_shed_repository_by_id,
+)
+from galaxy.tool_shed.util.shed_util_common import have_shed_tool_conf_for_install
+from galaxy.tool_shed.util.tool_util import generate_message_for_invalid_tools
+from galaxy.web import (
+    expose_api,
+    require_admin,
+    url_for
+)
 from galaxy.webapps.base.controller import BaseAPIController
-from tool_shed.galaxy_install.install_manager import InstallRepositoryManager
-from tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
-from tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
-from tool_shed.util import (
-    repository_util,
-    tool_util
-)
+
 
 log = logging.getLogger(__name__)
 
@@ -42,7 +49,7 @@ class ToolShedRepositoriesController(BaseAPIController):
 
     def __ensure_can_install_repos(self, trans):
         # Make sure this Galaxy instance is configured with a shed-related tool panel configuration file.
-        if not suc.have_shed_tool_conf_for_install(self.app):
+        if not have_shed_tool_conf_for_install(self.app):
             message = get_message_for_no_shed_tool_config()
             log.debug(message)
             return dict(status='error', error=message)
@@ -81,12 +88,13 @@ class ToolShedRepositoriesController(BaseAPIController):
         for tool_shed_repository in query.all():
             tool_shed_repository_dict = \
                 tool_shed_repository.to_dict(value_mapper=self.__get_value_mapper(trans, tool_shed_repository))
-            tool_shed_repository_dict['url'] = web.url_for(controller='tool_shed_repositories',
-                                                           action='show',
-                                                           id=trans.security.encode_id(tool_shed_repository.id))
+            tool_shed_repository_dict['url'] = url_for(controller='tool_shed_repositories',
+                                                       action='show',
+                                                       id=trans.security.encode_id(tool_shed_repository.id))
             tool_shed_repository_dicts.append(tool_shed_repository_dict)
         return tool_shed_repository_dicts
 
+    @require_admin
     @expose_api
     def install_repository_revision(self, trans, payload, **kwd):
         """
@@ -132,15 +140,16 @@ class ToolShedRepositoriesController(BaseAPIController):
 
         def to_dict(tool_shed_repository):
             tool_shed_repository_dict = tool_shed_repository.as_dict(value_mapper=self.__get_value_mapper(trans, tool_shed_repository))
-            tool_shed_repository_dict['url'] = web.url_for(controller='tool_shed_repositories',
-                                                           action='show',
-                                                           id=trans.security.encode_id(tool_shed_repository.id))
+            tool_shed_repository_dict['url'] = url_for(controller='tool_shed_repositories',
+                                                       action='show',
+                                                       id=trans.security.encode_id(tool_shed_repository.id))
             return tool_shed_repository_dict
         if installed_tool_shed_repositories:
             return list(map(to_dict, installed_tool_shed_repositories))
         message = "No repositories were installed, possibly because the selected repository has already been installed."
         return dict(status="ok", message=message)
 
+    @require_admin
     @expose_api
     def install_repository_revisions(self, trans, payload, **kwd):
         """
@@ -220,6 +229,7 @@ class ToolShedRepositoriesController(BaseAPIController):
                 all_installed_tool_shed_repositories.extend(installed_tool_shed_repositories)
         return all_installed_tool_shed_repositories
 
+    @require_admin
     @expose_api
     def uninstall_repository(self, trans, id=None, **kwd):
         """
@@ -234,9 +244,10 @@ class ToolShedRepositoriesController(BaseAPIController):
                     'changeset_revision': Changeset revision to uninstall
                     'tool_shed_url'     : Tool Shed URL
         """
+        remove_from_disk = util.asbool(kwd.get('remove_from_disk', True))
         if id:
             try:
-                repository = repository_util.get_tool_shed_repository_by_id(self.app, id)
+                repository = get_tool_shed_repository_by_id(self.app, id)
             except ValueError:
                 raise HTTPBadRequest(detail="No repository with id '%s' found" % id)
         else:
@@ -245,17 +256,17 @@ class ToolShedRepositoriesController(BaseAPIController):
                 tsr_arguments = {key: kwd[key] for key in tsr_arguments}
             except KeyError as e:
                 raise HTTPBadRequest(detail="Missing required parameter '%s'" % e.args[0])
-            repository = repository_util.get_installed_repository(app=self.app,
-                                                                  tool_shed=tsr_arguments['tool_shed_url'],
-                                                                  name=tsr_arguments['name'],
-                                                                  owner=tsr_arguments['owner'],
-                                                                  changeset_revision=tsr_arguments['changeset_revision'])
+            repository = get_installed_repository(app=self.app,
+                                                  tool_shed=tsr_arguments['tool_shed_url'],
+                                                  name=tsr_arguments['name'],
+                                                  owner=tsr_arguments['owner'],
+                                                  changeset_revision=tsr_arguments['changeset_revision'])
             if not repository:
                 raise HTTPBadRequest(detail="Repository not found")
         irm = InstalledRepositoryManager(app=self.app)
-        errors = irm.uninstall_repository(repository=repository, remove_from_disk=kwd.get('remove_from_disk', True))
+        errors = irm.uninstall_repository(repository=repository, remove_from_disk=remove_from_disk)
         if not errors:
-            action = 'removed' if kwd.get('remove_from_disk', True) else 'deactivated'
+            action = 'removed' if remove_from_disk else 'deactivated'
             return {'message': 'The repository named %s has been %s.' % (repository.name, action)}
         else:
             raise Exception('Attempting to uninstall tool dependencies for repository named %s resulted in errors: %s' % (repository.name, errors))
@@ -280,8 +291,21 @@ class ToolShedRepositoriesController(BaseAPIController):
 
         return tool_shed_url, name, owner, changeset_revision
 
-    @web.expose_api
-    @web.require_admin
+    @require_admin
+    @expose_api
+    def check_for_updates(self, trans, **kwd):
+        '''
+        GET /api/tool_shed_repositories/check_for_updates
+        Check for updates to the specified repository, or all installed repositories.
+
+        :param id: the encoded repository id
+        '''
+        repository_id = kwd.get('id', None)
+        message, status = check_for_updates(self.app, trans.install_model, repository_id)
+        return {'status': status, 'message': message}
+
+    @require_admin
+    @expose_api
     def reset_metadata_on_selected_installed_repositories(self, trans, **kwd):
         repository_ids = util.listify(kwd.get("repository_ids"))
         if repository_ids:
@@ -290,7 +314,7 @@ class ToolShedRepositoriesController(BaseAPIController):
             successful = []
             for repository_id in repository_ids:
                 try:
-                    repository = repository_util.get_installed_tool_shed_repository(self.app, repository_id)
+                    repository = get_installed_tool_shed_repository(self.app, repository_id)
                     irmm.set_repository(repository)
                     irmm.reset_all_metadata_on_installed_repository()
                     if irmm.invalid_file_tups:
@@ -335,11 +359,11 @@ class ToolShedRepositoriesController(BaseAPIController):
                 irmm.reset_all_metadata_on_installed_repository()
                 irmm_invalid_file_tups = irmm.get_invalid_file_tups()
                 if irmm_invalid_file_tups:
-                    message = tool_util.generate_message_for_invalid_tools(self.app,
-                                                                           irmm_invalid_file_tups,
-                                                                           repository,
-                                                                           None,
-                                                                           as_html=False)
+                    message = generate_message_for_invalid_tools(self.app,
+                                                                 irmm_invalid_file_tups,
+                                                                 repository,
+                                                                 None,
+                                                                 as_html=False)
                     results['unsuccessful_count'] += 1
                 else:
                     message = "Successfully reset metadata on repository %s owned by %s" % \
@@ -363,12 +387,12 @@ class ToolShedRepositoriesController(BaseAPIController):
         :param id: the encoded id of the ToolShedRepository object
         """
         # Example URL: http://localhost:8763/api/tool_shed_repositories/df7a1f0c02a5b08e
-        tool_shed_repository = repository_util.get_tool_shed_repository_by_id(self.app, id)
+        tool_shed_repository = get_tool_shed_repository_by_id(self.app, id)
         if tool_shed_repository is None:
             log.debug("Unable to locate tool_shed_repository record for id %s." % (str(id)))
             return {}
         tool_shed_repository_dict = tool_shed_repository.as_dict(value_mapper=self.__get_value_mapper(trans, tool_shed_repository))
-        tool_shed_repository_dict['url'] = web.url_for(controller='tool_shed_repositories',
-                                                       action='show',
-                                                       id=trans.security.encode_id(tool_shed_repository.id))
+        tool_shed_repository_dict['url'] = url_for(controller='tool_shed_repositories',
+                                                   action='show',
+                                                   id=trans.security.encode_id(tool_shed_repository.id))
         return tool_shed_repository_dict

@@ -48,8 +48,8 @@ EXTRA_SERVER_MESSAGE = "Additional server section after [%s] encountered [%s], w
 MISSING_FILTER_TYPE_MESSAGE = "Missing filter type for section [%s], it will be ignored."
 UNHANDLED_FILTER_TYPE_MESSAGE = "Unhandled filter type encountered [%s] for section [%s]."
 NO_APP_MAIN_MESSAGE = "No app:main section found, using application defaults throughout."
-YAML_COMMENT_WRAPPER = TextWrapper(initial_indent="# ", subsequent_indent="# ", break_long_words=False)
-RST_DESCRIPTION_WRAPPER = TextWrapper(initial_indent="    ", subsequent_indent="    ", break_long_words=False)
+YAML_COMMENT_WRAPPER = TextWrapper(initial_indent="# ", subsequent_indent="# ", break_long_words=False, break_on_hyphens=False)
+RST_DESCRIPTION_WRAPPER = TextWrapper(initial_indent="    ", subsequent_indent="    ", break_long_words=False, break_on_hyphens=False)
 UWSGI_SCHEMA_PATH = "lib/galaxy/webapps/uwsgi_schema.yml"
 
 App = namedtuple(
@@ -163,6 +163,11 @@ UWSGI_OPTIONS = OrderedDict([
         'default': True,
         'type': 'bool',
     }),
+    ('umask', {
+        'desc': """uWSGI default umask. On some systems uWSGI has a default umask of 000, for Galaxy a somewhat safer default is chosen. If Galaxy submits jobs as real user then all users needs to be able to read the files, i.e. the the umask needs to be '022' or the Galaxy users need to be in the same group as the Galaxy system user""",
+        'default': '027',
+        'type': 'str',
+    }),
     # ('route-uri', {
     #     'default': '^/proxy/ goto:proxy'
     # }),
@@ -182,6 +187,12 @@ UWSGI_OPTIONS = OrderedDict([
     #     'default': True
     # }),
 ])
+
+SHED_ONLY_UWSGI_OPTIONS = [('cron', {
+    'desc': """Task for rebuilding Toolshed search indexes using the uWSGI cron-like interface.""",
+    'default': "0 -1 -1 -1 -1 python scripts/tool_shed/build_ts_whoosh_index.py -c config/tool_shed.yml --config-section tool_shed",
+    'type': 'str',
+})]
 
 DROP_OPTION_VALUE = object()
 
@@ -266,6 +277,7 @@ class _RenameAction(_OptionAction):
 
 OPTION_ACTIONS = {
     'use_beaker_session': _DeprecatedAndDroppedAction(),
+    'use_interactive': _DeprecatedAndDroppedAction(),
     'session_type': _DeprecatedAndDroppedAction(),
     'session_data_dir': _DeprecatedAndDroppedAction(),
     'session_key': _DeprecatedAndDroppedAction(),
@@ -275,7 +287,6 @@ OPTION_ACTIONS = {
     'debug': _ProductionUnsafe(True),
     'serve_xss_vulnerable_mimetypes': _ProductionUnsafe(True),
     'use_printdebug': _ProductionUnsafe(True),
-    'use_interactive': _ProductionUnsafe(True),
     'id_secret': _ProductionUnsafe('USING THE DEFAULT IS NOT SECURE!'),
     'master_api_key': _ProductionUnsafe('changethis'),
     'external_service_type_config_file': _DeprecatedAndDroppedAction(),
@@ -336,8 +347,8 @@ SHED_APP = App(
     "9009",
     ["galaxy.webapps.tool_shed.buildapp:app_factory"],
     "config/tool_shed.yml",
-    "lib/galaxy/webapps/tool_shed/config_schema.yml",
-    'galaxy.webapps.tool_shed.buildapp:uwsgi_app()',
+    "lib/tool_shed/webapp/config_schema.yml",
+    'tool_shed.webapp.buildapp:uwsgi_app()',
 )
 REPORTS_APP = App(
     ["reports_wsgi.ini", "config/reports.ini"],
@@ -516,7 +527,7 @@ def _validate(args, app_desc):
     fp = tempfile.NamedTemporaryFile('w', delete=False, suffix=".yml")
 
     def _clean(p, k, v):
-        return k != 'reloadable'
+        return k not in ['reloadable', 'path_resolves_to']
 
     clean_schema = remap(app_desc.schema.raw_schema, _clean)
     ordered_dump(clean_schema, fp)
@@ -648,6 +659,8 @@ def _replace_file(args, f, app_desc, from_path, to_path):
 
 
 def _build_sample_yaml(args, app_desc):
+    if app_desc.app_name in ["tool_shed"]:
+        UWSGI_OPTIONS.update(SHED_ONLY_UWSGI_OPTIONS)
     schema = app_desc.schema
     f = StringIO()
     for key, value in UWSGI_OPTIONS.items():
@@ -676,16 +689,16 @@ def _build_sample_yaml(args, app_desc):
 
 
 def _write_to_file(args, f, path):
-    dry_run = args.dry_run
     if hasattr(f, "getvalue"):
         contents = f.getvalue()
     else:
         contents = f
-    contents_indented = "\n".join([" |%s" % l for l in contents.splitlines()])
-    print("Writing the file contents:\n%s\nto %s" % (contents_indented, path))
-    if dry_run:
+    if args.dry_run:
+        contents_indented = "\n".join([" |%s" % l for l in contents.splitlines()])
+        print("Overwriting %s with the following contents:\n%s" % (path, contents_indented))
         print("... skipping because --dry-run is enabled.")
     else:
+        print("Overwriting %s" % path)
         safe_makedirs(os.path.dirname(path))
         with open(path, "w") as to_f:
             to_f.write(contents)

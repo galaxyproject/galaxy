@@ -42,7 +42,7 @@ class ToolShedRepository(object):
         self.installed_changeset_revision = installed_changeset_revision
         self.changeset_revision = changeset_revision
         self.ctx_rev = ctx_rev
-        self.metadata = metadata
+        self.metadata = metadata or {}
         self.includes_datatypes = includes_datatypes
         self.tool_shed_status = tool_shed_status
         self.deleted = deleted
@@ -79,33 +79,27 @@ class ToolShedRepository(object):
     def get_sharable_url(self, app):
         return common_util.get_tool_shed_repository_url(app, self.tool_shed, self.owner, self.name)
 
-    def get_shed_config_filename(self):
-        shed_config_filename = None
-        if self.metadata:
-            shed_config_filename = self.metadata.get('shed_config_filename', shed_config_filename)
-        return shed_config_filename
+    @property
+    def shed_config_filename(self):
+        return self.metadata.get('shed_config_filename')
 
-    def get_shed_config_dict(self, app, default=None):
+    @shed_config_filename.setter
+    def shed_config_filename(self, value):
+        self.metadata['shed_config_filename'] = os.path.abspath(value)
+
+    def get_shed_config_dict(self, app):
         """
         Return the in-memory version of the shed_tool_conf file, which is stored in the config_elems entry
         in the shed_tool_conf_dict.
         """
-
-        def _is_valid_shed_config_filename(filename):
-            for shed_tool_conf_dict in app.toolbox.dynamic_confs(include_migrated_tool_conf=True):
-                if filename == shed_tool_conf_dict['config_filename']:
-                    return True
-            return False
-
-        if not self.shed_config_filename or not _is_valid_shed_config_filename(self.shed_config_filename):
-            self.guess_shed_config(app, default=default)
         if self.shed_config_filename:
-            for shed_tool_conf_dict in app.toolbox.dynamic_confs(include_migrated_tool_conf=True):
-                if self.shed_config_filename == shed_tool_conf_dict['config_filename']:
-                    return shed_tool_conf_dict
-        return default
+            shed_config_dict = app.toolbox.get_shed_config_dict_by_filename(self.shed_config_filename)
+            if shed_config_dict:
+                return shed_config_dict
+        return self.guess_shed_config(app)
 
     def get_tool_relative_path(self, app):
+        # This is a somewhat public function, used by data_manager_manual for instance
         shed_conf_dict = self.get_shed_config_dict(app)
         tool_path = None
         relative_path = None
@@ -114,10 +108,9 @@ class ToolShedRepository(object):
             relative_path = os.path.join(self.tool_shed_path_name, 'repos', self.owner, self.name, self.installed_changeset_revision)
         return tool_path, relative_path
 
-    def guess_shed_config(self, app, default=None):
+    def guess_shed_config(self, app):
         tool_ids = []
-        metadata = self.metadata or {}
-        for tool in metadata.get('tools', []):
+        for tool in self.metadata.get('tools', []):
             tool_ids.append(tool.get('guid'))
         for shed_tool_conf_dict in app.toolbox.dynamic_confs(include_migrated_tool_conf=True):
             name = shed_tool_conf_dict['config_filename']
@@ -135,49 +128,46 @@ class ToolShedRepository(object):
                             if tool_id in tool_ids:
                                 self.shed_config_filename = name
                                 return shed_tool_conf_dict
-        if self.includes_datatypes or self.includes_data_managers:
-            # We need to search by file paths here, which is less desirable.
-            tool_shed = common_util.remove_protocol_and_port_from_tool_shed_url(self.tool_shed)
-            for shed_tool_conf_dict in app.toolbox.dynamic_confs(include_migrated_tool_conf=True):
-                tool_path = shed_tool_conf_dict['tool_path']
-                relative_path = os.path.join(tool_path, tool_shed, 'repos', self.owner, self.name, self.installed_changeset_revision)
-                if os.path.exists(relative_path):
-                    self.shed_config_filename = shed_tool_conf_dict['config_filename']
-                    return shed_tool_conf_dict
-        return default
+        # We need to search by file paths here, which is less desirable.
+        tool_shed = common_util.remove_protocol_and_port_from_tool_shed_url(self.tool_shed)
+        for shed_tool_conf_dict in app.toolbox.dynamic_confs(include_migrated_tool_conf=True):
+            tool_path = shed_tool_conf_dict['tool_path']
+            relative_path = os.path.join(tool_path, tool_shed, 'repos', self.owner, self.name)
+            if os.path.exists(relative_path):
+                self.shed_config_filename = shed_tool_conf_dict['config_filename']
+                return shed_tool_conf_dict
+        # Very last resort, get default shed_tool_config file for this instance
+        shed_tool_conf_dict = self.app.toolbox.default_shed_tool_conf_dict()
+        self.shed_config_filename = shed_tool_conf_dict['config_filename']
+        return shed_tool_conf_dict
 
     @property
     def has_readme_files(self):
-        if self.metadata:
-            return 'readme_files' in self.metadata
-        return False
+        return 'readme_files' in self.metadata
 
     @property
     def has_repository_dependencies(self):
-        if self.metadata:
-            repository_dependencies_dict = self.metadata.get('repository_dependencies', {})
-            repository_dependencies = repository_dependencies_dict.get('repository_dependencies', [])
-            # [["http://localhost:9009", "package_libgtextutils_0_6", "test", "e2003cbf18cd", "True", "True"]]
-            for rd_tup in repository_dependencies:
-                tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
-                    common_util.parse_repository_dependency_tuple(rd_tup)
-                if not asbool(only_if_compiling_contained_td):
-                    return True
+        repository_dependencies_dict = self.metadata.get('repository_dependencies', {})
+        repository_dependencies = repository_dependencies_dict.get('repository_dependencies', [])
+        # [["http://localhost:9009", "package_libgtextutils_0_6", "test", "e2003cbf18cd", "True", "True"]]
+        for rd_tup in repository_dependencies:
+            tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
+                common_util.parse_repository_dependency_tuple(rd_tup)
+            if not asbool(only_if_compiling_contained_td):
+                return True
         return False
 
     @property
     def has_repository_dependencies_only_if_compiling_contained_td(self):
-        if self.metadata:
-            repository_dependencies_dict = self.metadata.get('repository_dependencies', {})
-            repository_dependencies = repository_dependencies_dict.get('repository_dependencies', [])
-            # [["http://localhost:9009", "package_libgtextutils_0_6", "test", "e2003cbf18cd", "True", "True"]]
-            for rd_tup in repository_dependencies:
-                tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
-                    common_util.parse_repository_dependency_tuple(rd_tup)
-                if not asbool(only_if_compiling_contained_td):
-                    return False
-            return True
-        return False
+        repository_dependencies_dict = self.metadata.get('repository_dependencies', {})
+        repository_dependencies = repository_dependencies_dict.get('repository_dependencies', [])
+        # [["http://localhost:9009", "package_libgtextutils_0_6", "test", "e2003cbf18cd", "True", "True"]]
+        for rd_tup in repository_dependencies:
+            tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
+                common_util.parse_repository_dependency_tuple(rd_tup)
+            if not asbool(only_if_compiling_contained_td):
+                return False
+        return True
 
     @property
     def in_error_state(self):
@@ -185,15 +175,11 @@ class ToolShedRepository(object):
 
     @property
     def includes_data_managers(self):
-        if self.metadata:
-            return bool(len(self.metadata.get('data_manager', {}).get('data_managers', {})))
-        return False
+        return bool(len(self.metadata.get('data_manager', {}).get('data_managers', {})))
 
     @property
     def includes_tools(self):
-        if self.metadata:
-            return 'tools' in self.metadata
-        return False
+        return 'tools' in self.metadata
 
     @property
     def includes_tools_for_display_in_tool_panel(self):
@@ -206,15 +192,11 @@ class ToolShedRepository(object):
 
     @property
     def includes_tool_dependencies(self):
-        if self.metadata:
-            return 'tool_dependencies' in self.metadata
-        return False
+        return 'tool_dependencies' in self.metadata
 
     @property
     def includes_workflows(self):
-        if self.metadata:
-            return 'workflows' in self.metadata
-        return False
+        return 'workflows' in self.metadata
 
     @property
     def installed_repository_dependencies(self):
@@ -381,11 +363,6 @@ class ToolShedRepository(object):
             return asbool(self.tool_shed_status.get('revision_update', False))
         return False
 
-    def set_shed_config_filename(self, value):
-        self.metadata['shed_config_filename'] = value
-
-    shed_config_filename = property(get_shed_config_filename, set_shed_config_filename)
-
     def to_dict(self, view='collection', value_mapper=None):
         if value_mapper is None:
             value_mapper = {}
@@ -455,14 +432,13 @@ class ToolShedRepository(object):
         dependencies.
         """
         rd_tups_of_repositories_needed_for_compiling_td = []
-        if self.metadata:
-            repository_dependencies = self.metadata.get('repository_dependencies', None)
-            rd_tups = repository_dependencies['repository_dependencies']
-            for rd_tup in rd_tups:
-                if len(rd_tup) == 6:
-                    tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = rd_tup
-                    if asbool(only_if_compiling_contained_td):
-                        rd_tups_of_repositories_needed_for_compiling_td.append((tool_shed, name, owner, changeset_revision, 'False', 'True'))
+        repository_dependencies = self.metadata.get('repository_dependencies', {})
+        rd_tups = repository_dependencies.get('repository_dependencies', [])
+        for rd_tup in rd_tups:
+            if len(rd_tup) == 6:
+                tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = rd_tup
+                if asbool(only_if_compiling_contained_td):
+                    rd_tups_of_repositories_needed_for_compiling_td.append((tool_shed, name, owner, changeset_revision, 'False', 'True'))
         return rd_tups_of_repositories_needed_for_compiling_td
 
     @property

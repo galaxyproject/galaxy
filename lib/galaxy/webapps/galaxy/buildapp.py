@@ -18,12 +18,11 @@ import galaxy.web.framework.webapp
 from galaxy import util
 from galaxy.util import asbool
 from galaxy.util.properties import load_app_properties
-from galaxy.webapps.util import (
-    build_template_error_formatters,
-    MiddlewareWrapUnsupported,
-    wrap_if_allowed,
-    wrap_if_allowed_or_fail
-)
+from galaxy.web.framework.middleware.batch import BatchMiddleware
+from galaxy.web.framework.middleware.error import ErrorMiddleware
+from galaxy.web.framework.middleware.request_id import RequestIDMiddleware
+from galaxy.web.framework.middleware.xforwardedhost import XForwardedHostMiddleware
+from galaxy.webapps.util import wrap_if_allowed
 
 log = logging.getLogger(__name__)
 
@@ -105,6 +104,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_client_route('/admin/data_types', 'admin')
     webapp.add_client_route('/admin/jobs', 'admin')
     webapp.add_client_route('/admin/invocations', 'admin')
+    webapp.add_client_route('/admin/toolbox_dependencies', 'admin')
     webapp.add_client_route('/admin/data_manager{path_info:.*}', 'admin')
     webapp.add_client_route('/admin/error_stack', 'admin')
     webapp.add_client_route('/admin/users', 'admin')
@@ -152,6 +152,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_client_route('/workflows/create')
     webapp.add_client_route('/workflows/run')
     webapp.add_client_route('/workflows/import')
+    webapp.add_client_route('/workflows/invocations')
     webapp.add_client_route('/workflows/invocations/report')
     webapp.add_client_route('/custom_builds')
     webapp.add_client_route('/interactivetool_entry_points/list')
@@ -378,11 +379,26 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('/api/dependency_resolvers/dependency', action="manager_dependency", controller="tool_dependencies", conditions=dict(method=["GET"]))
     webapp.mapper.connect('/api/dependency_resolvers/dependency', action="install_dependency", controller="tool_dependencies", conditions=dict(method=["POST"]))
     webapp.mapper.connect('/api/dependency_resolvers/requirements', action="manager_requirements", controller="tool_dependencies")
-    webapp.mapper.connect('/api/dependency_resolvers/{id}/clean', action="clean", controller="tool_dependencies", conditions=dict(method=["POST"]))
-    webapp.mapper.connect('/api/dependency_resolvers/{id}/dependency', action="resolver_dependency", controller="tool_dependencies", conditions=dict(method=["GET"]))
-    webapp.mapper.connect('/api/dependency_resolvers/{id}/dependency', action="install_dependency", controller="tool_dependencies", conditions=dict(method=["POST"]))
-    webapp.mapper.connect('/api/dependency_resolvers/{id}/requirements', action="resolver_requirements", controller="tool_dependencies")
+    webapp.mapper.connect('/api/dependency_resolvers/unused_paths', action="unused_dependency_paths", controller="tool_dependencies", conditions=dict(method=["GET"]))
+    webapp.mapper.connect('/api/dependency_resolvers/unused_paths', action="delete_unused_dependency_paths", controller="tool_dependencies", conditions=dict(method=["PUT"]))
+    webapp.mapper.connect('/api/dependency_resolvers/toolbox', controller="tool_dependencies", action="summarize_toolbox", conditions=dict(method=["GET"]))
+    webapp.mapper.connect('/api/dependency_resolvers/toolbox/install', controller="tool_dependencies", action="toolbox_install", conditions=dict(method=["POST"]))
+    webapp.mapper.connect('/api/dependency_resolvers/toolbox/uninstall', controller="tool_dependencies", action="toolbox_uninstall", conditions=dict(method=["POST"]))
+    webapp.mapper.connect('/api/dependency_resolvers/{index}/clean', action="clean", controller="tool_dependencies", conditions=dict(method=["POST"]))
+    webapp.mapper.connect('/api/dependency_resolvers/{index}/dependency', action="resolver_dependency", controller="tool_dependencies", conditions=dict(method=["GET"]))
+    webapp.mapper.connect('/api/dependency_resolvers/{index}/dependency', action="install_dependency", controller="tool_dependencies", conditions=dict(method=["POST"]))
+    webapp.mapper.connect('/api/dependency_resolvers/{index}/requirements', action="resolver_requirements", controller="tool_dependencies")
     webapp.mapper.resource('dependency_resolver', 'dependency_resolvers', controller="tool_dependencies", path_prefix='api')
+    webapp.mapper.connect('/api/container_resolvers', action="index", controller="container_resolution", conditions=dict(method=["GET"]))
+    webapp.mapper.connect('/api/container_resolvers/resolve', action="resolve", controller="container_resolution", conditions=dict(method=["GET"]))
+    webapp.mapper.connect('/api/container_resolvers/toolbox', action="resolve_toolbox", controller="container_resolution", conditions=dict(method=["GET"]))
+    webapp.mapper.connect('/api/container_resolvers/resolve/install', action="resolve_with_install", controller="container_resolution", conditions=dict(method=["POST"]))
+    webapp.mapper.connect('/api/container_resolvers/toolbox/install', action="resolve_toolbox_with_install", controller="container_resolution", conditions=dict(method=["POST"]))
+    webapp.mapper.connect('/api/container_resolvers/{index}', action="show", controller="container_resolution", conditions=dict(method=["GET"]))
+    webapp.mapper.connect('/api/container_resolvers/{index}/resolve', action="resolve", controller="container_resolution", conditions=dict(method=["GET"]))
+    webapp.mapper.connect('/api/container_resolvers/{index}/toolbox', action="resolve_toolbox", controller="container_resolution", conditions=dict(method=["GET"]))
+    webapp.mapper.connect('/api/container_resolvers/{index}/resolve/install', action="resolve_with_install", controller="container_resolution", conditions=dict(method=["POST"]))
+    webapp.mapper.connect('/api/container_resolvers/{index}/toolbox/install', action="resolve_toolbox_with_install", controller="container_resolution", conditions=dict(method=["POST"]))
 
     webapp.mapper.resource_with_deleted('user', 'users', path_prefix='/api')
     webapp.mapper.resource('genome', 'genomes', path_prefix='/api')
@@ -761,6 +777,16 @@ def populate_api_routes(webapp, app):
                           controller='webhooks',
                           action='webhook_data',
                           conditions=dict(method=['GET']))
+
+    # ====================
+    # ===== TAGS API =====
+    # ====================
+
+    webapp.mapper.connect('update_tags',
+                          '/api/tags',
+                          controller='tags',
+                          action='update',
+                          conditions=dict(method=['PUT']))
 
     # =======================
     # ===== LIBRARY API =====
@@ -1181,35 +1207,17 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
         if asbool(conf.get('use_profile', False)):
             from paste.debug import profile
             app = wrap_if_allowed(app, stack, profile.ProfileMiddleware, args=(conf,))
-    if debug and asbool(conf.get('use_interactive', False)):
-        # Interactive exception debugging, scary dangerous if publicly
-        # accessible, if not enabled we'll use the regular error printing
-        # middleware.
-        try:
-            from weberror import evalexception
-            app = wrap_if_allowed_or_fail(app, stack, evalexception.EvalException,
-                                          args=(conf,),
-                                          kwargs=dict(templating_formatters=build_template_error_formatters()))
-        except MiddlewareWrapUnsupported as exc:
-            log.warning(util.unicodify(exc))
-            import galaxy.web.framework.middleware.error
-            app = wrap_if_allowed(app, stack, galaxy.web.framework.middleware.error.ErrorMiddleware, args=(conf,))
-    else:
-        # Not in interactive debug mode, just use the regular error middleware
-        import galaxy.web.framework.middleware.error
-        app = wrap_if_allowed(app, stack, galaxy.web.framework.middleware.error.ErrorMiddleware, args=(conf,))
+    # Error middleware
+    app = wrap_if_allowed(app, stack, ErrorMiddleware, args=(conf,))
     # Transaction logging (apache access.log style)
     if asbool(conf.get('use_translogger', True)):
         from galaxy.web.framework.middleware.translogger import TransLogger
         app = wrap_if_allowed(app, stack, TransLogger)
     # X-Forwarded-Host handling
-    from galaxy.web.framework.middleware.xforwardedhost import XForwardedHostMiddleware
     app = wrap_if_allowed(app, stack, XForwardedHostMiddleware)
     # Request ID middleware
-    from galaxy.web.framework.middleware.request_id import RequestIDMiddleware
     app = wrap_if_allowed(app, stack, RequestIDMiddleware)
     # api batch call processing middleware
-    from galaxy.web.framework.middleware.batch import BatchMiddleware
     app = wrap_if_allowed(app, stack, BatchMiddleware, args=(webapp, {}))
     if asbool(conf.get('enable_per_request_sql_debugging', False)):
         from galaxy.web.framework.middleware.sqldebug import SQLDebugMiddleware

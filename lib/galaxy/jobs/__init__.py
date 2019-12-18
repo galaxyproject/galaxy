@@ -39,6 +39,7 @@ from galaxy.jobs.actions.post import ActionBox
 from galaxy.jobs.mapper import JobMappingException, JobRunnerMapper
 from galaxy.jobs.runners import BaseJobRunner, JobState
 from galaxy.metadata import get_metadata_compute_strategy
+from galaxy.model import store
 from galaxy.objectstore import ObjectStorePopulator
 from galaxy.tool_util.deps import requirements
 from galaxy.tool_util.output_checker import check_output, DETECTED_JOB_STATE
@@ -886,7 +887,10 @@ class JobWrapper(HasResourceParameters):
         self.output_hdas_and_paths = None
         self.tool_provided_job_metadata = None
         # Wrapper holding the info required to restore and clean up from files used for setting metadata externally
-        self.external_output_metadata = get_metadata_compute_strategy(self.app.config, job.id)
+        metadata_strategy_override = None
+        if job.tasks:
+            metadata_strategy_override = "directory"
+        self.external_output_metadata = get_metadata_compute_strategy(self.app.config, job.id, metadata_strategy_override=metadata_strategy_override)
         self.job_runner_mapper = JobRunnerMapper(self, queue.dispatcher.url_to_destination, self.app.job_config)
         self.params = None
         if job.params:
@@ -1537,7 +1541,10 @@ class JobWrapper(HasResourceParameters):
         the output datasets based on stderr and stdout from the command, and
         the contents of the output files.
         """
-        finish_timer = util.ExecutionTimer()
+        finish_timer = self.app.execution_timer_factory.get_timer(
+            'internals.galaxy.jobs.job_wrapper_finish',
+            'job_wrapper.finish for job ${job_id} executed'
+        )
 
         # default post job setup
         self.sa_session.expunge_all()
@@ -1561,6 +1568,8 @@ class JobWrapper(HasResourceParameters):
             # could also mean that a job was broken up into tasks and one of
             # the tasks failed. So include the stderr, stdout, and exit code:
             return fail()
+
+        extended_metadata = self.external_output_metadata.extended
 
         # We collect the stderr from tools that write their stderr to galaxy.json
         tool_provided_metadata = self.get_tool_provided_job_metadata()
@@ -1590,7 +1599,8 @@ class JobWrapper(HasResourceParameters):
                 os.unlink(version_filename)
 
         outputs_to_working_directory = util.asbool(self.get_destination_configuration("outputs_to_working_directory", False))
-        if outputs_to_working_directory and not self.__link_file_check():
+        if not extended_metadata and outputs_to_working_directory and not self.__link_file_check():
+            # output will be moved by job if metadata_strategy is extended_metadata, so skip moving here
             for dataset_path in self.get_output_fnames():
                 try:
                     shutil.move(dataset_path.false_path, dataset_path.real_path)
@@ -1608,15 +1618,35 @@ class JobWrapper(HasResourceParameters):
                         return self.fail("Job %s's output dataset(s) could not be read" % job.id)
 
         job_context = ExpressionContext(dict(stdout=job.stdout, stderr=job.stderr))
-        for dataset_assoc in job.output_datasets + job.output_library_datasets:
+        if extended_metadata:
+            try:
+                import_options = store.ImportOptions(allow_dataset_object_edit=True, allow_edit=True)
+                import_model_store = store.get_import_model_store_for_directory(os.path.join(self.working_directory, 'metadata', 'outputs_populated'), app=self.app, import_options=import_options)
+                import_model_store.perform_import(history=job.history)
+            except Exception:
+                log.exception("problem importing job outputs. stdout [%s] stderr [%s]" % (job.stdout, job.stderr))
+                raise
+        output_dataset_associations = job.output_datasets + job.output_library_datasets
+        for dataset_assoc in output_dataset_associations:
             context = self.get_dataset_finish_context(job_context, dataset_assoc)
             # should this also be checking library associations? - can a library item be added from a history before the job has ended? -
             # lets not allow this to occur
             # need to update all associated output hdas, i.e. history was shared with job running
             for dataset in dataset_assoc.dataset.dataset.history_associations + dataset_assoc.dataset.dataset.library_associations:
-                self._finish_dataset(
-                    dataset_assoc.name, dataset, job, context, final_job_state, remote_metadata_directory
-                )
+                output_name = dataset_assoc.name
+                standard_job_finish = not extended_metadata
+                if extended_metadata:
+                    if job.states.ERROR == final_job_state:
+                        dataset.blurb = "error"
+                        dataset.mark_unhidden()
+
+                if standard_job_finish:
+                    # Handles retry internally on error for instance...
+                    self._finish_dataset(
+                        output_name, dataset, job, context, final_job_state, remote_metadata_directory
+                    )
+
+        for dataset_assoc in output_dataset_associations:
             if job.states.ERROR == final_job_state:
                 log.debug("(%s) setting dataset %s state to ERROR", job.id, dataset_assoc.dataset.dataset.id)
                 # TODO: This is where the state is being set to error. Change it!
@@ -1626,13 +1656,14 @@ class JobWrapper(HasResourceParameters):
                     self.pause(dep_job_assoc.job, "Execution of this dataset's job is paused because its input datasets are in an error state.")
             else:
                 dataset_assoc.dataset.dataset.state = model.Dataset.states.OK
-            # If any of the rest of the finish method below raises an
-            # exception, the fail method will run and set the datasets to
-            # ERROR.  The user will never see that the datasets are in error if
-            # they were flushed as OK here, since upon doing so, the history
-            # panel stops checking for updates.  So allow the
-            # self.sa_session.flush() at the bottom of this method set
-            # the state instead.
+
+        # If any of the rest of the finish method below raises an
+        # exception, the fail method will run and set the datasets to
+        # ERROR.  The user will never see that the datasets are in error if
+        # they were flushed as OK here, since upon doing so, the history
+        # panel stops checking for updates.  So allow the
+        # self.sa_session.flush() at the bottom of this method set
+        # the state instead.
 
         for pja in job.post_job_actions:
             ActionBox.execute(self.app, self.sa_session, pja.post_job_action, job)
@@ -1647,11 +1678,15 @@ class JobWrapper(HasResourceParameters):
             job.exit_code = tool_exit_code
         # custom post process setup
         inp_data, out_data, out_collections = job.io_dicts()
-        self.discover_outputs(job, inp_data, out_data, out_collections)
+        if not extended_metadata:
+            # importing metadata will discover outputs if extended metadata
+            # is enabled.
+            self.discover_outputs(job, inp_data, out_data, out_collections)
+
         # Certain tools require tasks to be completed after job execution
         # ( this used to be performed in the "exec_after_process" hook, but hooks are deprecated ).
         param_dict = self.get_param_dict(job)
-        self.tool.exec_after_process(self.app, inp_data, out_data, param_dict, job=job)
+        self.tool.exec_after_process(self.app, inp_data, out_data, param_dict, job=job, final_job_state=final_job_state)
         # Call 'exec_after_process' hook
         self.tool.call_hook('exec_after_process', self.app, inp_data=inp_data,
                             out_data=out_data, param_dict=param_dict,
@@ -1687,22 +1722,33 @@ class JobWrapper(HasResourceParameters):
             # If job was composed of tasks, don't attempt to recollect statisitcs
             self._collect_metrics(job, job_metrics_directory)
         self.sa_session.flush()
-        log.debug('job %d ended (finish() executed in %s)' % (self.job_id, finish_timer))
         if job.state == job.states.ERROR:
             self._report_error()
         cleanup_job = self.cleanup_job
         delete_files = cleanup_job == 'always' or (job.state == job.states.OK and cleanup_job == 'onsuccess')
         self.cleanup(delete_files=delete_files)
+        log.debug(finish_timer.to_str(job_id=self.job_id, tool_id=job.tool_id))
 
     def discover_outputs(self, job, inp_data, out_data, out_collections):
-        input_ext = 'data'
-        input_dbkey = '?'
-        for _, data in inp_data.items():
-            # For loop odd, but sort simulating behavior in galaxy.tools.actions
-            if not data:
-                continue
-            input_ext = data.ext
-            input_dbkey = data.dbkey or '?'
+        # Try to just recover input_ext and dbkey from job parameters (used and set in
+        # galaxy.tools.actions). Old jobs may have not set these in the job parameters
+        # before persisting them.
+        input_params = job.raw_param_dict()
+        input_ext = input_params.get("__input_ext")
+        input_dbkey = input_params.get("dbkey")
+        if input_ext is not None:
+            input_ext = loads(input_ext)
+            input_dbkey = loads(input_dbkey)
+        else:
+            # Legacy jobs without __input_ext.
+            input_ext = 'data'
+            input_dbkey = '?'
+            for _, data in inp_data.items():
+                # For loop odd, but sort simulating behavior in galaxy.tools.actions
+                if not data:
+                    continue
+                input_ext = data.ext
+                input_dbkey = data.dbkey or '?'
 
         # Create generated output children and primary datasets.
         tool_working_directory = self.tool_working_directory
@@ -1948,7 +1994,8 @@ class JobWrapper(HasResourceParameters):
     def get_dataset_finish_context(self, job_context, output_dataset_assoc):
         meta = {}
         tool_provided_metadata = self.get_tool_provided_job_metadata()
-        meta = tool_provided_metadata.get_dataset_meta(output_dataset_assoc.name, output_dataset_assoc.dataset.dataset.id)
+        dataset = output_dataset_assoc.dataset.dataset
+        meta = tool_provided_metadata.get_dataset_meta(output_dataset_assoc.name, dataset.id, dataset.uuid)
         if meta:
             return ExpressionContext(meta, job_context)
         return job_context
@@ -1987,13 +2034,11 @@ class JobWrapper(HasResourceParameters):
             safe_makedirs(os.path.join(self.working_directory, 'metadata'))
             self.app.datatypes_registry.to_xml_file(path=datatypes_config)
 
-        output_datasets = {}
-        for output_dataset_assoc in job.output_datasets + job.output_library_datasets:
-            output_name = output_dataset_assoc.name
-            assert output_name not in output_datasets
-            output_datasets[output_dataset_assoc.name] = output_dataset_assoc.dataset
-
-        command = self.external_output_metadata.setup_external_metadata(output_datasets,
+        inp_data, out_data, out_collections = job.io_dicts()
+        job_metadata = os.path.join(self.tool_working_directory, self.tool.provided_metadata_file)
+        object_store_conf = self.object_store.to_dict()
+        command = self.external_output_metadata.setup_external_metadata(out_data,
+                                                                        out_collections,
                                                                         self.sa_session,
                                                                         exec_dir=exec_dir,
                                                                         tmp_dir=tmp_dir,
@@ -2001,7 +2046,11 @@ class JobWrapper(HasResourceParameters):
                                                                         config_root=config_root,
                                                                         config_file=config_file,
                                                                         datatypes_config=datatypes_config,
-                                                                        job_metadata=os.path.join(self.tool_working_directory, self.tool.provided_metadata_file),
+                                                                        job_metadata=job_metadata,
+                                                                        provided_metadata_style=self.tool.provided_metadata_style,
+                                                                        object_store_conf=object_store_conf,
+                                                                        tool=self.tool,
+                                                                        job=job,
                                                                         max_metadata_value_size=self.app.config.max_metadata_value_size,
                                                                         validate_outputs=self.validate_outputs,
                                                                         **kwds)
@@ -2441,6 +2490,10 @@ class ComputeEnvironment(object):
     def tmp_directory(self):
         """Temp directory of target job - none if HOME should not be set."""
 
+    @abstractmethod
+    def galaxy_url(self):
+        """URL to access Galaxy API from for this compute environment."""
+
 
 class SimpleComputeEnvironment(object):
 
@@ -2510,6 +2563,9 @@ class SharedComputeEnvironment(SimpleComputeEnvironment):
 
     def tmp_directory(self):
         return self.job_wrapper.tmp_directory()
+
+    def galaxy_url(self):
+        return self.job_wrapper.get_destination_configuration("galaxy_infrastructure_url")
 
 
 class NoopQueue(object):

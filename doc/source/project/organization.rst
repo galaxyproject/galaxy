@@ -51,6 +51,7 @@ Members
 - Dave Clements (@tnabtaf)
 - Nate Coraor (@natefoo)
 - Jeremy Goecks (@jgoecks)
+- Sergey Golitsynskiy (@ic4f)
 - Björn Grüning (@bgruening)
 - Aysam Guerler (@guerler)
 - Jennifer Hillman Jackson (@jennaj)
