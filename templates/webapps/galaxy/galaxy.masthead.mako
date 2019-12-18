@@ -8,6 +8,7 @@
         masthead_config = {
             ## inject configuration
             'brand'                     : app.config.brand or '',
+            'display_galaxy_brand'      : app.config.display_galaxy_brand,
             'nginx_upload_path'         : app.config.nginx_upload_path or h.url_for(controller='api', action='tools'),
             'use_remote_user'           : app.config.use_remote_user,
             'remote_user_logout_href'   : app.config.remote_user_logout_href,
