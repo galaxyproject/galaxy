@@ -6,6 +6,7 @@
         <b-alert v-if="loading" variant="info" show>
             <loading-span message="Loading workflow run data" />
         </b-alert>
+        <workflow-run-success v-else-if="invocations != null" :invocations="invocations" :workflowName="workflowName" />
         <div v-else>
             <div ref="run" class="ui-form-composite">
                 <div class="ui-form-composite-messages mb-4" ref="messages">
@@ -48,6 +49,7 @@ import axios from "axios";
 
 import WaitButton from "components/WaitButton";
 import LoadingSpan from "components/LoadingSpan";
+import WorkflowRunSuccess from "./WorkflowRunSuccess";
 import { getAppRoot } from "onload";
 import ToolFormComposite from "mvc/tool/tool-form-composite";
 import { errorMessageAsString } from "utils/simple-error";
@@ -55,7 +57,8 @@ import { errorMessageAsString } from "utils/simple-error";
 export default {
     components: {
         LoadingSpan,
-        WaitButton
+        WaitButton,
+        WorkflowRunSuccess
     },
     props: {
         workflowId: { type: String }
@@ -70,7 +73,8 @@ export default {
             runForm: null,
             runButtonEnabled: true,
             runButtonWaitText: "",
-            runButtonPercentage: -1
+            runButtonPercentage: -1,
+            invocations: null
         };
     },
     created() {
@@ -85,7 +89,11 @@ export default {
                 this.loading = false;
                 this.$nextTick(() => {
                     const el = this.$refs["run"];
-                    const formProps = { el, setRunButtonStatus: this.setRunButtonStatus };
+                    const formProps = {
+                        el,
+                        setRunButtonStatus: this.setRunButtonStatus,
+                        handleInvocations: this.handleInvocations
+                    };
                     this.runForm = new ToolFormComposite.View(_.extend(runData, formProps));
                 });
             })
@@ -101,6 +109,9 @@ export default {
             this.runButtonEnabled = enabled;
             this.runButtonWaitText = waitText;
             this.runButtonPercentage = percentage;
+        },
+        handleInvocations(invocations) {
+            this.invocations = invocations;
         }
     },
 };

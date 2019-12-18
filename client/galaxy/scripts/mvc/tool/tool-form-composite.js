@@ -11,9 +11,7 @@ import Form from "mvc/form/form-view";
 import FormData from "mvc/form/form-data";
 import ToolFormBase from "mvc/tool/tool-form-base";
 import Modal from "mvc/ui/ui-modal";
-import Webhooks from "mvc/webhooks";
 import WorkflowIcons from "mvc/workflow/workflow-icons";
-import { mountWorkflowInvocationState } from "components/WorkflowInvocationState";
 
 var View = Backbone.View.extend({
     initialize: function(options) {
@@ -25,6 +23,7 @@ var View = Backbone.View.extend({
             this.active_tab = options.active_tab;
         }
         this.setRunButtonStatus = options.setRunButtonStatus;
+        this.handleInvocations = options.handleInvocations;
         // TODO: refactor 'run' response handling out into WorkflowRun
         // so only steps needs to be passed in as the target element.
         this.setElement(options.el);
@@ -472,25 +471,6 @@ var View = Backbone.View.extend({
         }
     },
 
-    /** Refresh the history after job submission while form is shown */
-    _refreshHistory: function() {
-        const Galaxy = getGalaxyInstance();
-        var self = this;
-        var history = Galaxy && Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model;
-        if (this._refresh_history) {
-            window.clearTimeout(this._refresh_history);
-        }
-        if (history) {
-            history.refresh().success(() => {
-                if (history.numOfUnfinishedShownContents() === 0) {
-                    self._refresh_history = window.setTimeout(() => {
-                        self._refreshHistory();
-                    }, history.UPDATE_DELAY);
-                }
-            });
-        }
-    },
-
     /** Build remaining steps */
     execute: function() {
         this.show_progress = true;
@@ -571,22 +551,16 @@ var View = Backbone.View.extend({
                 type: "POST",
                 url: `${getAppRoot()}api/workflows/${this.model.id}/invocations`,
                 data: job_def,
-                success: function(response) {
+                success: response => {
                     Galaxy.emit.debug("tool-form-composite::submit", "Submission successful.", response);
-                    self.$el.children().hide();
-                    self.$el.append(self._templateSuccess(response));
-                    mountWorkflowInvocationState();
-                    // Show Webhook if job is running
                     if ($.isArray(response) && response.length > 0) {
-                        self.$el.append($("<div/>", { id: "webhook-view" }));
-                        new Webhooks.WebhookView({
-                            type: "workflow",
-                            toolId: job_def.tool_id,
-                            toolVersion: job_def.tool_version
-                        });
+                        this.handleInvocations(response);
+                    } else {
+                        // Probably handle this up a layer in
+                        this.$el.append(
+                            this._templateError(response, "Invalid success response. No invocations found.")
+                        );
                     }
-
-                    self._refreshHistory();
                 },
                 error: function(response) {
                     Galaxy.emit.debug("tool-form-composite::submit", "Submission failed.", response);
@@ -658,51 +632,6 @@ var View = Backbone.View.extend({
     },
 
     /** Templates */
-    _templateSuccess: function(response) {
-        const Galaxy = getGalaxyInstance();
-        if ($.isArray(response) && response.length > 0) {
-            let timesExecuted = "";
-            // Default destination blurb, used for a single execution, same history.
-            let destinationBlurb =
-                "You can check the status of queued jobs and view the resulting data by refreshing the History pane, if this has not already happened automatically.";
-            const newHistoryTarget =
-                (response[0].history_id &&
-                    Galaxy.currHistoryPanel &&
-                    Galaxy.currHistoryPanel.model.id != response[0].history_id) ||
-                false;
-            if (response.length > 1) {
-                // Executed more than one time, build blurb but skip history link.
-                timesExecuted = `<em> - ${response.length} times</em>`;
-                if (newHistoryTarget) {
-                    destinationBlurb = `This workflow will generate results in multiple histories.  You can observe progress in the <a href="${getAppRoot()}history/view_multiple">history multi-view</a>.`;
-                }
-            } else if (newHistoryTarget) {
-                // Single execution, with a destination other than the
-                // current history.  Present a link.
-                destinationBlurb = `This workflow will generate results in a new history. <a href="${getAppRoot()}history/switch_to_history?hist_id=${
-                    response[0].history_id
-                }">Switch to that history now</a>.`;
-            }
-            let success = `
-            <div>
-                <div class="donemessagelarge">
-                    <p>
-                        Successfully invoked workflow <b>${Utils.sanitize(this.model.get("name"))}</b>${timesExecuted}.
-                    </p>
-                    <p>
-                        ${destinationBlurb}
-                    </p>
-                </div>`;
-            for (const invocation of response) {
-                success += `<div class="workflow-invocation-state" workflow_invocation_id="${invocation.id}"></div>`;
-            }
-            success += "</div>";
-            return $(success);
-        } else {
-            return this._templateError(response, "Invalid success response. No invocations found.");
-        }
-    },
-
     _templateError: function(response, err_msg) {
         return $("<div/>")
             .addClass("errormessagelarge")
