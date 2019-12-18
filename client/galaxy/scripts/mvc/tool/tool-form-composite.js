@@ -24,10 +24,7 @@ var View = Backbone.View.extend({
         }
         this.setRunButtonStatus = options.setRunButtonStatus;
         this.handleInvocations = options.handleInvocations;
-        // TODO: refactor 'run' response handling out into WorkflowRun
-        // so only steps needs to be passed in as the target element.
         this.setElement(options.el);
-        this.$steps = this.$el.find(".ui-form-composite-steps");
         this._configure();
         this.render();
     },
@@ -229,7 +226,7 @@ var View = Backbone.View.extend({
                     });
                 }
             });
-            this._append(this.$steps.empty(), this.wp_form.$el);
+            this._append(this.$el.empty(), this.wp_form.$el);
         }
     },
 
@@ -265,7 +262,7 @@ var View = Backbone.View.extend({
                 }
             ]
         });
-        this._append(this.$steps, this.history_form.$el);
+        this._append(this.$el, this.history_form.$el);
     },
 
     /** Render Workflow Options */
@@ -277,7 +274,7 @@ var View = Backbone.View.extend({
                 title: "<b>Workflow Resource Options</b>",
                 inputs: this.model.get("workflow_resource_parameters")
             });
-            this._append(this.$steps, this.workflow_resource_parameters_form.$el);
+            this._append(this.$el, this.workflow_resource_parameters_form.$el);
         }
     },
 
@@ -311,7 +308,7 @@ var View = Backbone.View.extend({
                     }
                 ]
             });
-            this._append(this.$steps, this.job_options_form.$el);
+            this._append(this.$el, this.job_options_form.$el);
         }
     },
 
@@ -321,7 +318,7 @@ var View = Backbone.View.extend({
         var self = this;
         var form = null;
         this.deferred.execute(promise => {
-            self.$steps.addClass("ui-steps");
+            self.$el.addClass("ui-steps");
             if (step.step_type == "tool") {
                 step.postchange = function(process, form) {
                     var current_state = {
@@ -404,7 +401,7 @@ var View = Backbone.View.extend({
                 }
             }
             self.forms[step.index] = form;
-            self._append(self.$steps, form.$el);
+            self._append(self.$el, form.$el);
             if (step.needs_refresh) {
                 self._refreshStep(step);
             }

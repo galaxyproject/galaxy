@@ -9,7 +9,7 @@
         <workflow-run-success v-else-if="invocations != null" :invocations="invocations" :workflowName="workflowName" />
         <div v-else>
             <div ref="run" class="ui-form-composite">
-                <div class="ui-form-composite-messages mb-4" ref="messages">
+                <div class="ui-form-composite-messages mb-4">
                     <b-alert v-if="hasUpgradeMessages" variant="warning" show>
                         Some tools in this workflow may have changed since it was last saved or some errors were found.
                         The workflow may still run, but any new options will have default values. Please review the
@@ -23,7 +23,7 @@
                     </b-alert>
                 </div>
                 <!-- h4 as a class here looks odd but it was in the Backbone -->
-                <div class="ui-form-composite-header h4" ref="header">
+                <div class="ui-form-composite-header h4">
                     <b>Workflow: {{ workflowName }}</b>
                     <wait-button
                         title="Run Workflow"
@@ -37,7 +37,7 @@
                     >
                     </wait-button>
                 </div>
-                <div class="ui-form-composite-steps" ref="steps"></div>
+                <div class="ui-form-composite-form" ref="form"></div>
             </div>
         </div>
     </div>
@@ -88,7 +88,7 @@ export default {
                 this.workflowName = runData.name;
                 this.loading = false;
                 this.$nextTick(() => {
-                    const el = this.$refs["run"];
+                    const el = this.$refs["form"];
                     const formProps = {
                         el,
                         setRunButtonStatus: this.setRunButtonStatus,
