@@ -522,6 +522,11 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
                 log.exception('Subscribing to the mailing list has failed.')
                 return "Subscribing to the mailing list has failed."
 
+    def activate(self, trans, user):
+        user.active = True
+        trans.sa_session.add(user)
+        trans.sa_session.flush()
+
 
 class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
     model_manager_class = UserManager
