@@ -17,7 +17,6 @@ from galaxy import (
     managers,
     web
 )
-from galaxy.auth.util import get_authenticators
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.util import (
     FILENAME_VALID_CHARS,
