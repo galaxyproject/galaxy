@@ -25,10 +25,9 @@ var View = Backbone.View.extend({
         if (options && options.active_tab) {
             this.active_tab = options.active_tab;
         }
-        // refactor message, header, and 'run' response handling out into WorkflowRun
+        // TODO: refactor header, and 'run' response handling out into WorkflowRun
         // so only steps needs to be passed in as the target element.
         this.setElement(options.el);
-        this.$message = this.$el.find(".ui-form-composite-messages");
         this.$header = this.$el.find(".ui-form-composite-header");
         this.$steps = this.$el.find(".ui-form-composite-steps");
         this._configure();
@@ -207,7 +206,6 @@ var View = Backbone.View.extend({
         var self = this;
         this.deferred.reset();
         this._renderHeader();
-        this._renderMessage();
         this._renderParameters();
         this._renderHistory();
         this._renderUseCachedJob();
@@ -234,34 +232,6 @@ var View = Backbone.View.extend({
             .empty()
             .append(`<b>Workflow: ${this.model.get("name")}<b>`)
             .append(this.execute_btn.$el);
-    },
-
-    /** Render message */
-    _renderMessage: function() {
-        this.$message.empty();
-        if (this.model.get("has_upgrade_messages")) {
-            this.$message.append(
-                new Ui.Message({
-                    message:
-                        "Some tools in this workflow may have changed since it was last saved or some errors were found. The workflow may still run, but any new options will have default values. Please review the messages below to make a decision about whether the changes will affect your analysis.",
-                    status: "warning",
-                    persistent: true,
-                    fade: false
-                }).$el
-            );
-        }
-        var step_version_changes = this.model.get("step_version_changes");
-        if (step_version_changes && step_version_changes.length > 0) {
-            this.$message.append(
-                new Ui.Message({
-                    message:
-                        "Some tools are being executed with different versions compared to those available when this workflow was last saved because the other versions are not or no longer available on this Galaxy instance. To upgrade your workflow and dismiss this message simply edit the workflow and re-save it.",
-                    status: "warning",
-                    persistent: true,
-                    fade: false
-                }).$el
-            );
-        }
     },
 
     /** Render workflow parameters */
