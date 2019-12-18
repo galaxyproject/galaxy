@@ -7,7 +7,11 @@
             <loading-span message="Loading workflow run data" />
         </b-alert>
         <div v-else>
-            <div class="workflow-run-form" ref="workflow-run-form" />
+            <div ref="run" class="ui-form-composite">
+                <div class="ui-form-composite-messages mb-4" ref="messages"></div>
+                <div class="ui-form-composite-header" ref="header"></div>
+                <div class="ui-form-composite-steps" ref="steps"></div>
+            </div>
         </div>
     </div>
 </template>
@@ -40,9 +44,8 @@ export default {
             .then(response => {
                 this.loading = false;
                 this.$nextTick(() => {
-                    const formEl = this.$refs["workflow-run-form"];
-                    console.log(this.$refs);
-                    const view = new ToolFormComposite.View(_.extend(response.data, { el: formEl }));
+                    const el = this.$refs["run"];
+                    const view = new ToolFormComposite.View(_.extend(response.data, { el }));
                 });
             })
             .catch(response => {

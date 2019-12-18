@@ -25,11 +25,12 @@ var View = Backbone.View.extend({
         if (options && options.active_tab) {
             this.active_tab = options.active_tab;
         }
-        const $el = $(options.el);
-        $el.addClass("ui-form-composite")
-            .append((this.$message = $("<div/>").addClass("mb-4")))
-            .append((this.$header = $("<div/>")))
-            .append((this.$steps = $("<div/>")));
+        // refactor message, header, and 'run' response handling out into WorkflowRun
+        // so only steps needs to be passed in as the target element.
+        this.setElement(options.el);
+        this.$message = this.$el.find(".ui-form-composite-messages");
+        this.$header = this.$el.find(".ui-form-composite-header");
+        this.$steps = this.$el.find(".ui-form-composite-steps");
         this._configure();
         this.render();
     },
