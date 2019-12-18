@@ -40,7 +40,7 @@ from galaxy_test.base.workflow_fixtures import (
 from ._framework import ApiTestCase
 
 
-NESTED_WORKFLOW_AUTO_LABELS = """
+NESTED_WORKFLOW_AUTO_LABELS_LEGACY_SYNTAX = """
 class: GalaxyWorkflow
 inputs:
   outer_input: data
@@ -79,6 +79,44 @@ steps:
       queries:
         - input2:
             $link: nested_workflow#1:out_file1
+"""
+
+NESTED_WORKFLOW_AUTO_LABELS_MODERN_SYNTAX = """
+class: GalaxyWorkflow
+inputs:
+  outer_input: data
+outputs:
+  outer_output:
+    outputSource: second_cat/out_file1
+steps:
+  first_cat:
+    tool_id: cat1
+    in:
+      input1: outer_input
+  nested_workflow:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        - id: inner_input
+      outputs:
+        - outputSource: 1/out_file1
+      steps:
+        random:
+          tool_id: random_lines1
+          state:
+            num_lines: 1
+            input:
+              $link: inner_input
+            seed_source:
+              seed_source_selector: set_seed
+              seed: asdf
+    in:
+      inner_input: first_cat/out_file1
+  second_cat:
+    tool_id: cat1
+    in:
+      input1: nested_workflow/1:out_file1
+      queries_0|input2: nested_workflow/1:out_file1
 """
 
 
@@ -1144,19 +1182,23 @@ test_data:
             assert len([x for x in content.split("\n") if x]) == 2
 
     def test_run_subworkflow_auto_labels(self):
-        history_id = self.dataset_populator.new_history()
-        test_data = """
-outer_input:
-  value: 1.bed
-  type: File
-"""
-        job_summary = self._run_jobs(NESTED_WORKFLOW_AUTO_LABELS, test_data=test_data, history_id=history_id)
-        assert len(job_summary.jobs) == 4, "4 jobs expected, got %d jobs" % len(job_summary.jobs)
+        def run_test(workflow_text):
+            with self.dataset_populator.test_history() as history_id:
+                test_data = """
+        outer_input:
+          value: 1.bed
+          type: File
+        """
+                job_summary = self._run_jobs(workflow_text, test_data=test_data, history_id=history_id)
+                assert len(job_summary.jobs) == 4, "4 jobs expected, got %d jobs" % len(job_summary.jobs)
 
-        content = self.dataset_populator.get_history_dataset_content(history_id)
-        self.assertEqual(
-            "chrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\nchrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\n",
-            content)
+                content = self.dataset_populator.get_history_dataset_content(history_id)
+                self.assertEqual(
+                    "chrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\nchrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\n",
+                    content)
+
+        for workflow_text in [NESTED_WORKFLOW_AUTO_LABELS_LEGACY_SYNTAX, NESTED_WORKFLOW_AUTO_LABELS_MODERN_SYNTAX]:
+            run_test(workflow_text)
 
     @skip_without_tool("cat1")
     @skip_without_tool("collection_paired_test")
