@@ -12,17 +12,17 @@
         </b-link>
         <p v-if="workflow.description">{{ workflow.description }}</p>
         <div v-if="workflow.shared" class="dropdown-menu" aria-labelledby="workflow-dropdown">
-            <a class="dropdown-item" href="#" @click="onCopy">Copy</a>
+            <a class="dropdown-item" href="#" @click.prevent="onCopy">Copy</a>
             <a class="dropdown-item" :href="urlViewShared">View</a>
         </div>
         <div v-else class="dropdown-menu" aria-labelledby="workflow-dropdown">
             <a class="dropdown-item" :href="urlEdit">Edit</a>
-            <a class="dropdown-item" href="#" @click="onCopy">Copy</a>
+            <a class="dropdown-item" href="#" @click.prevent="onCopy">Copy</a>
             <a class="dropdown-item" :href="urlDownload">Download</a>
-            <a class="dropdown-item" href="#" @click="onRename">Rename</a>
+            <a class="dropdown-item" href="#" @click.prevent="onRename">Rename</a>
             <a class="dropdown-item" :href="urlShare">Share</a>
             <a class="dropdown-item" :href="urlView">View</a>
-            <a class="dropdown-item" href="#" @click="onDelete">Delete</a>
+            <a class="dropdown-item" href="#" @click.prevent="onDelete">Delete</a>
         </div>
     </div>
 </template>
