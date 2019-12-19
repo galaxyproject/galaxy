@@ -40,11 +40,11 @@
                 </b-form>
                 <div v-for="idp in oidc_idps" :key="idp" style="margin:0.5em">
                     <span v-if="oidc_idps_icons[idp]">
-                        <img v-bind:src="oidc_idps_icons[idp]" height="45" v-bind:alt="idp" />
+                        <img v-bind:src="oidc_idps[idp]" height="45" v-bind:alt="idp" />
                     </span>
                     <span v-else>
                         <b-button class="d-block mt-3" @click="submitOIDCLogin(idp)">
-                            <i v-bind:class="oidc_idps_icons[idp]" /> Sign in with
+                            <i v-bind:class="oidc_idps[idp]" /> Sign in with
                             {{ idp.charAt(0).toUpperCase() + idp.slice(1) }}
                         </b-button>
                     </span>
