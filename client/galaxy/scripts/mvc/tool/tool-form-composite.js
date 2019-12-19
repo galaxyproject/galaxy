@@ -8,7 +8,7 @@ import _l from "utils/localization";
 import Utils from "utils/utils";
 import Deferred from "utils/deferred";
 import Form from "mvc/form/form-view";
-import { isDataStep } from "components/Workflow/Run/model";
+import { isDataStep, invokeWorkflow } from "components/Workflow/Run";
 
 import ToolFormBase from "mvc/tool/tool-form-base";
 import Modal from "mvc/ui/ui-modal";
@@ -373,19 +373,19 @@ var View = Backbone.View.extend({
             Galaxy.emit.debug("tool-form-composite::submit()", "Validation failed.", job_def);
         } else {
             Galaxy.emit.debug("tool-form-composite::submit()", "Validation complete.", job_def);
-            Utils.request({
-                type: "POST",
-                url: `${getAppRoot()}api/workflows/${this.runWorkflowModel.workflowId}/invocations`,
-                data: job_def,
-                success: (response) => {
-                    Galaxy.emit.debug("tool-form-composite::submit", "Submission successful.", response);
-                    if ($.isArray(response) && response.length > 0) {
-                        this.handleInvocations(response);
+            invokeWorkflow(this.runWorkflowModel.workflowId, job_def)
+                .then((invocations) => {
+                    Galaxy.emit.debug("tool-form-composite::submit", "Submission successful.", invocations);
+                    if ($.isArray(invocations) && invocations.length > 0) {
+                        this.handleInvocations(invocations);
                     } else {
-                        this.submissionErrorModal(job_def, response);
+                        this.submissionErrorModal(job_def, invocations);
                     }
-                },
-                error: (response) => {
+                    this._enabled(true);
+                })
+                .catch((response) => {
+                    // TODO: Is this the same response as the Utils post would
+                    // have had?
                     Galaxy.emit.debug("tool-form-composite::submit", "Submission failed.", response);
                     var input_found = false;
                     if (response && response.err_data) {
@@ -405,11 +405,8 @@ var View = Backbone.View.extend({
                     if (!input_found) {
                         this.submissionErrorModal(job_def, response);
                     }
-                },
-                complete: () => {
                     this._enabled(true);
-                },
-            });
+                });
         }
     },
 

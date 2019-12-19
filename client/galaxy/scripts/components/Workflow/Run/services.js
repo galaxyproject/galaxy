@@ -20,3 +20,14 @@ export async function getRunData(workflowId) {
         rethrowSimple(e);
     }
 }
+
+/**
+ * Invoke the specified workflow using the supplied data.
+ *
+ * @param {String} workflowId - (Stored?) Workflow ID to fetch data for.
+ */
+export async function invokeWorkflow(workflowId, invocationData) {
+    const url = `${getAppRoot()}api/workflows/${workflowId}/invocations`;
+    const response = await axios.post(url, invocationData);
+    return response.data;
+}
