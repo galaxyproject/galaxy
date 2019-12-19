@@ -828,8 +828,11 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 return None
 
         tool_loaded = False
+        if not os.path.isdir(directory):
+            log.error("Failed to read tool directory %s.", directory)
+            return
         for name in os.listdir(directory):
-            if name.startswith('.' or '_'):
+            if name.startswith(('.', '_')):
                 # Very unlikely that we want to load tools from a hidden or private folder
                 continue
             child_path = os.path.join(directory, name)
