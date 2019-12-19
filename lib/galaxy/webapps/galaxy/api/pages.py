@@ -3,13 +3,15 @@ API for updating Galaxy Pages
 """
 import logging
 
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.managers.base import get_object
+from galaxy.managers.markdown_util import internal_galaxy_markdown_to_pdf
 from galaxy.managers.pages import (
     PageManager,
     PageSerializer
 )
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.web import expose_api
+from galaxy.web import expose_api, expose_api_raw
 from galaxy.webapps.base.controller import (
     BaseAPIController,
     SharableItemSecurityMixin,
@@ -124,3 +126,22 @@ class PagesController(BaseAPIController, SharableItemSecurityMixin, UsesAnnotati
         rval['content_format'] = page.latest_revision.content_format
         self.manager.rewrite_content_for_export(trans, rval)
         return rval
+
+    @expose_api_raw
+    def show_pdf(self, trans, id, **kwd):
+        """
+        show( self, trans, id, **kwd )
+        * GET /api/pages/{id}.pdf
+            View a page summary and the content of the latest revision as PDF.
+
+        :param  id:    ID of page to be displayed
+
+        :rtype:     dict
+        :returns:   Dictionary return of the Page.to_dict call with the 'content' field populated by the most recent revision
+        """
+        page = get_object(trans, id, 'Page', check_ownership=False, check_accessible=True)
+        if page.latest_revision.content_format != "markdown":
+            raise RequestParameterInvalidException("PDF export only allowed for Markdown based pages")
+        internal_galaxy_markdown = page.latest_revision.content
+        trans.response.set_content_type("application/pdf")
+        return internal_galaxy_markdown_to_pdf(trans, internal_galaxy_markdown, 'page')

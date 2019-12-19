@@ -450,6 +450,7 @@ def populate_api_routes(webapp, app):
                            collection={'sniffers': 'GET', 'mapping': 'GET', 'converters': 'GET', 'edam_data': 'GET', 'edam_formats': 'GET'},
                            parent_resources=dict(member_name='datatype', collection_name='datatypes'))
     webapp.mapper.resource('search', 'search', path_prefix='/api')
+    webapp.mapper.connect('/api/pages/{id}.pdf', action='show_pdf', controller="pages", conditions=dict(method=["GET"]))
     webapp.mapper.resource('page', 'pages', path_prefix="/api")
     webapp.mapper.connect('/api/pages/{id}/sharing', action='sharing', controller="pages", conditions=dict(method=["GET", "POST"]))
     webapp.mapper.resource('revision', 'revisions',
@@ -596,6 +597,7 @@ def populate_api_routes(webapp, app):
 
     connect_invocation_endpoint('show', '', action='show_invocation')
     connect_invocation_endpoint('show_report', '/report', action='show_invocation_report')
+    connect_invocation_endpoint('show_report_pdf', '/report.pdf', action='show_invocation_report_pdf')
     connect_invocation_endpoint('jobs_summary', '/jobs_summary', action='invocation_jobs_summary')
     connect_invocation_endpoint('step_jobs_summary', '/step_jobs_summary', action='invocation_step_jobs_summary')
     connect_invocation_endpoint('cancel', '', action='cancel_invocation', conditions=dict(method=['DELETE']))

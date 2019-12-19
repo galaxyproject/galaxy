@@ -15,6 +15,7 @@ GALAXY_FLAVORED_MARKDOWN_CONTAINER_LINE_PATTERN = re.compile(
 VALID_CONTAINER_END_PATTERN = re.compile(r"^```\s*$")
 GALAXY_FLAVORED_MARKDOWN_CONTAINERS = [
     "history_dataset_display",
+    "history_dataset_embedded",
     "history_dataset_collection_display",
     "history_dataset_as_image",
     "history_dataset_peek",
