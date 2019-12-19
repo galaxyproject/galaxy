@@ -19,7 +19,7 @@
         <environment_variable name="USER_APIKEY">${__user_name__}</environment_variable>
         <!-- Galaxy info -->
         <environment_variable name="GALAXY_URL">$__galaxy_url__</environment_variable>
-        <environment_variable name="API_KEY" inject="api_key" />
+        <environment_variable name="GALAXY_API_KEY" inject="api_key" />
         <!-- AskOmics config -->
         <environment_variable name="DEPMODE">prod</environment_variable>
         <environment_variable name="MAX_CELERY_QUEUE">1</environment_variable>
