@@ -42,9 +42,29 @@ def test_select_wrapper_simple_options(tool):
     </param>''')
     parameter = SelectToolParameter(tool, xml)
     wrapper = SelectToolParameterWrapper(parameter, "x")
-    assert str(wrapper) == "x"
     assert wrapper.name == "blah"
+    assert str(wrapper) == "x"
     assert wrapper.value_label == "I am X"
+
+
+@with_mock_tool
+def test_select_wrapper_multiple_options(tool):
+    xml = XML('''<param name="blah" type="select" multiple="true">
+        <option value="x">I am X</option>
+        <option value="y" selected="true">I am Y</option>
+        <option value="z">I am Z</option>
+    </param>''')
+    parameter = SelectToolParameter(tool, xml)
+    wrapper = SelectToolParameterWrapper(parameter, ["x"])
+    assert wrapper.name == "blah"
+    assert str(wrapper) == "x"
+    assert "x" in wrapper
+    wrapper = SelectToolParameterWrapper(parameter, ["x", "z"])
+    assert str(wrapper) == "x,z"
+    assert "x" in wrapper
+    wrapper = SelectToolParameterWrapper(parameter, [])
+    assert str(wrapper) == "None"
+    assert "x" not in wrapper
 
 
 @with_mock_tool

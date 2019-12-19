@@ -902,7 +902,7 @@ class SelectToolParameter(ToolParameter):
             return value
 
     def to_param_dict_string(self, value, other_values={}):
-        if value is None:
+        if value in (None, []):
             return "None"
         if isinstance(value, list):
             if not self.multiple:
