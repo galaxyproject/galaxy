@@ -68,7 +68,7 @@ export default {
     },
     data() {
         return {
-            error: false,
+            error: null,
             loading: true,
             hasUpgradeMessages: false,
             hasStepVersionChanges: false,
