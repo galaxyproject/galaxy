@@ -110,18 +110,18 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
                     query = query.filter(trans.app.model.User.username.like("%%%s%%" % f_any))
 
         if deleted:
-            query = query.filter(trans.app.model.User.table.c.deleted == true())
             # only admins can see deleted users
             if not trans.user_is_admin:
                 return []
+            query = query.filter(trans.app.model.User.table.c.deleted == true())
         else:
-            query = query.filter(trans.app.model.User.table.c.deleted == false())
             # special case: user can see only their own user
             # special case2: if the galaxy admin has specified that other user email/names are
             #   exposed, we don't want special case #1
             if not trans.user_is_admin and not trans.app.config.expose_user_name and not trans.app.config.expose_user_email:
                 item = trans.user.to_dict(value_mapper={'id': trans.security.encode_id})
                 return [item]
+            query = query.filter(trans.app.model.User.table.c.deleted == false())
         for user in query:
             item = user.to_dict(value_mapper={'id': trans.security.encode_id})
             # If NOT configured to expose_email, do not expose email UNLESS the user is self, or
