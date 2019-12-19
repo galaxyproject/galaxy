@@ -83,7 +83,7 @@ class InputValueWrapper(ToolParameterValueWrapper):
         if self.input.type == 'boolean' and isinstance(other, string_types):
             return str(self)
         # For backward compatibility, allow `$wrapper != ""` for optional non-text param
-        if self.input.optional and self.value is None and isinstance(other, string_types):
+        if self.input.optional and self.value is None and self.input.type != 'boolean':
             return str(self)
         cast = {
             'text': str,
