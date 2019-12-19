@@ -561,7 +561,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         if workflow_dict:
             raw_workflow_description = self.__normalize_workflow(trans, workflow_dict)
             workflow_dict = raw_workflow_description.as_dict
-            new_workflow_name = workflow_dict.get('name') or workflow_dict.get('name')
+            new_workflow_name = workflow_dict.get('name')
             if new_workflow_name and new_workflow_name != stored_workflow.name:
                 sanitized_name = sanitize_html(new_workflow_name)
                 workflow = stored_workflow.latest_workflow.copy()
@@ -584,7 +584,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 else:
                     # remove if in list
                     entries = {x.stored_workflow_id: x for x in trans.get_user().stored_workflow_menu_entries}
-                    if (trans.security.decode_id(id) in entries):
+                    if trans.security.decode_id(id) in entries:
                         trans.get_user().stored_workflow_menu_entries.remove(entries[trans.security.decode_id(id)])
             # set tags
             if 'tags' in workflow_dict:

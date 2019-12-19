@@ -204,7 +204,7 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
                 folder to create
             * description: (optional, only if create_type is 'folder')
                 description of the folder to create
-            * tag_using_filename: (optional)
+            * tag_using_filenames: (optional)
                 create tags on datasets using the file's original name
             * tags: (optional)
                 create the given list of tags on datasets

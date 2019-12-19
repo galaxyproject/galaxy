@@ -936,7 +936,7 @@ class Tool(Dictifiable):
         if getattr(self, 'tool_shed', None):
             tool_dir = Path(self.tool_dir)
             for repo_dir in itertools.chain([tool_dir], tool_dir.parents):
-                if repo_dir.stem == self.repository_name:
+                if repo_dir.name == self.repository_name:
                     return str(repo_dir)
             else:
                 log.error("Problem finding repository dir for tool [%s]" % self.id)
