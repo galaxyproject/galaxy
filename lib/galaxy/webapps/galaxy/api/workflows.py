@@ -959,6 +959,63 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         )
 
     @expose_api
+    def export_invocation_bco(self, trans, invocation_id, **kwd):
+        """
+        GET /api/invocations/{invocations_id}/export_bco
+        Return a BioCompute Object for the workflow invocation.
+        """
+        decoded_workflow_invocation_id = self.decode_id(invocation_id)
+        workflow_invocation = self.workflow_manager.get_invocation(trans, decoded_workflow_invocation_id)
+        history = workflow_invocation.history
+        workflow = workflow_invocation.workflow
+        stored_workflow = workflow.stored_workflow
+        contributing_users = {history.user, stored_workflow.user}
+
+        contributors = []
+        for contributing_user in contributing_users:
+            contributor = {
+                "orcid": "",
+                "affiliation": contributing_user.email.split('@')[-1],
+                "contribution": [],
+                "name": contributing_user.username,
+                "email": contributing_user.email,
+            }
+            contributors.append(contributor)
+
+        provenance_domain = {
+            'name': workflow.name,
+            'version': 'TODO',
+            'created': workflow_invocation.create_time.isoformat(),
+            'modified': workflow_invocation.update_time.isoformat(),
+            'contributors': contributors,
+            'license': 'TODO',
+        }
+
+        output_subdomain = []  # TODO
+
+        ret_dict = {
+            'bco_id': url_for('invocation_export_bco', invocation_id=invocation_id),
+            'bco_spec_version': 'https://w3id.org/biocompute/1.3.0/',
+            'checksum': 'TODO',
+            'provenance_domain': provenance_domain,
+            'usability_domain': history.annotations,
+            'extension_domain': {},
+            'description_domain': {
+                'keywords': stored_workflow.tags,
+                'platform': 'Galaxy',
+                'pipeline_steps': [],  # fill from the workflow steps
+            },
+            'execution_domain': {},
+            'parametric_domain': {},
+            'io_domain': {
+                'input_subdomain': [],
+                'output_subdomain': output_subdomain,
+            },
+            'error_domain': {},
+        }
+        return ret_dict
+
+    @expose_api
     def invocation_step(self, trans, invocation_id, step_id, **kwd):
         """
         GET /api/workflows/{workflow_id}/invocations/{invocation_id}/steps/{step_id}

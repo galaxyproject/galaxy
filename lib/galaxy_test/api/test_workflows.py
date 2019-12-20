@@ -40,6 +40,21 @@ from galaxy_test.base.workflow_fixtures import (
 from ._framework import ApiTestCase
 
 
+WORKFLOW_SIMPLE = """
+class: GalaxyWorkflow
+name: Simple Workflow
+inputs:
+  input1: data
+outputs:
+  wf_output_1:
+    outputSource: first_cat/out_file1
+steps:
+  first_cat:
+    tool_id: cat1
+    in:
+      input1: input1
+"""
+
 NESTED_WORKFLOW_AUTO_LABELS_LEGACY_SYNTAX = """
 class: GalaxyWorkflow
 inputs:
@@ -1130,7 +1145,7 @@ outer_input:
             assert len([x for x in content.split("\n") if x]) == 2
 
     @skip_without_tool("cat")
-    def test_run_subworkflow_replacment_parameters(self):
+    def test_run_subworkflow_replacement_parameters(self):
         with self.dataset_populator.test_history() as history_id:
             test_data = """
 replacement_parameters:
@@ -1304,7 +1319,7 @@ input_1:
   type: File
 """
         with self.dataset_populator.test_history() as history_id:
-            summary = self._run_jobs(r"""
+            summary = self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
   input_1: data
@@ -1351,6 +1366,15 @@ steps:
             assert "\n```galaxy\nhistory_dataset_display(history_dataset_id=" in markdown_content
             assert "## Workflow Inputs" in markdown_content
             assert "## About This Report" in markdown_content
+
+    @skip_without_tool("cat1")
+    def test_export_invocation_bco(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_jobs(WORKFLOW_SIMPLE, test_data={"input1": "hello world"}, history_id=history_id)
+            invocation_id = summary.invocation_id
+            bco = self._get("invocations/%s/export_bco" % invocation_id).json()
+            self.assertEqual(bco['bco_spec_version'], 'https://w3id.org/biocompute/1.3.0/')
+            self.assertEqual(bco['provenance_domain']['name'], "Simple Workflow")
 
     @skip_without_tool("__APPLY_RULES__")
     def test_workflow_run_apply_rules(self):
@@ -1418,19 +1442,7 @@ input_c:
 
     def test_workflow_output_dataset(self):
         with self.dataset_populator.test_history() as history_id:
-            summary = self._run_jobs("""
-class: GalaxyWorkflow
-inputs:
-  input1: data
-outputs:
-  wf_output_1:
-    outputSource: first_cat/out_file1
-steps:
-  first_cat:
-    tool_id: cat1
-    in:
-      input1: input1
-""", test_data={"input1": "hello world"}, history_id=history_id)
+            summary = self._run_jobs(WORKFLOW_SIMPLE, test_data={"input1": "hello world"}, history_id=history_id)
             workflow_id = summary.workflow_id
             invocation_id = summary.invocation_id
             invocation_response = self._get("workflows/%s/invocations/%s" % (workflow_id, invocation_id))
@@ -3418,19 +3430,7 @@ steps:
     @skip_without_tool("cat1")
     def test_validated_post_job_action_unvalidated_default(self):
         with self.dataset_populator.test_history() as history_id:
-            self._run_jobs("""
-class: GalaxyWorkflow
-inputs:
-  input1: data
-outputs:
-  wf_output_1:
-    outputSource: first_cat/out_file1
-steps:
-  first_cat:
-    tool_id: cat1
-    in:
-      input1: input1
-""", test_data={"input1": {"type": "File", "file_type": "fastqsanger", "value": "1.fastqsanger"}}, history_id=history_id)
+            self._run_jobs(WORKFLOW_SIMPLE, test_data={"input1": {"type": "File", "file_type": "fastqsanger", "value": "1.fastqsanger"}}, history_id=history_id)
             hda2 = self.dataset_populator.get_history_dataset_details(history_id, hid=2)
             assert hda2["validated_state"] == "unknown"
 
