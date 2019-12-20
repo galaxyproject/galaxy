@@ -161,6 +161,7 @@ def test_input_value_wrapper_comparison_optional(tool):
     wrapper = valuewrapper(tool, None, 'integer', optional=True)
     assert wrapper != 1
     assert str(wrapper) == ""
+    assert wrapper == None  # noqa: E711
     wrapper = valuewrapper(tool, None, "boolean")
     assert bool(wrapper) is False, wrapper
     assert str(wrapper) == 'falsevalue'
