@@ -82,6 +82,7 @@ kombu==4.6.6
 lockfile==0.12.2
 lxml==4.4.2
 mako==1.1.0
+markdown==3.1.1
 markupsafe==1.1.1
 mercurial==5.2
 mistune==0.8.4
