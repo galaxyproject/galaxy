@@ -153,10 +153,6 @@ class UserListGrid(grids.Grid):
                             allow_multiple=False),
         grids.GridOperation("Generate New API Key",
                             allow_multiple=False,
-                            async_compatible=True),
-        grids.GridOperation("Activate User",
-                            condition=(lambda item: not item.active),
-                            allow_multiple=False,
                             async_compatible=True)
     ]
 
@@ -535,6 +531,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         condition=(lambda item: not item.deleted and not item.purged),
         allow_multiple=False
     )
+    activate_operation = grids.GridOperation("Activate User", condition=(lambda item: not item.active), allow_multiple=False)
 
     @web.expose
     @web.require_admin
@@ -631,6 +628,9 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         if trans.app.config.allow_user_impersonation:
             if self.impersonate_operation not in self.user_list_grid.operations:
                 self.user_list_grid.operations.append(self.impersonate_operation)
+        if trans.app.config.user_activation_on:
+            if self.activate_operation not in self.user_list_grid.operations:
+                self.user_list_grid.operations.append(self.activate_operation)
         if message and status:
             kwd['message'] = util.sanitize_text(message)
             kwd['status'] = status
