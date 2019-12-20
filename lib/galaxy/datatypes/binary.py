@@ -1102,8 +1102,8 @@ class Cool(H5):
         if super(Cool, self).sniff(filename):
             keys = ['chroms', 'bins', 'pixels', 'indexes']
             with h5py.File(filename, 'r') as handle:
-                fmt = handle.attrs.get('format')
-                url = handle.attrs.get('format-url')
+                fmt = util.unicodify(handle.attrs.get('format'))
+                url = util.unicodify(handle.attrs.get('format-url'))
                 if fmt == MAGIC or url == URL:
                     if not all(name in handle.keys() for name in keys):
                         return False
@@ -1162,8 +1162,8 @@ class MCool(H5):
                     return False
                 res0 = list(handle['resolutions'].keys())[0]
                 keys = ['chroms', 'bins', 'pixels', 'indexes']
-                fmt = handle['resolutions'][res0].attrs.get('format')
-                url = handle['resolutions'][res0].attrs.get('format-url')
+                fmt = util.unicodify(handle['resolutions'][res0].attrs.get('format'))
+                url = util.unicodify(handle['resolutions'][res0].attrs.get('format-url'))
                 if fmt == MAGIC or url == URL:
                     if not all(name in handle['resolutions'][res0].keys() for name in keys):
                         return False
