@@ -126,7 +126,7 @@
                         v-model="selectedStopJobIds"
                         :checked="allSelected"
                         :key="data.index"
-                        :value="data.item['job_info']['id']"
+                        :value="data.item['id']"
                     ></b-form-checkbox>
                 </template>
                 <template v-slot:cell(job_info)="data">
@@ -192,6 +192,11 @@ import { getAppRoot } from "onload/loadConfig";
 import UtcDate from "components/UtcDate";
 import axios from "axios";
 
+function cancelJob(jobId, message) {
+    const url = `${getAppRoot()}api/jobs/${jobId}`;
+    return axios.delete(url, { data: { message: message } });
+}
+
 export default {
     components: { UtcDate },
     data() {
@@ -227,15 +232,7 @@ export default {
     },
     watch: {
         jobLock(newVal) {
-            axios
-                .get(`${getAppRoot()}admin/jobs_control?job_lock=${this.jobLock}`)
-                .then(response => {
-                    this.jobLock = response.data.job_lock;
-                    this.jobLockDisplay = response.data.job_lock;
-                })
-                .catch(error => {
-                    console.error(error);
-                });
+            this.handleJobLock(axios.put(`${getAppRoot()}api/job_lock`, { active: this.jobLock }));
         },
         selectedStopJobIds(newVal) {
             if (newVal.length === 0) {
@@ -251,12 +248,23 @@ export default {
         }
     },
     methods: {
+        initJobLock() {
+            this.handleJobLock(axios.get(`${getAppRoot()}api/job_lock`));
+        },
+        handleJobLock(axiosPromise) {
+            axiosPromise
+                .then(response => {
+                    this.jobLock = response.data.active;
+                    this.jobLockDisplay = response.data.active;
+                })
+                .catch(error => {
+                    console.error(error);
+                });
+        },
         update() {
             this.busy = true;
             let params = [];
             params.push(`cutoff=${this.cutoff}`);
-            params.push(`stop_msg=${this.stopMessage}`);
-            params.push(`stop=${this.selectedStopJobIds.join()}`);
             params = params.join("&");
             axios
                 .get(`${getAppRoot()}admin/jobs_list?${params}`)
@@ -266,8 +274,6 @@ export default {
                     this.cutoffDisplay = response.data.cutoff;
                     this.message = response.data.message;
                     this.status = response.data.status;
-                    this.jobLock = response.data.job_lock;
-                    this.jobLockDisplay = response.data.job_lock;
                     this.loading = false;
                     this.busy = false;
                 })
@@ -281,9 +287,11 @@ export default {
             this.update();
         },
         onStopJobs() {
-            this.update();
-            this.selectedStopJobIds = [];
-            this.stopMessage = "";
+            axios.all(this.selectedStopJobIds.map(jobId => cancelJob(jobId, this.stopMessage))).then(res => {
+                this.update();
+                this.selectedStopJobIds = [];
+                this.stopMessage = "";
+            });
         },
         clickJobInfo(id) {
             this.selectedJobId = id;
@@ -328,9 +336,7 @@ export default {
             return f;
         },
         toggleAll(checked) {
-            this.selectedStopJobIds = checked
-                ? this.jobsItemsModel.reduce((acc, j) => [...acc, j["job_info"]["id"]], [])
-                : [];
+            this.selectedStopJobIds = checked ? this.jobsItemsModel.reduce((acc, j) => [...acc, j["id"]], []) : [];
         },
         galaxyKwdToBootstrap(status) {
             let variant = "info";
@@ -373,6 +379,7 @@ export default {
         }
     },
     created() {
+        this.initJobLock();
         this.update();
     }
 };
