@@ -100,6 +100,9 @@ class CwlToolSource(ToolSource):
     def parse_description(self):
         return self.tool_proxy.description()
 
+    def parse_interactivetool(self):
+        return []
+
     def parse_input_pages(self):
         page_source = CwlPageSource(self.tool_proxy)
         return PagesSource([page_source])
