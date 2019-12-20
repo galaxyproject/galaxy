@@ -531,6 +531,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         condition=(lambda item: not item.deleted and not item.purged),
         allow_multiple=False
     )
+    activate_operation = grids.GridOperation("Activate User", condition=(lambda item: not item.active), allow_multiple=False)
 
     @web.expose
     @web.require_admin
@@ -614,6 +615,9 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 message, status = self._recalculate_user(trans, id)
             elif operation == 'generate new api key':
                 message, status = self._new_user_apikey(trans, id)
+            elif operation == 'activate user':
+                message, status = self._activate_user(trans, id)
+
         if trans.app.config.allow_user_deletion:
             if self.delete_operation not in self.user_list_grid.operations:
                 self.user_list_grid.operations.append(self.delete_operation)
@@ -624,6 +628,9 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         if trans.app.config.allow_user_impersonation:
             if self.impersonate_operation not in self.user_list_grid.operations:
                 self.user_list_grid.operations.append(self.impersonate_operation)
+        if trans.app.config.user_activation_on:
+            if self.activate_operation not in self.user_list_grid.operations:
+                self.user_list_grid.operations.append(self.activate_operation)
         if message and status:
             kwd['message'] = util.sanitize_text(message)
             kwd['status'] = status
@@ -1456,6 +1463,13 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         trans.sa_session.add(new_key)
         trans.sa_session.flush()
         return ("New key '%s' generated for requested user '%s'." % (new_key.key, user.email), "done")
+
+    def _activate_user(self, trans, user_id):
+        user = trans.sa_session.query(trans.model.User).get(trans.security.decode_id(user_id))
+        if not user:
+            return ('User not found for id (%s)' % sanitize_text(str(user_id)), 'error')
+        self.user_manager.activate(user)
+        return ('Activated user: %s.' % user.email, 'done')
 
     @web.legacy_expose_api
     @web.require_admin
