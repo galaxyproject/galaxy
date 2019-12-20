@@ -1468,7 +1468,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         user = trans.sa_session.query(trans.model.User).get(trans.security.decode_id(user_id))
         if not user:
             return ('User not found for id (%s)' % sanitize_text(str(user_id)), 'error')
-        self.user_manager.activate(trans, user)
+        self.user_manager.activate(user)
         return ('Activated user: %s.' % user.email, 'done')
 
     @web.legacy_expose_api

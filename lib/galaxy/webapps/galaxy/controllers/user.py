@@ -273,7 +273,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
                 return trans.show_ok_message("Your account is already active. Nothing has changed. <br><a href='%s'>Go to login page.</a>") % web.url_for(controller='root', action='index')
             if user.activation_token == activation_token:
                 user.activation_token = None
-                self.user_manager.activate(trans, user)
+                self.user_manager.activate(user)
                 return trans.show_ok_message("Your account has been successfully activated! <br><a href='%s'>Go to login page.</a>") % web.url_for(controller='root', action='index')
             else:
                 #  Tokens don't match. Activation is denied.
