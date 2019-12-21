@@ -3622,6 +3622,120 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_beta_markdown_export``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable export of Galaxy Markdown documents (pages and workflow
+    reports) to PDF. Requires manual installation and setup of
+    weasyprint (latest version available for Python 2.7 is 0.42).
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~
+``markdown_export_css``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    CSS file to apply to all Markdown exports to PDF - currently used
+    by WeasyPrint during rendering an HTML export of the document to
+    PDF.
+:Default: ``markdown_export.css``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``markdown_export_css_pages``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    CSS file to apply to "Galaxy Page" exports to PDF. Generally
+    prefer  markdown_export_css, but this is here for deployments that
+    would like to tailor different kinds of exports.
+:Default: ``markdown_export_pages.css``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``markdown_export_css_invocation_reports``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    CSS file to apply to invocation report exports to PDF. Generally
+    prefer  markdown_export_css, but this is here for deployments that
+    would like to tailor different kinds of exports.
+:Default: ``markdown_export_invocation_reports.css``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``markdown_export_prologue``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Prologue Markdown/HTML to apply to markdown exports to PDF.
+    Allowing branded headers.
+:Default: ````
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``markdown_export_epilogue``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Prologue Markdown/HTML to apply to markdown exports to PDF.
+    Allowing branded footers.
+:Default: ````
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``markdown_export_prologue_pages``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Alternative to markdown_export_prologue that applies just to page
+    exports.
+:Default: ````
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``markdown_export_prologue_invocation_reports``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Alternative to markdown_export_prologue that applies just to
+    invocation report exports.
+:Default: ````
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``markdown_export_epilogue_pages``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Alternative to markdown_export_epilogue that applies just to page
+    exports.
+:Default: ````
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``markdown_export_epilogue_invocation_reports``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Alternative to markdown_export_epilogue that applies just to
+    invocation report exports.
+:Default: ````
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``job_resource_params_file``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
