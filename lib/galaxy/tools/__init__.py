@@ -922,7 +922,7 @@ class Tool(Dictifiable):
                     self.__tests = parse_tests(self, tests_source)
                 except Exception:
                     self.__tests = None
-                    log.exception("Failed to parse tool tests")
+                    log.exception("Failed to parse tool tests for tool '%s'", self.id)
             else:
                 self.__tests = None
             self.__tests_populated = True
@@ -939,7 +939,7 @@ class Tool(Dictifiable):
                 if repo_dir.name == self.repository_name:
                     return str(repo_dir)
             else:
-                log.error("Problem finding repository dir for tool [%s]" % self.id)
+                log.error("Problem finding repository dir for tool '%s'" % self.id)
 
         return repository_base_dir
 
@@ -1128,8 +1128,7 @@ class Tool(Dictifiable):
                 group.min = int(input_source.get("min", 0))
                 # Use float instead of int so that 'inf' can be used for no max
                 group.max = float(input_source.get("max", "inf"))
-                assert group.min <= group.max, \
-                    ValueError("Min repeat count must be less-than-or-equal to the max.")
+                assert group.min <= group.max, ValueError("Tool with id '%s': min repeat count must be less-than-or-equal to the max." % self.id)
                 # Force default to be within min-max range
                 group.default = min(max(group.default, group.min), group.max)
                 rval[group.name] = group
@@ -1160,7 +1159,7 @@ class Tool(Dictifiable):
                     test_param_input_source = input_source.parse_test_input_source()
                     group.test_param = self.parse_param_elem(test_param_input_source, enctypes, context)
                     if group.test_param.optional:
-                        log.debug("Tool with id %s declares a conditional test parameter as optional, this is invalid and will be ignored." % self.id)
+                        log.debug("Tool with id '%s': declares a conditional test parameter as optional, this is invalid and will be ignored." % self.id)
                         group.test_param.optional = False
                     possible_cases = list(group.test_param.legal_values)  # store possible cases, undefined whens will have no inputs
                     # Must refresh when test_param changes
@@ -1174,10 +1173,10 @@ class Tool(Dictifiable):
                         try:
                             possible_cases.remove(case.value)
                         except Exception:
-                            log.debug("Tool %s: a when tag has been defined for '%s (%s) --> %s', but does not appear to be selectable." %
+                            log.debug("Tool with id '%s': a when tag has been defined for '%s (%s) --> %s', but does not appear to be selectable." %
                                       (self.id, group.name, group.test_param.name, case.value))
                     for unspecified_case in possible_cases:
-                        log.warning("Tool %s: a when tag has not been defined for '%s (%s) --> %s', assuming empty inputs." %
+                        log.warning("Tool with id '%s': a when tag has not been defined for '%s (%s) --> %s', assuming empty inputs." %
                                     (self.id, group.name, group.test_param.name, unspecified_case))
                         case = ConditionalWhen()
                         case.value = unspecified_case
@@ -1231,7 +1230,7 @@ class Tool(Dictifiable):
         for name in param.get_dependencies():
             # Let it throw exception, but give some hint what the problem might be
             if name not in context:
-                log.error("Could not find dependency '%s' of parameter '%s' in tool %s" % (name, param.name, self.name))
+                log.error("Tool with id '%s': Could not find dependency '%s' of parameter '%s'" % (self.id, name, param.name))
             context[name].refresh_on_change = True
         return param
 
@@ -1294,7 +1293,7 @@ class Tool(Dictifiable):
                         self.app, help_text, encoded_repository_id=self.repository_id, tool_shed_repository=self.tool_shed_repository, tool_id=self.old_id, tool_version=self.version
                     )
             except Exception:
-                log.exception("Exception in parse_help, so images may not be properly displayed")
+                log.exception("Exception in parse_help, so images may not be properly displayed for tool with id '%s'", self.id)
             try:
                 self.__help = Template(rst_to_html(help_text), input_encoding='utf-8',
                                        default_filters=['decode.utf8'],
@@ -1409,7 +1408,7 @@ class Tool(Dictifiable):
                 rerun_remap_job_id = trans.app.security.decode_id(incoming['rerun_remap_job_id'])
             except Exception as exception:
                 log.error(str(exception))
-                raise exceptions.MessageException('Failure executing tool (attempting to rerun invalid job).')
+                raise exceptions.MessageException("Failure executing tool with id '%s' (attempting to rerun invalid job).", self.id)
 
         set_dataset_matcher_factory(request_context, self)
 
@@ -1421,7 +1420,7 @@ class Tool(Dictifiable):
         # remap if multi-runs of tools are being used.
         if rerun_remap_job_id and len(expanded_incomings) > 1:
             raise exceptions.MessageException(
-                'Failure executing tool (cannot create multiple jobs when remapping existing job).')
+                "Failure executing tool with id '%s' (cannot create multiple jobs when remapping existing job).", self.id)
 
         # Process incoming data
         validation_timer = self.app.execution_timer_factory.get_timer(
@@ -1522,8 +1521,8 @@ class Tool(Dictifiable):
         except ToolInputsNotReadyException as e:
             return False, e
         except Exception as e:
-            log.exception('Exception caught while attempting tool execution:')
-            message = 'Error executing tool: %s' % unicodify(e)
+            log.exception("Exception caught while attempting to execute tool with id '%s':", self.id)
+            message = "Error executing tool with id '%s': %s" % (self.id, unicodify(e))
             return False, message
         if isinstance(out_data, OrderedDict):
             return job, list(out_data.items())
@@ -1531,7 +1530,7 @@ class Tool(Dictifiable):
             if isinstance(out_data, string_types):
                 message = out_data
             else:
-                message = 'Failure executing tool (invalid data returned from tool execution)'
+                message = "Failure executing tool with id '%s' (invalid data returned from tool execution)" % self.id
             return False, message
 
     def find_fieldstorage(self, x):
