@@ -50,6 +50,7 @@ def description_from_tool_object(tool, test_index, raw_test_dict):
             "output_collections": raw_test_dict["output_collections"],
             "num_outputs": num_outputs,
             "command_line": raw_test_dict.get("command", None),
+            "command_version": raw_test_dict.get("command_version", None),
             "stdout": raw_test_dict.get("stdout", None),
             "stderr": raw_test_dict.get("stderr", None),
             "expect_exit_code": raw_test_dict.get("expect_exit_code", None),
