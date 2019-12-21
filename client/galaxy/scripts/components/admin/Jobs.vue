@@ -68,9 +68,6 @@
                                 </b-input-group-append>
                             </b-input-group>
                         </b-form-group>
-                        <b-button :pressed.sync="showCommandLine" variant="outline-secondary">
-                            {{ showCommandLine ? "Hide" : "Show" }} Command Line
-                        </b-button>
                     </b-col>
                     <b-col>
                         <b-card v-if="jobsItemsComputed.length" header="Stop Selected Jobs">
@@ -213,7 +210,6 @@ export default {
                 { key: "job_runner_name", label: "Job Runner" },
                 { key: "job_runner_external_id", label: "PID/Cluster ID", sortable: true }
             ],
-            showCommandLine: false,
             cutoff: 180,
             cutoffDisplay: 180,
             jobLock: false,
@@ -327,12 +323,6 @@ export default {
         },
         computeFields(fields) {
             const f = Array.from(fields).slice(0);
-            if (this.showCommandLine) {
-                f.splice(6, 0, {
-                    key: "command_line",
-                    tdClass: ["text-white", "bg-dark", "break-word"]
-                });
-            }
             return f;
         },
         toggleAll(checked) {
