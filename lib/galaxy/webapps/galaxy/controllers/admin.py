@@ -531,6 +531,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         allow_multiple=False
     )
     activate_operation = grids.GridOperation("Activate User", condition=(lambda item: not item.active), allow_multiple=False)
+    resend_activation_email = grids.GridOperation("Resend Activation Email", condition=(lambda item: not item.active), allow_multiple=False)
 
     @web.expose
     @web.require_admin
@@ -616,7 +617,11 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 message, status = self._new_user_apikey(trans, id)
             elif operation == 'activate user':
                 message, status = self._activate_user(trans, id)
-
+            elif operation == 'resend activation email':
+                message, status = self._resend_activation_email(trans, id)
+        if message and status:
+            kwd['message'] = util.sanitize_text(message)
+            kwd['status'] = status
         if trans.app.config.allow_user_deletion:
             if self.delete_operation not in self.user_list_grid.operations:
                 self.user_list_grid.operations.append(self.delete_operation)
@@ -630,9 +635,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         if trans.app.config.user_activation_on:
             if self.activate_operation not in self.user_list_grid.operations:
                 self.user_list_grid.operations.append(self.activate_operation)
-        if message and status:
-            kwd['message'] = util.sanitize_text(message)
-            kwd['status'] = status
+                self.user_list_grid.operations.append(self.resend_activation_email)
         return self.user_list_grid(trans, **kwd)
 
     @web.legacy_expose_api
@@ -1469,6 +1472,15 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             return ('User not found for id (%s)' % sanitize_text(str(user_id)), 'error')
         self.user_manager.activate(user)
         return ('Activated user: %s.' % user.email, 'done')
+
+    def _resend_activation_email(self, trans, user_id):
+        user = trans.sa_session.query(trans.model.User).get(trans.security.decode_id(user_id))
+        if not user:
+            return ('User not found for id (%s)' % sanitize_text(str(user_id)), 'error')
+        if self.user_manager.send_activation_email(trans, user.email, user.username):
+            return ('Activation email has been sent to user: %s.' % user.email, 'done')
+        else:
+            return ('Unable to send activation email to user: %s.' % user.email, 'error')
 
     @web.legacy_expose_api
     @web.require_admin
