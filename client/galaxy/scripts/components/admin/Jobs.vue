@@ -132,12 +132,7 @@
                     </b-link>
                 </template>
                 <template v-slot:row-details="row">
-                    <b-card>
-                        <h5>Command Line</h5>
-                        <pre
-                            class="text-white bg-dark"
-                        ><code class="break-word">{{ row.item.command_line }}</code></pre>
-                    </b-card>
+                    <job-details :commandLine="row.item.command_line" :jobId="row.item.jobId" />
                 </template>
             </b-table>
             <b-alert v-if="!recentJobsItemsComputed.length" variant="secondary" show>
@@ -167,12 +162,7 @@
                     <utc-date :date="data.value" mode="elapsed" />
                 </template>
                 <template v-slot:row-details="row">
-                    <b-card>
-                        <h5>Command Line</h5>
-                        <pre
-                            class="text-white bg-dark"
-                        ><code class="break-word">{{ row.item.command_line }}</code></pre>
-                    </b-card>
+                    <job-details :commandLine="row.item.command_line" :jobId="row.item.id" />
                 </template>
             </b-table>
             <b-modal ref="job-info-modal" scrollable hide-header ok-only @hidden="resetModalContents">
@@ -188,6 +178,7 @@
 import { getAppRoot } from "onload/loadConfig";
 import UtcDate from "components/UtcDate";
 import axios from "axios";
+import JobDetails from "./JobDetails";
 
 function cancelJob(jobId, message) {
     const url = `${getAppRoot()}api/jobs/${jobId}`;
@@ -195,7 +186,7 @@ function cancelJob(jobId, message) {
 }
 
 export default {
-    components: { UtcDate },
+    components: { UtcDate, JobDetails },
     data() {
         return {
             jobsItems: [],
@@ -206,7 +197,6 @@ export default {
                 { key: "user" },
                 { key: "tool_id", label: "Tool", tdClass: ["break-word"] },
                 { key: "state" },
-                { key: "input_dataset", label: "Inputs" },
                 { key: "job_runner_name", label: "Job Runner" },
                 { key: "job_runner_external_id", label: "PID/Cluster ID", sortable: true }
             ],

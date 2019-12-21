@@ -1541,11 +1541,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         def prepare_jobs_list(jobs):
             res = []
             for job in jobs:
-                inputs = ""
-                try:
-                    inputs = ", ".join(['{} {}'.format(da.dataset.id, da.dataset.state) for da in job.input_datasets])
-                except Exception:
-                    inputs = 'Unable to determine inputs'
                 res.append({
                     'job_info': {
                         'id': job.id,
@@ -1555,7 +1550,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                     'update_time': job.update_time.isoformat(),
                     'tool_id': job.tool_id,
                     'state': job.state,
-                    'input_dataset': inputs,
                     'command_line': job.command_line,
                     'job_runner_name': job.job_runner_name,
                     'job_runner_external_id': job.job_runner_external_id
