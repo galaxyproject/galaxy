@@ -1549,7 +1549,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 res.append({
                     'job_info': {
                         'id': job.id,
-                        'info_url': "{}?jobid={}".format(web.url_for(controller="admin", action="job_info"), job.id)
                     },
                     'id': trans.security.encode_id(job.id),
                     'user': job.history.user.email if job.history and job.history.user else 'anonymous',
