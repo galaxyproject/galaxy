@@ -18,7 +18,18 @@ function logoutClick() {
         if (galaxy.user) {
             galaxy.user.clearSessionStorage();
         }
-        window.top.location.href = galaxy.root;
+        // Check if we need to logout of OIDC IDP
+        if (galaxy.config.enable_oidc) {
+            return axios.get(`${galaxy.root}authnz/logout`)
+        } else {
+            return {};
+        }
+    }).then((response) => {
+        if (response.data && response.data.redirect_uri) {
+            window.top.location.href = response.data.redirect_uri;
+        } else {
+            window.top.location.href = galaxy.root;
+        }
     });
 }
 
