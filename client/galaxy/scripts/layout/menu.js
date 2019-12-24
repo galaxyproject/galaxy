@@ -14,23 +14,26 @@ function logoutClick() {
     const galaxy = getGalaxyInstance();
     const session_csrf_token = galaxy.session_csrf_token;
     const url = `${galaxy.root}user/logout?session_csrf_token=${session_csrf_token}`;
-    axios.get(url).then(() => {
-        if (galaxy.user) {
-            galaxy.user.clearSessionStorage();
-        }
-        // Check if we need to logout of OIDC IDP
-        if (galaxy.config.enable_oidc) {
-            return axios.get(`${galaxy.root}authnz/logout`)
-        } else {
-            return {};
-        }
-    }).then((response) => {
-        if (response.data && response.data.redirect_uri) {
-            window.top.location.href = response.data.redirect_uri;
-        } else {
-            window.top.location.href = galaxy.root;
-        }
-    });
+    axios
+        .get(url)
+        .then(() => {
+            if (galaxy.user) {
+                galaxy.user.clearSessionStorage();
+            }
+            // Check if we need to logout of OIDC IDP
+            if (galaxy.config.enable_oidc) {
+                return axios.get(`${galaxy.root}authnz/logout`);
+            } else {
+                return {};
+            }
+        })
+        .then(response => {
+            if (response.data && response.data.redirect_uri) {
+                window.top.location.href = response.data.redirect_uri;
+            } else {
+                window.top.location.href = galaxy.root;
+            }
+        });
 }
 
 const Collection = Backbone.Collection.extend({
