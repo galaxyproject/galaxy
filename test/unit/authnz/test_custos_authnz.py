@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 
 import jwt
 import requests
-from six.moves.urllib.parse import parse_qs, urlparse
+from six.moves.urllib.parse import parse_qs, quote, urlparse
 
 from galaxy.authnz import custos_authnz
 from galaxy.model import CustosAuthnzToken, User
@@ -32,7 +32,8 @@ class CustosAuthnzTestCase(unittest.TestCase):
         requests.get = self.mockRequest(self._get_idp_url(), {
             "authorization_endpoint": "https://test-auth-endpoint",
             "token_endpoint": "https://test-token-endpoint",
-            "userinfo_endpoint": "https://test-userinfo-endpoint"
+            "userinfo_endpoint": "https://test-userinfo-endpoint",
+            "end_session_endpoint": "https://test-end-session-endpoint"
         })
         self.custos_authnz = custos_authnz.CustosAuthnz('Custos', {
             'VERIFY_SSL': True
@@ -474,3 +475,10 @@ class CustosAuthnzTestCase(unittest.TestCase):
         self.assertFalse(success)
         self.assertNotEqual("", message)
         self.assertIsNone(redirect_uri)
+
+    def test_logout_with_redirect(self):
+
+        logout_redirect_url = "http://localhost:8080/post-logout"
+        redirect_url = self.custos_authnz.logout(self.trans, logout_redirect_url)
+
+        self.assertEqual(redirect_url, "https://test-end-session-endpoint?redirect_uri=" + quote(logout_redirect_url))

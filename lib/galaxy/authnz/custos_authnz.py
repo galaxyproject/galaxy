@@ -3,13 +3,13 @@ import hashlib
 import json
 import logging
 import os
-from urllib import quote
 from datetime import datetime, timedelta
 
 import jwt
 import requests
 from oauthlib.common import generate_nonce
 from requests_oauthlib import OAuth2Session
+from six.moves.urllib.parse import quote
 
 from galaxy import util
 from galaxy.model import CustosAuthnzToken, User
@@ -29,7 +29,6 @@ class CustosAuthnz(IdentityProvider):
         self.config['client_secret'] = oidc_backend_config['client_secret']
         self.config['redirect_uri'] = oidc_backend_config['redirect_uri']
         self.config['ca_bundle'] = oidc_backend_config.get('ca_bundle', None)
-        self.config['enable_idp_logout'] = oidc_backend_config['enable_idp_logout']
         self.config['extra_params'] = {
             'kc_idp_hint': oidc_backend_config.get('idphint', 'cilogon')
         }
