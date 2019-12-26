@@ -1,8 +1,17 @@
 <template>
     <div>
-        <h2 class="mb-3">
-            <span id="jobs-title">Jobs</span>
-        </h2>
+        <b-container class="mb-3">
+            <b-row>
+                <b-col md="6">
+                    <h2>
+                        <span id="jobs-title">Jobs</span>
+                    </h2>
+                </b-col>
+                <b-col>
+                    <job-lock />
+                </b-col>
+            </b-row>
+        </b-container>
         <b-alert v-if="this.message !== ''" :variant="galaxyKwdToBootstrap(status)" show>
             {{ message }}
         </b-alert>
@@ -40,14 +49,6 @@
                                 </b-input-group>
                             </b-form-group>
                         </b-form>
-                    </b-col>
-                    <b-col>
-                        <b-form-group label="Administrative Job Lock" label-for="prevent-job-dispatching">
-                            <b-form-checkbox id="prevent-job-dispatching" v-model="jobLock" switch>
-                                Job dispatching is currently
-                                <strong>{{ jobLockDisplay ? "locked" : "unlocked" }}</strong>
-                            </b-form-checkbox>
-                        </b-form-group>
                     </b-col>
                 </b-row>
                 <b-row>
@@ -179,6 +180,7 @@ import { getAppRoot } from "onload/loadConfig";
 import UtcDate from "components/UtcDate";
 import axios from "axios";
 import JobDetails from "./JobDetails";
+import JobLock from "./JobLock";
 
 function cancelJob(jobId, message) {
     const url = `${getAppRoot()}api/jobs/${jobId}`;
@@ -186,7 +188,7 @@ function cancelJob(jobId, message) {
 }
 
 export default {
-    components: { UtcDate, JobDetails },
+    components: { UtcDate, JobDetails, JobLock },
     data() {
         return {
             jobsItems: [],
@@ -202,8 +204,6 @@ export default {
             ],
             cutoff: 180,
             cutoffDisplay: 180,
-            jobLock: false,
-            jobLockDisplay: false,
             selectedStopJobIds: [],
             selectedJobId: null,
             allSelected: false,
@@ -217,9 +217,6 @@ export default {
         };
     },
     watch: {
-        jobLock(newVal) {
-            this.handleJobLock(axios.put(`${getAppRoot()}api/job_lock`, { active: this.jobLock }));
-        },
         selectedStopJobIds(newVal) {
             if (newVal.length === 0) {
                 this.indeterminate = false;
@@ -234,19 +231,6 @@ export default {
         }
     },
     methods: {
-        initJobLock() {
-            this.handleJobLock(axios.get(`${getAppRoot()}api/job_lock`));
-        },
-        handleJobLock(axiosPromise) {
-            axiosPromise
-                .then(response => {
-                    this.jobLock = response.data.active;
-                    this.jobLockDisplay = response.data.active;
-                })
-                .catch(error => {
-                    console.error(error);
-                });
-        },
         update() {
             this.busy = true;
             let params = [];
@@ -359,7 +343,6 @@ export default {
         }
     },
     created() {
-        this.initJobLock();
         this.update();
     }
 };
