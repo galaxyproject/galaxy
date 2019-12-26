@@ -83,6 +83,19 @@ class Container(object):
     def shell(self):
         return DEFAULT_CONTAINER_SHELL if not self.container_description else self.container_description.shell
 
+    @property
+    def source_environment(self):
+        return """if [ -d /usr/local/etc/conda/activate.d ]; then
+  export CONDA_PREFIX=/usr/local
+  for f in /usr/local/etc/conda/activate.d/*.sh; do
+    case "$f" in
+      "/usr/local/etc/conda/activate.d/activate-"*) :;;
+      *) . "$f" ;;
+    esac;
+  done
+fi
+"""
+
     @abstractmethod
     def containerize_command(self, command):
         """
