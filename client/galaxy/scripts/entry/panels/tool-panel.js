@@ -37,14 +37,13 @@ const ToolPanel = Backbone.View.extend({
         });
 
         // add upload modal
-        this.upload_button = new Upload({
+        const upload = new Upload({
             upload_path: config.nginx_upload_path || `${appRoot}api/tools`,
             chunk_upload_size: config.chunk_upload_size,
             ftp_upload_site: config.ftp_upload_site,
             default_genome: config.default_genome,
             default_extension: config.default_extension
         });
-        const panel_buttons = [this.upload_button];
 
         // add favorite filter button
         if (Galaxy.user && Galaxy.user.id) {
@@ -66,15 +65,13 @@ const ToolPanel = Backbone.View.extend({
                     }
                 }
             });
-            panel_buttons.push(this.favorite_button);
         }
-        // add uploader button to Galaxy object
-        Galaxy.upload = this.upload_button;
+        // attach upload entrypoint to Galaxy object
+        Galaxy.upload = upload;
 
         // components for panel definition
         this.model = new Backbone.Model({
             title: _l("Tools"),
-            buttons: panel_buttons
         });
 
         // build body template
