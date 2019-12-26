@@ -68,29 +68,29 @@ export default Backbone.View.extend({
         this.current_user = Galaxy.user.id;
         if (!this.modal) {
             this.tabs = new Tabs.View();
-            this.default_view = new UploadViewDefault(this);
+            const default_view = new UploadViewDefault(this);
             this.tabs.add({
                 id: "regular",
                 title: _l("Regular"),
-                $el: this.default_view.$el
+                $el: default_view.$el
             });
-            this.composite_view = new UploadViewComposite(this);
+            const composite_view = new UploadViewComposite(this);
             this.tabs.add({
                 id: "composite",
                 title: _l("Composite"),
-                $el: this.composite_view.$el
+                $el: composite_view.$el
             });
-            this.collection_view = new UploadViewCollection(this);
+            const collection_view = new UploadViewCollection(this);
             this.tabs.add({
                 id: "collection",
                 title: _l("Collection"),
-                $el: this.collection_view.$el
+                $el: collection_view.$el
             });
-            this.rule_based_view = new UploadViewRuleBased(this);
+            const rule_based_view = new UploadViewRuleBased(this);
             this.tabs.add({
                 id: "rule-based",
                 title: _l("Rule-based"),
-                $el: this.rule_based_view.$el
+                $el: rule_based_view.$el
             });
             this.modal = new Modal.View({
                 title: _l("Download from web or upload from disk"),
