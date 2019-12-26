@@ -6,7 +6,6 @@ import Utils from "utils/utils";
 import Modal from "mvc/ui/ui-modal";
 import Tabs from "mvc/ui/ui-tabs";
 import UploadUtils from "mvc/upload/upload-utils";
-import UploadButton from "mvc/upload/upload-button";
 import UploadViewDefault from "mvc/upload/default/default-view";
 import UploadViewComposite from "mvc/upload/composite/composite-view";
 import UploadViewCollection from "mvc/upload/collection/collection-view";
@@ -31,22 +30,15 @@ export default Backbone.View.extend({
     initialize: function(options) {
         this.options = Utils.merge(options, this.options);
 
-        // create view for upload/progress button
-        this.ui_button = new UploadButton.View({
-            onclick: e => {
-                e.preventDefault();
-                this.show();
-            },
-            onunload: () => {
-                var percentage = this.ui_button.model.get("percentage", 0);
-                if (percentage > 0 && percentage < 100) {
-                    return "Several uploads are queued.";
-                }
-            }
+        this.model = new Backbone.Model({
+            tooltip: _l("Download from URL or upload files from disk"),
+            label: "Load Data",
+            percentage: 0,
+            status: "",
+            onunload: function() {},
+            onclick: function() {}
         });
-
-        // set element to button view
-        this.setElement(this.ui_button.$el);
+        $(window).on("beforeunload", () => this.model.get("onunload")());
 
         // load extensions
         UploadUtils.getUploadDatatypes(
