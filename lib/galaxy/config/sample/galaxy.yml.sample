@@ -1785,6 +1785,49 @@ galaxy:
   # environment individually.
   #environment_setup_file: null
 
+  # Enable export of Galaxy Markdown documents (pages and workflow
+  # reports) to PDF. Requires manual installation and setup of
+  # weasyprint (latest version available for Python 2.7 is 0.42).
+  #enable_beta_markdown_export: false
+
+  # CSS file to apply to all Markdown exports to PDF - currently used by
+  # WeasyPrint during rendering an HTML export of the document to PDF.
+  #markdown_export_css: markdown_export.css
+
+  # CSS file to apply to "Galaxy Page" exports to PDF. Generally prefer
+  # markdown_export_css, but this is here for deployments that would
+  # like to tailor different kinds of exports.
+  #markdown_export_css_pages: markdown_export_pages.css
+
+  # CSS file to apply to invocation report exports to PDF. Generally
+  # prefer  markdown_export_css, but this is here for deployments that
+  # would like to tailor different kinds of exports.
+  #markdown_export_css_invocation_reports: markdown_export_invocation_reports.css
+
+  # Prologue Markdown/HTML to apply to markdown exports to PDF. Allowing
+  # branded headers.
+  #markdown_export_prologue: ''
+
+  # Prologue Markdown/HTML to apply to markdown exports to PDF. Allowing
+  # branded footers.
+  #markdown_export_epilogue: ''
+
+  # Alternative to markdown_export_prologue that applies just to page
+  # exports.
+  #markdown_export_prologue_pages: ''
+
+  # Alternative to markdown_export_prologue that applies just to
+  # invocation report exports.
+  #markdown_export_prologue_invocation_reports: ''
+
+  # Alternative to markdown_export_epilogue that applies just to page
+  # exports.
+  #markdown_export_epilogue_pages: ''
+
+  # Alternative to markdown_export_epilogue that applies just to
+  # invocation report exports.
+  #markdown_export_epilogue_invocation_reports: ''
+
   # Optional file containing job resource data entry fields definition.
   # These fields will be presented to users in the tool forms and allow
   # them to overwrite default job resources such as number of

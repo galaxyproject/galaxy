@@ -659,7 +659,7 @@ class TaskMetricNumeric(BaseJobMetric, RepresentById):
 
 class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
     dict_collection_visible_keys = ['id', 'state', 'exit_code', 'update_time', 'create_time', 'galaxy_version']
-    dict_element_visible_keys = ['id', 'state', 'exit_code', 'update_time', 'create_time', 'galaxy_version']
+    dict_element_visible_keys = ['id', 'state', 'exit_code', 'update_time', 'create_time', 'galaxy_version', 'command_version']
 
     """
     A job represents a request to run a tool given input datasets, tool
@@ -1131,6 +1131,12 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         if config_value is param_unspecified:
             config_value = default
         return config_value
+
+    @property
+    def command_version(self):
+        # TODO: make actual database property and track properly - we should be recording this on the job and not on the datasets
+        for dataset_assoc in self.output_datasets:
+            return dataset_assoc.dataset.tool_version
 
 
 class Task(JobLike, RepresentById):
