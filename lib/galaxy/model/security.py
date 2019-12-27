@@ -658,15 +658,15 @@ class GalaxyRBACAgent(RBACAgent):
 
     def create_user_role(self, user, app):
         # Create private user role if necessary
-        if self.app.security_agent.get_private_user_role(user):
-            self.app.security_agent.create_private_user_role(user)
+        if app.security_agent.get_private_user_role(user):
+            app.security_agent.create_private_user_role(user)
         # Create default user permissions if necessary
         if not user.default_permissions:
-            if hasattr(self.app.config, "new_user_dataset_access_role_default_private"):
-                permissions = self.app.config.new_user_dataset_access_role_default_private
-                self.app.security_agent.user_set_default_permissions(user, default_access_private=permissions)
+            if hasattr(app.config, "new_user_dataset_access_role_default_private"):
+                permissions = app.config.new_user_dataset_access_role_default_private
+                app.security_agent.user_set_default_permissions(user, default_access_private=permissions)
             else:
-                self.app.security_agent.user_set_default_permissions(user, history=True, dataset=True)
+                app.security_agent.user_set_default_permissions(user, history=True, dataset=True)
 
     def create_private_user_role(self, user):
         # Create private role
