@@ -206,10 +206,6 @@ export default Backbone.View.extend({
                     </span>
                 </div>
                 <div class="clear" />
-                <!--
-                <div class="upload-footer">
-                </div>
-                -->
                 <div class="upload-buttons"/>
                 </div>
         `;

@@ -17,7 +17,7 @@
                 <upload-tab :app="this" :viewClass="this.defaultView" />
             </b-tab>
             <b-tab title="Composite" id="composite">
-                <upload-tab :app="this" :viewClass="this.compositeView" />
+                <composite :app="this" />
             </b-tab>
             <b-tab title="Collection" id="collection">
                 <upload-tab :app="this" :viewClass="this.collectionView" />
@@ -41,15 +41,16 @@ import BootstrapVue from "bootstrap-vue";
 import { getGalaxyInstance } from "app";
 import UploadUtils from "mvc/upload/upload-utils";
 import UploadViewDefault from "mvc/upload/default/default-view";
-import UploadViewComposite from "mvc/upload/composite/composite-view";
 import UploadViewCollection from "mvc/upload/collection/collection-view";
 import UploadViewRuleBased from "mvc/upload/collection/rules-input-view";
 import UploadTab from "./UploadTab";
+import Composite from "./Composite";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
+        Composite,
         UploadTab
     },
     props: {
@@ -127,7 +128,6 @@ export default {
         }, this.defaultGenome);
 
         this.defaultView = UploadViewDefault;
-        this.compositeView = UploadViewComposite;
         this.collectionView = UploadViewCollection;
         this.ruleBasedView = UploadViewRuleBased;
 
