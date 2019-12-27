@@ -9,7 +9,8 @@ import UploadUtils from "mvc/upload/upload-utils";
 import axios from "axios";
 
 export default Backbone.View.extend({
-    initialize: function(app) {
+    initialize: function(options) {
+        const app = options.app;
         this.app = app;
         this.ftpFiles = [];
         this.ftpUploadSite = app.currentFtp();

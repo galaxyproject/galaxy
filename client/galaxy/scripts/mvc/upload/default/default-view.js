@@ -32,8 +32,9 @@ export default Backbone.View.extend({
         }
     },
 
-    initialize: function(app) {
-        var self = this;
+    initialize: function(options) {
+        const app = options.app;
+        const self = this;
         this.app = app;
         this.list_extensions = app.listExtensions;
         this.list_genomes = app.listGenomes;

@@ -10,9 +10,25 @@
         hide-footer
     >
         <template v-slot:modal-header>
-            <h4 class="title">Download from URL or upload files from disk</h4>
+            <h4 class="title" tabindex="0">Download from URL or upload files from disk</h4>
         </template>
-        <div ref="content" />
+        <b-tabs v-if="currentUser != null">
+            <b-tab title="Regular" id="regular">
+                <upload-tab :app="this" :viewClass="this.defaultView" />
+            </b-tab>
+            <b-tab title="Composite" id="composite">
+                <upload-tab :app="this" :viewClass="this.compositeView" />
+            </b-tab>
+            <b-tab title="Collection" id="collection">
+                <upload-tab :app="this" :viewClass="this.collectionView" />
+            </b-tab>
+            <b-tab title="Rule-based" id="rule-based">
+                <upload-tab :app="this" :viewClass="this.ruleBasedView" />
+            </b-tab>
+        </b-tabs>
+        <div v-else>
+            Loading required information from Galaxy server.
+        </div>
     </b-modal>
 </template>
 
@@ -23,16 +39,19 @@ import _l from "utils/localization";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { getGalaxyInstance } from "app";
-import Tabs from "mvc/ui/ui-tabs";
 import UploadUtils from "mvc/upload/upload-utils";
 import UploadViewDefault from "mvc/upload/default/default-view";
 import UploadViewComposite from "mvc/upload/composite/composite-view";
 import UploadViewCollection from "mvc/upload/collection/collection-view";
 import UploadViewRuleBased from "mvc/upload/collection/rules-input-view";
+import UploadTab from "./UploadTab";
 
 Vue.use(BootstrapVue);
 
 export default {
+    components: {
+        UploadTab
+    },
     props: {
         modalStatic: {
             type: Boolean,
@@ -76,10 +95,8 @@ export default {
     data: function() {
         return {
             currentUser: null,
-            tabs: null,
             listGenomes: [],
-            listExtensions: [],
-            mountedTabs: false
+            listExtensions: []
         };
     },
     created: function() {
@@ -107,6 +124,11 @@ export default {
             this.listGenomes = listGenomes;
         }, this.defaultGenome);
 
+        this.defaultView = UploadViewDefault;
+        this.compositeView = UploadViewComposite;
+        this.collectionView = UploadViewCollection;
+        this.ruleBasedView = UploadViewRuleBased;
+
         this.initStateWhenHistoryReady();
     },
     methods: {
@@ -117,13 +139,6 @@ export default {
         hide() {
             this.modalShow = false;
         },
-        tryMountingTabs() {
-            const content = this.$refs.content;
-            if (!this.mountedTabs && content && this.tabs) {
-                $(content).append(this.tabs.$el);
-                this.mountedTabs = true;
-            }
-        },
         initStateWhenHistoryReady() {
             const Galaxy = getGalaxyInstance();
             if (!Galaxy.currHistoryPanel || !Galaxy.currHistoryPanel.model) {
@@ -133,33 +148,6 @@ export default {
                 return;
             }
             this.currentUser = Galaxy.user.id;
-            this.tabs = new Tabs.View();
-            const default_view = new UploadViewDefault(this);
-            this.tabs.add({
-                id: "regular",
-                title: _l("Regular"),
-                $el: default_view.$el
-            });
-            const composite_view = new UploadViewComposite(this);
-            this.tabs.add({
-                id: "composite",
-                title: _l("Composite"),
-                $el: composite_view.$el
-            });
-            const collection_view = new UploadViewCollection(this);
-            this.tabs.add({
-                id: "collection",
-                title: _l("Collection"),
-                $el: collection_view.$el
-            });
-            const rule_based_view = new UploadViewRuleBased(this);
-            this.tabs.add({
-                id: "rule-based",
-                title: _l("Rule-based"),
-                $el: rule_based_view.$el
-            });
-            // mount tabs now or when modal is showing and content ref available
-            this.tryMountingTabs();
         },
         currentFtp: function() {
             return this.currentUser && this.ftpUploadSite;
