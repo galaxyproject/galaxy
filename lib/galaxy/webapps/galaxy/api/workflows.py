@@ -960,10 +960,12 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
     @expose_api
     def export_invocation_bco(self, trans, invocation_id, **kwd):
-        """
+        '''
         GET /api/invocations/{invocations_id}/export_bco
         Return a BioCompute Object for the workflow invocation.
-        """
+        '''
+        # added a 'host' for testing purposes. This shoule be the actual host in production
+        host = 'galaxy.aws.biochemistry.gwu.edu'
         decoded_workflow_invocation_id = self.decode_id(invocation_id)
         workflow_invocation = self.workflow_manager.get_invocation(trans, decoded_workflow_invocation_id)
         history = workflow_invocation.history
@@ -971,44 +973,118 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         stored_workflow = workflow.stored_workflow
         contributing_users = {history.user, stored_workflow.user}
 
+        # history_encoded_id = trans.security.encode_id(history.id)
+        workflow_encoded_id = trans.security.encode_id(stored_workflow.id)
+        # print('\n', history_encoded_id, '\n', workflow_encoded_id, '\n', invocation_id, '\n')
+
+        # list of Job IDs for invocation
+        invocation_dict = json.loads(self.show_invocation(trans, invocation_id))
+        jobs = []
+        for step in invocation_dict['steps']:
+            inv_step = str(step['id'])
+            job = self.invocation_step(trans, invocation_id, inv_step)
+            jobs.append(json.loads(job))
+
+        # listing the versions of the workflow for 'version' and 'derived_from'
+        versions = []
+        workflow_versions = self.workflow_manager.get_stored_accessible_workflow(trans, workflow_encoded_id, **kwd)
+        for i, w in enumerate(reversed(workflow_versions.workflows)):
+            version = {
+                'version': i,
+                'update_time': str(w.update_time),
+                'steps': len(w.steps),
+                'version_id': trans.security.encode_id(w.stored_workflow.id),
+            }
+            versions.append(version)
+        current_version = versions[-1]['version']
+
         contributors = []
         for contributing_user in contributing_users:
             contributor = {
-                "orcid": "",
-                "affiliation": contributing_user.email.split('@')[-1],
-                "contribution": [],
-                "name": contributing_user.username,
-                "email": contributing_user.email,
+                'orcid': '',
+                'affiliation': contributing_user.email.split('@')[-1],
+                'contribution': ['authoredBy'],
+                'name': contributing_user.username,
+                'email': contributing_user.email,
             }
             contributors.append(contributor)
 
+        reviewer = []
+        reviewer = {
+            'status': 'approved',
+            'reviewer_comment': '',
+            'date': workflow_invocation.update_time.isoformat(),
+            'reviewer': {
+                'name': contributing_user.username,
+                'affiliation': contributing_user.email.split('@')[-1],
+                'email': contributing_user.email,
+                # Would like to find a way to offer a choice on this value
+                'contribution': 'curatedBy'
+                # 'orcid': 'TO DO'
+            }
+        }
+
         provenance_domain = {
             'name': workflow.name,
-            'version': 'TODO',
+            'version': current_version,
+            'review': reviewer,
+            'derived_from': url_for('workflow', id=workflow_encoded_id, host=host),
             'created': workflow_invocation.create_time.isoformat(),
             'modified': workflow_invocation.update_time.isoformat(),
             'contributors': contributors,
-            'license': 'TODO',
+            'license': 'https://spdx.org/licenses/CC-BY-4.0.html',
         }
 
+        dict_workflow = json.loads(self.workflow_dict(trans, workflow_encoded_id))
+
+        pipeline_steps = []
+        for step in range(len(dict_workflow['steps'].keys())):
+            current_tool = dict_workflow['steps'][str(step)]
+            output_list = []
+            input_list = []
+            pipeline_step = {
+                'step_number': step,
+                'name': current_tool['name'],
+                'description': current_tool['annotation'],
+                'version': current_tool['tool_version'],
+                #  'prerequisite': prerequisite,
+                'input_list': input_list,
+                'output_list': output_list
+            }
+            prerequisite = []
+            try:
+                prerequisite = {
+                    'uri': {
+                        'name': current_tool['tool_shed_repository']['name'],
+                        'uri': current_tool['content_id'],
+                        #  'access_time': ''
+                    }
+                }
+                pipeline_step['prerequisite'] = prerequisite
+            except Exception:
+                continue
+            pipeline_steps.append(pipeline_step)
+
+        input_subdomain = []  # TODO
         output_subdomain = []  # TODO
 
         ret_dict = {
-            'bco_id': url_for('invocation_export_bco', invocation_id=invocation_id),
+            'bco_id': url_for('invocation_export_bco', invocation_id=invocation_id, host=host),
             'bco_spec_version': 'https://w3id.org/biocompute/1.3.0/',
             'checksum': 'TODO',
             'provenance_domain': provenance_domain,
-            'usability_domain': history.annotations,
+            'usability_domain': dict_workflow['annotation'],
             'extension_domain': {},
             'description_domain': {
-                'keywords': stored_workflow.tags,
-                'platform': 'Galaxy',
-                'pipeline_steps': [],  # fill from the workflow steps
+                'keywords': dict_workflow['tags'],
+                'xref': [],
+                'platform': ['Galaxy'],
+                'pipeline_steps': pipeline_steps,
             },
             'execution_domain': {},
             'parametric_domain': {},
             'io_domain': {
-                'input_subdomain': [],
+                'input_subdomain': input_subdomain,
                 'output_subdomain': output_subdomain,
             },
             'error_domain': {},
