@@ -35,9 +35,8 @@ export default Backbone.View.extend({
     initialize: function(app) {
         var self = this;
         this.app = app;
-        this.options = app.options;
-        this.list_extensions = app.list_extensions;
-        this.list_genomes = app.list_genomes;
+        this.list_extensions = app.listExtensions;
+        this.list_genomes = app.listGenomes;
         this.app_model = app.model;
         this.ftp_upload_site = app.currentFtp();
 
@@ -96,7 +95,7 @@ export default Backbone.View.extend({
             id: "btn-close",
             title: _l("Close"),
             onclick: function() {
-                self.app.modal.hide();
+                self.app.hide();
             }
         });
         _.each(
@@ -108,7 +107,7 @@ export default Backbone.View.extend({
 
         // file upload
         this.uploadbox = this.$uploadbox.uploadbox({
-            url: this.app.options.upload_path,
+            url: this.app.uploadPath,
             announce: function(index, file) {
                 self._eventAnnounce(index, file);
             },
@@ -143,13 +142,12 @@ export default Backbone.View.extend({
             title: _l("FTP files"),
             container: this.btnFtp.$el
         });
-
         // select extension
         this.select_extension = new Select.View({
             css: "upload-footer-selection",
             container: this.$(".upload-footer-extension"),
             data: _.filter(this.list_extensions, ext => !ext.composite_files),
-            value: this.options.default_extension,
+            value: this.app.defaultExtension,
             onchange: function(extension) {
                 self._changeExtension(extension);
             }
@@ -175,7 +173,7 @@ export default Backbone.View.extend({
             css: "upload-footer-selection",
             container: this.$(".upload-footer-genome"),
             data: this.list_genomes,
-            value: this.options.default_genome,
+            value: this.app.defaultGenome,
             onchange: function(genome) {
                 self._changeGenome(genome);
             }
@@ -374,7 +372,7 @@ export default Backbone.View.extend({
             const Galaxy = getGalaxyInstance();
             this.uploadbox.start({
                 id: Galaxy.user.id,
-                chunk_upload_size: this.app.options.chunk_upload_size
+                chunk_upload_size: this.app.chunkUploadSize
             });
             this.render();
         }
@@ -395,8 +393,8 @@ export default Backbone.View.extend({
             this.collection.reset();
             this.counter.reset();
             this.uploadbox.reset();
-            this.select_extension.value(this.options.default_extension);
-            this.select_genome.value(this.options.default_genome);
+            this.select_extension.value(this.app.defaultExtension);
+            this.select_genome.value(this.app.defaultGenome);
             this.app_model.set("percentage", 0);
             this.render();
         }
@@ -404,11 +402,10 @@ export default Backbone.View.extend({
 
     /** Update extension for all models */
     _changeExtension: function(extension, defaults_only) {
-        var self = this;
         this.collection.each(model => {
             if (
                 model.get("status") == "init" &&
-                (model.get("extension") == self.options.default_extension || !defaults_only)
+                (model.get("extension") == this.app.defaultExtension || !defaults_only)
             ) {
                 model.set("extension", extension);
             }
@@ -417,12 +414,8 @@ export default Backbone.View.extend({
 
     /** Update genome for all models */
     _changeGenome: function(genome, defaults_only) {
-        var self = this;
         this.collection.each(model => {
-            if (
-                model.get("status") == "init" &&
-                (model.get("genome") == self.options.default_genome || !defaults_only)
-            ) {
+            if (model.get("status") == "init" && (model.get("genome") == this.app.defaultGenome || !defaults_only)) {
                 model.set("genome", genome);
             }
         });
@@ -441,7 +434,7 @@ export default Backbone.View.extend({
         if (list.length > 0) {
             $.uploadpost({
                 data: this.app.toData(list),
-                url: this.app.options.upload_path,
+                url: this.app.uploadPath,
                 success: function(message) {
                     _.each(list, model => {
                         self._eventSuccess(model.id);

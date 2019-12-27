@@ -35,9 +35,8 @@ export default Backbone.View.extend({
     initialize: function(app) {
         var self = this;
         this.app = app;
-        this.options = app.options;
-        this.list_extensions = app.list_extensions;
-        this.list_genomes = app.list_genomes;
+        this.list_extensions = app.listExtensions;
+        this.list_genomes = app.listGenomes;
         this.app_model = app.model;
         this.ftp_upload_site = app.currentFtp();
         this.setElement(this._template());
@@ -99,7 +98,7 @@ export default Backbone.View.extend({
             id: "btn-close",
             title: _l("Close"),
             onclick: function() {
-                self.app.modal.hide();
+                self.app.hide();
             }
         });
         _.each(
@@ -120,7 +119,7 @@ export default Backbone.View.extend({
 
         // file upload
         this.uploadbox = this.$(".upload-box").uploadbox({
-            url: this.app.options.upload_path,
+            url: this.app.uploadPath,
             announce: function(index, file) {
                 self._eventAnnounce(index, file);
             },
@@ -157,7 +156,7 @@ export default Backbone.View.extend({
         this.select_extension = new Select.View({
             container: this.$(".upload-footer-extension"),
             data: _.filter(this.list_extensions, ext => !ext.composite_files),
-            value: this.options.default_extension,
+            value: this.app.defaultExtension,
             onchange: function(extension) {
                 self.updateExtension(extension);
             }
@@ -197,7 +196,7 @@ export default Backbone.View.extend({
             css: "upload-footer-selection",
             container: this.$(".upload-footer-genome"),
             data: this.list_genomes,
-            value: this.options.default_genome,
+            value: this.app.defaultGenome,
             onchange: function(genome) {
                 self.updateGenome(genome);
             }
@@ -289,7 +288,7 @@ export default Backbone.View.extend({
         this.counter.running = 0;
         this._updateScreen();
         this._eventReset();
-        this.app.modal.hide();
+        this.app.hide();
     },
 
     /** Remove model from upload list */
@@ -375,8 +374,8 @@ export default Backbone.View.extend({
             this.collection.reset();
             this.counter.reset();
             this.uploadbox.reset();
-            this.select_extension.value(this.options.default_extension);
-            this.select_genome.value(this.options.default_genome);
+            this.select_extension.value(this.app.defaultExtension);
+            this.select_genome.value(this.app.defaultGenome);
             this.app_model.set("percentage", 0);
             this._updateScreen();
         }

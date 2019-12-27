@@ -11,7 +11,6 @@ import axios from "axios";
 export default Backbone.View.extend({
     initialize: function(app) {
         this.app = app;
-        this.options = app.options;
         this.ftpFiles = [];
         this.ftpUploadSite = app.currentFtp();
         this.setElement(this._template());
@@ -31,7 +30,7 @@ export default Backbone.View.extend({
         this.btnClose = new Ui.Button({
             id: "btn-close",
             title: _l("Close"),
-            onclick: () => this.app.modal.hide()
+            onclick: () => this.app.hide()
         });
         _.each([this.btnReset, this.btnBuild, this.btnClose], button => {
             this.$(".upload-buttons").prepend(button.$el);
@@ -157,7 +156,7 @@ export default Backbone.View.extend({
         }
         selection.dataType = this.dataType;
         Galaxy.currHistoryPanel.buildCollection("rules", selection, true);
-        this.app.modal.hide();
+        this.app.hide();
     },
 
     _setPreview: function(content) {

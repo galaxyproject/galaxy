@@ -16,9 +16,8 @@ export default Backbone.View.extend({
     initialize: function(app) {
         var self = this;
         this.app = app;
-        this.options = app.options;
-        this.list_extensions = app.list_extensions;
-        this.list_genomes = app.list_genomes;
+        this.list_extensions = app.listExtensions;
+        this.list_genomes = app.listGenomes;
         this.ftp_upload_site = app.currentFtp();
         this.setElement(this._template());
 
@@ -39,7 +38,7 @@ export default Backbone.View.extend({
         this.btnClose = new Ui.Button({
             title: _l("Close"),
             onclick: function() {
-                self.app.modal.hide();
+                self.app.hide();
             }
         });
 
@@ -90,7 +89,7 @@ export default Backbone.View.extend({
             css: "upload-footer-selection",
             container: this.$(".upload-footer-genome"),
             data: this.list_genomes,
-            value: this.options.default_genome
+            value: this.app.defaultGenome
         });
 
         // listener for collection triggers on change in composite datatype and extension selection
@@ -149,7 +148,7 @@ export default Backbone.View.extend({
             });
         });
         $.uploadpost({
-            url: this.app.options.upload_path,
+            url: this.app.uploadPath,
             data: this.app.toData(this.collection.filter()),
             success: function(message) {
                 self._eventSuccess(message);
@@ -167,8 +166,8 @@ export default Backbone.View.extend({
     _eventReset: function() {
         if (this.collection.where({ status: "running" }).length == 0) {
             this.collection.reset();
-            this.select_extension.value(this.options.default_extension);
-            this.select_genome.value(this.options.default_genome);
+            this.select_extension.value(this.app.defaultExtension);
+            this.select_genome.value(this.app.defaultGenome);
             this.render();
         }
     },

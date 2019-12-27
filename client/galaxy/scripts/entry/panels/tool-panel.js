@@ -1,9 +1,8 @@
 import Backbone from "backbone";
 import $ from "jquery";
 import Tools from "mvc/tool/tools";
-import Upload from "mvc/upload/upload-view";
+import UploadModal from "components/Upload/UploadModal";
 import _l from "utils/localization";
-// import ToolForm from "mvc/tool/tool-form-composite";
 import _ from "libs/underscore";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
@@ -37,13 +36,19 @@ const ToolPanel = Backbone.View.extend({
         });
 
         // add upload modal
-        const upload = new Upload({
-            upload_path: config.nginx_upload_path || `${appRoot}api/tools`,
-            chunk_upload_size: config.chunk_upload_size,
-            ftp_upload_site: config.ftp_upload_site,
-            default_genome: config.default_genome,
-            default_extension: config.default_extension
-        });
+        const modalInstance = Vue.extend(UploadModal);
+        const propsData = {
+            uploadPath: config.nginx_upload_path || `${appRoot}api/tools`,
+            chunkUploadSize: config.chunk_upload_size,
+            ftpUploadSite: config.ftp_upload_site,
+            defaultGenome: config.default_genome,
+            defaultExtension: config.default_extension
+        };
+        const vm = document.createElement("div");
+        $("body").append(vm);
+        const upload = new modalInstance({
+            propsData: propsData
+        }).$mount(vm);
 
         // add favorite filter button
         if (Galaxy.user && Galaxy.user.id) {
@@ -71,7 +76,7 @@ const ToolPanel = Backbone.View.extend({
 
         // components for panel definition
         this.model = new Backbone.Model({
-            title: _l("Tools"),
+            title: _l("Tools")
         });
 
         // build body template
