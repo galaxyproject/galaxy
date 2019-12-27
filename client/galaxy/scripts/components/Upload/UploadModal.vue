@@ -6,6 +6,7 @@
         modal-class="ui-modal"
         dialog-class="upload-dialog"
         body-class="upload-dialog-body"
+        no-enforce-focus
         hide-footer
     >
         <template v-slot:modal-header>
