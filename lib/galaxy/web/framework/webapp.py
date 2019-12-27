@@ -712,6 +712,9 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
            - add the disk usage of the current session to the user's total disk usage
         """
         self.user_checks(user)
+        # Make sure that user has a private role
+        if not self.app.security_agent.get_private_user_role(user):
+            self.app.security_agent.create_private_user_role(user)
         # Set the previous session
         prev_galaxy_session = self.galaxy_session
         prev_galaxy_session.is_valid = False
