@@ -658,7 +658,7 @@ class GalaxyRBACAgent(RBACAgent):
 
     def create_user_role(self, user, app):
         # Create private user role if necessary
-        if app.security_agent.get_private_user_role(user):
+        if not app.security_agent.get_private_user_role(user):
             app.security_agent.create_private_user_role(user)
         # Create default user permissions if necessary
         if not user.default_permissions:
