@@ -109,9 +109,6 @@ export default {
         this.renderNonReactiveComponents();
     },
     methods: {
-        $uploadTable() {
-            return $(this.$refs.uploadTable);
-        },
         renderNonReactiveComponents: function() {
             var model = this.collection.first();
             if (model && model.get("status") == "running") {

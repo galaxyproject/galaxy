@@ -4,8 +4,7 @@
         <div class="upload-top">
             <div class="upload-top-info" v-html="topInfo"></div>
         </div>
-        <!-- modify height to 335px if !hasFooter -->
-        <div class="upload-box" ref="uploadBox" v-bind:style="boxStyle">
+        <div class="upload-box" ref="uploadBox" v-bind:style="boxStyle" v-bind:class="{highlight: hightlightBox}">
             <slot />
         </div>
         <div class="upload-footer" v-if="hasFooter">
@@ -28,6 +27,10 @@ export default {
         wrapperClass: {
             type: String,
             default: "upload-view-default"
+        },
+        hightlightBox: {
+            type: Boolean,
+            default: false
         }
     },
     computed: {
