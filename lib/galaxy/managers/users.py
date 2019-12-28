@@ -102,12 +102,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             # TODO:?? flush needed for permissions below? If not, make optional
         except exc.IntegrityError as db_err:
             raise exceptions.Conflict(str(db_err))
-        # can throw an sqlalx.IntegrityError if username not unique
-        self.app.security_agent.create_private_user_role(user)
-        # We set default user permissions, before we log in and set the default history permissions
-        if hasattr(self.app.config, "new_user_dataset_access_role_default_private"):
-            permissions = self.app.config.new_user_dataset_access_role_default_private
-            self.app.security_agent.user_set_default_permissions(user, default_access_private=permissions)
+        self.app.security_agent.create_user_role(user, self.app)
         return user
 
     def delete(self, user, flush=True):
