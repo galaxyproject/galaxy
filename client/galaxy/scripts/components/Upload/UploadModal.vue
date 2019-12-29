@@ -10,7 +10,7 @@
         hide-footer
     >
         <template v-slot:modal-header>
-            <h4 class="title" tabindex="0">Download from URL or upload files from disk</h4>
+            <h4 class="title" tabindex="0">{{ title }}</h4>
         </template>
         <b-tabs v-if="currentUser != null">
             <b-tab title="Regular" id="regular">
@@ -94,6 +94,7 @@ export default {
     },
     data: function() {
         return {
+            title: _l("Download from web or upload from disk"),
             currentUser: null,
             listGenomes: [],
             listExtensions: []
