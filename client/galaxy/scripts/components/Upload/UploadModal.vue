@@ -12,7 +12,7 @@
         <template v-slot:modal-header>
             <h4 class="title" tabindex="0">{{ title }}</h4>
         </template>
-        <b-tabs v-if="currentUser != null">
+        <b-tabs v-if="historyAvailable">
             <b-tab title="Regular" id="regular">
                 <upload-tab :app="this" :viewClass="this.defaultView" />
             </b-tab>
@@ -95,6 +95,7 @@ export default {
     data: function() {
         return {
             title: _l("Download from web or upload from disk"),
+            historyAvailable: false,
             currentUser: null,
             listGenomes: [],
             listExtensions: []
@@ -148,6 +149,7 @@ export default {
                 }, 500);
                 return;
             }
+            this.historyAvailable = true;
             this.currentUser = Galaxy.user.id;
         },
         currentFtp: function() {
