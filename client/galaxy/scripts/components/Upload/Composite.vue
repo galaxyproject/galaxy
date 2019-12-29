@@ -1,6 +1,7 @@
 <template>
     <upload-wrapper wrapperClass="upload-view-composite">
-        <table class="upload-table ui-table-striped" style="display: none;" ref="uploadTable">
+        <div class="upload-helper" v-show="showHelper">Select extension to show files required to upload</div>
+        <table class="upload-table ui-table-striped" v-show="!showHelper" ref="uploadTable">
             <thead>
                 <tr>
                     <th />
@@ -35,7 +36,15 @@
             </select2>
         </template>
         <template v-slot:buttons>
-            <div ref="uploadButtons" />
+            <b-button ref="btnClose" class="ui-button-default" @click="app.hide()">
+                {{ btnCloseTitle }}
+            </b-button>
+            <b-button ref="btnStart" class="ui-button-default" @click="_eventStart" :disabled="!readyStart" :variant="readyStart ? 'primary' : ''">
+                {{ btnStartTitle }}
+            </b-button>
+            <b-button ref="btnReset" class="ui-button-default" id="btn-reset" @click="_eventReset">
+                {{ btnResetTitle }}
+            </b-button>
         </template>
     </upload-wrapper>
 </template>
@@ -46,7 +55,6 @@ import _ from "underscore";
 import $ from "jquery";
 import { getGalaxyInstance } from "app";
 import UploadRow from "mvc/upload/composite/composite-row";
-import Ui from "mvc/ui/ui-misc";
 import UploadBoxMixin from "./UploadBoxMixin";
 
 export default {
@@ -57,33 +65,17 @@ export default {
             genome: this.app.defaultGenome,
             listExtensions: [],
             listGenomes: [],
-            running: false
+            running: false,
+            showHelper: true,
+            btnResetTitle: _l("Reset"),
+            btnStartTitle: _l("Start"),
+            btnCloseTitle: _l("Close"),
+            readyStart: false
         };
     },
     created() {
         this.initCollection();
         this.initAppProperties();
-
-        // TODO: to template in Vue
-        this.btnReset = new Ui.Button({
-            id: "btn-reset",
-            title: _l("Reset"),
-            onclick: () => {
-                this._eventReset();
-            }
-        });
-        this.btnStart = new Ui.Button({
-            title: _l("Start"),
-            onclick: () => {
-                this._eventStart();
-            }
-        });
-        this.btnClose = new Ui.Button({
-            title: _l("Close"),
-            onclick: () => {
-                this.app.hide();
-            }
-        });
     },
     computed: {
         extensions() {
@@ -93,11 +85,6 @@ export default {
         }
     },
     mounted() {
-        // init buttons
-        _.each([this.btnReset, this.btnStart, this.btnClose], button => {
-            $(this.$refs.uploadButtons).prepend(button.$el);
-        });
-
         this.initExtensionInfo();
         // listener for collection triggers on change in composite datatype and extension selection
         this.collection.on("add", model => {
@@ -121,13 +108,11 @@ export default {
                     this.collection.length &&
                 this.collection.length > 0
             ) {
-                this.btnStart.enable();
-                this.btnStart.$el.addClass("btn-primary");
+                this.readyStart = true;
             } else {
-                this.btnStart.disable();
-                this.btnStart.$el.removeClass("btn-primary");
+                this.readyStart = false;
             }
-            this.$uploadTable()[this.collection.length > 0 ? "show" : "hide"]();
+            this.showHelper = this.collection.length == 0;
         },
 
         //
@@ -140,7 +125,7 @@ export default {
             this.$uploadTable()
                 .find("tbody:first")
                 .append(upload_row.$el);
-            this.$uploadTable()[this.collection.length > 0 ? "show" : "hide"]();
+            this.showHelper = this.collection.length == 0;
             upload_row.render();
         },
 
@@ -203,9 +188,7 @@ export default {
     watch: {
         extension: function(value) {
             this.collection.reset();
-            var details = _.findWhere(this.listExtensions, {
-                id: value
-            });
+            const details = this.extensionDetails(value);
             if (details && details.composite_files) {
                 _.each(details.composite_files, item => {
                     this.collection.add({

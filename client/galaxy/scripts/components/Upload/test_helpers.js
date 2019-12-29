@@ -1,5 +1,6 @@
-import "utils/uploadbox";
 import _ from "underscore";
+import Backbone from "backbone";
+import "utils/uploadbox";
 import { mount, createLocalVue } from "@vue/test-utils";
 
 export function mountWithApp(component, options = {}) {
@@ -7,7 +8,28 @@ export function mountWithApp(component, options = {}) {
         defaultExtension: "auto",
         currentFtp: () => {
             return "ftp://localhost";
-        }
+        },
+        model: new Backbone.Model(),
+        listExtensions: [
+            { id: "ab1", text: "ab1", description: "A binary sequence file in 'ab1' format with a '.ab1'" },
+            {
+                id: "affybatch",
+                text: "affybatch",
+                description: null,
+                composite_files: [
+                    {
+                        name: "%s.pheno",
+                        optional: false,
+                        description: "Phenodata tab text file"
+                    },
+                    {
+                        name: "%s.affybatch",
+                        optional: false,
+                        description: "AffyBatch R object saved to file"
+                    }
+                ]
+            }
+        ]
     });
     const propsData = { app };
     const localVue = createLocalVue();

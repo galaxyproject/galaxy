@@ -1,4 +1,5 @@
 import _l from "utils/localization";
+import _ from "underscore";
 import $ from "jquery";
 import Select2 from "components/Select2";
 import Popover from "mvc/ui/ui-popover";
@@ -25,16 +26,25 @@ export default {
         $uploadTable() {
             return $(this.$refs.uploadTable);
         },
+        extensionDetails(extension) {
+            var details = _.findWhere(this.listExtensions, {
+                id: extension
+            });
+            return details;
+        },
         initExtensionInfo() {
             $(this.$refs.footerExtensionInfo)
                 .on("click", e => {
-                    new UploadExtension({
-                        $el: $(e.target),
-                        title: this.select_extension.text(),
-                        extension: this.select_extension.value(),
-                        list: this.list_extensions,
-                        placement: "top"
-                    });
+                    const details = this.extensionDetails(this.extension);
+                    if (details) {
+                        new UploadExtension({
+                            $el: $(e.target),
+                            title: details && details.text,
+                            extension: details && details.id,
+                            list: this.listExtensions,
+                            placement: "top"
+                        });
+                    }
                 })
                 .on("mousedown", e => {
                     e.preventDefault();
