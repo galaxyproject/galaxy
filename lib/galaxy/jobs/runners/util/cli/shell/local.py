@@ -34,6 +34,8 @@ class LocalShell(BaseShellExec):
     True
     >>> exec_result.stdout.strip() == u'Hello World'
     True
+    >>> exec_result.returncode
+    0
     >>> exec_result = exec_python("import time; time.sleep(10)", timeout=1, timeout_check_interval=.1)
     >>> exec_result.stdout == u''
     True
