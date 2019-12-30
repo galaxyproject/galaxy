@@ -116,7 +116,7 @@ class AuthnzManager(object):
             'client_id': config_xml.find('client_id').text,
             'client_secret': config_xml.find('client_secret').text,
             'redirect_uri': config_xml.find('redirect_uri').text,
-            'enable_idp_logout': asbool(config_xml.findtext('enable_idp_logout', 'false'))
+            'enable_idp_logout': asbool(config_xml.findtext('enable_idp_logout', 'false'))}
         if config_xml.find('prompt') is not None:
             rtv['prompt'] = config_xml.find('prompt').text
         return rtv
