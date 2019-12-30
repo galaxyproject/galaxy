@@ -14,7 +14,7 @@
         </template>
         <b-tabs v-if="historyAvailable">
             <b-tab title="Regular" id="regular">
-                <upload-tab :app="this" :viewClass="this.defaultView" />
+                <default :app="this" />
             </b-tab>
             <b-tab title="Composite" id="composite">
                 <composite :app="this" />
@@ -40,10 +40,9 @@ import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { getGalaxyInstance } from "app";
 import UploadUtils from "mvc/upload/upload-utils";
-import UploadViewDefault from "mvc/upload/default/default-view";
-import UploadTab from "./UploadTab";
 import Composite from "./Composite";
 import Collection from "./Collection";
+import Default from "./Default";
 import RulesInput from "./RulesInput";
 
 Vue.use(BootstrapVue);
@@ -52,8 +51,8 @@ export default {
     components: {
         Collection,
         Composite,
-        RulesInput,
-        UploadTab
+        Default,
+        RulesInput
     },
     props: {
         modalStatic: {
@@ -128,8 +127,6 @@ export default {
         UploadUtils.getUploadGenomes(listGenomes => {
             this.listGenomes = listGenomes;
         }, this.defaultGenome);
-
-        this.defaultView = UploadViewDefault;
 
         this.initStateWhenHistoryReady();
     },

@@ -39,7 +39,13 @@
             <b-button ref="btnClose" class="ui-button-default" @click="app.hide()">
                 {{ btnCloseTitle }}
             </b-button>
-            <b-button ref="btnStart" class="ui-button-default" @click="_eventStart" :disabled="!readyStart" :variant="readyStart ? 'primary' : ''">
+            <b-button
+                ref="btnStart"
+                class="ui-button-default"
+                @click="_eventStart"
+                :disabled="!readyStart"
+                :variant="readyStart ? 'primary' : ''"
+            >
                 {{ btnStartTitle }}
             </b-button>
             <b-button ref="btnReset" class="ui-button-default" id="btn-reset" @click="_eventReset">

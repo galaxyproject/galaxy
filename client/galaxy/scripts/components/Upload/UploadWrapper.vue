@@ -4,7 +4,7 @@
         <div class="upload-top">
             <div class="upload-top-info" v-html="topInfo"></div>
         </div>
-        <div class="upload-box" ref="uploadBox" v-bind:style="boxStyle" v-bind:class="{highlight: hightlightBox}">
+        <div class="upload-box" ref="uploadBox" v-bind:style="boxStyle" v-bind:class="{ highlight: hightlightBox }">
             <slot />
         </div>
         <div class="upload-footer" v-if="hasFooter">

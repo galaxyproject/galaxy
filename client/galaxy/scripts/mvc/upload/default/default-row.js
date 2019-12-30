@@ -22,7 +22,7 @@ export default Backbone.View.extend({
     initialize: function(app, options) {
         var self = this;
         this.app = app;
-        this.list_extensions = app.list_extensions;
+        this.list_extensions = app.listExtensions;
         this.model = options.model;
         this.setElement(this._template(options.model));
         this.$mode = this.$(".upload-mode");
@@ -45,13 +45,13 @@ export default Backbone.View.extend({
         });
 
         // identify default genome and extension values
-        var default_genome = this.app.select_genome.value();
-        var default_extension = this.app.select_extension.value();
+        var default_genome = this.app.genome;
+        var default_extension = this.app.extension;
 
         // create select genomes
         this.select_genome = new Select.View({
             css: "upload-genome",
-            data: self.app.list_genomes,
+            data: self.app.listGenomes,
             container: this.$(".upload-genome"),
             value: default_genome,
             onchange: function(genome) {
@@ -62,7 +62,7 @@ export default Backbone.View.extend({
         // create select extension
         this.select_extension = new Select.View({
             css: "upload-extension",
-            data: _.filter(this.list_extensions, ext => !ext.composite_files),
+            data: self.app.extensions,
             container: this.$(".upload-extension"),
             value: default_extension,
             onchange: function(extension) {
