@@ -23,7 +23,7 @@
                 <collection :app="this" />
             </b-tab>
             <b-tab title="Rule-based" id="rule-based">
-                <upload-tab :app="this" :viewClass="this.ruleBasedView" />
+                <rules-input :app="this" />
             </b-tab>
         </b-tabs>
         <div v-else>
@@ -41,10 +41,10 @@ import BootstrapVue from "bootstrap-vue";
 import { getGalaxyInstance } from "app";
 import UploadUtils from "mvc/upload/upload-utils";
 import UploadViewDefault from "mvc/upload/default/default-view";
-import UploadViewRuleBased from "mvc/upload/collection/rules-input-view";
 import UploadTab from "./UploadTab";
 import Composite from "./Composite";
 import Collection from "./Collection";
+import RulesInput from "./RulesInput";
 
 Vue.use(BootstrapVue);
 
@@ -52,6 +52,7 @@ export default {
     components: {
         Collection,
         Composite,
+        RulesInput,
         UploadTab
     },
     props: {
@@ -129,7 +130,6 @@ export default {
         }, this.defaultGenome);
 
         this.defaultView = UploadViewDefault;
-        this.ruleBasedView = UploadViewRuleBased;
 
         this.initStateWhenHistoryReady();
     },

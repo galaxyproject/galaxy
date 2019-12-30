@@ -15,7 +15,7 @@ export default {
         const select2Options = {
             data: this.options,
             placeholder: this.placeholder,
-            allowClear: this.placeholder,
+            allowClear: !!this.placeholder,
             enable: enabled
         };
         if (this.containerClass) {
