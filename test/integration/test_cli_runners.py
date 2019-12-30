@@ -58,6 +58,7 @@ def cli_job_config(remote_connection, shell_plugin='ParamikoShell', job_plugin='
             <param id="shell_private_key">$private_key</param>
             <param id="shell_hostname">$hostname</param>
             <param id="shell_port">$port</param>
+            <param id="shell_strict_host_key_checking">False</param>
             <param id="embed_metadata_in_job">False</param>
             <env id="SOME_ENV_VAR">42</env>
         </destination>

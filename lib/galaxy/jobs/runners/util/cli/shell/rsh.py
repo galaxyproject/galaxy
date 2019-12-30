@@ -6,7 +6,8 @@ from pulsar.managers.util.retry import RetryActionExecutor
 
 from galaxy.util import (
     smart_str,
-    unicodify
+    string_as_bool,
+    unicodify,
 )
 from galaxy.util.bunch import Bunch
 from .local import LocalShell
@@ -43,7 +44,7 @@ class SecureShell(RemoteShell):
     SSH_NEW_KEY_STRING = 'Are you sure you want to continue connecting'
 
     def __init__(self, rsh='ssh', rcp='scp', private_key=None, port=None, strict_host_key_checking=True, **kwargs):
-        strict_host_key_checking = "yes" if strict_host_key_checking else "no"
+        strict_host_key_checking = "yes" if string_as_bool(strict_host_key_checking) else "no"
         options = ["-o", "StrictHostKeyChecking=%s" % strict_host_key_checking]
         options.extend(["-o", "ConnectTimeout=60"])
         if private_key:
