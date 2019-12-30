@@ -14,6 +14,26 @@ describe("Default.vue", () => {
         expect(wrapper.vm.counterAnnounce).to.equals(0);
         expect(wrapper.vm.showHelper).to.equals(true);
         expect(wrapper.vm.extensions[0].id).to.equals("ab1");
+        expect(wrapper.find("#btn-reset").classes()).to.contain("disabled");
+        expect(wrapper.find("#btn-start").classes()).to.contain("disabled");
+        expect(wrapper.find("#btn-stop").classes()).to.contain("disabled");
+    });
+
+    it("does render FTP is site set", async () => {
+        const { wrapper, localVue } = mountWithApp(Default);
+        expect(wrapper.find("#btn-ftp").isVisible()).to.equals(true);
+        wrapper.find("#btn-ftp").trigger("click");
+        await localVue.nextTick();
+        // TODO: test popover appears... not sure best way to do this...
+    });
+
+    it("doesn't render FTP is no site set", async () => {
+        const { wrapper } = mountWithApp(Default, {
+            currentFtp: () => {
+                return null;
+            }
+        });
+        expect(wrapper.findAll("#btn-ftp").length).to.equals(0);
     });
 
     it("resets properly", async () => {

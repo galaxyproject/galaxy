@@ -7,6 +7,9 @@ describe("Collection.vue", () => {
         expect(wrapper.vm.counterAnnounce).to.equals(0);
         expect(wrapper.vm.showHelper).to.equals(true);
         expect(wrapper.vm.extensions[0].id).to.equals("ab1");
+        expect(wrapper.find("#btn-reset").classes()).to.contain("disabled");
+        expect(wrapper.find("#btn-start").classes()).to.contain("disabled");
+        expect(wrapper.find("#btn-stop").classes()).to.contain("disabled");
     });
 
     it("does render FTP is site set", async () => {
@@ -30,6 +33,10 @@ describe("Collection.vue", () => {
         await localVue.nextTick();
         expect(wrapper.vm.showHelper).to.equals(false);
         expect(wrapper.vm.counterAnnounce).to.equals(1);
+
+        expect(wrapper.find("#btn-reset").classes()).to.not.contain("disabled");
+        expect(wrapper.find("#btn-start").classes()).to.not.contain("disabled");
+
         wrapper.find("#btn-reset").trigger("click");
         await localVue.nextTick();
         expect(wrapper.vm.showHelper).to.equals(true);

@@ -43,6 +43,7 @@
                 ref="btnStart"
                 class="ui-button-default"
                 @click="_eventStart"
+                id="btn-start"
                 :disabled="!readyStart"
                 :variant="readyStart ? 'primary' : ''"
             >

@@ -4,6 +4,7 @@ import { mountWithApp } from "./test_helpers";
 describe("Composite.vue", () => {
     it("loads with correct initial state", async () => {
         const { wrapper } = mountWithApp(Composite);
+        expect(wrapper.find("#btn-start").classes()).to.contain("disabled");
         expect(wrapper.vm.showHelper).to.equals(true);
         expect(wrapper.vm.readyStart).to.equals(false);
         // filters listExtensions to just the composite definition + _select_ value
