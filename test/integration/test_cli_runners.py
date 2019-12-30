@@ -12,7 +12,7 @@ from galaxy_test.driver import integration_util
 from .test_job_environments import BaseJobEnvironmentIntegrationTestCase
 
 
-RemoteConnection = collections.namedtuple('remote_connection', ['hostname', 'username', 'password', 'port', 'private_key', 'public_key'])
+RemoteConnection = collections.namedtuple('remote_connection', ['hostname', 'username', 'port', 'private_key', 'public_key'])
 
 
 @integration_util.skip_unless_docker()
@@ -36,7 +36,8 @@ def start_ssh_docker(container_name, jobs_directory, port=10022, image='agaveapi
                           'nofile=2048:2048',
                           image]
     subprocess.check_call(START_SLURM_DOCKER)
-    return RemoteConnection('localhost', 'testuser', 'testuser', port, ssh_keys.private_key_file, ssh_keys.public_key_file)
+    subprocess.check_call(['docker', 'exec', container_name, 'usermod', '-u', str(os.getuid()), 'testuser'])
+    return RemoteConnection('localhost', 'testuser', port, ssh_keys.private_key_file, ssh_keys.public_key_file)
 
 
 def stop_ssh_docker(container_name, remote_connection):
