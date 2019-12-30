@@ -263,6 +263,18 @@ class AuthnzManager(object):
             return False, msg, (None, None)
 
     def logout(self, provider, trans, post_logout_redirect_url=None):
+        """
+        Log the user out of the identity provider.
+
+        :type provider: string
+        :param provider: set the name of the identity provider.
+        :type trans: GalaxyWebTransaction
+        :param trans: Galaxy web transaction.
+        :type post_logout_redirect_url: string
+        :param post_logout_redirect_url: (Optional) URL for identity provider
+            to redirect to after logging user out.
+        :return: a tuple (success boolean, message, redirect URI)
+        """
         try:
             # check if logout is enabled for this idp and return false if not
             unified_provider_name = self._unify_provider_name(provider)
