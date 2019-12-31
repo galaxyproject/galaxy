@@ -1,6 +1,6 @@
 import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
-import Utils from "utils/utils";
+import axios from "axios";
 
 const AUTO_EXTENSION = {
     id: "auto",
@@ -12,9 +12,11 @@ const DEFAULT_GENOME = "?";
 const DEFAULT_EXTENSION = "auto";
 
 function getUploadDatatypes(callback, datatypesDisableAuto, auto) {
-    Utils.get({
-        url: `${getAppRoot()}api/datatypes?extension_only=False`,
-        success: function(datatypes) {
+    const url = `${getAppRoot()}api/datatypes?extension_only=False`;
+    axios
+        .get(url)
+        .then(response => {
+            const datatypes = response.data;
             const listExtensions = [];
             for (var key in datatypes) {
                 listExtensions.push({
@@ -34,14 +36,18 @@ function getUploadDatatypes(callback, datatypesDisableAuto, auto) {
                 listExtensions.unshift(auto);
             }
             callback(listExtensions);
-        }
-    });
+        })
+        .catch(errorMessage => {
+            console.log(errorMessage);
+        });
 }
 
 function getUploadGenomes(callback, defaultGenome) {
-    Utils.get({
-        url: `${getAppRoot()}api/genomes`,
-        success: function(genomes) {
+    const url = `${getAppRoot()}api/genomes`;
+    axios
+        .get(url)
+        .then(response => {
+            const genomes = response.data;
             const listGenomes = [];
 
             for (var key in genomes) {
@@ -60,8 +66,10 @@ function getUploadGenomes(callback, defaultGenome) {
                 return a.text > b.text ? 1 : a.text < b.text ? -1 : 0;
             });
             callback(listGenomes);
-        }
-    });
+        })
+        .catch(errorMessage => {
+            console.log(errorMessage);
+        });
 }
 
 function getRemoteFiles(success, error) {

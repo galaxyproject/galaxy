@@ -105,7 +105,6 @@ export default {
     },
     created: function() {
         this.model = new Backbone.Model({
-            tooltip: _l("Download from URL or upload files from disk"),
             label: "Load Data",
             percentage: 0,
             status: "",
