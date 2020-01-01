@@ -19,8 +19,7 @@ try:
         process,
         pathmapper,
     )
-except (ImportError, SyntaxError):
-    # Drop SyntaxError once cwltool supports Python 3
+except ImportError:
     main = None
     workflow = None
     job = None
@@ -29,13 +28,26 @@ except (ImportError, SyntaxError):
 
 try:
     from cwltool.context import LoadingContext  # Introduced in cwltool 1.0.20180615183820
-except (ImportError, SyntaxError):
+    from cwltool.context import RuntimeContext
+except ImportError:
     LoadingContext = None
+    RuntimeContext = None
 
 try:
     from cwltool import load_tool
-except (ImportError, SyntaxError):
+except ImportError:
     load_tool = None
+
+try:
+    from cwltool.load_tool import resolve_and_validate_document
+except ImportError:
+    resolve_and_validate_document = None
+
+try:
+    from cwltool import command_line_tool
+    command_line_tool.ACCEPTLIST_RE = command_line_tool.ACCEPTLIST_EN_RELAXED_RE
+except ImportError:
+    command_line_tool = None
 
 try:
     import shellescape
@@ -44,8 +56,7 @@ except ImportError:
 
 try:
     import schema_salad
-except (ImportError, SyntaxError):
-    # Drop SyntaxError once schema_salad supports Python 3
+except ImportError:
     schema_salad = None
 
 try:
@@ -53,8 +64,10 @@ try:
 except (ImportError, SyntaxError):
     ref_resolver = None
 
-
 needs_shell_quoting = re.compile(r"""(^$|[\s|&;()<>\'"$@])""").search
+
+# if set to true, file format checking is not performed.
+beta_relaxed_fmt_check = True
 
 
 def ensure_cwltool_available():
@@ -68,6 +81,8 @@ def ensure_cwltool_available():
             message += " cwltool is not unavailable."
         elif load_tool is None:
             message += " cwltool.load_tool is unavailable - cwltool version is too old."
+        elif resolve_and_validate_document is None:
+            message += " cwltool.load_tool.resolve_and_validate_document is unavailable - cwltool version is too old."
         if requests is None:
             message += " Library 'requests' unavailable."
         if shellescape is None:
