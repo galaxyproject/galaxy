@@ -8,52 +8,10 @@
                 </b-navbar-brand>
 
                 <b-navbar-nav>
-                    <template v-for="tab in tabs">
-                            <b-nav-item v-if="!tab.menu"
-                                        :class="{
-                                            active: tab.id === activeTab(),
-                                        }"
-                                        :active="!tab.disabled"
-                                        v-b-tooltip.hover.bottom :title="tab.tooltip"
-                                        @click="open(tab, $event)"
-                                        v-b-popover.manual.bottom="{id: tab.id, content: popoverNote, html: true}"
-                                        :style="{
-                                            visibility: tab.visible ? 'visible' : 'hidden',
-                                        }"
-                                        :id="tab.id"
-                                        :href="tab.url"
-                                        :target="tab.target"
-                                        :link-classes="[
-                                            tab.icon && 'nav-icon',
-                                        ]">
-
-                                <template v-if="tab.icon">
-                                    <span :class="['fa', tab.icon, tab.toggle && 'toggle']"/>
-                                    <span v-if="tab.show_note" class="nav-note-port" :class="tab.note_cls">{{ tab.note }}</span>
-                                </template>
-                                <template v-else>
-                                    {{ tab.title }}
-                                </template>
-                            </b-nav-item>
-                            <b-nav-item-dropdown v-else
-                                                 :class="{
-                                                    active: tab.id === activeTab(),
-                                                 }"
-                                                 :text="tab.title"
-                                                 v-b-tooltip.hover.bottom :title="tab.tooltip"
-                                                 @show="open(tab, $event)"
-                                                 v-b-popover.manual.bottom="{id: tab.id, content: popoverNote, html: true}"
-                                                 :style="{visibility: tab.visible ? 'visible' : 'hidden'}"
-                                                 :id="tab.id" href="#">
-                                <b-dropdown-item v-for="item in tab.menu"
-                                                 :href="item.url"
-                                                 :target="item.target"
-                                                 @click="open(item, $event)"
-                                >
-                                    {{ item.title }}
-                                </b-dropdown-item>
-                            </b-nav-item-dropdown>
-                    </template>
+                    <masthead-item v-for="(tab, idx) in tabs" :tab="tab" :activeTab="activeTab"
+                                   :key="`tab-${idx}`"
+                                   :appRoot="appRoot" :Galaxy="Galaxy" @updateScratchbookTab="updateScratchbookTab">
+                    </masthead-item>
                 </b-navbar-nav>
 
                 <div ref="quota-meter-container" class="quota-meter-container"/>
@@ -62,17 +20,12 @@
 </template>
 
 <script>
-    import { VBTooltip } from "bootstrap-vue";
-    import { VBPopover } from "bootstrap-vue";
     import { BNavbar, BNavbarBrand, BNavbarNav } from "bootstrap-vue";
+    import MastheadItem from "./MastheadItem";
     import _ from "underscore";
 
     export default {
         name: "Masthead",
-        directives: {
-            "v-b-tooltip": VBTooltip,
-            "v-b-popover": VBPopover
-        },
         props: {
             brandTitle: {
                 type: String
@@ -106,73 +59,23 @@
             BNavbar,
             BNavbarBrand,
             BNavbarNav,
-        },
-        data() {
-            return {
-            };
-        },
-        computed: {
-            popoverNote() {
-                return `Please <a href="${this.appRoot}login">login or register</a> to use this feature.`;
-            }
+            MastheadItem
         },
         methods: {
-            open(tab, event) {
-                if (tab.onclick) {
-                    return this.propogateClick(tab, event);
-                }
+            updateScratchbookTab(tab) {
+                _.each(this.tabs, (tab, i) => {
+                    if (tab.id === "enable-scratchbook") {
+                        tab.active = !tab.active;
 
-                if (tab.disabled) {
-                    event.preventDefault();
-
-                    this.$root.$emit('bv::hide::tooltip');
-                    this.$root.$emit('bv::show::popover', tab.id);
-
-                    setTimeout(() => {
-                        this.$root.$emit('bv::hide::popover', tab.id);
-                    }, 3000);
-                } else if (!tab.menu) {
-                    event.preventDefault();
-
-                    if (tab.target === "__use_router__" && typeof this.Galaxy.page !== "undefined") {
-                        this.Galaxy.page.router.executeUseRouter(tab.url);
-                    } else {
-                        try {
-                            this.Galaxy.frame.add(tab);
-                        } catch (err) {
-                            console.warn("Missing frame element on galaxy instance", err);
-                        }
+                        this.$set(this.tabs, i, {
+                            ...tab,
+                            toggle: tab.active,
+                            show_note: tab.active,
+                            note_cls: tab.active && "fa fa-check"
+                        });
                     }
-                }
-            },
-            propogateClick(tab, event) {
-                event.preventDefault();
-                tab.onclick();
-
-                if (tab.id === "enable-scratchbook") {
-                    _.each(this.tabs, (tab, i) => {
-                        if (tab.id === "enable-scratchbook") {
-                            tab.active = !tab.active;
-
-                            this.$set(this.tabs, i, {
-                                ...tab,
-                                toggle: tab.active,
-                                show_note: tab.active,
-                                note_cls: tab.active && "fa fa-check"
-                            });
-                        }
-                    });
-                }
-            },
-        },
-        created() {
-            _.each(this.tabs, tab => {
-                if (tab.onbeforeunload) {
-                    document.addEventListener('beforeunload', () => {
-                        tab.onbeforeunload();
-                    });
-                }
-            });
+                });
+            }
         },
         mounted() {
             this.quotaMeter.setElement(this.$refs['quota-meter-container']);
@@ -200,16 +103,4 @@
 </script>
 
 <style scoped>
-    .nav-note-port {
-        position: absolute;
-        font-weight: 700;
-        font-size: .7rem;
-        color: gold;
-        line-height: 3.5rem;
-        margin-left: 1px;
-    }
-
-    li .nav-link > span.toggle {
-        color: gold;
-    }
 </style>

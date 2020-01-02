@@ -103,7 +103,7 @@ const View = Backbone.View.extend({
                 brandImage: this.options.logo_src,
 
                 quotaMeter: this.quotaMeter,
-                activeTab: () => {return this.activeView},
+                activeTab: () => { return this.activeView },
                 tabs: _.map(this.collection.models, el => {
                     return el.toJSON();
                 }),
