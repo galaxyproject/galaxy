@@ -28,6 +28,7 @@ def start_ssh_docker(container_name, jobs_directory, port=10022, image='agaveapi
                           '--name',
                           container_name,
                           '--rm',
+                          '--privileged',  # for torque
                           '-v',
                           "{jobs_directory}:{jobs_directory}".format(jobs_directory=jobs_directory),
                           "-v",
