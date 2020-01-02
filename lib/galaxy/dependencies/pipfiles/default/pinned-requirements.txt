@@ -164,7 +164,7 @@ ruamel.ordereddict==0.4.14 ; platform_python_implementation == 'CPython' and pyt
 ruamel.yaml==0.15.100
 s3transfer==0.2.1
 scandir==1.10.0 ; python_version < '3.5'
-schema-salad==2.7.20181126142424
+schema-salad==4.5.20191229160203
 setuptools-scm==3.3.3
 shellescape==3.4.1
 simplejson==3.17.0
