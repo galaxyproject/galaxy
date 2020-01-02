@@ -24,13 +24,16 @@
                                         :href="tab.url"
                                         :target="tab.target"
                                         :link-classes="[
-                                            tab.toggle && 'toggle',
                                             tab.icon && 'nav-icon',
-                                            tab.icon && 'fa',
-                                            tab.icon || ''
                                         ]">
 
-                                {{ tab.title }}
+                                <template v-if="tab.icon">
+                                    <span :class="['fa', tab.icon, tab.toggle && 'toggle']"/>
+                                    <span v-if="tab.show_note" class="nav-note-port" :class="tab.note_cls">{{ tab.note }}</span>
+                                </template>
+                                <template v-else>
+                                    {{ tab.title }}
+                                </template>
                             </b-nav-item>
                             <b-nav-item-dropdown v-else
                                                  :class="{
@@ -50,7 +53,6 @@
                                     {{ item.title }}
                                 </b-dropdown-item>
                             </b-nav-item-dropdown>
-                        <li v-if="tab.show_note" class="nav-note-port" :class="tab.note_cls">{{ tab.note }}</li>
                     </template>
                 </b-navbar-nav>
 
@@ -199,12 +201,15 @@
 
 <style scoped>
     .nav-note-port {
-        position: relative;
+        position: absolute;
         font-weight: 700;
-        left: -0.4rem;
-        top: 0.7rem;
         font-size: .7rem;
         color: gold;
-        width: 0;
+        line-height: 3.5rem;
+        margin-left: 1px;
+    }
+
+    li .nav-link > span.toggle {
+        color: gold;
     }
 </style>
