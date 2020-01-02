@@ -9,7 +9,6 @@ import os
 from six import string_types
 
 from galaxy.exceptions import RequestParameterInvalidException
-from galaxy.model.none_like import NoneDataset
 from galaxy.util import safe_makedirs, string_as_bool
 from galaxy.util.bunch import Bunch
 from .util import set_basename_and_derived_properties
@@ -161,7 +160,8 @@ def dataset_wrapper_to_file_json(inputs_dir, dataset_wrapper):
 
     raw_file_object["location"] = path
 
-    if not isinstance(dataset_wrapper.unsanitized, NoneDataset):
+    # Verify it isn't a NoneDataset
+    if dataset_wrapper.unsanitized:
         raw_file_object["size"] = int(dataset_wrapper.get_size())
 
     set_basename_and_derived_properties(raw_file_object, str(dataset_wrapper.created_from_basename or dataset_wrapper.name))
