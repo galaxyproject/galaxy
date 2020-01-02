@@ -30,7 +30,7 @@
                                             tab.icon || ''
                                         ]">
 
-                                {{ tab["title"] }}
+                                {{ tab.title }}
                             </b-nav-item>
                             <b-nav-item-dropdown v-else
                                                  :class="{
@@ -47,10 +47,10 @@
                                                  :target="item.target"
                                                  @click="open(item, $event)"
                                 >
-                                    {{ item["title"] }}
+                                    {{ item.title }}
                                 </b-dropdown-item>
                             </b-nav-item-dropdown>
-                        <li v-if="tab.show_note" class="nav-note-port" :class="tab.note_cls">{{ tab["note"] }}</li>
+                        <li v-if="tab.show_note" class="nav-note-port" :class="tab.note_cls">{{ tab.note }}</li>
                     </template>
                 </b-navbar-nav>
 
