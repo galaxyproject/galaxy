@@ -8,6 +8,7 @@ import UploadModel from "mvc/upload/upload-model";
 import UploadWrapper from "./UploadWrapper";
 import { getGalaxyInstance } from "app";
 import UploadFtp from "mvc/upload/upload-ftp";
+import LazyLimited from "mvc/lazy/lazy-limited";
 
 export default {
     components: {
@@ -18,6 +19,10 @@ export default {
         app: {
             type: Object,
             required: true
+        },
+        lazyLoadMax: {
+            type: Number,
+            default: null
         }
     },
     methods: {
@@ -27,6 +32,17 @@ export default {
         initUploadbox(options) {
             const $uploadBox = this.$uploadBox();
             this.uploadbox = $uploadBox.uploadbox(options);
+            if (this.lazyLoadMax !== null) {
+                const $uploadBox = this.$uploadBox();
+                this.loader = new LazyLimited({
+                    $container: $uploadBox,
+                    collection: this.collection,
+                    max: this.lazyLoadMax,
+                    new_content: model => {
+                        return this.renderNewModel(model);
+                    }
+                });
+            }
         },
         uploadSelect: function() {
             this.uploadbox.select();
@@ -95,6 +111,19 @@ export default {
             this._updateStateForCounters();
             const Galaxy = getGalaxyInstance();
             Galaxy.currHistoryPanel.refreshContents();
+        },
+        /** A new file has been dropped/selected through the uploadbox plugin */
+        _eventAnnounce: function(index, file) {
+            this.counterAnnounce++;
+            const modelProps = this._newUploadModelProps(index, file);
+            var newModel = new UploadModel.Model(modelProps);
+            this.collection.add(newModel);
+            // if using lazyLoader, let it handle it - else render directly
+            if (this.loader) {
+                this._updateStateForCounters();
+            } else {
+                this.renderNewModel(newModel);
+            }
         },
         /** Error */
         _eventError: function(index, message) {

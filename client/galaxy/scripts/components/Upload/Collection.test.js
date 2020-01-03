@@ -10,6 +10,7 @@ describe("Collection.vue", () => {
         expect(wrapper.find("#btn-reset").classes()).to.contain("disabled");
         expect(wrapper.find("#btn-start").classes()).to.contain("disabled");
         expect(wrapper.find("#btn-stop").classes()).to.contain("disabled");
+        expect(wrapper.findAll(".ui-limitloader").length).to.equals(0);
     });
 
     it("does render FTP is site set", async () => {
@@ -40,5 +41,19 @@ describe("Collection.vue", () => {
         wrapper.find("#btn-reset").trigger("click");
         await localVue.nextTick();
         expect(wrapper.vm.showHelper).to.equals(true);
+    });
+
+    it("respects lazyLoadMax limit", async () => {
+        const { wrapper, localVue } = mountWithApp(Collection, {}, { lazyLoadMax: 2 });
+        expect(wrapper.findAll(".ui-limitloader").length).to.equals(1);
+        wrapper.find("#btn-new").trigger("click");
+        await localVue.nextTick();
+        wrapper.find("#btn-new").trigger("click");
+        await localVue.nextTick();
+        expect(wrapper.findAll("table tbody tr").length).to.equals(2);
+        wrapper.find("#btn-new").trigger("click");
+        await localVue.nextTick();
+        expect(wrapper.findAll("table tbody tr").length).to.equals(2);
+        expect(wrapper.find(".ui-limitloader").text()).to.contain("only the first 2 entries");
     });
 });

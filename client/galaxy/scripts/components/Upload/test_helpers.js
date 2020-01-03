@@ -3,7 +3,7 @@ import Backbone from "backbone";
 import "utils/uploadbox";
 import { mount, createLocalVue } from "@vue/test-utils";
 
-export function mountWithApp(component, options = {}) {
+export function mountWithApp(component, options = {}, propsData_ = {}) {
     const app = _.defaults(options, {
         defaultExtension: "auto",
         currentFtp: () => {
@@ -31,7 +31,7 @@ export function mountWithApp(component, options = {}) {
             }
         ]
     });
-    const propsData = { app };
+    const propsData = _.defaults(propsData_, { app });
     const localVue = createLocalVue();
     const wrapper = mount(component, {
         propsData,

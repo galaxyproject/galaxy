@@ -47,4 +47,11 @@ describe("Default.vue", () => {
         await localVue.nextTick();
         expect(wrapper.vm.showHelper).to.equals(true);
     });
+
+    it("renders a limitloader element if lazyLoadMax set", async () => {
+        const { wrapper } = mountWithApp(Default, {}, { lazyLoadMax: 2 });
+        expect(wrapper.findAll(".ui-limitloader").length).to.equals(1);
+        // hard to actually test the functionality like in Collection.test.js
+        // because we're stubbing out all of UploadRow.
+    });
 });

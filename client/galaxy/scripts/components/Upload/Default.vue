@@ -105,10 +105,8 @@ import _l from "utils/localization";
 import _ from "underscore";
 import $ from "jquery";
 import { getGalaxyInstance } from "app";
-import UploadModel from "mvc/upload/upload-model";
 import UploadRow from "mvc/upload/default/default-row";
 import UploadBoxMixin from "./UploadBoxMixin";
-import LazyLimited from "mvc/lazy/lazy-limited";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 
@@ -182,15 +180,6 @@ export default {
                 this.hightlightBox = false;
             }
         });
-        const $uploadBox = this.$uploadBox();
-        // Lazy load helper
-        this.loader = new LazyLimited({
-            $container: $uploadBox,
-            collection: this.collection,
-            new_content: model => {
-                return this.registerNewModel(model);
-            }
-        });
         this.collection.on("remove", model => {
             this._eventRemove(model);
         });
@@ -214,19 +203,15 @@ export default {
         }
     },
     methods: {
-        /** A new file has been dropped/selected through the uploadbox plugin */
-        _eventAnnounce: function(index, file) {
-            this.counterAnnounce++;
-            var newModel = new UploadModel.Model({
+        _newUploadModelProps: function(index, file) {
+            return {
                 id: index,
                 file_name: file.name,
                 file_size: file.size,
                 file_mode: file.mode || "local",
                 file_path: file.path,
                 file_data: file
-            });
-            this.collection.add(newModel);
-            this._updateStateForCounters();
+            };
         },
 
         /** Success */
