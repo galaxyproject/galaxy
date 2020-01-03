@@ -1,13 +1,9 @@
 /** Renders the collection uploader rows */
-import _l from "utils/localization";
 import $ from "jquery";
 import _ from "underscore";
 import Utils from "utils/utils";
-import UploadSettings from "mvc/upload/upload-settings";
 import UploadBoxRow from "mvc/upload/uploadbox-row";
-import Popover from "mvc/ui/ui-popover";
 export default UploadBoxRow.extend({
-
     initialize: function(app, options) {
         var self = this;
         this.app = app;
@@ -24,17 +20,7 @@ export default UploadBoxRow.extend({
         this.$progress_bar = this.$(".upload-progress-bar");
         this.$percentage = this.$(".upload-percentage");
 
-        // append popup to settings icon
-        this.settings = new Popover({
-            title: _l("Upload configuration"),
-            container: this.$(".upload-settings"),
-            placement: "bottom"
-        });
-
-        // identify default genome and extension values
-        // TODO: These appear unused.
-        //var default_genome = this.app.select_genome.value();
-        //var default_extension = this.app.select_extension.value();
+        this._setupSettings();
 
         // handle click event
         this.$symbol.on("click", () => {
@@ -50,18 +36,7 @@ export default UploadBoxRow.extend({
         });
 
         // model events
-        this.listenTo(this.model, "change:percentage", () => {
-            self._refreshPercentage();
-        });
-        this.listenTo(this.model, "change:status", () => {
-            self._refreshStatus();
-        });
-        this.listenTo(this.model, "change:info", () => {
-            self._refreshInfo();
-        });
-        this.listenTo(this.model, "change:file_size", () => {
-            self._refreshFileSize();
-        });
+        this._setupUploadBoxListeners();
         this.listenTo(this.model, "remove", () => {
             self.remove();
         });
@@ -94,23 +69,6 @@ export default UploadBoxRow.extend({
         }
     },
 
-    /** Refresh info text */
-    _refreshInfo: function() {
-        var info = this.model.get("info");
-        if (info) {
-            this.$info_text.html(`<strong>Failed: </strong>${info}`).show();
-        } else {
-            this.$info_text.hide();
-        }
-    },
-
-    /** Refresh percentage status */
-    _refreshPercentage: function() {
-        var percentage = parseInt(this.model.get("percentage"));
-        this.$progress_bar.css({ width: `${percentage}%` });
-        this.$percentage.html(percentage != 100 ? `${percentage}%` : "Adding to history...");
-    },
-
     /** Refresh status */
     _refreshStatus: function() {
         var status = this.model.get("status");
@@ -122,23 +80,6 @@ export default UploadBoxRow.extend({
         var enabled = this.model.get("enabled");
         this.$text_content.attr("disabled", !enabled);
         this._renderStatusType(status);
-    },
-
-    /** Refresh file size */
-    _refreshFileSize: function() {
-        this.$size.html(Utils.bytesToString(this.model.get("file_size")));
-    },
-
-    /** Remove row */
-    _removeRow: function() {
-        if (["init", "success", "error"].indexOf(this.model.get("status")) !== -1) {
-            this.app.collection.remove(this.model);
-        }
-    },
-
-    /** Attach file info popup */
-    _showSettings: function() {
-        this.settings.show(new UploadSettings(this).$el);
     },
 
     /** View template */
