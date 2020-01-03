@@ -69,8 +69,8 @@ def tool_proxy(tool_path=None, tool_object=None, strict_cwl_validation=True, too
     grab relevant data.
     """
     ensure_cwltool_available()
-    if uuid is None:
-        raise Exception("tool_proxy must be called with non-None uuid")
+    # if uuid is None:
+    #    raise Exception("tool_proxy must be called with non-None uuid")
     tool = _to_cwl_tool_object(
         tool_path=tool_path,
         tool_object=tool_object,
@@ -318,7 +318,13 @@ class CommandLineToolProxy(ToolProxy):
     _class = "CommandLineTool"
 
     def description(self):
+        # Don't use description - typically too verbose.
         return ''
+
+    def doc(self):
+        # TODO: parse multiple lines and merge - valid in cwl-1.1
+        doc = self._tool.tool.get('doc')
+        return doc
 
     def label(self):
         label = self._tool.tool.get('label')
