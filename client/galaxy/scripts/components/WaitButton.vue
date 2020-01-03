@@ -1,11 +1,6 @@
 /** Button variant with waiting and progress tracking. */
 <template>
-    <button
-        class="ui-button-default"
-        v-bind:class="[waiting ? 'disabled' : '', variantClass]"
-        type="button"
-        v-on:click="$emit('click')"
-    >
+    <button class="ui-button-default" v-bind:class="buttonClass" type="button" v-on:click="$emit('click')">
         <i class="icon fa" v-bind:class="iconClass"> </i>
         <span class="title"> {{ currentText }} </span>
         <div class="progress" v-if="percentage != -1">
@@ -46,8 +41,12 @@ export default {
         progressWidth() {
             return `${this.percentage}%`;
         },
-        variantClass() {
-            return `btn btn-${this.variant}`;
+        buttonClass() {
+            if (this.waiting) {
+                return "disabled";
+            } else {
+                return `btn btn-${this.variant}`;
+            }
         },
         iconClass() {
             if (this.waiting) {
