@@ -3,6 +3,7 @@ import collections
 import os
 import string
 import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -37,7 +38,8 @@ def start_ssh_docker(container_name, jobs_directory, port=10022, image='agaveapi
                           'nofile=2048:2048',
                           image]
     subprocess.check_call(START_SLURM_DOCKER)
-    subprocess.check_call(['docker', 'exec', container_name, 'usermod', '-u', str(os.getuid()), 'testuser'])
+    if sys.platform != 'darwin':
+        subprocess.check_call(['docker', 'exec', container_name, 'usermod', '-u', str(os.getuid()), 'testuser'])
     return RemoteConnection('localhost', 'testuser', port, ssh_keys.private_key_file, ssh_keys.public_key_file)
 
 
