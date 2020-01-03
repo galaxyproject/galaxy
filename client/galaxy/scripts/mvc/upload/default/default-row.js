@@ -7,18 +7,9 @@ import Utils from "utils/utils";
 import UploadSettings from "mvc/upload/upload-settings";
 import Popover from "mvc/ui/ui-popover";
 import UploadExtension from "mvc/upload/upload-extension";
+import UploadBoxRow from "mvc/upload/uploadbox-row";
 import Select from "mvc/ui/ui-select";
-export default Backbone.View.extend({
-    /** Dictionary of upload states and associated icons */
-    status_classes: {
-        init: "upload-icon-button fa fa-trash-o",
-        queued: "upload-icon fa fa-spinner fa-spin",
-        running: "upload-icon fa fa-spinner fa-spin",
-        warning: "upload-icon fa fa-spinner fa-spin",
-        success: "upload-icon-button fa fa-check",
-        error: "upload-icon-button fa fa-exclamation-triangle"
-    },
-
+export default UploadBoxRow.extend({
     initialize: function(app, options) {
         var self = this;
         this.app = app;
@@ -232,16 +223,7 @@ export default Backbone.View.extend({
         }
         this.$info_progress.show();
         this.$el.removeClass().addClass("upload-row");
-        if (status == "success") {
-            this.$el.addClass("table-success");
-            this.$percentage.html("100%");
-        } else if (status == "error") {
-            this.$el.addClass("table-danger");
-            this.$info_progress.hide();
-        } else if (status == "warning") {
-            this.$el.addClass("table-warning");
-            this.$info_progress.hide();
-        }
+        this._renderStatusType(status);
     },
 
     /** Refresh file size */

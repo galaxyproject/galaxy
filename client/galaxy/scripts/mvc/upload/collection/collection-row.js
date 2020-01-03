@@ -2,19 +2,11 @@
 import _l from "utils/localization";
 import $ from "jquery";
 import _ from "underscore";
-import Backbone from "backbone";
 import Utils from "utils/utils";
 import UploadSettings from "mvc/upload/upload-settings";
+import UploadBoxRow from "mvc/upload/uploadbox-row";
 import Popover from "mvc/ui/ui-popover";
-export default Backbone.View.extend({
-    /** Dictionary of upload states and associated icons */
-    status_classes: {
-        init: "upload-icon-button fa fa-trash-o",
-        queued: "upload-icon fa fa-spinner fa-spin",
-        running: "upload-icon fa fa-spinner fa-spin",
-        success: "upload-icon-button fa fa-check",
-        error: "upload-icon-button fa fa-exclamation-triangle"
-    },
+export default UploadBoxRow.extend({
 
     initialize: function(app, options) {
         var self = this;
@@ -129,14 +121,7 @@ export default Backbone.View.extend({
         this.model.set("enabled", status == "init");
         var enabled = this.model.get("enabled");
         this.$text_content.attr("disabled", !enabled);
-        if (status == "success") {
-            this.$el.addClass("table-success");
-            this.$percentage.html("100%");
-        }
-        if (status == "error") {
-            this.$el.addClass("table-danger");
-            this.$info_progress.hide();
-        }
+        this._renderStatusType(status);
     },
 
     /** Refresh file size */

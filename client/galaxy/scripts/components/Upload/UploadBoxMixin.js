@@ -164,6 +164,10 @@ export default {
                 this.uploadbox.stop();
             }
         },
+        _eventWarning: function(index, message) {
+            var it = this.collection.get(index);
+            it.set({ status: "warning", info: message });
+        },
         $uploadTable() {
             return $(this.$refs.uploadTable);
         },

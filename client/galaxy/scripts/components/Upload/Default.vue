@@ -236,12 +236,6 @@ export default {
             this._updateStateForSuccess(it);
         },
 
-        /** Warning */
-        _eventWarning: function(index, message) {
-            var it = this.collection.get(index);
-            it.set({ status: "warning", info: message });
-        },
-
         /** Start upload process */
         _eventStart: function() {
             if (this.counterAnnounce !== 0 && this.counterRunning === 0) {

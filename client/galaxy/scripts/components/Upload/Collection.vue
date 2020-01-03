@@ -186,6 +186,9 @@ export default {
             success: (index, message) => {
                 this._eventSuccess(index, message);
             },
+            warning: (index, message) => {
+                this._eventWarning(index, message);
+            },
             error: (index, message) => {
                 this._eventError(index, message);
             },
