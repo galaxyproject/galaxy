@@ -103,7 +103,6 @@
 <script>
 import _l from "utils/localization";
 import _ from "underscore";
-import $ from "jquery";
 import { getGalaxyInstance } from "app";
 import UploadRow from "mvc/upload/default/default-row";
 import UploadBoxMixin from "./UploadBoxMixin";
@@ -263,34 +262,6 @@ export default {
                 this.genome = this.app.defaultGenome;
                 this.appModel.set("percentage", 0);
                 this._updateStateForCounters();
-            }
-        },
-
-        /** Package and upload ftp files in a single request */
-        _uploadFtp: function() {
-            var self = this;
-            var list = [];
-            this.collection.each(model => {
-                if (model.get("status") == "queued" && model.get("file_mode") == "ftp") {
-                    self.uploadbox.remove(model.id);
-                    list.push(model);
-                }
-            });
-            if (list.length > 0) {
-                $.uploadpost({
-                    data: this.app.toData(list),
-                    url: this.app.uploadPath,
-                    success: function(message) {
-                        _.each(list, model => {
-                            self._eventSuccess(model.id);
-                        });
-                    },
-                    error: function(message) {
-                        _.each(list, model => {
-                            self._eventError(model.id, message);
-                        });
-                    }
-                });
             }
         }
     }

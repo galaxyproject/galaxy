@@ -239,7 +239,6 @@ export default {
 
         /** Success */
         _eventSuccess: function(index, message) {
-            // var hdaId = message["outputs"][0]["id"];
             var hids = _.pluck(message["outputs"], "hid");
             var it = this.collection.get(index);
             it.set({ percentage: 100, status: "success", hids: hids });
@@ -281,6 +280,8 @@ export default {
             this.appModel.set({ percentage: 0, status: "success" });
             this.counterRunning = this.counterAnnounce;
             this.history_id = this.app.currentHistory();
+            // package ftp files separately, and remove them from queue
+            this._uploadFtp();
             this.uploadbox.start();
             this._updateStateForCounters();
         },

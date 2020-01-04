@@ -47,6 +47,32 @@ export default {
         uploadSelect: function() {
             this.uploadbox.select();
         },
+        /** Package and upload ftp files in a single request */
+        _uploadFtp: function() {
+            const list = [];
+            this.collection.each(model => {
+                if (model.get("status") == "queued" && model.get("file_mode") == "ftp") {
+                    this.uploadbox.remove(model.id);
+                    list.push(model);
+                }
+            });
+            if (list.length > 0) {
+                $.uploadpost({
+                    data: this.app.toData(list),
+                    url: this.app.uploadPath,
+                    success: message => {
+                        _.each(list, model => {
+                            this._eventSuccess(model.id, message);
+                        });
+                    },
+                    error: message => {
+                        _.each(list, model => {
+                            self._eventError(model.id, message);
+                        });
+                    }
+                });
+            }
+        },
         renderNewModel: function(model) {
             // Turn backbone upload model into row model and place in table,
             // render in next tick so table can respond first and dynamic
