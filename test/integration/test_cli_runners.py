@@ -96,7 +96,7 @@ class BaseCliIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):
         super(BaseCliIntegrationTestCase, cls).tearDownClass()
 
     @classmethod
-    def handle_galaxy_config_kwds(cls, config, ):
+    def handle_galaxy_config_kwds(cls, config):
         config["jobs_directory"] = cls.jobs_directory
         config["file_path"] = cls.jobs_directory
         config["job_config_file"] = cli_job_config(remote_connection=cls.remote_connection,
