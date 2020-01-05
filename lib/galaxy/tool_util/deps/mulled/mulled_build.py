@@ -180,7 +180,7 @@ def mull_targets(
     if DEST_BASE_IMAGE:
         dest_base_image = DEST_BASE_IMAGE
     else:
-        dest_base_image = DEFAULT_EXTENDED_BASE_IMAGE if not any_target_requires_extended_base(targets) else DEST_BASE_IMAGE
+        dest_base_image = DEFAULT_EXTENDED_BASE_IMAGE if any_target_requires_extended_base(targets) else DEST_BASE_IMAGE
 
     targets = list(targets)
     if involucro_context is None:
