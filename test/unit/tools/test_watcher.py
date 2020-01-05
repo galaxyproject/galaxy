@@ -16,15 +16,17 @@ def test_watcher():
     with __test_directory() as t:
         tool_path = path.join(t, "test.xml")
         toolbox = Toolbox()
-        open(tool_path, "w").write("a")
+        with open(tool_path, "w") as f:
+            f.write("a")
         tool_watcher = watcher.get_tool_watcher(toolbox, bunch.Bunch(
             watch_tools=True
         ))
         tool_watcher.start()
-        time.sleep(1)
         tool_watcher.watch_file(tool_path, "cool_tool")
+        time.sleep(2)
         assert not toolbox.was_reloaded("cool_tool")
-        open(tool_path, "w").write("b")
+        with open(tool_path, "w") as f:
+            f.write("b")
         wait_for_reload(lambda: toolbox.was_reloaded("cool_tool"))
         tool_watcher.shutdown()
         assert tool_watcher.observer is None
@@ -41,10 +43,12 @@ def test_tool_conf_watcher():
 
     with __test_directory() as t:
         tool_conf_path = path.join(t, "test_conf.xml")
-        open(tool_conf_path, "w").write("a")
+        with open(tool_conf_path, "w", 1) as t:
+            t.write("a")
         conf_watcher.watch_file(tool_conf_path)
-        time.sleep(1)
-        open(tool_conf_path, "w").write("b")
+        time.sleep(2)
+        with open(tool_conf_path, 'wb', 0) as t:
+            t.write(b"b")
         wait_for_reload(lambda: callback.called)
         conf_watcher.shutdown()
         assert conf_watcher.thread is None
