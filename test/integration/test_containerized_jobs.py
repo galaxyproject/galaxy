@@ -1,5 +1,6 @@
 """Integration tests for running tools in Docker containers."""
 
+import json
 import os
 import unittest
 
@@ -111,13 +112,18 @@ class DockerizedJobsIntegrationTestCase(integration_util.IntegrationTestCase, Ru
         if not which('docker'):
             raise unittest.SkipTest("Docker not found on PATH, required for building images via involucro")
         resolver_type = self.build_mulled_resolver
-        tool_id = 'mulled_example_multi_1'
-        endpoint = "tools/%s/dependencies" % tool_id
-        data = {'id': tool_id, 'resolver_type': resolver_type}
+        tool_ids = ['mulled_example_multi_1']
+        endpoint = "dependency_resolvers/toolbox/install"
+        data = {'tool_ids': json.dumps(tool_ids), 'resolver_type': resolver_type, 'container_type': self.container_type, 'include_containers': True}
         create_response = self._post(endpoint, data=data, admin=True)
         self._assert_status_code_is(create_response, 200)
+        create_response = self._get("dependency_resolvers/toolbox", data={'tool_ids': tool_ids, 'container_type': self.container_type, 'include_containers': True, 'index_by': 'tools'}, admin=True)
         response = create_response.json()
-        assert any([True for d in response if d['dependency_type'] == self.container_type])
+        assert len(response) == 1
+        status = response[0]['status']
+        assert status[0]['model_class'] == 'ContainerDependency'
+        assert status[0]['dependency_type'] == self.container_type
+        assert status[0]['container_description']['identifier'].startswith('quay.io/local/mulled-v2-')
 
 
 class MappingContainerResolverTestCase(integration_util.IntegrationTestCase):
