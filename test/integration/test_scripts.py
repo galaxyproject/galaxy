@@ -116,7 +116,6 @@ class ScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
         output = self._scripts_check_output(script, ["-c", config_file])
         assert "Complete" in output
 
-    @integration_util.skip_if_jenkins
     def test_grt_export(self):
         script = "grt/export.py"
         self._scripts_check_argparse_help(script)
@@ -134,7 +133,7 @@ class ScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
         json_file = os.path.join(self.config_dir, json_files[0])
         with open(json_file, "r") as f:
             export = json.load(f)
-        assert export["version"] == 2
+        assert export["version"] == 3
 
     def test_admin_cleanup_datasets(self):
         self._scripts_check_argparse_help("cleanup_datasets/admin_cleanup_datasets.py")
