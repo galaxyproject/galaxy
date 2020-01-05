@@ -1,5 +1,6 @@
 """Integration tests for the Kubernetes runner."""
-# Tested on docker for mac 18.06.1-ce-mac73 using the default kubernetes setup
+# Tested on docker for mac 18.06.1-ce-mac73 using the default kubernetes setup,
+# also works on minikube
 import collections
 import json
 import os
@@ -91,37 +92,40 @@ def job_config(jobs_directory):
             <param id="k8s_persistent_volume_claims">jobs-directory-claim:$jobs_directory,tool-directory-claim:$tool_directory</param>
             <param id="k8s_config_path">$k8s_config_path</param>
             <param id="k8s_galaxy_instance_id">gx-short-id</param>
+            <param id="k8s_run_as_user_id">$$uid</param>
         </plugin>
         <plugin id="k8s_walltime_short" type="runner" load="galaxy.jobs.runners.kubernetes:KubernetesJobRunner">
             <param id="k8s_persistent_volume_claims">jobs-directory-claim:$jobs_directory,tool-directory-claim:$tool_directory</param>
             <param id="k8s_config_path">$k8s_config_path</param>
             <param id="k8s_galaxy_instance_id">gx-short-id</param>
             <param id="k8s_walltime_limit">10</param>
+            <param id="k8s_run_as_user_id">$$uid</param>
         </plugin>
         <plugin id="k8s_no_cleanup" type="runner" load="galaxy.jobs.runners.kubernetes:KubernetesJobRunner">
             <param id="k8s_persistent_volume_claims">jobs-directory-claim:$jobs_directory,tool-directory-claim:$tool_directory</param>
             <param id="k8s_config_path">$k8s_config_path</param>
             <param id="k8s_galaxy_instance_id">gx-short-id</param>
             <param id="k8s_cleanup_job">never</param>
+            <param id="k8s_run_as_user_id">$$uid</param>
         </plugin>
     </plugins>
     <destinations default="k8s_destination">
         <destination id="k8s_destination" runner="k8s">
-            <param id="limits_cpu">1.9</param>
+            <param id="limits_cpu">1.1</param>
             <param id="limits_memory">10M</param>
             <param id="docker_enabled">true</param>
             <param id="docker_default_container_id">busybox:ubuntu-14.04</param>
             <env id="SOME_ENV_VAR">42</env>
         </destination>
         <destination id="k8s_destination_walltime_short" runner="k8s_walltime_short">
-            <param id="limits_cpu">1.9</param>
+            <param id="limits_cpu">1.1</param>
             <param id="limits_memory">10M</param>
             <param id="docker_enabled">true</param>
             <param id="docker_default_container_id">busybox:ubuntu-14.04</param>
             <env id="SOME_ENV_VAR">42</env>
         </destination>
         <destination id="k8s_destination_no_cleanup" runner="k8s_no_cleanup">
-            <param id="limits_cpu">1.9</param>
+            <param id="limits_cpu">1.1</param>
             <param id="limits_memory">10M</param>
             <param id="docker_enabled">true</param>
             <param id="docker_default_container_id">busybox:ubuntu-14.04</param>
@@ -182,7 +186,9 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
         super(BaseKubernetesIntegrationTestCase, cls).tearDownClass()
 
     @classmethod
-    def handle_galaxy_config_kwds(cls, config, ):
+    def handle_galaxy_config_kwds(cls, config):
+        # TODO: implement metadata setting as separate job, as service or side-car
+        config['retry_metadata_internally'] = True
         config["jobs_directory"] = cls.jobs_directory
         config["file_path"] = cls.jobs_directory
         config["job_config_file"] = cls.job_config.path
