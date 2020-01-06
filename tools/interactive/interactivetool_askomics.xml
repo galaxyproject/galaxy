@@ -16,6 +16,7 @@
         <environment_variable name="USER_LAST_NAME">Galaxy</environment_variable>
         <environment_variable name="USER_USERNAME">${__user_name__}</environment_variable>
         <environment_variable name="USER_EMAIL">${__user_email__}</environment_variable>
+        <environment_variable name="USER_APIKEY">${__user_name__}</environment_variable>
         <!-- Galaxy info -->
         <environment_variable name="GALAXY_URL">$__galaxy_url__</environment_variable>
         <environment_variable name="GALAXY_API_KEY" inject="api_key" />
