@@ -980,6 +980,25 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             target_format=target_format,
         )
 
+    def map_datasets(self, content, *parents):
+        """
+        Iterate over the datasets of a given collection, recursing into collections, and
+        calling fn on each dataset.
+        Uses the same kwargs as `contents` above.
+        Added here to access HDAs from HDCAs for BioCompute Object generaion.
+        """
+        returned = []
+        # lots of nesting going on within the nesting
+        collection = content.collection if hasattr(content, 'collection') else content
+        this_parents = (content, ) + parents
+        for element in collection.elements:
+            next_parents = (element, ) + this_parents
+            if element.is_collection:
+                returned.extend(self.map_datasets(element.child_collection, *next_parents))
+            else:
+                returned.append(element.dataset_instance)
+        return returned
+
     @expose_api
     def export_invocation_bco(self, trans, invocation_id, **kwd):
         '''
@@ -993,19 +1012,28 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         history = workflow_invocation.history
         workflow = workflow_invocation.workflow
         stored_workflow = workflow.stored_workflow
-        contributing_users = {history.user, stored_workflow.user}
 
-        # history_encoded_id = trans.security.encode_id(history.id)
+        # pull in the user info from those who the history and workflow has been shared with
+        contributing_users = [stored_workflow.user]
+        for association in trans.sa_session.query(model.StoredWorkflowUserShareAssociation):
+            if association.user not in contributing_users:
+                contributing_users.append(association.user)
+        for h_association in trans.sa_session.query(model.HistoryUserShareAssociation):
+            if h_association.user not in contributing_users:
+                contributing_users.append(h_association.user)
+
+        # may want to extend this to have more reviewers.
+        reviewing_users = [stored_workflow.user]
         workflow_encoded_id = trans.security.encode_id(stored_workflow.id)
-        # print('\n', history_encoded_id, '\n', workflow_encoded_id, '\n', invocation_id, '\n')
+        dict_workflow = json.loads(self.workflow_dict(trans, workflow_encoded_id))
 
-        # list of Job IDs for invocation
-        invocation_dict = json.loads(self.show_invocation(trans, invocation_id))
-        jobs = []
-        for step in invocation_dict['steps']:
-            inv_step = str(step['id'])
-            job = self.invocation_step(trans, invocation_id, inv_step)
-            jobs.append(json.loads(job))
+        h_contents = []
+        for content in history.contents_iter(types=["dataset", "dataset_collection"]):
+            h_contents.extend(self.map_datasets(content)) if hasattr(content, 'collection') else h_contents.append(content)
+        h_contents = list(set(h_contents))
+
+        # TODO add a keyword option/function to determine the spec_version used in BCO creation, and populate it accordingly
+        spec_version = 'https://w3id.org/biocompute/1.4.0/',
 
         # listing the versions of the workflow for 'version' and 'derived_from'
         versions = []
@@ -1023,33 +1051,35 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         contributors = []
         for contributing_user in contributing_users:
             contributor = {
-                'orcid': '',
+                # 'orcid': '', TODO
+                'name': contributing_user.username,
                 'affiliation': contributing_user.email.split('@')[-1],
                 'contribution': ['authoredBy'],
-                'name': contributing_user.username,
                 'email': contributing_user.email,
             }
             contributors.append(contributor)
 
-        reviewer = []
-        reviewer = {
-            'status': 'approved',
-            'reviewer_comment': '',
-            'date': workflow_invocation.update_time.isoformat(),
-            'reviewer': {
-                'name': contributing_user.username,
-                'affiliation': contributing_user.email.split('@')[-1],
-                'email': contributing_user.email,
-                # Would like to find a way to offer a choice on this value
-                'contribution': 'curatedBy'
-                # 'orcid': 'TO DO'
+        reviewers = []
+        for reviewer in reviewing_users:
+            reviewer = {
+                'status': 'approved',
+                'reviewer_comment': '',
+                'date': workflow_invocation.update_time.isoformat(),
+                'reviewer': {
+                    # 'orcid': '',  TODO
+                    'name': contributing_user.username,
+                    'affiliation': contributing_user.email.split('@')[-1],
+                    # Would like to find a way to offer a choice on this value
+                    'contribution': 'curatedBy',
+                    'email': contributing_user.email
+                }
             }
-        }
+            reviewers.append(reviewer)
 
         provenance_domain = {
             'name': workflow.name,
             'version': current_version,
-            'review': reviewer,
+            'review': reviewers,
             'derived_from': url_for('workflow', id=workflow_encoded_id, host=host),
             'created': workflow_invocation.create_time.isoformat(),
             'modified': workflow_invocation.update_time.isoformat(),
@@ -1057,9 +1087,14 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             'license': 'https://spdx.org/licenses/CC-BY-4.0.html',
         }
 
-        dict_workflow = json.loads(self.workflow_dict(trans, workflow_encoded_id))
+        keywords = []
+        for tag in stored_workflow.tags:
+            keywords.append(tag.user_tname)
+        for tag in history.tags:
+            if tag.user_tname not in keywords:
+                keywords.append(tag.user_tname)
 
-        pipeline_steps = []
+        pipeline_steps, software_prerequisites = [], []
         for step in range(len(dict_workflow['steps'].keys())):
             current_tool = dict_workflow['steps'][str(step)]
             output_list = []
@@ -1073,38 +1108,64 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 'input_list': input_list,
                 'output_list': output_list
             }
-            prerequisite = []
+            pipeline_steps.append(pipeline_step)
+            software_prerequisite = []
             try:
-                prerequisite = {
+                software_prerequisite = {
+                    'name': current_tool['tool_shed_repository']['name'],
+                    'version': current_tool['tool_version'],
                     'uri': {
-                        'name': current_tool['tool_shed_repository']['name'],
                         'uri': current_tool['content_id'],
-                        #  'access_time': ''
+                        'access_time': current_tool['uuid']
                     }
                 }
-                pipeline_step['prerequisite'] = prerequisite
             except Exception:
                 continue
-            pipeline_steps.append(pipeline_step)
+            software_prerequisites.append(software_prerequisite)
 
+        usability_domain = []
+        for a in stored_workflow.annotations:
+            usability_domain.append(a.annotation)
+        for h in history.annotations:
+            usability_domain.append(h.annotation)
+
+        parametric_domain = []
+        for inv_step in workflow_invocation.steps:
+            try:
+                for k, v in inv_step.workflow_step.tool_inputs.iteritems():
+                    param, value, step = k, v, inv_step.workflow_step.order_index
+                    parametric_domain.append({'param': param, 'value': value, 'step': step})
+            except Exception:
+                continue
+
+        execution_domain = {
+            'script_access_type': 'a_galaxy_workflow',
+            'script': [url_for('workflows', encoded_workflow_id=workflow_encoded_id)],
+            'script_driver': 'Galaxy',
+            'software_prerequisites': software_prerequisites,
+            'external_data_endpoints': [],
+            'environment_variables': {}
+        }
+
+        galaxy_extension = []  # TODO
         input_subdomain = []  # TODO
         output_subdomain = []  # TODO
 
         ret_dict = {
             'bco_id': url_for('invocation_export_bco', invocation_id=invocation_id, host=host),
-            'bco_spec_version': 'https://w3id.org/biocompute/1.3.0/',
-            'checksum': 'TODO',
+            'bco_spec_version': spec_version,
+            'etag': str(model.uuid4().hex),
             'provenance_domain': provenance_domain,
-            'usability_domain': dict_workflow['annotation'],
-            'extension_domain': {},
+            'usability_domain': usability_domain,
+            'extension_domain': galaxy_extension,
             'description_domain': {
-                'keywords': dict_workflow['tags'],
+                'keywords': keywords,
                 'xref': [],
                 'platform': ['Galaxy'],
                 'pipeline_steps': pipeline_steps,
             },
-            'execution_domain': {},
-            'parametric_domain': {},
+            'execution_domain': execution_domain,
+            'parametric_domain': parametric_domain,
             'io_domain': {
                 'input_subdomain': input_subdomain,
                 'output_subdomain': output_subdomain,
