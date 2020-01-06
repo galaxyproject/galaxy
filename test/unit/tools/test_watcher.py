@@ -4,15 +4,14 @@ from contextlib import contextmanager
 from os import path
 from shutil import rmtree
 
+import pytest
+
 from galaxy.tools.toolbox import watcher
 from galaxy.util import bunch
 
 
+@pytest.mark.skipif(not watcher.can_watch, reason="watchdog not available")
 def test_watcher():
-    if not watcher.can_watch:
-        from nose.plugins.skip import SkipTest
-        raise SkipTest()
-
     with __test_directory() as t:
         tool_path = path.join(t, "test.xml")
         toolbox = Toolbox()
@@ -32,23 +31,20 @@ def test_watcher():
         assert tool_watcher.observer is None
 
 
+@pytest.mark.skipif(not watcher.can_watch, reason="watchdog not available")
 def test_tool_conf_watcher():
-    if not watcher.can_watch:
-        from nose.plugins.skip import SkipTest
-        raise SkipTest()
-
     callback = CallbackRecorder()
     conf_watcher = watcher.get_tool_conf_watcher(callback.call)
     conf_watcher.start()
 
     with __test_directory() as t:
         tool_conf_path = path.join(t, "test_conf.xml")
-        with open(tool_conf_path, "w", 1) as t:
-            t.write("a")
+        with open(tool_conf_path, "w") as f:
+            f.write("a")
         conf_watcher.watch_file(tool_conf_path)
         time.sleep(2)
-        with open(tool_conf_path, 'wb', 0) as t:
-            t.write(b"b")
+        with open(tool_conf_path, "w") as f:
+            f.write("b")
         wait_for_reload(lambda: callback.called)
         conf_watcher.shutdown()
         assert conf_watcher.thread is None
