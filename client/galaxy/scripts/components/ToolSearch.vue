@@ -11,14 +11,15 @@
             autocomplete="off"
             type="text"
         />
-        <span
-            class="search-clear fa fa-times-circle"
+        <font-awesome-icon
+            class="search-clear"
+            v-if="showClear"
+            icon="times-circle"
             v-b-tooltip.hover
             title="clear search (esc)"
-            v-if="showClear"
             @click="clear"
-        ></span>
-        <span class="search-loading fa fa-spinner fa-spin" v-if="showSpinner"></span>
+        />
+        <font-awesome-icon class="search-loading" v-if="showSpinner" icon="spinner" spin />
     </div>
 </template>
 
@@ -27,12 +28,23 @@ import { VBTooltip } from "bootstrap-vue";
 import _ from "underscore";
 import axios from "axios";
 
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faTimesCircle } from "@fortawesome/free-solid-svg-icons";
+import { faSpinner } from "@fortawesome/free-solid-svg-icons";
+
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app"; // FIXME: may be we can move it to the ToolBox?
 /* global ga */
 
+library.add(faSpinner);
+library.add(faTimesCircle);
+
 export default {
     name: "ToolSearch",
+    components: {
+        FontAwesomeIcon
+    },
     directives: {
         "v-b-tooltip": VBTooltip
     },
