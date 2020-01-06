@@ -1373,7 +1373,7 @@ steps:
             summary = self._run_jobs(WORKFLOW_SIMPLE, test_data={"input1": "hello world"}, history_id=history_id)
             invocation_id = summary.invocation_id
             bco = self._get("invocations/%s/export_bco" % invocation_id).json()
-            self.assertEqual(bco['bco_spec_version'], 'https://w3id.org/biocompute/1.3.0/')
+            self.assertEqual(bco['spec_version'], 'https://w3id.org/biocompute/1.4.0/')
             self.assertEqual(bco['provenance_domain']['name'], "Simple Workflow")
 
     @skip_without_tool("__APPLY_RULES__")
