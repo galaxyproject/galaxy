@@ -101,6 +101,12 @@ UWSGI_OPTIONS = OrderedDict([
         'default': '/favicon.ico=static/favicon.ico',
         'type': 'str',
     }),
+    ('static-safe', {
+        'key': 'static-safe',
+        'desc': """Allow serving images out of `client`.  Most modern Galaxy interfaces bundle all of this, but some older pages still serve these via symlink, requiring this rule.""",
+        'default': 'client/galaxy/images',
+        'type': 'str',
+    }),
     ('master', {
         'desc': """Enable the master process manager. Disabled by default for maximum compatibility with CTRL+C, but should be enabled for use with --daemon and/or production deployments.""",
         'default': False,

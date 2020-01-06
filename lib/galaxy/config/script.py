@@ -37,6 +37,7 @@ DEFAULT_DB_CONN = 'sqlite:///./database/universe.sqlite?isolation_level=IMMEDIAT
 SAMPLES_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), 'sample'))
 GALAXY_CONFIG_TEMPLATE_FILE = os.path.join(SAMPLES_PATH, 'galaxy.yml.sample')
 STATIC_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'web', 'framework', 'static'))
+CLIENT_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir, 'client'))
 
 MSG_CONFIG_SUMMARY = """
 For help on configuring Galaxy, consult the documentation at: \n {}
@@ -55,6 +56,7 @@ GALAXY_CONFIG_SUBSTITUTIONS = {
     '  static-map: /static/style=static/style/blue': '  static-map: /static=${static_path}/style/blue',
     '  static-map: /static=static': '  static-map: /static=${static_path}',
     '  static-map: /favicon.ico=static/favicon.ico': '  static-map: /static=${static_path}/favicon.ico',
+    '  static-safe: client/galaxy/images': '  ${client_path}/galaxy/images',
     '  virtualenv: .venv': '  #venv: .venv   # not used when running installed',
     '  pythonpath: lib': '  #pythonpath: lib  # not used  when running installed',
     '  #config_dir: false': '  config_dir: ${config_dir}',
@@ -147,6 +149,7 @@ def _handle_galaxy_yml(args, config_dir, data_dir):
         uwsgi_transport=uwsgi_transport,
         config_dir=config_dir,
         data_dir=data_dir,
+        client_dir=CLIENT_PATH,
         static_path=STATIC_PATH,
         database_connection=args.db_conn,
     )
