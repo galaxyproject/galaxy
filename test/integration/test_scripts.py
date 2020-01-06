@@ -184,7 +184,10 @@ class ScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
         config_dir = self.config_dir
         path = os.path.join(config_dir, "galaxy.yml")
         self._test_driver.temp_directories.extend([config_dir])
+        config = self._raw_config
+        # Update config dict with database_connection, which might be set through env variables
+        config['database_connection'] = self._app.config.database_connection
         with open(path, "w") as f:
-            yaml.dump({"galaxy": self._raw_config}, f)
+            yaml.dump({"galaxy": config}, f)
 
         return path
