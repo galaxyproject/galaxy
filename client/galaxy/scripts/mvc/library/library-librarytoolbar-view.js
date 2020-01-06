@@ -143,9 +143,9 @@ var LibraryToolbarView = Backbone.View.extend({
     templateToolBar: function() {
         return _.template(
             `<div class="library_style_container">
-                <div class="d-flex align-items-center mb-2">
-                    <a class="btn btn-secondary mr-1" data-toggle="tooltip" data-placement="top" title="Go to first page" href="#">
-                        <span class="fa fa-home"/>
+                <div class="d-flex align-items-center mb-2 library-toolbar">
+                    <a class="btn btn-secondary mr-1" data-toggle="tooltip" data-placement="top" title="Go to first page" href="#" role="button">
+                        <span class="fa fa-home fa-lg"/>
                     </a>
                     <% if(admin_user === true) { %>
                         <button data-toggle="tooltip" data-placement="top" title="Create new library" id="create_new_library_btn" class="mr-1 btn btn-secondary" type="button">
@@ -168,7 +168,6 @@ var LibraryToolbarView = Backbone.View.extend({
                         </form>
                     </div>
                     <div id="libraries_element" />
-
                     <div class="d-flex justify-content-center align-items-center library-paginator mt-2 mb-2">
                         <ul class="pagination paginator mr-1" />
                         <input style="width: initial;" min="0" max="999" class="page_size form-control" type="number" value="<%- library_page_size %>" />

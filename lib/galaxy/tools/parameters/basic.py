@@ -897,12 +897,14 @@ class SelectToolParameter(ToolParameter):
                         return []
                     else:
                         raise ValueError("parameter '%s': no option was selected for non optional parameter" % (self.name))
+            if is_runtime_value(value):
+                return None
             if value not in legal_values and require_legal_value:
                 raise ValueError("parameter '%s': an invalid option (%r) was selected (valid options: %s)" % (self.name, value, ",".join(legal_values)))
             return value
 
     def to_param_dict_string(self, value, other_values={}):
-        if value is None:
+        if value in (None, []):
             return "None"
         if isinstance(value, list):
             if not self.multiple:

@@ -47,7 +47,7 @@ const DataOutputView = Backbone.View.extend({
         let label = output.label || output.name;
         const node = this.nodeView.node;
 
-        const isInput = output.extensions.indexOf("input") >= 0 || output.extensions.indexOf("input_collection") >= 0;
+        const isInput = output.extensions.indexOf("input") >= 0;
         if (!isInput) {
             label = `${label} (${output.force_datatype || output.extensions.join(", ")})`;
         }

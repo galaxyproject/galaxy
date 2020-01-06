@@ -1,3 +1,5 @@
+import { datasetCommandsHtml, markdownGeneralHelpHtml } from "components/Markdown/help";
+
 const reportHelp = `
 <div>
 <h3>Overview</h3>
@@ -6,16 +8,10 @@ const reportHelp = `
     This document Markdown document will be used to generate a report
     for invocations of this workflow. This document should be Markdown
     with embedded command for extracting and displaying parts of the workflow,
-    its invocation metadata, its inputs and outputs, etc.. For an overview
-    of standard Markdown visit the <a href="https://commonmark.org/help/tutorial/">commonmark.org
-    tutorial</a>.
+    its invocation metadata, its inputs and outputs, etc..
 </p>
 
-<p>
-    The Galaxy extensions to Markdown are represented as code blocks, these blocks start
-    with the line <tt>\`\`\`galaxy</tt> and end with the line <tt>\`\`\`</tt> and have a
-    command with arguments that reference parts of the workflow in the middle.
-</p>
+${markdownGeneralHelpHtml}
 
 <h3>Workflow Commands</h3>
 
@@ -78,18 +74,7 @@ history_dataset_collection_display(output="Merged Bam")
 \`\`\`
 </pre>
 
-<dt><tt>history_dataset_display</tt></dt>
-<dd>Embed a dataset description in the resulting report.</dd>
-<dt><tt>history_dataset_collection_display</tt></dt>
-<dd>Embed a dataset collection description in the resulting report.</dd>
-<dt><tt>history_dataset_as_image</tt></dt>
-<dd>Embed a dataset as an image in the resulting report - the dataset should be an image datatype.</dd>
-<dt><tt>history_dataset_peek</tt></dt>
-<dd>Embed Galaxy's metadata attribute 'peek' into the resulting report - this is datatype dependent metadata but usually this is a few lines from the start of a file.</dd>
-<dt><tt>history_dataset_info</tt></dt>
-<dd>Embed Galaxy's metadata attribute 'info' into the resulting report - this is datatype dependent metadata but usually this is the program output that generated the dataset.</dd>
-</dl>
-</div>
+${datasetCommandsHtml}
 `;
 
 import $ from "jquery";

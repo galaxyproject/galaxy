@@ -100,7 +100,7 @@
             </div>
         </div>
         <div class="unified-panel-body workflow-report-body" v-show="mode == 'report'">
-            <markdown-editor ref="report-editor" initial-markdown="" :onupdate="onReportUpdate" />
+            <markdown-editor ref="report-editor" initial-markdown="" :onupdate="onReportUpdate" :toolbar="false" />
         </div>
     </div>
 </template>

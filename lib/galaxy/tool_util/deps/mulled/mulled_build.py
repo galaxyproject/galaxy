@@ -11,6 +11,7 @@ Build a mulled image with:
 from __future__ import print_function
 
 import json
+import logging
 import os
 import shutil
 import string
@@ -25,12 +26,18 @@ except ImportError:
     yaml = None
 
 from galaxy.tool_util.deps import commands, installable
-from galaxy.util import safe_makedirs
+from galaxy.tool_util.deps.conda_util import best_search_result
+from galaxy.tool_util.deps.docker_util import command_list as docker_command_list
+from galaxy.util import (
+    safe_makedirs,
+    unicodify,
+)
 from ._cli import arg_parser
 from .util import (
     build_target,
     conda_build_target_str,
     create_repository,
+    get_file_from_recipe_url,
     PrintProgress,
     quay_repository,
     v1_image_name,
@@ -38,7 +45,10 @@ from .util import (
 )
 from ..conda_compat import MetaData
 
+log = logging.getLogger(__name__)
+
 DIRNAME = os.path.dirname(__file__)
+DEFAULT_EXTENDED_BASE_IMAGE = "bioconda/extended-base-image:latest"
 DEFAULT_CHANNELS = ["conda-forge", "bioconda"]
 DEFAULT_REPOSITORY_TEMPLATE = "quay.io/${namespace}/${image}"
 DEFAULT_BINDS = ["build/dist:/usr/local/"]
@@ -133,6 +143,23 @@ def conda_versions(pkg_name, file_name):
     return ret
 
 
+def get_conda_hits_for_targets(targets, conda_context):
+    search_results = (best_search_result(t, conda_context, platform='linux-64')[0] for t in targets)
+    return [r for r in search_results if r]
+
+
+def any_target_requires_extended_base(targets):
+    hits = get_conda_hits_for_targets(targets, CondaInDockerContext())
+    for hit in hits:
+        try:
+            meta_content = unicodify(get_file_from_recipe_url(hit['url']).extractfile('info/about.json').read())
+            if json.loads(meta_content).get('extra', {}).get('container', {}).get('extended-base', False):
+                return True
+        except Exception:
+            log.warning("Could not load metadata.yaml for '%s', version '%s'", hit['name'], hit['version'], exc_info=True)
+    return False
+
+
 class BuildExistsException(Exception):
     """Exception indicating mull_targets is skipping an existing build.
 
@@ -150,6 +177,11 @@ def mull_targets(
     oauth_token=None, hash_func="v2", singularity=False,
     singularity_image_dir="singularity_import",
 ):
+    if DEST_BASE_IMAGE:
+        dest_base_image = DEST_BASE_IMAGE
+    else:
+        dest_base_image = DEFAULT_EXTENDED_BASE_IMAGE if not any_target_requires_extended_base(targets) else DEST_BASE_IMAGE
+
     targets = list(targets)
     if involucro_context is None:
         involucro_context = InvolucroContext()
@@ -200,8 +232,8 @@ def mull_targets(
         '-set', "BINDS='%s'" % bind_str,
     ]
 
-    if DEST_BASE_IMAGE:
-        involucro_args.extend(["-set", "DEST_BASE_IMAGE='%s'" % DEST_BASE_IMAGE])
+    if dest_base_image:
+        involucro_args.extend(["-set", "DEST_BASE_IMAGE='%s'" % dest_base_image])
     if CONDA_IMAGE:
         involucro_args.extend(["-set", "CONDA_IMAGE='%s'" % CONDA_IMAGE])
     if verbose:
@@ -252,6 +284,21 @@ def mull_targets(
 def context_from_args(args):
     verbose = "2" if not args.verbose else "3"
     return InvolucroContext(involucro_bin=args.involucro_path, verbose=verbose)
+
+
+class CondaInDockerContext(object):
+
+    @property
+    def conda_exec(self):
+        conda_image = CONDA_IMAGE or 'continuumio/miniconda3:latest'
+        return docker_command_list('run', [conda_image, 'conda'])
+
+    @property
+    def _override_channels_args(self):
+        override_channels_args = ['--override-channels']
+        for channel in DEFAULT_CHANNELS:
+            override_channels_args.extend(["--channel", channel])
+        return override_channels_args
 
 
 class InvolucroContext(installable.InstallableContext):

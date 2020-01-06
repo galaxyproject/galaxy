@@ -493,7 +493,7 @@ var FolderListView = Backbone.View.extend({
             </ol>
 
             <!-- FOLDER CONTENT -->
-            <table data-library-id="<%- parent_library_id  %>" class="grid table table-hover table-sm">
+            <table data-library-id="<%- parent_library_id  %>" class="grid table table-hover table-sm folder-container">
                 <thead>
                     <th class="button_heading"></th>
                     <th class="mid" style="width: 20px;"

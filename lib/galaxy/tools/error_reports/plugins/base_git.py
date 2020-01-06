@@ -45,21 +45,27 @@ class BaseGitPlugin(ErrorPlugin):
     def _determine_ts_url(self, tool):
         if not tool.tool_shed or self.git_default_repo_only:
             return None
-        if tool.tool_shed not in self.ts_urls:
-            ts_url_request = requests.get('http://' + str(tool.tool_shed))
-            self.ts_urls[tool.tool_shed] = ts_url_request.url
-        return self.ts_urls[tool.tool_shed]
+        try:
+            if tool.tool_shed not in self.ts_urls:
+                ts_url_request = requests.get('http://' + str(tool.tool_shed))
+                self.ts_urls[tool.tool_shed] = ts_url_request.url
+            return self.ts_urls[tool.tool_shed]
+        except Exception:
+            return None
 
     def _get_gitrepo_from_ts(self, job, ts_url):
         if not ts_url or self.git_default_repo_only:
             return None
-        if job.tool_id not in self.ts_repo_cache:
-            ts_repo_request_data = requests.get(ts_url + "/api/repositories?tool_ids=" + str(job.tool_id)).json()
+        try:
+            if job.tool_id not in self.ts_repo_cache:
+                ts_repo_request_data = requests.get(ts_url + "/api/repositories?tool_ids=" + str(job.tool_id)).json()
 
-            for changeset, repoinfo in ts_repo_request_data.items():
-                if isinstance(repoinfo, dict):
-                    self.ts_repo_cache[job.tool_id] = repoinfo.get('repository', {}).get('remote_repository_url', None)
-        return self.ts_repo_cache[job.tool_id]
+                for changeset, repoinfo in ts_repo_request_data.items():
+                    if isinstance(repoinfo, dict):
+                        self.ts_repo_cache[job.tool_id] = repoinfo.get('repository', {}).get('remote_repository_url', None)
+            return self.ts_repo_cache[job.tool_id]
+        except Exception:
+            return None
 
     def _get_issue_cache_key(self, job, ts_repourl):
         return job.tool_id if ts_repourl else "default"

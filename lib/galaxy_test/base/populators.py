@@ -906,6 +906,9 @@ class BaseWorkflowPopulator(object):
         invocation_response = workflow_populator.invoke_workflow_raw(workflow_id, workflow_request)
         api_asserts.assert_status_code_is(invocation_response, expected_response)
         invocation = invocation_response.json()
+        if expected_response != 200:
+            assert not assert_ok
+            return invocation
         invocation_id = invocation.get('id')
         if invocation_id:
             # Wait for workflow to become fully scheduled and then for all jobs

@@ -41,6 +41,7 @@ class ConfigSerializer(base.ModelSerializer):
             # TODO: this is available from user data, remove
             'is_admin_user'                     : lambda *a, **c: False,
             'brand'                             : _required_attribute,
+            'display_galaxy_brand'              : _required_attribute,
             # TODO: this doesn't seem right
             'logo_url'                          : lambda item, key, **context: self.url_for(item.get(key, '/')),
             'logo_src'                          : lambda item, key, **context: self.url_for('/static/favicon.png'),
@@ -72,6 +73,7 @@ class ConfigSerializer(base.ModelSerializer):
             'allow_user_dataset_purge'          : _defaults_to(False),  # schema default is True
             'ga_code'                           : _required_attribute,
             'enable_unique_workflow_defaults'   : _required_attribute,
+            'enable_beta_markdown_export'       : _required_attribute,
             'has_user_tool_filters'             : _defaults_to(False),
             # TODO: is there no 'correct' way to get an api url? controller='api', action='tools' is a hack
             # at any rate: the following works with path_prefix but is still brittle
@@ -95,6 +97,7 @@ class ConfigSerializer(base.ModelSerializer):
             'show_welcome_with_login'           : _defaults_to(True),  # schema default is False
             'cookie_domain'                     : _required_attribute,
             'python'                            : _defaults_to((sys.version_info.major, sys.version_info.minor)),
+            'select_type_workflow_threshold'    : _required_attribute,
         }
 
 

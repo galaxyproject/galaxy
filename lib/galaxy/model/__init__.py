@@ -228,6 +228,7 @@ class WorkerProcess(UsesCreateAndUpdateTime):
     def __init__(self, server_name, hostname):
         self.server_name = server_name
         self.hostname = hostname
+        self.pid = None
 
 
 def cached_id(galaxy_model_object):
@@ -658,7 +659,7 @@ class TaskMetricNumeric(BaseJobMetric, RepresentById):
 
 class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
     dict_collection_visible_keys = ['id', 'state', 'exit_code', 'update_time', 'create_time', 'galaxy_version']
-    dict_element_visible_keys = ['id', 'state', 'exit_code', 'update_time', 'create_time', 'galaxy_version']
+    dict_element_visible_keys = ['id', 'state', 'exit_code', 'update_time', 'create_time', 'galaxy_version', 'command_version']
 
     """
     A job represents a request to run a tool given input datasets, tool
@@ -1131,6 +1132,12 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
             config_value = default
         return config_value
 
+    @property
+    def command_version(self):
+        # TODO: make actual database property and track properly - we should be recording this on the job and not on the datasets
+        for dataset_assoc in self.output_datasets:
+            return dataset_assoc.dataset.tool_version
+
 
 class Task(JobLike, RepresentById):
     """
@@ -1389,7 +1396,7 @@ class ImplicitCollectionJobsJobAssociation(RepresentById):
 
 
 class PostJobAction(RepresentById):
-    def __init__(self, action_type, workflow_step, output_name=None, action_arguments=None):
+    def __init__(self, action_type, workflow_step=None, output_name=None, action_arguments=None):
         self.action_type = action_type
         self.output_name = output_name
         self.action_arguments = action_arguments
@@ -4658,6 +4665,15 @@ class WorkflowStep(RepresentById):
     def tool_uuid(self):
         return self.dynamic_tool and self.dynamic_tool.uuid
 
+    @property
+    def input_default_value(self):
+        tool_inputs = self.tool_inputs
+        tool_state = tool_inputs
+        default_value = tool_state.get("default")
+        if default_value:
+            default_value = json.loads(default_value)["value"]
+        return default_value
+
     def get_input(self, input_name):
         for step_input in self.inputs:
             if step_input.name == input_name:
@@ -5115,6 +5131,8 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
                             if output_step_type in ['data_input', 'data_collection_input']:
                                 src = "hda" if output_step_type == 'data_input' else 'hdca'
                                 for job_input in job.input_datasets:
+                                    if not job_input.dataset:
+                                        continue
                                     if job_input.name == step_input.input_name:
                                         inputs[str(step_input.output_step.order_index)] = {
                                             "id": job_input.dataset_id, "src": src,
@@ -5150,6 +5168,8 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
             output_values = {}
             for output_param in self.output_values:
                 label = output_param.workflow_output.label
+                if not label:
+                    continue
                 output_values[label] = output_param.value
             rval['output_values'] = output_values
 
@@ -5753,7 +5773,8 @@ class CloudAuthz(RepresentById):
 
 
 class Page(Dictifiable, RepresentById):
-    dict_element_visible_keys = ['id', 'title', 'latest_revision_id', 'slug', 'published', 'importable', 'deleted']
+    # username needed for slug generation
+    dict_element_visible_keys = ['id', 'title', 'latest_revision_id', 'slug', 'published', 'importable', 'deleted', 'username']
 
     def __init__(self):
         self.id = None
@@ -5773,14 +5794,20 @@ class Page(Dictifiable, RepresentById):
         rval['revision_ids'] = rev
         return rval
 
+    @property
+    def username(self):
+        return self.user.username
+
 
 class PageRevision(Dictifiable, RepresentById):
-    dict_element_visible_keys = ['id', 'page_id', 'title', 'content']
+    DEFAULT_CONTENT_FORMAT = 'html'
+    dict_element_visible_keys = ['id', 'page_id', 'title', 'content', 'content_format']
 
     def __init__(self):
         self.user = None
         self.title = None
         self.content = None
+        self.content_format = PageRevision.DEFAULT_CONTENT_FORMAT
 
     def to_dict(self, view='element'):
         rval = super(PageRevision, self).to_dict(view=view)

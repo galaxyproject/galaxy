@@ -43,7 +43,7 @@ from galaxy.webapps.base.controller import (
 )
 from galaxy.workflow.extract import extract_workflow
 from galaxy.workflow.modules import module_factory
-from galaxy.workflow.reports import generate_report_json
+from galaxy.workflow.reports import generate_report
 from galaxy.workflow.run import invoke, queue_invoke
 from galaxy.workflow.run_request import build_workflow_run_configs
 
@@ -551,6 +551,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                          annotation defaults to existing annotation
             * menu_entry optional boolean marking if the workflow should appear in the user's menu,
                          if not present, workflow menu entries are not modified
+            * from_tool_form True iff encoded state coming in is encoded for the tool form.
 
         :rtype:     dict
         :returns:   serialized version of the workflow
@@ -560,7 +561,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         if workflow_dict:
             raw_workflow_description = self.__normalize_workflow(trans, workflow_dict)
             workflow_dict = raw_workflow_description.as_dict
-            new_workflow_name = workflow_dict.get('name') or workflow_dict.get('name')
+            new_workflow_name = workflow_dict.get('name')
             if new_workflow_name and new_workflow_name != stored_workflow.name:
                 sanitized_name = sanitize_html(new_workflow_name)
                 workflow = stored_workflow.latest_workflow.copy()
@@ -583,7 +584,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 else:
                     # remove if in list
                     entries = {x.stored_workflow_id: x for x in trans.get_user().stored_workflow_menu_entries}
-                    if (trans.security.decode_id(id) in entries):
+                    if trans.security.decode_id(id) in entries:
                         trans.get_user().stored_workflow_menu_entries.remove(entries[trans.security.decode_id(id)])
             # set tags
             if 'tags' in workflow_dict:
@@ -613,11 +614,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         """
         inputs = payload.get('inputs', {})
         trans.workflow_building_mode = workflow_building_modes.ENABLED
-        module = module_factory.from_dict(trans, payload)
+        module = module_factory.from_dict(trans, payload, from_tool_form=True)
         if 'tool_state' not in payload:
             module_state = {}
             populate_state(trans, module.get_inputs(), inputs, module_state, check=False)
-            module.recover_state(module_state)
+            module.recover_state(module_state, from_tool_form=True)
         return {
             'label'             : inputs.get('__label', ''),
             'annotation'        : inputs.get('__annotation', ''),
@@ -719,10 +720,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         # Fill in missing tool state for hand built so the workflow can run, default of this
         # should become True at some point in the future I imagine.
         fill_defaults = util.string_as_bool(payload.get("fill_defaults", False))
-
+        from_tool_form = payload.get("from_tool_form", False)
         return {
             'exact_tools': exact_tools,
             'fill_defaults': fill_defaults,
+            'from_tool_form': from_tool_form,
         }
 
     def __normalize_workflow(self, trans, as_dict):
@@ -924,15 +926,35 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         Get JSON summarizing invocation for reporting.
         """
+        kwd["format"] = "json"
+        return self._generate_report(trans, invocation_id, **kwd)
+
+    @expose_api_raw
+    def show_invocation_report_pdf(self, trans, invocation_id, **kwd):
+        """
+        GET /api/workflows/{workflow_id}/invocations/{invocation_id}/report.pdf
+        GET /api/invocations/{invocation_id}/report.pdf
+
+        Get JSON summarizing invocation for reporting.
+        """
+        kwd["format"] = "pdf"
+        trans.response.set_content_type("application/pdf")
+        return self._generate_report(trans, invocation_id, **kwd)
+
+    def _generate_report(self, trans, invocation_id, **kwd):
         decoded_workflow_invocation_id = self.decode_id(invocation_id)
         workflow_invocation = self.workflow_manager.get_invocation(trans, decoded_workflow_invocation_id)
         generator_plugin_type = kwd.get("generator_plugin_type")
         runtime_report_config_json = kwd.get("runtime_report_config_json")
         invocation_markdown = kwd.get("invocation_markdown", None)
+        target_format = kwd.get("format", "json")
         if invocation_markdown:
             runtime_report_config_json = {"markdown": invocation_markdown}
-        return generate_report_json(
-            trans, workflow_invocation, runtime_report_config_json=runtime_report_config_json, plugin_type=generator_plugin_type
+        return generate_report(
+            trans, workflow_invocation,
+            runtime_report_config_json=runtime_report_config_json,
+            plugin_type=generator_plugin_type,
+            target_format=target_format,
         )
 
     @expose_api

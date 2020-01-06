@@ -4,9 +4,11 @@ from __future__ import print_function
 import collections
 import hashlib
 import logging
+import re
 import sys
+import tarfile
 import threading
-import time
+from io import BytesIO
 
 import packaging.version
 import requests
@@ -14,6 +16,8 @@ import requests
 log = logging.getLogger(__name__)
 
 QUAY_REPOSITORY_API_ENDPOINT = 'https://quay.io/api/v1/repository'
+BUILD_NUMBER_REGEX = re.compile(r'\d+$')
+PARSED_TAG = collections.namedtuple('ParsedTag', 'tag version build_string build_number')
 
 
 def create_repository(namespace, repo_name, oauth_token):
@@ -38,7 +42,7 @@ def quay_versions(namespace, pkg_name):
     if 'tags' not in data:
         raise Exception("Unexpected response from quay.io - no tags description found [%s]" % data)
 
-    return [tag for tag in data['tags'] if tag != 'latest']
+    return [tag for tag in data['tags'].keys() if tag != 'latest']
 
 
 def quay_repository(namespace, pkg_name):
@@ -107,18 +111,36 @@ def mulled_tags_for(namespace, image, tag_prefix=None, resolution_cache=None):
 
 
 def split_tag(tag):
-    """Split mulled image name into conda version and conda build."""
-    version = tag.split('--', 1)[0]
-    build = tag.split('--', 1)[1]
-    return version, build
+    """Split mulled image tag into conda version and conda build."""
+    return tag.rsplit('--', 1)
+
+
+def parse_tag(tag):
+    """Decompose tag of mulled images into version, build string and build number."""
+    version = tag
+    build_string = "-1"
+    if '--' in tag:
+        version, build_string = tag.rsplit('--', 1)
+    elif '-' in tag:
+        # Should be mulled multi-container image tag
+        version, build_string = tag.rsplit('-', 1)
+    build_number = int(BUILD_NUMBER_REGEX.search(tag).group(0))
+    return PARSED_TAG(tag=tag,
+                      version=packaging.version.parse(version),
+                      build_string=packaging.version.parse(build_string),
+                      build_number=build_number)
 
 
 def version_sorted(elements):
     """Sort iterable based on loose description of "version" from newest to oldest."""
-    return sorted(elements, key=packaging.version.parse, reverse=True)
+    elements = (parse_tag(tag) for tag in elements)
+    elements = sorted(elements, key=lambda tag: tag.build_string, reverse=True)
+    elements = sorted(elements, key=lambda tag: tag.build_number, reverse=True)
+    elements = sorted(elements, key=lambda tag: tag.version)
+    return [e.tag for e in elements]
 
 
-Target = collections.namedtuple("Target", ["package_name", "version", "build"])
+Target = collections.namedtuple("Target", ["package_name", "version", "build", "package"])
 
 
 def build_target(package_name, version=None, build=None, tag=None):
@@ -128,7 +150,7 @@ def build_target(package_name, version=None, build=None, tag=None):
         assert build is None
         version, build = split_tag(tag)
 
-    return Target(package_name, version, build)
+    return Target(package_name, version, build, package_name)
 
 
 def conda_build_target_str(target):
@@ -252,6 +274,12 @@ def v2_image_name(targets, image_build=None, name_override=None):
         return "mulled-v2-%s%s" % (package_hash.hexdigest(), suffix)
 
 
+def get_file_from_recipe_url(url):
+    """Downloads file at url and returns tarball"""
+    r = requests.get(url)
+    return tarfile.open(mode="r:bz2", fileobj=BytesIO(r.content))
+
+
 def split_container_name(name):
     """
     Takes a container name (e.g. samtools:1.7--1) and returns a list (e.g. ['samtools', '1.7', '1'])
@@ -264,13 +292,13 @@ def split_container_name(name):
 class PrintProgress(object):
     def __init__(self):
         self.thread = threading.Thread(target=self.progress)
-        self.stop = False
+        self.stop = threading.Event()
 
     def progress(self):
-        while not self.stop:
+        while not self.stop.is_set():
             print(".", end="")
             sys.stdout.flush()
-            time.sleep(60)
+            self.stop.wait(60)
         print("")
 
     def __enter__(self):
@@ -278,7 +306,7 @@ class PrintProgress(object):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.stop = True
+        self.stop.set()
         self.thread.join()
 
 

@@ -10,10 +10,10 @@ import { gridSearchStore } from "./gridSearchStore";
 import { tagStore } from "./tagStore";
 import { jobMetricsStore } from "./jobMetricsStore";
 import { invocationStore } from "./invocationStore";
+import { historyStore } from "./historyStore";
 import { userStore } from "./userStore";
 import { configStore } from "./configStore";
 import { workflowStore } from "./workflowStore";
-import { historyStore } from "./historyStore";
 
 Vue.use(Vuex);
 
@@ -28,13 +28,13 @@ export function createStore() {
         ],
         modules: {
             gridSearch: gridSearchStore,
+            histories: historyStore,
             tags: tagStore,
             jobMetrics: jobMetricsStore,
             invocations: invocationStore,
             user: userStore,
             config: configStore,
-            workflows: workflowStore,
-            history: historyStore
+            workflows: workflowStore
         }
     });
 }

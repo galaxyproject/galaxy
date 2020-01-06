@@ -30,8 +30,8 @@ uwsgi:
   buffer-size: 16384
 
   # Number of web server (worker) processes to fork after the
-  # application has loaded. If this is set to greater than 1, thunder-
-  # lock likely should be enabled below.
+  # application has loaded. If this is set to greater than 1,
+  # thunder-lock likely should be enabled below.
   processes: 1
 
   # Number of threads for each web server process.
@@ -70,8 +70,8 @@ uwsgi:
   # URL prefix. Cannot be used together with 'module:' above.
   #mount: /galaxy=galaxy.webapps.galaxy.buildapp:uwsgi_app()
 
-  # Make uWSGI rewrite PATH_INFO and SCRIPT_NAME according to mount-
-  # points. Set this to true if a URL prefix is used.
+  # Make uWSGI rewrite PATH_INFO and SCRIPT_NAME according to
+  # mount-points. Set this to true if a URL prefix is used.
   manage-script-name: false
 
   # It is usually a good idea to set this to ``true`` if processes is
@@ -95,6 +95,13 @@ uwsgi:
 
   # Ensure application threads will run if `threads` is unset.
   enable-threads: true
+
+  # uWSGI default umask. On some systems uWSGI has a default umask of
+  # 000, for Galaxy a somewhat safer default is chosen. If Galaxy
+  # submits jobs as real user then all users needs to be able to read
+  # the files, i.e. the the umask needs to be '022' or the Galaxy users
+  # need to be in the same group as the Galaxy system user
+  umask: 027
 
 galaxy:
 
@@ -217,9 +224,9 @@ galaxy:
   # Tool config file for tools installed from the Galaxy Tool Shed. Must
   # be writable by Galaxy and generally should not be edited by hand. In
   # older Galaxy releases, this file was part of the tool_config_file
-  # option. It is still possible to specify this file (and other shed-
-  # enabled tool config files) in tool_config_file, but in the standard
-  # case of a single shed-enabled tool config, this option is
+  # option. It is still possible to specify this file (and other
+  # shed-enabled tool config files) in tool_config_file, but in the
+  # standard case of a single shed-enabled tool config, this option is
   # preferable. This file will be created automatically upon tool
   # installation, whereas Galaxy will fail to start if any files in
   # tool_config_file cannot be read.
@@ -290,8 +297,8 @@ galaxy:
   # Pass debug flag to conda commands.
   #conda_debug: false
 
-  # conda channels to enable by default (https://conda.io/docs/user-
-  # guide/tasks/manage-channels.html)
+  # conda channels to enable by default
+  # (https://conda.io/docs/user-guide/tasks/manage-channels.html)
   #conda_ensure_channels: iuc,conda-forge,bioconda,defaults
 
   # Use locally-built conda packages.
@@ -505,8 +512,8 @@ galaxy:
 
   # Visualizations config directory: where to look for individual
   # visualization plugins.  The path is relative to the Galaxy root dir.
-  # To use an absolute path begin the path with '/'.  This is a comma-
-  # separated list.
+  # To use an absolute path begin the path with '/'.  This is a
+  # comma-separated list.
   #visualization_plugins_directory: config/plugins/visualizations
 
   # Interactive environment plugins root directory: where to look for
@@ -588,6 +595,19 @@ galaxy:
   # store this information.
   #citation_cache_lock_dir: citations/locks
 
+  # Mulled resolution caching. Mulled resolution uses external APIs of
+  # quay.io, these requests are caching using this and the following
+  # parameters
+  #mulled_resolution_cache_type: file
+
+  # Data directory used by beaker for caching mulled resolution
+  # requests.
+  #mulled_resolution_cache_data_dir: mulled/data
+
+  # Lock directory used by beaker for caching mulled resolution
+  # requests.
+  #mulled_resolution_cache_lock_dir: mulled/locks
+
   # Configuration file for the object store If this is set and exists,
   # it overrides any other objectstore settings.
   # The value of this option will be resolved with respect to
@@ -638,8 +658,8 @@ galaxy:
   # Email address to use in the 'From' field when sending emails for
   # account activations, workflow step notifications and password
   # resets. We recommend using string in the following format: Galaxy
-  # Project <galaxy-no-reply@example.com> If not configured, '<galaxy-
-  # no-reply@HOSTNAME>' will be used.
+  # Project <galaxy-no-reply@example.com> If not configured,
+  # '<galaxy-no-reply@HOSTNAME>' will be used.
   #email_from: null
 
   # URL of the support resource for the galaxy instance.  Used in
@@ -733,8 +753,11 @@ galaxy:
   # 'info' (the default), 'warning', 'error', 'done'.
   #message_box_class: info
 
-  # Append "/{brand}" to the "Galaxy" text in the masthead.
+  # Append "{brand}" text to the masthead.
   #brand: null
+
+  # Display the "Galaxy" text in the masthead.
+  #display_galaxy_brand: true
 
   # Format string used when showing date and time information. The
   # string may contain: - the directives used by Python time.strftime()
@@ -877,10 +900,10 @@ galaxy:
   # upstream.
   #apache_xsendfile: false
 
-  # The same download handling can be done by nginx using X-Accel-
-  # Redirect.  This should be set to the path defined in the nginx
-  # config as an internal redirect with access to Galaxy's data files
-  # (see documentation linked above).
+  # The same download handling can be done by nginx using
+  # X-Accel-Redirect.  This should be set to the path defined in the
+  # nginx config as an internal redirect with access to Galaxy's data
+  # files (see documentation linked above).
   #nginx_x_accel_redirect_base: null
 
   # If using compression in the upstream proxy server, use this option
@@ -894,8 +917,8 @@ galaxy:
   # prevent a class of attack called clickjacking
   # (https://www.owasp.org/index.php/Clickjacking).  If you configure a
   # proxy in front of Galaxy - please ensure this header remains intact
-  # to protect your users.  Uncomment and leave empty to not set the `X
-  # -Frame-Options` header.
+  # to protect your users.  Uncomment and leave empty to not set the
+  # `X-Frame-Options` header.
   #x_frame_options: SAMEORIGIN
 
   # nginx can also handle file uploads (user-to-Galaxy) via
@@ -937,8 +960,9 @@ galaxy:
   #dynamic_proxy_manage: true
 
   # As of 16.04 Galaxy supports multiple proxy types. The original
-  # NodeJS implementation, alongside a new Golang single-binary-no-
-  # dependencies version. Valid values are (node, golang)
+  # NodeJS implementation, alongside a new Golang
+  # single-binary-no-dependencies version. Valid values are (node,
+  # golang)
   #dynamic_proxy: node
 
   # The NodeJS dynamic proxy can use an SQLite database or a JSON file
@@ -1056,9 +1080,9 @@ galaxy:
 
   # Return a Access-Control-Allow-Origin response header that matches
   # the Origin header of the request if that Origin hostname matches one
-  # of the strings or regular expressions listed here. This is a comma-
-  # separated list of hostname strings or regular expressions beginning
-  # and ending with /. E.g.
+  # of the strings or regular expressions listed here. This is a
+  # comma-separated list of hostname strings or regular expressions
+  # beginning and ending with /. E.g.
   # mysite.com,google.com,usegalaxy.org,/^[\w\.]*example\.com/ See:
   # https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
   #allowed_origin_hostnames: null
@@ -1093,8 +1117,9 @@ galaxy:
   # responsible for preparing/submitting and collecting/finishing jobs,
   # and which can cause job errors if not shut down cleanly. If using
   # supervisord, consider also increasing the value of `stopwaitsecs`.
-  # If using job handler mules, consider also setting the `mule-reload-
-  # mercy` uWSGI option. See the Galaxy Admin Documentation for more.
+  # If using job handler mules, consider also setting the
+  # `mule-reload-mercy` uWSGI option. See the Galaxy Admin Documentation
+  # for more.
   #monitor_thread_join_timeout: 30
 
   # Write thread status periodically to 'heartbeat.log',  (careful, uses
@@ -1163,8 +1188,8 @@ galaxy:
 
   # Add an option to the library upload form which allows authorized
   # non-administrators to upload a directory of files.  The configured
-  # directory must contain sub-directories named the same as the non-
-  # admin user's Galaxy login ( email ).  The non-admin user is
+  # directory must contain sub-directories named the same as the
+  # non-admin user's Galaxy login ( email ).  The non-admin user is
   # restricted to uploading files or sub-directories of files contained
   # in their directory.
   #user_library_import_dir: null
@@ -1353,8 +1378,8 @@ galaxy:
   # debugging).
   #allow_user_impersonation: false
 
-  # When using LDAP for authentication, allow administrators to pre-
-  # populate users using an additional form on 'Create new user'
+  # When using LDAP for authentication, allow administrators to
+  # pre-populate users using an additional form on 'Create new user'
   #show_user_prepopulate_form: false
 
   # Allow users to remove their datasets from disk immediately
@@ -1395,8 +1420,8 @@ galaxy:
   # space, to prevent users making requests to services which the
   # administrator did not intend to expose. Previously, you could
   # request any network service that Galaxy might have had access to,
-  # even if the user could not normally access it. It should be a comma-
-  # separated list of IP addresses or IP address/mask, e.g.
+  # even if the user could not normally access it. It should be a
+  # comma-separated list of IP addresses or IP address/mask, e.g.
   # 10.10.10.10,10.0.1.0/24,fd00::/8
   #fetch_url_whitelist: null
 
@@ -1715,39 +1740,37 @@ galaxy:
   #cleanup_job: always
 
   # When running DRMAA jobs as the Galaxy user
-  # (https://docs.galaxyproject.org/en/master/admin/cluster.html
-  # #submitting-jobs-as-the-real-user) this script is used to run the
-  # job script Galaxy generates for a tool execution.
+  # (https://docs.galaxyproject.org/en/master/admin/cluster.html#submitting-jobs-as-the-real-user)
+  # this script is used to run the job script Galaxy generates for a
+  # tool execution.
   # Example value 'sudo -E scripts/drmaa_external_runner.py
   # --assign_all_groups'
   #drmaa_external_runjob_script: null
 
   # When running DRMAA jobs as the Galaxy user
-  # (https://docs.galaxyproject.org/en/master/admin/cluster.html
-  # #submitting-jobs-as-the-real-user) this script is used to kill such
-  # jobs by Galaxy (e.g. if the user cancels the job).
+  # (https://docs.galaxyproject.org/en/master/admin/cluster.html#submitting-jobs-as-the-real-user)
+  # this script is used to kill such jobs by Galaxy (e.g. if the user
+  # cancels the job).
   # Example value 'sudo -E scripts/drmaa_external_killer.py'
   #drmaa_external_killjob_script: null
 
   # When running DRMAA jobs as the Galaxy user
-  # (https://docs.galaxyproject.org/en/master/admin/cluster.html
-  # #submitting-jobs-as-the-real-user) this script is used transfer
-  # permissions back and forth between the Galaxy user and the user that
-  # is running the job.
+  # (https://docs.galaxyproject.org/en/master/admin/cluster.html#submitting-jobs-as-the-real-user)
+  # this script is used transfer permissions back and forth between the
+  # Galaxy user and the user that is running the job.
   # Example value 'sudo -E scripts/external_chown_script.py'
   #external_chown_script: null
 
   # When running DRMAA jobs as the Galaxy user
-  # (https://docs.galaxyproject.org/en/master/admin/cluster.html
-  # #submitting-jobs-as-the-real-user) Galaxy can extract the user name
-  # from the email address (actually the local-part before the @) or the
-  # username which are both stored in the Galaxy data base. The latter
-  # option is particularly useful for installations that get the
-  # authentication from LDAP. Also, Galaxy can accept the name of a
-  # common system user (eg. galaxy_worker) who can run every job being
-  # submitted. This user should not be the same user running the galaxy
-  # system. Possible values are user_email (default), username or
-  # <common_system_user>
+  # (https://docs.galaxyproject.org/en/master/admin/cluster.html#submitting-jobs-as-the-real-user)
+  # Galaxy can extract the user name from the email address (actually
+  # the local-part before the @) or the username which are both stored
+  # in the Galaxy data base. The latter option is particularly useful
+  # for installations that get the authentication from LDAP. Also,
+  # Galaxy can accept the name of a common system user (eg.
+  # galaxy_worker) who can run every job being submitted. This user
+  # should not be the same user running the galaxy system. Possible
+  # values are user_email (default), username or <common_system_user>
   #real_system_username: user_email
 
   # File to source to set up the environment when running jobs.  By
@@ -1761,6 +1784,49 @@ galaxy:
   # jobs as the actual user, to remove the need to configure each user's
   # environment individually.
   #environment_setup_file: null
+
+  # Enable export of Galaxy Markdown documents (pages and workflow
+  # reports) to PDF. Requires manual installation and setup of
+  # weasyprint (latest version available for Python 2.7 is 0.42).
+  #enable_beta_markdown_export: false
+
+  # CSS file to apply to all Markdown exports to PDF - currently used by
+  # WeasyPrint during rendering an HTML export of the document to PDF.
+  #markdown_export_css: markdown_export.css
+
+  # CSS file to apply to "Galaxy Page" exports to PDF. Generally prefer
+  # markdown_export_css, but this is here for deployments that would
+  # like to tailor different kinds of exports.
+  #markdown_export_css_pages: markdown_export_pages.css
+
+  # CSS file to apply to invocation report exports to PDF. Generally
+  # prefer  markdown_export_css, but this is here for deployments that
+  # would like to tailor different kinds of exports.
+  #markdown_export_css_invocation_reports: markdown_export_invocation_reports.css
+
+  # Prologue Markdown/HTML to apply to markdown exports to PDF. Allowing
+  # branded headers.
+  #markdown_export_prologue: ''
+
+  # Prologue Markdown/HTML to apply to markdown exports to PDF. Allowing
+  # branded footers.
+  #markdown_export_epilogue: ''
+
+  # Alternative to markdown_export_prologue that applies just to page
+  # exports.
+  #markdown_export_prologue_pages: ''
+
+  # Alternative to markdown_export_prologue that applies just to
+  # invocation report exports.
+  #markdown_export_prologue_invocation_reports: ''
+
+  # Alternative to markdown_export_epilogue that applies just to page
+  # exports.
+  #markdown_export_epilogue_pages: ''
+
+  # Alternative to markdown_export_epilogue that applies just to
+  # invocation report exports.
+  #markdown_export_epilogue_invocation_reports: ''
 
   # Optional file containing job resource data entry fields definition.
   # These fields will be presented to users in the tool forms and allow
@@ -1806,34 +1872,34 @@ galaxy:
   # if running many handlers.
   #cache_user_job_count: false
 
-  # Define toolbox filters (https://galaxyproject.org/user-defined-
-  # toolbox-filters/) that admins may use to restrict the tools to
-  # display.
+  # Define toolbox filters
+  # (https://galaxyproject.org/user-defined-toolbox-filters/) that
+  # admins may use to restrict the tools to display.
   #tool_filters: null
 
-  # Define toolbox filters (https://galaxyproject.org/user-defined-
-  # toolbox-filters/) that admins may use to restrict the tool labels to
-  # display.
+  # Define toolbox filters
+  # (https://galaxyproject.org/user-defined-toolbox-filters/) that
+  # admins may use to restrict the tool labels to display.
   #tool_label_filters: null
 
-  # Define toolbox filters (https://galaxyproject.org/user-defined-
-  # toolbox-filters/) that admins may use to restrict the tool sections
-  # to display.
+  # Define toolbox filters
+  # (https://galaxyproject.org/user-defined-toolbox-filters/) that
+  # admins may use to restrict the tool sections to display.
   #tool_section_filters: null
 
-  # Define toolbox filters (https://galaxyproject.org/user-defined-
-  # toolbox-filters/) that users may use to restrict the tools to
-  # display.
+  # Define toolbox filters
+  # (https://galaxyproject.org/user-defined-toolbox-filters/) that users
+  # may use to restrict the tools to display.
   #user_tool_filters: examples:restrict_upload_to_admins, examples:restrict_encode
 
-  # Define toolbox filters (https://galaxyproject.org/user-defined-
-  # toolbox-filters/) that users may use to restrict the tool sections
-  # to display.
+  # Define toolbox filters
+  # (https://galaxyproject.org/user-defined-toolbox-filters/) that users
+  # may use to restrict the tool sections to display.
   #user_tool_section_filters: examples:restrict_text
 
-  # Define toolbox filters (https://galaxyproject.org/user-defined-
-  # toolbox-filters/) that users may use to restrict the tool labels to
-  # display.
+  # Define toolbox filters
+  # (https://galaxyproject.org/user-defined-toolbox-filters/) that users
+  # may use to restrict the tool labels to display.
   #user_tool_label_filters: examples:restrict_upload_to_admins, examples:restrict_encode
 
   # The base module(s) that are searched for modules for toolbox
@@ -1877,4 +1943,12 @@ galaxy:
   # subdomain to the other. This root domain will be written in the
   # unique session cookie shared by all subdomains.
   #cookie_domain: null
+
+  # Due to performance considerations (select2 fields are pretty
+  # 'expensive' in terms of memory usage) Galaxy uses the regular select
+  # fields for non-dataset selectors in the workflow run form. use 0 in
+  # order to always use select2 fields, use -1 (default) in order to
+  # always use the regular select fields, use any other positive number
+  # as threshold (above threshold: regular select fields will be used)
+  #select_type_workflow_threshold: -1
 

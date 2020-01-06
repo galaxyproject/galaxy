@@ -5,7 +5,7 @@ import { rethrowSimple } from "utils/simple-error";
 /** Workflow data request helper **/
 export class Services {
     constructor(options = {}) {
-        this.root = options.root;
+        this.root = options.root || getGalaxyInstance().root;
     }
 
     async copyWorkflow(workflow) {

@@ -411,7 +411,8 @@ var OutputTerminalView = BaseOutputTerminalView.extend({
         return new Terminals.OutputTerminal({
             element: this.el,
             datatypes: type,
-            force_datatype: output.force_datatype
+            force_datatype: output.force_datatype,
+            optional: output.optional
         });
     }
 });
@@ -427,7 +428,8 @@ var OutputCollectionTerminalView = BaseOutputTerminalView.extend({
             collection_type: collection_type,
             collection_type_source: collection_type_source,
             datatypes: output.extensions,
-            force_datatype: output.force_datatype
+            force_datatype: output.force_datatype,
+            optional: output.optional
         });
     }
 });
@@ -436,9 +438,10 @@ var OutputParameterTerminalView = BaseOutputTerminalView.extend({
     terminalMappingClass: Terminals.TerminalMapping,
     terminalMappingViewClass: TerminalMappingView,
     terminalForOutput: function(output) {
-        return new Terminals.OutputCollectionTerminal({
+        return new Terminals.OutputParameterTerminal({
             element: this.el,
-            type: output.type
+            type: output.type,
+            optional: output.optional
         });
     }
 });

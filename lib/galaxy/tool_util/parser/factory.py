@@ -10,7 +10,7 @@ from galaxy.tool_util.loader import load_tool_with_refereces
 from .cwl import CwlToolSource
 from .interface import InputSource
 from .xml import XmlInputSource, XmlToolSource
-from .yaml import YamlToolSource
+from .yaml import YamlInputSource, YamlToolSource
 from ..fetcher import ToolLocationFetcher
 
 log = logging.getLogger(__name__)
@@ -75,14 +75,17 @@ def get_tool_source_from_representation(tool_format, tool_representation):
 
 
 def get_input_source(content):
-    """Wrap an XML element in a XmlInputSource if needed.
+    """Wrap dicts or XML elements as InputSource if needed.
 
     If the supplied content is already an InputSource object,
     it is simply returned. This allow Galaxy to uniformly
     consume using the tool input source interface.
     """
     if not isinstance(content, InputSource):
-        content = XmlInputSource(content)
+        if isinstance(content, dict):
+            content = YamlInputSource(content)
+        else:
+            content = XmlInputSource(content)
     return content
 
 

@@ -18,7 +18,7 @@ function logoutClick() {
         if (galaxy.user) {
             galaxy.user.clearSessionStorage();
         }
-        window.top.location.href = `${galaxy.root}login`;
+        window.top.location.href = galaxy.root;
     });
 }
 

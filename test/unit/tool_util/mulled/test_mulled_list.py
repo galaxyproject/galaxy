@@ -2,7 +2,7 @@ import shutil
 import tempfile
 
 from galaxy.tool_util.deps.mulled.mulled_list import get_missing_containers, get_missing_envs, get_singularity_containers
-from ..test_conda_resolution import external_dependency_management
+from ..util import external_dependency_management
 
 # def test_get_quay_containers():
 #     lst = get_quay_containers()

@@ -21,6 +21,13 @@ from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_NESTED_RUNTIME_PARAMETER,
     WORKFLOW_NESTED_SIMPLE,
     WORKFLOW_ONE_STEP_DEFAULT,
+    WORKFLOW_OPTIONAL_FALSE_INPUT_COLLECTION,
+    WORKFLOW_OPTIONAL_FALSE_INPUT_DATA,
+    WORKFLOW_OPTIONAL_TRUE_INPUT_COLLECTION,
+    WORKFLOW_OPTIONAL_TRUE_INPUT_DATA,
+    WORKFLOW_PARAMETER_INPUT_INTEGER_DEFAULT,
+    WORKFLOW_PARAMETER_INPUT_INTEGER_OPTIONAL,
+    WORKFLOW_PARAMETER_INPUT_INTEGER_REQUIRED,
     WORKFLOW_RENAME_ON_INPUT,
     WORKFLOW_RUNTIME_PARAMETER_AFTER_PAUSE,
     WORKFLOW_WITH_CUSTOM_REPORT_1,
@@ -33,7 +40,7 @@ from galaxy_test.base.workflow_fixtures import (
 from ._framework import ApiTestCase
 
 
-NESTED_WORKFLOW_AUTO_LABELS = """
+NESTED_WORKFLOW_AUTO_LABELS_LEGACY_SYNTAX = """
 class: GalaxyWorkflow
 inputs:
   outer_input: data
@@ -72,6 +79,44 @@ steps:
       queries:
         - input2:
             $link: nested_workflow#1:out_file1
+"""
+
+NESTED_WORKFLOW_AUTO_LABELS_MODERN_SYNTAX = """
+class: GalaxyWorkflow
+inputs:
+  outer_input: data
+outputs:
+  outer_output:
+    outputSource: second_cat/out_file1
+steps:
+  first_cat:
+    tool_id: cat1
+    in:
+      input1: outer_input
+  nested_workflow:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        - id: inner_input
+      outputs:
+        - outputSource: 1/out_file1
+      steps:
+        random:
+          tool_id: random_lines1
+          state:
+            num_lines: 1
+            input:
+              $link: inner_input
+            seed_source:
+              seed_source_selector: set_seed
+              seed: asdf
+    in:
+      inner_input: first_cat/out_file1
+  second_cat:
+    tool_id: cat1
+    in:
+      input1: nested_workflow/1:out_file1
+      queries_0|input2: nested_workflow/1:out_file1
 """
 
 
@@ -493,8 +538,14 @@ test_data:
         uploaded_workflow_id = self.workflow_populator.simple_workflow("test_for_export")
         downloaded_workflow = self._download_workflow(uploaded_workflow_id)
         assert downloaded_workflow["name"] == "test_for_export"
-        assert len(downloaded_workflow["steps"]) == 3
-        first_input = downloaded_workflow["steps"]["0"]["inputs"][0]
+        steps = downloaded_workflow["steps"]
+        assert len(steps) == 3
+        assert "0" in steps
+        first_step = steps["0"]
+        self._assert_has_keys(first_step, "inputs", "outputs")
+        inputs = first_step["inputs"]
+        assert len(inputs) > 0, first_step
+        first_input = inputs[0]
         assert first_input["name"] == "WorkflowInput1"
         assert first_input["description"] == "input1 description"
         self._assert_has_keys(downloaded_workflow, "a_galaxy_workflow", "format-version", "annotation", "uuid", "steps")
@@ -1131,19 +1182,23 @@ test_data:
             assert len([x for x in content.split("\n") if x]) == 2
 
     def test_run_subworkflow_auto_labels(self):
-        history_id = self.dataset_populator.new_history()
-        test_data = """
-outer_input:
-  value: 1.bed
-  type: File
-"""
-        job_summary = self._run_jobs(NESTED_WORKFLOW_AUTO_LABELS, test_data=test_data, history_id=history_id)
-        assert len(job_summary.jobs) == 4, "4 jobs expected, got %d jobs" % len(job_summary.jobs)
+        def run_test(workflow_text):
+            with self.dataset_populator.test_history() as history_id:
+                test_data = """
+        outer_input:
+          value: 1.bed
+          type: File
+        """
+                job_summary = self._run_jobs(workflow_text, test_data=test_data, history_id=history_id)
+                assert len(job_summary.jobs) == 4, "4 jobs expected, got %d jobs" % len(job_summary.jobs)
 
-        content = self.dataset_populator.get_history_dataset_content(history_id)
-        self.assertEqual(
-            "chrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\nchrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\n",
-            content)
+                content = self.dataset_populator.get_history_dataset_content(history_id)
+                self.assertEqual(
+                    "chrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\nchrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\n",
+                    content)
+
+        for workflow_text in [NESTED_WORKFLOW_AUTO_LABELS_LEGACY_SYNTAX, NESTED_WORKFLOW_AUTO_LABELS_MODERN_SYNTAX]:
+            run_test(workflow_text)
 
     @skip_without_tool("cat1")
     @skip_without_tool("collection_paired_test")
@@ -2128,7 +2183,62 @@ steps:
             self.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
             self._assert_history_job_count(history_id, 4)
 
-    def test_run_with_validated_parameter_connection_valid(self):
+    def test_run_with_optional_data_specified_to_multi_data(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs(WORKFLOW_OPTIONAL_TRUE_INPUT_DATA, test_data="""
+input1:
+  value: 1.bed
+  type: File
+""", history_id=history_id, wait=True, assert_ok=True)
+            content = self.dataset_populator.get_history_dataset_content(history_id)
+            assert "CCDS989.1_cds_0_0_chr1_147962193_r" in content
+
+    def test_run_with_optional_data_unspecified_to_multi_data(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs(WORKFLOW_OPTIONAL_TRUE_INPUT_DATA, test_data={}, history_id=history_id, wait=True, assert_ok=True)
+            content = self.dataset_populator.get_history_dataset_content(history_id)
+            assert "No input selected" in content
+
+    def test_run_with_non_optional_data_unspecified_fails_invocation(self):
+        with self.dataset_populator.test_history() as history_id:
+            error = self._run_jobs(WORKFLOW_OPTIONAL_FALSE_INPUT_DATA, test_data={}, history_id=history_id, wait=False, assert_ok=False, expected_response=400)
+            self._assert_failed_on_non_optional_input(error, "input1")
+
+    def test_run_with_optional_collection_specified(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs(WORKFLOW_OPTIONAL_TRUE_INPUT_COLLECTION, test_data="""
+input1:
+  type: paired
+  name: the_dataset_pair
+  elements:
+    - identifier: forward
+      value: 1.fastq
+      type: File
+    - identifier: reverse
+      value: 1.fastq
+      type: File
+""", history_id=history_id, wait=True, assert_ok=True)
+            content = self.dataset_populator.get_history_dataset_content(history_id)
+            assert "GAATTGATCAGGACATAGGACAACTGTAGGCACCAT" in content
+
+    def test_run_with_optional_collection_unspecified(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs(WORKFLOW_OPTIONAL_TRUE_INPUT_COLLECTION, test_data={}, history_id=history_id, wait=True, assert_ok=True)
+            content = self.dataset_populator.get_history_dataset_content(history_id)
+            assert "No input specified." in content
+
+    def test_run_with_non_optional_collection_unspecified_fails_invocation(self):
+        with self.dataset_populator.test_history() as history_id:
+            error = self._run_jobs(WORKFLOW_OPTIONAL_FALSE_INPUT_COLLECTION, test_data={}, history_id=history_id, wait=False, assert_ok=False, expected_response=400)
+            self._assert_failed_on_non_optional_input(error, "input1")
+
+    def _assert_failed_on_non_optional_input(self, error, input_name):
+        assert "err_msg" in error
+        err_msg = error["err_msg"]
+        assert input_name in err_msg
+        assert "is not optional and no input" in err_msg
+
+    def test_run_with_validated_parameter_connection_optional(self):
         with self.dataset_populator.test_history() as history_id:
             run_summary = self._run_jobs("""
 class: GalaxyWorkflow
@@ -2149,6 +2259,48 @@ text_input:
             self.wait_for_invocation_and_jobs(history_id, run_summary.workflow_id, run_summary.invocation_id)
             jobs = self._history_jobs(history_id)
             assert len(jobs) == 1
+
+    def test_run_with_int_parameter(self):
+        with self.dataset_populator.test_history() as history_id:
+            failed = False
+            try:
+                self._run_jobs(WORKFLOW_PARAMETER_INPUT_INTEGER_REQUIRED, test_data="""
+data_input:
+  value: 1.bed
+  type: File
+""", history_id=history_id, wait=True, assert_ok=True)
+            except AssertionError as e:
+                assert '(int_input) is not optional' in str(e)
+                failed = True
+            assert failed
+            self._run_jobs(WORKFLOW_PARAMETER_INPUT_INTEGER_REQUIRED, test_data="""
+data_input:
+  value: 1.bed
+  type: File
+int_input:
+  value: 1
+  type: raw
+""", history_id=history_id, wait=True, assert_ok=True)
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            content = self.dataset_populator.get_history_dataset_content(history_id)
+            assert len(content.splitlines()) == 1, content
+
+            self._run_jobs(WORKFLOW_PARAMETER_INPUT_INTEGER_OPTIONAL, test_data="""
+data_input:
+  value: 1.bed
+  type: File
+""", history_id=history_id, wait=True, assert_ok=True)
+
+    def test_run_with_validated_parameter_connection_default_values(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs(WORKFLOW_PARAMETER_INPUT_INTEGER_DEFAULT, test_data="""
+data_input:
+  value: 1.bed
+  type: File
+""", history_id=history_id, wait=True, assert_ok=True)
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            content = self.dataset_populator.get_history_dataset_content(history_id)
+            assert len(content.splitlines()) == 3, content
 
     def test_run_with_validated_parameter_connection_invalid(self):
         with self.dataset_populator.test_history() as history_id:
@@ -3415,7 +3567,7 @@ steps:
     state:
       r2:
       - text: ""
-""", history_id=history_id, wait=False, expected_response=400)
+""", history_id=history_id, wait=False, expected_response=400, assert_ok=False)
 
     def _run_validation_workflow_with_substitions(self, substitions):
         workflow = self.workflow_populator.load_workflow_from_resource("test_workflow_validation_1")
