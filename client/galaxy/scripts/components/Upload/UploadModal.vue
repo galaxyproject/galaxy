@@ -13,16 +13,16 @@
             <h4 class="title" tabindex="0">{{ title }}</h4>
         </template>
         <b-tabs v-if="historyAvailable">
-            <b-tab title="Regular" id="regular">
+            <b-tab title="Regular" id="regular" button-id="tab-title-link-regular">
                 <default :app="this" :lazyLoadMax="50" />
             </b-tab>
-            <b-tab title="Composite" id="composite">
+            <b-tab title="Composite" id="composite" button-id="tab-title-link-composite">
                 <composite :app="this" />
             </b-tab>
-            <b-tab title="Collection" id="collection">
+            <b-tab title="Collection" id="collection" button-id="tab-title-link-collection">
                 <collection :app="this" />
             </b-tab>
-            <b-tab title="Rule-based" id="rule-based">
+            <b-tab title="Rule-based" id="rule-based" button-id="tab-title-link-rule-based">
                 <rules-input :app="this" />
             </b-tab>
         </b-tabs>
