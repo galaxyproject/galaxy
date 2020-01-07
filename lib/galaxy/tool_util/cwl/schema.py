@@ -3,6 +3,7 @@ import os
 from collections import namedtuple
 
 from .cwltool_deps import (
+    default_loader,
     ensure_cwltool_available,
     load_tool,
     LoadingContext,
@@ -23,7 +24,6 @@ class SchemaLoader(object):
     @property
     def raw_document_loader(self):
         ensure_cwltool_available()
-        from cwltool.load_tool import default_loader
         return default_loader(None)
 
     def loading_context(self):
