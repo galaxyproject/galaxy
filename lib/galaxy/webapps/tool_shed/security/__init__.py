@@ -34,6 +34,9 @@ class RBACAgent(object):
         """
         return [x for x in [self.permitted_actions.get(action_string) for action_string in permitted_action_strings] if x is not None]
 
+    def create_user_role(self, user, app):
+        raise Exception("Unimplemented Method")
+
     def create_private_user_role(self, user):
         raise Exception("Unimplemented Method")
 
@@ -127,6 +130,9 @@ class CommunityRBACAgent(RBACAgent):
         # Add user to role
         self.associate_components(role=role, user=user)
         return role
+
+    def create_user_role(self, user, app):
+        self.get_private_user_role(user, auto_create=True)
 
     def get_item_actions(self, action, item):
         # item must be one of: Dataset, Library, LibraryFolder, LibraryDataset, LibraryDatasetDatasetAssociation
