@@ -984,6 +984,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         # may want to extend this to have more reviewers.
         reviewing_users = [stored_workflow.user]
         workflow_encoded_id = trans.security.encode_id(stored_workflow.id)
+        history_encoded_id = trans.security.encode_id(history.id)
         dict_workflow = json.loads(self.workflow_dict(trans, workflow_encoded_id))
 
         # h_contents = self.history_contents_manager.contained(history)
@@ -1050,34 +1051,73 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             if tag.user_tname not in keywords:
                 keywords.append(tag.user_tname)
 
-        pipeline_steps, software_prerequisites = [], []
-        for step in range(len(dict_workflow['steps'].keys())):
-            current_tool = dict_workflow['steps'][str(step)]
-            output_list = []
-            input_list = []
-            pipeline_step = {
-                'step_number': step,
-                'name': current_tool['name'],
-                'description': current_tool['annotation'],
-                'version': current_tool['tool_version'],
-                #  'prerequisite': prerequisite,
-                'input_list': input_list,
-                'output_list': output_list
-            }
-            pipeline_steps.append(pipeline_step)
-            software_prerequisite = []
-            try:
-                software_prerequisite = {
-                    'name': current_tool['tool_shed_repository']['name'],
+        host = 'https://localhost:8080'
+        input_subdomain, output_subdomain, pipeline_steps, software_prerequisites = [], [], [], []
+        # Which `url_for` function option would generate this format below?
+        url_format = '{}/api/histories/{}/contents/{}'
+        for i, step in enumerate(workflow_invocation.steps):
+            current_tool = dict_workflow['steps'][str(i)]
+            if step.workflow_step.type == 'tool':
+                workflow_outputs_list , output_list, input_list = [], [], []
+                for wo in step.workflow_step.workflow_outputs:
+                    workflow_outputs_list.append(wo.output_name)
+                for job in step.jobs:
+                    for job_input in job.input_datasets:
+                        if hasattr(job_input.dataset, 'dataset_id'):
+                            inputobj = trans.security.encode_id(job_input.dataset.dataset_id)
+                            input_obj = {
+                                'filename': job_input.dataset.name,
+                                'uri': url_format.format(host, history_encoded_id, inputobj),
+                                'access_time': job_input.dataset.create_time.isoformat(),
+                            }
+                            input_list.append(input_obj)
+
+                    for job_output in job.output_datasets:
+                        if hasattr(job_output.dataset, 'dataset_id'):
+                            outobj = trans.security.encode_id(job_output.dataset.dataset_id)
+                            output_obj = {
+                                'filename': job_output.dataset.name,
+                                'uri': url_format.format(host, history_encoded_id, outobj),
+                                'access_time': job_output.dataset.create_time.isoformat(),
+                            }
+                            output_list.append(output_obj)
+
+                        if job_output.name in workflow_outputs_list:
+                            output = {
+                                'mediatype': job_output.dataset.extension,
+                                'uri': {
+                                    'filename': job_output.dataset.name,
+                                    'uri': url_format.format(host, history_encoded_id, outobj) ,
+                                    'access_time': job_output.dataset.create_time.isoformat(),
+                                }
+                            }
+                            output_subdomain.append(output)
+                pipeline_step = {
+                    'step_number': i,
+                    'name': current_tool['name'],
+                    'description': current_tool['annotation'],
                     'version': current_tool['tool_version'],
-                    'uri': {
-                        'uri': current_tool['content_id'],
-                        'access_time': current_tool['uuid']
-                    }
+                    #  'prerequisite': prerequisite,
+                    'input_list': input_list,
+                    'output_list': output_list
                 }
-            except Exception:
-                continue
-            software_prerequisites.append(software_prerequisite)
+                pipeline_steps.append(pipeline_step)
+                software_prerequisite = []
+                try:
+                    software_prerequisite = {
+                        'name': current_tool['tool_shed_repository']['name'],
+                        'version': current_tool['tool_version'],
+                        'uri': {
+                            'uri': current_tool['content_id'],
+                            'access_time': current_tool['uuid']
+                        }
+                    }
+                except Exception:
+                    continue
+                software_prerequisites.append(software_prerequisite)
+            # method to grab the workflow inputs? [WIP] TODO
+            if step.workflow_step.type != 'tool':
+                input_subdomain.append(step.workflow_step)
 
         usability_domain = []
         for a in stored_workflow.annotations:
