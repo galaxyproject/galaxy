@@ -21,6 +21,7 @@ from galaxy import (
 )
 from galaxy.managers import (
     histories,
+    history_contents,
     workflows
 )
 from galaxy.managers.jobs import fetch_job_states, invocation_job_source_iter
@@ -55,6 +56,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     def __init__(self, app):
         super(WorkflowsAPIController, self).__init__(app)
         self.history_manager = histories.HistoryManager(app)
+        self.history_contents_manager = history_contents.HistoryContentsManager(app)
         self.workflow_manager = workflows.WorkflowsManager(app)
         self.workflow_contents_manager = workflows.WorkflowContentsManager(app)
 
@@ -958,33 +960,12 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             target_format=target_format,
         )
 
-    def map_datasets(self, content, *parents):
-        """
-        Iterate over the datasets of a given collection, recursing into collections, and
-        calling fn on each dataset.
-        Uses the same kwargs as `contents` above.
-        Added here to access HDAs from HDCAs for BioCompute Object generaion.
-        """
-        returned = []
-        # lots of nesting going on within the nesting
-        collection = content.collection if hasattr(content, 'collection') else content
-        this_parents = (content, ) + parents
-        for element in collection.elements:
-            next_parents = (element, ) + this_parents
-            if element.is_collection:
-                returned.extend(self.map_datasets(element.child_collection, *next_parents))
-            else:
-                returned.append(element.dataset_instance)
-        return returned
-
     @expose_api
     def export_invocation_bco(self, trans, invocation_id, **kwd):
         '''
         GET /api/invocations/{invocations_id}/export_bco
         Return a BioCompute Object for the workflow invocation.
         '''
-        # added a 'host' for testing purposes. This shoule be the actual host in production
-        host = 'galaxy.aws.biochemistry.gwu.edu'
         decoded_workflow_invocation_id = self.decode_id(invocation_id)
         workflow_invocation = self.workflow_manager.get_invocation(trans, decoded_workflow_invocation_id)
         history = workflow_invocation.history
@@ -1005,17 +986,14 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         workflow_encoded_id = trans.security.encode_id(stored_workflow.id)
         dict_workflow = json.loads(self.workflow_dict(trans, workflow_encoded_id))
 
-        h_contents = []
-        for content in history.contents_iter(types=["dataset", "dataset_collection"]):
-            h_contents.extend(self.map_datasets(content)) if hasattr(content, 'collection') else h_contents.append(content)
-        h_contents = list(set(h_contents))
+        # h_contents = self.history_contents_manager.contained(history)
 
         # TODO add a keyword option/function to determine the spec_version used in BCO creation, and populate it accordingly
-        spec_version = 'https://w3id.org/biocompute/1.4.0/',
+        spec_version = 'https://w3id.org/biocompute/1.4.0/'
 
         # listing the versions of the workflow for 'version' and 'derived_from'
         versions = []
-        workflow_versions = self.workflow_manager.get_stored_accessible_workflow(trans, workflow_encoded_id, **kwd)
+        workflow_versions = self.workflow_manager.get_stored_accessible_workflow(trans, workflow_encoded_id)
         for i, w in enumerate(reversed(workflow_versions.workflows)):
             version = {
                 'version': i,
@@ -1058,7 +1036,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             'name': workflow.name,
             'version': current_version,
             'review': reviewers,
-            'derived_from': url_for('workflow', id=workflow_encoded_id, host=host),
+            'derived_from': url_for('workflow', id=workflow_encoded_id, qualified=True),
             'created': workflow_invocation.create_time.isoformat(),
             'modified': workflow_invocation.update_time.isoformat(),
             'contributors': contributors,
@@ -1130,8 +1108,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         output_subdomain = []  # TODO
 
         ret_dict = {
-            'bco_id': url_for('invocation_export_bco', invocation_id=invocation_id, host=host),
-            'bco_spec_version': spec_version,
+            'bco_id': url_for('invocation_export_bco', invocation_id=invocation_id, qualified=True),
+            'spec_version': spec_version,
             'etag': str(model.uuid4().hex),
             'provenance_domain': provenance_domain,
             'usability_domain': usability_domain,
