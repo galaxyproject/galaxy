@@ -150,10 +150,6 @@ class InstalledRepositoryGrid(grids.Grid):
                                               visible=False,
                                               filterable="standard"))
     global_actions = [
-        grids.GridAction(label="Update tool shed status",
-                         url_args=dict(controller='admin_toolshed',
-                                       action='update_tool_shed_status_for_installed_repository',
-                                       all_installed_repositories=True))
     ]
     operations = [grids.GridOperation(label="Update tool shed status",
                                       condition=(lambda item: not item.deleted),
