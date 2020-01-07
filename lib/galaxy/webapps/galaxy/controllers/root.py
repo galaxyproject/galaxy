@@ -87,7 +87,8 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
         # there is only one oidc provider, 3) auth_conf.xml has no authenticators
         if (trans.app.config.enable_oidc and
                 len(trans.app.config.oidc) == 1 and
-                len(trans.app.auth_manager.authenticators) == 0):
+                len(trans.app.auth_manager.authenticators) == 0
+                and not kwd.get('logout', False)):
 
             provider = trans.app.config.oidc[0]
             success, message, redirect_uri = trans.app.authnz_manager.authenticate(provider, trans)
