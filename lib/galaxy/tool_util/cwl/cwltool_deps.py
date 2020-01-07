@@ -5,6 +5,9 @@ Use this as the import interface for cwltool and just call
 functionality at runtime.
 """
 import re
+import warnings
+
+warnings.filterwarnings("ignore", message=r"[\n.]DEPRECATION: Python 2", module="cwltool")
 
 try:
     import requests
@@ -27,20 +30,29 @@ except ImportError:
     pathmapper = None
 
 try:
-    from cwltool.context import LoadingContext  # Introduced in cwltool 1.0.20180615183820
-    from cwltool.context import RuntimeContext
+    from cwltool.context import (
+        getdefault,
+        LoadingContext,
+        RuntimeContext,
+    )
+    from cwltool.job import relink_initialworkdir
+    from cwltool.stdfsaccess import StdFsAccess
 except ImportError:
+    getdefault = None
     LoadingContext = None
+    relink_initialworkdir = None
     RuntimeContext = None
+    StdFsAccess = None
 
 try:
     from cwltool import load_tool
+    from cwltool.load_tool import (
+        default_loader,
+        resolve_and_validate_document,
+    )
 except ImportError:
+    default_loader = None
     load_tool = None
-
-try:
-    from cwltool.load_tool import resolve_and_validate_document
-except ImportError:
     resolve_and_validate_document = None
 
 try:
@@ -66,7 +78,7 @@ except (ImportError, SyntaxError):
 
 needs_shell_quoting = re.compile(r"""(^$|[\s|&;()<>\'"$@])""").search
 
-# if set to true, file format checking is not performed.
+# if set to True, file format checking is not performed.
 beta_relaxed_fmt_check = True
 
 
@@ -79,8 +91,6 @@ def ensure_cwltool_available():
         message = "This feature requires cwltool and dependencies to be available, they are not."
         if main is None:
             message += " cwltool is not unavailable."
-        elif load_tool is None:
-            message += " cwltool.load_tool is unavailable - cwltool version is too old."
         elif resolve_and_validate_document is None:
             message += " cwltool.load_tool.resolve_and_validate_document is unavailable - cwltool version is too old."
         if requests is None:
@@ -93,15 +103,21 @@ def ensure_cwltool_available():
 
 
 __all__ = (
-    'main',
-    'ref_resolver',
+    'default_loader',
+    'ensure_cwltool_available',
+    'getdefault',
     'load_tool',
     'LoadingContext',
-    'workflow',
-    'process',
+    'main',
+    'needs_shell_quoting',
     'pathmapper',
-    'ensure_cwltool_available',
+    'process',
+    'ref_resolver',
+    'relink_initialworkdir',
+    'resolve_and_validate_document',
+    'RuntimeContext',
     'schema_salad',
     'shellescape',
-    'needs_shell_quoting',
+    'StdFsAccess',
+    'workflow',
 )

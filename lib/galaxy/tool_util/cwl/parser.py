@@ -22,9 +22,12 @@ from galaxy.util.bunch import Bunch
 from .cwltool_deps import (
     beta_relaxed_fmt_check,
     ensure_cwltool_available,
+    getdefault,
     pathmapper,
     process,
+    relink_initialworkdir,
     RuntimeContext,
+    StdFsAccess,
 )
 from .representation import (
     field_to_field_type,
@@ -474,8 +477,6 @@ class JobProxy(object):
                 del p["path"]
 
         runtime_context = RuntimeContext({})
-        from cwltool.stdfsaccess import StdFsAccess
-        from cwltool.context import getdefault
         make_fs_access = getdefault(runtime_context.make_fs_access, StdFsAccess)
         fs_access = make_fs_access(runtime_context.basedir)
         process.fill_in_defaults(self._tool_proxy._tool.tool["inputs"], self._input_dict, fs_access)
@@ -650,8 +651,7 @@ class JobProxy(object):
             # TODO: figure out what inplace_update should be.
             inplace_update = getattr(cwl_job, "inplace_update")
             process.stage_files(generate_mapper, stageFunc, ignore_writable=inplace_update, symlink=False)
-            from cwltool import job
-            job.relink_initialworkdir(generate_mapper, outdir, outdir, inplace_update=inplace_update)
+            relink_initialworkdir(generate_mapper, outdir, outdir, inplace_update=inplace_update)
         # else: expression tools do not have a path mapper.
 
     @staticmethod
