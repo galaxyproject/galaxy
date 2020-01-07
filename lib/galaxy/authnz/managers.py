@@ -104,6 +104,8 @@ class AuthnzManager(object):
                     self.oidc_backends_config[idp] = self._parse_custos_config(child)
                     self.oidc_backends_implementation[idp] = 'custos'
                     self.app.config.oidc.append(idp)
+                else:
+                    raise ParseError("Unknown provider specified")
             if len(self.oidc_backends_config) == 0:
                 raise ParseError("No valid provider configuration parsed.")
         except ImportError:
