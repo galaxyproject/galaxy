@@ -181,7 +181,7 @@ mapping:
 
       file_path:
         type: str
-        default: files
+        default: objects
         path_resolves_to: data_dir
         required: false
         desc: |
@@ -802,11 +802,12 @@ mapping:
 
       object_store_store_by:
         type: str
-        default: id
         required: false
         desc: |
           What Dataset attribute is used to reference files in an ObjectStore implementation,
-          default is 'id' but can also be set to 'uuid' for more de-centralized usage.
+          this can be 'uuid' or 'id'. The default will depend on how the object store is configured,
+          starting with 20.05 Galaxy will try to default to 'uuid' if it can be sure this
+          is a new Galaxy instance - but the default will be 'id' in many cases.
 
       smtp_server:
         type: str
