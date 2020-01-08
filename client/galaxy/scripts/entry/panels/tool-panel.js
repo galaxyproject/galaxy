@@ -9,7 +9,7 @@ import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
 import Buttons from "mvc/ui/ui-buttons";
 import Vue from "vue";
-import ToolBox from "../../components/ToolBox.vue";
+import ToolBox from "../../components/Panels/ToolBox.vue";
 import SidePanel from "../../components/Panels/SidePanel.vue";
 import { mountVueComponent } from "../../utils/mountVueComponent";
 

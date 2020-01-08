@@ -43,10 +43,10 @@
 </template>
 
 <script>
-import ToolSection from "./ToolSection";
-import ToolSearch from "./ToolSearch";
-import UploadButton from "./UploadButton";
-import FavoritesButton from "./FavoritesButton";
+import ToolSection from "components/ToolSection";
+import ToolSearch from "components/ToolSearch";
+import UploadButton from "components/UploadButton";
+import FavoritesButton from "components/FavoritesButton";
 import _ from "underscore";
 
 export default {
