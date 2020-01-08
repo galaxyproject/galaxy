@@ -45,7 +45,7 @@ pyuwsgi = "*"
 pysam = "==0.15.2"
 bdbag = "*"
 bleach = "*"
-cwltool = "==1.0.20180721142728"
+cwltool = "==1.0.20191225192155"
 "bz2file" = {version = "*", markers = "python_version < '3.3'"}
 ipaddress = {version = "*", markers = "python_version < '3.3'"}
 isa-rwval = "*"
