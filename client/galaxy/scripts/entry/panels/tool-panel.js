@@ -10,7 +10,7 @@ import { getAppRoot } from "onload";
 import Buttons from "mvc/ui/ui-buttons";
 import Vue from "vue";
 import ToolBox from "../../components/ToolBox.vue";
-import SidePanel from "../../components/SidePanel.vue";
+import SidePanel from "../../components/Panels/SidePanel.vue";
 import { mountVueComponent } from "../../utils/mountVueComponent";
 
 const ToolPanel = Backbone.View.extend({
