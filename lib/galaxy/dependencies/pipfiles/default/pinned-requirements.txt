@@ -18,7 +18,7 @@ azure-nspkg==3.0.2
 azure-storage-blob==1.3.1
 azure-storage-common==1.4.2
 azure-storage-nspkg==3.1.0
-babel==2.7.0
+babel==2.8.0
 bagit==1.7.0
 bcrypt==3.1.7
 bdbag==1.5.6
@@ -37,7 +37,7 @@ certifi==2019.11.28
 cffi==1.13.2
 chardet==3.0.4
 cheetah3==3.2.4
-cliff==2.16.0
+cliff==2.17.0
 cloudauthz==0.6.0
 cloudbridge==2.0.0
 cmd2==0.8.9
@@ -53,22 +53,21 @@ dictobj==0.4
 docopt==0.6.2
 docutils==0.15.2
 dogpile.cache==0.9.0
-ecdsa==0.14.1
+ecdsa==0.15
 enum34==1.1.6 ; python_version < '3.4'
 fabric3==1.14.post1
 funcsigs==1.0.2 ; python_version < '3.3'
 functools32==3.2.3.post2 ; python_version < '3.2'
-future==0.18.2
 futures==3.3.0 ; python_version == '2.6' or python_version == '2.7'
 galaxy-sequence-utils==1.1.3
 google-api-python-client==1.7.8
 google-auth-httplib2==0.0.3
-google-auth==1.7.1
+google-auth==1.10.0
 gxformat2==0.10.1
 h5py==2.10.0
-httplib2==0.14.0
+httplib2==0.15.0
 idna==2.8
-importlib-metadata==1.2.0 ; python_version < '3.8'
+importlib-metadata==1.3.0 ; python_version < '3.8'
 ipaddress==1.0.23 ; python_version < '3.3'
 isa-rwval==0.10.7
 iso8601==0.1.12
@@ -78,13 +77,13 @@ jsonpatch==1.24
 jsonpointer==2.0
 jsonschema==3.2.0
 keystoneauth1==3.18.0
-kombu==4.6.6
+kombu==4.6.7
 lockfile==0.12.2
 lxml==4.4.2
 mako==1.1.0
 markdown==3.1.1
 markupsafe==1.1.1
-mercurial==5.2
+mercurial==5.2.2
 mistune==0.8.4
 monotonic==1.5
 more-itertools==5.0.0
@@ -96,25 +95,25 @@ mypy-extensions==0.4.3
 netaddr==0.7.19
 netifaces==0.10.9
 networkx==1.11
-nodeenv==1.3.3
+nodeenv==1.3.4
 nose==1.3.7
-numpy==1.16.5
+numpy==1.16.6
 oauth2client==4.1.3
 oauthlib==3.1.0
 openstacksdk==0.17.0
 os-client-config==1.33.0
 os-service-types==1.7.0
-osc-lib==1.14.1
-oslo.config==6.12.0
+osc-lib==1.15.0
+oslo.config==7.0.0
 oslo.context==2.23.0
-oslo.i18n==3.25.0
-oslo.log==3.45.0
+oslo.i18n==3.25.1
+oslo.log==3.45.2
 oslo.serialization==2.29.2
-oslo.utils==3.42.0
-packaging==19.2
-paramiko==2.7.0
+oslo.utils==3.42.1
+packaging==20.0
+paramiko==2.7.1
 parsley==1.3
-paste==3.2.3
+paste==3.2.4
 pastedeploy==2.0.1
 pastescript==3.2.0
 pathlib2==2.3.2 ; python_version < '3.6'
@@ -133,16 +132,16 @@ pyjwt==1.7.1
 pykwalify==1.7.0
 pynacl==1.3.0
 pyopenssl==19.1.0
-pyparsing==2.4.5
+pyparsing==2.4.6
 pyperclip==1.7.0
-pyrsistent==0.15.6
+pyrsistent==0.15.7
 pysam==0.15.2
 pysftp==0.2.9
 python-cinderclient==4.0.0
 python-dateutil==2.8.1
 python-genomespaceclient==1.2.0
 python-glanceclient==2.12.0
-python-jose==3.0.1
+python-jose==3.1.0
 python-keystoneclient==3.17.0
 python-neutronclient==6.9.0
 python-novaclient==11.0.0
@@ -150,7 +149,7 @@ python-openid==2.2.5 ; python_version < '3.0'
 python-swiftclient==3.6.0
 pytz==2019.3
 pyuwsgi==2.0.18.post0
-pyyaml==5.2
+pyyaml==5.3
 rdflib-jsonld==0.4.0
 rdflib==4.2.2
 repoze.lru==0.7
@@ -172,8 +171,8 @@ simplejson==3.17.0
 six==1.11.0
 social-auth-core[openidconnect]==3.1.0+gx0
 sqlalchemy-migrate==0.13.0
-sqlalchemy-utils==0.35.0
-sqlalchemy==1.3.11
+sqlalchemy-utils==0.36.1
+sqlalchemy==1.3.12
 sqlparse==0.3.0
 stevedore==1.31.0
 subprocess32==3.5.4 ; python_version < '3.0'
@@ -184,11 +183,11 @@ typing-extensions==3.7.4.1
 typing==3.7.4.1 ; python_version < '3.5'
 tzlocal==2.0.0
 unicodecsv==0.14.1 ; python_version < '3.0'
-uritemplate==3.0.0
+uritemplate==3.0.1
 urllib3==1.25.7 ; python_version == '2.7'
 vine==1.3.0
 warlock==1.3.3
-wcwidth==0.1.7 ; sys_platform != 'win32'
+wcwidth==0.1.8 ; sys_platform != 'win32'
 webencodings==0.5.1
 webob==1.8.5
 whoosh==2.7.4
