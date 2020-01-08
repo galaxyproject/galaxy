@@ -47,7 +47,7 @@ def k8s_config_path():
 
 
 def skip_unless_fixed_port():
-    if os.environ.get("GALAXY_TEST_PORT"):
+    if os.environ.get("GALAXY_TEST_PORT_RANDOM") != "1":
         return _identity
 
     return skip("GALAXY_TEST_PORT must be set for this test.")
