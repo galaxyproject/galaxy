@@ -171,6 +171,9 @@ class BaseAppConfiguration(object):
     def _in_sample_dir(self, path):
         return os.path.join(self.sample_config_dir, path)
 
+    def _in_data_dir(self, path):
+        return os.path.join(self.data_dir, path)
+
     def _parse_config_file_options(self, defaults, listify_defaults, config_kwargs):
         for var, values in defaults.items():
             if config_kwargs.get(var) is not None:
@@ -539,7 +542,17 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.object_store = kwargs.get('object_store', 'disk')
         self.object_store_check_old_style = string_as_bool(kwargs.get('object_store_check_old_style', False))
         self.object_store_cache_path = self.resolve_path(kwargs.get("object_store_cache_path", os.path.join(self.data_dir, "object_store_cache")))
-
+        object_store_store_by = kwargs.get('object_store_store_by', None)
+        if object_store_store_by is None:
+            if not self.file_path_set:
+                if self.file_path.endswith('objects'):
+                    object_store_store_by = 'uuid'
+                else:
+                    object_store_store_by = 'id'
+            else:
+                object_store_store_by = 'id'
+        assert object_store_store_by in ['id', 'uuid'], "Invalid value for object_store_store_by [%s]" % object_store_store_by
+        self.object_store_store_by = object_store_store_by
         # Handle AWS-specific config options for backward compatibility
         if kwargs.get('aws_access_key') is not None:
             self.os_access_key = kwargs.get('aws_access_key')
@@ -760,6 +773,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             markdown_export_css=[self._in_config_dir('markdown_export.css')],
             markdown_export_css_pages=[self._in_config_dir('markdown_export_pages.css')],
             markdown_export_css_invocation_reports=[self._in_config_dir('markdown_export_invocation_reports.css')],
+            file_path=[self._in_data_dir('files'), self._in_data_dir('objects')],
         )
         listify_defaults = {
             'tool_data_table_config_path': [
