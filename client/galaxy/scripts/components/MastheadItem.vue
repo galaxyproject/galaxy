@@ -1,40 +1,41 @@
 <template>
     <b-nav-item v-if="!tab.menu"
-                :class="{ active: tab.id === activeTab(), }"
+                :class="classes"
+                :style="styles"
                 :active="!tab.disabled"
-                v-b-tooltip.hover.bottom :title="tab.tooltip"
-                @click="open(tab, $event)"
-                v-b-popover.manual.bottom="{id: tab.id, content: popoverNote, html: true}"
-                :style="{ visibility: tab.visible ? 'visible' : 'hidden',}"
                 :id="tab.id"
                 :href="tab.url"
                 :target="tab.target"
-                :link-classes="[ tab.icon && 'nav-icon', ]">
+                :link-classes="linkClasses"
+                v-b-tooltip.hover.bottom :title="tab.tooltip"
+                v-b-popover.manual.bottom="{id: tab.id, content: popoverNote, html: true}"
+                @click="open(tab, $event)">
 
         <template v-if="tab.icon">
-            <span :class="['fa', tab.icon, tab.toggle && 'toggle']"/>
-            <span v-if="tab.show_note" class="nav-note-port" :class="tab.note_cls">{{ tab.note }}</span>
+            <span :class="iconClasses"/>
+            <span v-if="tab.show_note" :class="['nav-note-port', tab.note_cls]">{{ tab.note }}</span>
         </template>
         <template v-else>
             {{ tab.title }}
         </template>
     </b-nav-item>
     <b-nav-item-dropdown v-else
-                         :class="{ active: tab.id === activeTab(), }"
+                         :class="classes"
+                         :style="styles"
                          :text="tab.title"
+                         :id="tab.id" href="#"
                          v-b-tooltip.hover.bottom :title="tab.tooltip"
-                         @show="open(tab, $event)"
                          v-b-popover.manual.bottom="{id: tab.id, content: popoverNote, html: true}"
-                         :style="{visibility: tab.visible ? 'visible' : 'hidden'}"
-                         :id="tab.id" href="#">
-        <template v-for="item in tab.menu">
+                         @show="open(tab, $event)">
+        <template v-for="(item, idx) in tab.menu">
             <b-dropdown-item :href="item.url"
+                             :key="`item-${idx}`"
                              :target="item.target"
                              @click="open(item, $event)"
             >
                 {{ item.title }}
             </b-dropdown-item>
-            <div v-if="item.divider" class="dropdown-divider" />
+            <div v-if="item.divider" class="dropdown-divider" :key="`divider-${idx}`" />
         </template>
     </b-nav-item-dropdown>
 </template>
@@ -67,6 +68,28 @@
         computed: {
             popoverNote() {
                 return `Please <a href="${this.appRoot}login">login or register</a> to use this feature.`;
+            },
+            classes() {
+                return {
+                    active: this.tab.id === this.activeTab()
+                }
+            },
+            linkClasses() {
+                return {
+                    'nav-icon': this.tab.icon
+                }
+            },
+            iconClasses() {
+                return Object.fromEntries([
+                    ['fa', true],
+                    ['toggle', this.tab.toggle],
+                    [this.tab.icon, this.tab.icon]
+                ]);
+            },
+            styles() {
+                return {
+                    visibility: this.tab.visible ? 'visible' : 'hidden',
+                }
             }
         },
         created() {
@@ -75,9 +98,6 @@
                     this.tab.onbeforeunload();
                 });
             }
-        },
-        mounted() {
-            console.log(this.tab)
         },
         methods: {
             open(tab, event) {
@@ -114,18 +134,6 @@
 
                 if (tab.id === "enable-scratchbook") {
                     this.$emit('updateScratchbookTab', tab);
-                    // _.each(this.tabs, (tab, i) => {
-                    //     if (tab.id === "enable-scratchbook") {
-                    //         tab.active = !tab.active;
-                    //
-                    //         this.$set(this.tabs, i, {
-                    //             ...tab,
-                    //             toggle: tab.active,
-                    //             show_note: tab.active,
-                    //             note_cls: tab.active && "fa fa-check"
-                    //         });
-                    //     }
-                    // });
                 }
             },
         },
