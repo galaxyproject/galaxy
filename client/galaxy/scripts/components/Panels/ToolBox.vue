@@ -16,7 +16,7 @@
             <div class="toolMenuContainer">
                 <div class="toolMenu">
                     <tool-section
-                        v-for="category in toolsLayout"
+                        v-for="category in categories"
                         :category="category"
                         :isFiltered="isFiltered"
                         :key="category.id"
@@ -47,6 +47,7 @@ import ToolSection from "./ToolSection";
 import ToolSearch from "./ToolSearch";
 import UploadButton from "./Buttons/UploadButton";
 import FavoritesButton from "./Buttons/FavoritesButton";
+import { toolsLayout } from "./utilities.js";
 import _ from "underscore";
 
 export default {
@@ -84,51 +85,17 @@ export default {
         }
     },
     computed: {
+        categories() {
+            return toolsLayout(this.layout, this.results)
+        },
         isFiltered() {
             if (this.results) {
                 return true;
             } else {
                 return false;
             }
-        },
-        toolsLayout() {
-            if (this.results) {
-                return _.filter(
-                    _.map(this.layout, category => {
-                        return {
-                            ...category,
-                            elems: (filtered => {
-                                return _.filter(filtered, (el, i) => {
-                                    if (el.model_class.endsWith("ToolSectionLabel")) {
-                                        return filtered[i + 1] && filtered[i + 1].model_class.endsWith("Tool");
-                                    } else {
-                                        return true;
-                                    }
-                                });
-                            })(
-                                _.filter(category.elems, el => {
-                                    if (el.model_class.endsWith("ToolSectionLabel")) {
-                                        return true;
-                                    } else {
-                                        return this.results.includes(el.id);
-                                    }
-                                })
-                            )
-                        };
-                    }),
-                    category => {
-                        return (
-                            category.elems.length ||
-                            (category.model_class.endsWith("Tool") && this.results.includes(category.id))
-                        );
-                    }
-                );
-            } else {
-                return this.layout;
-            }
         }
     },
-    created() {},
     methods: {
         setResults(results) {
             this.results = results;
