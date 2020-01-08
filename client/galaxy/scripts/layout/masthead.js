@@ -17,22 +17,10 @@ const View = Backbone.View.extend({
 
         const self = this;
         this.options = options;
-        this.setElement(this._template());
-        this.$navbarBrandLink = this.$(".navbar-brand");
-        this.$navbarBrandImage = this.$(".navbar-brand-image");
-        this.$navbarBrandTitle = this.$(".navbar-brand-title");
-        this.$navbarTabs = this.$(".navbar-nav");
-        this.$quoteMeter = this.$(".quota-meter-container");
 
         // build tabs
         this.collection = new Menu.Collection();
         this.collection
-            .on("add", model => {
-                self.$navbarTabs.append(new Menu.Tab({ model: model }).render().$el);
-            })
-            .on("reset", () => {
-                self.$navbarTabs.empty();
-            })
             .on("dispatch", callback => {
                 self.collection.each(m => {
                     callback(m);
@@ -41,7 +29,6 @@ const View = Backbone.View.extend({
             .fetch(this.options);
 
         // highlight initial active view
-        this.activeView = options.active_view;
         this.highlight(options.active_view); // covered
 
         // scratchbook
@@ -53,7 +40,6 @@ const View = Backbone.View.extend({
         // add quota meter to masthead
         Galaxy.quotaMeter = this.quotaMeter = new QuotaMeter.UserQuotaMeter({
             model: Galaxy.user,
-            el: this.$quoteMeter
         });
 
         // loop through beforeunload functions if the user attempts to unload the page
@@ -87,11 +73,6 @@ const View = Backbone.View.extend({
     },
 
     render: function() {
-        this.$navbarBrandTitle.html(`Galaxy ${(this.options.brand && `/ ${this.options.brand}`) || ""}`); // covered
-        this.$navbarBrandLink.attr("href", this.options.logo_url); // covered
-        this.$navbarBrandImage.attr("src", this.options.logo_src); // covered
-        this.quotaMeter.render();
-
         const el = document.createElement("div");
         this.el.appendChild(el); // use this.el directly when feature parity is accomplished
 
