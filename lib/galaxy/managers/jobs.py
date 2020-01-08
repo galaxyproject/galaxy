@@ -84,7 +84,7 @@ class JobSearch(object):
         def populate_input_data_input_id(path, key, value):
             """Traverses expanded incoming using remap and collects input_ids and input_data."""
             if key == 'id':
-                path_key = get_path_key(path[:-2])
+                path_key = get_path_key(path[:-2]).split('|')[-1]
                 current_case = param_dump
                 for p in path:
                     current_case = current_case[p]
