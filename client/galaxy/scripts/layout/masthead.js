@@ -92,18 +92,20 @@ const View = Backbone.View.extend({
         this.$navbarBrandImage.attr("src", this.options.logo_src); // covered
         this.quotaMeter.render();
 
-
-        const el = document.createElement('div');
+        const el = document.createElement("div");
         this.el.appendChild(el); // use this.el directly when feature parity is accomplished
 
         mountVueComponent(Masthead)(
-            { // params
+            {
+                // params
                 brandTitle: `Galaxy ${(this.options.brand && `/ ${this.options.brand}`) || ""}`,
-                brandLink:  this.options.logo_url,
+                brandLink: this.options.logo_url,
                 brandImage: this.options.logo_src,
 
                 quotaMeter: this.quotaMeter,
-                activeTab: () => { return this.activeView },
+                activeTab: () => {
+                    return this.activeView;
+                },
                 tabs: _.map(this.collection.models, el => {
                     return el.toJSON();
                 }),
@@ -111,7 +113,7 @@ const View = Backbone.View.extend({
                 frames: this.frame.getFrames(),
 
                 appRoot: getAppRoot(),
-                Galaxy: getGalaxyInstance(),
+                Galaxy: getGalaxyInstance()
             },
             el
         );

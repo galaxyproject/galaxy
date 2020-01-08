@@ -442,7 +442,8 @@ const Tab = Backbone.View.extend({
             });
     },
 
-    buildLink: function(label, url) { // covered
+    buildLink: function(label, url) {
+        // covered
         return $("<div/>")
             .append(
                 $("<a/>")
@@ -453,7 +454,8 @@ const Tab = Backbone.View.extend({
     },
 
     /** Handle click event */
-    _toggleClick: function(e) { // covered
+    _toggleClick: function(e) {
+        // covered
         const model = this.model;
         e.preventDefault();
         $(".tooltip").hide();

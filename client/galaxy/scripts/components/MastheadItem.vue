@@ -1,38 +1,40 @@
 <template>
-    <b-nav-item v-if="!tab.menu"
-                :class="classes"
-                :style="styles"
-                :active="!tab.disabled"
-                :id="tab.id"
-                :href="tab.url"
-                :target="tab.target"
-                :link-classes="linkClasses"
-                v-b-tooltip.hover.bottom :title="tab.tooltip"
-                v-b-popover.manual.bottom="{id: tab.id, content: popoverNote, html: true}"
-                @click="open(tab, $event)">
-
+    <b-nav-item
+        v-if="!tab.menu"
+        :class="classes"
+        :style="styles"
+        :active="!tab.disabled"
+        :id="tab.id"
+        :href="tab.url"
+        :target="tab.target"
+        :link-classes="linkClasses"
+        v-b-tooltip.hover.bottom
+        :title="tab.tooltip"
+        v-b-popover.manual.bottom="{ id: tab.id, content: popoverNote, html: true }"
+        @click="open(tab, $event)"
+    >
         <template v-if="tab.icon">
-            <span :class="iconClasses"/>
+            <span :class="iconClasses" />
             <span v-if="tab.show_note" :class="['nav-note-port', tab.note_cls]">{{ tab.note }}</span>
         </template>
         <template v-else>
             {{ tab.title }}
         </template>
     </b-nav-item>
-    <b-nav-item-dropdown v-else
-                         :class="classes"
-                         :style="styles"
-                         :text="tab.title"
-                         :id="tab.id" href="#"
-                         v-b-tooltip.hover.bottom :title="tab.tooltip"
-                         v-b-popover.manual.bottom="{id: tab.id, content: popoverNote, html: true}"
-                         @show="open(tab, $event)">
+    <b-nav-item-dropdown
+        v-else
+        :class="classes"
+        :style="styles"
+        :text="tab.title"
+        :id="tab.id"
+        href="#"
+        v-b-tooltip.hover.bottom
+        :title="tab.tooltip"
+        v-b-popover.manual.bottom="{ id: tab.id, content: popoverNote, html: true }"
+        @show="open(tab, $event)"
+    >
         <template v-for="(item, idx) in tab.menu">
-            <b-dropdown-item :href="item.url"
-                             :key="`item-${idx}`"
-                             :target="item.target"
-                             @click="open(item, $event)"
-            >
+            <b-dropdown-item :href="item.url" :key="`item-${idx}`" :target="item.target" @click="open(item, $event)">
                 {{ item.title }}
             </b-dropdown-item>
             <div v-if="item.divider" class="dropdown-divider" :key="`divider-${idx}`" />
@@ -41,116 +43,111 @@
 </template>
 
 <script>
-    import _ from "underscore";
-    import { VBTooltip } from "bootstrap-vue";
-    import { VBPopover } from "bootstrap-vue";
+import { VBTooltip } from "bootstrap-vue";
+import { VBPopover } from "bootstrap-vue";
 
-    export default {
-        name: "MastheadItem",
-        directives: {
-            "v-b-tooltip": VBTooltip,
-            "v-b-popover": VBPopover
+export default {
+    name: "MastheadItem",
+    directives: {
+        "v-b-tooltip": VBTooltip,
+        "v-b-popover": VBPopover
+    },
+    props: {
+        tab: {
+            type: Object
         },
-        props: {
-            tab: {
-                type: Object,
-            },
-            activeTab: {
-                type: Function,
-            },
-            appRoot: {
-                type: String,
-            },
-            Galaxy: {
-                type: Object,
+        activeTab: {
+            type: Function
+        },
+        appRoot: {
+            type: String
+        },
+        Galaxy: {
+            type: Object
+        }
+    },
+    computed: {
+        popoverNote() {
+            return `Please <a href="${this.appRoot}login">login or register</a> to use this feature.`;
+        },
+        classes() {
+            return {
+                active: this.tab.id === this.activeTab()
+            };
+        },
+        linkClasses() {
+            return {
+                "nav-icon": this.tab.icon
+            };
+        },
+        iconClasses() {
+            return Object.fromEntries([["fa", true], ["toggle", this.tab.toggle], [this.tab.icon, this.tab.icon]]);
+        },
+        styles() {
+            return {
+                visibility: this.tab.visible ? "visible" : "hidden"
+            };
+        }
+    },
+    created() {
+        if (this.tab.onbeforeunload) {
+            document.addEventListener("beforeunload", () => {
+                this.tab.onbeforeunload();
+            });
+        }
+    },
+    methods: {
+        open(tab, event) {
+            if (tab.onclick) {
+                return this.propogateClick(tab, event);
             }
-        },
-        computed: {
-            popoverNote() {
-                return `Please <a href="${this.appRoot}login">login or register</a> to use this feature.`;
-            },
-            classes() {
-                return {
-                    active: this.tab.id === this.activeTab()
-                }
-            },
-            linkClasses() {
-                return {
-                    'nav-icon': this.tab.icon
-                }
-            },
-            iconClasses() {
-                return Object.fromEntries([
-                    ['fa', true],
-                    ['toggle', this.tab.toggle],
-                    [this.tab.icon, this.tab.icon]
-                ]);
-            },
-            styles() {
-                return {
-                    visibility: this.tab.visible ? 'visible' : 'hidden',
-                }
-            }
-        },
-        created() {
-            if (this.tab.onbeforeunload) {
-                document.addEventListener('beforeunload', () => {
-                    this.tab.onbeforeunload();
-                });
-            }
-        },
-        methods: {
-            open(tab, event) {
-                if (tab.onclick) {
-                    return this.propogateClick(tab, event);
-                }
 
-                if (tab.disabled) {
-                    event.preventDefault();
+            if (tab.disabled) {
+                event.preventDefault();
 
-                    this.$root.$emit('bv::hide::tooltip');
-                    this.$root.$emit('bv::show::popover', tab.id);
+                this.$root.$emit("bv::hide::tooltip");
+                this.$root.$emit("bv::show::popover", tab.id);
 
-                    setTimeout(() => {
-                        this.$root.$emit('bv::hide::popover', tab.id);
-                    }, 3000);
-                } else if (!tab.menu) {
-                    event.preventDefault();
+                setTimeout(() => {
+                    this.$root.$emit("bv::hide::popover", tab.id);
+                }, 3000);
+            } else if (!tab.menu) {
+                event.preventDefault();
 
-                    if (tab.target === "__use_router__" && typeof this.Galaxy.page !== "undefined") {
-                        this.Galaxy.page.router.executeUseRouter(tab.url);
-                    } else {
-                        try {
-                            this.Galaxy.frame.add(tab);
-                        } catch (err) {
-                            console.warn("Missing frame element on galaxy instance", err);
-                        }
+                if (tab.target === "__use_router__" && typeof this.Galaxy.page !== "undefined") {
+                    this.Galaxy.page.router.executeUseRouter(tab.url);
+                } else {
+                    try {
+                        this.Galaxy.frame.add(tab);
+                    } catch (err) {
+                        console.warn("Missing frame element on galaxy instance", err);
                     }
                 }
-            },
-            propogateClick(tab, event) {
-                event.preventDefault();
-                tab.onclick();
-
-                if (tab.id === "enable-scratchbook") {
-                    this.$emit('updateScratchbookTab', tab);
-                }
-            },
+            }
         },
+        propogateClick(tab, event) {
+            event.preventDefault();
+            tab.onclick();
+
+            if (tab.id === "enable-scratchbook") {
+                this.$emit("updateScratchbookTab", tab);
+            }
+        }
     }
+};
 </script>
 
 <style scoped>
-    .nav-note-port {
-        position: absolute;
-        font-weight: 700;
-        font-size: .7rem;
-        color: gold;
-        line-height: 3.5rem;
-        margin-left: 1px;
-    }
+.nav-note-port {
+    position: absolute;
+    font-weight: 700;
+    font-size: 0.7rem;
+    color: gold;
+    line-height: 3.5rem;
+    margin-left: 1px;
+}
 
-    li .nav-link > span.toggle {
-        color: gold;
-    }
+li .nav-link > span.toggle {
+    color: gold;
+}
 </style>
