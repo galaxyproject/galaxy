@@ -62,7 +62,6 @@ class DockerizedJobsIntegrationTestCase(integration_util.IntegrationTestCase, Ru
     job_config_file = DOCKERIZED_JOB_CONFIG_FILE
     build_mulled_resolver = 'build_mulled'
     container_type = 'docker'
-    default_container_home_dir = '/'
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -106,7 +105,7 @@ class DockerizedJobsIntegrationTestCase(integration_util.IntegrationTestCase, Ru
         assert job_env.pwd.endswith("/working")
         # Should we change env_pass_through to just always include TMP and HOME for docker?
         # I'm not sure, if yes this would change.
-        assert job_env.home == self.default_container_home_dir, job_env.home
+        assert not job_env.home.endswith('/home')
 
     def test_build_mulled(self):
         if not which('docker'):
@@ -175,5 +174,3 @@ class SingularityJobsIntegrationTestCase(DockerizedJobsIntegrationTestCase):
     job_config_file = SINGULARITY_JOB_CONFIG_FILE
     build_mulled_resolver = 'build_mulled_singularity'
     container_type = 'singularity'
-    # singularity passes $HOME by default
-    default_container_home_dir = os.environ.get('HOME', '/')
