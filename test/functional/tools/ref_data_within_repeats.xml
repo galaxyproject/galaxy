@@ -1,0 +1,43 @@
+<tool id="ref_data_within_repeats" name="ref_data_within_repeats" version="1.0.0">
+    <description>Filter reference genome to associated dataset within nested repeat block</description>
+    <command>
+        echo $reference_genome > $output
+    </command>
+    <inputs>
+        <repeat name="condition_repeat" title="Condition" min="1">
+            <param name="condition_name" type="text" value="cond" label="Condition name">
+                <validator type="empty_field" />
+            </param>
+            <repeat name="signal_repeat" title="Signal" min="1">
+                <param name="signal" type="data" format="bam,bed,scidx" label="Select signal" help="Supported formats are bam, bed and scidx">
+                    <validator type="unspecified_build" />
+                </param>
+            </repeat>
+        </repeat>
+        <param name="reference_genome" type="select" label="Using reference genome">
+            <options from_data_table="all_fasta">
+                <!--the following filter is the problem-->
+                <filter type="data_meta" key="dbkey" ref="signal" column="1"/>
+            </options>
+            <validator type="no_options" message="A built-in reference genome is not available for the build associated with the selected input file"/>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt"/>
+    </outputs>
+    <tests>
+        <test>
+            <repeat name="condition_repeat">
+                <repeat name="signal_repeat">
+                    <param name="signal" value="1.bed" ftype="bed" dbkey="hg19" />
+                </repeat>
+            </repeat>
+            <output name="output" file="hg19_output.txt" ftype="txt">
+                <assert_contents>
+                    <has_line line="hg19" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>
+
