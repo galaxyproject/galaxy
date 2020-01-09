@@ -178,7 +178,12 @@ class ScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
         clean_env = {
             "PATH": os.environ.get("PATH", None),
         }  # Don't let testing environment variables interfere with config.
-        return unicodify(subprocess.check_output(cmd, cwd=cwd, env=clean_env))
+        try:
+            return unicodify(subprocess.check_output(cmd, cwd=cwd, env=clean_env))
+        except Exception as e:
+            if isinstance(e, subprocess.CalledProcessError):
+                raise Exception("%s\nOutput was:\n%s" % (unicodify(e), e.output))
+            raise
 
     def write_config_file(self):
         config_dir = self.config_dir
