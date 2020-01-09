@@ -35,7 +35,7 @@ Highlighted Enhancements
   (thanks to `@BalthazarPavot <https://github.com/BalthazarPavot>`__.)
   `Pull Request 2664`_
 * Nicer bug report emails
-  (thanks to `@erasche <https://github.com/erasche>`__.)
+  (thanks to `@hexylena <https://github.com/hexylena>`__.)
   `Pull Request 2143`_
 * Tools with auto_format='true' now connectable in workflow editor
   (thanks to `@yhoogstrate <https://github.com/yhoogstrate>`__.)
@@ -160,7 +160,7 @@ Enhancements
 * Remove backported importlib and ordereddict.
   `Pull Request 2380`_
 * Note on updating tool testing
-  (thanks to `@erasche <https://github.com/erasche>`__.)
+  (thanks to `@hexylena <https://github.com/hexylena>`__.)
   `Pull Request 2381`_
 * Docker swarm support for Galaxy Interactive Environments (GIEs)
   `Pull Request 2386`_, `Pull Request 2392`_
@@ -238,7 +238,7 @@ Enhancements
 * Allow users to purge datasets by default.
   `Pull Request 2553`_
 * Add Jupyter IE to the allowed visualizations for BAM datasets
-  (thanks to `@erasche <https://github.com/erasche>`__.)
+  (thanks to `@hexylena <https://github.com/hexylena>`__.)
   `Pull Request 2572`_
 * Python3: port 215 files
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__, `@tshtatland <https://github.com/tshtatland>`__, `@xiaoqian1984 <https://github.com/xiaoqian1984>`__, `@alanryanwang <https://github.com/alanryanwang>`__ and `@ericenns <https://github.com/ericenns>`__.)
@@ -392,14 +392,14 @@ Fixes
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
   `Pull Request 2223`_
 * Sanitize poorly escaped input value in run workflow form
-  (thanks to `@erasche <https://github.com/erasche>`__.)
+  (thanks to `@hexylena <https://github.com/hexylena>`__.)
   `Pull Request 2231`_
 * Multi-data collection reductions in repeat blocks are broken.
   `Pull Request 2233`_
 * Encode collection reduce in serializable fashion
   `Pull Request 2241`_
 * Cast everything to a string
-  (thanks to `@erasche <https://github.com/erasche>`__.)
+  (thanks to `@hexylena <https://github.com/hexylena>`__.)
   `Pull Request 2252`_
 * Use standard model.orm.now for toolshed's password reset token datetime math
   `Pull Request 2261`_
@@ -426,7 +426,7 @@ Fixes
 * Build: remove redundant webpack step in makefile
   `Pull Request 2327`_
 * Unicodify has different semantics to str, causing bug reporter bug
-  (thanks to `@erasche <https://github.com/erasche>`__.)
+  (thanks to `@hexylena <https://github.com/hexylena>`__.)
   `Pull Request 2336`_
 * Wrap statsd timing middleware more closely around the core application
   `Pull Request 2342`_
@@ -441,7 +441,7 @@ Fixes
   (thanks to `@bgruening <https://github.com/bgruening>`__.)
   `Pull Request 2394`_
 * Check variable's presence before calling str methods
-  (thanks to `@erasche <https://github.com/erasche>`__.)
+  (thanks to `@hexylena <https://github.com/hexylena>`__.)
   `Pull Request 2408`_
 * UI, history: correctly handle index API defaults
   `Pull Request 2413`_
@@ -482,10 +482,10 @@ Fixes
 * Initialize objectstore for fix_set_dataset_sizes script
   `Pull Request 2544`_
 * Fix old bug in non-allowed_images.yml GIEs
-  (thanks to `@erasche <https://github.com/erasche>`__.)
+  (thanks to `@hexylena <https://github.com/hexylena>`__.)
   `Pull Request 2548`_
 * More defensive GIE Proxying
-  (thanks to `@erasche <https://github.com/erasche>`__.)
+  (thanks to `@hexylena <https://github.com/hexylena>`__.)
   `Pull Request 2552`_
 * Fixes for showing min/max labels in Trackster.
   `Pull Request 2555`_

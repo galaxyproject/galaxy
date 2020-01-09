@@ -50,7 +50,7 @@ Enhancements
   `Pull Request 5479`_
 * Allow formatting `StatsD <https://github.com/etsy/statsd>`__ data for
   `InfluxDB <https://github.com/influxdata/influxdb>`__
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 5742`_
 * Tool versions should follow `PEP 440 <https://www.python.org/dev/peps/pep-0440/>`__
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
@@ -145,10 +145,10 @@ Enhancements
 * Various improvements for API tests.
   `Pull Request 5697`_, `Pull Request 5699`_
 * Small log level improvement
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 5715`_
 * Swap password checking for the constant time comparison algorithm
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 5719`_
 * Upgrade clone failure logging to error
   (thanks to `@pvanheus <https://github.com/pvanheus>`__).
@@ -201,7 +201,7 @@ Enhancements
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5924`_
 * Document Github bug reporter
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 5928`_
 * Rewrite history structure display in `VueJS <https://vuejs.org/>`__
   (thanks to `@anuprulez <https://github.com/anuprulez>`__).
@@ -295,7 +295,7 @@ Fixes
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 5718`_
 * `Sentry <https://sentry.io/>`__ bug reports working for anonymous users
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 5721`_
 * Add Galaxy `lib` directory to Python path for 2 scripts
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
@@ -366,7 +366,7 @@ Fixes
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5917`_
 * Correct signal number in admin documentation
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 5921`_
 * Fix error with data managers when trying to move_merge nonexistent
   extra_files dir

@@ -14,7 +14,7 @@ Highlights
   oriented but will likely be even more so now. Features such as favoriting tools,
   improved workflow editor feedback, and an exciting new cellxgene GIE may have
   been featured in these release notes in the past but are now featured in the
-  user release notes instead. A huge thanks to `@erasche <https://github.com/erasche>`__
+  user release notes instead. A huge thanks to `@hexylena <https://github.com/hexylena>`__
   for getting the ball rolling on this initiative.
 
   Check out the `19.05 user release notes <https://docs.galaxyproject.org/en/release_19.05/releases/19.05_announce_user.html>`__.

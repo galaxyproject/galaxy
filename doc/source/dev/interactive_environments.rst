@@ -545,4 +545,4 @@ If everything went well, at this point you should see a directory listing show u
 .. image:: interactive_environments_success.png
 
 If you find yourself encountering difficulties, the "Hello, World" IE is
-available in a `GitHub repo <https://github.com/erasche/hello-world-interactive-environment/releases/tag/v15.10>`__, and there are people on the IRC channel who can help debug.
+available in a `GitHub repo <https://github.com/hexylena/hello-world-interactive-environment/releases/tag/v15.10>`__, and there are people on the IRC channel who can help debug.

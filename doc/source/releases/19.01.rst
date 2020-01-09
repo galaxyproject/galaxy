@@ -310,7 +310,7 @@ Fixes
 .. bug
 
 * Fixes to allow config schema to validate
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 5919`_
 * Patch `update.sh` to address dependency update issues on a macOS.
   `Pull Request 6694`_
@@ -414,7 +414,7 @@ Fixes
 * Fix resubmission on tool error detection.
   `Pull Request 7040`_
 * GRT: Rip out all parameters, round file sizes
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 7041`_
 * Pass through ``--daemon`` option to gunicorn
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).

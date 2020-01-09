@@ -50,20 +50,20 @@ Enhancements
   `Pull Request 3217`_
 * Many improvements to the job information page - including
   exposing certain job metrics to non-admin users
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 3344`_, `Pull Request 3256`_,
   `Pull Request 3340`_
 * Formalize decision to increase time between releases to four months. The next release
   will be 17.05.
   `Pull Request 3271`_
 * Add API endpoint to determine who the current user is
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 3423`_
 * Extend API version information for Docker-based Galaxy instances
   (thanks to `@manabuishii <https://github.com/manabuishii>`__).
   `Pull Request 3411`_
 * Implement a more complete Genbank datatype with sniffer
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 3339`_
 * Add additional image datatypes
   (thanks to `@ThomasWollmann <https://github.com/ThomasWollmann>`__).
@@ -114,7 +114,7 @@ Enhancements
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 3328`_
 * Allow admins to see API keys under when using remote user authentication from proxies.
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 3338`_
 * Limit adjusting Galaxy's Python environment to legacy tools
   (discussed in Deprecation Notices section of release notes).
@@ -149,7 +149,7 @@ Fixes
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 3215`_
 * Fix user table header in admin view
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 3200`_
 * Fix to adjust masthead and tool search.
   `Pull Request 3055`_
@@ -193,10 +193,10 @@ Fixes
   (thanks to `@manabuishii <https://github.com/manabuishii>`__).
   `Pull Request 3409`_
 * Fix login functionality for RStudio IEs
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 3414`_
 * Fix accidental email exposure during history sharing
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 3417`_
 * Fix UX problem when sharing objects with users.
   `Pull Request 3373`_
