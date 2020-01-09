@@ -271,7 +271,7 @@ def xml_to_string(elem, pretty=False):
     except TypeError as e:
         # we assume this is a comment
         if hasattr(elem, 'text'):
-            return "<!-- %s -->\n" % elem.text
+            return u"<!-- %s -->\n" % elem.text
         else:
             raise e
     if xml_str and pretty:
