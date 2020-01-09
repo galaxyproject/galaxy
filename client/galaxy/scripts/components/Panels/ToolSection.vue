@@ -1,6 +1,6 @@
 <template>
     <div>
-        <div v-if="category.model_class.endsWith('ToolSection')" class="toolSectionWrapper">
+        <div v-if="category.panel_type == 'section'" class="toolSectionWrapper">
             <div :id="category.name" class="toolSectionTitle">
                 <a @click="toggleToolSectionMenu" href="javascript:void(0)" role="button">
                     <span>
@@ -10,21 +10,21 @@
             </div>
             <transition name="slide">
                 <div v-if="opened">
-                    <template v-for="tool in category.elems">
-                        <tool v-if="tool.model_class.endsWith('Tool')" :tool="tool" :key="tool.id"></tool>
-                        <div v-else-if="tool.model_class === 'ToolSectionLabel'" class="toolPanelLabel" :key="tool.id">
+                    <template v-for="el in category.elems">
+                        <tool v-if="el.panel_type == 'tool'" :tool="el" :key="el.id"></tool>
+                        <div v-else-if="el.panel_type == 'section'" class="toolPanelLabel" :key="el.id">
                             <span>
-                                {{ tool.text }}
+                                {{ el.text }}
                             </span>
                         </div>
                     </template>
                 </div>
             </transition>
         </div>
-        <div v-else-if="category.model_class.endsWith('Tool')">
+        <div v-else-if="category.panel_type == 'tool'">
             <tool :tool="category" :no-section="true"></tool>
         </div>
-        <div v-else-if="category.model_class.endsWith('ToolSectionLabel')" class="toolPanelLabel">
+        <div v-else-if="category.panel_type == 'label'" class="toolPanelLabel">
             <span>
                 {{ category.text }}
             </span>
