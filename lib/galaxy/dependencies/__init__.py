@@ -194,7 +194,7 @@ class ConditionalDependencies(object):
 
 def optional(config_file=None):
     if not config_file:
-        config_file = find_config_file(['galaxy', 'universe_wsgi'])
+        config_file = find_config_file(['galaxy', 'universe_wsgi'], include_samples=True)
     if not config_file:
         print("galaxy.dependencies.optional: no config file found", file=sys.stderr)
         return []
