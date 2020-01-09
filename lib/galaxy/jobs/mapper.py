@@ -228,6 +228,8 @@ class JobRunnerMapper(object):
     def __cache_job_destination(self, params, raw_job_destination=None):
         try:
             self.cached_job_destination = self.__determine_job_destination(params, raw_job_destination=raw_job_destination)
+        except (JobMappingException, JobNotReadyException):
+            raise
         except Exception:
             log.exception("Caught unhandled exception while attempting to cache job destination:")
             raise JobMappingException(ERROR_MESSAGE_RULE_EXCEPTION)
