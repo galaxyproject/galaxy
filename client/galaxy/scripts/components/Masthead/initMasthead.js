@@ -3,7 +3,7 @@
  * This function is exposed with the rest of the page-globals in bundledEntries.
  */
 import Vue from "vue";
-import Masthead from "components/Masthead";
+import Masthead from "./Masthead";
 
 export function initMasthead(config, container) {
     console.log("initMasthead");

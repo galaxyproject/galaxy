@@ -4,8 +4,7 @@ import Menu from "layout/menu";
 import Scratchbook from "layout/scratchbook";
 import QuotaMeter from "mvc/user/user-quotameter";
 import { getGalaxyInstance } from "app";
-
-import Masthead from "../components/Masthead.vue";
+import Masthead from "../components/Masthead/Masthead";
 import { mountVueComponent } from "../utils/mountVueComponent";
 import _ from "../libs/underscore";
 import { getAppRoot } from "onload/loadConfig";
