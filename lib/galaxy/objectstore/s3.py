@@ -29,7 +29,7 @@ from galaxy.util import (
 from galaxy.util.path import safe_relpath
 from galaxy.util.sleeper import Sleeper
 from .s3_multipart_upload import multipart_upload
-from ..objectstore import convert_bytes, ObjectStore
+from ..objectstore import ConcreteObjectStore, convert_bytes
 
 NO_BOTO_ERROR_MESSAGE = ("S3/Swift object store configured, but no boto dependency available."
                          "Please install and properly configure boto or modify object store configuration.")
@@ -129,7 +129,7 @@ class CloudConfigMixin(object):
         }
 
 
-class S3ObjectStore(ObjectStore, CloudConfigMixin):
+class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
     """
     Object store that stores objects as items in an AWS S3 bucket. A local
     cache exists that is used as an intermediate location for files between

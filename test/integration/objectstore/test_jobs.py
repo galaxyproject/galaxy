@@ -3,7 +3,7 @@
 import os
 import string
 
-from ._base import BaseObjectStoreIntegrationTestCase
+from ._base import BaseObjectStoreIntegrationTestCase, files_count
 
 DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE = string.Template("""<?xml version="1.0"?>
 <object_store type="hierarchical">
@@ -75,9 +75,9 @@ class ObjectStoreJobsIntegrationTestCase(BaseObjectStoreIntegrationTestCase):
         `secondary/files3`, assuming it will not fail persisting
         data in `primary` backend.
         """
-        files_1_count = _files_count(self.files1_path)
-        files_2_count = _files_count(self.files2_path)
-        files_3_count = _files_count(self.files3_path)
+        files_1_count = files_count(self.files1_path)
+        files_2_count = files_count(self.files2_path)
+        files_3_count = files_count(self.files3_path)
 
         # Ensure no files written to the secondary/inactive hierarchical disk store.
         assert files_3_count == 0
@@ -106,10 +106,6 @@ class ObjectStoreJobsIntegrationTestCase(BaseObjectStoreIntegrationTestCase):
 
         for expected_content in range(1, 10):
             assert str(expected_content) in contents
-
-
-def _files_count(directory):
-    return sum(len(files) for _, _, files in os.walk(directory))
 
 
 def _get_datasets_files_in_path(directory):

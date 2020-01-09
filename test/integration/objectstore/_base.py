@@ -30,3 +30,7 @@ class BaseObjectStoreIntegrationTestCase(integration_util.IntegrationTestCase):
     def setUp(self):
         super(BaseObjectStoreIntegrationTestCase, self).setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+
+
+def files_count(directory):
+    return sum(len(files) for _, _, files in os.walk(directory))

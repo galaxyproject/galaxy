@@ -603,6 +603,9 @@ class MockObjectStore(object):
     def get_filename(self, *args, **kwds):
         return "dataest_14.dat"
 
+    def get_store_by(self, *args, **kwds):
+        return 'id'
+
 
 def get_suite():
     suite = unittest.TestSuite()

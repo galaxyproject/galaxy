@@ -26,7 +26,7 @@ from galaxy.util import (
     umask_fix_perms,
 )
 from galaxy.util.path import safe_relpath
-from ..objectstore import ObjectStore
+from ..objectstore import ConcreteObjectStore
 
 NO_KAMAKI_ERROR_MESSAGE = (
     "ObjectStore configured, but no kamaki.clients dependency available."
@@ -79,7 +79,7 @@ def parse_config_xml(config_xml):
     return r
 
 
-class PithosObjectStore(ObjectStore):
+class PithosObjectStore(ConcreteObjectStore):
     """
     Object store that stores objects as items in a Pithos+ container.
     Cache is ignored for the time being.

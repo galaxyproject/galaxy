@@ -3,7 +3,7 @@
 import os
 import string
 
-from ._base import BaseObjectStoreIntegrationTestCase
+from ._base import BaseObjectStoreIntegrationTestCase, files_count
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "selection_job_conf.xml")
@@ -46,16 +46,16 @@ class ObjectStoreSelectionIntegrationTestCase(BaseObjectStoreIntegrationTestCase
         config["job_resource_params_file"] = JOB_RESOURCE_PARAMETERS_CONFIG_FILE
 
     def _object_store_counts(self):
-        files_default_count = _files_count(self.files_default_path)
-        files_static_count = _files_count(self.files_static_path)
-        files_dynamic_count = _files_count(self.files_dynamic_path)
+        files_default_count = files_count(self.files_default_path)
+        files_static_count = files_count(self.files_static_path)
+        files_dynamic_count = files_count(self.files_dynamic_path)
         return files_default_count, files_static_count, files_dynamic_count
 
     def _assert_file_counts(self, default, static, dynamic_ebs, dynamic_s3):
-        files_default_count = _files_count(self.files_default_path)
-        files_static_count = _files_count(self.files_static_path)
-        files_dynamic_ebs_count = _files_count(self.files_dynamic_ebs_path)
-        files_dynamic_s3_count = _files_count(self.files_dynamic_s3_path)
+        files_default_count = files_count(self.files_default_path)
+        files_static_count = files_count(self.files_static_path)
+        files_dynamic_ebs_count = files_count(self.files_dynamic_ebs_path)
+        files_dynamic_s3_count = files_count(self.files_dynamic_s3_path)
         assert default == files_default_count
         assert static == files_static_count
         assert dynamic_ebs == files_dynamic_ebs_count
@@ -103,7 +103,3 @@ class ObjectStoreSelectionIntegrationTestCase(BaseObjectStoreIntegrationTestCase
             }
             _run_tool("create_10", create_10_inputs)
             self._assert_file_counts(1, 2, 10, 10)
-
-
-def _files_count(directory):
-    return sum(len(files) for _, _, files in os.walk(directory))
