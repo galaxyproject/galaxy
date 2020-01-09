@@ -12,11 +12,9 @@ from galaxy_test.base.ssh_util import generate_ssh_keys
 from galaxy_test.driver import integration_util
 from .test_job_environments import BaseJobEnvironmentIntegrationTestCase
 
-
 RemoteConnection = collections.namedtuple('remote_connection', ['hostname', 'username', 'port', 'private_key', 'public_key'])
 
 
-@integration_util.skip_unless_docker()
 def start_ssh_docker(container_name, jobs_directory, port=10022, image='agaveapi/slurm'):
     ssh_keys = generate_ssh_keys()
     START_SLURM_DOCKER = ['docker',
@@ -77,6 +75,7 @@ def cli_job_config(remote_connection, shell_plugin='ParamikoShell', job_plugin='
     return job_conf.name
 
 
+@integration_util.skip_unless_docker()
 class BaseCliIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):
 
     @classmethod
