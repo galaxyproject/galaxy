@@ -38,7 +38,7 @@ const View = Backbone.View.extend({
         // set up the quota meter (And fetch the current user data from trans)
         // add quota meter to masthead
         Galaxy.quotaMeter = this.quotaMeter = new QuotaMeter.UserQuotaMeter({
-            model: Galaxy.user,
+            model: Galaxy.user
         });
 
         // loop through beforeunload functions if the user attempts to unload the page
