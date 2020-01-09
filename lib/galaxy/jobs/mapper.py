@@ -15,6 +15,7 @@ DYNAMIC_DESTINATION_ID = "dynamic_legacy_from_url"
 
 ERROR_MESSAGE_NO_RULE_FUNCTION = "Galaxy misconfigured - cannot find dynamic rule function name for destination %s."
 ERROR_MESSAGE_RULE_FUNCTION_NOT_FOUND = "Galaxy misconfigured - no rule function named %s found in dynamic rule modules."
+ERROR_MESSAGE_RULE_EXCEPTION = "Galaxy misconfigured - encountered an unhandled exception while caching dynamic rule."
 
 
 class JobMappingException(Exception):
@@ -225,8 +226,11 @@ class JobRunnerMapper(object):
         return job_destination
 
     def __cache_job_destination(self, params, raw_job_destination=None):
-        self.cached_job_destination = self.__determine_job_destination(
-            params, raw_job_destination=raw_job_destination)
+        try:
+            self.cached_job_destination = self.__determine_job_destination(params, raw_job_destination=raw_job_destination)
+        except Exception:
+            log.exception("Caught unhandled exception while attempting to cache job destination:")
+            raise JobMappingException(ERROR_MESSAGE_RULE_EXCEPTION)
         return self.cached_job_destination
 
     def get_job_destination(self, params):
