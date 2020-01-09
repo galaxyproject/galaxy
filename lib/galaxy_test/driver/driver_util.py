@@ -4,6 +4,7 @@ import fcntl
 import logging
 import os
 import random
+import re
 import shutil
 import signal
 import socket
@@ -62,13 +63,15 @@ INSTALLED_TOOL_PANEL_CONFIGS = [
 ]
 REALTIME_PROXY_TEMPLATE = string.Template(r"""
 uwsgi:
-  realtime_map: $tempdir/realtime_map.sqlite
-  python-raw: scripts/realtime/key_type_token_mapping.py
-  route-host: ^([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.(realtime\.$test_host:$test_port)$ goto:realtime
+  http-raw-body: true
+  interactivetools_map: $tempdir/interactivetools_map.sqlite
+  python-raw: scripts/interactivetools/key_type_token_mapping.py
+  route-host: ^([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)-([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.(interactivetool\.$test_host:$test_port)$ goto:interactivetool
   route-run: goto:endendend
-  route-label: realtime
-  route-host: ^([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.(realtime\.$test_host:$test_port)$ rpcvar:TARGET_HOST rtt_key_type_token_mapper_cached $2 $1 $3 $4 $0 5
+  route-label: interactivetool
+  route-host: ^([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)-([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.(interactivetool\.$test_host:$test_port)$ rpcvar:TARGET_HOST rtt_key_type_token_mapper_cached $1 $3 $2 $4 $0 5
   route-if-not: empty:${TARGET_HOST} httpdumb:${TARGET_HOST}
+  route: .* break:404 Not Found
   route-label: endendend
 """)
 
@@ -729,8 +732,9 @@ def launch_uwsgi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=No
 
     enable_realtime_mapping = getattr(config_object, "enable_realtime_mapping", False)
     if enable_realtime_mapping:
-        config["galaxy"]["realtime_prefix"] = "realtime"
-        config["galaxy"]["realtime_map"] = os.path.join(tempdir, "realtime_map.sqlite")
+        config["galaxy"]["interactivetools_prefix"] = "interactivetool"
+        config["galaxy"]["interactivetools_map"] = os.path.join(tempdir, "interactivetools_map.sqlite")
+        config['galaxy']['interactivetools_enable'] = True
 
     yaml_config_path = os.path.join(tempdir, "galaxy.yml")
     with open(yaml_config_path, "w") as f:
@@ -743,7 +747,7 @@ def launch_uwsgi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=No
             old_contents = f.read()
         with open(yaml_config_path, "w") as f:
             test_port = str(port) if port else r"[0-9]+"
-            test_host = host or "localhost"
+            test_host = re.escape(host) if host else "localhost"
             uwsgi_section = REALTIME_PROXY_TEMPLATE.safe_substitute(test_host=test_host, test_port=test_port, tempdir=tempdir)
             f.write(uwsgi_section)
             f.write(old_contents)

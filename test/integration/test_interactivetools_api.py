@@ -47,8 +47,7 @@ class InteractiveToolsIntegrationTestCase(ContainerizedIntegrationTestCase):
         assert isinstance(jobs, list)
         assert len(jobs) == 1
         job0 = jobs[0]
-        entry_points = self.wait_on_entry_points_active(job0["id"])
-        assert len(entry_points) == 2
+        entry_points = self.wait_on_entry_points_active(job0["id"], expected_num=2)
         entry_point0 = entry_points[0]
         entry_point1 = entry_points[1]
         target0 = self.entry_point_target(entry_point0["id"])
@@ -59,19 +58,18 @@ class InteractiveToolsIntegrationTestCase(ContainerizedIntegrationTestCase):
 
         content1 = self.wait_on_proxied_content(target1)
         assert content1 == "moo cow\n", content1
-        assert False
 
     def wait_on_proxied_content(self, target):
         def get_hosted_content():
             try:
                 scheme, rest = target.split("://", 1)
-                prefix, host_and_port = rest.split(".realtime.")
-                print(rest)
+                prefix, host_and_port = rest.split(".interactivetool.")
                 faked_host = rest
                 if "/" in rest:
                     faked_host = rest.split("/", 1)[0]
-                response = requests.get("%s://%s" % (scheme, host_and_port), timeout=1, headers={"Host": faked_host})
-                return response.content
+                url = "%s://%s" % (scheme, host_and_port)
+                response = requests.get(url, timeout=1, headers={"Host": faked_host})
+                return response.text
             except Exception as e:
                 print(e)
                 return None

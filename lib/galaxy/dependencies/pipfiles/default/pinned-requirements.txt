@@ -112,7 +112,7 @@ oslo.log==3.45.0
 oslo.serialization==2.29.2
 oslo.utils==3.42.0
 packaging==19.2
-paramiko==2.7.0
+paramiko==2.7.1
 parsley==1.3
 paste==3.2.3
 pastedeploy==2.0.1
