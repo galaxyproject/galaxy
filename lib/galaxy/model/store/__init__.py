@@ -327,8 +327,7 @@ class ModelImportStore(object):
                         # Import additional files if present. Histories exported previously might not have this attribute set.
                         dataset_extra_files_path = dataset_attrs.get('extra_files_path', None)
                         if dataset_extra_files_path:
-                            store_by = self.object_store.store_by
-                            dir_name = 'dataset_%s_files' % getattr(dataset_instance.dataset, store_by)
+                            dir_name = dataset_instance.dataset.extra_files_path_name
                             dataset_extra_files_path = os.path.join(self.archive_dir, dataset_extra_files_path)
                             for root, dirs, files in safe_walk(dataset_extra_files_path):
                                 extra_dir = os.path.join(dir_name, root.replace(dataset_extra_files_path, '', 1).lstrip(os.path.sep))

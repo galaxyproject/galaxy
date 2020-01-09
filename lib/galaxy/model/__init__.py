@@ -2254,10 +2254,17 @@ class Dataset(StorableObject, RepresentById):
     def extra_files_path_exists(self):
         return self.object_store.exists(self, extra_dir=self._extra_files_rel_path, dir_only=True)
 
+    def extra_files_path_name_from(self, object_store):
+        store_by = getattr(object_store, "store_by", "id")
+        return "dataset_%s_files" % getattr(self, store_by)
+
+    @property
+    def extra_files_path_name(self):
+        return self.extra_files_path_name_from(self.object_store)
+
     @property
     def _extra_files_rel_path(self):
-        store_by = getattr(self.object_store, "store_by", "id")
-        return self._extra_files_path or "dataset_%s_files" % getattr(self, store_by)
+        return self._extra_files_path or self.extra_files_path_name
 
     def _calculate_size(self):
         if self.external_filename:
