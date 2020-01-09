@@ -12,9 +12,8 @@ import { getAppRoot } from "onload/loadConfig";
 /** Masthead **/
 const View = Backbone.View.extend({
     initialize: function(options) {
-        const Galaxy = getGalaxyInstance();
-
         const self = this;
+        const Galaxy = getGalaxyInstance();
         this.options = options;
 
         // build tabs
@@ -74,19 +73,15 @@ const View = Backbone.View.extend({
     render: function() {
         const el = document.createElement("div");
         this.el.appendChild(el); // use this.el directly when feature parity is accomplished
-
         let brandTitle = this.options.display_galaxy_brand ? "Galaxy " : "";
         if (this.options.brand) {
             brandTitle += this.options.brand;
         }
-
         mountVueComponent(Masthead)(
             {
-                // params
                 brandTitle: brandTitle,
                 brandLink: this.options.logo_url,
                 brandImage: this.options.logo_src,
-
                 quotaMeter: this.quotaMeter,
                 activeTab: () => {
                     return this.activeView;
@@ -94,9 +89,7 @@ const View = Backbone.View.extend({
                 tabs: _.map(this.collection.models, el => {
                     return el.toJSON();
                 }),
-
                 frames: this.frame.getFrames(),
-
                 appRoot: getAppRoot(),
                 Galaxy: getGalaxyInstance()
             },
@@ -110,21 +103,6 @@ const View = Backbone.View.extend({
         this.collection.forEach(function(model) {
             model.set("active", model.id == id);
         });
-    },
-
-    /** body template */
-    _template: function() {
-        return `
-            <div>
-                <nav id="masthead" class="navbar navbar-expand justify-content-center navbar-dark" role="navigation" aria-label="Main">
-                    <a class="navbar-brand" aria-label="homepage">
-                        <img alt="logo" class="navbar-brand-image"/>
-                        <span class="navbar-brand-title"/>
-                    </a>
-                    <ul class="navbar-nav"/>
-                    <div class="quota-meter-container"/>
-                </nav>
-            </div>`;
     }
 });
 
