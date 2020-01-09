@@ -1,5 +1,5 @@
 <template>
-    <div class="unified-panel-wrapper">
+    <div class="unified-panel">
         <div class="unified-panel-header" unselectable="on">
             <div class="unified-panel-header-inner">
                 <div class="panel-header-buttons">
@@ -116,12 +116,3 @@ export default {
     }
 };
 </script>
-
-<style scoped>
-.unified-panel-wrapper {
-    display: flex;
-    flex-flow: column;
-    height: 100%;
-    overflow: auto;
-}
-</style>

@@ -192,11 +192,12 @@ body {
 }
 
 // ==== Unified panel styles ====
-
 .unified-panel {
     display: flex;
-    @extend .flex-column;
+    flex-flow: column;
     background: $panel-bg-color;
+    height: 100%;
+    overflow: auto;
 }
 .unified-panel-header {
     @extend .unselectable;
