@@ -3,8 +3,8 @@
         <div class="unified-panel-header" unselectable="on">
             <div class="unified-panel-header-inner">
                 <div class="panel-header-buttons">
-                    <favorites-button v-if="isUser"></favorites-button>
-                    <upload-button></upload-button>
+                    <favorites-button v-if="isUser" />
+                    <upload-button />
                 </div>
                 <div class="panel-header-text">Tools</div>
             </div>
@@ -20,6 +20,7 @@
                         :category="category"
                         :isFiltered="isFiltered"
                         :key="category.id"
+                        @onOpen="onOpen"
                     ></tool-section>
                 </div>
                 <div class="toolSectionPad"></div>
@@ -48,7 +49,6 @@ import ToolSearch from "./ToolSearch";
 import UploadButton from "./Buttons/UploadButton";
 import FavoritesButton from "./Buttons/FavoritesButton";
 import { toolsLayout } from "./utilities.js";
-import _ from "underscore";
 
 export default {
     name: "ToolBox",
@@ -86,7 +86,7 @@ export default {
     },
     computed: {
         categories() {
-            return toolsLayout(this.layout, this.results)
+            return toolsLayout(this.layout, this.results);
         },
         isFiltered() {
             if (this.results) {
@@ -99,6 +99,9 @@ export default {
     methods: {
         setResults(results) {
             this.results = results;
+        },
+        onOpen(e, tool) {
+            this.$emit("onOpen", e, tool);
         }
     }
 };

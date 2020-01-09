@@ -1,6 +1,6 @@
 <template>
     <div :id="side" class="unified-panel-outer-wrap" :style="styles">
-        <component :is="currentPanel" v-bind="currentPanelProperties"></component>
+        <component :is="currentPanel" v-bind="currentPanelProperties" @onOpen="currentPanelOnOpen" />
 
         <div class="unified-panel-footer">
             <div
@@ -11,8 +11,8 @@
                     hidden: !show
                 }"
                 @click="toggle"
-            ></div>
-            <div class="drag" @mousedown="dragHandler"></div>
+            />
+            <div class="drag" @mousedown="dragHandler" />
         </div>
     </div>
 </template>
@@ -23,7 +23,7 @@ const MAX_PANEL_WIDTH = 800;
 
 export default {
     name: "SidePanel",
-    props: ["currentPanel", "currentPanelProperties", "side"],
+    props: ["currentPanel", "currentPanelProperties", "currentPanelOnOpen", "side"],
     data() {
         return {
             show: true,

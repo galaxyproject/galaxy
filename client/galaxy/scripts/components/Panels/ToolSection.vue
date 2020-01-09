@@ -11,7 +11,7 @@
             <transition name="slide">
                 <div v-if="opened">
                     <template v-for="el in category.elems">
-                        <tool v-if="el.panel_type == 'tool'" :tool="el" :key="el.id"></tool>
+                        <tool v-if="el.panel_type == 'tool'" :tool="el" :key="el.id" @onOpen="onOpen"></tool>
                         <div v-else-if="el.panel_type == 'section'" class="toolPanelLabel" :key="el.id">
                             <span>
                                 {{ el.text }}
@@ -50,6 +50,9 @@ export default {
         }
     },
     methods: {
+        onOpen(e, tool) {
+            this.$emit("onOpen", e, tool);
+        },
         toggleToolSectionMenu(e) {
             this.opened = !this.opened;
             const currentState = this.opened ? "opened" : "closed";

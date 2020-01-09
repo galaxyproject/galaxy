@@ -88,7 +88,8 @@ const ToolPanel = Backbone.View.extend({
             {
                 side: "left",
                 currentPanel: ToolBox,
-                currentPanelProperties: this.getProperties()
+                currentPanelProperties: this.getProperties(),
+                currentPanelOnOpen: this.onOpen
             },
             el
         );
@@ -96,14 +97,28 @@ const ToolPanel = Backbone.View.extend({
 
     getVueComponent: function() {
         const SidePanelClass = Vue.extend(SidePanel);
-
         return new SidePanelClass({
             propsData: {
                 side: "left",
                 currentPanel: ToolBox,
-                currentPanelProperties: this.getProperties()
+                currentPanelProperties: this.getProperties(),
+                currentPanelOnOpen: this.onOpen
             }
         });
+    },
+
+    onOpen: function(e, tool) {
+        const Galaxy = getGalaxyInstance();
+        if (tool.id === "upload1") {
+            e.preventDefault();
+            Galaxy.upload.show();
+        } else if (tool.form_style === "regular") {
+            e.preventDefault();
+            Galaxy.router.push("/", {
+                tool_id: tool.id,
+                version: tool.version
+            });
+        }
     },
 
     getProperties: function() {

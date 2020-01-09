@@ -1,7 +1,6 @@
 import _ from "underscore";
 
 export function toolsLayout(layout, results) {
-
     // todo: panel_types are already defined in backend
     layout = _.map(layout, category => {
         return {
@@ -11,7 +10,7 @@ export function toolsLayout(layout, results) {
                 return {
                     ...el,
                     panel_type: getPanelType(el)
-                }
+                };
             })
         };
     });
@@ -41,10 +40,7 @@ export function toolsLayout(layout, results) {
                 };
             }),
             category => {
-                return (
-                    category.elems.length ||
-                    (category.panel_type == "tool" && results.includes(category.id))
-                );
+                return category.elems.length || (category.panel_type == "tool" && results.includes(category.id));
             }
         );
     } else {

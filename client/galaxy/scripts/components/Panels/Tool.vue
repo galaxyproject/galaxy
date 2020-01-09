@@ -25,7 +25,6 @@
 </template>
 
 <script>
-import { getGalaxyInstance } from "app"; // FIXME:
 import ariaAlert from "utils/ariaAlert";
 
 export default {
@@ -42,24 +41,9 @@ export default {
     },
     methods: {
         open(e) {
-            const formStyle = this.tool["form_style"];
-            const Galaxy = getGalaxyInstance();
-
-            if (this.tool.id === "upload1") {
-                e.preventDefault();
-                Galaxy.upload.show();
-            } else if (formStyle === "regular") {
-                e.preventDefault();
-                Galaxy.router.push("/", {
-                    tool_id: this.tool.id,
-                    version: this.tool.version
-                });
-            }
-            ariaAlert(`${this.tool.name} opened in galaxy center panel`);
+            ariaAlert(`${this.tool.name} opened in center panel`);
+            this.$emit("onOpen", e, this.tool);
         }
-    },
-    created() {}
+    }
 };
 </script>
-
-<style scoped></style>
