@@ -983,9 +983,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         # may want to extend this to have more reviewers.
         reviewing_users = [stored_workflow.user]
-        workflow_encoded_id = trans.security.encode_id(stored_workflow.id)
-        history_encoded_id = trans.security.encode_id(history.id)
-        dict_workflow = json.loads(self.workflow_dict(trans, workflow_encoded_id))
+        encoded_workflow_id = trans.security.encode_id(stored_workflow.id)
+        encoded_history_id = trans.security.encode_id(history.id)
+        dict_workflow = json.loads(self.workflow_dict(trans, encoded_workflow_id))
 
         # h_contents = self.history_contents_manager.contained(history)
 
@@ -994,7 +994,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         # listing the versions of the workflow for 'version' and 'derived_from'
         versions = []
-        workflow_versions = self.workflow_manager.get_stored_accessible_workflow(trans, workflow_encoded_id)
+        workflow_versions = self.workflow_manager.get_stored_accessible_workflow(trans, encoded_workflow_id)
         for i, w in enumerate(reversed(workflow_versions.workflows)):
             version = {
                 'version': i,
@@ -1037,7 +1037,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             'name': workflow.name,
             'version': current_version,
             'review': reviewers,
-            'derived_from': url_for('workflow', id=workflow_encoded_id, qualified=True),
+            'derived_from': url_for('workflow', id=encoded_workflow_id, qualified=True),
             'created': workflow_invocation.create_time.isoformat(),
             'modified': workflow_invocation.update_time.isoformat(),
             'contributors': contributors,
@@ -1051,10 +1051,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             if tag.user_tname not in keywords:
                 keywords.append(tag.user_tname)
 
-        host = 'https://localhost:8080'
         input_subdomain, output_subdomain, pipeline_steps, software_prerequisites = [], [], [], []
-        # Which `url_for` function option would generate this format below?
-        url_format = '{}/api/histories/{}/contents/{}'
         for i, step in enumerate(workflow_invocation.steps):
             current_tool = dict_workflow['steps'][str(i)]
             if step.workflow_step.type == 'tool':
@@ -1064,20 +1061,20 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 for job in step.jobs:
                     for job_input in job.input_datasets:
                         if hasattr(job_input.dataset, 'dataset_id'):
-                            inputobj = trans.security.encode_id(job_input.dataset.dataset_id)
+                            encoded_dataset_id = trans.security.encode_id(job_input.dataset.dataset_id)
                             input_obj = {
                                 'filename': job_input.dataset.name,
-                                'uri': url_format.format(host, history_encoded_id, inputobj),
+                                'uri': url_for('history_content', history_id=encoded_history_id, id=encoded_dataset_id, qualified=True),
                                 'access_time': job_input.dataset.create_time.isoformat(),
                             }
                             input_list.append(input_obj)
 
                     for job_output in job.output_datasets:
                         if hasattr(job_output.dataset, 'dataset_id'):
-                            outobj = trans.security.encode_id(job_output.dataset.dataset_id)
+                            encoded_dataset_id = trans.security.encode_id(job_output.dataset.dataset_id)
                             output_obj = {
                                 'filename': job_output.dataset.name,
-                                'uri': url_format.format(host, history_encoded_id, outobj),
+                                'uri': url_for('history_content', history_id=encoded_history_id, id=encoded_dataset_id, qualified=True),
                                 'access_time': job_output.dataset.create_time.isoformat(),
                             }
                             output_list.append(output_obj)
@@ -1087,7 +1084,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                                 'mediatype': job_output.dataset.extension,
                                 'uri': {
                                     'filename': job_output.dataset.name,
-                                    'uri': url_format.format(host, history_encoded_id, outobj) ,
+                                    'uri': url_for('history_content', history_id=encoded_history_id, id=encoded_dataset_id, qualified=True),
                                     'access_time': job_output.dataset.create_time.isoformat(),
                                 }
                             }
@@ -1136,7 +1133,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         execution_domain = {
             'script_access_type': 'a_galaxy_workflow',
-            'script': [url_for('workflows', encoded_workflow_id=workflow_encoded_id)],
+            'script': [url_for('workflows', encoded_workflow_id=encoded_workflow_id)],
             'script_driver': 'Galaxy',
             'software_prerequisites': software_prerequisites,
             'external_data_endpoints': [],
