@@ -85,12 +85,7 @@ const ToolPanel = Backbone.View.extend({
 
     mountVueComponent: function(el) {
         return mountVueComponent(SidePanel)(
-            {
-                side: "left",
-                currentPanel: ToolBox,
-                currentPanelProperties: this.getProperties(),
-                currentPanelOnOpen: this.onOpen
-            },
+            this.getPropsData(),
             el
         );
     },
@@ -98,12 +93,7 @@ const ToolPanel = Backbone.View.extend({
     getVueComponent: function() {
         const SidePanelClass = Vue.extend(SidePanel);
         return new SidePanelClass({
-            propsData: {
-                side: "left",
-                currentPanel: ToolBox,
-                currentPanelProperties: this.getProperties(),
-                currentPanelOnOpen: this.onOpen
-            }
+            propsData: this.getPropsData()
         });
     },
 
@@ -118,6 +108,15 @@ const ToolPanel = Backbone.View.extend({
                 tool_id: tool.id,
                 version: tool.version
             });
+        }
+    },
+
+    getPropsData: function() {
+        return {
+            side: "left",
+            currentPanel: ToolBox,
+            currentPanelProperties: this.getProperties(),
+            currentPanelOnOpen: this.onOpen
         }
     },
 
