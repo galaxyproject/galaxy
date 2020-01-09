@@ -11,7 +11,10 @@ import pkg_resources
 import yaml
 
 from galaxy.containers import parse_containers_config
-from galaxy.util import asbool
+from galaxy.util import (
+    asbool,
+    which,
+)
 from galaxy.util.properties import (
     find_config_file,
     load_app_properties
@@ -145,7 +148,7 @@ class ConditionalDependencies(object):
         return "galaxy.jobs.runners.pbs:PBSJobRunner" in self.job_runners
 
     def check_pykube(self):
-        return "galaxy.jobs.runners.kubernetes:KubernetesJobRunner" in self.job_runners
+        return "galaxy.jobs.runners.kubernetes:KubernetesJobRunner" in self.job_runners or which('kubectl')
 
     def check_chronos_python(self):
         return "galaxy.jobs.runners.chronos:ChronosJobRunner" in self.job_runners
@@ -194,7 +197,7 @@ class ConditionalDependencies(object):
 
 def optional(config_file=None):
     if not config_file:
-        config_file = find_config_file(['galaxy', 'universe_wsgi'])
+        config_file = find_config_file(['galaxy', 'universe_wsgi'], include_samples=True)
     if not config_file:
         print("galaxy.dependencies.optional: no config file found", file=sys.stderr)
         return []
