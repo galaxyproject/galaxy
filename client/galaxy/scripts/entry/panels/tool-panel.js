@@ -61,26 +61,11 @@ const ToolPanel = Backbone.View.extend({
         });
     },
 
-    onOpen: function(e, tool) {
-        const Galaxy = getGalaxyInstance();
-        if (tool.id === "upload1") {
-            e.preventDefault();
-            Galaxy.upload.show();
-        } else if (tool.form_style === "regular") {
-            e.preventDefault();
-            Galaxy.router.push("/", {
-                tool_id: tool.id,
-                version: tool.version
-            });
-        }
-    },
-
     getPropsData: function() {
         return {
             side: "left",
             currentPanel: ToolBox,
-            currentPanelProperties: this.getProperties(),
-            currentPanelOnOpen: this.onOpen
+            currentPanelProperties: this.getProperties()
         };
     },
 

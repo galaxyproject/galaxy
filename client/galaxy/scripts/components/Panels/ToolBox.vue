@@ -48,6 +48,7 @@ import ToolSearch from "./ToolSearch";
 import UploadButton from "./Buttons/UploadButton";
 import FavoritesButton from "./Buttons/FavoritesButton";
 import { filterToolsLayout } from "./utilities.js";
+import { getGalaxyInstance } from "app";
 
 export default {
     name: "ToolBox",
@@ -100,7 +101,17 @@ export default {
             this.results = results;
         },
         onOpen(e, tool) {
-            this.$emit("onOpen", e, tool);
+            const Galaxy = getGalaxyInstance();
+            if (tool.id === "upload1") {
+                e.preventDefault();
+                Galaxy.upload.show();
+            } else if (tool.form_style === "regular") {
+                e.preventDefault();
+                Galaxy.router.push("/", {
+                    tool_id: tool.id,
+                    version: tool.version
+                });
+            }
         }
     }
 };

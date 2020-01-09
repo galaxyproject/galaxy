@@ -1,6 +1,6 @@
 <template>
     <div :id="side" class="unified-panel-outer-wrap" :style="styles">
-        <component :is="currentPanel" v-bind="currentPanelProperties" @onOpen="currentPanelOnOpen" />
+        <component :is="currentPanel" v-bind="currentPanelProperties" />
 
         <div class="unified-panel-footer">
             <div
@@ -23,7 +23,7 @@ const MAX_PANEL_WIDTH = 800;
 
 export default {
     name: "SidePanel",
-    props: ["currentPanel", "currentPanelProperties", "currentPanelOnOpen", "side"],
+    props: ["currentPanel", "currentPanelProperties", "side"],
     data() {
         return {
             show: true,
