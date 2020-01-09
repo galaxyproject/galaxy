@@ -21,11 +21,10 @@
                         :isFiltered="isFiltered"
                         :key="category.id"
                         @onOpen="onOpen"
-                    ></tool-section>
+                    />
                 </div>
-                <div class="toolSectionPad"></div>
-                <div class="toolSectionPad"></div>
-
+                <div class="toolSectionPad" />
+                <div class="toolSectionPad" />
                 <div class="toolSectionTitle" id="title_XXinternalXXworkflow">
                     <a>{{ workflowsTitle }}</a>
                 </div>
@@ -48,7 +47,7 @@ import ToolSection from "./ToolSection";
 import ToolSearch from "./ToolSearch";
 import UploadButton from "./Buttons/UploadButton";
 import FavoritesButton from "./Buttons/FavoritesButton";
-import { toolsLayout } from "./utilities.js";
+import { filterToolsLayout } from "./utilities.js";
 
 export default {
     name: "ToolBox",
@@ -67,7 +66,7 @@ export default {
         tools: {
             type: Array
         },
-        layout: {
+        toolsLayout: {
             type: Array
         },
         toolSearch: {
@@ -86,7 +85,7 @@ export default {
     },
     computed: {
         categories() {
-            return toolsLayout(this.layout, this.results);
+            return filterToolsLayout(this.toolsLayout, this.results);
         },
         isFiltered() {
             if (this.results) {

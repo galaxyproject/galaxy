@@ -1,20 +1,20 @@
 import _ from "underscore";
 
-export function toolsLayout(layout, results) {
-    // todo: panel_types are already defined in backend
-    layout = _.map(layout, category => {
+export function getToolsLayout(tool_panel) {
+    return _.map(tool_panel.get("layout").toJSON(), category => {
         return {
             ...category,
             panel_type: getPanelType(category),
             elems: _.map(category.elems, el => {
-                return {
-                    ...el,
-                    panel_type: getPanelType(el)
-                };
+                const json = el.toJSON();
+                json.panel_type = getPanelType(json);
+                return json;
             })
         };
     });
+}
 
+export function filterToolsLayout(layout, results) {
     if (results) {
         return _.filter(
             _.map(layout, category => {

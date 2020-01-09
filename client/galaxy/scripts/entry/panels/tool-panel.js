@@ -3,7 +3,6 @@ import $ from "jquery";
 import Tools from "mvc/tool/tools";
 import Upload from "mvc/upload/upload-view";
 import _l from "utils/localization";
-// import ToolForm from "mvc/tool/tool-form-composite";
 import _ from "libs/underscore";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
@@ -11,6 +10,7 @@ import Buttons from "mvc/ui/ui-buttons";
 import Vue from "vue";
 import ToolBox from "../../components/Panels/ToolBox.vue";
 import SidePanel from "../../components/Panels/SidePanel.vue";
+import { getToolsLayout } from "../../components/Panels/utilities.js";
 import { mountVueComponent } from "../../utils/mountVueComponent";
 
 const ToolPanel = Backbone.View.extend({
@@ -84,10 +84,7 @@ const ToolPanel = Backbone.View.extend({
     isVueWrapper: true,
 
     mountVueComponent: function(el) {
-        return mountVueComponent(SidePanel)(
-            this.getPropsData(),
-            el
-        );
+        return mountVueComponent(SidePanel)(this.getPropsData(), el);
     },
 
     getVueComponent: function() {
@@ -117,7 +114,7 @@ const ToolPanel = Backbone.View.extend({
             currentPanel: ToolBox,
             currentPanelProperties: this.getProperties(),
             currentPanelOnOpen: this.onOpen
-        }
+        };
     },
 
     getProperties: function() {
@@ -126,17 +123,8 @@ const ToolPanel = Backbone.View.extend({
         return {
             appRoot: getAppRoot(),
             toolsTitle: _l("Tools"),
-            layout: _.map(this.tool_panel.get("layout").toJSON(), category => {
-                return {
-                    ...category,
-                    elems: _.map(category.elems, el => {
-                        return el.toJSON();
-                    })
-                };
-            }),
-
+            toolsLayout: getToolsLayout(this.tool_panel),
             isUser: !!(Galaxy.user && Galaxy.user.id),
-
             workflowsTitle: _l("Workflows"),
             workflows: [
                 {
@@ -154,8 +142,6 @@ const ToolPanel = Backbone.View.extend({
             ]
         };
     },
-
-    render: function() {},
 
     /** build a link to one tool */
     _templateTool: function(tool) {
