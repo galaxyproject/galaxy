@@ -124,7 +124,7 @@ The following individuals have contributed code to Galaxy:
 * Chinmay Rao <chinmay@bx.psu.edu>
 * Matt Ralston <mrals89@gmail.com>
 * ramezrawas <ramezrawas@gmail.com>
-* Eric Rasche <esr@tamu.edu> <rasche.eric@gmail.com> <rasche.eric@yandex.ru>
+* Helena Rasche <helena.rasche@gmail.com>
 * Athos Ribeiro <athoscr@fedoraproject.org>
 * Andrew Robinson <Andrew.Robinson@latrobe.edu.au>
 * Devon Ryan <dpryan79@gmail.com>
