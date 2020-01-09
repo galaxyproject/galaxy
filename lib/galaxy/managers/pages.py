@@ -14,6 +14,10 @@ from six.moves.html_parser import HTMLParser
 from galaxy import exceptions, model
 from galaxy.managers import base, sharable
 from galaxy.managers.hdas import HDAManager
+from galaxy.managers.markdown_util import (
+    ready_galaxy_markdown_for_export,
+    ready_galaxy_markdown_for_import,
+)
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.util import unicodify
 from galaxy.util.sanitize_html import sanitize_html
@@ -87,7 +91,8 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
             raise exceptions.DuplicatedSlugException("Page identifier must be unique")
 
         content = payload.get("content", "")
-        content = self.rewrite_content_for_import(trans, content)
+        content_format = payload.get("content_format", "html")
+        content = self.rewrite_content_for_import(trans, content, content_format)
 
         # Create the new stored page
         page = trans.app.model.Page()
@@ -105,6 +110,7 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
         page_revision.page = page
         page.latest_revision = page_revision
         page_revision.content = content
+        page_revision.content_format = content_format
         # Persist
         session = trans.sa_session
         session.add(page)
@@ -114,46 +120,66 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
     def save_new_revision(self, trans, page, payload):
         # Assumes security has already been checked by caller.
         content = payload.get("content", None)
+        content_format = payload.get("content_format", None)
         if not content:
             raise exceptions.ObjectAttributeMissingException("content undefined or empty")
+        if content_format not in [None, "html", "markdown"]:
+            raise exceptions.RequestParameterInvalidException("content_format [%s], if specified, must be either html or markdown" % content_format)
 
         if 'title' in payload:
             title = payload['title']
         else:
             title = page.title
 
-        content = self.rewrite_content_for_import(trans, content)
+        if content_format is None:
+            content_format = page.latest_revision.content_format
+        content = self.rewrite_content_for_import(trans, content, content_format=content_format)
 
         page_revision = trans.app.model.PageRevision()
         page_revision.title = title
         page_revision.page = page
         page.latest_revision = page_revision
         page_revision.content = content
+        page_revision.content_format = content_format
 
         # Persist
         session = trans.sa_session
         session.flush()
         return page_revision
 
-    def rewrite_content_for_import(self, trans, content):
-        try:
-            content = sanitize_html(content)
-            processor = PageContentProcessor(trans, placeholderRenderForSave)
-            processor.feed(content)
-            # Output is string, so convert to unicode for saving.
-            content = unicodify(processor.output(), 'utf-8')
-        except exceptions.MessageException:
-            raise
-        except Exception:
-            raise exceptions.RequestParameterInvalidException("problem with embedded HTML content [%s]" % content)
+    def rewrite_content_for_import(self, trans, content, content_format):
+        if content_format == "html":
+            try:
+                content = sanitize_html(content)
+                processor = PageContentProcessor(trans, placeholderRenderForSave)
+                processor.feed(content)
+                # Output is string, so convert to unicode for saving.
+                content = unicodify(processor.output(), 'utf-8')
+            except exceptions.MessageException:
+                raise
+            except Exception:
+                raise exceptions.RequestParameterInvalidException("problem with embedded HTML content [%s]" % content)
+        elif content_format == "markdown":
+            content = ready_galaxy_markdown_for_import(trans, content)
+        else:
+            raise exceptions.RequestParameterInvalidException("content_format [%s] must be either html or markdown" % content_format)
+
         return content
 
     def rewrite_content_for_export(self, trans, as_dict):
         content = as_dict["content"]
-        processor = PageContentProcessor(trans, placeholderRenderForEdit)
-        processor.feed(content)
-        content = unicodify(processor.output(), 'utf-8')
-        as_dict["content"] = content
+        content_format = as_dict.get("content_format", "html")
+        if content_format == "html":
+            processor = PageContentProcessor(trans, placeholderRenderForEdit)
+            processor.feed(content)
+            content = unicodify(processor.output(), 'utf-8')
+            as_dict["content"] = content
+        elif content_format == "markdown":
+            content, extra_attributes = ready_galaxy_markdown_for_export(trans, content)
+            as_dict["content"] = content
+            as_dict.update(extra_attributes)
+        else:
+            raise exceptions.RequestParameterInvalidException("content_format [%s] must be either html or markdown" % content_format)
         return as_dict
 
 

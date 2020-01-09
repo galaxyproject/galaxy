@@ -20,6 +20,7 @@ from gxformat2 import (
     convert_and_import_workflow,
     ImporterGalaxyInterface,
 )
+from gxformat2._yaml import ordered_load
 from pkg_resources import resource_string
 from six import StringIO
 
@@ -849,7 +850,10 @@ class BaseWorkflowPopulator(object):
             params["style"] = style
         response = self._get("workflows/%s/download" % workflow_id, data=params)
         api_asserts.assert_status_code_is(response, 200)
-        return response.json()
+        if style != "format2":
+            return response.json()
+        else:
+            return ordered_load(response.text)
 
     def update_workflow(self, workflow_id, workflow_object):
         data = dict(
@@ -902,6 +906,9 @@ class BaseWorkflowPopulator(object):
         invocation_response = workflow_populator.invoke_workflow_raw(workflow_id, workflow_request)
         api_asserts.assert_status_code_is(invocation_response, expected_response)
         invocation = invocation_response.json()
+        if expected_response != 200:
+            assert not assert_ok
+            return invocation
         invocation_id = invocation.get('id')
         if invocation_id:
             # Wait for workflow to become fully scheduled and then for all jobs

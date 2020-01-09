@@ -212,9 +212,16 @@ var OutputTerminal = Terminal.extend({
     initialize: function(attr) {
         Terminal.prototype.initialize.call(this, attr);
         this.datatypes = attr.datatypes;
+        this.optional = attr.optional;
         this.force_datatype = attr.force_datatype;
     },
-
+    /*
+    update: function(output) {
+        // This isn't needed for datatypes or optional because WorkflowNode.update_field_data just updates the
+        // properties directly, but an upshot of that is that connected non-optional inputs that become optional
+        // don't disconnect from non-optional inputs.
+    },
+    */
     resetMappingIfNeeded: function() {
         // If inputs were only mapped over to preserve
         // an output just disconnected reset these...
@@ -312,7 +319,7 @@ var BaseInputTerminal = Terminal.extend({
                 if (
                     firstOutput.isCollection ||
                     firstOutput.isMappedOver() ||
-                    firstOutput.datatypes.indexOf("input_collection") > 0
+                    firstOutput.datatypes.indexOf("input") > 0
                 ) {
                     return true;
                 } else {
@@ -359,7 +366,6 @@ var BaseInputTerminal = Terminal.extend({
                 if (
                     other_datatype == "input" ||
                     other_datatype == "_sniff_" ||
-                    other_datatype == "input_collection" ||
                     window.workflow_globals.app.isSubType(cat_outputs[other_datatype_i], thisDatatype)
                 ) {
                     return new ConnectionAcceptable(true, null);
@@ -370,6 +376,12 @@ var BaseInputTerminal = Terminal.extend({
             false,
             `Effective output data type(s) [${cat_outputs}] do not appear to match input type(s) [${this.datatypes}].`
         );
+    },
+    _producesAcceptableDatatypeAndOptionalness(other) {
+        if (!this.optional && !this.multiple && other.optional) {
+            return new ConnectionAcceptable(false, "Cannot connect an optional output to a non-optional input");
+        }
+        return this._producesAcceptableDatatype(other);
     },
     _otherCollectionType: function(other) {
         var otherCollectionType = NULL_COLLECTION_TYPE_DESCRIPTION;
@@ -388,6 +400,7 @@ var InputTerminal = BaseInputTerminal.extend({
     update: function(input) {
         this.datatypes = input.extensions;
         this.multiple = input.multiple;
+        this.optional = input.optional;
         this.collection = false;
     },
     connect: function(connector) {
@@ -420,16 +433,16 @@ var InputTerminal = BaseInputTerminal.extend({
                 }
             }
             if (thisMapOver.isCollection && thisMapOver.canMatch(otherCollectionType)) {
-                return this._producesAcceptableDatatype(other);
+                return this._producesAcceptableDatatypeAndOptionalness(other);
             } else if (this.multiple && new CollectionTypeDescription("list").canMatch(otherCollectionType)) {
                 // This handles the special case of a list input being connected to a multiple="true" data input.
                 // Nested lists would be correctly mapped over by the above condition.
-                return this._producesAcceptableDatatype(other);
+                return this._producesAcceptableDatatypeAndOptionalness(other);
             } else {
                 //  Need to check if this would break constraints...
                 var mappingConstraints = this._mappingConstraints();
                 if (mappingConstraints.every(_.bind(otherCollectionType.canMatch, otherCollectionType))) {
-                    return this._producesAcceptableDatatype(other);
+                    return this._producesAcceptableDatatypeAndOptionalness(other);
                 } else {
                     if (thisMapOver.isCollection) {
                         // incompatible collection type attached
@@ -458,19 +471,25 @@ var InputTerminal = BaseInputTerminal.extend({
                 "Cannot attach non-collection outputs to mapped over inputs, consider disconnecting inputs and outputs to reset this input's mapping."
             );
         }
-        return this._producesAcceptableDatatype(other);
+        return this._producesAcceptableDatatypeAndOptionalness(other);
     }
 });
 
 var InputParameterTerminal = BaseInputTerminal.extend({
     update: function(input) {
         this.type = input.type;
+        this.optional = input.optional;
     },
     connect: function(connector) {
         BaseInputTerminal.prototype.connect.call(this, connector);
     },
+    effectiveType: function(parameterType) {
+        return parameterType == "select" ? "text" : parameterType;
+    },
     attachable: function(other) {
-        return new ConnectionAcceptable(this.type == other.attributes.type, "");
+        const effectiveThisType = this.effectiveType(this.type);
+        const effectiveOtherType = this.effectiveType(other.attributes.type);
+        return new ConnectionAcceptable(effectiveThisType == effectiveOtherType, "");
     }
 });
 
@@ -480,6 +499,7 @@ var InputCollectionTerminal = BaseInputTerminal.extend({
         this.collection = true;
         this.collection_type = input.collection_type;
         this.datatypes = input.extensions;
+        this.optional = input.optional;
         var collectionTypes = [];
         if (input.collection_types) {
             _.each(input.collection_types, collectionType => {
@@ -550,7 +570,7 @@ var InputCollectionTerminal = BaseInputTerminal.extend({
             );
             if (canMatch) {
                 // Only way a direct match...
-                return this._producesAcceptableDatatype(other);
+                return this._producesAcceptableDatatypeAndOptionalness(other);
                 // Otherwise we need to mapOver
             } else if (thisMapOver.isCollection) {
                 // In this case, mapOver already set and we didn't match skipping...
@@ -574,7 +594,7 @@ var InputCollectionTerminal = BaseInputTerminal.extend({
                 //  Need to check if this would break constraints...
                 var mappingConstraints = this._mappingConstraints();
                 if (mappingConstraints.every(d => effectiveMapOver.canMatch(d))) {
-                    return this._producesAcceptableDatatype(other);
+                    return this._producesAcceptableDatatypeAndOptionalness(other);
                 } else {
                     if (this.node.hasConnectedMappedInputTerminals()) {
                         return new ConnectionAcceptable(
@@ -601,6 +621,7 @@ var OutputCollectionTerminal = Terminal.extend({
     initialize: function(attr) {
         Terminal.prototype.initialize.call(this, attr);
         this.datatypes = attr.datatypes;
+        this.optional = attr.optional;
         this.force_datatype = attr.force_datatype;
         if (attr.collection_type) {
             this.collectionType = new CollectionTypeDescription(attr.collection_type);
@@ -614,6 +635,7 @@ var OutputCollectionTerminal = Terminal.extend({
         this.isCollection = true;
     },
     update: function(output) {
+        this.optional = output.optional;
         var newCollectionType;
         if (output.collection_type) {
             newCollectionType = new CollectionTypeDescription(output.collection_type);

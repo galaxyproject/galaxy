@@ -48,7 +48,7 @@
     </style>
 </%def>
 
-    
+
 <%def name="center_panel()">
     ${self.body()}
 </%def>
@@ -67,23 +67,23 @@
     </div>
     <p />
     %endif
-    
+
     <%
         #
         # Setup and variables needed for page.
         #
-    
+
         # Get class name strings.
-        item_class_name = get_class_display_name( item.__class__ ) 
+        item_class_name = get_class_display_name( item.__class__ )
         item_class_name_lc = item_class_name.lower()
         item_class_plural_name = get_class_plural_display_name( item.__class__ )
         item_class_plural_name_lc = item_class_plural_name.lower()
         item_controller = get_controller_name(item)
-        
+
         # Get item name.
         item_name = get_item_name(item)
     %>
-    
+
     <div class="card">
         <div class="card-header">Share ${item_class_name} '${item_name | h}' with Another User</div>
             <div class="card-body">
@@ -108,7 +108,11 @@
                         <input type="submit" value="Share"></input>
                     </div>
                     <div class="form-row">
+                        %if item_class_name == "Workflow":
+                        <a href="${h.url_for(controller="", action="workflow/sharing", id=trans.security.encode_id( item.id ) )}">Back to ${item_class_name}'s Sharing Home</a>
+                        %else:
                         <a href="${h.url_for(controller="", action="%s/sharing" % item_class_plural_name_lc, id=trans.security.encode_id( item.id ) )}">Back to ${item_class_name}'s Sharing Home</a>
+                        %endif
                     </div>
                 </form>
             </div>
@@ -189,7 +193,7 @@
             });
             // If there aren't any users with matching object labels, then
             // display a "default" entry with whatever text they're entering.
-            // id is set to term as that will be used in 
+            // id is set to term as that will be used in
             if(matches.length == 0){
                 return {id: term, text:term};
             }else{

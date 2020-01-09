@@ -36,7 +36,7 @@ class ToolInfo(object):
     # variables they can consume (e.g. JVM options, license keys, etc..)
     # and add these to env_path_through
 
-    def __init__(self, container_descriptions=None, requirements=None, requires_galaxy_python_environment=False, env_pass_through=["GALAXY_SLOTS"], guest_ports=None):
+    def __init__(self, container_descriptions=None, requirements=None, requires_galaxy_python_environment=False, env_pass_through=["GALAXY_SLOTS"], guest_ports=None, tool_id=None, tool_version=None):
         if container_descriptions is None:
             container_descriptions = []
         if requirements is None:
@@ -46,19 +46,22 @@ class ToolInfo(object):
         self.requires_galaxy_python_environment = requires_galaxy_python_environment
         self.env_pass_through = env_pass_through
         self.guest_ports = guest_ports
+        self.tool_id = tool_id
+        self.tool_version = tool_version
 
 
 class JobInfo(object):
 
     def __init__(
-        self, working_directory, tool_directory, job_directory, tmp_directory, job_directory_type
+        self, working_directory, tool_directory, job_directory, tmp_directory, home_directory, job_directory_type,
     ):
         self.working_directory = working_directory
-        self.job_directory = job_directory
         # Tool files may be remote staged - so this is unintuitively a property
         # of the job not of the tool.
         self.tool_directory = tool_directory
+        self.job_directory = job_directory
         self.tmp_directory = tmp_directory
+        self.home_directory = home_directory
         self.job_directory_type = job_directory_type  # "galaxy" or "pulsar"
 
 

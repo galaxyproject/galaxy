@@ -104,6 +104,8 @@ class AuthnzManager(object):
                     self.oidc_backends_config[idp] = self._parse_custos_config(child)
                     self.oidc_backends_implementation[idp] = 'custos'
                     self.app.config.oidc.append(idp)
+                else:
+                    raise ParseError("Unknown provider specified")
             if len(self.oidc_backends_config) == 0:
                 raise ParseError("No valid provider configuration parsed.")
         except ImportError:
@@ -254,8 +256,9 @@ class AuthnzManager(object):
             if success is False:
                 return False, message, (None, None)
             return True, message, backend.callback(state_token, authz_code, trans, login_redirect_url)
-        except Exception:
-            msg = 'An error occurred when handling callback from `{}` identity provider'.format(provider)
+        except Exception as e:
+            msg = 'The following error occurred when handling callback from `{}` identity provider: ' \
+                  '{}'.format(provider, e.message)
             log.exception(msg)
             return False, msg, (None, None)
 

@@ -8,15 +8,20 @@
         role="button"
         aria-label="Show favorite tools"
     >
-        <span class="fa fa-star-o"></span>
+        <font-awesome-icon :icon="['far', 'star']" />
     </a>
 </template>
 
 <script>
 import { VBTooltip } from "bootstrap-vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faStar } from "@fortawesome/free-regular-svg-icons";
+library.add(faStar);
 
 export default {
     name: "FavoritesButton",
+    components: { FontAwesomeIcon },
     data() {
         return {
             tooltipText: "Show favorites"

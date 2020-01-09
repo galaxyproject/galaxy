@@ -121,6 +121,13 @@ class TabularData(data.Text):
                                        column_names=column_names,
                                        column_types=column_types)
 
+    def display_as_markdown(self, dataset_instance, markdown_format_helpers):
+        contents = open(dataset_instance.file_name, "r").read(data.DEFAULT_MAX_PEEK_SIZE)
+        markdown = self.make_html_table(dataset_instance, peek=contents)
+        if len(contents) == data.DEFAULT_MAX_PEEK_SIZE:
+            markdown += markdown_format_helpers.indicate_data_truncated()
+        return markdown_format_helpers.pre_formatted_contents(markdown)
+
     def make_html_table(self, dataset, **kwargs):
         """Create HTML table, used for displaying peek"""
         out = ['<table cellspacing="0" cellpadding="3">']
@@ -184,12 +191,15 @@ class TabularData(data.Text):
             skipchars = []
         out = []
         try:
-            if not dataset.peek:
-                dataset.set_peek()
+            peek = kwargs.get("peek")
+            if peek is None:
+                if not dataset.peek:
+                    dataset.set_peek()
+                peek = dataset.peek
             columns = dataset.metadata.columns
             if columns is None:
                 columns = dataset.metadata.spec.columns.no_value
-            for line in dataset.peek.splitlines():
+            for line in peek.splitlines():
                 if line.startswith(tuple(skipchars)):
                     out.append('<tr><td colspan="100%%">%s</td></tr>' % escape(line))
                 elif line:
@@ -815,7 +825,7 @@ class Eland(Tabular):
                              'PART_CONTIG', 'PART_OFFSET', 'PART_STRAND', 'FILT'
                              ]
 
-    def make_html_table(self, dataset, skipchars=None):
+    def make_html_table(self, dataset, skipchars=None, peek=None):
         """Create HTML table, used for displaying peek"""
         if skipchars is None:
             skipchars = []
@@ -830,7 +840,7 @@ class Eland(Tabular):
                 for i in range(len(self.column_names), dataset.metadata.columns):
                     out.append('<th>%s</th>' % str(i + 1))
                 out.append('</tr>')
-            out.append(self.make_html_peek_rows(dataset, skipchars=skipchars))
+            out.append(self.make_html_peek_rows(dataset, skipchars=skipchars, peek=peek))
             out.append('</table>')
             out = "".join(out)
         except Exception as exc:

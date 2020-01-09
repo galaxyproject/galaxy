@@ -32,6 +32,7 @@ class GitLabPlugin(BaseGitPlugin):
 
         # GitLab settings
         self.gitlab_base_url = kwargs.get('gitlab_base_url', 'https://gitlab.com')
+        self.gitlab_private_token = kwargs.get('gitlab_private_token', "")
         self.git_default_repo_owner = kwargs.get('gitlab_default_repo_owner', False)
         self.git_default_repo_name = kwargs.get('gitlab_default_repo_name', False)
         self.git_default_repo_only = string_as_bool(kwargs.get('gitlab_default_repo_only', True))
@@ -39,43 +40,52 @@ class GitLabPlugin(BaseGitPlugin):
 
         try:
             import gitlab
-
-            session = requests.Session()
-            if self.gitlab_use_proxy:
-                session.proxies = {
-                    'https': os.environ.get('https_proxy'),
-                    'http': os.environ.get('http_proxy'),
-                }
-
-            self.gitlab = gitlab.Gitlab(
-                # Allow running against GL enterprise deployments
-                kwargs.get('gitlab_base_url', 'https://gitlab.com'),
-                private_token=kwargs['gitlab_private_token'],
-                session=session
-            )
+            self.gitlab = self.gitlab_connect()
             self.gitlab.auth()
 
         except ImportError:
-            log.error("GitLab error reporting - Please install python-gitlab to submit bug reports to GitLab.")
+            log.error("GitLab error reporting - Please install python-gitlab to submit bug reports to GitLab.", exc_info=True)
             self.gitlab = None
         except gitlab.GitlabAuthenticationError:
-            log.error("GitLab error reporting - Could not authenticate with GitLab.")
+            log.error("GitLab error reporting - Could not authenticate with GitLab.", exc_info=True)
             self.gitlab = None
         except gitlab.GitlabParsingError:
-            log.error("GitLab error reporting - Could not parse GitLab message.")
+            log.error("GitLab error reporting - Could not parse GitLab message.", exc_info=True)
             self.gitlab = None
         except (gitlab.GitlabConnectionError, gitlab.GitlabHttpError):
-            log.error("GitLab error reporting - Could not connect to GitLab.")
+            log.error("GitLab error reporting - Could not connect to GitLab.", exc_info=True)
             self.gitlab = None
         except gitlab.GitlabError:
-            log.error("GitLab error reporting - General error communicating with GitLab.")
+            log.error("GitLab error reporting - General error communicating with GitLab.", exc_info=True)
             self.gitlab = None
+
+    def gitlab_connect(self):
+        import gitlab
+        session = requests.Session()
+        if self.gitlab_use_proxy:
+            session.proxies = {
+                'https': os.environ.get('https_proxy'),
+                'http': os.environ.get('http_proxy'),
+            }
+
+        return gitlab.Gitlab(
+            # Allow running against GL enterprise deployments
+            self.gitlab_base_url,
+            private_token=self.gitlab_private_token,
+            session=session
+        )
 
     def submit_report(self, dataset, job, tool, **kwargs):
         """Submit the error report to GitLab
         """
         log.info(self.gitlab)
 
+        # Try to connect beforehand, as we might lose connection
+        if not self.gitlab:
+            self.gitlab = self.gitlab_connect()
+            self.gitlab.auth()
+
+        # Ensure we are connected to Gitlab
         if self.gitlab:
             # Import GitLab here for the error handling
             import gitlab
@@ -92,7 +102,7 @@ class GitLabPlugin(BaseGitPlugin):
                 ts_repourl = self._get_gitrepo_from_ts(job, ts_url)
 
                 # Remove .git from the repository URL if this was specified
-                if ts_repourl.endswith(".git"):
+                if ts_repourl is not None and ts_repourl.endswith(".git"):
                     ts_repourl = ts_repourl[:-4]
 
                 log.info("GitLab error reporting - Determine ToolShed Repository URL: %s", ts_repourl)
@@ -127,10 +137,12 @@ class GitLabPlugin(BaseGitPlugin):
                     if not self.redact_user_details_in_bugreport:
                         log.debug("GitLab error reporting - Last commiter username: %s" % gl_username)
                     if gl_username not in self.git_username_id_cache:
-                        log.debug("GitLab error reporting - Last Committer user ID: %d" %
-                                  self.gitlab.users.list(username=gl_username)[0].get_id())
-                        self.git_username_id_cache[gl_username] = self.gitlab.users.list(username=gl_username)[
-                            0].get_id()
+                        gl_userquery = self.gitlab.users.list(username=gl_username)
+                        log.debug("GitLab error reporting - User list: %s" % gl_userquery)
+                        if len(gl_userquery) > 0:
+                            log.debug("GitLab error reporting - Last Committer user ID: %d" %
+                                      gl_userquery[0].get_id())
+                            self.git_username_id_cache[gl_username] = gl_userquery[0].get_id()
                     gl_userid = self.git_username_id_cache.get(gl_username, None)
 
                 log.info(error_title in self.issue_cache[issue_cache_key])
@@ -138,11 +150,11 @@ class GitLabPlugin(BaseGitPlugin):
                     try:
                         # Create a new issue.
                         self._create_issue(issue_cache_key, error_title, error_message, gl_project, gl_userid=gl_userid)
-                    except gitlab.GitlabOwnershipError:
+                    except (gitlab.GitlabOwnershipError, gitlab.GitlabGetError):
                         gitlab_projecturl = "/".join([self.git_default_repo_owner, self.git_default_repo_name])
                         gitlab_urlencodedpath = urllib.quote_plus(gitlab_projecturl)
                         # Make sure we are always logged in, then retrieve the GitLab project if it isn't cached.
-                        self.gitlab.auth()
+                        self.gitlab = self.gitlab_connect()
                         if gitlab_projecturl not in self.git_project_cache:
                             self.git_project_cache[gitlab_projecturl] = self.gitlab.projects.get(gitlab_urlencodedpath)
                         gl_project = self.git_project_cache[gitlab_projecturl]
@@ -158,36 +170,30 @@ class GitLabPlugin(BaseGitPlugin):
                                                       self.issue_cache[issue_cache_key][error_title],
                                                       self.issue_cache[issue_cache_key][error_title]), 'success')
 
-            except gitlab.GitlabCreateError as e:
-                log.error("GitLab error reporting - Could not create the issue on GitLab. "
-                          "Exception information: " + e.message)
+            except gitlab.GitlabCreateError:
+                log.error("GitLab error reporting - Could not create the issue on GitLab.", exc_info=True)
                 return ('Internal Error.', 'danger')
-            except gitlab.GitlabOwnershipError as e:
-                log.error("GitLab error reporting - Could not create the issue on GitLab due to ownership issues. "
-                          "Exception information: " + e.message)
+            except gitlab.GitlabOwnershipError:
+                log.error("GitLab error reporting - Could not create the issue on GitLab due to ownership issues.", exc_info=True)
                 return ('Internal Error.', 'danger')
-            except gitlab.GitlabSearchError as e:
-                log.error("GitLab error reporting - Could not find repository on GitLab. "
-                          "Exception information: " + e.message)
+            except gitlab.GitlabSearchError:
+                log.error("GitLab error reporting - Could not find repository on GitLab.", exc_info=True)
                 return ('Internal Error.', 'danger')
-            except gitlab.GitlabAuthenticationError as e:
-                log.error("GitLab error reporting - Could not authenticate with GitLab. "
-                          "Exception information: " + e.message)
+            except gitlab.GitlabAuthenticationError:
+                log.error("GitLab error reporting - Could not authenticate with GitLab.", exc_info=True)
                 return ('Internal Error.', 'danger')
-            except gitlab.GitlabParsingError as e:
-                log.error("GitLab error reporting - Could not parse GitLab message. "
-                          "Exception information: " + e.message)
+            except gitlab.GitlabParsingError:
+                log.error("GitLab error reporting - Could not parse GitLab message.", exc_info=True)
                 return ('Internal Error.', 'danger')
-            except (gitlab.GitlabConnectionError, gitlab.GitlabHttpError) as e:
-                log.error("GitLab error reporting - Could not connect to GitLab. Exception information: " + e.message)
+            except (gitlab.GitlabConnectionError, gitlab.GitlabHttpError):
+                log.error("GitLab error reporting - Could not connect to GitLab.", exc_info=True)
                 return ('Internal Error.', 'danger')
-            except gitlab.GitlabError as e:
-                log.error("GitLab error reporting - General error communicating with GitLab. "
-                          "Exception information: " + e.message)
+            except gitlab.GitlabError:
+                log.error("GitLab error reporting - General error communicating with GitLab.", exc_info=True)
                 return ('Internal Error.', 'danger')
-            except Exception as e:
+            except Exception:
                 log.error("GitLab error reporting - Error reporting to GitLab had an exception that could not be "
-                          "determined. Exception information: " + e.message)
+                          "determined.", exc_info=True)
                 return ('Internal Error.', 'danger')
         else:
             log.error("GitLab error reporting - No connection to GitLab. Cannot report error to GitLab.")

@@ -83,6 +83,18 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
         """
         User login path for client-side.
         """
+        # directly redirect to oidc provider if 1) enable_oidc is True, 2)
+        # there is only one oidc provider, 3) auth_conf.xml has no authenticators
+        if (trans.app.config.enable_oidc and
+                len(trans.app.config.oidc) == 1 and
+                len(trans.app.auth_manager.authenticators) == 0
+                and not kwd.get('logout', False)):
+
+            provider = trans.app.config.oidc[0]
+            success, message, redirect_uri = trans.app.authnz_manager.authenticate(provider, trans)
+            if success:
+                return trans.response.send_redirect(redirect_uri)
+
         return self.template(trans, 'login',
                              redirect=redirect,
                              # an installation may have it's own welcome_url - show it here if they've set that

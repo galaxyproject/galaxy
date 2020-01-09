@@ -19,8 +19,9 @@ import ToolForm from "mvc/tool/tool-form";
 import FormWrapper from "mvc/form/form-wrapper";
 import Sharing from "components/Sharing.vue";
 import UserPreferences from "components/User/UserPreferences.vue";
+import DatasetList from "components/Dataset/DatasetList.vue";
 import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
-import CustomBuilds from "mvc/user/user-custom-builds";
+import CustomBuilds from "components/User/CustomBuilds.vue";
 import Tours from "mvc/tours";
 import GridView from "mvc/grid/grid-view";
 import EntryPointGridView from "mvc/entrypoints/view";
@@ -30,6 +31,7 @@ import WorkflowList from "components/Workflow/WorkflowList.vue";
 import HistoryImport from "components/HistoryImport.vue";
 import HistoryView from "components/HistoryView.vue";
 import WorkflowInvocationReport from "components/WorkflowInvocationReport.vue";
+import RecentInvocations from "components/User/RecentInvocations.vue";
 import HistoryList from "mvc/history/history-list";
 import PluginList from "components/PluginList.vue";
 import ToolFormComposite from "mvc/tool/tool-form-composite";
@@ -40,8 +42,10 @@ import DatasetError from "mvc/dataset/dataset-error";
 import DatasetEditAttributes from "mvc/dataset/dataset-edit-attributes";
 import Citations from "components/Citations.vue";
 import DisplayStructure from "components/DisplayStructured.vue";
-import Vue from "vue";
 import { CloudAuth } from "components/User/CloudAuth";
+
+import Vue from "vue";
+import store from "store";
 
 /** Routes */
 export const getAnalysisRouter = Galaxy =>
@@ -64,6 +68,7 @@ export const getAnalysisRouter = Galaxy =>
             "(/)workflows/import": "show_workflows_import",
             "(/)workflows/run(/)": "show_workflows_run",
             "(/)workflows(/)list": "show_workflows",
+            "(/)workflows/invocations": "show_workflow_invocations",
             "(/)workflows/invocations/report": "show_workflow_invocation_report",
             "(/)workflows/list_published(/)": "show_workflows_published",
             "(/)workflows/create(/)": "show_workflows_create",
@@ -89,11 +94,11 @@ export const getAnalysisRouter = Galaxy =>
             return (Galaxy.user && Galaxy.user.id) || this.require_login.indexOf(name) == -1;
         },
 
-        _display_vue_helper: function(component, props = {}) {
+        _display_vue_helper: function(component, propsData = {}) {
             const instance = Vue.extend(component);
             const container = document.createElement("div");
             this.page.display(container);
-            return new instance(props).$mount(container);
+            return new instance({ store, propsData }).$mount(container);
         },
 
         show_tours: function(tour_id) {
@@ -188,10 +193,11 @@ export const getAnalysisRouter = Galaxy =>
 
         show_workflow_invocation_report: function() {
             const invocationId = QueryStringParsing.get("id");
-            var reportInstance = Vue.extend(WorkflowInvocationReport);
-            var vm = document.createElement("div");
-            this.page.display(vm);
-            new reportInstance({ propsData: { invocationId: invocationId } }).$mount(vm);
+            this._display_vue_helper(WorkflowInvocationReport, { invocationId: invocationId });
+        },
+
+        show_workflow_invocations: function() {
+            this._display_vue_helper(RecentInvocations, {});
         },
 
         show_history_structure: function() {
@@ -249,12 +255,7 @@ export const getAnalysisRouter = Galaxy =>
         },
 
         show_datasets: function() {
-            this.page.display(
-                new GridView({
-                    url_base: `${getAppRoot()}dataset/list`,
-                    active_tab: "user"
-                })
-            );
+            this._display_vue_helper(DatasetList);
         },
 
         show_pages: function(action_id) {
@@ -345,7 +346,10 @@ export const getAnalysisRouter = Galaxy =>
                 }, 500);
                 return;
             }
-            this.page.display(new CustomBuilds.View());
+            const customBuildsInstance = Vue.extend(CustomBuilds);
+            const vm = document.createElement("div");
+            this.page.display(vm);
+            new customBuildsInstance().$mount(vm);
         },
 
         show_dataset_edit_attributes: function() {

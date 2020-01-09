@@ -1074,8 +1074,8 @@ class ShedTwillTestCase(FunctionalTestCase):
         repo = self.get_hg_repo(self.get_repo_path(repository))
         changelog_tuples = []
         for changeset in repo.changelog:
-            ctx = repo.changectx(changeset)
-            changelog_tuples.append((ctx.rev(), repo.changectx(changeset)))
+            ctx = repo[changeset]
+            changelog_tuples.append((ctx.rev(), ctx))
         return changelog_tuples
 
     def get_repository_datatypes_count(self, repository):
@@ -1128,7 +1128,7 @@ class ShedTwillTestCase(FunctionalTestCase):
 
     def get_repository_tip(self, repository):
         repo = self.get_hg_repo(self.get_repo_path(repository))
-        return str(repo.changectx(repo.changelog.tip()))
+        return str(repo[repo.changelog.tip()])
 
     def get_sniffers_count(self):
         url = '/api/datatypes/sniffers'
@@ -1423,7 +1423,7 @@ class ShedTwillTestCase(FunctionalTestCase):
 
     def repository_is_new(self, repository):
         repo = self.get_hg_repo(self.get_repo_path(repository))
-        tip_ctx = repo.changectx(repo.changelog.tip())
+        tip_ctx = repo[repo.changelog.tip()]
         return tip_ctx.rev() < 0
 
     def reset_installed_repository_metadata(self, repository):
@@ -1580,10 +1580,9 @@ class ShedTwillTestCase(FunctionalTestCase):
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def update_tool_shed_status(self):
-        params = {
-            'all_installed_repositories': True
-        }
-        self.visit_galaxy_url('/admin_toolshed/update_tool_shed_status_for_installed_repository', params=params)
+        api_key = get_master_api_key()
+        response = requests.get(self.galaxy_url + "/api/tool_shed_repositories/check_for_updates?key=" + api_key)
+        assert response.status_code != 403, response.content
 
     def upload_file(self,
                     repository,

@@ -1,6 +1,9 @@
-$fa-font-path: "~font-awesome/fonts/";
-@import "~font-awesome/scss/font-awesome.scss";
-@import "~font-awesome/scss/_mixins";
+//$fa-font-path: "~font-awesome/fonts/";
+//@import "~font-awesome/scss/font-awesome.scss";
+//@import "~font-awesome/scss/_mixins";
+$fa-font-path: "../../../node_modules/@fortawesome/fontawesome-free/webfonts/";
+@import "~@fortawesome/fontawesome-free/scss/fontawesome";
+@import "~@fortawesome/fontawesome-free/scss/_variables";
 
 // Utility mixin expands to container edges
 @mixin fill() {

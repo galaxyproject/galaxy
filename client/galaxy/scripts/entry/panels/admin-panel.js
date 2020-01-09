@@ -100,12 +100,7 @@ const AdminPanel = Backbone.View.extend({
                         enabled: this.settings.is_tool_shed_installed
                     },
                     {
-                        title: _l("Monitor installation"),
-                        url: "admin_toolshed/monitor_repository_installation",
-                        enabled: this.settings.installing_repository_ids
-                    },
-                    {
-                        title: _l("Manage metadata"),
+                        title: _l("Manage Metadata"),
                         url: "admin/reset_metadata",
                         enabled: this.settings.is_repo_installed,
                         target: "__use_router__"
@@ -116,6 +111,12 @@ const AdminPanel = Backbone.View.extend({
                     },
                     {
                         title: _l("Manage Dependencies"),
+                        url: "admin/toolbox_dependencies",
+                        target: "__use_router__",
+                        id: "admin-link-manage-dependencies"
+                    },
+                    {
+                        title: _l("Manage Dependencies (legacy)"),
                         url: "admin/manage_tool_dependencies"
                     },
                     {

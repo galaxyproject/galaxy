@@ -7,7 +7,9 @@
         echo "$radio_select" >> $out_file1;
         echo "$check_select" >> $out_file1;
         echo "$drop_select"  >> $out_file1;
+        #if len($files) > 0
         cat "$files[0].file" >> $out_file1;
+        #end if
     </command>
     <inputs>
         <conditional name="p1">

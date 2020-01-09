@@ -76,10 +76,15 @@ const View = Backbone.View.extend({
         const el = document.createElement("div");
         this.el.appendChild(el); // use this.el directly when feature parity is accomplished
 
+        let brandTitle = this.options.display_galaxy_brand ? "Galaxy " : "";
+        if (this.options.brand) {
+            brandTitle += this.options.brand;
+        }
+
         mountVueComponent(Masthead)(
             {
                 // params
-                brandTitle: `Galaxy ${(this.options.brand && `/ ${this.options.brand}`) || ""}`,
+                brandTitle: brandTitle,
                 brandLink: this.options.logo_url,
                 brandImage: this.options.logo_src,
 

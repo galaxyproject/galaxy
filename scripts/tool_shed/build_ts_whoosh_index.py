@@ -193,7 +193,7 @@ def get_repos(sa_session, file_path, hgweb_config_dir, **kwargs):
         hg_repo = hg.repository(ui.ui(), repo_path)
         lineage = []
         for changeset in hg_repo.changelog:
-            lineage.append(str(changeset) + ":" + str(hg_repo.changectx(changeset)))
+            lineage.append(str(changeset) + ":" + str(hg_repo[changeset]))
         repo_lineage = str(lineage)
 
         #  Parse all the tools within repo for a separate index.
@@ -228,7 +228,7 @@ def get_repos(sa_session, file_path, hgweb_config_dir, **kwargs):
 
 def load_one_dir(path):
     tools_in_dir = []
-    tool_elems = load_tool_elements_from_path(path)
+    tool_elems = load_tool_elements_from_path(path, load_exception_handler=debug_handler)
     if tool_elems:
         for elem in tool_elems:
             root = elem[1].getroot()
@@ -243,6 +243,14 @@ def load_one_dir(path):
                                  version=root.attrib.get('version')))
                 tools_in_dir.append(tool)
     return tools_in_dir
+
+
+def debug_handler(path, exc_info):
+    """
+    By default the underlying tool parsing logs warnings for each exception.
+    This is very chatty hence this metod changes it to debug level.
+    """
+    log.debug("Failed to load tool with path %s." % path, exc_info=exc_info)
 
 
 def main():

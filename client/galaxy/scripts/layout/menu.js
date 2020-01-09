@@ -18,7 +18,7 @@ function logoutClick() {
         if (galaxy.user) {
             galaxy.user.clearSessionStorage();
         }
-        window.top.location.href = `${galaxy.root}login`;
+        window.top.location.href = `${galaxy.root}login?logout=true`;
     });
 }
 
@@ -301,6 +301,11 @@ const Collection = Backbone.Collection.extend({
                     {
                         title: _l("Pages"),
                         url: "pages/list",
+                        target: "__use_router__"
+                    },
+                    {
+                        title: _l("Workflow Invocations"),
+                        url: "workflows/invocations",
                         target: "__use_router__"
                     }
                 ]

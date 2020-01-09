@@ -57,6 +57,7 @@
             </div>
             <span v-if="invocationSchedulingTerminal && jobStatesTerminal">
                 <a v-bind:href="invocationLink">View Invocation Report</a>
+                <a class="fa fa-print" v-bind:href="invocationPdfLink"></a>
             </span>
         </div>
     </div>
@@ -139,6 +140,9 @@ export default {
         },
         invocationLink: function() {
             return getUrl(`workflows/invocations/report?id=${this.invocationId}`);
+        },
+        invocationPdfLink: function() {
+            return getUrl(`api/invocations/${this.invocationId}/report.pdf`);
         },
         invocationSchedulingTerminal: function() {
             return (

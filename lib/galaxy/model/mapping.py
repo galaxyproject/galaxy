@@ -54,6 +54,7 @@ model.WorkerProcess.table = Table(
     Column("id", Integer, primary_key=True),
     Column("server_name", String(255), index=True),
     Column("hostname", String(255)),
+    Column("pid", Integer),
     Column("update_time", DateTime, default=now, onupdate=now),
     UniqueConstraint('server_name', 'hostname'),
 )
@@ -850,7 +851,7 @@ model.Task.table = Table(
 model.PostJobAction.table = Table(
     "post_job_action", metadata,
     Column("id", Integer, primary_key=True),
-    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True, nullable=False),
+    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True, nullable=True),
     Column("action_type", String(255), nullable=False),
     Column("output_name", String(255), nullable=True),
     Column("action_arguments", JSONType, nullable=True))
@@ -1245,7 +1246,8 @@ model.PageRevision.table = Table(
     Column("update_time", DateTime, default=now, onupdate=now),
     Column("page_id", Integer, ForeignKey("page.id"), index=True, nullable=False),
     Column("title", TEXT),
-    Column("content", TEXT))
+    Column("content", TEXT),
+    Column("content_format", TrimmedString(32)))
 
 model.PageUserShareAssociation.table = Table(
     "page_user_share_association", metadata,

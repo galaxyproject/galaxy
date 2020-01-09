@@ -2,6 +2,7 @@
     <stdio>
         <exit_code range="127" level="fatal" description="Failing exit code." />
     </stdio>
+    <version_command>echo 'v1.1'</version_command>
     <command><![CDATA[
         #if $thebool
             echo "The bool is true" &&
@@ -44,6 +45,9 @@
             <assert_stderr>
                 <has_line line="The bool is really true" />
             </assert_stderr>
+            <assert_command_version>
+                <has_text text="v1.1" />
+            </assert_command_version>
         </test>
         <test expect_exit_code="2">
             <param name="thebool" value="false" />

@@ -39,7 +39,7 @@ QUnit.module("Input terminal model test", {
     beforeEach: function() {
         testApp.create();
         this.node = new Node(create_app(), {});
-        this.input = { extensions: ["txt"], multiple: false };
+        this.input = { extensions: ["txt"], multiple: false, optional: false };
         this.input_terminal = new Terminals.InputTerminal({ input: this.input });
         this.input_terminal.node = this.node;
     },
@@ -65,7 +65,7 @@ QUnit.module("Input terminal model test", {
         this.input_terminal.connectors = [];
     },
     test_accept: function(other) {
-        other = other || { node: {}, datatypes: ["txt"] };
+        other = other || { node: {}, datatypes: ["txt"], optional: false };
         if (!other.mapOver) {
             other.mapOver = function() {
                 return Terminals.NULL_COLLECTION_TYPE_DESCRIPTION;
@@ -151,6 +151,19 @@ QUnit.test("can accept inputs", function(assert) {
     assert.ok(this.test_accept(other));
 });
 
+QUnit.test("can't connect non-optional", function(assert) {
+    var other = { node: {}, datatypes: ["input"], optional: true };
+    assert.ok(!this.test_accept(other));
+});
+
+QUnit.test("multiple inputs can accept optional outputs regardless", function(assert) {
+    // Galaxy multiple inputs have an optional field but it is hard to resolve that
+    // completely until runtime.
+    var other = { node: {}, datatypes: ["input"], optional: true };
+    this.multiple();
+    assert.ok(this.test_accept(other));
+});
+
 QUnit.test("input type can accept any datatype", function(assert) {
     this.input.extensions = ["input"];
     this.input_terminal.update(this.input);
@@ -159,35 +172,31 @@ QUnit.test("input type can accept any datatype", function(assert) {
 });
 
 QUnit.test("cannot accept when already connected", function(assert) {
-    var self = this;
     // If other is subtype but already connected, cannot accept
-    this.with_test_connector(function() {
-        assert.ok(!self.test_accept());
+    this.with_test_connector(() => {
+        assert.ok(!this.test_accept());
     });
 });
 
 QUnit.test("can accept already connected inputs if input is multiple", function(assert) {
-    var self = this;
     this.multiple();
-    this.with_test_connector(function() {
-        assert.ok(self.test_accept());
+    this.with_test_connector(() => {
+        assert.ok(this.test_accept());
     });
 });
 
 QUnit.test("cannot accept already connected inputs if input is multiple but datatypes don't match", function(assert) {
     var other = { node: {}, datatypes: ["binary"] }; // binary is not txt
 
-    var self = this;
     this.multiple();
-    this.with_test_connector(function() {
-        assert.ok(!self.test_accept(other));
+    this.with_test_connector(() => {
+        assert.ok(!this.test_accept(other));
     });
 });
 
 QUnit.test("can accept list collection for multiple input parameters if datatypes match", function(assert) {
-    var self = this;
     this.multiple();
-    assert.ok(self.test_accept());
+    assert.ok(this.test_accept());
 });
 
 QUnit.test("can accept list collection for empty multiple inputs", function(assert) {
@@ -198,9 +207,8 @@ QUnit.test("can accept list collection for empty multiple inputs", function(asse
             return new Terminals.CollectionTypeDescription("list");
         }
     };
-    var self = this;
     this.multiple();
-    assert.ok(self.test_accept(other));
+    assert.ok(this.test_accept(other));
 });
 
 QUnit.test("cannot accept list collection for multiple input if collection already connected", function(assert) {
@@ -211,18 +219,17 @@ QUnit.test("cannot accept list collection for multiple input if collection alrea
             return new Terminals.CollectionTypeDescription("list");
         }
     };
-    var self = this;
     this.multiple();
-    this.with_test_connector(function() {
-        assert.ok(!self.test_accept(other));
+    this.with_test_connector(() => {
+        assert.ok(!this.test_accept(other));
     });
 });
 
 QUnit.module("Connector test", {});
 
 QUnit.test("connects only if both valid handles", function(assert) {
-    var input = { connect: sinon.spy() };
-    var output = { connect: sinon.spy() };
+    const input = { connect: sinon.spy() };
+    const output = { connect: sinon.spy() };
     new Connector(input, null);
     new Connector(null, output);
     // Not attempts to connect...
@@ -234,9 +241,9 @@ QUnit.test("connects only if both valid handles", function(assert) {
 });
 
 QUnit.test("default attributes", function(assert) {
-    var input = { connect: sinon.spy() };
-    var output = { connect: sinon.spy() };
-    var connector = new Connector(input, output);
+    const input = { connect: sinon.spy() };
+    const output = { connect: sinon.spy() };
+    const connector = new Connector(input, output);
     assert.equal(connector.dragging, false);
     assert.equal(connector.canvas, null);
     assert.equal(connector.inner_color, "#FFFFFF");
@@ -244,31 +251,31 @@ QUnit.test("default attributes", function(assert) {
 });
 
 QUnit.test("destroy", function(assert) {
-    var input = { connect: sinon.spy(), disconnect: sinon.spy() };
-    var output = { connect: sinon.spy(), disconnect: sinon.spy() };
-    var connector = new Connector(input, output);
+    const input = { connect: sinon.spy(), disconnect: sinon.spy() };
+    const output = { connect: sinon.spy(), disconnect: sinon.spy() };
+    const connector = new Connector(input, output);
     connector.destroy();
     assert.ok(input.disconnect.called);
     assert.ok(output.disconnect.called);
 });
 
 QUnit.test("initial redraw", function(assert) {
-    var input = {
+    const input = {
         connect: sinon.spy(),
         element: $("<div>"),
         isMappedOver: function() {
             return false;
         }
     };
-    var output = {
+    const output = {
         connect: sinon.spy(),
         element: $("<div>"),
         isMappedOver: function() {
             return false;
         }
     };
-    var connector = new Connector(input, output);
-    var n = $("#canvas-container").find("canvas").length;
+    const connector = new Connector(input, output);
+    const n = $("#canvas-container").find("canvas").length;
     connector.redraw();
     // Ensure canvas gets set
     assert.ok(connector.canvas);
@@ -290,10 +297,8 @@ QUnit.module("Input collection terminal model test", {
 });
 
 QUnit.test("Collection output can connect to same collection input type", function(assert) {
-    var self = this;
-    var inputTerminal = self.input_terminal;
-    assert.ok(inputTerminal);
-    var outputTerminal = new Terminals.OutputCollectionTerminal({
+    const inputTerminal = this.input_terminal;
+    const outputTerminal = new Terminals.OutputCollectionTerminal({
         datatypes: "txt",
         collection_type: "list"
     });
@@ -304,9 +309,19 @@ QUnit.test("Collection output can connect to same collection input type", functi
     );
 });
 
+QUnit.test("Optional collection output can not connect to required collection input", function(assert) {
+    const inputTerminal = this.input_terminal;
+    const outputTerminal = new Terminals.OutputCollectionTerminal({
+        datatypes: "txt",
+        collection_type: "list",
+        optional: true
+    });
+    outputTerminal.node = {};
+    assert.ok(!inputTerminal.canAccept(outputTerminal).canAccept);
+});
+
 QUnit.test("Collection output cannot connect to different collection input type", function(assert) {
-    var self = this;
-    var inputTerminal = self.input_terminal;
+    var inputTerminal = this.input_terminal;
     var outputTerminal = new Terminals.OutputCollectionTerminal({
         datatypes: "txt",
         collection_type: "paired"
@@ -333,13 +348,13 @@ QUnit.module("Node unit test", {
         return $(this.node.element.find(selector));
     },
     expect_workflow_node_changed: function(assert, f) {
-        var node = this.node;
-        var node_changed_spy = sinon.spy(this.app.workflow, "node_changed");
+        const node = this.node;
+        const node_changed_spy = sinon.spy(this.app.workflow, "node_changed");
         f();
         assert.ok(node_changed_spy.calledWith(node));
     },
     init_field_data_simple: function(option_overrides) {
-        var data = Utils.merge(option_overrides, {
+        const data = Utils.merge(option_overrides, {
             inputs: [{ name: "input1", extensions: ["data"] }],
             outputs: [{ name: "output1", extensions: ["data"] }],
             label: null
@@ -347,7 +362,7 @@ QUnit.module("Node unit test", {
         this.node.init_field_data(data);
     },
     update_field_data_with_new_input: function(option_overrides) {
-        var new_data = Utils.merge(option_overrides, {
+        const new_data = Utils.merge(option_overrides, {
             inputs: [{ name: "input1", extensions: ["data"] }, { name: "extra_0|input1", extensions: ["data"] }],
             outputs: [{ name: "output1", extensions: ["data"] }],
             post_job_actions: "{}",
@@ -410,22 +425,20 @@ QUnit.test("init_field_data properties", function(assert) {
 });
 
 QUnit.test("init_field_data data", function(assert) {
-    var test = this;
-    this.expect_workflow_node_changed(assert, function() {
+    this.expect_workflow_node_changed(assert, () => {
         // pre-init not tool form body...
-        assert.equal(test.$(".output-terminal").length, 0);
-        assert.equal(test.$(".input-terminal").length, 0);
-        assert.equal(test.$(".rule").length, 0);
-        test.init_field_data_simple();
+        assert.equal(this.$(".output-terminal").length, 0);
+        assert.equal(this.$(".input-terminal").length, 0);
+        assert.equal(this.$(".rule").length, 0);
+        this.init_field_data_simple();
         // After init tool form should have three "rows"/divs - , inputs div, one output, and rule...
-        assert.equal(test.$(".output-terminal").length, 1);
-        assert.equal(test.$(".input-terminal").length, 1);
-        assert.equal(test.$(".rule").length, 1);
-        assert.equal(test.$(".toolFormBody").children().length, 3);
-        assert.equal(test.$(".nodeTitle").text(), "newnode");
+        assert.equal(this.$(".output-terminal").length, 1);
+        assert.equal(this.$(".input-terminal").length, 1);
+        assert.equal(this.$(".rule").length, 1);
+        assert.equal(this.$(".toolFormBody").children().length, 3);
+        assert.equal(this.$(".nodeTitle").text(), "newnode");
         assert.ok(
-            test
-                .$(".toolFormTitle")
+            this.$(".toolFormTitle")
                 .find("i")
                 .hasClass("fa-wrench")
         );
@@ -433,62 +446,58 @@ QUnit.test("init_field_data data", function(assert) {
 });
 
 QUnit.test("node title behavior", function(assert) {
-    var test = this;
-    this.expect_workflow_node_changed(assert, function() {
+    this.expect_workflow_node_changed(assert, () => {
         // Node created with name newnode
-        assert.equal(test.$(".nodeTitle").text(), "newnode");
+        assert.equal(this.$(".nodeTitle").text(), "newnode");
         // init_field_data_simple doesn't change label, so it should
         // remain original name.
-        test.init_field_data_simple();
-        assert.equal(test.$(".nodeTitle").text(), "newnode");
+        this.init_field_data_simple();
+        assert.equal(this.$(".nodeTitle").text(), "newnode");
         // Despite awkward name, update does change the label...
-        test.update_field_data_with_new_input();
-        assert.equal(test.$(".nodeTitle").text(), "New Label");
+        this.update_field_data_with_new_input();
+        assert.equal(this.$(".nodeTitle").text(), "New Label");
     });
 });
 
 QUnit.test("update_field_data updated data inputs and outputs", function(assert) {
-    var test = this;
-    this.expect_workflow_node_changed(assert, function() {
+    this.expect_workflow_node_changed(assert, () => {
         // Call init with one input and output.
-        test.init_field_data_simple();
+        this.init_field_data_simple();
 
-        test.update_field_data_with_new_input();
+        this.update_field_data_with_new_input();
 
         // Now there are 2 inputs...
-        assert.equal(test.$(".input-terminal").length, 2);
-        assert.equal(test.$(".output-terminal").length, 1);
-        assert.equal(test.$(".rule").length, 1);
+        assert.equal(this.$(".input-terminal").length, 2);
+        assert.equal(this.$(".output-terminal").length, 1);
+        assert.equal(this.$(".rule").length, 1);
     });
 });
 
 QUnit.test("update_field_data preserves connectors", function(assert) {
-    var test = this;
     var node = this.node;
-    this.expect_workflow_node_changed(assert, function() {
+    this.expect_workflow_node_changed(assert, () => {
         // Call init with one input and output.
-        test.init_field_data_simple();
+        this.init_field_data_simple();
 
         var connector = new Connector();
         var old_input_terminal = node.input_terminals.input1;
         old_input_terminal.connectors.push(connector);
 
         // Update node, make sure connector still the same...
-        test.update_field_data_with_new_input();
+        this.update_field_data_with_new_input();
         var new_input_terminal = node.input_terminals.input1;
         assert.equal(connector, new_input_terminal.connectors[0]);
 
         // Update a second time, make sure connector still the same...
-        test.update_field_data_with_new_input();
+        this.update_field_data_with_new_input();
         new_input_terminal = node.input_terminals.input1;
         assert.equal(connector, new_input_terminal.connectors[0]);
     });
 });
 
 QUnit.test("update_field_data destroys old terminals", function(assert) {
-    var test = this;
     var node = this.node;
-    this.expect_workflow_node_changed(assert, function() {
+    this.expect_workflow_node_changed(assert, () => {
         var data = {
             inputs: [{ name: "input1", extensions: ["data"] }, { name: "willDisappear", extensions: ["data"] }],
             outputs: [{ name: "output1", extensions: ["data"] }]
@@ -497,7 +506,7 @@ QUnit.test("update_field_data destroys old terminals", function(assert) {
         var old_input_terminal = node.input_terminals.willDisappear;
         var destroy_spy = sinon.spy(old_input_terminal, "destroy");
         // Update
-        test.update_field_data_with_new_input();
+        this.update_field_data_with_new_input();
         assert.ok(destroy_spy.called);
     });
 });
@@ -705,7 +714,6 @@ QUnit.test("terminal element", function(assert) {
     assert.equal(el.className, "terminal input-terminal");
 });
 
-// global OutputTerminalView
 QUnit.module("Output terminal view", {
     beforeEach: function() {
         this.node = { output_terminals: [] };
@@ -867,9 +875,9 @@ QUnit.module("terminal mapping logic", {
         if (!("extensions" in input)) {
             input["extensions"] = ["data"];
         }
-        var inputEl = $("<div>")[0];
-        var inputTerminal = new Terminals.InputCollectionTerminal({ element: inputEl, input: input });
-        var inputTerminalMapping = new Terminals.TerminalMapping({ terminal: inputTerminal });
+        const inputEl = $("<div>")[0];
+        const inputTerminal = new Terminals.InputCollectionTerminal({ element: inputEl, input: input });
+        new Terminals.TerminalMapping({ terminal: inputTerminal });
         inputTerminal.node = node;
         return inputTerminal;
     },
@@ -879,9 +887,9 @@ QUnit.module("terminal mapping logic", {
         if (!("extensions" in output)) {
             output["extensions"] = ["data"];
         }
-        var outputEl = $("<div>")[0];
-        var outputTerminal = new Terminals.OutputTerminal({ element: outputEl, datatypes: output.extensions });
-        var outputTerminalMapping = new Terminals.TerminalMapping({ terminal: outputTerminal });
+        const outputEl = $("<div>")[0];
+        const outputTerminal = new Terminals.OutputTerminal({ element: outputEl, datatypes: output.extensions });
+        new Terminals.TerminalMapping({ terminal: outputTerminal });
         outputTerminal.node = node;
         if (mapOver) {
             outputTerminal.setMapOver(new Terminals.CollectionTypeDescription(mapOver));

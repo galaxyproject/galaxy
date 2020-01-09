@@ -58,6 +58,10 @@ class TestDatatypesRegistry(object):
     def get_datatype_by_extension(self, ext):
         return ext
 
+    @property
+    def datatypes_by_extension(self):
+        return {"fasta": object(), "fastqsanger": object(), "txt": object()}
+
 
 class TestToolbox(object):
 

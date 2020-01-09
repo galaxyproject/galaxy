@@ -110,7 +110,7 @@ class LegacyToolProvidedMetadata(BaseToolProvidedMetadata):
                     line = stringify_dictionary_keys(json.loads(line))
                     assert 'type' in line
                 except Exception:
-                    log.exception('(%s) Got JSON data from tool, but data is improperly formatted or no "type" key in data' % job_wrapper.job_id)
+                    log.exception('(%s) Got JSON data from tool, but data is improperly formatted or no "type" key in data' % getattr(job_wrapper, "job_id", None))
                     log.debug('Offending data was: %s' % line)
                     continue
                 # Set the dataset id if it's a dataset entry and isn't set.

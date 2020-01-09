@@ -13,6 +13,7 @@ from .framework.decorators import (
     expose_api_raw,
     expose_api_raw_anonymous,
     expose_api_raw_anonymous_and_sessionless,
+    format_return_as_json,
     json,
     json_pretty,
     legacy_expose_api,
@@ -23,7 +24,7 @@ from .framework.decorators import (
     require_login,
 )
 
-__all__ = ('url_for', 'error', 'expose', 'json', 'json_pretty',
+__all__ = ('url_for', 'error', 'expose', 'format_return_as_json', 'json', 'json_pretty',
            'require_admin', 'require_login', 'legacy_expose_api', 'legacy_expose_api_anonymous',
            'legacy_expose_api_raw', 'legacy_expose_api_raw_anonymous', 'expose_api',
            'expose_api_anonymous', 'expose_api_raw',

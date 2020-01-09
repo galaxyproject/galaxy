@@ -12,7 +12,7 @@
             @filtered="filtered"
         >
             <template v-slot:cell(label)="data">
-                <i v-if="data.item.isDataset" class="fa fa-file-o" /> <i v-else class="fa fa-folder" />
+                <i v-if="data.item.isLeaf" :class="leafIcon" /> <i v-else class="fa fa-folder" />
                 {{ data.value ? data.value : "-" }}
             </template>
             <template v-slot:cell(details)="data">
@@ -52,6 +52,10 @@ export default {
         multiple: {
             type: Boolean,
             default: false
+        },
+        leafIcon: {
+            type: String,
+            default: "fa fa-file-o"
         }
     },
     data() {
