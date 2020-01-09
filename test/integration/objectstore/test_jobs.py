@@ -3,10 +3,7 @@
 import os
 import string
 
-from galaxy_test.base.populators import (
-    DatasetPopulator,
-)
-from galaxy_test.driver import integration_util
+from ._base import BaseObjectStoreIntegrationTestCase
 
 DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE = string.Template("""<?xml version="1.0"?>
 <object_store type="hierarchical">
@@ -37,26 +34,14 @@ DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE = string.Template("""<?xml version="1.0
 TEST_INPUT_FILES_CONTENT = "1 2 3"
 
 
-class ObjectStoreJobsIntegrationTestCase(integration_util.IntegrationTestCase):
-
-    framework_tool_and_types = True
+class ObjectStoreJobsIntegrationTestCase(BaseObjectStoreIntegrationTestCase):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
-        temp_directory = cls._test_driver.mkdtemp()
-        cls.object_stores_parent = temp_directory
-        for disk_store_file_name in ["files1", "files2", "files3"]:
-            disk_store_path = os.path.join(temp_directory, disk_store_file_name)
-            os.makedirs(disk_store_path)
-            setattr(cls, "%s_path" % disk_store_file_name, disk_store_path)
-        config_path = os.path.join(temp_directory, "object_store_conf.xml")
-        with open(config_path, "w") as f:
-            f.write(DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE.safe_substitute({"temp_directory": temp_directory}))
-        config["object_store_config_file"] = config_path
+        cls._configure_object_store(DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE, config)
 
     def setUp(self):
         super(ObjectStoreJobsIntegrationTestCase, self).setUp()
-        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         with self.dataset_populator.test_history() as history_id:
             hda1 = self.dataset_populator.new_dataset(history_id, content=TEST_INPUT_FILES_CONTENT)
             create_10_inputs = {
