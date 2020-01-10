@@ -92,6 +92,7 @@ class DockerizedJobsIntegrationTestCase(integration_util.IntegrationTestCase, Ru
         assert job_env.pwd.endswith("/working")
         assert job_env.home.startswith(self.jobs_directory)
         assert job_env.home.endswith("/home")
+        assert job_env.conda_env == 'CONDA_PREFIX_IS_/usr/local'
 
     def test_container_job_environment_legacy(self):
         job_env = self._run_and_get_environment_properties("job_environment_default_legacy")
