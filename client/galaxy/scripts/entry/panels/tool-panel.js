@@ -1,5 +1,4 @@
 import Backbone from "backbone";
-import Tools from "mvc/tool/tools";
 import Upload from "mvc/upload/upload-view";
 import _l from "utils/localization";
 import { getGalaxyInstance } from "app";
@@ -7,7 +6,6 @@ import { getAppRoot } from "onload";
 import Vue from "vue";
 import ToolBox from "../../components/Panels/ToolBox.vue";
 import SidePanel from "../../components/Panels/SidePanel.vue";
-import { getToolsLayout } from "../../components/Panels/utilities.js";
 import { mountVueComponent } from "../../utils/mountVueComponent";
 
 const ToolPanel = Backbone.View.extend({
@@ -50,24 +48,12 @@ const ToolPanel = Backbone.View.extend({
         /** @type {Object[]} descriptions of user's workflows to be shown in the tool menu */
         const storedWorkflowMenuEntries = Galaxy.config.stored_workflow_menu_entries || [];
 
-        // create tool search, tool panel, and tool panel view.
-        const tool_search = new Tools.ToolSearch({
-            hidden: false
-        });
-        const tools = new Tools.ToolCollection(Galaxy.config.toolbox);
-        const toolPanel = new Tools.ToolPanel({
-            tool_search: tool_search,
-            tools: tools,
-            layout: Galaxy.config.toolbox_in_panel
-        });
-
         return {
             side: "left",
             currentPanel: ToolBox,
             currentPanelProperties: {
                 appRoot: getAppRoot(),
                 toolsTitle: _l("Tools"),
-                toolsLayout: getToolsLayout(toolPanel),
                 isUser: !!(Galaxy.user && Galaxy.user.id),
                 workflowsTitle: _l("Workflows"),
                 workflows: [

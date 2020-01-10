@@ -1,7 +1,20 @@
 import _ from "underscore";
+import Tools from "mvc/tool/tools";
+import { getGalaxyInstance } from "app";
 
-export function getToolsLayout(tool_panel) {
-    return _.map(tool_panel.get("layout").toJSON(), category => {
+// create tool search, tool panel, and tool panel view.
+export function getToolsLayout() {
+    const Galaxy = getGalaxyInstance();
+    const tool_search = new Tools.ToolSearch({
+        hidden: false
+    });
+    const tools = new Tools.ToolCollection(Galaxy.config.toolbox);
+    const toolPanel = new Tools.ToolPanel({
+        tool_search: tool_search,
+        tools: tools,
+        layout: Galaxy.config.toolbox_in_panel
+    });
+    return _.map(toolPanel.get("layout").toJSON(), category => {
         return {
             ...category,
             panel_type: getPanelType(category),

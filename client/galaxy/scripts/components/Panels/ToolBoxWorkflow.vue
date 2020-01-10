@@ -3,8 +3,6 @@
         <div class="unified-panel-header" unselectable="on">
             <div class="unified-panel-header-inner">
                 <div class="panel-header-buttons">
-                    <favorites-button v-if="isUser" />
-                    <upload-button />
                 </div>
                 <div class="panel-header-text">Tools</div>
             </div>
@@ -45,16 +43,12 @@
 <script>
 import ToolSection from "./ToolSection";
 import ToolSearch from "./ToolSearch";
-import UploadButton from "./Buttons/UploadButton";
-import FavoritesButton from "./Buttons/FavoritesButton";
 import { filterToolsLayout, getToolsLayout } from "./utilities.js";
 import { getGalaxyInstance } from "app";
 
 export default {
     name: "ToolBox",
     components: {
-        UploadButton,
-        FavoritesButton,
         ToolSection,
         ToolSearch
     },

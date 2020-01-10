@@ -42,6 +42,7 @@
             var editorConfig = ${h.dumps(self.editor_config)};
             console.log("workflow/editor.mako, editorConfig", editorConfig);
             window.bundleEntries.mountWorkflowEditor(editorConfig);
+            window.bundleEntries.mountToolBoxWorkflow({});
         });
     </script>
 
