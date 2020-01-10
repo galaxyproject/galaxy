@@ -235,6 +235,8 @@ class JobRunnerMapper(object):
         except (JobMappingConfigurationException, JobMappingException, JobNotReadyException):
             raise
         except Exception:
+            # Other exceptions should not bubble up to the job wrapper since they can occur during the fail() method,
+            # causing jobs to become permanently stuck in a non-terminal state.
             log.exception("Caught unhandled exception while attempting to cache job destination:")
             raise JobMappingException(ERROR_MESSAGE_RULE_EXCEPTION)
         return self.cached_job_destination
