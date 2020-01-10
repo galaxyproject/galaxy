@@ -25,7 +25,7 @@ def ordered_load(stream):
     return yaml.load(stream, OrderedLoader)
 
 
-class OrderedLoader(yaml.Loader):
+class OrderedLoader(yaml.SafeLoader):
     # This class was pulled out of ordered_load() for the sake of
     # mocking __init__ in a unit test.
     def __init__(self, stream):

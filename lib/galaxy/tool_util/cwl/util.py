@@ -380,7 +380,7 @@ def output_to_cwl_json(
             return json.loads(dataset_dict["content"])
         else:
             with open(dataset_dict["path"]) as f:
-                return json.load(f)
+                return json.safe_load(f)
 
     if output_metadata["history_content_type"] == "dataset":
         ext = output_metadata["file_ext"]
@@ -509,7 +509,7 @@ def guess_artifact_type(path):
     tool_or_workflow = "workflow"
     try:
         with open(path, "r") as f:
-            artifact = yaml.load(f)
+            artifact = yaml.safe_load(f)
 
         tool_or_workflow = "tool" if artifact["class"] != "Workflow" else "workflow"
 
