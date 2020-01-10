@@ -38,6 +38,10 @@
     ${parent.javascript_app()}
 
     <script type="text/javascript">
+        var options = ${ h.dumps( options ) };
+        config.set({
+            options: options
+        });
         config.addInitialization(function(galaxy, config) {
             var editorConfig = ${h.dumps(self.editor_config)};
             console.log("workflow/editor.mako, editorConfig", editorConfig);

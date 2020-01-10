@@ -33,6 +33,7 @@ from galaxy.web.framework.helpers import (
 )
 from galaxy.webapps.base.controller import (
     BaseUIController,
+    JSAppLauncher,
     SharableMixin,
     UsesStoredWorkflowMixin
 )
@@ -177,7 +178,7 @@ class SingleTagContentsParser(HTMLParser):
             self.tag_content += text
 
 
-class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, UsesItemRatings):
+class WorkflowController(JSAppLauncher, BaseUIController, SharableMixin, UsesStoredWorkflowMixin, UsesItemRatings):
     stored_list_grid = StoredWorkflowListGrid()
     published_list_grid = StoredWorkflowAllPublishedGrid()
 
@@ -655,9 +656,12 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             version = len(stored.workflows) - 1
         else:
             version = int(version)
+        js_options = self._get_js_options(trans)
+        js_options['config'].update(self._get_extended_config(trans))
         return trans.fill_template("workflow/editor.mako",
                                    workflows=workflows,
                                    stored=stored,
+                                   options=js_options,
                                    version=version,
                                    annotation=self.get_item_annotation_str(trans.sa_session, trans.user, stored))
 
