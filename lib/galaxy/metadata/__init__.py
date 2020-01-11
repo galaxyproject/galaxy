@@ -144,9 +144,11 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
 
             _initialize_metadata_inputs(dataset, _metadata_path, tmp_dir, kwds, real_metadata_object=real_metadata_object)
 
+            store_by = galaxy.model.Dataset.object_store.store_by  # TODO: per dataset
             outputs[name] = {
                 "filename_override": _get_filename_override(output_fnames, dataset.file_name),
                 "validate": validate_outputs,
+                "object_store_store_by": store_by,
                 'id': dataset.id,
             }
 
@@ -158,7 +160,6 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
             "datatypes_config": datatypes_config,
             "max_metadata_value_size": max_metadata_value_size,
             "outputs": outputs,
-            "object_store_store_by": galaxy.model.Dataset.object_store.store_by,
         }
 
         if self.write_object_store_conf:
