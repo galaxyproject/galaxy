@@ -1,6 +1,38 @@
 import _ from "underscore";
+import _l from "utils/localization";
 import Tools from "mvc/tool/tools";
 import { getGalaxyInstance } from "app";
+import { getAppRoot } from "onload";
+
+export function getPanelProps(panelComponent) {
+    const Galaxy = getGalaxyInstance();
+    const appRoot = getAppRoot();
+    const storedWorkflowMenuEntries = Galaxy.config.stored_workflow_menu_entries || [];
+    return {
+        side: "left",
+        currentPanel: panelComponent,
+        currentPanelProperties: {
+            appRoot: getAppRoot(),
+            toolsTitle: _l("Tools"),
+            isUser: !!(Galaxy.user && Galaxy.user.id),
+            workflowsTitle: _l("Workflows"),
+            workflows: [
+                {
+                    title: _l("All workflows"),
+                    href: `${appRoot}workflows/list`,
+                    id: "list"
+                },
+                ...storedWorkflowMenuEntries.map(menuEntry => {
+                    return {
+                        title: menuEntry["stored_workflow"]["name"],
+                        href: `${appRoot}workflows/run?id=${menuEntry["encoded_stored_workflow_id"]}`,
+                        id: menuEntry["encoded_stored_workflow_id"]
+                    };
+                })
+            ]
+        }
+    };
+}
 
 // create tool search, tool panel, and tool panel view.
 export function getToolsLayout() {

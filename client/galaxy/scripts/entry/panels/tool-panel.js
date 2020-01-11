@@ -6,6 +6,7 @@ import { getAppRoot } from "onload";
 import Vue from "vue";
 import ToolBox from "../../components/Panels/ToolBox.vue";
 import SidePanel from "../../components/Panels/SidePanel.vue";
+import { getPanelProps } from "../../components/Panels/utilities.js";
 import { mountVueComponent } from "../../utils/mountVueComponent";
 
 const ToolPanel = Backbone.View.extend({
@@ -31,47 +32,14 @@ const ToolPanel = Backbone.View.extend({
     isVueWrapper: true,
 
     mountVueComponent: function(el) {
-        return mountVueComponent(SidePanel)(this.getPropsData(), el);
+        return mountVueComponent(SidePanel)(getPanelProps(ToolBox), el);
     },
 
     getVueComponent: function() {
         const SidePanelClass = Vue.extend(SidePanel);
         return new SidePanelClass({
-            propsData: this.getPropsData()
+            propsData: getPanelProps(ToolBox)
         });
-    },
-
-    getPropsData: function() {
-        const Galaxy = getGalaxyInstance();
-        const appRoot = getAppRoot();
-
-        /** @type {Object[]} descriptions of user's workflows to be shown in the tool menu */
-        const storedWorkflowMenuEntries = Galaxy.config.stored_workflow_menu_entries || [];
-
-        return {
-            side: "left",
-            currentPanel: ToolBox,
-            currentPanelProperties: {
-                appRoot: getAppRoot(),
-                toolsTitle: _l("Tools"),
-                isUser: !!(Galaxy.user && Galaxy.user.id),
-                workflowsTitle: _l("Workflows"),
-                workflows: [
-                    {
-                        title: _l("All workflows"),
-                        href: `${appRoot}workflows/list`,
-                        id: "list"
-                    },
-                    ...storedWorkflowMenuEntries.map(menuEntry => {
-                        return {
-                            title: menuEntry["stored_workflow"]["name"],
-                            href: `${appRoot}workflows/run?id=${menuEntry["encoded_stored_workflow_id"]}`,
-                            id: menuEntry["encoded_stored_workflow_id"]
-                        };
-                    })
-                ]
-            }
-        };
     },
 
     toString: function() {

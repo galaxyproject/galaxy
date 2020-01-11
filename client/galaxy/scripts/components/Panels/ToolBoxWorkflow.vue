@@ -89,7 +89,6 @@ export default {
     },
     created() {
         this.toolsLayout = getToolsLayout();
-        console.log(this.toolsLayout);
     },
     methods: {
         setResults(results) {
