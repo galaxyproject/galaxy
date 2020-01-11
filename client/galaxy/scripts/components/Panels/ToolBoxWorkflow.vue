@@ -41,8 +41,8 @@
 </template>
 
 <script>
-import ToolSection from "./ToolSection";
-import ToolSearch from "./ToolSearch";
+import ToolSection from "./common/ToolSection";
+import ToolSearch from "./common/ToolSearch";
 import { filterToolsLayout, getToolsLayout } from "./utilities.js";
 import { getGalaxyInstance } from "app";
 
