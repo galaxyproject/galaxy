@@ -4,22 +4,22 @@ import Tools from "mvc/tool/tools";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
 
-export function getPanelProps(panelComponent) {
+export function getPanelProps(panelComponent, options = {}) {
     const Galaxy = getGalaxyInstance();
     const appRoot = getAppRoot();
-    const storedWorkflowMenuEntries = Galaxy.config.stored_workflow_menu_entries || [];
+    const storedWorkflowMenuEntries = options.stored_workflow_menu_entries || [];
     return {
         side: "left",
         currentPanel: panelComponent,
         currentPanelProperties: {
             appRoot: getAppRoot(),
             toolsTitle: _l("Tools"),
+            toolSections: options.tool_sections,
             isUser: !!(Galaxy.user && Galaxy.user.id),
-            moduleSections: Galaxy.config.module_sections,
+            moduleSections: options.module_sections,
             dataManagers: {
                 name: _l("Data Managers"),
-                panel_type: "section",
-                elems: Galaxy.config.data_managers,
+                elems: options.data_managers,
             },
             workflowsTitle: _l("Workflows"),
             workflows: [
@@ -41,16 +41,15 @@ export function getPanelProps(panelComponent) {
 }
 
 // create tool search, tool panel, and tool panel view.
-export function getToolsLayout() {
-    const Galaxy = getGalaxyInstance();
+export function getToolSections(options) {
     const tool_search = new Tools.ToolSearch({
         hidden: false
     });
-    const tools = new Tools.ToolCollection(Galaxy.config.toolbox);
+    const tools = new Tools.ToolCollection(options.toolbox);
     const toolPanel = new Tools.ToolPanel({
         tool_search: tool_search,
         tools: tools,
-        layout: Galaxy.config.toolbox_in_panel
+        layout: options.toolbox_in_panel
     });
     return _.map(toolPanel.get("layout").toJSON(), category => {
         return {
@@ -65,7 +64,7 @@ export function getToolsLayout() {
     });
 }
 
-export function filterToolsLayout(layout, results) {
+export function filterToolSections(layout, results) {
     if (results) {
         return _.filter(
             _.map(layout, category => {

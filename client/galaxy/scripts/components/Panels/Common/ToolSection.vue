@@ -1,6 +1,6 @@
 <template>
     <div>
-        <div v-if="category.panel_type == 'section'" class="toolSectionWrapper">
+        <div v-if="category.elems" class="toolSectionWrapper">
             <div :id="category.name" class="toolSectionTitle">
                 <a @click="toggleToolSectionMenu" href="javascript:void(0)" role="button">
                     <span>
@@ -11,7 +11,7 @@
             <transition name="slide">
                 <div v-if="opened">
                     <template v-for="el in category.elems">
-                        <div v-if="el.panel_type == 'section'" class="toolPanelLabel" :key="el.id">
+                        <div v-if="el.elems" class="toolPanelLabel" :key="el.id">
                             <span>
                                 {{ el.text }}
                             </span>
@@ -22,7 +22,7 @@
             </transition>
         </div>
         <div v-else-if="category.panel_type == 'tool'">
-            <tool :tool="category" :no-section="true"></tool>
+            <tool :tool="category" :no-section="true"/>
         </div>
         <div v-else-if="category.panel_type == 'label'" class="toolPanelLabel">
             <span>

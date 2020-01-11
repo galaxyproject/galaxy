@@ -29,8 +29,7 @@
                     <a>{{ workflowsTitle }}</a>
                 </div>
                 <div id="internal-workflows" class="toolSectionBody">
-                    <div class="toolSectionBg"></div>
-
+                    <div class="toolSectionBg"/>
                     <div class="toolTitle" v-for="workflow in workflows" :key="workflow.id">
                         <a :href="workflow.href">
                             {{ workflow.title }}
@@ -47,7 +46,7 @@ import ToolSection from "./common/ToolSection";
 import ToolSearch from "./common/ToolSearch";
 import UploadButton from "./Buttons/UploadButton";
 import FavoritesButton from "./Buttons/FavoritesButton";
-import { filterToolsLayout, getToolsLayout } from "./utilities.js";
+import { filterToolSections, getToolSections } from "./utilities.js";
 import { getGalaxyInstance } from "app";
 
 export default {
@@ -83,7 +82,7 @@ export default {
     },
     computed: {
         categories() {
-            return filterToolsLayout(this.toolsLayout, this.results);
+            return filterToolSections(this.toolsLayout, this.results);
         },
         isFiltered() {
             if (this.results) {
@@ -94,7 +93,8 @@ export default {
         }
     },
     created() {
-        this.toolsLayout = getToolsLayout();
+        const Galaxy = getGalaxyInstance();
+        this.toolsLayout = getToolSections(Galaxy.config);
     },
     methods: {
         setResults(results) {

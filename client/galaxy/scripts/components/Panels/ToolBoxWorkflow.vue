@@ -12,23 +12,17 @@
         </div>
         <div class="unified-panel-body">
             <div class="toolMenuContainer">
-                <div v-for="moduleSection in moduleSections" :key="moduleSection.name">
-                    <div class="toolSectionTitle" role="button">
-                        <a>{{ moduleSection.title }}</a>
-                    </div>
-                    <div class="toolSectionBody">
-                        <div class="toolSectionBg">
-                            <div class="toolTitle" v-for="module in moduleSection.modules" :key="module.name">
-                                <a role="button" href="javascript:void(0)">
-                                    {{ module.description }}
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <tool-section
+                    v-for="category in moduleSections"
+                    :category="category"
+                    :isFiltered="isFiltered"
+                    :key="category.id"
+                    @onOpen="onOpen"
+                />
                 <tool-section
                     :category="dataManagers"
                     :key="dataManagers.name"
+                    :isFiltered="isFiltered"
                     @onOpen="onOpen"
                 />
                 <div class="toolSectionPad" />
@@ -43,17 +37,12 @@
                 </div>
                 <div class="toolSectionPad" />
                 <div class="toolSectionPad" />
-                <div class="toolSectionTitle" id="title_XXinternalXXworkflow">
-                    <a>{{ workflowsTitle }}</a>
-                </div>
-                <div id="internal-workflows" class="toolSectionBody">
-                    <div class="toolSectionBg"/>
-                    <div class="toolTitle" v-for="workflow in workflows" :key="workflow.id">
-                        <a :href="workflow.href">
-                            {{ workflow.title }}
-                        </a>
-                    </div>
-                </div>
+                <tool-section
+                    :category="workflows"
+                    :key="workflows.name"
+                    :isFiltered="isFiltered"
+                    @onOpen="onOpen"
+                />
             </div>
         </div>
     </div>
@@ -62,7 +51,7 @@
 <script>
 import ToolSection from "./common/ToolSection";
 import ToolSearch from "./common/ToolSearch";
-import { filterToolsLayout, getToolsLayout } from "./utilities.js";
+import { filterToolSections, getToolSections } from "./utilities.js";
 import { getGalaxyInstance } from "app";
 
 export default {
@@ -77,7 +66,7 @@ export default {
         };
     },
     props: {
-        tools: {
+        toolSections: {
             type: Array
         },
         toolSearch: {
@@ -90,7 +79,7 @@ export default {
             type: Array
         },
         dataManagers: {
-            type: Array
+            type: Object
         },
         moduleSections: {
             type: Array
@@ -102,7 +91,7 @@ export default {
     },
     computed: {
         categories() {
-            return filterToolsLayout(this.toolsLayout, this.results);
+            return filterToolSections(this.toolSections, this.results);
         },
         isFiltered() {
             if (this.results) {
@@ -113,7 +102,8 @@ export default {
         }
     },
     created() {
-        this.toolsLayout = getToolsLayout();
+        const Galaxy = getGalaxyInstance();
+        this.toolsLayout = getToolSections(Galaxy.config);
     },
     methods: {
         setResults(results) {
