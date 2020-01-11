@@ -660,19 +660,23 @@ class WorkflowController(JSAppLauncher, BaseUIController, SharableMixin, UsesSto
         js_options = self._get_js_options(trans)
         js_options['config'].update(self._get_extended_config(trans))
 
+        ## add workflow modules to response
+        module_sections = load_module_sections( trans )
+        js_options['config']['module_sections'] = [ m for s, m in module_sections.items() ]
+
         ## add data manager tools to response
-        data_manager_tools = []
+        data_managers = []
         if trans.user_is_admin and trans.app.data_managers.data_managers:
             for data_manager_id, data_manager_val in trans.app.data_managers.data_managers.items():
                 tool = data_manager_val.tool
                 if not tool.hidden:
-                    data_manager_tools.append({
+                    data_managers.append({
                         "id": tool.id,
                         "name": tool.name,
                         "description": tool.description,
                         "is_workflow_compatible": tool.is_workflow_compatible,
                     })
-        js_options['config']['data_manager_tools'] = data_manager_tools
+        js_options['config']['data_managers'] = data_managers
 
         ## parse to mako
         return trans.fill_template("workflow/editor.mako",

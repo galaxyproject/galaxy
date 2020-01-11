@@ -15,6 +15,12 @@ export function getPanelProps(panelComponent) {
             appRoot: getAppRoot(),
             toolsTitle: _l("Tools"),
             isUser: !!(Galaxy.user && Galaxy.user.id),
+            moduleSections: Galaxy.config.module_sections,
+            dataManagers: {
+                name: _l("Data Managers"),
+                panel_type: "section",
+                elems: Galaxy.config.data_managers,
+            },
             workflowsTitle: _l("Workflows"),
             workflows: [
                 {

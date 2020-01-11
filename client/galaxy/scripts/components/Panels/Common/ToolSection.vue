@@ -11,12 +11,12 @@
             <transition name="slide">
                 <div v-if="opened">
                     <template v-for="el in category.elems">
-                        <tool v-if="el.panel_type == 'tool'" :tool="el" :key="el.id" @onOpen="onOpen"></tool>
-                        <div v-else-if="el.panel_type == 'section'" class="toolPanelLabel" :key="el.id">
+                        <div v-if="el.panel_type == 'section'" class="toolPanelLabel" :key="el.id">
                             <span>
                                 {{ el.text }}
                             </span>
                         </div>
+                        <tool v-else :tool="el" :key="el.id" @onOpen="onOpen"/>
                     </template>
                 </div>
             </transition>

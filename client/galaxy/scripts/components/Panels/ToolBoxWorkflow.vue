@@ -12,6 +12,26 @@
         </div>
         <div class="unified-panel-body">
             <div class="toolMenuContainer">
+                <div v-for="moduleSection in moduleSections" :key="moduleSection.name">
+                    <div class="toolSectionTitle" role="button">
+                        <a>{{ moduleSection.title }}</a>
+                    </div>
+                    <div class="toolSectionBody">
+                        <div class="toolSectionBg">
+                            <div class="toolTitle" v-for="module in moduleSection.modules" :key="module.name">
+                                <a role="button" href="javascript:void(0)">
+                                    {{ module.description }}
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <tool-section
+                    :category="dataManagers"
+                    :key="dataManagers.name"
+                    @onOpen="onOpen"
+                />
+                <div class="toolSectionPad" />
                 <div class="toolMenu">
                     <tool-section
                         v-for="category in categories"
@@ -27,8 +47,7 @@
                     <a>{{ workflowsTitle }}</a>
                 </div>
                 <div id="internal-workflows" class="toolSectionBody">
-                    <div class="toolSectionBg"></div>
-
+                    <div class="toolSectionBg"/>
                     <div class="toolTitle" v-for="workflow in workflows" :key="workflow.id">
                         <a :href="workflow.href">
                             {{ workflow.title }}
@@ -68,6 +87,12 @@ export default {
             type: String
         },
         workflows: {
+            type: Array
+        },
+        dataManagers: {
+            type: Array
+        },
+        moduleSections: {
             type: Array
         },
         isUser: {
