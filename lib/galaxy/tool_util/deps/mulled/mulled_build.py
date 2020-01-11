@@ -148,8 +148,8 @@ def get_conda_hits_for_targets(targets, conda_context):
     return [r for r in search_results if r]
 
 
-def any_target_requires_extended_base(targets):
-    hits = get_conda_hits_for_targets(targets, CondaInDockerContext())
+def any_target_requires_extended_base(targets, conda_context=None):
+    hits = get_conda_hits_for_targets(targets, conda_context or CondaInDockerContext())
     for hit in hits:
         try:
             meta_content = unicodify(get_file_from_recipe_url(hit['url']).extractfile('info/about.json').read())
