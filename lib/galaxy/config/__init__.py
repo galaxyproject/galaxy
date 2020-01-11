@@ -773,7 +773,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             markdown_export_css=[self._in_config_dir('markdown_export.css')],
             markdown_export_css_pages=[self._in_config_dir('markdown_export_pages.css')],
             markdown_export_css_invocation_reports=[self._in_config_dir('markdown_export_invocation_reports.css')],
-            file_path=[self._in_data_dir('files'), self._in_data_dir('objects')],
+            # self.file_path set to self._in_data_dir('objects') by schema
+            file_path=[self._in_data_dir('files'), self.file_path],
         )
         listify_defaults = {
             'tool_data_table_config_path': [
