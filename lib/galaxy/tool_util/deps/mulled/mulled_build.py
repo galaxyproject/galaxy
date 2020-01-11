@@ -175,9 +175,11 @@ def mull_targets(
     repository_template=DEFAULT_REPOSITORY_TEMPLATE, dry_run=False,
     conda_version=None, verbose=False, binds=DEFAULT_BINDS, rebuild=True,
     oauth_token=None, hash_func="v2", singularity=False,
-    singularity_image_dir="singularity_import",
+    singularity_image_dir="singularity_import", base_image=None,
 ):
-    if DEST_BASE_IMAGE:
+    if base_image:
+        dest_base_image = base_image
+    elif DEST_BASE_IMAGE:
         dest_base_image = DEST_BASE_IMAGE
     else:
         dest_base_image = DEFAULT_EXTENDED_BASE_IMAGE if any_target_requires_extended_base(targets) else DEST_BASE_IMAGE
