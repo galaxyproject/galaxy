@@ -17,6 +17,7 @@
 
     <script type="text/javascript">
         var editorConfig = ${ h.dumps( editor_config ) };
+        editorConfig.workflow_globals = workflow_globals;
         config.addInitialization(function(galaxy, config) {
             console.log("workflow/editor.mako, editorConfig", editorConfig);
             window.bundleEntries.mountWorkflowEditor(editorConfig);

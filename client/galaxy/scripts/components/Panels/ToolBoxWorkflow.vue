@@ -78,6 +78,9 @@ export default {
         workflowSection: {
             type: Object
         },
+        workflowGlobals: {
+            type: Object
+        },
         dataManagers: {
             type: Object
         },
@@ -105,17 +108,7 @@ export default {
             this.results = results;
         },
         onOpen(e, tool) {
-            const Galaxy = getGalaxyInstance();
-            if (tool.id === "upload1") {
-                e.preventDefault();
-                Galaxy.upload.show();
-            } else if (tool.form_style === "regular") {
-                e.preventDefault();
-                Galaxy.router.push("/", {
-                    tool_id: tool.id,
-                    version: tool.version
-                });
-            }
+            this.workflowGlobals.app.add_node_for_tool( tool.id );
         }
     }
 };

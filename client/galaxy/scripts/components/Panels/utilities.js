@@ -10,6 +10,7 @@ export function getPanelProps(panelComponent, options = {}) {
         currentPanelProperties: {
             appRoot: getAppRoot(),
             toolsTitle: _l("Tools"),
+            workflowGlobals: options.workflow_globals,
             toolbox: options.toolbox,
             moduleSections: options.module_sections,
             dataManagers: {
