@@ -63,9 +63,6 @@ export default {
         };
     },
     props: {
-        tools: {
-            type: Array
-        },
         toolSearch: {
             type: Object
         },

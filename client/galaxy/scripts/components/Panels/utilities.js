@@ -1,6 +1,5 @@
 import _ from "underscore";
 import _l from "utils/localization";
-import Tools from "mvc/tool/tools";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
 
@@ -14,7 +13,7 @@ export function getPanelProps(panelComponent, options = {}) {
         currentPanelProperties: {
             appRoot: getAppRoot(),
             toolsTitle: _l("Tools"),
-            toolSections: options.tool_sections,
+            toolbox_in_panel: options.toolbox_in_panel,
             isUser: !!(Galaxy.user && Galaxy.user.id),
             moduleSections: options.module_sections,
             dataManagers: {
@@ -42,23 +41,14 @@ export function getPanelProps(panelComponent, options = {}) {
 
 // create tool search, tool panel, and tool panel view.
 export function getToolSections(options) {
-    const tool_search = new Tools.ToolSearch({
-        hidden: false
-    });
-    const tools = new Tools.ToolCollection(options.toolbox);
-    const toolPanel = new Tools.ToolPanel({
-        tool_search: tool_search,
-        tools: tools,
-        layout: options.toolbox_in_panel
-    });
-    return _.map(toolPanel.get("layout").toJSON(), category => {
+    console.log(options);
+    return _.map(options.toolbox_in_panel, category => {
         return {
             ...category,
             panel_type: getPanelType(category),
             elems: _.map(category.elems, el => {
-                const json = el.toJSON();
-                json.panel_type = getPanelType(json);
-                return json;
+                el.panel_type = getPanelType(el);
+                return el;
             })
         };
     });
