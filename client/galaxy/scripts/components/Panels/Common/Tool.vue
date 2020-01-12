@@ -5,8 +5,6 @@
                 @click="open"
                 :href="tool.link"
                 :target="tool.target"
-                :minsizehint="tool.min_width"
-                :class="['tool-link', tool.id]"
             >
                 <span class="labels">
                     <span
@@ -17,7 +15,7 @@
                         {{ label }}
                     </span>
                 </span>
-                <span class="tool-old-link">{{ tool.name }}</span>
+                <span class="font-weight-bold">{{ tool.name }}</span>
                 {{ tool.description }}
             </a>
         </div>
