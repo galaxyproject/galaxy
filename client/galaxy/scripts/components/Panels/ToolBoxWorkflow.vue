@@ -98,7 +98,7 @@ export default {
         }
     },
     created() {
-        this.toolsLayout = getToolSections(this.toolbox, x => x.is_workflow_compatible);
+        this.toolsLayout = getToolSections(this.toolbox, x => !x.is_workflow_compatible);
     },
     methods: {
         setResults(results) {

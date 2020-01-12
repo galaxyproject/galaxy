@@ -1400,7 +1400,7 @@ div.toolTitleNoSection {
             background: darken($panel-bg-color, 5%);
         }
     }
-    &.text-muted a {
+    a.text-muted {
         &:hover {
             background: inherit;
         }

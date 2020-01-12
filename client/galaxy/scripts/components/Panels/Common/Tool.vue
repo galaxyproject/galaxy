@@ -1,10 +1,13 @@
 <template>
     <div :class="rootClass">
+        <a v-if="tool.disabled" class="text-muted">
+            {{ tool.name }} {{ tool.description }}
+        </a>
         <a
             @click="open"
             :href="tool.link"
             :target="tool.target"
-            :class="anchorClass"
+            v-else
         >
             <span class="labels">
                 <span
@@ -37,9 +40,6 @@ export default {
         }
     },
     computed: {
-        anchorClass() {
-            return !this.tool.disabled && "text-muted";
-        },
         rootClass() {
             return this.noSection ? 'toolTitleNoSection' : 'toolTitle';
         }
