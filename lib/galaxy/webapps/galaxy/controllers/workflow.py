@@ -694,7 +694,7 @@ class WorkflowController(JSAppLauncher, BaseUIController, SharableMixin, UsesSto
         editor_config = {
             'id'                      : trans.security.encode_id(stored.id),
             'name'                    : stored.name,
-            'toolbox_in_panel'        : trans.app.toolbox.to_dict(trans),
+            'toolbox'                 : trans.app.toolbox.to_dict(trans),
             'module_sections'         : module_sections,
             'data_managers'           : data_managers,
             'workflows'               : workflows,

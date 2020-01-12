@@ -66,7 +66,7 @@ export default {
         };
     },
     props: {
-        toolbox_in_panel: {
+        toolbox: {
             type: Array
         },
         toolSearch: {
@@ -91,7 +91,7 @@ export default {
     },
     computed: {
         categories() {
-            return filterToolSections(this.toolbox_in_panel, this.results);
+            return filterToolSections(this.toolbox, this.results);
         },
         isFiltered() {
             if (this.results) {

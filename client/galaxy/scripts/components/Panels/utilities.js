@@ -13,7 +13,7 @@ export function getPanelProps(panelComponent, options = {}) {
         currentPanelProperties: {
             appRoot: getAppRoot(),
             toolsTitle: _l("Tools"),
-            toolbox_in_panel: options.toolbox_in_panel,
+            toolbox: options.toolbox,
             isUser: !!(Galaxy.user && Galaxy.user.id),
             moduleSections: options.module_sections,
             dataManagers: {
@@ -42,7 +42,7 @@ export function getPanelProps(panelComponent, options = {}) {
 // create tool search, tool panel, and tool panel view.
 export function getToolSections(options) {
     console.log(options);
-    return _.map(options.toolbox_in_panel, category => {
+    return _.map(options.toolbox, category => {
         return {
             ...category,
             panel_type: getPanelType(category),
