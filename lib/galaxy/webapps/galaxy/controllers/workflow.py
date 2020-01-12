@@ -677,8 +677,9 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
                     data_managers.append({
                         "id": tool.id,
                         "name": tool.name,
+                        "hidden": tool.is_hidden,
                         "description": tool.description,
-                        "is_workflow_compatible": tool.is_workflow_compatible,
+                        "is_workflow_compatible": tool.is_workflow_compatible
                     })
 
         ## create workflow models

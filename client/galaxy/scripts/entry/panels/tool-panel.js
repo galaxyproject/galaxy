@@ -32,13 +32,15 @@ const ToolPanel = Backbone.View.extend({
     isVueWrapper: true,
 
     mountVueComponent: function(el) {
-        return mountVueComponent(SidePanel)(getPanelProps(ToolBox), el);
+        const Galaxy = getGalaxyInstance();
+        return mountVueComponent(SidePanel)(getPanelProps(ToolBox, Galaxy.config), el);
     },
 
     getVueComponent: function() {
+        const Galaxy = getGalaxyInstance();
         const SidePanelClass = Vue.extend(SidePanel);
         return new SidePanelClass({
-            propsData: getPanelProps(ToolBox)
+            propsData: getPanelProps(ToolBox, Galaxy.config)
         });
     },
 

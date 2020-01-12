@@ -71,10 +71,6 @@ export default {
         },
         workflows: {
             type: Array
-        },
-        isUser: {
-            type: Boolean,
-            default: false
         }
     },
     computed: {
@@ -87,6 +83,10 @@ export default {
             } else {
                 return false;
             }
+        },
+        isUser() {
+            const Galaxy = getGalaxyInstance();
+            return !!(Galaxy.user && Galaxy.user.id);
         }
     },
     created() {

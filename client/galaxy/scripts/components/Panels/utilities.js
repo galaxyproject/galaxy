@@ -1,11 +1,8 @@
 import _ from "underscore";
 import _l from "utils/localization";
-import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
 
 export function getPanelProps(panelComponent, options = {}) {
-    const Galaxy = getGalaxyInstance();
-    const appRoot = getAppRoot();
     const storedWorkflowMenuEntries = options.stored_workflow_menu_entries || [];
     return {
         side: "left",
@@ -14,23 +11,26 @@ export function getPanelProps(panelComponent, options = {}) {
             appRoot: getAppRoot(),
             toolsTitle: _l("Tools"),
             toolbox: options.toolbox,
-            isUser: !!(Galaxy.user && Galaxy.user.id),
             moduleSections: options.module_sections,
             dataManagers: {
                 name: _l("Data Managers"),
                 elems: options.data_managers,
             },
             workflowsTitle: _l("Workflows"),
+            workflowSection: {
+                name: _l("Workflows"),
+                elems: options.workflows
+            },
             workflows: [
                 {
                     title: _l("All workflows"),
-                    href: `${appRoot}workflows/list`,
+                    href: `${getAppRoot()}workflows/list`,
                     id: "list"
                 },
                 ...storedWorkflowMenuEntries.map(menuEntry => {
                     return {
                         title: menuEntry["stored_workflow"]["name"],
-                        href: `${appRoot}workflows/run?id=${menuEntry["encoded_stored_workflow_id"]}`,
+                        href: `${getAppRoot()}workflows/run?id=${menuEntry["encoded_stored_workflow_id"]}`,
                         id: menuEntry["encoded_stored_workflow_id"]
                     };
                 })

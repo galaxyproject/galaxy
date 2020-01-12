@@ -38,8 +38,8 @@
                 <div class="toolSectionPad" />
                 <div class="toolSectionPad" />
                 <tool-section
-                    :category="workflows"
-                    :key="workflows.name"
+                    :category="workflowSection"
+                    :key="workflowSection.name"
                     :isFiltered="isFiltered"
                     @onOpen="onOpen"
                 />
@@ -75,8 +75,8 @@ export default {
         workflowsTitle: {
             type: String
         },
-        workflows: {
-            type: Array
+        workflowSection: {
+            type: Object
         },
         dataManagers: {
             type: Object
