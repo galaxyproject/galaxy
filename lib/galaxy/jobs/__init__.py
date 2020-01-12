@@ -1034,11 +1034,11 @@ class JobWrapper(HasResourceParameters):
         return False
 
     def get_version_string_path(self):
-        return os.path.abspath(os.path.join(self.working_directory, COMMAND_VERSION_FILENAME))
+        return os.path.abspath(os.path.join(self.working_directory, "outputs", COMMAND_VERSION_FILENAME))
 
-    # TODO: Remove in Galaxy 20.XX, for running jobs at GX upgrade
+    # TODO: Remove in Galaxy 21.XX, for running jobs at GX upgrade
     def get_version_string_path_legacy(self):
-        return os.path.abspath(os.path.join(self.app.config.new_file_path, "GALAXY_VERSION_STRING_%s" % self.job_id))
+        return os.path.abspath(os.path.join(self.working_directory, COMMAND_VERSION_FILENAME))
 
     def __prepare_upload_paramfile(self, tool_evaluator):
         """Special case paramfile handling for the upload tool. Moves the paramfile to the working directory
@@ -2111,7 +2111,7 @@ class JobWrapper(HasResourceParameters):
                 "connection_configuration": container.connection_configuration,
             }, f)
 
-        return "(python '%s'/lib/galaxy_ext/container_monitor/monitor.py &) " % exec_dir
+        return "(python '%s'/lib/galaxy_ext/container_monitor/monitor.py &); sleep 1 " % exec_dir
 
     @property
     def user(self):

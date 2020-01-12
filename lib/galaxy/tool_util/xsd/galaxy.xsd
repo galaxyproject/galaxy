@@ -855,6 +855,15 @@ $assertions
 </xs:documentation>
         </xs:annotation>
       </xs:element>
+      <xs:element name="assert_command_version" type="TestAssertions">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Describe assertions about the job's
+command version.
+
+$assertions
+</xs:documentation>
+        </xs:annotation>
+      </xs:element>
     </xs:choice>
   </xs:group>
   <xs:complexType name="TestSection">

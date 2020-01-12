@@ -45,7 +45,7 @@ Enhancements
   (thanks to `@xgaia <https://github.com/xgaia>`__).
   `Pull Request 4737`_
 * Implement a Github error report backend for
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 4765`_
 * Add maintenance script to simplify setting up a cleanup cron job
   (thanks to `@scholtalbers <https://github.com/scholtalbers>`__).
@@ -136,7 +136,7 @@ Enhancements
 * Allow multiple simultaneous uploads via single POST.
   `Pull Request 4563`_
 * Various bits of proactive security-related hardening
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 4604`_
 * Move test helper ``wait_for_dataset_collection`` for reuse
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
@@ -157,14 +157,14 @@ Enhancements
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 4688`_
 * Nicer logging message for sentry
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 4693`_
 * Use enumeration to provide history input index names.
   `Pull Request 4700`_
 * Cleanup delayed action in ``history-view.js``.
   `Pull Request 4704`_
 * Add logging during for script integrity exceptions
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 4720`_
 * Fix to respect ``galaxy.json`` supplied metadata for empty outputs.
   `Pull Request 4722`_
@@ -187,7 +187,7 @@ Enhancements
   (thanks to `@pcm32 <https://github.com/pcm32>`__ and the `@phnmnl <https://github.com/phnmnl>`__ project).
   `Pull Request 4751`_
 * Send all influxdb stats to a single bucket
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 4758`_
 * PEP-8 fixes in random doctests.
   `Pull Request 4764`_
@@ -274,7 +274,7 @@ Enhancements
 * Document fastest way to iterate on client & client tests together.
   `Pull Request 5051`_
 * Support separate DSN for job sentry error reports
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 5056`_
 * Build endpoint separation
   `Pull Request 5058`_
@@ -531,7 +531,7 @@ Fixes
   `Pull Request 5045`_
 * Safely handle possible ``None`` value encountered in processing and execution of
   post-job action arguments
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 5050`_
 * Restore admin form routes.
   `Pull Request 5065`_
@@ -563,7 +563,7 @@ Fixes
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5121`_
 * Fix attribute error that was missed during refactor of sentry
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 5122`_
 * Fix connecting non-input modules to subworkflow inputs.
   `Pull Request 5140`_
@@ -664,7 +664,7 @@ Fixes
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5357`_
 * Handle ``None`` in job owner in API
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 5358`_
 * Fix form logic in deactivate or uninstall.
   `Pull Request 5363`_

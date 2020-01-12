@@ -3,7 +3,7 @@
         <div v-if="error" class="alert alert-danger" show>{{ error }}</div>
         <div v-else>
             <span v-if="loading">
-                <span class="fa fa-spinner fa-spin" />
+                <font-awesome-icon icon="spinner" spin />
                 Loading workflows...
             </span>
             <div v-else>
@@ -23,11 +23,11 @@
                     <b-col>
                         <span class="float-right">
                             <b-button id="workflow-create" class="m-1" @click="createWorkflow">
-                                <span class="fa fa-plus" />
+                                <font-awesome-icon icon="plus" />
                                 Create
                             </b-button>
                             <b-button id="workflow-import" class="m-1" @click="importWorkflow">
-                                <span class="fa fa-upload" />
+                                <font-awesome-icon icon="upload" />
                                 Import
                             </b-button>
                         </span>
@@ -81,14 +81,25 @@
     </div>
 </template>
 <script>
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faPlus } from "@fortawesome/free-solid-svg-icons";
+import { faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { faUpload } from "@fortawesome/free-solid-svg-icons";
+
 import { getAppRoot } from "onload/loadConfig";
 import { Services } from "./services.js";
 import WorkflowTags from "./WorkflowTags.vue";
 import WorkflowDropdown from "./WorkflowDropdown.vue";
 import UtcDate from "components/UtcDate";
 
+library.add(faPlus);
+library.add(faUpload);
+library.add(faSpinner);
+
 export default {
     components: {
+        FontAwesomeIcon,
         UtcDate,
         WorkflowTags,
         WorkflowDropdown

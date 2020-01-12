@@ -3,7 +3,6 @@ import logging
 import os
 from collections import OrderedDict
 from datetime import datetime, timedelta
-from string import punctuation as PUNCTUATION
 
 import six
 from sqlalchemy import and_, false, or_
@@ -531,6 +530,8 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         condition=(lambda item: not item.deleted and not item.purged),
         allow_multiple=False
     )
+    activate_operation = grids.GridOperation("Activate User", condition=(lambda item: not item.active), allow_multiple=False)
+    resend_activation_email = grids.GridOperation("Resend Activation Email", condition=(lambda item: not item.active), allow_multiple=False)
 
     @web.expose
     @web.require_admin
@@ -614,6 +615,13 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 message, status = self._recalculate_user(trans, id)
             elif operation == 'generate new api key':
                 message, status = self._new_user_apikey(trans, id)
+            elif operation == 'activate user':
+                message, status = self._activate_user(trans, id)
+            elif operation == 'resend activation email':
+                message, status = self._resend_activation_email(trans, id)
+        if message and status:
+            kwd['message'] = util.sanitize_text(message)
+            kwd['status'] = status
         if trans.app.config.allow_user_deletion:
             if self.delete_operation not in self.user_list_grid.operations:
                 self.user_list_grid.operations.append(self.delete_operation)
@@ -624,9 +632,10 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         if trans.app.config.allow_user_impersonation:
             if self.impersonate_operation not in self.user_list_grid.operations:
                 self.user_list_grid.operations.append(self.impersonate_operation)
-        if message and status:
-            kwd['message'] = util.sanitize_text(message)
-            kwd['status'] = status
+        if trans.app.config.user_activation_on:
+            if self.activate_operation not in self.user_list_grid.operations:
+                self.user_list_grid.operations.append(self.activate_operation)
+                self.user_list_grid.operations.append(self.resend_activation_email)
         return self.user_list_grid(trans, **kwd)
 
     @web.legacy_expose_api
@@ -1457,6 +1466,22 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         trans.sa_session.flush()
         return ("New key '%s' generated for requested user '%s'." % (new_key.key, user.email), "done")
 
+    def _activate_user(self, trans, user_id):
+        user = trans.sa_session.query(trans.model.User).get(trans.security.decode_id(user_id))
+        if not user:
+            return ('User not found for id (%s)' % sanitize_text(str(user_id)), 'error')
+        self.user_manager.activate(user)
+        return ('Activated user: %s.' % user.email, 'done')
+
+    def _resend_activation_email(self, trans, user_id):
+        user = trans.sa_session.query(trans.model.User).get(trans.security.decode_id(user_id))
+        if not user:
+            return ('User not found for id (%s)' % sanitize_text(str(user_id)), 'error')
+        if self.user_manager.send_activation_email(trans, user.email, user.username):
+            return ('Activation email has been sent to user: %s.' % user.email, 'done')
+        else:
+            return ('Unable to send activation email to user: %s.' % user.email, 'error')
+
     @web.legacy_expose_api
     @web.require_admin
     def manage_roles_and_groups_for_user(self, trans, payload=None, **kwd):
@@ -1508,47 +1533,9 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
     @web.expose
     @web.json
     @web.require_admin
-    def jobs_control(self, trans, job_lock=None, **kwd):
-        if job_lock is not None:
-            job_lock = True if job_lock == 'true' else False
-            trans.app.queue_worker.send_control_task('admin_job_lock', kwargs={'job_lock': job_lock}, get_response=True)
-        job_lock = trans.app.job_manager.job_lock
-        return {'job_lock': job_lock}
-
-    @web.expose
-    @web.json
-    @web.require_admin
-    def jobs_list(self, trans, stop=[], stop_msg=None, cutoff=180, **kwd):
-        deleted = []
+    def jobs_list(self, trans, cutoff=180, **kwd):
         message = kwd.get('message', '')
         status = kwd.get('status', 'info')
-        job_ids = util.listify(stop)
-        if job_ids and stop_msg in [None, '']:
-            message = 'Please enter an error message to display to the user describing why the job was terminated'
-            return self.message_exception(trans, message)
-        elif job_ids:
-            if stop_msg[-1] not in PUNCTUATION:
-                stop_msg += '.'
-            for job_id in job_ids:
-                error_msg = "This job was stopped by an administrator: %s  <a href='%s' target='_blank'>Contact support</a> for additional help." \
-                    % (stop_msg, self.app.config.get("support_url", "https://galaxyproject.org/support/"))
-                if trans.app.config.track_jobs_in_database:
-                    job = trans.sa_session.query(trans.app.model.Job).get(job_id)
-                    job.job_stderr = error_msg
-                    job.set_state(trans.app.model.Job.states.DELETED_NEW)
-                    trans.sa_session.add(job)
-                else:
-                    trans.app.job_manager.stop(job, message=error_msg)
-                deleted.append(str(job_id))
-        if deleted:
-            message = 'Queued job'
-            if len(deleted) > 1:
-                message += 's'
-            message += ' for deletion: '
-            message += ', '.join(deleted)
-            status = 'done'
-            trans.sa_session.flush()
-        job_lock = trans.app.job_manager.job_lock
         cutoff_time = datetime.utcnow() - timedelta(seconds=int(cutoff))
         jobs = trans.sa_session.query(trans.app.model.Job) \
                                .filter(and_(trans.app.model.Job.table.c.update_time < cutoff_time,
@@ -1566,21 +1553,15 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         def prepare_jobs_list(jobs):
             res = []
             for job in jobs:
-                inputs = ""
-                try:
-                    inputs = ", ".join(['{} {}'.format(da.dataset.id, da.dataset.state) for da in job.input_datasets])
-                except Exception:
-                    inputs = 'Unable to determine inputs'
                 res.append({
                     'job_info': {
                         'id': job.id,
-                        'info_url': "{}?jobid={}".format(web.url_for(controller="admin", action="job_info"), job.id)
                     },
+                    'id': trans.security.encode_id(job.id),
                     'user': job.history.user.email if job.history and job.history.user else 'anonymous',
                     'update_time': job.update_time.isoformat(),
                     'tool_id': job.tool_id,
                     'state': job.state,
-                    'input_dataset': inputs,
                     'command_line': job.command_line,
                     'job_runner_name': job.job_runner_name,
                     'job_runner_external_id': job.job_runner_external_id
@@ -1590,8 +1571,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 'recent_jobs': prepare_jobs_list(recent_jobs),
                 'cutoff': cutoff,
                 'message': message,
-                'status': status,
-                'job_lock': job_lock}
+                'status': status}
 
     @web.expose
     @web.require_admin

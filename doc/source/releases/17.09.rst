@@ -80,7 +80,7 @@ Enhancements
   `Pull Request 4466`_
 * Refactor tool error reporting into plugins and implement a new
   plugin for `influxdb <https://www.influxdata.com/>`__
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 4305`_, `Pull Request 4533`_
 * Implement second toolshed installation UX targetting the API.
   `Pull Request 3626`_
@@ -120,10 +120,10 @@ Enhancements
   (thanks to `@arbernard <https://github.com/arbernard>`__).
   `Pull Request 4489`_
 * Nicer tool click targets for toolbox
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 4470`_
 * Implement a "plain" bootstrap theme for the UX
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 4470`_
 * Add Selenium tests for the "saved histories", "published histories", and
   "custom builds"
@@ -136,7 +136,7 @@ Enhancements
   `Pull Request 4576`_, `Pull Request 4561`_, `Pull Request 4531`_, `Pull Request 4564`_,
   `Pull Request 4582`_, `Pull Request 4586`_, `Pull Request 4592`_, `Pull Request 4042`_
 * Prevent graphite from dying loudly
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 4036`_
 * Updated parameters check for OpenID
   (thanks to `@VJalili <https://github.com/VJalili>`__).
@@ -164,12 +164,12 @@ Enhancements
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 4096`_
 * Security policy
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 4113`_
 * Improved styling of workflow list.
   `Pull Request 4138`_
 * Swap over all URLs to new wiki location
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 4141`_
 * Documentation fixes and improvements
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
@@ -238,10 +238,10 @@ Enhancements
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4271`_
 * More uniform backend code for generating page titles
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 4272`_, `Pull Request 4578`_
 * Fix blockquote>p sizing
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 4273`_
 * Expose more user properties to admins via the API.
   `Pull Request 4274`_
@@ -256,7 +256,7 @@ Enhancements
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 4284`_
 * Improve security via local network access restrictions
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 4289`_
 * Enhancement for Phyloviz viz plugin
   (thanks to `@bgruening <https://github.com/bgruening>`__).
@@ -288,7 +288,7 @@ Enhancements
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4368`_, `Pull Request 4380`_
 * Galactic Radio Telescope Update
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 4376`_
 * Show minimum required galaxy version in tool shed and galaxy installation
   process
@@ -308,7 +308,7 @@ Enhancements
 * Generalize allow_library_path_paste to allow_path_paste.
   `Pull Request 4404`_
 * Small GRT bugfixes
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 4408`_
 * Update conda channel order to sync with Bioconda
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
@@ -335,7 +335,7 @@ Enhancements
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 4456`_
 * Improvements to `Sentry <https://sentry.io/welcome/>`__ integration
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 4457`_, `Pull Request 4471`_
 * Fix for GIEs to not automatically uppercase environment variables
   (thanks to `@xgaia <https://github.com/xgaia>`__).
@@ -359,7 +359,7 @@ Enhancements
 * Minor copy datasets dialog improvement.
   `Pull Request 4486`_
 * 41% reduction in freiburg galaxy startup time
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 4495`_
 * Allow paramiko cli to recover from ssh timeout
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
@@ -473,7 +473,7 @@ Enhancements
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4598`_
 * Remove various unreachable statements
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 4603`_
 * Refactored a dataset variable to HDA
   (thanks to `@VJalili <https://github.com/VJalili>`__).
@@ -583,7 +583,7 @@ Fixes
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4420`_
 * Some unicoding for local runner
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 4426`_
 * Break connection in workflow editor if necessary
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
@@ -603,7 +603,7 @@ Fixes
 * Fix drag and drop from history for Firefox
   `Pull Request 4496`_
 * 2017-08 Security Patch
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 4501`_
 * Fix history import if using symlink in database directory
   (thanks to `@FredericBGA <https://github.com/FredericBGA>`__).

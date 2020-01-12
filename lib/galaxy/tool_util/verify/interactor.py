@@ -901,6 +901,7 @@ def _verify_outputs(testdef, history, jobs, tool_id, data_list, data_collection_
 
     other_checks = {
         "command_line": "Command produced by the job",
+        "command_version": "Tool version indicated during job execution",
         "stdout": "Standard output of the job",
         "stderr": "Standard error of the job",
     }
@@ -1064,6 +1065,7 @@ class ToolTestDescription(object):
 
         self.output_collections = map(TestCollectionOutputDef.from_dict, processed_test_dict.get("output_collections", []))
         self.command_line = processed_test_dict.get("command_line", None)
+        self.command_version = processed_test_dict.get("command_version", None)
         self.stdout = processed_test_dict.get("stdout", None)
         self.stderr = processed_test_dict.get("stderr", None)
         self.expect_exit_code = processed_test_dict.get("expect_exit_code", None)
@@ -1089,6 +1091,7 @@ class ToolTestDescription(object):
             "output_collections": map(lambda o: o.to_dict(), self.output_collections),
             "num_outputs": self.num_outputs,
             "command_line": self.command_line,
+            "command_version": self.command_version,
             "stdout": self.stdout,
             "stderr": self.stderr,
             "expect_exit_code": self.expect_exit_code,

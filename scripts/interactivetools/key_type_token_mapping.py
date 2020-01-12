@@ -6,7 +6,7 @@ from time import time
 import uwsgi
 
 
-realtime_db_file = uwsgi.opt["interactivetools_map"]
+realtime_db_file = uwsgi.opt["interactivetools_map"].decode('utf-8')
 db_conn = sqlite3.connect(realtime_db_file)
 
 DATABASE_TABLE_NAME = 'gxitproxy'
@@ -51,6 +51,14 @@ class CacheList():
 key_type_token_mapped_cache = CacheList()
 
 
+def args_as_unicode(func):
+    def wrap_args(*args):
+        args = (arg.decode('utf-8') if isinstance(arg, bytes) else arg for arg in args)
+        return func(*args)
+    return wrap_args
+
+
+@args_as_unicode
 def key_type_token_mapper_cached(key, key_type, token, route_extra, url, ttl):
     global key_type_token_mapped_cache
     cache_key = (key, key_type, token)
@@ -58,11 +66,12 @@ def key_type_token_mapper_cached(key, key_type, token, route_extra, url, ttl):
     if entry is None:
         entry = key_type_token_mapper(key, key_type, token, route_extra, url)
         if entry is not None:
-            # Should we cache empt/not authorized entries, perhaps for shorter time?
+            # Should we cache empty/not authorized entries, perhaps for shorter time?
             key_type_token_mapped_cache.add_entry(cache_key, entry, ttl=float(ttl))
     return entry
 
 
+@args_as_unicode
 def key_type_token_mapper(key, key_type, token, route_extra, url):
     global db_conn
     # print 'key %s key_type %s token %s route_extra %s url %s\n' % (key, key_type, token, route_extra, url)

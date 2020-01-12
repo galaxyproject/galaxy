@@ -1,8 +1,17 @@
 <template>
     <div>
-        <h2 class="mb-3">
-            <span id="jobs-title">Jobs</span>
-        </h2>
+        <b-container class="mb-3">
+            <b-row>
+                <b-col md="6">
+                    <h2>
+                        <span id="jobs-title">Jobs</span>
+                    </h2>
+                </b-col>
+                <b-col>
+                    <job-lock />
+                </b-col>
+            </b-row>
+        </b-container>
         <b-alert v-if="this.message !== ''" :variant="galaxyKwdToBootstrap(status)" show>
             {{ message }}
         </b-alert>
@@ -41,14 +50,6 @@
                             </b-form-group>
                         </b-form>
                     </b-col>
-                    <b-col>
-                        <b-form-group label="Administrative Job Lock" label-for="prevent-job-dispatching">
-                            <b-form-checkbox id="prevent-job-dispatching" v-model="jobLock" switch>
-                                Job dispatching is currently
-                                <strong>{{ jobLockDisplay ? "locked" : "unlocked" }}</strong>
-                            </b-form-checkbox>
-                        </b-form-group>
-                    </b-col>
                 </b-row>
                 <b-row>
                     <b-col md="6">
@@ -68,9 +69,6 @@
                                 </b-input-group-append>
                             </b-input-group>
                         </b-form-group>
-                        <b-button :pressed.sync="showCommandLine" variant="outline-secondary">
-                            {{ showCommandLine ? "Hide" : "Show" }} Command Line
-                        </b-button>
                     </b-col>
                     <b-col>
                         <b-card v-if="jobsItemsComputed.length" header="Stop Selected Jobs">
@@ -126,7 +124,7 @@
                         v-model="selectedStopJobIds"
                         :checked="allSelected"
                         :key="data.index"
-                        :value="data.item['job_info']['id']"
+                        :value="data.item['id']"
                     ></b-form-checkbox>
                 </template>
                 <template v-slot:cell(job_info)="data">
@@ -135,12 +133,7 @@
                     </b-link>
                 </template>
                 <template v-slot:row-details="row">
-                    <b-card>
-                        <h5>Command Line</h5>
-                        <pre
-                            class="text-white bg-dark"
-                        ><code class="break-word">{{ row.item.command_line }}</code></pre>
-                    </b-card>
+                    <job-details :commandLine="row.item.command_line" :jobId="row.item.jobId" />
                 </template>
             </b-table>
             <b-alert v-if="!recentJobsItemsComputed.length" variant="secondary" show>
@@ -170,12 +163,7 @@
                     <utc-date :date="data.value" mode="elapsed" />
                 </template>
                 <template v-slot:row-details="row">
-                    <b-card>
-                        <h5>Command Line</h5>
-                        <pre
-                            class="text-white bg-dark"
-                        ><code class="break-word">{{ row.item.command_line }}</code></pre>
-                    </b-card>
+                    <job-details :commandLine="row.item.command_line" :jobId="row.item.id" />
                 </template>
             </b-table>
             <b-modal ref="job-info-modal" scrollable hide-header ok-only @hidden="resetModalContents">
@@ -191,9 +179,16 @@
 import { getAppRoot } from "onload/loadConfig";
 import UtcDate from "components/UtcDate";
 import axios from "axios";
+import JobDetails from "./JobDetails";
+import JobLock from "./JobLock";
+
+function cancelJob(jobId, message) {
+    const url = `${getAppRoot()}api/jobs/${jobId}`;
+    return axios.delete(url, { data: { message: message } });
+}
 
 export default {
-    components: { UtcDate },
+    components: { UtcDate, JobDetails, JobLock },
     data() {
         return {
             jobsItems: [],
@@ -204,15 +199,11 @@ export default {
                 { key: "user" },
                 { key: "tool_id", label: "Tool", tdClass: ["break-word"] },
                 { key: "state" },
-                { key: "input_dataset", label: "Inputs" },
                 { key: "job_runner_name", label: "Job Runner" },
                 { key: "job_runner_external_id", label: "PID/Cluster ID", sortable: true }
             ],
-            showCommandLine: false,
             cutoff: 180,
             cutoffDisplay: 180,
-            jobLock: false,
-            jobLockDisplay: false,
             selectedStopJobIds: [],
             selectedJobId: null,
             allSelected: false,
@@ -226,17 +217,6 @@ export default {
         };
     },
     watch: {
-        jobLock(newVal) {
-            axios
-                .get(`${getAppRoot()}admin/jobs_control?job_lock=${this.jobLock}`)
-                .then(response => {
-                    this.jobLock = response.data.job_lock;
-                    this.jobLockDisplay = response.data.job_lock;
-                })
-                .catch(error => {
-                    console.error(error);
-                });
-        },
         selectedStopJobIds(newVal) {
             if (newVal.length === 0) {
                 this.indeterminate = false;
@@ -255,8 +235,6 @@ export default {
             this.busy = true;
             let params = [];
             params.push(`cutoff=${this.cutoff}`);
-            params.push(`stop_msg=${this.stopMessage}`);
-            params.push(`stop=${this.selectedStopJobIds.join()}`);
             params = params.join("&");
             axios
                 .get(`${getAppRoot()}admin/jobs_list?${params}`)
@@ -266,8 +244,6 @@ export default {
                     this.cutoffDisplay = response.data.cutoff;
                     this.message = response.data.message;
                     this.status = response.data.status;
-                    this.jobLock = response.data.job_lock;
-                    this.jobLockDisplay = response.data.job_lock;
                     this.loading = false;
                     this.busy = false;
                 })
@@ -281,9 +257,11 @@ export default {
             this.update();
         },
         onStopJobs() {
-            this.update();
-            this.selectedStopJobIds = [];
-            this.stopMessage = "";
+            axios.all(this.selectedStopJobIds.map(jobId => cancelJob(jobId, this.stopMessage))).then(res => {
+                this.update();
+                this.selectedStopJobIds = [];
+                this.stopMessage = "";
+            });
         },
         clickJobInfo(id) {
             this.selectedJobId = id;
@@ -319,18 +297,10 @@ export default {
         },
         computeFields(fields) {
             const f = Array.from(fields).slice(0);
-            if (this.showCommandLine) {
-                f.splice(6, 0, {
-                    key: "command_line",
-                    tdClass: ["text-white", "bg-dark", "break-word"]
-                });
-            }
             return f;
         },
         toggleAll(checked) {
-            this.selectedStopJobIds = checked
-                ? this.jobsItemsModel.reduce((acc, j) => [...acc, j["job_info"]["id"]], [])
-                : [];
+            this.selectedStopJobIds = checked ? this.jobsItemsModel.reduce((acc, j) => [...acc, j["id"]], []) : [];
         },
         galaxyKwdToBootstrap(status) {
             let variant = "info";

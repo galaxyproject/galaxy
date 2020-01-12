@@ -31,7 +31,7 @@ function logoutClick() {
             if (response.data && response.data.redirect_uri) {
                 window.top.location.href = response.data.redirect_uri;
             } else {
-                window.top.location.href = galaxy.root;
+                window.top.location.href = `${galaxy.root}login?logout=true`;
             }
         });
 }

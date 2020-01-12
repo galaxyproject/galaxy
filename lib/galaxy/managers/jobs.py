@@ -66,6 +66,15 @@ class JobManager(object):
         trans.sa_session.refresh(job)
         return job
 
+    def stop(self, job, message=None):
+        if not job.finished:
+            job.mark_deleted(self.app.config.track_jobs_in_database)
+            self.app.model.context.current.flush()
+            self.app.job_manager.stop(job, message=message)
+            return True
+        else:
+            return False
+
 
 class JobSearch(object):
     """Search for jobs using tool inputs or other jobs"""

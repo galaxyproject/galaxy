@@ -641,6 +641,18 @@ class ExpectationsTestCase(BaseLoaderTestCase):
         assert len(test_0["stdout"]) == 2
 
 
+class ExpectationsCommandVersionTestCase(BaseLoaderTestCase):
+    source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/job_properties.xml")
+    source_contents = None
+
+    def test_tests(self):
+        tests_dict = self._tool_source.parse_tests_to_dict()
+        tests = tests_dict["tests"]
+        assert len(tests) > 0
+        test_0 = tests[0]
+        assert len(test_0["command_version"]) == 1
+
+
 class QcStdioTestCase(BaseLoaderTestCase):
     source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/qc_stdout.xml")
     source_contents = None

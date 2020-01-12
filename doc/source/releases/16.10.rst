@@ -221,7 +221,7 @@ Enhancements
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 3033`_
 * Remove outdated warning on ID_SECRET
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 3046`_
 * Add Galaxy architecture slides documentation to project.
   `Pull Request 3060`_, `Pull Request 3091`_
@@ -330,10 +330,10 @@ Fixes
   (thanks to `@sszakony <https://github.com/sszakony>`__).
   `Pull Request 2808`_
 * Allow NodeJS proxy to do reverse proxying
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 2817`_
 * Fixes for the RStudio interactive environment
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 2818`_
 * Acquire lock before attempting to install conda
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
