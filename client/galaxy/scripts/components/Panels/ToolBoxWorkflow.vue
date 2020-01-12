@@ -17,7 +17,7 @@
                     :category="category"
                     :isFiltered="isFiltered"
                     :key="category.id"
-                    @onOpen="onOpen"
+                    @onOpen="onOpenModule"
                 />
                 <tool-section
                     :category="dataManagers"
@@ -52,7 +52,6 @@
 import ToolSection from "./common/ToolSection";
 import ToolSearch from "./common/ToolSearch";
 import { filterToolSections, getToolSections } from "./utilities.js";
-import { getGalaxyInstance } from "app";
 
 export default {
     name: "ToolBox",
@@ -101,14 +100,19 @@ export default {
         }
     },
     created() {
-        this.toolsLayout = getToolSections(this.toolbox, x => !x.is_workflow_compatible);
+        this.toolsLayout = getToolSections(this.toolbox, x => !x.is_workflow_compatible || x.hidden);
     },
     methods: {
         setResults(results) {
             this.results = results;
         },
         onOpen(e, tool) {
+            e.preventDefault();
             this.workflowGlobals.app.add_node_for_tool( tool.id );
+        },
+        onOpenModule(e, tool) {
+            e.preventDefault();
+            this.workflowGlobals.app.add_node_for_module( tool.id );
         }
     }
 };
