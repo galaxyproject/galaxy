@@ -83,10 +83,6 @@ export default {
         },
         moduleSections: {
             type: Array
-        },
-        isUser: {
-            type: Boolean,
-            default: false
         }
     },
     computed: {
@@ -102,7 +98,7 @@ export default {
         }
     },
     created() {
-        this.toolsLayout = getToolSections(this.toolbox);
+        this.toolsLayout = getToolSections(this.toolbox, x => x.is_workflow_compatible);
     },
     methods: {
         setResults(results) {

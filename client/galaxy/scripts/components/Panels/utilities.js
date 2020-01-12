@@ -40,13 +40,14 @@ export function getPanelProps(panelComponent, options = {}) {
 }
 
 // create tool search, tool panel, and tool panel view.
-export function getToolSections(toolbox) {
+export function getToolSections(toolbox, disabledCaller) {
     return _.map(toolbox, category => {
         return {
             ...category,
             panel_type: getPanelType(category),
             elems: _.map(category.elems, el => {
                 el.panel_type = getPanelType(el);
+                el.disabled = disabledCaller ? disabledCaller(el) : false;
                 return el;
             })
         };

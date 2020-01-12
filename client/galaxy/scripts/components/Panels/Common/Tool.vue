@@ -1,24 +1,23 @@
 <template>
-    <div :class="noSection ? 'toolTitleNoSection' : 'toolTitle'">
-        <div>
-            <a
-                @click="open"
-                :href="tool.link"
-                :target="tool.target"
-            >
-                <span class="labels">
-                    <span
-                        v-for="(label, index) in tool.labels"
-                        :class="['badge', 'badge-primary', `badge-${label}`]"
-                        :key="index"
-                    >
-                        {{ label }}
-                    </span>
+    <div :class="rootClass">
+        <a
+            @click="open"
+            :href="tool.link"
+            :target="tool.target"
+            :class="anchorClass"
+        >
+            <span class="labels">
+                <span
+                    v-for="(label, index) in tool.labels"
+                    :class="['badge', 'badge-primary', `badge-${label}`]"
+                    :key="index"
+                >
+                    {{ label }}
                 </span>
-                <span class="font-weight-bold">{{ tool.name }}</span>
-                {{ tool.description }}
-            </a>
-        </div>
+            </span>
+            <span class="font-weight-bold">{{ tool.name }}</span>
+            {{ tool.description }}
+        </a>
     </div>
 </template>
 
@@ -35,6 +34,14 @@ export default {
         noSection: {
             type: Boolean,
             default: false
+        }
+    },
+    computed: {
+        anchorClass() {
+            return !this.tool.disabled && "text-muted";
+        },
+        rootClass() {
+            return this.noSection ? 'toolTitleNoSection' : 'toolTitle';
         }
     },
     methods: {
