@@ -106,6 +106,21 @@ function searchInput(parentNode, options) {
                 .val(options.initialVal)
         );
     }
+    
+    // .................................................................... question button that will pop up 
+    // a button for clearing the search bar, placed on the right hand side
+    function $advSearchBtn() {
+        return $(
+            ['<span class="search-advanced fa fa-question-circle" ', 'title="', _l("click for Advanced Search tips"), '"></span>'].join(
+                ""
+            )
+        )
+            .tooltip({ placement: "bottom" })
+            .click(function(event) {
+					window.open("https://galaxyproject.org/tutorials/histories/#advanced-searching")
+            });
+    }
+
 
     // .................................................................... clear button rendering and events
     // a button for clearing the search bar, placed on the right hand side
@@ -152,7 +167,7 @@ function searchInput(parentNode, options) {
         options = jQuery.extend(true, {}, defaults, options);
     }
     //NOTE: prepended
-    return $parentNode.addClass("search-input").prepend([$input(), $clearBtn(), $loadingIndicator()]);
+    return $parentNode.addClass("search-input").prepend([$input(), $clearBtn(), $advSearchBtn(), $loadingIndicator()]);
 }
 
 // as jq plugin
