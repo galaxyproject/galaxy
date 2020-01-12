@@ -101,14 +101,18 @@ class OIDC(JSAppLauncher):
         return trans.response.send_redirect(redirect_url)
 
     @web.json
-    def logout(self, trans, **kwargs):
+    def logout(self, trans, provider, **kwargs):
+        post_logout_redirect_url = trans.request.base + url_for('/')
+        success, message, redirect_uri = trans.app.authnz_manager.logout(provider,
+                                                                         trans,
+                                                                         post_logout_redirect_url=post_logout_redirect_url)
+        if success:
+            return {'redirect_uri': redirect_uri}
+        else:
+            return {'message': message}
+
+    @web.expose
+    def get_logout_url(self, trans, **kwargs):
         idp_provider = trans.get_cookie(name=PROVIDER_COOKIE_NAME)
         if idp_provider:
-            post_logout_redirect_url = trans.request.base + url_for('/')
-            success, message, redirect_uri = trans.app.authnz_manager.logout(idp_provider,
-                                                                             trans,
-                                                                             post_logout_redirect_url=post_logout_redirect_url)
-            if success:
-                return {'redirect_uri': redirect_uri}
-            else:
-                return {'message': message}
+            return trans.response.send_redirect(url_for(controller='authnz', action='logout', provider=idp_provider))
