@@ -1,33 +1,33 @@
 <template>
     <div>
         <div v-if="category.elems" class="toolSectionWrapper">
-            <div :id="category.name" class="toolSectionTitle">
+            <div class="toolSectionTitle">
                 <a @click="toggleToolSectionMenu" href="javascript:void(0)" role="button">
                     <span>
-                        {{ category.name }}
+                        {{ this.name }}
                     </span>
                 </a>
             </div>
             <transition name="slide">
                 <div v-if="opened">
                     <template v-for="el in category.elems">
-                        <div v-if="el.elems" class="toolPanelLabel" :key="el.id">
+                        <div v-if="el.text" class="toolPanelLabel" :key="el.id" >
                             <span>
                                 {{ el.text }}
                             </span>
                         </div>
-                        <tool v-else :tool="el" :key="el.id" @onOpen="onOpen"/>
+                        <tool v-else :tool="el" :key="el.id" @onOpen="onOpen" :showName="showName"/>
                     </template>
                 </div>
             </transition>
         </div>
-        <div v-else-if="category.panel_type == 'tool'">
-            <tool :tool="category" :no-section="true"/>
-        </div>
-        <div v-else-if="category.panel_type == 'label'" class="toolPanelLabel">
+        <div v-else-if="category.text" class="toolPanelLabel">
             <span>
                 {{ category.text }}
             </span>
+        </div>
+        <div v-else>
+            <tool :tool="category" :no-section="true" :showName="showName"/>
         </div>
     </div>
 </template>
@@ -47,6 +47,15 @@ export default {
         },
         isFiltered: {
             type: Boolean
+        },
+        showName: {
+            type: Boolean,
+            default: true
+        }
+    },
+    computed: {
+        name() {
+            return this.category.title || this.category.name;
         }
     },
     methods: {
@@ -56,7 +65,7 @@ export default {
         toggleToolSectionMenu(e) {
             this.opened = !this.opened;
             const currentState = this.opened ? "opened" : "closed";
-            ariaAlert(`${this.category.name} tools menu ${currentState}`);
+            ariaAlert(`${this.name} tools menu ${currentState}`);
         }
     },
     data() {

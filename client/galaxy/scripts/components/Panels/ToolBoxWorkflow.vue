@@ -2,8 +2,7 @@
     <div class="unified-panel">
         <div class="unified-panel-header" unselectable="on">
             <div class="unified-panel-header-inner">
-                <div class="panel-header-buttons">
-                </div>
+                <div class="panel-header-buttons"/>
                 <div class="panel-header-text">Tools</div>
             </div>
         </div>
@@ -14,6 +13,7 @@
             <div class="toolMenuContainer">
                 <tool-section
                     v-for="category in moduleSections"
+                    :showName="false"
                     :category="category"
                     :isFiltered="isFiltered"
                     :key="category.id"
@@ -21,7 +21,7 @@
                 />
                 <tool-section
                     :category="dataManagers"
-                    :key="dataManagers.name"
+                    :key="dataManagers.id"
                     :isFiltered="isFiltered"
                     @onOpen="onOpen"
                 />
@@ -41,7 +41,7 @@
                     :category="workflowSection"
                     :key="workflowSection.name"
                     :isFiltered="isFiltered"
-                    @onOpen="onOpen"
+                    @onOpen="onOpenWorkflow"
                 />
             </div>
         </div>
@@ -100,7 +100,9 @@ export default {
         }
     },
     created() {
+        console.log(this.moduleSections);
         this.toolsLayout = getToolSections(this.toolbox, x => !x.is_workflow_compatible || x.hidden);
+
     },
     methods: {
         setResults(results) {
@@ -108,11 +110,15 @@ export default {
         },
         onOpen(e, tool) {
             e.preventDefault();
-            this.workflowGlobals.app.add_node_for_tool( tool.id );
+            this.workflowGlobals.app.add_node_for_tool( tool.id, tool.name );
         },
-        onOpenModule(e, tool) {
+        onOpenModule(e, module) {
             e.preventDefault();
-            this.workflowGlobals.app.add_node_for_module( tool.id );
+            this.workflowGlobals.app.add_node_for_module( module.name, module.title );
+        },
+        onOpenWorkflow(e, workflow) {
+            e.preventDefault();
+            this.workflowGlobals.app.add_node_for_subworkflow( workflow.id, workflow.name );
         }
     }
 };

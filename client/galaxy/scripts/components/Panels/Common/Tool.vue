@@ -1,7 +1,8 @@
 <template>
     <div :class="rootClass">
         <a v-if="tool.disabled" class="text-muted">
-            {{ tool.name }} {{ tool.description }}
+            <span v-if="showName">{{ tool.name }}</span>
+            {{ tool.description }}
         </a>
         <a
             @click="open"
@@ -18,7 +19,7 @@
                     {{ label }}
                 </span>
             </span>
-            <span class="font-weight-bold">{{ tool.name }}</span>
+            <span v-if="showName" class="font-weight-bold">{{ tool.name }}</span>
             {{ tool.description }}
         </a>
     </div>
@@ -37,6 +38,10 @@ export default {
         noSection: {
             type: Boolean,
             default: false
+        },
+        showName: {
+            type: Boolean,
+            default: true
         }
     },
     computed: {
