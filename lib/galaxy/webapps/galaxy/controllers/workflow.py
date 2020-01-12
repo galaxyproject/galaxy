@@ -664,7 +664,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
                 "name": module_section.get("title"),
                 "elems": [{
                     "id": elem.get("name"),
-                    "name": elem.get("title")
+                    "description": elem.get("description")
                 } for elem in module_section.get("modules")]
             })
 
