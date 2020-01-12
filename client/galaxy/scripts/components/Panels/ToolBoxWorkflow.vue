@@ -91,7 +91,7 @@ export default {
     },
     computed: {
         categories() {
-            return filterToolSections(this.toolbox, this.results);
+            return filterToolSections(this.toolsLayout, this.results);
         },
         isFiltered() {
             if (this.results) {
@@ -102,8 +102,7 @@ export default {
         }
     },
     created() {
-        const Galaxy = getGalaxyInstance();
-        this.toolsLayout = getToolSections(Galaxy.config);
+        this.toolsLayout = getToolSections(this.toolbox);
     },
     methods: {
         setResults(results) {

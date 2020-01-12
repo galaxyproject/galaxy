@@ -91,7 +91,7 @@ export default {
     },
     created() {
         const Galaxy = getGalaxyInstance();
-        this.toolsLayout = getToolSections(Galaxy.config);
+        this.toolsLayout = getToolSections(Galaxy.config.toolbox);
     },
     methods: {
         setResults(results) {
