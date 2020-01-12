@@ -33,7 +33,6 @@ from galaxy.web.framework.helpers import (
 )
 from galaxy.webapps.base.controller import (
     BaseUIController,
-    JSAppLauncher,
     SharableMixin,
     UsesStoredWorkflowMixin
 )
@@ -179,7 +178,7 @@ class SingleTagContentsParser(HTMLParser):
             self.tag_content += text
 
 
-class WorkflowController(JSAppLauncher, BaseUIController, SharableMixin, UsesStoredWorkflowMixin, UsesItemRatings):
+class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, UsesItemRatings):
     stored_list_grid = StoredWorkflowListGrid()
     published_list_grid = StoredWorkflowAllPublishedGrid()
 
