@@ -1,13 +1,11 @@
 /**
- * Model, view, and controller objects for Galaxy tools and tool panel.
+ * Model, view, and controller objects for Galaxy tools in Trackster.
  */
-/* global ga */
 import _ from "underscore";
 import $ from "jquery";
 import d3 from "d3";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
-import { getGalaxyInstance } from "app";
 import util from "viz/trackster/util";
 import { DatasetCollection } from "mvc/dataset/data";
 
@@ -282,223 +280,6 @@ var Tool = Backbone.Model.extend({
 _.extend(Tool.prototype, VisibilityMixin);
 
 /**
- * Wrap collection of tools for fast access/manipulation.
- */
-var ToolCollection = Backbone.Collection.extend({
-    model: Tool
-});
-
-/**
- * Label or section header in tool panel.
- */
-var ToolSectionLabel = Backbone.Model.extend(VisibilityMixin);
-
-/**
- * Section of tool panel with elements (labels and tools).
- */
-var ToolSection = Backbone.Model.extend({
-    defaults: {
-        elems: [],
-        open: false
-    },
-
-    clear_search_results: function() {
-        _.each(this.attributes.elems, elt => {
-            elt.show();
-        });
-
-        this.show();
-        this.set("open", false);
-    },
-
-    apply_search_results: function(results) {
-        var all_hidden = true;
-        var cur_label;
-        _.each(this.attributes.elems, elt => {
-            if (elt instanceof ToolSectionLabel) {
-                cur_label = elt;
-                cur_label.hide();
-            } else if (elt instanceof Tool) {
-                if (elt.apply_search_results(results)) {
-                    all_hidden = false;
-                    if (cur_label) {
-                        cur_label.show();
-                    }
-                }
-            }
-        });
-
-        if (all_hidden) {
-            this.hide();
-        } else {
-            this.show();
-            this.set("open", true);
-        }
-    }
-});
-_.extend(ToolSection.prototype, VisibilityMixin);
-
-/**
- * Tool search that updates results when query is changed. Result value of null
- * indicates that query was not run; if not null, results are from search using
- * query.
- */
-var ToolSearch = Backbone.Model.extend({
-    SEARCH_RESERVED_TERMS_FAVORITES: ["#favs", "#favorites", "#favourites"],
-
-    defaults: {
-        min_chars_for_search: 3,
-        visible: true,
-        query: "",
-        results: null,
-        // ESC (27) will clear the input field and tool search filters
-        clear_key: 27
-    },
-
-    urlRoot: `${getAppRoot()}api/tools`,
-
-    initialize: function() {
-        this.on("change:query", this.do_search);
-    },
-
-    /**
-     * Do the search and update the results.
-     */
-    do_search: function() {
-        const Galaxy = getGalaxyInstance();
-        var query = this.attributes.query;
-
-        // If query is too short, do not search.
-        if (query.length < this.attributes.min_chars_for_search) {
-            this.set("results", null);
-            return;
-        }
-
-        // Do search via AJAX.
-        var q = query;
-        // Stop previous ajax-request
-        if (this.timer) {
-            clearTimeout(this.timer);
-        }
-        // Catch reserved words
-        if (this.SEARCH_RESERVED_TERMS_FAVORITES.indexOf(q) >= 0) {
-            this.set("results", Galaxy.user.getFavorites().tools);
-        } else {
-            // Start a new ajax-request in X ms
-            $("#search-clear-btn").hide();
-            $("#search-spinner").show();
-            var self = this;
-            this.timer = setTimeout(() => {
-                // log the search to analytics if present
-                if (typeof ga !== "undefined") {
-                    ga("send", "pageview", `${getAppRoot()}?q=${q}`);
-                }
-                $.get(
-                    self.urlRoot,
-                    { q: q },
-                    data => {
-                        self.set("results", data);
-                        $("#search-spinner").hide();
-                        $("#search-clear-btn").show();
-                    },
-                    "json"
-                );
-            }, 400);
-        }
-    },
-
-    clear_search: function() {
-        this.set("query", "");
-        this.set("results", null);
-    }
-});
-_.extend(ToolSearch.prototype, VisibilityMixin);
-
-/**
- * Tool Panel.
- */
-var ToolPanel = Backbone.Model.extend({
-    initialize: function(options) {
-        this.attributes.tool_search = options.tool_search;
-        this.attributes.tool_search.on("change:results", this.apply_search_results, this);
-        this.attributes.tools = options.tools;
-        this.attributes.layout = new Backbone.Collection(this.parse(options.layout));
-    },
-
-    /**
-     * Parse tool panel dictionary and return collection of tool panel elements.
-     */
-    parse: function(response) {
-        // Recursive function to parse tool panel elements.
-        var self = this;
-
-        var // Helper to recursively parse tool panel.
-            parse_elt = elt_dict => {
-                const type = elt_dict.model_class;
-                // There are many types of tools; for now, anything that ends in 'Tool'
-                // and is not a ExpressionTool is treated as a generic tool.
-                if (type.indexOf("Tool") === type.length - 4) {
-                    const tool = self.attributes.tools.get(elt_dict.id);
-                    if (type === "ExpressionTool") {
-                        tool.hide();
-                    }
-                    return tool;
-                } else if (type === "ToolSection") {
-                    // Parse elements.
-                    const elems = _.map(elt_dict.elems, parse_elt).filter(el => el.is_visible());
-                    elt_dict.elems = elems;
-                    const section = new ToolSection(elt_dict);
-                    if (elems.length == 0) {
-                        section.hide();
-                    }
-                    return section;
-                } else if (type === "ToolSectionLabel") {
-                    return new ToolSectionLabel(elt_dict);
-                }
-            };
-
-        return _.map(response, parse_elt);
-    },
-
-    clear_search_results: function() {
-        this.get("layout").each(panel_elt => {
-            if (panel_elt instanceof ToolSection) {
-                panel_elt.clear_search_results();
-            } else {
-                // Label or tool, so just show.
-                panel_elt.show();
-            }
-        });
-    },
-
-    apply_search_results: function() {
-        var results = this.get("tool_search").get("results");
-        if (results === null) {
-            this.clear_search_results();
-            return;
-        }
-
-        var cur_label = null;
-        this.get("layout").each(panel_elt => {
-            if (panel_elt instanceof ToolSectionLabel) {
-                cur_label = panel_elt;
-                cur_label.hide();
-            } else if (panel_elt instanceof Tool) {
-                if (panel_elt.apply_search_results(results)) {
-                    if (cur_label) {
-                        cur_label.show();
-                    }
-                }
-            } else {
-                // Starting new section, so clear current label.
-                cur_label = null;
-                panel_elt.apply_search_results(results);
-            }
-        });
-    }
-});
-
-/**
  * View for working with a tool: setting parameters and inputs and executing the tool.
  */
 var ToolFormView = Backbone.View.extend({
@@ -550,8 +331,5 @@ export default {
     IntegerToolParameter: IntegerToolParameter,
     SelectToolParameter: SelectToolParameter,
     Tool: Tool,
-    ToolCollection: ToolCollection,
-    ToolSearch: ToolSearch,
-    ToolPanel: ToolPanel,
     ToolFormView: ToolFormView
 };

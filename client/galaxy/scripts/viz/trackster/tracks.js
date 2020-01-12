@@ -11,7 +11,7 @@ import slotting from "viz/trackster/slotting";
 import painters from "viz/trackster/painters";
 import filters_mod from "viz/trackster/filters";
 import { Dataset } from "mvc/dataset/data";
-import tools_mod from "mvc/tool/tools";
+import tools_mod from "viz/tools";
 import config_mod from "utils/config";
 import bbi from "viz/bbi-data-manager";
 import "ui/editable-text";
