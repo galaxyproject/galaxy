@@ -102,7 +102,7 @@ class OIDC(JSAppLauncher):
 
     @web.json
     def logout(self, trans, provider, **kwargs):
-        post_logout_redirect_url = trans.request.base + url_for('/')
+        post_logout_redirect_url = trans.request.base + url_for('/') + 'login?logout=true'
         success, message, redirect_uri = trans.app.authnz_manager.logout(provider,
                                                                          trans,
                                                                          post_logout_redirect_url=post_logout_redirect_url)
