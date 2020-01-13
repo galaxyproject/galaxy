@@ -23,8 +23,6 @@
                         @onOpen="onOpen"
                     />
                 </div>
-                <div class="toolSectionPad" />
-                <div class="toolSectionPad" />
                 <div class="toolSectionTitle" id="title_XXinternalXXworkflow">
                     <a>{{ workflowsTitle }}</a>
                 </div>

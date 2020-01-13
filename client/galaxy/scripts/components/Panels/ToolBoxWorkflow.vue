@@ -25,7 +25,6 @@
                     :isFiltered="isFiltered"
                     @onOpen="onOpen"
                 />
-                <div class="toolSectionPad" />
                 <div class="toolMenu">
                     <tool-section
                         v-for="category in categories"
@@ -35,8 +34,6 @@
                         @onOpen="onOpen"
                     />
                 </div>
-                <div class="toolSectionPad" />
-                <div class="toolSectionPad" />
                 <tool-section
                     :category="workflowSection"
                     :key="workflowSection.name"
