@@ -333,6 +333,39 @@ steps:
         self.assert_modal_has_text("Tool is not installed")
         self.screenshot("workflow_editor_missing_tool")
 
+    @selenium_test
+    def test_workflow_bookmarking(self):
+        new_workflow_name = self.workflow_create_new(clear_placeholder=True)
+
+        self.wait_for_id_clickable("workflow-save-button")
+
+        # element is clickable, but still might be behind the modal
+        self.wait_for_selector_absent_or_hidden(self.modal_body_selector())
+        self.driver.find_element_by_id("workflow-save-button").click()
+
+        # wait for saving
+        self.wait_for_selector_absent_or_hidden(self.modal_body_selector())
+        self.driver.find_element_by_id("workflow").click()
+
+        # parse workflow table
+        table_elements = self.workflow_index_table_elements()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        bookmark_td = table_elements[0].find_elements_by_tag_name('td')[3]
+
+        # get bookmark pseudo element
+        # https://stackoverflow.com/questions/45427223/click-on-pseudo-element-using-selenium
+        self.action_chains().move_to_element_with_offset(bookmark_td, 20, 20).click().perform()
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+
+        # search for bookmark in tools menu
+        tools_search_input = self.driver.find_element_by_name("query")
+        tools_search_input.send_keys(new_workflow_name)
+        internal_workflows = self.driver.find_element_by_id("internal-workflows")
+        worksflows = internal_workflows.find_elements_by_class_name("toolTitle")
+
+        # check if bookmark exists
+        self.assertTrue(any(workflow.text == new_workflow_name for workflow in worksflows))
+
     def workflow_editor_maximize_center_pane(self, collapse_left=True, collapse_right=True):
         if collapse_left:
             self.components._.left_panel_collapse.wait_for_and_click()
@@ -437,7 +470,7 @@ steps:
         workflow_populator.upload_yaml_workflow(content, name=name)
         return name
 
-    def workflow_create_new(self, annotation=None):
+    def workflow_create_new(self, annotation=None, clear_placeholder=False):
         self.workflow_index_open()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.click_button_new_workflow()
@@ -446,6 +479,8 @@ steps:
         name = self._get_random_name()
         annotation = annotation or self._get_random_name()
         inputs = self.driver.find_elements_by_class_name("ui-input")
+        if clear_placeholder:
+            inputs[0].clear()
         inputs[0].send_keys(name)
         inputs[1].send_keys(annotation)
         form_element.click()
