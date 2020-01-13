@@ -106,6 +106,14 @@ class HasDriver(object):
         )
         return element
 
+    def wait_for_id_clickable(self, id, **kwds):
+        element = self._wait_on(
+            ec.element_to_be_clickable((By.ID, id)),
+            "ID [%s] to become clickable" % id,
+            **kwds
+        )
+        return element
+
     def wait_for_clickable(self, selector_template, **kwds):
         element = self._wait_on(
             ec.element_to_be_clickable(selector_template.element_locator),
