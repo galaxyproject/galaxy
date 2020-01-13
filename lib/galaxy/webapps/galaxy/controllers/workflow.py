@@ -663,7 +663,6 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             module_sections.append({
                 "title": module_section.get("title"),
                 "elems": [{
-                    "id": elem.get("name"),
                     "name": elem.get("name"),
                     "title": elem.get("title"),
                     "description": elem.get("description")
