@@ -2,7 +2,7 @@
     <div>
         <div v-if="hasElements">
             <div class="toolSectionTitle">
-                <a @click="toggleToolSectionMenu" href="javascript:void(0)" role="button">
+                <a @click="toggleMenu" href="javascript:void(0)" role="button">
                     <span>
                         {{ this.name }}
                     </span>
@@ -16,7 +16,7 @@
                                 {{ el.text }}
                             </span>
                         </div>
-                        <tool v-else :tool="el" :key="key" :show-name="showName" @onOpen="onOpen" />
+                        <tool v-else :tool="el" :key="key" :show-name="showName" @onClick="onClick" />
                     </template>
                 </div>
             </transition>
@@ -27,7 +27,7 @@
                     {{ category.text }}
                 </span>
             </div>
-            <tool v-else :tool="category" :no-section="true" :show-name="showName" @onOpen="onOpen" />
+            <tool v-else :tool="category" :no-section="true" :show-name="showName" @onClick="onClick" />
         </div>
     </div>
 </template>
@@ -62,10 +62,10 @@ export default {
         }
     },
     methods: {
-        onOpen(e, tool) {
-            this.$emit("onOpen", e, tool);
+        onClick(e, tool) {
+            this.$emit("onClick", e, tool);
         },
-        toggleToolSectionMenu(e) {
+        toggleMenu(e) {
             this.opened = !this.opened;
             const currentState = this.opened ? "opened" : "closed";
             ariaAlert(`${this.name} tools menu ${currentState}`);

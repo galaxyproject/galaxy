@@ -20,7 +20,7 @@
                         :category="category"
                         :isFiltered="isFiltered"
                         :key="category.id"
-                        @onOpen="onOpen"
+                        @onClick="onOpen"
                     />
                 </div>
                 <div class="toolSectionTitle" id="title_XXinternalXXworkflow">

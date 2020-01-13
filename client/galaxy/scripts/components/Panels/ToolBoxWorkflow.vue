@@ -17,13 +17,13 @@
                     :category="category"
                     :isFiltered="isFiltered"
                     :key="category.name"
-                    @onOpen="onOpenModule"
+                    @onClick="onInsertModule"
                 />
                 <tool-section
                     :category="dataManagers"
                     :key="dataManagers.id"
                     :isFiltered="isFiltered"
-                    @onOpen="onOpen"
+                    @onClick="onInsertTool"
                 />
                 <div class="toolMenu">
                     <tool-section
@@ -31,14 +31,14 @@
                         :category="category"
                         :isFiltered="isFiltered"
                         :key="category.id"
-                        @onOpen="onOpen"
+                        @onClick="onInsertTool"
                     />
                 </div>
                 <tool-section
                     :category="workflowSection"
                     :key="workflowSection.name"
                     :isFiltered="isFiltered"
-                    @onOpen="onOpenWorkflow"
+                    @onClick="onInsertWorkflow"
                 />
             </div>
         </div>
@@ -103,15 +103,15 @@ export default {
         setResults(results) {
             this.results = results;
         },
-        onOpen(e, tool) {
+        onInsertTool(e, tool) {
             e.preventDefault();
             this.workflowGlobals.app.add_node_for_tool(tool.id, tool.name);
         },
-        onOpenModule(e, module) {
+        onInsertModule(e, module) {
             e.preventDefault();
             this.workflowGlobals.app.add_node_for_module(module.name, module.title);
         },
-        onOpenWorkflow(e, workflow) {
+        onInsertWorkflow(e, workflow) {
             e.preventDefault();
             this.workflowGlobals.app.add_node_for_subworkflow(workflow.id, workflow.name);
         }

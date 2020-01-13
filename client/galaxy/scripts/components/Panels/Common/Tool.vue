@@ -5,7 +5,7 @@
             {{ tool.description }}
         </a>
         <a
-            @click="open"
+            @click="onClick"
             :href="tool.link"
             :target="tool.target"
             v-else
@@ -50,9 +50,9 @@ export default {
         }
     },
     methods: {
-        open(e) {
-            ariaAlert(`${this.tool.name} opened in center panel`);
-            this.$emit("onOpen", e, this.tool);
+        onClick(e) {
+            ariaAlert(`${this.tool.name} selected from panel`);
+            this.$emit("onClick", e, this.tool);
         }
     }
 };
