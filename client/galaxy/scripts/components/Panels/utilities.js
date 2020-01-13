@@ -20,7 +20,12 @@ export function getPanelProps(panelComponent, options = {}) {
             workflowsTitle: _l("Workflows"),
             workflowSection: {
                 name: _l("Workflows"),
-                elems: options.workflows
+                elems: options.workflows.map(workflow => {
+                    return {
+                        id: workflow.latest_id,
+                        name: workflow.name
+                    };
+                })
             },
             workflows: [
                 {

@@ -1,6 +1,6 @@
 <template>
     <div>
-        <div v-if="isSection">
+        <div v-if="hasElements">
             <div class="toolSectionTitle">
                 <a @click="toggleToolSectionMenu" href="javascript:void(0)" role="button">
                     <span>
@@ -57,7 +57,7 @@ export default {
         name() {
             return this.category.title || this.category.name;
         },
-        isSection() {
+        hasElements() {
             return this.category.elems && this.category.elems.length > 0;
         }
     },
