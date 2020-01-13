@@ -583,16 +583,21 @@ class User(Dictifiable, RepresentById):
             user_id = '%d' % user.id
             user_email = str(user.email)
             user_name = str(user.username)
+            api_keys = [one_key.key for one_key in user.api_keys]
+            # get the more up to date
+            user_key = api_keys[0]
         else:
             user = None
             user_id = 'Anonymous'
             user_email = 'Anonymous'
             user_name = 'Anonymous'
+            user_key = 'Anonymous'
         environment = {}
         environment['__user__'] = user
         environment['__user_id__'] = environment['userId'] = user_id
         environment['__user_email__'] = environment['userEmail'] = user_email
         environment['__user_name__'] = user_name
+        environment['__user_key__'] = user_key
         return environment
 
     @staticmethod
