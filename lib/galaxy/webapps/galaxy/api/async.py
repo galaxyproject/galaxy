@@ -8,13 +8,16 @@ from six.moves.urllib.parse import urlencode
 
 from galaxy import jobs
 from galaxy.util import (
-    Params, unicodify
+    Params,
+    unicodify,
 )
 from galaxy.util.hash_util import hmac_new
 from galaxy.web import (
-    expose_api_anonymous_and_sessionless
+    expose_api
 )
-from galaxy.webapps.base.controller import BaseAPIController
+from galaxy.web.base.controller import (
+    BaseAPIController
+)
 
 log = logging.getLogger(__name__)
 
@@ -24,7 +27,12 @@ class AsyncController(BaseAPIController):
     def __init__(self, app):
         super(AsyncController, self).__init__(app)
 
-    @expose_api_anonymous_and_sessionless
+    @expose_api
+    def default(self, trans, tool_id=None, data_id=None, data_secret=None, **kwd):
+        """Catches the tool id and redirects as needed"""
+        return self.index(trans, tool_id=tool_id, data_id=data_id, data_secret=data_secret, **kwd)
+
+    @expose_api
     def index(self, trans, tool_id=None, data_secret=None, **kwd):
         """Manages asynchronous connections"""
 
@@ -101,6 +109,11 @@ class AsyncController(BaseAPIController):
             #
             # no data_id must be parameter submission
             #
+
+            # need to get history, as trans.history seems to be None in async mode
+            async_history = trans.sa_session.query(trans.app.model.History).filter_by(
+                user=trans.get_user(),
+                deleted=False).order_by(trans.app.model.History.update_time.desc()).first()
             GALAXY_TYPE = None
             if params.data_type:
                 GALAXY_TYPE = params.data_type
@@ -136,24 +149,23 @@ class AsyncController(BaseAPIController):
             # data.dbkey = GALAXY_BUILD
             # data.state = jobs.JOB_OK
             # history.datasets.add_dataset( data )
-
             data = trans.app.model.HistoryDatasetAssociation(create_dataset=True, sa_session=trans.sa_session, extension=GALAXY_TYPE)
-            trans.app.security_agent.set_all_dataset_permissions(data.dataset, trans.app.security_agent.history_get_default_permissions(trans.history))
+            trans.app.security_agent.set_all_dataset_permissions(data.dataset, trans.app.security_agent.history_get_default_permissions(async_history))
             data.name = GALAXY_NAME
             data.dbkey = GALAXY_BUILD
             data.info = GALAXY_INFO
             trans.sa_session.add(data)  # Need to add data to session before setting state (setting state requires that the data object is in the session, but this may change)
             data.state = data.states.NEW
-            trans.history.add_dataset(data, genome_build=GALAXY_BUILD)
-            trans.sa_session.add(trans.history)
+            async_history.add_dataset(data, genome_build=GALAXY_BUILD)
+            trans.sa_session.add(async_history)
             trans.sa_session.flush()
             # we need to explicitly create the file
             data.dataset.object_store.create(data)
-            trans.log_event("Added dataset %d to history %d" % (data.id, trans.history.id), tool_id=tool_id)
+            trans.log_event("Added dataset %d to history %d" % (data.id, async_history.id), tool_id=tool_id)
 
             try:
                 key = hmac_new(trans.app.config.tool_secret, "%d:%d" % (data.id, data.history_id))
-                galaxy_url = trans.request.base + '/async/%s/%s/%s' % (tool_id, data.id, key)
+                galaxy_url = trans.request.base + '/api/async/%s/%s/%s' % (tool_id, data.id, key)
                 params.update({'GALAXY_URL': galaxy_url})
                 params.update({'data_id': data.id})
 
