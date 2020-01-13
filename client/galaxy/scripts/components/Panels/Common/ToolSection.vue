@@ -1,6 +1,6 @@
 <template>
     <div>
-        <div v-if="isSection" class="toolSectionWrapper">
+        <div v-if="isSection">
             <div class="toolSectionTitle">
                 <a @click="toggleToolSectionMenu" href="javascript:void(0)" role="button">
                     <span>

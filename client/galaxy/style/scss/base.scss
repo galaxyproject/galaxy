@@ -1384,9 +1384,8 @@ div.toolPanelLabel {
     text-transform: uppercase;
 }
 
-div.toolSectionTitle,
 div.toolTitle,
-div.toolTitleNoSection {
+div.toolSectionTitle {
     display: block;
     .labels {
         float: right;
@@ -1404,13 +1403,6 @@ div.toolTitleNoSection {
         &:hover {
             background: inherit;
         }
-    }
-}
-
-div.toolSectionWrapper {
-    div.toolTitle a {
-        @extend .pl-4;
-        font-size: inherit;
     }
 }
 
