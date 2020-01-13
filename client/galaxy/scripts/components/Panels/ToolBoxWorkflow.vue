@@ -2,7 +2,7 @@
     <div class="unified-panel">
         <div class="unified-panel-header" unselectable="on">
             <div class="unified-panel-header-inner">
-                <div class="panel-header-buttons"/>
+                <div class="panel-header-buttons" />
                 <div class="panel-header-text">Tools</div>
             </div>
         </div>
@@ -100,9 +100,7 @@ export default {
         }
     },
     created() {
-        console.log(this.moduleSections);
         this.toolsLayout = getToolSections(this.toolbox, x => !x.is_workflow_compatible || x.hidden);
-
     },
     methods: {
         setResults(results) {
@@ -110,15 +108,15 @@ export default {
         },
         onOpen(e, tool) {
             e.preventDefault();
-            this.workflowGlobals.app.add_node_for_tool( tool.id, tool.name );
+            this.workflowGlobals.app.add_node_for_tool(tool.id, tool.name);
         },
         onOpenModule(e, module) {
             e.preventDefault();
-            this.workflowGlobals.app.add_node_for_module( module.name, module.title );
+            this.workflowGlobals.app.add_node_for_module(module.name, module.title);
         },
         onOpenWorkflow(e, workflow) {
             e.preventDefault();
-            this.workflowGlobals.app.add_node_for_subworkflow( workflow.id, workflow.name );
+            this.workflowGlobals.app.add_node_for_subworkflow(workflow.id, workflow.name);
         }
     }
 };

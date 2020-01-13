@@ -29,7 +29,7 @@
                     <a>{{ workflowsTitle }}</a>
                 </div>
                 <div id="internal-workflows" class="toolSectionBody">
-                    <div class="toolSectionBg"/>
+                    <div class="toolSectionBg" />
                     <div class="toolTitle" v-for="workflow in workflows" :key="workflow.id">
                         <a :href="workflow.href">
                             {{ workflow.title }}

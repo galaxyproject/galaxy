@@ -4,12 +4,7 @@
             <span v-if="showName">{{ tool.name }}</span>
             {{ tool.description }}
         </a>
-        <a
-            @click="open"
-            :href="tool.link"
-            :target="tool.target"
-            v-else
-        >
+        <a @click="open" :href="tool.link" :target="tool.target" v-else>
             <span class="labels">
                 <span
                     v-for="(label, index) in tool.labels"
@@ -46,7 +41,7 @@ export default {
     },
     computed: {
         rootClass() {
-            return this.noSection ? 'toolTitleNoSection' : 'toolTitle';
+            return this.noSection ? "toolTitleNoSection" : "toolTitle";
         }
     },
     methods: {

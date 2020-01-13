@@ -1,6 +1,6 @@
 <template>
     <div>
-        <div v-if="category.elems" class="toolSectionWrapper">
+        <div v-if="isSection" class="toolSectionWrapper">
             <div class="toolSectionTitle">
                 <a @click="toggleToolSectionMenu" href="javascript:void(0)" role="button">
                     <span>
@@ -11,23 +11,23 @@
             <transition name="slide">
                 <div v-if="opened">
                     <template v-for="el in category.elems">
-                        <div v-if="el.text" class="toolPanelLabel" :key="el.id" >
+                        <div v-if="el.text" class="toolPanelLabel ml-2" :key="el.id">
                             <span>
                                 {{ el.text }}
                             </span>
                         </div>
-                        <tool v-else :tool="el" :key="el.id" @onOpen="onOpen" :showName="showName"/>
+                        <tool v-else :tool="el" :key="el.id" :show-name="showName" @onOpen="onOpen" />
                     </template>
                 </div>
             </transition>
         </div>
-        <div v-else-if="category.text" class="toolPanelLabel">
-            <span>
-                {{ category.text }}
-            </span>
-        </div>
         <div v-else>
-            <tool :tool="category" :no-section="true" :showName="showName"/>
+            <div v-if="category.text" class="toolPanelLabel">
+                <span>
+                    {{ category.text }}
+                </span>
+            </div>
+            <tool v-else :tool="category" :no-section="true" :show-name="showName" @onOpen="onOpen" />
         </div>
     </div>
 </template>
@@ -56,6 +56,9 @@ export default {
     computed: {
         name() {
             return this.category.title || this.category.name;
+        },
+        isSection() {
+            return this.category.elems && this.category.elems.length > 0;
         }
     },
     methods: {

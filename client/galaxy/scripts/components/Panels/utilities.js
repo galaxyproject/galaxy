@@ -15,7 +15,7 @@ export function getPanelProps(panelComponent, options = {}) {
             moduleSections: options.module_sections,
             dataManagers: {
                 name: _l("Data Managers"),
-                elems: options.data_managers,
+                elems: options.data_managers
             },
             workflowsTitle: _l("Workflows"),
             workflowSection: {
