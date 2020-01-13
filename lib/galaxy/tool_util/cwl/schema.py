@@ -85,5 +85,4 @@ class SchemaLoader(object):
 
 
 schema_loader = SchemaLoader()
-non_strict_schema_loader = SchemaLoader(strict=False)
 non_strict_non_validating_schema_loader = SchemaLoader(strict=False, validate=False)
