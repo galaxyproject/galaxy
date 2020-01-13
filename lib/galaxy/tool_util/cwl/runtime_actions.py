@@ -14,6 +14,19 @@ from .util import (
 )
 
 
+def file_dict_to_description(file_dict):
+    output_class = file_dict["class"]
+    assert output_class in ["File", "Directory"], file_dict
+    location = file_dict["location"]
+    if location.startswith("_:"):
+        assert output_class == "File"
+        return LiteralFileDescription(file_dict["contents"])
+    elif output_class == "File":
+        return PathFileDescription(_possible_uri_to_path(location))
+    else:
+        return PathDirectoryDescription(_possible_uri_to_path(location))
+
+
 class FileDescription(object):
     pass
 
@@ -26,6 +39,15 @@ class PathFileDescription(object):
     def write_to(self, destination):
         # TODO: Move if we can be sure this is in the working directory for instance...
         shutil.copy(self.path, destination)
+
+
+class PathDirectoryDescription(object):
+
+    def __init__(self, path):
+        self.path = path
+
+    def write_to(self, destination):
+        shutil.copytree(self.path, destination)
 
 
 class LiteralFileDescription(object):
@@ -46,20 +68,19 @@ def _possible_uri_to_path(location):
     return path
 
 
-def file_dict_to_description(file_dict):
-    assert file_dict["class"] == "File", file_dict
-    location = file_dict["location"]
-    if location.startswith("_:"):
-        return LiteralFileDescription(file_dict["contents"])
-    else:
-        return PathFileDescription(_possible_uri_to_path(location))
-
-
 def handle_outputs(job_directory=None):
     # Relocate dynamically collected files to pre-determined locations
     # registered with ToolOutput objects via from_work_dir handling.
     if job_directory is None:
         job_directory = os.path.join(os.getcwd(), os.path.pardir)
+    metadata_directory = os.path.join(job_directory, "metadata")
+    metadata_params_path = os.path.join(metadata_directory, "params.json")
+    try:
+        with open(metadata_params_path, "r") as f:
+            metadata_params = json.load(f)
+    except IOError:
+        raise Exception("Failed to find params.json from metadata directory [%s]" % metadata_directory)
+
     cwl_job_file = os.path.join(job_directory, JOB_JSON_FILE)
     if not os.path.exists(cwl_job_file):
         # Not a CWL job, just continue
@@ -69,7 +90,13 @@ def handle_outputs(job_directory=None):
     # allows us to not need Galaxy's full configuration on job nodes.
     job_proxy = load_job_proxy(job_directory, strict_cwl_validation=False)
     tool_working_directory = os.path.join(job_directory, "working")
-    outputs = job_proxy.collect_outputs(tool_working_directory)
+
+    job_id_tag = metadata_params["job_id_tag"]
+    from galaxy.job_execution.output_collect import default_exit_code_file, read_exit_code_from
+    exit_code_file = default_exit_code_file(".", job_id_tag)
+    tool_exit_code = read_exit_code_from(exit_code_file, job_id_tag)
+
+    outputs = job_proxy.collect_outputs(tool_working_directory, tool_exit_code)
 
     # Build galaxy.json file.
     provided_metadata = {}
@@ -87,7 +114,7 @@ def handle_outputs(job_directory=None):
                 file_description.write_to(os.path.join(target_path, listed_file["basename"]))
         else:
             shutil.move(output_path, target_path)
-        return {"cwl_filename": output["basename"]}
+        return {"created_from_basename": output["basename"]}
 
     def move_output(output, target_path, output_name=None):
         assert output["class"] == "File"
@@ -137,7 +164,7 @@ def handle_outputs(job_directory=None):
             with open(os.path.join(secondary_files_dir, "..", SECONDARY_FILES_INDEX_PATH), "w") as f:
                 json.dump(index_contents, f)
 
-        return {"cwl_filename": output["basename"]}
+        return {"created_from_basename": output["basename"]}
 
     def handle_known_output(output, output_key, output_name):
         # if output["class"] != "File":
@@ -157,20 +184,35 @@ def handle_outputs(job_directory=None):
             raise Exception("Unknown output type [%s] encountered" % output)
         provided_metadata[output_name] = file_metadata
 
+    def handle_known_output_json(output, output_name):
+        target_path = job_proxy.output_path(output_name)
+        with open(target_path, "w") as f:
+            f.write(json.dumps(output))
+        provided_metadata[output_name] = {
+            "ext": "expression.json",
+        }
+
+    handled_outputs = []
     for output_name, output in outputs.items():
+        handled_outputs.append(output_name)
         if isinstance(output, dict) and "location" in output:
             handle_known_output(output, output_name, output_name)
         elif isinstance(output, dict):
             prefix = "%s|__part__|" % output_name
             for record_key, record_value in output.items():
                 record_value_output_key = "%s%s" % (prefix, record_key)
-                handle_known_output(record_value, record_value_output_key, output_name)
+                if isinstance(record_value, dict) and "class" in record_value:
+                    handle_known_output(record_value, record_value_output_key, output_name)
+                else:
+                    # param_evaluation_noexpr
+                    handle_known_output_json(output, output_name)
+
         elif isinstance(output, list):
             elements = []
             for index, el in enumerate(output):
                 if isinstance(el, dict) and el["class"] == "File":
                     output_path = _possible_uri_to_path(el["location"])
-                    elements.append({"name": str(index), "filename": output_path, "cwl_filename": el["basename"]})
+                    elements.append({"name": str(index), "filename": output_path, "created_from_basename": el["basename"]})
                 else:
                     target_path = "%s____%s" % (output_name, str(index))
                     with open(target_path, "w") as f:
@@ -178,12 +220,12 @@ def handle_outputs(job_directory=None):
                     elements.append({"name": str(index), "filename": target_path, "ext": "expression.json"})
             provided_metadata[output_name] = {"elements": elements}
         else:
-            target_path = job_proxy.output_path(output_name)
-            with open(target_path, "w") as f:
-                f.write(json.dumps(output))
-            provided_metadata[output_name] = {
-                "ext": "expression.json",
-            }
+            handle_known_output_json(output, output_name)
+
+    for output_instance in job_proxy._tool_proxy.output_instances():
+        output_name = output_instance.name
+        if output_name not in handled_outputs:
+            handle_known_output_json(None, output_name)
 
     with open("galaxy.json", "w") as f:
         json.dump(provided_metadata, f)

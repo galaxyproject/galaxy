@@ -70,7 +70,7 @@ class CwlToolSource(ToolSource):
         return []
 
     def parse_help(self):
-        return self.tool_proxy.description() or ""
+        return self.tool_proxy.doc()
 
     def parse_sanitize(self):
         return False
