@@ -3,6 +3,11 @@
     ::placeholder {
         color: $text-muted;
     }
+    
+    border: 1px solid black;
+    border-radius: 1rem;
+    background: #fff;
+    
     .search-advanced,
     .search-clear,
     .search-loading {
@@ -31,12 +36,12 @@
     .search-query {
         @extend .px-3;
         @extend .py-1;
-        width: 100%;
+        width: 85%;
         display: inline-block;
         font-size: $font-size-base;
         line-height: $line-height-base;
         color: $text-color;
-        border: $border-default;
+        border: 0px;
         @include border-radius($border-radius-extralarge);
         max-width: auto;
         background: $white;

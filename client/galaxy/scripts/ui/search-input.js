@@ -30,6 +30,7 @@ function searchInput(parentNode, options) {
         onsearch: function(inputVal) {},
         minSearchLen: 0,
         escWillClear: true,
+        advsearchlink: null,
         oninit: function() {}
     };
 
@@ -117,7 +118,9 @@ function searchInput(parentNode, options) {
         )
             .tooltip({ placement: "bottom" })
             .click(function(event) {
-					window.open("https://galaxyproject.org/tutorials/histories/#advanced-searching")
+            	if (options.advsearchlink) {
+						window.open(options.advsearchlink);
+					}
             });
     }
 
@@ -166,8 +169,16 @@ function searchInput(parentNode, options) {
     if (jQuery.type(options) === "object") {
         options = jQuery.extend(true, {}, defaults, options);
     }
+	 var buttonsArr = [$clearBtn(), $loadingIndicator()];
+	 // If a link to the advanced search documentation link was provided, render the advanced search button	 
+	 if (options.advsearchlink) {
+	     buttonsArr.push($advSearchBtn());	 
+	 }
+	 var buttonDiv = $('<div class="search-button-panel"></div>');	 
+	 $(buttonDiv).prepend(buttonsArr);
+    
     //NOTE: prepended
-    return $parentNode.addClass("search-input").prepend([$input(), $clearBtn(), $advSearchBtn(), $loadingIndicator()]);
+    return $parentNode.addClass("search-input").prepend([$input(), $(buttonDiv)]);
 }
 
 // as jq plugin

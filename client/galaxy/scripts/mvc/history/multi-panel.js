@@ -863,7 +863,9 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
                 //TODO: remove specifically not just reset
                 this.filters = [];
                 this.renderColumns(0);
-            }
+            },
+            
+            advsearchlink: "https://galaxyproject.org/tutorials/histories/#advanced-searching"
         });
 
         // input to search datasets
@@ -899,7 +901,8 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
                 this.sortedFilteredColumns().forEach(column => {
                     column.panel.clearSearch();
                 });
-            }
+            },
+            advsearchlink: "https://galaxyproject.org/tutorials/histories/#advanced-searching"
         });
 
         // resize first (fixed position) column on page resize
