@@ -16,7 +16,7 @@
                     :showName="false"
                     :category="category"
                     :isFiltered="isFiltered"
-                    :key="category.id"
+                    :key="category.name"
                     @onOpen="onOpenModule"
                 />
                 <tool-section

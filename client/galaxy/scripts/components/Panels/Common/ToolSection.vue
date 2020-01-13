@@ -10,13 +10,13 @@
             </div>
             <transition name="slide">
                 <div v-if="opened">
-                    <template v-for="el in category.elems">
-                        <div v-if="el.text" class="toolPanelLabel ml-2" :key="el.id">
+                    <template v-for="[key, el] in category.elems.entries()">
+                        <div v-if="el.text" class="toolPanelLabel ml-2" :key="key">
                             <span>
                                 {{ el.text }}
                             </span>
                         </div>
-                        <tool v-else :tool="el" :key="el.id" :show-name="showName" @onOpen="onOpen" />
+                        <tool v-else :tool="el" :key="key" :show-name="showName" @onOpen="onOpen" />
                     </template>
                 </div>
             </transition>
