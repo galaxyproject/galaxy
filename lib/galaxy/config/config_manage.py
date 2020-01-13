@@ -28,7 +28,10 @@ if __name__ == '__main__':
 
 
 from galaxy.config import GALAXY_CONFIG_SCHEMA_PATH
-from galaxy.config.schema import AppSchema, Schema
+from galaxy.config.schema import (
+    AppSchema,
+    Schema,
+)
 from galaxy.util import safe_makedirs
 from galaxy.util.properties import nice_config_parser
 from galaxy.util.yaml_util import (

@@ -2,7 +2,7 @@ import logging
 import os
 from collections import OrderedDict
 
-from galaxy.tool_util.cwl import tool_proxy
+from galaxy.tool_util.cwl.parser import tool_proxy
 from galaxy.tool_util.deps import requirements
 from .interface import (
     PageSource,
