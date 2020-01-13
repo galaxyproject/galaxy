@@ -76,11 +76,7 @@ export default {
             return filterToolSections(this.toolsLayout, this.results);
         },
         isFiltered() {
-            if (this.results) {
-                return true;
-            } else {
-                return false;
-            }
+            return !!this.results;
         },
         isUser() {
             const Galaxy = getGalaxyInstance();
