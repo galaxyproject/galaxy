@@ -540,12 +540,13 @@ def _validate(args, app_desc):
     clean_schema = remap(app_desc.schema.raw_schema, _clean)
     with tempfile.NamedTemporaryFile('w', suffix=".yml") as fp:
         ordered_dump(clean_schema, fp)
+        fp.flush()
         c = Core(
             source_file=config_p.name,
             schema_files=[fp.name],
         )
-        c.validate()
     os.remove(config_p.name)
+    c.validate()
 
 
 class PrefixFilter(object):
