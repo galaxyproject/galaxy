@@ -149,16 +149,16 @@ def get_conda_hits_for_targets(targets, conda_context):
     return [r for r in search_results if r]
 
 
-def any_target_requires_extended_base(targets, conda_context=None):
+def base_image_for_targets(targets, conda_context=None):
     hits = get_conda_hits_for_targets(targets, conda_context or CondaInDockerContext())
     for hit in hits:
         try:
             meta_content = unicodify(get_file_from_recipe_url(hit['url']).extractfile('info/about.json').read())
             if json.loads(meta_content).get('extra', {}).get('container', {}).get('extended-base', False):
-                return True
+                return DEFAULT_EXTENDED_BASE_IMAGE
         except Exception:
             log.warning("Could not load metadata.yaml for '%s', version '%s'", hit['name'], hit['version'], exc_info=True)
-    return False
+    return DEFAULT_BASE_IMAGE
 
 
 class BuildExistsException(Exception):
@@ -183,7 +183,7 @@ def mull_targets(
     elif DEST_BASE_IMAGE:
         dest_base_image = DEST_BASE_IMAGE
     else:
-        dest_base_image = DEFAULT_EXTENDED_BASE_IMAGE if any_target_requires_extended_base(targets) else DEST_BASE_IMAGE
+        dest_base_image = base_image_for_targets(targets)
 
     targets = list(targets)
     if involucro_context is None:
