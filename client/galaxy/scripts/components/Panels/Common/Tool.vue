@@ -55,13 +55,13 @@ export default {
         }
     },
     methods: {
-        onClick(e) {
+        onClick(evt) {
             ariaAlert(`${this.tool.name} selected from panel`);
-            this.$emit("onClick", e, this.tool);
+            this.$emit("onClick", this.tool, evt);
         },
-        onOperation(e) {
+        onOperation(evt) {
             ariaAlert(`${this.tool.name} operation selected from panel`);
-            this.$emit("onOperation", e, this.tool);
+            this.$emit("onOperation", this.tool, evt);
         }
     }
 };

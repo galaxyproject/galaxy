@@ -88,13 +88,13 @@ export default {
         }
     },
     methods: {
-        onClick(e, tool) {
-            this.$emit("onClick", e, tool);
+        onClick(tool, evt) {
+            this.$emit("onClick", tool, evt);
         },
-        onOperation(e, tool) {
-            this.$emit("onOperation", e, tool);
+        onOperation(tool, evt) {
+            this.$emit("onOperation", tool, evt);
         },
-        toggleMenu(e) {
+        toggleMenu() {
             this.opened = !this.opened;
             const currentState = this.opened ? "opened" : "closed";
             ariaAlert(`${this.name} tools menu ${currentState}`);

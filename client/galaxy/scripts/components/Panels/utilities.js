@@ -4,15 +4,6 @@ import { getAppRoot } from "onload";
 
 export function getPanelProps(panelComponent, options = {}) {
     const storedWorkflowMenuEntries = options.stored_workflow_menu_entries || [];
-    let workflowElements = options.workflows;
-    if (workflowElements) {
-        workflowElements = workflowElements.map(workflow => {
-            return {
-                id: workflow.latest_id,
-                name: workflow.name
-            };
-        });
-    }
     return {
         side: "left",
         currentPanel: panelComponent,
@@ -29,7 +20,7 @@ export function getPanelProps(panelComponent, options = {}) {
             workflowsTitle: _l("Workflows"),
             workflowSection: {
                 name: _l("Workflows"),
-                elems: workflowElements
+                elems: options.workflows
             },
             workflows: [
                 {

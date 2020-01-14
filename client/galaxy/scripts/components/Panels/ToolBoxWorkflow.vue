@@ -103,19 +103,21 @@ export default {
         setResults(results) {
             this.results = results;
         },
-        onInsertTool(e, tool) {
-            e.preventDefault();
+        onInsertTool(tool, evt) {
+            evt.preventDefault();
             this.workflowGlobals.app.add_node_for_tool(tool.id, tool.name);
         },
-        onInsertModule(e, module) {
-            e.preventDefault();
+        onInsertModule(module, evt) {
+            evt.preventDefault();
             this.workflowGlobals.app.add_node_for_module(module.name, module.title);
         },
-        onInsertWorkflow(e, workflow) {
-            e.preventDefault();
-            this.workflowGlobals.app.add_node_for_subworkflow(workflow.id, workflow.name);
+        onInsertWorkflow(workflow, evt) {
+            evt.preventDefault();
+            this.workflowGlobals.app.add_node_for_subworkflow(workflow.latest_id, workflow.name);
         },
-        onInsertWorkflowSteps(e, workflow) {}
+        onInsertWorkflowSteps(workflow) {
+            this.workflowGlobals.app.copy_into_workflow(workflow.latest_id);
+        }
     }
 };
 </script>

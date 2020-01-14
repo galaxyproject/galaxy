@@ -92,13 +92,13 @@ export default {
         setResults(results) {
             this.results = results;
         },
-        onOpen(e, tool) {
+        onOpen(tool, evt) {
             const Galaxy = getGalaxyInstance();
             if (tool.id === "upload1") {
-                e.preventDefault();
+                evt.preventDefault();
                 Galaxy.upload.show();
             } else if (tool.form_style === "regular") {
-                e.preventDefault();
+                evt.preventDefault();
                 Galaxy.router.push("/", {
                     tool_id: tool.id,
                     version: tool.version
