@@ -28,7 +28,7 @@ def lint_output(tool_xml, lint_ctx):
 
         format_set = False
         if output.tag == "data":
-            if __check_format(output):
+            if __check_format(output, lint_ctx):
                 format_set = True
             elif "auto_format" in output.attrib and output.attrib["auto_format"]:
                 format_set = True
@@ -43,7 +43,7 @@ def lint_output(tool_xml, lint_ctx):
         for sub in output:
             if __check_pattern(sub):
                 format_set = True
-            elif __check_format(sub):
+            elif __check_format(sub, lint_ctx):
                 format_set = True
 
         if not format_set:
@@ -58,7 +58,7 @@ def __check_format(node, lint_ctx):
     issue a warning if the value is input
     return true (node defines format/ext) / false (else)
     """
-    fmt = node.attrib.get("format", node.attrib("ext", None))
+    fmt = node.attrib.get("format", node.attrib.get("ext", None))
     if fmt == "input":
         lint_ctx.warn("Using format='input' on %s, format_source attribute is less ambiguous and should be used instead." % node.tag)
     return fmt is not None
