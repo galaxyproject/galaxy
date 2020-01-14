@@ -88,7 +88,7 @@ class CustosAuthnz(IdentityProvider):
         # Create or update custos_authnz_token record
         custos_authnz_token = self._get_custos_authnz_token(trans.sa_session, user_id, self.config['provider'])
         if custos_authnz_token is None:
-            user = self._get_current_user(trans)
+            user = trans.user
             if not user:
                 user = self._create_user(trans.sa_session, username, email)
             custos_authnz_token = CustosAuthnzToken(user=user,
@@ -155,9 +155,6 @@ class CustosAuthnz(IdentityProvider):
     def _get_custos_authnz_token(self, sa_session, user_id, provider):
         return sa_session.query(CustosAuthnzToken).filter_by(
             external_user_id=user_id, provider=provider).one_or_none()
-
-    def _get_current_user(self, trans):
-        return trans.user if trans.user else None
 
     def _create_user(self, sa_session, username, email):
         user = User(email=email, username=username)
