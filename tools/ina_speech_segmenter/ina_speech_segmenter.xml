@@ -1,4 +1,4 @@
-<tool id="ISS-1" name="Ina Speech Segmenter" version="1.0.0">
+<tool id="ISS-1" name="INA Speech Segmenter" version="1.0.0">
   <description>Create speech segmentations containing type, gender, start offset, and end offset</description>
     <requirements>
     </requirements>
