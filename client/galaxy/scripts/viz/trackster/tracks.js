@@ -1002,7 +1002,7 @@ var TracksterView = Backbone.View.extend({
 
         // We break out of the parent container with nav (and potentially other
         // things?) so we need to override any overflow settings here.
-        parent_element.css("overflow", "visible");
+        parent_element.attr("style", "overflow: visible !important");
         // Navigation at top
         this.nav_container = $("<div/>")
             .addClass("trackster-nav-container")
