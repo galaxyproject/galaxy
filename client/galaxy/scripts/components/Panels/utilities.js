@@ -11,7 +11,7 @@ export function getPanelProps(panelComponent, options = {}) {
                 id: workflow.latest_id,
                 name: workflow.name
             };
-        })
+        });
     }
     return {
         side: "left",

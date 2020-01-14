@@ -29,6 +29,7 @@
                     <tool-section
                         v-for="category in categories"
                         :category="category"
+                        :isFilterable="true"
                         :isFiltered="isFiltered"
                         :key="category.id"
                         @onClick="onInsertTool"
@@ -89,7 +90,7 @@ export default {
             return filterToolSections(this.toolsLayout, this.results);
         },
         isFiltered() {
-            return !!this.results
+            return !!this.results;
         }
     },
     created() {

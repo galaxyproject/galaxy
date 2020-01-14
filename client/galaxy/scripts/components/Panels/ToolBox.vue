@@ -18,6 +18,7 @@
                     <tool-section
                         v-for="category in categories"
                         :category="category"
+                        :isFilterable="true"
                         :isFiltered="isFiltered"
                         :key="category.id"
                         @onClick="onOpen"

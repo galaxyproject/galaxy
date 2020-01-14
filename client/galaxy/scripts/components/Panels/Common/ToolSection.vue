@@ -48,6 +48,9 @@ export default {
         isFiltered: {
             type: Boolean
         },
+        isFilterable: {
+            type: Boolean
+        },
         showName: {
             type: Boolean,
             default: true
@@ -77,19 +80,12 @@ export default {
         };
     },
     watch: {
-        isFiltered(newVal) {
-            if (newVal) {
-                this.opened = true;
-            } else {
+        isFiltered(state) {
+            if (!this.isFilterable && this.isFiltered) {
                 this.opened = false;
+            } else {
+                this.opened = !!state;
             }
-        }
-    },
-    mounted() {
-        if (this.isFiltered) {
-            this.opened = true;
-        } else {
-            this.opened = false;
         }
     }
 };

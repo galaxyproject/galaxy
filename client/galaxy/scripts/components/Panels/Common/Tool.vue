@@ -4,12 +4,7 @@
             <span v-if="showName">{{ tool.name }}</span>
             {{ tool.description }}
         </a>
-        <a
-            @click="onClick"
-            :href="tool.link"
-            :target="tool.target"
-            v-else
-        >
+        <a @click="onClick" :href="tool.link" :target="tool.target" v-else>
             <span class="labels">
                 <span
                     v-for="(label, index) in tool.labels"
