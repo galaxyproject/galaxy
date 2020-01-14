@@ -108,8 +108,8 @@ function searchInput(parentNode, options) {
         );
     }
     
-    // .................................................................... question button that will pop up 
-    // a button for clearing the search bar, placed on the right hand side
+    // .................................................................... question button that will open 
+    // the Advanced Search documentation
     function $advSearchBtn() {
         return $(
             ['<span class="search-advanced fa fa-question-circle" ', 'title="', _l("click for Advanced Search tips"), '"></span>'].join(
@@ -118,7 +118,7 @@ function searchInput(parentNode, options) {
         )
             .tooltip({ placement: "bottom" })
             .click(function(event) {
-            	if (options.advsearchlink) {
+               if (options.advsearchlink) {
                    window.open(options.advsearchlink);
                }
             });
@@ -169,13 +169,13 @@ function searchInput(parentNode, options) {
     if (jQuery.type(options) === "object") {
         options = jQuery.extend(true, {}, defaults, options);
     }
-	 var buttonsArr = [$clearBtn(), $loadingIndicator()];
-	 // If a link to the advanced search documentation link was provided, render the advanced search button	 
-	 if (options.advsearchlink) {
-	     buttonsArr.push($advSearchBtn());	 
-	 }
-	 var buttonDiv = $('<div class="search-button-panel"></div>');	 
-	 $(buttonDiv).prepend(buttonsArr);
+     var buttonsArr = [$clearBtn(), $loadingIndicator()];
+     // If a link to the advanced search documentation link was provided, render the advanced search button     
+     if (options.advsearchlink) {
+         buttonsArr.push($advSearchBtn());     
+     }
+     var buttonDiv = $('<div class="search-button-panel"></div>');     
+     $(buttonDiv).prepend(buttonsArr);
     
     //NOTE: prepended
     return $parentNode.addClass("search-input").prepend([$input(), $(buttonDiv)]);
