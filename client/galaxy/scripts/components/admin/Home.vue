@@ -10,32 +10,32 @@
         <ul>
             <li>
                 <strong>
-                    <a @click.prevent="useRouter" :href="adminDataTypesUrl">Data types</a>
+                    <a @click.prevent="useRouter" :href="adminDataTypesUrl">Data Types</a>
                 </strong>
                 - See all datatypes available in this Galaxy.
             </li>
             <li>
                 <strong>
-                    <a @click.prevent="useRouter" :href="adminDataTablesUrl">Data tables</a>
+                    <a @click.prevent="useRouter" :href="adminDataTablesUrl">Data Tables</a>
                 </strong>
                 - See all data tables available in this Galaxy.
             </li>
             <li>
                 <strong>
-                    <a @click.prevent="useRouter" :href="adminDisplayApplicationsUrl">Display applications</a>
+                    <a @click.prevent="useRouter" :href="adminDisplayApplicationsUrl">Display Applications</a>
                 </strong>
                 - See all display applications configured in this Galaxy.
             </li>
             <li>
                 <strong>
-                    <a @click.prevent="useRouter" :href="adminJobsUrl">Manage jobs</a>
+                    <a @click.prevent="useRouter" :href="adminJobsUrl">Manage Jobs</a>
                 </strong>
                 - Display all jobs that are currently not finished (i.e., their state is new, waiting, queued, or
                 running). Administrators are able to cleanly stop long-running jobs.
             </li>
             <li>
                 <strong>
-                    <a @click.prevent="useRouter" :href="adminDMUrl">Local data</a>
+                    <a @click.prevent="useRouter" :href="adminDMUrl">Local Data</a>
                 </strong>
                 - Manage the reference (and other) data that is stored within Tool Data Tables. See
                 <a href="https://galaxyproject.org/admin/tools/data-managers" target="_blank">wiki</a> for details.
@@ -95,19 +95,19 @@
             </li>
             <li v-if="isRepoInstalled">
                 <strong>
-                    <a @click.prevent="useRouter" :href="adminManageMetadata">Manage metadata</a>
+                    <a @click.prevent="useRouter" :href="adminManageMetadata">Manage Metadata</a>
                 </strong>
                  - Select on which repositories you want to reset metadata.
             </li>
             <li>
                 <strong>
-                    <a @click.prevent="useRouter" :href="adminToolVersionsUrl">View lineage</a>
+                    <a @click.prevent="useRouter" :href="adminToolVersionsUrl">View Lineage</a>
                 </strong>
                 - A view of a version lineages for all installed tools. Useful for debugging.
             </li>
             <li>
                 <strong>
-                    <a :href="migrationStagesUrl">View migration stages</a>
+                    <a :href="migrationStagesUrl">View Migration Stages</a>
                 </strong>
                 - See the list of migration stages that moved sets of tools from the distribution to the Tool Shed.
             </li>
