@@ -1,2 +1,2 @@
-galaxy-util
+galaxy-util>=20.1.0.dev0
 galaxy-containers
