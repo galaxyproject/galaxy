@@ -86,22 +86,19 @@
         <ul>
             <li v-if="isToolShedInstalled">
                 <strong>
-                    <a @click.prevent="useRouter" :href="adminToolshedUrl">Install new tools</a>
+                    <a @click.prevent="useRouter" :href="adminToolshedUrl">Install and Uninstall</a>
                 </strong>
                 - Search and install new tools and other Galaxy utilities from the Tool Shed. See
                 <a href="https://galaxyproject.org/admin/tools/add-tool-from-toolshed-tutorial" target="_blank"
                     >the tutorial</a
                 >.
             </li>
-            <li v-if="installingRepositoryIds">
-                <strong>Monitor installation</strong> - View the status of tools that are being currently installed.
+            <li v-if="isRepoInstalled">
+                <strong>
+                    <a @click.prevent="useRouter" :href="adminManageMetadata">Manage metadata</a>
+                </strong>
+                 - Select on which repositories you want to reset metadata.
             </li>
-            <template v-if="isRepoInstalled">
-                <li>
-                    <strong>Manage tools</strong> - View and administer installed tools and utilities on this Galaxy.
-                </li>
-                <li><strong>Manage metadata</strong> - Select on which repositories you want to reset metadata.</li>
-            </template>
             <li>
                 <strong>
                     <a @click.prevent="useRouter" :href="adminToolVersionsUrl">View lineage</a>
@@ -126,10 +123,6 @@ const root = getAppRoot();
 
 export default {
     props: {
-        installingRepositoryIds: {
-            type: String,
-            required: true
-        },
         isRepoInstalled: {
             type: Boolean,
             required: true
@@ -151,6 +144,7 @@ export default {
         adminDataTablesUrl: () => `${root}admin/data_tables`,
         adminDisplayApplicationsUrl: () => `${root}admin/display_applications`,
         adminJobsUrl: () => `${root}admin/jobs`,
+        adminManageMetadata: () => `${root}admin/reset_metadata`,
         adminDMUrl: () => `${root}admin/data_manager`,
         adminUsersUrl: () => `${root}admin/users`,
         adminQuotasUrl: () => `${root}admin/quotas`,

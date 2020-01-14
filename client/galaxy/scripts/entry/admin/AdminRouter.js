@@ -59,7 +59,6 @@ export const getAdminRouter = (Galaxy, options) => {
 
         show_home: function() {
             this._display_vue_helper(AdminHome, {
-                installingRepositoryIds: options.settings.installing_repository_ids,
                 isRepoInstalled: options.settings.is_repo_installed,
                 isToolShedInstalled: options.settings.is_tool_shed_installed
             });
