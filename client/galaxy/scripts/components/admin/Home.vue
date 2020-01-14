@@ -28,7 +28,7 @@
             </li>
             <li>
                 <strong>
-                    <a @click.prevent="useRouter" :href="adminJobsUrl">Manage Jobs</a>
+                    <a @click.prevent="useRouter" :href="adminJobsUrl">Jobs</a>
                 </strong>
                 - Display all jobs that are currently not finished (i.e., their state is new, waiting, queued, or
                 running). Administrators are able to cleanly stop long-running jobs.
