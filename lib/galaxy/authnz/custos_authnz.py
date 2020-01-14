@@ -21,7 +21,7 @@ NONCE_COOKIE_NAME = 'custos-nonce'
 
 
 class CustosAuthnz(IdentityProvider):
-    def __init__(self, provider, oidc_config, oidc_backend_config):
+    def __init__(self, provider, oidc_config, oidc_backend_config, idphint=None):
         self.config = {'provider': provider.lower()}
         self.config['verify_ssl'] = oidc_config['VERIFY_SSL']
         self.config['url'] = oidc_backend_config['url']
@@ -45,12 +45,15 @@ class CustosAuthnz(IdentityProvider):
             realm = oidc_backend_config['realm']
             self._load_config_for_provider_and_realm(self.config['provider'], realm)
 
-    def authenticate(self, trans):
-        base_authorize_url = self.config['authorization_endpoint']
-        oauth2_session = self._create_oauth2_session(scope=('openid', 'email', 'profile'))
+    #edit here Juleen for cilogon state?
+    def authenticate(self, trans, idphint=None):
+        base_authorize_url = self._create_cilogon_authorize_url(idphint)
+        oauth2_session = self._create_oauth2_session(scope=('openid', 'email', 'profile', 'org.cilogon.userinfo')) #maybe set state to be state_cookie like in callback
         nonce = generate_nonce()
         nonce_hash = self._hash_nonce(nonce)
         extra_params = {"nonce": nonce_hash}
+        if idphint is not None:
+            extra_params['idphint'] = idphint
         if "extra_params" in self.config:
             extra_params.update(self.config['extra_params'])
         authorization_url, state = oauth2_session.authorization_url(
@@ -70,7 +73,8 @@ class CustosAuthnz(IdentityProvider):
         access_token = token['access_token']
         id_token = token['id_token']
         refresh_token = token['refresh_token'] if 'refresh_token' in token else None
-        expiration_time = datetime.now() + timedelta(seconds=token['expires_in'])
+        #expiration_time = datetime.now() + timedelta(seconds=token['expires_in'])
+        expiration_time = datetime.now() + timedelta(seconds=token.get('expires_in', 3600)) #revisit later Juleen, once CILogon bug fixed
         refresh_expiration_time = (datetime.now() + timedelta(seconds=token['refresh_expires_in'])) if 'refresh_expires_in' in token else None
 
         # Get nonce from token['id_token'] and validate. 'nonce' in the
@@ -83,8 +87,9 @@ class CustosAuthnz(IdentityProvider):
         # Get userinfo and lookup/create Galaxy user record
         userinfo = self._get_userinfo(oauth2_session)
         log.debug("userinfo={}".format(json.dumps(userinfo, indent=True)))
-        username = userinfo['preferred_username']
         email = userinfo['email']
+        username = userinfo.get('preferred_username', email.split('@')[0]) #TBD handle is username already exists
+        #username = userinfo.get('preferred_username', self.generate_username(email)) #TBD handle is username already exists
         user_id = userinfo['sub']
 
         # Create or update custos_authnz_token record
@@ -197,6 +202,16 @@ class CustosAuthnz(IdentityProvider):
         if nonce_hash != nonce_cookie_hash:
             raise Exception("Nonce mismatch!")
 
+    def _load_config_for_cilogon (self):
+        #set cilogon endpoints
+        self.config['authorization_endpoint'] = "https://cilogon.org/authorize"
+        self.config['token_endpoint'] = "https://cilogon.org/oauth2/token"
+        self.config['userinfo_endpoint'] = "https://cilogon.org/oauth2/userinfo"
+
+    def _create_cilogon_authorize_url (self, idphint):
+        return "{}/?idphint={}&response_type=code&client_id={}&redirect_uri={}".format(
+            self.config['authorization_endpoint'], self.config['url'], idphint, self.config['client_id'], self.config['redirect_uri'])
+
     def _load_config_for_provider_and_realm(self, provider, realm):
         self.config['well_known_oidc_config_uri'] = self._get_well_known_uri_for_provider_and_realm(provider, realm)
         well_known_oidc_config = self._load_well_known_oidc_config(self.config['well_known_oidc_config_uri'])
@@ -230,3 +245,11 @@ class CustosAuthnz(IdentityProvider):
             return self.config['ca_bundle']
         else:
             return self.config['verify_ssl']
+
+    #def generate_username(email):
+    #    temp_username = email.split('@')[0]
+    #    count = 0
+
+    #    while (temp_username in database):
+    #        count += 1
+    #    return temp_username if count == 0 else temp_username + str(count) #do I have 
