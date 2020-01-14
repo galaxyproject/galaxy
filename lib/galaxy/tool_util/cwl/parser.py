@@ -6,6 +6,7 @@ of the framework.
 from __future__ import absolute_import
 
 import base64
+import copy
 import json
 import logging
 import os
@@ -17,7 +18,11 @@ from uuid import uuid4
 import six
 
 from galaxy.exceptions import MessageException
-from galaxy.util import listify, safe_makedirs, unicodify
+from galaxy.util import (
+    listify,
+    safe_makedirs,
+    unicodify,
+)
 from galaxy.util.bunch import Bunch
 from .cwltool_deps import (
     beta_relaxed_fmt_check,
@@ -25,8 +30,10 @@ from .cwltool_deps import (
     getdefault,
     pathmapper,
     process,
+    ref_resolver,
     relink_initialworkdir,
     RuntimeContext,
+    sourceline,
     StdFsAccess,
 )
 from .representation import (
@@ -37,8 +44,11 @@ from .representation import (
     USE_FIELD_TYPES,
     USE_STEP_PARAMETERS,
 )
-from .schema import non_strict_non_validating_schema_loader, schema_loader
-from .util import guess_artifact_type, SECONDARY_FILES_EXTRA_PREFIX
+from .schema import (
+    non_strict_non_validating_schema_loader,
+    schema_loader,
+)
+from .util import SECONDARY_FILES_EXTRA_PREFIX
 
 log = logging.getLogger(__name__)
 
@@ -138,17 +148,13 @@ def _to_cwl_tool_object(tool_path=None, tool_object=None, cwl_tool_object=None, 
 
         # Allow loading tools from YAML...
         from ruamel import yaml as ryaml
-        import json
         as_str = json.dumps(tool_object)
         tool_object = ryaml.round_trip_load(as_str)
-        from schema_salad import sourceline
-        from schema_salad.ref_resolver import file_uri
         path = tool_directory
         if path is None:
             path = os.getcwd()
-        uri = file_uri(path) + "/"
+        uri = ref_resolver.file_uri(path) + "/"
         sourceline.add_lc_filename(tool_object, uri)
-        # tool_object, _ = schema_loader.raw_document_loader.resolve_all(tool_object, uri, checklinks=False)
         raw_process_reference = schema_loader.raw_process_reference_for_object(
             tool_object,
             uri=uri
@@ -346,7 +352,6 @@ class CommandLineToolProxy(ToolProxy):
         # schemadef_req_tool_param
         rval = []
         for input in input_records_schema["fields"]:
-            import copy
             input_copy = copy.deepcopy(input)
             input_type = input.get("type")
             if isinstance(input_type, list) or isinstance(input_type, dict):
@@ -1295,38 +1300,6 @@ class OutputInstance(object):
         self.output_type = output_type
         self.path = path
         self.fields = fields
-
-
-def get_outputs(path):
-    tool_or_workflow = guess_artifact_type(path)
-    if tool_or_workflow == "tool":
-        from galaxy.tools.parser import get_tool_source
-        tool_source = get_tool_source(path)
-        output_datasets, _ = tool_source.parse_outputs(None)
-        outputs = [ToolOutput(o) for o in output_datasets.values()]
-        return outputs
-    else:
-        workflow = workflow_proxy(path, strict_cwl_validation=False)
-        return [CwlWorkflowOutput(label) for label in workflow.output_labels]
-
-
-# Lighter-weight variant of Planemo runnable outputs.
-class CwlWorkflowOutput(object):
-
-    def __init__(self, label):
-        self._label = label
-
-    def get_id(self):
-        return self._label
-
-
-class ToolOutput(object):
-
-    def __init__(self, tool_output):
-        self._tool_output = tool_output
-
-    def get_id(self):
-        return self._tool_output.name
 
 
 __all__ = (

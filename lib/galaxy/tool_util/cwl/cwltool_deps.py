@@ -68,13 +68,14 @@ except ImportError:
 
 try:
     import schema_salad
+    from schema_salad import (
+        ref_resolver,
+        sourceline,
+    )
 except ImportError:
     schema_salad = None
-
-try:
-    from schema_salad import ref_resolver
-except (ImportError, SyntaxError):
     ref_resolver = None
+    sourceline = None
 
 needs_shell_quoting = re.compile(r"""(^$|[\s|&;()<>\'"$@])""").search
 
@@ -118,6 +119,7 @@ __all__ = (
     'RuntimeContext',
     'schema_salad',
     'shellescape',
+    'sourceline',
     'StdFsAccess',
     'workflow',
 )

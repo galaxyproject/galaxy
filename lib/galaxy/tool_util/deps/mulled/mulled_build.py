@@ -148,8 +148,8 @@ def get_conda_hits_for_targets(targets, conda_context):
     return [r for r in search_results if r]
 
 
-def any_target_requires_extended_base(targets):
-    hits = get_conda_hits_for_targets(targets, CondaInDockerContext())
+def any_target_requires_extended_base(targets, conda_context=None):
+    hits = get_conda_hits_for_targets(targets, conda_context or CondaInDockerContext())
     for hit in hits:
         try:
             meta_content = unicodify(get_file_from_recipe_url(hit['url']).extractfile('info/about.json').read())
@@ -175,9 +175,11 @@ def mull_targets(
     repository_template=DEFAULT_REPOSITORY_TEMPLATE, dry_run=False,
     conda_version=None, verbose=False, binds=DEFAULT_BINDS, rebuild=True,
     oauth_token=None, hash_func="v2", singularity=False,
-    singularity_image_dir="singularity_import",
+    singularity_image_dir="singularity_import", base_image=None,
 ):
-    if DEST_BASE_IMAGE:
+    if base_image:
+        dest_base_image = base_image
+    elif DEST_BASE_IMAGE:
         dest_base_image = DEST_BASE_IMAGE
     else:
         dest_base_image = DEFAULT_EXTENDED_BASE_IMAGE if any_target_requires_extended_base(targets) else DEST_BASE_IMAGE
