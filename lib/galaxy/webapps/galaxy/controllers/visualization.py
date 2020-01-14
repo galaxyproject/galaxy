@@ -11,7 +11,14 @@ from paste.httpexceptions import (
     HTTPNotFound
 )
 from six import string_types
-from sqlalchemy import and_, desc, false, or_, true, text
+from sqlalchemy import (
+    and_,
+    desc,
+    false,
+    or_,
+    text,
+    true,
+)
 from sqlalchemy.orm import eagerload, undefer
 
 from galaxy import managers, model, util, web
