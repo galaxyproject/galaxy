@@ -48,6 +48,7 @@ from ..conda_compat import MetaData
 log = logging.getLogger(__name__)
 
 DIRNAME = os.path.dirname(__file__)
+DEFAULT_BASE_IMAGE = "bgruening/busybox-bash:0.1"
 DEFAULT_EXTENDED_BASE_IMAGE = "bioconda/extended-base-image:latest"
 DEFAULT_CHANNELS = ["conda-forge", "bioconda"]
 DEFAULT_REPOSITORY_TEMPLATE = "quay.io/${namespace}/${image}"
@@ -59,7 +60,7 @@ DEST_BASE_IMAGE = os.environ.get('DEST_BASE_IMAGE', None)
 CONDA_IMAGE = os.environ.get('CONDA_IMAGE', None)
 
 SINGULARITY_TEMPLATE = """Bootstrap: docker
-From: bgruening/busybox-bash:0.1
+From: %(base_image)s
 
 %%setup
 
@@ -271,7 +272,7 @@ def mull_targets(
             if not os.path.exists(singularity_image_dir):
                 safe_makedirs(singularity_image_dir)
             with open(os.path.join(singularity_image_dir, 'Singularity.def'), 'w+') as sin_def:
-                fill_template = SINGULARITY_TEMPLATE % {'container_test': test}
+                fill_template = SINGULARITY_TEMPLATE % {'container_test': test, 'base_image': dest_base_image or DEFAULT_BASE_IMAGE}
                 sin_def.write(fill_template)
         with PrintProgress():
             ret = involucro_context.exec_command(involucro_args)
