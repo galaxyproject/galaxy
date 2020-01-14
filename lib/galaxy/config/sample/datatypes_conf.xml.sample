@@ -228,6 +228,8 @@
     <datatype extension="directory" type="galaxy.datatypes.data:Directory">
     </datatype>
     <!-- Proteomics Datatypes -->
+    <datatype extension="mrm" type="galaxy.datatypes.tabular:Tabular" subclass="true"/>
+    <datatype extension="dta" type="galaxy.datatypes.proteomics:Dta" display_in_upload="true" />
     <datatype extension="dta" type="galaxy.datatypes.proteomics:Dta" display_in_upload="true" />
     <datatype extension="dta2d" type="galaxy.datatypes.proteomics:Dta2d" display_in_upload="true" />
     <datatype extension="edta" type="galaxy.datatypes.proteomics:Edta" display_in_upload="true" />
