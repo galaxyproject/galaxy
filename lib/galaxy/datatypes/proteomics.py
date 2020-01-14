@@ -239,10 +239,8 @@ class Dta2d(TabularData):
     Example: '#MZ MIN INT'
     The peaks of one retention time have to be in subsequent lines.
 
-    Note: sniffer detects
-        - tab separated with correct header and
-        - all space separated variants w/wo correct header
-        Since tab separated wo header would probably cover to much
+    Note: sniffer detects (tab or space separated) dta2d files with correct
+    header, wo header seems to generic
     """
     file_ext = "dta2d"
     comment_lines = 0
@@ -314,7 +312,7 @@ class Dta2d(TabularData):
                     return False
             elif not self._parse_dataline(line):
                 return False
-        if sep is None or (sep == '\t' and header is None):
+        if sep is None or header is None:
             return False
         return True
 
@@ -334,6 +332,8 @@ class Edta(TabularData):
        quadruplets describe the sub-features. This variant is discerned from
        variant #2 by the name of the fifth column, which is required to be RT1
        (or rt1). All other column names for sub-features are faithfully ignored.
+
+    Note the sniffer only detects files with header.
     """
     file_ext = "edta"
     comment_lines = 0
@@ -359,7 +359,7 @@ class Edta(TabularData):
             if line[0] == "rt" and line[1] == "mz" and (line[2] == "int" or line[2] == "intensity"):
                 return 1
             else:
-                return 0
+                return None
         if line[0] != "rt" or line[1] != "mz" or (line[2] != "int" and line[2] != "intensity") or line[3] != "charge":
             return None
         if not line[4].startswith("rt"):
@@ -447,7 +447,7 @@ class Edta(TabularData):
                     return False
             elif not self._parse_dataline(line, tpe):
                 return False
-        if tpe is None or (tpe == 0 and sep == '\t'):
+        if tpe is None:
             return False
         return True
 
