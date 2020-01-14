@@ -97,7 +97,7 @@
                 <strong>
                     <a @click.prevent="useRouter" :href="adminManageMetadata">Manage Metadata</a>
                 </strong>
-                 - Select on which repositories you want to reset metadata.
+                - Select on which repositories you want to reset metadata.
             </li>
             <li>
                 <strong>
