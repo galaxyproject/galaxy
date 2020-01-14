@@ -170,9 +170,6 @@ class CustosAuthnz(IdentityProvider):
         return sa_session.query(CustosAuthnzToken).filter_by(
             external_user_id=user_id, provider=provider).one_or_none()
 
-    def _get_current_user(self, trans):
-        return trans.user if trans.user else None
-
     def _create_user(self, sa_session, username, email):
         user = User(email=email, username=username)
         user.set_random_password()
