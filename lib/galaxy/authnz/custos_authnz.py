@@ -157,7 +157,7 @@ class CustosAuthnz(IdentityProvider):
             external_user_id=user_id, provider=provider).one_or_none()
 
     def _create_user(self, sa_session, username, email):
-        if sa_session.query(User).filter(User.table.c.email == email).first():
+        if sa_session.query(User).filter_by(email == email).first():
             raise Exception("User with this email '%s' already exists." % email)
         user = User(email=email, username=username)
         user.set_random_password()
