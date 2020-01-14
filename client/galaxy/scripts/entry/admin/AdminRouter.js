@@ -59,11 +59,8 @@ export const getAdminRouter = (Galaxy, options) => {
 
         show_home: function() {
             this._display_vue_helper(AdminHome, {
-                propsData: {
-                    installingRepositoryIds: options.settings.installing_repository_ids,
-                    isRepoInstalled: options.settings.is_repo_installed,
-                    isToolShedInstalled: options.settings.is_tool_shed_installed
-                }
+                isRepoInstalled: options.settings.is_repo_installed,
+                isToolShedInstalled: options.settings.is_tool_shed_installed
             });
         },
 
@@ -73,12 +70,10 @@ export const getAdminRouter = (Galaxy, options) => {
 
         show_users_create: function() {
             this._display_vue_helper(Register, {
-                propsData: {
-                    redirect: "/admin/users",
-                    registration_warning_message: options.config.registration_warning_message,
-                    mailing_join_addr: options.config.mailing_join_addr,
-                    server_mail_configured: options.config.server_mail_configured
-                }
+                redirect: "/admin/users",
+                registration_warning_message: options.config.registration_warning_message,
+                mailing_join_addr: options.config.mailing_join_addr,
+                server_mail_configured: options.config.server_mail_configured
             });
         },
 
@@ -112,11 +107,11 @@ export const getAdminRouter = (Galaxy, options) => {
             );
         },
 
-        _display_vue_helper: function(component, props) {
+        _display_vue_helper: function(component, propsData = {}) {
             const instance = Vue.extend(component);
-            const vm = document.createElement("div");
-            this.page.display(vm);
-            new instance({ store, props }).$mount(vm);
+            const container = document.createElement("div");
+            this.page.display(container);
+            new instance({ store, propsData }).$mount(container);
         },
 
         show_data_tables: function() {
