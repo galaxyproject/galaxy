@@ -5690,6 +5690,8 @@ class UserAuthnzToken(UserMixin, RepresentById):
     def create_user(cls, *args, **kwargs):
         model = cls.user_model()
         instance = model(*args, **kwargs)
+        if cls.get_users_by_email(instance.email).first():
+            raise Exception("User with this email '%s' already exists." % instance.email)
         instance.set_random_password()
         cls.sa_session.add(instance)
         cls.sa_session.flush()

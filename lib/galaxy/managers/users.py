@@ -95,11 +95,8 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         user = self.model_class(email=email)
         user.set_password_cleartext(password)
         user.username = username
-        if self.app.config.user_activation_on:
-            user.active = False
-        else:
-            # Activation is off, every new user is active by default.
-            user.active = True
+        # Activation is off, every new user is active by default.
+        user.active = not self.app.config.user_activation_on
         self.session().add(user)
         try:
             self.session().flush()
