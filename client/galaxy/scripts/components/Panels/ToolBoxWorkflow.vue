@@ -116,7 +116,7 @@ export default {
             this.workflowGlobals.app.add_node_for_subworkflow(workflow.latest_id, workflow.name);
         },
         onInsertWorkflowSteps(workflow) {
-            this.workflowGlobals.app.copy_into_workflow(workflow.latest_id);
+            this.workflowGlobals.app.copy_into_workflow(workflow.id);
         }
     }
 };
