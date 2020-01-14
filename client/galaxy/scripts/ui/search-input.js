@@ -119,8 +119,8 @@ function searchInput(parentNode, options) {
             .tooltip({ placement: "bottom" })
             .click(function(event) {
             	if (options.advsearchlink) {
-						window.open(options.advsearchlink);
-					}
+                   window.open(options.advsearchlink);
+               }
             });
     }
 
