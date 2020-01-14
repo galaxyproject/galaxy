@@ -16,7 +16,16 @@
                                 {{ el.text }}
                             </span>
                         </div>
-                        <tool v-else :tool="el" :key="key" :show-name="showName" @onClick="onClick" />
+                        <tool
+                            v-else
+                            :tool="el"
+                            :key="key"
+                            :hideName="hideName"
+                            :operationTitle="operationTitle"
+                            :operationIcon="operationIcon"
+                            @onOperation="onOperation"
+                            @onClick="onClick"
+                        />
                     </template>
                 </div>
             </transition>
@@ -27,7 +36,16 @@
                     {{ category.text }}
                 </span>
             </div>
-            <tool v-else :tool="category" :no-section="true" :show-name="showName" @onClick="onClick" />
+            <tool
+                v-else
+                :tool="category"
+                :noSection="true"
+                :hideName="hideName"
+                :operationTitle="operationTitle"
+                :operationIcon="operationIcon"
+                @onOperation="onOperation"
+                @onClick="onClick"
+            />
         </div>
     </div>
 </template>
@@ -51,9 +69,14 @@ export default {
         isFilterable: {
             type: Boolean
         },
-        showName: {
-            type: Boolean,
-            default: true
+        hideName: {
+            type: Boolean
+        },
+        operationTitle: {
+            type: String
+        },
+        operationIcon: {
+            type: String
         }
     },
     computed: {
@@ -67,6 +90,9 @@ export default {
     methods: {
         onClick(e, tool) {
             this.$emit("onClick", e, tool);
+        },
+        onOperation(e, tool) {
+            this.$emit("onOperation", e, tool);
         },
         toggleMenu(e) {
             this.opened = !this.opened;

@@ -1,7 +1,7 @@
 <template>
     <div :class="['toolTitle', rootClass]">
         <a v-if="tool.disabled" class="text-muted">
-            <span v-if="showName">{{ tool.name }}</span>
+            <span v-if="!hideName">{{ tool.name }}</span>
             {{ tool.description }}
         </a>
         <a @click="onClick" :href="tool.link" :target="tool.target" v-else>
@@ -14,8 +14,14 @@
                     {{ label }}
                 </span>
             </span>
-            <span v-if="showName" class="font-weight-bold">{{ tool.name }}</span>
+            <span v-if="!hideName" class="font-weight-bold">{{ tool.name }}</span>
             {{ tool.description }}
+            <span
+                v-b-tooltip.hover
+                :class="['float-right', operationIcon]"
+                :title="operationTitle"
+                @click.stop.prevent="onOperation"
+            />
         </a>
     </div>
 </template>
@@ -30,13 +36,17 @@ export default {
             type: Object,
             required: true
         },
-        noSection: {
-            type: Boolean,
-            default: false
+        operationTitle: {
+            type: String
         },
-        showName: {
-            type: Boolean,
-            default: true
+        operationIcon: {
+            type: String
+        },
+        noSection: {
+            type: Boolean
+        },
+        hideName: {
+            type: Boolean
         }
     },
     computed: {
@@ -48,6 +58,10 @@ export default {
         onClick(e) {
             ariaAlert(`${this.tool.name} selected from panel`);
             this.$emit("onClick", e, this.tool);
+        },
+        onOperation(e) {
+            ariaAlert(`${this.tool.name} operation selected from panel`);
+            this.$emit("onOperation", e, this.tool);
         }
     }
 };

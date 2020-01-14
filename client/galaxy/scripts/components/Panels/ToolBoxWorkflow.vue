@@ -13,7 +13,7 @@
             <div class="toolMenuContainer">
                 <tool-section
                     v-for="category in moduleSections"
-                    :showName="false"
+                    :hideName="true"
                     :category="category"
                     :isFiltered="isFiltered"
                     :key="category.name"
@@ -38,8 +38,11 @@
                 <tool-section
                     :category="workflowSection"
                     :key="workflowSection.name"
+                    operationIcon="fa fa-copy"
+                    operationTitle="Insert individual steps."
                     :isFiltered="isFiltered"
                     @onClick="onInsertWorkflow"
+                    @onOperation="onInsertWorkflowSteps"
                 />
             </div>
         </div>
@@ -111,7 +114,8 @@ export default {
         onInsertWorkflow(e, workflow) {
             e.preventDefault();
             this.workflowGlobals.app.add_node_for_subworkflow(workflow.id, workflow.name);
-        }
+        },
+        onInsertWorkflowSteps(e, workflow) {}
     }
 };
 </script>
