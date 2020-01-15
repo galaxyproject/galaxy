@@ -110,7 +110,7 @@ export default {
                         id: menuEntry.encoded_stored_workflow_id
                     };
                 })
-            ]
+            ];
         },
         setResults(results) {
             this.results = results;

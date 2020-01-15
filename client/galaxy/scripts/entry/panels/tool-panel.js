@@ -32,11 +32,14 @@ const ToolPanel = Backbone.View.extend({
 
     mountVueComponent: function(el) {
         const Galaxy = getGalaxyInstance();
-        return mountVueComponent(SidePanel)({
-            side: "left",
-            currentPanel: ToolBox,
-            currentPanelProperties: Galaxy.config
-        }, el);
+        return mountVueComponent(SidePanel)(
+            {
+                side: "left",
+                currentPanel: ToolBox,
+                currentPanelProperties: Galaxy.config
+            },
+            el
+        );
     },
 
     getVueComponent: function() {
