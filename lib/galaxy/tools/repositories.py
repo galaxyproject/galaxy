@@ -53,7 +53,7 @@ class ValidationContext(object):
         if not work_dir:
             work_dir = tempfile.mkdtemp()
             cleanup = True
-        tool_data_tables = ToolDataTableManager(work_dir)
+        tool_data_tables = ToolDataTableManager(work_dir, len_file_path=app.config.len_file_path)
         with ValidationContext(app_name=app.name,
                                security=app.security,
                                model=app.model,

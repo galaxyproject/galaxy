@@ -1,0 +1,17 @@
+<tool id="CONVERTER_interval_to_pairix" name="Convert Interval to Pairix" version="1.0.0">
+    <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+    <!-- Used on the metadata edit page. -->
+    <command><![CDATA[
+python '$__tool_directory__/interval_to_pairix_converter.py'
+'$input' '$output' $input.metadata.column_names
+    
+]]></command>
+    <inputs>
+        <param name="input" type="data" format="interval" label="Interval file"/>
+    </inputs>
+    <outputs>
+        <data name="output" format="pairix"/>
+    </outputs>
+    <help>
+    </help>
+</tool>

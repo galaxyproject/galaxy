@@ -85,6 +85,9 @@
       <converter file="interval_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
       <converter file="bed_gff_or_vcf_to_bigwig_converter.xml" target_datatype="bigwig"/>
     </datatype>
+    <datatype extension="pairix" type="galaxy.datatypes.interval:Pairix" display_in_upload="true">
+      <converter file="interval_to_pairix_converter.xml" target_datatype="pairix" depends_on="bgzip"/>
+    </datatype>
     <datatype extension="csv" type="galaxy.datatypes.tabular:CSV" display_in_upload="true">
       <converter file="csv_to_tabular.xml" target_datatype="tabular"/>
     </datatype>
@@ -173,6 +176,7 @@
       <converter file="interval_to_bgzip_converter.xml" target_datatype="bgzip"/>
       <converter file="interval_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
       <converter file="interval_to_bigwig_converter.xml" target_datatype="bigwig"/>
+      <converter file="interval_to_pairix_converter.xml" target_datatype="pairix" depends_on="bgzip"/>
       <!-- <display file="ucsc/interval_as_bed.xml" inherit="true" /> -->
       <display file="ensembl/ensembl_interval_as_bed.xml" inherit="true"/>
       <display file="gbrowse/gbrowse_interval_as_bed.xml" inherit="true"/>
@@ -346,6 +350,7 @@
     <datatype extension="gemini.sqlite" type="galaxy.datatypes.binary:GeminiSQLite" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="cuffdiff.sqlite" type="galaxy.datatypes.binary:CuffDiffSQlite" display_in_upload="true"/>
     <datatype extension="gafa.sqlite" type="galaxy.datatypes.binary:GAFASQLite" mimetype="application/octet-stream" display_in_upload="true"/>
+    <datatype extension="beddb.sqlite" type="galaxy.datatypes.binary:BedDBSQLite" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="txt" type="galaxy.datatypes.data:Text" display_in_upload="true" description="Any text file." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Plain_text"/>
     <datatype extension="linecount" type="galaxy.datatypes.data:LineCount" display_in_upload="false"/>
     <datatype extension="memepsp" type="galaxy.datatypes.sequence:MemePsp" display_in_upload="true" description="The MEME Position Specific Priors (PSP) format includes the name of the sequence for which a prior distribution corresponds." description_url="http://meme-suite.org/doc/psp-format.html"/>
@@ -792,6 +797,7 @@
     <sniffer type="galaxy.datatypes.binary:BlibSQlite"/>
     <sniffer type="galaxy.datatypes.binary:CuffDiffSQlite"/>
     <sniffer type="galaxy.datatypes.binary:GAFASQLite"/>
+    <sniffer type="galaxy.datatypes.binary:BedDBSQLite"/>
     <sniffer type="galaxy.datatypes.binary:SQlite"/>
     <sniffer type="galaxy.datatypes.binary:Cool"/>
     <sniffer type="galaxy.datatypes.binary:MCool"/>
@@ -884,6 +890,7 @@
     <sniffer type="galaxy.datatypes.interval:Gff"/>
     <sniffer type="galaxy.datatypes.interval:Gff3"/>
     <sniffer type="galaxy.datatypes.tabular:Pileup"/>
+    <sniffer type="galaxy.datatypes.interval:Pairix"/>
     <sniffer type="galaxy.datatypes.interval:Interval"/>
     <sniffer type="galaxy.datatypes.tabular:Sam"/>
     <sniffer type="galaxy.datatypes.data:Newick"/>

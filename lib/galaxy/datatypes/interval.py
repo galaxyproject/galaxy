@@ -5,7 +5,10 @@ import logging
 import math
 import sys
 import tempfile
+import binascii
+import subprocess
 
+import pypairix
 from bx.intervals.io import GenomicIntervalReader, ParseError
 from six.moves.urllib.parse import quote_plus
 
@@ -19,6 +22,7 @@ from galaxy.datatypes.sniff import (
     iter_headers
 )
 from galaxy.datatypes.tabular import Tabular
+from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.util.gff_util import parse_gff3_attributes, parse_gff_attributes
 from . import (
     data,
@@ -1445,6 +1449,115 @@ class ChromatinInteractions(Interval):
 
     def sniff(self, filename):
         return False
+
+
+class Pairix(Interval, Binary):
+    # A generic genomic coordinate pair bgz-compressed and indexed class
+    edam_format = "format_3016"
+    track_type = "Pairix"
+    file_ext = "pairix"
+    compressed = True
+    compressed_format = "gzip"
+
+    MetadataElement(name="pairix_index", desc="Pairix Index File", param=metadata.FileParameter, file_ext="px2", readonly=True, no_value=None, visible=False, optional=True)
+    MetadataElement(name="chrom2Col", default=0, desc="Chrom2 column", param=metadata.ColumnParameter)
+    MetadataElement(name="start2Col", default=0, desc="Start2 column", param=metadata.ColumnParameter)
+    MetadataElement(name="end2Col", default=0, desc="End2 column", param=metadata.ColumnParameter)
+
+    def display_peek(self, dataset):
+        """Returns formated html of peek"""
+        return self.make_html_table(dataset, skipchars=["#"], column_parameter_alias={'chromCol': 'Chrom', 'startCol': 'Start', 'endCol': 'End', 'strandCol': 'Strand', 'nameCol': 'Name'})
+
+    def sniff(self, filename):
+        # Check that the file is compressed with bgzip (not gzip), i.e. the
+        # compressed format is BGZF, as explained in
+        # http://samtools.github.io/hts-specs/SAMv1.pdf
+        with open(filename, 'rb') as fh:
+            fh.seek(-28, 2)
+            last28 = fh.read()
+            if binascii.hexlify(last28) != b'1f8b08040000000000ff0600424302001b0003000000000000000000':
+                return False
+        # Check that the file has the required column name line in the
+        # commented header
+        file_iterator = compression_utils.get_fileobj(filename)
+        columns = None
+        for line in file_iterator:
+            if len(line) == 0 or line[0] != '#':
+                break
+            line = line.rstrip('\n\r')
+            if line.startswith('#columns: '):
+                columns = line.lower().replace('chrom', 'chr').replace('chromosome','chr').replace('stop', 'end').split()[1:]
+                break
+        if columns is None:
+            return False
+        # Make sure that the required columns are listed
+        return (('chr' in columns or 'chr1' in columns)
+                & ('pos' in columns or 'pos1' in columns or 'start' in columns or 'start1' in columns)
+                & ('chr2' in columns)
+                & ('pos2' in columns or 'start2' in columns))
+
+    def sniff_prefix(self, file_prefix):
+        return self.sniff(file_prefix.filename)
+
+    def set_meta(self, dataset, **kwd):
+        """ Creates the index for the pairix file. """
+        # We need to know which columns correspond to the chromosome name,
+        # the start coordinate, and if a stop coordinate is present.
+        # In order to produce a pairx index, we need to look at the
+        # required header line "#columns:". The sniffer should already
+        # have ensured that this line is present.
+        Tabular.set_meta(self, dataset, skip=0)
+        file_iterator = compression_utils.get_fileobj(dataset.file_name)
+        sep_character = None
+        comment_lines = 0
+        for line in file_iterator:
+            if sep_character is not None:
+                break
+            elif len(line) > 0 and line[0] != '#':
+                fields = line.split()
+                if len(fields) > 1:
+                    sep_character = line.split(fields[1])[0].split(fields[0])[-1]
+            else:
+                comment_lines += 1
+                line = line.rstrip('\n\r')
+                if line.startswith('#columns: '):
+                    line = line.lower().replace('chrom', 'chr').replace('chromosome','chr').replace('stop', 'end')
+                    columns = line.split()[1:]
+        dataset.metadata.delimiter = sep_character
+        dataset.metadata.comment_lines = comment_lines
+        dataset.metadata.column_names = columns
+        dataset.metadata.columns = len(columns)
+        for i, name in enumerate(columns):
+            if name == 'chr' or name == 'chr1':
+                dataset.metadata.chromCol = i + 1
+            elif name == 'pos' or name == 'pos1':
+                dataset.metadata.startCol = i + 1
+                dataset.metadata.endCol = i + 1
+            elif name == 'start' or name == 'start1':
+                dataset.metadata.startCol = i + 1
+            elif name == 'end' or name == 'end1':
+                dataset.metadata.endCol = i + 1
+            elif name == 'chr2':
+                dataset.metadata.chrom2Col = i + 1
+            elif name == 'pos2':
+                dataset.metadata.start2Col = i + 1
+                dataset.metadata.end2Col = i + 1
+            elif name == 'start2':
+                dataset.metadata.start2Col = i + 1
+            elif name == 'end2':
+                dataset.metadata.end2Col = i + 1
+        index_file = dataset.metadata.pairix_index
+        if not index_file:
+            index_file = dataset.metadata.spec['pairix_index'].param.new_file(dataset=dataset)
+        try:
+            pypairix.build_index(dataset.file_name, sc=dataset.metadata.chromCol, bc=dataset.metadata.startCol,
+                                 ec=dataset.metadata.endCol, sc2=dataset.metadata.chrom2Col,
+                                 bc2=dataset.metadata.start2Col, ec2=dataset.metadata.end2Col,
+                                 delimiter=dataset.metadata.delimiter, force=1)
+            subprocess.Popen(['mv', '%s.px2' % dataset.file_name, index_file.file_name])
+        except Exception as e:
+            raise Exception('Error creating pairix index: %s' % (str(e)))
+        dataset.metadata.pairix_index = index_file
 
 
 @build_sniff_from_prefix

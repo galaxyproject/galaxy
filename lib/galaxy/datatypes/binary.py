@@ -227,6 +227,10 @@ class Bz2DynamicCompressedArchive(DynamicCompressedArchive):
     compressed_format = "bz2"
 
 
+class BgzDynamicCompressedArchive(DynamicCompressedArchive):
+    compressed_format = "bgzip"
+
+
 class CompressedZipArchive(CompressedArchive):
     """
         Class describing an compressed binary file
@@ -1740,6 +1744,39 @@ class GAFASQLite(SQlite):
         if super(IdpDB, self).sniff(filename):
             table_names = frozenset(['gene', 'gene_family', 'gene_family_member', 'meta', 'transcript'])
             return self.sniff_table_names(filename, table_names)
+        return False
+
+
+class BedDBSQLite(SQlite):
+    """Class describing a Multivec SQLite database"""
+    MetadataElement(name='beddb_schema_version', default='0.10.8', param=MetadataParameter, desc='BedDB schema version',
+                    readonly=True, visible=True, no_value='0.10.8')
+    file_ext = 'beddb.sqlite'
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        super(BedDBSQLite, self).set_meta(dataset, overwrite=overwrite, **kwd)
+        try:
+            conn = sqlite.connect(dataset.file_name)
+            c = conn.cursor()
+            version_query = 'SELECT version FROM meta'
+            results = c.execute(version_query).fetchall()
+            if len(results) == 0:
+                raise Exception('version not found in meta table')
+            elif len(results) > 1:
+                raise Exception('Multiple versions found in meta table')
+            dataset.metadata.gafa_schema_version = results[0][0]
+        except Exception as e:
+            log.warning("%s, set_meta Exception: %s", self, e)
+
+    def sniff(self, filename):
+        if super(BedDBSQLite, self).sniff(filename):
+            beddb_table_names = frozenset(['intervals', 'position_index', 'position_index_node', 'position_index_parent', 'position_index_rowid', 'tileset_info'])
+            conn = sqlite.connect(filename)
+            c = conn.cursor()
+            tables_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+            results = c.execute(tables_query).fetchall()
+            found_table_names = frozenset(_[0] for _ in results)
+            return beddb_table_names <= found_table_names
         return False
 
 

@@ -67,7 +67,7 @@ class ToolDataPathFiles(object):
 class ToolDataTableManager(object):
     """Manages a collection of tool data tables"""
 
-    def __init__(self, tool_data_path, config_filename=None, tool_data_table_config_path_set=None):
+    def __init__(self, tool_data_path, config_filename=None, tool_data_table_config_path_set=None, len_file_path=None):
         self.tool_data_path = tool_data_path
         # This stores all defined data table entries from both the tool_data_table_conf.xml file and the shed_tool_data_table_conf.xml file
         # at server startup. If tool shed repositories are installed that contain a valid file named tool_data_table_conf.xml.sample, entries
@@ -78,6 +78,7 @@ class ToolDataTableManager(object):
             if not single_config_filename:
                 continue
             self.load_from_config_file(single_config_filename, self.tool_data_path, from_shed_config=False)
+            self.load_length_table(len_file_path, self.tool_data_path, single_config_filename)
 
     def __getitem__(self, key):
         return self.data_tables.__getitem__(key)
@@ -235,6 +236,14 @@ class ToolDataTableManager(object):
                 table_names.add(name)
         return list(table_names)
 
+    def load_length_table(self, path, tool_data_path, config_filename):
+        """Load a table of chromosome lengths from length files and using FASTA table for full names"""
+        if path is None:
+            return None
+        xml_string = "<table name='chrom_length' commen_char='#' allow_duplicate_entries='False'><columns>value, dbkey, name, path</columns><file path='%s'/></table>" % path
+        table_elem = util.parse_xml_string(xml_string)
+        table = LengthToolDataTable(table_elem, tool_data_path, from_shed_config=False, filename=config_filename, tool_data_path_files=self.tool_data_path_files, data_tables=self.data_tables)
+        self.data_tables['chrom_length'] = table
 
 class ToolDataTable(object):
 
@@ -783,6 +792,43 @@ class TabularToolDataField(Dictifiable):
         rval['files'] = self.get_filesize_map(True)
         rval['fingerprint'] = self.get_fingerprint()
         return rval
+
+
+class LengthToolDataTable(TabularToolDataTable, Dictifiable):
+    table_names = ['all_fasta']
+
+    def __init__(self, config_element, tool_data_path, from_shed_config=False, filename=None, tool_data_path_files=None, data_tables=None):
+        super(TabularToolDataTable, self).__init__(config_element, tool_data_path, from_shed_config, filename, tool_data_path_files)
+        self.config_element = config_element
+        self.data = []
+        self.configure_and_load(config_element, tool_data_path, from_shed_config, data_tables=data_tables)
+
+    def configure_and_load(self, config_element, tool_data_path, from_shed_config=False, url_timeout=10, data_tables=None):
+        """
+        Configure and load table from an XML element.
+        """
+        self.separator = config_element.get('separator', '\t')
+        self.comment_char = config_element.get('comment_char', '#')
+        # Configure columns
+        self.parse_column_spec(config_element)
+
+        # Read every file
+        for file_element in config_element.findall('file'):
+            tmp_file = None
+            path = file_element.get('path', None)
+            if path is not None:
+                filenames = glob("%s/*" % path)
+                for filename in filenames:
+                    dbkey = filename.split('/')[-1].split('.')[0]
+                    name = None
+                    if data_tables is not None:
+                        for table_name in self.table_names:
+                            name = data_tables[table_name].get_entry('dbkey', dbkey, 'name')
+                            if name is not None:
+                                value = data_tables[table_name].get_entry('dbkey', dbkey, 'value')
+                                break
+                    if name is not None:
+                        self.data.append([value, dbkey, name, filename])
 
 
 def expand_here_template(content, here=None):
