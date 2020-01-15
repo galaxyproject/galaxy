@@ -8,12 +8,14 @@ describe("Tool", () => {
                 tool: {}
             }
         });
-        const labelsElement = wrapper.find(".labels");
-        const operationElement = wrapper.find(".operation");
         const nameElement = wrapper.findAll(".name");
-        expect(labelsElement.children).to.equal(undefined);
-        expect(operationElement.classes()).to.include("operation");
         expect(nameElement.at(0).text()).to.equal("");
+        nameElement.trigger("click");
+        expect(wrapper.emitted().onClick).to.not.be.undefined;
+        const labelsElement = wrapper.find(".labels");
+        expect(labelsElement.children).to.equal(undefined);
+        const operationElement = wrapper.find(".operation");
+        expect(operationElement.classes()).to.include("operation");
         operationElement.trigger("click");
         expect(wrapper.emitted().onOperation).to.not.be.undefined;
     });
