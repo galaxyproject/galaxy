@@ -88,9 +88,12 @@ class CustosAuthnz(IdentityProvider):
         # Create or update custos_authnz_token record
         custos_authnz_token = self._get_custos_authnz_token(trans.sa_session, user_id, self.config['provider'])
         if custos_authnz_token is None:
-            user = self._get_current_user(trans)
-            if not user:
-                user = self._create_user(trans.sa_session, username, email)
+            if not trans.user:
+                existing_user = trans.sa_session.query(User).filter_by(email=email).first()
+                if existing_user:
+                    raise Exception("There already exists a user with email %s.  To associate this external login, you must first be logged in as that existing account." % email)
+                else:
+                    user = self._create_user(trans.sa_session, username, email)
             custos_authnz_token = CustosAuthnzToken(user=user,
                                    external_user_id=user_id,
                                    provider=self.config['provider'],
