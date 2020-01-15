@@ -3,7 +3,7 @@
         <div v-if="hasElements">
             <div class="toolSectionTitle">
                 <a @click="toggleMenu" href="javascript:void(0)" role="button">
-                    <span>
+                    <span class="name">
                         {{ this.name }}
                     </span>
                 </a>
@@ -11,11 +11,9 @@
             <transition name="slide">
                 <div v-if="opened">
                     <template v-for="[key, el] in category.elems.entries()">
-                        <div v-if="el.text" class="toolPanelLabel ml-2" :key="key">
-                            <span>
-                                {{ el.text }}
-                            </span>
-                        </div>
+                        <span v-if="el.text" class="label toolPanelLabel ml-2" :key="key">
+                            {{ el.text }}
+                        </span>
                         <tool
                             v-else
                             class="ml-2"
@@ -32,11 +30,9 @@
             </transition>
         </div>
         <div v-else>
-            <div v-if="category.text" class="toolPanelLabel">
-                <span>
-                    {{ category.text }}
-                </span>
-            </div>
+            <span v-if="category.text" class="label toolPanelLabel">
+                {{ category.text }}
+            </span>
             <tool
                 v-else
                 :tool="category"
@@ -51,7 +47,7 @@
 </template>
 
 <script>
-import Tool from "./Tool.vue";
+import Tool from "./Tool";
 import ariaAlert from "utils/ariaAlert";
 
 export default {
