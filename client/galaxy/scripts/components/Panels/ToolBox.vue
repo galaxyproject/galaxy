@@ -29,7 +29,7 @@
                 </div>
                 <div id="internal-workflows" class="toolSectionBody">
                     <div class="toolSectionBg" />
-                    <div class="toolTitle" v-for="workflow in workflows" :key="workflow.id">
+                    <div class="toolTitle" v-for="workflow in this.workflows" :key="workflow.id">
                         <a :href="workflow.href">
                             {{ workflow.title }}
                         </a>
@@ -47,6 +47,8 @@ import UploadButton from "./Buttons/UploadButton";
 import FavoritesButton from "./Buttons/FavoritesButton";
 import { filterToolSections, getToolSections } from "./utilities.js";
 import { getGalaxyInstance } from "app";
+import { getAppRoot } from "onload";
+import _l from "utils/localization";
 
 export default {
     name: "ToolBox",
@@ -58,7 +60,8 @@ export default {
     },
     data() {
         return {
-            results: null
+            results: null,
+            workflow: null
         };
     },
     props: {
@@ -67,9 +70,6 @@ export default {
         },
         workflowsTitle: {
             type: String
-        },
-        workflows: {
-            type: Array
         }
     },
     computed: {
@@ -86,9 +86,27 @@ export default {
     },
     created() {
         const Galaxy = getGalaxyInstance();
+        this.workflows = this.getWorkflows(Galaxy.config);
         this.toolsLayout = getToolSections(Galaxy.config.toolbox);
     },
     methods: {
+        getWorkflows(options) {
+            const storedWorkflowMenuEntries = options.stored_workflow_menu_entries || [];
+            return [
+                {
+                    title: _l("All workflows"),
+                    href: `${getAppRoot()}workflows/list`,
+                    id: "list"
+                },
+                ...storedWorkflowMenuEntries.map(menuEntry => {
+                    return {
+                        title: menuEntry.stored_workflow.name,
+                        href: `${getAppRoot()}workflows/run?id=${menuEntry.encoded_stored_workflow_id}`,
+                        id: menuEntry.encoded_stored_workflow_id
+                    };
+                })
+            ]
+        },
         setResults(results) {
             this.results = results;
         },

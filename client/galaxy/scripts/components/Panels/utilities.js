@@ -3,39 +3,24 @@ import _l from "utils/localization";
 import { getAppRoot } from "onload";
 
 export function getPanelProps(panelComponent, options = {}) {
-    const storedWorkflowMenuEntries = options.stored_workflow_menu_entries || [];
     return {
         side: "left",
         currentPanel: panelComponent,
         currentPanelProperties: {
             appRoot: getAppRoot(),
             toolsTitle: _l("Tools"),
-            workflowGlobals: options.workflow_globals,
             toolbox: options.toolbox,
+            workflowsTitle: _l("Workflows"),
+            workflowGlobals: options.workflow_globals,
             moduleSections: options.module_sections,
             dataManagers: {
                 name: _l("Data Managers"),
                 elems: options.data_managers
             },
-            workflowsTitle: _l("Workflows"),
             workflowSection: {
                 name: _l("Workflows"),
                 elems: options.workflows
-            },
-            workflows: [
-                {
-                    title: _l("All workflows"),
-                    href: `${getAppRoot()}workflows/list`,
-                    id: "list"
-                },
-                ...storedWorkflowMenuEntries.map(menuEntry => {
-                    return {
-                        title: menuEntry["stored_workflow"]["name"],
-                        href: `${getAppRoot()}workflows/run?id=${menuEntry["encoded_stored_workflow_id"]}`,
-                        id: menuEntry["encoded_stored_workflow_id"]
-                    };
-                })
-            ]
+            }
         }
     };
 }
