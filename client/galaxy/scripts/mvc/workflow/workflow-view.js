@@ -354,12 +354,6 @@ export default Backbone.View.extend({
             }
         };
 
-        if (this.options.workflows.length > 0) {
-            $("#left")
-                .find(".toolMenu")
-                .append(this._buildToolPanelWorkflows());
-        }
-
         // Tool menu
         $("div.toolSectionBody").hide();
         $("div.toolSectionTitle > span").wrap("<a href='javascript:void(0)' role='button'></a>");
@@ -398,65 +392,30 @@ export default Backbone.View.extend({
         );
     },
 
-    _buildToolPanelWorkflows: function() {
-        var self = this;
-        var $section = $(
-            '<div class="toolSectionWrapper">' +
-                '<div class="toolSectionTitle">' +
-                '<a href="javascript:void(0)" role="button"><span>Workflows</span></a>' +
-                "</div>" +
-                '<div class="toolSectionBody">' +
-                '<div class="toolSectionBg"/>' +
-                "</div>" +
-                "</div>"
-        );
-        _.each(this.options.workflows, workflow => {
-            if (workflow.id !== self.options.id) {
-                var copy = new Ui.Button({
-                    icon: "fa fa-copy",
-                    cls: "ui-button-icon-plain",
-                    tooltip: _l("Copy and insert individual steps"),
-                    onclick: function() {
-                        const Galaxy = getGalaxyInstance();
-                        if (workflow.step_count < 2) {
-                            self.copy_into_workflow(workflow.id, workflow.name);
-                        } else {
-                            // don't ruin the workflow by adding 50 steps unprompted.
-                            Galaxy.modal.show({
-                                title: _l("Warning"),
-                                body: `This will copy ${workflow.step_count} new steps into your workflow.`,
-                                buttons: {
-                                    Cancel: function() {
-                                        Galaxy.modal.hide();
-                                    },
-                                    Copy: function() {
-                                        Galaxy.modal.hide();
-                                        self.copy_into_workflow(workflow.id, workflow.name);
-                                    }
-                                }
-                            });
-                        }
+    copy_into_workflow: function(id, stepCount=0) {
+        const Galaxy = getGalaxyInstance();
+        if (stepCount < 2) {
+            this._copy_into_workflow_ajax(id);
+        } else {
+            // don't ruin the workflow by adding 50 steps unprompted.
+            var self = this;
+            Galaxy.modal.show({
+                title: _l("Warning"),
+                body: `This will copy ${stepCount} new steps into your workflow.`,
+                buttons: {
+                    Cancel: function() {
+                        Galaxy.modal.hide();
+                    },
+                    Copy: function() {
+                        Galaxy.modal.hide();
+                        self._copy_into_workflow_ajax(id);
                     }
-                });
-                var $add = $("<a/>")
-                    .attr("href", "javascript:void(0)")
-                    .attr("role", "button")
-                    .html(workflow.name)
-                    .on("click", () => {
-                        self.add_node_for_subworkflow(workflow.latest_id, workflow.name);
-                    });
-                $section.find(".toolSectionBg").append(
-                    $("<div/>")
-                        .addClass("toolTitle")
-                        .append($add)
-                        .append(copy.$el)
-                );
-            }
-        });
-        return $section;
+                }
+            });
+        }
     },
 
-    copy_into_workflow: function(workflowId) {
+    _copy_into_workflow_ajax: function(workflowId) {
         // Load workflow definition
         var self = this;
         this._workflowLoadAjax(workflowId, null, {
