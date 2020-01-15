@@ -392,7 +392,7 @@ export default Backbone.View.extend({
         );
     },
 
-    copy_into_workflow: function(id, stepCount=0) {
+    copy_into_workflow: function(id, stepCount = 0) {
         const Galaxy = getGalaxyInstance();
         if (stepCount < 2) {
             this._copy_into_workflow_ajax(id);
