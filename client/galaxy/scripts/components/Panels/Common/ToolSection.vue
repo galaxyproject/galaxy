@@ -107,11 +107,7 @@ export default {
     },
     watch: {
         isFiltered(state) {
-            if (!this.isFilterable && this.isFiltered) {
-                this.opened = false;
-            } else {
-                this.opened = !!state;
-            }
+            this.opened = this.isFilterable && !!state;
         }
     }
 };
