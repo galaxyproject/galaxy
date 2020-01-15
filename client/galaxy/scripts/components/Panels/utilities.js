@@ -1,29 +1,4 @@
 import _ from "underscore";
-import _l from "utils/localization";
-import { getAppRoot } from "onload";
-
-export function getPanelProps(panelComponent, options = {}) {
-    return {
-        side: "left",
-        currentPanel: panelComponent,
-        currentPanelProperties: {
-            appRoot: getAppRoot(),
-            toolsTitle: _l("Tools"),
-            toolbox: options.toolbox,
-            workflowsTitle: _l("Workflows"),
-            workflowGlobals: options.workflow_globals,
-            moduleSections: options.module_sections,
-            dataManagers: {
-                name: _l("Data Managers"),
-                elems: options.data_managers
-            },
-            workflowSection: {
-                name: _l("Workflows"),
-                elems: options.workflows
-            }
-        }
-    };
-}
 
 // create tool search, tool panel, and tool panel view.
 export function getToolSections(toolbox, disabledCaller) {

@@ -50,6 +50,7 @@
 </template>
 
 <script>
+import _l from "utils/localization";
 import ToolSection from "./common/ToolSection";
 import ToolSearch from "./common/ToolSearch";
 import { filterToolSections, getToolSections } from "./utilities.js";
@@ -67,13 +68,12 @@ export default {
     },
     props: {
         toolbox: {
-            type: Array
-        },
-        toolSearch: {
-            type: Object
+            type: Array,
+            required: true
         },
         workflowsTitle: {
-            type: String
+            type: String,
+            default: _l("Workflows")
         },
         workflowSection: {
             type: Object

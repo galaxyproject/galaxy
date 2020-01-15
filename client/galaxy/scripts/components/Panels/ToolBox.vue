@@ -65,11 +65,17 @@ export default {
         };
     },
     props: {
-        toolSearch: {
-            type: Object
+        toolbox: {
+            type: Array,
+            required: true
+        },
+        stored_workflow_menu_entries: {
+            type: Array,
+            required: true
         },
         workflowsTitle: {
-            type: String
+            type: String,
+            default: _l("Workflows")
         }
     },
     computed: {
@@ -85,13 +91,12 @@ export default {
         }
     },
     created() {
-        const Galaxy = getGalaxyInstance();
-        this.workflows = this.getWorkflows(Galaxy.config);
-        this.toolsLayout = getToolSections(Galaxy.config.toolbox);
+        this.workflows = this.getWorkflows(this.stored_workflow_menu_entries);
+        this.toolsLayout = getToolSections(this.toolbox);
     },
     methods: {
-        getWorkflows(options) {
-            const storedWorkflowMenuEntries = options.stored_workflow_menu_entries || [];
+        getWorkflows(stored_workflow_menu_entries) {
+            const storedWorkflowMenuEntries = stored_workflow_menu_entries || [];
             return [
                 {
                     title: _l("All workflows"),

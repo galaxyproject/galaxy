@@ -6,7 +6,6 @@ import { getAppRoot } from "onload";
 import Vue from "vue";
 import ToolBox from "../../components/Panels/ToolBox.vue";
 import SidePanel from "../../components/Panels/SidePanel.vue";
-import { getPanelProps } from "../../components/Panels/utilities.js";
 import { mountVueComponent } from "../../utils/mountVueComponent";
 
 const ToolPanel = Backbone.View.extend({
@@ -33,14 +32,22 @@ const ToolPanel = Backbone.View.extend({
 
     mountVueComponent: function(el) {
         const Galaxy = getGalaxyInstance();
-        return mountVueComponent(SidePanel)(getPanelProps(ToolBox, Galaxy.config), el);
+        return mountVueComponent(SidePanel)({
+            side: "left",
+            currentPanel: ToolBox,
+            currentPanelProperties: Galaxy.config
+        }, el);
     },
 
     getVueComponent: function() {
         const Galaxy = getGalaxyInstance();
         const SidePanelClass = Vue.extend(SidePanel);
         return new SidePanelClass({
-            propsData: getPanelProps(ToolBox, Galaxy.config)
+            propsData: {
+                side: "left",
+                currentPanel: ToolBox,
+                currentPanelProperties: Galaxy.config
+            }
         });
     },
 
