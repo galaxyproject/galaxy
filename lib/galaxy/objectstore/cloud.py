@@ -20,7 +20,7 @@ from galaxy.util import (
 )
 from galaxy.util.sleeper import Sleeper
 from .s3 import parse_config_xml
-from ..objectstore import convert_bytes, ObjectStore
+from ..objectstore import ConcreteObjectStore, convert_bytes
 try:
     from cloudbridge.factory import CloudProviderFactory, ProviderList
     from cloudbridge.interfaces.exceptions import InvalidNameException
@@ -60,7 +60,7 @@ class CloudConfigMixin(object):
         }
 
 
-class Cloud(ObjectStore, CloudConfigMixin):
+class Cloud(ConcreteObjectStore, CloudConfigMixin):
     """
     Object store that stores objects as items in an cloud storage. A local
     cache exists that is used as an intermediate location for files between
