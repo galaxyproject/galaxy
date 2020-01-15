@@ -88,21 +88,15 @@ export default {
         isUser() {
             const Galaxy = getGalaxyInstance();
             return !!(Galaxy.user && Galaxy.user.id);
-        }
-    },
-    created() {
-        this.workflows = this.getWorkflows(this.stored_workflow_menu_entries);
-    },
-    methods: {
-        getWorkflows(stored_workflow_menu_entries) {
-            const storedWorkflowMenuEntries = stored_workflow_menu_entries || [];
+        },
+        workflows() {
             return [
                 {
                     title: _l("All workflows"),
                     href: `${getAppRoot()}workflows/list`,
                     id: "list"
                 },
-                ...storedWorkflowMenuEntries.map(menuEntry => {
+                ...this.stored_workflow_menu_entries.map(menuEntry => {
                     return {
                         title: menuEntry.stored_workflow.name,
                         href: `${getAppRoot()}workflows/run?id=${menuEntry.encoded_stored_workflow_id}`,
@@ -110,7 +104,9 @@ export default {
                     };
                 })
             ];
-        },
+        }
+    },
+    methods: {
         setResults(results) {
             this.results = results;
         },

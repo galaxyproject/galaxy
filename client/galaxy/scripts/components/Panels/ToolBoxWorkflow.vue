@@ -93,18 +93,20 @@ export default {
         },
         isFiltered() {
             return !!this.results;
+        },
+        toolsLayout() {
+            return this.toolbox.map(section => {
+                return {
+                    ...section,
+                    elems:
+                        section.elems &&
+                        section.elems.map(el => {
+                            el.disabled = !el.is_workflow_compatible;
+                            return el;
+                        })
+                };
+            });
         }
-    },
-    created() {
-        this.toolsLayout = _.map(this.toolbox, section => {
-            return {
-                ...section,
-                elems: _.map(section.elems, el => {
-                    el.disabled = !el.is_workflow_compatible || el.hidden;
-                    return el;
-                })
-            }
-        });
     },
     methods: {
         setResults(results) {
