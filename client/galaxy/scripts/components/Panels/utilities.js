@@ -1,32 +1,18 @@
-import _ from "underscore";
-
 export function filterToolSections(layout, results) {
     if (results) {
-        return _.filter(
-            _.map(layout, category => {
-                return {
-                    ...category,
-                    elems: (filtered => {
-                        return _.filter(filtered, (el, i) => {
-                            if (el.text) {
-                                return filtered[i + 1] && !filtered[i + 1].text;
-                            } else {
-                                return true;
-                            }
-                        });
-                    })(
-                        _.filter(category.elems, el => {
-                            if (el.text) {
-                                return true;
-                            } else {
-                                return results.includes(el.id);
-                            }
-                        })
-                    )
-                };
-            }),
+        const filteredLayout = layout.map(category => {
+            return {
+                ...category,
+                elems: category.elems && category.elems.filter(el => {
+                    return !el.text && results.includes(el.id);
+                })
+            };
+        });
+        return filteredLayout.filter(
             category => {
-                return category.elems.length || (!category.text && results.includes(category.id));
+                const isSection = category.elems && category.elems.length > 0;
+                const isMatchedTool = !category.text && results.includes(category.id);
+                return isSection || isMatchedTool;
             }
         );
     } else {
