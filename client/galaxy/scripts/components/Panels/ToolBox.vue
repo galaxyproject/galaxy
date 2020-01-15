@@ -45,7 +45,7 @@ import ToolSection from "./common/ToolSection";
 import ToolSearch from "./common/ToolSearch";
 import UploadButton from "./Buttons/UploadButton";
 import FavoritesButton from "./Buttons/FavoritesButton";
-import { filterToolSections, getToolSections } from "./utilities.js";
+import { filterToolSections } from "./utilities.js";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
 import _l from "utils/localization";
@@ -80,7 +80,7 @@ export default {
     },
     computed: {
         categories() {
-            return filterToolSections(this.toolsLayout, this.results);
+            return filterToolSections(this.toolbox, this.results);
         },
         isFiltered() {
             return !!this.results;
@@ -92,7 +92,6 @@ export default {
     },
     created() {
         this.workflows = this.getWorkflows(this.stored_workflow_menu_entries);
-        this.toolsLayout = getToolSections(this.toolbox);
     },
     methods: {
         getWorkflows(stored_workflow_menu_entries) {

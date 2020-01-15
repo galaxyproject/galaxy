@@ -1,20 +1,5 @@
 import _ from "underscore";
 
-// create tool search, tool panel, and tool panel view.
-export function getToolSections(toolbox, disabledCaller) {
-    return _.map(toolbox, category => {
-        return {
-            ...category,
-            panel_type: getPanelType(category),
-            elems: _.map(category.elems, el => {
-                el.panel_type = getPanelType(el);
-                el.disabled = disabledCaller ? disabledCaller(el) : false;
-                return el;
-            })
-        };
-    });
-}
-
 export function filterToolSections(layout, results) {
     if (results) {
         return _.filter(
@@ -23,15 +8,15 @@ export function filterToolSections(layout, results) {
                     ...category,
                     elems: (filtered => {
                         return _.filter(filtered, (el, i) => {
-                            if (el.panel_type == "label") {
-                                return filtered[i + 1] && filtered[i + 1].panel_type == "tool";
+                            if (el.text) {
+                                return filtered[i + 1] && !filtered[i + 1].text;
                             } else {
                                 return true;
                             }
                         });
                     })(
                         _.filter(category.elems, el => {
-                            if (el.panel_type == "label") {
+                            if (el.text) {
                                 return true;
                             } else {
                                 return results.includes(el.id);
@@ -41,20 +26,10 @@ export function filterToolSections(layout, results) {
                 };
             }),
             category => {
-                return category.elems.length || (category.panel_type == "tool" && results.includes(category.id));
+                return category.elems.length || (!category.text && results.includes(category.id));
             }
         );
     } else {
         return layout;
     }
-}
-
-export function getPanelType(el) {
-    if (el.model_class.endsWith("ToolSection")) {
-        return "section";
-    }
-    if (el.model_class.endsWith("ToolSectionLabel")) {
-        return "label";
-    }
-    return "tool";
 }

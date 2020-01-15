@@ -2,7 +2,6 @@
     <div class="unified-panel">
         <div class="unified-panel-header" unselectable="on">
             <div class="unified-panel-header-inner">
-                <div class="panel-header-buttons" />
                 <div class="panel-header-text">Tools</div>
             </div>
         </div>
@@ -53,7 +52,7 @@
 import _l from "utils/localization";
 import ToolSection from "./common/ToolSection";
 import ToolSearch from "./common/ToolSearch";
-import { filterToolSections, getToolSections } from "./utilities.js";
+import { filterToolSections } from "./utilities.js";
 
 export default {
     name: "ToolBox",
@@ -97,7 +96,15 @@ export default {
         }
     },
     created() {
-        this.toolsLayout = getToolSections(this.toolbox, x => !x.is_workflow_compatible || x.hidden);
+        this.toolsLayout = _.map(this.toolbox, section => {
+            return {
+                ...section,
+                elems: _.map(section.elems, el => {
+                    el.disabled = !el.is_workflow_compatible || el.hidden;
+                    return el;
+                })
+            }
+        });
     },
     methods: {
         setResults(results) {
