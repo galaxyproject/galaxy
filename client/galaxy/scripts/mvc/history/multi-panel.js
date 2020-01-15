@@ -864,7 +864,7 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
                 this.filters = [];
                 this.renderColumns(0);
             },
-            
+
             advsearchlink: "https://galaxyproject.org/tutorials/histories/#advanced-searching"
         });
 
