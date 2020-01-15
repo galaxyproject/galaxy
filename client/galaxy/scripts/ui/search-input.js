@@ -107,20 +107,24 @@ function searchInput(parentNode, options) {
                 .val(options.initialVal)
         );
     }
-    
-    // .................................................................... question button that will open 
+
+    // .................................................................... question button that will open
     // the Advanced Search documentation
     function $advSearchBtn() {
         return $(
-            ['<span class="search-advanced fa fa-question-circle" ', 'title="', _l
-                ("click for Advanced Search tips"), '"></span>'].join("")
+            [
+                '<span class="search-advanced fa fa-question-circle" ',
+                'title="',
+                _l("click for Advanced Search tips"),
+                '"></span>'
+            ].join("")
         )
-        .tooltip({ placement: "bottom" })
-        .click(function(event) {
-             if (options.advsearchlink) {
-                 window.open(options.advsearchlink);
-             }
-        });
+            .tooltip({ placement: "bottom" })
+            .click(function(event) {
+                if (options.advsearchlink) {
+                    window.open(options.advsearchlink);
+                }
+            });
     }
 
     // .................................................................... clear button rendering and events
@@ -167,15 +171,15 @@ function searchInput(parentNode, options) {
     if (jQuery.type(options) === "object") {
         options = jQuery.extend(true, {}, defaults, options);
     }
-     var buttonsArr = [$clearBtn(), $loadingIndicator()];
-     // If a link to the advanced search documentation link 
-     //was provided, render the advanced search button     
-     if (options.advsearchlink) {
-         buttonsArr.push($advSearchBtn());     
-     }
-     var buttonDiv = $('<div class="search-button-panel"></div>');     
-     $(buttonDiv).prepend(buttonsArr);
-    
+    var buttonsArr = [$clearBtn(), $loadingIndicator()];
+    // If a link to the advanced search documentation link
+    //was provided, render the advanced search button
+    if (options.advsearchlink) {
+        buttonsArr.push($advSearchBtn());
+    }
+    var buttonDiv = $('<div class="search-button-panel"></div>');
+    $(buttonDiv).prepend(buttonsArr);
+
     //NOTE: prepended
     return $parentNode.addClass("search-input").prepend([$input(), $(buttonDiv)]);
 }
