@@ -657,9 +657,9 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         else:
             version = int(version)
 
-        ## create workflow module models
+        # create workflow module models
         module_sections = []
-        for section_name, module_section in load_module_sections( trans ).items():
+        for section_name, module_section in load_module_sections(trans).items():
             module_sections.append({
                 "title": module_section.get("title"),
                 "elems": [{
@@ -669,7 +669,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
                 } for elem in module_section.get("modules")]
             })
 
-        ## create data manager tool models
+        # create data manager tool models
         data_managers = []
         if trans.user_is_admin and trans.app.data_managers.data_managers:
             for data_manager_id, data_manager_val in trans.app.data_managers.data_managers.items():
@@ -683,7 +683,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
                         "is_workflow_compatible": tool.is_workflow_compatible
                     })
 
-        ## create workflow models
+        # create workflow models
         workflows = [{
             'id'                  : trans.security.encode_id(workflow.id),
             'latest_id'           : trans.security.encode_id(workflow.latest_workflow.id),
@@ -691,7 +691,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             'name'                : workflow.name
         } for workflow in workflows]
 
-        ## build workflow editor model
+        # build workflow editor model
         editor_config = {
             'id'                      : trans.security.encode_id(stored.id),
             'name'                    : stored.name,
@@ -713,7 +713,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             }
         }
 
-        ## parse to mako
+        # parse to mako
         return trans.fill_template("workflow/editor.mako",
                                    editor_config=editor_config,
                                    stored=stored,
