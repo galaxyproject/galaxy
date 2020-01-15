@@ -41,8 +41,8 @@
 </template>
 
 <script>
-import ToolSection from "./common/ToolSection";
-import ToolSearch from "./common/ToolSearch";
+import ToolSection from "./Common/ToolSection";
+import ToolSearch from "./Common/ToolSearch";
 import UploadButton from "./Buttons/UploadButton";
 import FavoritesButton from "./Buttons/FavoritesButton";
 import { filterToolSections } from "./utilities.js";

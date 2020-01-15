@@ -50,8 +50,8 @@
 
 <script>
 import _l from "utils/localization";
-import ToolSection from "./common/ToolSection";
-import ToolSearch from "./common/ToolSearch";
+import ToolSection from "./Common/ToolSection";
+import ToolSearch from "./Common/ToolSearch";
 import { filterToolSections } from "./utilities.js";
 
 export default {

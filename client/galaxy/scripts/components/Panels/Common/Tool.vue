@@ -1,8 +1,8 @@
 <template>
     <div class="toolTitle">
-        <a v-if="tool.disabled" class="text-muted">
+        <a v-if="tool.disabled" class="name text-muted">
             <span v-if="!hideName">{{ tool.name }}</span>
-            {{ tool.description }}
+            <span class="description">{{ tool.description }}</span>
         </a>
         <a @click="onClick" :href="tool.link" :target="tool.target" v-else>
             <span class="labels">
@@ -14,11 +14,11 @@
                     {{ label }}
                 </span>
             </span>
-            <span v-if="!hideName" class="font-weight-bold">{{ tool.name }}</span>
-            {{ tool.description }}
+            <span v-if="!hideName" class="name font-weight-bold">{{ tool.name }}</span>
+            <span class="description">{{ tool.description }}</span>
             <span
                 v-b-tooltip.hover
-                :class="['float-right', operationIcon]"
+                :class="['operation', 'float-right', operationIcon]"
                 :title="operationTitle"
                 @click.stop.prevent="onOperation"
             />
@@ -27,7 +27,11 @@
 </template>
 
 <script>
+import Vue from "vue";
+import BootstrapVue from "bootstrap-vue";
 import ariaAlert from "utils/ariaAlert";
+
+Vue.use(BootstrapVue);
 
 export default {
     name: "Tool",
