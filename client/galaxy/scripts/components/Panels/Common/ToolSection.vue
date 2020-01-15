@@ -18,6 +18,7 @@
                         </div>
                         <tool
                             v-else
+                            class="ml-2"
                             :tool="el"
                             :key="key"
                             :hideName="hideName"
@@ -39,7 +40,6 @@
             <tool
                 v-else
                 :tool="category"
-                :noSection="true"
                 :hideName="hideName"
                 :operationTitle="operationTitle"
                 :operationIcon="operationIcon"

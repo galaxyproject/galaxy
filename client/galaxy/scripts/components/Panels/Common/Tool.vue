@@ -1,5 +1,5 @@
 <template>
-    <div :class="['toolTitle', rootClass]">
+    <div class="toolTitle">
         <a v-if="tool.disabled" class="text-muted">
             <span v-if="!hideName">{{ tool.name }}</span>
             {{ tool.description }}
@@ -42,16 +42,8 @@ export default {
         operationIcon: {
             type: String
         },
-        noSection: {
-            type: Boolean
-        },
         hideName: {
             type: Boolean
-        }
-    },
-    computed: {
-        rootClass() {
-            return this.noSection ? "" : "ml-2";
         }
     },
     methods: {
