@@ -133,6 +133,7 @@ pyjwt==1.7.1
 pykwalify==1.7.0
 pynacl==1.3.0
 pyopenssl==19.1.0
+pypairix==0.3.7
 pyparsing==2.4.6
 pyperclip==1.7.0
 pyrsistent==0.15.7

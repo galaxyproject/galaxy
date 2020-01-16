@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
+
 import sys
 import subprocess
-from __future__ import print_function
 
 
 def main():
@@ -62,7 +63,7 @@ def main():
     P1 = subprocess.Popen(["sort", "-k%i,%i" % (chrom1Col, chrom1Col), "-k%i,%i" % (chrom2Col, chrom2Col),
                            "-k%i,%in" % (start1Col, start1Col), "-k%i,%in" % (start2Col, start2Col)],
                           stdin=P0.stdout, stdout=subprocess.PIPE)
-    P2 = subprocess.Popen("bgzip > %s" % output_name, stdin=P1.stdout, shell=True)
+    subprocess.Popen("bgzip > %s" % output_name, stdin=P1.stdout, shell=True)
 
 
 if __name__ == "__main__":
