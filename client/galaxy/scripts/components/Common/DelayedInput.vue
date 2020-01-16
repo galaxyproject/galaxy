@@ -41,12 +41,10 @@ export default {
         },
         placeholder: {
             type: String,
-            required: false,
             default: "Enter your search term here."
         },
         delay: {
             type: Number,
-            required: false,
             default: 1000
         }
     },
