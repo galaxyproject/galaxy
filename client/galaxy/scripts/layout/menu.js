@@ -501,7 +501,7 @@ const Tab = Backbone.View.extend({
 
     /** Url formatting */
     _formatUrl: function(url) {
-        return typeof url == "string" && url.indexOf("//") === -1 && url.charAt(0) != "/" ? getAppRoot() + url : url;
+        return typeof url == "string" && url.indexOf("mailto:")=== -1 && url.indexOf("//") === -1 && url.charAt(0) != "/" ? getAppRoot() + url : url;
     },
 
     /** body tempate */
