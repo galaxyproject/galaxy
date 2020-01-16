@@ -526,7 +526,11 @@ def best_search_result(conda_target, conda_context, channels_override=None, offl
     try:
         res = commands.execute(search_cmd)
         res = unicodify(res)
-        hits = json.loads(res).get(conda_target.package, [])
+        # Use python's stable list sorting to sort by date,
+        # then build_number, then version. The top of the list
+        # then is the newest version with the newest build and
+        # the latest update time.
+        hits = json.loads(res).get(conda_target.package, [])[::-1]
         hits = sorted(hits, key=lambda hit: hit['build_number'], reverse=True)
         hits = sorted(hits, key=lambda hit: packaging.version.parse(hit['version']), reverse=True)
     except CommandLineException:
