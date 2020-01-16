@@ -1,24 +1,22 @@
 <template>
-    <div>
-        <div class="search-input">
-            <b-input
-                class="search-query"
-                :placeholder="placeholder"
-                v-model="queryInput"
-                @input="delayQuery"
-                @change="setQuery"
-                @keydown.esc="setQuery()"
-            />
-            <font-awesome-icon v-if="loading" class="search-clear" icon="spinner" spin />
-            <font-awesome-icon
-                v-else
-                v-b-tooltip.hover
-                title="clear search (esc)"
-                class="search-clear"
-                icon="times-circle"
-                @click="setQuery()"
-            />
-        </div>
+    <div class="search-input">
+        <b-input
+            class="search-query"
+            :placeholder="placeholder"
+            v-model="queryInput"
+            @input="delayQuery"
+            @change="setQuery"
+            @keydown.esc="setQuery()"
+        />
+        <font-awesome-icon v-if="loading" class="search-clear" icon="spinner" spin />
+        <font-awesome-icon
+            v-else
+            v-b-tooltip.hover
+            title="clear search (esc)"
+            class="search-clear"
+            icon="times-circle"
+            @click="setQuery()"
+        />
     </div>
 </template>
 <script>
