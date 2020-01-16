@@ -1,16 +1,16 @@
 """
 Interval datatypes
 """
+import binascii
 import logging
 import math
+import subprocess
 import sys
 import tempfile
-import binascii
-import subprocess
 
 from bx.intervals.io import GenomicIntervalReader, ParseError
-from six.moves.urllib.parse import quote_plus
 import pypairix
+from six.moves.urllib.parse import quote_plus
 
 from galaxy import util
 from galaxy.datatypes import metadata
@@ -21,8 +21,8 @@ from galaxy.datatypes.sniff import (
     get_headers,
     iter_headers
 )
-from galaxy.datatypes.tabular import Tabular
 from galaxy.datatypes.binary import Binary
+from galaxy.datatypes.tabular import Tabular
 from galaxy.datatypes.util.gff_util import parse_gff3_attributes, parse_gff_attributes
 from . import (
     data,
@@ -1486,7 +1486,7 @@ class Pairix(Interval, Binary):
                 break
             line = line.rstrip('\n\r')
             if line.startswith('#columns: '):
-                columns = line.lower().replace('chrom', 'chr').replace('chromosome','chr').replace('stop', 'end').split()[1:]
+                columns = line.lower().replace('chrom', 'chr').replace('chromosome', 'chr').replace('stop', 'end').split()[1:]
                 break
         if columns is None:
             return False
@@ -1522,7 +1522,7 @@ class Pairix(Interval, Binary):
                 comment_lines += 1
                 line = line.rstrip('\n\r')
                 if line.startswith('#columns: '):
-                    line = line.lower().replace('chrom', 'chr').replace('chromosome','chr').replace('stop', 'end')
+                    line = line.lower().replace('chrom', 'chr').replace('chromosome', 'chr').replace('stop', 'end')
                     columns = line.split()[1:]
         dataset.metadata.delimiter = sep_character
         dataset.metadata.comment_lines = comment_lines
