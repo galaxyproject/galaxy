@@ -21,9 +21,10 @@
         mkdir -p ./jupyter/outputs/ &&
         mkdir -p ./jupyter/data &&
 
-        #set $cleaned_name = re.sub('[^\w\-\.]', '_', str($input.element_identifier))
-        cp '$input' './jupyter/data/${cleaned_name}' &&
-
+        #if $input:
+            #set $cleaned_name = re.sub('[^\w\-\.]', '_', str($input.element_identifier))
+            cp '$input' './jupyter/data/${cleaned_name}' &&
+        #end if
         ## change into the directory where the notebooks are located
         cd ./jupyter/ &&
         export PATH=/home/jovyan/.local/bin:\$PATH &&
