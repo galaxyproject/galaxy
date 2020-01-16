@@ -153,8 +153,6 @@ class KubernetesStagingContainerExtendedMetadataIntegrationTestCase(BaseKubernet
         assert job_env.some_env == '42'
 
 
-@integration_util.skip_unless_kubernetes()
-@integration_util.skip_unless_fixed_port()
 class KubernetesDependencyResolutionIntegrationTestCase(BaseKubernetesStagingTest):
 
     @classmethod
