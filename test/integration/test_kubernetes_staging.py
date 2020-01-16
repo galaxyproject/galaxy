@@ -105,7 +105,7 @@ def job_config(template_str, jobs_directory):
 
 @integration_util.skip_unless_kubernetes()
 @integration_util.skip_unless_fixed_port()
-class KubernetesStagingContainerIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, MulledJobTestCases):
+class BaseKubernetesStagingTest(BaseJobEnvironmentIntegrationTestCase, MulledJobTestCases):
 
     def setUp(self):
         super(KubernetesStagingContainerIntegrationTestCase, self).setUp()
@@ -116,6 +116,9 @@ class KubernetesStagingContainerIntegrationTestCase(BaseJobEnvironmentIntegratio
         # realpath for docker deployed in a VM on Mac, also done in driver_util.
         cls.jobs_directory = os.path.realpath(tempfile.mkdtemp())
         super(KubernetesStagingContainerIntegrationTestCase, cls).setUpClass()
+
+
+class KubernetesStagingContainerIntegrationTestCase(BaseKubernetesStagingTest):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -134,17 +137,7 @@ class KubernetesStagingContainerIntegrationTestCase(BaseJobEnvironmentIntegratio
 
 @integration_util.skip_unless_kubernetes()
 @integration_util.skip_unless_fixed_port()
-class KubernetesDependencyResolutionIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, MulledJobTestCases):
-
-    def setUp(self):
-        super(KubernetesDependencyResolutionIntegrationTestCase, self).setUp()
-        self.history_id = self.dataset_populator.new_history()
-
-    @classmethod
-    def setUpClass(cls):
-        # realpath for docker deployed in a VM on Mac, also done in driver_util.
-        cls.jobs_directory = os.path.realpath(tempfile.mkdtemp())
-        super(KubernetesDependencyResolutionIntegrationTestCase, cls).setUpClass()
+class KubernetesDependencyResolutionIntegrationTestCase(BaseKubernetesStagingTest):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
