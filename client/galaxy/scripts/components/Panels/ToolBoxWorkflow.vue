@@ -6,7 +6,7 @@
             </div>
         </div>
         <div class="unified-panel-controls">
-            <tool-search @results="setResults" />
+            <tool-search placeholder="search tools" @onResults="setResults" />
         </div>
         <div class="unified-panel-body">
             <div class="toolMenuContainer">

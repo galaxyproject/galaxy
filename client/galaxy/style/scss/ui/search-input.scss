@@ -7,10 +7,9 @@
     .search-loading {
         @extend .mr-2;
         position: relative;
-        display: inline-block;
         float: right;
-        margin-top: -25px;
-        font-size: 1.4em;
+        top: -27px;
+        font-size: 1.2rem;
         color: $text-muted;
     }
     .search-clear:hover {
@@ -23,6 +22,10 @@
     .search-query {
         @extend .px-3;
         @extend .py-1;
+        @extend .form-control;
+        outline: 0px !important;
+        -webkit-appearance: none;
+        box-shadow: none !important;
         width: 100%;
         display: inline-block;
         font-size: $font-size-base;

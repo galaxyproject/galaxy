@@ -3,14 +3,14 @@
         <div class="unified-panel-header" unselectable="on">
             <div class="unified-panel-header-inner">
                 <div class="panel-header-buttons">
-                    <favorites-button v-if="isUser" />
+                    <favorites-button @onFavorites="onFavorites" v-if="isUser" />
                     <upload-button />
                 </div>
                 <div class="panel-header-text">Tools</div>
             </div>
         </div>
         <div class="unified-panel-controls">
-            <tool-search @results="setResults" />
+            <tool-search :query="query" placeholder="search tools" @onResults="setResults" />
         </div>
         <div class="unified-panel-body">
             <div class="toolMenuContainer">
@@ -60,6 +60,7 @@ export default {
     },
     data() {
         return {
+            query: null,
             results: null,
             workflow: null
         };
@@ -109,6 +110,9 @@ export default {
     methods: {
         setResults(results) {
             this.results = results;
+        },
+        onFavorites(term) {
+            this.query = term;
         },
         onOpen(tool, evt) {
             const Galaxy = getGalaxyInstance();
