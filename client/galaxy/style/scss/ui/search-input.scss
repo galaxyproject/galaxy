@@ -1,5 +1,4 @@
 .search-input {
-    @extend .mb-2;
     ::placeholder {
         color: $text-muted;
     }
@@ -21,7 +20,6 @@
     }
     .search-query {
         @extend .px-3;
-        @extend .py-1;
         @extend .form-control;
         outline: 0px !important;
         -webkit-appearance: none;

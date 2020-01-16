@@ -1,6 +1,5 @@
 <template>
     <delayed-input
-        class="search-input"
         :query="query"
         :loading="loading"
         :placeholder="placeholder"
