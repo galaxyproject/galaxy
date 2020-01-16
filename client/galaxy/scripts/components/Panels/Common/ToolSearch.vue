@@ -27,15 +27,12 @@
 import { VBTooltip } from "bootstrap-vue";
 import _ from "underscore";
 import axios from "axios";
-
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTimesCircle } from "@fortawesome/free-solid-svg-icons";
 import { faSpinner } from "@fortawesome/free-solid-svg-icons";
-
 import { getAppRoot } from "onload/loadConfig";
-import { getGalaxyInstance } from "app"; // FIXME: may be we can move it to the ToolBox?
-/* global ga */
+import { getGalaxyInstance } from "app";
 
 library.add(faSpinner);
 library.add(faTimesCircle);
@@ -50,44 +47,34 @@ export default {
     },
     data() {
         return {
-            "api/tools": `${getAppRoot()}api/tools`, // FIXME: 'api/tools' and naming conventions?
             query: "",
             previousQuery: "",
-            reservedKeywordsSynonyms: {
-                favourites: ["#favs", "#favorites", "#favourites"]
-            },
+            favorites: ["#favs", "#favorites", "#favourites"],
             minQueryLength: 3,
-
             showSpinner: false,
-            showClear: true
+            showClear: true,
+            responseDelay: 200,
+            debounceDelay: 400
         };
     },
     watch: {
         query(newVal) {
-            this.checkQuery(newVal);
+            _.debounce(this.checkQuery, this.debounceDelay)(newVal);
         }
     },
     methods: {
-        checkQuery: _.debounce(function(q) {
+        checkQuery(q) {
             const Galaxy = getGalaxyInstance();
-
             if (q !== this.previousQuery) {
                 this.previousQuery = q;
-
                 if (q.length >= this.minQueryLength) {
-                    if (this.reservedKeywordsSynonyms["favourites"].includes(q)) {
+                    if (this.favorites.includes(q)) {
                         this.$emit("results", Galaxy.user.getFavorites().tools);
                     } else {
                         this.showSpinner = true;
                         this.showClear = false;
-
-                        // log the search to analytics if present
-                        if (typeof ga !== "undefined") {
-                            ga("send", "pageview", `${getAppRoot()}?q=${q}`);
-                        }
-
                         axios
-                            .get(this["api/tools"], {
+                            .get(`${getAppRoot()}api/tools`, {
                                 params: { q }
                             })
                             .then(this.handleResponse)
@@ -97,19 +84,17 @@ export default {
                     this.$emit("results", null);
                 }
             }
-        }, 400),
+        },
         handleResponse(response) {
             this.$emit("results", response.data);
-
-            // console.log(data);
             setTimeout(() => {
                 this.showSpinner = false;
                 this.showClear = true;
-            }, 200);
+            }, this.responseDelay);
         },
         handleError(err) {
-            // FIXME: if in debug mode
             console.warn(err);
+            this.$emit("onError", err);
         },
         clear() {
             this.$emit("results", null);
