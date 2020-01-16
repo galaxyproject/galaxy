@@ -78,7 +78,8 @@ class ToolDataTableManager(object):
             if not single_config_filename:
                 continue
             self.load_from_config_file(single_config_filename, self.tool_data_path, from_shed_config=False)
-            self.load_length_table(len_file_path, self.tool_data_path, single_config_filename)
+            if len_file_path is not None:
+                self.load_length_table(len_file_path, self.tool_data_path, single_config_filename)
 
     def __getitem__(self, key):
         return self.data_tables.__getitem__(key)
@@ -238,8 +239,6 @@ class ToolDataTableManager(object):
 
     def load_length_table(self, path, tool_data_path, config_filename):
         """Load a table of chromosome lengths from length files and using FASTA table for full names"""
-        if path is None:
-            return None
         xml_string = "<table name='chrom_length' commen_char='#' allow_duplicate_entries='False'><columns>value, dbkey, name, path</columns><file path='%s'/></table>" % path
         table_elem = util.parse_xml_string(xml_string)
         table = LengthToolDataTable(table_elem, tool_data_path, from_shed_config=False, filename=config_filename, tool_data_path_files=self.tool_data_path_files, data_tables=self.data_tables)

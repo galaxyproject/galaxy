@@ -2,6 +2,7 @@
 
 import sys
 import subprocess
+from __future__ import print_function
 
 
 def main():
@@ -49,7 +50,7 @@ def main():
             col_line = True
             break
     if not col_line and min(chrom1Col, start1Col, end1Col, chrom2Col, start2Col, end2Col) == 0:
-        print >> sys.stderr, ("Not all of the required column information is present")
+        print("Not all of the required column information is present", file=sys.stderr)
         return
     if col_line:
         P0 = subprocess.Popen("(grep ^'#' %s; grep -v ^'#' %s)" % (input_name, input_name),
@@ -62,7 +63,6 @@ def main():
                            "-k%i,%in" % (start1Col, start1Col), "-k%i,%in" % (start2Col, start2Col)],
                           stdin=P0.stdout, stdout=subprocess.PIPE)
     P2 = subprocess.Popen("bgzip > %s" % output_name, stdin=P1.stdout, shell=True)
-
 
 
 if __name__ == "__main__":

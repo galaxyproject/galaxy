@@ -206,12 +206,14 @@ class DynamicCompressedArchive(CompressedArchive):
         """
         compressed_target_datatypes = []
         uncompressed_target_datatypes = []
-
+        log.info("%s" % (str(target_datatypes)))
         for target_datatype in target_datatypes:
             if hasattr(target_datatype, "uncompressed_datatype_instance") and target_datatype.compressed_format == self.compressed_format:
                 uncompressed_target_datatypes.append(target_datatype.uncompressed_datatype_instance)
             else:
                 compressed_target_datatypes.append(target_datatype)
+        log.info("%s" % (str(uncompressed_target_datatypes)))
+        log.info("%s" % (str(compressed_target_datatypes)))
 
         # TODO: Add gz and bz2 as proper datatypes and use those instances instead of
         # CompressedArchive() in the following check.
@@ -228,7 +230,7 @@ class Bz2DynamicCompressedArchive(DynamicCompressedArchive):
 
 
 class BgzDynamicCompressedArchive(DynamicCompressedArchive):
-    compressed_format = "bgzip"
+    compressed_format = "gzip"
 
 
 class CompressedZipArchive(CompressedArchive):

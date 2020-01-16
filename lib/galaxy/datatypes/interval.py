@@ -8,9 +8,9 @@ import tempfile
 import binascii
 import subprocess
 
-import pypairix
 from bx.intervals.io import GenomicIntervalReader, ParseError
 from six.moves.urllib.parse import quote_plus
+import pypairix
 
 from galaxy import util
 from galaxy.datatypes import metadata
@@ -1479,7 +1479,7 @@ class Pairix(Interval, Binary):
                 return False
         # Check that the file has the required column name line in the
         # commented header
-        file_iterator = compression_utils.get_fileobj(filename)
+        file_iterator = util.compression_utils.get_fileobj(filename)
         columns = None
         for line in file_iterator:
             if len(line) == 0 or line[0] != '#':
@@ -1507,10 +1507,11 @@ class Pairix(Interval, Binary):
         # required header line "#columns:". The sniffer should already
         # have ensured that this line is present.
         Tabular.set_meta(self, dataset, skip=0)
-        file_iterator = compression_utils.get_fileobj(dataset.file_name)
+        file_iterator = util.compression_utils.get_fileobj(dataset.file_name)
         sep_character = None
         comment_lines = 0
         for line in file_iterator:
+            log.info(line)
             if sep_character is not None:
                 break
             elif len(line) > 0 and line[0] != '#':
