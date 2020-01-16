@@ -19,7 +19,7 @@
     ]]>
     </command>
     <inputs>
-        <param name="matrix" type="data" format="cool" label="Cool file with multiple resolutions"/>
+        <param name="matrix" type="data" format="mcool" label="Cool file with multiple resolutions"/>
     </inputs>
     <outputs>
         <data name="outfile" format="txt" />
