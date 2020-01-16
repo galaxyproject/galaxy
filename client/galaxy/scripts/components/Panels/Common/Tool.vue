@@ -4,7 +4,7 @@
             <span v-if="!hideName">{{ tool.name }}</span>
             <span class="description">{{ tool.description }}</span>
         </a>
-        <a @click="onClick" :href="tool.link" :target="tool.target" v-else>
+        <a :class="targetClass" @click="onClick" :href="tool.link" :target="tool.target" v-else>
             <span class="labels">
                 <span
                     v-for="(label, index) in tool.labels"
@@ -48,6 +48,18 @@ export default {
         },
         hideName: {
             type: Boolean
+        },
+        toolKey: {
+            type: String
+        }
+    },
+    computed: {
+        targetClass() {
+            if (this.toolKey) {
+                return `tool-menu-item-${this.tool[this.toolKey]}`;
+            } else {
+                return null;
+            }
         }
     },
     methods: {

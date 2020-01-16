@@ -1,7 +1,7 @@
 <template>
     <div>
         <div v-if="hasElements">
-            <div class="toolSectionTitle">
+            <div :class="['toolSectionTitle', `tool-menu-section-${sectionName}`]">
                 <a @click="toggleMenu" href="javascript:void(0)" role="button">
                     <span class="name">
                         {{ this.name }}
@@ -19,6 +19,7 @@
                             class="ml-2"
                             :tool="el"
                             :key="key"
+                            :toolKey="toolKey"
                             :hideName="hideName"
                             :operationTitle="operationTitle"
                             :operationIcon="operationIcon"
@@ -57,7 +58,8 @@ export default {
     },
     props: {
         category: {
-            type: Object
+            type: Object,
+            required: true
         },
         isFiltered: {
             type: Boolean
@@ -73,6 +75,13 @@ export default {
         },
         operationIcon: {
             type: String
+        },
+        toolKey: {
+            type: String
+        },
+        sectionName: {
+            type: String,
+            default: "default"
         }
     },
     computed: {

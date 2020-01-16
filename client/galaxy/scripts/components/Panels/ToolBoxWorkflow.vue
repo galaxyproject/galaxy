@@ -14,6 +14,8 @@
                     v-for="category in moduleSections"
                     :hideName="true"
                     :category="category"
+                    toolKey="name"
+                    :sectionName="category.name"
                     :isFiltered="isFiltered"
                     :key="category.name"
                     @onClick="onInsertModule"
@@ -24,7 +26,7 @@
                     :isFiltered="isFiltered"
                     @onClick="onInsertTool"
                 />
-                <div class="toolMenu">
+                <div class="toolMenu" id="workflow-tool-menu">
                     <tool-section
                         v-for="category in categories"
                         :category="category"
