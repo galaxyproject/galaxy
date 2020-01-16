@@ -153,8 +153,11 @@ def base_image_for_targets(targets, conda_context=None):
     hits = get_conda_hits_for_targets(targets, conda_context or CondaInDockerContext())
     for hit in hits:
         try:
-            meta_content = unicodify(get_file_from_recipe_url(hit['url']).extractfile('info/about.json').read())
+            tarball = get_file_from_recipe_url(hit['url'])
+            meta_content = unicodify(tarball.extractfile('info/about.json').read())
             if json.loads(meta_content).get('extra', {}).get('container', {}).get('extended-base', False):
+                return DEFAULT_EXTENDED_BASE_IMAGE
+            elif yaml.safe_load(unicodify(tarball.extractfile('info/recipe/meta.yaml').read())).get('extra', {}).get('container', {}).get('extended-base', False):
                 return DEFAULT_EXTENDED_BASE_IMAGE
         except Exception:
             log.warning("Could not load metadata.yaml for '%s', version '%s'", hit['name'], hit['version'], exc_info=True)
