@@ -5,8 +5,9 @@
         :style="styles"
         :active="!tab.disabled"
         :id="tab.id"
-        :href="tab.url"
-        :target="tab.target"
+        :href="formatUrl(tab.url)"
+        :target="tab.target || '_parent'"
+        role="menuitem"
         :link-classes="linkClasses"
         v-b-tooltip.hover.bottom
         :title="tab.tooltip"
@@ -34,7 +35,7 @@
         @show="open(tab, $event)"
     >
         <template v-for="(item, idx) in tab.menu">
-            <b-dropdown-item :href="item.url" :key="`item-${idx}`" :target="item.target" @click="open(item, $event)">
+            <b-dropdown-item :href="formatUrl(item.url)" :key="`item-${idx}`" :target="item.target || '_parent'" role="menuitem" @click="open(item, $event)">
                 {{ item.title }}
             </b-dropdown-item>
             <div v-if="item.divider" class="dropdown-divider" :key="`divider-${idx}`" />
@@ -45,6 +46,7 @@
 <script>
 import { VBTooltip } from "bootstrap-vue";
 import { VBPopover } from "bootstrap-vue";
+import {getAppRoot} from "../../onload";
 
 export default {
     name: "MastheadItem",
@@ -113,12 +115,13 @@ export default {
                 }, 3000);
             } else if (!tab.menu) {
                 event.preventDefault();
-
                 if (tab.target === "__use_router__" && typeof this.Galaxy.page !== "undefined") {
-                    this.Galaxy.page.router.executeUseRouter(tab.url);
+                    this.Galaxy.page.router.executeUseRouter(this.formatUrl(tab.url));
                 } else {
                     try {
-                        this.Galaxy.frame.add(tab);
+                        this.Galaxy.frame.add({...tab,
+                            url: this.formatUrl(tab.url),
+                        });
                     } catch (err) {
                         console.warn("Missing frame element on galaxy instance", err);
                     }
@@ -132,7 +135,10 @@ export default {
             if (tab.id === "enable-scratchbook") {
                 this.$emit("updateScratchbookTab", tab);
             }
-        }
+        },
+        formatUrl(url) {
+            return typeof url === "string" && url.indexOf("//") === -1 && url.charAt(0) != "/" ? this.appRoot + url : url;
+        },
     }
 };
 </script>
