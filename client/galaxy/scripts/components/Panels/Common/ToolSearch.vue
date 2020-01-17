@@ -1,10 +1,5 @@
 <template>
-    <delayed-input
-        :query="query"
-        :loading="loading"
-        :placeholder="placeholder"
-        @onChange="checkQuery"
-    />
+    <delayed-input :query="query" :loading="loading" :placeholder="placeholder" @onChange="checkQuery" />
 </template>
 
 <script>
