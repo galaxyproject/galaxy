@@ -181,13 +181,6 @@ def mull_targets(
     oauth_token=None, hash_func="v2", singularity=False,
     singularity_image_dir="singularity_import", base_image=None,
 ):
-    if base_image:
-        dest_base_image = base_image
-    elif DEST_BASE_IMAGE:
-        dest_base_image = DEST_BASE_IMAGE
-    else:
-        dest_base_image = base_image_for_targets(targets)
-
     targets = list(targets)
     if involucro_context is None:
         involucro_context = InvolucroContext()
@@ -237,9 +230,14 @@ def mull_targets(
         '-set', "REPO='%s'" % repo,
         '-set', "BINDS='%s'" % bind_str,
     ]
+    if base_image:
+        dest_base_image = base_image
+    elif DEST_BASE_IMAGE:
+        dest_base_image = DEST_BASE_IMAGE
+    else:
+        dest_base_image = base_image_for_targets(targets)
 
-    if dest_base_image:
-        involucro_args.extend(["-set", "DEST_BASE_IMAGE='%s'" % dest_base_image])
+    involucro_args.extend(["-set", "DEST_BASE_IMAGE='%s'" % dest_base_image])
     if CONDA_IMAGE:
         involucro_args.extend(["-set", "CONDA_IMAGE='%s'" % CONDA_IMAGE])
     if verbose:
