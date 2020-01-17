@@ -69,6 +69,7 @@ From: %(base_image)s
     cp -r /data/dist/* /tmp/conda/
 
 %%post
+    rm -R /usr/local || true
     mkdir -p /usr/local
     cp -R /tmp/conda/* /usr/local/
 
@@ -180,14 +181,8 @@ def mull_targets(
     conda_version=None, verbose=False, binds=DEFAULT_BINDS, rebuild=True,
     oauth_token=None, hash_func="v2", singularity=False,
     singularity_image_dir="singularity_import", base_image=None,
+    determine_base_image=True,
 ):
-    if base_image:
-        dest_base_image = base_image
-    elif DEST_BASE_IMAGE:
-        dest_base_image = DEST_BASE_IMAGE
-    else:
-        dest_base_image = base_image_for_targets(targets)
-
     targets = list(targets)
     if involucro_context is None:
         involucro_context = InvolucroContext()
@@ -237,6 +232,13 @@ def mull_targets(
         '-set', "REPO='%s'" % repo,
         '-set', "BINDS='%s'" % bind_str,
     ]
+    dest_base_image = None
+    if base_image:
+        dest_base_image = base_image
+    elif DEST_BASE_IMAGE:
+        dest_base_image = DEST_BASE_IMAGE
+    elif determine_base_image:
+        dest_base_image = base_image_for_targets(targets)
 
     if dest_base_image:
         involucro_args.extend(["-set", "DEST_BASE_IMAGE='%s'" % dest_base_image])
