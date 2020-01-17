@@ -4,11 +4,9 @@ Interval datatypes
 import binascii
 import logging
 import math
-import subprocess
 import sys
 import tempfile
 
-import pypairix
 from bx.intervals.io import GenomicIntervalReader, ParseError
 from six.moves.urllib.parse import quote_plus
 
@@ -1547,18 +1545,6 @@ class Pairix(Interval, Binary):
                 dataset.metadata.start2Col = i + 1
             elif name == 'end2':
                 dataset.metadata.end2Col = i + 1
-        index_file = dataset.metadata.pairix_index
-        if not index_file:
-            index_file = dataset.metadata.spec['pairix_index'].param.new_file(dataset=dataset)
-        try:
-            pypairix.build_index(dataset.file_name, sc=dataset.metadata.chromCol, bc=dataset.metadata.startCol,
-                                 ec=dataset.metadata.endCol, sc2=dataset.metadata.chrom2Col,
-                                 bc2=dataset.metadata.start2Col, ec2=dataset.metadata.end2Col,
-                                 delimiter=dataset.metadata.delimiter, force=1)
-            subprocess.Popen(['mv', '%s.px2' % dataset.file_name, index_file.file_name])
-        except Exception as e:
-            raise Exception('Error creating pairix index: %s' % (str(e)))
-        dataset.metadata.pairix_index = index_file
 
 
 @build_sniff_from_prefix
