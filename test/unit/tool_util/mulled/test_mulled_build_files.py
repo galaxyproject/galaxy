@@ -39,6 +39,13 @@ TESTCASES = yaml.safe_load(r"""
       image_build: '10'
       name_override: image_name
       targets: samtools
+- test_files_package_image_build_base_image_with_header:
+    content: "#targets\timage_build\tbase_image\nsamtools\t10\textended_image"
+    equals:
+      base_image: extended_image
+      image_build: '10'
+      name_override: null
+      targets: samtools
 - test_files_package_image_build_name_override_base_image_with_header_reordered:
     content: "#base_image\ttargets\timage_build\tname_override\nextended_image\tsamtools\t10\timage_name"
     equals:

@@ -44,6 +44,7 @@ def main(argv=None):
                 image_build=target.image_build,
                 name_override=target.name_override,
                 base_image=target.base_image,
+                determine_base_image=False,
                 **args_to_mull_targets_kwds(args)
             )
         except BuildExistsException:
@@ -79,6 +80,10 @@ def tuple_from_header(header):
     fields = header[1:].split('\t')
     for field in fields:
         assert field in KNOWN_FIELDS, "'%s' is not one of %s" % (field, KNOWN_FIELDS)
+    # Make sure tuple contains all fields
+    for field in KNOWN_FIELDS:
+        if field not in fields:
+            fields.append(field)
     return collections.namedtuple("_Line", "%s" % " ".join(fields))
 
 
