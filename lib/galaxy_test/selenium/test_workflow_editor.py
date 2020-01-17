@@ -335,13 +335,23 @@ steps:
 
     @selenium_test
     def test_workflow_bookmarking(self):
+        @retry_assertion_during_transitions
+        def assert_workflow_bookmarked_status(target_status):
+            name_matches = [c.text == new_workflow_name for c in self.components.tool_panel.workflow_names.all()]
+            status = any(name_matches)
+            self.assertTrue(status == target_status)
+
         new_workflow_name = self.workflow_create_new(clear_placeholder=True)
 
-        self.wait_for_id_clickable("workflow-save-button")
+        # Assert workflow not initially bookmarked.
+        assert_workflow_bookmarked_status(False)
+
+        save_button = self.components.workflows.save_button
+        save_button.wait_for_clickable()
 
         # element is clickable, but still might be behind the modal
         self.wait_for_selector_absent_or_hidden(self.modal_body_selector())
-        self.driver.find_element_by_id("workflow-save-button").click()
+        save_button.wait_for_and_click()
 
         # wait for saving
         self.wait_for_selector_absent_or_hidden(self.modal_body_selector())
@@ -358,13 +368,8 @@ steps:
         self.sleep_for(self.wait_types.UX_TRANSITION)
 
         # search for bookmark in tools menu
-        tools_search_input = self.driver.find_element_by_name("query")
-        tools_search_input.send_keys(new_workflow_name)
-        internal_workflows = self.driver.find_element_by_id("internal-workflows")
-        worksflows = internal_workflows.find_elements_by_class_name("toolTitle")
-
-        # check if bookmark exists
-        self.assertTrue(any(workflow.text == new_workflow_name for workflow in worksflows))
+        self.components.tool_panel.search.wait_for_and_send_keys(new_workflow_name)
+        assert_workflow_bookmarked_status(True)
 
     def workflow_editor_maximize_center_pane(self, collapse_left=True, collapse_right=True):
         if collapse_left:
