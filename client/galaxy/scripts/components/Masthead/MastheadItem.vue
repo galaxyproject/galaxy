@@ -46,7 +46,6 @@
 <script>
 import { VBTooltip } from "bootstrap-vue";
 import { VBPopover } from "bootstrap-vue";
-import {getAppRoot} from "../../onload";
 
 export default {
     name: "MastheadItem",
