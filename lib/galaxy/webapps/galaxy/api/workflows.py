@@ -1164,7 +1164,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         galaxy_extension = []  # TODO
         input_subdomain = []  # TODO
-        output_subdomain = []  # TODO
 
         ret_dict = {
             'bco_id': url_for('invocation_export_bco', invocation_id=invocation_id, qualified=True),
