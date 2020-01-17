@@ -244,6 +244,7 @@ class ToolDataTableManager(object):
         table = LengthToolDataTable(table_elem, tool_data_path, from_shed_config=False, filename=config_filename, tool_data_path_files=self.tool_data_path_files, data_tables=self.data_tables)
         self.data_tables['chrom_length'] = table
 
+
 class ToolDataTable(object):
 
     @classmethod
@@ -813,7 +814,6 @@ class LengthToolDataTable(TabularToolDataTable, Dictifiable):
 
         # Read every file
         for file_element in config_element.findall('file'):
-            tmp_file = None
             path = file_element.get('path', None)
             if path is not None:
                 filenames = glob("%s/*" % path)

@@ -8,12 +8,13 @@ import subprocess
 import sys
 import tempfile
 
-from bx.intervals.io import GenomicIntervalReader, ParseError
 import pypairix
+from bx.intervals.io import GenomicIntervalReader, ParseError
 from six.moves.urllib.parse import quote_plus
 
 from galaxy import util
 from galaxy.datatypes import metadata
+from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import DatatypeValidation
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import (
@@ -21,7 +22,6 @@ from galaxy.datatypes.sniff import (
     get_headers,
     iter_headers
 )
-from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.tabular import Tabular
 from galaxy.datatypes.util.gff_util import parse_gff3_attributes, parse_gff_attributes
 from . import (
