@@ -91,7 +91,18 @@ class CustosAuthnz(IdentityProvider):
             if not trans.user:
                 existing_user = trans.sa_session.query(User).filter_by(email=email).first()
                 if existing_user:
-                    raise Exception("There already exists a user with email %s.  To associate this external login, you must first be logged in as that existing account." % email)
+                    # If there is only a single external authentication
+                    # provider in use, trust the user provided and
+                    # automatically associate.
+                    # TODO: Future work will expand on this and provide an
+                    # interface for when there are multiple auth providers
+                    # allowing explicit authenticated association.
+                    if (trans.app.config.enable_oidc and
+                            len(trans.app.config.oidc) == 1 and
+                            len(trans.app.auth_manager.authenticators) == 0):
+                        user = existing_user
+                    else:
+                        raise Exception("There already exists a user with email %s.  To associate this external login, you must first be logged in as that existing account." % email)
                 else:
                     user = self._create_user(trans.sa_session, username, email)
             custos_authnz_token = CustosAuthnzToken(user=user,
