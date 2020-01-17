@@ -6,6 +6,7 @@ import time
 import traceback
 from xml.sax.saxutils import escape
 
+from galaxy.util import RW_R__R__
 from .panel import (
     panel_item_types,
     ToolPanelElements
@@ -110,7 +111,7 @@ $INTEGRATED_TOOL_PANEL
             filename = filename + ".copy"
         shutil.move(filename, destination)
         try:
-            os.chmod(destination, 0o644)
+            os.chmod(destination, RW_R__R__)
         except OSError:
             # That can happen if multiple threads are simultaneously moving/chmod'ing this file
             # Should be harmless, though this race condition should be avoided.

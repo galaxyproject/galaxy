@@ -73,7 +73,7 @@ class EnvFileBuilder(object):
         if make_executable:
             # Explicitly set the file's executable bits.
             try:
-                os.chmod(file_path, int('111', base=8) | os.stat(file_path)[stat.ST_MODE])
+                os.chmod(file_path, os.stat(file_path).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
             except Exception as e:
                 log.exception(str(e))
                 return 1
