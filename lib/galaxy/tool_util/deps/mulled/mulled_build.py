@@ -69,6 +69,7 @@ From: %(base_image)s
     cp -r /data/dist/* /tmp/conda/
 
 %%post
+    rm -R /usr/local || true
     mkdir -p /usr/local
     cp -R /tmp/conda/* /usr/local/
 
