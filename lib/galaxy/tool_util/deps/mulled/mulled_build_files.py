@@ -79,6 +79,10 @@ def tuple_from_header(header):
     fields = header[1:].split('\t')
     for field in fields:
         assert field in KNOWN_FIELDS, "'%s' is not one of %s" % (field, KNOWN_FIELDS)
+    # Make sure tuple contains all fields
+    for field in KNOWN_FIELDS:
+        if field not in fields:
+            fields.append(field)
     return collections.namedtuple("_Line", "%s" % " ".join(fields))
 
 
