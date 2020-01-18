@@ -1,9 +1,9 @@
 <tool id="inputs_as_json" name="inputs_as_json" version="1.0.0">
     <command detect_errors="exit_code">
-        python $check_inputs $inputs $test_case
+        python $check_inputs inputs.json $test_case
     </command>
     <configfiles>
-        <inputs name="inputs" />
+        <inputs name="inputs" filename="inputs.json" />
         <!-- Can specify with fixed path in working directory instead:
         <inputs name="inputs" filename="input.json" />
         -->
@@ -21,6 +21,7 @@ def assert_equals(x, y):
 
 if test_case == "1":
     assert_equals(as_dict["test_case"], 1)
+    assert "file_test" not in as_dict
     assert_equals(as_dict["text_test"], "foo")
     assert_equals(as_dict["booltest"], True)
     assert_equals(as_dict["booltest2"], True)
@@ -33,6 +34,7 @@ if test_case == "1":
     assert_equals(as_dict["section_example"]["section_text"], "section_default")
 elif test_case == "2":
     assert_equals(as_dict["test_case"], 2)
+    assert "file_test" not in as_dict
     assert_equals(as_dict["text_test"], "bar")
     assert_equals(as_dict["booltest"], False)
     assert_equals(as_dict["booltest2"], False)
@@ -50,6 +52,7 @@ with open("output", "w") as f:
     </configfiles>
     <inputs>
         <param name="test_case" type="integer" value="0" />
+        <param name="file_test" type="data" format="txt" />
         <param name="text_test" type="text" />
         <param name="booltest" truevalue="booltrue" falsevalue="boolfalse" checked="false" type="boolean" />
         <param name="booltest2" truevalue="booltrue" falsevalue="boolfalse" checked="false" type="boolean" />
@@ -85,6 +88,7 @@ with open("output", "w") as f:
     <tests>
         <test>
             <param name="test_case" value="1" />
+            <param name="file_test" value="simple_lines_both.txt" ftype="txt" />
             <param name="text_test" value="foo" />
             <param name="booltest" value="true" />
             <param name="booltest2" value="booltrue" />
@@ -107,6 +111,7 @@ with open("output", "w") as f:
         </test>
         <test>
             <param name="test_case" value="2" />
+            <param name="file_test" value="simple_lines_both.txt" ftype="txt" />
             <param name="text_test" value="bar" />
             <param name="booltest" value="false" />
             <param name="booltest2" value="boolfalse" />
