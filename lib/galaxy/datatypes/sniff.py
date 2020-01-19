@@ -64,19 +64,19 @@ def stream_to_open_named_file(stream, fd, filename, source_encoding=None, source
         codecs.lookup(target_encoding)
     except Exception:
         target_encoding = util.DEFAULT_ENCODING  # utf-8
-    try_source_encoding = True
+    use_source_encoding = source_encoding is not None
     while True:
         chunk = stream.read(CHUNK_SIZE)
         if not chunk:
             break
-        if source_encoding is not None and try_source_encoding:
+        if use_source_encoding:
             # If a source encoding is given we use it to convert to the target encoding
             try:
                 if not isinstance(chunk, text_type):
                     chunk = chunk.decode(source_encoding, source_error)
                 os.write(fd, chunk.encode(target_encoding, target_error))
             except UnicodeDecodeError:
-                try_source_encoding = False
+                use_source_encoding = False
                 os.write(fd, chunk)
         else:
             # Compressed files must be encoded after they are uncompressed in the upload utility,
