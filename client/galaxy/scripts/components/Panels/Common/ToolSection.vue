@@ -64,7 +64,7 @@ export default {
         isFiltered: {
             type: Boolean
         },
-        isFilterable: {
+        disableFilter: {
             type: Boolean
         },
         hideName: {
@@ -84,6 +84,16 @@ export default {
             default: "default"
         }
     },
+    data() {
+        return {
+            opened: this.checkFilter()
+        };
+    },
+    watch: {
+        isFiltered() {
+            this.opened = this.checkFilter();
+        }
+    },
     computed: {
         name() {
             return this.category.title || this.category.name;
@@ -93,6 +103,9 @@ export default {
         }
     },
     methods: {
+        checkFilter() {
+            return !this.disableFilter && this.isFiltered;
+        },
         onClick(tool, evt) {
             this.$emit("onClick", tool, evt);
         },
@@ -103,16 +116,6 @@ export default {
             this.opened = !this.opened;
             const currentState = this.opened ? "opened" : "closed";
             ariaAlert(`${this.name} tools menu ${currentState}`);
-        }
-    },
-    data() {
-        return {
-            opened: false
-        };
-    },
-    watch: {
-        isFiltered(state) {
-            this.opened = this.isFilterable && !!state;
         }
     }
 };

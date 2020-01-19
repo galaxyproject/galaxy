@@ -17,6 +17,7 @@
                     toolKey="name"
                     :sectionName="category.name"
                     :isFiltered="isFiltered"
+                    :disableFilter="true"
                     :key="category.name"
                     @onClick="onInsertModule"
                 />
@@ -24,13 +25,13 @@
                     :category="dataManagers"
                     :key="dataManagers.id"
                     :isFiltered="isFiltered"
+                    :disableFilter="true"
                     @onClick="onInsertTool"
                 />
                 <div class="toolMenu" id="workflow-tool-menu">
                     <tool-section
                         v-for="category in categories"
                         :category="category"
-                        :isFilterable="true"
                         :isFiltered="isFiltered"
                         :key="category.id"
                         @onClick="onInsertTool"
@@ -42,6 +43,7 @@
                     operationIcon="fa fa-copy"
                     operationTitle="Insert individual steps."
                     :isFiltered="isFiltered"
+                    :disableFilter="true"
                     @onClick="onInsertWorkflow"
                     @onOperation="onInsertWorkflowSteps"
                 />
