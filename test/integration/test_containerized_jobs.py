@@ -1,5 +1,6 @@
 """Integration tests for running tools in Docker containers."""
 
+import json
 import os
 import unittest
 
@@ -37,6 +38,11 @@ class ContainerizedIntegrationTestCase(integration_util.IntegrationTestCase):
         skip_if_container_type_unavailable(cls)
         super(ContainerizedIntegrationTestCase, cls).setUpClass()
 
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        config["job_config_file"] = DOCKERIZED_JOB_CONFIG_FILE
+        disable_dependency_resolution(config)
+
 
 def disable_dependency_resolution(config):
     # Disable tool dependency resolution.
@@ -56,7 +62,6 @@ class DockerizedJobsIntegrationTestCase(integration_util.IntegrationTestCase, Ru
     job_config_file = DOCKERIZED_JOB_CONFIG_FILE
     build_mulled_resolver = 'build_mulled'
     container_type = 'docker'
-    default_container_home_dir = '/'
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -100,19 +105,24 @@ class DockerizedJobsIntegrationTestCase(integration_util.IntegrationTestCase, Ru
         assert job_env.pwd.endswith("/working")
         # Should we change env_pass_through to just always include TMP and HOME for docker?
         # I'm not sure, if yes this would change.
-        assert job_env.home == self.default_container_home_dir, job_env.home
+        assert not job_env.home.endswith('/home')
 
     def test_build_mulled(self):
         if not which('docker'):
             raise unittest.SkipTest("Docker not found on PATH, required for building images via involucro")
         resolver_type = self.build_mulled_resolver
-        tool_id = 'mulled_example_multi_1'
-        endpoint = "tools/%s/dependencies" % tool_id
-        data = {'id': tool_id, 'resolver_type': resolver_type}
+        tool_ids = ['mulled_example_multi_1']
+        endpoint = "dependency_resolvers/toolbox/install"
+        data = {'tool_ids': json.dumps(tool_ids), 'resolver_type': resolver_type, 'container_type': self.container_type, 'include_containers': True}
         create_response = self._post(endpoint, data=data, admin=True)
         self._assert_status_code_is(create_response, 200)
+        create_response = self._get("dependency_resolvers/toolbox", data={'tool_ids': tool_ids, 'container_type': self.container_type, 'include_containers': True, 'index_by': 'tools'}, admin=True)
         response = create_response.json()
-        assert any([True for d in response if d['dependency_type'] == self.container_type])
+        assert len(response) == 1
+        status = response[0]['status']
+        assert status[0]['model_class'] == 'ContainerDependency'
+        assert status[0]['dependency_type'] == self.container_type
+        assert status[0]['container_description']['identifier'].startswith('quay.io/local/mulled-v2-')
 
 
 class MappingContainerResolverTestCase(integration_util.IntegrationTestCase):
@@ -164,5 +174,3 @@ class SingularityJobsIntegrationTestCase(DockerizedJobsIntegrationTestCase):
     job_config_file = SINGULARITY_JOB_CONFIG_FILE
     build_mulled_resolver = 'build_mulled_singularity'
     container_type = 'singularity'
-    # singularity passes $HOME by default
-    default_container_home_dir = os.environ.get('HOME', '/')

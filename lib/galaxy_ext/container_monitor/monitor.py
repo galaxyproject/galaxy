@@ -22,7 +22,7 @@ def parse_ports(container_name, connection_configuration):
                                         preexec_fn=os.setpgrp)
             if exit_code == 0:
                 stdout_file.seek(0)
-                ports_raw = stdout_file.read()
+                ports_raw = stdout_file.read().decode('utf-8')
                 return ports_raw
 
 

@@ -38,7 +38,7 @@ Enhancements
   (thanks to `@anuprulez <https://github.com/anuprulez>`__ and `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 3601`_
 * Add script to encode or decode the IDs that Galaxy exposes to users and admins
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 3622`_
 * Support Docker Engine swarm mode for Interactive Environments.
   `Pull Request 3666`_
@@ -50,7 +50,7 @@ Enhancements
 * Container interface abstraction.
   `Pull Request 3863`_
 * Graphite support
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 3964`_
 * Normalize the handling of steps and missing tools for the workflow editor.
   `Pull Request 3181`_
@@ -187,7 +187,7 @@ Enhancements
 * i18n improvements and French localization.
   `Pull Request 3762`_
 * Should exit immediately to avoid index error
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 3770`_
 * Made collection operations help sections slightly more readable.
   `Pull Request 3784`_
@@ -258,7 +258,7 @@ Enhancements
 * Change 'User' menu to 'Login or Register' for anonymous users.
   `Pull Request 3955`_
 * Stats docs
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 3968`_
 * Enhance filenames with collection context when downloading datasets from
   GUI.
@@ -270,7 +270,7 @@ Enhancements
 * Update Jupyter image to 17.05 .
   `Pull Request 4007`_
 * Inline CSS in error report email
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 3445`_
 * Improve routing for user preference views.
   `Pull Request 3446`_
@@ -340,7 +340,7 @@ Fixes
 * Fix margin style values for color picker element.
   `Pull Request 3965`_
 * 17.05 rstudio fixes / one small GIE fix
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 3975`_
 * Fix transiently failing Selenium upload test.
   `Pull Request 3587`_
@@ -480,7 +480,7 @@ Fixes
 * Fix multiple collection reductions on multiple data parameters.
   `Pull Request 3875`_
 * Fix inability for viz to raise loading with non-ascii messages
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 3881`_
 * Fix new history endpoint providing custom builds metadata.
   `Pull Request 3887`_
@@ -525,7 +525,7 @@ Fixes
 * Use the configured tool_path when loading data managers.
   `Pull Request 3989`_
 * Typo in remote user / user preferences exception
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 4015`_
 * Fix setting up explicit container resolution from a container resolution
   config file.
@@ -546,7 +546,7 @@ Fixes
 * Fix for S3ObjectStore _clean_cache method.
   `Pull Request 4055`_
 * Correct webhooks to use Galaxy.root and be compatible with proxy_prefix
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 4065`_
 * Fix global grid action event handler.
   `Pull Request 4068`_

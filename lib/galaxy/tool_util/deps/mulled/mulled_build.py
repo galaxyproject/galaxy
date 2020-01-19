@@ -48,6 +48,7 @@ from ..conda_compat import MetaData
 log = logging.getLogger(__name__)
 
 DIRNAME = os.path.dirname(__file__)
+DEFAULT_BASE_IMAGE = "bgruening/busybox-bash:0.1"
 DEFAULT_EXTENDED_BASE_IMAGE = "bioconda/extended-base-image:latest"
 DEFAULT_CHANNELS = ["conda-forge", "bioconda"]
 DEFAULT_REPOSITORY_TEMPLATE = "quay.io/${namespace}/${image}"
@@ -59,7 +60,7 @@ DEST_BASE_IMAGE = os.environ.get('DEST_BASE_IMAGE', None)
 CONDA_IMAGE = os.environ.get('CONDA_IMAGE', None)
 
 SINGULARITY_TEMPLATE = """Bootstrap: docker
-From: bgruening/busybox-bash:0.1
+From: %(base_image)s
 
 %%setup
 
@@ -68,6 +69,7 @@ From: bgruening/busybox-bash:0.1
     cp -r /data/dist/* /tmp/conda/
 
 %%post
+    rm -R /usr/local || true
     mkdir -p /usr/local
     cp -R /tmp/conda/* /usr/local/
 
@@ -148,16 +150,19 @@ def get_conda_hits_for_targets(targets, conda_context):
     return [r for r in search_results if r]
 
 
-def any_target_requires_extended_base(targets):
-    hits = get_conda_hits_for_targets(targets, CondaInDockerContext())
+def base_image_for_targets(targets, conda_context=None):
+    hits = get_conda_hits_for_targets(targets, conda_context or CondaInDockerContext())
     for hit in hits:
         try:
-            meta_content = unicodify(get_file_from_recipe_url(hit['url']).extractfile('info/about.json').read())
+            tarball = get_file_from_recipe_url(hit['url'])
+            meta_content = unicodify(tarball.extractfile('info/about.json').read())
             if json.loads(meta_content).get('extra', {}).get('container', {}).get('extended-base', False):
-                return True
+                return DEFAULT_EXTENDED_BASE_IMAGE
+            elif yaml.safe_load(unicodify(tarball.extractfile('info/recipe/meta.yaml').read())).get('extra', {}).get('container', {}).get('extended-base', False):
+                return DEFAULT_EXTENDED_BASE_IMAGE
         except Exception:
             log.warning("Could not load metadata.yaml for '%s', version '%s'", hit['name'], hit['version'], exc_info=True)
-    return False
+    return DEFAULT_BASE_IMAGE
 
 
 class BuildExistsException(Exception):
@@ -175,13 +180,9 @@ def mull_targets(
     repository_template=DEFAULT_REPOSITORY_TEMPLATE, dry_run=False,
     conda_version=None, verbose=False, binds=DEFAULT_BINDS, rebuild=True,
     oauth_token=None, hash_func="v2", singularity=False,
-    singularity_image_dir="singularity_import",
+    singularity_image_dir="singularity_import", base_image=None,
+    determine_base_image=True,
 ):
-    if DEST_BASE_IMAGE:
-        dest_base_image = DEST_BASE_IMAGE
-    else:
-        dest_base_image = DEFAULT_EXTENDED_BASE_IMAGE if not any_target_requires_extended_base(targets) else DEST_BASE_IMAGE
-
     targets = list(targets)
     if involucro_context is None:
         involucro_context = InvolucroContext()
@@ -231,6 +232,13 @@ def mull_targets(
         '-set', "REPO='%s'" % repo,
         '-set', "BINDS='%s'" % bind_str,
     ]
+    dest_base_image = None
+    if base_image:
+        dest_base_image = base_image
+    elif DEST_BASE_IMAGE:
+        dest_base_image = DEST_BASE_IMAGE
+    elif determine_base_image:
+        dest_base_image = base_image_for_targets(targets)
 
     if dest_base_image:
         involucro_args.extend(["-set", "DEST_BASE_IMAGE='%s'" % dest_base_image])
@@ -269,7 +277,7 @@ def mull_targets(
             if not os.path.exists(singularity_image_dir):
                 safe_makedirs(singularity_image_dir)
             with open(os.path.join(singularity_image_dir, 'Singularity.def'), 'w+') as sin_def:
-                fill_template = SINGULARITY_TEMPLATE % {'container_test': test}
+                fill_template = SINGULARITY_TEMPLATE % {'container_test': test, 'base_image': dest_base_image or DEFAULT_BASE_IMAGE}
                 sin_def.write(fill_template)
         with PrintProgress():
             ret = involucro_context.exec_command(involucro_args)

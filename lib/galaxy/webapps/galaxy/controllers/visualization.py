@@ -11,7 +11,14 @@ from paste.httpexceptions import (
     HTTPNotFound
 )
 from six import string_types
-from sqlalchemy import and_, desc, false, or_, true
+from sqlalchemy import (
+    and_,
+    desc,
+    false,
+    or_,
+    text,
+    true,
+)
 from sqlalchemy.orm import eagerload, undefer
 
 from galaxy import managers, model, util, web
@@ -44,7 +51,8 @@ class HistoryDatasetsSelectionGrid(grids.Grid):
             """ Filter by dbkey through a raw SQL b/c metadata is a BLOB. """
             dbkey_user, dbkey = decode_dbkey(dbkey)
             dbkey = dbkey.replace("'", "\\'")
-            return query.filter(or_("metadata like '%%\"dbkey\": [\"%s\"]%%'" % dbkey, "metadata like '%%\"dbkey\": \"%s\"%%'" % dbkey))
+            return query.filter(or_(text("metadata like '%%\"dbkey\": [\"%s\"]%%'" % dbkey,
+                                         "metadata like '%%\"dbkey\": \"%s\"%%'" % dbkey)))
 
     class HistoryColumn(grids.GridColumn):
         def get_value(self, trans, grid, hda):

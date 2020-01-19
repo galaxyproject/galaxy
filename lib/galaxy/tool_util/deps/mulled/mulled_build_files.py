@@ -25,6 +25,8 @@ from .mulled_build import (
     mull_targets,
     target_str_to_targets,
 )
+KNOWN_FIELDS = ["targets", "image_build", "name_override", "base_image"]
+FALLBACK_LINE_TUPLE = collections.namedtuple("_Line", " ".join(KNOWN_FIELDS))
 
 
 def main(argv=None):
@@ -35,12 +37,14 @@ def main(argv=None):
     parser.add_argument('files', metavar="FILES", default=".",
                         help="Path to directory (or single file) of TSV files describing composite recipes.")
     args = parser.parse_args()
-    for (targets, image_build, name_override) in generate_targets(args.files):
+    for target in generate_targets(args.files):
         try:
             ret = mull_targets(
-                targets,
-                image_build=image_build,
-                name_override=name_override,
+                target.targets,
+                image_build=target.image_build,
+                name_override=target.name_override,
+                base_image=target.base_image,
+                determine_base_image=False,
                 **args_to_mull_targets_kwds(args)
             )
         except BuildExistsException:
@@ -58,30 +62,40 @@ def generate_targets(target_source):
         target_source_files = [target_source]
 
     for target_source_file in target_source_files:
+        # If no headers are defined we use the 4 default fields in the order
+        # that has been used in galaxy-tool-util / galaxy-lib < 20.01
+        line_tuple = FALLBACK_LINE_TUPLE
         with open(target_source_file, "r") as f:
             for line in f.readlines():
                 if line:
                     line = line.strip()
-
-                if not line or line.startswith("#"):
-                    continue
-
-                yield line_to_targets(line)
-
-
-def line_to_targets(line_str):
-    line = _parse_line(line_str)
-    return (target_str_to_targets(line.targets), line.image_build, line.name_override)
+                    if line.startswith('#'):
+                        # headers can define a different column order
+                        line_tuple = tuple_from_header(line)
+                    else:
+                        yield line_to_targets(line, line_tuple)
 
 
-_Line = collections.namedtuple("_Line", ["targets", "image_build", "name_override"])
+def tuple_from_header(header):
+    fields = header[1:].split('\t')
+    for field in fields:
+        assert field in KNOWN_FIELDS, "'%s' is not one of %s" % (field, KNOWN_FIELDS)
+    # Make sure tuple contains all fields
+    for field in KNOWN_FIELDS:
+        if field not in fields:
+            fields.append(field)
+    return collections.namedtuple("_Line", "%s" % " ".join(fields))
 
 
-def _parse_line(line_str):
+def line_to_targets(line_str, line_tuple):
+    """Parse a line so that some columns can remain unspecified."""
     line_parts = line_str.split("\t")
-    assert len(line_parts) < 3, "Too many fields in line [%s], expect at most 3 - targets, image build number, and name override." % line_str
-    line_parts += [None] * (3 - len(line_parts))
-    return _Line(*line_parts)
+    n_fields = len(line_tuple._fields)
+    targets_column = line_tuple._fields.index('targets')
+    assert len(line_parts) <= n_fields, "Too many fields in line [%s], expect at most %s - targets, image build number, and name override." % (line_str, n_fields)
+    line_parts += [None] * (n_fields - len(line_parts))
+    line_parts[targets_column] = target_str_to_targets(line_parts[targets_column])
+    return line_tuple(*line_parts)
 
 
 __all__ = ("main", )

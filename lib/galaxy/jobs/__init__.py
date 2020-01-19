@@ -2111,7 +2111,7 @@ class JobWrapper(HasResourceParameters):
                 "connection_configuration": container.connection_configuration,
             }, f)
 
-        return "(python '%s'/lib/galaxy_ext/container_monitor/monitor.py &) " % exec_dir
+        return "(python '%s'/lib/galaxy_ext/container_monitor/monitor.py &); sleep 1 " % exec_dir
 
     @property
     def user(self):

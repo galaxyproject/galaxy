@@ -1,8 +1,14 @@
+from __future__ import absolute_import
+
+import logging
 import os
 from collections import OrderedDict
 
 import yaml
+from yaml.constructor import ConstructorError
 
+
+log = logging.getLogger(__name__)
 
 OPTION_DEFAULTS = {
     "type": "str",
@@ -12,20 +18,7 @@ OPTION_DEFAULTS = {
 }
 
 
-def ordered_load(stream):
-    def construct_mapping(loader, node):
-        loader.flatten_mapping(node)
-        return OrderedDict(loader.construct_pairs(node))
-
-    OrderedLoader.add_constructor(
-        yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
-        construct_mapping)
-    OrderedLoader.add_constructor('!include', OrderedLoader.include)
-
-    return yaml.load(stream, OrderedLoader)
-
-
-class OrderedLoader(yaml.Loader):
+class OrderedLoader(yaml.SafeLoader):
     # This class was pulled out of ordered_load() for the sake of
     # mocking __init__ in a unit test.
     def __init__(self, stream):
@@ -36,6 +29,45 @@ class OrderedLoader(yaml.Loader):
         filename = os.path.join(self._root, self.construct_scalar(node))
         with open(filename, 'r') as f:
             return yaml.load(f, OrderedLoader)
+
+
+def ordered_load(stream, merge_duplicate_keys=False):
+    """
+    Parse the first YAML document in a stream and produce the corresponding
+    Python object, using OrderedDicts instead of dicts.
+
+    If merge_duplicate_keys is True, merge the values of duplicate mapping keys
+    into a list, as the uWSGI "dumb" YAML parser would do.
+    Otherwise, following YAML 1.2 specification which says that "each key is
+    unique in the association", raise a ConstructionError exception.
+    """
+    def construct_mapping(loader, node, deep=False):
+        loader.flatten_mapping(node)
+        mapping = OrderedDict()
+        merged_duplicate = {}
+        for key_node, value_node in node.value:
+            key = loader.construct_object(key_node, deep=deep)
+            value = loader.construct_object(value_node, deep=deep)
+            if key in mapping:
+                if not merge_duplicate_keys:
+                    raise ConstructorError("while constructing a mapping", node.start_mark,
+                        "found duplicated key (%s)" % key, key_node.start_mark)
+                log.debug("Merging values for duplicate key '%s' into a list", key)
+                if merged_duplicate.get(key):
+                    mapping[key].append(value)
+                else:
+                    mapping[key] = [mapping[key], value]
+                    merged_duplicate[key] = True
+            else:
+                mapping[key] = value
+        return mapping
+
+    OrderedLoader.add_constructor(
+        yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
+        construct_mapping)
+    OrderedLoader.add_constructor('!include', OrderedLoader.include)
+
+    return yaml.load(stream, OrderedLoader)
 
 
 def ordered_dump(data, stream=None, Dumper=yaml.Dumper, **kwds):

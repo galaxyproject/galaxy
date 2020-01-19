@@ -46,7 +46,7 @@ Enhancements
   `Pull Request 7193`_, `Pull Request 7192`_, `Pull Request 7537`_,
   `Pull Request 7540`_, `Pull Request 7684`_, `Pull Request 7704`_
 * User facing release notes
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 7527`_
 * Implement dataset source and hash tracking.
   `Pull Request 7487`_, `Pull Request 4659`_, `Pull Request 7549`_
@@ -223,10 +223,10 @@ Enhancements
 * Automatically set ``cookie_path`` using ``url_for()``.
   `Pull Request 7404`_
 * Allow configuration location of user preferences extra configuration
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 7428`_
 * Add hover styling to target tool in tool panel
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 7437`_
 * Update Docker testing image
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
@@ -260,7 +260,7 @@ Enhancements
 * Refactor XSD output elements to share common output attributes.
   `Pull Request 7555`_
 * Improve linking between job conf handler assignment and documentation
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 7558`_
 * Refactor ``galaxy.web.security`` into ``galaxy.security.idencoding``.
   `Pull Request 7560`_
@@ -537,7 +537,7 @@ Fixes
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 7547`_
 * Correct db-self handler assignment method
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 7561`_
 * Fix database config doctests when env vars are in use for dburi
   `Pull Request 7562`_
@@ -549,7 +549,7 @@ Fixes
 * Update cloud imports to adhere with cloudbridge interface changes.
   `Pull Request 7586`_
 * Fix RStudio GIE
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 7590`_, `Pull Request 7925`_
 * Fix styleguide.
   `Pull Request 7602`_

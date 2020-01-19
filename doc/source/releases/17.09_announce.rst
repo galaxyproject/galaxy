@@ -141,7 +141,7 @@ Cross site scripting and session fixation
 
 Disclosed on the `mailing list <https://lists.galaxyproject.org/pipermail/galaxy-dev/2017-August/025938.html>`__ in August 2017.
 
-Vulnerabilities were found by Eric Rasche and Manabu Ishii respectively. Detailed descriptions of these categories of vulnerabilities can be found at:
+Vulnerabilities were found by Helena Rasche and Manabu Ishii respectively. Detailed descriptions of these categories of vulnerabilities can be found at:
 
 - `<https://www.owasp.org/index.php/Cross-site_Scripting_(XSS)>`__
 - https://www.owasp.org/index.php/Session_fixation

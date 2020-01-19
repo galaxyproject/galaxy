@@ -602,6 +602,7 @@ if [ -z "$skip_common_startup" ]; then
             export GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION
     fi
     ./scripts/common_startup.sh $skip_venv $no_create_venv $no_replace_pip $replace_pip $skip_client_build --dev-wheels || exit 1
+    unset GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION
 fi
 
 . ./scripts/common_startup_functions.sh

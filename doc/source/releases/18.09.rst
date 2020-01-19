@@ -54,7 +54,7 @@ Enhancements
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 6013`_
 * Add hostname metric
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 6021`_
 * Pause jobs with invalid inputs
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
@@ -88,7 +88,7 @@ Enhancements
 * Common dataset selector
   `Pull Request 6195`_
 * Permit numeric values of GRT instance ID in config
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 6200`_
 * Add the newick extension for the Newick datatype,
   (thanks to `@gregvonkuster <https://github.com/gregvonkuster>`__).
@@ -100,7 +100,7 @@ Enhancements
 * Charts filename download fix
   `Pull Request 6216`_
 * Wrap inputs in labels
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 6221`_
 * Workflow submit text links
   `Pull Request 6240`_
@@ -209,14 +209,14 @@ Enhancements
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 6469`_
 * Fix bug noticed in sentry
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 6474`_
 * Rulebuilder: Special case auto URL schema detection for SRA inputs.
   `Pull Request 6476`_
 * GRT: fix the upload logging init
   `Pull Request 6478`_
 * Add more information to the dataset template
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 6480`_
 * Use bootstrap vue classes for workflow import form
   `Pull Request 6489`_
@@ -344,7 +344,7 @@ Enhancements
 .. small_enhancement
 
 * Remove duplicate metric sending
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 6011`_
 * This strips the graphite-specific middleware
   `Pull Request 6018`_
@@ -670,7 +670,7 @@ Fixes
 * Redirect unidentified routes in admin panel
   `Pull Request 6551`_
 * Remove the sharing of toolbox in GRT
-  (thanks to `@erasche <https://github.com/erasche>`__).
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 6553`_
 * Restore ``log_destination = stdout`` configuration option.
   `Pull Request 6555`_

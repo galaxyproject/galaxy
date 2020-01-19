@@ -58,7 +58,7 @@ Enhancements
   `Pull Request 1405`_
 * Add search on username/any for API calls to user and use Select2 for sharing
   workflows/pages/histories
-  (thanks to `@erasche <https://github.com/erasche>`__.)
+  (thanks to `@hexylena <https://github.com/hexylena>`__.)
   `Pull Request 1111`_
 * Improve masthead and scratchbook UI and architecture.
   `Pull Request 1407`_, `Pull Request 1424`_
@@ -113,7 +113,7 @@ Enhancements
   environment variables.
   `Pull Request 564`_, `Pull Request 889`_
 * Reorganize history menu
-  (thanks to `@erasche <https://github.com/erasche>`__.)
+  (thanks to `@hexylena <https://github.com/hexylena>`__.)
   `Pull Request 985`_
 * Look up installed tools from different toolshed(s)
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__.)
@@ -141,7 +141,7 @@ Enhancements
   (thanks to `@scholtalbers <https://github.com/scholtalbers>`__.)
   `Pull Request 912`_
 * Add an API script to upload directory as a data library
-  (thanks to `@erasche <https://github.com/erasche>`__.)
+  (thanks to `@hexylena <https://github.com/hexylena>`__.)
   `Pull Request 918`_
 * Enable dockerized toolshed tests.
   `Pull Request 942`_
@@ -197,7 +197,7 @@ Enhancements
 * Use common exceptions in tools.
   `Pull Request 874`_
 * Refactor the remote user middleware for complexity
-  (thanks to `@erasche <https://github.com/erasche>`__.)
+  (thanks to `@hexylena <https://github.com/hexylena>`__.)
   `Pull Request 875`_
 * Allowed for capitalized package names such as R in unlinked tool shed
   dependency resolver
@@ -221,7 +221,7 @@ Enhancements
 * Add Workflow editor UI for step labels.
   `Pull Request 1251`_
 * Ease the grunt uglify process
-  (Thanks to `@erasche <https://github.com/erasche>`__.)
+  (Thanks to `@hexylena <https://github.com/hexylena>`__.)
   `Pull Request 1238`_
 * Add beta run workflow form based on the newer tool form code.
   `Pull Request 1249`_
@@ -260,7 +260,7 @@ Enhancements
 * Unify and abstract code for checking if file looks like a tool definition.
   `Pull Request 1368`_
 * Added hashes to pip requirements file
-  (thanks to `@erasche <https://github.com/erasche>`__.)
+  (thanks to `@hexylena <https://github.com/hexylena>`__.)
   `Pull Request 1393`_
 * Interactive environment updates
   (thanks to `@bgruening <https://github.com/bgruening>`__.)
@@ -376,10 +376,10 @@ Fixes
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__.)
   `Pull Request 863`_
 * Bump version of sqlite3 in nodejs proxy
-  (thanks to `@erasche <https://github.com/erasche>`__.)
+  (thanks to `@hexylena <https://github.com/hexylena>`__.)
   `Pull Request 866`_
 * Expose API keys to admins under ``REMOTE_USER``
-  (thanks to `@erasche <https://github.com/erasche>`__.)
+  (thanks to `@hexylena <https://github.com/hexylena>`__.)
   `Pull Request 872`_
 * Bug fix for tool shed repository API
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__.)
@@ -394,7 +394,7 @@ Fixes
   error.
   `Pull Request 908`_
 * Bug fix for condor runner changes made this release cycle
-  (thanks to `@erasche <https://github.com/erasche>`__.)
+  (thanks to `@hexylena <https://github.com/hexylena>`__.)
   `Pull Request 909`_
 * Change user preference datatype to text.
   `Pull Request 916`_
@@ -404,14 +404,14 @@ Fixes
 * Revise tool URL building.
   `Pull Request 947`_
 * Fix for code checking if a file seems to a tool definition file
-  (thanks to `@erasche <https://github.com/erasche>`__.)
+  (thanks to `@hexylena <https://github.com/hexylena>`__.)
   `Pull Request 949`_
 * Fix base panels to include scripts as the last element of the body.
   `Pull Request 969`_
 * Grid batch operation fixes.
   `Pull Request 971`_
 * Fix extra files path URL problem.
-  (thanks to `@erasche <https://github.com/erasche>`__.)
+  (thanks to `@hexylena <https://github.com/hexylena>`__.)
   `Pull Request 991`_
 * Fixes broken env-var declarations for tools with weird chars in their names
   (thanks to `@yhoogstrate <https://github.com/yhoogstrate>`__.)
@@ -485,7 +485,7 @@ Fixes
 * Fix for creating workflow outputs on initial workflow upload.
   `Pull Request 1330`_
 * Don't query on unencoded IDs for error form
-  (thanks to `@erasche <https://github.com/erasche>`__.)
+  (thanks to `@hexylena <https://github.com/hexylena>`__.)
   `Pull Request 1340`_
 * If ``GALAXY_SLOTS`` is defined in the environment, use it for the local runner.
   `Pull Request 1346`_

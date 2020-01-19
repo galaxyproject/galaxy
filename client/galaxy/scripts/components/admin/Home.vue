@@ -10,32 +10,32 @@
         <ul>
             <li>
                 <strong>
-                    <a @click.prevent="useRouter" :href="adminDataTypesUrl">Data types</a>
+                    <a @click.prevent="useRouter" :href="adminDataTypesUrl">Data Types</a>
                 </strong>
                 - See all datatypes available in this Galaxy.
             </li>
             <li>
                 <strong>
-                    <a @click.prevent="useRouter" :href="adminDataTablesUrl">Data tables</a>
+                    <a @click.prevent="useRouter" :href="adminDataTablesUrl">Data Tables</a>
                 </strong>
                 - See all data tables available in this Galaxy.
             </li>
             <li>
                 <strong>
-                    <a @click.prevent="useRouter" :href="adminDisplayApplicationsUrl">Display applications</a>
+                    <a @click.prevent="useRouter" :href="adminDisplayApplicationsUrl">Display Applications</a>
                 </strong>
                 - See all display applications configured in this Galaxy.
             </li>
             <li>
                 <strong>
-                    <a @click.prevent="useRouter" :href="adminJobsUrl">Manage jobs</a>
+                    <a @click.prevent="useRouter" :href="adminJobsUrl">Jobs</a>
                 </strong>
                 - Display all jobs that are currently not finished (i.e., their state is new, waiting, queued, or
                 running). Administrators are able to cleanly stop long-running jobs.
             </li>
             <li>
                 <strong>
-                    <a @click.prevent="useRouter" :href="adminDMUrl">Local data</a>
+                    <a @click.prevent="useRouter" :href="adminDMUrl">Local Data</a>
                 </strong>
                 - Manage the reference (and other) data that is stored within Tool Data Tables. See
                 <a href="https://galaxyproject.org/admin/tools/data-managers" target="_blank">wiki</a> for details.
@@ -86,31 +86,28 @@
         <ul>
             <li v-if="isToolShedInstalled">
                 <strong>
-                    <a @click.prevent="useRouter" :href="adminToolshedUrl">Install new tools</a>
+                    <a @click.prevent="useRouter" :href="adminToolshedUrl">Install and Uninstall</a>
                 </strong>
                 - Search and install new tools and other Galaxy utilities from the Tool Shed. See
                 <a href="https://galaxyproject.org/admin/tools/add-tool-from-toolshed-tutorial" target="_blank"
                     >the tutorial</a
                 >.
             </li>
-            <li v-if="installingRepositoryIds">
-                <strong>Monitor installation</strong> - View the status of tools that are being currently installed.
+            <li v-if="isRepoInstalled">
+                <strong>
+                    <a @click.prevent="useRouter" :href="adminManageMetadata">Manage Metadata</a>
+                </strong>
+                - Select on which repositories you want to reset metadata.
             </li>
-            <template v-if="isRepoInstalled">
-                <li>
-                    <strong>Manage tools</strong> - View and administer installed tools and utilities on this Galaxy.
-                </li>
-                <li><strong>Manage metadata</strong> - Select on which repositories you want to reset metadata.</li>
-            </template>
             <li>
                 <strong>
-                    <a @click.prevent="useRouter" :href="adminToolVersionsUrl">View lineage</a>
+                    <a @click.prevent="useRouter" :href="adminToolVersionsUrl">View Lineage</a>
                 </strong>
                 - A view of a version lineages for all installed tools. Useful for debugging.
             </li>
             <li>
                 <strong>
-                    <a :href="migrationStagesUrl">View migration stages</a>
+                    <a :href="migrationStagesUrl">View Migration Stages</a>
                 </strong>
                 - See the list of migration stages that moved sets of tools from the distribution to the Tool Shed.
             </li>
@@ -126,10 +123,6 @@ const root = getAppRoot();
 
 export default {
     props: {
-        installingRepositoryIds: {
-            type: String,
-            required: true
-        },
         isRepoInstalled: {
             type: Boolean,
             required: true
@@ -151,6 +144,7 @@ export default {
         adminDataTablesUrl: () => `${root}admin/data_tables`,
         adminDisplayApplicationsUrl: () => `${root}admin/display_applications`,
         adminJobsUrl: () => `${root}admin/jobs`,
+        adminManageMetadata: () => `${root}admin/reset_metadata`,
         adminDMUrl: () => `${root}admin/data_manager`,
         adminUsersUrl: () => `${root}admin/users`,
         adminQuotasUrl: () => `${root}admin/quotas`,
