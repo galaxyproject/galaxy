@@ -20,7 +20,7 @@
             console.log("workflow/editor.mako, editorConfig", editorConfig);
             window.bundleEntries.mountWorkflowEditor(editorConfig);
             window.bundleEntries.mountToolBoxWorkflow(editorConfig);
-            window.bundleEntries.mountWorkflowPanel({});
+            window.bundleEntries.mountWorkflowPanel({workflow: editorConfig });
         });
     </script>
 </%def>
