@@ -101,7 +101,13 @@ def build_command(
 
         # Remove the working directory incase this is for instance a SLURM re-submission.
         # xref https://github.com/galaxyproject/galaxy/issues/3289
-        commands_builder.prepend_command("rm -rf working outputs; mkdir -p working outputs; cd working")
+        commands_builder.prepend_command("""# Delete working/ and outputs/ only if job was resubmitted
+if [ -f .job_started ]; then
+    rm -rf working outputs; mkdir -p working outputs
+fi
+touch .job_started
+cd working
+""", sep='')
 
     container_monitor_command = job_wrapper.container_monitor_command(container)
     if container_monitor_command:
