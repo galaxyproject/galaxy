@@ -1,6 +1,6 @@
 <tool id="job_environment_default" name="job_environment_default" version="0.1.0" profile="18.01">
     <requirements>
-        <container type="docker">mvdbeek/source-activate-minimal:0.1</container>
+      <container type="docker">busybox:ubuntu-14.04</container>
     </requirements>
     <command detect_errors="exit_code"><![CDATA[
       echo 'Writing environment properties to output files.';
@@ -11,7 +11,6 @@
       echo "\$HOME" > '$home';
       echo "\$TMP"  > '$tmp';
       echo "\$SOME_ENV_VAR" > '$some_env_var';
-      echo "\$CONDA_VAR" > '$conda_var';
     ]]></command>
     <inputs>
     </inputs>
@@ -22,7 +21,6 @@
         <data name="home" format="txt" label="home" />
         <data name="tmp" format="txt" label="tmp" />
         <data name="some_env_var" format="txt" label="env_var" />
-        <data name="conda_var" format="txt" label="conda_var" />
     </outputs>
     <help>
     </help>

@@ -23,7 +23,6 @@ JobEnviromentProperties = collections.namedtuple("JobEnvironmentProperties", [
     "home",
     "tmp",
     "some_env",
-    "conda_env",
 ])
 
 
@@ -34,20 +33,16 @@ class RunsEnvironmentJobs(object):
             self.dataset_populator.run_tool(tool_id, {}, history_id)
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             self._check_completed_history(history_id)
-            return self._environment_properties(history_id, tool_id)
+            return self._environment_properties(history_id)
 
-    def _environment_properties(self, history_id, tool_id):
+    def _environment_properties(self, history_id):
         user_id = self.dataset_populator.get_history_dataset_content(history_id, hid=1).strip()
         group_id = self.dataset_populator.get_history_dataset_content(history_id, hid=2).strip()
         pwd = self.dataset_populator.get_history_dataset_content(history_id, hid=3).strip()
         home = self.dataset_populator.get_history_dataset_content(history_id, hid=4).strip()
         tmp = self.dataset_populator.get_history_dataset_content(history_id, hid=5).strip()
         some_env = self.dataset_populator.get_history_dataset_content(history_id, hid=6).strip()
-        if tool_id == 'job_environment_default':
-            conda_env = self.dataset_populator.get_history_dataset_content(history_id, hid=7).strip()
-        else:
-            conda_env = None
-        return JobEnviromentProperties(user_id, group_id, pwd, home, tmp, some_env, conda_env)
+        return JobEnviromentProperties(user_id, group_id, pwd, home, tmp, some_env)
 
     def _check_completed_history(self, history_id):
         """Extension point that lets subclasses investigate the completed job."""
