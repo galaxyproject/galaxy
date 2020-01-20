@@ -358,16 +358,14 @@ class DefaultToolAction(object):
         parent_to_child_pairs = []
         child_dataset_names = set()
         object_store_populator = ObjectStorePopulator(app)
+        async_tool = tool.tool_type == 'data_source_async'
 
         def handle_output(name, output, hidden=None):
             if output.parent:
                 parent_to_child_pairs.append((output.parent, name))
                 child_dataset_names.add(name)
-            # What is the following hack for? Need to document under what
-            # conditions can the following occur? (james@bx.psu.edu)
-            # HACK: the output data has already been created
-            #      this happens i.e. as a result of the async controller
-            if name in incoming:
+            if async_tool and name in incoming:
+                # HACK: output data has already been created as a result of the async controller
                 dataid = incoming[name]
                 data = trans.sa_session.query(app.model.HistoryDatasetAssociation).get(dataid)
                 assert data is not None
