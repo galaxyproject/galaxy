@@ -33,6 +33,7 @@ describe("ToolSection", () => {
                 }
             }
         });
+        expect(wrapper.vm.opened).to.equal(false);
         const $sectionName = wrapper.find(".name");
         expect($sectionName.text()).to.equal("tool_section");
         $sectionName.trigger("click");
@@ -44,5 +45,40 @@ describe("ToolSection", () => {
         $sectionName.trigger("click");
         await Vue.nextTick();
         expect(wrapper.findAll(".name").length).to.equal(1);
+    });
+
+    it("test tool slider state", () => {
+        const wrapper = mount(ToolSection, {
+            propsData: {
+                category: {
+                    title: "tool_section",
+                    elems: [
+                        {
+                            name: "name"
+                        },
+                        {
+                            text: "text"
+                        }
+                    ]
+                },
+                isFiltered: true
+            }
+        });
+        expect(wrapper.vm.opened).to.equal(true);
+        const $sectionName = wrapper.find(".name");
+        $sectionName.trigger("click");
+        expect(wrapper.vm.opened).to.equal(false);
+        wrapper.vm.isFiltered = false;
+        expect(wrapper.vm.opened).to.equal(false);
+        wrapper.vm.isFiltered = true;
+        expect(wrapper.vm.opened).to.equal(true);
+        wrapper.vm.disableFilter = true;
+        expect(wrapper.vm.opened).to.equal(true);
+        wrapper.vm.isFiltered = false;
+        expect(wrapper.vm.opened).to.equal(false);
+        $sectionName.trigger("click");
+        expect(wrapper.vm.opened).to.equal(true);
+        wrapper.vm.isFiltered = true;
+        expect(wrapper.vm.opened).to.equal(false);
     });
 });
