@@ -170,6 +170,7 @@ class ContainerDescription(object):
         self.type = type
         self.resolve_dependencies = resolve_dependencies
         self.shell = shell
+        self.explicit = False
 
     def to_dict(self, *args, **kwds):
         return dict(
