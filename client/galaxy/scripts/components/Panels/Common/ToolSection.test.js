@@ -61,24 +61,24 @@ describe("ToolSection", () => {
                         }
                     ]
                 },
-                isFiltered: true
+                queryFilter: "test"
             }
         });
         expect(wrapper.vm.opened).to.equal(true);
         const $sectionName = wrapper.find(".name");
         $sectionName.trigger("click");
         expect(wrapper.vm.opened).to.equal(false);
-        wrapper.vm.isFiltered = false;
+        wrapper.vm.queryFilter = "";
         expect(wrapper.vm.opened).to.equal(false);
-        wrapper.vm.isFiltered = true;
+        wrapper.vm.queryFilter = "test";
         expect(wrapper.vm.opened).to.equal(true);
         wrapper.vm.disableFilter = true;
         expect(wrapper.vm.opened).to.equal(true);
-        wrapper.vm.isFiltered = false;
+        wrapper.vm.queryFilter = "";
         expect(wrapper.vm.opened).to.equal(false);
         $sectionName.trigger("click");
         expect(wrapper.vm.opened).to.equal(true);
-        wrapper.vm.isFiltered = true;
+        wrapper.vm.queryFilter = "test";
         expect(wrapper.vm.opened).to.equal(false);
     });
 });

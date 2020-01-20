@@ -10,7 +10,7 @@
             </div>
         </div>
         <div class="unified-panel-controls">
-            <tool-search :query="query" placeholder="search tools" @onResults="setResults" />
+            <tool-search :query="query" placeholder="search tools" @onQuery="onQuery" @onResults="onResults" />
         </div>
         <div class="unified-panel-body">
             <div class="toolMenuContainer">
@@ -18,7 +18,7 @@
                     <tool-section
                         v-for="category in categories"
                         :category="category"
-                        :isFiltered="isFiltered"
+                        :queryFilter="query"
                         :key="category.id"
                         @onClick="onOpen"
                     />
@@ -82,9 +82,6 @@ export default {
         categories() {
             return filterToolSections(this.toolbox, this.results);
         },
-        isFiltered() {
-            return !!this.results;
-        },
         isUser() {
             const Galaxy = getGalaxyInstance();
             return !!(Galaxy.user && Galaxy.user.id);
@@ -107,7 +104,10 @@ export default {
         }
     },
     methods: {
-        setResults(results) {
+        onQuery(query) {
+            this.query = query;
+        },
+        onResults(results) {
             this.results = results;
         },
         onFavorites(term) {

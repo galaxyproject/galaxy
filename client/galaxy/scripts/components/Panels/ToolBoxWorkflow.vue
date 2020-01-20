@@ -6,7 +6,7 @@
             </div>
         </div>
         <div class="unified-panel-controls">
-            <tool-search placeholder="search tools" @onResults="setResults" />
+            <tool-search placeholder="search tools" @onQuery="onQuery" @onResults="onResults" />
         </div>
         <div class="unified-panel-body">
             <div class="toolMenuContainer">
@@ -16,7 +16,7 @@
                     :category="category"
                     toolKey="name"
                     :sectionName="category.name"
-                    :isFiltered="isFiltered"
+                    :queryFilter="query"
                     :disableFilter="true"
                     :key="category.name"
                     @onClick="onInsertModule"
@@ -24,7 +24,7 @@
                 <tool-section
                     :category="dataManagers"
                     :key="dataManagers.id"
-                    :isFiltered="isFiltered"
+                    :queryFilter="query"
                     :disableFilter="true"
                     @onClick="onInsertTool"
                 />
@@ -32,7 +32,7 @@
                     <tool-section
                         v-for="category in categories"
                         :category="category"
-                        :isFiltered="isFiltered"
+                        :queryFilter="query"
                         :key="category.id"
                         @onClick="onInsertTool"
                     />
@@ -42,7 +42,7 @@
                     :key="workflowSection.name"
                     operationIcon="fa fa-copy"
                     operationTitle="Insert individual steps."
-                    :isFiltered="isFiltered"
+                    :queryFilter="query"
                     :disableFilter="true"
                     @onClick="onInsertWorkflow"
                     @onOperation="onInsertWorkflowSteps"
@@ -66,6 +66,7 @@ export default {
     },
     data() {
         return {
+            query: null,
             results: null
         };
     },
@@ -95,9 +96,6 @@ export default {
         categories() {
             return filterToolSections(this.toolsLayout, this.results);
         },
-        isFiltered() {
-            return !!this.results;
-        },
         toolsLayout() {
             return this.toolbox.map(section => {
                 return {
@@ -113,7 +111,10 @@ export default {
         }
     },
     methods: {
-        setResults(results) {
+        onQuery(query) {
+            this.query = query;
+        },
+        onResults(results) {
             this.results = results;
         },
         onInsertTool(tool, evt) {

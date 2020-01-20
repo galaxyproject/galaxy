@@ -61,8 +61,8 @@ export default {
             type: Object,
             required: true
         },
-        isFiltered: {
-            type: Boolean
+        queryFilter: {
+            type: String
         },
         disableFilter: {
             type: Boolean
@@ -90,7 +90,7 @@ export default {
         };
     },
     watch: {
-        isFiltered() {
+        queryFilter() {
             this.opened = this.checkFilter();
         }
     },
@@ -104,7 +104,7 @@ export default {
     },
     methods: {
         checkFilter() {
-            return !this.disableFilter && this.isFiltered;
+            return !this.disableFilter && !!this.queryFilter;
         },
         onClick(tool, evt) {
             this.$emit("onClick", tool, evt);

@@ -36,6 +36,7 @@ export default {
     },
     methods: {
         checkQuery(q) {
+            this.$emit("onQuery", q);
             if (q && q.length >= this.minQueryLength) {
                 if (this.favorites.includes(q)) {
                     this.$emit("onResults", this.favoritesResults);
