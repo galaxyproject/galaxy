@@ -75,10 +75,6 @@ export default {
             type: Array,
             required: true
         },
-        workflowsTitle: {
-            type: String,
-            default: _l("Workflows")
-        },
         workflowSection: {
             type: Object
         },

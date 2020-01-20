@@ -24,7 +24,7 @@
                     />
                 </div>
                 <div class="toolSectionTitle" id="title_XXinternalXXworkflow">
-                    <a>{{ workflowsTitle }}</a>
+                    <a>{{ workflowTitle }}</a>
                 </div>
                 <div id="internal-workflows" class="toolSectionBody">
                     <div class="toolSectionBg" />
@@ -73,7 +73,7 @@ export default {
             type: Array,
             required: true
         },
-        workflowsTitle: {
+        workflowTitle: {
             type: String,
             default: _l("Workflows")
         }
