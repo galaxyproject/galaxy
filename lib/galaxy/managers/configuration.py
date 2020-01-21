@@ -31,7 +31,7 @@ class ConfigSerializer(base.ModelSerializer):
     def add_serializers(self):
 
         def _defaults_to(default):
-            return lambda item, key, **context: getattr(item, key, default)
+            return lambda config, key, **context: getattr(config, key, default)
 
         def _use_config(config, key, **context):
             """Let config object determine the value for key"""
@@ -44,8 +44,8 @@ class ConfigSerializer(base.ModelSerializer):
             'brand'                             : _use_config,
             'display_galaxy_brand'              : _use_config,
             # TODO: this doesn't seem right
-            'logo_url'                          : lambda item, key, **context: self.url_for(item.get(key, '/')),
-            'logo_src'                          : lambda item, key, **context: self.url_for('/static/favicon.png'),
+            'logo_url'                          : lambda config, key, **context: self.url_for(config.get(key, '/')),
+            'logo_src'                          : lambda config, key, **context: self.url_for('/static/favicon.png'),
             'terms_url'                         : _use_config,
             'myexperiment_target_url'           : _use_config,
             'wiki_url'                          : _use_config,
@@ -79,7 +79,7 @@ class ConfigSerializer(base.ModelSerializer):
             # TODO: is there no 'correct' way to get an api url? controller='api', action='tools' is a hack
             # at any rate: the following works with path_prefix but is still brittle
             # TODO: change this to (more generic) upload_path and incorporate config.nginx_upload_path into building it
-            'nginx_upload_path'                 : lambda item, key, **context: getattr(item, key, False),
+            'nginx_upload_path'                 : lambda config, key, **context: getattr(config, key, False),
             'chunk_upload_size'                 : _use_config,
             'ftp_upload_site'                   : _use_config,
             'version_major'                     : _defaults_to(None),
@@ -90,9 +90,9 @@ class ConfigSerializer(base.ModelSerializer):
             'message_box_content'               : _use_config,
             'message_box_visible'               : _use_config,
             'message_box_class'                 : _use_config,
-            'server_startttime'                 : lambda item, key, **context: server_starttime,
+            'server_startttime'                 : lambda config, key, **context: server_starttime,
             'mailing_join_addr'                 : _defaults_to('galaxy-announce-join@bx.psu.edu'),  # should this be the schema default?
-            'server_mail_configured'            : lambda item, key, **context: bool(getattr(item, 'smtp_server')),
+            'server_mail_configured'            : lambda config, key, **context: bool(getattr(config, 'smtp_server')),
             'registration_warning_message'      : _use_config,
             'welcome_url'                       : _use_config,
             'show_welcome_with_login'           : _defaults_to(True),  # schema default is False
@@ -109,7 +109,7 @@ class AdminConfigSerializer(ConfigSerializer):
         super(AdminConfigSerializer, self).add_serializers()
 
         def _defaults_to(default):
-            return lambda item, key, **context: getattr(item, key, default)
+            return lambda config, key, **context: getattr(config, key, default)
 
         self.serializers.update({
             # TODO: this is available from user serialization: remove
