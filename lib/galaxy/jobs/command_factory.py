@@ -19,6 +19,13 @@ YIELD_CAPTURED_CODE = 'sh -c "exit $return_code"'
 SETUP_GALAXY_FOR_METADATA = """
 [ "$GALAXY_VIRTUAL_ENV" = "None" ] && GALAXY_VIRTUAL_ENV="$_GALAXY_VIRTUAL_ENV"; _galaxy_setup_environment True
 """
+PREPARE_DIRS = """mkdir -p working outputs
+if [ -f .job_started ]; then
+    rm -rf working/ outputs/; cp -R _working working; cp -R _outputs outputs
+else
+    cp -R working _working; cp -R outputs _outputs
+fi
+touch .job_started; cd working"""
 
 
 def build_command(
@@ -99,15 +106,9 @@ def build_command(
         # usually working will already exist, but it will not for task
         # split jobs.
 
-        # Copy working/ and output/ before job submission so that these can be restored on resubmission
+        # Copy working and outputs before job submission so that these can be restored on resubmission
         # xref https://github.com/galaxyproject/galaxy/issues/3289
-        commands_builder.prepend_command("""mkdir -p working outputs
-if [ -f .job_started ]; then
-    rm -rf working/ outputs/; cp -R _working working; cp -R _outputs outputs
-else
-    cp -R working _working; cp -R outputs _outputs
-fi
-touch .job_started; cd working""")
+        commands_builder.prepend_command(PREPARE_DIRS)
 
     container_monitor_command = job_wrapper.container_monitor_command(container)
     if container_monitor_command:
