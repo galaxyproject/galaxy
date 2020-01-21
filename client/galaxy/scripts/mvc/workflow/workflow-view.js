@@ -239,7 +239,7 @@ export default Backbone.View.extend({
         });
 
         // Rename async.
-        async_save_text("workflow-name", "workflow-name", self.urls.rename_async, "new_name");
+        //async_save_text("workflow-name", "workflow-name", self.urls.rename_async, "new_name");
 
         // Tag async. Simply have the workflow edit element generate a click on the tag element to activate tagging.
         $("#workflow-tag").click(() => {

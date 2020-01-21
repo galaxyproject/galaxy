@@ -9,7 +9,7 @@
             <div id="edit-attributes" class="right-content p-2">
                 <div id="workflow-name-area">
                     <b>Name</b>
-                    <b-input id="workflow-name">{{ workflow.name }}</b-input>
+                    <b-input id="workflow-name" :value="workflow.name" @change="onRename"/>
                 </div>
                 <div id="workflow-version-area" class="mt-2">
                     <b>Version</b>
@@ -19,7 +19,7 @@
                 </div>
                 <div id="workflow-annotation-area" class="mt-2">
                     <b>Annotation</b>
-                    <b-textarea id="workflow-annotation">{{ workflow.annotation }}</b-textarea>
+                    <b-textarea id="workflow-annotation" :value="workflow.annotation" />
                     <div class="form-text text-muted">
                         These notes will be visible when this workflow is viewed.
                     </div>
@@ -46,6 +46,7 @@
 
 <script>
 import Tags from "components/Common/Tags";
+import { Services } from "components/Workflow/services";
 export default {
     name: "EditorPanel",
     components: {
@@ -60,8 +61,14 @@ export default {
             required: true
         }
     },
+    created() {
+        this.services = new Services();
+    },
     methods: {
-        onTags(item) {}
+        onTags(item) {},
+        onRename(name) {
+            this.services.updateWorkflow(this.workflow.id, { name } );
+        }
     }
 };
 </script>
