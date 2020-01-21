@@ -53,7 +53,6 @@
 </template>
 
 <script>
-import _l from "utils/localization";
 import ToolSection from "./Common/ToolSection";
 import ToolSearch from "./Common/ToolSearch";
 import { filterToolSections } from "./utilities.js";
