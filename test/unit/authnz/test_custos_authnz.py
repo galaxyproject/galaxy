@@ -146,7 +146,7 @@ class CustosAuthnzTestCase(unittest.TestCase):
             provider = None
             custos_authnz_token = None
 
-            def filter_by(self, external_user_id=None, provider=None):
+            def filter_by(self, email=None, external_user_id=None, provider=None):
                 self.external_user_id = external_user_id
                 self.provider = provider
                 if self.custos_authnz_token:
