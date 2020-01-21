@@ -88,7 +88,8 @@ class CustosAuthnz(IdentityProvider):
         # Create or update custos_authnz_token record
         custos_authnz_token = self._get_custos_authnz_token(trans.sa_session, user_id, self.config['provider'])
         if custos_authnz_token is None:
-            if not trans.user:
+            user = trans.user
+            if not user:
                 existing_user = trans.sa_session.query(User).filter_by(email=email).first()
                 if existing_user:
                     # If there is only a single external authentication
