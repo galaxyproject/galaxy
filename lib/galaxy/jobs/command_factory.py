@@ -99,13 +99,15 @@ def build_command(
         # usually working will already exist, but it will not for task
         # split jobs.
 
-        # Remove all non-readonly files in the workfing directory incase this is a re-submission.
+        # Copy working/ and output/ before job submission so that these can be restored on resubmission
         # xref https://github.com/galaxyproject/galaxy/issues/3289
-        commands_builder.prepend_command("""
+        commands_builder.prepend_command("""mkdir -p working outputs
 if [ -f .job_started ]; then
-    find working outputs -perm /0222  -delete 2> /dev/null || true
+    rm -rf working/ outputs/; cp -R _working working; cp -R _outputs outputs
+else
+    cp -R working _working; cp -R outputs _outputs
 fi
-mkdir -p working outputs; touch .job_started; cd working""")
+touch .job_started; cd working""")
 
     container_monitor_command = job_wrapper.container_monitor_command(container)
     if container_monitor_command:
