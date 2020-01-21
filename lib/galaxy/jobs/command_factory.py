@@ -99,15 +99,13 @@ def build_command(
         # usually working will already exist, but it will not for task
         # split jobs.
 
-        # Remove the working directory incase this is for instance a SLURM re-submission.
+        # Remove all non-readonly files in the workfing directory incase this is a re-submission.
         # xref https://github.com/galaxyproject/galaxy/issues/3289
-        commands_builder.prepend_command("""# Delete working/ and outputs/ only if job was resubmitted
+        commands_builder.prepend_command("""
 if [ -f .job_started ]; then
-    rm -rf working outputs; mkdir -p working outputs
+    find working outputs -perm /0222  -delete 2> /dev/null || true
 fi
-touch .job_started
-cd working
-""", sep='')
+mkdir -p working outputs; touch .job_started; cd working""")
 
     container_monitor_command = job_wrapper.container_monitor_command(container)
     if container_monitor_command:
