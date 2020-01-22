@@ -16,9 +16,11 @@
                 </div>
                 <div id="workflow-version-area" class="mt-2">
                     <b>Version</b>
-                    <select id="workflow-version-switch" class="ui-input"
-                        >Select version</select
-                    >
+                    <div class="ui-select">
+                        <select class="ui-input" id="workflow-version-switch">
+                            Select version
+                        </select>
+                    </div>
                 </div>
                 <div id="workflow-annotation-area" class="mt-2">
                     <b>Annotation</b>
