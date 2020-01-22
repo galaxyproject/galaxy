@@ -1,6 +1,6 @@
 <template>
     <upload-wrapper wrapperClass="upload-view-composite">
-        <div class="upload-helper" v-show="showHelper">Select extension to show files required to upload</div>
+        <div class="upload-helper" v-show="showHelper">Select Composite Type to show files required to upload</div>
         <table class="upload-table ui-table-striped" v-show="!showHelper" ref="uploadTable">
             <thead>
                 <tr>
