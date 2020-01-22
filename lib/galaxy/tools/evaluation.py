@@ -525,6 +525,8 @@ class ToolEvaluator(object):
             if not os.path.exists(directory):
                 os.makedirs(directory)
             if filename is not None:
+                # Explicit filename was requested, needs to be placed in tool working directory
+                directory = os.path.join(self.local_working_directory, "working")
                 config_filename = os.path.join(directory, filename)
             else:
                 fd, config_filename = tempfile.mkstemp(dir=directory)
@@ -582,14 +584,13 @@ class ToolEvaluator(object):
         if self.tool.profile < 16.04 and command and "$param_file" in command:
             fd, param_filename = tempfile.mkstemp(dir=directory)
             os.close(fd)
-            f = open(param_filename, "w")
-            for key, value in param_dict.items():
-                # parameters can be strings or lists of strings, coerce to list
-                if not isinstance(value, list):
-                    value = [value]
-                for elem in value:
-                    f.write('%s=%s\n' % (key, elem))
-            f.close()
+            with open(param_filename, "w") as f:
+                for key, value in param_dict.items():
+                    # parameters can be strings or lists of strings, coerce to list
+                    if not isinstance(value, list):
+                        value = [value]
+                    for elem in value:
+                        f.write('%s=%s\n' % (key, elem))
             self.__register_extra_file('param_file', param_filename)
             return param_filename
         else:

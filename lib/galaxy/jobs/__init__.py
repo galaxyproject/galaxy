@@ -1113,6 +1113,7 @@ class JobWrapper(HasResourceParameters):
             # The tool execution is given a working directory beneath the
             # "job" working directory.
             safe_makedirs(self.tool_working_directory)
+            safe_makedirs(os.path.join(working_directory, 'outputs'))
             log.debug('(%s) Working directory for job is: %s',
                       self.job_id, self.working_directory)
         except ObjectInvalid:
@@ -1784,7 +1785,11 @@ class JobWrapper(HasResourceParameters):
         try:
             if delete_files:
                 for fname in self.extra_filenames:
-                    os.remove(fname)
+                    try:
+                        os.remove(fname)
+                    except EnvironmentError as e:
+                        if e.errno != errno.ENOENT:
+                            raise
                 self.external_output_metadata.cleanup_external_metadata(self.sa_session)
             galaxy.tools.imp_exp.JobExportHistoryArchiveWrapper(self.app, self.job_id).cleanup_after_job()
             galaxy.tools.imp_exp.JobImportHistoryArchiveWrapper(self.app, self.job_id).cleanup_after_job()

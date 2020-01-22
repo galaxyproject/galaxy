@@ -2269,9 +2269,8 @@ class OutputParameterJSONTool(Tool):
             json_params['output_data'].append(data_dict)
             if json_filename is None:
                 json_filename = file_name
-        out = open(json_filename, 'w')
-        out.write(json.dumps(json_params))
-        out.close()
+        with open(json_filename, 'w') as out:
+            out.write(json.dumps(json_params))
 
 
 class ExpressionTool(Tool):
