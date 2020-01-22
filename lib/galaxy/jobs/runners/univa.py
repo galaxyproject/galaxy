@@ -32,7 +32,7 @@ import time
 
 from galaxy.jobs.runners.drmaa import DRMAAJobRunner
 from galaxy.util import (
-    size_to_bytes, 
+    size_to_bytes,
     unicodify
 )
 
