@@ -692,10 +692,19 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             'name'                : workflow.name
         } for workflow in workflows]
 
+        # identify item tags
+        item_tags = [ tag for tag in stored.tags if ( tag.user == trans.user ) ]
+        item_tag_names = []
+        for ta in item_tags:
+            item_tag_names.append(escape(ta.tag.name))
+
         # build workflow editor model
         editor_config = {
             'id'                      : trans.security.encode_id(stored.id),
             'name'                    : stored.name,
+            'tags'                    : item_tag_names,
+            'version'                 : version,
+            'annotation'              : self.get_item_annotation_str(trans.sa_session, trans.user, stored),
             'toolbox'                 : trans.app.toolbox.to_dict(trans),
             'module_sections'         : module_sections,
             'data_managers'           : data_managers,
@@ -715,11 +724,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         }
 
         # parse to mako
-        return trans.fill_template("workflow/editor.mako",
-                                   editor_config=editor_config,
-                                   stored=stored,
-                                   version=version,
-                                   annotation=self.get_item_annotation_str(trans.sa_session, trans.user, stored))
+        return trans.fill_template("workflow/editor.mako", editor_config=editor_config)
 
     @web.json
     def load_workflow(self, trans, id, version=None):

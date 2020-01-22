@@ -6,10 +6,13 @@
             </div>
         </div>
         <div class="unified-panel-body workflow-right">
+            <b-alert class="m-2" :variant="messageVariant" :show="!!message">
+                {{ message }}
+            </b-alert>
             <div id="edit-attributes" class="right-content p-2">
                 <div id="workflow-name-area">
                     <b>Name</b>
-                    <b-input id="workflow-name" :value="workflow.name" @change="onRename"/>
+                    <b-input id="workflow-name" :value="workflow.name" @change="onRename" />
                 </div>
                 <div id="workflow-version-area" class="mt-2">
                     <b>Version</b>
@@ -19,7 +22,7 @@
                 </div>
                 <div id="workflow-annotation-area" class="mt-2">
                     <b>Annotation</b>
-                    <b-textarea id="workflow-annotation" :value="workflow.annotation" />
+                    <b-textarea id="workflow-annotation" :value="workflow.annotation" @change="onAnnotation" />
                     <div class="form-text text-muted">
                         These notes will be visible when this workflow is viewed.
                     </div>
@@ -53,7 +56,10 @@ export default {
         Tags
     },
     data() {
-        return {};
+        return {
+            message: null,
+            messageVariant: null
+        };
     },
     props: {
         workflow: {
@@ -65,9 +71,28 @@ export default {
         this.services = new Services();
     },
     methods: {
-        onTags(item) {},
+        onTags(workflow) {
+            this.services
+                .updateWorkflow(workflow.id, {
+                    tags: workflow.tags
+                })
+                .catch(error => {
+                    this.onError(error);
+                });
+        },
+        onAnnotation(annotation) {
+            this.services.updateWorkflow(this.workflow.id, { annotation }).catch(error => {
+                this.onError(error);
+            });
+        },
         onRename(name) {
-            this.services.updateWorkflow(this.workflow.id, { name } );
+            this.services.updateWorkflow(this.workflow.id, { name }).catch(error => {
+                this.onError(error);
+            });
+        },
+        onError: function(message) {
+            this.message = message;
+            this.messageVariant = "danger";
         }
     }
 };
