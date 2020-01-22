@@ -693,7 +693,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         } for workflow in workflows]
 
         # identify item tags
-        item_tags = [ tag for tag in stored.tags if ( tag.user == trans.user ) ]
+        item_tags = [tag for tag in stored.tags if (tag.user == trans.user)]
         item_tag_names = []
         for ta in item_tags:
             item_tag_names.append(escape(ta.tag.name))
