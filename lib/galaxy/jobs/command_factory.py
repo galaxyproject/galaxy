@@ -20,12 +20,12 @@ SETUP_GALAXY_FOR_METADATA = """
 [ "$GALAXY_VIRTUAL_ENV" = "None" ] && GALAXY_VIRTUAL_ENV="$_GALAXY_VIRTUAL_ENV"; _galaxy_setup_environment True
 """
 PREPARE_DIRS = """mkdir -p working outputs
-if [ -f .job_started ]; then
+if [ -d _working ]; then
     rm -rf working/ outputs/; cp -R _working working; cp -R _outputs outputs
 else
     cp -R working _working; cp -R outputs _outputs
 fi
-touch .job_started; cd working"""
+cd working"""
 
 
 def build_command(
