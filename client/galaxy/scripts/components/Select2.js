@@ -16,7 +16,8 @@ export default {
             data: this.options,
             placeholder: this.placeholder,
             allowClear: !!this.placeholder,
-            enable: enabled
+            enable: enabled,
+            dropdownAutoWidth: true
         };
         if (this.containerClass) {
             select2Options.containerCssClass = this.containerClass;
