@@ -41,9 +41,6 @@ def main():
     else:
         mediaLength = len(stt.result.transcript)
 
-    print(mediaLength)
-
-
     # If the text doesn't exist, exit
     if mediaLength == 0:
         exit(1)
@@ -66,9 +63,36 @@ def main():
     
     result.media = EntityExtractionMedia(mediaLength, input_file)
 
+    # Variables for filling time offsets based on speech to text
+    lastPos = 0  # Iterator to keep track of location in STT word
+    sttWords = len(stt.result.words) # Number of STT words
+
     if 'Entities' in comprehend_data.keys():
-         for entity in comprehend_data["Entities"]:
-             result.addEntity(entity["Type"], entity["Text"], int(entity["BeginOffset"]), int(entity["EndOffset"]), "relevance", float(entity["Score"]))
+        for entity in comprehend_data["Entities"]:
+            # Start and end time offsets
+            start = None
+            end = None
+            text = entity["Text"]
+
+            # Split the entity into an array of words based on whitespace
+            entityParts = text.split()
+
+            # For each word in the entity, find the corresponding word in the STT word list
+            for entityPart in entityParts:
+                for wordPos in range(lastPos, sttWords):
+                    # If it matches, set the time offset.
+                    word = stt.result.words[wordPos]
+                    if word.text == entityPart:
+                        # Keep track of last position to save iterations
+                        lastPos = wordPos
+                        # Set start if we haven't set it yet
+                        if start == None:
+                            start = word.start
+                        end = word.end
+                        break
+            result.addEntity(entity["Type"], text, int(entity["BeginOffset"]), int(entity["EndOffset"]), "relevance", float(entity["Score"]), start, end)
+
+
 
     #Write the json file
     write_json_file(result, json_file)
