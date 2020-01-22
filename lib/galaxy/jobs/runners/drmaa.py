@@ -18,7 +18,10 @@ from galaxy.jobs.runners import (
     AsynchronousJobRunner,
     AsynchronousJobState
 )
-from galaxy.util import asbool, unicodify
+from galaxy.util import (
+    asbool,
+    unicodify,
+)
 
 drmaa = None
 
