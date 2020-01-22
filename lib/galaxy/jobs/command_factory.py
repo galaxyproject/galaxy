@@ -19,7 +19,7 @@ YIELD_CAPTURED_CODE = 'sh -c "exit $return_code"'
 SETUP_GALAXY_FOR_METADATA = """
 [ "$GALAXY_VIRTUAL_ENV" = "None" ] && GALAXY_VIRTUAL_ENV="$_GALAXY_VIRTUAL_ENV"; _galaxy_setup_environment True
 """
-PREPARE_DIRS = """mkdir -p working outputs
+PREPARE_DIRS = """mkdir -p working outputs configs
 if [ -d _working ]; then
     rm -rf working/ outputs/ configs/; cp -R _working working; cp -R _outputs outputs; cp -R _configs configs
 else
