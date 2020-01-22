@@ -20,6 +20,7 @@ from galaxy.managers.histories import HistoryManager
 from galaxy.managers.interactivetool import InteractiveToolManager
 from galaxy.managers.libraries import LibraryManager
 from galaxy.managers.tools import DynamicToolManager
+from galaxy.managers.users import UserManager
 from galaxy.managers.workflows import WorkflowsManager
 from galaxy.model.database_heartbeat import DatabaseHeartbeat
 from galaxy.model.tags import GalaxyTagHandler
@@ -174,6 +175,7 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         self.heartbeat = None
         from galaxy import auth
         self.auth_manager = auth.AuthManager(self)
+        self.user_manager = UserManager(self)
         # Start the heartbeat process if configured and available (wait until
         # postfork if using uWSGI)
         if self.config.use_heartbeat:

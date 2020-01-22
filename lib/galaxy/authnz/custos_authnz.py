@@ -105,7 +105,10 @@ class CustosAuthnz(IdentityProvider):
                     else:
                         raise Exception("There already exists a user with email %s.  To associate this external login, you must first be logged in as that existing account." % email)
                 else:
-                    user = self._create_user(trans.sa_session, username, email)
+                    user = trans.app.user_manager.create(email=email, username=username)
+                    user.set_random_password()
+                    trans.sa_session.add(user)
+                    trans.sa_session.flush()
             custos_authnz_token = CustosAuthnzToken(user=user,
                                    external_user_id=user_id,
                                    provider=self.config['provider'],
@@ -170,13 +173,6 @@ class CustosAuthnz(IdentityProvider):
     def _get_custos_authnz_token(self, sa_session, user_id, provider):
         return sa_session.query(CustosAuthnzToken).filter_by(
             external_user_id=user_id, provider=provider).one_or_none()
-
-    def _create_user(self, sa_session, username, email):
-        user = User(email=email, username=username)
-        user.set_random_password()
-        sa_session.add(user)
-        sa_session.flush()
-        return user
 
     def _hash_nonce(self, nonce):
         return hashlib.sha256(util.smart_str(nonce)).hexdigest()
