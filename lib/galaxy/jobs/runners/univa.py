@@ -30,8 +30,8 @@ import signal
 import subprocess
 import time
 
-from galaxy.util import unicodify, size_to_bytes
 from galaxy.jobs.runners.drmaa import DRMAAJobRunner
+from galaxy.util import size_to_bytes, unicodify
 log = logging.getLogger(__name__)
 
 __all__ = ('UnivaJobRunner',)
