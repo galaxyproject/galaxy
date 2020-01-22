@@ -574,7 +574,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             return {'id': trans.security.encode_id(stored_workflow.id), 'message': 'Workflow %s has been created.' % workflow_name}
 
     @web.json
-    def save_workflow_as(self, trans, workflow_name, workflow_data, workflow_annotation=""):
+    def save_workflow_as(self, trans, workflow_name, workflow_data, workflow_annotation="", **kwd):
         """
             Creates a new workflow based on Save As command. It is a new workflow, but
             is created with workflow_data already present.
@@ -708,19 +708,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             'toolbox'                 : trans.app.toolbox.to_dict(trans),
             'module_sections'         : module_sections,
             'data_managers'           : data_managers,
-            'workflows'               : workflows,
-            'urls'    : {
-                'tool_search'         : url_for('/api/tools'),
-                'get_datatypes'       : url_for('/api/datatypes/mapping'),
-                'load_workflow'       : url_for(controller='workflow', action='load_workflow'),
-                'run_workflow'        : url_for(controller='root', action='index', workflow_id=trans.security.encode_id(stored.id)),
-                'rename_async'        : url_for(controller='workflow', action='rename_async', id=trans.security.encode_id(stored.id)),
-                'annotate_async'      : url_for(controller='workflow', action='annotate_async', id=trans.security.encode_id(stored.id)),
-                'get_new_module_info' : url_for(controller='workflow', action='get_new_module_info'),
-                'workflow_index'      : url_for('/workflows/list'),
-                'save_workflow'       : url_for(controller='workflow', action='save_workflow'),
-                'workflow_save_as'    : url_for(controller='workflow', action='save_workflow_as')
-            }
+            'workflows'               : workflows
         }
 
         # parse to mako

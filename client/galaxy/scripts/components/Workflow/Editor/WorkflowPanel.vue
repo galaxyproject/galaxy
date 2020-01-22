@@ -1,5 +1,5 @@
 <template>
-    <div id="right" class="unified-panel">
+    <div class="unified-panel">
         <div class="unified-panel-header" unselectable="on">
             <div class="unified-panel-header-inner">
                 <div class="panel-header-text">Details</div>
