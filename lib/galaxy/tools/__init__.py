@@ -129,7 +129,6 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     # Legacy tools bundled with Galaxy.
     "vcf_to_maf_customtrack1",
     "laj_1",
-    "meme_fimo",
     "secure_hash_message_digest",
     "join1",
     "gff2bed1",
@@ -185,6 +184,7 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
 # Tools that needed galaxy on the PATH in the past but no longer do along
 # with the version at which they were fixed.
 GALAXY_LIB_TOOLS_VERSIONED = {
+    "meme_fimo": packaging.version.parse("5.0.5"),
     "Extract genomic DNA 1": packaging.version.parse("3.0.0"),
     "fetchflank": packaging.version.parse("1.0.1"),
     "gops_intersect_1": packaging.version.parse("1.0.0"),
