@@ -18,7 +18,10 @@ from galaxy.jobs.runners import (
     AsynchronousJobRunner,
     AsynchronousJobState
 )
-from galaxy.util import asbool
+from galaxy.util import (
+    asbool,
+    unicodify,
+)
 
 drmaa = None
 
@@ -407,7 +410,8 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         log.info("Running command %s" % command)
         p = subprocess.Popen(command,
                              shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        (stdoutdata, stderrdata) = p.communicate()
+        stdoutdata, stderrdata = p.communicate()
+        stdoutdata, stderrdata = unicodify(stdoutdata).strip(), unicodify(stderrdata).strip()
         exitcode = p.returncode
         # os.unlink(jobtemplate_filename)
         if exitcode != 0:

@@ -1113,6 +1113,7 @@ class JobWrapper(HasResourceParameters):
             # The tool execution is given a working directory beneath the
             # "job" working directory.
             safe_makedirs(self.tool_working_directory)
+            safe_makedirs(os.path.join(working_directory, 'outputs'))
             log.debug('(%s) Working directory for job is: %s',
                       self.job_id, self.working_directory)
         except ObjectInvalid:
@@ -1784,7 +1785,11 @@ class JobWrapper(HasResourceParameters):
         try:
             if delete_files:
                 for fname in self.extra_filenames:
-                    os.remove(fname)
+                    try:
+                        os.remove(fname)
+                    except EnvironmentError as e:
+                        if e.errno != errno.ENOENT:
+                            raise
                 self.external_output_metadata.cleanup_external_metadata(self.sa_session)
             galaxy.tools.imp_exp.JobExportHistoryArchiveWrapper(self.app, self.job_id).cleanup_after_job()
             galaxy.tools.imp_exp.JobImportHistoryArchiveWrapper(self.app, self.job_id).cleanup_after_job()
@@ -2173,6 +2178,7 @@ class JobWrapper(HasResourceParameters):
             log.debug('(%s) Changing ownership of working directory with: %s' % (job.id, ' '.join(cmd)))
             p = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             stdout, stderr = p.communicate()
+            stdout, stderr = unicodify(stdout).strip(), unicodify(stdout).strip()
             if p.returncode != 0:
                 log.error('external script failed.')
                 log.error('stdout was: %s' % stdout)

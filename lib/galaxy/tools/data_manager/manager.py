@@ -266,28 +266,18 @@ class DataManager(object):
 
         data_tables_dict = data_manager_dict.get('data_tables', {})
         for data_table_name in self.data_tables.keys():
-            data_table_values = None
-            data_table_remove_values = None
-            # Add/Remove option for data tables
-            if isinstance(data_tables_dict.get(data_table_name), dict):
-
-                data_table_data = data_tables_dict.get(data_table_name, None)
-                # Validate results
-                if not data_table_data:
-                    log.warning('Data table seems invalid: "%s".' % data_table_name)
-                    continue
-
-                data_table_values = data_table_data.pop('add', None)
-                data_table_remove_values = data_table_data.pop('remove', None)
-
-                # Remove it as well here
-                data_tables_dict.pop(data_table_name, None)
-            else:
-                data_table_values = data_tables_dict.pop(data_table_name, None)
-
-            if not data_table_values and not data_table_remove_values:
+            data_table_values = data_tables_dict.pop(data_table_name, None)
+            if not data_table_values:
                 log.warning('No values for data table "%s" were returned by the data manager "%s".' % (data_table_name, self.id))
                 continue  # next data table
+            data_table_remove_values = None
+            if isinstance(data_table_values, dict):
+                values_to_add = data_table_values.get('add')
+                data_table_remove_values = data_table_values.get('remove')
+                if values_to_add or data_table_remove_values:
+                    # We don't have an old style data table definition
+                    data_table_values = values_to_add
+
             data_table = self.data_managers.app.tool_data_tables.get(data_table_name, None)
             if data_table is None:
                 log.error('The data manager "%s" returned an unknown data table "%s" with new entries "%s". These entries will not be created. Please confirm that an entry for "%s" exists in your "%s" file.' % (self.id, data_table_name, data_table_values, data_table_name, 'tool_data_table_conf.xml'))
