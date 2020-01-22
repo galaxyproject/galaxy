@@ -525,6 +525,8 @@ class ToolEvaluator(object):
             if not os.path.exists(directory):
                 os.makedirs(directory)
             if filename is not None:
+                # Explicit filename was requested, needs to be placed in tool working directory
+                directory = os.path.join(self.local_working_directory, "working")
                 config_filename = os.path.join(directory, filename)
             else:
                 fd, config_filename = tempfile.mkstemp(dir=directory)
