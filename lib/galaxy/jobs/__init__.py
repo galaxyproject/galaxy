@@ -1787,8 +1787,9 @@ class JobWrapper(HasResourceParameters):
                 for fname in self.extra_filenames:
                     try:
                         os.remove(fname)
-                    except FileNotFoundError:
-                        pass
+                    except EnvironmentError as e:
+                        if e.errno != errno.ENOENT:
+                            raise
                 self.external_output_metadata.cleanup_external_metadata(self.sa_session)
             galaxy.tools.imp_exp.JobExportHistoryArchiveWrapper(self.app, self.job_id).cleanup_after_job()
             galaxy.tools.imp_exp.JobImportHistoryArchiveWrapper(self.app, self.job_id).cleanup_after_job()
