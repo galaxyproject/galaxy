@@ -165,6 +165,8 @@ tool_panel:
   selectors:
     tool_link: 'a[href$$="tool_runner?tool_id=${tool_id}"]'
     outer_tool_link: '.toolTitle a[href$$="tool_runner?tool_id=${tool_id}"]'
+    search: '.search-query'
+    workflow_names: '#internal-workflows .toolTitle'
 
 multi_history_view:
 
@@ -252,6 +254,7 @@ workflows:
   selectors:
     new_button: '#workflow-create'
     import_button: '#workflow-import'
+    save_button: '#workflow-save-button'
 
 workflow_run:
 

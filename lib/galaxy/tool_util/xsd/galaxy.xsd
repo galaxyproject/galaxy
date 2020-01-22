@@ -4812,6 +4812,11 @@ This file is then used in the ``command`` block of the tool as follows:
 the path to the file created with this directive.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
+        <xs:attribute name="filename" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Path relative to the working directory of the tool for the configfile created in response to this directive.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
       </xs:extension>
     </xs:simpleContent>
   </xs:complexType>

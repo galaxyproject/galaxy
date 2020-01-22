@@ -1,7 +1,7 @@
-<tool id="exit_code_oom" name="exit_code_oom">
+<tool id="exit_code_oom" name="exit_code_oom" version="0.1.1" profile="16.04">
     <!-- tool errors out with identified OOM error if less than 10MB are allocated. -->
     <command detect_errors="exit_code" oom_exit_code="42"><![CDATA[
-        echo 'Hello' > '$out_file1';
+        mv hi.txt '$out_file1';
         echo "\$GALAXY_MEMORY_MB";
         : \${GALAXY_MEMORY_MB:=20};
         echo "\$GALAXY_MEMORY_MB";
@@ -12,6 +12,10 @@
             exit 0;
         fi
     ]]></command>
+    <configfiles>
+        <!-- also tests that configfiles are placed in working dir and that this works on resubmission as well -->
+        <configfile filename="hi.txt">Hello</configfile>
+    </configfiles>
     <inputs>
         <param name="input" type="integer" label="Dummy" value="6" />
     </inputs>
