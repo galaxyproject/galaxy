@@ -10,7 +10,6 @@ from six.moves.urllib.parse import parse_qs, urlparse
 
 from galaxy.authnz import custos_authnz
 from galaxy.model import CustosAuthnzToken, User
-
 from ..unittest_utils.galaxy_mock import MockApp
 
 
