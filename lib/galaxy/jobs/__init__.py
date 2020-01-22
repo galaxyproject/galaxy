@@ -2092,6 +2092,7 @@ class JobWrapper(HasResourceParameters):
             log.debug('(%s) Changing ownership of working directory with: %s' % (job.id, ' '.join(cmd)))
             p = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             stdout, stderr = p.communicate()
+            stdout, stderr = unicodify(stdout).strip(), unicodify(stdout).strip()
             if p.returncode != 0:
                 log.error('external script failed.')
                 log.error('stdout was: %s' % stdout)
