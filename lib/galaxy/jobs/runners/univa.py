@@ -31,7 +31,11 @@ import subprocess
 import time
 
 from galaxy.jobs.runners.drmaa import DRMAAJobRunner
-from galaxy.util import size_to_bytes, unicodify
+from galaxy.util import (
+    size_to_bytes, 
+    unicodify
+)
+
 log = logging.getLogger(__name__)
 
 __all__ = ('UnivaJobRunner',)
