@@ -21,9 +21,9 @@ SETUP_GALAXY_FOR_METADATA = """
 """
 PREPARE_DIRS = """mkdir -p working outputs
 if [ -d _working ]; then
-    rm -rf working/ outputs/; cp -R _working working; cp -R _outputs outputs
+    rm -rf working/ outputs/ configs/; cp -R _working working; cp -R _outputs outputs; cp -R _configs configs
 else
-    cp -R working _working; cp -R outputs _outputs
+    cp -R working _working; cp -R outputs _outputs; cp -R configs _configs
 fi
 cd working"""
 
