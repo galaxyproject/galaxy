@@ -128,7 +128,7 @@
     "prettier": "^1.19.1",
     "raw-loader": "^4.0.0",
     "sass-loader": "^8.0.0",
-    "sinon": "^4.1.2",
+    "sinon": "^8.1.1",
     "store": "^2.0.12",
     "style-loader": "^1.0.1",
     "vue-loader": "^15.7.2",
