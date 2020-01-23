@@ -45,6 +45,10 @@ def test_select_wrapper_simple_options(tool):
     assert wrapper.name == "blah"
     assert str(wrapper) == "x"
     assert wrapper.value_label == "I am X"
+    wrapper = SelectToolParameterWrapper(parameter, None)
+    assert str(wrapper) == "None"
+    assert wrapper == ""
+    assert wrapper == "None"
 
 
 @with_mock_tool
@@ -64,6 +68,8 @@ def test_select_wrapper_multiple_options(tool):
     assert "x" in wrapper
     wrapper = SelectToolParameterWrapper(parameter, [])
     assert str(wrapper) == "None"
+    assert wrapper == ""
+    assert wrapper == "None"
     assert "x" not in wrapper
 
 
