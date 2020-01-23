@@ -55,7 +55,7 @@ def __main__():
                     sequences[spec] = c.text.replace('-', '')
                 else:
                     sequences[spec] = c.text
-            sequences = '\t'.join([sequences.get(_, '') for _ in all_species])
+            sequences = '\t'.join(sequences.get(_, '') for _ in all_species)
             for spec in species:
                 c = block.get_component_by_src_start(spec)
                 if c is not None:

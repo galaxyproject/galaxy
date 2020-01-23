@@ -33,7 +33,7 @@ class GalaxyStatsdClient(object):
     def _effective_infix(self, path, tags):
         tags = tags or {}
         if self.statsd_influxdb and tags:
-            return ',' + ",".join(["%s=%s" % (k, v) for (k, v) in tags.items()]) + ",path="
+            return ',' + ",".join("%s=%s" % (k, v) for (k, v) in tags.items()) + ",path="
         if self.statsd_influxdb:
             return ',path='
         else:

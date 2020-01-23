@@ -1621,7 +1621,7 @@ class ToolsTestCase(ApiTestCase):
         self.assertEqual(len(outputs), 1)
         output1 = outputs[0]
         output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
-        self.assertEqual(output1_content.strip(), '\n'.join([d['name'] for d in element_identifiers]))
+        self.assertEqual(output1_content.strip(), '\n'.join(d['name'] for d in element_identifiers))
 
     @skip_without_tool("identifier_in_actions")
     @uses_test_history(require_new=False)

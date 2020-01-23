@@ -276,7 +276,7 @@ def xml_to_string(elem, pretty=False):
             raise e
     if xml_str and pretty:
         pretty_string = xml.dom.minidom.parseString(xml_str).toprettyxml(indent='    ')
-        return "\n".join([line for line in pretty_string.split('\n') if not re.match(r'^[\s\\nb\']*$', line)])
+        return "\n".join(line for line in pretty_string.split('\n') if not re.match(r'^[\s\\nb\']*$', line))
     return xml_str
 
 

@@ -52,7 +52,7 @@ class VisualizationsRegistry_TestCase(unittest.TestCase):
         scatterplot = plugin_mgr.plugins['scatterplot']
         self.assertEqual(scatterplot.name, 'scatterplot')
         self.assertEqual(scatterplot.path, os.path.join(expected_plugins_path, 'scatterplot'))
-        self.assertEqual(scatterplot.base_url, '/'.join([plugin_mgr.base_url, scatterplot.name]))
+        self.assertEqual(scatterplot.base_url, '/'.join((plugin_mgr.base_url, scatterplot.name)))
         self.assertTrue(scatterplot.serves_templates)
         self.assertEqual(scatterplot.template_path, os.path.join(scatterplot.path, 'templates'))
         self.assertEqual(scatterplot.template_lookup.__class__.__name__, 'TemplateLookup')
@@ -60,7 +60,7 @@ class VisualizationsRegistry_TestCase(unittest.TestCase):
         trackster = plugin_mgr.plugins['trackster']
         self.assertEqual(trackster.name, 'trackster')
         self.assertEqual(trackster.path, os.path.join(expected_plugins_path, 'trackster'))
-        self.assertEqual(trackster.base_url, '/'.join([plugin_mgr.base_url, trackster.name]))
+        self.assertEqual(trackster.base_url, '/'.join((plugin_mgr.base_url, trackster.name)))
         self.assertFalse(trackster.serves_templates)
 
     def test_plugin_load(self):
@@ -115,7 +115,7 @@ class VisualizationsRegistry_TestCase(unittest.TestCase):
         vis1 = plugin_mgr.plugins['vis1']
         self.assertEqual(vis1.name, 'vis1')
         self.assertEqual(vis1.path, os.path.join(expected_plugins_path, 'vis1'))
-        self.assertEqual(vis1.base_url, '/'.join([plugin_mgr.base_url, vis1.name]))
+        self.assertEqual(vis1.base_url, '/'.join((plugin_mgr.base_url, vis1.name)))
         self.assertTrue(vis1.serves_templates)
         self.assertEqual(vis1.template_path, os.path.join(vis1.path, 'templates'))
         self.assertEqual(vis1.template_lookup.__class__.__name__, 'TemplateLookup')
@@ -123,7 +123,7 @@ class VisualizationsRegistry_TestCase(unittest.TestCase):
         vis2 = plugin_mgr.plugins['vis2']
         self.assertEqual(vis2.name, 'vis2')
         self.assertEqual(vis2.path, os.path.join(expected_plugins_path, 'vis2'))
-        self.assertEqual(vis2.base_url, '/'.join([plugin_mgr.base_url, vis2.name]))
+        self.assertEqual(vis2.base_url, '/'.join((plugin_mgr.base_url, vis2.name)))
         self.assertFalse(vis2.serves_templates)
 
         mock_app_dir.remove()

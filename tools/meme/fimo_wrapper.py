@@ -70,7 +70,7 @@ def main():
         else:
             strand = "+"
         start -= 1  # make 0-based start position
-        out_file.write("%s\n" % "\t".join([fields[1], str(start), str(end), fields[0], fields[4], strand, sequence, fields[5], fields[6]]))
+        out_file.write("%s\n" % "\t".join((fields[1], str(start), str(end), fields[0], fields[4], strand, sequence, fields[5], fields[6])))
     out_file.close()
 
 

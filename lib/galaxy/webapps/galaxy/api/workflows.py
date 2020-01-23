@@ -196,7 +196,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 for tool_id in workflow['missing_tools']:
                     toolshed, _, owner, name, tool, version = tool_id.split('/')
                     shed_url = self.__get_full_shed_url(toolshed)
-                    repo_identifier = '/'.join([toolshed, owner, name])
+                    repo_identifier = '/'.join((toolshed, owner, name))
                     if repo_identifier not in workflows_by_toolshed:
                         workflows_by_toolshed[repo_identifier] = dict(shed=shed_url.rstrip('/'), repository=name, owner=owner, tools=[tool_id], workflows=[workflow['name']])
                     else:

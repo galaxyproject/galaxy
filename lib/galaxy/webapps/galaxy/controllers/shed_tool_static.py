@@ -24,7 +24,7 @@ class ShedToolStatic(BaseUIController):
         .. image:: some_image.jpg
         .. image:: /deep/some_image.png
         """
-        guid = '/'.join([shed, 'repos', owner, repo, tool, version])
+        guid = '/'.join((shed, 'repos', owner, repo, tool, version))
         tool = trans.app.toolbox.get_tool(guid)
         repo_path = tool._repository_dir
         if 'static/images' not in image_file:

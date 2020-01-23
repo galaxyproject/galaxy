@@ -98,7 +98,7 @@ $INTEGRATED_TOOL_PANEL
                                 label_version = section_item.version or ''
                                 integrated_tool_panel.append('        <label id="%s" text="%s" version="%s" />\n' % (label_id, label_text, label_version))
                     integrated_tool_panel.append('    </section>\n')
-        tool_panel_description = '\n    '.join([l for l in INTEGRATED_TOOL_PANEL_DESCRIPTION.split("\n") if l])
+        tool_panel_description = '\n    '.join(l for l in INTEGRATED_TOOL_PANEL_DESCRIPTION.split("\n") if l)
         tp_string = template.substitute(INTEGRATED_TOOL_PANEL_DESCRIPTION=tool_panel_description,
                                         INTEGRATED_TOOL_PANEL='\n'.join(integrated_tool_panel))
         with open(filename, "w") as integrated_tool_panel_file:

@@ -68,9 +68,9 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             return None, message
         if not email or not username or not password or not confirm:
             return None, "Please provide email, username and password."
-        message = "\n".join([validate_email(trans, email),
+        message = "\n".join((validate_email(trans, email),
                              validate_password(trans, password, confirm),
-                             validate_publicname(trans, username)]).rstrip()
+                             validate_publicname(trans, username))).rstrip()
         if message:
             return None, message
         email = util.restore_text(email)

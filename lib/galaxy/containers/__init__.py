@@ -243,7 +243,7 @@ class ContainerInterface(with_metaclass(ABCMeta, object)):
         """
         if isinstance(val, string_types):
             return self._stringify_kwopt_string(flag, val)
-        return ' '.join(['{flag} {value}'.format(flag=flag, value=shlex_quote(str(v))) for v in val])
+        return ' '.join('{flag} {value}'.format(flag=flag, value=shlex_quote(str(v))) for v in val)
 
     def _stringify_kwopt_list_of_kvpairs(self, flag, val):
         """

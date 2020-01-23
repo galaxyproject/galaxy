@@ -190,7 +190,7 @@ def __main__():
     err=c(%s)
     grade = (0:32)/32
     hues = rev(gray(grade))
-    ''' % (','.join([str(p) for p in polymorphisms]), ','.join([str(d) for d in detection_threshes])))
+    ''' % (','.join(str(p) for p in polymorphisms), ','.join(str(d) for d in detection_threshes)))
 
     # Suppress warnings
     r('options(warn=-1)')

@@ -63,7 +63,7 @@ class Test_FilteredLineDataProvider(test_base_dataproviders.Test_FilteredDataPro
             (3, 2, result_data[2:3], 1, 1, 1),
         ]
         for test in test_data:
-            log.debug('limit_offset_combo: %s', ', '.join([str(e) for e in test]))
+            log.debug('limit_offset_combo: %s', ', '.join(str(e) for e in test))
             limit_offset_combo(*test)
 
     def test_provide_blank(self):

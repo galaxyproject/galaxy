@@ -775,7 +775,7 @@ def launch_uwsgi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=No
             handle_uwsgi_cli_command(uwsgi_command)
 
         # we don't want to quote every argument but we don't want to print unquoted ones either, so do this
-        log.info("Starting uwsgi with command line: %s", ' '.join([shlex_quote(x) for x in uwsgi_command]))
+        log.info("Starting uwsgi with command line: %s", ' '.join(shlex_quote(x) for x in uwsgi_command))
         p = subprocess.Popen(
             uwsgi_command,
             cwd=galaxy_root,

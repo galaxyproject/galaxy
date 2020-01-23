@@ -91,14 +91,14 @@ class ToolBoxSearch(object):
         }
         if tool.name.find('-') != -1:
             # Replace hyphens, since they are wildcards in Whoosh causing false positives
-            add_doc_kwds['name'] = (' ').join([token.text for token in self.rex(to_unicode(tool.name))])
+            add_doc_kwds['name'] = (' ').join(token.text for token in self.rex(to_unicode(tool.name)))
         else:
             add_doc_kwds['name'] = to_unicode(tool.name)
         if tool.guid:
             # Create a stub consisting of owner, repo, and tool from guid
             slash_indexes = [m.start() for m in re.finditer('/', tool.guid)]
             id_stub = tool.guid[(slash_indexes[1] + 1): slash_indexes[4]]
-            add_doc_kwds['stub'] = (' ').join([token.text for token in self.rex(to_unicode(id_stub))])
+            add_doc_kwds['stub'] = (' ').join(token.text for token in self.rex(to_unicode(id_stub)))
         else:
             add_doc_kwds['stub'] = to_unicode(id)
         if tool.labels:
@@ -143,7 +143,7 @@ class ToolBoxSearch(object):
         cleaned_query = q.lower()
         # Replace hyphens, since they are wildcards in Whoosh causing false positives
         if cleaned_query.find('-') != -1:
-            cleaned_query = (' ').join([token.text for token in self.rex(to_unicode(cleaned_query))])
+            cleaned_query = (' ').join(token.text for token in self.rex(to_unicode(cleaned_query)))
         if tool_enable_ngram_search is True:
             rval = self._search_ngrams(cleaned_query, tool_ngram_minsize, tool_ngram_maxsize, tool_search_limit)
             return rval

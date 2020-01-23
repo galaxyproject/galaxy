@@ -93,7 +93,7 @@ def __main__():
         assert num_lines > 0, "You must select at least one line."
 
         if options.seed is not None:
-            seed_int = int("".join([str(ord(_)) for _ in options.seed]))
+            seed_int = int("".join(str(ord(_)) for _ in options.seed))
             try:
                 # Select version 1, which results in the same seed for python 2 and 3
                 random.seed(seed_int, version=1)

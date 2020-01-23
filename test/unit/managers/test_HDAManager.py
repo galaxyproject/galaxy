@@ -638,7 +638,7 @@ class HDAFilterParserTestCase(HDATestCase):
         self.log('the following filters should be parsable')
         # base
         self.assertORMFilter(self.filter_parser.parse_filter('id', 'in', [1, 2]))
-        encoded_id_string = ','.join([self.app.security.encode_id(id_) for id_ in [1, 2]])
+        encoded_id_string = ','.join(self.app.security.encode_id(id_) for id_ in [1, 2])
         self.assertORMFilter(self.filter_parser.parse_filter('encoded_id', 'in', encoded_id_string))
         self.assertORMFilter(self.filter_parser.parse_filter('create_time', 'le', '2015-03-15'))
         self.assertORMFilter(self.filter_parser.parse_filter('create_time', 'ge', '2015-03-15'))
