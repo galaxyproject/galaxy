@@ -346,6 +346,24 @@ def populate_api_routes(webapp, app):
                           action='get_custom_builds_metadata',
                           conditions=dict(method=["GET"]))
 
+    webapp.mapper.connect('healthcheck',
+                          '/api/healthcheck/',
+                          controller='healthcheck',
+                          action='get',
+                          conditions=dict(method=["GET"]))
+
+    webapp.mapper.connect('healthcheck_web',
+                          '/api/healthcheck/web',
+                          controller='healthcheck',
+                          action='get_web',
+                          conditions=dict(method=["GET"]))
+
+    webapp.mapper.connect('healthcheck_job',
+                          '/api/healthcheck/job',
+                          controller='healthcheck',
+                          action='get_job',
+                          conditions=dict(method=["GET"]))
+
     # =======================
     # ====== TOOLS API ======
     # =======================
