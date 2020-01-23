@@ -2,14 +2,15 @@ from collections import namedtuple
 import json
 
 class SegmentationSchema:
-	def __init__(self, segments=[], media=None):
+	def __init__(self, segments=[], media=None, numSpeakers=None):
 		self.segments = segments
+		self.numSpeakers = numSpeakers
 		if media is None:
 			self.media = SegmentationSchemaMedia()
 		else:
 			 self.media = media
-	def addSegment(self, label, gender=None, start=None, end=None):
-		self.segments.append(SegmentationSchemaSegment(label, gender, start, end))
+	def addSegment(self, label, gender=None, start=None, end=None, speakerLabel = None):
+		self.segments.append(SegmentationSchemaSegment(label, gender, start, end, speakerLabel))
 		if end is not None and end > self.media.duration:
 			self.media.duration = end
 		return
@@ -38,12 +39,14 @@ class SegmentationSchemaSegment:
 	start = 0
 	end = 0
 	gender = None
-	def __init__(self, label, gender=None, start=None, end=None):
+	speakerLabel = None
+	def __init__(self, label, gender=None, start=None, end=None, speakerLabel = None):
 		self.label = label
 		if gender is not None:
 			self.gender = gender
 		self.start = start
 		self.end = end
+		self.speakerLabel = speakerLabel
 	@classmethod
 	def from_json(cls, json_data: dict):
 		return cls(**json_data)

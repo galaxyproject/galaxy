@@ -47,7 +47,7 @@ input_file_name=$(basename ${input_file})
 media_file_url="http://${s3_bucket}.s3.amazonaws.com/${s3_path}${input_file_name}"
 
 # use user-specified bucket for output for easier access control
-jq -n "{ \"TranscriptionJobName\": \"${job_name}\", \"LanguageCode\": \"en-US\", \"MediaFormat\": \"${audio_format}\", \"Media\": { \"MediaFileUri\": \"${media_file_url}\" }, \"OutputBucketName\": \"${s3_bucket}\" }" > ${request_file}
+jq -n "{ \"TranscriptionJobName\": \"${job_name}\", \"LanguageCode\": \"en-US\", \"MediaFormat\": \"${audio_format}\", \"Media\": { \"MediaFileUri\": \"${media_file_url}\" }, \"OutputBucketName\": \"${s3_bucket}\", \"Settings\":{ \"ShowSpeakerLabels\": true, \"MaxSpeakerLabels\": 10 } }" > ${request_file}
  
 # submit transcribe job
 echo "Starting transcription job ${job_name} using request file ${request_file}" >> $log_file 2>&1
