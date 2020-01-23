@@ -72,7 +72,7 @@ class GithubPlugin(BaseGitPlugin):
 
             # Determine the GitLab project URL and the issue cache key
             github_projecturl = urlparse.urlparse(ts_repourl).path[1:] if (ts_repourl and not self.git_default_repo_only) \
-                else "/".join([self.git_default_repo_owner, self.git_default_repo_name])
+                else "/".join((self.git_default_repo_owner, self.git_default_repo_name))
             issue_cache_key = self._get_issue_cache_key(job, ts_repourl)
 
             # Connect to the repo

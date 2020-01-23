@@ -766,7 +766,7 @@ class DefaultToolAction(object):
 
         <data format="tabular" name="output" label="Tabular output, aggregates data from individual_inputs" >
             <actions>
-                <action name="column_names" type="metadata" default="${','.join([input.name for input in $individual_inputs ])}" />
+                <action name="column_names" type="metadata" default="${','.join(input.name for input in $individual_inputs)}" />
             </actions>
         </data>
         """

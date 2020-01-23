@@ -727,7 +727,7 @@ class JobConfiguration(ConfiguresHandlers):
         rval = {}
         if handler_id in self.handler_runner_plugins:
             plugins_to_load = [rp for rp in self.runner_plugins if rp['id'] in self.handler_runner_plugins[handler_id]]
-            log.info("Handler '%s' will load specified runner plugins: %s", handler_id, ', '.join([rp['id'] for rp in plugins_to_load]))
+            log.info("Handler '%s' will load specified runner plugins: %s", handler_id, ', '.join(rp['id'] for rp in plugins_to_load))
         else:
             plugins_to_load = self.runner_plugins
             log.info("Handler '%s' will load all configured runner plugins", handler_id)

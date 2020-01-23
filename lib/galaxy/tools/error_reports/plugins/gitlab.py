@@ -109,7 +109,7 @@ class GitLabPlugin(BaseGitPlugin):
 
                 # Determine the GitLab project URL and the issue cache key
                 gitlab_projecturl = urlparse.urlparse(ts_repourl).path[1:] if (ts_repourl and not self.git_default_repo_only)\
-                    else "/".join([self.git_default_repo_owner, self.git_default_repo_name])
+                    else "/".join((self.git_default_repo_owner, self.git_default_repo_name))
                 issue_cache_key = self._get_issue_cache_key(job, ts_repourl)
 
                 gitlab_urlencodedpath = urllib.quote_plus(gitlab_projecturl)
@@ -151,7 +151,7 @@ class GitLabPlugin(BaseGitPlugin):
                         # Create a new issue.
                         self._create_issue(issue_cache_key, error_title, error_message, gl_project, gl_userid=gl_userid)
                     except (gitlab.GitlabOwnershipError, gitlab.GitlabGetError):
-                        gitlab_projecturl = "/".join([self.git_default_repo_owner, self.git_default_repo_name])
+                        gitlab_projecturl = "/".join((self.git_default_repo_owner, self.git_default_repo_name))
                         gitlab_urlencodedpath = urllib.quote_plus(gitlab_projecturl)
                         # Make sure we are always logged in, then retrieve the GitLab project if it isn't cached.
                         self.gitlab = self.gitlab_connect()
@@ -217,7 +217,7 @@ class GitLabPlugin(BaseGitPlugin):
 
     def _append_issue(self, issue_cache_key, error_title, error_message, **kwargs):
         # Add a comment to an existing issue
-        gl_url = "/".join([
+        gl_url = "/".join((
             self.gitlab_base_url,
             "api",
             "v4",
@@ -226,7 +226,7 @@ class GitLabPlugin(BaseGitPlugin):
             "issues",
             str(self.issue_cache[issue_cache_key][error_title]),
             "notes"
-        ])
+        ))
         self.gitlab.http_post(gl_url, post_data={'body': error_message})
 
     def _fill_issue_cache(self, git_project, issue_cache_key):

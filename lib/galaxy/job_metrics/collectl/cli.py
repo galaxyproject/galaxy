@@ -92,7 +92,7 @@ class CollectlCli(object):
 
     def __subsystems_arg(self, subsystems):
         if subsystems:
-            return "-s%s" % "".join([s.command_line_arg for s in subsystems])
+            return "-s%s" % "".join(s.command_line_arg for s in subsystems)
         else:
             return ""
 
