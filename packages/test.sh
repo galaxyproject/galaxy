@@ -26,7 +26,6 @@ PACKAGE_DIRS=(
     data
     job_execution
     auth
-    authnz
     web_stack
     web_framework
     app
