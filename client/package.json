@@ -45,6 +45,7 @@
     "moment": "2.24.0",
     "popper.js": "^1.16.0",
     "pyre-to-regexp": "^0.0.5",
+    "qunit": "^2.9.3",
     "raven-js": "^3.27.0",
     "requirejs": "2.3.6",
     "rxjs": "^6.4.0",
