@@ -18,6 +18,5 @@ import "./tests/job_dag_tests";
 import "./tests/history_contents_model_tests";
 import "./tests/hda_base_tests";
 import "./tests/modal_tests";
-import "./tests/page_tests";
 import "./tests/utils_tests";
 import "./tests/ui_tests";
