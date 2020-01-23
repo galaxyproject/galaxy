@@ -126,7 +126,6 @@
     "phantomjs-prebuilt": "^2.1.7",
     "postcss-loader": "^3.0.0",
     "prettier": "^1.19.1",
-    "qunitjs": "^2.4.1",
     "raw-loader": "^4.0.0",
     "sass-loader": "^8.0.0",
     "sinon": "^4.1.2",
