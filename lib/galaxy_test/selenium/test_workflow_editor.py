@@ -24,10 +24,14 @@ class WorkflowEditorTestCase(SeleniumTestCase):
     @selenium_test
     def test_basics(self):
         editor = self.components.workflow_editor
-
-        name = self.workflow_create_new()
+        annotation = "basic_test"
+        name = self.workflow_create_new(annotation=annotation)
         edit_name_element = self.components.workflow_editor.edit_name.wait_for_visible()
-        assert name in edit_name_element.text, edit_name_element.text
+        actual_name = edit_name_element.get_attribute("value")
+        assert name in actual_name, "'%s' unequal name '%s'" % (name, actual_name)
+        edit_annotation_element = self.components.workflow_editor.edit_annotation.wait_for_visible()
+        actual_annotation = edit_annotation_element.get_attribute("value")
+        assert annotation in actual_annotation, "'%s' unequal annotation '%s'" % (annotation, actual_annotation)
 
         editor.canvas_body.wait_for_visible()
         editor.tool_menu.wait_for_visible()
