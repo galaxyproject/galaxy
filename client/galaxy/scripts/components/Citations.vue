@@ -1,6 +1,6 @@
 <template>
     <div>
-    <b-card>
+    <b-card  v-if="!simple">
         <template v-slot:header>
             <h4 class="mb-0">
                 Citations
@@ -38,7 +38,9 @@
       <b-collapse
         :id="id"
         class="mt-2"
+        @show='$emit("show")'
         @shown='$emit("shown")'
+        @hide='$emit("hide")'
         @hidden='$emit("hidden")'
       >
         <b-card>
@@ -74,6 +76,11 @@ export default {
             type: Boolean,
             requried: false,
             default: true
+        },
+        simple: {
+            type: Boolean,
+            required: false,
+            default: false
         }
     },
     data() {
