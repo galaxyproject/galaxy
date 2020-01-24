@@ -35,7 +35,7 @@ class JobManager(object):
             if jobs_at_startup:
                 log.info(
                     'No handler assigned at startup for the following jobs, will dispatch via message: %s',
-                    ', '.join([str(j.id) for j in jobs_at_startup]))
+                    ', '.join(str(j.id) for j in jobs_at_startup))
             for job in jobs_at_startup:
                 tool = self.app.toolbox.get_tool(job.tool_id, job.tool_version, exact=True)
                 self.enqueue(job, tool)

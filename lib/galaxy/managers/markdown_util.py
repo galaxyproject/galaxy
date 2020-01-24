@@ -387,7 +387,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
             markdown += " | "
             value = parameter["value"]
             if isinstance(value, list):
-                markdown += ", ".join(["%s: %s" % (p["hid"], p["name"]) for p in value])
+                markdown += ", ".join("%s: %s" % (p["hid"], p["name"]) for p in value)
             else:
                 markdown += value
             markdown += " |\n"
@@ -400,7 +400,7 @@ class MarkdownFormatHelpers(object):
 
     @staticmethod
     def literal_via_fence(content):
-        return "\n%s\n" % "\n".join(["    %s" % l for l in content.splitlines()])
+        return "\n%s\n" % "\n".join("    %s" % l for l in content.splitlines())
 
     @staticmethod
     def indicate_data_truncated():

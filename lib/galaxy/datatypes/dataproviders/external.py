@@ -58,7 +58,7 @@ class SubprocessDataProvider(base.DataProvider):
 
         except OSError as os_err:
             command_str = ' '.join(self.command)
-            raise OSError(' '.join([str(os_err), ':', command_str]))
+            raise OSError(' '.join((str(os_err), ':', command_str)))
 
         return popen
 

@@ -107,7 +107,7 @@ def argv_to_str(command_argv, quote=True):
     code.
     """
     map_func = shlex_quote if quote else lambda x: x
-    return " ".join([map_func(c) for c in command_argv if c is not None])
+    return " ".join(map_func(c) for c in command_argv if c is not None)
 
 
 def _wait(cmds, **popen_kwds):

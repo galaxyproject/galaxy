@@ -161,7 +161,7 @@ def generate_tool_shed_repository_install_dir(repository_clone_url, changeset_re
     tool_shed_url = items[0]
     repo_path = items[1]
     tool_shed_url = common_util.remove_port_from_tool_shed_url(tool_shed_url)
-    return '/'.join([tool_shed_url, 'repos', repo_path, changeset_revision])
+    return '/'.join((tool_shed_url, 'repos', repo_path, changeset_revision))
 
 
 def get_absolute_path_to_file_in_repository(repo_files_dir, file_name):

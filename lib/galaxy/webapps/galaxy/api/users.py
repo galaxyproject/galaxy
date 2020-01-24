@@ -188,9 +188,9 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
             username = payload['username']
             email = payload['email']
             password = payload['password']
-            message = "\n".join([validate_email(trans, email),
+            message = "\n".join((validate_email(trans, email),
                                  validate_password(trans, password, password),
-                                 validate_publicname(trans, username)]).rstrip()
+                                 validate_publicname(trans, username))).rstrip()
             if message:
                 raise exceptions.RequestParameterInvalidException(message)
             else:

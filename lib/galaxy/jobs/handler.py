@@ -121,7 +121,7 @@ class JobHandlerQueue(Monitors):
             self.__grab_conn_opts['isolation_level'] = 'SERIALIZABLE'
         log.info(
             "Handler job grabber initialized with '%s' assignment method for handler '%s', tag(s): %s", method,
-            self.app.config.server_name, ', '.join([str(x) for x in self.app.job_config.handler_tags])
+            self.app.config.server_name, ', '.join(str(x) for x in self.app.job_config.handler_tags)
         )
 
     def start(self):
@@ -267,7 +267,7 @@ class JobHandlerQueue(Monitors):
             try:
                 rows = conn.execute(self.__grab_query).fetchall()
                 if rows:
-                    log.debug('Grabbed job(s): %s', ', '.join([str(row[0]) for row in rows]))
+                    log.debug('Grabbed job(s): %s', ', '.join(str(row[0]) for row in rows))
                     trans.commit()
                 else:
                     trans.rollback()

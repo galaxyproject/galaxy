@@ -1,7 +1,6 @@
 <template>
     <div :id="side" class="unified-panel-outer-wrap" :style="styles">
-        <component :is="currentPanel" v-bind="currentPanelProperties"></component>
-
+        <component :is="currentPanel" v-bind="currentPanelProperties" />
         <div class="unified-panel-footer">
             <div
                 class="panel-collapse"
@@ -11,8 +10,8 @@
                     hidden: !show
                 }"
                 @click="toggle"
-            ></div>
-            <div class="drag" @mousedown="dragHandler"></div>
+            />
+            <div class="drag" @mousedown="dragHandler" />
         </div>
     </div>
 </template>

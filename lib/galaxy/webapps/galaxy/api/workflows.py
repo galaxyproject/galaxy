@@ -196,7 +196,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 for tool_id in workflow['missing_tools']:
                     toolshed, _, owner, name, tool, version = tool_id.split('/')
                     shed_url = self.__get_full_shed_url(toolshed)
-                    repo_identifier = '/'.join([toolshed, owner, name])
+                    repo_identifier = '/'.join((toolshed, owner, name))
                     if repo_identifier not in workflows_by_toolshed:
                         workflows_by_toolshed[repo_identifier] = dict(shed=shed_url.rstrip('/'), repository=name, owner=owner, tools=[tool_id], workflows=[workflow['name']])
                     else:
@@ -266,7 +266,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         :param  workflow_id:                 An existing workflow id. Either workflow_id, installed_repository_file or from_history_id must be specified
         :type   workflow_id:                 str
 
-        :param  parameters:                  If workflow_id is set - see _update_step_parameters()
+        :param  parameters:                  If workflow_id is set - see _step_parameters() in lib/galaxy/workflow/run_request.py
         :type   parameters:                  dict
 
         :param  ds_map:                      If workflow_id is set - a dictionary mapping each input step id to a dictionary with 2 keys: 'src' (which can be 'ldda', 'ld' or 'hda') and 'id' (which should be the id of a LibraryDatasetDatasetAssociation, LibraryDataset or HistoryDatasetAssociation respectively)

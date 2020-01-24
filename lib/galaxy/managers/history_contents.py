@@ -507,7 +507,7 @@ class HistoryContentsFilters(base.ModelFilterParser,
     def decode_type_id(self, type_id):
         TYPE_ID_SEP = '-'
         split = type_id.split(TYPE_ID_SEP, 1)
-        return TYPE_ID_SEP.join([split[0], str(self.app.security.decode_id(split[1]))])
+        return TYPE_ID_SEP.join((split[0], str(self.app.security.decode_id(split[1]))))
 
     def parse_type_id_list(self, type_id_list_string, sep=','):
         """

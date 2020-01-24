@@ -1845,7 +1845,7 @@ class DataToolParameter(BaseDataToolParameter):
             value = [value]
         if value:
             try:
-                return ", ".join(["%s: %s" % (item.hid, item.name) for item in value])
+                return ", ".join("%s: %s" % (item.hid, item.name) for item in value)
             except Exception:
                 pass
         return "No dataset."

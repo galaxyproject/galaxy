@@ -3253,7 +3253,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
 
     @hybrid.hybrid_property
     def type_id(self):
-        return u'-'.join([self.content_type, str(self.id)])
+        return u'-'.join((self.content_type, str(self.id)))
 
     @type_id.expression
     def type_id(cls):
@@ -3526,7 +3526,7 @@ class LibraryDataset(RepresentById):
             if isinstance(val, MetadataFile):
                 val = val.file_name
             elif isinstance(val, list):
-                val = ', '.join([str(v) for v in val])
+                val = ', '.join(str(v) for v in val)
             rval['metadata_' + name] = val
         return rval
 
@@ -4160,7 +4160,7 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
 
     @hybrid.hybrid_property
     def type_id(self):
-        return u'-'.join([self.content_type, str(self.id)])
+        return u'-'.join((self.content_type, str(self.id)))
 
     @type_id.expression
     def type_id(cls):

@@ -183,7 +183,7 @@ class ShedTwillTestCase(FunctionalTestCase):
                         hdas.append(hda)
             json_data = hdas
         if show_details:
-            params['details'] = ','.join([hda['id'] for hda in json_data])
+            params['details'] = ','.join(hda['id'] for hda in json_data)
             api_url = '/api/histories/%s/contents' % encoded_history_id
             json_data = self.json_from_url(api_url, params=params)
         return json_data
@@ -1151,7 +1151,7 @@ class ShedTwillTestCase(FunctionalTestCase):
     def get_tool_panel_section_from_api(self, metadata):
         tool_metadata = metadata['tools']
         tool_guid = quote_plus(tool_metadata[0]['guid'], safe='')
-        api_url = '/%s' % '/'.join(['api', 'tools', tool_guid])
+        api_url = '/api/tools/%s' % tool_guid
         self.visit_galaxy_url(api_url)
         tool_dict = loads(self.last_page())
         tool_panel_section = tool_dict['panel_section_name']

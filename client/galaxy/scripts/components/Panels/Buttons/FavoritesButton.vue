@@ -1,7 +1,7 @@
 <template>
     <a
         class="panel-header-button"
-        @click="showFavorites"
+        @click="onFavorites"
         v-b-tooltip.hover
         :title="tooltipText"
         href="javascript:void(0)"
@@ -31,22 +31,9 @@ export default {
         "v-b-tooltip": VBTooltip
     },
     methods: {
-        showFavorites() {
-            // FIXME: use Vue communication for this
-            const toolSearchQueryNode = document.querySelector(".tool-search-query");
-
-            if (toolSearchQueryNode.value.startsWith("#fav")) {
-                toolSearchQueryNode.value = "";
-                toolSearchQueryNode.dispatchEvent(new Event("input"));
-                this.tooltipText = "Hide favorites";
-            } else {
-                toolSearchQueryNode.value = "#favorites";
-                toolSearchQueryNode.dispatchEvent(new Event("input"));
-                this.tooltipText = "Show favorites";
-            }
+        onFavorites() {
+            this.$emit("onFavorites", "#favorites");
         }
     }
 };
 </script>
-
-<style scoped></style>
