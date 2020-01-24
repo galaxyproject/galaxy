@@ -10,13 +10,13 @@
                 </tr>
             </thead>
             <tbody>
-                <tr v-for="(parameter, index) in parameters" :key="index">
+                <tr v-for="(parameter, p_index) in parameters" :key="p_index">
                     <td :style="{ 'padding-left': `${(parameter.depth - 1) * 10}px` }">
                         {{ parameter.text }}
                     </td>
                     <td v-if="Array.isArray(parameter.value)">
                         <ul style="padding-inline-start: 25px;">
-                            <li v-for="(elVal, index) in parameter.value" :key="index">
+                            <li v-for="(elVal, pv_index) in parameter.value" :key="pv_index">
                                 <span v-if="elVal.src == 'hda'">
                                     <a :href="appRoot() + 'datasets/' + elVal.id + '/show_params'">
                                         {{ elVal.hid }}: {{ elVal.name }}
