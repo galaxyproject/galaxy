@@ -302,9 +302,7 @@ class JSAppLauncher(BaseUIController):
             'active_view'                   : 'analysis',
             'enable_cloud_launch'           : trans.app.config.get_bool('enable_cloud_launch', False),
             'enable_webhooks'               : True if trans.app.webhooks_registry.webhooks else False,
-            # TODO: next two should be redundant - why can't we build one from the other?
-            'toolbox'                       : trans.app.toolbox.to_dict(trans, in_panel=False),
-            'toolbox_in_panel'              : trans.app.toolbox.to_dict(trans),
+            'toolbox'                       : trans.app.toolbox.to_dict(trans),
             'message_box_visible'           : trans.app.config.message_box_visible,
             'show_inactivity_warning'       : trans.app.config.user_activation_on and trans.user and not trans.user.active,
             'tool_shed_urls'                : list(trans.app.tool_shed_registry.tool_sheds.values()) if trans.app.tool_shed_registry else [],

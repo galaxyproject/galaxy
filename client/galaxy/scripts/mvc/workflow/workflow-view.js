@@ -10,7 +10,6 @@ import WorkflowCanvas from "mvc/workflow/workflow-canvas";
 import Node from "mvc/workflow/workflow-node";
 import WorkflowIcons from "mvc/workflow/workflow-icons";
 import FormWrappers from "mvc/workflow/workflow-forms";
-import Ui from "mvc/ui/ui-misc";
 import async_save_text from "utils/async-save-text";
 import "ui/editable-text";
 
@@ -38,41 +37,6 @@ workflow_display()
 \`\`\`
 `;
 
-// Reset tool search to start state.
-function reset_tool_search(initValue) {
-    // Function may be called in top frame or in tool_menu_frame;
-    // in either case, get the tool menu frame.
-    var tool_menu_frame = $("#galaxy_tools").contents();
-    if (tool_menu_frame.length === 0) {
-        tool_menu_frame = $(document);
-        // Remove classes that indicate searching is active.
-        $(this).removeClass("search_active");
-        tool_menu_frame.find(".toolTitle").removeClass("search_match");
-
-        // Reset visibility of tools and labels.
-        tool_menu_frame.find(".toolSectionBody").hide();
-        tool_menu_frame.find(".toolTitle").show();
-        tool_menu_frame.find(".toolPanelLabel").show();
-        tool_menu_frame.find(".toolSectionWrapper").each(function() {
-            if ($(this).attr("id") !== "recently_used_wrapper") {
-                // Default action.
-                $(this).show();
-            } else if ($(this).hasClass("user_pref_visible")) {
-                $(this).show();
-            }
-        });
-        tool_menu_frame.find("#search-no-results").hide();
-
-        // Reset search input.
-        tool_menu_frame.find("#search-spinner").hide();
-        tool_menu_frame.find("#search-clear-btn").show();
-        if (initValue) {
-            var search_input = tool_menu_frame.find("#tool-search-query");
-            search_input.val("search tools");
-        }
-    }
-}
-
 function add_node_icon($to_el, nodeType) {
     var iconStyle = WorkflowIcons[nodeType];
     if (iconStyle) {
@@ -89,104 +53,6 @@ export default Backbone.View.extend({
         this.urls = (options && options.urls) || {};
         const workflow_index = this.urls.workflow_index;
         this.reportsEditor = reportsEditor;
-
-        // Clear search by clicking X button
-        $("#search-clear-btn").click(function() {
-            $("#tool-search-query").val("");
-            reset_tool_search(false);
-        });
-
-        // Init searching.
-        $("#tool-search-query")
-            .click(function() {
-                $(this).focus();
-                $(this).select();
-            })
-            .keyup(function(e) {
-                // If ESC is pressed clear the search field
-                if (e.keyCode == 27) {
-                    this.value = "";
-                }
-                // Remove italics.
-                $(this).css("font-style", "normal");
-                // Don't update if same value as last time
-                if (this.value.length < 3) {
-                    reset_tool_search(false);
-                } else if (this.value != this.lastValue) {
-                    // Add class to denote that searching is active.
-                    $(this).addClass("search_active");
-                    // input.addClass(config.loadingClass);
-                    // Add '*' to facilitate partial matching.
-                    var q = this.value;
-                    // Stop previous ajax-request
-                    if (this.timer) {
-                        window.clearTimeout(this.timer);
-                    }
-                    // Start a new ajax-request in X ms
-                    $("#search-spinner").show();
-                    $("#search-clear-btn").hide();
-                    this.timer = window.setTimeout(() => {
-                        $.get(
-                            self.urls.tool_search,
-                            { q: q },
-                            data => {
-                                // input.removeClass(config.loadingClass);
-                                // Show live-search if results and search-term aren't empty
-                                $("#search-no-results").hide();
-                                // Hide all tool sections.
-                                $(".toolSectionWrapper").hide();
-                                // This hides all tools but not workflows link (which is in a .toolTitle div).
-                                $(".toolSectionWrapper")
-                                    .find(".toolTitle")
-                                    .hide();
-                                if (data.length !== 0) {
-                                    // Map tool ids to element ids and join them.
-                                    var s = $.map(data, (n, i) => `link-${n}`);
-                                    // First pass to show matching tools and their parents.
-                                    $(s).each((index, id) => {
-                                        // Add class to denote match.
-                                        $(`[id='${id}']`)
-                                            .parent()
-                                            .addClass("search_match");
-                                        $(`[id='${id}']`)
-                                            .parent()
-                                            .show()
-                                            .parent()
-                                            .parent()
-                                            .show()
-                                            .parent()
-                                            .show();
-                                    });
-                                    // Hide labels that have no visible children.
-                                    $(".toolPanelLabel").each(function() {
-                                        var this_label = $(this);
-                                        var next = this_label.next();
-                                        var no_visible_tools = true;
-                                        // Look through tools following label and, if none are visible, hide label.
-                                        while (next.length !== 0 && next.hasClass("toolTitle")) {
-                                            if (next.is(":visible")) {
-                                                no_visible_tools = false;
-                                                break;
-                                            } else {
-                                                next = next.next();
-                                            }
-                                        }
-                                        if (no_visible_tools) {
-                                            this_label.hide();
-                                        }
-                                    });
-                                } else {
-                                    $("#search-no-results").show();
-                                }
-                                $("#search-spinner").hide();
-                                $("#search-clear-btn").show();
-                            },
-                            "json"
-                        );
-                    }, 400);
-                }
-                this.lastValue = this.value;
-            });
 
         // Canvas overview management
         this.canvas_manager = window.workflow_globals.canvas_manager = new WorkflowCanvas(
@@ -354,12 +220,6 @@ export default Backbone.View.extend({
             }
         };
 
-        if (this.options.workflows.length > 0) {
-            $("#left")
-                .find(".toolMenu")
-                .append(this._buildToolPanelWorkflows());
-        }
-
         // Tool menu
         $("div.toolSectionBody").hide();
         $("div.toolSectionTitle > span").wrap("<a href='javascript:void(0)' role='button'></a>");
@@ -398,65 +258,30 @@ export default Backbone.View.extend({
         );
     },
 
-    _buildToolPanelWorkflows: function() {
-        var self = this;
-        var $section = $(
-            '<div class="toolSectionWrapper">' +
-                '<div class="toolSectionTitle">' +
-                '<a href="javascript:void(0)" role="button"><span>Workflows</span></a>' +
-                "</div>" +
-                '<div class="toolSectionBody">' +
-                '<div class="toolSectionBg"/>' +
-                "</div>" +
-                "</div>"
-        );
-        _.each(this.options.workflows, workflow => {
-            if (workflow.id !== self.options.id) {
-                var copy = new Ui.Button({
-                    icon: "fa fa-copy",
-                    cls: "ui-button-icon-plain",
-                    tooltip: _l("Copy and insert individual steps"),
-                    onclick: function() {
-                        const Galaxy = getGalaxyInstance();
-                        if (workflow.step_count < 2) {
-                            self.copy_into_workflow(workflow.id, workflow.name);
-                        } else {
-                            // don't ruin the workflow by adding 50 steps unprompted.
-                            Galaxy.modal.show({
-                                title: _l("Warning"),
-                                body: `This will copy ${workflow.step_count} new steps into your workflow.`,
-                                buttons: {
-                                    Cancel: function() {
-                                        Galaxy.modal.hide();
-                                    },
-                                    Copy: function() {
-                                        Galaxy.modal.hide();
-                                        self.copy_into_workflow(workflow.id, workflow.name);
-                                    }
-                                }
-                            });
-                        }
+    copy_into_workflow: function(id, stepCount = 0) {
+        const Galaxy = getGalaxyInstance();
+        if (stepCount < 2) {
+            this._copy_into_workflow_ajax(id);
+        } else {
+            // don't ruin the workflow by adding 50 steps unprompted.
+            var self = this;
+            Galaxy.modal.show({
+                title: _l("Warning"),
+                body: `This will copy ${stepCount} new steps into your workflow.`,
+                buttons: {
+                    Cancel: function() {
+                        Galaxy.modal.hide();
+                    },
+                    Copy: function() {
+                        Galaxy.modal.hide();
+                        self._copy_into_workflow_ajax(id);
                     }
-                });
-                var $add = $("<a/>")
-                    .attr("href", "javascript:void(0)")
-                    .attr("role", "button")
-                    .html(workflow.name)
-                    .on("click", () => {
-                        self.add_node_for_subworkflow(workflow.latest_id, workflow.name);
-                    });
-                $section.find(".toolSectionBg").append(
-                    $("<div/>")
-                        .addClass("toolTitle")
-                        .append($add)
-                        .append(copy.$el)
-                );
-            }
-        });
-        return $section;
+                }
+            });
+        }
     },
 
-    copy_into_workflow: function(workflowId) {
+    _copy_into_workflow_ajax: function(workflowId) {
         // Load workflow definition
         var self = this;
         this._workflowLoadAjax(workflowId, null, {

@@ -170,6 +170,9 @@ class SelectToolParameterWrapper(ToolParameterValueWrapper):
 
     def __eq__(self, other):
         if isinstance(other, string_types):
+            if other == '' and self.value in (None, []):
+                # Allow $wrapper == '' for select (self.value is None) and multiple select (self.value is []) params
+                return True
             return str(self) == other
         else:
             return super(SelectToolParameterWrapper, self) == other

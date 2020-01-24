@@ -93,8 +93,8 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         if autoreg["auto_reg"]:
             email = autoreg["email"]
             username = autoreg["username"]
-            message = " ".join([validate_email(trans, email, allow_empty=True),
-                                validate_publicname(trans, username)]).rstrip()
+            message = " ".join((validate_email(trans, email, allow_empty=True),
+                                validate_publicname(trans, username))).rstrip()
             if not message:
                 user = self.user_manager.create(email=email, username=username, password="")
                 if trans.app.config.user_activation_on:

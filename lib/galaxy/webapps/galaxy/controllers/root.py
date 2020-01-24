@@ -121,7 +121,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
                     if tagged_tool.tool_id not in results:
                         results.append(tagged_tool.tool_id)
             if trans.user:
-                trans.user.preferences['selected_tool_tags'] = ','.join([tag.name for tag in tags])
+                trans.user.preferences['selected_tool_tags'] = ','.join(tag.name for tag in tags)
                 trans.sa_session.flush()
         elif trans.user:
             trans.user.preferences['selected_tool_tags'] = ''

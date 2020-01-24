@@ -71,10 +71,10 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
         self.name = name
         self.config = config
         base_url = context.get('base_url', '')
-        self.base_url = '/'.join([base_url, self.name]) if base_url else self.name
+        self.base_url = '/'.join((base_url, self.name)) if base_url else self.name
         self.static_path = self._get_static_path(self.path)
         if self.static_path and os.path.exists(os.path.join(self.static_path, 'logo.png')):
-            self.config['logo'] = '/'.join([self.static_path, 'logo.png'])
+            self.config['logo'] = self.static_path + '/logo.png'
         template_cache_dir = context.get('template_cache_dir', None)
         additional_template_paths = context.get('additional_template_paths', [])
         self._set_up_template_plugin(template_cache_dir, additional_template_paths=additional_template_paths)

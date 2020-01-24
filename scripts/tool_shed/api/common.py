@@ -218,7 +218,7 @@ def make_url(url, api_key=None, args=None):
     if api_key:
         if '?key=' not in url and '&key=' not in url:
             args.insert(0, ('key', api_key))
-    return url + argsep + '&'.join(['='.join(t) for t in args])
+    return url + argsep + '&'.join('='.join(t) for t in args)
 
 
 def post(url, data, api_key=None):
