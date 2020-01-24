@@ -142,7 +142,7 @@
     <!-- galaxy.panels.mako stylesheets -->
 
     ## load default style
-    ${h.css("base")}
+    ${h.dist_css("base")}
 
     <style type="text/css">
 
