@@ -128,7 +128,7 @@
                     ></b-form-checkbox>
                 </template>
                 <template v-slot:cell(job_info)="data">
-                    <b-link :href="data.value.info_url" v-on:click.prevent="clickJobInfo(data.value.id)">
+                    <b-link :href="data.value.info_url" @click.prevent="clickJobInfo(data.value.id)">
                         {{ data.value.id }}
                     </b-link>
                 </template>
@@ -155,7 +155,7 @@
                     Recent Jobs: These jobs have completed in the previous {{ cutoffDisplay }} seconds.
                 </template>
                 <template v-slot:cell(job_info)="data">
-                    <b-link :href="data.value.info_url" v-on:click.prevent="clickJobInfo(data.value.id)">
+                    <b-link :href="data.value.info_url" @click.prevent="clickJobInfo(data.value.id)">
                         {{ data.value.id }}
                     </b-link>
                 </template>

@@ -1,7 +1,8 @@
 module.exports = {
     extends: [
         "eslint:recommended",
-        "plugin:vue/strongly-recommended",
+        //"plugin:vue/strongly-recommended",
+        "plugin:vue/essential",
         //"airbnb-base", eventually
     ],
     env: {
@@ -21,6 +22,7 @@ module.exports = {
         "no-console": "off",
         "no-unused-vars": ["error", { args: "none" }],
         "prefer-const": "error",
+        "vue/v-on-style": "error",
 
         // Vue.  Prettier compat workarounds, mostly.
         "vue/html-indent": "off",

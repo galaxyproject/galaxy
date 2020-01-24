@@ -351,8 +351,8 @@
                                     v-bind:key="map.type"
                                     @remove="removeMapping(index)"
                                     @edit="displayRuleType = 'mapping'"
-                                    v-on:mouseover.native="map.columns.forEach(col => highlightColumn(col))"
-                                    v-on:mouseout.native="map.columns.forEach(col => unhighlightColumn(col))"
+                                    @mouseover.native="map.columns.forEach(col => highlightColumn(col))"
+                                    @mouseout.native="map.columns.forEach(col => unhighlightColumn(col))"
                                     :col-headers="colHeaders"
                                 />
                                 <div v-if="mapping.length == 0">
