@@ -1,8 +1,7 @@
 module.exports = {
     extends: [
         "eslint:recommended",
-        //"plugin:vue/strongly-recommended",
-        "plugin:vue/essential",
+        "plugin:vue/strongly-recommended",
         //"airbnb-base", eventually
     ],
     env: {
@@ -22,16 +21,20 @@ module.exports = {
         "no-console": "off",
         "no-unused-vars": ["error", { args: "none" }],
         "prefer-const": "error",
-        "vue/v-on-style": "error",
-        "vue/v-bind-style": "error",
-        "vue/attribute-hyphenation": "error",
 
-        // Vue.  Prettier compat workarounds, mostly.
+        // Vue TODO (enable these)
+        "vue/require-default-prop": "off",
+        "vue/require-prop-types": "off",
+        "vue/prop-name-casing": "off",
+
+        // Prettier compromises/workarounds -- mostly #wontfix?
         "vue/html-indent": "off",
         "vue/max-attributes-per-line": "off",
+        "vue/html-self-closing": "off",
         "vue/singleline-html-element-content-newline": "off",
         "vue/multiline-html-element-content-newline": "off",
-        "vue/html-closing-bracket-newline": "off"
+        "vue/html-closing-bracket-newline": "off",
+        "vue/html-closing-bracket-spacing": "off"
     },
     globals: {
         // chai tests
