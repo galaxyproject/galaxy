@@ -28,9 +28,9 @@
                 </div>
                 <div id="internal-workflows" class="toolSectionBody">
                     <div class="toolSectionBg" />
-                    <div class="toolTitle" v-for="workflow in this.workflows" :key="workflow.id">
-                        <a :href="workflow.href">
-                            {{ workflow.title }}
+                    <div class="toolTitle" v-for="wf in this.workflows" :key="wf.id">
+                        <a :href="wf.href">
+                            {{ wf.title }}
                         </a>
                     </div>
                 </div>
