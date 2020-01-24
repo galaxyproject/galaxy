@@ -28,6 +28,7 @@
     "bootstrap-vue": "^2.2.2",
     "d3": "3",
     "decode-uri-component": "^0.2.0",
+    "eslint-config-prettier": "^6.9.0",
     "flush-promises": "^1.0.2",
     "glob": "^7.1.4",
     "handsontable": "^2.0.0",
