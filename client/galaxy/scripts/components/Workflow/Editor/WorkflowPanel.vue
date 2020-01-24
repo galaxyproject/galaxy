@@ -12,7 +12,7 @@
             <div id="edit-attributes" class="right-content p-2">
                 <div id="workflow-name-area">
                     <b>Name</b>
-                    <b-input id="workflow-name" :value="workflow.name" @change="onRename" />
+                    <b-input id="workflow-name" :value="name" @change="onRename" />
                 </div>
                 <div id="workflow-version-area" class="mt-2">
                     <b>Version</b>
@@ -24,14 +24,14 @@
                 </div>
                 <div id="workflow-annotation-area" class="mt-2">
                     <b>Annotation</b>
-                    <b-textarea id="workflow-annotation" :value="workflow.annotation" @change="onAnnotation" />
+                    <b-textarea id="workflow-annotation" :value="annotation" @change="onAnnotation" />
                     <div class="form-text text-muted">
                         These notes will be visible when this workflow is viewed.
                     </div>
                 </div>
                 <div class="mt-2">
                     <b>Tags</b>
-                    <Tags :item="workflow" @input="onTags" />
+                    <Tags :item="this" @input="onTags" />
                     <div class="form-text text-muted">
                         Apply tags to make it easy to search for and find items with the same tag.
                     </div>
@@ -57,9 +57,20 @@ export default {
         };
     },
     props: {
-        workflow: {
-            type: Object,
+        id: {
+            type: String,
             required: true
+        },
+        name: {
+            type: String,
+            required: true
+        },
+        tags: {
+            type: Array,
+            required: true
+        },
+        annotation: {
+            type: String
         }
     },
     created() {
@@ -76,12 +87,12 @@ export default {
                 });
         },
         onAnnotation(annotation) {
-            this.services.updateWorkflow(this.workflow.id, { annotation }).catch(error => {
+            this.services.updateWorkflow(this.id, { annotation }).catch(error => {
                 this.onError(error);
             });
         },
         onRename(name) {
-            this.services.updateWorkflow(this.workflow.id, { name }).catch(error => {
+            this.services.updateWorkflow(this.id, { name }).catch(error => {
                 this.onError(error);
             });
         },
