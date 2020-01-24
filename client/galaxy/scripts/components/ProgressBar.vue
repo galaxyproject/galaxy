@@ -5,11 +5,7 @@
         </span>
         <div class="progress-bar info" :style="styleFromProgress(infoProgress)" :title="infoMessage"></div>
         <div class="progress-bar ok" :style="styleFromProgress(okProgress)" :title="okMessage"></div>
-        <div
-            class="progress-bar running"
-            :style="styleFromProgress(runningProgress)"
-            :title="runningMessage"
-        ></div>
+        <div class="progress-bar running" :style="styleFromProgress(runningProgress)" :title="runningMessage"></div>
         <div class="progress-bar new" :style="styleFromProgress(newProgress)" :title="newMessage"></div>
         <div class="progress-bar error" :style="styleFromProgress(errorProgress)" :title="errorMessage"></div>
     </div>
