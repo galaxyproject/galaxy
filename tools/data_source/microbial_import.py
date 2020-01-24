@@ -1,13 +1,14 @@
 #!/usr/bin/env python
-
 """
 Script that imports locally stored data as a new dataset for the user
 Usage: import id outputfile
 """
+from __future__ import print_function
+
 import sys
 from shutil import copyfile
 
-assert sys.version_info[:2] >= ( 2, 4 )
+assert sys.version_info[:2] >= (2, 6)
 
 BUFFER = 1048576
 
@@ -19,7 +20,7 @@ have_none = True
 while have_none:
     try:
         uids.remove('None')
-    except:
+    except ValueError:
         have_none = False
 
 
@@ -27,7 +28,7 @@ while have_none:
 available_files = {}
 try:
     filename = sys.argv[-1]
-    for i, line in enumerate( open( filename ) ):
+    for i, line in enumerate(open(filename)):
         if not line or line[0:1] == "#":
             continue
         fields = line.split('\t')
@@ -47,19 +48,19 @@ try:
                 description = uid
             else:
                 continue
-        except:
+        except Exception:
             continue
 
         available_files[uid] = (description, path, build, file_type, chr_acc)
-except:
-    print >>sys.stderr, "It appears that the configuration file for this tool is missing."
+except Exception:
+    print("It appears that the configuration file for this tool is missing.", file=sys.stderr)
 
 # create list of tuples of (displayName,FileName,build) for desired files
 desired_files = []
 for uid in uids:
     try:
         desired_files.append(available_files[uid])
-    except:
+    except Exception:
         continue
 
 # copy first file to contents of given output file
@@ -67,19 +68,19 @@ file1_copied = False
 while not file1_copied:
     try:
         first_file = desired_files.pop(0)
-    except:
-        print >>sys.stderr, "There were no valid files requested."
+    except IndexError:
+        print("There were no valid files requested.", file=sys.stderr)
         sys.exit()
     file1_desc, file1_path, file1_build, file1_type, file1_chr_acc = first_file
     try:
         copyfile(file1_path, out_file1)
-        print "#File1\t" + file1_desc + "\t" + file1_chr_acc + "\t" + file1_build + "\t" + file1_type
+        print("#File1\t" + file1_desc + "\t" + file1_chr_acc + "\t" + file1_build + "\t" + file1_type)
         file1_copied = True
-    except:
-        print >>sys.stderr, "The file specified is missing."
+    except Exception:
+        print("The file specified is missing.", file=sys.stderr)
         continue
 
 # Tell post-process filter where remaining files reside
 for extra_output in desired_files:
     file_desc, file_path, file_build, file_type, file_chr_acc = extra_output
-    print "#NewFile\t" + file_desc + "\t" + file_chr_acc + "\t" + file_build + "\t" + file_path + "\t" + file_type
+    print("#NewFile\t" + file_desc + "\t" + file_chr_acc + "\t" + file_build + "\t" + file_path + "\t" + file_type)

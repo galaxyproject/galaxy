@@ -1,0 +1,56 @@
+<tool id="interactive_tool_wilson" tool_type="interactive" name="Wilson" version="0.1">
+    <description>Webbased Interactive Omics visualization</description>
+    <requirements>
+        <container type="docker">loosolab/wilson:2.1.1</container>
+    </requirements>
+    <entry_points>
+        <entry_point name="Wilson visualisation of $infile.display_name" requires_domain="True">
+            <port>3838</port>
+        </entry_point>
+    </entry_points>
+    <environment_variables>
+        <environment_variable name="WILSON_LANDING_PAGE">feature_selection</environment_variable>
+        <environment_variable name="WILSON_BLACKLIST_EXAMPLES">true</environment_variable>
+    </environment_variables>
+    <command><![CDATA[
+        mkdir -p /srv/shiny-server/external_data/ &&
+        echo "WILSON_LANDING_PAGE=\$WILSON_LANDING_PAGE" > /home/shiny/.Renviron &&
+        echo "WILSON_BLACKLIST_EXAMPLES=\$WILSON_BLACKLIST_EXAMPLES" >> /home/shiny/.Renviron &&
+        ln -s ${infile} /srv/shiny-server/external_data/input.clarion &&
+        exec shiny-server 2>&1
+    ]]>
+    </command>
+    <inputs>
+        <param name="infile" type="data" format="tabular,txt" label="Tabular in Clarion format"/>
+    </inputs>
+    <outputs>
+        <data name="outfile" format="txt" />
+    </outputs>
+    <tests>
+    </tests>
+    <help>
+<![CDATA[
+
+`WIlsON: Webbased Interactive Omics visualizatioN <https://github.molgen.mpg.de/loosolab/wilson-apps/wiki>`_
+
+.. class:: infomark
+
+Wilson uses the CLARION file format, which is a generic file format for quantitative comparisons of high throughput screens.
+
+CLARION is a data format specially developed to be used with Wilson, which relies on a tab-delimited table with
+a metadata header to describe the following columns. It is based on the Summarized Experiment format and supports
+all types of data which can be reduced to features and their annotation (e.g. genes, transcripts, proteins, probes)
+with assigned numerical values (e.g. count, score, log2foldchange, z-score, p-value). Most result tables derived from RNA-Seq,
+ChIP/ATAC-Seq, Proteomics, Microarrays, and many other analyses can thus be easily reformatted to become compatible
+without having to modify the code of Wilson for each specific experiment.
+
+Please check the following link for details considering the `CLARION format <https://github.molgen.mpg.de/loosolab/wilson-apps/wiki/CLARION-Format>`_.
+
+
+
+]]>
+    </help>
+    <citations>
+        <citation type="doi">10.1093/bioinformatics/bty711</citation>
+    </citations>
+</tool>

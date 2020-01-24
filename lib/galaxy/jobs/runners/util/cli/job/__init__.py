@@ -1,11 +1,16 @@
 """
 Abstract base class for cli job plugins.
 """
-from abc import ABCMeta, abstractmethod
+from abc import (
+    ABCMeta,
+    abstractmethod
+)
+
+import six
 
 
+@six.add_metaclass(ABCMeta)
 class BaseJobExec(object):
-    __metaclass__ = ABCMeta
 
     @abstractmethod
     def __init__(self, **params):
@@ -56,3 +61,15 @@ class BaseJobExec(object):
         """
         Parse the status of output from get_single_status command.
         """
+
+    def get_failure_reason(self, job_id):
+        """
+        Return the failure reason for the given job_id.
+        """
+        return None
+
+    def parse_failure_reason(self, reason, job_id):
+        """
+        Parses the failure reason, assigning it against a
+        """
+        return None

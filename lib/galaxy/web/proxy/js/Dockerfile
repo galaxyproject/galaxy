@@ -1,6 +1,6 @@
 # Have not yet gotten this to work - goal was to launch the prox in a Docker container.
 # Networking is a bit tricky though - could not get the child proxy to talk to the child
-# IPython container.
+# Jupyter container.
 
 
 # sudo docker build --no-cache=true -t gxproxy .

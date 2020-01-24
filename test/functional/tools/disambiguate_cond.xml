@@ -1,6 +1,11 @@
 <tool id="disambiguate_cond" name="disambiguate_cond">
     <command>
-        echo "$p1.p1v $p2.p2v $p3.p3v" > $out_file1; cat "$files.p4.file" >> $out_file1;
+        echo "$p1.p1v $p2.p2v $p3.p3v" > $out_file1;
+        #if $files.attach_files
+        cat "$files.p4.file" >> $out_file1;
+        #else
+        echo "no file specified" >> $out_file1;
+        #end if
     </command>
     <inputs>
         <conditional name="p1">

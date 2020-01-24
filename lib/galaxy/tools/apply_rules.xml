@@ -1,0 +1,36 @@
+ <tool id="__APPLY_RULES__"
+      name="Apply Rule to Collection"
+      version="1.0.0"
+      tool_type="apply_rules_to_collection">
+    <type class="ApplyRulesTool" module="galaxy.tools" />
+    <action module="galaxy.tools.actions.model_operations"
+            class="ModelOperationToolAction"/>
+    <inputs>
+        <param type="data_collection" name="input" label="Input Collection" />
+        <param type="rules" name="rules" data_ref="input" label="Rules" />
+    </inputs>
+    <outputs>
+        <collection name="output" format_source="input" type_from_rules="rules" label="${input.name} (re-organized)" >
+        </collection>
+    </outputs>
+    <help><![CDATA[
+
+This tool allows one to process an existing Galaxy dataset collection's metadata as tabular data, 
+apply a series of rules to it, and generate a new collection. When used interactively in the tool
+form, a dynamic preview of the processing will be available in a tabular data viewer but this tool
+may be used in workflows as well where no such preview can be generated.
+
+This tool is an advanced feature but has a lot of flexibility - it can be used to process collections
+with arbitrary nesting and can do many kinds of filtering, re-sorting, nesting,
+flattening, and arbitrary combinations thereof not possible with Galaxy's other, more simple 
+collection operation tools.
+
+More information about the rule processor in general can be found `here
+<https://github.com/jmchilton/training-material/blob/rules/topics/introduction/tutorials/galaxy-intro-rules/tutorial.md>`__ (this link is to documentation that is pretty rough still).
+
+.. class:: infomark
+
+This tool will create new history datasets from your collection but your quota usage will not increase.
+
+      ]]></help>
+</tool>

@@ -11,10 +11,8 @@ Subpackages
 
 .. toctree::
 
-    galaxy.web.base
     galaxy.web.framework
     galaxy.web.proxy
-    galaxy.web.security
 
 Submodules
 ----------
@@ -27,8 +25,8 @@ galaxy.web.buildapp module
     :undoc-members:
     :show-inheritance:
 
-galaxy.web.form_builder module
-------------------------------
+galaxy.web.form\_builder module
+-------------------------------
 
 .. automodule:: galaxy.web.form_builder
     :members:

@@ -11,8 +11,10 @@ Subpackages
 
 .. toctree::
 
+    galaxy.model.dataset_collections
     galaxy.model.migrate
     galaxy.model.orm
+    galaxy.model.store
     galaxy.model.tool_shed_install
 
 Submodules
@@ -26,16 +28,24 @@ galaxy.model.base module
     :undoc-members:
     :show-inheritance:
 
-galaxy.model.custom_types module
---------------------------------
+galaxy.model.custom\_types module
+---------------------------------
 
 .. automodule:: galaxy.model.custom_types
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.model.item_attrs module
-------------------------------
+galaxy.model.database\_heartbeat module
+---------------------------------------
+
+.. automodule:: galaxy.model.database_heartbeat
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.model.item\_attrs module
+-------------------------------
 
 .. automodule:: galaxy.model.item_attrs
     :members:
@@ -50,10 +60,42 @@ galaxy.model.mapping module
     :undoc-members:
     :show-inheritance:
 
+galaxy.model.metadata module
+----------------------------
+
+.. automodule:: galaxy.model.metadata
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.model.none\_like module
+------------------------------
+
+.. automodule:: galaxy.model.none_like
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy.model.search module
 --------------------------
 
 .. automodule:: galaxy.model.search
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.model.security module
+----------------------------
+
+.. automodule:: galaxy.model.security
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.model.tags module
+------------------------
+
+.. automodule:: galaxy.model.tags
     :members:
     :undoc-members:
     :show-inheritance:

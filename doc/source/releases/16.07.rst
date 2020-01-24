@@ -1,0 +1,787 @@
+
+.. to_doc
+
+16.07
+===============================
+
+.. announce_start
+
+Highlighted Enhancements
+-------------------------------
+
+* Implement an Azure backend for the Galaxy objectstore
+  (thanks to `@zfrenchee <https://github.com/zfrenchee>`__.)
+  `Pull Request 2621`_
+* HTCondor Docker Integration
+  (thanks to `@bgruening <https://github.com/bgruening>`__.)
+  `Pull Request 2278`_
+* Implement a Kubernetes job runner
+  (thanks to `@pcm32 <https://github.com/pcm32>`__.)
+  `Pull Request 2314`_, `Pull Request 2498`_, `Pull Request 2559`_,
+  `Pull Request 2578`_, `Pull Request 2616`_, `Pull Request 2528`_
+* Implement collection operations - tool-like entities allowing users
+  to zip, unzip, flatten, and filter failed datasets out of collections.
+  (You may need to sync your ``tool_conf.xml`` against sample.)
+  `Pull Request 2434`_
+* Allow history panel to display list of lists dataset collections.
+  `Pull Request 2613`_
+* Add a Tool Shed API endpoint method to check the current user.
+  `Pull Request 2243`_
+* Add a Galaxy API endpoint to update a user object.
+  `Pull Request 2595`_
+* Improvements to toolbox search.
+  `Pull Request 2273`_
+* New pages and general improvements to the Reports application
+  (thanks to `@BalthazarPavot <https://github.com/BalthazarPavot>`__.)
+  `Pull Request 2664`_
+* Nicer bug report emails
+  (thanks to `@hexylena <https://github.com/hexylena>`__.)
+  `Pull Request 2143`_
+* Tools with auto_format='true' now connectable in workflow editor
+  (thanks to `@yhoogstrate <https://github.com/yhoogstrate>`__.)
+  `Pull Request 2144`_
+* Drop "Galaxy pip" in favor of manylinux1 wheels (which are supported in pip
+  >= 8.1).
+  `Pull Request 2383`_
+* Allow tool form to listen to history
+  (thanks to `@nturaga <https://github.com/nturaga>`__.)
+  `Pull Request 2476`_
+* Add `EDAM <http://edamontology.org/page>`__ operations to tools and expose in API
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__, `@nsoranzo <https://github.com/nsoranzo>`__ and `@odoppelt <https://github.com/odoppelt>`__.)
+  `Pull Request 2379`_
+* Add support to PDBQT molecule datatype
+  (thanks to `@leobiscassi <https://github.com/leobiscassi>`__.)
+  `Pull Request 2452`_
+* Add the trackhub composite datatype
+  (thanks to `@remimarenco <https://github.com/remimarenco>`__.)
+  `Pull Request 2348`_, `Pull Request 2646`_, `Pull Request 2701`_
+* Add the Mothur datatypes
+  (thanks to `@shiltemann <https://github.com/shiltemann>`__.)
+  `Pull Request 2038`_, `Pull Request 2429`_
+* Add the dynamic tool destination tool to Galaxy for defining finer grained
+  tool destination rules.
+  (thanks to `@ericenns <https://github.com/ericenns>`__.)
+  `Pull Request 2579`_
+* Galaxy can now install Conda dependencies in addition to tool shed
+  dependencies during repository installations
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__
+  and `@bwlang <https://github.com/bwlang>`__.)
+  `Pull Request 2554`_
+* Implement the Galaxy Communication Server (a simple in-Galaxy chat server)
+  (thanks to `@anuprulez <https://github.com/anuprulez>`__
+  and `@bgruening <https://github.com/bgruening>`__.)
+  `Pull Request 2515`_
+
+Enhancements
+-------------------------------
+
+* Install Conda at startup; enable conda_auto_init in sample conf
+  `Pull Request 2759`_
+* Add ``filter_failed_datasets_from_collection.py`` script to ``scripts/``
+  (thanks to `@chambm <https://github.com/chambm>`__.)
+  `Pull Request 2358`_
+* Enhanced workflow run form using newer client forms architecture.
+  `Pull Request 2077`_
+* Tweaks to various library functions for galaxy-lib.
+  `Pull Request 2110`_, `Pull Request 2494`_, `Pull Request 2354`_,
+  `Pull Request 2414`_, `Pull Request 2436`_
+* Automate and clarify more of the release process.
+  `Pull Request 2117`_,  `Pull Request 2366`_, `Pull Request 2372`_,
+  `Pull Request 2388`_
+* Update template to include the release of the Docker container
+  (thanks to `@bgruening <https://github.com/bgruening>`__.)
+  `Pull Request 2378`_
+* Add ``server_starttime`` to configuration API.
+  `Pull Request 2124`_
+* Show line breaks in commit log in the Tool Shed
+  (thanks to `@nturaga <https://github.com/nturaga>`__.)
+  `Pull Request 2142`_
+* Replacing the ``_getIndex`` method by UnderscoreJS method ``_.findIndex()``
+  (thanks to `@anuprulez <https://github.com/anuprulez>`__.)
+  `Pull Request 2157`_
+* Small enhancements to user activation process.
+  `Pull Request 2158`_
+* Implement ``single_user = <email>`` config option.
+  `Pull Request 2165`_
+* More documentation and flexibility for FTP imports.
+  `Pull Request 2168`_
+* Make stats prefix configurable and add a conditional wheel requirement.
+  `Pull Request 2171`_
+* Fix running tool tests if remote user middleware is enabled.
+  `Pull Request 2173`_
+* Improve handling of a missing R environment during Tool Shed dependency
+  installations.
+  `Pull Request 2215`_
+* Quote some parameters in the trim tool command
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
+  `Pull Request 2248`_
+* Remove overly chatty tool dependency resolution logging statement.
+  `Pull Request 2254`_
+* Update the list of contributors.
+  `Pull Request 2256`_, `Pull Request 2257`_, `Pull Request 2258`_
+* Add grunt watcher on .less files
+  (thanks to `@remimarenco <https://github.com/remimarenco>`__.)
+  `Pull Request 2274`_
+* Remove dependency on custom Whoosh (requirements update).
+  `Pull Request 2276`_
+* Various enhancements for library functions related to tools.
+  `Pull Request 2279`_
+* Shift ``asbool`` handling in datatypes API so that an appropriate error message is now returned.
+  `Pull Request 2286`_
+* More small fixes from downstream projects.
+  `Pull Request 2292`_
+* For published workflow display, provide a better error when the workflow or user cannot be found
+  `Pull Request 2302`_
+* Bump sqlite3 version
+  (thanks to `@matthdsm <https://github.com/matthdsm>`__.)
+  `Pull Request 2307`_
+* Show collection counts in collection and history collection views.
+  `Pull Request 2326`_
+* Various client library updates.
+  `Pull Request 2328`_
+* Revise form data visitor.
+  `Pull Request 2330`_
+* Update using xhr date header.
+  `Pull Request 2335`_
+* Implement an API for managing history/sharable model user sharing.
+  `Pull Request 2340`_
+* Revise portlet view, integrate collapsible option.
+  `Pull Request 2360`_
+* Fix issue with lowercasing in datatypes/registry.py
+  (thanks to `@remimarenco <https://github.com/remimarenco>`__.)
+  `Pull Request 2361`_
+* Improve composite output tool test.
+  `Pull Request 2363`_
+* Upgrade shared ui libraries, add test cases
+  `Pull Request 2368`_
+* Throughout backend use open() instead of file() for Python 3
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
+  `Pull Request 2370`_
+* Remove backported importlib and ordereddict.
+  `Pull Request 2380`_
+* Note on updating tool testing
+  (thanks to `@hexylena <https://github.com/hexylena>`__.)
+  `Pull Request 2381`_
+* Docker swarm support for Galaxy Interactive Environments (GIEs)
+  `Pull Request 2386`_, `Pull Request 2392`_
+* Add support for EDAM data annotations to datatypes
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__, `@bgruening <https://github.com/bgruening>`__, `@hmenager <https://github.com/hmenager>`__ and `@mvdbeek <https://github.com/mvdbeek>`__.)
+  `Pull Request 2387`_
+* Add a new workflow building mode variation which does access the history
+  `Pull Request 2390`_
+* Add conda search function to ``conda_util`` library function
+  (thanks to `@bgruening <https://github.com/bgruening>`__.)
+  `Pull Request 2395`_
+* Add history navigation options for dataset frames to scratch book
+  `Pull Request 2396`_
+* Add EDAM topics to tools and expose in API
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
+  `Pull Request 2397`_
+* Update SLURM runner so when scontrol fails, Galaxy attempts to get job
+  state with sacct
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
+  `Pull Request 2403`_
+* Enhancements to tool test output verification.
+  `Pull Request 2409`_
+* Show history dataset id (hid) in dataset 'view details' page.
+  `Pull Request 2411`_
+* Updates and fixes for the run workflow UI elements.
+  `Pull Request 2416`_
+* Raise ``Exception`` if ``watch_tools`` has an unrecognized value
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
+  `Pull Request 2418`_
+* Use ``log.warning()`` instead of deprecated ``log.warn()`` (for Python 3)
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
+  `Pull Request 2420`_
+* Minor updates to documentation.
+  `Pull Request 2427`_
+* Correct various EDAM data/format annotations in datatypes
+  (thanks to `@hmenager <https://github.com/hmenager>`__.)
+  `Pull Request 2428`_
+* Fix ``$defaults`` according to `#2430
+  <https://github.com/galaxyproject/galaxy/issues/2430>`__
+  (thanks to `@ThomasWollmann <https://github.com/ThomasWollmann>`__.)
+  `Pull Request 2438`_
+* Properly list subworkflows in run workflow form.
+  `Pull Request 2440`_
+* Make some files compatible with Python3
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
+  `Pull Request 2453`_
+* Add parameter expansion caller and test cases as preparation for workflow
+  API extension.
+  `Pull Request 2464`_
+* Set a default for ``tool_dependencies_dir``.
+  `Pull Request 2480`_
+* Add a password expiration config option (resolves `#2485
+  <https://github.com/galaxyproject/galaxy/issues/2485>`__)
+  (thanks to `@benfulton <https://github.com/benfulton>`__.)
+  `Pull Request 2486`_
+* Display TIFF format in upload
+  (thanks to `@bgruening <https://github.com/bgruening>`__.)
+  `Pull Request 2516`_
+* Use ``self.decode_id`` instead of ``trans.security.decode_id``
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
+  `Pull Request 2529`_
+* Charts revision.
+  `Pull Request 2531`_
+* Add ``Makefile`` target for fetching updated bower dependencies.
+  `Pull Request 2534`_
+* Make conda autoinstall of packages safer:
+  (thanks to `@pvanheus <https://github.com/pvanheus>`__.)
+  `Pull Request 2538`_
+* Updates to Interactive Environment docs
+  (thanks to `@pvanheus <https://github.com/pvanheus>`__.)
+  `Pull Request 2543`_
+* Allow displaying bigWig files in IGV
+  (thanks to `@dpryan79 <https://github.com/dpryan79>`__.)
+  `Pull Request 2545`_
+* Allow users to purge datasets by default.
+  `Pull Request 2553`_
+* Add Jupyter IE to the allowed visualizations for BAM datasets
+  (thanks to `@hexylena <https://github.com/hexylena>`__.)
+  `Pull Request 2572`_
+* Python3: port 215 files
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__, `@tshtatland <https://github.com/tshtatland>`__, `@xiaoqian1984 <https://github.com/xiaoqian1984>`__, `@alanryanwang <https://github.com/alanryanwang>`__ and `@ericenns <https://github.com/ericenns>`__.)
+  `Pull Request 2574`_
+* Add python-ldap module to conditional requirements
+  (thanks to `@abretaud <https://github.com/abretaud>`__.)
+  `Pull Request 2576`_
+
+* Update gsummary.xml
+  (thanks to `@lecorguille <https://github.com/lecorguille>`__.)
+  `Pull Request 2590`_
+* Add Warning when Conda is installed
+  (thanks to `@remimarenco <https://github.com/remimarenco>`__.)
+  `Pull Request 2596`_
+* Added the neostore (neo4j db) for noe4jdb dataset
+  (thanks to `@zipho <https://github.com/zipho>`__.)
+  `Pull Request 2605`_
+* Fix smart_str for Python 3. Add doctests
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
+  `Pull Request 2608`_
+* Added Neo4j IE
+  (thanks to `@thobalose <https://github.com/thobalose>`__.)
+  `Pull Request 2610`_
+* Committing format changes to the user impersonation dropdown.
+  (thanks to `@sszakony <https://github.com/sszakony>`__.)
+  `Pull Request 2612`_
+* Use pagination and filtering for select2 fields
+  `Pull Request 2615`_
+* Update workflow share dropdown width
+  (thanks to `@sszakony <https://github.com/sszakony>`__.)
+  `Pull Request 2617`_
+* Graph visualization: add parsers, change datatypes
+  `Pull Request 2620`_
+* Fix certain combos of dynamic deeply nested collections in workflows.
+  `Pull Request 2634`_
+* add tar to datatypes_conf.xml
+  (thanks to `@mariabernard <https://github.com/mariabernard>`__.)
+  `Pull Request 2636`_
+* Optimize get_file_peek()
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
+  `Pull Request 2637`_
+* Move workflow run and history options to top, add loading indicator
+  `Pull Request 2643`_
+* Enhance workflow run button to indicate workflow loading progress, keep
+  header fixed
+  `Pull Request 2647`_
+* Allow uploading strict BED datatypes.
+  `Pull Request 2648`_
+* Reduce server sided refresh requests to changes in data associated input
+  fields
+  `Pull Request 2652`_
+* Add import order linting using tox and flake8-import-order.
+  `Pull Request 2661`_
+* Add hg38 to main for ucsc_build_sites.txt.sample
+  `Pull Request 2670`_
+* Extend the list of files tested with flake8-import-order to all files
+  already passing
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
+  `Pull Request 2682`_
+* List resolver Tool Shed packages
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__.)
+  `Pull Request 2750`_
+
+
+.. small_enhancement
+
+* Remove buildbot remnants
+  `Pull Request 2125`_
+* Try pushing again when we get unexpected exception (test fix)
+  `Pull Request 2130`_
+* Refactor checking tool files toward reuse with workflows in Planemo.
+  `Pull Request 2183`_
+* Rename/refactor Utils.validate() to Utils.isEmpty()
+  `Pull Request 2239`_
+* Cleanup of the install and test framework.
+  `Pull Request 2249`_
+* cleanup TS and Reports configs
+  `Pull Request 2267`_
+* Move specific methods from shed_util_common.py to specific_util.py
+  `Pull Request 2269`_
+* Revise selection, options and drilldown wrappers, add tests
+  `Pull Request 2305`_
+* Visualizations: remove graphview
+  `Pull Request 2329`_
+* Update qunit and sinon
+  `Pull Request 2338`_
+* Build job success messages within tool form view
+  `Pull Request 2355`_
+* Cleanup of E203 primarily, and some other misc formatting
+  `Pull Request 2364`_
+* Isolate the data libraries css to affect only the libraries app
+  `Pull Request 2444`_
+* Re-add get_updated_changeset_revisions_from_tool_shed() method
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
+  `Pull Request 2472`_
+* Workaround for circular import. Refactor.
+  `Pull Request 2477`_
+* run_tests.sh: Clarify when/where the report file is created.
+  (thanks to `@NickSto <https://github.com/NickSto>`__.)
+  `Pull Request 2564`_
+* Reroute consistent workflow endpoint to internal API
+  `Pull Request 2622`_
+* Add tool test for what happens when output filter throws exception.
+  `Pull Request 2631`_
+* Ignore .tox and eggs directories for flake8
+  `Pull Request 2650`_
+* Reorder base templates meta tags
+  `Pull Request 2651`_
+* Import pyparsing in testing so twill's older version doesn't get loaded.
+  `Pull Request 2656`_
+* Change default refresh mode for form views
+  `Pull Request 2667`_
+* Fix unit tests
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
+  `Pull Request 2691`_
+* Create a uWSGI postfork function registry and start the tool conf watcher
+  thread post-fork
+  `Pull Request 2774`_
+
+
+Fixes
+-------------------------------
+
+.. major_bug
+
+* Do not encode dict items that start with ``metadata\_`` in return value of
+  api/tools/create.
+  `Pull Request 2459`_
+* Generate metadata in separate conda environment
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__.)
+  `Pull Request 2253`_
+* Fix to use "$NCPUS" if defined to set GALAXY_SLOTS
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__.)
+  `Pull Request 2145`_
+
+.. bug
+
+* fix blocking issue check
+  `Pull Request 2113`_
+* Correctly check set_environment declarations when updating repository.
+  `Pull Request 2116`_
+* Hide hidden data parameters in workflow editor
+  `Pull Request 2120`_
+* Place $headers before integrity_check
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__.)
+  `Pull Request 2146`_
+* Fix bug when determining locale
+  (thanks to `@xiaojay <https://github.com/xiaojay>`__.)
+  `Pull Request 2213`_
+* Add pyparsing dependency of svgwrite. Unpin mercurial.
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
+  `Pull Request 2223`_
+* Sanitize poorly escaped input value in run workflow form
+  (thanks to `@hexylena <https://github.com/hexylena>`__.)
+  `Pull Request 2231`_
+* Multi-data collection reductions in repeat blocks are broken.
+  `Pull Request 2233`_
+* Encode collection reduce in serializable fashion
+  `Pull Request 2241`_
+* Cast everything to a string
+  (thanks to `@hexylena <https://github.com/hexylena>`__.)
+  `Pull Request 2252`_
+* Use standard model.orm.now for toolshed's password reset token datetime math
+  `Pull Request 2261`_
+* fixed ui bugs in tours
+  (thanks to `@ThomasWollmann <https://github.com/ThomasWollmann>`__.)
+  `Pull Request 2262`_
+* Preliminary fix for displaying raw text/html
+  `Pull Request 2263`_
+* Correctly use defaults specified in galaxy.ini.sample for statsd.
+  `Pull Request 2268`_
+* Fix encoding issues in test/unit/test_objectstore.py.
+  `Pull Request 2280`_
+* Workflow sharing slug edit fix.
+  `Pull Request 2293`_
+* Always remove the working directory after creating the capsule archive.
+  `Pull Request 2294`_
+* update check for Conda env.
+  (thanks to `@matthdsm <https://github.com/matthdsm>`__.)
+  `Pull Request 2295`_
+* Make grunt watch (for scripts) work again, settings were being overwritten by the new watch-style command
+  `Pull Request 2296`_
+* Monkeypatch Whoosh to use mkdtemp rather than a fixed temporary directory
+  `Pull Request 2310`_
+* Build: remove redundant webpack step in makefile
+  `Pull Request 2327`_
+* Unicodify has different semantics to str, causing bug reporter bug
+  (thanks to `@hexylena <https://github.com/hexylena>`__.)
+  `Pull Request 2336`_
+* Wrap statsd timing middleware more closely around the core application
+  `Pull Request 2342`_
+* UI & API: fix display of inaccessible datasets
+  `Pull Request 2351`_
+* Update README to remove 2.6
+  (thanks to `@remimarenco <https://github.com/remimarenco>`__.)
+  `Pull Request 2367`_
+* Revise asserts triggering false exceptions for dynamic parameters
+  `Pull Request 2374`_
+* Fix the installed conda version to 3.19.3.
+  (thanks to `@bgruening <https://github.com/bgruening>`__.)
+  `Pull Request 2394`_
+* Check variable's presence before calling str methods
+  (thanks to `@hexylena <https://github.com/hexylena>`__.)
+  `Pull Request 2408`_
+* UI, history: correctly handle index API defaults
+  `Pull Request 2413`_
+* Fix to 4a61a4c: add hids for dataset inputs
+  `Pull Request 2415`_
+* wrap bare str raises with generic Exception()
+  `Pull Request 2421`_
+* Fix raven.js import order in galaxy.panels.mako
+  `Pull Request 2445`_
+* Fix usage of super() in the mothur datatypes.
+  (thanks to `@bgruening <https://github.com/bgruening>`__.)
+  `Pull Request 2457`_
+* Make pykube an optional dependency since we don't have wheels for it.
+  `Pull Request 2468`_
+* fix markup for button links on sharing template
+  `Pull Request 2481`_
+* fix image generation for workflows with missing tools
+  `Pull Request 2488`_
+* mothur datatypes: don't generate error for pairwise distance matrices
+  (thanks to `@shiltemann <https://github.com/shiltemann>`__.)
+  `Pull Request 2489`_
+* Toolbox filter fixes
+  `Pull Request 2499`_
+* Fix Post Job Action problem
+  `Pull Request 2505`_
+* Copy PJAs when importing a workflow.
+  `Pull Request 2508`_
+* Fix two errors in sff_extract.py detected by flake8
+  `Pull Request 2509`_
+* Fix HTML errors on 2 templates
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
+  `Pull Request 2524`_
+* Fix tabular display chunking
+  `Pull Request 2527`_
+* Fix dataset matcher when no tool available.
+  (thanks to `@zipho <https://github.com/zipho>`__.)
+  `Pull Request 2540`_
+* Initialize objectstore for fix_set_dataset_sizes script
+  `Pull Request 2544`_
+* Fix old bug in non-allowed_images.yml GIEs
+  (thanks to `@hexylena <https://github.com/hexylena>`__.)
+  `Pull Request 2548`_
+* More defensive GIE Proxying
+  (thanks to `@hexylena <https://github.com/hexylena>`__.)
+  `Pull Request 2552`_
+* Fixes for showing min/max labels in Trackster.
+  `Pull Request 2555`_
+* Fix tag_autocomplete issue in workflow editor.
+  `Pull Request 2569`_
+* Fix element_identifier unavailable with data_collection input param
+  (thanks to `@abretaud <https://github.com/abretaud>`__.)
+  `Pull Request 2570`_
+* Ignore W503 (line break before binary operator) as PEP 8 has reversed its
+  position on this.
+  `Pull Request 2594`_
+* Fix hex vs float parsing in request body
+  `Pull Request 2597`_
+* Fixes for workflow extraction of mapping collection jobs.
+  `Pull Request 2625`_
+* Workflow SVG generation fix
+  `Pull Request 2628`_
+* Properly initialize datasets when workflow is loaded for execution
+  `Pull Request 2632`_
+* typo in summary statistics tool
+  (thanks to `@nturaga <https://github.com/nturaga>`__.)
+  `Pull Request 2639`_
+* Set allow_duplicate_entries="False" for built-in Tool Data Tables.
+  `Pull Request 2644`_
+* Ensure Galaxy's python binary is used for metadata generation.
+  `Pull Request 2660`_
+* Fix an error with getting the size of an object from Azure
+  `Pull Request 2678`_
+* Limit creation of multitudes of default, empty histories.
+  `Pull Request 2684`_
+* Fix the sanitization of ``None`` values in utils
+  `Pull Request 2693`_
+* Fix metadata collection on workdir outputs for Pulsar.
+  `Pull Request 2721`_
+* Allow link buttons to trigger regular click events
+  `Pull Request 2743`_
+* Fix unused href parameter when adding scratchbook frames
+  `Pull Request 2744`_
+* Update common_startup.sh to require python2.7 in .venv
+  (thanks to `@BenjaminHCCarr <https://github.com/BenjaminHCCarr>`__.)
+  `Pull Request 2756`_
+* Separate styles of new and old libraries fixing various ui bugs
+  `Pull Request 2780`_
+* Make conda install and resolver status more robust
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__.)
+  `Pull Request 2789`_
+* Smart string handling on the wsgi response -- this fixes uWSGI blanking out when handling endpoints that return Unicode
+  `Pull Request 2630`_
+* Do not instantiate the raven (sentry) client or tool conf watchdog threads
+  until uWSGI postfork
+  `Pull Request 2792`_
+* API, history contents: allow ``source`` in payload
+  `Pull Request 2809`_
+
+.. github_links
+.. _Pull Request 2038: https://github.com/galaxyproject/galaxy/pull/2038
+.. _Pull Request 2077: https://github.com/galaxyproject/galaxy/pull/2077
+.. _Pull Request 2079: https://github.com/galaxyproject/galaxy/pull/2079
+.. _Pull Request 2110: https://github.com/galaxyproject/galaxy/pull/2110
+.. _Pull Request 2113: https://github.com/galaxyproject/galaxy/pull/2113
+.. _Pull Request 2116: https://github.com/galaxyproject/galaxy/pull/2116
+.. _Pull Request 2117: https://github.com/galaxyproject/galaxy/pull/2117
+.. _Pull Request 2119: https://github.com/galaxyproject/galaxy/pull/2119
+.. _Pull Request 2120: https://github.com/galaxyproject/galaxy/pull/2120
+.. _Pull Request 2121: https://github.com/galaxyproject/galaxy/pull/2121
+.. _Pull Request 2124: https://github.com/galaxyproject/galaxy/pull/2124
+.. _Pull Request 2125: https://github.com/galaxyproject/galaxy/pull/2125
+.. _Pull Request 2130: https://github.com/galaxyproject/galaxy/pull/2130
+.. _Pull Request 2142: https://github.com/galaxyproject/galaxy/pull/2142
+.. _Pull Request 2143: https://github.com/galaxyproject/galaxy/pull/2143
+.. _Pull Request 2144: https://github.com/galaxyproject/galaxy/pull/2144
+.. _Pull Request 2145: https://github.com/galaxyproject/galaxy/pull/2145
+.. _Pull Request 2146: https://github.com/galaxyproject/galaxy/pull/2146
+.. _Pull Request 2157: https://github.com/galaxyproject/galaxy/pull/2157
+.. _Pull Request 2158: https://github.com/galaxyproject/galaxy/pull/2158
+.. _Pull Request 2165: https://github.com/galaxyproject/galaxy/pull/2165
+.. _Pull Request 2168: https://github.com/galaxyproject/galaxy/pull/2168
+.. _Pull Request 2171: https://github.com/galaxyproject/galaxy/pull/2171
+.. _Pull Request 2173: https://github.com/galaxyproject/galaxy/pull/2173
+.. _Pull Request 2183: https://github.com/galaxyproject/galaxy/pull/2183
+.. _Pull Request 2213: https://github.com/galaxyproject/galaxy/pull/2213
+.. _Pull Request 2215: https://github.com/galaxyproject/galaxy/pull/2215
+.. _Pull Request 2223: https://github.com/galaxyproject/galaxy/pull/2223
+.. _Pull Request 2231: https://github.com/galaxyproject/galaxy/pull/2231
+.. _Pull Request 2233: https://github.com/galaxyproject/galaxy/pull/2233
+.. _Pull Request 2239: https://github.com/galaxyproject/galaxy/pull/2239
+.. _Pull Request 2241: https://github.com/galaxyproject/galaxy/pull/2241
+.. _Pull Request 2243: https://github.com/galaxyproject/galaxy/pull/2243
+.. _Pull Request 2248: https://github.com/galaxyproject/galaxy/pull/2248
+.. _Pull Request 2249: https://github.com/galaxyproject/galaxy/pull/2249
+.. _Pull Request 2252: https://github.com/galaxyproject/galaxy/pull/2252
+.. _Pull Request 2253: https://github.com/galaxyproject/galaxy/pull/2253
+.. _Pull Request 2254: https://github.com/galaxyproject/galaxy/pull/2254
+.. _Pull Request 2256: https://github.com/galaxyproject/galaxy/pull/2256
+.. _Pull Request 2257: https://github.com/galaxyproject/galaxy/pull/2257
+.. _Pull Request 2258: https://github.com/galaxyproject/galaxy/pull/2258
+.. _Pull Request 2261: https://github.com/galaxyproject/galaxy/pull/2261
+.. _Pull Request 2262: https://github.com/galaxyproject/galaxy/pull/2262
+.. _Pull Request 2263: https://github.com/galaxyproject/galaxy/pull/2263
+.. _Pull Request 2267: https://github.com/galaxyproject/galaxy/pull/2267
+.. _Pull Request 2268: https://github.com/galaxyproject/galaxy/pull/2268
+.. _Pull Request 2269: https://github.com/galaxyproject/galaxy/pull/2269
+.. _Pull Request 2271: https://github.com/galaxyproject/galaxy/pull/2271
+.. _Pull Request 2273: https://github.com/galaxyproject/galaxy/pull/2273
+.. _Pull Request 2274: https://github.com/galaxyproject/galaxy/pull/2274
+.. _Pull Request 2276: https://github.com/galaxyproject/galaxy/pull/2276
+.. _Pull Request 2278: https://github.com/galaxyproject/galaxy/pull/2278
+.. _Pull Request 2279: https://github.com/galaxyproject/galaxy/pull/2279
+.. _Pull Request 2280: https://github.com/galaxyproject/galaxy/pull/2280
+.. _Pull Request 2286: https://github.com/galaxyproject/galaxy/pull/2286
+.. _Pull Request 2289: https://github.com/galaxyproject/galaxy/pull/2289
+.. _Pull Request 2292: https://github.com/galaxyproject/galaxy/pull/2292
+.. _Pull Request 2293: https://github.com/galaxyproject/galaxy/pull/2293
+.. _Pull Request 2294: https://github.com/galaxyproject/galaxy/pull/2294
+.. _Pull Request 2295: https://github.com/galaxyproject/galaxy/pull/2295
+.. _Pull Request 2296: https://github.com/galaxyproject/galaxy/pull/2296
+.. _Pull Request 2302: https://github.com/galaxyproject/galaxy/pull/2302
+.. _Pull Request 2305: https://github.com/galaxyproject/galaxy/pull/2305
+.. _Pull Request 2307: https://github.com/galaxyproject/galaxy/pull/2307
+.. _Pull Request 2308: https://github.com/galaxyproject/galaxy/pull/2308
+.. _Pull Request 2310: https://github.com/galaxyproject/galaxy/pull/2310
+.. _Pull Request 2314: https://github.com/galaxyproject/galaxy/pull/2314
+.. _Pull Request 2326: https://github.com/galaxyproject/galaxy/pull/2326
+.. _Pull Request 2327: https://github.com/galaxyproject/galaxy/pull/2327
+.. _Pull Request 2328: https://github.com/galaxyproject/galaxy/pull/2328
+.. _Pull Request 2329: https://github.com/galaxyproject/galaxy/pull/2329
+.. _Pull Request 2330: https://github.com/galaxyproject/galaxy/pull/2330
+.. _Pull Request 2335: https://github.com/galaxyproject/galaxy/pull/2335
+.. _Pull Request 2336: https://github.com/galaxyproject/galaxy/pull/2336
+.. _Pull Request 2338: https://github.com/galaxyproject/galaxy/pull/2338
+.. _Pull Request 2340: https://github.com/galaxyproject/galaxy/pull/2340
+.. _Pull Request 2342: https://github.com/galaxyproject/galaxy/pull/2342
+.. _Pull Request 2348: https://github.com/galaxyproject/galaxy/pull/2348
+.. _Pull Request 2351: https://github.com/galaxyproject/galaxy/pull/2351
+.. _Pull Request 2354: https://github.com/galaxyproject/galaxy/pull/2354
+.. _Pull Request 2355: https://github.com/galaxyproject/galaxy/pull/2355
+.. _Pull Request 2358: https://github.com/galaxyproject/galaxy/pull/2358
+.. _Pull Request 2360: https://github.com/galaxyproject/galaxy/pull/2360
+.. _Pull Request 2361: https://github.com/galaxyproject/galaxy/pull/2361
+.. _Pull Request 2363: https://github.com/galaxyproject/galaxy/pull/2363
+.. _Pull Request 2364: https://github.com/galaxyproject/galaxy/pull/2364
+.. _Pull Request 2366: https://github.com/galaxyproject/galaxy/pull/2366
+.. _Pull Request 2367: https://github.com/galaxyproject/galaxy/pull/2367
+.. _Pull Request 2368: https://github.com/galaxyproject/galaxy/pull/2368
+.. _Pull Request 2370: https://github.com/galaxyproject/galaxy/pull/2370
+.. _Pull Request 2372: https://github.com/galaxyproject/galaxy/pull/2372
+.. _Pull Request 2374: https://github.com/galaxyproject/galaxy/pull/2374
+.. _Pull Request 2378: https://github.com/galaxyproject/galaxy/pull/2378
+.. _Pull Request 2379: https://github.com/galaxyproject/galaxy/pull/2379
+.. _Pull Request 2380: https://github.com/galaxyproject/galaxy/pull/2380
+.. _Pull Request 2381: https://github.com/galaxyproject/galaxy/pull/2381
+.. _Pull Request 2383: https://github.com/galaxyproject/galaxy/pull/2383
+.. _Pull Request 2386: https://github.com/galaxyproject/galaxy/pull/2386
+.. _Pull Request 2387: https://github.com/galaxyproject/galaxy/pull/2387
+.. _Pull Request 2388: https://github.com/galaxyproject/galaxy/pull/2388
+.. _Pull Request 2390: https://github.com/galaxyproject/galaxy/pull/2390
+.. _Pull Request 2391: https://github.com/galaxyproject/galaxy/pull/2391
+.. _Pull Request 2392: https://github.com/galaxyproject/galaxy/pull/2392
+.. _Pull Request 2394: https://github.com/galaxyproject/galaxy/pull/2394
+.. _Pull Request 2395: https://github.com/galaxyproject/galaxy/pull/2395
+.. _Pull Request 2396: https://github.com/galaxyproject/galaxy/pull/2396
+.. _Pull Request 2397: https://github.com/galaxyproject/galaxy/pull/2397
+.. _Pull Request 2403: https://github.com/galaxyproject/galaxy/pull/2403
+.. _Pull Request 2408: https://github.com/galaxyproject/galaxy/pull/2408
+.. _Pull Request 2409: https://github.com/galaxyproject/galaxy/pull/2409
+.. _Pull Request 2410: https://github.com/galaxyproject/galaxy/pull/2410
+.. _Pull Request 2411: https://github.com/galaxyproject/galaxy/pull/2411
+.. _Pull Request 2412: https://github.com/galaxyproject/galaxy/pull/2412
+.. _Pull Request 2413: https://github.com/galaxyproject/galaxy/pull/2413
+.. _Pull Request 2414: https://github.com/galaxyproject/galaxy/pull/2414
+.. _Pull Request 2415: https://github.com/galaxyproject/galaxy/pull/2415
+.. _Pull Request 2416: https://github.com/galaxyproject/galaxy/pull/2416
+.. _Pull Request 2418: https://github.com/galaxyproject/galaxy/pull/2418
+.. _Pull Request 2420: https://github.com/galaxyproject/galaxy/pull/2420
+.. _Pull Request 2421: https://github.com/galaxyproject/galaxy/pull/2421
+.. _Pull Request 2427: https://github.com/galaxyproject/galaxy/pull/2427
+.. _Pull Request 2428: https://github.com/galaxyproject/galaxy/pull/2428
+.. _Pull Request 2429: https://github.com/galaxyproject/galaxy/pull/2429
+.. _Pull Request 2434: https://github.com/galaxyproject/galaxy/pull/2434
+.. _Pull Request 2436: https://github.com/galaxyproject/galaxy/pull/2436
+.. _Pull Request 2438: https://github.com/galaxyproject/galaxy/pull/2438
+.. _Pull Request 2440: https://github.com/galaxyproject/galaxy/pull/2440
+.. _Pull Request 2444: https://github.com/galaxyproject/galaxy/pull/2444
+.. _Pull Request 2445: https://github.com/galaxyproject/galaxy/pull/2445
+.. _Pull Request 2452: https://github.com/galaxyproject/galaxy/pull/2452
+.. _Pull Request 2453: https://github.com/galaxyproject/galaxy/pull/2453
+.. _Pull Request 2455: https://github.com/galaxyproject/galaxy/pull/2455
+.. _Pull Request 2457: https://github.com/galaxyproject/galaxy/pull/2457
+.. _Pull Request 2459: https://github.com/galaxyproject/galaxy/pull/2459
+.. _Pull Request 2464: https://github.com/galaxyproject/galaxy/pull/2464
+.. _Pull Request 2468: https://github.com/galaxyproject/galaxy/pull/2468
+.. _Pull Request 2469: https://github.com/galaxyproject/galaxy/pull/2469
+.. _Pull Request 2472: https://github.com/galaxyproject/galaxy/pull/2472
+.. _Pull Request 2476: https://github.com/galaxyproject/galaxy/pull/2476
+.. _Pull Request 2477: https://github.com/galaxyproject/galaxy/pull/2477
+.. _Pull Request 2480: https://github.com/galaxyproject/galaxy/pull/2480
+.. _Pull Request 2481: https://github.com/galaxyproject/galaxy/pull/2481
+.. _Pull Request 2486: https://github.com/galaxyproject/galaxy/pull/2486
+.. _Pull Request 2488: https://github.com/galaxyproject/galaxy/pull/2488
+.. _Pull Request 2489: https://github.com/galaxyproject/galaxy/pull/2489
+.. _Pull Request 2494: https://github.com/galaxyproject/galaxy/pull/2494
+.. _Pull Request 2498: https://github.com/galaxyproject/galaxy/pull/2498
+.. _Pull Request 2499: https://github.com/galaxyproject/galaxy/pull/2499
+.. _Pull Request 2505: https://github.com/galaxyproject/galaxy/pull/2505
+.. _Pull Request 2508: https://github.com/galaxyproject/galaxy/pull/2508
+.. _Pull Request 2509: https://github.com/galaxyproject/galaxy/pull/2509
+.. _Pull Request 2515: https://github.com/galaxyproject/galaxy/pull/2515
+.. _Pull Request 2516: https://github.com/galaxyproject/galaxy/pull/2516
+.. _Pull Request 2524: https://github.com/galaxyproject/galaxy/pull/2524
+.. _Pull Request 2527: https://github.com/galaxyproject/galaxy/pull/2527
+.. _Pull Request 2528: https://github.com/galaxyproject/galaxy/pull/2528
+.. _Pull Request 2529: https://github.com/galaxyproject/galaxy/pull/2529
+.. _Pull Request 2531: https://github.com/galaxyproject/galaxy/pull/2531
+.. _Pull Request 2534: https://github.com/galaxyproject/galaxy/pull/2534
+.. _Pull Request 2538: https://github.com/galaxyproject/galaxy/pull/2538
+.. _Pull Request 2540: https://github.com/galaxyproject/galaxy/pull/2540
+.. _Pull Request 2543: https://github.com/galaxyproject/galaxy/pull/2543
+.. _Pull Request 2544: https://github.com/galaxyproject/galaxy/pull/2544
+.. _Pull Request 2545: https://github.com/galaxyproject/galaxy/pull/2545
+.. _Pull Request 2548: https://github.com/galaxyproject/galaxy/pull/2548
+.. _Pull Request 2552: https://github.com/galaxyproject/galaxy/pull/2552
+.. _Pull Request 2553: https://github.com/galaxyproject/galaxy/pull/2553
+.. _Pull Request 2554: https://github.com/galaxyproject/galaxy/pull/2554
+.. _Pull Request 2555: https://github.com/galaxyproject/galaxy/pull/2555
+.. _Pull Request 2559: https://github.com/galaxyproject/galaxy/pull/2559
+.. _Pull Request 2564: https://github.com/galaxyproject/galaxy/pull/2564
+.. _Pull Request 2569: https://github.com/galaxyproject/galaxy/pull/2569
+.. _Pull Request 2570: https://github.com/galaxyproject/galaxy/pull/2570
+.. _Pull Request 2572: https://github.com/galaxyproject/galaxy/pull/2572
+.. _Pull Request 2574: https://github.com/galaxyproject/galaxy/pull/2574
+.. _Pull Request 2576: https://github.com/galaxyproject/galaxy/pull/2576
+.. _Pull Request 2578: https://github.com/galaxyproject/galaxy/pull/2578
+.. _Pull Request 2579: https://github.com/galaxyproject/galaxy/pull/2579
+.. _Pull Request 2590: https://github.com/galaxyproject/galaxy/pull/2590
+.. _Pull Request 2594: https://github.com/galaxyproject/galaxy/pull/2594
+.. _Pull Request 2595: https://github.com/galaxyproject/galaxy/pull/2595
+.. _Pull Request 2596: https://github.com/galaxyproject/galaxy/pull/2596
+.. _Pull Request 2597: https://github.com/galaxyproject/galaxy/pull/2597
+.. _Pull Request 2599: https://github.com/galaxyproject/galaxy/pull/2599
+.. _Pull Request 2605: https://github.com/galaxyproject/galaxy/pull/2605
+.. _Pull Request 2608: https://github.com/galaxyproject/galaxy/pull/2608
+.. _Pull Request 2610: https://github.com/galaxyproject/galaxy/pull/2610
+.. _Pull Request 2612: https://github.com/galaxyproject/galaxy/pull/2612
+.. _Pull Request 2613: https://github.com/galaxyproject/galaxy/pull/2613
+.. _Pull Request 2615: https://github.com/galaxyproject/galaxy/pull/2615
+.. _Pull Request 2616: https://github.com/galaxyproject/galaxy/pull/2616
+.. _Pull Request 2617: https://github.com/galaxyproject/galaxy/pull/2617
+.. _Pull Request 2620: https://github.com/galaxyproject/galaxy/pull/2620
+.. _Pull Request 2621: https://github.com/galaxyproject/galaxy/pull/2621
+.. _Pull Request 2622: https://github.com/galaxyproject/galaxy/pull/2622
+.. _Pull Request 2625: https://github.com/galaxyproject/galaxy/pull/2625
+.. _Pull Request 2628: https://github.com/galaxyproject/galaxy/pull/2628
+.. _Pull Request 2630: https://github.com/galaxyproject/galaxy/pull/2630
+.. _Pull Request 2631: https://github.com/galaxyproject/galaxy/pull/2631
+.. _Pull Request 2632: https://github.com/galaxyproject/galaxy/pull/2632
+.. _Pull Request 2634: https://github.com/galaxyproject/galaxy/pull/2634
+.. _Pull Request 2636: https://github.com/galaxyproject/galaxy/pull/2636
+.. _Pull Request 2637: https://github.com/galaxyproject/galaxy/pull/2637
+.. _Pull Request 2639: https://github.com/galaxyproject/galaxy/pull/2639
+.. _Pull Request 2643: https://github.com/galaxyproject/galaxy/pull/2643
+.. _Pull Request 2644: https://github.com/galaxyproject/galaxy/pull/2644
+.. _Pull Request 2646: https://github.com/galaxyproject/galaxy/pull/2646
+.. _Pull Request 2647: https://github.com/galaxyproject/galaxy/pull/2647
+.. _Pull Request 2648: https://github.com/galaxyproject/galaxy/pull/2648
+.. _Pull Request 2650: https://github.com/galaxyproject/galaxy/pull/2650
+.. _Pull Request 2651: https://github.com/galaxyproject/galaxy/pull/2651
+.. _Pull Request 2652: https://github.com/galaxyproject/galaxy/pull/2652
+.. _Pull Request 2656: https://github.com/galaxyproject/galaxy/pull/2656
+.. _Pull Request 2660: https://github.com/galaxyproject/galaxy/pull/2660
+.. _Pull Request 2661: https://github.com/galaxyproject/galaxy/pull/2661
+.. _Pull Request 2664: https://github.com/galaxyproject/galaxy/pull/2664
+.. _Pull Request 2667: https://github.com/galaxyproject/galaxy/pull/2667
+.. _Pull Request 2670: https://github.com/galaxyproject/galaxy/pull/2670
+.. _Pull Request 2678: https://github.com/galaxyproject/galaxy/pull/2678
+.. _Pull Request 2680: https://github.com/galaxyproject/galaxy/pull/2680
+.. _Pull Request 2681: https://github.com/galaxyproject/galaxy/pull/2681
+.. _Pull Request 2682: https://github.com/galaxyproject/galaxy/pull/2682
+.. _Pull Request 2684: https://github.com/galaxyproject/galaxy/pull/2684
+.. _Pull Request 2685: https://github.com/galaxyproject/galaxy/pull/2685
+.. _Pull Request 2691: https://github.com/galaxyproject/galaxy/pull/2691
+.. _Pull Request 2693: https://github.com/galaxyproject/galaxy/pull/2693
+.. _Pull Request 2701: https://github.com/galaxyproject/galaxy/pull/2701
+.. _Pull Request 2721: https://github.com/galaxyproject/galaxy/pull/2721
+.. _Pull Request 2723: https://github.com/galaxyproject/galaxy/pull/2723
+.. _Pull Request 2737: https://github.com/galaxyproject/galaxy/pull/2737
+.. _Pull Request 2743: https://github.com/galaxyproject/galaxy/pull/2743
+.. _Pull Request 2744: https://github.com/galaxyproject/galaxy/pull/2744
+.. _Pull Request 2749: https://github.com/galaxyproject/galaxy/pull/2749
+.. _Pull Request 2750: https://github.com/galaxyproject/galaxy/pull/2750
+.. _Pull Request 2756: https://github.com/galaxyproject/galaxy/pull/2756
+.. _Pull Request 2759: https://github.com/galaxyproject/galaxy/pull/2759
+.. _Pull Request 2773: https://github.com/galaxyproject/galaxy/pull/2773
+.. _Pull Request 2774: https://github.com/galaxyproject/galaxy/pull/2774
+.. _Pull Request 2780: https://github.com/galaxyproject/galaxy/pull/2780
+.. _Pull Request 2789: https://github.com/galaxyproject/galaxy/pull/2789
+.. _Pull Request 2792: https://github.com/galaxyproject/galaxy/pull/2792
+.. _Pull Request 2809: https://github.com/galaxyproject/galaxy/pull/2809
+.. _Pull Request 2810: https://github.com/galaxyproject/galaxy/pull/2810
+

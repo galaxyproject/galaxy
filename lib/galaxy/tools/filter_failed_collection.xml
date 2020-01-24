@@ -1,0 +1,46 @@
+<tool id="__FILTER_FAILED_DATASETS__"
+      name="Filter failed"
+      version="1.0.0"
+      tool_type="filter_failed_datasets_collection">
+    <description>datasets from a collection</description>
+    <type class="FilterFailedDatasetsTool" module="galaxy.tools" />
+    <action module="galaxy.tools.actions.model_operations"
+            class="ModelOperationToolAction"/>
+    <inputs>
+        <param type="data_collection" collection_type="list,list:paired" name="input" label="Input Collection" />
+    </inputs>
+    <outputs>
+        <collection name="output" format_source="input" type_source="input" label="${on_string} (filtered failed datasets)" >
+        </collection>
+    </outputs>
+    <tests>
+        <!-- Test framework has no way of creating a collection with
+             failed elements, so best we can do is verify identity on
+             an okay collection. API tests verify this tool works
+             though.
+        -->
+        <test>
+            <param name="input">
+                <collection type="list">
+                    <element name="e1" value="simple_line.txt" />
+                </collection>
+            </param>
+            <output_collection name="output" type="list">
+                <element name="e1">
+                  <assert_contents>
+                      <has_text_matching expression="^This is a line of text.\n$" />
+                  </assert_contents>
+                </element>
+            </output_collection>
+        </test>
+    </tests>
+    <help><![CDATA[
+
+This tool takes a dataset collection and filters out datasets in the failed state. This is useful for continuing a multi-sample analysis when one of more of the samples fails at some point.
+
+.. class:: infomark
+
+This tool will create new history datasets from your collection but your quota usage will not increase.
+
+      ]]></help>
+</tool>

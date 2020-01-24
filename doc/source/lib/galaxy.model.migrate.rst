@@ -6,6 +6,13 @@ galaxy.model.migrate package
     :undoc-members:
     :show-inheritance:
 
+Subpackages
+-----------
+
+.. toctree::
+
+    galaxy.model.migrate.versions
+
 Submodules
 ----------
 

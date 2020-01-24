@@ -17,8 +17,8 @@ galaxy.auth.providers.alwaysreject module
     :undoc-members:
     :show-inheritance:
 
-galaxy.auth.providers.ldap_ad module
-------------------------------------
+galaxy.auth.providers.ldap\_ad module
+-------------------------------------
 
 .. automodule:: galaxy.auth.providers.ldap_ad
     :members:
@@ -33,8 +33,8 @@ galaxy.auth.providers.localdb module
     :undoc-members:
     :show-inheritance:
 
-galaxy.auth.providers.pam_auth module
--------------------------------------
+galaxy.auth.providers.pam\_auth module
+--------------------------------------
 
 .. automodule:: galaxy.auth.providers.pam_auth
     :members:

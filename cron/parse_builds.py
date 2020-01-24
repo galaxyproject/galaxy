@@ -1,34 +1,34 @@
 #!/usr/bin/env python
-
 """
 Connects to the URL specified and outputs builds available at that
 DSN in tabular format.  UCSC Main gateway is used as default.
 build   description
 """
+from __future__ import print_function
 
 import sys
-import urllib
 import xml.etree.ElementTree as ElementTree
+
+import requests
 
 
 def getbuilds(url):
     try:
-        page = urllib.urlopen(url)
-    except:
-        print "#Unable to open " + url
-        print "?\tunspecified (?)"
+        text = requests.get(url).text
+    except Exception:
+        print("#Unable to open " + url)
+        print("?\tunspecified (?)")
         sys.exit(1)
 
-    text = page.read()
     try:
         tree = ElementTree.fromstring(text)
-    except:
-        print "#Invalid xml passed back from " + url
-        print "?\tunspecified (?)"
+    except Exception:
+        print("#Invalid xml passed back from " + url)
+        print("?\tunspecified (?)")
         sys.exit(1)
 
-    print "#Harvested from " + url
-    print "?\tunspecified (?)"
+    print("#Harvested from " + url)
+    print("?\tunspecified (?)")
     for dsn in tree:
         build = dsn.find("SOURCE").attrib['id']
         description = dsn.find("DESCRIPTION").text.replace(" - Genome at UCSC", "").replace(" Genome at UCSC", "")
@@ -43,10 +43,11 @@ def getbuilds(url):
         description = " ".join(fields)
         yield [build, description]
 
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         URL = sys.argv[1]
     else:
         URL = "http://genome.cse.ucsc.edu/cgi-bin/das/dsn"
     for build in getbuilds(URL):
-        print build[0] + "\t" + build[1] + " (" + build[0] + ")"
+        print(build[0] + "\t" + build[1] + " (" + build[0] + ")")

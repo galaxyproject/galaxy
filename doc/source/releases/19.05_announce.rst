@@ -1,0 +1,62 @@
+
+===========================================================
+May 2019 Galaxy Release (v 19.05)
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+**User Facing Release Notes**
+  Galaxy releases now include "user facing" release notes, you are reading
+  the traditional release notes which have always been relatively admin and developer
+  oriented but will likely be even more so now. Features such as favoriting tools,
+  improved workflow editor feedback, and an exciting new cellxgene GIE may have
+  been featured in these release notes in the past but are now featured in the
+  user release notes instead. A huge thanks to `@hexylena <https://github.com/hexylena>`__
+  for getting the ball rolling on this initiative.
+
+  Check out the `19.05 user release notes <https://docs.galaxyproject.org/en/release_19.05/releases/19.05_announce_user.html>`__.
+
+**Login and Registration Rewrite**
+  The march toward replacing templated backend generated HTML with modern, reactive
+  components accelerated in Galaxy 19.05. Galaxy's login, logout, and registration pages
+  were replaced with VueJS components. Support for OIDC login options was added and
+  certain deprecated OpenID login options were removed. This release contains many other
+  client code enhancements including a new client initialization pipeline, ESLint based
+  linting, and greatly optimized initial dynamic loading of bundles.
+
+**Improvements to Workflow Expressivity**
+  In 19.01, non-data connections were added to the workflow editor in the form of
+  explicit, typed, non-data inputs to workflows. This idea has been generalized in 19.05
+  and tool can now produce non-data outputs and a new class of tools called "Expression"
+  tools has been added to make this especially easy. The Format 2 workflow format is now
+  importable by default and admin-only extensions even allow embedding tool definitions
+  directly into workflows. Many thanks to `@mvdbeek <https://github.com/mvdbeek>`__ for
+  pushing this effort.
+
+Get Galaxy
+==========
+
+The code lives at `GitHub <https://github.com/galaxyproject/galaxy>`__ and you should have `Git <https://git-scm.com/>`__ to obtain it.
+
+To get a new Galaxy repository run:
+  .. code-block:: shell
+
+      $ git clone -b release_19.05 https://github.com/galaxyproject/galaxy.git
+
+To update an existing Galaxy repository run:
+  .. code-block:: shell
+
+      $ git fetch origin && git checkout release_19.05 && git pull --ff-only origin release_19.05
+
+See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
+
+Release Notes
+===========================================================
+
+.. include:: 19.05.rst
+   :start-after: announce_start
+
+.. include:: _thanks.rst

@@ -25,8 +25,8 @@ galaxy.tools.toolbox.base module
     :undoc-members:
     :show-inheritance:
 
-galaxy.tools.toolbox.integrated_panel module
---------------------------------------------
+galaxy.tools.toolbox.integrated\_panel module
+---------------------------------------------
 
 .. automodule:: galaxy.tools.toolbox.integrated_panel
     :members:
@@ -37,6 +37,14 @@ galaxy.tools.toolbox.panel module
 ---------------------------------
 
 .. automodule:: galaxy.tools.toolbox.panel
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.tools.toolbox.parser module
+----------------------------------
+
+.. automodule:: galaxy.tools.toolbox.parser
     :members:
     :undoc-members:
     :show-inheritance:

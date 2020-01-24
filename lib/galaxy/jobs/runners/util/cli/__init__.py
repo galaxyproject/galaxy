@@ -1,8 +1,12 @@
 """
 """
+import json
 from glob import glob
-from os.path import basename, join
 from os import getcwd
+from os.path import (
+    basename,
+    join
+)
 
 DEFAULT_SHELL_PLUGIN = 'LocalShell'
 
@@ -36,6 +40,7 @@ class CliInterface(object):
 
         self.cli_shells = {}
         self.cli_job_interfaces = {}
+        self.active_cli_shells = {}
 
         module_prefix = self.__module__
         __load('%s.shell' % module_prefix, self.cli_shells)
@@ -52,8 +57,10 @@ class CliInterface(object):
 
     def get_shell_plugin(self, shell_params):
         shell_plugin = shell_params.get('plugin', DEFAULT_SHELL_PLUGIN)
-        shell = self.cli_shells[shell_plugin](**shell_params)
-        return shell
+        requested_shell_settings = json.dumps(shell_params, sort_keys=True)
+        if requested_shell_settings not in self.active_cli_shells:
+            self.active_cli_shells[requested_shell_settings] = self.cli_shells[shell_plugin](**shell_params)
+        return self.active_cli_shells[requested_shell_settings]
 
     def get_job_interface(self, job_params):
         job_plugin = job_params.get('plugin', None)
@@ -61,7 +68,7 @@ class CliInterface(object):
             raise ValueError(ERROR_MESSAGE_NO_JOB_PLUGIN)
         job_plugin_class = self.cli_job_interfaces.get(job_plugin, None)
         if not job_plugin_class:
-            raise ValueError(ERROR_MESSAGE_NO_SUCH_JOB_PLUGIN % (job_plugin, self.cli_job_interfaces.keys()))
+            raise ValueError(ERROR_MESSAGE_NO_SUCH_JOB_PLUGIN % (job_plugin, list(self.cli_job_interfaces.keys())))
         job_interface = job_plugin_class(**job_params)
 
         return job_interface

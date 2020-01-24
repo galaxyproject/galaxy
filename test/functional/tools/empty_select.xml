@@ -1,0 +1,23 @@
+<tool id="empty_select" name="empty_select" version="1.0.0">
+    <description>multi_select</description>
+    <command><![CDATA[
+touch '$output'
+#if $select_optional:
+    && echo '$select_optional' > '$output'
+#end if
+    ]]></command>
+    <inputs>
+        <param name="select_optional" type="select" optional="true">
+        </param>
+    </inputs>
+    <outputs>
+        <data format="txt" name="output" />
+    </outputs>
+    <tests>
+        <test>
+            <output name="output" md5="d41d8cd98f00b204e9800998ecf8427e" />
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

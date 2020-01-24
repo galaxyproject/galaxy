@@ -1,6 +1,8 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 import sys
+
 from galaxy.util.checkers import is_gzip
 
 
@@ -18,7 +20,7 @@ def main():
     """
     input_fname = sys.argv[1]
     if is_gzip(input_fname):
-        print 'Conversion is only possible for uncompressed files'
+        print('Conversion is only possible for uncompressed files')
         sys.exit(1)
 
     out_file = open(sys.argv[2], 'w')

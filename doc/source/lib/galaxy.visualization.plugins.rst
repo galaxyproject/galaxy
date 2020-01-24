@@ -9,10 +9,18 @@ galaxy.visualization.plugins package
 Submodules
 ----------
 
-galaxy.visualization.plugins.config_parser module
--------------------------------------------------
+galaxy.visualization.plugins.config\_parser module
+--------------------------------------------------
 
 .. automodule:: galaxy.visualization.plugins.config_parser
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.visualization.plugins.interactive\_environments module
+-------------------------------------------------------------
+
+.. automodule:: galaxy.visualization.plugins.interactive_environments
     :members:
     :undoc-members:
     :show-inheritance:
@@ -33,8 +41,8 @@ galaxy.visualization.plugins.registry module
     :undoc-members:
     :show-inheritance:
 
-galaxy.visualization.plugins.resource_parser module
----------------------------------------------------
+galaxy.visualization.plugins.resource\_parser module
+----------------------------------------------------
 
 .. automodule:: galaxy.visualization.plugins.resource_parser
     :members:

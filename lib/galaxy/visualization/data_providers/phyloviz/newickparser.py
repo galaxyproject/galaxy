@@ -1,6 +1,6 @@
-from __future__ import with_statement
-from baseparser import Base_Parser, PhyloTree
 import re
+
+from .baseparser import Base_Parser, PhyloTree
 
 
 class Newick_Parser(Base_Parser):
@@ -36,8 +36,8 @@ class Newick_Parser(Base_Parser):
         return self.phyloTree.generateJsonableDict()
 
     def cleanNewickString(self, rawNewick):
-        """removing semi colon, and illegal json characters (\,',") and white spaces"""
-        return re.sub(r'\s|;|\"|\'|\\', '', rawNewick)
+        r"""removing semi colon, and illegal json characters (\,',") and white spaces"""
+        return re.sub(r'\s|;|\"|\'|\\', r'', rawNewick)
 
     def _makeNodesFromString(self, string, depth):
         """elements separated by comma could be empty"""
@@ -81,7 +81,7 @@ class Newick_Parser(Base_Parser):
         start = 0
         end = 0
 
-        for i in xrange(len(newickString)):
+        for i in range(len(newickString)):
             if newickString[i] == "(" or newickString[i] == ",":
                 if re.match(r"[,(]", newickString[i + 1:]):
                     continue
@@ -89,7 +89,7 @@ class Newick_Parser(Base_Parser):
                     end = i + 1
                     # i now refers to the starting position of the term to be replaced,
                     # we will next find j which is the ending pos of the term
-                    for j in xrange(i + 1, len(newickString)):
+                    for j in range(i + 1, len(newickString)):
                         enclosingSymbol = newickString[j]   # the immediate symbol after a common or left bracket which denotes the end of a term
                         if enclosingSymbol == ")" or enclosingSymbol == ":" or enclosingSymbol == ",":
                             termToReplace = newickString[end:j]
@@ -124,7 +124,7 @@ class Newick_Parser(Base_Parser):
         lenOfPreceedingInternalNodeString = 0
         bracketStack = []
 
-        for j in xrange(len(string)):
+        for j in range(len(string)):
             if string[j] == "(":    # finding the positions of all the open brackets
                 bracketStack.append(j)
                 continue
@@ -147,7 +147,7 @@ class Newick_Parser(Base_Parser):
                         if match:
                             indexOfNextSymbol = match.start()
                             stringRepOfInternalNode = stringRightOfBracket[:indexOfNextSymbol]
-                            internalNodes = self._makeNodesFromString( stringRepOfInternalNode, depth)
+                            internalNodes = self._makeNodesFromString(stringRepOfInternalNode, depth)
                             if len(internalNodes) > 0:
                                 InternalNode = internalNodes[0]
                             lenOfPreceedingInternalNodeString = len(stringRepOfInternalNode)
@@ -155,11 +155,11 @@ class Newick_Parser(Base_Parser):
                             InternalNode = self._makeNodesFromString(string[j + 1:], depth)[0]
                             lenOfPreceedingInternalNodeString = len(string) - j
                     if InternalNode is None:       # creating a generic node if it is unnamed
-                        InternalNode = self.phyloTree.makeNode( "", depth=depth, isInternal=True )  # "internal-" + str(depth)
+                        InternalNode = self.phyloTree.makeNode("", depth=depth, isInternal=True)  # "internal-" + str(depth)
                         lenOfPreceedingInternalNodeString = 0
 
                     # recussive call to make the internal claude
-                    childSubString = string[ i + 1 : j ]
+                    childSubString = string[i + 1 : j]
                     InternalNode.addChildNode(self.parseNode(childSubString, depth + 1))
 
                     nodes.append(InternalNode)  # we append the internal node later to preserve order

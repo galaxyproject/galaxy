@@ -42,4 +42,20 @@ galaxy.jobs.runners.util.kill module
     :undoc-members:
     :show-inheritance:
 
+galaxy.jobs.runners.util.pykube\_util module
+--------------------------------------------
+
+.. automodule:: galaxy.jobs.runners.util.pykube_util
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.jobs.runners.util.sudo module
+------------------------------------
+
+.. automodule:: galaxy.jobs.runners.util.sudo
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 

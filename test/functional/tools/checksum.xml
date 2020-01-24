@@ -1,0 +1,17 @@
+<tool id="checksum" name="checksum" version="1.0.0">
+    <command>
+        cp $input $output
+    </command>
+    <inputs>
+        <param name="input" type="data" format="txt" />
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" value="simple_line.txt" />
+            <output name="output" checksum="sha1$8156d7ca0f46ed7abac98f82e36cfaddb2aca041" />
+        </test>
+    </tests>
+</tool>

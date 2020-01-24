@@ -1,8 +1,5 @@
 # A simple CLI runner for slurm that can be used when running Galaxy from a
 # non-submit host and using a Slurm cluster.
-
-from ..job import BaseJobExec
-
 from logging import getLogger
 
 try:
@@ -10,8 +7,10 @@ try:
     job_states = Job.states
 except ImportError:
     # Not in Galaxy, map Galaxy job states to Pulsar ones.
-    from galaxy.util import enum
+    from pulsar.util import enum
     job_states = enum(RUNNING='running', OK='complete', QUEUED='queued', ERROR="failed")
+
+from ..job import BaseJobExec
 
 log = getLogger(__name__)
 
@@ -42,7 +41,7 @@ class Slurm(BaseJobExec):
                 if not k.startswith('-'):
                     k = argmap[k]
                 scriptargs[k] = v
-            except:
+            except Exception:
                 log.warning('Unrecognized long argument passed to Slurm CLI plugin: %s' % k)
 
         # Generated template.

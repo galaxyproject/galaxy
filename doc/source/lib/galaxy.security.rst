@@ -9,6 +9,14 @@ galaxy.security package
 Submodules
 ----------
 
+galaxy.security.idencoding module
+---------------------------------
+
+.. automodule:: galaxy.security.idencoding
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy.security.passwords module
 --------------------------------
 
@@ -17,8 +25,8 @@ galaxy.security.passwords module
     :undoc-members:
     :show-inheritance:
 
-galaxy.security.validate_user_input module
-------------------------------------------
+galaxy.security.validate\_user\_input module
+--------------------------------------------
 
 .. automodule:: galaxy.security.validate_user_input
     :members:

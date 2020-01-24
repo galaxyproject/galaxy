@@ -1,0 +1,20 @@
+runners:
+  local:
+    load: galaxy.jobs.runners.local:LocalJobRunner
+  pulsar_embed:
+    load: galaxy.jobs.runners.pulsar:PulsarEmbeddedJobRunner
+
+execution:
+  default: pulsar_embed
+  environments:
+    local:
+      runner: local
+    pulsar_embed:
+      runner: pulsar_embed
+      docker_enabled: true
+      docker_sudo: false
+      docker_required: true
+
+tools:
+- id: upload1
+  environment: local

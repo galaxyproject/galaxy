@@ -1,6 +1,6 @@
-<tool id="validation_default" name="Validation (default)">
+<tool id="validation_default" name="Validation (default)" version="0.1">
   <command>
-    echo "$input1" > out1;
+    echo '$input1' > out1;
     echo $float_param > out2;
     echo $select_param > out3;
   </command>
@@ -25,6 +25,9 @@
       <output name="out_file1">
          <assert_contents>
             <has_line line="__dq__ X echo __dq__moo" />
+            <has_n_lines n="1" />
+            <has_size value="24"/>
+            <has_size value="20" delta="5"/>
          </assert_contents>
       </output>
     </test>

@@ -12,6 +12,7 @@ Subpackages
 .. toctree::
 
     galaxy.webapps.reports.controllers
+    galaxy.webapps.reports.framework
 
 Submodules
 ----------

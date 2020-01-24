@@ -1,0 +1,21 @@
+@import "theme/blue.scss";
+.shed-style-container {
+    width: 95%;
+    margin: auto;
+    margin-top: 1em;
+    overflow: auto !important;
+    .header {
+        h2 {
+            float: left;
+        }
+        span {
+            float: right;
+        }
+    }
+}
+.ui-autocomplete {
+    background-color: #fff;
+    li.ui-menu-item {
+        list-style-type: none;
+    }
+}

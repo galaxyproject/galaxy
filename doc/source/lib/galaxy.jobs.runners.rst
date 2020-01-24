@@ -17,6 +17,14 @@ Subpackages
 Submodules
 ----------
 
+galaxy.jobs.runners.chronos module
+----------------------------------
+
+.. automodule:: galaxy.jobs.runners.chronos
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy.jobs.runners.cli module
 ------------------------------
 
@@ -37,6 +45,22 @@ galaxy.jobs.runners.drmaa module
 --------------------------------
 
 .. automodule:: galaxy.jobs.runners.drmaa
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.jobs.runners.godocker module
+-----------------------------------
+
+.. automodule:: galaxy.jobs.runners.godocker
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.jobs.runners.kubernetes module
+-------------------------------------
+
+.. automodule:: galaxy.jobs.runners.kubernetes
     :members:
     :undoc-members:
     :show-inheritance:
@@ -73,8 +97,8 @@ galaxy.jobs.runners.slurm module
     :undoc-members:
     :show-inheritance:
 
-galaxy.jobs.runners.state_handler_factory module
-------------------------------------------------
+galaxy.jobs.runners.state\_handler\_factory module
+--------------------------------------------------
 
 .. automodule:: galaxy.jobs.runners.state_handler_factory
     :members:
@@ -85,6 +109,14 @@ galaxy.jobs.runners.tasks module
 --------------------------------
 
 .. automodule:: galaxy.jobs.runners.tasks
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.jobs.runners.univa module
+--------------------------------
+
+.. automodule:: galaxy.jobs.runners.univa
     :members:
     :undoc-members:
     :show-inheritance:

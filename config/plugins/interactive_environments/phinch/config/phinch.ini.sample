@@ -19,3 +19,8 @@ image = shiltemann/docker-phinch-galaxy:16.04
 # The Docker hostname. It can be useful to run the Docker daemon on a different
 # host than Galaxy.
 #docker_hostname = localhost
+
+# If your Docker container exposes more then one port, Galaxy needs to know to
+# which ports it needs to connect. With this option you can specify the port number
+# inside your container to which Galaxy should connect the UI.
+#docker_connect_port = None

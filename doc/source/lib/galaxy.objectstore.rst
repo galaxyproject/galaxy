@@ -9,6 +9,30 @@ galaxy.objectstore package
 Submodules
 ----------
 
+galaxy.objectstore.azure\_blob module
+-------------------------------------
+
+.. automodule:: galaxy.objectstore.azure_blob
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.objectstore.cloud module
+-------------------------------
+
+.. automodule:: galaxy.objectstore.cloud
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.objectstore.pithos module
+--------------------------------
+
+.. automodule:: galaxy.objectstore.pithos
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy.objectstore.pulsar module
 --------------------------------
 
@@ -33,8 +57,8 @@ galaxy.objectstore.s3 module
     :undoc-members:
     :show-inheritance:
 
-galaxy.objectstore.s3_multipart_upload module
----------------------------------------------
+galaxy.objectstore.s3\_multipart\_upload module
+-----------------------------------------------
 
 .. automodule:: galaxy.objectstore.s3_multipart_upload
     :members:

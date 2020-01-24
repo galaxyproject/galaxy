@@ -2,5 +2,6 @@
 Galaxy web application framework
 """
 
-import base
+from . import base
+
 url_for = base.routes.url_for

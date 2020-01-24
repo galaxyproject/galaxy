@@ -1,5 +1,5 @@
-galaxy_ext package
-==================
+galaxy\_ext package
+===================
 
 .. automodule:: galaxy_ext
     :members:
@@ -11,5 +11,6 @@ Subpackages
 
 .. toctree::
 
+    galaxy_ext.expressions
     galaxy_ext.metadata
 

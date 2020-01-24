@@ -13,13 +13,16 @@ Subpackages
 
     galaxy.actions
     galaxy.auth
-    galaxy.dataset_collections
+    galaxy.authnz
+    galaxy.config
+    galaxy.containers
     galaxy.datatypes
     galaxy.dependencies
     galaxy.eggs
     galaxy.exceptions
-    galaxy.external_services
     galaxy.forms
+    galaxy.job_execution
+    galaxy.job_metrics
     galaxy.jobs
     galaxy.managers
     galaxy.metadata
@@ -27,14 +30,17 @@ Subpackages
     galaxy.objectstore
     galaxy.openid
     galaxy.quota
-    galaxy.sample_tracking
     galaxy.security
-    galaxy.tags
+    galaxy.selenium
+    galaxy.tool_util
     galaxy.tools
+    galaxy.tours
     galaxy.util
     galaxy.visualization
     galaxy.web
+    galaxy.web_stack
     galaxy.webapps
+    galaxy.webhooks
     galaxy.work
     galaxy.workflow
 
@@ -49,10 +55,10 @@ galaxy.app module
     :undoc-members:
     :show-inheritance:
 
-galaxy.config module
---------------------
+galaxy.config\_watchers module
+------------------------------
 
-.. automodule:: galaxy.config
+.. automodule:: galaxy.config_watchers
     :members:
     :undoc-members:
     :show-inheritance:
@@ -65,8 +71,8 @@ galaxy.main module
     :undoc-members:
     :show-inheritance:
 
-galaxy.queue_worker module
---------------------------
+galaxy.queue\_worker module
+---------------------------
 
 .. automodule:: galaxy.queue_worker
     :members:

@@ -1,0 +1,6 @@
+<display id="ucsc_trackhub" version="1.0.0" name="display at Track Hub UCSC">
+    <link id="main" name="main">
+        <url>https://genome.ucsc.edu/cgi-bin/hgHubConnect?hubUrl=${qp($hub_file.url + '/myHub/hub.txt')}&amp;hgHub_do_firstDb=on&amp;hgHub_do_redirect=on&amp;hgHubConnect.remakeTrackHub=on</url>
+        <param type="data" name="hub_file" url="galaxy_${DATASET_HASH}" allow_extra_files_access="True" />
+    </link>
+</display>

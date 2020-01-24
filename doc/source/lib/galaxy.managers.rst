@@ -17,8 +17,8 @@ galaxy.managers.annotatable module
     :undoc-members:
     :show-inheritance:
 
-galaxy.managers.api_keys module
--------------------------------
+galaxy.managers.api\_keys module
+--------------------------------
 
 .. automodule:: galaxy.managers.api_keys
     :members:
@@ -41,6 +41,22 @@ galaxy.managers.citations module
     :undoc-members:
     :show-inheritance:
 
+galaxy.managers.cloud module
+----------------------------
+
+.. automodule:: galaxy.managers.cloud
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.managers.cloudauthzs module
+----------------------------------
+
+.. automodule:: galaxy.managers.cloudauthzs
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy.managers.collections module
 ----------------------------------
 
@@ -49,8 +65,8 @@ galaxy.managers.collections module
     :undoc-members:
     :show-inheritance:
 
-galaxy.managers.collections_util module
----------------------------------------
+galaxy.managers.collections\_util module
+----------------------------------------
 
 .. automodule:: galaxy.managers.collections_util
     :members:
@@ -113,10 +129,34 @@ galaxy.managers.hdas module
     :undoc-members:
     :show-inheritance:
 
+galaxy.managers.hdcas module
+----------------------------
+
+.. automodule:: galaxy.managers.hdcas
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy.managers.histories module
 --------------------------------
 
 .. automodule:: galaxy.managers.histories
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.managers.history\_contents module
+----------------------------------------
+
+.. automodule:: galaxy.managers.history_contents
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.managers.jobs module
+---------------------------
+
+.. automodule:: galaxy.managers.jobs
     :members:
     :undoc-members:
     :show-inheritance:
@@ -137,6 +177,14 @@ galaxy.managers.libraries module
     :undoc-members:
     :show-inheritance:
 
+galaxy.managers.library\_datasets module
+----------------------------------------
+
+.. automodule:: galaxy.managers.library_datasets
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy.managers.pages module
 ----------------------------
 
@@ -153,8 +201,8 @@ galaxy.managers.ratable module
     :undoc-members:
     :show-inheritance:
 
-galaxy.managers.rbac_secured module
------------------------------------
+galaxy.managers.rbac\_secured module
+------------------------------------
 
 .. automodule:: galaxy.managers.rbac_secured
     :members:
@@ -193,10 +241,10 @@ galaxy.managers.taggable module
     :undoc-members:
     :show-inheritance:
 
-galaxy.managers.tags module
----------------------------
+galaxy.managers.tools module
+----------------------------
 
-.. automodule:: galaxy.managers.tags
+.. automodule:: galaxy.managers.tools
     :members:
     :undoc-members:
     :show-inheritance:

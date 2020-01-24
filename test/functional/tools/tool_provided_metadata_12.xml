@@ -1,0 +1,45 @@
+<tool id="tool_provided_metadata_12" name="tool_provided_metadata_12" profile="17.09" version="1.0.0">
+  <!-- Demonstrate setting extra_files for discovered primary datasets in profile >= 17.09 tools. -->
+  <command>
+    mkdir sample1data;
+    echo "1" > sample1.report.tsv;
+    echo "foo line" > sample1data/foo;
+    echo "moo cow bar" > sample1data/bar;
+    cp $c1 galaxy.json;
+  </command>
+  <configfiles>
+      <configfile name="c1">{"sample": {
+"datasets": [
+{"filename": "sample1.report.tsv", "name": "cool name 1", "ext": "txt", "info": "cool 1 info", "dbkey": "hg19", "extra_files": "sample1data"}
+]
+}}
+</configfile>
+  </configfiles>
+  <inputs>
+    <param name="input" type="data" />
+  </inputs>
+  <outputs>
+    <data name="sample">
+      <discover_datasets pattern="(?P&lt;designation&gt;.+)\.report\.tsv" visible="true" />
+    </data>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input" ftype="txt" value="simple_line.txt"/>
+      <output name="sample">
+        <discovered_dataset designation="sample1" ftype="txt">
+          <assert_contents><has_line line="1" /></assert_contents>
+          <metadata name="name" value="cool name 1" />
+          <metadata name="dbkey" value="hg19" />
+          <metadata name="info" value="cool 1 info" />
+          <extra_files type="file" name="foo">
+            <assert_contents><has_line line="foo line" /></assert_contents>
+          </extra_files>
+          <extra_files type="file" name="bar">
+            <assert_contents><has_line line="moo cow bar" /></assert_contents>
+          </extra_files>
+        </discovered_dataset>
+      </output>
+    </test>
+  </tests>
+</tool>

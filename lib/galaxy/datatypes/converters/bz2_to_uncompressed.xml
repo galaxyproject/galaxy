@@ -1,0 +1,20 @@
+<tool id="CONVERTER_bz2_to_uncompressed" name="Convert compressed file to uncompressed." version="1.0.0" hidden="true" profile="17.09">
+  <command><![CDATA[
+    cp '$ext_config' 'galaxy.json' && bzip2 -dcf '$input1' > '$output1'
+  ]]></command>
+  <configfiles>
+      <configfile name="ext_config">{"output1": {
+  "name": "${input1.name[0:-len('.gz')] if $input1.name.endswith('.gz') else $input1.name} uncompressed",
+  "ext": "${input1.ext[0:-len('.gz')]}"
+}}</configfile>
+  </configfiles>
+  <inputs>
+      <param format="data" name="input1" type="data" label="Choose compressed file"/>
+  </inputs>
+  <outputs>
+      <!-- auto doesn't sniff - it defers to galaxy.json in this context. -->
+      <data name="output1" format="auto"/>
+  </outputs>
+  <help>
+  </help>
+</tool>

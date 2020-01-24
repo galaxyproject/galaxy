@@ -25,6 +25,22 @@ galaxy.webapps.galaxy.api.authenticate module
     :undoc-members:
     :show-inheritance:
 
+galaxy.webapps.galaxy.api.cloud module
+--------------------------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.cloud
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.webapps.galaxy.api.cloudauthz module
+-------------------------------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.cloudauthz
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy.webapps.galaxy.api.configuration module
 ----------------------------------------------
 
@@ -33,8 +49,8 @@ galaxy.webapps.galaxy.api.configuration module
     :undoc-members:
     :show-inheritance:
 
-galaxy.webapps.galaxy.api.dataset_collections module
-----------------------------------------------------
+galaxy.webapps.galaxy.api.dataset\_collections module
+-----------------------------------------------------
 
 .. automodule:: galaxy.webapps.galaxy.api.dataset_collections
     :members:
@@ -57,16 +73,32 @@ galaxy.webapps.galaxy.api.datatypes module
     :undoc-members:
     :show-inheritance:
 
-galaxy.webapps.galaxy.api.extended_metadata module
---------------------------------------------------
+galaxy.webapps.galaxy.api.display\_applications module
+------------------------------------------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.display_applications
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.webapps.galaxy.api.dynamic\_tools module
+-----------------------------------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.dynamic_tools
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.webapps.galaxy.api.extended\_metadata module
+---------------------------------------------------
 
 .. automodule:: galaxy.webapps.galaxy.api.extended_metadata
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.webapps.galaxy.api.folder_contents module
-------------------------------------------------
+galaxy.webapps.galaxy.api.folder\_contents module
+-------------------------------------------------
 
 .. automodule:: galaxy.webapps.galaxy.api.folder_contents
     :members:
@@ -97,16 +129,16 @@ galaxy.webapps.galaxy.api.genomes module
     :undoc-members:
     :show-inheritance:
 
-galaxy.webapps.galaxy.api.group_roles module
---------------------------------------------
+galaxy.webapps.galaxy.api.group\_roles module
+---------------------------------------------
 
 .. automodule:: galaxy.webapps.galaxy.api.group_roles
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.webapps.galaxy.api.group_users module
---------------------------------------------
+galaxy.webapps.galaxy.api.group\_users module
+---------------------------------------------
 
 .. automodule:: galaxy.webapps.galaxy.api.group_users
     :members:
@@ -129,24 +161,24 @@ galaxy.webapps.galaxy.api.histories module
     :undoc-members:
     :show-inheritance:
 
-galaxy.webapps.galaxy.api.history_contents module
--------------------------------------------------
+galaxy.webapps.galaxy.api.history\_contents module
+--------------------------------------------------
 
 .. automodule:: galaxy.webapps.galaxy.api.history_contents
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.webapps.galaxy.api.item_tags module
-------------------------------------------
+galaxy.webapps.galaxy.api.item\_tags module
+-------------------------------------------
 
 .. automodule:: galaxy.webapps.galaxy.api.item_tags
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.webapps.galaxy.api.job_files module
-------------------------------------------
+galaxy.webapps.galaxy.api.job\_files module
+-------------------------------------------
 
 .. automodule:: galaxy.webapps.galaxy.api.job_files
     :members:
@@ -161,14 +193,6 @@ galaxy.webapps.galaxy.api.jobs module
     :undoc-members:
     :show-inheritance:
 
-galaxy.webapps.galaxy.api.lda_datasets module
----------------------------------------------
-
-.. automodule:: galaxy.webapps.galaxy.api.lda_datasets
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 galaxy.webapps.galaxy.api.libraries module
 ------------------------------------------
 
@@ -177,10 +201,18 @@ galaxy.webapps.galaxy.api.libraries module
     :undoc-members:
     :show-inheritance:
 
-galaxy.webapps.galaxy.api.library_contents module
--------------------------------------------------
+galaxy.webapps.galaxy.api.library\_contents module
+--------------------------------------------------
 
 .. automodule:: galaxy.webapps.galaxy.api.library_contents
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.webapps.galaxy.api.library\_datasets module
+--------------------------------------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.library_datasets
     :members:
     :undoc-members:
     :show-inheritance:
@@ -193,8 +225,8 @@ galaxy.webapps.galaxy.api.metrics module
     :undoc-members:
     :show-inheritance:
 
-galaxy.webapps.galaxy.api.page_revisions module
------------------------------------------------
+galaxy.webapps.galaxy.api.page\_revisions module
+------------------------------------------------
 
 .. automodule:: galaxy.webapps.galaxy.api.page_revisions
     :members:
@@ -205,6 +237,14 @@ galaxy.webapps.galaxy.api.pages module
 --------------------------------------
 
 .. automodule:: galaxy.webapps.galaxy.api.pages
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.webapps.galaxy.api.plugins module
+----------------------------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.plugins
     :members:
     :undoc-members:
     :show-inheritance:
@@ -225,26 +265,10 @@ galaxy.webapps.galaxy.api.quotas module
     :undoc-members:
     :show-inheritance:
 
-galaxy.webapps.galaxy.api.remote_files module
----------------------------------------------
-
-.. automodule:: galaxy.webapps.galaxy.api.remote_files
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-galaxy.webapps.galaxy.api.request_types module
+galaxy.webapps.galaxy.api.remote\_files module
 ----------------------------------------------
 
-.. automodule:: galaxy.webapps.galaxy.api.request_types
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-galaxy.webapps.galaxy.api.requests module
------------------------------------------
-
-.. automodule:: galaxy.webapps.galaxy.api.requests
+.. automodule:: galaxy.webapps.galaxy.api.remote_files
     :members:
     :undoc-members:
     :show-inheritance:
@@ -257,14 +281,6 @@ galaxy.webapps.galaxy.api.roles module
     :undoc-members:
     :show-inheritance:
 
-galaxy.webapps.galaxy.api.samples module
-----------------------------------------
-
-.. automodule:: galaxy.webapps.galaxy.api.samples
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 galaxy.webapps.galaxy.api.search module
 ---------------------------------------
 
@@ -273,16 +289,24 @@ galaxy.webapps.galaxy.api.search module
     :undoc-members:
     :show-inheritance:
 
-galaxy.webapps.galaxy.api.tool_data module
-------------------------------------------
+galaxy.webapps.galaxy.api.tool\_data module
+-------------------------------------------
 
 .. automodule:: galaxy.webapps.galaxy.api.tool_data
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.webapps.galaxy.api.tool_shed_repositories module
--------------------------------------------------------
+galaxy.webapps.galaxy.api.tool\_dependencies module
+---------------------------------------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.tool_dependencies
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.webapps.galaxy.api.tool\_shed\_repositories module
+---------------------------------------------------------
 
 .. automodule:: galaxy.webapps.galaxy.api.tool_shed_repositories
     :members:
@@ -293,6 +317,30 @@ galaxy.webapps.galaxy.api.tools module
 --------------------------------------
 
 .. automodule:: galaxy.webapps.galaxy.api.tools
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.webapps.galaxy.api.toolshed module
+-----------------------------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.toolshed
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.webapps.galaxy.api.tours module
+--------------------------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.tours
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.webapps.galaxy.api.uploads module
+----------------------------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.uploads
     :members:
     :undoc-members:
     :show-inheritance:
@@ -309,6 +357,14 @@ galaxy.webapps.galaxy.api.visualizations module
 -----------------------------------------------
 
 .. automodule:: galaxy.webapps.galaxy.api.visualizations
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.webapps.galaxy.api.webhooks module
+-----------------------------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.webhooks
     :members:
     :undoc-members:
     :show-inheritance:

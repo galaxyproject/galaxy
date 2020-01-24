@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<job_conf>
+    <plugins>
+        <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="2"/>
+    </plugins>
+
+    <handlers>
+        <handler id="main"/>
+    </handlers>
+
+    <destinations default="local_resubmit">
+        <destination id="local_resubmit" runner="local">
+            <env id="GX_TARGET_EXIT_CODE">4</env>
+            <resubmit condition="tool_detected_failure" destination="local_good" />
+        </destination>
+
+        <destination id="local_good" runner="local">
+            <env id="GX_TARGET_EXIT_CODE">0</env>
+        </destination>
+    </destinations>
+
+</job_conf>

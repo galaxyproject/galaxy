@@ -3,10 +3,10 @@ Created on 16/07/2014
 
 @author: Andrew Robinson
 """
+import logging
 
 from ..providers import AuthProvider
 
-import logging
 log = logging.getLogger(__name__)
 
 
@@ -26,8 +26,8 @@ class AlwaysReject(AuthProvider):
         """
         See abstract method documentation.
         """
-        log.debug("User: %s, ALWAYSREJECT: None" % (user.email))
+        log.debug("User: %s, ALWAYSREJECT: None" % (user.id if options['redact_username_in_logs'] else user.email))
         return None
 
 
-__all__ = ['AlwaysReject']
+__all__ = ('AlwaysReject', )

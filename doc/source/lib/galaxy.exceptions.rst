@@ -9,8 +9,8 @@ galaxy.exceptions package
 Submodules
 ----------
 
-galaxy.exceptions.error_codes module
-------------------------------------
+galaxy.exceptions.error\_codes module
+-------------------------------------
 
 .. automodule:: galaxy.exceptions.error_codes
     :members:

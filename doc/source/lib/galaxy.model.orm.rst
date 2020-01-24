@@ -9,16 +9,16 @@ galaxy.model.orm package
 Submodules
 ----------
 
-galaxy.model.orm.engine_factory module
---------------------------------------
+galaxy.model.orm.engine\_factory module
+---------------------------------------
 
 .. automodule:: galaxy.model.orm.engine_factory
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.model.orm.logging_connection_proxy module
-------------------------------------------------
+galaxy.model.orm.logging\_connection\_proxy module
+--------------------------------------------------
 
 .. automodule:: galaxy.model.orm.logging_connection_proxy
     :members:

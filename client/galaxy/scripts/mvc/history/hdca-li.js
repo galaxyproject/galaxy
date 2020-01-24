@@ -1,103 +1,125 @@
-define([
-    "mvc/dataset/states",
-    "mvc/collection/collection-li",
-    "mvc/collection/collection-view",
-    "mvc/base-mvc",
-    "utils/localization"
-], function( STATES, DC_LI, DC_VIEW, BASE_MVC, _l ){
-
-'use strict';
+import _ from "underscore";
+import STATES from "mvc/dataset/states";
+import DC_LI from "mvc/collection/collection-li";
+import DC_VIEW from "mvc/collection/collection-view";
+import _l from "utils/localization";
+import { mountNametags } from "components/Nametags";
+import { mountCollectionJobStates } from "components/JobStates";
 
 //==============================================================================
 var _super = DC_LI.DCListItemView;
 /** @class Read only view for HistoryDatasetCollectionAssociation (a dataset collection inside a history).
  */
 var HDCAListItemView = _super.extend(
-/** @lends HDCAListItemView.prototype */{
+    /** @lends HDCAListItemView.prototype */ {
+        className: `${_super.prototype.className} history-content`,
 
-    /** logger used to record this.log messages, commonly set to console */
-    //logger              : console,
+        render: function() {
+            const result = _super.prototype.render.apply(this, arguments);
+            this._mountNametags("initialize");
+            return result;
+        },
 
-    className   : _super.prototype.className + " history-content",
+        /** event listeners */
+        _setUpListeners: function() {
+            _super.prototype._setUpListeners.call(this);
+            var renderListen = (model, options) => {
+                // We want this to swap immediately without extra animations.
+                this.render(0);
+                this._mountNametags("listener");
+            };
+            if (this.model.jobStatesSummary) {
+                this.listenTo(this.model.jobStatesSummary, "change", renderListen);
+            }
+            this.listenTo(this.model, {
+                "change:tags change:visible change:state": renderListen
+            });
+        },
 
-    /** event listeners */
-    _setUpListeners : function(){
-        _super.prototype._setUpListeners.call( this );
+        _mountNametags(context) {
+            const container = this.$el.find(".nametags")[0];
+            if (container) {
+                const { id, model_class, tags } = this.model.attributes;
+                const storeKey = `${model_class}-${id}`;
+                mountNametags({ storeKey, tags }, container);
+            }
+        },
 
-        this.listenTo( this.model, {
-            'change:populated change:visible' : function( model, options ){ this.render(); },
-        });
-    },
+        /** Override to provide the proper collections panels as the foldout */
+        _getFoldoutPanelClass: function() {
+            return DC_VIEW.CollectionView;
+        },
 
-    /** Override to provide the proper collections panels as the foldout */
-    _getFoldoutPanelClass : function(){
-        switch( this.model.get( 'collection_type' ) ){
-            case 'list':
-                return DC_VIEW.ListCollectionView;
-            case 'paired':
-                return DC_VIEW.PairCollectionView;
-            case 'list:paired':
-                return DC_VIEW.ListOfPairsCollectionView;
+        /** In this override, add the state as a class for use with state-based CSS */
+        _swapNewRender: function($newRender) {
+            _super.prototype._swapNewRender.call(this, $newRender);
+            //TODO: model currently has no state
+            var state;
+            var jobStatesSummary = this.model.jobStatesSummary;
+            if (jobStatesSummary) {
+                if (jobStatesSummary.new()) {
+                    state = "loading";
+                } else if (jobStatesSummary.errored()) {
+                    state = "error";
+                } else if (jobStatesSummary.terminal()) {
+                    state = "ok";
+                } else if (jobStatesSummary.running()) {
+                    state = "running";
+                } else {
+                    state = "queued";
+                }
+            } else if (this.model.get("job_source_id")) {
+                // Initial rendering - polling will fill in more details in a bit.
+                state = "loading";
+            } else {
+                state = this.model.get("populated_state") ? STATES.OK : STATES.RUNNING;
+            }
+            this.$el.addClass(`state-${state}`);
+            const collection = this.model;
+            const stateContainer = this.$el.find(".state-description")[0];
+            mountCollectionJobStates({ jobStatesSummary, collection }, stateContainer);
+            return this.$el;
+        },
+
+        // ......................................................................... misc
+        /** String representation */
+        toString: function() {
+            var modelString = this.model ? `${this.model}` : "(no model)";
+            return `HDCAListItemView(${modelString})`;
         }
-        throw new TypeError( 'Uknown collection_type: ' + this.model.get( 'collection_type' ) );
-    },
-
-    /** In this override, add the state as a class for use with state-based CSS */
-    _swapNewRender : function( $newRender ){
-        _super.prototype._swapNewRender.call( this, $newRender );
-//TODO: model currently has no state
-        var state = !this.model.get( 'populated' ) ? STATES.RUNNING : STATES.OK;
-        //if( this.model.has( 'state' ) ){
-        this.$el.addClass( 'state-' + state );
-        //}
-        return this.$el;
-    },
-
-    // ......................................................................... misc
-    /** String representation */
-    toString : function(){
-        var modelString = ( this.model )?( this.model + '' ):( '(no model)' );
-        return 'HDCAListItemView(' + modelString + ')';
     }
-});
+);
 
 /** underscore templates */
-HDCAListItemView.prototype.templates = (function(){
-
-    var warnings = _.extend( {}, _super.prototype.templates.warnings, {
-        hidden : BASE_MVC.wrapTemplate([
-            // add a warning when hidden
-            '<% if( !collection.visible ){ %>',
-                '<div class="hidden-msg warningmessagesmall">',
-                    _l( 'This collection has been hidden' ),
-                '</div>',
-            '<% } %>'
-        ], 'collection' )
+HDCAListItemView.prototype.templates = (() => {
+    var warnings = _.extend({}, _super.prototype.templates.warnings, {
+        hidden: collection => {
+            collection.visible
+                ? ""
+                : `<div class="hidden-msg warningmessagesmall">${_l("This collection has been hidden")}</div>`;
+        }
     });
 
-// could steal this from hda-base (or use mixed content)
-    var titleBarTemplate = BASE_MVC.wrapTemplate([
-        // adding the hid display to the title
-        '<div class="title-bar clear" tabindex="0">',
-            '<span class="state-icon"></span>',
-            '<div class="title">',
-                //TODO: remove whitespace and use margin-right
-                '<span class="hid"><%- collection.hid %></span> ',
-                '<span class="name"><%- collection.name %></span>',
-            '</div>',
-            '<div class="subtitle"></div>',
-        '</div>'
-    ], 'collection' );
+    var titleBarTemplate = collection => `
+        <div class="title-bar clear" tabindex="0">
+            <span class="state-icon"></span>
+            <div class="title">
+                <span class="hid">${collection.hid}</span>
+                <span class="name">${_.escape(collection.name)}</span>
+            </div>
+            <div class="state-description">
+            </div>
+            <div class="nametags"><!-- Nametags mount here (hdca-li) --></div>
+        </div>
+    `;
 
-    return _.extend( {}, _super.prototype.templates, {
-        warnings : warnings,
-        titleBar : titleBarTemplate
+    return _.extend({}, _super.prototype.templates, {
+        warnings: warnings,
+        titleBar: titleBarTemplate
     });
-}());
-
+})();
 
 //==============================================================================
-    return {
-        HDCAListItemView : HDCAListItemView
-    };
-});
+export default {
+    HDCAListItemView: HDCAListItemView
+};

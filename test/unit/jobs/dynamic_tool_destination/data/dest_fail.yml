@@ -1,0 +1,9 @@
+tools:
+  test:
+    rules:
+      - rule_type: file_size
+        nice_value: 0
+        lower_bound: 1 KB
+        upper_bound: 2 KB
+        destination: DestinationF
+verbose: True

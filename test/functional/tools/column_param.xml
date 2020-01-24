@@ -1,13 +1,13 @@
 <tool id="column_param" name="Column Param">
   <command>
-    cut -f '$col' '$input1' > 'col_output'
+    cut -f '$col' '$input1' > '$output1'
   </command>
   <inputs>
     <param type="data" format="tabular" name="input1" label="Input 1" />
     <param name="col" type="data_column" data_ref="input1" label="Column to Use" />
   </inputs>
   <outputs>
-    <data name="output1" type="tabular" from_work_dir="col_output" />
+    <data name="output1" format="tabular" />
   </outputs>
   <tests>
     <test>

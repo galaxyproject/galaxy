@@ -12,7 +12,7 @@ Enhancements
 .. enhancements
 
 * Interactive environment (IE) framework updates including a new IE for RStudio.
-  (Thanks to a team effort spearheaded by `@erasche <https://github.com/erasche>`__.)
+  (Thanks to a team effort spearheaded by `@hexylena <https://github.com/hexylena>`__.)
   `Pull Request 229`_, `Pull Request 230`_
 * Rework workflow editor to use newer tool form components and allow construction
   of workflows with tools explicitly producing output collections.
@@ -27,8 +27,8 @@ Enhancements
   focus on the API documentation. (Thanks to `@nsoranzo
   <https://github.com/nsoranzo>`__.)
   `Pull Request 399`_, `Pull Request 405`_
-* Add EDAM IDs to Galaxy datatypes. (Thanks to a team effort initiated by `@erasche
-  <https://github.com/erasche>`__.)
+* Add EDAM IDs to Galaxy datatypes. (Thanks to a team effort initiated by `@hexylena
+  <https://github.com/hexylena>`__.)
   `Pull Request 80`_, `Pull Request 342`_
 * Improved reports app sorting and bug fixes thanks to
   Daniel Bouchard (`@Airistotal <https://github.com/Airistotal>`__). Even more
@@ -66,11 +66,11 @@ Enhancements
   <https://github.com/Christian-B>`__.) `Pull Request 441`_
 * Add emboss datatypes (previously migrated to Tool Shed). (Thanks to `@bgruening
   <https://github.com/bgruening>`__.) `Pull Request 148`_
-* Add new Hmmer & Stockholm datatypes. (Thanks to `@erasche
-  <https://github.com/erasche>`__.) `Pull Request 218`_
-* Add an RData datatype. (Thanks to `@erasche
-  <https://github.com/erasche>`__.) `Pull Request 239`_
-* Add mauve XMFA datatype (Thanks to `@erasche <https://github.com/erasche>`__.)
+* Add new Hmmer & Stockholm datatypes. (Thanks to `@hexylena
+  <https://github.com/hexylena>`__.) `Pull Request 218`_
+* Add an RData datatype. (Thanks to `@hexylena
+  <https://github.com/hexylena>`__.) `Pull Request 239`_
+* Add mauve XMFA datatype (Thanks to `@hexylena <https://github.com/hexylena>`__.)
   `Pull Request 270`_
 * Add ConnectivityTable (\*.ct) (RNA 2D structure format) datatype.
   (Thanks to `@yhoogstrate <https://github.com/yhoogstrate>`__.)
@@ -114,10 +114,10 @@ Enhancements
   `Pull Request 186`_
 * Switch visualizations registry to entry_point config definition for 
   built-in visualizations. `Pull Request 243`_
-* Set default value for IE sig proxy (Thanks to `@erasche
-  <https://github.com/erasche>`__.) `Pull Request 197`_
+* Set default value for IE sig proxy (Thanks to `@hexylena
+  <https://github.com/hexylena>`__.) `Pull Request 197`_
 * Other smaller interactive environment updates. (Thanks to
-  `@erasche <https://github.com/erasche>`__.)
+  `@hexylena <https://github.com/hexylena>`__.)
   `Pull Request 412`_
 * Refuse to load interactive debugging middleware under uwsgi.
   `Pull Request 200`_
@@ -179,7 +179,7 @@ Enhancements
 * Add configurable Docker hostname (Thanks to `@bgruening
   <https://github.com/bgruening>`__.) `Pull Request 356`_
 * Improve XML styling of display applications. 
-  (Thanks to `@erasche <https://github.com/erasche>`__.)
+  (Thanks to `@hexylena <https://github.com/hexylena>`__.)
   `Pull Request 364`_
 * README improvements including - adding shields for Biostar, IRC, and Travis.
   `Pull Request 368`_, `Pull Request 369`_

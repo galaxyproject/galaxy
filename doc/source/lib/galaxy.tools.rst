@@ -14,18 +14,33 @@ Subpackages
     galaxy.tools.actions
     galaxy.tools.data
     galaxy.tools.data_manager
-    galaxy.tools.deps
+    galaxy.tools.error_reports
+    galaxy.tools.expressions
     galaxy.tools.filters
     galaxy.tools.imp_exp
-    galaxy.tools.linters
     galaxy.tools.parameters
-    galaxy.tools.parser
     galaxy.tools.search
     galaxy.tools.toolbox
     galaxy.tools.util
 
 Submodules
 ----------
+
+galaxy.tools.cache module
+-------------------------
+
+.. automodule:: galaxy.tools.cache
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.tools.data\_fetch module
+-------------------------------
+
+.. automodule:: galaxy.tools.data_fetch
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
 galaxy.tools.errors module
 --------------------------
@@ -43,8 +58,8 @@ galaxy.tools.evaluation module
     :undoc-members:
     :show-inheritance:
 
-galaxy.tools.exception_handling module
---------------------------------------
+galaxy.tools.exception\_handling module
+---------------------------------------
 
 .. automodule:: galaxy.tools.exception_handling
     :members:
@@ -59,26 +74,18 @@ galaxy.tools.execute module
     :undoc-members:
     :show-inheritance:
 
-galaxy.tools.lint module
-------------------------
+galaxy.tools.repositories module
+--------------------------------
 
-.. automodule:: galaxy.tools.lint
+.. automodule:: galaxy.tools.repositories
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.tools.loader module
---------------------------
+galaxy.tools.special\_tools module
+----------------------------------
 
-.. automodule:: galaxy.tools.loader
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-galaxy.tools.loader_directory module
-------------------------------------
-
-.. automodule:: galaxy.tools.loader_directory
+.. automodule:: galaxy.tools.special_tools
     :members:
     :undoc-members:
     :show-inheritance:

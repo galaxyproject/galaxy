@@ -1,0 +1,38 @@
+<tool id="interactive_tool_phinch" tool_type="interactive" name="Phinch Visualisation" version="0.1">
+    <requirements>
+        <container type="docker">shiltemann/docker-phinch-galaxy:16.04</container>
+    </requirements>
+    <entry_points>
+        <entry_point name="Phinch Visualisation of $infile.display_name" requires_domain="True">
+            <port>80</port>
+        </entry_point>
+    </entry_points>
+    <command><![CDATA[
+        ## ToDo nginx, proxy.conf etc can be removed from the container
+
+        #import os
+        #set $name = os.path.splitext(str($infile.display_name).replace(' ', '_'))[0]
+        ## in case someone names the data testdata.
+        rm /home/Phinch/data/testdata.biom | true &&
+        ln -s '$infile' '/home/Phinch/data/${name}.biom' &&
+        cd /home/Phinch/data &&
+        sed -i  "s/'REPLACE_ME'/'${name}.biom'/g" /home/Phinch/scripts/readFile.js &&
+        sed -i  "s/http/https/g" /home/Phinch/scripts/readFile.js &&
+        ## keep it running
+        cd /home/Phinch &&
+        php -S 0.0.0.0:80 2>&1 > /var/log/phinch.log
+
+    ]]>
+    </command>
+    <inputs>
+        <param name="infile" type="data" format="biom1" label="Biom1 dataset"/>
+    </inputs>
+    <outputs>
+        <data name="outfile" format="txt" />
+    </outputs>
+    <tests>
+    </tests>
+    <help>
+        Interactive tool for visualising Biom data.
+    </help>
+</tool>

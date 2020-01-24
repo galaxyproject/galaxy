@@ -1,6 +1,7 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/admin/tool_shed_repository/repository_actions_menu.mako" import="*" />
 <%namespace file="/message.mako" import="render_msg" />
+<%namespace file="/webapps/tool_shed/common/common.mako" import="*" />
 
 <% import os %>
 
@@ -17,8 +18,8 @@ ${render_galaxy_repository_actions( repository )}
     </p> 
 </div>
   
-<div class="toolForm">
-    <div class="toolFormBody">
+<div class="card">
+    <div class="card-body">
         <form name="install_tool_dependencies_with_update" id="install_tool_dependencies_with_update" action="${h.url_for( controller='admin_toolshed', action='install_tool_dependencies_with_update' )}" method="post" >
             <input type="hidden" name="updating_repository_id" value="${updating_repository_id|h}"/>
             <input type="hidden" name="updating_to_ctx_rev" value="${updating_to_ctx_rev|h}"/>
@@ -30,8 +31,8 @@ ${render_galaxy_repository_actions( repository )}
                 %if install_tool_dependencies_check_box is not None:
                     <div class="form-row">
                         <label>Handle tool dependencies?</label>
-                        <% disabled = trans.app.config.tool_dependency_dir is None %>
-                        ${install_tool_dependencies_check_box.get_html( disabled=disabled )}
+                        <% disabled = trans.app.tool_dependency_dir is None %>
+                        ${render_checkbox(install_tool_dependencies_check_box, disabled=disabled)}
                         <div class="toolParamHelp" style="clear: both;">
                             %if disabled:
                                 Set the tool_dependency_dir configuration value in your Galaxy config to automatically handle tool dependencies.
@@ -62,7 +63,7 @@ ${render_galaxy_repository_actions( repository )}
                                     key_name = key_items[ 0 ]
                                     key_version = key_items[ 1 ]
                                     readme_text = requirements_dict.get( 'readme', None )
-                                    install_dir = os.path.join( trans.app.config.tool_dependency_dir,
+                                    install_dir = os.path.join( trans.app.tool_dependency_dir,
                                                                 key_name,
                                                                 key_version,
                                                                 repository.owner,

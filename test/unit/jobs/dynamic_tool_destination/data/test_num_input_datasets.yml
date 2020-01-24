@@ -1,0 +1,17 @@
+tools:
+  spades:
+    default_destination: cluster_default
+  smalt:
+    rules:
+      - rule_type: num_input_datasets
+        nice_value: 0
+        lower_bound: 0
+        upper_bound: 200
+        destination: cluster_low_4
+      - rule_type: num_input_datasets
+        nice_value: 0
+        lower_bound: 200
+        upper_bound: Infinity
+        destination: cluster_high_32
+default_destination: cluster_low
+verbose: True

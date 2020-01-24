@@ -19,6 +19,22 @@ Subpackages
 Submodules
 ----------
 
+galaxy.datatypes.annotation module
+----------------------------------
+
+.. automodule:: galaxy.datatypes.annotation
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.datatypes.anvio module
+-----------------------------
+
+.. automodule:: galaxy.datatypes.anvio
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy.datatypes.assembly module
 --------------------------------
 
@@ -31,6 +47,14 @@ galaxy.datatypes.binary module
 ------------------------------
 
 .. automodule:: galaxy.datatypes.binary
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.datatypes.blast module
+-----------------------------
+
+.. automodule:: galaxy.datatypes.blast
     :members:
     :undoc-members:
     :show-inheritance:
@@ -51,8 +75,8 @@ galaxy.datatypes.chrominfo module
     :undoc-members:
     :show-inheritance:
 
-galaxy.datatypes.constructive_solid_geometry module
----------------------------------------------------
+galaxy.datatypes.constructive\_solid\_geometry module
+-----------------------------------------------------
 
 .. automodule:: galaxy.datatypes.constructive_solid_geometry
     :members:
@@ -83,6 +107,14 @@ galaxy.datatypes.genetics module
     :undoc-members:
     :show-inheritance:
 
+galaxy.datatypes.gis module
+---------------------------
+
+.. automodule:: galaxy.datatypes.gis
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy.datatypes.graph module
 -----------------------------
 
@@ -107,10 +139,42 @@ galaxy.datatypes.interval module
     :undoc-members:
     :show-inheritance:
 
+galaxy.datatypes.isa module
+---------------------------
+
+.. automodule:: galaxy.datatypes.isa
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy.datatypes.metadata module
 --------------------------------
 
 .. automodule:: galaxy.datatypes.metadata
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.datatypes.microarrays module
+-----------------------------------
+
+.. automodule:: galaxy.datatypes.microarrays
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.datatypes.molecules module
+---------------------------------
+
+.. automodule:: galaxy.datatypes.molecules
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.datatypes.mothur module
+------------------------------
+
+.. automodule:: galaxy.datatypes.mothur
     :members:
     :undoc-members:
     :show-inheritance:
@@ -123,10 +187,34 @@ galaxy.datatypes.msa module
     :undoc-members:
     :show-inheritance:
 
+galaxy.datatypes.neo4j module
+-----------------------------
+
+.. automodule:: galaxy.datatypes.neo4j
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy.datatypes.ngsindex module
 --------------------------------
 
 .. automodule:: galaxy.datatypes.ngsindex
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.datatypes.phylip module
+------------------------------
+
+.. automodule:: galaxy.datatypes.phylip
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.datatypes.plant\_tribes module
+-------------------------------------
+
+.. automodule:: galaxy.datatypes.plant_tribes
     :members:
     :undoc-members:
     :show-inheritance:
@@ -171,6 +259,14 @@ galaxy.datatypes.sniff module
     :undoc-members:
     :show-inheritance:
 
+galaxy.datatypes.spaln module
+-----------------------------
+
+.. automodule:: galaxy.datatypes.spaln
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy.datatypes.tabular module
 -------------------------------
 
@@ -191,6 +287,22 @@ galaxy.datatypes.tracks module
 ------------------------------
 
 .. automodule:: galaxy.datatypes.tracks
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.datatypes.triples module
+-------------------------------
+
+.. automodule:: galaxy.datatypes.triples
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.datatypes.upload\_util module
+------------------------------------
+
+.. automodule:: galaxy.datatypes.upload_util
     :members:
     :undoc-members:
     :show-inheritance:

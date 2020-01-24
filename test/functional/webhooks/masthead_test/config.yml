@@ -1,0 +1,10 @@
+id: masthead_test
+type:
+  - masthead
+activate: true
+
+icon: fa-star-half-o
+tooltip: Galaxy Help
+
+function: >
+  window.open('https://help.galaxyproject.org', '_blank');

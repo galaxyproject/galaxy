@@ -52,9 +52,9 @@ def __assert_query_errors(connection, query):
     assert exception
 
 
-def __assert_whitelisted( query ):
+def __assert_whitelisted(query):
     assert sqlite.is_read_only_query(query), "Query [%s] fails whitelist." % query
 
 
-def __assert_not_whitelisted( query ):
+def __assert_not_whitelisted(query):
     assert not sqlite.is_read_only_query(query), "Query [%s] incorrectly fails whitelist." % query

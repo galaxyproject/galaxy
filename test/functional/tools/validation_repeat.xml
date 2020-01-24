@@ -8,10 +8,10 @@
     #end for
   </command>
   <inputs>
-    <repeat name="r1" label="Repeat 1">
+    <repeat name="r1" title="Repeat 1">
       <param name="text" type="text" label="text input" />
     </repeat>
-    <repeat name="r2" label="Repeat 2">
+    <repeat name="r2" title="Repeat 2">
       <param name="text" type="text" label="text input">
         <validator type="empty_field" />
         <sanitizer>

@@ -1,4 +1,1 @@
-nose
-NoseHTML
-twill==0.9.1
-mock
+pipfiles/default/pinned-dev-requirements.txt

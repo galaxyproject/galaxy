@@ -1,12 +1,12 @@
 <tool id="tabular_to_dbnsfp" name="Convert tabular to dbnsfp" version="1.0.0">
-  <description></description> 
-  <command interpreter="python">tabular_to_dbnsfp.py $input $dbnsfp.extra_files_path/dbNSFP.gz</command>
-  <inputs>
-      <param format="tabular" name="input" type="data" label="Choose a dbnsfp tabular file"/>
-   </inputs>
-  <outputs>
-    <data format="snpsiftdbnsfp" name="dbnsfp"/>
-  </outputs>
-  <help>
-  </help>
+    <description></description>
+    <command>python '$__tool_directory__/tabular_to_dbnsfp.py' '$input' '$dbnsfp.extra_files_path/dbNSFP.gz'</command>
+    <inputs>
+        <param format="tabular" name="input" type="data" label="Choose a dbnsfp tabular file"/>
+    </inputs>
+    <outputs>
+        <data format="snpsiftdbnsfp" name="dbnsfp"/>
+    </outputs>
+    <help>
+    </help>
 </tool>

@@ -23,10 +23,13 @@ THE ORIGINAL WORK IS WITH YOU.
 
 Script for merging specific local Galaxy config galaxy.ini.cri with default Galaxy galaxy.ini.sample
 '''
-import ConfigParser
+from __future__ import print_function
+
 import logging
 import optparse
 import sys
+
+from six.moves import configparser
 
 
 def main():
@@ -42,15 +45,15 @@ def main():
 
     for option in ['sample', 'config']:
         if getattr(options, option) is None:
-            print "Please supply a --%s parameter.\n" % (option)
+            print("Please supply a --%s parameter.\n" % (option))
             parser.print_help()
             sys.exit()
 
-    config_sample = ConfigParser.RawConfigParser()
+    config_sample = configparser.RawConfigParser()
     config_sample.read(options.sample)
     config_sample_content = open(options.sample, 'r').read()
 
-    config = ConfigParser.RawConfigParser()
+    config = configparser.RawConfigParser()
     config.read(options.config)
 
     logging.info("Merging your own config file %s into the sample one %s." % (options.config, options.sample))
@@ -77,12 +80,10 @@ def main():
         config_sample.write(outputfile)
         outputfile.close()
     else:
-        # print "----------"
-        # config_sample.write(sys.stdout)
-        # print "----------"
         logging.info("use -o OUTPUT to write the merged configuration into a file.")
 
     logging.info("read Galaxy galaxy.ini.sample for detailed information.")
+
 
 if __name__ == '__main__':
     main()

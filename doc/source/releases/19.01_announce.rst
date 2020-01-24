@@ -1,0 +1,86 @@
+
+===========================================================
+January 2019 Galaxy Release (v 19.01)
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+**Revised UI Style**
+  The Galaxy stylesheet has been substantially reworked resulting in the largest visual
+  refresh to Galaxy in years.
+
+  `Pull Request 6422`_, `Pull Request 6790`_, `Pull Request 6868`_,
+  `Pull Request 6870`_, `Pull Request 6881`_, `Pull Request 6905`_,
+  `Pull Request 6910`_, `Pull Request 6967`_, `Pull Request 6985`_,
+  `Pull Request 7017`_
+  
+
+**More Colorful Tags**
+  Use consistently hashed randomized colors for history dataset name tags to increase visual
+  distinction between tags, making it easier to track data flow in complex histories.
+  Thanks to `@hexylena <https://github.com/hexylena>`__.
+  `Pull Request 7072`_, `Pull Request 7081`_
+
+**Extensive Workflow Enhancements (continued)**
+  Galaxy 18.09 featured a bunch of important and diverse fixes and enhancements to workflows on
+  both the frontend and backend. That progress continues in release 19.01.
+
+  The workflow editor now features explicit step parameter nodes for non-file data (integers,
+  strings, booleans, etc) and the ability to connect these to all tool inputs - not just files
+  (`Pull Request 6925`_, `Pull Request 7150`_).
+  The YAML-based Galaxy Format 2 workflow language is now included in Galaxy as a beta option
+  and allows import and export of human readable workflows (`Pull Request 6776`_, `Pull Request 6807`_, 
+  `Pull Request 6811`_, `Pull Request 6746`_) as well as extensions to allow Galaxy
+  to serve as a file editor for such workflows (`Pull Request 7019`_). The workflow editor features
+  more helpful labels on inputs and outputs (`Pull Request 6770`_) and important fixes including
+  logic for connecting collections (`Pull Request 6732`_) and dealing with missing tools
+  (`Pull Request 7227`_, `Pull Request 7258`_). The workflow run form now deals with default
+  values more correctly (`Pull Request 7157`_).
+
+**Enhanced Support for Singularity**
+  `Singularity <https://singularity.lbl.gov/>`__ container support in Galaxy has been brought to
+  parity with Docker container support. Specifically, Galaxy can now be configured to fetch
+  `Biocontainers <https://biocontainers.pro/>`__ automatically for enabled job destinations.
+  Moreover, explicitly annotated Docker containers (either in tools or job destinations) can be used
+  with Singularity.
+  Thanks to `@mvdbeek <https://github.com/mvdbeek>`__.
+  `Pull Request 7125`_
+
+
+Get Galaxy
+==========
+
+The code lives at `GitHub <https://github.com/galaxyproject/galaxy>`__ and you should have `Git <https://git-scm.com/>`__ to obtain it.
+
+To get a new Galaxy repository run:
+  .. code-block:: shell
+
+      $ git clone -b release_19.01 https://github.com/galaxyproject/galaxy.git
+
+To update an existing Galaxy repository run:
+  .. code-block:: shell
+
+      $ git fetch origin && git checkout release_19.01 && git pull --ff-only origin release_19.01
+
+See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
+
+Security
+========
+
+Permissions Not Checked to Modify Dataset Metadata
+--------------------------------------------------
+
+Jelle Scholtalbers reported an issue where permissions were not being checked when modifying dataset
+metadata. This has been resolved with `Pull Request 7322
+<https://github.com/galaxyproject/galaxy/pull/7322>`__ and the fix backported through 18.01.
+
+Release Notes
+===========================================================
+
+.. include:: 19.01.rst
+   :start-after: announce_start
+
+.. include:: _thanks.rst

@@ -2,32 +2,68 @@
 Mothur Metagenomics Datatypes
 """
 import logging
-import sys
 import re
-from galaxy.datatypes.sniff import get_headers
-from galaxy.datatypes.metadata import MetadataElement
+import sys
+
 from galaxy.datatypes.data import Text
+from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes.sniff import (
+    build_sniff_from_prefix,
+    get_headers,
+    iter_headers
+)
 from galaxy.datatypes.tabular import Tabular
+from galaxy.util import unicodify
 
 log = logging.getLogger(__name__)
 
 
+@build_sniff_from_prefix
 class Otu(Text):
     file_ext = 'mothur.otu'
     MetadataElement(name="columns", default=0, desc="Number of columns", readonly=True, visible=True, no_value=0)
     MetadataElement(name="labels", default=[], desc="Label Names", readonly=True, visible=True, no_value=[])
+    MetadataElement(name="otulabels", default=[], desc="OTU Names", readonly=True, visible=True, no_value=[])
 
     def __init__(self, **kwd):
-        Text.__init__(self, **kwd)
+        super(Otu, self).__init__(**kwd)
 
     def set_meta(self, dataset, overwrite=True, **kwd):
+        """
+        Set metadata for Otu files.
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> from galaxy.util.bunch import Bunch
+        >>> dataset = Bunch()
+        >>> dataset.metadata = Bunch
+        >>> otu = Otu()
+        >>> dataset.file_name = get_test_fname( 'mothur_datatypetest_true.mothur.otu' )
+        >>> dataset.has_data = lambda: True
+        >>> otu.set_meta(dataset)
+        >>> dataset.metadata.columns
+        100
+        >>> len(dataset.metadata.labels) == 37
+        True
+        >>> len(dataset.metadata.otulabels) == 98
+        True
+        """
+        super(Otu, self).set_meta(dataset, overwrite=overwrite, **kwd)
+
         if dataset.has_data():
             label_names = set()
+            otulabel_names = set()
             ncols = 0
             data_lines = 0
             comment_lines = 0
 
-            headers = get_headers(dataset.file_name, sep='\t', count=-1)
+            headers = iter_headers(dataset.file_name, sep='\t', count=-1)
+            first_line = get_headers(dataset.file_name, sep='\t', count=1)
+            if first_line:
+                first_line = first_line[0]
+            # set otulabels
+            if len(first_line) > 2:
+                otulabel_names = first_line[2:]
+            # set label names and number of lines
             for line in headers:
                 if len(line) >= 2 and not line[0].startswith('@'):
                     data_lines += 1
@@ -40,8 +76,10 @@ class Otu(Text):
             dataset.metadata.columns = ncols
             dataset.metadata.labels = list(label_names)
             dataset.metadata.labels.sort()
+            dataset.metadata.otulabels = list(otulabel_names)
+            dataset.metadata.otulabels.sort()
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Determines whether the file is otu (operational taxonomic unit) format
 
@@ -53,7 +91,7 @@ class Otu(Text):
         >>> Otu().sniff( fname )
         False
         """
-        headers = get_headers(filename, sep='\t')
+        headers = iter_headers(file_prefix, sep='\t')
         count = 0
         for line in headers:
             if not line[0].startswith('@'):
@@ -80,12 +118,12 @@ class Sabund(Otu):
         """
         http://www.mothur.org/wiki/Sabund_file
         """
-        Otu.__init__(self, **kwd)
+        super(Sabund, self).__init__(**kwd)
 
     def init_meta(self, dataset, copy_from=None):
-        Otu.init_meta(self, dataset, copy_from=copy_from)
+        super(Sabund, self).init_meta(dataset, copy_from=copy_from)
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Determines whether the file is otu (operational taxonomic unit) format
         label<TAB>count[<TAB>value(1..n)]
@@ -98,7 +136,7 @@ class Sabund(Otu):
         >>> Sabund().sniff( fname )
         False
         """
-        headers = get_headers(filename, sep='\t')
+        headers = iter_headers(file_prefix, sep='\t')
         count = 0
         for line in headers:
             if not line[0].startswith('@'):
@@ -124,16 +162,14 @@ class GroupAbund(Otu):
     MetadataElement(name="groups", default=[], desc="Group Names", readonly=True, visible=True, no_value=[])
 
     def __init__(self, **kwd):
-        Otu.__init__(self, **kwd)
+        super(GroupAbund, self).__init__(**kwd)
 
-    """
     def init_meta(self, dataset, copy_from=None):
-        Otu.init_meta(self, dataset, copy_from=copy_from)
-    """
-    def init_meta(self, dataset, copy_from=None):
-        Otu.init_meta(self, dataset, copy_from=copy_from)
+        super(GroupAbund, self).init_meta(dataset, copy_from=copy_from)
 
-    def set_meta(self, dataset, overwrite=True, skip=1, max_data_lines=100000, **kwd):
+    def set_meta(self, dataset, overwrite=True, skip=1, **kwd):
+        super(GroupAbund, self).set_meta(dataset, overwrite=overwrite, **kwd)
+
         # See if file starts with header line
         if dataset.has_data():
             label_names = set()
@@ -142,7 +178,7 @@ class GroupAbund(Otu):
             comment_lines = 0
             ncols = 0
 
-            headers = get_headers(dataset.file_name, sep='\t', count=max_data_lines)
+            headers = iter_headers(dataset.file_name, sep='\t', count=-1)
             for line in headers:
                 if line[0] == 'label' and line[1] == 'Group':
                     skip = 1
@@ -163,7 +199,7 @@ class GroupAbund(Otu):
             dataset.metadata.groups.sort()
             dataset.metadata.skip = skip
 
-    def sniff(self, filename, vals_are_int=False):
+    def sniff_prefix(self, file_prefix, vals_are_int=False):
         """
         Determines whether the file is a otu (operational taxonomic unit)
         Shared format
@@ -178,7 +214,7 @@ class GroupAbund(Otu):
         >>> GroupAbund().sniff( fname )
         False
         """
-        headers = get_headers(filename, sep='\t')
+        headers = iter_headers(file_prefix, sep='\t')
         count = 0
         for line in headers:
             if not line[0].startswith('@'):
@@ -202,15 +238,16 @@ class GroupAbund(Otu):
         return False
 
 
+@build_sniff_from_prefix
 class SecondaryStructureMap(Tabular):
     file_ext = 'mothur.map'
 
     def __init__(self, **kwd):
         """Initialize secondary structure map datatype"""
-        Tabular.__init__(self, **kwd)
+        super(SecondaryStructureMap, self).__init__(**kwd)
         self.column_names = ['Map']
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Determines whether the file is a secondary structure map format
         A single column with an integer value which indicates the row that this
@@ -225,7 +262,7 @@ class SecondaryStructureMap(Tabular):
         >>> SecondaryStructureMap().sniff( fname )
         False
         """
-        headers = get_headers(filename, sep='\t')
+        headers = iter_headers(file_prefix, sep='\t')
         line_num = 0
         rowidxmap = {}
         for line in headers:
@@ -251,20 +288,19 @@ class AlignCheck(Tabular):
 
     def __init__(self, **kwd):
         """Initialize AlignCheck datatype"""
-        Tabular.__init__(self, **kwd)
+        super(AlignCheck, self).__init__(**kwd)
         self.column_names = ['name', 'pound', 'dash', 'plus', 'equal', 'loop', 'tilde', 'total']
         self.column_types = ['str', 'int', 'int', 'int', 'int', 'int', 'int', 'int']
         self.comment_lines = 1
 
     def set_meta(self, dataset, overwrite=True, **kwd):
-        data_lines = 0
-        headers = get_headers(dataset.file_name, sep='\t', count=-1)
-        for line in headers:
-            data_lines += 1
-        dataset.metadata.comment_lines = 1
-        dataset.metadata.data_lines = data_lines - 1 if data_lines > 0 else 0
+        super(AlignCheck, self).set_meta(dataset, overwrite=overwrite, **kwd)
+
         dataset.metadata.column_names = self.column_names
         dataset.metadata.column_types = self.column_types
+        dataset.metadata.comment_lines = self.comment_lines
+        if isinstance(dataset.metadata.data_lines, int):
+            dataset.metadata.data_lines -= self.comment_lines
 
 
 class AlignReport(Tabular):
@@ -276,7 +312,7 @@ class AlignReport(Tabular):
 
     def __init__(self, **kwd):
         """Initialize AlignCheck datatype"""
-        Tabular.__init__(self, **kwd)
+        super(AlignReport, self).__init__(**kwd)
         self.column_names = ['QueryName', 'QueryLength', 'TemplateName', 'TemplateLength', 'SearchMethod', 'SearchScore',
                              'AlignmentMethod', 'QueryStart', 'QueryEnd', 'TemplateStart', 'TemplateEnd',
                              'PairwiseAlignmentLength', 'GapsInQuery', 'GapsInTemplate', 'LongestInsert', 'SimBtwnQuery&Template'
@@ -289,32 +325,34 @@ class DistanceMatrix(Text):
     MetadataElement(name="sequence_count", default=0, desc="Number of sequences", readonly=True, visible=True, optional=True, no_value='?')
 
     def init_meta(self, dataset, copy_from=None):
-        Text.init_meta(self, dataset, copy_from=copy_from)
+        super(DistanceMatrix, self).init_meta(dataset, copy_from=copy_from)
 
     def set_meta(self, dataset, overwrite=True, skip=0, **kwd):
-        Text.set_meta(self, dataset, overwrite=overwrite, skip=skip, **kwd)
+        super(DistanceMatrix, self).set_meta(dataset, overwrite=overwrite, skip=skip, **kwd)
 
-        headers = get_headers(dataset.file_name, sep='\t', count=-1)
+        headers = iter_headers(dataset.file_name, sep='\t')
         for line in headers:
             if not line[0].startswith('@'):
                 try:
                     dataset.metadata.sequence_count = int(''.join(line))  # seq count sometimes preceded by tab
                     break
                 except Exception as e:
-                    log.warning("DistanceMatrix set_meta %s" % e)
+                    if not isinstance(self, PairwiseDistanceMatrix):
+                        log.warning("DistanceMatrix set_meta %s" % e)
 
 
+@build_sniff_from_prefix
 class LowerTriangleDistanceMatrix(DistanceMatrix):
     file_ext = 'mothur.lower.dist'
 
     def __init__(self, **kwd):
         """Initialize secondary structure map datatype"""
-        DistanceMatrix.__init__(self, **kwd)
+        super(LowerTriangleDistanceMatrix, self).__init__(**kwd)
 
     def init_meta(self, dataset, copy_from=None):
-        DistanceMatrix.init_meta(self, dataset, copy_from=copy_from)
+        super(LowerTriangleDistanceMatrix, self).init_meta(dataset, copy_from=copy_from)
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Determines whether the file is a lower-triangle distance matrix (phylip) format
         The first line has the number of sequences in the matrix.
@@ -335,7 +373,7 @@ class LowerTriangleDistanceMatrix(DistanceMatrix):
         False
         """
         numlines = 300
-        headers = get_headers(filename, sep='\t', count=numlines)
+        headers = iter_headers(file_prefix, sep='\t', count=numlines)
         line_num = 0
         for line in headers:
             if not line[0].startswith('@'):
@@ -346,6 +384,7 @@ class LowerTriangleDistanceMatrix(DistanceMatrix):
                     else:
                         try:
                             sequence_count = int(''.join(line))
+                            assert sequence_count > 0
                         except ValueError:
                             return False
                 else:
@@ -367,16 +406,17 @@ class LowerTriangleDistanceMatrix(DistanceMatrix):
         return False
 
 
+@build_sniff_from_prefix
 class SquareDistanceMatrix(DistanceMatrix):
     file_ext = 'mothur.square.dist'
 
     def __init__(self, **kwd):
-        DistanceMatrix.__init__(self, **kwd)
+        super(SquareDistanceMatrix, self).__init__(**kwd)
 
     def init_meta(self, dataset, copy_from=None):
-        DistanceMatrix.init_meta(self, dataset, copy_from=copy_from)
+        super(SquareDistanceMatrix, self).init_meta(dataset, copy_from=copy_from)
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Determines whether the file is a square distance matrix (Column-formatted distance matrix) format
         The first line has the number of sequences in the matrix.
@@ -396,7 +436,7 @@ class SquareDistanceMatrix(DistanceMatrix):
         False
         """
         numlines = 300
-        headers = get_headers(filename, sep='\t', count=numlines)
+        headers = iter_headers(file_prefix, sep='\t', count=numlines)
         line_num = 0
         for line in headers:
             if not line[0].startswith('@'):
@@ -406,6 +446,7 @@ class SquareDistanceMatrix(DistanceMatrix):
                     else:
                         try:
                             sequence_count = int(''.join(line))
+                            assert sequence_count > 0
                         except ValueError:
                             return False
                 else:
@@ -427,19 +468,20 @@ class SquareDistanceMatrix(DistanceMatrix):
         return False
 
 
+@build_sniff_from_prefix
 class PairwiseDistanceMatrix(DistanceMatrix, Tabular):
     file_ext = 'mothur.pair.dist'
 
     def __init__(self, **kwd):
         """Initialize secondary structure map datatype"""
-        Tabular.__init__(self, **kwd)
+        super(PairwiseDistanceMatrix, self).__init__(**kwd)
         self.column_names = ['Sequence', 'Sequence', 'Distance']
         self.column_types = ['str', 'str', 'float']
 
     def set_meta(self, dataset, overwrite=True, skip=None, **kwd):
-        Tabular.set_meta(self, dataset, overwrite=overwrite, skip=skip, **kwd)
+        super(PairwiseDistanceMatrix, self).set_meta(dataset, overwrite=overwrite, skip=skip, **kwd)
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Determines whether the file is a pairwise distance matrix (Column-formatted distance matrix) format
         The first and second columns have the sequence names and the third column is the distance between those sequences.
@@ -452,7 +494,7 @@ class PairwiseDistanceMatrix(DistanceMatrix, Tabular):
         >>> PairwiseDistanceMatrix().sniff( fname )
         False
         """
-        headers = get_headers(filename, sep='\t')
+        headers = iter_headers(file_prefix, sep='\t')
         count = 0
         for line in headers:
             if not line[0].startswith('@'):
@@ -484,7 +526,7 @@ class Names(Tabular):
         http://www.mothur.org/wiki/Name_file
         Name file shows the relationship between a representative sequence(col 1)  and the sequences(comma-separated) it represents(col 2)
         """
-        Tabular.__init__(self, **kwd)
+        super(Names, self).__init__(**kwd)
         self.column_names = ['name', 'representatives']
         self.columns = 2
 
@@ -494,7 +536,7 @@ class Summary(Tabular):
 
     def __init__(self, **kwd):
         """summarizes the quality of sequences in an unaligned or aligned fasta-formatted sequence file"""
-        Tabular.__init__(self, **kwd)
+        super(Summary, self).__init__(**kwd)
         self.column_names = ['seqname', 'start', 'end', 'nbases', 'ambigs', 'polymer']
         self.columns = 6
 
@@ -508,15 +550,15 @@ class Group(Tabular):
         http://www.mothur.org/wiki/Groups_file
         Group file assigns sequence (col 1)  to a group (col 2)
         """
-        Tabular.__init__(self, **kwd)
+        super(Group, self).__init__(**kwd)
         self.column_names = ['name', 'group']
         self.columns = 2
 
     def set_meta(self, dataset, overwrite=True, skip=None, max_data_lines=None, **kwd):
-        Tabular.set_meta(self, dataset, overwrite, skip, max_data_lines)
-        group_names = set()
+        super(Group, self).set_meta(dataset, overwrite, skip, max_data_lines)
 
-        headers = get_headers(dataset.file_name, sep='\t')
+        group_names = set()
+        headers = iter_headers(dataset.file_name, sep='\t', count=-1)
         for line in headers:
             if len(line) > 1:
                 group_names.add(line[1])
@@ -528,15 +570,16 @@ class AccNos(Tabular):
 
     def __init__(self, **kwd):
         """A list of names"""
-        Tabular.__init__(self, **kwd)
+        super(AccNos, self).__init__(**kwd)
         self.column_names = ['name']
         self.columns = 1
 
 
+@build_sniff_from_prefix
 class Oligos(Text):
     file_ext = 'mothur.oligos'
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         http://www.mothur.org/wiki/Oligos_File
         Determines whether the file is a otu (operational taxonomic unit) format
@@ -549,7 +592,7 @@ class Oligos(Text):
         >>> Oligos().sniff( fname )
         False
         """
-        headers = get_headers(filename, sep='\t')
+        headers = iter_headers(file_prefix, sep='\t')
         count = 0
         for line in headers:
             if not line[0].startswith('@') and not line[0].startswith('#'):
@@ -567,16 +610,17 @@ class Oligos(Text):
         return False
 
 
+@build_sniff_from_prefix
 class Frequency(Tabular):
     file_ext = 'mothur.freq'
 
     def __init__(self, **kwd):
         """A list of names"""
-        Tabular.__init__(self, **kwd)
+        super(Frequency, self).__init__(**kwd)
         self.column_names = ['position', 'frequency']
         self.column_types = ['int', 'float']
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Determines whether the file is a frequency tabular format for chimera analysis
         #1.14.0
@@ -592,15 +636,20 @@ class Frequency(Tabular):
         >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.freq' )
         >>> Frequency().sniff( fname )
         False
+        >>> # Expression count matrix (EdgeR wrapper)
+        >>> fname = get_test_fname( 'mothur_datatypetest_false_2.mothur.freq' )
+        >>> Frequency().sniff( fname )
+        False
         """
-        headers = get_headers(filename, sep='\t')
+        headers = iter_headers(file_prefix, sep='\t')
         count = 0
         for line in headers:
             if not line[0].startswith('@'):
+                # first line should be #<version string>
                 if count == 0:
-                    # first line should be #<version string>
-                    if not line[0].startswith('#') and len(line) == 1:
+                    if not line[0].startswith('#') or len(line) != 1:
                         return False
+
                 else:
                     # all other lines should be <int> <float>
                     if len(line) != 2:
@@ -608,15 +657,20 @@ class Frequency(Tabular):
                     try:
                         int(line[0])
                         float(line[1])
+
+                        if line[1].find('.') == -1:
+                            return False
                     except Exception:
                         return False
                 count += 1
+
         if count > 1:
             return True
 
         return False
 
 
+@build_sniff_from_prefix
 class Quantile(Tabular):
     file_ext = 'mothur.quan'
     MetadataElement(name="filtered", default=False, no_value=False, optional=True, desc="Quantiles calculated using a mask", readonly=True)
@@ -624,11 +678,11 @@ class Quantile(Tabular):
 
     def __init__(self, **kwd):
         """Quantiles for chimera analysis"""
-        Tabular.__init__(self, **kwd)
+        super(Quantile, self).__init__(**kwd)
         self.column_names = ['num', 'ten', 'twentyfive', 'fifty', 'seventyfive', 'ninetyfive', 'ninetynine']
         self.column_types = ['int', 'float', 'float', 'float', 'float', 'float', 'float']
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Determines whether the file is a quantiles tabular format for chimera analysis
         1	0	0	0	0	0	0
@@ -644,7 +698,7 @@ class Quantile(Tabular):
         >>> Quantile().sniff( fname )
         False
         """
-        headers = get_headers(filename, sep='\t')
+        headers = iter_headers(file_prefix, sep='\t')
         count = 0
         for line in headers:
             if not line[0].startswith('@') and not line[0].startswith('#'):
@@ -667,10 +721,11 @@ class Quantile(Tabular):
         return False
 
 
+@build_sniff_from_prefix
 class LaneMask(Text):
     file_ext = 'mothur.filter'
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Determines whether the file is a lane mask filter:  1 line consisting of zeros and ones.
 
@@ -682,8 +737,12 @@ class LaneMask(Text):
         >>> LaneMask().sniff( fname )
         False
         """
-        headers = get_headers(filename, sep='\t')
+        headers = get_headers(file_prefix, sep='\t', count=2)
         if len(headers) != 1 or len(headers[0]) != 1:
+            return False
+
+        if len(headers[0][0]) < 1000:
+            # these filter files should be relatively big
             return False
 
         if not re.match('^[01]+$', headers[0][0]):
@@ -706,40 +765,41 @@ class CountTable(Tabular):
         U68595  1
         U68600  1
         # Example 2 (with group columns):
-        Representative_Sequence total   forest  pastur
+        Representative_Sequence total   forest  pasture
         U68630  1       1       0
         U68595  1       1       0
         U68600  1       1       0
         U68591  1       1       0
         U68647  1       0       1
         """
-        Tabular.__init__(self, **kwd)
+        super(CountTable, self).__init__(**kwd)
         self.column_names = ['name', 'total']
 
     def set_meta(self, dataset, overwrite=True, skip=1, max_data_lines=None, **kwd):
-        data_lines = 0
-        headers = get_headers(dataset.file_name, sep='\t', count=-1)
+        super(CountTable, self).set_meta(dataset, overwrite=overwrite, **kwd)
+
+        headers = get_headers(dataset.file_name, sep='\t', count=1)
         colnames = headers[0]
-        dataset.metadata.column_types = ['str'] + (['int'] * ( len(headers[0]) - 1))
+        dataset.metadata.column_types = ['str'] + (['int'] * (len(headers[0]) - 1))
         if len(colnames) > 1:
             dataset.metadata.columns = len(colnames)
         if len(colnames) > 2:
             dataset.metadata.groups = colnames[2:]
-        for line in headers[1:]:
-            data_lines += 1
 
         dataset.metadata.comment_lines = 1
-        dataset.metadata.data_lines = data_lines
+        if isinstance(dataset.metadata.data_lines, int):
+            dataset.metadata.data_lines -= 1
 
 
+@build_sniff_from_prefix
 class RefTaxonomy(Tabular):
     file_ext = 'mothur.ref.taxonomy'
 
     def __init__(self, **kwd):
-        Tabular.__init__(self, **kwd)
+        super(RefTaxonomy, self).__init__(**kwd)
         self.column_names = ['name', 'taxonomy']
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Determines whether the file is a Reference Taxonomy
 
@@ -765,7 +825,7 @@ class RefTaxonomy(Tabular):
         >>> RefTaxonomy().sniff( fname )
         False
         """
-        headers = get_headers(filename, sep='\t', count=300)
+        headers = iter_headers(file_prefix, sep='\t', count=300)
         count = 0
         pat_prog = re.compile('^([^ \t\n\r\x0c\x0b;]+([(]\\d+[)])?(;[^ \t\n\r\x0c\x0b;]+([(]\\d+[)])?)*(;)?)$')
         found_semicolons = False
@@ -796,7 +856,7 @@ class ConsensusTaxonomy(Tabular):
 
     def __init__(self, **kwd):
         """A list of names"""
-        Tabular.__init__(self, **kwd)
+        super(ConsensusTaxonomy, self).__init__(**kwd)
         self.column_names = ['OTU', 'count', 'taxonomy']
 
 
@@ -805,18 +865,19 @@ class TaxonomySummary(Tabular):
 
     def __init__(self, **kwd):
         """A Summary of taxon classification"""
-        Tabular.__init__(self, **kwd)
+        super(TaxonomySummary, self).__init__(**kwd)
         self.column_names = ['taxlevel', 'rankID', 'taxon', 'daughterlevels', 'total']
 
 
+@build_sniff_from_prefix
 class Axes(Tabular):
     file_ext = 'mothur.axes'
 
     def __init__(self, **kwd):
         """Initialize axes datatype"""
-        Tabular.__init__(self, **kwd)
+        super(Axes, self).__init__(**kwd)
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Determines whether the file is an axes format
         The first line may have column headings.
@@ -840,7 +901,7 @@ class Axes(Tabular):
         >>> Axes().sniff( fname )
         False
         """
-        headers = get_headers(filename, sep='\t')
+        headers = iter_headers(file_prefix, sep='\t')
         count = 0
         col_cnt = None
         all_integers = True
@@ -891,13 +952,14 @@ class SffFlow(Tabular):
           GQY1XT001CQIRF 84 1.02 0.06 0.98 0.06 0.09 1.05 0.07 ...
           GQY1XT001CF5YW 88 1.02 0.02 1.01 0.04 0.06 1.02 0.03 ...
     """
+
     def __init__(self, **kwd):
-        Tabular.__init__(self, **kwd)
+        super(SffFlow, self).__init__(**kwd)
 
     def set_meta(self, dataset, overwrite=True, skip=1, max_data_lines=None, **kwd):
-        Tabular.set_meta(self, dataset, overwrite, 1, max_data_lines)
+        super(SffFlow, self).set_meta(dataset, overwrite, 1, max_data_lines)
 
-        headers = get_headers(dataset.file_name, sep='\t')
+        headers = get_headers(dataset.file_name, sep='\t', count=1)
         try:
             flow_values = int(headers[0][0])
             dataset.metadata.flow_values = flow_values
@@ -920,7 +982,7 @@ class SffFlow(Tabular):
             out += self.make_html_peek_rows(dataset, skipchars=skipchars)
             out += '</table>'
         except Exception as exc:
-            out = "Can't create peek %s" % str(exc)
+            out = "Can't create peek: %s" % unicodify(exc)
         return out
 
 

@@ -5,22 +5,17 @@ import logging
 
 from sqlalchemy import MetaData, String, Table
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 
 
-def upgrade( migrate_engine ):
-    meta = MetaData( bind=migrate_engine )
-    user = Table( 'galaxy_user', meta, autoload=True )
+def upgrade(migrate_engine):
+    meta = MetaData(bind=migrate_engine)
+    user = Table('galaxy_user', meta, autoload=True)
     try:
         user.c.password.alter(type=String(255))
-    except:
-        log.exception( "Altering password column failed" )
+    except Exception:
+        log.exception("Altering password column failed")
 
 
 def downgrade(migrate_engine):
-    meta = MetaData( bind=migrate_engine )
-    user = Table( 'galaxy_user', meta, autoload=True )
-    try:
-        user.c.password.alter(type=String(40))
-    except:
-        log.exception( "Altering password column failed" )
+    pass

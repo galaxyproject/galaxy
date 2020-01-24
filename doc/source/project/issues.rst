@@ -9,6 +9,12 @@ guidelines for longer term planning for various Galaxy related projects.
 Some inspiration taken from the way the
 `Docker <https://github.com/docker/docker>`__ project labels issues.
 
+Issue Reporting
+===============
+
+Issues (bugs, feature requests, etc.) should be reported at `GitHub issues`_, and
+handling of issues follows the procedures described in the `issues document`_.
+
 Milestones
 ==========
 
@@ -52,30 +58,30 @@ Labeling Structure
 ==================
 
 To allow for easy search, filtering, and general issue management every
-issue or PR (not tagged ``procedures`` or ``planning``) is *required* to
-have three labels which indicate the type, status, and focus area of the
-issue. Any issue without these three tags will be automatically have a
-``triage`` label applied indicating that it needs human intervention to
-be correctly tagged. These ``triage`` tagged issues will be regularly
-reviewed and tagged as appropriate.
+issue or PR (not tagged ``procedures`` or ``planning``) is expected to
+have two labels which indicate the type (``kind/``) and focus
+area (``area/``) of the issue. Any issue without these tags will
+automatically have a ``triage`` label applied indicating that it needs
+human intervention to be correctly tagged. These ``triage`` tagged
+issues will be regularly reviewed and tagged as appropriate.
 
 Kind Labels
 -----------
 
-The 'kind' label set is used for classifying the type of contribution or
+The ``kind`` label set is used for classifying the type of contribution or
 request/report to separate enhancements and new features from bugs, etc.
 
 -  ``kind/bug`` - something is broken, and it needs fixing
 -  ``kind/enhancement`` - polish to an existing feature or interface
 -  ``kind/feature`` - something brand new
--  ``kind/refactoring`` - refactoring of existing code, no functional
-   changes
--  ``kind/testing`` - issues related to tests and the testing framework
+-  ``kind/refactoring`` - cleanup or refactoring of existing code, no
+   functional changes
 
 Status Labels
 -------------
 
-The ``status`` of an issue or PR should be tracked using the following
+The default ``status`` of an issue or PR is ``ready for review``. If that
+is not true the state should be communicated using the following
 labels:
 
 -  ``status/planning`` - the issue planning phase, this issue may
@@ -83,15 +89,6 @@ labels:
    to a work in progress
 -  ``status/WIP`` - this issue or PR is currently being worked on and in
    the case of a PR, it should not be merged until this tag is removed
--  ``status/review`` - PR is complete and ready for review, or when
-   applied to an issue it is thought to be resolved but needs
-   verification
-
-We use the same set of status tags for PRs and issues to keep things
-simple, but not every PR or issue needs to go through every state. For
-example, it'll be common for a PR to be submitted with the label
-'status/review', and get merged without needing to go through the rest
-of the states.
 
 Note that there are no ``status/complete``, ``status/wontfix``,
 ``status/duplicate``, or other terminal status indicators. This is
@@ -103,32 +100,49 @@ be indicated in the closing comment by the issue closer.
 Area Labels
 -----------
 
-The 'area' label is used for tagging issues and pull requests to a
+The ``area`` label is used for tagging issues and pull requests to a
 particular focus area. This allows for easy searching within that
 particular domain, as well as more organized release notes.
 
--  ``area/admin`` - Changes to admin functionality of the Galaxy webapp.
--  ``area/API``
--  ``area/cleanup`` - General code cleanup.
--  ``area/database`` - Change requires a modification to Galaxy's database.
--  ``area/dataset-collections``
--  ``area/datatypes`` - Changes to Galaxy's datatypes
--  ``area/datatype-framework`` - Changes to Galaxy's datatype and metadata framework
--  ``area/documentation``
--  ``area/framework``
--  ``area/GIEs``
--  ``area/histories``
--  ``area/jobs``
--  ``area/performance``
--  ``area/reports``
--  ``area/system`` - Changes to scripts used to run or manage Galaxy.
--  ``area/tools`` - Changes to specific tools in Galaxy.
--  ``area/tool-framework``
--  ``area/toolshed``- Changes to the tool shed client or server.
--  ``area/UI-UX``
--  ``area/util``
--  ``area/visualizations``
--  ``area/workflows``
+- ``area/admin`` - Changes to admin functionality of the Galaxy webapp
+- ``area/API``
+- ``area/auth`` - Authentication and authorization
+- ``area/client-build``
+- ``area/compliance``
+- ``area/configuration`` - Galaxy's configuration system
+- ``area/cwl`` - changes related to supporting the common workflow language in Galaxy
+- ``area/database`` - Change requires a modification to Galaxy's database
+- ``area/dataset-collections``
+- ``area/datatypes`` - Changes to Galaxy's datatypes
+- ``area/datatype-framework`` - Changes to Galaxy's datatype and metadata framework
+- ``area/dependencies`` - Changes related to Python or JavaScript dependencies of Galaxy itself
+- ``area/documentation``
+- ``area/framework``
+- ``area/GIEs``
+- ``area/histories``
+- ``area/i18n`` - Internationalization and localization
+- ``area/jobs``
+- ``area/libraries`` - Change related to data libraries
+- ``area/objectstore``
+- ``area/performance``
+- ``area/reports``
+- ``area/security``
+- ``area/scripts`` - Changes to scripts used to run or manage Galaxy.
+- ``area/testing``
+- ``area/testing/api``
+- ``area/testing/integration``
+- ``area/testing/selenium``
+- ``area/tool-framework``
+- ``area/tool-dependencies`` - Changes to dependency resolution (including Conda)
+- ``area/tools`` - Changes to specific tools in Galaxy
+- ``area/toolshed``- Changes to the Tool Shed client or server
+- ``area/UI-UX``
+- ``area/upload``
+- ``area/util``
+- ``area/visualizations``
+- ``area/webhooks``
+- ``area/workflows``
+- ``area/workflows/subworkflows``
 
 New labels should be proposed by opening a pull request against this document
 in the dev branch of Galaxy.
@@ -152,15 +166,18 @@ special purpose.
    resolution. These *can* utilize the ``area/*`` tags but are not
    required to. Status and type make little sense here.
 
--  ``roadmap`` is a reserved tag for the primary project roadmap. This
-   is a meta-issue that is not expected to be completed, but rather
-   serves as an entry point to the high level development of the
-   project.
-
--  ``beginner-friendly`` can be used to indicate a nice entry-level
+-  ``friendliness/beginner`` can be used to indicate a nice entry-level
    issue that only requires limited understanding of the larger Galaxy
    framework and ecosystem. This is useful for encouraging new
    contributors.
+
+-  ``friendliness/intermediate`` can be used to indicate an advanced
+   level issue that requires decent understanding of the larger Galaxy
+   framework and system.
+
+-  ``friendliness/unfriendly`` can be used to mark issues that require
+   deep understanding of the framework and/or exquisite programming
+   abilities.
 
 -  ``minor`` is a special tag used to generate release notes. It should
    only be applied to pull requests made by committers that fix
@@ -174,21 +191,30 @@ special purpose.
    release and is used to prioritize important items of note for the
    top of release notes sections.
 
+-  ``merge`` tag used to indicate PR that only merges a change that has
+   been previously added. Used to filter things out of release notes.
+
+-  ``feature-request`` is used to indicate a request for change or feature.
+
+-  ``triage`` is a tag automatically added by a GalaxyBot to indicate that
+   the issue needs to be evaluated and properly tagged.
+
+-  ``hacktoberfest`` is a tag that encourages contributions to Galaxy codebase
+   by including these issues in the `Hacktoberfest <https://hacktoberfest.digitalocean.com/>`__ event.
+   Similar to ``friendliness/beginner`` tag in other characteristics.
+
 
 The Roadmap
 ===========
 
-We will maintain a single ``roadmap`` tagged meta-issue which will
+We will maintain a single ``roadmap`` GitHub project which will
 describe (at a very high level) the *current* major areas of focus for
-the project. This is similar to our PRIORITIES 2014/15 cards on Trello.
-Using `Task
-Lists <https://github.com/blog/1375-task-lists-in-gfm-issues-pulls-comments>`__,
-this issue will link to sub-issues which will go into much more detail,
-might have its own checklists to even more subcomponent cards, and so
-on.
+the project. This project will link to issues and PRs, which will go into
+much more detail and might link to other sub-issues, projects, or PRs.
 
-This ``roadmap`` issue will be assigned to every release milestone,
-forcing periodic review of the roadmap.
+This ``roadmap`` project is subject to periodic review every release.
+
+The current roadmap project is `here <https://github.com/galaxyproject/galaxy/projects/8>`__.
 
 Voting
 ======
@@ -204,7 +230,7 @@ Automation
 
 For now, we will rely on a few simple automation rules:
 
--  All issues, unless tagged ``procedures`` or ``planning`` will
+-  All PRs, unless tagged ``procedures`` or ``planning`` will
    automatically be tagged ``triage``, indicating that they require
    attention.
 
@@ -212,3 +238,5 @@ For now, we will rely on a few simple automation rules:
    ``triage`` to indicate that they require attention prior to merge.
 
 .. _ORGANIZATION: https://github.com/galaxyproject/galaxy/blob/dev/doc/source/project/organization.rst
+.. _issues document: https://github.com/galaxyproject/galaxy/blob/dev/doc/source/project/issues.rst
+.. _Github issues: https://github.com/galaxyproject/galaxy/issues/

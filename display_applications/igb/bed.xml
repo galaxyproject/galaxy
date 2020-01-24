@@ -9,7 +9,7 @@
         </param>
         <param type="data" name="bed_file" url="${niceName}.bed" />
         <param type="template" name="bioviz" strip="True" >
-            http://bioviz.org/igb/galaxy.html?version=${bed_file.dbkey}&amp;loadresidues=false&amp;feature_url_0=${bed_file.url}&amp;sym_name_0=${niceName}&amp;sym_method_0=${bed_file.url}&amp;query_url=${bed_file.url}&amp;server_url=galaxy
+            http://bioviz.org/galaxy.html?version=${bed_file.dbkey}&amp;loadresidues=false&amp;feature_url_0=${bed_file.url}&amp;sym_name_0=${niceName}&amp;sym_method_0=${bed_file.url}&amp;query_url=${bed_file.url}&amp;server_url=galaxy
         </param>
     </link>
 </display>

@@ -9,26 +9,26 @@ galaxy.datatypes.util package
 Submodules
 ----------
 
-galaxy.datatypes.util.generic_util module
------------------------------------------
+galaxy.datatypes.util.generic\_util module
+------------------------------------------
 
 .. automodule:: galaxy.datatypes.util.generic_util
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.datatypes.util.gff_util module
--------------------------------------
+galaxy.datatypes.util.gff\_util module
+--------------------------------------
 
 .. automodule:: galaxy.datatypes.util.gff_util
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.datatypes.util.image_util module
----------------------------------------
+galaxy.datatypes.util.maf\_utilities module
+-------------------------------------------
 
-.. automodule:: galaxy.datatypes.util.image_util
+.. automodule:: galaxy.datatypes.util.maf_utilities
     :members:
     :undoc-members:
     :show-inheritance:

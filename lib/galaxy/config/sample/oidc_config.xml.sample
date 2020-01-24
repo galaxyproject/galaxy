@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<!--
+Each Setter must have three attributes: Property, Value, and Type.
+
+- Property: sets the name of a Python Social Auth (PSA) configuration attribute that its value is set by the setter.
+
+- Value: sets a value for the property.
+
+- Type: sets the type of the value. Galaxy uses the specified type to cast the values of string type to their actual
+type. For instance, casts "False" -> False (string -> boolean). The value of the `Type` attribute should be a Python
+built-in type, which could be any of the following types: int; long; float; str; tuple; list; and dict.
+
+Note that the values of these attributes are case-sensitive.
+-->
+<OIDC>
+    <Setter Property="VERIFY_SSL" Value="False" Type="bool"/>
+    <Setter Property="REQUESTS_TIMEOUT" Value="3600" Type="float"/>
+    <!-- The unit of value is seconds -->
+    <Setter Property="ID_TOKEN_MAX_AGE" Value="3600" Type="float"/>
+    <!-- The unit of value is seconds -->
+
+    <!-- If configured, sets secondary authorization provider and endpoint. -->
+    <!--
+    <Setter Property="SECONDARY_AUTH_PROVIDER" Value="..." Type="str" />
+    <Setter Property="SECONDARY_AUTH_ENDPOINT" Value="..." Type="str" />
+    -->
+</OIDC>

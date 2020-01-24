@@ -1,0 +1,226 @@
+// ############################################################# Reports Webapp
+
+// ======================================================== SparkLines ========
+#spark_time_select {
+    display: inline-block;
+}
+#spark_select {
+    height: 23px;
+    width: 30px;
+    padding: 0;
+    border-radius: 2px;
+}
+
+.jqstooltip {
+    -webkit-box-sizing: content-box;
+    -moz-box-sizing: content-box;
+    box-sizing: content-box;
+}
+
+// ======================================================== Sorting ===========
+.dir_arrow {
+    visibility: hidden;
+}
+
+// ======================================================== Home page =========
+.chart {
+    cursor: zoom-in;
+    position: relative;
+    z-index: 2;
+}
+
+.chart rect {
+    fill: steelblue;
+    shape-rendering: preserveAspectRatio;
+}
+
+.chart text {
+    fill: black;
+    font: 7px sans-serif;
+    text-anchor: end;
+}
+
+.tick text {
+    fill: black;
+    font-family: Arial, sans-serif;
+    font-size: 7px;
+    text-anchor: end;
+}
+
+.axis path,
+.axis line {
+    fill: none;
+    stroke: #000;
+    shape-rendering: preserveAspectRatio;
+}
+
+.x_path {
+    stroke: #000;
+    stroke-width: 1;
+}
+
+.chart .title {
+    fill: black;
+    font-size: 15px;
+    font-family: "Lucida Grande", verdana, arial, helvetica, sans-serif;
+    font-weight: 800;
+    line-height: 1.1;
+}
+
+.chart .ax_title {
+    fill: black;
+}
+
+.hr_container,
+.dy_container {
+    position: relative;
+    z-index: 2;
+    display: inline-block;
+    vertical-align: top;
+}
+
+.charts {
+    margin-top: 10px;
+    margin-left: 0;
+    margin-right: 0;
+    text-align: center;
+    position: relative;
+    display: block;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+}
+
+.trim {
+    position: relative;
+    height: 10px;
+    top: 50px;
+    background: #ebd9b2;
+    color: #000;
+    border-top: solid #d6b161 1px;
+    border-bottom: solid #d6b161 1px;
+}
+
+.tool_tip text {
+    fill: white;
+}
+
+// ======================================================== Paging ============
+// ------------------------------------ Pages ---------------------------------
+#back_button,
+#next_button,
+#curr_button,
+.miss_pages,
+.page_button {
+    position: relative;
+    float: left;
+    height: 24px;
+    width: 23px;
+    margin: 0 -1px 0 0;
+    padding-top: 2.5px;
+    border: 1px solid #bfbfbf;
+    z-index: 0;
+}
+
+#back_button {
+    cursor: pointer;
+    border-top-left-radius: 3px;
+    border-bottom-left-radius: 3px;
+}
+
+#curr_button {
+    background: #ebd9b2;
+    border: 1px solid #5f6990;
+    z-index: 1;
+}
+
+#formHeader > tbody > tr {
+    vertical-align: middle;
+}
+
+#next_button {
+    cursor: pointer;
+    border-top-right-radius: 3px;
+    border-bottom-right-radius: 3px;
+}
+
+// TODO: min-width in page_selector should be set when the amount of
+//       buttons is calculated
+#page_selector {
+    cursor: default;
+    position: relative;
+    text-align: center;
+    min-width: 132px;
+}
+
+.page_button > a {
+    text-decoration: none;
+    padding: 8px;
+    margin: -8px;
+    height: 100%;
+    width: 100%;
+}
+// ------------------------------------ Entry Selector ------------------------
+#entries_edit {
+    position: relative;
+    padding: 0;
+    width: 36px;
+    height: 20px;
+    text-align: center;
+    border: 1px solid black;
+    border-radius: 3px;
+    z-index: 6;
+}
+
+#entry_form {
+    min-width: 123px;
+}
+
+#entry_submit {
+    cursor: default;
+    position: relative;
+    display: inline-block;
+    border: 1px solid black;
+    padding: 0;
+    width: 22px;
+    height: 22px;
+    border-radius: 11px;
+    background-color: #ebd9b2;
+    text-align: center;
+    opacity: 0;
+    z-index: 0;
+}
+
+// ======================================================== Misc. =============
+.half_width {
+    width: 50%;
+}
+.third_width {
+    width: 30%;
+}
+.quarter_width {
+    width: 25%;
+}
+
+.reportBody {
+    text-align: center;
+    text-align: -moz-center;
+}
+
+#systemForm {
+    width: 90%;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 5px;
+    border-spacing: 5px;
+    border-collapse: separate;
+}
+
+.lastAccessForm,
+.diskUsageForm {
+    width: 70%;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 5px;
+    border-spacing: 5px;
+}

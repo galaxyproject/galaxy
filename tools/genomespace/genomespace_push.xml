@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<tool name="GenomeSpace Push" id="genomespace_push"  tool_type="data_source" force_history_refresh="True" hidden="True" display_interface="False" require_login="True" version="0.0.6">
+    <description> - Push data from GenomeSpace to Galaxy</description>
+    <environment_variables>
+        <environment_variable name="GS_TOKEN">
+            #set $token = $__user__.preferences.get('genomespace_token', None)
+            #assert $token, Exception('Invalid token. You must be logged into GenomeSpace through OpenID.')
+            $token
+        </environment_variable>
+    </environment_variables>
+    <command interpreter="python">genomespace_importer.py
+        #set $input_file = $URL.split("^")[0] if "^" in $URL else $URL
+
+        #assert $input_file, Exception( 'You must select a valid input file.' )
+        --json_parameter_file '${output_file1}'
+        --galaxy_root $__root_dir__
+        --data_conf $__datatypes_config__
+    </command>
+    <!-- If using this tool through bioblend, the URL parameter should contain a comma separated list of GenomeSpace URLs -->
+    <inputs check_values="False">
+        <param name="URL" type="genomespacefile" label="Choose Input File from GenomeSpace" select_type="FILE" />
+    </inputs>
+    <outputs>
+        <data format="auto" name="output_file1" />
+    </outputs>
+    <help>
+This tool is a variant of the genomespace_importer which behaves like a data_source and allows you to pull data from GenomeSpace.
+The URL parameter must contain a comma separated list of files to pull from GenomeSpace.
+The user must be logged into GenomeSpace through OpenID so that the authentication token can be obtained. 
+You can associate your OpenID credentials under the User Preferences panel.
+Click here_ to refresh your GenomeSpace token.
+  
+.. _here:  ${static_path}/../user/openid_auth?openid_provider=genomespace&amp;auto_associate=True
+    </help>
+    <options sanitize="False" refresh="True"/>
+</tool>

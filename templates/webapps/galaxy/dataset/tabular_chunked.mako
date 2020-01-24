@@ -3,23 +3,24 @@
 
 <%def name="title()">Dataset Display</%def>
 
-<%def name="javascripts()">
-    ${parent.javascripts()}
+<%def name="javascript_app()">
+
+    <!-- tabular_chunked.mako javascript_app() -->
+    ${parent.javascript_app()}
 
     <script type="text/javascript">
-        require([ 'mvc/dataset/data' ], function( data ) {
-            data.createTabularDatasetChunkedView({
-                dataset_config : _.extend( ${ h.dumps( trans.security.encode_dict_ids( dataset.to_dict() ) )}, {
-                        first_data_chunk: ${ chunk }
-                    }),
-                parent_elt : $( 'body' )
+        config.addInitialization(function(galaxy) {
+            var dataset = ${ h.dumps( trans.security.encode_dict_ids( dataset.to_dict() ) )};
+            var firstChunk = ${chunk};
+            window.bundleEntries.createTabularDatasetChunkedView({
+                dataset_config : Object.assign(dataset, {
+                    first_data_chunk: firstChunk
+                }),
+                parent_elt : $('body')
             });
         });
     </script>
-</%def>
-
-<%def name="stylesheets()">
-    ${parent.stylesheets()}
+    
 </%def>
 
 ${ render_deleted_data_message( dataset ) }

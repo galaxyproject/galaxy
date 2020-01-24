@@ -1,14 +1,16 @@
 <tool id="collection_creates_dynamic_nested" name="collection_creates_dynamic_nested" version="0.1.0">
-  <command>
+  <command><![CDATA[
     echo "A" > oe1_ie1.fq ;
     echo "B" > oe1_ie2.fq ;
     echo "C" > oe2_ie1.fq ;
     echo "D" > oe2_ie2.fq ;
     echo "E" > oe3_ie1.fq ;
-    echo "F" > oe3_ie2.fq
-  </command>
+    echo "F" > oe3_ie2.fq ;
+    sleep '$sleep_time';    
+  ]]></command>
   <inputs>
     <param name="foo" type="text" label="Dummy Parameter" />
+    <param name="sleep_time" type="integer" label="Sleep Time" value="0" />
   </inputs>
   <outputs>
     <collection name="list_output" type="list:list" label="Duplicate List">

@@ -24,8 +24,9 @@ def main():
     cmdline = cmdline + ">" + outfile
     try:
         os.system(cmdline)
-    except:
+    except Exception:
         stop_err("Error encountered with cat.")
+
 
 if __name__ == "__main__":
     main()

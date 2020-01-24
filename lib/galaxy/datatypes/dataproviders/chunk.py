@@ -4,17 +4,19 @@ Chunk (N number of bytes at M offset to a source's beginning) provider.
 Primarily for file sources but usable by any iterator that has both
 seek and read( N ).
 """
-import os
 import base64
-import base
-import exceptions
-
 import logging
-log = logging.getLogger( __name__ )
+import os
+
+from . import (
+    base,
+    exceptions
+)
+
+log = logging.getLogger(__name__)
 
 
-# -----------------------------------------------------------------------------
-class ChunkDataProvider( base.DataProvider ):
+class ChunkDataProvider(base.DataProvider):
     """
     Data provider that yields chunks of data from its file.
 
@@ -29,7 +31,7 @@ class ChunkDataProvider( base.DataProvider ):
 
     # TODO: subclass from LimitedOffsetDataProvider?
     # see web/framework/base.iterate_file, util/__init__.file_reader, and datatypes.tabular
-    def __init__( self, source, chunk_index=0, chunk_size=DEFAULT_CHUNK_SIZE, **kwargs ):
+    def __init__(self, source, chunk_index=0, chunk_size=DEFAULT_CHUNK_SIZE, **kwargs):
         """
         :param chunk_index: if a source can be divided into N number of
             `chunk_size` sections, this is the index of which section to
@@ -37,29 +39,29 @@ class ChunkDataProvider( base.DataProvider ):
         :param chunk_size:  how large are the desired chunks to return
             (gen. in bytes).
         """
-        super( ChunkDataProvider, self ).__init__( source, **kwargs )
-        self.chunk_size = int( chunk_size )
-        self.chunk_pos = int( chunk_index ) * self.chunk_size
+        super(ChunkDataProvider, self).__init__(source, **kwargs)
+        self.chunk_size = int(chunk_size)
+        self.chunk_pos = int(chunk_index) * self.chunk_size
 
-    def validate_source( self, source ):
+    def validate_source(self, source):
         """
         Does the given source have both the methods `seek` and `read`?
         :raises InvalidDataProviderSource: if not.
         """
-        source = super( ChunkDataProvider, self ).validate_source( source )
-        if( ( not hasattr( source, 'seek' ) ) or ( not hasattr( source, 'read' ) ) ):
-            raise exceptions.InvalidDataProviderSource( source )
+        source = super(ChunkDataProvider, self).validate_source(source)
+        if((not hasattr(source, 'seek')) or (not hasattr(source, 'read'))):
+            raise exceptions.InvalidDataProviderSource(source)
         return source
 
-    def __iter__( self ):
+    def __iter__(self):
         # not reeeally an iterator per se
         self.__enter__()
-        self.source.seek( self.chunk_pos, os.SEEK_SET )
-        chunk = self.encode( self.source.read( self.chunk_size ) )
+        self.source.seek(self.chunk_pos, os.SEEK_SET)
+        chunk = self.encode(self.source.read(self.chunk_size))
         yield chunk
         self.__exit__()
 
-    def encode( self, chunk ):
+    def encode(self, chunk):
         """
         Called on the chunk before returning.
 
@@ -68,12 +70,13 @@ class ChunkDataProvider( base.DataProvider ):
         return chunk
 
 
-class Base64ChunkDataProvider( ChunkDataProvider ):
+class Base64ChunkDataProvider(ChunkDataProvider):
     """
     Data provider that yields chunks of base64 encoded data from its file.
     """
-    def encode( self, chunk ):
+
+    def encode(self, chunk):
         """
         Return chunks encoded in base 64.
         """
-        return base64.b64encode( chunk )
+        return base64.b64encode(chunk)

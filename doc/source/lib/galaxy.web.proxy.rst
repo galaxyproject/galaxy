@@ -6,15 +6,3 @@ galaxy.web.proxy package
     :undoc-members:
     :show-inheritance:
 
-Submodules
-----------
-
-galaxy.web.proxy.filelock module
---------------------------------
-
-.. automodule:: galaxy.web.proxy.filelock
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-

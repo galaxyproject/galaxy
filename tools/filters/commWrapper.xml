@@ -1,18 +1,24 @@
 <tool id="Comm1" name="Find Similarities and Differences" version="1.0.0">
   <description>between two datasets</description>
-  <command interpreter="perl">commWrapper.pl $input1 $input2 $mode $out_file1</command>
+  <command><![CDATA[
+perl '$__tool_directory__/commWrapper.pl'
+'$input1'
+'$input2'
+$mode
+'$out_file1'
+  ]]></command>
   <inputs>
-    <param format="tabular" name="input1" type="data" label="Compare Dataset1"/>
-    <param format="tabular" name="input2" type="data" label="with Dataset2"/>
+    <param name="input1" type="data" format="tabular" label="Compare Dataset1"/>
+    <param name="input2" type="data" format="tabular" label="with Dataset2"/>
     <param name="mode" type="select" label="And find">
       <option value="-23">Lines unique to Dataset1</option>
       <option value="-12">Lines shared between Dataset1 and Dataset2</option>
     </param>
   </inputs>
   <outputs>
-    <data format="input" name="out_file1" metadata_source="input1" />
+    <data name="out_file1" format_source="input1" metadata_source="input1" />
   </outputs>
-  <help>
+  <help><![CDATA[
 This tool is based on UNIX shell command comm. It compares two datasets and returns similarities or differences. For example, if you have two datasets::
   
  a  1
@@ -33,6 +39,5 @@ Using this tool with **Lines unique to Dataset1** option will return::
 If you use **Lines shared between Dataset1 and Dataset2** option output will look like this::
 
  a  1
-
-</help>
+  ]]></help>
 </tool>

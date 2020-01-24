@@ -1,10 +1,12 @@
 #!/usr/bin/env python
+from __future__ import print_function
+
 import sys
 import textwrap
 
 from Bio import GenBank
 
-assert sys.version_info[:2] >= ( 2, 4 )
+assert sys.version_info[:2] >= (2, 6)
 
 
 def make_fasta(rec):
@@ -16,17 +18,18 @@ def make_fasta(rec):
     body = '\n'.join(textwrap.wrap(rec.seq.data, width=80))
     return head, body
 
+
 if __name__ == '__main__':
     mode = sys.argv[1]
     text = sys.argv[2]
     output_file = sys.argv[3]
 
-    print 'Searching for %s <br>' % text
+    print('Searching for %s <br>' % text)
 
     # check if inputs are all numbers
     try:
         gi_list = text.split()
-        tmp = map(int, gi_list)
+        [int(_) for _ in gi_list]
     except ValueError:
         gi_list = GenBank.search_for(text, max_ids=10)
 
@@ -37,5 +40,5 @@ if __name__ == '__main__':
         res = ncbi_dict[gid]
         head, body = make_fasta(res)
         fp.write(head + body + '\n')
-        print head
+        print(head)
     fp.close()

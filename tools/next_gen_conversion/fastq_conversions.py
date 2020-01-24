@@ -19,14 +19,14 @@ import sys
 from bx.cookbook import doc_optparse
 
 
-def stop_err( msg ):
-    sys.stderr.write( "%s\n" % msg )
+def stop_err(msg):
+    sys.stderr.write("%s\n" % msg)
     sys.exit()
 
 
 def __main__():
     # Parse Command Line
-    options, args = doc_optparse.parse( __doc__ )
+    options, args = doc_optparse.parse(__doc__)
 
     cmd = "fq_all2std.pl %s %s > %s"
     if options.command == 'sol2std':
@@ -39,6 +39,7 @@ def __main__():
         os.system(cmd)
     except Exception as eq:
         stop_err("Error converting data format.\n" + str(eq))
+
 
 if __name__ == "__main__":
     __main__()

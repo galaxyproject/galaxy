@@ -1,2 +1,0 @@
-define([],function(){function a(a,b){if(0===a.length)return b.length;if(0===b.length)return a.length;var c,d=[];for(c=0;c<=b.length;c++)d[c]=[c];var e;for(e=0;e<=a.length;e++)d[0][e]=e;for(c=1;c<=b.length;c++)for(e=1;e<=a.length;e++)d[c][e]=b.charAt(c-1)===a.charAt(e-1)?d[c-1][e-1]:Math.min(d[c-1][e-1]+1,Math.min(d[c][e-1]+1,d[c-1][e]+1));return d[b.length][a.length]}return a});
-//# sourceMappingURL=../../maps/utils/levenshtein.js.map

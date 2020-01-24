@@ -11,12 +11,20 @@ Subpackages
 
 .. toctree::
 
+    galaxy.webapps.base
     galaxy.webapps.galaxy
     galaxy.webapps.reports
-    galaxy.webapps.tool_shed
 
 Submodules
 ----------
+
+galaxy.webapps.config\_manage module
+------------------------------------
+
+.. automodule:: galaxy.webapps.config_manage
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
 galaxy.webapps.util module
 --------------------------

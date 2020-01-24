@@ -1,19 +1,21 @@
+from __future__ import print_function
+
 import os
 import sys
 
 # read tool_conf.xml to get all the tool xml file names
 onoff = 1
 tool_list = []
-tool_conf_file = os.environ.get( 'GALAXY_TEST_TOOL_CONF', None )
+tool_conf_file = os.environ.get('GALAXY_TEST_TOOL_CONF', None)
 
 if tool_conf_file is None:
-    for possible_tool_file in [ 'config/tool_conf.xml', 'tool_conf.xml', 'config/tool_conf.xml.sample' ]:
+    for possible_tool_file in ['config/tool_conf.xml', 'tool_conf.xml', 'config/tool_conf.xml.sample']:
         tool_conf_file = possible_tool_file
-        if os.path.isfile( possible_tool_file ):
+        if os.path.isfile(possible_tool_file):
             break
 
 if tool_conf_file is None or not os.path.isfile(tool_conf_file):
-    sys.stderr.write( "Tool config file not found: {}\n".format(tool_conf_file) )
+    sys.stderr.write("Tool config file not found: {}\n".format(tool_conf_file))
     sys.exit(1)
 
 for line in open(tool_conf_file, "r"):
@@ -66,16 +68,16 @@ flag = 0
 if len(sys.argv) == 1:
     for tool_info in tool_infos:
         if tool_info["id"].find("section") != -1:
-            print "==========================================================================================================================================="
-            print "%-45s\t%-40s\t%s" % ("id", "name", tool_info["id"])
-            print "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"
+            print("===========================================================================================================================================")
+            print("%-45s\t%-40s\t%s" % ("id", "name", tool_info["id"]))
+            print("- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -")
         else:
-            print "%-45s\t%-40s" % (tool_info["id"], tool_info["name"])
+            print("%-45s\t%-40s" % (tool_info["id"], tool_info["name"]))
 else:
     for tool_info in tool_infos:
         if tool_info["id"].find("section") != -1:
             flag = 0
         elif flag == 1:
-            print " functional.test_toolbox:TestForTool_%s" % tool_info["id"],
+            print(" functional.test_toolbox:TestForTool_%s" % tool_info["id"], end=' ')
         if tool_info["id"].replace('section::', '') == sys.argv[1]:
             flag = 1

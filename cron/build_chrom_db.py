@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 """
 Connects to a UCSC table browser and scrapes chrominfo for every build
 specified by an input file (such as one output by parse_builds.py).
@@ -12,18 +11,21 @@ All chromInfo is placed in a path with the convention
 Usage:
 python build_chrom_db.py dbpath/ [builds_file]
 """
+from __future__ import print_function
 
 import fileinput
 import os
 import sys
-import urllib
 
-import parse_builds
+import requests
+from six.moves.urllib.parse import urlencode
+
+import parse_builds  # noqa: I100,I202
 
 
 def getchrominfo(url, db):
-    tableURL = "http://genome-test.cse.ucsc.edu/cgi-bin/hgTables?"
-    URL = tableURL + urllib.urlencode({
+    tableURL = "http://genome-test.gi.ucsc.edu/cgi-bin/hgTables?"
+    URL = tableURL + urlencode({
         "clade": "",
         "org": "",
         "db": db,
@@ -34,16 +36,17 @@ def getchrominfo(url, db):
         "hgta_regionType": "",
         "position": "",
         "hgta_doTopSubmit": "get info"})
-    page = urllib.urlopen(URL)
-    for line in page:
-        line = line.rstrip( "\r\n" )
+    page = requests.get(URL).text
+    for i, line in enumerate(page.splitlines()):
+        line = line.rstrip("\r\n")
         if line.startswith("#"):
             continue
         fields = line.split("\t")
         if len(fields) > 1 and len(fields[0]) > 0 and int(fields[1]) > 0:
             yield [fields[0], fields[1]]
         else:
-            raise Exception("Problem parsing line '%s'" % line)
+            raise Exception("Problem parsing line %d '%s' in page '%s'" % (i, line, page))
+
 
 if __name__ == "__main__":
     if len(sys.argv) == 1:
@@ -57,23 +60,23 @@ if __name__ == "__main__":
                 if line.startswith("#"):
                     continue
                 builds.append(line.split("\t")[0])
-        except:
+        except Exception:
             sys.exit("Bad input file.")
     else:
         try:
             for build in parse_builds.getbuilds("http://genome.cse.ucsc.edu/cgi-bin/das/dsn"):
                 builds.append(build[0])
-        except:
+        except Exception:
             sys.exit("Unable to retrieve builds.")
     for build in builds:
         if build == "?":
             continue  # no lengths for unspecified chrom
-        print "Retrieving " + build
+        print("Retrieving " + build)
         outfile_name = dbpath + build + ".len"
         try:
             with open(outfile_name, "w") as outfile:
-                for chrominfo in getchrominfo("http://genome-test.cse.ucsc.edu/cgi-bin/hgTables?", build):
-                    print >> outfile, "\t".join(chrominfo)
+                for chrominfo in getchrominfo("http://genome-test.gi.ucsc.edu/cgi-bin/hgTables?", build):
+                    print("\t".join(chrominfo), file=outfile)
         except Exception as e:
-            print "Failed to retrieve %s: %s" % (build, e)
+            print("Failed to retrieve %s: %s" % (build, e))
             os.remove(outfile_name)

@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<!-- A sample job config for InteractiveTools using local runner. -->
+<job_conf>
+    <plugins>
+        <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="4"/>
+    </plugins>
+    <destinations default="docker_dispatch">
+        <destination id="local" runner="local"/>
+
+        <destination id="docker_local" runner="local">
+          <param id="docker_enabled">true</param>
+          <!-- If you have not set 'outputs_to_working_directory: true' in galaxy.yml you can remove the docker_volumes setting. -->
+          <param id="docker_volumes">$galaxy_root:ro,$tool_directory:ro,$job_directory:rw,$working_directory:rw,$default_file_path:ro</param>
+          <param id="docker_sudo">false</param>
+          <param id="docker_net">bridge</param>
+          <param id="docker_auto_rm">true</param>
+          <param id="require_container">true</param>
+          <param id="docker_set_user"></param>
+          <!-- InteractiveTools do need real hostnames or URLs to work - simply specifying IPs will not work.
+               If you develop interactive tools on your 'localhost' and don't have a proper domain name
+               you need to tell all Docker containers a hostname where Galaxy is running.
+               This can be done via the add-host parameter during the `docker run` command.
+               'my-hostname' here is an arbritrary hostname that matches the IP address of your
+               Galaxy host. Make sure this hostname ('my-hostname') is also set in your galaxy.yml file, e.g.
+               `galaxy_infrastructure_url: http://my-hostname:8080`.
+              Note: XML does not allow double hyphens in comments, hence the line below has them escaped as &#45;
+          -->
+          <!-- <param id="docker_run_extra_arguments">&#45;&#45;add-host my-hostname:10.1.2.3</param> -->
+
+        </destination>
+
+        <destination id="docker_dispatch" runner="dynamic">
+            <param id="type">docker_dispatch</param>
+            <param id="docker_destination_id">docker_local</param>
+            <param id="default_destination_id">local</param>
+        </destination>
+
+    </destinations>
+
+</job_conf>

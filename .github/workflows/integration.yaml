@@ -1,0 +1,48 @@
+name: Integration
+on: [push, pull_request]
+env:
+  GALAXY_TEST_DBURI: 'postgres://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
+jobs:
+
+  test:
+    name: Test
+    runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        python-version: [3.7]
+        subset: ['upload_datatype', 'extended_metadata', 'kubernetes', 'not (upload_datatype or extended_metadata or kubernetes)']
+    services:
+      postgres:
+        image: postgres:11
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+    steps:
+    - name: Setup Minikube
+      if: matrix.subset == 'kubernetes'
+      id: minikube
+      uses: CodingNagger/minikube-setup-action@v1.0.2
+    - name: Launch Minikube
+      if: matrix.subset == 'kubernetes'
+      run: eval ${{ steps.minikube.outputs.launcher }}
+    - name: Check pods
+      if: matrix.subset == 'kubernetes'
+      run: |
+        kubectl get pods
+    - uses: actions/checkout@v1
+      with:
+        fetch-depth: 1
+    - uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Cache venv dir
+      uses: actions/cache@v1
+      id: pip-cache
+      with:
+        path: ~/.cache/pip
+        key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('requirements.txt') }}
+    - name: Run tests
+      run: './run_tests.sh -integration test/integration -- -k "${{ matrix.subset }}"'

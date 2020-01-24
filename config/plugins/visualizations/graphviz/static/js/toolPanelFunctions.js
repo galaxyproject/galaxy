@@ -1,8 +1,9 @@
 $(function() { // on dom ready
-
+	var showIn, showOut;
 
 	///// show/hide Labels
 	$('#nodeLabelCheck').change(function() {
+		var showNodeLabel;
 		if ($(this).is(":checked")) {
 
 			showNodeLabel = 'data(id)'; //.replace(/[^0-9\.]+/g, "")';  // change to label or name if needed
@@ -19,6 +20,7 @@ $(function() { // on dom ready
 	});
 
 	$('#linkLabelCheck').change(function() {
+		var showEdgeLabel;
 		if ($(this).is(":checked")) {
 			showEdgeLabel = "data(id)"; // change to label or name if needed
 		} else {
@@ -34,7 +36,7 @@ $(function() { // on dom ready
 	});
 
 
-	//////// change the shape of the graph 
+	//////// change the shape of the graph
 	$('#selectShape').change(function() {
 
 		$("select option:selected").each(function() {
@@ -54,11 +56,11 @@ $(function() { // on dom ready
 		if ($('#showOutNode').is(":checked")) {
 			showOut = true;
 			cy.nodes().on("tapend", highlightOut);
-			
+
 		} else {
 			showOut = false;
 			cy.nodes().off("tapend", highlightOut);
-			
+
 			resetHighlightOut(showIn, showOut);
 		}
 	});
@@ -67,17 +69,16 @@ $(function() { // on dom ready
 	////////  highlighting incoming nodes
 
 	$('#showInNode').change(function() {
-
 		if ($('#showInNode').is(":checked")) {
 			showIn = true;
 			cy.nodes().on("tapend", highlightIn);
-			
+
 
 		} else {
 			showIn = false;
 			cy.nodes().off("tapend", highlightIn);
 			resetHighlightIn(showIn, showOut);
-			
+
 			cy.nodes().removeClass('connectedNodeIn');
 		}
 
@@ -101,12 +102,12 @@ $(function() { // on dom ready
 
 	});
 
-	//// disable/unable buttons 
+	//// disable/unable buttons
 	$(document).on('click', function() {
 
 		var selectedNode = cy.nodes(':selected');
 
-		if (selectedNode.outgoers().length == 0) {
+		if (selectedNode.outgoers().length === 0) {
 
 			$('.btn.colNode').prop('disabled', true);
 
@@ -149,7 +150,7 @@ $(function() { // on dom ready
 
 		var selectedNode = cy.nodes(':selected');
 
-		if (e.which == 101 && selectedNode.size() != 0) { // 101 for 'e' = expand
+		if (e.which === 101 && selectedNode.size() !== 0) { // 101 for 'e' = expand
 
 			if (selectedNode.hasClass('toBeExpaned')) {
 
@@ -162,20 +163,20 @@ $(function() { // on dom ready
 
 
 		}
-		if (e.which == 99 && selectedNode.size() != 0 && !selectedNode.hasClass('superNode') && selectedNode.outgoers().length != 0) { // 99 for 'c' = collapse
+		if (e.which === 99 && selectedNode.size() !== 0 && !selectedNode.hasClass('superNode') && selectedNode.outgoers().length !== 0) { // 99 for 'c' = collapse
 
 			colNode();
 
 		}
 
-		if (e.which == 100 && selectedNode.size() != 0) { // 100 for 'd' = delete
+		if (e.which === 100 && selectedNode.size() !== 0) { // 100 for 'd' = delete
 			deleteSelectedNodes();
 		}
 
 
 	});
 
-	/////////////// tool Panel movement 
+	/////////////// tool Panel movement
 
 	$(document).on('click', '.slider-arrow.show', function() {
 		$(".slider-arrow, .panel").animate({
@@ -234,13 +235,9 @@ $(function() { // on dom ready
 		// document.getElementById('cy').style.width="100%";
 		cy.resize();
 	});
+}); // on dom ready END
 
-
-
-
-}) // on dom ready END
-
-///////// finding outgoing Nodes		
+///////// finding outgoing Nodes
 function highlightOut() {
 
 	var selectedNode = this;
@@ -259,7 +256,7 @@ function highlightOut() {
 		})
 			.update();
 	} else {
-		
+
 		cy.nodes().not(this).removeClass('connectedNodeOut');
 		cy.nodes().not(this).removeClass('selectedNodeOut');
 		cy.edges().not(this).removeClass('connectedNodeOut');
@@ -290,7 +287,7 @@ function highlightOut() {
 	}
 }
 
-/////// reset highlighting of outgoing nodes 		
+/////// reset highlighting of outgoing nodes
 function resetHighlightOut(showIn, showOut) {
 
 	cy.style()
@@ -370,7 +367,7 @@ function highlightIn() {
 }
 
 
-/////// reset highlighting of incoming nodes 		
+/////// reset highlighting of incoming nodes
 function resetHighlightIn(showIn, showOut) {
 
 	cy.style()
@@ -401,7 +398,7 @@ function resetHighlightIn(showIn, showOut) {
 }
 
 
-////// export PNG 	
+////// export PNG
 function exportFunction() {
 
 	var pngPic = cy.png();
@@ -418,7 +415,6 @@ function downloadURI(uri, fname) {
 	link.click();
 	// Cleanup the DOM
 	document.body.removeChild(link);
-	delete link;
 }
 
 ///// restore Graph structure
@@ -449,7 +445,6 @@ function showNodeInfo(node) {
 	var j = 0;
 
 	for (var key in nodeContent) {
-
 		if (key == 'group' || key == 'data') {
 			continue;
 		}
@@ -458,9 +453,7 @@ function showNodeInfo(node) {
 		i++;
 		values[j] = nodeContent[key];
 		j++;
-
 	}
-
 
 	var childNodes = node.outgoers().nodes();
 	var childNum = childNodes.length;
@@ -472,16 +465,15 @@ function showNodeInfo(node) {
 	var table = createTable(fieldName, values, degree, parentNum, childNum);
 
 	$('#nodeInfoDiv').html("<p><strong>Node Description </p>" + table);
-	for (var i = 0; i < fieldName.length; i++) {
 
-		if (isValidUrl(values[i])) {
+	for (var strIndex = 0; strIndex < fieldName.length; strIndex++) {
 
+		if (isValidUrl(values[strIndex])) {
 			var e = document.createElement("div");
 			e.id = "linkDiv";
 			$('#nodeInfoDiv').append(e);
-			
+
 			var url = values[i];
-			
 			document.getElementById("linkDiv").innerHTML += "<br>" + fieldName[i] + "<br>";
 			$('<iframe id="iframeId" width = "240"/>').appendTo(document.getElementById("linkDiv")).prop('src', url);
 
@@ -490,39 +482,26 @@ function showNodeInfo(node) {
 	}
 }
 
-function isValidUrl(str) {
-	var pattern = new RegExp(/((([A-Za-z]{3,9}:(?:\/\/)?)(?:[\-;:&=\+\$,\w]+@)?[A-Za-z0-9\.\-]+|(?:www\.|[\-;:&=\+\$,\w]+@)[A-Za-z0-9\.\-]+)((?:\/[\+~%\/\.\w\-_]*)?\??(?:[\-\+=&;%@\.\w_]*)#?(?:[\.\!\/\\\w]*))?)/); // fragment locater
-	if (!pattern.test(str)) {
-
-		return false;
-	} else {
-		return true;
-	}
-}
-
 function createTable(fieldName, values, degree, parentNum, childNum) {
-
 	var table = "<table class='CSSTableGenerator'>";
-
 	for (var i = 0; i < fieldName.length; i++) {
-
-
 		if (isValidUrl(values[i])) {
 			i++;
 		}
-
 		table += "<tr>" + "<td>" + fieldName[i] + "</td>" + "<td>" + values[i] + "</td>" + "</tr>";
-
 	}
 	table += "<tr>" + "<td>" + "degree" + "</td>" + "<td>" + degree + "</td>" + "</tr>";
 	table += "<tr>" + "<td>" + "number of child nodes" + "</td>" + "<td>" + childNum + "</td>" + "</tr>";
 	table += "<tr>" + "<td>" + "number of parent nodes" + "</td>" + "<td>" + parentNum + "</td>" + "</tr>";
-
-
 	table += "</table>";
 	return table;
-
 }
+
+function isValidUrl(str) {
+	var pattern = new RegExp(/((([A-Za-z]{3,9}:(?:\/\/)?)(?:[\-;:&=\+\$,\w]+@)?[A-Za-z0-9\.\-]+|(?:www\.|[\-;:&=\+\$,\w]+@)[A-Za-z0-9\.\-]+)((?:\/[\+~%\/\.\w\-_]*)?\??(?:[\-\+=&;%@\.\w_]*)#?(?:[\.\!\/\\\w]*))?)/); // fragment locater
+	return pattern.test(str);
+}
+
 
 
 /////// delete selected nodes
@@ -539,7 +518,7 @@ function deleteSelectedNodes() {
 	cy.remove(edgesToRemove);
 
 }
-/////// restore Deleted Nodes 
+/////// restore Deleted Nodes
 function restoreDeletedNodes() {
 	nodesToRemove.restore();
 	edgesToRemove.restore();
@@ -550,16 +529,16 @@ function expandNodes(selectedNode) {
 
 	cy.nodes().unbind("tapend");
 	var selectedNodeId = selectedNode.id();
-	selectedNodeId = selectedNodeId.replace(/[^0-9\.]+/g, ""); // removing "" 
+	selectedNodeId = selectedNodeId.replace(/[^0-9\.]+/g, ""); // removing ""
 
 	var eles = allcy.nodes();
 
-	nodesToAdd = eles[selectedNodeId].outgoers();
+	var nodesToAdd = eles[selectedNodeId].outgoers();
 
 	showNodesToExpand(nodesToAdd);
 	cy.add(eles[selectedNodeId].outgoers());
 
-	selectedNode.removeClass('toBeExpaned'); 
+	selectedNode.removeClass('toBeExpaned');
 
 	$("select option:selected").each(function() {
 		shape = $(this).val();
@@ -583,7 +562,7 @@ function showNodesToExpand(toAdd) {
 
 		if (ele.outdegree() > 0 && !ele.hasClass('roots')) {
 			ele.addClass('toBeExpaned');
-		} 
+		}
 	});
 
 }
@@ -592,7 +571,7 @@ function showNodesToExpand(toAdd) {
 // checkBox options
 
 function checkBoxes() {
-
+	var showIn;
 
 	if ($('#showInNode').is(":checked")) {
 		showIn = true;
@@ -604,7 +583,7 @@ function checkBoxes() {
 		resetHighlightIn(showIn, showOut);
 		cy.nodes().removeClass('connectedNodeIn');
 	}
-	
+
 	if ($('#showOutNode').is(":checked")) {
 		showOut = true;
 		cy.nodes().on("tapend", highlightOut);

@@ -6,6 +6,6 @@ February 2013 Galaxy Release (v 13.02)
 
 Please see the `Galaxy wiki`_ for announcement and release notes.
 
-.. _Galaxy wiki: https://wiki.galaxyproject.org/News/2013_02_08_GalaxyNewsBrief
+.. _Galaxy wiki: https://galaxyproject.org/news/2013-02-08-galaxy-news-brief/
 
 .. include:: _thanks.rst

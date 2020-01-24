@@ -9,6 +9,14 @@ galaxy.webapps.reports.controllers package
 Submodules
 ----------
 
+galaxy.webapps.reports.controllers.history module
+-------------------------------------------------
+
+.. automodule:: galaxy.webapps.reports.controllers.history
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy.webapps.reports.controllers.home module
 ----------------------------------------------
 
@@ -41,18 +49,18 @@ galaxy.webapps.reports.controllers.root module
     :undoc-members:
     :show-inheritance:
 
-galaxy.webapps.reports.controllers.sample_tracking module
----------------------------------------------------------
-
-.. automodule:: galaxy.webapps.reports.controllers.sample_tracking
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 galaxy.webapps.reports.controllers.system module
 ------------------------------------------------
 
 .. automodule:: galaxy.webapps.reports.controllers.system
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.webapps.reports.controllers.tools module
+-----------------------------------------------
+
+.. automodule:: galaxy.webapps.reports.controllers.tools
     :members:
     :undoc-members:
     :show-inheritance:

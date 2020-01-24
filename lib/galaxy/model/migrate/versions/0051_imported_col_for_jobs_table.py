@@ -1,47 +1,35 @@
 """
 Migration script to add imported column for jobs table.
 """
+from __future__ import print_function
+
 import logging
 
 from sqlalchemy import Boolean, Column, MetaData, Table
 
-log = logging.getLogger( __name__ )
+from galaxy.model.migrate.versions.util import add_column, drop_column, engine_false
+
+log = logging.getLogger(__name__)
 metadata = MetaData()
 
 
 def upgrade(migrate_engine):
+    print(__doc__)
     metadata.bind = migrate_engine
-    print __doc__
     metadata.reflect()
 
     # Create and initialize imported column in job table.
-    Jobs_table = Table( "job", metadata, autoload=True )
-    c = Column( "imported", Boolean, default=False, index=True )
+    Jobs_table = Table("job", metadata, autoload=True)
+    c = Column("imported", Boolean, default=False, index=True)
+    add_column(c, Jobs_table, metadata, index_name="ix_job_imported")
     try:
-        # Create
-        c.create( Jobs_table, index_name="ix_job_imported")
-        assert c is Jobs_table.c.imported
-
-        # Initialize.
-        if migrate_engine.name in ['mysql', 'sqlite']:
-            default_false = "0"
-        elif migrate_engine.name in ['postgres', 'postgresql']:
-            default_false = "false"
-        migrate_engine.execute( "UPDATE job SET imported=%s" % default_false )
-
-    except Exception as e:
-        print "Adding imported column to job table failed: %s" % str( e )
-        log.debug( "Adding imported column to job table failed: %s" % str( e ) )
+        migrate_engine.execute("UPDATE job SET imported=%s" % engine_false(migrate_engine))
+    except Exception:
+        log.exception("Updating column 'imported' of table 'job' failed.")
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    # Drop imported column from job table.
-    Jobs_table = Table( "job", metadata, autoload=True )
-    try:
-        Jobs_table.c.imported.drop()
-    except Exception as e:
-        print "Dropping column imported from job table failed: %s" % str( e )
-        log.debug( "Dropping column imported from job table failed: %s" % str( e ) )
+    drop_column('imported', 'job', metadata)

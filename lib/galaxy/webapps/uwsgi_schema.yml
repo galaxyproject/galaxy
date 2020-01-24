@@ -1,0 +1,1742 @@
+desc: uwsgi definition, see https://uwsgi-docs.readthedocs.io/en/latest/Options.html
+mapping:
+  socket: {desc: ' bind to the specified UNIX/TCP socket using default protocol',
+    type: any}
+  uwsgi-socket: {desc: ' bind to the specified UNIX/TCP socket using uwsgi protocol',
+    type: any}
+  suwsgi-socket: {desc: ' bind to the specified UNIX/TCP socket using uwsgi protocol
+      over SSL', type: any}
+  ssl-socket: {desc: ' bind to the specified UNIX/TCP socket using uwsgi protocol
+      over SSL', type: any}
+  http-socket: {desc: ' bind to the specified UNIX/TCP socket using HTTP protocol',
+    type: any}
+  http-socket-modifier1: {desc: ' force the specified modifier1 when using HTTP protocol',
+    type: any}
+  http-socket-modifier2: {desc: ' force the specified modifier2 when using HTTP protocol',
+    type: any}
+  http11-socket: {desc: ' bind to the specified UNIX/TCP socket using HTTP 1.1 (Keep-Alive)
+      protocol', type: any}
+  https-socket: {desc: ' bind to the specified UNIX/TCP socket using HTTPS protocol',
+    type: any}
+  https-socket-modifier1: {desc: ' force the specified modifier1 when using HTTPS
+      protocol', type: any}
+  https-socket-modifier2: {desc: ' force the specified modifier2 when using HTTPS
+      protocol', type: any}
+  fastcgi-socket: {desc: ' bind to the specified UNIX/TCP socket using FastCGI protocol',
+    type: any}
+  fastcgi-nph-socket: {desc: ' bind to the specified UNIX/TCP socket using FastCGI
+      protocol (nph mode)', type: any}
+  fastcgi-modifier1: {desc: ' force the specified modifier1 when using FastCGI protocol',
+    type: any}
+  fastcgi-modifier2: {desc: ' force the specified modifier2 when using FastCGI protocol',
+    type: any}
+  scgi-socket: {desc: ' bind to the specified UNIX/TCP socket using SCGI protocol',
+    type: any}
+  scgi-nph-socket: {desc: ' bind to the specified UNIX/TCP socket using SCGI protocol
+      (nph mode)', type: any}
+  scgi-modifier1: {desc: ' force the specified modifier1 when using SCGI protocol',
+    type: any}
+  scgi-modifier2: {desc: ' force the specified modifier2 when using SCGI protocol',
+    type: any}
+  raw-socket: {desc: ' bind to the specified UNIX/TCP socket using RAW protocol',
+    type: any}
+  raw-modifier1: {desc: ' force the specified modifier1 when using RAW protocol',
+    type: any}
+  raw-modifier2: {desc: ' force the specified modifier2 when using RAW protocol',
+    type: any}
+  puwsgi-socket: {desc: ' bind to the specified UNIX/TCP socket using persistent uwsgi
+      protocol (puwsgi)', type: any}
+  protocol: {desc: ' force the specified protocol for default sockets', type: any}
+  socket-protocol: {desc: ' force the specified protocol for default sockets', type: any}
+  shared-socket: {desc: ' create a shared socket for advanced jailing or ipc', type: any}
+  undeferred-shared-socket: {desc: ' create a shared socket for advanced jailing or
+      ipc (undeferred mode)', type: any}
+  processes: {desc: ' spawn the specified number of workers/processes', type: int}
+  workers: {desc: ' spawn the specified number of workers/processes', type: int}
+  thunder-lock: {desc: ' serialize accept() usage (if possible)', type: any}
+  harakiri: {desc: ' set harakiri timeout', type: int}
+  harakiri-verbose: {desc: ' enable verbose mode for harakiri', type: any}
+  harakiri-no-arh: {desc: ' do not enable harakiri during after-request-hook', type: any}
+  no-harakiri-arh: {desc: ' do not enable harakiri during after-request-hook', type: any}
+  no-harakiri-after-req-hook: {desc: ' do not enable harakiri during after-request-hook',
+    type: any}
+  backtrace-depth: {desc: ' set backtrace depth', type: int}
+  mule-harakiri: {desc: ' set harakiri timeout for mule tasks', type: int}
+  xmlconfig: {desc: ' load config from xml file', type: any}
+  xml: {desc: ' load config from xml file', type: any}
+  config: {desc: ' load configuration using the pluggable system', type: any}
+  fallback-config: {desc: ' re-exec uwsgi with the specified config when exit code
+      is 1', type: any}
+  strict: {desc: ' enable strict mode (placeholder cannot be used)', type: any}
+  skip-zero: {desc: ' skip check of file descriptor 0', type: any}
+  skip-atexit: {desc: ' skip atexit teardown (ignored by the master)', type: any}
+  set: {desc: ' set a placeholder or an option', type: any}
+  set-placeholder: {desc: ' set a placeholder', type: any}
+  set-ph: {desc: ' set a placeholder', type: any}
+  get: {desc: ' print the specified option value and exit', type: any}
+  declare-option: {desc: ' declare a new uWSGI custom option', type: any}
+  declare-option2: {desc: ' declare a new uWSGI custom option (non-immediate)', type: any}
+  resolve: {desc: ' place the result of a dns query in the specified placeholder,
+      sytax: placeholder=name (immediate option)', type: any}
+  for: {desc: ' (opt logic) for cycle', type: any}
+  for-glob: {desc: ' (opt logic) for cycle (expand glob)', type: any}
+  for-times: {desc: ' (opt logic) for cycle (expand the specified num to a list starting
+      from 1)', type: any}
+  for-readline: {desc: ' (opt logic) for cycle (expand the specified file to a list
+      of lines)', type: any}
+  endfor: {desc: ' (opt logic) end for cycle', type: any}
+  end-for: {desc: ' (opt logic) end for cycle', type: any}
+  if-opt: {desc: ' (opt logic) check for option', type: any}
+  if-not-opt: {desc: ' (opt logic) check for option', type: any}
+  if-env: {desc: ' (opt logic) check for environment variable', type: any}
+  if-not-env: {desc: ' (opt logic) check for environment variable', type: any}
+  ifenv: {desc: ' (opt logic) check for environment variable', type: any}
+  if-reload: {desc: ' (opt logic) check for reload', type: any}
+  if-not-reload: {desc: ' (opt logic) check for reload', type: any}
+  if-hostname: {desc: ' (opt logic) check for hostname', type: any}
+  if-not-hostname: {desc: ' (opt logic) check for hostname', type: any}
+  if-hostname-match: {desc: ' (opt logic) try to match hostname against a regular
+      expression', type: any}
+  if-not-hostname-match: {desc: ' (opt logic) try to match hostname against a regular
+      expression', type: any}
+  if-exists: {desc: ' (opt logic) check for file/directory existance', type: any}
+  if-not-exists: {desc: ' (opt logic) check for file/directory existance', type: any}
+  ifexists: {desc: ' (opt logic) check for file/directory existance', type: any}
+  if-plugin: {desc: ' (opt logic) check for plugin', type: any}
+  if-not-plugin: {desc: ' (opt logic) check for plugin', type: any}
+  ifplugin: {desc: ' (opt logic) check for plugin', type: any}
+  if-file: {desc: ' (opt logic) check for file existance', type: any}
+  if-not-file: {desc: ' (opt logic) check for file existance', type: any}
+  if-dir: {desc: ' (opt logic) check for directory existance', type: any}
+  if-not-dir: {desc: ' (opt logic) check for directory existance', type: any}
+  ifdir: {desc: ' (opt logic) check for directory existance', type: any}
+  if-directory: {desc: ' (opt logic) check for directory existance', type: any}
+  endif: {desc: ' (opt logic) end if', type: any}
+  end-if: {desc: ' (opt logic) end if', type: any}
+  blacklist: {desc: ' set options blacklist context', type: any}
+  end-blacklist: {desc: ' clear options blacklist context', type: any}
+  whitelist: {desc: ' set options whitelist context', type: any}
+  end-whitelist: {desc: ' clear options whitelist context', type: any}
+  ignore-sigpipe: {desc: ' do not report (annoying) SIGPIPE', type: any}
+  ignore-write-errors: {desc: ' do not report (annoying) write()/writev() errors',
+    type: any}
+  write-errors-tolerance: {desc: ' set the maximum number of allowed write errors
+      (default: no tolerance)', type: any}
+  write-errors-exception-only: {desc: ' only raise an exception on write errors giving
+      control to the app itself', type: any}
+  disable-write-exception: {desc: ' disable exception generation on write()/writev()',
+    type: any}
+  inherit: {desc: ' use the specified file as config template', type: any}
+  include: {desc: ' include the specified file as immediate configuration', type: any}
+  inject-before: {desc: ' inject a text file before the config file (advanced templating)',
+    type: any}
+  inject-after: {desc: ' inject a text file after the config file (advanced templating)',
+    type: any}
+  daemonize: {desc: ' daemonize uWSGI', type: any}
+  daemonize2: {desc: ' daemonize uWSGI after app loading', type: any}
+  stop: {desc: ' stop an instance', type: any}
+  reload: {desc: ' reload an instance', type: any}
+  pause: {desc: ' pause an instance', type: any}
+  suspend: {desc: ' suspend an instance', type: any}
+  resume: {desc: ' resume an instance', type: any}
+  connect-and-read: {desc: ' connect to a socket and wait for data from it', type: any}
+  extract: {desc: ' fetch/dump any supported address to stdout', type: any}
+  listen: {desc: ' set the socket listen queue size', type: int}
+  max-vars: {desc: ' set the amount of internal iovec/vars structures', type: any}
+  max-apps: {desc: ' set the maximum number of per-worker applications', type: int}
+  buffer-size: {desc: ' set internal buffer size', type: any}
+  memory-report: {desc: ' enable memory report', type: any}
+  profiler: {desc: ' enable the specified profiler', type: any}
+  cgi-mode: {desc: ' force CGI-mode for plugins supporting it', type: any}
+  abstract-socket: {desc: ' force UNIX socket in abstract mode (Linux only)', type: any}
+  chmod-socket: {desc: ' chmod-socket', type: any}
+  chmod: {desc: ' chmod-socket', type: any}
+  chown-socket: {desc: ' chown unix sockets', type: any}
+  umask: {desc: ' set umask', type: any}
+  freebind: {desc: ' put socket in freebind mode', type: any}
+  map-socket: {desc: ' map sockets to specific workers', type: any}
+  enable-threads: {desc: ' enable threads', type: any}
+  no-threads-wait: {desc: ' do not wait for threads cancellation on quit/reload',
+    type: any}
+  auto-procname: {desc: ' automatically set processes name to something meaningful',
+    type: any}
+  procname-prefix: {desc: ' add a prefix to the process names', type: any}
+  procname-prefix-spaced: {desc: ' add a spaced prefix to the process names', type: any}
+  procname-append: {desc: ' append a string to process names', type: any}
+  procname: {desc: ' set process names', type: any}
+  procname-master: {desc: ' set master process name', type: any}
+  single-interpreter: {desc: ' do not use multiple interpreters (where available)',
+    type: any}
+  need-app: {desc: ' exit if no app can be loaded', type: any}
+  master: {desc: ' enable master process', type: any}
+  honour-stdin: {desc: ' do not remap stdin to /dev/null', type: any}
+  emperor: {desc: ' run the Emperor', type: any}
+  emperor-proxy-socket: {desc: ' force the vassal to became an Emperor proxy', type: any}
+  emperor-wrapper: {desc: ' set a binary wrapper for vassals', type: any}
+  emperor-nofollow: {desc: ' do not follow symlinks when checking for mtime', type: any}
+  emperor-procname: {desc: ' set the Emperor process name', type: any}
+  emperor-freq: {desc: ' set the Emperor scan frequency (default 3 seconds)', type: int}
+  emperor-required-heartbeat: {desc: ' set the Emperor tolerance about heartbeats',
+    type: int}
+  emperor-curse-tolerance: {desc: ' set the Emperor tolerance about cursed vassals',
+    type: int}
+  emperor-pidfile: {desc: ' write the Emperor pid in the specified file', type: any}
+  emperor-tyrant: {desc: ' put the Emperor in Tyrant mode', type: any}
+  emperor-tyrant-nofollow: {desc: ' do not follow symlinks when checking for uid/gid
+      in Tyrant mode', type: any}
+  emperor-tyrant-initgroups: {desc: ' add additional groups set via initgroups() in
+      Tyrant mode', type: any}
+  emperor-stats: {desc: ' run the Emperor stats server', type: any}
+  emperor-stats-server: {desc: ' run the Emperor stats server', type: any}
+  early-emperor: {desc: ' spawn the emperor as soon as possibile', type: any}
+  emperor-broodlord: {desc: ' run the emperor in BroodLord mode', type: int}
+  emperor-throttle: {desc: ' set throttling level (in milliseconds) for bad behaving
+      vassals (default 1000)', type: int}
+  emperor-max-throttle: {desc: ' set max throttling level (in milliseconds) for bad
+      behaving vassals (default 3 minutes)', type: int}
+  emperor-magic-exec: {desc: ' prefix vassals config files with exec:// if they have
+      the executable bit', type: any}
+  emperor-on-demand-extension: {desc: ' search for text file (vassal name + extension)
+      containing the on demand socket name', type: any}
+  emperor-on-demand-ext: {desc: ' search for text file (vassal name + extension) containing
+      the on demand socket name', type: any}
+  emperor-on-demand-directory: {desc: ' enable on demand mode binding to the unix
+      socket in the specified directory named like the vassal + .socket', type: any}
+  emperor-on-demand-dir: {desc: ' enable on demand mode binding to the unix socket
+      in the specified directory named like the vassal + .socket', type: any}
+  emperor-on-demand-exec: {desc: ' use the output of the specified command as on demand
+      socket name (the vassal name is passed as the only argument)', type: any}
+  emperor-extra-extension: {desc: ' allows the specified extension in the Emperor
+      (vassal will be called with --config)', type: any}
+  emperor-extra-ext: {desc: ' allows the specified extension in the Emperor (vassal
+      will be called with --config)', type: any}
+  emperor-no-blacklist: {desc: ' disable Emperor blacklisting subsystem', type: any}
+  emperor-use-clone: {desc: ' use clone() instead of fork() passing the specified
+      unshare() flags', type: any}
+  emperor-use-fork-server: {desc: ' connect to the specified fork server instead of
+      using plain fork() for new vassals', type: any}
+  vassal-fork-base: {desc: ' use plain fork() for the specified vassal (instead of
+      a fork-server)', type: any}
+  emperor-subreaper: {desc: ' force the Emperor to be a sub-reaper (if supported)',
+    type: any}
+  emperor-cap: {desc: ' set vassals capability', type: any}
+  vassals-cap: {desc: ' set vassals capability', type: any}
+  vassal-cap: {desc: ' set vassals capability', type: any}
+  emperor-collect-attribute: {desc: ' collect the specified vassal attribute from
+      imperial monitors', type: any}
+  emperor-collect-attr: {desc: ' collect the specified vassal attribute from imperial
+      monitors', type: any}
+  emperor-fork-server-attr: {desc: ' set the vassal''s attribute to get when checking
+      for fork-server', type: any}
+  emperor-wrapper-attr: {desc: ' set the vassal''s attribute to get when checking
+      for fork-wrapper', type: any}
+  emperor-chdir-attr: {desc: ' set the vassal''s attribute to get when checking for
+      chdir', type: any}
+  imperial-monitor-list: {desc: ' list enabled imperial monitors', type: any}
+  imperial-monitors-list: {desc: ' list enabled imperial monitors', type: any}
+  vassals-inherit: {desc: ' add config templates to vassals config (uses --inherit)',
+    type: any}
+  vassals-include: {desc: ' include config templates to vassals config (uses --include
+      instead of --inherit)', type: any}
+  vassals-inherit-before: {desc: ' add config templates to vassals config (uses --inherit,
+      parses before the vassal file)', type: any}
+  vassals-include-before: {desc: ' include config templates to vassals config (uses
+      --include instead of --inherit, parses before the vassal file)', type: any}
+  vassals-start-hook: {desc: ' run the specified command before each vassal starts',
+    type: any}
+  vassals-stop-hook: {desc: ' run the specified command after vassal''s death', type: any}
+  vassal-sos: {desc: ' ask emperor for reinforcement when overloaded', type: int}
+  vassal-sos-backlog: {desc: ' ask emperor for sos if backlog queue has more items
+      than the value specified', type: int}
+  vassals-set: {desc: ' automatically set the specified option (via --set) for every
+      vassal', type: any}
+  vassal-set: {desc: ' automatically set the specified option (via --set) for every
+      vassal', type: any}
+  heartbeat: {desc: ' announce healthiness to the emperor', type: int}
+  zeus: {desc: ' enable Zeus mode', type: any}
+  reload-mercy: {desc: ' set the maximum time (in seconds) we wait for workers and
+      other processes to die during reload/shutdown', type: int}
+  worker-reload-mercy: {desc: ' set the maximum time (in seconds) a worker can take
+      to reload/shutdown (default is 60)', type: int}
+  mule-reload-mercy: {desc: ' set the maximum time (in seconds) a mule can take to
+      reload/shutdown (default is 60)', type: int}
+  exit-on-reload: {desc: ' force exit even if a reload is requested', type: any}
+  die-on-term: {desc: ' exit instead of brutal reload on SIGTERM (no more needed)',
+    type: any}
+  force-gateway: {desc: ' force the spawn of the first registered gateway without
+      a master', type: any}
+  help: {desc: ' show this help', type: any}
+  usage: {desc: ' show this help', type: any}
+  print-sym: {desc: ' print content of the specified binary symbol', type: any}
+  print-symbol: {desc: ' print content of the specified binary symbol', type: any}
+  reaper: {desc: ' call waitpid(-1,...) after each request to get rid of zombies',
+    type: any}
+  max-requests: {desc: ' reload workers after the specified amount of managed requests',
+    type: any}
+  max-requests-delta: {desc: ' add (worker_id * delta) to the max_requests value of
+      each worker', type: any}
+  min-worker-lifetime: {desc: ' number of seconds worker must run before being reloaded
+      (default is 60)', type: any}
+  max-worker-lifetime: {desc: ' reload workers after the specified amount of seconds
+      (default is disabled)', type: any}
+  socket-timeout: {desc: ' set internal sockets timeout', type: int}
+  no-fd-passing: {desc: ' disable file descriptor passing', type: any}
+  locks: {desc: ' create the specified number of shared locks', type: int}
+  lock-engine: {desc: ' set the lock engine', type: any}
+  ftok: {desc: ' set the ipcsem key via ftok() for avoiding duplicates', type: any}
+  persistent-ipcsem: {desc: ' do not remove ipcsem''s on shutdown', type: any}
+  sharedarea: {desc: ' create a raw shared memory area of specified pages (note: it
+      supports keyval too)', type: any}
+  safe-fd: {desc: ' do not close the specified file descriptor', type: any}
+  fd-safe: {desc: ' do not close the specified file descriptor', type: any}
+  cache: {desc: ' create a shared cache containing given elements', type: any}
+  cache-blocksize: {desc: ' set cache blocksize', type: any}
+  cache-store: {desc: ' enable persistent cache to disk', type: any}
+  cache-store-sync: {desc: ' set frequency of sync for persistent cache', type: int}
+  cache-no-expire: {desc: ' disable auto sweep of expired items', type: any}
+  cache-expire-freq: {desc: ' set the frequency of cache sweeper scans (default 3
+      seconds)', type: int}
+  cache-report-freed-items: {desc: ' constantly report the cache item freed by the
+      sweeper (use only for debug)', type: any}
+  cache-udp-server: {desc: ' bind the cache udp server (used only for set/update/delete)
+      to the specified socket', type: any}
+  cache-udp-node: {desc: ' send cache update/deletion to the specified cache udp server',
+    type: any}
+  cache-sync: {desc: ' copy the whole content of another uWSGI cache server on server
+      startup', type: any}
+  cache-use-last-modified: {desc: ' update last_modified_at timestamp on every cache
+      item modification (default is disabled)', type: any}
+  add-cache-item: {desc: ' add an item in the cache', type: any}
+  load-file-in-cache: {desc: ' load a static file in the cache', type: any}
+  load-file-in-cache-gzip: {desc: ' load a static file in the cache with gzip compression',
+    type: any}
+  cache2: {desc: ' create a new generation shared cache (keyval syntax)', type: any}
+  queue: {desc: ' enable shared queue', type: int}
+  queue-blocksize: {desc: ' set queue blocksize', type: int}
+  queue-store: {desc: ' enable persistent queue to disk', type: any}
+  queue-store-sync: {desc: ' set frequency of sync for persistent queue', type: int}
+  spooler: {desc: ' run a spooler on the specified directory', type: any}
+  spooler-external: {desc: ' map spoolers requests to a spooler directory managed
+      by an external instance', type: any}
+  spooler-ordered: {desc: ' try to order the execution of spooler tasks', type: any}
+  spooler-chdir: {desc: ' chdir() to specified directory before each spooler task',
+    type: any}
+  spooler-processes: {desc: ' set the number of processes for spoolers', type: int}
+  spooler-quiet: {desc: ' do not be verbose with spooler tasks', type: any}
+  spooler-max-tasks: {desc: ' set the maximum number of tasks to run before recycling
+      a spooler', type: int}
+  spooler-harakiri: {desc: ' set harakiri timeout for spooler tasks', type: int}
+  spooler-frequency: {desc: ' set spooler frequency, default 30 seconds', type: int}
+  spooler-freq: {desc: ' set spooler frequency, default 30 seconds', type: int}
+  mule: {desc: ' add a mule', type: any}
+  mules: {desc: ' add the specified number of mules', type: any}
+  farm: {desc: ' add a mule farm', type: any}
+  mule-msg-size: {desc: ' set mule message buffer size', type: int}
+  signal: {desc: ' send a uwsgi signal to a server', type: any}
+  signal-bufsize: {desc: ' set buffer size for signal queue', type: int}
+  signals-bufsize: {desc: ' set buffer size for signal queue', type: int}
+  signal-timer: {desc: ' add a timer (syntax: <signal> <seconds>)', type: any}
+  timer: {desc: ' add a timer (syntax: <signal> <seconds>)', type: any}
+  signal-rbtimer: {desc: ' add a redblack timer (syntax: <signal> <seconds>)', type: any}
+  rbtimer: {desc: ' add a redblack timer (syntax: <signal> <seconds>)', type: any}
+  rpc-max: {desc: ' maximum number of rpc slots (default: 64)', type: any}
+  disable-logging: {desc: ' disable request logging', type: any}
+  flock: {desc: ' lock the specified file before starting, exit if locked', type: any}
+  flock-wait: {desc: ' lock the specified file before starting, wait if locked', type: any}
+  flock2: {desc: ' lock the specified file after logging/daemon setup, exit if locked',
+    type: any}
+  flock-wait2: {desc: ' lock the specified file after logging/daemon setup, wait if
+      locked', type: any}
+  pidfile: {desc: ' create pidfile (before privileges drop)', type: any}
+  pidfile2: {desc: ' create pidfile (after privileges drop)', type: any}
+  safe-pidfile: {desc: ' create safe pidfile (before privileges drop)', type: any}
+  safe-pidfile2: {desc: ' create safe pidfile (after privileges drop)', type: any}
+  chroot: {desc: ' chroot() to the specified directory', type: any}
+  pivot-root: {desc: ' pivot_root() to the specified directories (new_root and put_old
+      must be separated with a space)', type: any}
+  pivot_root: {desc: ' pivot_root() to the specified directories (new_root and put_old
+      must be separated with a space)', type: any}
+  uid: {desc: ' setuid to the specified user/uid', type: any}
+  gid: {desc: ' setgid to the specified group/gid', type: any}
+  add-gid: {desc: ' add the specified group id to the process credentials', type: any}
+  immediate-uid: {desc: ' setuid to the specified user/uid IMMEDIATELY', type: any}
+  immediate-gid: {desc: ' setgid to the specified group/gid IMMEDIATELY', type: any}
+  no-initgroups: {desc: ' disable additional groups set via initgroups()', type: any}
+  cap: {desc: ' set process capability', type: any}
+  unshare: {desc: ' unshare() part of the processes and put it in a new namespace',
+    type: any}
+  unshare2: {desc: ' unshare() part of the processes and put it in a new namespace
+      after rootfs change', type: any}
+  setns-socket: {desc: ' expose a unix socket returning namespace fds from /proc/self/ns',
+    type: any}
+  setns-socket-skip: {desc: ' skip the specified entry when sending setns file descriptors',
+    type: any}
+  setns-skip: {desc: ' skip the specified entry when sending setns file descriptors',
+    type: any}
+  setns: {desc: ' join a namespace created by an external uWSGI instance', type: any}
+  setns-preopen: {desc: ' open /proc/self/ns as soon as possible and cache fds', type: any}
+  fork-socket: {desc: ' suspend the execution after early initialization and fork()
+      at every unix socket connection', type: any}
+  fork-server: {desc: ' suspend the execution after early initialization and fork()
+      at every unix socket connection', type: any}
+  jailed: {desc: ' mark the instance as jailed (force the execution of post_jail hooks)',
+    type: any}
+  jail: {desc: ' put the instance in a FreeBSD jail', type: any}
+  jail-ip4: {desc: ' add an ipv4 address to the FreeBSD jail', type: any}
+  jail-ip6: {desc: ' add an ipv6 address to the FreeBSD jail', type: any}
+  jidfile: {desc: ' save the jid of a FreeBSD jail in the specified file', type: any}
+  jid-file: {desc: ' save the jid of a FreeBSD jail in the specified file', type: any}
+  jail2: {desc: ' add an option to the FreeBSD jail', type: any}
+  libjail: {desc: ' add an option to the FreeBSD jail', type: any}
+  jail-attach: {desc: ' attach to the FreeBSD jail', type: any}
+  refork: {desc: ' fork() again after privileges drop. Useful for jailing systems',
+    type: any}
+  re-fork: {desc: ' fork() again after privileges drop. Useful for jailing systems',
+    type: any}
+  refork-as-root: {desc: ' fork() again before privileges drop. Useful for jailing
+      systems', type: any}
+  re-fork-as-root: {desc: ' fork() again before privileges drop. Useful for jailing
+      systems', type: any}
+  refork-post-jail: {desc: ' fork() again after jailing. Useful for jailing systems',
+    type: any}
+  re-fork-post-jail: {desc: ' fork() again after jailing. Useful for jailing systems',
+    type: any}
+  hook-asap: {desc: ' run the specified hook as soon as possible', type: any}
+  hook-pre-jail: {desc: ' run the specified hook before jailing', type: any}
+  hook-post-jail: {desc: ' run the specified hook after jailing', type: any}
+  hook-in-jail: {desc: ' run the specified hook in jail after initialization', type: any}
+  hook-as-root: {desc: ' run the specified hook before privileges drop', type: any}
+  hook-as-user: {desc: ' run the specified hook after privileges drop', type: any}
+  hook-as-user-atexit: {desc: ' run the specified hook before app exit and reload',
+    type: any}
+  hook-pre-app: {desc: ' run the specified hook before app loading', type: any}
+  hook-post-app: {desc: ' run the specified hook after app loading', type: any}
+  hook-post-fork: {desc: ' run the specified hook after each fork', type: any}
+  hook-accepting: {desc: ' run the specified hook after each worker enter the accepting
+      phase', type: any}
+  hook-accepting1: {desc: ' run the specified hook after the first worker enters the
+      accepting phase', type: any}
+  hook-accepting-once: {desc: ' run the specified hook after each worker enter the
+      accepting phase (once per-instance)', type: any}
+  hook-accepting1-once: {desc: ' run the specified hook after the first worker enters
+      the accepting phase (once per instance)', type: any}
+  hook-master-start: {desc: ' run the specified hook when the Master starts', type: any}
+  hook-touch: {desc: ' run the specified hook when the specified file is touched (syntax:
+      <file> <action>)', type: any}
+  hook-emperor-start: {desc: ' run the specified hook when the Emperor starts', type: any}
+  hook-emperor-stop: {desc: ' run the specified hook when the Emperor send a stop
+      message', type: any}
+  hook-emperor-reload: {desc: ' run the specified hook when the Emperor send a reload
+      message', type: any}
+  hook-emperor-lost: {desc: ' run the specified hook when the Emperor connection is
+      lost', type: any}
+  hook-as-vassal: {desc: ' run the specified hook before exec()ing the vassal', type: any}
+  hook-as-emperor: {desc: ' run the specified hook in the emperor after the vassal
+      has been started', type: any}
+  hook-as-on-demand-vassal: {desc: ' run the specified hook whenever a vassal enters
+      on-demand mode', type: any}
+  hook-as-on-config-vassal: {desc: ' run the specified hook whenever the emperor detects
+      a config change for an on-demand vassal', type: any}
+  hook-as-emperor-before-vassal: {desc: ' run the specified hook before the new vassal
+      is spawned', type: any}
+  hook-as-vassal-before-drop: {desc: ' run the specified hook into vassal, before
+      dropping its privileges', type: any}
+  hook-as-emperor-setns: {desc: ' run the specified hook in the emperor entering vassal
+      namespace', type: any}
+  hook-as-mule: {desc: ' run the specified hook in each mule', type: any}
+  hook-as-gateway: {desc: ' run the specified hook in each gateway', type: any}
+  after-request-hook: {desc: ' run the specified function/symbol after each request',
+    type: any}
+  after-request-call: {desc: ' run the specified function/symbol after each request',
+    type: any}
+  exec-asap: {desc: ' run the specified command as soon as possible', type: any}
+  exec-pre-jail: {desc: ' run the specified command before jailing', type: any}
+  exec-post-jail: {desc: ' run the specified command after jailing', type: any}
+  exec-in-jail: {desc: ' run the specified command in jail after initialization',
+    type: any}
+  exec-as-root: {desc: ' run the specified command before privileges drop', type: any}
+  exec-as-user: {desc: ' run the specified command after privileges drop', type: any}
+  exec-as-user-atexit: {desc: ' run the specified command before app exit and reload',
+    type: any}
+  exec-pre-app: {desc: ' run the specified command before app loading', type: any}
+  exec-post-app: {desc: ' run the specified command after app loading', type: any}
+  exec-as-vassal: {desc: ' run the specified command before exec()ing the vassal',
+    type: any}
+  exec-as-emperor: {desc: ' run the specified command in the emperor after the vassal
+      has been started', type: any}
+  mount-asap: {desc: ' mount filesystem as soon as possible', type: any}
+  mount-pre-jail: {desc: ' mount filesystem before jailing', type: any}
+  mount-post-jail: {desc: ' mount filesystem after jailing', type: any}
+  mount-in-jail: {desc: ' mount filesystem in jail after initialization', type: any}
+  mount-as-root: {desc: ' mount filesystem before privileges drop', type: any}
+  mount-as-vassal: {desc: ' mount filesystem before exec()ing the vassal', type: any}
+  mount-as-emperor: {desc: ' mount filesystem in the emperor after the vassal has
+      been started', type: any}
+  umount-asap: {desc: ' unmount filesystem as soon as possible', type: any}
+  umount-pre-jail: {desc: ' unmount filesystem before jailing', type: any}
+  umount-post-jail: {desc: ' unmount filesystem after jailing', type: any}
+  umount-in-jail: {desc: ' unmount filesystem in jail after initialization', type: any}
+  umount-as-root: {desc: ' unmount filesystem before privileges drop', type: any}
+  umount-as-vassal: {desc: ' unmount filesystem before exec()ing the vassal', type: any}
+  umount-as-emperor: {desc: ' unmount filesystem in the emperor after the vassal has
+      been started', type: any}
+  wait-for-interface: {desc: ' wait for the specified network interface to come up
+      before running root hooks', type: any}
+  wait-for-interface-timeout: {desc: ' set the timeout for wait-for-interface', type: int}
+  wait-interface: {desc: ' wait for the specified network interface to come up before
+      running root hooks', type: any}
+  wait-interface-timeout: {desc: ' set the timeout for wait-for-interface', type: int}
+  wait-for-iface: {desc: ' wait for the specified network interface to come up before
+      running root hooks', type: any}
+  wait-for-iface-timeout: {desc: ' set the timeout for wait-for-interface', type: int}
+  wait-iface: {desc: ' wait for the specified network interface to come up before
+      running root hooks', type: any}
+  wait-iface-timeout: {desc: ' set the timeout for wait-for-interface', type: int}
+  wait-for-fs: {desc: ' wait for the specified filesystem item to appear before running
+      root hooks', type: any}
+  wait-for-file: {desc: ' wait for the specified file to appear before running root
+      hooks', type: any}
+  wait-for-dir: {desc: ' wait for the specified directory to appear before running
+      root hooks', type: any}
+  wait-for-mountpoint: {desc: ' wait for the specified mountpoint to appear before
+      running root hooks', type: any}
+  wait-for-fs-timeout: {desc: ' set the timeout for wait-for-fs/file/dir', type: int}
+  call-asap: {desc: ' call the specified function as soon as possible', type: any}
+  call-pre-jail: {desc: ' call the specified function before jailing', type: any}
+  call-post-jail: {desc: ' call the specified function after jailing', type: any}
+  call-in-jail: {desc: ' call the specified function in jail after initialization',
+    type: any}
+  call-as-root: {desc: ' call the specified function before privileges drop', type: any}
+  call-as-user: {desc: ' call the specified function after privileges drop', type: any}
+  call-as-user-atexit: {desc: ' call the specified function before app exit and reload',
+    type: any}
+  call-pre-app: {desc: ' call the specified function before app loading', type: any}
+  call-post-app: {desc: ' call the specified function after app loading', type: any}
+  call-as-vassal: {desc: ' call the specified function() before exec()ing the vassal',
+    type: any}
+  call-as-vassal1: {desc: ' call the specified function before exec()ing the vassal',
+    type: any}
+  call-as-vassal3: {desc: ' call the specified function(char *, uid_t, gid_t) before
+      exec()ing the vassal', type: any}
+  call-as-emperor: {desc: ' call the specified function() in the emperor after the
+      vassal has been started', type: any}
+  call-as-emperor1: {desc: ' call the specified function in the emperor after the
+      vassal has been started', type: any}
+  call-as-emperor2: {desc: ' call the specified function(char *, pid_t) in the emperor
+      after the vassal has been started', type: any}
+  call-as-emperor4: {desc: ' call the specified function(char *, pid_t, uid_t, gid_t)
+      in the emperor after the vassal has been started', type: any}
+  ini: {desc: ' load config from ini file', type: any}
+  yaml: {desc: ' load config from yaml file', type: any}
+  yml: {desc: ' load config from yaml file', type: any}
+  json: {desc: ' load config from json file', type: any}
+  js: {desc: ' load config from json file', type: any}
+  weight: {desc: ' weight of the instance (used by clustering/lb/subscriptions)',
+    type: any}
+  auto-weight: {desc: ' set weight of the instance (used by clustering/lb/subscriptions)
+      automatically', type: any}
+  no-server: {desc: ' force no-server mode', type: any}
+  command-mode: {desc: ' force command mode', type: any}
+  no-defer-accept: {desc: ' disable deferred-accept on sockets', type: any}
+  tcp-nodelay: {desc: ' enable TCP NODELAY on each request', type: any}
+  so-keepalive: {desc: ' enable TCP KEEPALIVEs', type: any}
+  so-send-timeout: {desc: ' set SO_SNDTIMEO', type: int}
+  socket-send-timeout: {desc: ' set SO_SNDTIMEO', type: int}
+  so-write-timeout: {desc: ' set SO_SNDTIMEO', type: int}
+  socket-write-timeout: {desc: ' set SO_SNDTIMEO', type: int}
+  socket-sndbuf: {desc: ' set SO_SNDBUF', type: any}
+  socket-rcvbuf: {desc: ' set SO_RCVBUF', type: any}
+  limit-as: {desc: ' limit processes address space/vsz', type: any}
+  limit-nproc: {desc: ' limit the number of spawnable processes', type: int}
+  reload-on-as: {desc: ' reload if address space is higher than specified megabytes',
+    type: any}
+  reload-on-rss: {desc: ' reload if rss memory is higher than specified megabytes',
+    type: any}
+  evil-reload-on-as: {desc: ' force the master to reload a worker if its address space
+      is higher than specified megabytes', type: any}
+  evil-reload-on-rss: {desc: ' force the master to reload a worker if its rss memory
+      is higher than specified megabytes', type: any}
+  reload-on-fd: {desc: ' reload if the specified file descriptor is ready', type: any}
+  brutal-reload-on-fd: {desc: ' brutal reload if the specified file descriptor is
+      ready', type: any}
+  ksm: {desc: ' enable Linux KSM', type: int}
+  pcre-jit: {desc: ' enable pcre jit (if available)', type: any}
+  never-swap: {desc: ' lock all memory pages avoiding swapping', type: any}
+  touch-reload: {desc: ' reload uWSGI if the specified file is modified/touched',
+    type: any}
+  touch-workers-reload: {desc: ' trigger reload of (only) workers if the specified
+      file is modified/touched', type: any}
+  touch-chain-reload: {desc: ' trigger chain reload if the specified file is modified/touched',
+    type: any}
+  touch-logrotate: {desc: ' trigger logrotation if the specified file is modified/touched',
+    type: any}
+  touch-logreopen: {desc: ' trigger log reopen if the specified file is modified/touched',
+    type: any}
+  touch-exec: {desc: ' run command when the specified file is modified/touched (syntax:
+      file command)', type: any}
+  touch-signal: {desc: ' signal when the specified file is modified/touched (syntax:
+      file signal)', type: any}
+  fs-reload: {desc: ' graceful reload when the specified filesystem object is modified',
+    type: any}
+  fs-brutal-reload: {desc: ' brutal reload when the specified filesystem object is
+      modified', type: any}
+  fs-signal: {desc: ' raise a uwsgi signal when the specified filesystem object is
+      modified (syntax: file signal)', type: any}
+  check-mountpoint: {desc: ' destroy the instance if a filesystem is no more reachable
+      (useful for reliable Fuse management)', type: any}
+  mountpoint-check: {desc: ' destroy the instance if a filesystem is no more reachable
+      (useful for reliable Fuse management)', type: any}
+  check-mount: {desc: ' destroy the instance if a filesystem is no more reachable
+      (useful for reliable Fuse management)', type: any}
+  mount-check: {desc: ' destroy the instance if a filesystem is no more reachable
+      (useful for reliable Fuse management)', type: any}
+  propagate-touch: {desc: ' over-engineering option for system with flaky signal management',
+    type: any}
+  limit-post: {desc: ' limit request body', type: any}
+  no-orphans: {desc: ' automatically kill workers if master dies (can be dangerous
+      for availability)', type: any}
+  prio: {desc: ' set processes/threads priority', type: any}
+  cpu-affinity: {desc: ' set cpu affinity', type: int}
+  post-buffering: {desc: ' enable post buffering', type: any}
+  post-buffering-bufsize: {desc: ' set buffer size for read() in post buffering mode',
+    type: any}
+  body-read-warning: {desc: ' set the amount of allowed memory allocation (in megabytes)
+      for request body before starting printing a warning', type: any}
+  upload-progress: {desc: ' enable creation of .json files in the specified directory
+      during a file upload', type: any}
+  no-default-app: {desc: ' do not fallback to default app', type: any}
+  manage-script-name: {desc: ' automatically rewrite SCRIPT_NAME and PATH_INFO', type: any}
+  ignore-script-name: {desc: ' ignore SCRIPT_NAME', type: any}
+  catch-exceptions: {desc: ' report exception as http output (discouraged, use only
+      for testing)', type: any}
+  reload-on-exception: {desc: ' reload a worker when an exception is raised', type: any}
+  reload-on-exception-type: {desc: ' reload a worker when a specific exception type
+      is raised', type: any}
+  reload-on-exception-value: {desc: ' reload a worker when a specific exception value
+      is raised', type: any}
+  reload-on-exception-repr: {desc: ' reload a worker when a specific exception type+value
+      (language-specific) is raised', type: any}
+  exception-handler: {desc: ' add an exception handler', type: any}
+  enable-metrics: {desc: ' enable metrics subsystem', type: any}
+  metric: {desc: ' add a custom metric', type: any}
+  metric-threshold: {desc: ' add a metric threshold/alarm', type: any}
+  metric-alarm: {desc: ' add a metric threshold/alarm', type: any}
+  alarm-metric: {desc: ' add a metric threshold/alarm', type: any}
+  metrics-dir: {desc: ' export metrics as text files to the specified directory',
+    type: any}
+  metrics-dir-restore: {desc: ' restore last value taken from the metrics dir', type: any}
+  metric-dir: {desc: ' export metrics as text files to the specified directory', type: any}
+  metric-dir-restore: {desc: ' restore last value taken from the metrics dir', type: any}
+  metrics-no-cores: {desc: ' disable generation of cores-related metrics', type: any}
+  udp: {desc: ' run the udp server on the specified address', type: any}
+  stats: {desc: ' enable the stats server on the specified address', type: any}
+  stats-server: {desc: ' enable the stats server on the specified address', type: any}
+  stats-http: {desc: ' prefix stats server json output with http headers', type: any}
+  stats-minified: {desc: ' minify statistics json output', type: any}
+  stats-min: {desc: ' minify statistics json output', type: any}
+  stats-push: {desc: ' push the stats json to the specified destination', type: any}
+  stats-pusher-default-freq: {desc: ' set the default frequency of stats pushers',
+    type: int}
+  stats-pushers-default-freq: {desc: ' set the default frequency of stats pushers',
+    type: int}
+  stats-no-cores: {desc: ' disable generation of cores-related stats', type: any}
+  stats-no-metrics: {desc: ' do not include metrics in stats output', type: any}
+  multicast: {desc: ' subscribe to specified multicast group', type: any}
+  multicast-ttl: {desc: ' set multicast ttl', type: int}
+  multicast-loop: {desc: ' set multicast loop (default 1)', type: int}
+  master-fifo: {desc: ' enable the master fifo', type: any}
+  notify-socket: {desc: ' enable the notification socket', type: any}
+  subscription-notify-socket: {desc: ' set the notification socket for subscriptions',
+    type: any}
+  subscription-mountpoints: {desc: ' enable mountpoints support for subscription system',
+    type: any}
+  subscription-mountpoint: {desc: ' enable mountpoints support for subscription system',
+    type: any}
+  legion: {desc: ' became a member of a legion', type: any}
+  legion-mcast: {desc: ' became a member of a legion (shortcut for multicast)', type: any}
+  legion-node: {desc: ' add a node to a legion', type: any}
+  legion-freq: {desc: ' set the frequency of legion packets', type: int}
+  legion-tolerance: {desc: ' set the tolerance of legion subsystem', type: int}
+  legion-death-on-lord-error: {desc: ' declare itself as a dead node for the specified
+      amount of seconds if one of the lord hooks fails', type: int}
+  legion-skew-tolerance: {desc: ' set the clock skew tolerance of legion subsystem
+      (default 30 seconds)', type: int}
+  legion-lord: {desc: ' action to call on Lord election', type: any}
+  legion-unlord: {desc: ' action to call on Lord dismiss', type: any}
+  legion-setup: {desc: ' action to call on legion setup', type: any}
+  legion-death: {desc: ' action to call on legion death (shutdown of the instance)',
+    type: any}
+  legion-join: {desc: ' action to call on legion join (first time quorum is reached)',
+    type: any}
+  legion-node-joined: {desc: ' action to call on new node joining legion', type: any}
+  legion-node-left: {desc: ' action to call node leaving legion', type: any}
+  legion-quorum: {desc: ' set the quorum of a legion', type: any}
+  legion-scroll: {desc: ' set the scroll of a legion', type: any}
+  legion-scroll-max-size: {desc: ' set max size of legion scroll buffer', type: any}
+  legion-scroll-list-max-size: {desc: ' set max size of legion scroll list buffer',
+    type: any}
+  subscriptions-sign-check: {desc: ' set digest algorithm and certificate directory
+      for secured subscription system', type: any}
+  subscriptions-sign-check-tolerance: {desc: ' set the maximum tolerance (in seconds)
+      of clock skew for secured subscription system', type: int}
+  subscriptions-sign-skip-uid: {desc: ' skip signature check for the specified uid
+      when using unix sockets credentials', type: any}
+  subscriptions-credentials-check: {desc: ' add a directory to search for subscriptions
+      key credentials', type: any}
+  subscriptions-use-credentials: {desc: ' enable management of SCM_CREDENTIALS in
+      subscriptions UNIX sockets', type: any}
+  subscription-algo: {desc: ' set load balancing algorithm for the subscription system',
+    type: any}
+  subscription-dotsplit: {desc: ' try to fallback to the next part (dot based) in
+      subscription key', type: any}
+  subscribe-to: {desc: ' subscribe to the specified subscription server', type: any}
+  st: {desc: ' subscribe to the specified subscription server', type: any}
+  subscribe: {desc: ' subscribe to the specified subscription server', type: any}
+  subscribe2: {desc: ' subscribe to the specified subscription server using advanced
+      keyval syntax', type: any}
+  subscribe-freq: {desc: ' send subscription announce at the specified interval',
+    type: int}
+  subscription-tolerance: {desc: ' set tolerance for subscription servers', type: int}
+  unsubscribe-on-graceful-reload: {desc: ' force unsubscribe request even during graceful
+      reload', type: any}
+  start-unsubscribed: {desc: ' configure subscriptions but do not send them (useful
+      with master fifo)', type: any}
+  subscribe-with-modifier1: {desc: ' force the specififed modifier1 when subscribing',
+    type: any}
+  snmp: {desc: ' enable the embedded snmp server', type: any}
+  snmp-community: {desc: ' set the snmp community string', type: any}
+  ssl-verbose: {desc: ' be verbose about SSL errors', type: any}
+  ssl-sessions-use-cache: {desc: ' use uWSGI cache for ssl sessions storage', type: any}
+  ssl-session-use-cache: {desc: ' use uWSGI cache for ssl sessions storage', type: any}
+  ssl-sessions-timeout: {desc: ' set SSL sessions timeout (default: 300 seconds)',
+    type: int}
+  ssl-session-timeout: {desc: ' set SSL sessions timeout (default: 300 seconds)',
+    type: int}
+  sni: {desc: ' add an SNI-governed SSL context', type: any}
+  sni-dir: {desc: ' check for cert/key/client_ca file in the specified directory and
+      create a sni/ssl context on demand', type: any}
+  sni-dir-ciphers: {desc: ' set ssl ciphers for sni-dir option', type: any}
+  ssl-enable3: {desc: ' enable SSLv3 (insecure)', type: any}
+  ssl-option: {desc: ' set a raw ssl option (numeric value)', type: any}
+  sni-regexp: {desc: ' add an SNI-governed SSL context (the key is a regexp)', type: any}
+  ssl-tmp-dir: {desc: ' store ssl-related temp files in the specified directory',
+    type: any}
+  check-interval: {desc: ' set the interval (in seconds) of master checks', type: int}
+  forkbomb-delay: {desc: ' sleep for the specified number of seconds when a forkbomb
+      is detected', type: int}
+  binary-path: {desc: ' force binary path', type: any}
+  privileged-binary-patch: {desc: ' patch the uwsgi binary with a new command (before
+      privileges drop)', type: any}
+  unprivileged-binary-patch: {desc: ' patch the uwsgi binary with a new command (after
+      privileges drop)', type: any}
+  privileged-binary-patch-arg: {desc: ' patch the uwsgi binary with a new command
+      and arguments (before privileges drop)', type: any}
+  unprivileged-binary-patch-arg: {desc: ' patch the uwsgi binary with a new command
+      and arguments (after privileges drop)', type: any}
+  async: {desc: ' enable async mode with specified cores', type: int}
+  disable-async-warn-on-queue-full: {desc: ' Disable printing ''async queue is full''
+      warning messages.', type: any}
+  max-fd: {desc: ' set maximum number of file descriptors (requires root privileges)',
+    type: int}
+  logto: {desc: ' set logfile/udp address', type: any}
+  logto2: {desc: ' log to specified file or udp address after privileges drop', type: any}
+  log-format: {desc: ' set advanced format for request logging', type: any}
+  logformat: {desc: ' set advanced format for request logging', type: any}
+  logformat-strftime: {desc: ' apply strftime to logformat output', type: any}
+  log-format-strftime: {desc: ' apply strftime to logformat output', type: any}
+  logfile-chown: {desc: ' chown logfiles', type: any}
+  logfile-chmod: {desc: ' chmod logfiles', type: any}
+  log-syslog: {desc: ' log to syslog', type: any}
+  log-socket: {desc: ' send logs to the specified socket', type: any}
+  req-logger: {desc: ' set/append a request logger', type: any}
+  logger-req: {desc: ' set/append a request logger', type: any}
+  logger: {desc: ' set/append a logger', type: any}
+  logger-list: {desc: ' list enabled loggers', type: any}
+  loggers-list: {desc: ' list enabled loggers', type: any}
+  threaded-logger: {desc: ' offload log writing to a thread', type: any}
+  log-encoder: {desc: ' add an item in the log encoder chain', type: any}
+  log-req-encoder: {desc: ' add an item in the log req encoder chain', type: any}
+  log-drain: {desc: ' drain (do not show) log lines matching the specified regexp',
+    type: any}
+  log-filter: {desc: ' show only log lines matching the specified regexp', type: any}
+  log-route: {desc: ' log to the specified named logger if regexp applied on logline
+      matches', type: any}
+  log-req-route: {desc: ' log requests to the specified named logger if regexp applied
+      on logline matches', type: any}
+  use-abort: {desc: ' call abort() on segfault/fpe, could be useful for generating
+      a core dump', type: any}
+  alarm: {desc: ' create a new alarm, syntax: <alarm> <plugin:args>', type: any}
+  alarm-cheap: {desc: ' use main alarm thread rather than create dedicated threads
+      for curl-based alarms', type: any}
+  alarm-freq: {desc: ' tune the anti-loop alam system (default 3 seconds)', type: int}
+  alarm-fd: {desc: ' raise the specified alarm when an fd is read for read (by default
+      it reads 1 byte, set 8 for eventfd)', type: any}
+  alarm-segfault: {desc: ' raise the specified alarm when the segmentation fault handler
+      is executed', type: any}
+  segfault-alarm: {desc: ' raise the specified alarm when the segmentation fault handler
+      is executed', type: any}
+  alarm-backlog: {desc: ' raise the specified alarm when the socket backlog queue
+      is full', type: any}
+  backlog-alarm: {desc: ' raise the specified alarm when the socket backlog queue
+      is full', type: any}
+  lq-alarm: {desc: ' raise the specified alarm when the socket backlog queue is full',
+    type: any}
+  alarm-lq: {desc: ' raise the specified alarm when the socket backlog queue is full',
+    type: any}
+  alarm-listen-queue: {desc: ' raise the specified alarm when the socket backlog queue
+      is full', type: any}
+  listen-queue-alarm: {desc: ' raise the specified alarm when the socket backlog queue
+      is full', type: any}
+  log-alarm: {desc: ' raise the specified alarm when a log line matches the specified
+      regexp, syntax: <alarm>[,alarm...] <regexp>', type: any}
+  alarm-log: {desc: ' raise the specified alarm when a log line matches the specified
+      regexp, syntax: <alarm>[,alarm...] <regexp>', type: any}
+  not-log-alarm: {desc: ' skip the specified alarm when a log line matches the specified
+      regexp, syntax: <alarm>[,alarm...] <regexp>', type: any}
+  not-alarm-log: {desc: ' skip the specified alarm when a log line matches the specified
+      regexp, syntax: <alarm>[,alarm...] <regexp>', type: any}
+  alarm-list: {desc: ' list enabled alarms', type: any}
+  alarms-list: {desc: ' list enabled alarms', type: any}
+  alarm-msg-size: {desc: ' set the max size of an alarm message (default 8192)', type: any}
+  log-master: {desc: ' delegate logging to master process', type: any}
+  log-master-bufsize: {desc: ' set the buffer size for the master logger. bigger log
+      messages will be truncated', type: any}
+  log-master-stream: {desc: ' create the master logpipe as SOCK_STREAM', type: any}
+  log-master-req-stream: {desc: ' create the master requests logpipe as SOCK_STREAM',
+    type: any}
+  log-reopen: {desc: ' reopen log after reload', type: any}
+  log-truncate: {desc: ' truncate log on startup', type: any}
+  log-maxsize: {desc: ' set maximum logfile size', type: any}
+  log-backupname: {desc: ' set logfile name after rotation', type: any}
+  logdate: {desc: ' prefix logs with date or a strftime string', type: any}
+  log-date: {desc: ' prefix logs with date or a strftime string', type: any}
+  log-prefix: {desc: ' prefix logs with a string', type: any}
+  log-zero: {desc: ' log responses without body', type: any}
+  log-slow: {desc: ' log requests slower than the specified number of milliseconds',
+    type: int}
+  log-4xx: {desc: ' log requests with a 4xx response', type: any}
+  log-5xx: {desc: ' log requests with a 5xx response', type: any}
+  log-big: {desc: ' log requestes bigger than the specified size', type: any}
+  log-sendfile: {desc: ' log sendfile requests', type: any}
+  log-ioerror: {desc: ' log requests with io errors', type: any}
+  log-micros: {desc: ' report response time in microseconds instead of milliseconds',
+    type: any}
+  log-x-forwarded-for: {desc: ' use the ip from X-Forwarded-For header instead of
+      REMOTE_ADDR', type: any}
+  master-as-root: {desc: ' leave master process running as root', type: any}
+  drop-after-init: {desc: ' run privileges drop after plugin initialization', type: any}
+  drop-after-apps: {desc: ' run privileges drop after apps loading', type: any}
+  force-cwd: {desc: ' force the initial working directory to the specified value',
+    type: any}
+  binsh: {desc: ' override /bin/sh (used by exec hooks, it always fallback to /bin/sh)',
+    type: any}
+  chdir: {desc: ' chdir to specified directory before apps loading', type: any}
+  chdir2: {desc: ' chdir to specified directory after apps loading', type: any}
+  lazy: {desc: ' set lazy mode (load apps in workers instead of master)', type: any}
+  lazy-apps: {desc: ' load apps in each worker instead of the master', type: any}
+  cheap: {desc: ' set cheap mode (spawn workers only after the first request)', type: any}
+  cheaper: {desc: ' set cheaper mode (adaptive process spawning)', type: int}
+  cheaper-initial: {desc: ' set the initial number of processes to spawn in cheaper
+      mode', type: int}
+  cheaper-algo: {desc: ' choose to algorithm used for adaptive process spawning',
+    type: any}
+  cheaper-step: {desc: ' number of additional processes to spawn at each overload',
+    type: int}
+  cheaper-overload: {desc: ' increase workers after specified overload', type: any}
+  cheaper-idle: {desc: ' decrease workers after specified idle (algo: spare2) (default:
+      10)', type: int}
+  cheaper-algo-list: {desc: ' list enabled cheapers algorithms', type: any}
+  cheaper-algos-list: {desc: ' list enabled cheapers algorithms', type: any}
+  cheaper-list: {desc: ' list enabled cheapers algorithms', type: any}
+  cheaper-rss-limit-soft: {desc: ' don''t spawn new workers if total resident memory
+      usage of all workers is higher than this limit', type: any}
+  cheaper-rss-limit-hard: {desc: ' if total workers resident memory usage is higher
+      try to stop workers', type: any}
+  idle: {desc: ' set idle mode (put uWSGI in cheap mode after inactivity)', type: int}
+  die-on-idle: {desc: ' shutdown uWSGI when idle', type: any}
+  mount: {desc: ' load application under mountpoint', type: any}
+  worker-mount: {desc: ' load application under mountpoint in the specified worker
+      or after workers spawn', type: any}
+  threads: {desc: ' run each worker in prethreaded mode with the specified number
+      of threads', type: int}
+  thread-stacksize: {desc: ' set threads stacksize', type: int}
+  threads-stacksize: {desc: ' set threads stacksize', type: int}
+  thread-stack-size: {desc: ' set threads stacksize', type: int}
+  threads-stack-size: {desc: ' set threads stacksize', type: int}
+  vhost: {desc: ' enable virtualhosting mode (based on SERVER_NAME variable)', type: any}
+  vhost-host: {desc: ' enable virtualhosting mode (based on HTTP_HOST variable)',
+    type: any}
+  route: {desc: ' add a route', type: any}
+  route-host: {desc: ' add a route based on Host header', type: any}
+  route-uri: {desc: ' add a route based on REQUEST_URI', type: any}
+  route-qs: {desc: ' add a route based on QUERY_STRING', type: any}
+  route-remote-addr: {desc: ' add a route based on REMOTE_ADDR', type: any}
+  route-user-agent: {desc: ' add a route based on HTTP_USER_AGENT', type: any}
+  route-remote-user: {desc: ' add a route based on REMOTE_USER', type: any}
+  route-referer: {desc: ' add a route based on HTTP_REFERER', type: any}
+  route-label: {desc: ' add a routing label (for use with goto)', type: any}
+  route-if: {desc: ' add a route based on condition', type: any}
+  route-if-not: {desc: ' add a route based on condition (negate version)', type: any}
+  route-run: {desc: ' always run the specified route action', type: any}
+  final-route: {desc: ' add a final route', type: any}
+  final-route-status: {desc: ' add a final route for the specified status', type: any}
+  final-route-host: {desc: ' add a final route based on Host header', type: any}
+  final-route-uri: {desc: ' add a final route based on REQUEST_URI', type: any}
+  final-route-qs: {desc: ' add a final route based on QUERY_STRING', type: any}
+  final-route-remote-addr: {desc: ' add a final route based on REMOTE_ADDR', type: any}
+  final-route-user-agent: {desc: ' add a final route based on HTTP_USER_AGENT', type: any}
+  final-route-remote-user: {desc: ' add a final route based on REMOTE_USER', type: any}
+  final-route-referer: {desc: ' add a final route based on HTTP_REFERER', type: any}
+  final-route-label: {desc: ' add a final routing label (for use with goto)', type: any}
+  final-route-if: {desc: ' add a final route based on condition', type: any}
+  final-route-if-not: {desc: ' add a final route based on condition (negate version)',
+    type: any}
+  final-route-run: {desc: ' always run the specified final route action', type: any}
+  error-route: {desc: ' add an error route', type: any}
+  error-route-status: {desc: ' add an error route for the specified status', type: any}
+  error-route-host: {desc: ' add an error route based on Host header', type: any}
+  error-route-uri: {desc: ' add an error route based on REQUEST_URI', type: any}
+  error-route-qs: {desc: ' add an error route based on QUERY_STRING', type: any}
+  error-route-remote-addr: {desc: ' add an error route based on REMOTE_ADDR', type: any}
+  error-route-user-agent: {desc: ' add an error route based on HTTP_USER_AGENT', type: any}
+  error-route-remote-user: {desc: ' add an error route based on REMOTE_USER', type: any}
+  error-route-referer: {desc: ' add an error route based on HTTP_REFERER', type: any}
+  error-route-label: {desc: ' add an error routing label (for use with goto)', type: any}
+  error-route-if: {desc: ' add an error route based on condition', type: any}
+  error-route-if-not: {desc: ' add an error route based on condition (negate version)',
+    type: any}
+  error-route-run: {desc: ' always run the specified error route action', type: any}
+  response-route: {desc: ' add a response route', type: any}
+  response-route-status: {desc: ' add a response route for the specified status',
+    type: any}
+  response-route-host: {desc: ' add a response route based on Host header', type: any}
+  response-route-uri: {desc: ' add a response route based on REQUEST_URI', type: any}
+  response-route-qs: {desc: ' add a response route based on QUERY_STRING', type: any}
+  response-route-remote-addr: {desc: ' add a response route based on REMOTE_ADDR',
+    type: any}
+  response-route-user-agent: {desc: ' add a response route based on HTTP_USER_AGENT',
+    type: any}
+  response-route-remote-user: {desc: ' add a response route based on REMOTE_USER',
+    type: any}
+  response-route-referer: {desc: ' add a response route based on HTTP_REFERER', type: any}
+  response-route-label: {desc: ' add a response routing label (for use with goto)',
+    type: any}
+  response-route-if: {desc: ' add a response route based on condition', type: any}
+  response-route-if-not: {desc: ' add a response route based on condition (negate
+      version)', type: any}
+  response-route-run: {desc: ' always run the specified response route action', type: any}
+  router-list: {desc: ' list enabled routers', type: any}
+  routers-list: {desc: ' list enabled routers', type: any}
+  error-page-403: {desc: ' add an error page (html) for managed 403 response', type: any}
+  error-page-404: {desc: ' add an error page (html) for managed 404 response', type: any}
+  error-page-500: {desc: ' add an error page (html) for managed 500 response', type: any}
+  websockets-ping-freq: {desc: ' set the frequency (in seconds) of websockets automatic
+      ping packets', type: int}
+  websocket-ping-freq: {desc: ' set the frequency (in seconds) of websockets automatic
+      ping packets', type: int}
+  websockets-pong-tolerance: {desc: ' set the tolerance (in seconds) of websockets
+      ping/pong subsystem', type: int}
+  websocket-pong-tolerance: {desc: ' set the tolerance (in seconds) of websockets
+      ping/pong subsystem', type: int}
+  websockets-max-size: {desc: ' set the max allowed size of websocket messages (in
+      Kbytes, default 1024)', type: any}
+  websocket-max-size: {desc: ' set the max allowed size of websocket messages (in
+      Kbytes, default 1024)', type: any}
+  chunked-input-limit: {desc: ' set the max size of a chunked input part (default
+      1MB, in bytes)', type: any}
+  chunked-input-timeout: {desc: ' set default timeout for chunked input', type: int}
+  clock: {desc: ' set a clock source', type: any}
+  clock-list: {desc: ' list enabled clocks', type: any}
+  clocks-list: {desc: ' list enabled clocks', type: any}
+  add-header: {desc: ' automatically add HTTP headers to response', type: any}
+  rem-header: {desc: ' automatically remove specified HTTP header from the response',
+    type: any}
+  del-header: {desc: ' automatically remove specified HTTP header from the response',
+    type: any}
+  collect-header: {desc: ' store the specified response header in a request var (syntax:
+      header var)', type: any}
+  response-header-collect: {desc: ' store the specified response header in a request
+      var (syntax: header var)', type: any}
+  pull-header: {desc: ' store the specified response header in a request var and remove
+      it from the response (syntax: header var)', type: any}
+  check-static: {desc: ' check for static files in the specified directory', type: any}
+  check-static-docroot: {desc: ' check for static files in the requested DOCUMENT_ROOT',
+    type: any}
+  static-check: {desc: ' check for static files in the specified directory', type: any}
+  static-map: {desc: ' map mountpoint to static directory (or file)', type: any}
+  static-map2: {desc: ' like static-map but completely appending the requested resource
+      to the docroot', type: any}
+  static-skip-ext: {desc: ' skip specified extension from staticfile checks', type: any}
+  static-index: {desc: ' search for specified file if a directory is requested', type: any}
+  static-safe: {desc: ' skip security checks if the file is under the specified path',
+    type: any}
+  static-cache-paths: {desc: ' put resolved paths in the uWSGI cache for the specified
+      amount of seconds', type: int}
+  static-cache-paths-name: {desc: ' use the specified cache for static paths', type: any}
+  mimefile: {desc: ' set mime types file path (default /etc/mime.types)', type: any}
+  mime-file: {desc: ' set mime types file path (default /etc/mime.types)', type: any}
+  static-expires-type: {desc: ' set the Expires header based on content type', type: any}
+  static-expires-type-mtime: {desc: ' set the Expires header based on content type
+      and file mtime', type: any}
+  static-expires: {desc: ' set the Expires header based on filename regexp', type: any}
+  static-expires-mtime: {desc: ' set the Expires header based on filename regexp and
+      file mtime', type: any}
+  static-expires-uri: {desc: ' set the Expires header based on REQUEST_URI regexp',
+    type: any}
+  static-expires-uri-mtime: {desc: ' set the Expires header based on REQUEST_URI regexp
+      and file mtime', type: any}
+  static-expires-path-info: {desc: ' set the Expires header based on PATH_INFO regexp',
+    type: any}
+  static-expires-path-info-mtime: {desc: ' set the Expires header based on PATH_INFO
+      regexp and file mtime', type: any}
+  static-gzip: {desc: ' if the supplied regexp matches the static file translation
+      it will search for a gzip version', type: any}
+  static-gzip-all: {desc: ' check for a gzip version of all requested static files',
+    type: any}
+  static-gzip-dir: {desc: ' check for a gzip version of all requested static files
+      in the specified dir/prefix', type: any}
+  static-gzip-prefix: {desc: ' check for a gzip version of all requested static files
+      in the specified dir/prefix', type: any}
+  static-gzip-ext: {desc: ' check for a gzip version of all requested static files
+      with the specified ext/suffix', type: any}
+  static-gzip-suffix: {desc: ' check for a gzip version of all requested static files
+      with the specified ext/suffix', type: any}
+  honour-range: {desc: ' enable support for the HTTP Range header', type: any}
+  offload-threads: {desc: ' set the number of offload threads to spawn (per-worker,
+      default 0)', type: int}
+  offload-thread: {desc: ' set the number of offload threads to spawn (per-worker,
+      default 0)', type: int}
+  file-serve-mode: {desc: ' set static file serving mode', type: any}
+  fileserve-mode: {desc: ' set static file serving mode', type: any}
+  disable-sendfile: {desc: ' disable sendfile() and rely on boring read()/write()',
+    type: any}
+  check-cache: {desc: ' check for response data in the specified cache (empty for
+      default cache)', type: any}
+  close-on-exec: {desc: ' set close-on-exec on connection sockets (could be required
+      for spawning processes in requests)', type: any}
+  close-on-exec2: {desc: ' set close-on-exec on server sockets (could be required
+      for spawning processes in requests)', type: any}
+  mode: {desc: ' set uWSGI custom mode', type: any}
+  env: {desc: ' set environment variable', type: any}
+  ienv: {desc: ' set environment variable (IMMEDIATE version)', type: any}
+  envdir: {desc: ' load a daemontools compatible envdir', type: any}
+  early-envdir: {desc: ' load a daemontools compatible envdir ASAP', type: any}
+  unenv: {desc: ' unset environment variable', type: any}
+  vacuum: {desc: ' try to remove all of the generated file/sockets', type: any}
+  file-write: {desc: ' write the specified content to the specified file (syntax:
+      file=value) before privileges drop', type: any}
+  cgroup: {desc: ' put the processes in the specified cgroup', type: any}
+  cgroup-opt: {desc: ' set value in specified cgroup option', type: any}
+  cgroup-dir-mode: {desc: ' set permission for cgroup directory (default is 700)',
+    type: any}
+  namespace: {desc: ' run in a new namespace under the specified rootfs', type: any}
+  namespace-keep-mount: {desc: ' keep the specified mountpoint in your namespace',
+    type: any}
+  ns: {desc: ' run in a new namespace under the specified rootfs', type: any}
+  namespace-net: {desc: ' add network namespace', type: any}
+  ns-net: {desc: ' add network namespace', type: any}
+  enable-proxy-protocol: {desc: ' enable PROXY1 protocol support (only for http parsers)',
+    type: any}
+  reuse-port: {desc: ' enable REUSE_PORT flag on socket (BSD only)', type: any}
+  tcp-fast-open: {desc: ' enable TCP_FASTOPEN flag on TCP sockets with the specified
+      qlen value', type: int}
+  tcp-fastopen: {desc: ' enable TCP_FASTOPEN flag on TCP sockets with the specified
+      qlen value', type: int}
+  tcp-fast-open-client: {desc: ' use sendto(..., MSG_FASTOPEN, ...) instead of connect()
+      if supported', type: any}
+  tcp-fastopen-client: {desc: ' use sendto(..., MSG_FASTOPEN, ...) instead of connect()
+      if supported', type: any}
+  zerg: {desc: ' attach to a zerg server', type: any}
+  zerg-fallback: {desc: ' fallback to normal sockets if the zerg server is not available',
+    type: any}
+  zerg-server: {desc: ' enable the zerg server on the specified UNIX socket', type: any}
+  cron: {desc: ' add a cron task', type: any}
+  cron2: {desc: ' add a cron task (key=val syntax)', type: any}
+  unique-cron: {desc: ' add a unique cron task', type: any}
+  cron-harakiri: {desc: ' set the maximum time (in seconds) we wait for cron command
+      to complete', type: int}
+  legion-cron: {desc: ' add a cron task runnable only when the instance is a lord
+      of the specified legion', type: any}
+  cron-legion: {desc: ' add a cron task runnable only when the instance is a lord
+      of the specified legion', type: any}
+  unique-legion-cron: {desc: ' add a unique cron task runnable only when the instance
+      is a lord of the specified legion', type: any}
+  unique-cron-legion: {desc: ' add a unique cron task runnable only when the instance
+      is a lord of the specified legion', type: any}
+  loop: {desc: ' select the uWSGI loop engine', type: any}
+  loop-list: {desc: ' list enabled loop engines', type: any}
+  loops-list: {desc: ' list enabled loop engines', type: any}
+  worker-exec: {desc: ' run the specified command as worker', type: any}
+  worker-exec2: {desc: ' run the specified command as worker (after post_fork hook)',
+    type: any}
+  attach-daemon: {desc: ' attach a command/daemon to the master process (the command
+      has to not go in background)', type: any}
+  attach-control-daemon: {desc: ' attach a command/daemon to the master process (the
+      command has to not go in background), when the daemon dies, the master dies
+      too', type: any}
+  smart-attach-daemon: {desc: ' attach a command/daemon to the master process managed
+      by a pidfile (the command has to daemonize)', type: any}
+  smart-attach-daemon2: {desc: ' attach a command/daemon to the master process managed
+      by a pidfile (the command has to NOT daemonize)', type: any}
+  legion-attach-daemon: {desc: ' same as --attach-daemon but daemon runs only on legion
+      lord node', type: any}
+  legion-smart-attach-daemon: {desc: ' same as --smart-attach-daemon but daemon runs
+      only on legion lord node', type: any}
+  legion-smart-attach-daemon2: {desc: ' same as --smart-attach-daemon2 but daemon
+      runs only on legion lord node', type: any}
+  daemons-honour-stdin: {desc: ' do not change the stdin of external daemons to /dev/null',
+    type: any}
+  attach-daemon2: {desc: ' attach-daemon keyval variant (supports smart modes too)',
+    type: any}
+  plugins: {desc: ' load uWSGI plugins', type: any}
+  plugin: {desc: ' load uWSGI plugins', type: any}
+  need-plugins: {desc: ' load uWSGI plugins (exit on error)', type: any}
+  need-plugin: {desc: ' load uWSGI plugins (exit on error)', type: any}
+  plugins-dir: {desc: ' add a directory to uWSGI plugin search path', type: any}
+  plugin-dir: {desc: ' add a directory to uWSGI plugin search path', type: any}
+  plugins-list: {desc: ' list enabled plugins', type: any}
+  plugin-list: {desc: ' list enabled plugins', type: any}
+  autoload: {desc: ' try to automatically load plugins when unknown options are found',
+    type: any}
+  dlopen: {desc: ' blindly load a shared library', type: any}
+  allowed-modifiers: {desc: ' comma separated list of allowed modifiers', type: any}
+  remap-modifier: {desc: ' remap request modifier from one id to another', type: any}
+  dump-options: {desc: ' dump the full list of available options', type: any}
+  show-config: {desc: ' show the current config reformatted as ini', type: any}
+  binary-append-data: {desc: ' return the content of a resource to stdout for appending
+      to a uwsgi binary (for data:// usage)', type: any}
+  print: {desc: ' simple print', type: any}
+  iprint: {desc: ' simple print (immediate version)', type: any}
+  exit: {desc: ' force exit() of the instance', type: any}
+  cflags: {desc: ' report uWSGI CFLAGS (useful for building external plugins)', type: any}
+  dot-h: {desc: ' dump the uwsgi.h used for building the core  (useful for building
+      external plugins)', type: any}
+  config-py: {desc: ' dump the uwsgiconfig.py used for building the core  (useful
+      for building external plugins)', type: any}
+  build-plugin: {desc: ' build a uWSGI plugin for the current binary', type: any}
+  version: {desc: ' print uWSGI version', type: any}
+  asyncio: {desc: ' a shortcut enabling asyncio loop engine with the specified number
+      of async cores and optimal parameters', type: any}
+  carbon: {desc: ' push statistics to the specified carbon server', type: any}
+  carbon-timeout: {desc: ' set carbon connection timeout in seconds (default 3)',
+    type: int}
+  carbon-freq: {desc: ' set carbon push frequency in seconds (default 60)', type: int}
+  carbon-id: {desc: ' set carbon id', type: any}
+  carbon-no-workers: {desc: ' disable generation of single worker metrics', type: any}
+  carbon-max-retry: {desc: ' set maximum number of retries in case of connection errors
+      (default 1)', type: int}
+  carbon-retry-delay: {desc: ' set connection retry delay in seconds (default 7)',
+    type: int}
+  carbon-root: {desc: ' set carbon metrics root node (default ''uwsgi'')', type: any}
+  carbon-hostname-dots: {desc: ' set char to use as a replacement for dots in hostname
+      (dots are not replaced by default)', type: any}
+  carbon-name-resolve: {desc: ' allow using hostname as carbon server address (default
+      disabled)', type: any}
+  carbon-resolve-names: {desc: ' allow using hostname as carbon server address (default
+      disabled)', type: any}
+  carbon-idle-avg: {desc: ' average values source during idle period (no requests),
+      can be "last", "zero", "none" (default is last)', type: any}
+  carbon-use-metrics: {desc: ' don''t compute all statistics, use metrics subsystem
+      data instead (warning! key names will be different)', type: any}
+  cgi: {desc: ' add a cgi mountpoint/directory/script', type: any}
+  cgi-map-helper: {desc: ' add a cgi map-helper', type: any}
+  cgi-helper: {desc: ' add a cgi map-helper', type: any}
+  cgi-from-docroot: {desc: ' blindly enable cgi in DOCUMENT_ROOT', type: any}
+  cgi-buffer-size: {desc: ' set cgi buffer size', type: any}
+  cgi-timeout: {desc: ' set cgi script timeout', type: int}
+  cgi-index: {desc: ' add a cgi index file', type: any}
+  cgi-allowed-ext: {desc: ' cgi allowed extension', type: any}
+  cgi-unset: {desc: ' unset specified environment variables', type: any}
+  cgi-loadlib: {desc: ' load a cgi shared library/optimizer', type: any}
+  cgi-optimize: {desc: ' enable cgi realpath() optimizer', type: any}
+  cgi-optimized: {desc: ' enable cgi realpath() optimizer', type: any}
+  cgi-path-info: {desc: ' disable PATH_INFO management in cgi scripts', type: any}
+  cgi-do-not-kill-on-error: {desc: ' do not send SIGKILL to cgi script on errors',
+    type: any}
+  cgi-async-max-attempts: {desc: ' max waitpid() attempts in cgi async mode (default
+      10)', type: int}
+  coroae: {desc: ' a shortcut enabling Coro::AnyEvent loop engine with the specified
+      number of async cores and optimal parameters', type: any}
+  curl-cron: {desc: ' add a cron task invoking the specified url via CURL', type: any}
+  cron-curl: {desc: ' add a cron task invoking the specified url via CURL', type: any}
+  legion-curl-cron: {desc: ' add a cron task invoking the specified url via CURL runnable
+      only when the instance is a lord of the specified legion', type: any}
+  legion-cron-curl: {desc: ' add a cron task invoking the specified url via CURL runnable
+      only when the instance is a lord of the specified legion', type: any}
+  curl-cron-legion: {desc: ' add a cron task invoking the specified url via CURL runnable
+      only when the instance is a lord of the specified legion', type: any}
+  cron-curl-legion: {desc: ' add a cron task invoking the specified url via CURL runnable
+      only when the instance is a lord of the specified legion', type: any}
+  dumbloop-modifier1: {desc: ' set the modifier1 for the code_string', type: int}
+  dumbloop-code: {desc: ' set the script to load for the code_string', type: any}
+  dumbloop-function: {desc: ' set the function to run for the code_string', type: any}
+  fastrouter: {desc: ' run the fastrouter on the specified port', type: any}
+  fastrouter-processes: {desc: ' prefork the specified number of fastrouter processes',
+    type: int}
+  fastrouter-workers: {desc: ' prefork the specified number of fastrouter processes',
+    type: int}
+  fastrouter-zerg: {desc: ' attach the fastrouter to a zerg server', type: any}
+  fastrouter-use-cache: {desc: ' use uWSGI cache as hostname->server mapper for the
+      fastrouter', type: any}
+  fastrouter-use-pattern: {desc: ' use a pattern for fastrouter hostname->server mapping',
+    type: any}
+  fastrouter-use-base: {desc: ' use a base dir for fastrouter hostname->server mapping',
+    type: any}
+  fastrouter-fallback: {desc: ' fallback to the specified node in case of error',
+    type: any}
+  fastrouter-use-code-string: {desc: ' use code string as hostname->server mapper
+      for the fastrouter', type: any}
+  fastrouter-use-socket: {desc: ' forward request to the specified uwsgi socket',
+    type: any}
+  fastrouter-to: {desc: ' forward requests to the specified uwsgi server (you can
+      specify it multiple times for load balancing)', type: any}
+  fastrouter-gracetime: {desc: ' retry connections to dead static nodes after the
+      specified amount of seconds', type: int}
+  fastrouter-events: {desc: ' set the maximum number of concurrent events', type: int}
+  fastrouter-quiet: {desc: ' do not report failed connections to instances', type: any}
+  fastrouter-cheap: {desc: ' run the fastrouter in cheap mode', type: any}
+  fastrouter-subscription-server: {desc: ' run the fastrouter subscription server
+      on the specified address', type: any}
+  fastrouter-subscription-slot: {desc: ' *** deprecated ***', type: any}
+  fastrouter-timeout: {desc: ' set fastrouter timeout', type: int}
+  fastrouter-post-buffering: {desc: ' enable fastrouter post buffering', type: any}
+  fastrouter-post-buffering-dir: {desc: ' put fastrouter buffered files to the specified
+      directory (noop, use TMPDIR env)', type: any}
+  fastrouter-stats: {desc: ' run the fastrouter stats server', type: any}
+  fastrouter-stats-server: {desc: ' run the fastrouter stats server', type: any}
+  fastrouter-ss: {desc: ' run the fastrouter stats server', type: any}
+  fastrouter-harakiri: {desc: ' enable fastrouter harakiri', type: int}
+  fastrouter-uid: {desc: ' drop fastrouter privileges to the specified uid', type: any}
+  fastrouter-gid: {desc: ' drop fastrouter privileges to the specified gid', type: any}
+  fastrouter-resubscribe: {desc: ' forward subscriptions to the specified subscription
+      server', type: any}
+  fastrouter-resubscribe-bind: {desc: ' bind to the specified address when re-subscribing',
+    type: any}
+  fastrouter-buffer-size: {desc: ' set internal buffer size (default: page size)',
+    type: any}
+  fastrouter-fallback-on-no-key: {desc: ' move to fallback node even if a subscription
+      key is not found', type: any}
+  fastrouter-force-key: {desc: ' skip uwsgi parsing and directly set a key', type: any}
+  fiber: {desc: ' enable ruby fiber as suspend engine', type: any}
+  forkptyrouter: {desc: ' run the forkptyrouter on the specified address', type: any}
+  forkpty-router: {desc: ' run the forkptyrouter on the specified address', type: any}
+  forkptyurouter: {desc: ' run the forkptyrouter on the specified address', type: any}
+  forkpty-urouter: {desc: ' run the forkptyrouter on the specified address', type: any}
+  forkptyrouter-command: {desc: ' run the specified command on every connection (default:
+      /bin/sh)', type: any}
+  forkpty-router-command: {desc: ' run the specified command on every connection (default:
+      /bin/sh)', type: any}
+  forkptyrouter-cmd: {desc: ' run the specified command on every connection (default:
+      /bin/sh)', type: any}
+  forkpty-router-cmd: {desc: ' run the specified command on every connection (default:
+      /bin/sh)', type: any}
+  forkptyrouter-rows: {desc: ' set forkptyrouter default pty window rows', type: any}
+  forkptyrouter-cols: {desc: ' set forkptyrouter default pty window cols', type: any}
+  forkptyrouter-processes: {desc: ' prefork the specified number of forkptyrouter
+      processes', type: int}
+  forkptyrouter-workers: {desc: ' prefork the specified number of forkptyrouter processes',
+    type: int}
+  forkptyrouter-zerg: {desc: ' attach the forkptyrouter to a zerg server', type: any}
+  forkptyrouter-fallback: {desc: ' fallback to the specified node in case of error',
+    type: any}
+  forkptyrouter-events: {desc: ' set the maximum number of concufptyent events', type: int}
+  forkptyrouter-cheap: {desc: ' run the forkptyrouter in cheap mode', type: any}
+  forkptyrouter-timeout: {desc: ' set forkptyrouter timeout', type: int}
+  forkptyrouter-stats: {desc: ' run the forkptyrouter stats server', type: any}
+  forkptyrouter-stats-server: {desc: ' run the forkptyrouter stats server', type: any}
+  forkptyrouter-ss: {desc: ' run the forkptyrouter stats server', type: any}
+  forkptyrouter-harakiri: {desc: ' enable forkptyrouter harakiri', type: int}
+  go-load: {desc: ' load a go shared library in the process address space, eventually
+      patching main.main and __go_init_main', type: any}
+  gccgo-load: {desc: ' load a go shared library in the process address space, eventually
+      patching main.main and __go_init_main', type: any}
+  go-args: {desc: ' set go commandline arguments', type: any}
+  gccgo-args: {desc: ' set go commandline arguments', type: any}
+  goroutines: {desc: ' a shortcut setting optimal options for goroutine-based apps,
+      takes the number of max goroutines to spawn as argument', type: any}
+  geoip-country: {desc: ' load the specified geoip country database', type: any}
+  geoip-city: {desc: ' load the specified geoip city database', type: any}
+  geoip-use-disk: {desc: ' do not cache geoip databases in memory', type: any}
+  gevent: {desc: ' a shortcut enabling gevent loop engine with the specified number
+      of async cores and optimal parameters', type: any}
+  gevent-monkey-patch: {desc: ' call gevent.monkey.patch_all() automatically on startup',
+    type: any}
+  gevent-early-monkey-patch: {desc: ' call gevent.monkey.patch_all() automatically
+      before app loading', type: any}
+  gevent-wait-for-hub: {desc: ' wait for gevent hub''s death instead of the control
+      greenlet', type: any}
+  glusterfs-mount: {desc: ' virtual mount the specified glusterfs volume in a uri',
+    type: any}
+  glusterfs-timeout: {desc: ' timeout for glusterfs async mode', type: int}
+  greenlet: {desc: ' enable greenlet as suspend engine', type: any}
+  gridfs-mount: {desc: ' mount a gridfs db on the specified mountpoint', type: any}
+  gridfs-debug: {desc: ' report gridfs mountpoint and itemname for each request (debug)',
+    type: any}
+  http: {desc: ' add an http router/server on the specified address', type: any}
+  httprouter: {desc: ' add an http router/server on the specified address', type: any}
+  https: {desc: ' add an https router/server on the specified address with specified
+      certificate and key', type: any}
+  https2: {desc: ' add an https/spdy router/server using keyval options', type: any}
+  https-export-cert: {desc: ' export uwsgi variable HTTPS_CC containing the raw client
+      certificate', type: any}
+  https-session-context: {desc: ' set the session id context to the specified value',
+    type: any}
+  http-to-https: {desc: ' add an http router/server on the specified address and redirect
+      all of the requests to https', type: any}
+  http-processes: {desc: ' set the number of http processes to spawn', type: int}
+  http-workers: {desc: ' set the number of http processes to spawn', type: int}
+  http-var: {desc: ' add a key=value item to the generated uwsgi packet', type: any}
+  http-to: {desc: ' forward requests to the specified node (you can specify it multiple
+      time for lb)', type: any}
+  http-zerg: {desc: ' attach the http router to a zerg server', type: any}
+  http-fallback: {desc: ' fallback to the specified node in case of error', type: any}
+  http-modifier1: {desc: ' set uwsgi protocol modifier1', type: int}
+  http-modifier2: {desc: ' set uwsgi protocol modifier2', type: int}
+  http-use-cache: {desc: ' use uWSGI cache as key->value virtualhost mapper', type: any}
+  http-use-pattern: {desc: ' use the specified pattern for mapping requests to unix
+      sockets', type: any}
+  http-use-base: {desc: ' use the specified base for mapping requests to unix sockets',
+    type: any}
+  http-events: {desc: ' set the number of concurrent http async events', type: int}
+  http-subscription-server: {desc: ' enable the subscription server', type: any}
+  http-timeout: {desc: ' set internal http socket timeout', type: int}
+  http-manage-expect: {desc: ' manage the Expect HTTP request header (optionally checking
+      for Content-Length)', type: any}
+  http-keepalive: {desc: ' HTTP 1.1 keepalive support (non-pipelined) requests', type: int}
+  http-auto-chunked: {desc: ' automatically transform output to chunked encoding during
+      HTTP 1.1 keepalive (if needed)', type: any}
+  http-auto-gzip: {desc: ' automatically gzip content if uWSGI-Encoding header is
+      set to gzip, but content size (Content-Length/Transfer-Encoding) and Content-Encoding
+      are not specified', type: any}
+  http-raw-body: {desc: ' blindly send HTTP body to backends (required for WebSockets
+      and Icecast support in backends)', type: any}
+  http-websockets: {desc: ' automatically detect websockets connections and put the
+      session in raw mode', type: any}
+  http-chunked-input: {desc: ' automatically detect chunked input requests and put
+      the session in raw mode', type: any}
+  http-use-code-string: {desc: ' use code string as hostname->server mapper for the
+      http router', type: any}
+  http-use-socket: {desc: ' forward request to the specified uwsgi socket', type: any}
+  http-gracetime: {desc: ' retry connections to dead static nodes after the specified
+      amount of seconds', type: int}
+  http-quiet: {desc: ' do not report failed connections to instances', type: any}
+  http-cheap: {desc: ' run the http router in cheap mode', type: any}
+  http-stats: {desc: ' run the http router stats server', type: any}
+  http-stats-server: {desc: ' run the http router stats server', type: any}
+  http-ss: {desc: ' run the http router stats server', type: any}
+  http-harakiri: {desc: ' enable http router harakiri', type: int}
+  http-stud-prefix: {desc: ' expect a stud prefix (1byte family + 4/16 bytes address)
+      on connections from the specified address', type: any}
+  http-uid: {desc: ' drop http router privileges to the specified uid', type: any}
+  http-gid: {desc: ' drop http router privileges to the specified gid', type: any}
+  http-resubscribe: {desc: ' forward subscriptions to the specified subscription server',
+    type: any}
+  http-buffer-size: {desc: ' set internal buffer size (default: page size)', type: any}
+  http-server-name-as-http-host: {desc: ' force SERVER_NAME to HTTP_HOST', type: any}
+  http-headers-timeout: {desc: ' set internal http socket timeout for headers', type: int}
+  http-connect-timeout: {desc: ' set internal http socket timeout for backend connections',
+    type: int}
+  http-manage-source: {desc: ' manage the SOURCE HTTP method placing the session in
+      raw mode', type: any}
+  http-enable-proxy-protocol: {desc: ' manage PROXY protocol requests', type: any}
+  http-backend-http: {desc: ' use plain http protocol instead of uwsgi for backend
+      nodes', type: any}
+  http-manage-rtsp: {desc: ' manage RTSP sessions', type: any}
+  '0x1f': {desc: ' 0', type: any}
+  jvm-main-class: {desc: ' load the specified class and call its main() function',
+    type: any}
+  jvm-opt: {desc: ' add the specified jvm option', type: any}
+  jvm-class: {desc: ' load the specified class', type: any}
+  jvm-classpath: {desc: ' add the specified directory to the classpath', type: any}
+  jwsgi: {desc: ' load the specified JWSGI application (syntax class:method)', type: any}
+  ldap: {desc: ' load configuration from ldap server', type: any}
+  ldap-schema: {desc: ' dump uWSGI ldap schema', type: any}
+  ldap-schema-ldif: {desc: ' dump uWSGI ldap schema in ldif format', type: any}
+  log-zeromq: {desc: ' send logs to a zeromq server', type: any}
+  lua: {desc: ' load lua wsapi app', type: any}
+  lua-load: {desc: ' load a lua file', type: any}
+  lua-shell: {desc: ' run the lua interactive shell (debug.debug())', type: any}
+  luashell: {desc: ' run the lua interactive shell (debug.debug())', type: any}
+  lua-gc-freq: {desc: ' set the lua gc frequency (default: 0, runs after every request)',
+    type: int}
+  zeromq: {desc: ' create a mongrel2/zeromq pub/sub pair', type: any}
+  zmq: {desc: ' create a mongrel2/zeromq pub/sub pair', type: any}
+  zeromq-socket: {desc: ' create a mongrel2/zeromq pub/sub pair', type: any}
+  zmq-socket: {desc: ' create a mongrel2/zeromq pub/sub pair', type: any}
+  mongrel2: {desc: ' create a mongrel2/zeromq pub/sub pair', type: any}
+  mono-app: {desc: ' load a Mono asp.net app from the specified directory', type: any}
+  mono-gc-freq: {desc: ' run the Mono GC every <n> requests (default: run after every
+      request)', type: any}
+  mono-key: {desc: ' select the ApplicationHost based on the specified CGI var', type: any}
+  mono-version: {desc: ' set the Mono jit version', type: any}
+  mono-config: {desc: ' set the Mono config file', type: any}
+  mono-assembly: {desc: ' load the specified main assembly (default: uwsgi.dll)',
+    type: any}
+  mono-exec: {desc: ' exec the specified assembly just before app loading', type: any}
+  mono-index: {desc: ' add an asp.net index file', type: any}
+  nagios: {desc: ' nagios check', type: any}
+  notfound-log: {desc: ' log requests to the notfound plugin', type: any}
+  pam: {desc: ' set the pam service name to use', type: any}
+  pam-user: {desc: ' set a fake user for pam', type: any}
+  php-ini: {desc: ' set php.ini path', type: any}
+  php-config: {desc: ' set php.ini path', type: any}
+  php-ini-append: {desc: ' set php.ini path (append mode)', type: any}
+  php-config-append: {desc: ' set php.ini path (append mode)', type: any}
+  php-set: {desc: ' set a php config directive', type: any}
+  php-index: {desc: ' list the php index files', type: any}
+  php-docroot: {desc: ' force php DOCUMENT_ROOT', type: any}
+  php-allowed-docroot: {desc: ' list the allowed document roots', type: any}
+  php-allowed-ext: {desc: ' list the allowed php file extensions', type: any}
+  php-allowed-script: {desc: ' list the allowed php scripts (require absolute path)',
+    type: any}
+  php-server-software: {desc: ' force php SERVER_SOFTWARE', type: any}
+  php-app: {desc: ' force the php file to run at each request', type: any}
+  php-app-qs: {desc: ' when in app mode force QUERY_STRING to the specified value
+      + REQUEST_URI', type: any}
+  php-fallback: {desc: ' run the specified php script when the request one does not
+      exist', type: any}
+  php-app-bypass: {desc: ' if the regexp matches the uri the --php-app is bypassed',
+    type: any}
+  php-var: {desc: ' add/overwrite a CGI variable at each request', type: any}
+  php-dump-config: {desc: ' dump php config (if modified via --php-set or append options)',
+    type: any}
+  php-exec-before: {desc: ' run specified php code before the requested script', type: any}
+  php-exec-begin: {desc: ' run specified php code before the requested script', type: any}
+  php-exec-after: {desc: ' run specified php code after the requested script', type: any}
+  php-exec-end: {desc: ' run specified php code after the requested script', type: any}
+  php-sapi-name: {desc: ' hack the sapi name (required for enabling zend opcode cache)',
+    type: any}
+  early-php: {desc: ' initialize an early perl interpreter shared by all loaders',
+    type: any}
+  early-php-sapi-name: {desc: ' hack the sapi name (required for enabling zend opcode
+      cache)', type: any}
+  ping: {desc: ' ping specified uwsgi host', type: any}
+  ping-timeout: {desc: ' set ping timeout', type: int}
+  psgi: {desc: ' load a psgi app', type: any}
+  psgi-enable-psgix-io: {desc: ' enable psgix.io support', type: any}
+  perl-no-die-catch: {desc: ' do not catch $SIG{__DIE__}', type: any}
+  perl-local-lib: {desc: ' set perl locallib path', type: any}
+  perl-version: {desc: ' print perl version', type: any}
+  perl-args: {desc: ' add items (space separated) to @ARGV', type: any}
+  perl-arg: {desc: ' add an item to @ARGV', type: any}
+  perl-exec: {desc: ' exec the specified perl file before fork()', type: any}
+  perl-exec-post-fork: {desc: ' exec the specified perl file after fork()', type: any}
+  perl-auto-reload: {desc: ' enable perl auto-reloader with the specified frequency',
+    type: int}
+  perl-auto-reload-ignore: {desc: ' ignore the specified files when auto-reload is
+      enabled', type: any}
+  plshell: {desc: ' run a perl interactive shell', type: any}
+  plshell-oneshot: {desc: ' run a perl interactive shell (one shot)', type: any}
+  perl-no-plack: {desc: ' force the use of do instead of Plack::Util::load_psgi',
+    type: any}
+  early-perl: {desc: ' initialize an early perl interpreter shared by all loaders',
+    type: any}
+  early-psgi: {desc: ' load a psgi app soon after uWSGI initialization', type: any}
+  early-perl-exec: {desc: ' load a perl script soon after uWSGI initialization', type: any}
+  pty-socket: {desc: ' bind the pty server on the specified address', type: any}
+  pty-log: {desc: ' send stdout/stderr to the log engine too', type: any}
+  pty-input: {desc: ' read from original stdin in addition to pty', type: any}
+  pty-connect: {desc: ' connect the current terminal to a pty server', type: any}
+  pty-uconnect: {desc: ' connect the current terminal to a pty server (using uwsgi
+      protocol)', type: any}
+  pty-no-isig: {desc: ' disable ISIG terminal attribute in client mode', type: any}
+  pty-exec: {desc: ' run the specified command soon after the pty thread is spawned',
+    type: any}
+  pypy-lib: {desc: ' set the path/name of the pypy library', type: any}
+  pypy-setup: {desc: ' set the path of the python setup script', type: any}
+  pypy-home: {desc: ' set the home of pypy library', type: any}
+  pypy-wsgi: {desc: ' load a WSGI module', type: any}
+  pypy-wsgi-file: {desc: ' load a WSGI/mod_wsgi file', type: any}
+  pypy-ini-paste: {desc: ' load a paste.deploy config file containing uwsgi section',
+    type: any}
+  pypy-paste: {desc: ' load a paste.deploy config file', type: any}
+  pypy-eval: {desc: ' evaluate pypy code before fork()', type: any}
+  pypy-eval-post-fork: {desc: ' evaluate pypy code soon after fork()', type: any}
+  pypy-exec: {desc: ' execute pypy code from file before fork()', type: any}
+  pypy-exec-post-fork: {desc: ' execute pypy code from file soon after fork()', type: any}
+  pypy-pp: {desc: ' add an item to the pythonpath', type: any}
+  pypy-python-path: {desc: ' add an item to the pythonpath', type: any}
+  pypy-pythonpath: {desc: ' add an item to the pythonpath', type: any}
+  wsgi-file: {desc: ' load .wsgi file', type: any}
+  file: {desc: ' load .wsgi file', type: any}
+  eval: {desc: ' eval python code', type: any}
+  module: {desc: ' load a WSGI module', type: any}
+  wsgi: {desc: ' load a WSGI module', type: any}
+  callable: {desc: ' set default WSGI callable name', type: any}
+  test: {desc: ' test a module import', type: any}
+  home: {desc: ' set PYTHONHOME/virtualenv', type: any}
+  virtualenv: {desc: ' set PYTHONHOME/virtualenv', type: any}
+  venv: {desc: ' set PYTHONHOME/virtualenv', type: any}
+  pyhome: {desc: ' set PYTHONHOME/virtualenv', type: any}
+  py-programname: {desc: ' set python program name', type: any}
+  py-program-name: {desc: ' set python program name', type: any}
+  pythonpath: {desc: ' add directory (or glob) to pythonpath', type: any}
+  python-path: {desc: ' add directory (or glob) to pythonpath', type: any}
+  pp: {desc: ' add directory (or glob) to pythonpath', type: any}
+  pymodule-alias: {desc: ' add a python alias module', type: any}
+  post-pymodule-alias: {desc: ' add a python module alias after uwsgi module initialization',
+    type: any}
+  import: {desc: ' import a python module', type: any}
+  pyimport: {desc: ' import a python module', type: any}
+  py-import: {desc: ' import a python module', type: any}
+  python-import: {desc: ' import a python module', type: any}
+  shared-import: {desc: ' import a python module in all of the processes', type: any}
+  shared-pyimport: {desc: ' import a python module in all of the processes', type: any}
+  shared-py-import: {desc: ' import a python module in all of the processes', type: any}
+  shared-python-import: {desc: ' import a python module in all of the processes',
+    type: any}
+  pyargv: {desc: ' manually set sys.argv', type: any}
+  optimize: {desc: ' set python optimization level', type: int}
+  pecan: {desc: ' load a pecan config file', type: any}
+  paste: {desc: ' load a paste.deploy config file', type: any}
+  paste-logger: {desc: ' enable paste fileConfig logger', type: any}
+  web3: {desc: ' load a web3 app', type: any}
+  pump: {desc: ' load a pump app', type: any}
+  wsgi-lite: {desc: ' load a wsgi-lite app', type: any}
+  ini-paste: {desc: ' load a paste.deploy config file containing uwsgi section', type: any}
+  ini-paste-logged: {desc: ' load a paste.deploy config file containing uwsgi section
+      (load loggers too)', type: any}
+  reload-os-env: {desc: ' force reload of os.environ at each request', type: any}
+  no-site: {desc: ' do not import site module', type: any}
+  pyshell: {desc: ' run an interactive python shell in the uWSGI environment', type: any}
+  pyshell-oneshot: {desc: ' run an interactive python shell in the uWSGI environment
+      (one-shot variant)', type: any}
+  python: {desc: ' run a python script in the uWSGI environment', type: any}
+  py: {desc: ' run a python script in the uWSGI environment', type: any}
+  pyrun: {desc: ' run a python script in the uWSGI environment', type: any}
+  py-tracebacker: {desc: ' enable the uWSGI python tracebacker', type: any}
+  py-auto-reload: {desc: ' monitor python modules mtime to trigger reload (use only
+      in development)', type: int}
+  py-autoreload: {desc: ' monitor python modules mtime to trigger reload (use only
+      in development)', type: int}
+  python-auto-reload: {desc: ' monitor python modules mtime to trigger reload (use
+      only in development)', type: int}
+  python-autoreload: {desc: ' monitor python modules mtime to trigger reload (use
+      only in development)', type: int}
+  py-auto-reload-ignore: {desc: ' ignore the specified module during auto-reload scan
+      (can be specified multiple times)', type: any}
+  wsgi-env-behaviour: {desc: ' set the strategy for allocating/deallocating the WSGI
+      env', type: any}
+  wsgi-env-behavior: {desc: ' set the strategy for allocating/deallocating the WSGI
+      env', type: any}
+  start_response-nodelay: {desc: ' send WSGI http headers as soon as possible (PEP
+      violation)', type: any}
+  wsgi-strict: {desc: ' try to be fully PEP compliant disabling optimizations', type: any}
+  wsgi-accept-buffer: {desc: ' accept CPython buffer-compliant objects as WSGI response
+      in addition to string/bytes', type: any}
+  wsgi-accept-buffers: {desc: ' accept CPython buffer-compliant objects as WSGI response
+      in addition to string/bytes', type: any}
+  python-version: {desc: ' report python version', type: any}
+  python-raw: {desc: ' load a python file for managing raw requests', type: any}
+  py-sharedarea: {desc: ' create a sharedarea from a python bytearray object of the
+      specified size', type: any}
+  py-call-osafterfork: {desc: ' enable child processes running cpython to trap OS
+      signals', type: any}
+  early-python: {desc: ' load the python VM as soon as possible (useful for the fork
+      server)', type: any}
+  early-pyimport: {desc: ' import a python module in the early phase', type: any}
+  early-python-import: {desc: ' import a python module in the early phase', type: any}
+  early-pythonpath: {desc: ' add directory (or glob) to pythonpath (immediate version)',
+    type: any}
+  early-python-path: {desc: ' add directory (or glob) to pythonpath (immediate version)',
+    type: any}
+  rails: {desc: ' load a rails <= 2.x app', type: any}
+  rack: {desc: ' load a rack app', type: any}
+  ruby-gc-freq: {desc: ' set ruby GC frequency', type: int}
+  rb-gc-freq: {desc: ' set ruby GC frequency', type: int}
+  rb-lib: {desc: ' add a directory to the ruby libdir search path', type: any}
+  ruby-lib: {desc: ' add a directory to the ruby libdir search path', type: any}
+  rb-require: {desc: ' import/require a ruby module/script', type: any}
+  ruby-require: {desc: ' import/require a ruby module/script', type: any}
+  rbrequire: {desc: ' import/require a ruby module/script', type: any}
+  rubyrequire: {desc: ' import/require a ruby module/script', type: any}
+  require: {desc: ' import/require a ruby module/script', type: any}
+  shared-rb-require: {desc: ' import/require a ruby module/script (shared)', type: any}
+  shared-ruby-require: {desc: ' import/require a ruby module/script (shared)', type: any}
+  shared-rbrequire: {desc: ' import/require a ruby module/script (shared)', type: any}
+  shared-rubyrequire: {desc: ' import/require a ruby module/script (shared)', type: any}
+  shared-require: {desc: ' import/require a ruby module/script (shared)', type: any}
+  gemset: {desc: ' load the specified gemset (rvm)', type: any}
+  rvm: {desc: ' load the specified gemset (rvm)', type: any}
+  rvm-path: {desc: ' search for rvm in the specified directory', type: any}
+  rbshell: {desc: ' run  a ruby/irb shell', type: any}
+  rbshell-oneshot: {desc: ' set ruby/irb shell (one shot)', type: any}
+  rados-mount: {desc: ' virtual mount the specified rados volume in a uri', type: any}
+  rados-timeout: {desc: ' timeout for async operations', type: int}
+  rawrouter: {desc: ' run the rawrouter on the specified port', type: any}
+  rawrouter-processes: {desc: ' prefork the specified number of rawrouter processes',
+    type: int}
+  rawrouter-workers: {desc: ' prefork the specified number of rawrouter processes',
+    type: int}
+  rawrouter-zerg: {desc: ' attach the rawrouter to a zerg server', type: any}
+  rawrouter-use-cache: {desc: ' use uWSGI cache as hostname->server mapper for the
+      rawrouter', type: any}
+  rawrouter-use-pattern: {desc: ' use a pattern for rawrouter hostname->server mapping',
+    type: any}
+  rawrouter-use-base: {desc: ' use a base dir for rawrouter hostname->server mapping',
+    type: any}
+  rawrouter-fallback: {desc: ' fallback to the specified node in case of error', type: any}
+  rawrouter-use-code-string: {desc: ' use code string as hostname->server mapper for
+      the rawrouter', type: any}
+  rawrouter-use-socket: {desc: ' forward request to the specified uwsgi socket', type: any}
+  rawrouter-to: {desc: ' forward requests to the specified uwsgi server (you can specify
+      it multiple times for load balancing)', type: any}
+  rawrouter-gracetime: {desc: ' retry connections to dead static nodes after the specified
+      amount of seconds', type: int}
+  rawrouter-events: {desc: ' set the maximum number of concurrent events', type: int}
+  rawrouter-max-retries: {desc: ' set the maximum number of retries/fallbacks to other
+      nodes', type: int}
+  rawrouter-quiet: {desc: ' do not report failed connections to instances', type: any}
+  rawrouter-cheap: {desc: ' run the rawrouter in cheap mode', type: any}
+  rawrouter-subscription-server: {desc: ' run the rawrouter subscription server on
+      the spcified address', type: any}
+  rawrouter-subscription-slot: {desc: ' *** deprecated ***', type: any}
+  rawrouter-timeout: {desc: ' set rawrouter timeout', type: int}
+  rawrouter-stats: {desc: ' run the rawrouter stats server', type: any}
+  rawrouter-stats-server: {desc: ' run the rawrouter stats server', type: any}
+  rawrouter-ss: {desc: ' run the rawrouter stats server', type: any}
+  rawrouter-harakiri: {desc: ' enable rawrouter harakiri', type: int}
+  rawrouter-xclient: {desc: ' use the xclient protocol to pass the client address',
+    type: any}
+  rawrouter-buffer-size: {desc: ' set internal buffer size (default: page size)',
+    type: any}
+  rbthreads: {desc: ' enable ruby native threads', type: any}
+  rb-threads: {desc: ' enable ruby native threads', type: any}
+  rbthread: {desc: ' enable ruby native threads', type: any}
+  rb-thread: {desc: ' enable ruby native threads', type: any}
+  ring-load: {desc: ' load the specified clojure script', type: any}
+  clojure-load: {desc: ' load the specified clojure script', type: any}
+  ring-app: {desc: ' map the specified ring application (syntax namespace:function)',
+    type: any}
+  rrdtool: {desc: ' store rrd files in the specified directory', type: any}
+  rrdtool-freq: {desc: ' set collect frequency', type: int}
+  rrdtool-lib: {desc: ' set the name of rrd library (default: librrd.so)', type: any}
+  rsyslog-packet-size: {desc: ' set maximum packet size for syslog messages (default
+      1024) WARNING! using packets > 1024 breaks RFC 3164 (#4.1)', type: int}
+  rsyslog-split-messages: {desc: ' split big messages into multiple chunks if they
+      are bigger than allowed packet size (default is false)', type: any}
+  sqlite3: {desc: ' load config from sqlite3 db', type: any}
+  sqlite: {desc: ' load config from sqlite3 db', type: any}
+  sslrouter: {desc: ' run the sslrouter on the specified port', type: any}
+  sslrouter2: {desc: ' run the sslrouter on the specified port (key-value based)',
+    type: any}
+  sslrouter-session-context: {desc: ' set the session id context to the specified
+      value', type: any}
+  sslrouter-processes: {desc: ' prefork the specified number of sslrouter processes',
+    type: int}
+  sslrouter-workers: {desc: ' prefork the specified number of sslrouter processes',
+    type: int}
+  sslrouter-zerg: {desc: ' attach the sslrouter to a zerg server', type: any}
+  sslrouter-use-cache: {desc: ' use uWSGI cache as hostname->server mapper for the
+      sslrouter', type: any}
+  sslrouter-use-pattern: {desc: ' use a pattern for sslrouter hostname->server mapping',
+    type: any}
+  sslrouter-use-base: {desc: ' use a base dir for sslrouter hostname->server mapping',
+    type: any}
+  sslrouter-fallback: {desc: ' fallback to the specified node in case of error', type: any}
+  sslrouter-use-code-string: {desc: ' use code string as hostname->server mapper for
+      the sslrouter', type: any}
+  sslrouter-use-socket: {desc: ' forward request to the specified uwsgi socket', type: any}
+  sslrouter-to: {desc: ' forward requests to the specified uwsgi server (you can specify
+      it multiple times for load balancing)', type: any}
+  sslrouter-gracetime: {desc: ' retry connections to dead static nodes after the specified
+      amount of seconds', type: int}
+  sslrouter-events: {desc: ' set the maximum number of concurrent events', type: int}
+  sslrouter-max-retries: {desc: ' set the maximum number of retries/fallbacks to other
+      nodes', type: int}
+  sslrouter-quiet: {desc: ' do not report failed connections to instances', type: any}
+  sslrouter-cheap: {desc: ' run the sslrouter in cheap mode', type: any}
+  sslrouter-subscription-server: {desc: ' run the sslrouter subscription server on
+      the spcified address', type: any}
+  sslrouter-timeout: {desc: ' set sslrouter timeout', type: int}
+  sslrouter-stats: {desc: ' run the sslrouter stats server', type: any}
+  sslrouter-stats-server: {desc: ' run the sslrouter stats server', type: any}
+  sslrouter-ss: {desc: ' run the sslrouter stats server', type: any}
+  sslrouter-harakiri: {desc: ' enable sslrouter harakiri', type: int}
+  sslrouter-sni: {desc: ' use SNI to route requests', type: any}
+  sslrouter-buffer-size: {desc: ' set internal buffer size (default: page size)',
+    type: any}
+  stackless: {desc: ' use stackless as suspend engine', type: any}
+  symcall: {desc: ' load the specified C symbol as the symcall request handler (supports
+      <mountpoint=func> too)', type: any}
+  symcall-use-next: {desc: ' use RTLD_NEXT when searching for symbols', type: any}
+  symcall-register-rpc: {desc: ' load the specified C symbol as an RPC function (syntax:
+      name function)', type: any}
+  symcall-post-fork: {desc: ' call the specified C symbol after each fork()', type: any}
+  tornado: {desc: ' a shortcut enabling tornado loop engine with the specified number
+      of async cores and optimal parameters', type: any}
+  tuntap-router: {desc: ' run the tuntap router (syntax: <device> <socket> [stats]
+      [gateway])', type: any}
+  tuntap-device: {desc: ' add a tuntap device to the instance (syntax: <device>[ <socket>])',
+    type: any}
+  tuntap-use-credentials: {desc: ' enable check of SCM_CREDENTIALS for tuntap client/server',
+    type: any}
+  tuntap-router-firewall-in: {desc: ' add a firewall rule to the tuntap router (syntax:
+      <action> <src/mask> <dst/mask>)', type: any}
+  tuntap-router-firewall-out: {desc: ' add a firewall rule to the tuntap router (syntax:
+      <action> <src/mask> <dst/mask>)', type: any}
+  tuntap-router-route: {desc: ' add a routing rule to the tuntap router (syntax: <src/mask>
+      <dst/mask> <gateway>)', type: any}
+  tuntap-router-stats: {desc: ' run the tuntap router stats server', type: any}
+  tuntap-device-rule: {desc: ' add a tuntap device rule (syntax: <direction> <src/mask>
+      <dst/mask> <action> [target])', type: any}
+  ugreen: {desc: ' enable ugreen coroutine subsystem', type: any}
+  ugreen-stacksize: {desc: ' set ugreen stack size in pages', type: int}
+  v8-load: {desc: ' load a javascript file', type: any}
+  v8-preemptive: {desc: ' put v8 in preemptive move (single isolate) with the specified
+      frequency', type: int}
+  v8-gc-freq: {desc: ' set the v8 garbage collection frequency', type: any}
+  v8-module-path: {desc: ' set the v8 modules search path', type: any}
+  v8-jsgi: {desc: ' load the specified JSGI 3.0 application', type: any}
+  webdav-mount: {desc: ' map a filesystem directory as a webdav store', type: any}
+  webdav-css: {desc: ' add a css url for automatic webdav directory listing', type: any}
+  webdav-javascript: {desc: ' add a javascript url for automatic webdav directory
+      listing', type: any}
+  webdav-js: {desc: ' add a javascript url for automatic webdav directory listing',
+    type: any}
+  webdav-class-directory: {desc: ' set the css directory class for automatic webdav
+      directory listing', type: any}
+  webdav-div: {desc: ' set the div id for automatic webdav directory listing', type: any}
+  webdav-lock-cache: {desc: ' set the cache to use for webdav locking', type: any}
+  webdav-principal-base: {desc: ' enable WebDAV Current Principal Extension using
+      the specified base', type: any}
+  webdav-add-option: {desc: ' add a WebDAV standard to the OPTIONS response', type: any}
+  webdav-add-prop: {desc: ' add a WebDAV property to all resources', type: any}
+  webdav-add-collection-prop: {desc: ' add a WebDAV property to all collections',
+    type: any}
+  webdav-add-object-prop: {desc: ' add a WebDAV property to all objects', type: any}
+  webdav-add-prop-href: {desc: ' add a WebDAV property to all resources (href value)',
+    type: any}
+  webdav-add-collection-prop-href: {desc: ' add a WebDAV property to all collections
+      (href value)', type: any}
+  webdav-add-object-prop-href: {desc: ' add a WebDAV property to all objects (href
+      value)', type: any}
+  webdav-add-prop-comp: {desc: ' add a WebDAV property to all resources (xml value)',
+    type: any}
+  webdav-add-collection-prop-comp: {desc: ' add a WebDAV property to all collections
+      (xml value)', type: any}
+  webdav-add-object-prop-comp: {desc: ' add a WebDAV property to all objects (xml
+      value)', type: any}
+  webdav-add-rtype-prop: {desc: ' add a WebDAV resourcetype property to all resources',
+    type: any}
+  webdav-add-rtype-collection-prop: {desc: ' add a WebDAV resourcetype property to
+      all collections', type: any}
+  webdav-add-rtype-object-prop: {desc: ' add a WebDAV resourcetype property to all
+      objects', type: any}
+  webdav-skip-prop: {desc: ' do not add the specified prop if available in resource
+      xattr', type: any}
+  xslt-docroot: {desc: ' add a document_root for xslt processing', type: any}
+  xslt-ext: {desc: ' search for xslt stylesheets with the specified extension', type: any}
+  xslt-var: {desc: ' get the xslt stylesheet path from the specified request var',
+    type: any}
+  xslt-stylesheet: {desc: ' if no xslt stylesheet file can be found, use the specified
+      one', type: any}
+  xslt-content-type: {desc: ' set the content-type for the xslt rsult (default: text/html)',
+    type: any}
+  zabbix-template: {desc: ' print (or store to a file) the zabbix template for the
+      current metrics setup', type: any}
+  zergpool: {desc: ' start a zergpool on specified address for specified address',
+    type: any}
+  zerg-pool: {desc: ' start a zergpool on specified address for specified address',
+    type: any}
+type: map

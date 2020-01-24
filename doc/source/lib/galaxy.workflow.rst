@@ -11,6 +11,7 @@ Subpackages
 
 .. toctree::
 
+    galaxy.workflow.resources
     galaxy.workflow.schedulers
 
 Submodules
@@ -48,16 +49,16 @@ galaxy.workflow.run module
     :undoc-members:
     :show-inheritance:
 
-galaxy.workflow.run_request module
-----------------------------------
+galaxy.workflow.run\_request module
+-----------------------------------
 
 .. automodule:: galaxy.workflow.run_request
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.workflow.scheduling_manager module
------------------------------------------
+galaxy.workflow.scheduling\_manager module
+------------------------------------------
 
 .. automodule:: galaxy.workflow.scheduling_manager
     :members:

@@ -1,0 +1,46 @@
+<tool id="interactive_tool_bam_iobio" tool_type="interactive" name="BAM (iobio) Visualisation" version="0.1">
+    <requirements>
+        <container type="docker">qiaoy/iobio-bundle.bam-iobio:1.0-ondemand</container>
+    </requirements>
+    <entry_points>
+        <entry_point name="BAM io.bio visualisation of $infile.display_name" requires_domain="True">
+            <port>80</port>
+            <url><![CDATA[/?bam=http://localhost/tmp/bamfile.bam&region=1]]></url>
+        </entry_point>
+    </entry_points>
+    <command><![CDATA[
+    ## ToDo: websocket could not be found
+    ## WebSocket connection to 'ws://localhost/bamreaddepther/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
+
+    #set $PUB_HOSTNAME = 'localhost'
+    #set $PUB_HTTP_PORT = '80'
+
+    cd /var/www/html &&
+    sed -i "s@\"wss://services.iobio.io/samtools/\"@((window.location.protocol === \"https:\") ? \"wss://\" : \"ws://\") + window.location.host + \"/samtools/\"@" js/bam.iobio.js/bam.iobio.js &&
+    sed -i "s@\"wss://services.iobio.io/bamreaddepther/\"@((window.location.protocol === \"https:\") ? \"wss://\" : \"ws://\") + window.location.host + \"/bamreaddepther/\"@" js/bam.iobio.js/bam.iobio.js &&
+    sed -i "s@\"wss://services.iobio.io/bamstatsalive/\"@((window.location.protocol === \"https:\") ? \"wss://\" : \"ws://\") + window.location.host + \"/bamstatsalive/\"@" js/bam.iobio.js/bam.iobio.js &&
+    sed -i "s@\"wss://services.iobio.io/samheader/\"@((window.location.protocol === \"https:\") ? \"wss://\" : \"ws://\") + window.location.host + \"/samheader/\"@" js/bam.iobio.js/bam.iobio.js &&
+
+    sed -i 's/deny all;//g' /etc/nginx/nginx.conf &&
+
+        cp '${infile}' /input/bamfile.bam &&
+        cp '${infile.metadata.bam_index}' /input/bamfile.bam.bai &&
+        mkdir /var/log/supervisor/ &&
+        head -n -2  /etc/supervisor.d/app.conf > /tmp/app.conf &&
+        mv /tmp/app.conf /etc/supervisor.d/app.conf &&
+
+        /usr/bin/supervisord -c /etc/supervisord.conf
+    ]]>
+    </command>
+    <inputs>
+        <param name="infile" type="data" format="bam" label="BAM file"/>
+    </inputs>
+    <outputs>
+        <data name="outfile" format="txt" />
+    </outputs>
+    <tests>
+    </tests>
+    <help>
+        BAM iobio visualisation.
+    </help>
+</tool>

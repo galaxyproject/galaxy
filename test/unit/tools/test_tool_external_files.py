@@ -1,9 +1,10 @@
 """ Unit test logic related to finding externally referenced files in tool
 descriptions.
 """
-import tempfile
 import os
 import shutil
+import tempfile
+
 from galaxy.tools import Tool
 
 

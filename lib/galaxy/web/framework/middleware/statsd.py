@@ -1,15 +1,12 @@
 """
-Middleware for sending request statistics to statsd
+Middleware for sending request statistics to statsd.
 """
 from __future__ import absolute_import
+
 import time
 
-try:
-    import statsd
-except ImportError:
-    # This middleware will never be used without statsd.  This block allows
-    # unit tests pass on systems without it.
-    statsd = None
+from galaxy.model.orm.engine_factory import QUERY_COUNT_LOCAL
+from galaxy.web.statsd_client import GalaxyStatsdClient
 
 
 class StatsdMiddleware(object):
@@ -22,16 +19,28 @@ class StatsdMiddleware(object):
                  application,
                  statsd_host,
                  statsd_port,
-                 statsd_prefix):
-        if not statsd:
-            raise ImportError( "Statsd middleware configured, but no statsd python module found. "
-                           "Please install the python statsd module to use this functionality." )
+                 statsd_prefix,
+                 statsd_influxdb):
         self.application = application
-        self.statsd_client = statsd.StatsClient(statsd_host, statsd_port, prefix=statsd_prefix)
+        self.galaxy_stasd_client = GalaxyStatsdClient(
+            statsd_host,
+            statsd_port,
+            statsd_prefix,
+            statsd_influxdb
+        )
 
     def __call__(self, environ, start_response):
         start_time = time.time()
         req = self.application(environ, start_response)
         dt = int((time.time() - start_time) * 1000)
-        self.statsd_client.timing(environ.get('controller_action_key', None) or environ.get('PATH_INFO', "NOPATH").strip('/').replace('/', '.'), dt)
+
+        page = environ.get('controller_action_key', None) or environ.get('PATH_INFO', "NOPATH").strip('/').replace('/', '.')
+        self.galaxy_stasd_client.timing(page, dt)
+        try:
+            times = QUERY_COUNT_LOCAL.times
+            self.galaxy_stasd_client.timing("sql." + page, sum(times) * 1000.)
+            self.galaxy_stasd_client.incr("sqlqueries." + page, len(times))
+        except AttributeError:
+            # Not logging query counts, skip
+            pass
         return req

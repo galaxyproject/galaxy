@@ -1,0 +1,151 @@
+
+===========================================================
+September 2017 Galaxy Release (v 17.09)
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+**Singularity**
+  Tool execution using the HPC-friendly container technology `Singularity <http://singularity.lbl.gov/>`__
+  is now supported. Custom containers can be specified by the Galaxy admin on a per job destination basis
+  or standardized containers corresponding to Conda requirements can be built or downloaded automatically
+  using the mulled toolkit built into Galaxy (just like is possible for Docker). For more information
+  checkout `this presentation <http://bit.ly/gcc-biocontainers>`__ from the 2017 Galaxy Community Conference.
+  `Pull Request 4175`_
+
+**Download entire collection**
+  Downloading whole colections is now possible from the history interface. `Pull Request 4098`_
+  Thanks to `@mvdbeek <https://github.com/mvdbeek>`__.
+
+**Switch tool versions in workflows**
+  You can now select exactly what version of tool you want to use when building workflows. `Pull Request 4373`_
+  Thanks to `@mvdbeek <https://github.com/mvdbeek>`__.
+
+Get Galaxy
+==========
+
+The code lives at `Github <https://github.com/galaxyproject/galaxy>`__ and you should have `Git <https://git-scm.com/>`__ to obtain it.
+
+To get a new Galaxy repository run:
+  .. code-block:: shell
+
+      $ git clone -b release_17.09 https://github.com/galaxyproject/galaxy.git
+
+To update an existing Galaxy repository run:
+  .. code-block:: shell
+
+      $ git checkout release_17.09 && git pull --ff-only origin release_17.09
+
+See `the community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
+
+
+Security
+========
+
+The 17.09 Galaxy version includes many security patches. Per our new `Security Policy
+<https://github.com/galaxyproject/galaxy/blob/dev/SECURITY_POLICY.md>`__ some of these have been
+applied to Galaxy releases going back 12 months.
+
+Details of the vulnerabilities that have been backported can be found in the `Security patch details`_
+section of these release notes. Some issues have only been addressed in 17.09, for this reason
+if security is important to your Galaxy instance we strongly recommend upgrading to this latest release
+as soon as possible.
+
+If you maintain a publicly accessible Galaxy please consider signing up for this `mailing list <https://lists.galaxyproject.org/listinfo/galaxy-public-servers>`__ to receive the future security patches in advance of the public disclosure.
+
+Deprecation Notices
+===================
+
+* The Galaxy Sample Tracking and External Services functionality is now considered deprecated. In the next releases we will remove it completely. Related PRs:`#4526 <https://github.com/galaxyproject/galaxy/pull/4526>`__ `#4872 <https://github.com/galaxyproject/galaxy/pull/4872>`__ .
+* The deprecated admin-only interface for Galaxy Data Libraries is staged to be removed in the next release.
+* Workflows API: When exposing WorkflowInvocationSteps ``state`` will no longer be available.
+* The ``refresh_on_change`` attribute of a ``<param>`` tag in the tool syntax can no longer be set to a value of another parameter. Use boolean instead (e.g. ``refresh_on_change="True"``). `Details <https://github.com/galaxyproject/galaxy/issues/4810>`__
+* The endpoint ``/api/configuration/toolbox`` is now deprecated and will be removed in the future. All tools are now watched for changes and this feature became obsolete.
+
+
+Release Notes
+===========================================================
+
+.. include:: 17.09.rst
+   :start-after: announce_start
+
+Security patch details
+======================
+
+Limited Galaxy Data Library unauthorized filesystem access
+----------------------------------------------------------
+
+Tracked as `GX-2017-0001 <https://lists.galaxyproject.org/pipermail/galaxy-dev/2017-October/026058.html>`__
+
+A medium severity security vulnerability in Galaxy Data Libraries was
+recently discovered by `Jelle Scholtalbers <https://github.com/scholtalbers>`__.
+This vulnerability allows the following unauthorized actions:
+
+1. Any user that has been granted the permission to add datasets to a
+   library, library folder, or to modify an existing library dataset (an
+   "authorized user"), is able to import any file on the system that is
+   readable by the user running the Galaxy server.
+
+2. Anyone can create libraries and library folders (but not add datasets to them)
+
+The fix for this issue has been applied to Galaxy releases back to 16.07 and can be found in this `commit <https://github.com/galaxyproject/galaxy/commit/93a8bfc7cb5e9c3395c5057910ec39d68ad787b4>`__
+
+Arbitrary code execution for Galaxy servers with Galaxy Interactive Environments enabled
+----------------------------------------------------------------------------------------
+
+Tracked as `GX-2017-0002 <https://lists.galaxyproject.org/pipermail/galaxy-dev/2017-October/026059.html>`__
+
+A high severity security vulnerability was recently discovered in Galaxy
+Interactive Environments (GIEs) by the Galaxy Committers Team. Anyone with
+a Galaxy account can exploit this vulnerability to execute arbitrary code
+on the Galaxy server as the user running the Galaxy server process.
+
+The vulnerability only affects Galaxy servers on which Galaxy Interactive
+Environments are enabled (by setting the
+``interactive_environment_plugins_directory``
+option in ``galaxy.ini``). Because the vulnerability can be exploited to
+execute arbitrary code, the impact for affected servers is severe.
+
+Administrators of Galaxy servers where GIEs *are* enabled should update
+immediately.
+
+The fix for this issue has been applied to Galaxy releases back to 17.05 and can be found in this `commit <https://github.com/galaxyproject/galaxy/commit/9f8d3ee444ad10038add204ed1c1dc11e636dd9d>`__
+
+Unauthorized filesystem access via data source tools
+----------------------------------------------------
+
+Tracked as `GX-2017-0003 <https://lists.galaxyproject.org/pipermail/galaxy-dev/2017-October/026060.html>`__
+
+A medium severity security vulnerability in tools utilizing the Galaxy data
+source protocol was recently discovered by the Galaxy Committers Team.
+Anyone who is able to run an external data source tool can access
+any file that is readable by the user running Galaxy jobs
+on the host where the job runs.
+
+Many such "external data source" tools are provided with the Galaxy
+distribution and are enabled by default (most tools under the "Get Data"
+section of the tool panel), meaning that its exploitability is fairly high,
+as only one such tool needs to be enabled to be vulnerable, including any
+custom data source tools (any tool that uses
+``tools/data_source/data_source.py``).
+What files are readable depends entirely upon what the job's user has
+access to read on the host(s) where jobs run.
+
+The fix for this issue has been applied to Galaxy releases back to 16.07 and can be found in this `commit <https://github.com/galaxyproject/galaxy/commit/0e698813a96f1ad61d797255686f69cf5e6b1280>`__
+
+Cross site scripting and session fixation
+-----------------------------------------
+
+Disclosed on the `mailing list <https://lists.galaxyproject.org/pipermail/galaxy-dev/2017-August/025938.html>`__ in August 2017.
+
+Vulnerabilities were found by Helena Rasche and Manabu Ishii respectively. Detailed descriptions of these categories of vulnerabilities can be found at:
+
+- `<https://www.owasp.org/index.php/Cross-site_Scripting_(XSS)>`__
+- https://www.owasp.org/index.php/Session_fixation
+
+The fix for these issues has been applied to Galaxy releases back to 16.10 and can be found in this `diff <https://gist.githubusercontent.com/jmchilton/760bf8ba6055b9a47a48529fcc49a493/raw/01bc98e5a8067a435f38d7cf4fda4e304c4425a2/2017augsecurity_1610.patch>`__
+
+.. include:: _thanks.rst
