@@ -1,11 +1,11 @@
 <template>
     <div v-if="orderedPlugins.length > 0">
         <h3 v-if="includeTitle">Job Metrics</h3>
-        <div v-for="plugin in orderedPlugins" v-bind:key="plugin" class="metrics_plugin">
+        <div v-for="plugin in orderedPlugins" :key="plugin" class="metrics_plugin">
             <h4 class="metrics_plugin_title">{{ plugin }}</h4>
             <table class="tabletip info_data_table">
                 <tbody>
-                    <tr v-for="(metricValue, metricTitle) in metricsByPlugins[plugin]" v-bind:key="metricTitle">
+                    <tr v-for="(metricValue, metricTitle) in metricsByPlugins[plugin]" :key="metricTitle">
                         <td>{{ metricTitle }}</td>
                         <td>{{ metricValue }}</td>
                     </tr>

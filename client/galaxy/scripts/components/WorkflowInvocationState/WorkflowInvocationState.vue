@@ -4,7 +4,7 @@
             <b>Workflow Invocation State</b>
             <span v-if="createdTime"> (invoked at {{ createdTime }})</span>
         </span>
-        <div v-bind:class="{ 'context-wrapped': provideContext }">
+        <div :class="{ 'context-wrapped': provideContext }">
             <div>
                 Step Scheduling
                 <span
@@ -56,8 +56,8 @@
                 </div>
             </div>
             <span v-if="invocationSchedulingTerminal && jobStatesTerminal">
-                <a v-bind:href="invocationLink">View Invocation Report</a>
-                <a class="fa fa-print" v-bind:href="invocationPdfLink"></a>
+                <a :href="invocationLink">View Invocation Report</a>
+                <a class="fa fa-print" :href="invocationPdfLink"></a>
             </span>
         </div>
     </div>

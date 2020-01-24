@@ -23,6 +23,7 @@ module.exports = {
         "no-unused-vars": ["error", { args: "none" }],
         "prefer-const": "error",
         "vue/v-on-style": "error",
+        "vue/v-bind-style": "error",
 
         // Vue.  Prettier compat workarounds, mostly.
         "vue/html-indent": "off",
