@@ -1,5 +1,6 @@
-from galaxy.webapps.galaxy.api.healthcheck import HealthCheckController
 import json
+
+from galaxy.webapps.galaxy.api.healthcheck import HealthCheckController
 
 
 PASS = HealthCheckController.PASS

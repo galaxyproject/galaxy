@@ -22,13 +22,12 @@ class HealthCheckController(BaseAPIController):
         super(HealthCheckController, self).__init__(app)
 
     @staticmethod
-    def _handler_handler(handled, type):
+    def _handler_handler(handled, handler_type):
         if handled:
             return handled
         return [{
             "status": HealthCheckController.FAIL,
-            "notes": ["Error: no {} handlers found".format(type)]
-        }]
+            "notes": ["Error: no {} handlers found".format(handler_type)]}]
 
     @staticmethod
     def _create_status_and_notes(result, service_string=None):
@@ -44,9 +43,8 @@ class HealthCheckController(BaseAPIController):
                 not_passing += 1
                 service_notes.append(" - {}{} has status {}".format(
                     r["componentType"],
-                    ":"+str(r["componentId"]) if "componentId" in r else "",
-                    r["status"]
-                ))
+                    ":" + str(r["componentId"]) if "componentId" in r else "",
+                    r["status"]))
         if not_passing:
             status = HealthCheckController.WARN if not_passing < len(result) else HealthCheckController.FAIL
         _l = len(result)
