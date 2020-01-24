@@ -12,7 +12,7 @@
                     <DatasetHistory :item="row.item" />
                 </template>
                 <template v-slot:cell(tags)="row">
-                    <Tags :item="row.item" @input="onTags" />
+                    <Tags :index="row.index" :tags="row.item.tags" @input="onTags" />
                 </template>
                 <template v-slot:cell(update_time)="data">
                     <UtcDate :date="data.value" mode="elapsed" />
@@ -160,8 +160,10 @@ export default {
                     this.onError(error);
                 });
         },
-        onTags(item) {
-            this.services.updateTags(item.id, "HistoryDatasetAssociation", item.tags).catch(error => {
+        onTags(tags, index) {
+            const item = this.rows[index];
+            item.tags = tags;
+            this.services.updateTags(item.id, "HistoryDatasetAssociation", tags).catch(error => {
                 this.onError(error);
             });
         },

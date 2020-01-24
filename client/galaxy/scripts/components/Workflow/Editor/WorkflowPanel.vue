@@ -31,7 +31,7 @@
                 </div>
                 <div class="mt-2">
                     <b>Tags</b>
-                    <Tags :item="this" @input="onTags" />
+                    <Tags :tags="tags" @input="onTags" />
                     <div class="form-text text-muted">
                         Apply tags to make it easy to search for and find items with the same tag.
                     </div>
@@ -77,10 +77,11 @@ export default {
         this.services = new Services();
     },
     methods: {
-        onTags(workflow) {
+        onTags(tags) {
+            this.tags = tags;
             this.services
-                .updateWorkflow(workflow.id, {
-                    tags: workflow.tags
+                .updateWorkflow(this.id, {
+                    tags: this.tags
                 })
                 .catch(error => {
                     this.onError(error);
