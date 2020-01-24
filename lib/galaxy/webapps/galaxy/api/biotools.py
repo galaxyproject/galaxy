@@ -1,8 +1,8 @@
 import functools
+import logging
 import os
 import string
-import logging
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 
 
 def json_formatter(func):

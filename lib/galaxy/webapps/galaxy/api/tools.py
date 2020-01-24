@@ -114,7 +114,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
 
     @expose_api_anonymous_and_sessionless
     @json_formatter
-    def biotools( self, trans, id, **kwd ):
+    def biotools(self, trans, id, **kwd):
         """
         GET /api/tools/{tool_id}/biotools
         Return json that can be consumed by the ELIXIR registry.
@@ -123,7 +123,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         def to_dict(x):
             return x.to_dict()
 
-        tool = self._get_tool( id, user=trans.user )
+        tool = self._get_tool(id, user=trans.user)
         input_param = list()
         for name, param in tool.inputs.items():
             input_param.append(param.to_dict(trans))
