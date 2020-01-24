@@ -18,7 +18,7 @@
                     <tool-section
                         v-for="category in categories"
                         :category="category"
-                        :queryFilter="query"
+                        :query-filter="query"
                         :key="category.id"
                         @onClick="onOpen"
                     />
