@@ -79,8 +79,6 @@ class InputValueWrapper(ToolParameterValueWrapper):
         # For backward compatibility, allow `$wrapper != ""` for optional non-text param
         if self.input.optional and self.value is None:
             if isinstance(other, string_types):
-                if other == '':
-                    return ''
                 return str(self)
             else:
                 return None

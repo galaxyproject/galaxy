@@ -33,19 +33,25 @@ def with_mock_tool(func):
     return call
 
 
-@with_mock_tool
-def test_select_wrapper_simple_options(tool):
-    xml = XML('''<param name="blah" type="select">
+def selectwrapper(tool, value, multiple=False, optional=False):
+    optional = 'optional="true"' if optional else ''
+    multiple = 'multiple="true"' if multiple else ''
+    xml = XML('''<param name="blah" type="select" %s %s>
         <option value="x">I am X</option>
         <option value="y" selected="true">I am Y</option>
         <option value="z">I am Z</option>
-    </param>''')
+    </param>''' % (multiple, optional))
     parameter = SelectToolParameter(tool, xml)
-    wrapper = SelectToolParameterWrapper(parameter, "x")
+    return SelectToolParameterWrapper(parameter, value)
+
+
+@with_mock_tool
+def test_select_wrapper_simple_options(tool):
+    wrapper = selectwrapper(tool, "x")
     assert wrapper.name == "blah"
     assert str(wrapper) == "x"
     assert wrapper.value_label == "I am X"
-    wrapper = SelectToolParameterWrapper(parameter, None)
+    wrapper = selectwrapper(tool, None, optional=True)
     assert str(wrapper) == "None"
     assert wrapper == ""
     assert wrapper == "None"
@@ -53,20 +59,14 @@ def test_select_wrapper_simple_options(tool):
 
 @with_mock_tool
 def test_select_wrapper_multiple_options(tool):
-    xml = XML('''<param name="blah" type="select" multiple="true">
-        <option value="x">I am X</option>
-        <option value="y" selected="true">I am Y</option>
-        <option value="z">I am Z</option>
-    </param>''')
-    parameter = SelectToolParameter(tool, xml)
-    wrapper = SelectToolParameterWrapper(parameter, ["x"])
+    wrapper = selectwrapper(tool, ["x"], multiple=True)
     assert wrapper.name == "blah"
     assert str(wrapper) == "x"
     assert "x" in wrapper
-    wrapper = SelectToolParameterWrapper(parameter, ["x", "z"])
+    wrapper = selectwrapper(tool, ["x", "z"], multiple=True)
     assert str(wrapper) == "x,z"
     assert "x" in wrapper
-    wrapper = SelectToolParameterWrapper(parameter, [])
+    wrapper = selectwrapper(tool, [], multiple=True)
     assert str(wrapper) == "None"
     assert wrapper == ""
     assert wrapper == "None"
