@@ -24,6 +24,7 @@ module.exports = {
         "prefer-const": "error",
         "vue/v-on-style": "error",
         "vue/v-bind-style": "error",
+        "vue/attribute-hyphenation": "error",
 
         // Vue.  Prettier compat workarounds, mostly.
         "vue/html-indent": "off",

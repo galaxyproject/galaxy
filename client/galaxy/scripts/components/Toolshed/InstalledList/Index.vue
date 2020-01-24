@@ -25,7 +25,7 @@
                     id="repository-table"
                     striped
                     :fields="fields"
-                    :sortBy="sortBy"
+                    :sort-by="sortBy"
                     :items="repositories"
                     :filter="filter"
                     @filtered="filtered"

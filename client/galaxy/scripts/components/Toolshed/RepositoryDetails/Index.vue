@@ -40,9 +40,9 @@
                     <InstallationSettings
                         v-if="showSettings"
                         :repo="repo"
-                        :toolshedUrl="toolshedUrl"
-                        :changesetRevision="selectedChangeset"
-                        :requiresPanel="selectedRequiresPanel"
+                        :toolshed-url="toolshedUrl"
+                        :changeset-revision="selectedChangeset"
+                        :requires-panel="selectedRequiresPanel"
                         @hide="onHide"
                         @ok="onOk"
                     />

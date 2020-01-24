@@ -3,9 +3,9 @@
         <h5>Command Line</h5>
         <pre class="text-white bg-dark"><code class="break-word">{{ commandLine }}</code></pre>
         <h5>Job Parameters</h5>
-        <job-parameters :jobId="jobId" :includeTitle="false" />
+        <job-parameters :job-id="jobId" :include-title="false" />
         <h5>Job Metrics</h5>
-        <job-metrics :jobId="jobId" :includeTitle="false" />
+        <job-metrics :job-id="jobId" :include-title="false" />
     </b-card>
 </template>
 

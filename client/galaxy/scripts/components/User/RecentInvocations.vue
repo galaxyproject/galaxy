@@ -1,9 +1,9 @@
 <template>
     <invocations
-        :invocationItems="invocationItems"
+        :invocation-items="invocationItems"
         :loading="loading"
-        headerMessage="Your most recent workflow invocations are displayed on this page."
-        noInvocationsMessage="There are no workflow invocations to show."
+        header-message="Your most recent workflow invocations are displayed on this page."
+        no-invocations-message="There are no workflow invocations to show."
     >
     </invocations>
 </template>

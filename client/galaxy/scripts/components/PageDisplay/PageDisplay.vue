@@ -1,5 +1,5 @@
 <template>
-    <markdown :markdown-config="markdownConfig" :exportLink="exportUrl"> </markdown>
+    <markdown :markdown-config="markdownConfig" :export-link="exportUrl"> </markdown>
 </template>
 
 <script>

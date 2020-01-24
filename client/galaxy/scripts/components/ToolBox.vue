@@ -18,7 +18,7 @@
                     <tool-section
                         v-for="category in toolsLayout"
                         :category="category"
-                        :isFiltered="isFiltered"
+                        :is-filtered="isFiltered"
                         :key="category.id"
                     ></tool-section>
                 </div>

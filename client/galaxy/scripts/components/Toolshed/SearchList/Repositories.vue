@@ -8,7 +8,7 @@
                 <div>{{ row.item.description }}</div>
             </template>
             <template v-slot:row-details="row">
-                <RepositoryDetails :repo="row.item" :toolshedUrl="toolshedUrl" />
+                <RepositoryDetails :repo="row.item" :toolshed-url="toolshedUrl" />
             </template>
         </b-table>
         <div class="unavailable-message" v-if="noResultsFound">

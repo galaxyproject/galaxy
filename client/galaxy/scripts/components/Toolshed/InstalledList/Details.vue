@@ -8,7 +8,7 @@
                 </b-card>
             </span>
             <div v-else>
-                <RepositoryDetails :repo="toolshedRepository" :toolshedUrl="repo.tool_shed_url" />
+                <RepositoryDetails :repo="toolshedRepository" :toolshed-url="repo.tool_shed_url" />
             </div>
         </div>
     </div>

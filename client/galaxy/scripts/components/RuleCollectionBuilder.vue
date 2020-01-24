@@ -449,9 +449,9 @@
                         id="hot-table"
                         ref="hotTable"
                         :data="hotData.data"
-                        :colHeaders="colHeadersDisplay"
-                        :readOnly="true"
-                        stretchH="all"
+                        :col-headers="colHeadersDisplay"
+                        :read-only="true"
+                        stretch-h="all"
                     >
                     </hot-table>
                 </div>
