@@ -96,7 +96,6 @@ class ToolSectionLabel(Dictifiable):
     A label for a set of tools that can be displayed above groups of tools
     and sections in the user interface
     """
-
     dict_collection_visible_keys = ['id', 'text', 'version']
 
     def __init__(self, item):

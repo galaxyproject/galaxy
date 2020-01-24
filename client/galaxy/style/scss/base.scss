@@ -192,11 +192,12 @@ body {
 }
 
 // ==== Unified panel styles ====
-
 .unified-panel {
     display: flex;
-    @extend .flex-column;
+    flex-flow: column;
     background: $panel-bg-color;
+    height: 100%;
+    overflow: auto;
 }
 .unified-panel-header {
     @extend .unselectable;
@@ -1366,9 +1367,6 @@ div.permissionContainer {
     }
     background: $panel-bg-color;
     min-height: 100%;
-    .tool-old-link {
-        font-weight: bold;
-    }
 }
 
 div.toolSectionTitle {
@@ -1376,7 +1374,7 @@ div.toolSectionTitle {
     font-size: $h4-font-size;
 }
 
-div.toolPanelLabel {
+.toolPanelLabel {
     @extend .pb-1;
     @extend .pt-2;
     @extend .px-3;
@@ -1386,9 +1384,8 @@ div.toolPanelLabel {
     text-transform: uppercase;
 }
 
-div.toolSectionTitle,
 div.toolTitle,
-div.toolTitleNoSection {
+div.toolSectionTitle {
     display: block;
     .labels {
         float: right;
@@ -1402,17 +1399,10 @@ div.toolTitleNoSection {
             background: darken($panel-bg-color, 5%);
         }
     }
-    &.text-muted a {
+    a.text-muted {
         &:hover {
             background: inherit;
         }
-    }
-}
-
-div.toolSectionWrapper {
-    div.toolTitle a {
-        @extend .pl-4;
-        font-size: inherit;
     }
 }
 
@@ -1683,7 +1673,7 @@ div.toolSectionWrapper {
 #canvas-viewport {
     background: $workflow-editor-bg url("../../images/light_gray_grid.gif");
     width: 100%;
-    height: 100%;
+    height: calc(100% - 2.5rem);
     position: absolute;
     overflow: hidden;
 }

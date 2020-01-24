@@ -11,10 +11,10 @@ _:  # global stuff
   selectors:
     editable_text: '.editable-text'
     tooltip_balloon: '.tooltip'
-    left_panel_drag: '#left-panel-drag'
-    left_panel_collapse: '#left-panel-collapse'
-    right_panel_drag: '#right-panel-drag'
-    right_panel_collapse: '#right-panel-collapse'
+    left_panel_drag: '#left > .unified-panel-footer > .drag'
+    left_panel_collapse: '#left > .unified-panel-footer > .panel-collapse'
+    right_panel_drag: '#right > .unified-panel-footer > .drag'
+    right_panel_collapse: '#right > .unified-panel-footer > .panel-collapse'
 
   messages:
     selectors:
@@ -164,8 +164,8 @@ tool_panel:
 
   selectors:
     tool_link: 'a[href$$="tool_runner?tool_id=${tool_id}"]'
-    outer_tool_link: '.toolTitleNoSection a[href$$="tool_runner?tool_id=${tool_id}"]'
-    search: '.tool-search-query'
+    outer_tool_link: '.toolTitle a[href$$="tool_runner?tool_id=${tool_id}"]'
+    search: '.search-query'
     workflow_names: '#internal-workflows .toolTitle'
 
 multi_history_view:
@@ -285,8 +285,8 @@ workflow_editor:
     edit_name: '#edit-attributes #workflow-name'
 
     tool_menu: '#workflow-tool-menu'
-    tool_menu_section_link: '#title___workflow__${section_name}__ a span'
-    tool_menu_item_link: 'a#tool-menu-${section_name}-${item_name}'
+    tool_menu_section_link: '.tool-menu-section-${section_name} a span'
+    tool_menu_item_link: 'a.tool-menu-item-${item_name}'
 
     connect_icon: 'div.ui-form-element[tour_id="${name}"] .ui-form-connected-icon'
     collapse_icon: 'div.ui-form-element[tour_id="${name}"] .ui-form-collapsible-icon'

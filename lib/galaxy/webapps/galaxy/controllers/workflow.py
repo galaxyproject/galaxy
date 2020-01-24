@@ -41,6 +41,7 @@ from galaxy.workflow.extract import (
     summarize
 )
 from galaxy.workflow.modules import (
+    load_module_sections,
     module_factory,
     WorkflowModuleInjector
 )
@@ -655,8 +656,67 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             version = len(stored.workflows) - 1
         else:
             version = int(version)
+
+        # create workflow module models
+        module_sections = []
+        for section_name, module_section in load_module_sections(trans).items():
+            module_sections.append({
+                "title": module_section.get("title"),
+                "name": module_section.get("name"),
+                "elems": [{
+                    "name": elem.get("name"),
+                    "title": elem.get("title"),
+                    "description": elem.get("description")
+                } for elem in module_section.get("modules")]
+            })
+
+        # create data manager tool models
+        data_managers = []
+        if trans.user_is_admin and trans.app.data_managers.data_managers:
+            for data_manager_id, data_manager_val in trans.app.data_managers.data_managers.items():
+                tool = data_manager_val.tool
+                if not tool.hidden:
+                    data_managers.append({
+                        "id": tool.id,
+                        "name": tool.name,
+                        "hidden": tool.hidden,
+                        "description": tool.description,
+                        "is_workflow_compatible": tool.is_workflow_compatible
+                    })
+
+        # create workflow models
+        workflows = [{
+            'id'                  : trans.security.encode_id(workflow.id),
+            'latest_id'           : trans.security.encode_id(workflow.latest_workflow.id),
+            'step_count'          : len(workflow.latest_workflow.steps),
+            'name'                : workflow.name
+        } for workflow in workflows]
+
+        # build workflow editor model
+        editor_config = {
+            'id'                      : trans.security.encode_id(stored.id),
+            'name'                    : stored.name,
+            'toolbox'                 : trans.app.toolbox.to_dict(trans),
+            'module_sections'         : module_sections,
+            'data_managers'           : data_managers,
+            'workflows'               : workflows,
+            'urls'    : {
+                'tool_search'         : url_for('/api/tools'),
+                'get_datatypes'       : url_for('/api/datatypes/mapping'),
+                'load_workflow'       : url_for(controller='workflow', action='load_workflow'),
+                'run_workflow'        : url_for(controller='root', action='index', workflow_id=trans.security.encode_id(stored.id)),
+                'rename_async'        : url_for(controller='workflow', action='rename_async', id=trans.security.encode_id(stored.id)),
+                'annotate_async'      : url_for(controller='workflow', action='annotate_async', id=trans.security.encode_id(stored.id)),
+                'get_new_module_info' : url_for(controller='workflow', action='get_new_module_info'),
+                'workflow_index'      : url_for('/workflows/list'),
+                'save_workflow'       : url_for(controller='workflow', action='save_workflow'),
+                'workflow_save_as'    : url_for(controller='workflow', action='save_workflow_as')
+            }
+        }
+
+        # parse to mako
         return trans.fill_template("workflow/editor.mako",
-                                   workflows=workflows,
+                                   editor_config=editor_config,
                                    stored=stored,
                                    version=version,
                                    annotation=self.get_item_annotation_str(trans.sa_session, trans.user, stored))
