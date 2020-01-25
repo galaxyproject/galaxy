@@ -170,12 +170,12 @@ def _simple_image_name(targets, image_build=None):
     if target.version is not None:
         if image_build is not None:
             print("WARNING: Hard-coding image build instead of using Conda build - this is not recommended.")
-            suffix = image_build
+            build = image_build
         else:
-            suffix += ":%s" % target.version
             build = target.build
-            if build is not None:
-                suffix += "--%s" % build
+        suffix += ":%s" % target.version
+        if build is not None:
+            suffix += "--%s" % build
     return "%s%s" % (target.package_name, suffix)
 
 
