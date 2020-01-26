@@ -74,7 +74,7 @@
     "styleguide": "vue-styleguidist server",
     "styleguide:build": "vue-styleguidist build",
     "test": "yarn run test-mocha && yarn run test-qunit",
-    "test-watch": "npm run test-mocha -- --no-single-run",
+    "test-watch": "yarn run test-mocha -- --no-single-run",
     "test-qunit": "karma start karma/karma.config.qunit.js",
     "test-mocha": "karma start karma/karma.config.mocha.js",
     "eslint": "eslint -c .eslintrc.js galaxy/scripts --ext .js,.vue"

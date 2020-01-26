@@ -3,6 +3,7 @@ import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { mount, createLocalVue } from "@vue/test-utils";
 import { createStore } from "../../store";
+import flushPromises from "flush-promises";
 import JobMetrics from "./JobMetrics";
 
 const JOB_ID = "moo";
@@ -50,10 +51,8 @@ describe("JobMetrics/JobMetrics.vue", () => {
             propsData,
             localVue
         });
-        // One tick for axios request.
-        await wrapper.vm.$nextTick();
-        // One tick for Vue to render.
-        await wrapper.vm.$nextTick();
+        // Wait for axios and rendering.
+        await flushPromises();
         expect(wrapper.vm.jobMetrics.length).to.equals(3);
         expect(wrapper.vm.jobId).to.equals(JOB_ID);
         expect(wrapper.vm.metricsByPlugins.core.runtime).to.equals(145);
