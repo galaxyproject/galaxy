@@ -1051,7 +1051,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             if tag.user_tname not in keywords:
                 keywords.append(tag.user_tname)
 
-        input_subdomain, output_subdomain, pipeline_steps, software_prerequisites = [], [], [], []
+        tools, input_subdomain, output_subdomain, pipeline_steps, software_prerequisites = [], [], [], [], []
         for i, step in enumerate(workflow_invocation.steps):
             current_tool = dict_workflow['steps'][str(i)]
             if step.workflow_step.type == 'tool':
@@ -1111,11 +1111,15 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                     }
                 except Exception:
                     continue
-                software_prerequisites.append(software_prerequisite)
+                if software_prerequisite['uri']['uri'] in tools:
+                    continue
+                else:
+                    software_prerequisites.append(software_prerequisite)
+                tools.append(software_prerequisite['uri']['uri'])
             # method to grab the workflow inputs? [WIP] TODO
             if step.workflow_step.type != 'tool':
                 input_subdomain.append(step.workflow_step)
-
+        print tools
         usability_domain = []
         for a in stored_workflow.annotations:
             usability_domain.append(a.annotation)
@@ -1152,7 +1156,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             'extension_domain': galaxy_extension,
             'description_domain': {
                 'keywords': keywords,
-                'xref': [],
+                'xref': kwd.get('xref', []),
                 'platform': ['Galaxy'],
                 'pipeline_steps': pipeline_steps,
             },
