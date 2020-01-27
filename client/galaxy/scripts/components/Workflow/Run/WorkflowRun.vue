@@ -44,7 +44,6 @@
 </template>
 
 <script>
-import _ from "underscore";
 import axios from "axios";
 
 import WaitButton from "components/WaitButton";
@@ -94,7 +93,7 @@ export default {
                         setRunButtonStatus: this.setRunButtonStatus,
                         handleInvocations: this.handleInvocations
                     };
-                    this.runForm = new ToolFormComposite.View(_.extend(runData, formProps));
+                    this.runForm = new ToolFormComposite.View(Object.assign({}, runData, formProps));
                 });
             })
             .catch(response => {
