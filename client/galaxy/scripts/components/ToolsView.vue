@@ -1,7 +1,7 @@
 <template>
     <div v-infinite-scroll="loadMore" infinite-scroll-disabled="busy">
         <h2 class="mb-3" style="text-align: center">
-            <span id="tools-view">Tools View</span>
+            <span id="tools-view">Consolidated view of {{tools.length}} available tools.</span>
         </h2>
         <div v-if="!loading">
             <b-container fluid class="mb-4">
@@ -195,6 +195,9 @@ export default {
                 return helpText.substring(0, helpText.indexOf("\n\n"));
             }
             return null;
+        },
+        getToolsNumber(){
+            return this.tools.length;
         }
     }
 };
