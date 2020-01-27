@@ -403,8 +403,8 @@ def target_str_to_targets(targets_raw):
         if "=" in target_str:
             package_name, version = target_str.split("=", 1)
             build = None
-            if "--" in version:
-                version, build = version.split('--')
+            if "=" in version:
+                version, build = version.split('=')
             target = build_target(package_name, version, build)
         else:
             target = build_target(target_str)
