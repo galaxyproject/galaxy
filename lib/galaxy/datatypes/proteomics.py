@@ -131,7 +131,7 @@ class Kroenik(Tabular):
     def sniff_prefix(self, file_prefix):
         fh = file_prefix.string_io()
         line = [_.strip() for _ in fh.readline().split("\t")]
-        if len(line) != len(self.column_names) or line != self.column_names:
+        if line != self.column_names:
             return False
         line = fh.readline().split("\t")
         try:
@@ -161,7 +161,7 @@ class PepList(Tabular):
     def sniff_prefix(self, file_prefix):
         fh = file_prefix.string_io()
         line = [_.strip() for _ in fh.readline().split("\t")]
-        if len(line) == 5 and line == self.column_names:
+        if line == self.column_names:
             return True
         return False
 
@@ -189,7 +189,7 @@ class PSMS(Tabular):
     def sniff_prefix(self, file_prefix):
         fh = file_prefix.string_io()
         line = [_.strip() for _ in fh.readline().split("\t")]
-        if len(line) == 6 and line == self.column_names:
+        if line == self.column_names:
             return True
         return False
 
@@ -233,7 +233,6 @@ class ProtXmlReport(Tabular):
         return self.make_html_table(dataset, column_names=self.column_names)
 
 
-@build_sniff_from_prefix
 class Dta(TabularData):
     """dta
     The first line contains the singly protonated peptide mass (MH+) and the
@@ -263,21 +262,6 @@ class Dta(TabularData):
         dataset.metadata.columns = 2
         dataset.metadata.column_names = ['m/z', 'intensity']
         dataset.metadata.delimiter = " "
-
-    def sniff_prefix(self, file_prefix):
-        has_data = False
-        for line in file_prefix.line_iterator():
-            line = line.strip().split(" ")
-            if len(line) != 2:
-                return False
-            try:
-                line = [float(_) for _ in line]
-            except ValueError:
-                return False
-            if not all(_ >= 0 for _ in line):
-                return False
-            has_data = True
-        return has_data
 
 
 @build_sniff_from_prefix
@@ -665,8 +649,8 @@ class XquestSpecXML(ProteomicsXml):
 
 class QCML(ProteomicsXml):
     """qcml
-    https://github.com/OpenMS/OpenMS/blob/develop/share/OpenMS/SCHEMAS/mzQCML_0_0_5.xsd
-    https://github.com/OpenMS/OpenMS/blob/develop/share/OpenMS/SCHEMAS/qcML_0.0.7.xsd
+    https://github.com/OpenMS/OpenMS/blob/113c49d01677f7f03343ce7cd542d83c99b351ee/share/OpenMS/SCHEMAS/mzQCML_0_0_5.xsd
+    https://github.com/OpenMS/OpenMS/blob/3cfc57ad1788e7ab2bd6dd9862818b2855234c3f/share/OpenMS/SCHEMAS/qcML_0.0.7.xsd
     """
     file_ext = "qcml"
     blurb = 'QualityAssessments to runs'

@@ -230,7 +230,6 @@
     <!-- Proteomics Datatypes -->
     <datatype extension="mrm" type="galaxy.datatypes.tabular:Tabular" subclass="true"/>
     <datatype extension="dta" type="galaxy.datatypes.proteomics:Dta" display_in_upload="true" />
-    <datatype extension="dta" type="galaxy.datatypes.proteomics:Dta" display_in_upload="true" />
     <datatype extension="dta2d" type="galaxy.datatypes.proteomics:Dta2d" display_in_upload="true" />
     <datatype extension="edta" type="galaxy.datatypes.proteomics:Edta" display_in_upload="true" />
     <datatype extension="pepxml" type="galaxy.datatypes.proteomics:PepXml" mimetype="application/xml" display_in_upload="true"/>
@@ -856,7 +855,6 @@
     <sniffer type="galaxy.datatypes.xml:Phyloxml"/>
     <sniffer type="galaxy.datatypes.xml:Owl"/>
     <sniffer type="galaxy.datatypes.xml:Sbml"/>
-    <sniffer type="galaxy.datatypes.proteomics:Dta"/>
     <sniffer type="galaxy.datatypes.proteomics:Dta2d"/>
     <sniffer type="galaxy.datatypes.proteomics:Edta"/>
     <sniffer type="galaxy.datatypes.proteomics:ConsensusXML"/>
