@@ -1099,7 +1099,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                     'output_list': output_list
                 }
                 pipeline_steps.append(pipeline_step)
-                software_prerequisite = []
+                software_prerequisite = {}
                 try:
                     software_prerequisite = {
                         'name': current_tool['tool_shed_repository']['name'],
