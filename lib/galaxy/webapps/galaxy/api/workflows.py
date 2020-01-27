@@ -1119,7 +1119,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             # method to grab the workflow inputs? [WIP] TODO
             if step.workflow_step.type != 'tool':
                 input_subdomain.append(step.workflow_step)
-        print tools
         usability_domain = []
         for a in stored_workflow.annotations:
             usability_domain.append(a.annotation)
