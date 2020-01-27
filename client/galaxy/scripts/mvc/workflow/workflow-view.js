@@ -10,7 +10,6 @@ import WorkflowCanvas from "mvc/workflow/workflow-canvas";
 import Node from "mvc/workflow/workflow-node";
 import WorkflowIcons from "mvc/workflow/workflow-icons";
 import FormWrappers from "mvc/workflow/workflow-forms";
-import async_save_text from "utils/async-save-text";
 import "ui/editable-text";
 
 import { hide_modal, show_message, show_modal } from "layout/modal";
@@ -50,8 +49,6 @@ export default Backbone.View.extend({
     initialize: function(options, reportsEditor) {
         var self = (window.workflow_globals.app = this);
         this.options = options;
-        this.urls = (options && options.urls) || {};
-        const workflow_index = this.urls.workflow_index;
         this.reportsEditor = reportsEditor;
 
         // Canvas overview management
@@ -183,7 +180,7 @@ export default Backbone.View.extend({
                     show_modal("Loading workflow failed.", response.err_msg, {
                         Ok: function(response) {
                             window.onbeforeunload = undefined;
-                            window.document.location = workflow_index;
+                            window.document.location = `${getAppRoot()}workflows/list`;
                         }
                     });
                 },
@@ -219,43 +216,6 @@ export default Backbone.View.extend({
                 return "There are unsaved changes to your workflow which will be lost.";
             }
         };
-
-        // Tool menu
-        $("div.toolSectionBody").hide();
-        $("div.toolSectionTitle > span").wrap("<a href='javascript:void(0)' role='button'></a>");
-        var last_expanded = null;
-        $("div.toolSectionTitle").each(function() {
-            var body = $(this).next("div.toolSectionBody");
-            $(this).click(() => {
-                if (body.is(":hidden")) {
-                    if (last_expanded) last_expanded.slideUp("fast");
-                    last_expanded = body;
-                    body.slideDown("fast");
-                } else {
-                    body.slideUp("fast");
-                    last_expanded = null;
-                }
-            });
-        });
-
-        // Rename async.
-        async_save_text("workflow-name", "workflow-name", self.urls.rename_async, "new_name");
-
-        // Tag async. Simply have the workflow edit element generate a click on the tag element to activate tagging.
-        $("#workflow-tag").click(() => {
-            $(".tag-area").click();
-            return false;
-        });
-        // Annotate async.
-        async_save_text(
-            "workflow-annotation",
-            "workflow-annotation",
-            self.urls.annotate_async,
-            "new_annotation",
-            25,
-            true,
-            4
-        );
     },
 
     copy_into_workflow: function(id, stepCount = 0) {
@@ -341,7 +301,7 @@ export default Backbone.View.extend({
     _workflowLoadAjax: function(workflowId, version, options) {
         $.ajax(
             Utils.merge(options, {
-                url: this.urls.load_workflow,
+                url: `${getAppRoot()}workflow/load_workflow`,
                 data: { id: workflowId, _: "true", version: version },
                 dataType: "json",
                 cache: false
@@ -563,7 +523,7 @@ export default Backbone.View.extend({
                         : `SavedAs_${self.workflow.name}`;
                 var rename_annotation = $("#wf_annotation").val().length > 0 ? $("#wf_annotation").val() : "";
                 $.ajax({
-                    url: self.urls.workflow_save_as,
+                    url: `${getAppRoot()}workflow/save_workflow_as`,
                     type: "POST",
                     data: {
                         workflow_name: rename_name,
