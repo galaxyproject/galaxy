@@ -47,7 +47,7 @@ describe("ToolSection", () => {
         expect(wrapper.findAll(".name").length).to.equal(1);
     });
 
-    it("test tool slider state", () => {
+    it("test tool slider state", async () => {
         const wrapper = mount(ToolSection, {
             propsData: {
                 category: {
@@ -65,20 +65,34 @@ describe("ToolSection", () => {
             }
         });
         expect(wrapper.vm.opened).to.equal(true);
+
         const $sectionName = wrapper.find(".name");
         $sectionName.trigger("click");
+        await Vue.nextTick();
         expect(wrapper.vm.opened).to.equal(false);
+
         wrapper.vm.queryFilter = "";
+        await Vue.nextTick();
         expect(wrapper.vm.opened).to.equal(false);
+
         wrapper.vm.queryFilter = "test";
+        await Vue.nextTick();
         expect(wrapper.vm.opened).to.equal(true);
+
         wrapper.vm.disableFilter = true;
+        await Vue.nextTick();
         expect(wrapper.vm.opened).to.equal(true);
+
         wrapper.vm.queryFilter = "";
+        await Vue.nextTick();
         expect(wrapper.vm.opened).to.equal(false);
+
         $sectionName.trigger("click");
+        await Vue.nextTick();
         expect(wrapper.vm.opened).to.equal(true);
+
         wrapper.vm.queryFilter = "test";
+        await Vue.nextTick();
         expect(wrapper.vm.opened).to.equal(false);
     });
 });
