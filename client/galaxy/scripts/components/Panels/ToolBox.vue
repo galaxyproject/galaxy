@@ -95,9 +95,9 @@ export default {
                 },
                 ...this.stored_workflow_menu_entries.map(menuEntry => {
                     return {
-                        title: menuEntry.stored_workflow.name,
-                        href: `${getAppRoot()}workflows/run?id=${menuEntry.encoded_stored_workflow_id}`,
-                        id: menuEntry.encoded_stored_workflow_id
+                        id: menuEntry.id,
+                        title: menuEntry.name,
+                        href: `${getAppRoot()}workflows/run?id=${menuEntry.id}`
                     };
                 })
             ];
