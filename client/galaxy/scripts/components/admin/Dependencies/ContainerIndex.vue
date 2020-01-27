@@ -102,7 +102,7 @@ import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import DependencyIndexMixin from "./DependencyIndexMixin";
 import ContainerResolutionDetails from "./ContainerResolutionDetails";
-import { getContainerResolutionToolbox, resolveContainersWithInstall } from "../AdminServices.js";
+import { getContainerResolutionToolbox, resolveContainersWithInstall } from "../AdminServices";
 import { DESCRIPTION } from "./ContainerResolver";
 
 Vue.use(BootstrapVue);

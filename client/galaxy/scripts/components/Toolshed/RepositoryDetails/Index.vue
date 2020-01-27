@@ -54,7 +54,7 @@
 <script>
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { Services } from "../services.js";
+import { Services } from "../services";
 import InstallationSettings from "./InstallationSettings.vue";
 import InstallationButton from "./InstallationButton.vue";
 import RepositoryTools from "./RepositoryTools.vue";

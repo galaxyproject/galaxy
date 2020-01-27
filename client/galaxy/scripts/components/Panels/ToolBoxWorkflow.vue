@@ -55,7 +55,7 @@
 <script>
 import ToolSection from "./Common/ToolSection";
 import ToolSearch from "./Common/ToolSearch";
-import { filterToolSections } from "./utilities.js";
+import { filterToolSections } from "./utilities";
 
 export default {
     name: "ToolBox",

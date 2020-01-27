@@ -1,4 +1,4 @@
-import { Services } from "./services.js";
+import { Services } from "./services";
 
 describe("Toolshed service helpers", () => {
     const incoming = [

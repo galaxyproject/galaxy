@@ -60,7 +60,7 @@
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { getAppRoot } from "onload/loadConfig";
-import { Services } from "../services.js";
+import { Services } from "../services";
 import LoadingSpan from "components/LoadingSpan";
 import Monitor from "./Monitor";
 import RepositoryDetails from "./Details";

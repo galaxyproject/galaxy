@@ -15,7 +15,7 @@
 </template>
 <script>
 import { getAppRoot } from "onload/loadConfig";
-import { Services } from "../services.js";
+import { Services } from "../services";
 import RepositoryDetails from "../RepositoryDetails/Index.vue";
 import LoadingSpan from "components/LoadingSpan";
 
