@@ -1075,7 +1075,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         tools, input_subdomain, output_subdomain, pipeline_steps, software_prerequisites = [], [], [], [], []
         for i, step in enumerate(workflow_invocation.steps):
-            current_tool = dict_workflow['steps'][str(i)]
             if step.workflow_step.type == 'tool':
                 workflow_outputs_list , output_list, input_list = [], [], []
                 for wo in step.workflow_step.workflow_outputs:
@@ -1111,6 +1110,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                                 }
                             }
                             output_subdomain.append(output)
+                current_tool = dict_workflow['steps'][str(i)]
                 pipeline_step = {
                     'step_number': i,
                     'name': current_tool['name'],
@@ -1121,7 +1121,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                     'output_list': output_list
                 }
                 pipeline_steps.append(pipeline_step)
-                software_prerequisite = {}
                 try:
                     software_prerequisite = {
                         'name': current_tool['tool_shed_repository']['name'],
@@ -1131,13 +1130,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                             'access_time': current_tool['uuid']
                         }
                     }
+                    if software_prerequisite['uri']['uri'] not in tools:
+                        software_prerequisites.append(software_prerequisite)
+                        tools.append(software_prerequisite['uri']['uri'])
                 except Exception:
                     continue
-                if software_prerequisite['uri']['uri'] in tools:
-                    continue
-                else:
-                    software_prerequisites.append(software_prerequisite)
-                tools.append(software_prerequisite['uri']['uri'])
             # method to grab the workflow inputs? [WIP] TODO
             if step.workflow_step.type != 'tool':
                 input_subdomain.append(step.workflow_step)
