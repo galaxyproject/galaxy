@@ -150,26 +150,26 @@ directory. This is what happens during a complete client build.
 
 During client-side development, it is more convenient to have granular testing
 options. The various testing scripts are defined inside package.json within the
-client folder, and are called either with npm (or yarn) as follows:
-
+client folder, and are called either with `yarn` as demonstrated in the 
+following commands.
 
 #### Run all tests (mocha and qunit):
 
-     npm run test
+     yarn run test
 
 #### Watch and rerun all client-side unit-tests every time a source file changes:
 
-     npm run test-watch
+     yarn run test-watch
 
 #### Run only specified test files when a source file changes:
 
-    npm run test-watch watch-only="Tags/*.test.js"
+    yarn run test-watch watch-only="Tags/*.test.js"
 
 (The above watch-only parameter will be mapped to the following glob expression "**/Tags/*.test.js")
 
 #### Run qunit legacy tests
 
-    npm run test-qunit
+    yarn run test-qunit
 
 
 ## Writing a test file
