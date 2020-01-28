@@ -10,23 +10,23 @@ export default {
         createToolsJson(tools) {
             function extractSections(acc, section) {
                 function extractTools(_acc, tool) {
-                    return tool["name"]
+                    return tool.name
                         ? [
                               ..._acc,
                               {
                                   "@type": "SoftwareApplication",
                                   operatingSystem: "Any",
                                   applicationCategory: "Web application",
-                                  name: tool["name"],
-                                  description: tool["help"] || tool["description"],
-                                  softwareVersion: tool["version"],
-                                  url: getAppRoot() + String(tool["link"]).substring(1)
+                                  name: tool.name,
+                                  description: tool.help || tool.description,
+                                  softwareVersion: tool.version,
+                                  url: getAppRoot() + String(tool.link).substring(1)
                               }
                           ]
                         : _acc;
                 }
                 if ("elems" in section) {
-                    return acc.concat(section["elems"].reduce(extractTools, []));
+                    return acc.concat(section.elems.reduce(extractTools, []));
                 } else {
                     return acc;
                 }

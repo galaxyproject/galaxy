@@ -32,22 +32,22 @@
             >
                 <b-card v-for="(info, index) in buffer" :key="index" ref="cards" class="m-2" style="width: 23rem;">
                     <div slot="header">
-                        <b-link :href="info['url']" target="_blank">
-                            <h4 class="tools-view-name">{{ info["name"] }}</h4>
+                        <b-link :href="info.url" target="_blank">
+                            <h4 class="tools-view-name">{{ info.name }}</h4>
                         </b-link>
-                        <b-badge class="tools-view-section">{{ info["section"] }}</b-badge>
+                        <b-badge class="tools-view-section">{{ info.section }}</b-badge>
                     </div>
-                    <p class="card-text" v-html="helpSummary(info['help']) || info['description']" />
+                    <p class="card-text" v-html="helpSummary(info.help) || info.description" />
                     <p class="card-text">
                         <b-btn v-b-modal="'modal-' + '-' + index">Info</b-btn>
-                        <b-modal :id="'modal-' + '-' + index" centered :title="info['name']">
-                            <b>{{ info["version"] + " / " + info["id"] }}</b>
-                            <p>{{ info["description"] }}</p>
-                            <p v-html="info['help']"></p>
+                        <b-modal :id="'modal-' + '-' + index" centered :title="info.name">
+                            <b>{{ info.version + " / " + info.id }}</b>
+                            <p>{{ info.description }}</p>
+                            <p v-html="info.help"></p>
                         </b-modal>
                     </p>
                     <Citations
-                        :id="info['id']"
+                        :id="info.id"
                         simple
                         source="tools"
                         @rendered="layout"
