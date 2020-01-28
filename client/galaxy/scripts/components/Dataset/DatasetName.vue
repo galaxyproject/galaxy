@@ -9,18 +9,18 @@
         >
             <span
                 v-if="isError"
-                class="fa fa-times-circle text-danger mr-1"
+                class="error fa fa-times-circle text-danger mr-1"
                 v-b-tooltip.hover
                 title="An error occurred for this dataset."
             />
             <span
                 v-if="isPaused"
-                class="fa fa-pause text-info mr-1"
+                class="pause fa fa-pause text-info mr-1"
                 v-b-tooltip.hover
                 title="The creation of this dataset has been paused."
             />
             <span class="fa fa-caret-down" />
-            <span>{{ this.getName }}</span>
+            <span class="name">{{ this.getName }}</span>
         </b-link>
         <div class="dropdown-menu" aria-labelledby="dataset-dropdown">
             <a class="dropdown-item" href="#" @click.prevent="showDataset">
