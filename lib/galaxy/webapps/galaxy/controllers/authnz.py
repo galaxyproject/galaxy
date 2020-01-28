@@ -79,7 +79,7 @@ class OIDC(JSAppLauncher):
                                             "identity provider. Please try again, and if the problem persists, "
                                             "contact the Galaxy instance admin.".format(provider))
         trans.handle_user_login(user)
-        return self.client(trans)
+        return trans.response.send_redirect(url_for('/'))
 
     @web.expose
     @web.require_login("authenticate against the selected identity provider")
