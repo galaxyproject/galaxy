@@ -19,11 +19,18 @@
                 v-b-tooltip.hover
                 title="The creation of this dataset has been paused."
             />
-            <span> {{ this.getName }}</span>
+            <span class="fa fa-caret-down" />
+            <span>{{ this.getName }}</span>
         </b-link>
         <div class="dropdown-menu" aria-labelledby="dataset-dropdown">
-            <a class="dropdown-item" href="#" @click.prevent="showDataset">Show in History</a>
-            <a class="dropdown-item" href="#" @click.prevent="copyDataset">Copy to History</a>
+            <a class="dropdown-item" href="#" @click.prevent="showDataset">
+                <span class="fa fa-eye fa-fw mr-1" />
+                <span>Show in History</span>
+            </a>
+            <a class="dropdown-item" href="#" @click.prevent="copyDataset">
+                <span class="fa fa-copy fa-fw mr-1" />
+                <span>Copy to History</span>
+            </a>
         </div>
     </div>
 </template>
