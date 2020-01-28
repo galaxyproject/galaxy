@@ -1,0 +1,93 @@
+
+===========================================================
+January 2020 Galaxy Release (v 20.01)
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+**Feature1**
+  Feature description.
+
+**Feature2**
+  Feature description.
+
+**Feature3**
+  Feature description.
+
+
+New Visualizations
+===========================================================
+
+.. visualizations
+* Add data dialog input element to client form parameter list
+  `Pull Request 8774`_
+* Wrap SQL statement in a text() function as required by sqlalchemy
+  (thanks to `@kaukrise <https://github.com/kaukrise>`__).
+  `Pull Request 9216`_
+* Ensure visible overflow on navbar container
+  (thanks to `@kaukrise <https://github.com/kaukrise>`__).
+  `Pull Request 9217`_
+
+New Datatypes
+===========================================================
+
+.. datatypes
+* Datatypes for MassSpec DIA dlib,elib
+  (thanks to `@jj-umn <https://github.com/jj-umn>`__).
+  `Pull Request 8657`_
+* Add bus as binary, remove extra datatype
+  (thanks to `@astrovsky01 <https://github.com/astrovsky01>`__).
+  `Pull Request 8705`_
+* remove dada2_derep data type
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 8902`_
+* Add new GROMACS datatypes: ndx, xvg, edr
+  (thanks to `@simonbray <https://github.com/simonbray>`__).
+  `Pull Request 8964`_
+* add gff3.gz and gff3.bz2 datatypes
+  (thanks to `@FredericBGA <https://github.com/FredericBGA>`__).
+  `Pull Request 8967`_
+* Make mol2 visible
+  (thanks to `@galaxyproject <https://github.com/galaxyproject>`__).
+  `Pull Request 8995`_
+* Add a datatype subclass for CAT (Contig Annotation Tool)
+  (thanks to `@jj-umn <https://github.com/jj-umn>`__).
+  `Pull Request 9087`_
+* Fix cool sniffing on python3
+  `Pull Request 9153`_
+
+Builtin Tool Updates
+===========================================================
+
+.. tools
+* Upgrade askomics interactive tool
+  (thanks to `@xgaia <https://github.com/xgaia>`__).
+  `Pull Request 8517`_
+* Remove collection ID character restriction from 'Relabel collection from
+  file' tool
+  (thanks to `@brinkmanlab <https://github.com/brinkmanlab>`__).
+  `Pull Request 8571`_
+* Allow space, dot and comma in relabel identifier tool
+  `Pull Request 8757`_
+* Fix script shebangs
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 8888`_
+* grouping: strip newlines
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 8953`_
+* Allow admins to import tools/workflows from paths.
+  `Pull Request 9003`_
+* Add requirements to interval_to_bed_converter.xml
+  `Pull Request 9041`_
+
+Release Notes
+===========================================================
+
+Please see the `full release notes <20.01_announce.html>`_ for more details.
+
+.. include:: 20.01_prs.rst
+
+.. include:: _thanks.rst
