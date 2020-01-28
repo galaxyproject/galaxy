@@ -10,6 +10,7 @@ from six.moves.urllib.parse import parse_qs, urlparse
 
 from galaxy.authnz import custos_authnz
 from galaxy.model import CustosAuthnzToken, User
+from ..unittest_utils.galaxy_mock import MockApp
 
 
 class CustosAuthnzTestCase(unittest.TestCase):
@@ -146,7 +147,7 @@ class CustosAuthnzTestCase(unittest.TestCase):
             provider = None
             custos_authnz_token = None
 
-            def filter_by(self, external_user_id=None, provider=None):
+            def filter_by(self, email=None, external_user_id=None, provider=None):
                 self.external_user_id = external_user_id
                 self.provider = provider
                 if self.custos_authnz_token:
@@ -177,6 +178,7 @@ class CustosAuthnzTestCase(unittest.TestCase):
             cookies_args = {}
             request = Request()
             sa_session = Session()
+            app = MockApp()
             user = None
 
             def set_cookie(self, value, name=None, **kwargs):
