@@ -302,9 +302,7 @@ class JSAppLauncher(BaseUIController):
             'active_view'                   : 'analysis',
             'enable_cloud_launch'           : trans.app.config.get_bool('enable_cloud_launch', False),
             'enable_webhooks'               : True if trans.app.webhooks_registry.webhooks else False,
-            # TODO: next two should be redundant - why can't we build one from the other?
-            'toolbox'                       : trans.app.toolbox.to_dict(trans, in_panel=False),
-            'toolbox_in_panel'              : trans.app.toolbox.to_dict(trans),
+            'toolbox'                       : trans.app.toolbox.to_dict(trans),
             'message_box_visible'           : trans.app.config.message_box_visible,
             'show_inactivity_warning'       : trans.app.config.user_activation_on and trans.user and not trans.user.active,
             'tool_shed_urls'                : list(trans.app.tool_shed_registry.tool_sheds.values()) if trans.app.tool_shed_registry else [],
@@ -312,15 +310,17 @@ class JSAppLauncher(BaseUIController):
         }
 
         # TODO: move to user
-        stored_workflow_menu_entries = config['stored_workflow_menu_entries'] = []
+        stored_workflow_menu_index = {}
+        stored_workflow_menu_entries = []
         for menu_item in getattr(trans.user, 'stored_workflow_menu_entries', []):
-            stored_workflow_menu_entries.append({
-                'encoded_stored_workflow_id': trans.security.encode_id(menu_item.stored_workflow_id),
-                'stored_workflow': {
+            encoded_stored_workflow_id = trans.security.encode_id(menu_item.stored_workflow_id)
+            if encoded_stored_workflow_id not in stored_workflow_menu_index:
+                stored_workflow_menu_index[encoded_stored_workflow_id] = True
+                stored_workflow_menu_entries.append({
+                    'id': encoded_stored_workflow_id,
                     'name': util.unicodify(menu_item.stored_workflow.name)
-                }
-            })
-
+                })
+        config['stored_workflow_menu_entries'] = stored_workflow_menu_entries
         return config
 
     def _get_site_configuration(self, trans):

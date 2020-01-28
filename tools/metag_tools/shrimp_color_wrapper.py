@@ -76,7 +76,7 @@ def __main__():
     shrimp_log = tempfile.NamedTemporaryFile().name
 
     # SHRiMP command
-    command = ' '.join([shrimp, '-s', spaced_seed, '-n', seed_matches_per_window, '-t', seed_hit_taboo_length, '-9', seed_generation_taboo_length, '-w', seed_window_length, '-o', max_hits_per_read, '-r', max_read_length, '-d', kmer, '-m', sw_match_value, '-i', sw_mismatch_value, '-g', sw_gap_open_ref, '-q', sw_gap_open_query, '-e', sw_gap_ext_ref, '-f', sw_gap_ext_query, '-x', sw_crossover_penalty, '-h', sw_full_hit_threshold, '-v', sw_vector_hit_threshold, input_query_file, input_target_file, '>', shrimp_outfile, '2>', shrimp_log])
+    command = ' '.join((shrimp, '-s', spaced_seed, '-n', seed_matches_per_window, '-t', seed_hit_taboo_length, '-9', seed_generation_taboo_length, '-w', seed_window_length, '-o', max_hits_per_read, '-r', max_read_length, '-d', kmer, '-m', sw_match_value, '-i', sw_mismatch_value, '-g', sw_gap_open_ref, '-q', sw_gap_open_query, '-e', sw_gap_ext_ref, '-f', sw_gap_ext_query, '-x', sw_crossover_penalty, '-h', sw_full_hit_threshold, '-v', sw_vector_hit_threshold, input_query_file, input_target_file, '>', shrimp_outfile, '2>', shrimp_log))
 
     try:
         os.system(command)

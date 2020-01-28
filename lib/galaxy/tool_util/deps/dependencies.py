@@ -36,7 +36,7 @@ class ToolInfo(object):
     # variables they can consume (e.g. JVM options, license keys, etc..)
     # and add these to env_path_through
 
-    def __init__(self, container_descriptions=None, requirements=None, requires_galaxy_python_environment=False, env_pass_through=["GALAXY_SLOTS"], guest_ports=None, tool_id=None, tool_version=None):
+    def __init__(self, container_descriptions=None, requirements=None, requires_galaxy_python_environment=False, env_pass_through=["GALAXY_SLOTS"], guest_ports=None, tool_id=None, tool_version=None, profile=-1):
         if container_descriptions is None:
             container_descriptions = []
         if requirements is None:
@@ -48,6 +48,7 @@ class ToolInfo(object):
         self.guest_ports = guest_ports
         self.tool_id = tool_id
         self.tool_version = tool_version
+        self.profile = profile
 
 
 class JobInfo(object):

@@ -155,7 +155,7 @@ class SwarmManager(object):
         cleaned_services = self._docker_interface.services_clean()
         if cleaned_services:
             self._state.clean_services(cleaned_services)
-            log.info("cleaned services: %s", ', '.join([x.id for x in cleaned_services]))
+            log.info("cleaned services: %s", ', '.join(x.id for x in cleaned_services))
 
     @staticmethod
     def _env_str(envs, service):
@@ -273,7 +273,7 @@ class SwarmManager(object):
                 destroyed_slots += node_slots
         if destroy_nodes:
             command = self._conf.destroy_command.format(
-                nodes=' '.join([x.name for x in destroy_nodes]))
+                nodes=' '.join(x.name for x in destroy_nodes))
             destroyed_nodes = self._run_command(command)
             if not destroyed_nodes:
                 log.warning('destroy_command returned no destroyed nodes')

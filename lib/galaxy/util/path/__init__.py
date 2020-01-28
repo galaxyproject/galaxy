@@ -268,7 +268,7 @@ def joinext(root, ext):
     :rtype: string
     :returns: ``root`` joined with ``ext`` separated by a single ``os.extsep``
     """
-    return extsep.join([root.rstrip(extsep), ext.lstrip(extsep)])
+    return extsep.join((root.rstrip(extsep), ext.lstrip(extsep)))
 
 
 def has_ext(path, ext, aliases=False, ignore=None):

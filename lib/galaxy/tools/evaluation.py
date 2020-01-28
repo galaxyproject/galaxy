@@ -349,8 +349,7 @@ class ToolEvaluator(object):
             # TODO: move compute path logic into compute environment, move setting files_path
             # logic into DatasetFilenameWrapper. Currently this sits in the middle and glues
             # stuff together inconsistently with the way the rest of path rewriting works.
-            store_by = getattr(hda.dataset.object_store, "store_by", "id")
-            file_name = "dataset_%s_files" % getattr(hda.dataset, store_by)
+            file_name = hda.dataset.extra_files_path_name
             param_dict[name].files_path = os.path.abspath(os.path.join(job_working_directory, "working", file_name))
         for out_name, output in self.tool.outputs.items():
             if out_name not in param_dict and output.filters:
@@ -525,6 +524,8 @@ class ToolEvaluator(object):
             if not os.path.exists(directory):
                 os.makedirs(directory)
             if filename is not None:
+                # Explicit filename was requested, needs to be placed in tool working directory
+                directory = os.path.join(self.local_working_directory, "working")
                 config_filename = os.path.join(directory, filename)
             else:
                 fd, config_filename = tempfile.mkstemp(dir=directory)
@@ -582,14 +583,13 @@ class ToolEvaluator(object):
         if self.tool.profile < 16.04 and command and "$param_file" in command:
             fd, param_filename = tempfile.mkstemp(dir=directory)
             os.close(fd)
-            f = open(param_filename, "w")
-            for key, value in param_dict.items():
-                # parameters can be strings or lists of strings, coerce to list
-                if not isinstance(value, list):
-                    value = [value]
-                for elem in value:
-                    f.write('%s=%s\n' % (key, elem))
-            f.close()
+            with open(param_filename, "w") as f:
+                for key, value in param_dict.items():
+                    # parameters can be strings or lists of strings, coerce to list
+                    if not isinstance(value, list):
+                        value = [value]
+                    for elem in value:
+                        f.write('%s=%s\n' % (key, elem))
             self.__register_extra_file('param_file', param_filename)
             return param_filename
         else:

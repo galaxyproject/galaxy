@@ -83,7 +83,7 @@ class OIDC(JSAppLauncher):
         trans.handle_user_login(user)
         # Record which idp provider was logged into, so we can logout of it later
         trans.set_cookie(value=provider, name=PROVIDER_COOKIE_NAME)
-        return self.client(trans)
+        return trans.response.send_redirect(url_for('/'))
 
     @web.expose
     @web.require_login("authenticate against the selected identity provider")

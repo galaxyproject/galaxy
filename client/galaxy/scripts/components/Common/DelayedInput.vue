@@ -1,30 +1,50 @@
 <template>
-    <b-input-group>
+    <div class="search-input">
         <b-input
+            class="search-query"
             :placeholder="placeholder"
             v-model="queryInput"
             @input="delayQuery"
             @change="setQuery"
             @keydown.esc="setQuery()"
         />
-        <b-input-group-append v-b-tooltip.hover title="clear search (esc)">
-            <b-btn @click="setQuery()">
-                <i class="fa fa-times" />
-            </b-btn>
-        </b-input-group-append>
-    </b-input-group>
+        <font-awesome-icon v-if="loading" class="search-clear" icon="spinner" spin />
+        <font-awesome-icon
+            v-else
+            v-b-tooltip.hover
+            title="clear search (esc)"
+            class="search-clear"
+            icon="times-circle"
+            @click="setQuery()"
+        />
+    </div>
 </template>
 <script>
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faTimesCircle } from "@fortawesome/free-solid-svg-icons";
+import { faSpinner } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faSpinner);
+library.add(faTimesCircle);
+
 export default {
+    components: {
+        FontAwesomeIcon
+    },
     props: {
+        query: {
+            type: String
+        },
+        loading: {
+            type: Boolean
+        },
         placeholder: {
             type: String,
-            required: false,
             default: "Enter your search term here."
         },
         delay: {
             type: Number,
-            required: false,
             default: 1000
         }
     },
@@ -32,8 +52,13 @@ export default {
         return {
             queryInput: null,
             queryTimer: null,
-            query: null
+            queryCurrent: null
         };
+    },
+    watch: {
+        query(queryNew) {
+            this.setQuery(queryNew);
+        }
     },
     methods: {
         clearTimer() {
@@ -53,9 +78,9 @@ export default {
         },
         setQuery(queryNew) {
             this.clearTimer();
-            if (this.query !== this.queryInput || this.query !== queryNew) {
-                this.query = this.queryInput = queryNew;
-                this.$emit("onChange", this.query);
+            if (this.queryCurrent !== this.queryInput || this.queryCurrent !== queryNew) {
+                this.queryCurrent = this.queryInput = queryNew;
+                this.$emit("onChange", this.queryCurrent);
             }
         }
     }

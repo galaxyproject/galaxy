@@ -24,10 +24,14 @@ class WorkflowEditorTestCase(SeleniumTestCase):
     @selenium_test
     def test_basics(self):
         editor = self.components.workflow_editor
-
-        name = self.workflow_create_new()
+        annotation = "basic_test"
+        name = self.workflow_create_new(annotation=annotation)
         edit_name_element = self.components.workflow_editor.edit_name.wait_for_visible()
-        assert name in edit_name_element.text, edit_name_element.text
+        actual_name = edit_name_element.get_attribute("value")
+        assert name in actual_name, "'%s' unequal name '%s'" % (name, actual_name)
+        edit_annotation_element = self.components.workflow_editor.edit_annotation.wait_for_visible()
+        actual_annotation = edit_annotation_element.get_attribute("value")
+        assert annotation in actual_annotation, "'%s' unequal annotation '%s'" % (annotation, actual_annotation)
 
         editor.canvas_body.wait_for_visible()
         editor.tool_menu.wait_for_visible()
@@ -333,6 +337,44 @@ steps:
         self.assert_modal_has_text("Tool is not installed")
         self.screenshot("workflow_editor_missing_tool")
 
+    @selenium_test
+    def test_workflow_bookmarking(self):
+        @retry_assertion_during_transitions
+        def assert_workflow_bookmarked_status(target_status):
+            name_matches = [c.text == new_workflow_name for c in self.components.tool_panel.workflow_names.all()]
+            status = any(name_matches)
+            self.assertTrue(status == target_status)
+
+        new_workflow_name = self.workflow_create_new(clear_placeholder=True)
+
+        # Assert workflow not initially bookmarked.
+        assert_workflow_bookmarked_status(False)
+
+        save_button = self.components.workflows.save_button
+        save_button.wait_for_clickable()
+
+        # element is clickable, but still might be behind the modal
+        self.wait_for_selector_absent_or_hidden(self.modal_body_selector())
+        save_button.wait_for_and_click()
+
+        # wait for saving
+        self.wait_for_selector_absent_or_hidden(self.modal_body_selector())
+        self.driver.find_element_by_id("workflow").click()
+
+        # parse workflow table
+        table_elements = self.workflow_index_table_elements()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        bookmark_td = table_elements[0].find_elements_by_tag_name('td')[3]
+
+        # get bookmark pseudo element
+        # https://stackoverflow.com/questions/45427223/click-on-pseudo-element-using-selenium
+        self.action_chains().move_to_element_with_offset(bookmark_td, 20, 20).click().perform()
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+
+        # search for bookmark in tools menu
+        self.components.tool_panel.search.wait_for_and_send_keys(new_workflow_name)
+        assert_workflow_bookmarked_status(True)
+
     def workflow_editor_maximize_center_pane(self, collapse_left=True, collapse_right=True):
         if collapse_left:
             self.components._.left_panel_collapse.wait_for_and_click()
@@ -401,7 +443,7 @@ steps:
 
         editor.tool_menu.wait_for_visible()
         editor.tool_menu_section_link(section_name="inputs").wait_for_and_click()
-        editor.tool_menu_item_link(section_name="inputs", item_name=item_name).wait_for_and_click()
+        editor.tool_menu_item_link(item_name=item_name).wait_for_and_click()
 
     def workflow_editor_destroy_connection(self, sink):
         editor = self.components.workflow_editor
@@ -437,7 +479,7 @@ steps:
         workflow_populator.upload_yaml_workflow(content, name=name)
         return name
 
-    def workflow_create_new(self, annotation=None):
+    def workflow_create_new(self, annotation=None, clear_placeholder=False):
         self.workflow_index_open()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.click_button_new_workflow()
@@ -446,6 +488,8 @@ steps:
         name = self._get_random_name()
         annotation = annotation or self._get_random_name()
         inputs = self.driver.find_elements_by_class_name("ui-input")
+        if clear_placeholder:
+            inputs[0].clear()
         inputs[0].send_keys(name)
         inputs[1].send_keys(annotation)
         form_element.click()

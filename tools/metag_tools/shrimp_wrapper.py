@@ -315,7 +315,7 @@ def generate_sub_table(result_file, ref_file, score_files, table_outfile, hit_pe
                                     scoreBx = hits_score[readkey][str(x + 1)].split()[read_loc]
 
                                 # 1-based on chrom_loc and read_loc
-                                pos_line = pos_line + '\t'.join([end_chrom, str(chrom_loc + 1), readkey + '/' + str(x + 1), str(read_loc + 1), chrAx, chrBx, scoreBx]) + '\n'
+                                pos_line = pos_line + '\t'.join((end_chrom, str(chrom_loc + 1), readkey + '/' + str(x + 1), str(read_loc + 1), chrAx, chrBx, scoreBx)) + '\n'
 
                             else:
                                 chrom_loc = end_chr_end - match_len + mappingIndex
@@ -330,7 +330,7 @@ def generate_sub_table(result_file, ref_file, score_files, table_outfile, hit_pe
                                     scoreBx = hits_score[readkey][str(x + 1)].split()[read_loc]
 
                                 # 1-based on chrom_loc and read_loc
-                                rev_line = '\t'.join([end_chrom, str(chrom_loc + 1), readkey + '/' + str(x + 1), str(read_loc + 1), chrAx, chrBx, scoreBx]) + '\n' + rev_line
+                                rev_line = '\t'.join((end_chrom, str(chrom_loc + 1), readkey + '/' + str(x + 1), str(read_loc + 1), chrAx, chrBx, scoreBx)) + '\n' + rev_line
 
                             if end_chrom in chrom_cov:
                                 if chrom_loc in chrom_cov[end_chrom]:
@@ -559,7 +559,7 @@ def __main__():
 
     # SHRiMP command
     if type_of_reads == 'single':
-        command = ' '.join([shrimp, '-s', spaced_seed, '-n', seed_matches_per_window, '-t', seed_hit_taboo_length, '-9', seed_generation_taboo_length, '-w', seed_window_length, '-o', max_hits_per_read, '-r', max_read_length, '-d', kmer, '-m', sw_match_value, '-i', sw_mismatch_value, '-g', sw_gap_open_ref, '-q', sw_gap_open_query, '-e', sw_gap_ext_ref, '-f', sw_gap_ext_query, '-h', sw_hit_threshold, query_fasta, input_target_file, '>', shrimp_outfile, '2>', shrimp_log])
+        command = ' '.join((shrimp, '-s', spaced_seed, '-n', seed_matches_per_window, '-t', seed_hit_taboo_length, '-9', seed_generation_taboo_length, '-w', seed_window_length, '-o', max_hits_per_read, '-r', max_read_length, '-d', kmer, '-m', sw_match_value, '-i', sw_mismatch_value, '-g', sw_gap_open_ref, '-q', sw_gap_open_query, '-e', sw_gap_ext_ref, '-f', sw_gap_ext_query, '-h', sw_hit_threshold, query_fasta, input_target_file, '>', shrimp_outfile, '2>', shrimp_log))
 
         try:
             os.system(command)
@@ -571,8 +571,8 @@ def __main__():
             stop_err(str(e))
 
     else:  # paired
-        command_end1 = ' '.join([shrimp, '-s', spaced_seed, '-n', seed_matches_per_window, '-t', seed_hit_taboo_length, '-9', seed_generation_taboo_length, '-w', seed_window_length, '-o', max_hits_per_read, '-r', max_read_length, '-d', kmer, '-m', sw_match_value, '-i', sw_mismatch_value, '-g', sw_gap_open_ref, '-q', sw_gap_open_query, '-e', sw_gap_ext_ref, '-f', sw_gap_ext_query, '-h', sw_hit_threshold, query_fasta_end1, input_target_file, '>', shrimp_outfile, '2>', shrimp_log])
-        command_end2 = ' '.join([shrimp, '-s', spaced_seed, '-n', seed_matches_per_window, '-t', seed_hit_taboo_length, '-9', seed_generation_taboo_length, '-w', seed_window_length, '-o', max_hits_per_read, '-r', max_read_length, '-d', kmer, '-m', sw_match_value, '-i', sw_mismatch_value, '-g', sw_gap_open_ref, '-q', sw_gap_open_query, '-e', sw_gap_ext_ref, '-f', sw_gap_ext_query, '-h', sw_hit_threshold, query_fasta_end2, input_target_file, '>>', shrimp_outfile, '2>>', shrimp_log])
+        command_end1 = ' '.join((shrimp, '-s', spaced_seed, '-n', seed_matches_per_window, '-t', seed_hit_taboo_length, '-9', seed_generation_taboo_length, '-w', seed_window_length, '-o', max_hits_per_read, '-r', max_read_length, '-d', kmer, '-m', sw_match_value, '-i', sw_mismatch_value, '-g', sw_gap_open_ref, '-q', sw_gap_open_query, '-e', sw_gap_ext_ref, '-f', sw_gap_ext_query, '-h', sw_hit_threshold, query_fasta_end1, input_target_file, '>', shrimp_outfile, '2>', shrimp_log))
+        command_end2 = ' '.join((shrimp, '-s', spaced_seed, '-n', seed_matches_per_window, '-t', seed_hit_taboo_length, '-9', seed_generation_taboo_length, '-w', seed_window_length, '-o', max_hits_per_read, '-r', max_read_length, '-d', kmer, '-m', sw_match_value, '-i', sw_mismatch_value, '-g', sw_gap_open_ref, '-q', sw_gap_open_query, '-e', sw_gap_ext_ref, '-f', sw_gap_ext_query, '-h', sw_hit_threshold, query_fasta_end2, input_target_file, '>>', shrimp_outfile, '2>>', shrimp_log))
 
         try:
             os.system(command_end1)

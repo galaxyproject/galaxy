@@ -28,7 +28,10 @@ if __name__ == '__main__':
 
 
 from galaxy.config import GALAXY_CONFIG_SCHEMA_PATH
-from galaxy.config.schema import AppSchema, Schema
+from galaxy.config.schema import (
+    AppSchema,
+    Schema,
+)
 from galaxy.util import safe_makedirs
 from galaxy.util.properties import nice_config_parser
 from galaxy.util.yaml_util import (
@@ -373,7 +376,7 @@ def main(argv=None):
         argv = sys.argv[1:]
     args = _arg_parser().parse_args(argv)
     app_name = args.app
-    app_desc = APPS.get(app_name, None)
+    app_desc = APPS.get(app_name)
     action = args.action
     action_func = ACTIONS[action]
     action_func(args, app_desc)
@@ -520,31 +523,29 @@ def _lint(args, app_desc):
 
 
 def _validate(args, app_desc):
+    if Core is None:
+        raise Exception("Cannot validate file, pykwalify is not installed.")
     path = _find_config(args, app_desc)
-    # Allow empty mapping (not allowed by pykawlify)
+    # Allow empty mapping (not allowed by pykwalify)
     raw_config = _order_load_path(path)
-    if raw_config.get(app_desc.app_name, None) is None:
+    if raw_config.get(app_desc.app_name) is None:
         raw_config[app_desc.app_name] = {}
-        config_p = tempfile.NamedTemporaryFile('w', delete=False, suffix=".yml")
+    # Rewrite the file any way to merge any duplicate keys
+    with tempfile.NamedTemporaryFile('w', delete=False, suffix=".yml") as config_p:
         ordered_dump(raw_config, config_p)
-        config_p.flush()
-        path = config_p.name
-
-    fp = tempfile.NamedTemporaryFile('w', delete=False, suffix=".yml")
 
     def _clean(p, k, v):
         return k not in ['reloadable', 'path_resolves_to']
 
     clean_schema = remap(app_desc.schema.raw_schema, _clean)
-    ordered_dump(clean_schema, fp)
-    fp.flush()
-    name = fp.name
-    if Core is None:
-        raise Exception("Cannot validate file, pykwalify is not installed.")
-    c = Core(
-        source_file=path,
-        schema_files=[name],
-    )
+    with tempfile.NamedTemporaryFile('w', suffix=".yml") as fp:
+        ordered_dump(clean_schema, fp)
+        fp.flush()
+        c = Core(
+            source_file=config_p.name,
+            schema_files=[fp.name],
+        )
+    os.remove(config_p.name)
     c.validate()
 
 
@@ -686,7 +687,7 @@ def _build_sample_yaml(args, app_desc):
     description = getattr(schema, "description", None)
     if description:
         description = description.lstrip()
-        as_comment = "\n".join(["# %s" % l for l in description.split("\n")]) + "\n"
+        as_comment = "\n".join("# %s" % l for l in description.split("\n")) + "\n"
         f.write(as_comment)
     _write_sample_section(args, f, 'uwsgi', Schema(UWSGI_OPTIONS), as_comment=False, uwsgi_hack=True)
     _write_sample_section(args, f, app_desc.app_name, schema)
@@ -700,7 +701,7 @@ def _write_to_file(args, f, path):
     else:
         contents = f
     if args.dry_run:
-        contents_indented = "\n".join([" |%s" % l for l in contents.splitlines()])
+        contents_indented = "\n".join(" |%s" % l for l in contents.splitlines())
         print("Overwriting %s with the following contents:\n%s" % (path, contents_indented))
         print("... skipping because --dry-run is enabled.")
     else:
@@ -713,8 +714,8 @@ def _write_to_file(args, f, path):
 def _order_load_path(path):
     """Load (with ``_ordered_load``) on specified path (a YAML file)."""
     with open(path, "r") as f:
-        # Allow empty mapping (not allowed by pykawlify)
-        raw_config = ordered_load(f)
+        # Allow empty mapping (not allowed by pykwalify)
+        raw_config = ordered_load(f, merge_duplicate_keys=True)
         return raw_config
 
 
@@ -724,7 +725,7 @@ def _write_sample_section(args, f, section_header, schema, as_comment=True, uwsg
         default = None if "default" not in value else value["default"]
         option = schema.get_app_option(key)
         option_value = OptionValue(key, default, option)
-        # support uWSGI "dumb yaml parser" (unbit/uwsgi#863)
+        # support uWSGI "dumb YAML parser" (unbit/uwsgi#863)
         key = option.get('key', key)
         _write_option(args, f, key, option_value, as_comment=as_comment, uwsgi_hack=uwsgi_hack)
 
@@ -755,7 +756,7 @@ def _write_option(args, f, key, option_value, as_comment=False, uwsgi_hack=False
     else:
         key_val_str = yaml.dump({key: value}, width=float("inf")).lstrip("{").rstrip("\n}")
     lines = "%s%s%s" % (comment, as_comment_str, key_val_str)
-    lines_idented = "\n".join([("  %s" % l) for l in lines.split("\n")])
+    lines_idented = "\n".join("  %s" % l for l in lines.split("\n"))
     f.write("%s\n\n" % lines_idented)
 
 

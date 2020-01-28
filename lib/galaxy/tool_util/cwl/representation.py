@@ -13,6 +13,7 @@ from galaxy.util import safe_makedirs, string_as_bool
 from galaxy.util.bunch import Bunch
 from .util import set_basename_and_derived_properties
 
+
 log = logging.getLogger(__name__)
 
 NOT_PRESENT = object()
@@ -117,7 +118,8 @@ def type_descriptions_for_field_types(field_types):
             type_representation_names_for_field_type = CWL_TYPE_TO_REPRESENTATIONS.get(field_type)
         except TypeError:
             raise Exception("Failed to convert field_type %s" % field_type)
-        assert type_representation_names_for_field_type is not None, field_type
+        if type_representation_names_for_field_type is None:
+            raise Exception("Failed to convert type %s" % field_type)
         type_representation_names.update(type_representation_names_for_field_type)
     type_representations = []
     for type_representation in TYPE_REPRESENTATIONS:
@@ -157,16 +159,37 @@ def dataset_wrapper_to_file_json(inputs_dir, dataset_wrapper):
         path = new_input_path
 
     raw_file_object["location"] = path
-    raw_file_object["size"] = int(dataset_wrapper.get_size())
-    set_basename_and_derived_properties(raw_file_object, str(dataset_wrapper.cwl_filename or dataset_wrapper.name))
+
+    # Verify it isn't a NoneDataset
+    if dataset_wrapper.unsanitized:
+        raw_file_object["size"] = int(dataset_wrapper.get_size())
+
+    set_basename_and_derived_properties(raw_file_object, str(dataset_wrapper.created_from_basename or dataset_wrapper.name))
     return raw_file_object
 
 
 def dataset_wrapper_to_directory_json(inputs_dir, dataset_wrapper):
     assert dataset_wrapper.ext == "directory"
 
-    return {"location": dataset_wrapper.extra_files_path,
-            "class": "Directory"}
+    # get directory name
+    archive_name = str(dataset_wrapper.created_from_basename or dataset_wrapper.name)
+    nameroot, nameext = os.path.splitext(archive_name)
+    directory_name = nameroot  # assume archive file name contains the directory name
+
+    # get archive location
+    try:
+        archive_location = dataset_wrapper.unsanitized.file_name
+    except Exception:
+        archive_location = None
+
+    directory_json = {"location": dataset_wrapper.extra_files_path,
+                      "class": "Directory",
+                      "name": directory_name,
+                      "archive_location": archive_location,
+                      "archive_nameext": nameext,
+                      "archive_nameroot": nameroot}
+
+    return directory_json
 
 
 def collection_wrapper_to_array(inputs_dir, wrapped_value):
@@ -229,7 +252,11 @@ def to_cwl_job(tool, param_dict, local_working_directory):
                 return None
             if hasattr(param_dict_value, "value"):
                 # Is InputValueWrapper
-                return param_dict_value.value["value"]
+                rval = param_dict_value.value
+                if isinstance(rval, dict) and "src" in rval and rval["src"] == "json":
+                    # needed for wf_step_connect_undeclared_param, so non-file defaults?
+                    return rval["value"]
+                return rval
             elif not param_dict_value.is_collection:
                 # Is DatasetFilenameWrapper
                 return dataset_wrapper_to_file_json(inputs_dir, param_dict_value)

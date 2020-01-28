@@ -2255,9 +2255,24 @@ class Dataset(StorableObject, RepresentById):
         return self.object_store.exists(self, extra_dir=self._extra_files_rel_path, dir_only=True)
 
     @property
+    def store_by(self):
+        store_by = self.object_store.get_store_by(self)
+        return store_by
+
+    def extra_files_path_name_from(self, object_store):
+        store_by = self.store_by
+        if store_by is not None:
+            return "dataset_%s_files" % getattr(self, store_by)
+        else:
+            return None
+
+    @property
+    def extra_files_path_name(self):
+        return self.extra_files_path_name_from(self.object_store)
+
+    @property
     def _extra_files_rel_path(self):
-        store_by = getattr(self.object_store, "store_by", "id")
-        return self._extra_files_path or "dataset_%s_files" % getattr(self, store_by)
+        return self._extra_files_path or self.extra_files_path_name
 
     def _calculate_size(self):
         if self.external_filename:
@@ -2306,9 +2321,11 @@ class Dataset(StorableObject, RepresentById):
         if self.file_size is None:
             self.set_size()
         self.total_size = self.file_size or 0
-        if self.object_store.exists(self, extra_dir=self._extra_files_rel_path, dir_only=True):
-            for root, dirs, files in os.walk(self.extra_files_path):
-                self.total_size += sum([os.path.getsize(os.path.join(root, file)) for file in files if os.path.exists(os.path.join(root, file))])
+        rel_path = self._extra_files_rel_path
+        if rel_path is not None:
+            if self.object_store.exists(self, extra_dir=rel_path, dir_only=True):
+                for root, dirs, files in os.walk(self.extra_files_path):
+                    self.total_size += sum([os.path.getsize(os.path.join(root, file)) for file in files if os.path.exists(os.path.join(root, file))])
 
     def has_data(self):
         """Detects whether there is any data"""
@@ -2335,8 +2352,10 @@ class Dataset(StorableObject, RepresentById):
             self.object_store.delete(self)
         except galaxy.exceptions.ObjectNotFound:
             pass
-        if self.object_store.exists(self, extra_dir=self._extra_files_rel_path, dir_only=True):
-            self.object_store.delete(self, entire_dir=True, extra_dir=self._extra_files_rel_path, dir_only=True)
+        rel_path = self._extra_files_rel_path
+        if rel_path is not None:
+            if self.object_store.exists(self, extra_dir=rel_path, dir_only=True):
+                self.object_store.delete(self, entire_dir=True, extra_dir=rel_path, dir_only=True)
         # TODO: purge metadata files
         self.deleted = True
         self.purged = True
@@ -3234,7 +3253,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
 
     @hybrid.hybrid_property
     def type_id(self):
-        return u'-'.join([self.content_type, str(self.id)])
+        return u'-'.join((self.content_type, str(self.id)))
 
     @type_id.expression
     def type_id(cls):
@@ -3507,7 +3526,7 @@ class LibraryDataset(RepresentById):
             if isinstance(val, MetadataFile):
                 val = val.file_name
             elif isinstance(val, list):
-                val = ', '.join([str(v) for v in val])
+                val = ', '.join(str(v) for v in val)
             rval['metadata_' + name] = val
         return rval
 
@@ -4141,7 +4160,7 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
 
     @hybrid.hybrid_property
     def type_id(self):
-        return u'-'.join([self.content_type, str(self.id)])
+        return u'-'.join((self.content_type, str(self.id)))
 
     @type_id.expression
     def type_id(cls):
@@ -5413,7 +5432,7 @@ class MetadataFile(StorableObject, RepresentById):
             if self.object_store_id is None and da is not None:
                 self.object_store_id = da.dataset.object_store_id
             object_store = da.dataset.object_store
-            store_by = object_store.store_by
+            store_by = object_store.get_store_by(da.dataset)
             identifier = getattr(self, store_by)
             alt_name = "metadata_%s.dat" % identifier
             if not object_store.exists(self, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name=alt_name):
@@ -5688,8 +5707,14 @@ class UserAuthnzToken(UserMixin, RepresentById):
 
     @classmethod
     def create_user(cls, *args, **kwargs):
+        """
+        This is used by PSA authnz, do not use directly.
+        Prefer using the user manager.
+        """
         model = cls.user_model()
         instance = model(*args, **kwargs)
+        if cls.get_users_by_email(instance.email).first():
+            raise Exception("User with this email '%s' already exists." % instance.email)
         instance.set_random_password()
         cls.sa_session.add(instance)
         cls.sa_session.flush()

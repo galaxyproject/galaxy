@@ -31,7 +31,7 @@ function logoutClick() {
             if (response.data && response.data.redirect_uri) {
                 window.top.location.href = response.data.redirect_uri;
             } else {
-                window.top.location.href = `${galaxy.root}login?logout=true`;
+                window.top.location.href = `${galaxy.root}root/login?is_logout_redirect=true`;
             }
         });
 }
@@ -515,7 +515,12 @@ const Tab = Backbone.View.extend({
 
     /** Url formatting */
     _formatUrl: function(url) {
-        return typeof url == "string" && url.indexOf("//") === -1 && url.charAt(0) != "/" ? getAppRoot() + url : url;
+        return typeof url == "string" &&
+            url.indexOf("mailto:") === -1 &&
+            url.indexOf("//") === -1 &&
+            url.charAt(0) != "/"
+            ? getAppRoot() + url
+            : url;
     },
 
     /** body tempate */

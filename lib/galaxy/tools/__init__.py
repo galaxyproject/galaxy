@@ -129,7 +129,6 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     # Legacy tools bundled with Galaxy.
     "vcf_to_maf_customtrack1",
     "laj_1",
-    "meme_fimo",
     "secure_hash_message_digest",
     "join1",
     "gff2bed1",
@@ -185,6 +184,7 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
 # Tools that needed galaxy on the PATH in the past but no longer do along
 # with the version at which they were fixed.
 GALAXY_LIB_TOOLS_VERSIONED = {
+    "meme_fimo": packaging.version.parse("5.0.5"),
     "Extract genomic DNA 1": packaging.version.parse("3.0.0"),
     "fetchflank": packaging.version.parse("1.0.1"),
     "gops_intersect_1": packaging.version.parse("1.0.0"),
@@ -1912,6 +1912,8 @@ class Tool(Dictifiable):
 
         tool_dict["edam_operations"] = self.edam_operations
         tool_dict["edam_topics"] = self.edam_topics
+        tool_dict["hidden"] = self.hidden
+        tool_dict["is_workflow_compatible"] = self.is_workflow_compatible
         tool_dict["xrefs"] = self.xrefs
 
         # Fill in ToolShedRepository info
@@ -2268,9 +2270,8 @@ class OutputParameterJSONTool(Tool):
             json_params['output_data'].append(data_dict)
             if json_filename is None:
                 json_filename = file_name
-        out = open(json_filename, 'w')
-        out.write(json.dumps(json_params))
-        out.close()
+        with open(json_filename, 'w') as out:
+            out.write(json.dumps(json_params))
 
 
 class ExpressionTool(Tool):

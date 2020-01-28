@@ -270,7 +270,7 @@ class InstallEnvironment(object):
                 log.exception(str(e))
 
     def __setup_environment(self):
-        return "&&".join([". %s" % file for file in self.__valid_env_shell_file_paths()])
+        return "&&".join(". %s" % _ for _ in self.__valid_env_shell_file_paths())
 
     def __valid_env_shell_file_paths(self):
-        return [file for file in self.env_shell_file_paths if os.path.exists(file)]
+        return [_ for _ in self.env_shell_file_paths if os.path.exists(_)]

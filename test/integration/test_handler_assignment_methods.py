@@ -15,11 +15,11 @@ class WritesConfig(object):
         template = {
             'assign_with': ' assign_with="%s"' % assign_with if assign_with is not None else '',
             'default': ' default="%s"' % default if default is not None else '',
-            'handlers': '\n'.join([
+            'handlers': '\n'.join(
                 '<handler id="{id}"{tags}/>'.format(
                     id=x['id'],
                     tags=' tags="%s"' % x['tags'] if 'tags' in x else ''
-                ) for x in handlers]),
+                ) for x in handlers),
         }
         self.__write_config_from(HANDLER_TEMPLATE_JOB_CONFIG_FILE, template=template)
 

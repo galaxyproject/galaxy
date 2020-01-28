@@ -1138,7 +1138,7 @@ class ToolDependenciesGrid(RepositoryMetadataGrid):
                             if num_env_dicts > 0:
                                 td_str += '<a href="browse_datatypes?operation=view_or_manage_repository&id=%s">' % trans.security.encode_id(repository_metadata.id)
                                 td_str += '<b>environment:</b> '
-                                td_str += ', '.join([escape_html(env_dict['name']) for env_dict in env_dicts])
+                                td_str += ', '.join(escape_html(env_dict['name']) for env_dict in env_dicts)
                                 td_str += '</a><br/>'
                         for index, key in enumerate(sorted_keys):
                             if key == 'set_environment':

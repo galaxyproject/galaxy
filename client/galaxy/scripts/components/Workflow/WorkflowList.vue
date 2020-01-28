@@ -52,7 +52,7 @@
                         />
                     </template>
                     <template v-slot:cell(tags)="row">
-                        <WorkflowTags :workflow="row.item" @onError="onError" />
+                        <Tags :index="row.index" :tags="row.item.tags" @input="onTags" />
                     </template>
                     <template v-slot:cell(bookmark)="row">
                         <b-form-checkbox v-model="row.item.show_in_tool_panel" @change="bookmarkWorkflow(row.item)" />
@@ -89,8 +89,8 @@ import { faUpload } from "@fortawesome/free-solid-svg-icons";
 
 import { getAppRoot } from "onload/loadConfig";
 import { Services } from "./services.js";
-import WorkflowTags from "./WorkflowTags.vue";
-import WorkflowDropdown from "./WorkflowDropdown.vue";
+import Tags from "components/Common/Tags";
+import WorkflowDropdown from "./WorkflowDropdown";
 import UtcDate from "components/UtcDate";
 
 library.add(faPlus);
@@ -101,7 +101,7 @@ export default {
     components: {
         FontAwesomeIcon,
         UtcDate,
-        WorkflowTags,
+        Tags,
         WorkflowDropdown
     },
     data() {
@@ -194,6 +194,18 @@ export default {
                 .updateWorkflow(id, data)
                 .then(() => {
                     window.location = `${getAppRoot()}workflows/list`;
+                })
+                .catch(error => {
+                    this.onError(error);
+                });
+        },
+        onTags: function(tags, index) {
+            const workflow = this.workflows[index];
+            workflow.tags = tags;
+            this.services
+                .updateWorkflow(workflow.id, {
+                    show_in_tool_panel: workflow.show_in_tool_panel,
+                    tags: workflow.tags
                 })
                 .catch(error => {
                     this.onError(error);
