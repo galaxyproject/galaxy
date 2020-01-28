@@ -400,8 +400,8 @@ class BaseJobRunner(object):
         options.update(**kwds)
         return job_script(**options)
 
-    def write_executable_script(self, path, contents, mode=0o755):
-        write_script(path, contents, self.app.config, mode=mode)
+    def write_executable_script(self, path, contents):
+        write_script(path, contents, self.app.config)
 
     def _find_container(
         self,
