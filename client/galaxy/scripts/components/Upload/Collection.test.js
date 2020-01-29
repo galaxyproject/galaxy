@@ -30,6 +30,7 @@ describe("Collection.vue", () => {
     it("resets properly", async () => {
         const { wrapper, localVue } = mountWithApp(Collection);
         expect(wrapper.vm.showHelper).to.equals(true);
+        await localVue.nextTick();
         wrapper.find("#btn-new").trigger("click");
         await localVue.nextTick();
         expect(wrapper.vm.showHelper).to.equals(false);
@@ -46,6 +47,7 @@ describe("Collection.vue", () => {
     it("respects lazyLoadMax limit", async () => {
         const { wrapper, localVue } = mountWithApp(Collection, {}, { lazyLoadMax: 2 });
         expect(wrapper.findAll(".ui-limitloader").length).to.equals(1);
+        await localVue.nextTick();
         wrapper.find("#btn-new").trigger("click");
         await localVue.nextTick();
         wrapper.find("#btn-new").trigger("click");
