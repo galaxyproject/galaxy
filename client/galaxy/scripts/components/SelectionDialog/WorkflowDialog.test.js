@@ -3,21 +3,13 @@ import axios from "axios";
 import WorkflowDialog from "./WorkflowDialog.vue";
 import { __RewireAPI__ as rewire } from "components/Workflow/services";
 import SelectionDialog from "./SelectionDialog.vue";
+import { setupTestGalaxy } from "qunit/test-app";
 
 import { shallowMount, createLocalVue } from "@vue/test-utils";
 
 const mockOptions = {
     callback: () => {},
     modalStatic: true
-};
-
-const userModel = {
-    get: () => "username"
-};
-
-const galaxyInstance = {
-    root: "/",
-    user: userModel
 };
 
 describe("WorkflowDialog.vue", () => {
@@ -27,7 +19,7 @@ describe("WorkflowDialog.vue", () => {
 
     beforeEach(() => {
         axiosMock = new MockAdapter(axios);
-        rewire.__Rewire__("getGalaxyInstance", () => galaxyInstance);
+        setupTestGalaxy();
         rewire.__Rewire__("_addAttributes", workflow => workflow);
         localVue = createLocalVue();
         wrapper = shallowMount(WorkflowDialog, {

@@ -10,7 +10,6 @@ import "./tests/metrics_logger_tests";
 import "./tests/form_tests";
 
 import "./tests/list_of_pairs_collection_creator_tests";
-import "./tests/upload_dialog_tests";
 import "./tests/workflow_editor_tests";
 import "./tests/masthead_tests";
 import "./tests/graph_tests";
