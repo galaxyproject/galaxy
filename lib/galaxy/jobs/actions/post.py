@@ -520,7 +520,7 @@ class ActionBox(object):
                 implicit_collection_jobs_association = job.implicit_collection_jobs_association
                 if implicit_collection_jobs_association:
                     summary = summarize_jobs_to_dict(sa_session, implicit_collection_jobs_association.implicit_collection_jobs)
-                    # PJA get's executed prior to changing the job state,
+                    # PJA gets executed prior to changing the job state,
                     # so the one running job should be this one.
                     execute_action = summary['states'].get('running', 1) == 1
         if execute_action:
