@@ -1,7 +1,7 @@
 import Default from "./Default.vue";
 import { mountWithApp } from "./test_helpers";
 import { __RewireAPI__ as rewire } from "./Default";
-import Backbone from "Backbone";
+import Backbone from "backbone";
 
 describe("Default.vue", () => {
     beforeEach(() => {
