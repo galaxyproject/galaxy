@@ -3113,10 +3113,10 @@ boolbase@^1.0.0, boolbase@~1.0.0:
   resolved "https://registry.yarnpkg.com/boolbase/-/boolbase-1.0.0.tgz#68dff5fbe60c51eb37725ea9e3ed310dcc1e776e"
   integrity sha1-aN/1++YMUes3cl6p4+0xDcwed24=
 
-bootstrap-tourist@^0.2.1:
-  version "0.2.1"
-  resolved "https://registry.yarnpkg.com/bootstrap-tourist/-/bootstrap-tourist-0.2.1.tgz#5333dcc6054df453a4918d7ad72eaccace79c4b5"
-  integrity sha512-qIJBrS64Lj/4Cz/yWaRCrKT82R0hLkH5W3T8Kyyu1eRlEUHt4DygiJqH4YDuwc2CsTZagpikxr7sUXu1X1Cn6w==
+bootstrap-tourist@^0.3.2:
+  version "0.3.2"
+  resolved "https://registry.yarnpkg.com/bootstrap-tourist/-/bootstrap-tourist-0.3.2.tgz#a40b91fab14f6445231230d83a412ad2619b8a5e"
+  integrity sha512-WS8PDKPnjyT8anycKFvADmxGdZyGs+A/i4l+gQXxCeQ4E/Ggg/OiRleudM6m495YU/jvvv2YXcvoCTTaHLdhhw==
 
 bootstrap-vue@^2.15.0:
   version "2.15.0"
