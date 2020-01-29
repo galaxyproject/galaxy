@@ -23,9 +23,7 @@
                 v-model="extension"
                 :enabled="!running"
             >
-                <option v-for="(ext, index) in extensions" :key="index" :value="ext.id">{{
-                    ext.text
-                }}</option>
+                <option v-for="(ext, index) in extensions" :key="index" :value="ext.id">{{ ext.text }}</option>
             </select2>
             <span class="upload-footer-extension-info upload-icon-button fa fa-search" ref="footerExtensionInfo" />
             <span class="upload-footer-title">Genome/Build:</span>
