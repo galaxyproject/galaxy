@@ -23,15 +23,15 @@
                 v-model="extension"
                 :enabled="!running"
             >
-                <option v-for="(extension, index) in extensions" :key="index" :value="extension.id">{{
-                    extension.text
+                <option v-for="(ext, index) in extensions" :key="index" :value="ext.id">{{
+                    ext.text
                 }}</option>
             </select2>
             <span class="upload-footer-extension-info upload-icon-button fa fa-search" ref="footerExtensionInfo" />
             <span class="upload-footer-title">Genome/Build:</span>
             <select2 container-class="upload-footer-genome" ref="footerGenome" v-model="genome" :enabled="!running">
-                <option v-for="(genome, index) in listGenomes" :key="index" :value="genome.id">{{
-                    genome.text
+                <option v-for="(listGenome, index) in listGenomes" :key="index" :value="listGenome.id">{{
+                    listGenome.text
                 }}</option>
             </select2>
         </template>
