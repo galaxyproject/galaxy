@@ -523,5 +523,5 @@ class ActionBox(object):
                     # PJA gets executed prior to changing the job state,
                     # so the one running job should be this one.
                     execute_action = summary['states'].get('running', 1) == 1
-        if execute_action:
-            ActionBox.actions[pja.action_type].execute(app, sa_session, pja, job, replacement_dict)
+            if execute_action:
+                ActionBox.actions[pja.action_type].execute(app, sa_session, pja, job, replacement_dict)
