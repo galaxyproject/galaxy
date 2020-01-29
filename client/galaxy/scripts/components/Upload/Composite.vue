@@ -1,5 +1,5 @@
 <template>
-    <upload-wrapper wrapperClass="upload-view-composite">
+    <upload-wrapper wrapper-class="upload-view-composite">
         <div class="upload-helper" v-show="showHelper">Select Composite Type to show files required to upload</div>
         <table class="upload-table ui-table-striped" v-show="!showHelper" ref="uploadTable">
             <thead>
@@ -18,19 +18,19 @@
         <template v-slot:footer>
             <span class="upload-footer-title">Composite Type:</span>
             <select2
-                containerClass="upload-footer-extension"
+                container-class="upload-footer-extension"
                 ref="footerExtension"
                 v-model="extension"
                 :enabled="!running"
             >
-                <option v-for="(extension, index) in extensions" v-bind:key="index" :value="extension.id">{{
+                <option v-for="(extension, index) in extensions" :key="index" :value="extension.id">{{
                     extension.text
                 }}</option>
             </select2>
             <span class="upload-footer-extension-info upload-icon-button fa fa-search" ref="footerExtensionInfo" />
             <span class="upload-footer-title">Genome/Build:</span>
-            <select2 containerClass="upload-footer-genome" ref="footerGenome" v-model="genome" :enabled="!running">
-                <option v-for="(genome, index) in listGenomes" v-bind:key="index" :value="genome.id">{{
+            <select2 container-class="upload-footer-genome" ref="footerGenome" v-model="genome" :enabled="!running">
+                <option v-for="(genome, index) in listGenomes" :key="index" :value="genome.id">{{
                     genome.text
                 }}</option>
             </select2>
