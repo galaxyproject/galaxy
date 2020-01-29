@@ -11,7 +11,7 @@ jobs:
     strategy:
       matrix:
         python-version: [3.7]
-        subset: ['kubernetes_staging']
+        subset: ['KubernetesDependencyResolutionIntegrationTestCase']
     services:
       postgres:
         image: postgres:11
