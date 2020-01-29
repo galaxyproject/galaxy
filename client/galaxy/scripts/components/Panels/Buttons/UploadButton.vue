@@ -55,9 +55,9 @@ export default {
     created() {
         const Galaxy = getGalaxyInstance();
 
-        Galaxy.upload.ui_button.model.on("change", () => {
-            this.status = Galaxy.upload.ui_button.model.attributes.status;
-            this.percentage = Galaxy.upload.ui_button.model.attributes.percentage;
+        Galaxy.upload.model.on("change", () => {
+            this.status = Galaxy.upload.model.attributes.status;
+            this.percentage = Galaxy.upload.model.attributes.percentage;
         });
     }
 };

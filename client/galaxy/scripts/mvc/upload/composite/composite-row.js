@@ -72,7 +72,7 @@ export default Backbone.View.extend({
                 self.uploadinput.dialog();
             }
         });
-        if (this.app.ftp_upload_site) {
+        if (this.app.ftpUploadSite) {
             this.button_menu.addMenu({
                 icon: "fa-folder-open-o",
                 title: _l("Choose FTP file"),
@@ -261,7 +261,7 @@ export default Backbone.View.extend({
         var self = this;
         this.ftp.show(
             new UploadFtp({
-                ftp_upload_site: this.app.ftp_upload_site,
+                ftp_upload_site: this.app.ftpUploadSite,
                 onchange: function(ftp_file) {
                     self.ftp.hide();
                     if (self.model.get("status") != "running" && ftp_file) {

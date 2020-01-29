@@ -2,27 +2,15 @@
 import $ from "jquery";
 import _ from "underscore";
 import Backbone from "backbone";
-import _l from "utils/localization";
 import Utils from "utils/utils";
-import UploadSettings from "mvc/upload/upload-settings";
-import Popover from "mvc/ui/ui-popover";
 import UploadExtension from "mvc/upload/upload-extension";
+import UploadBoxRow from "mvc/upload/uploadbox-row";
 import Select from "mvc/ui/ui-select";
-export default Backbone.View.extend({
-    /** Dictionary of upload states and associated icons */
-    status_classes: {
-        init: "upload-icon-button fa fa-trash-o",
-        queued: "upload-icon fa fa-spinner fa-spin",
-        running: "upload-icon fa fa-spinner fa-spin",
-        warning: "upload-icon fa fa-spinner fa-spin",
-        success: "upload-icon-button fa fa-check",
-        error: "upload-icon-button fa fa-exclamation-triangle"
-    },
-
+export default UploadBoxRow.extend({
     initialize: function(app, options) {
         var self = this;
         this.app = app;
-        this.list_extensions = app.list_extensions;
+        this.list_extensions = app.listExtensions;
         this.model = options.model;
         this.setElement(this._template(options.model));
         this.$mode = this.$(".upload-mode");
@@ -37,21 +25,16 @@ export default Backbone.View.extend({
         this.$progress_bar = this.$(".upload-progress-bar");
         this.$percentage = this.$(".upload-percentage");
 
-        // append popup to settings icon
-        this.settings = new Popover({
-            title: _l("Upload configuration"),
-            container: this.$(".upload-settings"),
-            placement: "bottom"
-        });
+        this._setupSettings();
 
         // identify default genome and extension values
-        var default_genome = this.app.select_genome.value();
-        var default_extension = this.app.select_extension.value();
+        var default_genome = this.app.genome;
+        var default_extension = this.app.extension;
 
         // create select genomes
         this.select_genome = new Select.View({
             css: "upload-genome",
-            data: self.app.list_genomes,
+            data: self.app.listGenomes,
             container: this.$(".upload-genome"),
             value: default_genome,
             onchange: function(genome) {
@@ -62,7 +45,7 @@ export default Backbone.View.extend({
         // create select extension
         this.select_extension = new Select.View({
             css: "upload-extension",
-            data: _.filter(this.list_extensions, ext => !ext.composite_files),
+            data: self.app.extensions,
             container: this.$(".upload-extension"),
             value: default_extension,
             onchange: function(extension) {
@@ -123,23 +106,12 @@ export default Backbone.View.extend({
         });
 
         // model events
-        this.listenTo(this.model, "change:percentage", () => {
-            self._refreshPercentage();
-        });
-        this.listenTo(this.model, "change:status", () => {
-            self._refreshStatus();
-        });
-        this.listenTo(this.model, "change:info", () => {
-            self._refreshInfo();
-        });
+        this._setupUploadBoxListeners();
         this.listenTo(this.model, "change:genome", () => {
             self._refreshGenome();
         });
         this.listenTo(this.model, "change:extension", () => {
             self._refreshExtension();
-        });
-        this.listenTo(this.model, "change:file_size", () => {
-            self._refreshFileSize();
         });
     },
 
@@ -195,23 +167,6 @@ export default Backbone.View.extend({
         this.select_genome.value(this.model.get("genome"));
     },
 
-    /** Refresh info text */
-    _refreshInfo: function() {
-        var info = this.model.get("info");
-        if (info) {
-            this.$info_text.html(`<strong>Warning: </strong>${info}`).show();
-        } else {
-            this.$info_text.hide();
-        }
-    },
-
-    /** Refresh percentage status */
-    _refreshPercentage: function() {
-        var percentage = parseInt(this.model.get("percentage"));
-        this.$progress_bar.css({ width: `${percentage}%` });
-        this.$percentage.html(percentage != 100 ? `${percentage}%` : "Adding to history...");
-    },
-
     /** Refresh status */
     _refreshStatus: function() {
         var status = this.model.get("status");
@@ -232,33 +187,7 @@ export default Backbone.View.extend({
         }
         this.$info_progress.show();
         this.$el.removeClass().addClass("upload-row");
-        if (status == "success") {
-            this.$el.addClass("table-success");
-            this.$percentage.html("100%");
-        } else if (status == "error") {
-            this.$el.addClass("table-danger");
-            this.$info_progress.hide();
-        } else if (status == "warning") {
-            this.$el.addClass("table-warning");
-            this.$info_progress.hide();
-        }
-    },
-
-    /** Refresh file size */
-    _refreshFileSize: function() {
-        this.$size.html(Utils.bytesToString(this.model.get("file_size")));
-    },
-
-    /** Remove row */
-    _removeRow: function() {
-        if (["init", "success", "error"].indexOf(this.model.get("status")) !== -1) {
-            this.app.collection.remove(this.model);
-        }
-    },
-
-    /** Attach file info popup */
-    _showSettings: function() {
-        this.settings.show(new UploadSettings(this).$el);
+        this._renderStatusType(status);
     },
 
     /** Make extension popover */

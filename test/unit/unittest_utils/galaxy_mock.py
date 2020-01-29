@@ -13,6 +13,7 @@ from galaxy import (
 from galaxy.auth import AuthManager
 from galaxy.datatypes import registry
 from galaxy.jobs.manager import NoopManager
+from galaxy.managers.users import UserManager
 from galaxy.model import mapping, tags
 from galaxy.security import idencoding
 from galaxy.tool_util.deps.containers import NullContainerFinder
@@ -81,6 +82,7 @@ class MockApp(object):
         self.job_manager = NoopManager()
         self.application_stack = ApplicationStack()
         self.auth_manager = AuthManager(self)
+        self.user_manager = UserManager(self)
         self.execution_timer_factory = Bunch(get_timer=StructuredExecutionTimer)
 
         def url_for(*args, **kwds):

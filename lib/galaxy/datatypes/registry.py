@@ -13,6 +13,7 @@ from xml.etree.ElementTree import Element
 import yaml
 
 import galaxy.util
+from galaxy.util import RW_R__R__
 from galaxy.util.bunch import Bunch
 from . import (
     binary,
@@ -973,7 +974,7 @@ class Registry(object):
                                                                             datatype_elems=datatype_elems,
                                                                             sniffer_elems=sniffer_elems)
         with open(os.path.abspath(path), 'w') as registry_xml:
-            os.chmod(path, 0o644)
+            os.chmod(path, RW_R__R__)
             registry_xml.write(self._registry_xml_string)
 
     def get_extension(self, elem):

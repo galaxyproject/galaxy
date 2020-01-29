@@ -22,6 +22,7 @@ from xml.etree import ElementTree
 import requests
 
 from galaxy import util
+from galaxy.util import RW_R__R__
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.renamed_temporary_file import RenamedTemporaryFile
 
@@ -206,7 +207,7 @@ class ToolDataTableManager(object):
             root.append(elem)
         with RenamedTemporaryFile(full_path, mode='w') as out:
             out.write(util.xml_to_string(root, pretty=True))
-        os.chmod(full_path, 0o644)
+        os.chmod(full_path, RW_R__R__)
         if out_path_is_new:
             self.tool_data_path_files.update_files()
 

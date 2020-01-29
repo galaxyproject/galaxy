@@ -16,7 +16,7 @@ from six.moves import builtins
 
 from galaxy import exceptions
 from galaxy import model
-from galaxy.util import string_as_bool
+from galaxy.util import asbool, string_as_bool
 from galaxy.util import unicodify
 from .custos_authnz import CustosAuthnz
 from .psa_authnz import (
@@ -117,7 +117,8 @@ class AuthnzManager(object):
         rtv = {
             'client_id': config_xml.find('client_id').text,
             'client_secret': config_xml.find('client_secret').text,
-            'redirect_uri': config_xml.find('redirect_uri').text}
+            'redirect_uri': config_xml.find('redirect_uri').text,
+            'enable_idp_logout': asbool(config_xml.findtext('enable_idp_logout', 'false'))}
         if config_xml.find('prompt') is not None:
             rtv['prompt'] = config_xml.find('prompt').text
         return rtv
@@ -128,7 +129,8 @@ class AuthnzManager(object):
             'client_id': config_xml.find('client_id').text,
             'client_secret': config_xml.find('client_secret').text,
             'redirect_uri': config_xml.find('redirect_uri').text,
-            'realm': config_xml.find('realm').text}
+            'realm': config_xml.find('realm').text,
+            'enable_idp_logout': asbool(config_xml.findtext('enable_idp_logout', 'false'))}
         if config_xml.find('well_known_oidc_config_uri') is not None:
             rtv['well_known_oidc_config_uri'] = config_xml.find('well_known_oidc_config_uri').text
         if config_xml.find('idphint') is not None:
@@ -261,6 +263,35 @@ class AuthnzManager(object):
                   '{}'.format(provider, e.message)
             log.exception(msg)
             return False, msg, (None, None)
+
+    def logout(self, provider, trans, post_logout_redirect_url=None):
+        """
+        Log the user out of the identity provider.
+
+        :type provider: string
+        :param provider: set the name of the identity provider.
+        :type trans: GalaxyWebTransaction
+        :param trans: Galaxy web transaction.
+        :type post_logout_redirect_url: string
+        :param post_logout_redirect_url: (Optional) URL for identity provider
+            to redirect to after logging user out.
+        :return: a tuple (success boolean, message, redirect URI)
+        """
+        try:
+            # check if logout is enabled for this idp and return false if not
+            unified_provider_name = self._unify_provider_name(provider)
+            if self.oidc_backends_config[unified_provider_name]['enable_idp_logout'] is False:
+                return False, "IDP logout is not enabled for {}".format(provider), None
+
+            success, message, backend = self._get_authnz_backend(provider)
+            if success is False:
+                return False, message, None
+            return True, message, backend.logout(trans, post_logout_redirect_url)
+        except Exception as e:
+            msg = 'The following error occurred when logging out from `{}` identity provider: ' \
+                  '{}'.format(provider, e.message)
+            log.exception(msg)
+            return False, msg, None
 
     def disconnect(self, provider, trans, disconnect_redirect_url=None):
         try:

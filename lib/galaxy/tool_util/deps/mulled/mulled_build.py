@@ -14,6 +14,7 @@ import json
 import logging
 import os
 import shutil
+import stat
 import string
 import subprocess
 import sys
@@ -227,10 +228,10 @@ def mull_targets(
     bind_str = ",".join(binds)
     involucro_args = [
         '-f', '%s/invfile.lua' % DIRNAME,
-        '-set', "CHANNELS='%s'" % channels,
-        '-set', "TARGETS='%s'" % target_str,
-        '-set', "REPO='%s'" % repo,
-        '-set', "BINDS='%s'" % bind_str,
+        '-set', "CHANNELS=%s" % channels,
+        '-set', "TARGETS=%s" % target_str,
+        '-set', "REPO=%s" % repo,
+        '-set', "BINDS=%s" % bind_str,
     ]
     dest_base_image = None
     if base_image:
@@ -241,22 +242,22 @@ def mull_targets(
         dest_base_image = base_image_for_targets(targets)
 
     if dest_base_image:
-        involucro_args.extend(["-set", "DEST_BASE_IMAGE='%s'" % dest_base_image])
+        involucro_args.extend(["-set", "DEST_BASE_IMAGE=%s" % dest_base_image])
     if CONDA_IMAGE:
-        involucro_args.extend(["-set", "CONDA_IMAGE='%s'" % CONDA_IMAGE])
+        involucro_args.extend(["-set", "CONDA_IMAGE=%s" % CONDA_IMAGE])
     if verbose:
-        involucro_args.extend(["-set", "VERBOSE='1'"])
+        involucro_args.extend(["-set", "VERBOSE=1"])
     if singularity:
         singularity_image_name = repo_template_kwds['image']
-        involucro_args.extend(["-set", "SINGULARITY='1'"])
-        involucro_args.extend(["-set", "SINGULARITY_IMAGE_NAME='%s'" % singularity_image_name])
-        involucro_args.extend(["-set", "SINGULARITY_IMAGE_DIR='%s'" % singularity_image_dir])
-        involucro_args.extend(["-set", "USER_ID='%s:%s'" % (os.getuid(), os.getgid())])
+        involucro_args.extend(["-set", "SINGULARITY=1"])
+        involucro_args.extend(["-set", "SINGULARITY_IMAGE_NAME=%s" % singularity_image_name])
+        involucro_args.extend(["-set", "SINGULARITY_IMAGE_DIR=%s" % singularity_image_dir])
+        involucro_args.extend(["-set", "USER_ID=%s:%s" % (os.getuid(), os.getgid())])
     if test:
-        involucro_args.extend(["-set", "TEST=%s" % shlex_quote(test)])
+        involucro_args.extend(["-set", "TEST=%s" % test])
     if conda_version is not None:
         verbose = "--verbose" if verbose else "--quiet"
-        involucro_args.extend(["-set", "PREINSTALL='conda install %s --yes conda=%s'" % (verbose, conda_version)])
+        involucro_args.extend(["-set", "PREINSTALL=conda install %s --yes conda=%s" % (verbose, conda_version)])
     involucro_args.append(command)
     if test_files:
         test_bind = []
@@ -269,24 +270,25 @@ def mull_targets(
                     test_bind.append(test_file)
         if test_bind:
             involucro_args.insert(6, '-set')
-            involucro_args.insert(7, "TEST_BINDS='%s'" % ",".join(test_bind))
-    print(" ".join(involucro_context.build_command(involucro_args)))
-    if not dry_run:
-        ensure_installed(involucro_context, True)
-        if singularity:
-            if not os.path.exists(singularity_image_dir):
-                safe_makedirs(singularity_image_dir)
-            with open(os.path.join(singularity_image_dir, 'Singularity.def'), 'w+') as sin_def:
-                fill_template = SINGULARITY_TEMPLATE % {'container_test': test, 'base_image': dest_base_image or DEFAULT_BASE_IMAGE}
-                sin_def.write(fill_template)
-        with PrintProgress():
-            ret = involucro_context.exec_command(involucro_args)
-        if singularity:
-            # we can not remove this folder as it contains the image wich is owned by root
-            pass
-            # shutil.rmtree('./singularity_import')
-        return ret
-    return 0
+            involucro_args.insert(7, "TEST_BINDS=%s" % ",".join(test_bind))
+    cmd = involucro_context.build_command(involucro_args)
+    print('Executing: ' + ' '.join(shlex_quote(_) for _ in cmd))
+    if dry_run:
+        return 0
+    ensure_installed(involucro_context, True)
+    if singularity:
+        if not os.path.exists(singularity_image_dir):
+            safe_makedirs(singularity_image_dir)
+        with open(os.path.join(singularity_image_dir, 'Singularity.def'), 'w+') as sin_def:
+            fill_template = SINGULARITY_TEMPLATE % {'container_test': test, 'base_image': dest_base_image or DEFAULT_BASE_IMAGE}
+            sin_def.write(fill_template)
+    with PrintProgress():
+        ret = involucro_context.exec_command(involucro_args)
+    if singularity:
+        # we can not remove this folder as it contains the image wich is owned by root
+        pass
+        # shutil.rmtree('./singularity_import')
+    return ret
 
 
 def context_from_args(args):
@@ -335,7 +337,7 @@ class InvolucroContext(installable.InstallableContext):
             created_build_dir = True
             os.mkdir('./build')
         try:
-            res = self.shell_exec(" ".join(cmd))
+            res = self.shell_exec(cmd)
         finally:
             # delete build directory in any case
             if created_build_dir:
@@ -357,12 +359,19 @@ def ensure_installed(involucro_context, auto_init):
     return installable.ensure_installed(involucro_context, install_involucro, auto_init)
 
 
-def install_involucro(involucro_context=None, to_path=None):
+def install_involucro(involucro_context):
     install_path = os.path.abspath(involucro_context.involucro_bin)
     involucro_context.involucro_bin = install_path
-    download_cmd = " ".join(commands.download_command(involucro_link(), to=install_path, quote_url=True))
-    full_cmd = "%s && chmod +x %s" % (download_cmd, install_path)
-    return involucro_context.shell_exec(full_cmd)
+    download_cmd = commands.download_command(involucro_link(), to=install_path)
+    exit_code = involucro_context.shell_exec(download_cmd)
+    if exit_code:
+        return exit_code
+    try:
+        os.chmod(install_path, os.stat(install_path).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+        return 0
+    except Exception:
+        log.exception("Failed to make file '%s' executable", install_path)
+        return 1
 
 
 def add_build_arguments(parser):
