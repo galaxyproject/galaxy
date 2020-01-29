@@ -13,6 +13,8 @@ from galaxy.webapps.base.controller import JSAppLauncher
 
 log = logging.getLogger(__name__)
 
+PROVIDER_COOKIE_NAME = 'oidc-provider'
+
 
 class OIDC(JSAppLauncher):
 
@@ -79,6 +81,8 @@ class OIDC(JSAppLauncher):
                                             "identity provider. Please try again, and if the problem persists, "
                                             "contact the Galaxy instance admin.".format(provider))
         trans.handle_user_login(user)
+        # Record which idp provider was logged into, so we can logout of it later
+        trans.set_cookie(value=provider, name=PROVIDER_COOKIE_NAME)
         return trans.response.send_redirect(url_for('/'))
 
     @web.expose
@@ -95,3 +99,20 @@ class OIDC(JSAppLauncher):
         if redirect_url is None:
             redirect_url = url_for('/')
         return trans.response.send_redirect(redirect_url)
+
+    @web.json
+    def logout(self, trans, provider, **kwargs):
+        post_logout_redirect_url = trans.request.base + url_for('/') + 'root/login?is_logout_redirect=true'
+        success, message, redirect_uri = trans.app.authnz_manager.logout(provider,
+                                                                         trans,
+                                                                         post_logout_redirect_url=post_logout_redirect_url)
+        if success:
+            return {'redirect_uri': redirect_uri}
+        else:
+            return {'message': message}
+
+    @web.expose
+    def get_logout_url(self, trans, **kwargs):
+        idp_provider = trans.get_cookie(name=PROVIDER_COOKIE_NAME)
+        if idp_provider:
+            return trans.response.send_redirect(url_for(controller='authnz', action='logout', provider=idp_provider))
