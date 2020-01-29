@@ -24,6 +24,7 @@ class ExplicitContainerResolver(ContainerResolver):
         """
         for container_description in tool_info.container_descriptions:
             if self._container_type_enabled(container_description, enabled_container_types):
+                container_description.explicit = True
                 return container_description
 
         return None

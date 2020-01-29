@@ -414,6 +414,8 @@ def target_str_to_targets(targets_raw):
             build = None
             if "=" in version:
                 version, build = version.split('=')
+            elif "--" in version:
+                version, build = version.split('--')
             target = build_target(package_name, version, build)
         else:
             target = build_target(target_str)

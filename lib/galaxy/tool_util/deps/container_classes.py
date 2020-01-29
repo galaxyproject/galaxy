@@ -56,6 +56,20 @@ if not found:
     subprocess.check_call(cmd, shell=True)
 EOF
 '''
+SOURCE_CONDA_ACTIVATE = """
+# Check if container was created by installing conda packages,
+# and if so, source scripts to populate environment variables
+# that would be set by activating the conda environment.
+if [ -d /usr/local/etc/conda/activate.d ]; then
+  export CONDA_PREFIX=/usr/local
+  for f in /usr/local/etc/conda/activate.d/*.sh; do
+    case "$f" in
+      "/usr/local/etc/conda/activate.d/activate-"*) :;;
+      *) . "$f" ;;
+    esac;
+  done
+fi
+"""
 
 
 @six.add_metaclass(ABCMeta)
@@ -82,6 +96,12 @@ class Container(object):
     @property
     def shell(self):
         return DEFAULT_CONTAINER_SHELL if not self.container_description else self.container_description.shell
+
+    @property
+    def source_environment(self):
+        if self.container_description and not self.container_description.explicit:
+            return SOURCE_CONDA_ACTIVATE
+        return ""
 
     @abstractmethod
     def containerize_command(self, command):
