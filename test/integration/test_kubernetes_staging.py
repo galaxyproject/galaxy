@@ -108,14 +108,14 @@ def job_config(template_str, jobs_directory):
 class BaseKubernetesStagingTest(BaseJobEnvironmentIntegrationTestCase, MulledJobTestCases):
 
     def setUp(self):
-        super(KubernetesStagingContainerIntegrationTestCase, self).setUp()
+        super(BaseKubernetesStagingTest, self).setUp()
         self.history_id = self.dataset_populator.new_history()
 
     @classmethod
     def setUpClass(cls):
         # realpath for docker deployed in a VM on Mac, also done in driver_util.
         cls.jobs_directory = os.path.realpath(tempfile.mkdtemp())
-        super(KubernetesStagingContainerIntegrationTestCase, cls).setUpClass()
+        super(BaseKubernetesStagingTest, cls).setUpClass()
 
 
 class KubernetesStagingContainerIntegrationTestCase(BaseKubernetesStagingTest):
