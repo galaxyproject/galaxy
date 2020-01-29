@@ -8,13 +8,13 @@ January 2020 Galaxy Release (v 20.01)
 Highlights
 ===========================================================
 
-**Enhanced workflow functionality** 
-  Workflows can now now make use of optional datasets and optional parameters,
+**Enhanced workflow functionality**
+  Workflows can now make use of optional datasets and optional parameters,
   optional parameter default values and dataset inputs can now be restricted to
   user-defined datatypes. The workflow editor and execution engine have been
   enhanced to allow defining options to choose from, and these options can be
   connected to compatible text, integer, float, color and select tool parameters
-  for more flexible and universally re-usable workflows (`Pull Request 9086`_, `Pull Request 9073`_, `Pull Request 8264`_). 
+  for more flexible and universally re-usable workflows (`Pull Request 9086`_).
 
 **Major update to container and dependency management interface**
   The manage dependencies interface has been ported to vue.js and displays
@@ -26,16 +26,15 @@ Highlights
 **Extended job metadata collection**
   Creating Job metadata has been reworked so that the dataset transfer that
   occurs after a Galaxy job can be initiated by the compute node that runs a
-  Galaxy job. Previously the transfer was done by Galaxy under many production
-  scenarios.  This reduces IO load on Galaxy instances and should allow running
-  many more jobs in parallel. This work will also make jobs running on remote
-  compute resources much more efficient if the remote resources can write to
-  Galaxy's object store. To benefit from this new metadata setting Galaxy needs
-  to use object stores that use uuids for storing datasets and set the
-  ``metadata_strategy`` configuration value to ``extended``. This feature is in beta
-  testing, but work is ongoing to mix existing object store configuration and
-  choose the most efficient way of transfering datasets automatically (`Pull
-  Request 8930`_ ).
+  Galaxy job. Previously the transfer was often done by Galaxy. Offloading this
+  task to the compute node should allow handling many more jobs in parallel. This
+  work will also make jobs running on remote compute resources much more
+  efficient if the remote resources can write to Galaxy's object store. To
+  benefit from this new metadata setting Galaxy needs to use object stores that
+  use uuids for storing datasets and set the ``metadata_strategy`` configuration
+  value to ``extended``. This feature is in beta testing, but work is ongoing to
+  mix existing object store configuration and choose the most efficient way of
+  transfering datasets automatically (`Pull Request 8930`_ ).
 
 
 Also check out the `20.01 user release notes <https://docs.galaxyproject.org/en/release_20.01/releases/20.01_announce_user.html>`__
