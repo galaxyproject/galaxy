@@ -12,6 +12,7 @@ from galaxy_test.base.workflow_fixtures import (
 )
 from .framework import (
     retry_assertion_during_transitions,
+    retry_during_transitions,
     selenium_test,
     SeleniumTestCase
 )
@@ -339,7 +340,7 @@ steps:
 
     @selenium_test
     def test_workflow_bookmarking(self):
-        @retry_assertion_during_transitions
+        @retry_during_transitions
         def assert_workflow_bookmarked_status(target_status):
             name_matches = [c.text == new_workflow_name for c in self.components.tool_panel.workflow_names.all()]
             status = any(name_matches)
