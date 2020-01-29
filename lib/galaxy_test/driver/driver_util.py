@@ -517,7 +517,7 @@ def serve_webapp(webapp, port=None, host=None):
         try:
             server = httpserver.serve(webapp, host=host, port=port, start_loop=False)
             break
-        except OSError as e:
+        except socket.error as e:
             if e.errno == 98:
                 continue
             raise
