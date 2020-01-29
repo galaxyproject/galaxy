@@ -9,6 +9,7 @@ import jwt
 import requests
 from oauthlib.common import generate_nonce
 from requests_oauthlib import OAuth2Session
+from six.moves.urllib.parse import quote
 
 from galaxy import util
 from galaxy.model import CustosAuthnzToken, User
@@ -39,6 +40,7 @@ class CustosAuthnz(IdentityProvider):
             self.config['authorization_endpoint'] = well_known_oidc_config['authorization_endpoint']
             self.config['token_endpoint'] = well_known_oidc_config['token_endpoint']
             self.config['userinfo_endpoint'] = well_known_oidc_config['userinfo_endpoint']
+            self.config['end_session_endpoint'] = well_known_oidc_config['end_session_endpoint']
         else:
             realm = oidc_backend_config['realm']
             self._load_config_for_provider_and_realm(self.config['provider'], realm)
@@ -142,6 +144,16 @@ class CustosAuthnz(IdentityProvider):
         except Exception as e:
             return False, "Failed to disconnect provider {}: {}".format(provider, util.unicodify(e)), None
 
+    def logout(self, trans, post_logout_redirect_url=None):
+        try:
+            redirect_url = self.config['end_session_endpoint']
+            if post_logout_redirect_url is not None:
+                redirect_url += "?redirect_uri={}".format(quote(post_logout_redirect_url))
+            return redirect_url
+        except Exception as e:
+            log.error("Failed to generate logout redirect_url", exc_info=e)
+            return None
+
     def _create_oauth2_session(self, state=None, scope=None):
         client_id = self.config['client_id']
         redirect_uri = self.config['redirect_uri']
@@ -191,6 +203,7 @@ class CustosAuthnz(IdentityProvider):
         self.config['authorization_endpoint'] = well_known_oidc_config['authorization_endpoint']
         self.config['token_endpoint'] = well_known_oidc_config['token_endpoint']
         self.config['userinfo_endpoint'] = well_known_oidc_config['userinfo_endpoint']
+        self.config['end_session_endpoint'] = well_known_oidc_config['end_session_endpoint']
 
     def _get_well_known_uri_for_provider_and_realm(self, provider, realm):
         # TODO: Look up this URL from a Python library
