@@ -30,7 +30,7 @@ Highlights
   scenarios.  This reduces IO load on Galaxy instances and should allow running
   many more jobs in parallel. This work will also make jobs running on remote
   compute resources much more efficient if the remote resources can write to
-  Galaxy'so object store. To benefit from this new metadata setting Galaxy needs
+  Galaxy's object store. To benefit from this new metadata setting Galaxy needs
   to use object stores that use uuids for storing datasets and set the
   ``metadata_strategy`` configuration value to ``extended``. This feature is in beta
   testing, but work is ongoing to mix existing object store configuration and
