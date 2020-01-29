@@ -168,11 +168,11 @@ def _simple_image_name(targets, image_build=None):
     target = targets[0]
     suffix = ""
     if target.version is not None:
-        if image_build is not None:
+        build = target.build
+        if build is None and image_build is not None and image_build != "0":
+            # Special case image_build == "0", which has been built without a suffix
             print("WARNING: Hard-coding image build instead of using Conda build - this is not recommended.")
             build = image_build
-        else:
-            build = target.build
         suffix += ":%s" % target.version
         if build is not None:
             suffix += "--%s" % build
@@ -227,6 +227,15 @@ def v2_image_name(targets, image_build=None, name_override=None):
     >>> single_targets = [build_target("samtools", version="1.3.1")]
     >>> v2_image_name(single_targets)
     'samtools:1.3.1'
+    >>> single_targets = [build_target("samtools", version="1.3.1", build="py_1")]
+    >>> v2_image_name(single_targets)
+    'samtools:1.3.1--py_1'
+    >>> single_targets = [build_target("samtools", version="1.3.1")]
+    >>> v2_image_name(single_targets, image_build="0")
+    'samtools:1.3.1'
+    >>> single_targets = [build_target("samtools", version="1.3.1", build="py_1")]
+    >>> v2_image_name(single_targets, image_build="0")
+    'samtools:1.3.1--py_1'
     >>> multi_targets = [build_target("samtools", version="1.3.1"), build_target("bwa", version="0.7.13")]
     >>> v2_image_name(multi_targets)
     'mulled-v2-fe8faa35dbf6dc65a0f7f5d4ea12e31a79f73e40:4d0535c94ef45be8459f429561f0894c3fe0ebcf'
