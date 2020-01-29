@@ -39,8 +39,8 @@
                     </div>
                     <p class="card-text" v-html="helpSummary(info.help) || info.description" />
                     <p class="card-text">
-                        <b-btn v-b-modal="'modal-' + '-' + index">Info</b-btn>
-                        <b-modal :id="'modal-' + '-' + index" centered :title="info.name">
+                        <b-btn v-b-modal="'modal-' + '-' + index" >Info</b-btn>
+                        <b-modal :id="'modal-' + '-' + index" centered ok-only :title="info.name">
                             <b>{{ info.version + " / " + info.id }}</b>
                             <p>{{ info.description }}</p>
                             <p v-html="info.help"></p>
@@ -111,9 +111,8 @@ export default {
         axios
             .get(`${getAppRoot()}api/tools?tool_help=True`)
             .then(response => {
-                this.tools = this.toolsExtracted(response.data);
-                this.buffer = this.tools.slice(0, 20);
-                this.loading = false;
+                this.initialize(response.data);
+
             })
             .catch(error => {
                 console.error(error);
@@ -198,6 +197,11 @@ export default {
         },
         getToolsNumber(){
             return this.tools.length;
+        },
+        initialize(tools){
+            this.tools = this.toolsExtracted(tools);
+            this.buffer = this.tools.slice(0, 20);
+            this.loading = false;
         }
     }
 };
