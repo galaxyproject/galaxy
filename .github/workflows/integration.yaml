@@ -2,7 +2,6 @@ name: Integration
 on: [push, pull_request]
 env:
   GALAXY_TEST_DBURI: 'postgres://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
-  GALAXY_TEST_PORT: 9009
 jobs:
 
   test:
