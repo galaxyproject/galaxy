@@ -22,7 +22,7 @@ class ToolDescribingToursTestCase(SeleniumTestCase):
         popover_component.wait_for_visible()
 
         title = popover_component.title.wait_for_visible().text
-        assert title == "environment_variables Tour", title
+        assert title.startswith("environment_variables Tour"), title
 
         # Run tool
         self.tool_form_execute()
@@ -43,7 +43,7 @@ class ToolDescribingToursTestCase(SeleniumTestCase):
         popover_component.wait_for_visible()
 
         title = popover_component.title.wait_for_visible().text
-        assert title == "md5sum Tour", title
+        assert title.startswith("md5sum Tour"), title
         self.screenshot("tool_describing_tour_0_start")
 
         popover_component.next.wait_for_and_click()
@@ -59,7 +59,7 @@ class ToolDescribingToursTestCase(SeleniumTestCase):
         self.sleep_for(self.wait_types.UX_RENDER)
 
         title = popover_component.title.wait_for_visible().text
-        assert title == "Execute tool"
+        assert title.startswith("Execute tool")
         self.screenshot("tool_describing_tour_2_execute")
 
         popover_component.end.wait_for_and_click()
