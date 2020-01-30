@@ -49,6 +49,9 @@ const TOURPAGE_TEMPLATE = `
     </div>
 </div>`;
 
+
+const TOUR_RESUME_DELAY = 1000; // one second delay after pageload before a tour resume happens
+
 const DEFAULT_TOUR_OPTIONS = {
     framework: "bootstrap4",
     showProgressBar: false,
@@ -200,7 +203,7 @@ export function giveTourWithData(data) {
     const hookedTourData = hooked_tour_from_data(data);
     window.sessionStorage.setItem("activeGalaxyTour", JSON.stringify(data));
     // Store tour steps in sessionStorage to easily persist w/o hackery.
-    const tour = new Tour({...DEFAULT_TOUR_OPTIONS, steps: hookedTourData.steps });
+    const tour = new Tour({ ...DEFAULT_TOUR_OPTIONS, steps: hookedTourData.steps });
     tour.restart();
 }
 
@@ -221,8 +224,11 @@ export function activeGalaxyTourRunner() {
                 // functionality actually *could* be useful, but we'd need to handle it better and
                 // come up with some design guidelines for tours jumping between windows.
                 // Disabling for now.
-                var tour = new Tour({...DEFAULT_TOUR_OPTIONS, steps: et.steps });
-                tour.restart();
+                window.setTimeout(() => {
+                    // Don't pop up immediately; let people see the page first.
+                    var tour = new Tour({ ...DEFAULT_TOUR_OPTIONS, steps: et.steps });
+                    tour.restart();
+                }, TOUR_RESUME_DELAY);
             }
         }
     }
