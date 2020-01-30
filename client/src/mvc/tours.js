@@ -58,11 +58,11 @@ const DEFAULT_TOUR_OPTIONS = {
     }
 };
 
-var hooked_tour_from_data = (data) => {
-    _.each(data.steps, (step) => {
+var hooked_tour_from_data = data => {
+    data.steps.forEach(step => {
         if (step.preclick) {
             step.onShow = () => {
-                _.each(step.preclick, (preclick) => {
+                step.preclick.forEach(preclick => {
                     // TODO: click delay between clicks
                     $(preclick).click();
                 });
@@ -70,7 +70,7 @@ var hooked_tour_from_data = (data) => {
         }
         if (step.postclick) {
             step.onHide = () => {
-                _.each(step.postclick, (postclick) => {
+                step.postclick.forEach(postclick => {
                     // TODO: click delay between clicks
                     $(postclick).click();
                 });
@@ -127,7 +127,11 @@ export var ToursView = Backbone.View.extend({
         var tpl = _.template(TOURPAGE_TEMPLATE);
 
         var tourtags = {};
+<<<<<<< HEAD:client/src/mvc/tours.js
         _.each(this.model.models, (tour) => {
+=======
+        this.model.models.forEach(tour => {
+>>>>>>> d76c753612... Swap out most underscore-isms for vanilla js using array iteration and spread operator.:client/galaxy/scripts/mvc/tours.js
             tour.attributes.tags_lc = [];
             if (tour.attributes.tags === null) {
                 if (tourtags.Untagged === undefined) {
@@ -135,7 +139,11 @@ export var ToursView = Backbone.View.extend({
                 }
                 tourtags.Untagged.tours.push(tour);
             } else {
+<<<<<<< HEAD:client/src/mvc/tours.js
                 _.each(tour.attributes.tags, (otag) => {
+=======
+                tour.attributes.tags.forEach(otag => {
+>>>>>>> d76c753612... Swap out most underscore-isms for vanilla js using array iteration and spread operator.:client/galaxy/scripts/mvc/tours.js
                     var tag = otag.charAt(0).toUpperCase() + otag.slice(1);
                     if (tourtags[tag] === undefined) {
                         tourtags[tag] = { name: tag, tours: [] };
@@ -200,7 +208,7 @@ export function giveTourWithData(data) {
     const hookedTourData = hooked_tour_from_data(data);
     window.sessionStorage.setItem("activeGalaxyTour", JSON.stringify(data));
     // Store tour steps in sessionStorage to easily persist w/o hackery.
-    const tour = new Tour(_.extend({ steps: hookedTourData.steps }, DEFAULT_TOUR_OPTIONS));
+    const tour = new Tour(...DEFAULT_TOUR_OPTIONS, { steps: hookedTourData.steps });
     tour.restart();
 }
 
@@ -221,6 +229,7 @@ export function activeGalaxyTourRunner() {
                 // functionality actually *could* be useful, but we'd need to handle it better and
                 // come up with some design guidelines for tours jumping between windows.
                 // Disabling for now.
+<<<<<<< HEAD:client/src/mvc/tours.js
                 var tour = new Tour(
                     _.extend(
                         {
@@ -229,6 +238,9 @@ export function activeGalaxyTourRunner() {
                         DEFAULT_TOUR_OPTIONS
                     )
                 );
+=======
+                var tour = new Tour(...DEFAULT_TOUR_OPTIONS, { steps: et.steps });
+>>>>>>> d76c753612... Swap out most underscore-isms for vanilla js using array iteration and spread operator.:client/galaxy/scripts/mvc/tours.js
                 tour.restart();
             }
         }
