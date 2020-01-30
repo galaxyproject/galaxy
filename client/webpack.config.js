@@ -69,7 +69,7 @@ module.exports = (env = {}, argv = {}) => {
                 {
                     test: /\.js$/,
                     // Pretty sure we don't want anything except node_modules here
-                    exclude: [/(node_modules\/(?!(handsontable)\/)|bower_components)/, libsBase],
+                    exclude: [/(node_modules\/(?!(handsontable)\/))/, libsBase],
                     loader: "babel-loader",
                     options: {
                         cacheDirectory: true,
