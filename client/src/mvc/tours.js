@@ -127,11 +127,7 @@ export var ToursView = Backbone.View.extend({
         var tpl = _.template(TOURPAGE_TEMPLATE);
 
         var tourtags = {};
-<<<<<<< HEAD:client/src/mvc/tours.js
-        _.each(this.model.models, (tour) => {
-=======
         this.model.models.forEach(tour => {
->>>>>>> d76c753612... Swap out most underscore-isms for vanilla js using array iteration and spread operator.:client/galaxy/scripts/mvc/tours.js
             tour.attributes.tags_lc = [];
             if (tour.attributes.tags === null) {
                 if (tourtags.Untagged === undefined) {
@@ -139,11 +135,7 @@ export var ToursView = Backbone.View.extend({
                 }
                 tourtags.Untagged.tours.push(tour);
             } else {
-<<<<<<< HEAD:client/src/mvc/tours.js
-                _.each(tour.attributes.tags, (otag) => {
-=======
                 tour.attributes.tags.forEach(otag => {
->>>>>>> d76c753612... Swap out most underscore-isms for vanilla js using array iteration and spread operator.:client/galaxy/scripts/mvc/tours.js
                     var tag = otag.charAt(0).toUpperCase() + otag.slice(1);
                     if (tourtags[tag] === undefined) {
                         tourtags[tag] = { name: tag, tours: [] };
@@ -229,18 +221,7 @@ export function activeGalaxyTourRunner() {
                 // functionality actually *could* be useful, but we'd need to handle it better and
                 // come up with some design guidelines for tours jumping between windows.
                 // Disabling for now.
-<<<<<<< HEAD:client/src/mvc/tours.js
-                var tour = new Tour(
-                    _.extend(
-                        {
-                            steps: et.steps,
-                        },
-                        DEFAULT_TOUR_OPTIONS
-                    )
-                );
-=======
                 var tour = new Tour(...DEFAULT_TOUR_OPTIONS, { steps: et.steps });
->>>>>>> d76c753612... Swap out most underscore-isms for vanilla js using array iteration and spread operator.:client/galaxy/scripts/mvc/tours.js
                 tour.restart();
             }
         }
