@@ -1,7 +1,7 @@
 import Default from "./Default.vue";
 import { mountWithApp } from "./test_helpers";
 import { __RewireAPI__ as rewire } from "./Default";
-import Backbone from "Backbone";
+import Backbone from "backbone";
 
 describe("Default.vue", () => {
     beforeEach(() => {
@@ -39,6 +39,7 @@ describe("Default.vue", () => {
     it("resets properly", async () => {
         const { wrapper, localVue } = mountWithApp(Default);
         expect(wrapper.vm.showHelper).to.equals(true);
+        await localVue.nextTick();
         wrapper.find("#btn-new").trigger("click");
         await localVue.nextTick();
         expect(wrapper.vm.showHelper).to.equals(false);

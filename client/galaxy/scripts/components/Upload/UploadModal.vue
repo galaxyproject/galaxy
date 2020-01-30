@@ -14,7 +14,7 @@
         </template>
         <b-tabs v-if="historyAvailable">
             <b-tab title="Regular" id="regular" button-id="tab-title-link-regular">
-                <default :app="this" :lazyLoadMax="50" />
+                <default :app="this" :lazy-load-max="50" />
             </b-tab>
             <b-tab title="Composite" id="composite" button-id="tab-title-link-composite">
                 <composite :app="this" />

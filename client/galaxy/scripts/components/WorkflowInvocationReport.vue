@@ -1,7 +1,7 @@
 <template>
     <markdown :markdown-config="markdownConfig" v-if="!edit"></markdown>
     <markdown-editor
-        :initialMarkdown="markdownConfig.invocation_markdown"
+        :initial-markdown="markdownConfig.invocation_markdown"
         :onupdate="onupdate"
         v-else
     ></markdown-editor>

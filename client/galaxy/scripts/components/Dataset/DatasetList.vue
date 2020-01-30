@@ -32,7 +32,7 @@
 <script>
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
-import { Services } from "./services.js";
+import { Services } from "./services";
 import DatasetName from "./DatasetName";
 import DatasetHistory from "./DatasetHistory";
 import DelayedInput from "components/Common/DelayedInput";

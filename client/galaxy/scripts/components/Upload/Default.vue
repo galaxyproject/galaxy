@@ -1,5 +1,5 @@
 <template>
-    <upload-wrapper ref="wrapper" :topInfo="topInfo">
+    <upload-wrapper ref="wrapper" :top-info="topInfo">
         <div class="upload-helper" v-show="showHelper"><i class="fa fa-files-o" />Drop files here</div>
         <table class="upload-table ui-table-striped" v-show="!showHelper" ref="uploadTable">
             <thead>
@@ -18,20 +18,18 @@
         <template v-slot:footer>
             <span class="upload-footer-title">Type (set all):</span>
             <select2
-                containerClass="upload-footer-extension"
+                container-class="upload-footer-extension"
                 ref="footerExtension"
                 v-model="extension"
                 :enabled="!running"
             >
-                <option v-for="(extension, index) in extensions" v-bind:key="index" :value="extension.id">{{
-                    extension.text
-                }}</option>
+                <option v-for="(ext, index) in extensions" :key="index" :value="ext.id">{{ ext.text }}</option>
             </select2>
             <span class="upload-footer-extension-info upload-icon-button fa fa-search" />
             <span class="upload-footer-title">Genome (set all):</span>
-            <select2 containerClass="upload-footer-genome" ref="footerGenome" v-model="genome" :enabled="!running">
-                <option v-for="(genome, index) in listGenomes" v-bind:key="index" :value="genome.id">{{
-                    genome.text
+            <select2 container-class="upload-footer-genome" ref="footerGenome" v-model="genome" :enabled="!running">
+                <option v-for="(listGenome, index) in listGenomes" :key="index" :value="listGenome.id">{{
+                    listGenome.text
                 }}</option>
             </select2>
         </template>

@@ -106,8 +106,6 @@
 <%def name="javascripts()">
     ${parent.javascripts()}
 
-    ## ${h.js( "libs/jquery/jquery-ui" )}
-
     <script type="text/javascript">
         $(function() {
             // -- Viz set up. --

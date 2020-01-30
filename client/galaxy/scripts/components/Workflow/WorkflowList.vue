@@ -88,7 +88,7 @@ import { faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { faUpload } from "@fortawesome/free-solid-svg-icons";
 
 import { getAppRoot } from "onload/loadConfig";
-import { Services } from "./services.js";
+import { Services } from "./services";
 import Tags from "components/Common/Tags";
 import WorkflowDropdown from "./WorkflowDropdown";
 import UtcDate from "components/UtcDate";

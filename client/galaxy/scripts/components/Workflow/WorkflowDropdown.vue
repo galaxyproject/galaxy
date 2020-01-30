@@ -28,7 +28,7 @@
 </template>
 <script>
 import { getAppRoot } from "onload/loadConfig";
-import { Services } from "./services.js";
+import { Services } from "./services";
 export default {
     props: ["workflow"],
     data() {

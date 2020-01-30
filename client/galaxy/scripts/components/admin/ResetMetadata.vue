@@ -11,7 +11,7 @@
 </template>
 <script>
 import BaseList from "./BaseList";
-import { getInstalledRepositories, resetRepositoryMetadata } from "./AdminServices.js";
+import { getInstalledRepositories, resetRepositoryMetadata } from "./AdminServices";
 
 export default {
     components: {

@@ -1,9 +1,9 @@
 <template>
     <selection-dialog
-        :errorMessage="errorMessage"
-        :optionsShow="optionsShow"
-        :modalShow="modalShow"
-        :hideModal="() => (modalShow = false)"
+        :error-message="errorMessage"
+        :options-show="optionsShow"
+        :modal-show="modalShow"
+        :hide-modal="() => (modalShow = false)"
     >
         <template v-slot:search>
             <data-dialog-search v-model="filter" />
@@ -41,9 +41,9 @@
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import SelectionDialogMixin from "components/SelectionDialog/SelectionDialogMixin";
-import { UrlTracker } from "./utilities.js";
-import { Model } from "./model.js";
-import { Services } from "./services.js";
+import { UrlTracker } from "./utilities";
+import { Model } from "./model";
+import { Services } from "./services";
 
 Vue.use(BootstrapVue);
 
