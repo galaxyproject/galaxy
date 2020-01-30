@@ -1,6 +1,6 @@
 <tool id="interactive_tool_cellxgene" tool_type="interactive" name="Interactive CellXgene Environment" version="0.1">
     <requirements>
-        <container type="docker">quay.io/galaxy/cellxgene-galaxy-ie:ie2</container>
+        <container type="docker">cellxgene-server-shutdown:0.0.1</container>
     </requirements>
     <entry_points>
         <entry_point name="Cellxgene Single Cell Visualization on $infile.display_name" requires_domain="True">
@@ -59,6 +59,8 @@
             &&
             cp '${experimental_annotations_file_tmp}' '${experimental_annotations_output}'
         #end if
+
+        --server-shutdown
     ]]>
     </command>
     <inputs>
