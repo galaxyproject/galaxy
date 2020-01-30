@@ -36,7 +36,7 @@
                 </wait-button>
             </div>
             <workflow-run-form
-                ref="run-form"
+                ref="runform"
                 :model="model"
                 :setRunButtonStatus="setRunButtonStatus"
                 @submissionSuccess="handleInvocations"
@@ -95,7 +95,7 @@ export default {
     },
     methods: {
         execute() {
-            this.$refs["run-form"].execute();
+            this.$refs.runform.execute();
         },
         setRunButtonStatus(enabled, waitText, percentage) {
             this.runButtonEnabled = enabled;
