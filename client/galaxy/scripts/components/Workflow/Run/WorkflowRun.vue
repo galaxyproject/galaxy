@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <span>
         <b-alert variant="error" show v-if="error">
             {{ error }}
         </b-alert>
@@ -7,40 +7,38 @@
             <loading-span message="Loading workflow run data" />
         </b-alert>
         <workflow-run-success v-else-if="invocations != null" :invocations="invocations" :workflowName="workflowName" />
-        <div v-else>
-            <div ref="run" class="ui-form-composite">
-                <div class="ui-form-composite-messages mb-4">
-                    <b-alert v-if="hasUpgradeMessages" variant="warning" show>
-                        Some tools in this workflow may have changed since it was last saved or some errors were found.
-                        The workflow may still run, but any new options will have default values. Please review the
-                        messages below to make a decision about whether the changes will affect your analysis.
-                    </b-alert>
-                    <b-alert v-if="hasStepVersionChanges" variant="warning" show>
-                        Some tools are being executed with different versions compared to those available when this
-                        workflow was last saved because the other versions are not or no longer available on this Galaxy
-                        instance. To upgrade your workflow and dismiss this message simply edit the workflow and re-save
-                        it.
-                    </b-alert>
-                </div>
-                <!-- h4 as a class here looks odd but it was in the Backbone -->
-                <div class="ui-form-composite-header h4">
-                    <b>Workflow: {{ workflowName }}</b>
-                    <wait-button
-                        title="Run Workflow"
-                        id="run-workflow"
-                        variant="primary"
-                        :disabled="!runButtonEnabled"
-                        :waiting="!runButtonEnabled"
-                        :waitText="runButtonWaitText"
-                        :percentage="runButtonPercentage"
-                        @click="execute"
-                    >
-                    </wait-button>
-                </div>
-                <div class="ui-form-composite-form" ref="form"></div>
+        <div v-else ref="run" class="ui-form-composite">
+            <div class="ui-form-composite-messages mb-4">
+                <b-alert v-if="hasUpgradeMessages" variant="warning" show>
+                    Some tools in this workflow may have changed since it was last saved or some errors were found. The
+                    workflow may still run, but any new options will have default values. Please review the messages
+                    below to make a decision about whether the changes will affect your analysis.
+                </b-alert>
+                <b-alert v-if="hasStepVersionChanges" variant="warning" show>
+                    Some tools are being executed with different versions compared to those available when this workflow
+                    was last saved because the other versions are not or no longer available on this Galaxy instance. To
+                    upgrade your workflow and dismiss this message simply edit the workflow and re-save it.
+                </b-alert>
             </div>
+            <!-- h4 as a class here looks odd but it was in the Backbone -->
+            <div class="ui-form-composite-header h4">
+                <b>Workflow: {{ workflowName }}</b>
+                <wait-button
+                    title="Run Workflow"
+                    id="run-workflow"
+                    variant="primary"
+                    icon="fa-check"
+                    :disabled="!runButtonEnabled"
+                    :waiting="!runButtonEnabled"
+                    :waitText="runButtonWaitText"
+                    :percentage="runButtonPercentage"
+                    @click="execute"
+                >
+                </wait-button>
+            </div>
+            <div class="ui-form-composite-form" ref="form"></div>
         </div>
-    </div>
+    </span>
 </template>
 
 <script>
