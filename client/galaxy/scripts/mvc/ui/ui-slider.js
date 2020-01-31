@@ -24,7 +24,7 @@ const View = Backbone.View.extend({
         this.$text = this.$(".ui-form-slider-text");
         this.$slider = this.$(".ui-form-slider-element");
 
-        const textInputMask = IMask(this.$text[0], {
+        IMask(this.$text[0], {
             mask: value => {
                 if (this._isParameter(value)) {
                     return true;
