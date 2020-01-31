@@ -2563,8 +2563,10 @@ Set to ``false`` to not force user to select an option in the list.</xs:document
             <xs:documentation xml:lang="en">Used only if the ``type`` attribute
 value is ``data_column``, if ``true`` Galaxy assumes first row of ``data_ref``
 is a header and builds the select list with these values rather than the more
-generic ``c1`` ... ``cN``.
-</xs:documentation>
+generic ``c1`` ... ``cN`` (i.e. it will be ``c1: head1`` ... ``cN: headN``).
+Note that the content of the Cheetah variable is still
+the column index.
+            </xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="display" type="DisplayType">
@@ -4830,7 +4832,7 @@ write out a JSON representation of the tool parameters.
 
 *Example*
 
-The following will create a cheetah variable that can be evaluated as ``$inputs`` that
+The following will create a Cheetah variable that can be evaluated as ``$inputs`` that
 will contain the tool parameter inputs.
 
 ```xml
