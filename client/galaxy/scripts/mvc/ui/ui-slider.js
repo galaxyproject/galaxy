@@ -24,20 +24,16 @@ const View = Backbone.View.extend({
         this.$slider = this.$(".ui-form-slider-element");
 
         // add text field event
-        this.$text
-            .on("change", e => {
-                this.value(e.currentTarget.value);
-            })
-            .on("input", e => {
-                const input = e.currentTarget;
-                if (this._isParameter(input.value)) {
-                    return;
-                } else if (!this.model.get("precise")) {
+        this.$text.on("change", e => {
+            const input = e.currentTarget;
+            if (!this._isParameter(input.value)) {
+                if (!this.model.get("precise")) {
                     input.value = input.value.split(".")[0];
                 }
                 input.value = input.value.replace(/[^0-9eE.-]/g, "");
-            });
-
+            }
+            this.value(input.value);
+        });
         // build slider, cannot be rebuild in render
         const opts = this.model.attributes;
         this.has_slider = opts.max !== null && opts.min !== null && opts.max > opts.min;
