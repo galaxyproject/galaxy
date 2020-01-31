@@ -1,6 +1,6 @@
 <tool id="column_param_configfile" name="Column Param into configfile" >
   <command detect_errors="exit_code"><![CDATA[
-		  python $check_inputs inputs.json && cat inputs.json > $output1
+    python $check_inputs inputs.json
   ]]></command>
   <configfiles>
     <inputs name="inputs" filename="inputs.json" />
