@@ -481,6 +481,8 @@ class WorkflowContentsManager(UsesAnnotations):
         elif style == "format2_wrapped_yaml":
             wf_dict = self._workflow_to_dict_export(trans, stored, workflow=workflow)
             wf_dict = to_format_2(wf_dict, json_wrapper=True)
+        elif style == "cwl_abstract":
+            wf_dict = self._workflow_to_dict_cwl_abstract(trans, stored, workflow=workflow)
         elif style == "ga":
             wf_dict = self._workflow_to_dict_export(trans, stored, workflow=workflow)
         else:
@@ -815,6 +817,187 @@ class WorkflowContentsManager(UsesAnnotations):
         data['steps'] = {}
         if workflow.reports_config:
             data['report'] = workflow.reports_config
+        # For each step, rebuild the form and encode the state
+        for step in workflow.steps:
+            # Load from database representation
+            module = module_factory.from_workflow_step(trans, step)
+            if not module:
+                raise exceptions.MessageException('Unrecognized step type: %s' % step.type)
+            # Get user annotation.
+            annotation_str = self.get_item_annotation_str(trans.sa_session, trans.user, step) or ''
+            content_id = module.get_content_id()
+            # Export differences for backward compatibility
+            tool_state = module.get_export_state()
+            # Step info
+            step_dict = {
+                'id': step.order_index,
+                'type': module.type,
+                'content_id': content_id,
+                'tool_id': content_id,  # For workflows exported to older Galaxies,
+                                        # eliminate after a few years...
+                'tool_version': step.tool_version,
+                'name': module.get_name(),
+                'tool_state': json.dumps(tool_state),
+                'errors': module.get_errors(),
+                'uuid': str(step.uuid),
+                'label': step.label or None,
+                'annotation': annotation_str
+            }
+            # Add tool shed repository information and post-job actions to step dict.
+            if module.type == 'tool':
+                if module.tool and module.tool.tool_shed:
+                    step_dict["tool_shed_repository"] = {
+                        'name': module.tool.repository_name,
+                        'owner': module.tool.repository_owner,
+                        'changeset_revision': module.tool.changeset_revision,
+                        'tool_shed': module.tool.tool_shed
+                    }
+
+                tool_representation = None
+                dynamic_tool = step.dynamic_tool
+                if dynamic_tool:
+                    tool_representation = dynamic_tool.value
+                    step_dict['tool_representation'] = tool_representation
+                    if util.is_uuid(step_dict['content_id']):
+                        step_dict['content_id'] = None
+                        step_dict['tool_id'] = None
+
+                pja_dict = {}
+                for pja in step.post_job_actions:
+                    pja_dict[pja.action_type + pja.output_name] = dict(
+                        action_type=pja.action_type,
+                        output_name=pja.output_name,
+                        action_arguments=pja.action_arguments)
+                step_dict['post_job_actions'] = pja_dict
+
+            if module.type == 'subworkflow':
+                del step_dict['content_id']
+                del step_dict['errors']
+                del step_dict['tool_version']
+                del step_dict['tool_state']
+                subworkflow = step.subworkflow
+                subworkflow_as_dict = self._workflow_to_dict_export(
+                    trans,
+                    stored=None,
+                    workflow=subworkflow
+                )
+                step_dict['subworkflow'] = subworkflow_as_dict
+
+            # Data inputs, legacy section not used anywhere within core
+            input_dicts = []
+            step_state = module.state.inputs or {}
+            if module.type != 'tool':
+                name = step_state.get("name") or module.label
+                if name:
+                    input_dicts.append({"name": name, "description": annotation_str})
+            for name, val in step_state.items():
+                input_type = type(val)
+                if input_type == RuntimeValue:
+                    input_dicts.append({"name": name, "description": "runtime parameter for tool %s" % module.get_name()})
+                elif input_type == dict:
+                    # Input type is described by a dict, e.g. indexed parameters.
+                    for partval in val.values():
+                        if type(partval) == RuntimeValue:
+                            input_dicts.append({"name": name, "description": "runtime parameter for tool %s" % module.get_name()})
+            step_dict['inputs'] = input_dicts
+
+            # User outputs
+            workflow_outputs_dicts = []
+            for workflow_output in step.unique_workflow_outputs:
+                workflow_output_dict = dict(
+                    output_name=workflow_output.output_name,
+                    label=workflow_output.label,
+                    uuid=str(workflow_output.uuid) if workflow_output.uuid is not None else None,
+                )
+                workflow_outputs_dicts.append(workflow_output_dict)
+            step_dict['workflow_outputs'] = workflow_outputs_dicts
+
+            # All step outputs
+            step_dict['outputs'] = []
+            if type(module) is ToolModule:
+                for output in module.get_data_outputs():
+                    step_dict['outputs'].append({'name': output['name'], 'type': output['extensions'][0]})
+
+            step_in = {}
+            for step_input in step.inputs:
+                if step_input.default_value_set:
+                    step_in[step_input.name] = {"default": step_input.default_value}
+
+            if step_in:
+                step_dict["in"] = step_in
+
+            # Connections
+            input_connections = step.input_connections
+            if step.type is None or step.type == 'tool':
+                # Determine full (prefixed) names of valid input datasets
+                data_input_names = {}
+
+                def callback(input, prefixed_name, **kwargs):
+                    if isinstance(input, DataToolParameter) or isinstance(input, DataCollectionToolParameter):
+                        data_input_names[prefixed_name] = True
+                # FIXME: this updates modules silently right now; messages from updates should be provided.
+                module.check_and_update_state()
+                if module.tool:
+                    # If the tool is installed we attempt to verify input values
+                    # and connections, otherwise the last known state will be dumped without modifications.
+                    visit_input_values(module.tool.inputs, module.state.inputs, callback)
+
+            # Encode input connections as dictionary
+            input_conn_dict = {}
+            unique_input_names = set([conn.input_name for conn in input_connections])
+            for input_name in unique_input_names:
+                input_conn_dicts = []
+                for conn in input_connections:
+                    if conn.input_name != input_name:
+                        continue
+                    input_conn = dict(
+                        id=conn.output_step.order_index,
+                        output_name=conn.output_name
+                    )
+                    if conn.input_subworkflow_step is not None:
+                        subworkflow_step_id = conn.input_subworkflow_step.order_index
+                        input_conn["input_subworkflow_step_id"] = subworkflow_step_id
+
+                    input_conn_dicts.append(input_conn)
+                input_conn_dict[input_name] = input_conn_dicts
+
+            # Preserve backward compatibility. Previously Galaxy
+            # assumed input connections would be dictionaries not
+            # lists of dictionaries, so replace any singleton list
+            # with just the dictionary so that workflows exported from
+            # newer Galaxy instances can be used with older Galaxy
+            # instances if they do no include multiple input
+            # tools. This should be removed at some point. Mirrored
+            # hack in _workflow_from_raw_description should never be removed so
+            # existing workflow exports continue to function.
+            for input_name, input_conn in dict(input_conn_dict).items():
+                if len(input_conn) == 1:
+                    input_conn_dict[input_name] = input_conn[0]
+            step_dict['input_connections'] = input_conn_dict
+            # Position
+            step_dict['position'] = step.position
+            # Add to return value
+            data['steps'][step.order_index] = step_dict
+        return data
+
+
+    def _workflow_to_dict_cwl_abstract(self, trans, stored=None, workflow=None):
+        """ Return a cwl-abstract workflow schema in a dictionary ready for YAMLification and export.
+        """
+        annotation_str = ""
+        tag_str = ""
+        if stored is not None:
+            annotation_str = self.get_item_annotation_str(trans.sa_session, trans.user, stored) or ''
+            tag_str = stored.make_tag_string_list()
+        # Pack workflow data into a dictionary and return
+        data = {}
+        data['class'] = 'Workflow'  # Placeholder for identifying galaxy workflow
+        data['cwlVersion'] = "v1.3"
+        data['doc'] = workflow.name
+        # how can I make use of annotation and tags ?
+        #data['annotation'] = annotation_str
+        #data['tags'] = tag_str
+        data['steps'] = {}
         # For each step, rebuild the form and encode the state
         for step in workflow.steps:
             # Load from database representation
