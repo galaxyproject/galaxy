@@ -10,7 +10,7 @@ from galaxy.exceptions import ConfigurationError
 from galaxy.security.validate_user_input import transform_publicname
 from galaxy.util import (
     string_as_bool,
-    unicodify
+    unicodify,
 )
 from ..providers import AuthProvider
 
@@ -86,9 +86,10 @@ class LDAP(AuthProvider):
 
     def check_config(self, username, email, options):
         ok = True
-        failure_mode = False  # reject but continue
         if options.get('continue-on-failure', 'False') == 'False':
             failure_mode = None  # reject and do not continue
+        else:
+            failure_mode = False  # reject but continue
 
         if string_as_bool(options.get('login-use-username', False)):
             if not username:
@@ -107,7 +108,11 @@ class LDAP(AuthProvider):
             raise ConfigurationError("If 'auto-assign-roles-to-groups-only' is True, auto-create-roles and "
                                      "auto-create-groups have to be True as well.")
 
-        self.role_search_attribute = options.get(self.role_search_option, None)
+        self.role_search_attribute = options.get(self.role_search_option)
+        if self.auto_create_roles_or_groups and self.role_search_attribute is None:
+            raise ConfigurationError("If 'auto-create-roles' or 'auto-create-groups' is True, a '%s' attribute has to"
+                                     " be provided." % self.role_search_option)
+
         return ok, failure_mode
 
     def ldap_search(self, email, username, options):
@@ -117,10 +122,6 @@ class LDAP(AuthProvider):
 
         if not config_ok:
             return failure_mode, None
-
-        if self.auto_create_roles_or_groups and self.role_search_attribute is None:
-            raise ConfigurationError("If 'auto-create-roles' or 'auto-create-groups' is True, a '%s' attribute has to"
-                                     " be provided." % self.role_search_option)
 
         params = {'email': email, 'username': username}
 
@@ -153,10 +154,9 @@ class LDAP(AuthProvider):
                     l.simple_bind_s()
 
                 # setup search
-                attributes = [_.strip().format(**params)
-                              for _ in options['search-fields'].split(',')]
+                attributes = {_.strip().format(**params) for _ in options['search-fields'].split(',')}
                 if 'search-memberof-filter' in options:
-                    attributes.append('memberOf')
+                    attributes.add('memberOf')
                 suser = l.search_ext_s(_get_subs(options, 'search-base', params),
                     ldap.SCOPE_SUBTREE,
                     _get_subs(options, 'search-filter', params), attributes,
@@ -169,17 +169,16 @@ class LDAP(AuthProvider):
                 dn, attrs = suser[0]
                 log.debug("LDAP authenticate: dn is %s", dn)
                 log.debug("LDAP authenticate: search attributes are %s", attrs)
-                if hasattr(attrs, 'has_key'):
-                    for attr in attributes:
-                        if self.role_search_attribute and attr == self.role_search_attribute[1:-1]:  # strip curly brackets
-                            # keep role names as list
-                            params[self.role_search_option] = [unicodify(_) for _ in attrs[attr]]
-                        elif attr == 'memberOf':
-                            params[attr] = [unicodify(_) for _ in attrs[attr]]
-                        elif attr in attrs:
-                            params[attr] = unicodify(attrs[attr][0])
-                        else:
-                            params[attr] = ""
+                for attr in attributes:
+                    if self.role_search_attribute and attr == self.role_search_attribute[1:-1]:  # strip curly brackets
+                        # keep role names as list
+                        params[self.role_search_option] = [unicodify(_) for _ in attrs[attr]]
+                    elif attr == 'memberOf':
+                        params[attr] = [unicodify(_) for _ in attrs[attr]]
+                    elif attr in attrs:
+                        params[attr] = unicodify(attrs[attr][0])
+                    else:
+                        params[attr] = ""
 
                 if self.auto_create_roles_or_groups and self.role_search_option not in params:
                     raise ConfigurationError("Missing or mismatching LDAP parameters for %s. Make sure the %s is "
