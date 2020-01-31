@@ -1271,7 +1271,7 @@ class ColumnListParameter(SelectToolParameter):
             try:
                 with open(dataset.get_file_name(), 'r') as f:
                     head = f.readline()
-                cnames = head.rstrip().split('\t')
+                cnames = head.rstrip("\n\r ").split('\t')
                 column_list = [('%d' % (i + 1), 'c%d: %s' % (i + 1, x)) for i, x in enumerate(cnames)]
                 if self.numerical:  # If numerical was requested, filter columns based on metadata
                     if hasattr(dataset, 'metadata') and hasattr(dataset.metadata, 'column_types'):
