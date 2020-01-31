@@ -517,7 +517,7 @@
     <datatype extension="acedb" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="clustal" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="codata" type="galaxy.datatypes.data:Text" subclass="true"/>
-    <datatype extension="embl" type="galaxy.datatypes.data:Text" subclass="true"/>
+    <datatype extension="embl" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true"/>
     <datatype extension="fitch" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="gcg" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="genbank" auto_compressed_types="gz" sniff_compressed_types="true" type="galaxy.datatypes.sequence:Genbank" display_in_upload="True"/>
