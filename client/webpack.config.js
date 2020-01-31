@@ -68,7 +68,11 @@ module.exports = (env = {}, argv = {}) => {
                 },
                 {
                     test: /\.js$/,
-                    // Pretty sure we don't want anything except node_modules here
+                    /*
+                     * Babel transpile excludes for:
+                     * - all node_modules except for handsontable, bootstrap-vue
+                     * - statically included libs (like old jquery plugins, etc.)
+                    */
                     exclude: [/(node_modules\/(?!(handsontable|bootstrap-vue)\/))/, libsBase],
                     loader: "babel-loader",
                     options: {
