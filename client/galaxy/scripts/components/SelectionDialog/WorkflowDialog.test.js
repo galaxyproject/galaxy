@@ -34,7 +34,7 @@ describe("WorkflowDialog.vue", () => {
 
     it("loads correctly in loading state, shows options when optionsShow becomes true", async () => {
         // Initially in loading state.
-        const workflowsResponse = [{ id: "f2db41e1fa331b3e", name: "Awesome Workflow" }];
+        const workflowsResponse = [{ id: "f2db41e1fa331b3e", name: "Awesom e Workflow" }];
         axiosMock.onGet("/api/workflows").reply(200, workflowsResponse);
 
         expect(wrapper.find(SelectionDialog).is(SelectionDialog)).to.equals(true);
@@ -44,7 +44,7 @@ describe("WorkflowDialog.vue", () => {
         await localVue.nextTick();
         await localVue.nextTick();
 
-        // why not shown?
+        // why not shown?xios-mock-adapter
         expect(wrapper.vm.errorMessage).to.equals(null);
         expect(wrapper.vm.optionsShow).to.equals(true);
     });

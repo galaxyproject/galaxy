@@ -1,7 +1,7 @@
 <template>
     <div v-infinite-scroll="loadMore" infinite-scroll-disabled="busy">
         <h2 class="mb-3" style="text-align: center">
-            <span id="tools-view">Consolidated view of {{tools.length}} available tools.</span>
+            <span id="tools-view">Consolidated view of {{ tools.length }} available tools.</span>
         </h2>
         <div v-if="!loading">
             <b-container fluid class="mb-4">
@@ -39,8 +39,8 @@
                     </div>
                     <p class="card-text" v-html="helpSummary(info.help) || info.description" />
                     <p class="card-text">
-                        <b-btn v-b-modal="'modal-' + '-' + index" >Info</b-btn>
-                        <b-modal :id="'modal-' + '-' + index" centered ok-only :title="info.name">
+                        <b-btn :index="index" v-b-modal="'modal-' + '-' + index">Info</b-btn>
+                        <b-modal :id="'modal-' + '-' + index" centered ok-only :static="true" :title="info.name">
                             <b>{{ info.version + " / " + info.id }}</b>
                             <p>{{ info.description }}</p>
                             <p v-html="info.help"></p>
@@ -112,7 +112,6 @@ export default {
             .get(`${getAppRoot()}api/tools?tool_help=True`)
             .then(response => {
                 this.initialize(response.data);
-
             })
             .catch(error => {
                 console.error(error);
@@ -195,10 +194,10 @@ export default {
             }
             return null;
         },
-        getToolsNumber(){
+        getToolsNumber() {
             return this.tools.length;
         },
-        initialize(tools){
+        initialize(tools) {
             this.tools = this.toolsExtracted(tools);
             this.buffer = this.tools.slice(0, 20);
             this.loading = false;

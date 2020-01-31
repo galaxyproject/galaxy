@@ -33,7 +33,7 @@ import HistoryView from "components/HistoryView.vue";
 import WorkflowInvocationReport from "components/WorkflowInvocationReport.vue";
 import WorkflowRun from "components/Workflow/Run/WorkflowRun.vue";
 import RecentInvocations from "components/User/RecentInvocations.vue";
-import ToolsView from "components/ToolsView.vue";
+import ToolsView from "components/ToolsView/ToolsView.vue";
 import ToolsJson from "components/ToolsJson.vue";
 import HistoryList from "mvc/history/history-list";
 import PluginList from "components/PluginList.vue";
@@ -245,7 +245,7 @@ export const getAnalysisRouter = Galaxy =>
         show_histories_import: function() {
             this._display_vue_helper(HistoryImport);
         },
-    
+
         show_tools_view: function() {
             this.page.toolPanel.getVueComponent().hide();
             this.page.panels.right.hide();
