@@ -993,37 +993,71 @@ class WorkflowContentsManager(UsesAnnotations):
         data = {}
         data['class'] = 'Workflow'  # Placeholder for identifying galaxy workflow
         data['cwlVersion'] = "v1.3"
-        data['doc'] = workflow.name
-        # how can I make use of annotation and tags ?
-        #data['annotation'] = annotation_str
+        if annotation_str != '':
+            data['doc'] = workflow.name + ': ' + annotation_str
+        else:
+            data['doc'] = workflow.name
+        # how can I make use of tags ?
         #data['tags'] = tag_str
         data['steps'] = {}
         # For each step, rebuild the form and encode the state
+        global_input_dicts={}
+        input_index=0
         for step in workflow.steps:
             # Load from database representation
             module = module_factory.from_workflow_step(trans, step)
             if not module:
                 raise exceptions.MessageException('Unrecognized step type: %s' % step.type)
             # Get user annotation.
+            print('step.type is:' + str(step.type))
             annotation_str = self.get_item_annotation_str(trans.sa_session, trans.user, step) or ''
             content_id = module.get_content_id()
             # Export differences for backward compatibility
             tool_state = module.get_export_state()
+            input_dicts = {}
+            # if module.type == 'data_input':   #user's input, do not list as step. only shown in the inputs section
+                # input_dict = {
+                    # 'format' : 'data',
+                    # 'type' : 'File'
+                # }
+                # global_input_dicts[step.label]=input_dict
+                #continue
             # Step info
             step_dict = {
-                'id': step.order_index,
-                'type': module.type,
-                'content_id': content_id,
-                'tool_id': content_id,  # For workflows exported to older Galaxies,
-                                        # eliminate after a few years...
-                'tool_version': step.tool_version,
-                'name': module.get_name(),
-                'tool_state': json.dumps(tool_state),
-                'errors': module.get_errors(),
-                'uuid': str(step.uuid),
-                'label': step.label or None,
-                'annotation': annotation_str
-            }
+                'class' : 'Operation',
+                'doc' : '',
+                'id' : content_id
+                }
+#    class: Operation
+#    doc: Execute fastqc
+#    id: toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc/0.71
+#    inputs:
+#      input_file:
+#        doc: Need to complete from tool info
+#        format: Need to complete from tool info
+#        source: reads_1
+#        type: File
+#    outputs:
+#      text_file:
+#        doc: Need to complete from tool info
+#        format: Need to complete from tool info
+#        type: File
+
+
+#            step_dict = {
+#                'id': step.order_index,
+#                'type': module.type,
+#                'content_id': content_id,
+#                'tool_id': content_id,  # For workflows exported to older Galaxies,
+#                                        # eliminate after a few years...
+#                'tool_version': step.tool_version,
+#                'name': module.get_name(),
+#                'tool_state': json.dumps(tool_state),
+#                'errors': module.get_errors(),
+#                'uuid': str(step.uuid),
+#                'label': step.label or None,
+#                'annotation': annotation_str
+#            }
             # Add tool shed repository information and post-job actions to step dict.
             if module.type == 'tool':
                 if module.tool and module.tool.tool_shed:
@@ -1065,21 +1099,45 @@ class WorkflowContentsManager(UsesAnnotations):
                 step_dict['subworkflow'] = subworkflow_as_dict
 
             # Data inputs, legacy section not used anywhere within core
-            input_dicts = []
+            #input_dicts = []
             step_state = module.state.inputs or {}
-            if module.type != 'tool':
+            if module.type != 'tool' and module.type != 'data_input':   #which cases fill this condition?
+                print('module.type here is ' + str(module.type))
                 name = step_state.get("name") or module.label
                 if name:
-                    input_dicts.append({"name": name, "description": annotation_str})
+                    #input_dicts.append({"name": name, "description": annotation_str})
+                    input_dicts[name]={"type": 'File'}
+                    #need to complete these fields too
+                    #doc: Need to complete from tool info
+                    #format: Need to complete from tool info
+                    # source: 2/trimmed_reads_single
+                    # type: File
             for name, val in step_state.items():
                 input_type = type(val)
+                print('name and val are: '+ str(name)+ '=' + str(val) + ' of type ' + str(input_type))
+                # add all the name, val to the input list
+                input_dicts[name]={"name": name, "description": "runtime parameter for tool %s" % module.get_name()}
+                # print('input_type is: ' + str(input_type))
                 if input_type == RuntimeValue:
-                    input_dicts.append({"name": name, "description": "runtime parameter for tool %s" % module.get_name()})
+                    print("input_type is RuntimeValue class")
+                    # input_dicts.append({"name": name, "description": "runtime parameter for tool %s" % module.get_name()})
+                    #input_dicts[name]={"name": name, "description": "runtime parameter for tool %s" % module.get_name()}
                 elif input_type == dict:
+                    ## ********** FIND AN EXAMPLE OF THIS CASE... INDEXED PARAMETERS..
                     # Input type is described by a dict, e.g. indexed parameters.
+                    print("here i am")
                     for partval in val.values():
                         if type(partval) == RuntimeValue:
                             input_dicts.append({"name": name, "description": "runtime parameter for tool %s" % module.get_name()})
+            if module.type == 'data_input':
+                input_dict = {
+                    'format' : 'data',
+                    'type' : 'File'
+                }
+                name = module.label or ('unnamed_input_' + str(input_index))
+                input_index+=1
+                input_uri=str(step.uuid)+'/'+name
+                global_input_dicts[name]=input_dict
             step_dict['inputs'] = input_dicts
 
             # User outputs
@@ -1154,11 +1212,14 @@ class WorkflowContentsManager(UsesAnnotations):
             for input_name, input_conn in dict(input_conn_dict).items():
                 if len(input_conn) == 1:
                     input_conn_dict[input_name] = input_conn[0]
-            step_dict['input_connections'] = input_conn_dict
+            #step_dict['input_connections'] = input_conn_dict
             # Position
-            step_dict['position'] = step.position
+            #step_dict['position'] = step.position
             # Add to return value
-            data['steps'][step.order_index] = step_dict
+            if module.type != 'data_input':
+                data['steps'][step.order_index] = step_dict
+        # add the global input and outputs to the return value
+        data['inputs']=global_input_dicts
         return data
 
     def _workflow_to_dict_instance(self, stored, workflow, legacy=True):
