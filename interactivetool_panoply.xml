@@ -1,4 +1,5 @@
-<tool id="interactive_tool_panoply" tool_type="interactive" name="panoply" version="0.1">
+<tool id="interactive_tool_panoply" tool_type="interactive" name="Panoply" version="0.1">
+    <description>interative plotting tool for geo-referenced data</description>
     <requirements>
         <container type="docker">quay.io/nordicesmhub/docker-panoply</container>
     </requirements>
@@ -9,9 +10,9 @@
     </entry_points>
     <command><![CDATA[
         rm /opt/data/* -rf &&
-        cp '$infile' /opt/data/'$infile.display_name' &&
+        cp '$infile' '/opt/data/$infile.display_name' &&
         cd /opt/data &&
-        /opt/PanoplyJ/panoply.sh
+        /init
     ]]>
     </command>
     <inputs>
@@ -22,7 +23,8 @@
     </outputs>
     <tests>
     </tests>
-    <help>
+    <help><![CDATA[
         `Panoply <https://www.giss.nasa.gov/tools/panoply/>`_ plots geo-referenced and other arrays from netCDF, HDF, GRIB, and other datasets.
+    ]]>
     </help>
 </tool>
