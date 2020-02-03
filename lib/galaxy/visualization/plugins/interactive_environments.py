@@ -28,13 +28,13 @@ from galaxy.util.bunch import Bunch
 
 IS_OS_X = _platform == "darwin"
 CONTAINER_NAME_PREFIX = 'gie_'
-ENV_OVERRIDE_CAPITALIZE = frozenset([
+ENV_OVERRIDE_CAPITALIZE = frozenset({
     'notebook_username',
     'notebook_password',
     'dataset_hid',
     'dataset_filename',
     'additional_ids',
-])
+})
 
 log = logging.getLogger(__name__)
 

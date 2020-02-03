@@ -925,7 +925,7 @@ class InstallRepositoryManager(object):
                 self.update_tool_shed_repository_status(tool_shed_repository,
                                                         self.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES)
                 new_tools = [self.app.toolbox._tools_by_id.get(tool_d['guid'], None) for tool_d in metadata['tools']]
-                new_requirements = set([tool.requirements.packages for tool in new_tools if tool])
+                new_requirements = {tool.requirements.packages for tool in new_tools if tool}
                 [self._view.install_dependencies(r) for r in new_requirements]
                 dependency_manager = self.app.toolbox.dependency_manager
                 if dependency_manager.cached:

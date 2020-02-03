@@ -228,10 +228,10 @@ class UWSGIApplicationStack(MessageApplicationStack):
     Note that mules will use this as their stack class even though they start with the "webless" loading point.
     """
     name = 'uWSGI'
-    prohibited_middleware = frozenset([
+    prohibited_middleware = frozenset({
         'wrap_in_static',
         'EvalException',
-    ])
+    })
     transport_class = UWSGIFarmMessageTransport
     log_filter_class = UWSGILogFilter
     log_format = '%(name)s %(levelname)s %(asctime)s [p:%(process)s,w:%(worker_id)s,m:%(mule_id)s] [%(threadName)s] %(message)s'

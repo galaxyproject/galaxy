@@ -94,7 +94,7 @@ def annotate_locus(input, minorallelefrequency, snpsfile):
         genotypes = v.values()
         alleles = [y for x in genotypes for y in x]
         alleleset = list(set(alleles))
-        alleleset = list(set(alleles) - set(["N", "X"]))
+        alleleset = list(set(alleles) - {'N', 'X'})
 
         if len(alleleset) == 2:
             genotypevec = ""

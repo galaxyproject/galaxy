@@ -234,7 +234,7 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
         the history.
         """
         history = self.manager.get_accessible(self.decode_id(history_id), trans.user, current_history=trans.history)
-        tool_ids = set([])
+        tool_ids = set()
         for dataset in history.datasets:
             job = dataset.creating_job
             if not job:

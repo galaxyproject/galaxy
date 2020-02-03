@@ -551,7 +551,7 @@ class ModelSerializer(HasAModelManager):
         #   this allows us to: 'mention' the key without adding the default serializer
         # TODO: we may want to eventually error if a key is requested
         #   that is in neither serializable_keyset or serializers
-        self.serializable_keyset = set([])
+        self.serializable_keyset = set()
         # a map of dictionary keys to the functions (often lambdas) that create the values for those keys
         self.serializers = {}
         # add subclass serializers defined there
@@ -719,7 +719,7 @@ class ModelDeserializer(HasAModelManager):
         self.app = app
 
         self.deserializers = {}
-        self.deserializable_keyset = set([])
+        self.deserializable_keyset = set()
         self.add_deserializers()
         # a sub object that can validate incoming values
         self.validate = validator or ModelValidator(self.app)

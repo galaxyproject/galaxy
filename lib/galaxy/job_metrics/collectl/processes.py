@@ -147,7 +147,7 @@ class CollectlProcessSummarizer(object):
     def __init__(self, pid, statistics):
         self.pid = pid
         self.statistics = statistics
-        self.columns_of_interest = set([s[1] for s in statistics])
+        self.columns_of_interest = {s[1] for s in statistics}
         self.tree_statistics = collections.defaultdict(stats.StatisticsTracker)
         self.process_accum_statistics = collections.defaultdict(stats.StatisticsTracker)
         self.interval_count = 0
@@ -206,7 +206,7 @@ class CollectlProcessSummarizer(object):
         return process_rows
 
     def __all_child_pids(self, rows, pid):
-        pids_in_process_tree = set([str(self.pid)])
+        pids_in_process_tree = {str(self.pid)}
         added = True
         while added:
             added = False

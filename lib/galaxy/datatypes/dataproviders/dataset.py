@@ -652,7 +652,7 @@ class SamtoolsDataProvider(line.RegexLineDataProvider):
         # strip out any user supplied bash switch formating -> string of option chars
         #   then compress to single option string of unique, VALID flags with prefixed bash switch char '-'
         options_string = options_string.strip('- ')
-        validated_flag_list = set([flag for flag in options_string if flag in self.FLAGS_WO_ARGS])
+        validated_flag_list = {flag for flag in options_string if flag in self.FLAGS_WO_ARGS}
 
         # if sam add -S
         # TODO: not the best test in the world...

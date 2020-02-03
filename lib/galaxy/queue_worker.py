@@ -274,7 +274,7 @@ def reload_tour(app, **kwargs):
 
 
 def __job_rule_module_names(app):
-    rules_module_names = set(['galaxy.jobs.rules'])
+    rules_module_names = {'galaxy.jobs.rules'}
     if app.job_config.dynamic_params is not None:
         module_name = app.job_config.dynamic_params.get('rules_module')
         if module_name:

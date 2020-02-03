@@ -942,7 +942,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
             # Encode input connections as dictionary
             input_conn_dict = {}
-            unique_input_names = set([conn.input_name for conn in input_connections])
+            unique_input_names = {conn.input_name for conn in input_connections}
             for input_name in unique_input_names:
                 input_conn_dicts = []
                 for conn in input_connections:
@@ -1133,7 +1133,7 @@ class WorkflowContentsManager(UsesAnnotations):
         steps_by_external_id[external_id] = step
         if 'workflow_outputs' in step_dict:
             workflow_outputs = step_dict['workflow_outputs']
-            found_output_names = set([])
+            found_output_names = set()
             for workflow_output in workflow_outputs:
                 # Allow workflow outputs as list of output_names for backward compatibility.
                 if not isinstance(workflow_output, dict):

@@ -82,7 +82,7 @@ def validate_url(url, ip_whitelist):
     #   AF_* family: It will resolve to AF_INET or AF_INET6, getaddrinfo(3) doesn't even mention AF_UNIX,
     #   socktype: We don't care if a stream/dgram/raw protocol
     #   protocol: we don't care if it is tcp or udp.
-    addrinfo_results = set([info[4][0] for info in addrinfo])
+    addrinfo_results = {info[4][0] for info in addrinfo}
     # There may be multiple (e.g. IPv4 + IPv6 or DNS round robin). Any one of these
     # could resolve to a local addresses (and could be returned by chance),
     # therefore we must check them all.
