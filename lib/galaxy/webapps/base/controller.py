@@ -276,6 +276,10 @@ class JSAppLauncher(BaseUIController):
         return self._bootstrapped_client(trans, **kwd)
 
     def _bootstrapped_client(self, trans, app_name='analysis', **kwd):
+        # This includes contextualized user options in the bootstrapped data; we don't want to cache it.
+        trans.response.headers['Cache-Control'] = ['no-cache', 'no-store', 'must-revalidate']
+        trans.response.headers['Pragma'] = 'no-cache'
+        trans.response.headers['Expires'] = '0'
         js_options = self._get_js_options(trans)
         js_options['config'].update(self._get_extended_config(trans))
         return self.template(trans, app_name, options=js_options, **kwd)
