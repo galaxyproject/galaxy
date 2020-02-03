@@ -1,5 +1,5 @@
-<tool id="KL-1" name="KaldiLocal" version="1.0.2">
-  <description>Local Kaldi STT</description>
+<tool id="kaldi_local" name="Kaldi Local" version="1.0.2">
+  <description>Local Kaldi Speech-to-Text transcription</description>
     <requirements>
         <requirement type="package" version="8.30">coreutils</requirement>
     </requirements>
@@ -20,7 +20,7 @@
   <help>
 .. class:: infomark
 
-Take an audio file and to a speech-to-text using a local kaldi
+Do a speech-to-text transcribe on an audio file using a local Kaldi instance.
 
   </help>
 </tool>
