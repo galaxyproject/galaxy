@@ -1,7 +1,7 @@
 <tool id="interactive_tool_higlass" tool_type="interactive" name="HiGlass" version="1.8.0">
     <description>an interactive Hi-C data visualizer</description>
     <requirements>
-        <container type="docker">higlass/higlass-docker</container>
+        <container type="docker">image-default</container>
     </requirements>
     <entry_points>
         <entry_point name="HiGlass Visualisation on $matrix.display_name" requires_domain="True">
@@ -9,13 +9,12 @@
         </entry_point>
     </entry_points>
     <command><![CDATA[
-        mkdir higlass-local-data
-        && mkdir higlass-local-tmp
-        
-        && ln -s '$matrix' 'higlass-local-tmp/matrix_name.$matrix.ext'
-         
-        && python higlass-server/manage.py ingest_tileset --filename '/tmp/matrix_name.$matrix.ext' --filetype cooler --datatype matrix
-        
+
+        ln -s '$matrix' /tmp/matrix.cool
+        && supervisord
+        && sleep 10
+        && python higlass-server/manage.py ingest_tileset --filename /tmp/matrix.cool --filetype cooler --datatype matrix
+        && tail -f /etc/hosts
     ]]>
     </command>
     <inputs>
