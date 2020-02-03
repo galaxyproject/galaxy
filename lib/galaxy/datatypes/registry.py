@@ -248,13 +248,14 @@ class Registry(object):
                                         for mod in fields:
                                             module = getattr(module, mod)
                                         datatype_class = getattr(module, datatype_class_name)
-                                        self.log.debug('Retrieved datatype module %s:%s from the datatype registry.' % (str(datatype_module), datatype_class_name))
+                                        self.log.debug('Retrieved datatype module %s:%s from the datatype registry for extension %s.' % (str(datatype_module), datatype_class_name, extension))
                                     except Exception:
                                         self.log.exception('Error importing datatype module %s', str(datatype_module))
                                         ok = False
                         elif type_extension is not None:
                             try:
                                 datatype_class = self.datatypes_by_extension[type_extension].__class__
+                                self.log.debug('Retrieved datatype module %s from type_extension %s for extension %s.' % (str(datatype_class.__name__), type_extension, extension))
                             except Exception:
                                 self.log.exception('Error determining datatype_class for type_extension %s', str(type_extension))
                                 ok = False
