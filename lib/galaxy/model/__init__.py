@@ -2170,7 +2170,7 @@ class Dataset(StorableObject, RepresentById):
     )
     ready_states = tuple(set(states.__dict__.values()) - set(non_ready_states))
     valid_input_states = tuple(
-        set(states.__dict__.values()) - set([states.ERROR, states.DISCARDED])
+        set(states.__dict__.values()) - {states.ERROR, states.DISCARDED}
     )
     terminal_states = (
         states.OK,

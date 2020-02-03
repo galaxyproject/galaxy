@@ -302,7 +302,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         :param use_cached_job:               If set to True galaxy will attempt to find previously executed steps for all workflow steps with the exact same parameter combinations
                                              and will copy the outputs of the previously executed step.
         """
-        ways_to_create = set([
+        ways_to_create = {
             'archive_source',
             'workflow_id',
             'installed_repository_file',
@@ -310,7 +310,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             'from_path',
             'shared_workflow_id',
             'workflow',
-        ])
+        }
 
         if len(ways_to_create.intersection(payload)) == 0:
             message = "One parameter among - %s - must be specified" % ", ".join(ways_to_create)

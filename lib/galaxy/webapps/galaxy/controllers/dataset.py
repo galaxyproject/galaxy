@@ -1003,7 +1003,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             elif target_history_ids:
                 if not isinstance(target_history_ids, list):
                     target_history_ids = target_history_ids.split(",")
-                target_history_ids = list(set([self.decode_id(h) for h in target_history_ids if h]))
+                target_history_ids = list({self.decode_id(h) for h in target_history_ids if h})
             else:
                 target_history_ids = []
         done_msg = error_msg = ""

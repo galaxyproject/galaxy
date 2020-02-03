@@ -47,7 +47,7 @@ class ContainerPort(namedtuple('ContainerPort', ('port', 'protocol', 'hostaddr',
 
 class ContainerVolume(with_metaclass(ABCMeta, object)):
 
-    valid_modes = frozenset(["ro", "rw"])
+    valid_modes = frozenset({"ro", "rw"})
 
     def __init__(self, path, host_path=None, mode=None):
         self.path = path
