@@ -1373,16 +1373,8 @@ steps:
             summary = self._run_jobs(WORKFLOW_SIMPLE, test_data={"input1": "hello world"}, history_id=history_id)
             invocation_id = summary.invocation_id
             bco = self._get("invocations/%s/export_bco" % invocation_id).json()
-            print(self)
-            self._assert_has_keys(bco, "bco_id", "spec_version", "etag", "provenance_domain", "usability_domain", "description_domain", "execution_domain", "parametric_domain", "io_domain", "error_domain")
             self.assertEqual(bco['spec_version'], 'https://w3id.org/biocompute/1.4.0/')
             self.assertEqual(bco['provenance_domain']['name'], "Simple Workflow")
-            self._assert_has_keys(bco['description_domain'], "keywords", "xref", "platform", "pipeline_steps")
-#            if 'extension_domain' in bco: self._assert_has_keys(bco['extension_domain'], "extension_schema")
-            self._assert_has_keys(bco['execution_domain'], "script_access_type", "script", "script_driver", "software_prerequisites", "external_data_endpoints", "environment_variables")
-            for p in bco['parametric_domain']:
-                self._assert_has_keys(p, "param", "value", "step")
-            self._assert_has_keys(bco['io_domain'], "input_subdomain", "output_subdomain")
 
     @skip_without_tool("__APPLY_RULES__")
     def test_workflow_run_apply_rules(self):
