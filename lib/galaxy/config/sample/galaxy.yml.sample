@@ -441,6 +441,10 @@ galaxy:
   # scenarios than the watchdog default.
   #watch_tool_data_dir: 'false'
 
+  # File that defines the builds (dbkeys) available at sites used by
+  # display applications and the URL to those sites.
+  #build_sites_config_file: config/build_sites.yml.sample
+
   # File containing old-style genome builds
   #builds_file_path: tool-data/shared/ucsc/builds.txt
 
