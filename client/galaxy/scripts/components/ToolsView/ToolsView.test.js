@@ -6,6 +6,7 @@ import Vue from "vue";
 
 // test response
 import testToolsListResponse from "./testData/toolsList";
+import testCitation from "./testData/citation";
 import MockAdapter from "axios-mock-adapter";
 import axios from "axios";
 
@@ -20,6 +21,7 @@ describe("ToolsView/ToolsView.vue", () => {
         wrapper = mount(ToolsView);
         emitted = wrapper.emitted();
         axiosMock.onGet("/api/tools?tool_help=True").reply(200, testToolsListResponse);
+        axiosMock.onGet(new RegExp(`./*/citations`)).reply(200, testCitation);
         await Vue.nextTick();
         await Vue.nextTick();
     });
@@ -41,6 +43,7 @@ describe("ToolsView/ToolsView.vue", () => {
         // one 'info' button per tool
         assert(wrapper.vm.buffer.length === buttons.length, "Number of 'info' buttons do not equal the buffer size!");
     });
+
     it("should open modal on button click", async () => {
         // findAll() returns WrapperArray, thus regular array.find() won't work
         let infoButton = wrapper
@@ -55,5 +58,26 @@ describe("ToolsView/ToolsView.vue", () => {
         await Vue.nextTick();
 
         assert(modal.isVisible(), "'Info' button didn't open a modal!");
+    });
+
+    it("citation should open on click", async () => {
+        await Vue.nextTick();
+        await Vue.nextTick();
+        await Vue.nextTick();
+
+        let infoButton = wrapper
+            .findAll('[type="button"]')
+            .filter(button => button.text() === "Citations")
+            .at(0);
+        const citation = wrapper.find("#" + infoButton.attributes("aria-controls"));
+
+        assert(citation.isVisible() === false, "citation is visible before being triggered!");
+        assert(infoButton.attributes("aria-expanded") === "false", "citation is expanded before being triggered!");
+
+        infoButton.trigger("click");
+        await Vue.nextTick();
+
+        assert(infoButton.attributes("aria-expanded") === "true", "citation is expanded before being triggered!");
+        assert(citation.isVisible(), "citation is not visible, after being triggered!");
     });
 });
