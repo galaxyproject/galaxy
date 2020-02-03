@@ -1,5 +1,5 @@
 <tool id="aws_comprehend" name="AWS Comprehend" version="1.0.0">
-  <description>Entity extraction with AWS Comprehend</description>
+  <description>Named entity extraction with AWS Comprehend</description>
     <requirements>
         <requirement type="package" version="1.14">aws-cli</requirement>
     </requirements>
