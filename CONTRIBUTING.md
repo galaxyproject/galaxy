@@ -58,7 +58,7 @@ https://help.github.com/en/github/getting-started-with-github/git-and-github-lea
    * Additions of new features to the codebase should be pushed to the `dev`
      branch (`git checkout dev`).
 
-   * Most bug fixes to previous (or freezed) releases should be made against the
+   * Most bug fixes to previous (or frozen) releases should be made against the
      corrisponding `release_XX.XX` branch (`git checkout release_XX.XX`).
 
    * Serious security problems should not be fixed via pull request - please see
