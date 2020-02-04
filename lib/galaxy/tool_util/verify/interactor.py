@@ -542,7 +542,7 @@ class GalaxyInteractorApi(object):
             print(ERROR_MESSAGE_DATASET_SEP)
 
     def format_for_summary(self, blob, empty_message, prefix="|  "):
-        contents = "\n".join(["%s%s" % (prefix, line.strip()) for line in StringIO(blob).readlines() if line.rstrip("\n\r")])
+        contents = "\n".join("%s%s" % (prefix, line.strip()) for line in StringIO(blob).readlines() if line.rstrip("\n\r"))
         return contents or "%s*%s*" % (prefix, empty_message)
 
     def _dataset_provenance(self, history_id, id):

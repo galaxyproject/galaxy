@@ -98,7 +98,7 @@ class ToolConfWatcher(object):
 
     def check(self):
         """Check for changes in self.paths or self.cache and call the event handler."""
-        hashes = {key: None for key in self.paths.keys()}
+        hashes = {}
         while self._active and not self.exit.isSet():
             do_reload = False
             with self._lock:

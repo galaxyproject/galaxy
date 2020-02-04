@@ -398,12 +398,10 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
         rval = ''
         try:
             hda = self.hda_manager.get_accessible(decoded_content_id, trans.user)
-
             if raw:
                 if filename and filename != 'index':
                     object_store = trans.app.object_store
-                    store_by = getattr(object_store, "store_by", "id")
-                    dir_name = 'dataset_%s_files' % getattr(hda.dataset, store_by)
+                    dir_name = hda.dataset.extra_files_path_name
                     file_path = object_store.get_filename(hda.dataset,
                                                           extra_dir=dir_name,
                                                           alt_name=filename)

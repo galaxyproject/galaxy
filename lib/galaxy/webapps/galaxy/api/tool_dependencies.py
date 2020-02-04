@@ -246,7 +246,7 @@ class ToolDependenciesAPIController(BaseAPIController):
         """
         tools_by_id = trans.app.toolbox.tools_by_id.copy()
         tool_ids = payload.get("tool_ids")
-        requirements = set([tools_by_id[tid].tool_requirements for tid in tool_ids])
+        requirements = {tools_by_id[tid].tool_requirements for tid in tool_ids}
         install_kwds = {}
         for source in [payload, kwds]:
             if 'include_containers' in source:
@@ -280,7 +280,7 @@ class ToolDependenciesAPIController(BaseAPIController):
         """
         tools_by_id = trans.app.toolbox.tools_by_id.copy()
         tool_ids = payload.get("tool_ids")
-        requirements = set([tools_by_id[tid].tool_requirements for tid in tool_ids])
+        requirements = {tools_by_id[tid].tool_requirements for tid in tool_ids}
         install_kwds = {}
         for source in [payload, kwds]:
             if 'include_containers' in source:

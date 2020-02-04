@@ -1738,7 +1738,7 @@ class GAFASQLite(SQlite):
 
     def sniff(self, filename):
         if super(IdpDB, self).sniff(filename):
-            table_names = frozenset(['gene', 'gene_family', 'gene_family_member', 'meta', 'transcript'])
+            table_names = frozenset({'gene', 'gene_family', 'gene_family_member', 'meta', 'transcript'})
             return self.sniff_table_names(filename, table_names)
         return False
 

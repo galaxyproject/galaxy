@@ -103,7 +103,7 @@ into a workflow will be shown in gray.</p>
         <th style="width: 47.5%">${_('History items created')}</th>
     </tr>
 
-%for job, datasets in jobs.iteritems():
+%for job, datasets in jobs.items():
 
     <%
     cls = "toolForm"

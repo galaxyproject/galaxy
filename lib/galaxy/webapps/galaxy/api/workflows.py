@@ -196,7 +196,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 for tool_id in workflow['missing_tools']:
                     toolshed, _, owner, name, tool, version = tool_id.split('/')
                     shed_url = self.__get_full_shed_url(toolshed)
-                    repo_identifier = '/'.join([toolshed, owner, name])
+                    repo_identifier = '/'.join((toolshed, owner, name))
                     if repo_identifier not in workflows_by_toolshed:
                         workflows_by_toolshed[repo_identifier] = dict(shed=shed_url.rstrip('/'), repository=name, owner=owner, tools=[tool_id], workflows=[workflow['name']])
                     else:
@@ -266,7 +266,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         :param  workflow_id:                 An existing workflow id. Either workflow_id, installed_repository_file or from_history_id must be specified
         :type   workflow_id:                 str
 
-        :param  parameters:                  If workflow_id is set - see _update_step_parameters()
+        :param  parameters:                  If workflow_id is set - see _step_parameters() in lib/galaxy/workflow/run_request.py
         :type   parameters:                  dict
 
         :param  ds_map:                      If workflow_id is set - a dictionary mapping each input step id to a dictionary with 2 keys: 'src' (which can be 'ldda', 'ld' or 'hda') and 'id' (which should be the id of a LibraryDatasetDatasetAssociation, LibraryDataset or HistoryDatasetAssociation respectively)
@@ -302,7 +302,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         :param use_cached_job:               If set to True galaxy will attempt to find previously executed steps for all workflow steps with the exact same parameter combinations
                                              and will copy the outputs of the previously executed step.
         """
-        ways_to_create = set([
+        ways_to_create = {
             'archive_source',
             'workflow_id',
             'installed_repository_file',
@@ -310,7 +310,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             'from_path',
             'shared_workflow_id',
             'workflow',
-        ])
+        }
 
         if len(ways_to_create.intersection(payload)) == 0:
             message = "One parameter among - %s - must be specified" % ", ".join(ways_to_create)
@@ -575,6 +575,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             if 'annotation' in workflow_dict:
                 newAnnotation = sanitize_html(workflow_dict['annotation'])
                 self.add_item_annotation(trans.sa_session, trans.get_user(), stored_workflow, newAnnotation)
+                trans.sa_session.flush()
 
             if 'menu_entry' in workflow_dict or 'show_in_tool_panel' in workflow_dict:
                 if workflow_dict.get('menu_entry') or workflow_dict.get('show_in_tool_panel'):

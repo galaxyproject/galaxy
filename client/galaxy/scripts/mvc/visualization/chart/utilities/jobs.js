@@ -14,9 +14,16 @@ var requestCharts = function(chart, module) {
     var group_index = 0;
     for (var key in chart.settings.attributes) {
         var settings_value = chart.settings.get(key);
-        _.each([[" ", "&#32;"], [",", "&#44;"], [":", "&#58;"]], function(pair) {
-            settings_value = settings_value.replace(new RegExp(pair[0], "g"), pair[1]);
-        });
+        _.each(
+            [
+                [" ", "&#32;"],
+                [",", "&#44;"],
+                [":", "&#58;"]
+            ],
+            function(pair) {
+                settings_value = settings_value.replace(new RegExp(pair[0], "g"), pair[1]);
+            }
+        );
         settings_string += key + ":" + settings_value + ", ";
     }
     settings_string = settings_string.substring(0, settings_string.length - 2);

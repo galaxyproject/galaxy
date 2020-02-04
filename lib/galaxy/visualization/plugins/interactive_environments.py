@@ -28,13 +28,13 @@ from galaxy.util.bunch import Bunch
 
 IS_OS_X = _platform == "darwin"
 CONTAINER_NAME_PREFIX = 'gie_'
-ENV_OVERRIDE_CAPITALIZE = frozenset([
+ENV_OVERRIDE_CAPITALIZE = frozenset({
     'notebook_username',
     'notebook_password',
     'dataset_hid',
     'dataset_filename',
     'additional_ids',
-])
+})
 
 log = logging.getLogger(__name__)
 
@@ -431,7 +431,7 @@ class InteractiveEnvironmentRequest(object):
 
         log.info("Starting docker container for IE {0} with command [{1}]".format(
             self.attr.viz_id,
-            ' '.join([shlex_quote(x) for x in redacted_command])
+            ' '.join(shlex_quote(x) for x in redacted_command)
         ))
         p = Popen(raw_cmd, stdout=PIPE, stderr=PIPE, close_fds=True)
         stdout, stderr = p.communicate()
@@ -545,7 +545,7 @@ class InteractiveEnvironmentRequest(object):
         raw_cmd = self.base_docker_cmd('inspect') + [container_id]
         log.info("Inspecting docker container {0} with command [{1}]".format(
             container_id,
-            ' '.join([shlex_quote(x) for x in raw_cmd])
+            ' '.join(shlex_quote(x) for x in raw_cmd)
         ))
 
         p = Popen(raw_cmd, stdout=PIPE, stderr=PIPE, close_fds=True)

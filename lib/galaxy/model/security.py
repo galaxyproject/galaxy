@@ -910,7 +910,7 @@ class GalaxyRBACAgent(RBACAgent):
                     sharing_role = role
                     break
         if sharing_role is None:
-            sharing_role = self.model.Role(name="Sharing role for: " + ", ".join([u.email for u in users]),
+            sharing_role = self.model.Role(name="Sharing role for: " + ", ".join(u.email for u in users),
                                            type=self.model.Role.types.SHARING)
             self.sa_session.add(sharing_role)
             self.sa_session.flush()

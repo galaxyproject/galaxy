@@ -1,9 +1,9 @@
 <template>
     <selection-dialog
-        :errorMessage="errorMessage"
-        :optionsShow="optionsShow"
-        :modalShow="modalShow"
-        :hideModal="() => (modalShow = false)"
+        :error-message="errorMessage"
+        :options-show="optionsShow"
+        :modal-show="modalShow"
+        :hide-modal="() => (modalShow = false)"
     >
         <template v-slot:search>
             <data-dialog-search v-model="filter" />
@@ -14,7 +14,7 @@
                 :items="items"
                 :multiple="false"
                 :filter="filter"
-                leafIcon="fa fa-sitemap fa-rotate-270"
+                leaf-icon="fa fa-sitemap fa-rotate-270"
                 @clicked="clicked"
                 @load="load"
             />

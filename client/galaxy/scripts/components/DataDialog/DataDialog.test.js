@@ -1,8 +1,8 @@
 import DataDialog from "./DataDialog.vue";
 import SelectionDialog from "components/SelectionDialog/SelectionDialog.vue";
 import { __RewireAPI__ as rewire } from "./DataDialog";
-import { Model } from "./model.js";
-import { UrlTracker } from "./utilities.js";
+import { Model } from "./model";
+import { UrlTracker } from "./utilities";
 import { Services } from "./services";
 import { mount, createLocalVue } from "@vue/test-utils";
 

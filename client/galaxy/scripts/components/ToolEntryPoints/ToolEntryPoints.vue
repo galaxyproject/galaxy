@@ -15,7 +15,7 @@
         <div v-else>
             There are multiple InteractiveTool result views available:
             <ul>
-                <li v-for="entryPoint of entryPoints" v-bind:key="entryPoint.id">
+                <li v-for="entryPoint of entryPoints" :key="entryPoint.id">
                     {{ entryPoint.name }}
                     <span v-if="entryPoint.active"> (<a :href="entryPoints[0].target">click here to display</a>) </span>
                     <span v-else>

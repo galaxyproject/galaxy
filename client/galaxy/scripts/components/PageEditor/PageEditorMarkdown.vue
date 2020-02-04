@@ -5,7 +5,7 @@
             :onupdate="onUpdate"
             ref="markdownEditor"
             :toolbar="true"
-            :showMarkdownHelp="showMarkdownHelp"
+            :show-markdown-help="showMarkdownHelp"
         >
         </markdown-editor>
     </div>

@@ -1695,7 +1695,7 @@
     it via a proxy server.  These options should be self explanatory
     and so are not documented individually.  You can use these paths
     (or ones in the proxy server) to point to your own styles.
-:Default: ``static/june_2007_style/blue``
+:Default: ``static/style``
 :Type: str
 
 

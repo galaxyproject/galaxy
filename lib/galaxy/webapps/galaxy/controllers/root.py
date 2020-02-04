@@ -79,7 +79,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
         return self._bootstrapped_client(trans)
 
     @web.expose
-    def login(self, trans, redirect=None, **kwd):
+    def login(self, trans, redirect=None, is_logout_redirect=False, **kwd):
         """
         User login path for client-side.
         """
@@ -88,13 +88,11 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
         if (trans.app.config.enable_oidc and
                 len(trans.app.config.oidc) == 1 and
                 len(trans.app.auth_manager.authenticators) == 0
-                and not kwd.get('logout', False)):
-
+                and is_logout_redirect is False):
             provider = trans.app.config.oidc[0]
             success, message, redirect_uri = trans.app.authnz_manager.authenticate(provider, trans)
             if success:
                 return trans.response.send_redirect(redirect_uri)
-
         return self.template(trans, 'login',
                              redirect=redirect,
                              # an installation may have it's own welcome_url - show it here if they've set that
@@ -121,7 +119,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
                     if tagged_tool.tool_id not in results:
                         results.append(tagged_tool.tool_id)
             if trans.user:
-                trans.user.preferences['selected_tool_tags'] = ','.join([tag.name for tag in tags])
+                trans.user.preferences['selected_tool_tags'] = ','.join(tag.name for tag in tags)
                 trans.sa_session.flush()
         elif trans.user:
             trans.user.preferences['selected_tool_tags'] = ''

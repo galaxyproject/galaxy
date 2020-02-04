@@ -11,7 +11,7 @@ import slotting from "viz/trackster/slotting";
 import painters from "viz/trackster/painters";
 import filters_mod from "viz/trackster/filters";
 import { Dataset } from "mvc/dataset/data";
-import tools_mod from "mvc/tool/tools";
+import tools_mod from "viz/tools";
 import config_mod from "utils/config";
 import bbi from "viz/bbi-data-manager";
 import "ui/editable-text";
@@ -1002,7 +1002,7 @@ var TracksterView = Backbone.View.extend({
 
         // We break out of the parent container with nav (and potentially other
         // things?) so we need to override any overflow settings here.
-        parent_element.css("overflow", "visible");
+        parent_element.attr("style", "overflow: visible !important");
         // Navigation at top
         this.nav_container = $("<div/>")
             .addClass("trackster-nav-container")

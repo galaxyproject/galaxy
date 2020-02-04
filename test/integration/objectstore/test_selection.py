@@ -3,10 +3,7 @@
 import os
 import string
 
-from galaxy_test.base.populators import (
-    DatasetPopulator,
-)
-from galaxy_test.driver import integration_util
+from ._base import BaseObjectStoreIntegrationTestCase, files_count
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "selection_job_conf.xml")
@@ -40,40 +37,25 @@ DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE = string.Template("""<?xml version="1.0
 """)
 
 
-class ObjectStoreJobsIntegrationTestCase(integration_util.IntegrationTestCase):
-
-    framework_tool_and_types = True
+class ObjectStoreSelectionIntegrationTestCase(BaseObjectStoreIntegrationTestCase):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
-        temp_directory = cls._test_driver.mkdtemp()
-        cls.object_stores_parent = temp_directory
-        for disk_store_file_name in ["files_default", "files_static", "files_dynamic_ebs", "files_dynamic_s3"]:
-            disk_store_path = os.path.join(temp_directory, disk_store_file_name)
-            os.makedirs(disk_store_path)
-            setattr(cls, "%s_path" % disk_store_file_name, disk_store_path)
-        config_path = os.path.join(temp_directory, "object_store_conf.xml")
-        with open(config_path, "w") as f:
-            f.write(DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE.safe_substitute({"temp_directory": temp_directory}))
-        config["object_store_config_file"] = config_path
+        cls._configure_object_store(DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE, config)
         config["job_config_file"] = JOB_CONFIG_FILE
         config["job_resource_params_file"] = JOB_RESOURCE_PARAMETERS_CONFIG_FILE
 
-    def setUp(self):
-        super(ObjectStoreJobsIntegrationTestCase, self).setUp()
-        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
-
     def _object_store_counts(self):
-        files_default_count = _files_count(self.files_default_path)
-        files_static_count = _files_count(self.files_static_path)
-        files_dynamic_count = _files_count(self.files_dynamic_path)
+        files_default_count = files_count(self.files_default_path)
+        files_static_count = files_count(self.files_static_path)
+        files_dynamic_count = files_count(self.files_dynamic_path)
         return files_default_count, files_static_count, files_dynamic_count
 
     def _assert_file_counts(self, default, static, dynamic_ebs, dynamic_s3):
-        files_default_count = _files_count(self.files_default_path)
-        files_static_count = _files_count(self.files_static_path)
-        files_dynamic_ebs_count = _files_count(self.files_dynamic_ebs_path)
-        files_dynamic_s3_count = _files_count(self.files_dynamic_s3_path)
+        files_default_count = files_count(self.files_default_path)
+        files_static_count = files_count(self.files_static_path)
+        files_dynamic_ebs_count = files_count(self.files_dynamic_ebs_path)
+        files_dynamic_s3_count = files_count(self.files_dynamic_s3_path)
         assert default == files_default_count
         assert static == files_static_count
         assert dynamic_ebs == files_dynamic_ebs_count
@@ -121,7 +103,3 @@ class ObjectStoreJobsIntegrationTestCase(integration_util.IntegrationTestCase):
             }
             _run_tool("create_10", create_10_inputs)
             self._assert_file_counts(1, 2, 10, 10)
-
-
-def _files_count(directory):
-    return sum(len(files) for _, _, files in os.walk(directory))

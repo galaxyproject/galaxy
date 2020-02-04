@@ -1003,7 +1003,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             elif target_history_ids:
                 if not isinstance(target_history_ids, list):
                     target_history_ids = target_history_ids.split(",")
-                target_history_ids = list(set([self.decode_id(h) for h in target_history_ids if h]))
+                target_history_ids = list({self.decode_id(h) for h in target_history_ids if h})
             else:
                 target_history_ids = []
         done_msg = error_msg = ""
@@ -1053,10 +1053,10 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 if current_history in target_histories:
                     refresh_frames = ['history']
                 trans.sa_session.flush()
-                hist_names_str = ", ".join(['<a href="%s" target="_top">%s</a>' %
-                                            (url_for(controller="history", action="switch_to_history",
-                                                     hist_id=trans.security.encode_id(hist.id)), escape(hist.name))
-                                            for hist in target_histories])
+                hist_names_str = ", ".join('<a href="%s" target="_top">%s</a>' %
+                                           (url_for(controller="history", action="switch_to_history",
+                                                    hist_id=trans.security.encode_id(hist.id)), escape(hist.name))
+                                           for hist in target_histories)
                 num_source = len(source_content_ids) - invalid_contents
                 num_target = len(target_histories)
                 done_msg = "%i %s copied to %i %s: %s." % (num_source, inflector.cond_plural(num_source, "dataset"), num_target, inflector.cond_plural(num_target, "history"), hist_names_str)

@@ -593,8 +593,7 @@ def default_exit_code_file(files_dir, id_tag):
 
 
 def collect_extra_files(object_store, dataset, job_working_directory):
-    store_by = getattr(object_store, "store_by", "id")
-    file_name = "dataset_%s_files" % getattr(dataset.dataset, store_by)
+    file_name = dataset.dataset.extra_files_path_name_from(object_store)
     temp_file_path = os.path.join(job_working_directory, "working", file_name)
     extra_dir = None
     try:

@@ -6,6 +6,7 @@ import time
 import traceback
 from xml.sax.saxutils import escape
 
+from galaxy.util import RW_R__R__
 from .panel import (
     panel_item_types,
     ToolPanelElements
@@ -98,7 +99,7 @@ $INTEGRATED_TOOL_PANEL
                                 label_version = section_item.version or ''
                                 integrated_tool_panel.append('        <label id="%s" text="%s" version="%s" />\n' % (label_id, label_text, label_version))
                     integrated_tool_panel.append('    </section>\n')
-        tool_panel_description = '\n    '.join([l for l in INTEGRATED_TOOL_PANEL_DESCRIPTION.split("\n") if l])
+        tool_panel_description = '\n    '.join(l for l in INTEGRATED_TOOL_PANEL_DESCRIPTION.split("\n") if l)
         tp_string = template.substitute(INTEGRATED_TOOL_PANEL_DESCRIPTION=tool_panel_description,
                                         INTEGRATED_TOOL_PANEL='\n'.join(integrated_tool_panel))
         with open(filename, "w") as integrated_tool_panel_file:
@@ -110,7 +111,7 @@ $INTEGRATED_TOOL_PANEL
             filename = filename + ".copy"
         shutil.move(filename, destination)
         try:
-            os.chmod(destination, 0o644)
+            os.chmod(destination, RW_R__R__)
         except OSError:
             # That can happen if multiple threads are simultaneously moving/chmod'ing this file
             # Should be harmless, though this race condition should be avoided.

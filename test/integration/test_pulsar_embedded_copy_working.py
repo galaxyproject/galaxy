@@ -21,4 +21,4 @@ class EmbeddedCopyWorkingPulsarIntegrationInstance(integration_util.IntegrationI
 
 instance = integration_util.integration_module_instance(EmbeddedCopyWorkingPulsarIntegrationInstance)
 
-test_tools = integration_util.integration_tool_runner(["output_format"])
+test_tools = integration_util.integration_tool_runner(["output_format", "output_filter"])

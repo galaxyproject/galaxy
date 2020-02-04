@@ -63,7 +63,7 @@ class TransferManager(object):
         running daemon, so it should be fairly quick to return.
         """
         transfer_jobs = listify(transfer_jobs)
-        printable_tj_ids = ', '.join([str(tj.id) for tj in transfer_jobs])
+        printable_tj_ids = ', '.join(str(tj.id) for tj in transfer_jobs)
         log.debug('Initiating transfer job(s): %s' % printable_tj_ids)
         # Set all jobs running before spawning, or else updating the state may
         # clobber a state change performed by the worker.

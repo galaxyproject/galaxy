@@ -435,7 +435,7 @@ def hash_conda_packages(conda_packages, conda_target=None):
 def install_conda(conda_context, force_conda_build=False):
     f, script_path = tempfile.mkstemp(suffix=".sh", prefix="conda_install")
     os.close(f)
-    download_cmd = commands.download_command(conda_link(), to=script_path, quote_url=False)
+    download_cmd = commands.download_command(conda_link(), to=script_path)
     install_cmd = ['bash', script_path, '-b', '-p', conda_context.conda_prefix]
     package_targets = [
         "conda=%s" % CONDA_VERSION,
@@ -526,7 +526,11 @@ def best_search_result(conda_target, conda_context, channels_override=None, offl
     try:
         res = commands.execute(search_cmd)
         res = unicodify(res)
-        hits = json.loads(res).get(conda_target.package, [])
+        # Use python's stable list sorting to sort by date,
+        # then build_number, then version. The top of the list
+        # then is the newest version with the newest build and
+        # the latest update time.
+        hits = json.loads(res).get(conda_target.package, [])[::-1]
         hits = sorted(hits, key=lambda hit: hit['build_number'], reverse=True)
         hits = sorted(hits, key=lambda hit: packaging.version.parse(hit['version']), reverse=True)
     except CommandLineException:

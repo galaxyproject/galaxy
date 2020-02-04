@@ -6,7 +6,7 @@
     </div>
 </template>
 <script>
-import { getErrorStack } from "./AdminServices.js";
+import { getErrorStack } from "./AdminServices";
 
 export default {
     data() {

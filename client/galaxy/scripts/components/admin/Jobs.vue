@@ -112,7 +112,7 @@
                     Unfinished Jobs: These jobs are unfinished and have had their state updated in the previous
                     {{ cutoffDisplay }} seconds.
                 </template>
-                <template v-slot:head(selected)="{ rowSelected }">
+                <template v-slot:head(selected)>
                     <b-form-checkbox
                         v-model="allSelected"
                         :indeterminate="indeterminate"
@@ -128,12 +128,12 @@
                     ></b-form-checkbox>
                 </template>
                 <template v-slot:cell(job_info)="data">
-                    <b-link :href="data.value.info_url" v-on:click.prevent="clickJobInfo(data.value.id)">
+                    <b-link :href="data.value.info_url" @click.prevent="clickJobInfo(data.value.id)">
                         {{ data.value.id }}
                     </b-link>
                 </template>
                 <template v-slot:row-details="row">
-                    <job-details :commandLine="row.item.command_line" :jobId="row.item.jobId" />
+                    <job-details :command-line="row.item.command_line" :job-id="row.item.jobId" />
                 </template>
             </b-table>
             <b-alert v-if="!recentJobsItemsComputed.length" variant="secondary" show>
@@ -155,7 +155,7 @@
                     Recent Jobs: These jobs have completed in the previous {{ cutoffDisplay }} seconds.
                 </template>
                 <template v-slot:cell(job_info)="data">
-                    <b-link :href="data.value.info_url" v-on:click.prevent="clickJobInfo(data.value.id)">
+                    <b-link :href="data.value.info_url" @click.prevent="clickJobInfo(data.value.id)">
                         {{ data.value.id }}
                     </b-link>
                 </template>
@@ -163,7 +163,7 @@
                     <utc-date :date="data.value" mode="elapsed" />
                 </template>
                 <template v-slot:row-details="row">
-                    <job-details :commandLine="row.item.command_line" :jobId="row.item.id" />
+                    <job-details :command-line="row.item.command_line" :job-id="row.item.id" />
                 </template>
             </b-table>
             <b-modal ref="job-info-modal" scrollable hide-header ok-only @hidden="resetModalContents">

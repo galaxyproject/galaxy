@@ -158,6 +158,7 @@ DO_NOT_TEST = [
     'chunk_upload_size',  # broken: default overridden
     'cleanup_job',  # broken: default overridden
     'conda_auto_init',  # broken: default overridden
+    'config_dir',  # value overridden for testing
     'data_dir',  # value overridden for testing
     'data_manager_config_file',  # broken: remove 'config/' prefix from schema
     'database_connection',  # untestable; refactor config/__init__ to test

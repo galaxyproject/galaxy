@@ -44,21 +44,17 @@
 ## Default stylesheets
 <%def name="stylesheets()">
     ${h.css('bootstrap-tour')}
-    ${h.css('base')}
+    ${h.dist_css('base')}
 </%def>
 
 ## Default javascripts
 <%def name="javascripts()">
     ## TODO: remove when all libs are required directly in modules
-    ${h.js(
-        'bundled/libs.chunk',
-        'bundled/base.chunk'
+    ${h.dist_js(
+        'libs.chunk',
+        'base.chunk',
+        'generic.bundled'
     )}
-    ${self.javascript_entry()}
-</%def>
-
-<%def name="javascript_entry()">
-    ${h.js('bundled/generic.bundled')}
 </%def>
 
 <%def name="javascript_app()">

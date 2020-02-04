@@ -38,7 +38,7 @@ def get_commands_from_yaml(yaml_content):
 
     try:
         # we expect to get an input in bytes, so first decode to string; run the file through the jinja processing; load as yaml
-        meta_yaml = yaml.load(Template(yaml_content.decode('utf-8')).render(), Loader=yaml.SafeLoader)
+        meta_yaml = yaml.safe_load(Template(yaml_content.decode('utf-8')).render())
     except (yaml.scanner.ScannerError, UndefinedError) as e:  # what about things like {{ compiler('cxx') }}
         logging.info(e, exc_info=True)
         return None

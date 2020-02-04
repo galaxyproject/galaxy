@@ -3,7 +3,7 @@
   <description>from your computer</description>
   <action module="galaxy.tools.actions.upload" class="UploadToolAction"/>
   <command>
-    python '$__tool_directory__/upload.py' $GALAXY_ROOT_DIR $GALAXY_DATATYPES_CONF_FILE $paramfile
+    python '$__tool_directory__/upload.py' '$GALAXY_ROOT_DIR' '$GALAXY_DATATYPES_CONF_FILE' '$paramfile'
     #set $outnum = 0
     #while $varExists('output%i' % $outnum):
         #set $output = $getVar('output%i' % $outnum)
@@ -13,7 +13,7 @@
         #if $output.dataset.dataset.external_filename:
             #set $file_name = "None"
         #end if
-        ${output.dataset.dataset.id}:${output.files_path}:${file_name}
+        '${output.dataset.dataset.id}:${output.files_path}:${file_name}'
     #end while
   </command>
   <inputs nginx_upload="true">
