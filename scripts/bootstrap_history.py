@@ -713,6 +713,8 @@ def _text_target(github, pull_request, labels=None):
     else:
         print("Logic problem, cannot determine section for %s" % _pr_to_str(pull_request))
         text_target = None
+    if text_target:
+        text_target += "\n"
     return text_target
 
 
@@ -775,7 +777,7 @@ def wrap(message):
     message = process_sentence(message)
     wrapper = textwrap.TextWrapper(initial_indent="* ")
     wrapper.subsequent_indent = '  '
-    wrapper.width = 78
+    wrapper.width = 160
     message_lines = message.splitlines()
     first_lines = "\n".join(wrapper.wrap(message_lines[0]))
     wrapper.initial_indent = "  "
