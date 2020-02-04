@@ -17,7 +17,6 @@ describe("ToolsView/ToolsView.vue", () => {
 
     beforeEach(async () => {
         axiosMock = new MockAdapter(axios);
-        // using shallow because of inner 'Citation' component
         wrapper = mount(ToolsView);
         emitted = wrapper.emitted();
         axiosMock.onGet("/api/tools?tool_help=True").reply(200, testToolsListResponse);
@@ -77,7 +76,7 @@ describe("ToolsView/ToolsView.vue", () => {
         infoButton.trigger("click");
         await Vue.nextTick();
 
-        assert(infoButton.attributes("aria-expanded") === "true", "citation is expanded before being triggered!");
+        assert(infoButton.attributes("aria-expanded") === "true", "citation field did not expand!");
         assert(citation.isVisible(), "citation is not visible, after being triggered!");
     });
 });
