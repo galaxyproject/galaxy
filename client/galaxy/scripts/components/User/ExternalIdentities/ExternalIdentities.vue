@@ -55,6 +55,7 @@
                 size="sm"
                 @ok="disconnectID"
                 @cancel="doomedItem = null"
+<<<<<<< HEAD
             ></b-modal>
 
             <b-alert
@@ -64,6 +65,28 @@
                 :show="errorMessage !== null"
                 @dismissed="errorMessage = null"
             >{{ errorMessage }}</b-alert>
+=======
+            >
+            </b-modal>
+
+            <div>
+                <b-modal 
+                    centered
+                    id="disconnectIDModal"
+                    ref="deleteAndResetModal"
+                    title="Deleting last external identity"
+                    @ok="disconnectAndReset"
+                    @cancel="doomedItem = null"
+                >
+                    <p>If you delete this identity, you will be logged out and need to reset your Galaxy password the next time you log in 
+                or reconnect to this third party identity.</p>
+                </b-modal>
+            </div>
+
+            <b-alert dismissible fade variant="warning" :show="errorMessage !== null" @dismissed="errorMessage = null">
+                {{ errorMessage }}
+            </b-alert>
+>>>>>>> 7d7076db12... Logouts After Final Disconnect
         </div>
 
         <div class="external-subheading" v-if="enable_oidc">
@@ -86,7 +109,9 @@
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { getGalaxyInstance } from "app";
+import { getAppRoot } from "onload";
 import svc from "./service";
+import { logoutClick } from "layout/menu";
 
 Vue.use(BootstrapVue);
 
@@ -154,15 +179,28 @@ export default {
         onDisconnect(doomed) {
             console.log(this.doomedItem);
             this.doomedItem = doomed;
+<<<<<<< HEAD
             console.log(this.doomedItem);
             if (doomed.id) {
                 // User must confirm that they want to disconnect the identity
                 this.$refs.deleteModal.show();
+=======
+            if (doomed.id) {
+                if (this.items.length > 1) {
+                    // User must confirm that they want to disconnect the identity
+                    this.$refs.deleteModal.show();
+                } else {
+                    // User is notifed to reset password to use regular Galaxy login and avoid lockout
+                    this.$refs.deleteAndResetModal.show();
+                    this.setError(
+                        "Before disconnecting this identity, you need to set your account password, " +
+                            "in order to avoid being locked out of your account."
+                    );
+                }
+>>>>>>> 7d7076db12... Logouts After Final Disconnect
             } else {
-                this.setError(
-                    "Before disconnecting this identity, you need to set your account password, " +
-                        "in order to avoid being locked out of your account."
-                );
+                this.removeItem(doomed);
+                this.doomedItem = null;
             }
         },
         disconnectID() {
@@ -184,6 +222,11 @@ export default {
                 });
             console.log("after disconnectID");
             console.log(this.items);
+        },
+        disconnectAndReset() {
+            // Disconnects the user's final ext id and logouts of current session
+            this.disconnectID();
+            logoutClick;
         },
         removeItem(item) {
             this.items = this.items.filter(o => o != item);
