@@ -4,80 +4,7 @@
             <div class="unified-panel-header-inner">
                 <span class="sr-only">Workflow Editor&nbsp;</span>
                 {{ editorConfig["name"] }}
-                <div class="panel-header-buttons">
-                    <a
-                        id="workflow-run-button"
-                        class="panel-header-button"
-                        href="javascript:void(0)"
-                        role="button"
-                        title="Run"
-                        aria-label="Run"
-                        @click="navigateToRun"
-                        v-show="mode == 'canvas'"
-                    >
-                        <span class="fa fa-play"></span>
-                    </a>
-                    <a
-                        id="workflow-save-button"
-                        class="panel-header-button"
-                        href="javascript:void(0)"
-                        role="button"
-                        title="Save"
-                        aria-label="Save"
-                        @click="save"
-                        v-show="mode == 'canvas'"
-                    >
-                        <span class="fa fa-floppy-o"></span>
-                    </a>
-                    <a
-                        id="workflow-report-button"
-                        class="panel-header-button"
-                        href="javascript:void(0)"
-                        role="button"
-                        title="Edit Report"
-                        aria-label="Edit Report"
-                        v-show="mode == 'canvas'"
-                        @click="setMode('report')"
-                    >
-                        <span class="fa fa-edit"></span>
-                    </a>
-                    <a
-                        id="workflow-report-help-button"
-                        class="panel-header-button"
-                        href="javascript:void(0)"
-                        role="button"
-                        title="Report Syntax Help"
-                        aria-label="Report Syntax Help"
-                        @click="showReportHelp"
-                        v-show="mode == 'report'"
-                    >
-                        <span class="fa fa-question"></span>
-                    </a>
-                    <a
-                        id="workflow-canvas-button"
-                        class="panel-header-button"
-                        href="javascript:void(0)"
-                        role="button"
-                        title="Edit Workflow"
-                        aria-label="Edit Workflow"
-                        @click="setMode('canvas')"
-                        v-show="mode == 'report'"
-                    >
-                        <span class="fa fa-sitemap fa-rotate-270"></span>
-                    </a>
-                    <a
-                        id="workflow-options-button"
-                        class="panel-header-button"
-                        href="javascript:void(0)"
-                        role="button"
-                        title="Workflow options"
-                        aria-label="Workflow options"
-                        ref="save-button"
-                        v-show="mode == 'canvas'"
-                    >
-                        <span class="fa fa-cog"></span>
-                    </a>
-                </div>
+                <WorkflowOptions />
             </div>
         </div>
         <div class="unified-panel-body" id="workflow-canvas-body" v-show="mode == 'canvas'">
@@ -108,13 +35,14 @@
 <script>
 import $ from "jquery";
 import WorkflowView from "mvc/workflow/workflow-view";
+import WorkflowOptions from "./Options"
 import MarkdownEditor from "components/Markdown/MarkdownEditor";
 import { getAppRoot } from "onload/loadConfig";
 import { showReportHelp } from "./reportHelp";
 import { make_popupmenu } from "ui/popupmenu";
 
 export default {
-    components: { MarkdownEditor },
+    components: { MarkdownEditor, WorkflowOptions },
     props: {
         editorConfig: {
             type: Object
