@@ -16,6 +16,7 @@ Highlights
 
 .. figure:: https://user-images.githubusercontent.com/216771/65520097-0a041f80-deb5-11e9-80ac-2557b36c252f.png
    :alt: Workflow invocation menu
+   :width: 400px
 
 .. figure:: https://user-images.githubusercontent.com/6804901/73737075-345ac900-4742-11ea-9f50-0f0e4c3d9271.png
    :alt: Workflow invocatios
@@ -38,6 +39,7 @@ Highlights
 
 .. figure:: https://user-images.githubusercontent.com/6804901/73779180-a2c47900-478c-11ea-98ab-7355276b6f6d.png
    :alt: Example of email button
+   :width: 300px
 
 New Visualizations
 ===========================================================
