@@ -1002,6 +1002,7 @@ class WorkflowContentsManager(UsesAnnotations):
         data['steps'] = {}
         # For each step, rebuild the form and encode the state
         global_input_dicts={}
+        workflow_outputs_dicts={}  #global outputs
         input_index=0
         for step in workflow.steps:
             # Load from database representation
@@ -1077,13 +1078,6 @@ class WorkflowContentsManager(UsesAnnotations):
                         step_dict['content_id'] = None
                         step_dict['tool_id'] = None
 
-                pja_dict = {}
-                for pja in step.post_job_actions:
-                    pja_dict[pja.action_type + pja.output_name] = dict(
-                        action_type=pja.action_type,
-                        output_name=pja.output_name,
-                        action_arguments=pja.action_arguments)
-                step_dict['post_job_actions'] = pja_dict
 
             if module.type == 'subworkflow':
                 del step_dict['content_id']
@@ -1101,23 +1095,32 @@ class WorkflowContentsManager(UsesAnnotations):
             # Data inputs, legacy section not used anywhere within core
             #input_dicts = []
             step_state = module.state.inputs or {}
-            if module.type != 'tool' and module.type != 'data_input':   #which cases fill this condition?
-                print('module.type here is ' + str(module.type))
-                name = step_state.get("name") or module.label
-                if name:
-                    #input_dicts.append({"name": name, "description": annotation_str})
-                    input_dicts[name]={"type": 'File'}
-                    #need to complete these fields too
-                    #doc: Need to complete from tool info
-                    #format: Need to complete from tool info
-                    # source: 2/trimmed_reads_single
-                    # type: File
+
+
+            #which cases fill this condition??? comment until i figure  out if it should be included
+            #if module.type != 'tool' and module.type != 'data_input':
+            #    print('module.type here is ' + str(module.type))
+            #    name = step_state.get("name") or module.label
+            #    if name:
+            #        #input_dicts.append({"name": name, "description": annotation_str})
+            #        input_dicts[name]={"type": 'File'}
+            #        #need to complete these fields too
+            #        #doc: Need to complete from tool info
+            #        #format: Need to complete from tool info
+            #        # source: 2/trimmed_reads_single
+            #        # type: File
+
             for name, val in step_state.items():
                 input_type = type(val)
                 print('name and val are: '+ str(name)+ '=' + str(val) + ' of type ' + str(input_type))
                 # add all the name, val to the input list
+                ## Here I would like to add the default value as   "default":val
+                # but if I add it then I get errors with ConnectedValue objects
+                ## TypeError: <galaxy.tools.parameters.basic.ConnectedValue object at 0x7f59d1762810> is not JSON serializable
+
                 input_dicts[name]={"name": name, "description": "runtime parameter for tool %s" % module.get_name()}
                 # print('input_type is: ' + str(input_type))
+                # so.... i need to filter and only add if its a RuntimeValue or a dict in itself
                 if input_type == RuntimeValue:
                     print("input_type is RuntimeValue class")
                     # input_dicts.append({"name": name, "description": "runtime parameter for tool %s" % module.get_name()})
@@ -1128,7 +1131,7 @@ class WorkflowContentsManager(UsesAnnotations):
                     print("here i am")
                     for partval in val.values():
                         if type(partval) == RuntimeValue:
-                            input_dicts.append({"name": name, "description": "runtime parameter for tool %s" % module.get_name()})
+                            input_dicts.append({"name": name, "default":val,"description": "runtime parameter for tool %s" % module.get_name()})
             if module.type == 'data_input':
                 input_dict = {
                     'format' : 'data',
@@ -1140,23 +1143,25 @@ class WorkflowContentsManager(UsesAnnotations):
                 global_input_dicts[name]=input_dict
             step_dict['inputs'] = input_dicts
 
-            # User outputs
-            workflow_outputs_dicts = []
+            # User outputs - Collect global wf outputs
+            #workflow_outputs_dicts = []
             for workflow_output in step.unique_workflow_outputs:
                 workflow_output_dict = dict(
-                    output_name=workflow_output.output_name,
+                    #output_name=workflow_output.output_name,
                     label=workflow_output.label,
                     uuid=str(workflow_output.uuid) if workflow_output.uuid is not None else None,
                 )
-                workflow_outputs_dicts.append(workflow_output_dict)
-            step_dict['workflow_outputs'] = workflow_outputs_dicts
+                workflow_outputs_dicts[workflow_output.output_name]=workflow_output_dict
+            #step_dict['workflow_outputs'] = workflow_outputs_dicts
 
             # All step outputs
-            step_dict['outputs'] = []
+            step_outputs_dict = {}
             if type(module) is ToolModule:
                 for output in module.get_data_outputs():
-                    step_dict['outputs'].append({'name': output['name'], 'type': output['extensions'][0]})
+                    ### should i use a different (unique) name? does the output always have a name?
+                    step_outputs_dict[output['name']]= {'type': output['extensions'][0]}
 
+            step_dict['outputs']=step_outputs_dict
             step_in = {}
             for step_input in step.inputs:
                 if step_input.default_value_set:
@@ -1219,6 +1224,7 @@ class WorkflowContentsManager(UsesAnnotations):
             if module.type != 'data_input':
                 data['steps'][step.order_index] = step_dict
         # add the global input and outputs to the return value
+        data['outputs']=workflow_outputs_dicts
         data['inputs']=global_input_dicts
         return data
 
