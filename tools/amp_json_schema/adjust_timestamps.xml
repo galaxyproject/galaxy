@@ -1,5 +1,5 @@
-<tool id="ADJ-01" name="Adjust-Timestamps" version="1.0.0">
-  <description>Adjust timestamps so Speech to Text output matches timestamps of original file</description>
+<tool id="adjust_timestamps" name="Adjust Timestamps" version="1.0.0">
+  <description>Adjust timestamps so Speech-to-Text output matches timestamps of the original file</description>
     <requirements>
         <requirement type="package" version="8.30">coreutils</requirement>
     </requirements>
@@ -17,7 +17,7 @@
   <help>
 .. class:: infomark
 
-Adjust timestamps of speech to text json
+Adjust timestamps of a speech-to-text json output to match timestamps of the original file.
 
   </help>
 </tool>

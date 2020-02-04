@@ -1,4 +1,4 @@
-<tool id="remove-speech" name="Remove Speech and Silence Segments" version="1.0.0">
+<tool id="remove_silence_speech" name="Remove Silence & Speech" version="1.0.0">
   <description>Create an audio file containing only music, removing silence and speech</description>
     <requirements>
     </requirements>
@@ -18,7 +18,7 @@
   <help>
 .. class:: infomark
 
-Remove segments from an audio file
+Remove segments of silence and speech from an audio file.
 
   </help>
 </tool>

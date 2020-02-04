@@ -1,5 +1,5 @@
-<tool id="spacy-nlp" name="spaCy Entity Extraction" version="1.0.0">
-  <description>Entity Extraction with spaCy</description>
+<tool id="spacy_entity_extraction" name="spaCy Entity Extraction" version="1.0.0">
+  <description>Named entity extraction with spaCy</description>
     <requirements>
     </requirements>
   <command detect_errors="exit_code">$__tool_directory__/spacy_wrapper.py $input $json_out</command>
@@ -15,7 +15,7 @@
   <help>
 .. class:: infomark
 
-Entity Extraction
+Extract named entity using spaCy
 
   </help>
 </tool>
