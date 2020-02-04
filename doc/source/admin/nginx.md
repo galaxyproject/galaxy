@@ -199,7 +199,7 @@ previous section:
             }
 
             # serve framework static content
-            location /static {
+            location /galaxy/static {
                 alias $galaxy_root/static;
                 expires 24h;
             }
