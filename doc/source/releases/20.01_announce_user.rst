@@ -8,20 +8,37 @@ January 2020 Galaxy Release (v 20.01)
 Highlights
 ===========================================================
 
-**Feature1**
-  Feature description.
+**Workflow Executions Menu**
+  This menu can be reached from the User menu -> Workflow Invocations
+  and lists your recent Workflow executions, their status and links
+  to the Workflow Editor and the History with the results of the
+  Workflow run.
 
-**Feature2**
-  Feature description.
+.. figure:: https://user-images.githubusercontent.com/216771/65520097-0a041f80-deb5-11e9-80ac-2557b36c252f.png
+   :alt: Workflow invocation menu
 
-**Feature3**
-  Feature description.
+.. figure:: https://user-images.githubusercontent.com/6804901/73737075-345ac900-4742-11ea-9f50-0f0e4c3d9271.png
+   :alt: Workflow invocatios
+
+**Galay Markdown Pages and Workflow Reports as PDF**
+  An additional link has been added to Galaxy Markdown Pahes and Workflow reports
+  that exports your document as a standalone PDF.
+
+**Screenreader-friendly Navigation**
+  The top menu and the Workflow Editor have been improved for easier navigation
+  using Screenreaders and the Keyboard.
+  Thanks goes to `@WilliamHolden  <https://github.com/WilliamHolden>`__
+
+**Email-notification for completed jobs**
+  You can now select to be notified by email when a tool run has finished.
+  Thanks goes to `@astrovsky01 <https://github.com/astrovsky01>`__
 
 
 New Visualizations
 ===========================================================
 
 .. visualizations
+
 * Add data dialog input element to client form parameter list
   `Pull Request 8774`_
 * Wrap SQL statement in a text() function as required by sqlalchemy
@@ -35,6 +52,7 @@ New Datatypes
 ===========================================================
 
 .. datatypes
+
 * Datatypes for MassSpec DIA dlib,elib
   (thanks to `@jj-umn <https://github.com/jj-umn>`__).
   `Pull Request 8657`_
@@ -63,6 +81,7 @@ Builtin Tool Updates
 ===========================================================
 
 .. tools
+
 * Upgrade askomics interactive tool
   (thanks to `@xgaia <https://github.com/xgaia>`__).
   `Pull Request 8517`_
