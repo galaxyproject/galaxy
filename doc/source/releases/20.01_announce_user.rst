@@ -24,6 +24,9 @@ Highlights
   An additional link has been added to Galaxy Markdown Pahes and Workflow reports
   that exports your document as a standalone PDF.
 
+.. figure:: https://user-images.githubusercontent.com/6804901/73776256-b7524280-4787-11ea-821f-d9a8c6339ee9.png
+   :alt: Example PDF export
+
 **Screenreader-friendly Navigation**
   The top menu and the Workflow Editor have been improved for easier navigation
   using Screenreaders and the Keyboard.
@@ -33,6 +36,8 @@ Highlights
   You can now select to be notified by email when a tool run has finished.
   Thanks goes to `@astrovsky01 <https://github.com/astrovsky01>`__
 
+.. figure:: https://user-images.githubusercontent.com/6804901/73779180-a2c47900-478c-11ea-98ab-7355276b6f6d.png
+   :alt: Example of email button
 
 New Visualizations
 ===========================================================
