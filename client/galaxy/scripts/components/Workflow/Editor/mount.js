@@ -3,12 +3,12 @@
  */
 import Vue from "vue";
 import SidePanel from "components/Panels/SidePanel";
-import WorkflowEditor from "./WorkflowEditor";
+import Index from "./Index";
 import WorkflowPanel from "./WorkflowPanel";
 
 export const mountWorkflowEditor = editorConfig => {
     const propsData = { editorConfig };
-    const component = Vue.extend(WorkflowEditor);
+    const component = Vue.extend(Index);
     return new component({ propsData: propsData, el: "#center" });
 };
 
