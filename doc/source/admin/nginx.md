@@ -130,10 +130,6 @@ http {
         }
 
 		# serve framework static content
-		location /static/style {
-			alias $galaxy_root/static/style/blue;
-			expires 24h;
-		}
 		location /static {
 			alias $galaxy_root/static;
 			expires 24h;
@@ -203,8 +199,8 @@ previous section:
             }
 
             # serve framework static content
-            location /galaxy/static/style {
-                alias $galaxy_root/static/style/blue;
+            location /static {
+                alias $galaxy_root/static;
                 expires 24h;
             }
 

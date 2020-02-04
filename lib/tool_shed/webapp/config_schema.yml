@@ -425,7 +425,7 @@ mapping:
 
       static_style_dir:
         type: str
-        default: static/style/blue
+        default: static/style
         required: false
         desc: |
           Serving static files (needed if running standalone)

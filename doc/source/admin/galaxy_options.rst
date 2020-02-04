@@ -226,7 +226,7 @@
     Where dataset files are stored. It must be accessible at the same
     path on any cluster nodes that will run Galaxy jobs, unless using
     Pulsar.
-:Default: ``files``
+:Default: ``objects``
 :Type: str
 
 
@@ -1078,9 +1078,12 @@
 
 :Description:
     What Dataset attribute is used to reference files in an
-    ObjectStore implementation, default is 'id' but can also be set to
-    'uuid' for more de-centralized usage.
-:Default: ``id``
+    ObjectStore implementation, this can be 'uuid' or 'id'. The
+    default will depend on how the object store is configured,
+    starting with 20.05 Galaxy will try to default to 'uuid' if it can
+    be sure this is a new Galaxy instance - but the default will be
+    'id' in many cases.
+:Default: ``None``
 :Type: str
 
 
