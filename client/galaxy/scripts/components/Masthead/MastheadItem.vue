@@ -72,9 +72,11 @@ export default {
             return `Please <a href="${this.appRoot}login">login or register</a> to use this feature.`;
         },
         classes() {
-            return {
-                active: this.tab.id === this.activeTab()
-            };
+            let classesString = this.tab.cls || "";
+            if (this.tab.id == this.activeTab()) {
+                classesString = `${classesString} active`;
+            }
+            return classesString;
         },
         linkClasses() {
             return {
@@ -82,7 +84,11 @@ export default {
             };
         },
         iconClasses() {
-            return Object.fromEntries([["fa", true], ["toggle", this.tab.toggle], [this.tab.icon, this.tab.icon]]);
+            return Object.fromEntries([
+                ["fa", true],
+                ["toggle", this.tab.toggle],
+                [this.tab.icon, this.tab.icon]
+            ]);
         },
         styles() {
             return {

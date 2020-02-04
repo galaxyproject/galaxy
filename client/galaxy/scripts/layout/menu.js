@@ -264,7 +264,7 @@ const Collection = Backbone.Collection.extend({
                 userTab = {
                     id: "user",
                     title: _l("Login"),
-                    cls: "loggedout-only",
+                    cls: "loggedin-only",
                     tooltip: _l("Login"),
                     url: "login",
                     target: "galaxy_main",
