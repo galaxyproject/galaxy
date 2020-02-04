@@ -1167,10 +1167,8 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         return ''
 
     @web.json
+    @web.do_not_cache
     def get_file_contents(self, trans, file_path, repository_id):
-        # Avoid caching
-        trans.response.headers['Pragma'] = 'no-cache'
-        trans.response.headers['Expires'] = '0'
         is_admin = trans.user_is_admin
         return suc.get_repository_file_contents(trans.app, file_path, repository_id, is_admin)
 
@@ -1945,10 +1943,8 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         return ''
 
     @web.json
+    @web.do_not_cache
     def open_folder(self, trans, folder_path, repository_id):
-        # Avoid caching
-        trans.response.headers['Pragma'] = 'no-cache'
-        trans.response.headers['Expires'] = '0'
         is_admin = trans.user_is_admin
         return suc.open_repository_files_folder(trans.app, folder_path, repository_id, is_admin)
 
