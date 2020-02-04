@@ -13,6 +13,7 @@ Enhancements
 
 
 .. feature
+
 * CLI tools for installing/testing Docker and Singularity containers
   (thanks to `@simonbray <https://github.com/simonbray>`__).
   `Pull Request 7936`_
@@ -37,6 +38,7 @@ Enhancements
 .. enhancement_tag_viz
 
 .. enhancement_tag_datatypes
+
 * Datatypes for MassSpec DIA dlib,elib
   (thanks to `@jj-umn <https://github.com/jj-umn>`__).
   `Pull Request 8657`_
@@ -60,6 +62,7 @@ Enhancements
   `Pull Request 9087`_
 
 .. enhancement_tag_tools
+
 * Upgrade askomics interactive tool
   (thanks to `@xgaia <https://github.com/xgaia>`__).
   `Pull Request 8517`_
@@ -76,6 +79,7 @@ Enhancements
   `Pull Request 9003`_
 
 .. enhancement_tag_workflows
+
 * Interactive modification of invocation report.
   `Pull Request 8691`_
 * User-facing Workflow Invocation Grid
@@ -96,6 +100,7 @@ Enhancements
   `Pull Request 9105`_
 
 .. enhancement_tag_ui
+
 * Upgrade eslint (major version), fix compliance with new standard rules.
   `Pull Request 8708`_
 * JobMetrics.vue unit test.
@@ -109,6 +114,7 @@ Enhancements
   `Pull Request 8827`_
 
 .. enhancement_tag_jobs
+
 * Small cleanup for job runners kill
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 8523`_
@@ -130,6 +136,7 @@ Enhancements
   `Pull Request 9245`_
 
 .. enhancement_tag_admin
+
 * Add Tool Manager Component for Admin Panel
   `Pull Request 8601`_
 * Add process ID to worker_process table
@@ -137,6 +144,7 @@ Enhancements
   `Pull Request 8972`_
 
 .. enhancement
+
 * Use official "login with" buttons for OIDC
   (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 8107`_
@@ -285,6 +293,7 @@ Enhancements
   `Pull Request 9224`_
 
 .. small_enhancement
+
 * Factor out yaml read/write from config_manage.py
   `Pull Request 8509`_
 * Implementation of the workflow list as vue component
@@ -387,6 +396,7 @@ Fixes
 
 
 .. bug_tag_viz
+
 * Wrap SQL statement in a text() function as required by sqlalchemy
   (thanks to `@kaukrise <https://github.com/kaukrise>`__).
   `Pull Request 9216`_
@@ -394,30 +404,38 @@ Fixes
   (thanks to `@kaukrise <https://github.com/kaukrise>`__).
   `Pull Request 9217`_
 
+
 .. bug_tag_datatypes
+
 * Fix cool sniffing on python3
   `Pull Request 9153`_
 
+
 .. bug_tag_tools
+
 * grouping: strip newlines
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 8953`_
 * Add requirements to interval_to_bed_converter.xml
   `Pull Request 9041`_
 
+
 .. bug_tag_workflows
+
 * Exports reports with workflows (if configured).
   `Pull Request 9055`_
 * Rev gxformat2 dependency to fix various export issues.
   `Pull Request 9075`_
 
 .. bug_tag_ui
+
 * Run prettier after `#8107
   <https://github.com/galaxyproject/galaxy/issues/8107>`__
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 9102`_
 
 .. bug_tag_jobs
+
 * Small fixes for k8s.
   `Pull Request 8759`_
 * Fix output.file_path writing to read-only path on Docker
@@ -446,6 +464,7 @@ Fixes
   `Pull Request 9253`_
 
 .. bug_tag_admin
+
 * Encode lines in filter_file_fields
   (thanks to `@selten <https://github.com/selten>`__).
   `Pull Request 8652`_
@@ -459,6 +478,7 @@ Fixes
   `Pull Request 9193`_
 
 .. bug
+
 * Documentation update
   (thanks to `@selten <https://github.com/selten>`__).
   `Pull Request 8508`_
