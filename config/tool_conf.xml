@@ -23,9 +23,9 @@
   </section>
   <section id="Segmentation" name="Segmentation">
     <tool file="ina_speech_segmenter/ina_speech_segmenter.xml"/>
-    <tool file="amp_json_schema/adjust_timestamps.xml"/>
     <tool file="ina_speech_segmenter/remove_silence_music.xml"/>
     <tool file="ina_speech_segmenter/remove_silence_speech.xml"/>
+    <tool file="amp_json_schema/adjust_timestamps.xml"/>
   </section>
   <section id="nlp" name="Natural Language Processing">
     <tool file="spacy/spacy.xml"/>

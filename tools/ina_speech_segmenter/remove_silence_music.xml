@@ -1,4 +1,4 @@
-<tool id="remove_silence_music" name="Remove Silence & Music" version="1.0.0">
+<tool id="remove_silence_music" name="Remove Silence and Music" version="1.0.0">
   <description>Create an audio file containing only speech, removing silence and music</description>
     <requirements>
     </requirements>
