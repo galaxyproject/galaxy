@@ -35,7 +35,7 @@ repository](https://github.com/galaxyproject/galaxy) should be made through pull
 requests (with just two exceptions outlined below).
 
 If you are new to Git, the Software Carpentry's [Version Control with
-Git](https://swcarpentry.github.io/git-novice/) tutorial is a good places to
+Git](https://swcarpentry.github.io/git-novice/) tutorial is a good place to
 start.  More learning resources are listed at
 https://help.github.com/en/github/getting-started-with-github/git-and-github-learning-resources
 
@@ -55,7 +55,7 @@ https://help.github.com/en/github/getting-started-with-github/git-and-github-lea
 
 3. Choose the correct branch to develop your changes against.
 
-   * Additions of new features to the code base should be pushed to the `dev`
+   * Additions of new features to the codebase should be pushed to the `dev`
      branch (`git checkout dev`).
 
    * Most bug fixes to previous (or freezed) releases should be made against the
@@ -68,7 +68,7 @@ https://help.github.com/en/github/getting-started-with-github/git-and-github-lea
 4. If your changes modify code please ensure the resulting files conform to
    the [style guidelines](#style-guidelines) below.
 
-   If you are working on the Galaxy the user interface (i.e. JavaScript,
+   If you are working on the Galaxy user interface (i.e. JavaScript,
    styles, etc.), see more information in the [client README](client/README.md).
 
 5. Galaxy contains hundreds of tests of different types and complexity and

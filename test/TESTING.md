@@ -1,7 +1,7 @@
 Galaxy Testing
 ==============
 
-The Galaxy code base is large and contains many kinds of tests. The simpler
+The Galaxy codebase is large and contains many kinds of tests. The simpler
 tests can be run via `tox`, while the others via `./run_tests.sh` .
 
 ## tox
