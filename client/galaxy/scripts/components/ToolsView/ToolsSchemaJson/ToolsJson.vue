@@ -1,8 +1,10 @@
-<template />
+<template>
+    <div />
+</template>
+
 <script>
 import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
-import Vue from "vue";
 
 export default {
     data() {
