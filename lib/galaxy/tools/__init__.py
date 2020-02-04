@@ -1974,7 +1974,7 @@ class Tool(Dictifiable):
             help_txt = ''
             if self.help:
                 help_txt = self.help.render(static_path=self.app.url_for('/static'), host_url=self.app.url_for('/', qualified=True))
-                help_txt = unicodify(help_txt, 'utf-8')
+                help_txt = unicodify(help_txt)
             tool_dict['help'] = help_txt
 
         return tool_dict

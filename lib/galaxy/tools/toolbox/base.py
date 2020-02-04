@@ -1093,7 +1093,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 tool = filter_method(tool, panel_item_types.TOOL)
                 if not tool:
                     continue
-                rval.append(self.get_tool_to_dict(trans, tool))
+                rval.append(self.get_tool_to_dict(trans, tool, tool_help=tool_help))
         return rval
 
     def _lineage_in_panel(self, panel_dict, tool=None, tool_lineage=None):

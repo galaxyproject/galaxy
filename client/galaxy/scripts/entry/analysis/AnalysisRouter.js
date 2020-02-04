@@ -34,7 +34,7 @@ import WorkflowInvocationReport from "components/WorkflowInvocationReport.vue";
 import WorkflowRun from "components/Workflow/Run/WorkflowRun.vue";
 import RecentInvocations from "components/User/RecentInvocations.vue";
 import ToolsView from "components/ToolsView/ToolsView.vue";
-import ToolsJson from "components/ToolsJson.vue";
+import ToolsJson from "components/ToolsView/ToolsSchemaJson/ToolsJson.vue";
 import HistoryList from "mvc/history/history-list";
 import PluginList from "components/PluginList.vue";
 import QueryStringParsing from "utils/query-string-parsing";

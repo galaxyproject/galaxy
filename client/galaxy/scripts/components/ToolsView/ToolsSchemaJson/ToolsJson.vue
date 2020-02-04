@@ -1,10 +1,12 @@
+<template />
 <script>
 import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
+import Vue from "vue";
 
 export default {
     data() {
-        return { toolsJsonLD: {} };
+        return { schemaTagObj: {} };
     },
     methods: {
         createToolsJson(tools) {
@@ -41,11 +43,11 @@ export default {
         axios
             .get(`${getAppRoot()}api/tools?tool_help=True`)
             .then(response => {
-                this.toolsJsonLD = this.createToolsJson(response.data);
-
+                this.schemaTagObj = this.createToolsJson(response.data);
                 const el = document.createElement("script");
+                el.id = "schema-json";
                 el.type = "application/ld+json";
-                el.text = JSON.stringify(this.toolsJsonLD);
+                el.text = JSON.stringify(this.schemaTagObj);
                 document.head.appendChild(el);
             })
             .catch(error => {
