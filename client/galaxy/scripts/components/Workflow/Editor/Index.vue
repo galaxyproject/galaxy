@@ -4,42 +4,51 @@
             <div class="unified-panel-header-inner">
                 <span class="sr-only">Workflow Editor&nbsp;</span>
                 {{ editorConfig["name"] }}
-                <WorkflowOptions />
+                <WorkflowOptions
+                    :canvas="isCanvas"
+                    @onSave="onSave"
+                    @onSaveAs="onSaveAs"
+                    @onRun="onRun"
+                    @onDownload="onDownload"
+                    @onReport="onReport"
+                    @onReportHelp="onReportHelp"
+                    @onLayout="onLayout"
+                    @onEdit="onEdit"
+                    @onAttributes="onAttributes"
+                />
             </div>
         </div>
-        <div class="unified-panel-body" id="workflow-canvas-body" v-show="mode == 'canvas'">
+        <div class="unified-panel-body" id="workflow-canvas-body" v-show="isCanvas">
             <div id="canvas-viewport" class="workflow-canvas-content">
-                <div id="canvas-container"></div>
+                <div id="canvas-container"/>
             </div>
             <div id="workflow-parameters-box">
                 <span class="workflow-parameters-box-title">
                     Workflow Parameters
                 </span>
-                <div id="workflow-parameters-container"></div>
+                <div id="workflow-parameters-container"/>
             </div>
-            <div class="workflow-overview" v-show="mode == 'canvas'" aria-hidden="true">
+            <div class="workflow-overview" aria-hidden="true">
                 <div class="workflow-overview-body">
                     <div id="overview">
-                        <canvas width="0" height="0" id="overview-canvas"></canvas>
-                        <div id="overview-viewport"></div>
+                        <canvas width="0" height="0" id="overview-canvas"/>
+                        <div id="overview-viewport"/>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="unified-panel-body workflow-report-body" v-show="mode == 'report'">
+        <div class="unified-panel-body workflow-report-body" v-show="!isCanvas">
             <markdown-editor ref="report-editor" initial-markdown="" :onupdate="onReportUpdate" :toolbar="false" />
         </div>
     </div>
 </template>
 
 <script>
-import $ from "jquery";
 import WorkflowView from "mvc/workflow/workflow-view";
 import WorkflowOptions from "./Options"
 import MarkdownEditor from "components/Markdown/MarkdownEditor";
 import { getAppRoot } from "onload/loadConfig";
 import { showReportHelp } from "./reportHelp";
-import { make_popupmenu } from "ui/popupmenu";
 
 export default {
     components: { MarkdownEditor, WorkflowOptions },
@@ -50,37 +59,41 @@ export default {
     },
     data() {
         return {
-            mode: "canvas"
+            isCanvas: true
         };
     },
     mounted() {
         this.workflowView = new WorkflowView(this.editorConfig, this.$refs["report-editor"]);
-        make_popupmenu($(this.$refs["save-button"]), {
-            "Save As": () => this.workflowView.workflow_save_as(),
-            "Edit Attributes": () => {
-                this.workflowView.workflow.clear_active_node();
-            },
-            "Auto Re-layout": () => this.workflowView.layout_editor(),
-            Download: {
-                url: `${getAppRoot()}api/workflows/${this.editorConfig.id}/download?format=json-download`,
-                action: function() {}
-            }
-        });
     },
     methods: {
-        setMode(mode) {
-            this.mode = mode;
+        onDownload() {
+            window.location = `${getAppRoot()}api/workflows/${this.editorConfig.id}/download?format=json-download`;
+        },
+        onSaveAs() {
+            this.workflowView.workflow_save_as()
+        },
+        onLayout() {
+            this.workflowView.layout_editor();
+        },
+        onAttributes() {
+            this.workflowView.workflow.clear_active_node();
+        },
+        onEdit() {
+            this.isCanvas = true;
+        },
+        onReport() {
+            this.isCanvas = false;
         },
         onReportUpdate(markdown) {
             this.workflowView.report_changed(markdown);
         },
-        navigateToRun() {
+        onRun() {
             window.location = `${getAppRoot()}workflows/run?id=${this.editorConfig.id}`;
         },
-        save() {
+        onSave() {
             this.workflowView.save_current_workflow();
         },
-        showReportHelp() {
+        onReportHelp() {
             showReportHelp();
         }
     }
