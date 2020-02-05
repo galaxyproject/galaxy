@@ -211,18 +211,17 @@ var View = Backbone.View.extend({
                     return `
                     ${_.escape(result.text)}
                     <div>
-                        ${_.reduce(
-                            filteredTags.slice(0, 5),
-                            (memo, tag) => {
-                                const tagColors = keyedColorScheme(tag.slice(5));
-                                return `${memo}&nbsp;<div style="background-color: ${tagColors.primary}; color: ${
-                                    tagColors.contrasting
-                                }; border: 1px solid ${
-                                    tagColors.darker
-                                }" class="badge badge-primary badge-tags">${_.escape(tag)}</div>`;
-                            },
-                            ""
-                        )}
+                        ${filteredTags.slice(0, 5).reduce((memo, tag) => {
+                            const tagColors = keyedColorScheme(tag);
+                            const isNametag = tag.indexOf("name:") === 0;
+                            const tagDisplayText = isNametag ? `#${tag.slice(5)}` : tag;
+                            const styleBlock = isNametag
+                                ? `style="background-color: ${tagColors.primary}; color: ${tagColors.contrasting}; border: 1px solid ${tagColors.darker}"`
+                                : "";
+                            return `${memo}&nbsp;<div ${styleBlock} class="badge badge-primary badge-tags">${_.escape(
+                                tagDisplayText
+                            )}</div>`;
+                        }, "")}
                         ${extraTagWarning}
                    </div>`;
                 }

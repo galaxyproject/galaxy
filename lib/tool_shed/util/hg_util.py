@@ -32,7 +32,7 @@ def add_changeset(repo_path, path_to_filename_in_archive):
     except Exception as e:
         error_message = "Error adding '%s' to repository: %s" % (path_to_filename_in_archive, unicodify(e))
         if isinstance(e, subprocess.CalledProcessError):
-            error_message += "\nOutput was:\n%s" % e.output
+            error_message += "\nOutput was:\n%s" % unicodify(e.output)
         raise Exception(error_message)
 
 
