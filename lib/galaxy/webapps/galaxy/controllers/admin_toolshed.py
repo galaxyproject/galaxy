@@ -192,10 +192,8 @@ class AdminToolshed(AdminGalaxy):
 
     @web.json
     @web.require_admin
+    @web.do_not_cache
     def get_file_contents(self, trans, file_path, repository_id):
-        # Avoid caching
-        trans.response.headers['Pragma'] = 'no-cache'
-        trans.response.headers['Expires'] = '0'
         return suc.get_repository_file_contents(trans.app, file_path, repository_id, is_admin=True)
 
     @web.expose
@@ -963,10 +961,8 @@ class AdminToolshed(AdminGalaxy):
                                    reinstalling=True)
 
     @web.json
+    @web.do_not_cache
     def repository_installation_status_updates(self, trans, ids=None, status_list=None):
-        # Avoid caching
-        trans.response.headers['Pragma'] = 'no-cache'
-        trans.response.headers['Expires'] = '0'
         # Create new HTML for any ToolShedRepository records whose status that has changed.
         rval = []
         if ids is not None and status_list is not None:

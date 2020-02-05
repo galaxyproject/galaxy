@@ -1228,10 +1228,9 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
     # TODO: combine these next two - poss. with a redirect flag
     # @web.require_login( "switch to a history" )
     @web.json
+    @web.do_not_cache
     def set_as_current(self, trans, id):
         """Change the current user's current history to one with `id`."""
-        # Prevent IE11 from caching this, since we actually use it via GET.
-        trans.response.headers['Cache-Control'] = ["max-age=0", "no-cache", "no-store"]
         try:
             history = self.history_manager.get_owned(self.decode_id(id), trans.user, current_history=trans.history)
             trans.set_history(history)
@@ -1241,10 +1240,9 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             return {'err_msg': msg_exc.err_msg, 'err_code': msg_exc.err_code.code}
 
     @web.json
+    @web.do_not_cache
     def current_history_json(self, trans):
         """Return the current user's current history in a serialized, dictionary form."""
-        # Prevent IE11 from caching this
-        trans.response.headers['Cache-Control'] = ["max-age=0", "no-cache", "no-store"]
         history = trans.get_history(most_recent=True, create=True)
         return self.history_data(trans, history)
 
