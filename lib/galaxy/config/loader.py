@@ -1,5 +1,5 @@
-import os
 import logging
+import os
 
 from galaxy.config.schema import AppSchema
 from galaxy.exceptions import ConfigurationError
