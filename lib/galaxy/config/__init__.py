@@ -27,6 +27,7 @@ from six import string_types
 from six.moves import configparser
 
 from galaxy.config.loader import ConfigurationLoader
+from galaxy.config.schema import AppSchema
 from galaxy.containers import parse_containers_config
 from galaxy.exceptions import ConfigurationError
 from galaxy.model import mapping
@@ -209,6 +210,9 @@ class BaseAppConfiguration(object):
 
 
 class GalaxyAppConfiguration(BaseAppConfiguration):
+    # {key: config option, value: deprecated directory name}
+    # If value == first dir in a user path that resolves to key, it will be stripped from the path
+    deprecated_dirs = {'config_dir': 'config', 'data_dir': 'database'}
     deprecated_options = ('database_file', 'track_jobs_in_database')
     default_config_file_name = 'galaxy.yml'
 
@@ -216,15 +220,18 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.config_dict = kwargs
         self.root = find_root(kwargs)
         self._set_config_base(kwargs)  # Must be called prior to resolving paths
-        self._load_schema(kwargs)  # Load configuration from schema file + kwargs
+        self._load_schema()  # Load schema from schema definition file
+        self._load_config(kwargs)  # Load configuration from schema + kwargs
         self._process_config(kwargs)  # Finish processing configuration
 
-    def _load_schema(self, kwargs):
+    def _load_schema(self):
+        self.schema = AppSchema(GALAXY_CONFIG_SCHEMA_PATH, GALAXY_APP_NAME)
+        self.appschema = self.schema.app_schema
+
+    def _load_config(self, kwargs):
         loader = ConfigurationLoader()
         loader.load(self, kwargs)
-        self.schema = loader.schema
-        self.appschema = loader.appschema
-        self._raw_config = loader._raw_config
+        self.raw_config = loader.raw_config  # TODO private is wrong here
         self.reloadable_options = loader.reloadable_options
 
     def _process_config(self, kwargs):
@@ -780,8 +787,8 @@ def reload_config_options(current_config):
     for option in current_config.reloadable_options:
         if option in modified_config:
             # compare to raw value, as that one is set only on load and reload
-            if current_config._raw_config[option] != modified_config[option]:
-                current_config._raw_config[option] = modified_config[option]
+            if current_config.raw_config[option] != modified_config[option]:
+                current_config.raw_config[option] = modified_config[option]
                 setattr(current_config, option, modified_config[option])
                 log.info('Reloaded %s' % option)
 

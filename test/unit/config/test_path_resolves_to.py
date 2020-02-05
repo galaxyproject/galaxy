@@ -69,12 +69,12 @@ def mock_init(monkeypatch):
 def test_mock_schema_is_loaded(mock_init):
     # Check that mock is loaded as expected
     config = GalaxyAppConfiguration()
-    assert len(config._raw_config) == 5
-    assert config._raw_config['my_config_dir'] == 'my-config'
-    assert config._raw_config['my_data_dir'] == 'my-data'
-    assert config._raw_config['path1'] == 'my-config-files'
-    assert config._raw_config['path2'] == 'my-data-files'
-    assert config._raw_config['path3'] == 'my-other-files'
+    assert len(config.raw_config) == 5
+    assert config.raw_config['my_config_dir'] == 'my-config'
+    assert config.raw_config['my_data_dir'] == 'my-data'
+    assert config.raw_config['path1'] == 'my-config-files'
+    assert config.raw_config['path2'] == 'my-data-files'
+    assert config.raw_config['path3'] == 'my-other-files'
 
 
 def test_no_kwargs(mock_init):

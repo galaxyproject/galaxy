@@ -9,10 +9,10 @@ class MockGalaxyAppConfiguration():
     def __init__(self, properties):
         self.config_file = None
         self.reloadable_options = {R1, R2}
-        self._raw_config = {}
+        self.raw_config = {}
         for key, value in properties.items():
             setattr(self, key, value)
-            self._raw_config[key] = value
+            self.raw_config[key] = value
 
     def update_reloadable_property(self, key, value):
         setattr(self, key, value)
@@ -47,7 +47,7 @@ def test_overwrite_reloadable_attribute(monkeypatch):
     # GalaxyAppConfiguration, do something like this: `foo = resove_path(foo, bar)`. Now the value of `foo`
     # is not what was initially loaded, and if `foo` is reloadable, it will be reset to its default as soon
     # as the config file is modified. To prevent this, we compare the values read from the modified file
-    # to the `_raw_config` dict. This test ensures this works correctly.
+    # to the `raw_config` dict. This test ensures this works correctly.
     appconfig = MockGalaxyAppConfiguration({R1: 1, R2: 2, N1: 3})
 
     def mock_read_properties_from_file(values):
