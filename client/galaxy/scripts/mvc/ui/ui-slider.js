@@ -30,8 +30,8 @@ const View = Backbone.View.extend({
                     return true;
                 }
                 if (!this.model.get("precise")) {
-                    if (value != value.split(".")[0]){
-                        return false
+                    if (value != value.split(".")[0]) {
+                        return false;
                     }
                 }
                 return value == value.replace(/[^0-9eE.-]/g, "");
