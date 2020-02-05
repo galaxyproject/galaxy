@@ -10,7 +10,7 @@
                 aria-label="Run"
                 @click="$emit('onRun')"
             >
-                <span class="fa fa-play"/>
+                <span class="fa fa-play" />
             </a>
             <a
                 id="workflow-save-button"
@@ -21,7 +21,7 @@
                 aria-label="Save"
                 @click="$emit('onSave')"
             >
-                <span class="fa fa-floppy-o"/>
+                <span class="fa fa-floppy-o" />
             </a>
             <a
                 id="workflow-report-button"
@@ -32,7 +32,7 @@
                 aria-label="Edit Report"
                 @click="$emit('onReport')"
             >
-                <span class="fa fa-edit"/>
+                <span class="fa fa-edit" />
             </a>
 
             <a
@@ -44,14 +44,11 @@
                 aria-label="Workflow options"
                 ref="save-button"
             >
-                <span class="fa fa-cog"/>
+                <span class="fa fa-cog" />
             </a>
-            <b-dropdown
-                no-caret right
-                class="panel-header-button"
-            >
+            <b-dropdown no-caret right class="panel-header-button">
                 <template v-slot:button-content>
-                    <span class="fa fa-cog"/>
+                    <span class="fa fa-cog" />
                 </template>
                 <b-dropdown-item href="#" @click="$emit('onSaveAs')">Save As</b-dropdown-item>
                 <b-dropdown-item href="#" @click="$emit('onAttributes')">Edit Attributes</b-dropdown-item>
@@ -69,7 +66,7 @@
                 aria-label="Report Syntax Help"
                 @click="$emit('onReportHelp')"
             >
-                <span class="fa fa-question"/>
+                <span class="fa fa-question" />
             </a>
             <a
                 id="workflow-canvas-button"
@@ -80,14 +77,13 @@
                 aria-label="Edit Workflow"
                 @click="$emit('onEdit')"
             >
-                <span class="fa fa-sitemap fa-rotate-270"/>
+                <span class="fa fa-sitemap fa-rotate-270" />
             </a>
         </span>
     </div>
 </template>
 
 <script>
-
 export default {
     props: {
         canvas: {

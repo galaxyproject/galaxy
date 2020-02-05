@@ -2,8 +2,8 @@
     <div id="center" class="inbound">
         <div class="unified-panel-header" unselectable="on">
             <div class="unified-panel-header-inner">
-                <span class="sr-only">Workflow Editor&nbsp;</span>
-                {{ editorConfig["name"] }}
+                <span class="sr-only">Workflow Editor</span>
+                {{ editorConfig.name }}
                 <WorkflowOptions
                     :canvas="isCanvas"
                     @onSave="onSave"
@@ -20,19 +20,19 @@
         </div>
         <div class="unified-panel-body" id="workflow-canvas-body" v-show="isCanvas">
             <div id="canvas-viewport" class="workflow-canvas-content">
-                <div id="canvas-container"/>
+                <div id="canvas-container" />
             </div>
             <div id="workflow-parameters-box">
                 <span class="workflow-parameters-box-title">
                     Workflow Parameters
                 </span>
-                <div id="workflow-parameters-container"/>
+                <div id="workflow-parameters-container" />
             </div>
             <div class="workflow-overview" aria-hidden="true">
                 <div class="workflow-overview-body">
                     <div id="overview">
-                        <canvas width="0" height="0" id="overview-canvas"/>
-                        <div id="overview-viewport"/>
+                        <canvas width="0" height="0" id="overview-canvas" />
+                        <div id="overview-viewport" />
                     </div>
                 </div>
             </div>
@@ -45,7 +45,7 @@
 
 <script>
 import WorkflowView from "mvc/workflow/workflow-view";
-import WorkflowOptions from "./Options"
+import WorkflowOptions from "./Options";
 import MarkdownEditor from "components/Markdown/MarkdownEditor";
 import { getAppRoot } from "onload/loadConfig";
 import { showReportHelp } from "./reportHelp";
@@ -70,7 +70,7 @@ export default {
             window.location = `${getAppRoot()}api/workflows/${this.editorConfig.id}/download?format=json-download`;
         },
         onSaveAs() {
-            this.workflowView.workflow_save_as()
+            this.workflowView.workflow_save_as();
         },
         onLayout() {
             this.workflowView.layout_editor();
