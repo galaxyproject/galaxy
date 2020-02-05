@@ -88,17 +88,11 @@ UWSGI_OPTIONS = OrderedDict([
     }),
     ('static-map.1', {
         'key': 'static-map',
-        'desc': """Mapping to serve style content.""",
-        'default': '/static/style=static/style/blue',
-        'type': 'str',
-    }),
-    ('static-map.2', {
-        'key': 'static-map',
-        'desc': """Mapping to serve the remainder of the static content.""",
+        'desc': """Mapping to serve static content.""",
         'default': '/static=static',
         'type': 'str',
     }),
-    ('static-map.3', {
+    ('static-map.2', {
         'key': 'static-map',
         'desc': """Mapping to serve the favicon.""",
         'default': '/favicon.ico=static/favicon.ico',

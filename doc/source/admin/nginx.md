@@ -117,7 +117,7 @@ http {
         server_name _;
 
         # use a variable for convenience
-		set $galaxy_root /srv/galaxy/server;
+        set $galaxy_root /srv/galaxy/server;
 
         # Enable HSTS
         add_header Strict-Transport-Security "max-age=15552000; includeSubdomains";
@@ -129,28 +129,24 @@ http {
             include uwsgi_params;
         }
 
-		# serve framework static content
-		location /static/style {
-			alias $galaxy_root/static/style/blue;
-			expires 24h;
-		}
-		location /static {
-			alias $galaxy_root/static;
-			expires 24h;
-		}
-		location /robots.txt {
-			alias $galaxy_root/static/robots.txt;
-			expires 24h;
-		}
-		location /favicon.ico {
-			alias $galaxy_root/static/favicon.ico;
-			expires 24h;
-		}
+        # serve framework static content
+        location /static {
+            alias $galaxy_root/static;
+            expires 24h;
+        }
+        location /robots.txt {
+            alias $galaxy_root/static/robots.txt;
+            expires 24h;
+        }
+        location /favicon.ico {
+            alias $galaxy_root/static/favicon.ico;
+            expires 24h;
+        }
 
         # serve visualization and interactive environment plugin static content
-		location ~ ^/plugins/(?<plug_type>.+?)/(?<vis_name>.+?)/static/(?<static_file>.*?)$ {
+        location ~ ^/plugins/(?<plug_type>.+?)/(?<vis_name>.+?)/static/(?<static_file>.*?)$ {
             alias $galaxy_root/config/plugins/$plug_type/$vis_name/static/$static_file;
-			expires 24;
+            expires 24;
         }
     }
 }
@@ -203,8 +199,8 @@ previous section:
             }
 
             # serve framework static content
-            location /galaxy/static/style {
-                alias $galaxy_root/static/style/blue;
+            location /galaxy/static {
+                alias $galaxy_root/static;
                 expires 24h;
             }
 
@@ -307,24 +303,24 @@ user galaxy;
 
 http {
 
-	#...
+    #...
 
     server {
 
-		#...
+        #...
 
         # handle file uploads via the upload module
-		location /_upload {
-			upload_store /srv/galaxy/upload_store;
-			upload_store_access user:rw group:rw;
-			upload_pass_form_field "";
-			upload_set_form_field "__${upload_field_name}__is_composite" "true";
-			upload_set_form_field "__${upload_field_name}__keys" "name path";
-			upload_set_form_field "${upload_field_name}_name" "$upload_file_name";
-			upload_set_form_field "${upload_field_name}_path" "$upload_tmp_path";
-			upload_pass_args on;
-			upload_pass /_upload_done;
-		}
+        location /_upload {
+            upload_store /srv/galaxy/upload_store;
+            upload_store_access user:rw group:rw;
+            upload_pass_form_field "";
+            upload_set_form_field "__${upload_field_name}__is_composite" "true";
+            upload_set_form_field "__${upload_field_name}__keys" "name path";
+            upload_set_form_field "${upload_field_name}_name" "$upload_file_name";
+            upload_set_form_field "${upload_field_name}_path" "$upload_tmp_path";
+            upload_pass_args on;
+            upload_pass /_upload_done;
+        }
 
         # once upload is complete, redirect to the proper galaxy path
         location /_upload_done {
