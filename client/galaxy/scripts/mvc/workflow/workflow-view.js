@@ -10,6 +10,7 @@ import WorkflowCanvas from "mvc/workflow/workflow-canvas";
 import Node from "mvc/workflow/workflow-node";
 import WorkflowIcons from "mvc/workflow/workflow-icons";
 import FormWrappers from "mvc/workflow/workflow-forms";
+import { mountWorkflowNode } from "components/Workflow/Editor/mount";
 import "ui/editable-text";
 
 import { hide_modal, show_message, show_modal } from "layout/modal";
@@ -556,6 +557,7 @@ export default Backbone.View.extend({
     },
 
     prebuildNode: function(type, title_text, content_id) {
+        mountWorkflowNode({});
         var self = this;
         var $f = $(`<div class='toolForm toolFormInCanvas'/>`);
         var $title = $(
@@ -602,6 +604,7 @@ export default Backbone.View.extend({
         );
         // Place inside container
         $f.appendTo("#canvas-container");
+
         // Position in container
         var o = $("#canvas-container").position();
         var p = $("#canvas-container").parent();
