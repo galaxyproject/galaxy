@@ -8,6 +8,7 @@ from sqlalchemy import and_, desc, false, null, true
 from sqlalchemy.orm import eagerload
 
 from galaxy import model, util
+from galaxy.util import unicodify
 from galaxy.webapps.base.controller import BaseUIController, web
 
 log = logging.getLogger(__name__)
@@ -151,9 +152,9 @@ class System(BaseUIController):
     def get_disk_usage(self, file_path):
         is_sym_link = os.path.islink(file_path)
         file_system = disk_size = disk_used = disk_avail = disk_cap_pct = mount = None
-        df_output = subprocess.check_output(['df', '-h', file_path])
+        df_output = unicodify(subprocess.check_output(['df', '-h', file_path]))
 
-        for df_line in df_output:
+        for df_line in df_output.splitlines():
             df_line = df_line.strip()
             if df_line:
                 df_line = df_line.lower()
