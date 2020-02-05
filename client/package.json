@@ -24,7 +24,7 @@
     "bibtex-parse-js": "^0.0.24",
     "bootstrap": "4.3.1",
     "bootstrap-tour": "https://github.com/sorich87/bootstrap-tour.git#65a49742e131d19f41e3f5bf63588995f7b8a9e0",
-    "bootstrap-vue": "^2.2.2",
+    "bootstrap-vue": "^2.4.0",
     "d3": "3",
     "decode-uri-component": "^0.2.0",
     "flush-promises": "^1.0.2",
@@ -80,9 +80,9 @@
     "eslint": "eslint -c .eslintrc.js galaxy/scripts --ext .js,.vue"
   },
   "devDependencies": {
-    "@babel/core": "^7.8.3",
+    "@babel/core": "^7.8.4",
     "@babel/plugin-syntax-dynamic-import": "^7.8.3",
-    "@babel/preset-env": "^7.8.3",
+    "@babel/preset-env": "^7.8.4",
     "@vue/test-utils": "^1.0.0-beta.31",
     "amdi18n-loader": "^0.9.3",
     "autoprefixer": "^9.7.4",
