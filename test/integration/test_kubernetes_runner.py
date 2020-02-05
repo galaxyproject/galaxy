@@ -11,6 +11,7 @@ import time
 
 import pytest
 
+from galaxy.util import unicodify
 from galaxy_test.base.populators import skip_without_tool
 from galaxy_test.driver import integration_util
 from .test_containerized_jobs import MulledJobTestCases
@@ -235,7 +236,8 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
                 time.sleep(1)
                 max_tries -= 1
 
-            status = json.loads(subprocess.check_output(['kubectl', 'get', 'job', external_id, '-o', 'json']))
+            output = unicodify(subprocess.check_output(['kubectl', 'get', 'job', external_id, '-o', 'json']))
+            status = json.loads(output)
             assert status['status']['active'] == 1
 
             delete_response = self.dataset_populator.cancel_job(job_dict["id"])
@@ -246,7 +248,7 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
             # The default job config removes jobs, didn't find a better way to check that the job doesn't exist anymore
             with pytest.raises(subprocess.CalledProcessError) as excinfo:
                 subprocess.check_output(['kubectl', 'get', 'job', external_id, '-o', 'json'], stderr=subprocess.STDOUT)
-            assert "not found" in excinfo.value.output.decode()
+            assert "not found" in unicodify(excinfo.value.output)
 
     @skip_without_tool('job_properties')
     def test_exit_code_127(self):
@@ -297,7 +299,8 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
         job_dict = running_response["jobs"][0]
         job = self.galaxy_interactor.get("jobs/%s" % job_dict['id'], admin=True).json()
         external_id = job['external_id']
-        status = json.loads(subprocess.check_output(['kubectl', 'get', 'job', external_id, '-o', 'json']))
+        output = unicodify(subprocess.check_output(['kubectl', 'get', 'job', external_id, '-o', 'json']))
+        status = json.loads(output)
         assert 'active' not in status['status']
 
     @skip_without_tool('create_2')
