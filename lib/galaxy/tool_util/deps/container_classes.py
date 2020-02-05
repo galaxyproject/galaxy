@@ -186,6 +186,8 @@ class HasDockerLikeVolumes(object):
         add_var("galaxy_root", self.app_info.galaxy_root_dir)
         add_var("default_file_path", self.app_info.default_file_path)
         add_var("library_import_dir", self.app_info.library_import_dir)
+        add_var('tool_data_path', self.app_info.tool_data_path)
+        add_var('shed_tool_data_path', self.app_info.shed_tool_data_path)
 
         if self.job_info.job_directory and self.job_info.job_directory_type == "pulsar":
             # We have a Pulsar job directory, so everything needed (excluding index
@@ -215,6 +217,10 @@ class HasDockerLikeVolumes(object):
 
         if self.app_info.library_import_dir:
             defaults += ",$library_import_dir:default_ro"
+        if self.app_info.tool_data_path:
+            defaults += ",$tool_data_path:default_ro"
+        if self.app_info.shed_tool_data_path:
+            defaults += ",$shed_tool_data_path:default_ro"
 
         # Define $defaults that can easily be extended with external library and
         # index data without deployer worrying about above details.
