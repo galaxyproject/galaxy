@@ -1,6 +1,10 @@
 p {
 }
 
+img{
+	width: 100%;
+}
+
 /**
  *  Emulate dataset peek when generating tables.
  */
