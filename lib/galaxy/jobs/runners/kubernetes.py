@@ -294,7 +294,13 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         resources = self.__get_resources(ajs.job_wrapper)
         if resources:
             envs = []
-            if 'limits' in resources:
+            if 'requests' in resources:
+                requests = resources['requests']
+                if 'memory' in requests:
+                    envs.append({'name': 'GALAXY_MEMORY_MB', 'value': str(ByteSize(requests['memory']).to_unit('M', as_string=False))})
+                if 'cpu' in requests:
+                    envs.append({'name': 'GALAXY_SLOTS', 'value': str(int(math.ceil(float(requests['cpu']))))})
+            elif 'limits' in resources:
                 limits = resources['limits']
                 if 'memory' in limits:
                     envs.append({'name': 'GALAXY_MEMORY_MB', 'value': str(ByteSize(limits['memory']).to_unit('M', as_string=False))})
