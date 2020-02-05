@@ -163,7 +163,6 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     "lastz_paired_reads_wrapper",
     "subRate1",
     "substitutions1",
-    "sam_pileup",
     "find_diag_hits",
     "cufflinks",
     # Tools improperly migrated to the tool shed (iuc)
@@ -188,6 +187,7 @@ GALAXY_LIB_TOOLS_VERSIONED = {
     "lastz_wrapper_2": packaging.version.parse("1.3"),
     "PEsortedSAM2readprofile": packaging.version.parse("1.1.1"),
     "sam_to_bam": packaging.version.parse("1.1.3"),
+    "sam_pileup": packaging.version.parse("1.1.2"),
 }
 
 
