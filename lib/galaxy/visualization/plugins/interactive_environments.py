@@ -356,7 +356,7 @@ class InteractiveEnvironmentRequest(object):
                 envsets.append(item[2:])
             elif item.startswith('--env'):
                 envsets.append(item[5:])
-        return dict(map(lambda s: s.split(s, '=', 1), envsets))
+        return dict(map(lambda s: s.split('=', 1), envsets))
 
     def container_run_args(self, image, env_override=None, volumes=None):
         if volumes is None:
