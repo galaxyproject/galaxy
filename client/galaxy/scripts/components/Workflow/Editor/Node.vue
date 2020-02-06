@@ -2,9 +2,7 @@
     <div>
         <div class="toolFormTitle unselectable">
             <i :class="iconClass" />
-            <span class="nodeTitle">
-                {{ title }}
-            </span>
+            <span class="nodeTitle">{{ title }}</span>
             <span class="sr-only">&nbsp;Node</span>
             <div class="buttons float-right">
                 <a
