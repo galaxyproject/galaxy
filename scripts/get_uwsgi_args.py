@@ -23,7 +23,7 @@ ALIASES = {
     'module': ('mount',),   # mount is not actually an alias for module, but we don't want to set module if mount is set
 }
 DEFAULT_ARGS = {
-    '_all_': ('pythonpath', 'threads', 'buffer-size', 'http', 'static-map', 'static-safe', 'die-on-term', 'hook-master-start', 'enable-threads', 'umask'),
+    '_all_': ('pythonpath', 'threads', 'buffer-size', 'http', 'static-map', 'die-on-term', 'hook-master-start', 'enable-threads', 'umask'),
     'galaxy': ('py-call-osafterfork',),
     'reports': (),
     'tool_shed': ('cron',),
