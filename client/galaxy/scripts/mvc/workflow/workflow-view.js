@@ -557,51 +557,31 @@ export default Backbone.View.extend({
     },
 
     prebuildNode: function(type, title_text, content_id) {
-        mountWorkflowNode({});
         var self = this;
-        var $f = $(`<div class='toolForm toolFormInCanvas'/>`);
+        var $f = $(`<div class='toolForm toolFormInCanvas' />`);
+        console.log($f);
+        var WorkflowNode = mountWorkflowNode({
+            id: content_id,
+            type: type,
+            title: title_text
+        });
+        console.log(WorkflowNode.el);
         var $title = $(
             `<div class='toolFormTitle unselectable'><span class='nodeTitle'>${title_text}</span><span class="sr-only">&nbspNode</span></div>`
         );
         add_node_icon($title.find(".nodeTitle"), type);
         $f.append($title);
+
         $f.css("left", $(window).scrollLeft() + 20);
         $f.css("top", $(window).scrollTop() + 20);
+
         $f.append($("<div class='toolFormBody'></div>"));
         var node = new Node(this, { element: $f });
         node.type = type;
         node.content_id = content_id;
         var tmp = `<div><img alt="loading" height='16' align='middle' src='${getAppRoot()}static/images/loading_small_white_bg.gif'/> loading tool info...</div>`;
         $f.find(".toolFormBody").append(tmp);
-        // Fix width to computed width
-        // Now add floats
-        var buttons = $("<div class='buttons' style='float: right;'></div>");
-        if (type !== "subworkflow") {
-            buttons.append(
-                $("<a/>")
-                    .attr({
-                        "aria-label": "clone node",
-                        role: "button",
-                        href: "javascript:void(0)"
-                    })
-                    .addClass("fa-icon-button fa fa-files-o node-clone")
-                    .click(e => {
-                        node.clone();
-                    })
-            );
-        }
-        buttons.append(
-            $("<a/>")
-                .attr({
-                    "aria-label": "destroy node",
-                    role: "button",
-                    href: "javascript:void(0)"
-                })
-                .addClass("fa-icon-button fa fa-times node-destroy")
-                .click(e => {
-                    node.destroy();
-                })
-        );
+
         // Place inside container
         $f.appendTo("#canvas-container");
 
@@ -614,8 +594,7 @@ export default Backbone.View.extend({
             left: -o.left + p.width() / 2 - width / 2,
             top: -o.top + p.height() / 2 - height / 2
         });
-        buttons.appendTo($f.find(".toolFormTitle"));
-        width += buttons.width() + 10;
+        //width += buttons.width() + 10;
         $f.css("width", width);
         $f.bind("dragstart", () => {
             self.workflow.activate_node(node);
