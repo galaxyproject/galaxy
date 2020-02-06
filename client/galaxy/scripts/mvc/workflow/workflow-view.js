@@ -587,13 +587,12 @@ export default Backbone.View.extend({
         // Position in container
         var o = $("#canvas-container").position();
         var p = $("#canvas-container").parent();
-        var width = $f.width();
+        var width = $f.outerWidth() + 50;
         var height = $f.height();
         $f.css({
             left: -o.left + p.width() / 2 - width / 2,
             top: -o.top + p.height() / 2 - height / 2
         });
-        //width += buttons.width() + 10;
         $f.css("width", width);
         $f.bind("dragstart", () => {
             self.workflow.activate_node(node);

@@ -25,7 +25,7 @@
             </div>
         </div>
         <div class="toolFormBody">
-            test
+            <div><span class="fa fa-spinner fa-spin" /> Loading details...</div>
         </div>
     </div>
 </template>
