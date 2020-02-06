@@ -25,10 +25,9 @@ export const mountWorkflowPanel = propsData => {
     });
 };
 
-export const mountWorkflowNode = (propsData) => {
+export const mountWorkflowNode = (parent, propsData) => {
     const component = Vue.extend(Node);
     const container = document.createElement("div");
-    container.className = "toolForm toolFormInCanvas";
-    document.getElementById("canvas-container").appendChild(container);
+    parent.appendChild(container);
     return new component({ propsData: propsData, el: container });
 };

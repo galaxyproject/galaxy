@@ -558,29 +558,22 @@ export default Backbone.View.extend({
 
     prebuildNode: function(type, title_text, content_id) {
         var self = this;
-        var $f = $(`<div class='toolForm toolFormInCanvas' />`);
-        console.log($f);
-        var WorkflowNode = mountWorkflowNode({
+        const container = document.createElement("div");
+        container.className = "toolForm toolFormInCanvas";
+        document.getElementById("canvas-container").appendChild(container);
+        var $f = $(container);
+        mountWorkflowNode(container, {
             id: content_id,
             type: type,
             title: title_text
         });
-        console.log(WorkflowNode.el);
-        var $title = $(
-            `<div class='toolFormTitle unselectable'><span class='nodeTitle'>${title_text}</span><span class="sr-only">&nbspNode</span></div>`
-        );
-        add_node_icon($title.find(".nodeTitle"), type);
-        $f.append($title);
 
         $f.css("left", $(window).scrollLeft() + 20);
         $f.css("top", $(window).scrollTop() + 20);
 
-        $f.append($("<div class='toolFormBody'></div>"));
         var node = new Node(this, { element: $f });
         node.type = type;
         node.content_id = content_id;
-        var tmp = `<div><img alt="loading" height='16' align='middle' src='${getAppRoot()}static/images/loading_small_white_bg.gif'/> loading tool info...</div>`;
-        $f.find(".toolFormBody").append(tmp);
 
         // Place inside container
         $f.appendTo("#canvas-container");

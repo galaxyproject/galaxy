@@ -1,5 +1,5 @@
 <template>
-    <div class="toolForm toolFormInCanvas">
+    <div>
         <div class="toolFormTitle unselectable">
             <i :class="iconClass" />
             <span class="nodeTitle">
