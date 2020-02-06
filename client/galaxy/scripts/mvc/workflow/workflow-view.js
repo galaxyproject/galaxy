@@ -558,19 +558,27 @@ export default Backbone.View.extend({
 
     prebuildNode: function(type, title_text, content_id) {
         var self = this;
+
+        // Create node wrapper
         const container = document.createElement("div");
         container.className = "toolForm toolFormInCanvas";
         document.getElementById("canvas-container").appendChild(container);
         var $f = $(container);
-        mountWorkflowNode(container, {
+
+        // Mount node component as child dom to node wrapper
+        const child = document.createElement("div");
+        container.appendChild(child);
+        mountWorkflowNode(child, {
             id: content_id,
             type: type,
             title: title_text
         });
 
+        // Set initial scroll position
         $f.css("left", $(window).scrollLeft() + 20);
         $f.css("top", $(window).scrollTop() + 20);
 
+        // Create backbone model and view
         var node = new Node(this, { element: $f });
         node.type = type;
         node.content_id = content_id;

@@ -25,9 +25,7 @@ export const mountWorkflowPanel = propsData => {
     });
 };
 
-export const mountWorkflowNode = (parent, propsData) => {
+export const mountWorkflowNode = (container, propsData) => {
     const component = Vue.extend(Node);
-    const container = document.createElement("div");
-    parent.appendChild(container);
     return new component({ propsData: propsData, el: container });
 };

@@ -7,7 +7,8 @@
             </span>
             <span class="sr-only">&nbsp;Node</span>
             <div class="buttons float-right">
-                <a v-if="canClone"
+                <a
+                    v-if="canClone"
                     class="fa-icon-button fa fa-files-o node-clone"
                     aria-label="clone node"
                     role="button"
