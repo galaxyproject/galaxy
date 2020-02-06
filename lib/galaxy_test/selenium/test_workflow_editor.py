@@ -411,7 +411,7 @@ steps:
         name = self.workflow_upload_yaml_with_random_name(yaml_content)
         self.workflow_index_open()
         self.workflow_index_open_with_name(name)
-        self.workflow_editor_click_option("Auto Re-layout")
+        self.workflow_editor_click_option("Auto Layout")
 
     def workflow_editor_source_sink_terminal_ids(self, source, sink):
         editor = self.components.workflow_editor
