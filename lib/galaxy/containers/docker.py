@@ -501,7 +501,7 @@ class DockerAPIInterface(DockerInterface):
             map_spec = option_map[key]
             _kwopt_to_arg(map_spec, key, map_spec['default'])
         # don't allow kwopts that start with _, those are reserved for "child" object params
-        for kwopt in filter(lambda k: not k.startswith('_') and k in option_map, kwopts.keys()):
+        for kwopt in filter(lambda k: not k.startswith('_') and k in option_map, list(kwopts.keys())):
             map_spec = option_map[kwopt]
             _v = kwopts.pop(kwopt)
             _kwopt_to_arg(map_spec, kwopt, _v)
