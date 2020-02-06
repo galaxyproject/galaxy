@@ -1,6 +1,7 @@
 """
 Image classes
 """
+import base64
 import logging
 import zipfile
 
@@ -45,6 +46,13 @@ class Image(data.Data):
     def sniff(self, filename):
         """Determine if the file is in this format"""
         return check_image_type(filename, self.image_formats)
+
+    def handle_dataset_as_image(self, hda):
+        dataset = hda.dataset
+        name = hda.name or ''
+        with open(dataset.file_name, "rb") as f:
+            base64_image_data = base64.b64encode(f.read()).decode("utf-8")
+        return "![%s](data:image/%s;base64,%s)" % (name, self.file_ext, base64_image_data)
 
 
 class Jpg(Image):
