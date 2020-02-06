@@ -94,7 +94,6 @@ def _get_uwsgi_args(cliargs, kwargs):
         'static-map': ('/static/style={here}/static/style/blue'.format(here=os.getcwd()),
                        '/static={here}/static'.format(here=os.getcwd()),
                        '/favicon.ico={here}/static/favicon.ico'.format(here=os.getcwd())),
-        'static-safe': ('{here}/client/galaxy/images'.format(here=os.getcwd())),
         'die-on-term': True,
         'enable-threads': True,
         'hook-master-start': ('unix_signal:2 gracefully_kill_them_all',
