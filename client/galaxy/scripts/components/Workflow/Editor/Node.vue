@@ -45,6 +45,9 @@ export default {
         type: {
             type: String,
             default: "tool"
+        },
+        node: {
+            type: Object
         }
     },
     computed: {
@@ -61,10 +64,10 @@ export default {
     },
     methods: {
         onDestroy() {
-            //node.destroy();
+            this.node.destroy();
         },
         onClone() {
-            //node.clone();
+            this.node.clone();
         }
     }
 };

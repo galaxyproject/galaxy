@@ -565,26 +565,24 @@ export default Backbone.View.extend({
         document.getElementById("canvas-container").appendChild(container);
         var $f = $(container);
 
+        // Create backbone model and view
+        var node = new Node(this, { element: $f });
+        node.type = type;
+        node.content_id = content_id;
+
         // Mount node component as child dom to node wrapper
         const child = document.createElement("div");
         container.appendChild(child);
         mountWorkflowNode(child, {
             id: content_id,
             type: type,
-            title: title_text
+            title: title_text,
+            node: node
         });
 
         // Set initial scroll position
         $f.css("left", $(window).scrollLeft() + 20);
         $f.css("top", $(window).scrollTop() + 20);
-
-        // Create backbone model and view
-        var node = new Node(this, { element: $f });
-        node.type = type;
-        node.content_id = content_id;
-
-        // Place inside container
-        $f.appendTo("#canvas-container");
 
         // Position in container
         var o = $("#canvas-container").position();
