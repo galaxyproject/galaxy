@@ -42,7 +42,7 @@ def main(tmpFileName):
     try:
         in_file = open(sys.argv[1], 'r')
         xtic = int(sys.argv[2])
-        col_list = sys.argv[3].split(",")
+        col_list = sys.argv[3].split(',')
         title = 'set title "' + sys.argv[4] + '"'
         ylabel = 'set ylabel "' + sys.argv[5] + '"'
         ymin = sys.argv[6]
