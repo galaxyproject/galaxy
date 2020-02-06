@@ -146,9 +146,9 @@ class GalaxyInteractorApi(object):
         assert response.status_code == 200, "Non 200 response from tool test API. [%s]" % response.content
         return response.json()
 
-    def verify_output_collection(self, output_collection_def, output_collection_id):
+    def verify_output_collection(self, output_collection_def, output_collection_id, history, tool_id):
         name = output_collection_def.name
-        data_collection = galaxy_interactor._get("dataset_collections/%s" % output_collection_id, data={"instance_type": "history"}).json()
+        data_collection = self._get("dataset_collections/%s" % output_collection_id, data={"instance_type": "history"}).json()
 
         def get_element(elements, id):
             for element in elements:
@@ -183,7 +183,7 @@ class GalaxyInteractorApi(object):
                 element_type = element["element_type"]
                 if element_type != "dataset_collection":
                     hda = element["object"]
-                    galaxy_interactor.verify_output_dataset(
+                    self.verify_output_dataset(
                         history,
                         hda_id=hda["id"],
                         outfile=element_outfile,
@@ -1002,7 +1002,7 @@ def _verify_outputs(testdef, history, jobs, tool_id, data_list, data_collection_
             # Data collection returned from submission, elements may have been populated after
             # the job completed so re-hit the API for more information.
             data_collection_id = data_collection_list[name]["id"]
-            galaxy_interactor.verify_output_collection(output_collection_def, data_collection_id)
+            galaxy_interactor.verify_output_collection(output_collection_def, data_collection_id, history, tool_id)
         except Exception as e:
             register_exception(e)
 

@@ -176,11 +176,20 @@ def galactic_job_json(
 
     def replacement_file(value):
         file_path = value.get("location", None) or value.get("path", None)
-
-        composite_data = value.get("composite_data", None)
-        if composite_data:
-            filetype = value.get('filetype', None)
-            return upload_file_with_composite_data(None, composite_data, filetype=filetype)
+        # format to match output definitions in tool, where did filetype come from?
+        filetype = value.get("filetype", None) or value.get("format", None)
+        composite_data_raw = value.get("composite_data", None)
+        if composite_data_raw:
+            composite_data = []
+            for entry in composite_data_raw:
+                path = None
+                if isinstance(entry, dict):
+                    path = entry.get("location", None) or entry.get("path", None)
+                else:
+                    path = entry
+                composite_data.append(path)
+            rval_c = upload_file_with_composite_data(None, composite_data, filetype=filetype)
+            return rval_c
 
         if file_path is None:
             contents = value.get("contents", None)
@@ -189,7 +198,6 @@ def galactic_job_json(
 
             return value
 
-        filetype = value.get('filetype', None)
         secondary_files = value.get("secondaryFiles", [])
         secondary_files_tar_path = None
         if secondary_files:
