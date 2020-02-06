@@ -42,6 +42,10 @@ var Node = Backbone.Model.extend({
         }
         return false;
     },
+    markWorkflowOutput: function(outputName) {
+        var callout = $(this.element).find(`.callout-terminal.${outputName.replace(/(?=[()])/g, "\\")}`);
+        callout.find("icon").addClass("mark-terminal-active");
+    },
     labelWorkflowOutput: function(outputName, label) {
         var changed = false;
         var oldLabel = null;
