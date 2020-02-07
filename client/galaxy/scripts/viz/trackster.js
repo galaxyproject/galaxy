@@ -154,7 +154,12 @@ export class TracksterUI extends Backbone.Model {
                     icon_class: "globe",
                     title: _l("Circster"),
                     on_click: () => {
-                        window.top.location = `${this.baseURL}visualization/circster?id=${this.view.vis_id}`;
+                        const vis_id = this.view.vis_id;
+                        var circster_q = "id=" + vis_id;
+                        if (vis_id == undefined) {
+                            circster_q = `dataset_id=${this.view.drawables[0].dataset.id}&hda_ldda=${this.view.drawables[0].dataset.attributes.hda_ldda}`;
+                        }
+                        window.top.location = `${this.baseURL}visualization/circster?${circster_q}`;
                     }
                 },
                 {
