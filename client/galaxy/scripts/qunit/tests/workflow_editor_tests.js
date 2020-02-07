@@ -3,7 +3,7 @@ import $ from "jquery";
 import testApp from "qunit/test-app";
 import sinon from "sinon";
 import Utils from "utils/utils";
-import App from "mvc/workflow/workflow-view";
+import { WorkflowView } from "mvc/workflow/workflow-view";
 import { Node } from "mvc/workflow/workflow-node";
 import { NodeView } from "mvc/workflow/workflow-view-node";
 import Terminals from "mvc/workflow/workflow-terminals";
@@ -28,7 +28,7 @@ var create_app = function() {
     );
 
     // build app
-    return new App({
+    return new WorkflowView({
         id: null,
         urls: { get_datatypes: getAppRoot() + "api/datatypes/mapping" },
         workflows: []

@@ -44,7 +44,7 @@
 </template>
 
 <script>
-import WorkflowView from "mvc/workflow/workflow-view";
+import { WorkflowView } from "mvc/workflow/workflow-view";
 import WorkflowOptions from "./Options";
 import MarkdownEditor from "components/Markdown/MarkdownEditor";
 import { getAppRoot } from "onload/loadConfig";
