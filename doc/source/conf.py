@@ -129,8 +129,8 @@ pygments_style = 'sphinx'
 # A list of ignored prefixes for module index sorting.
 #modindex_common_prefix = []
 
-# Intersphinx mapping to Python 2.7 documentation
-intersphinx_mapping = {'python': ('https://docs.python.org/2.7', None)}
+# Intersphinx mapping to Python documentation
+intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}
 
 # -- Options for HTML output ---------------------------------------------------
 
