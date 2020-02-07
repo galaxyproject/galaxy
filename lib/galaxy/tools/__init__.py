@@ -127,7 +127,6 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     "send_to_cloud",
     "__DATA_FETCH__",
     # Legacy tools bundled with Galaxy.
-    "vcf_to_maf_customtrack1",
     "laj_1",
     "secure_hash_message_digest",
     "join1",
@@ -191,6 +190,7 @@ GALAXY_LIB_TOOLS_VERSIONED = {
     "PEsortedSAM2readprofile": packaging.version.parse("1.1.1"),
     "sam_to_bam": packaging.version.parse("1.1.3"),
     "sam_pileup": packaging.version.parse("1.1.3"),
+    "vcf_to_maf_customtrack1": packaging.version.parse("1.0.1"),
 }
 
 

@@ -77,7 +77,7 @@ def main():
     if not (options.population ^ options.sample):
         parser.error('You must specify either a per population conversion or a per sample conversion, but not both')
 
-    out = open(args.pop(0), 'wb')
+    out = open(args.pop(0), 'w')
     out.write('track name="%s" visibility=pack\n' % options.name.replace("\"", "'"))
 
     maf_writer = bx.align.maf.Writer(out)
