@@ -365,9 +365,7 @@ Example 1 JSON Output from Data Manager Tool to Galaxy
       }
     }
 
-This creates a new entry in the Tool Data Table:
-
-.. code-block::
+This creates a new entry in the Tool Data Table::
 
     #<unique_build_id>    <dbkey>        <display_name>    <file_path>
     sacCer2    sacCer2    S. cerevisiae June 2008 (SGD/sacCer2) (sacCer2)    /Users/dan/galaxy-central/tool-data/sacCer2/seq/sacCer2.fa
@@ -881,10 +879,7 @@ Example JSON Output from tool to galaxy, dbkey is sacCer2
       }
     }
 
-New Entry in Data Table, dbkey is sacCer2
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. code-block::
+This creates a new entry in the Tool Data Table::
 
     #<unique_build_id>    <dbkey>        <display_name>    <file_path>
     sacCer2    sacCer2    S. cerevisiae June 2008 (SGD/sacCer2) (sacCer2)    /Users/dan/galaxy-central/tool-data/sacCer2/seq/sacCer2.fa
