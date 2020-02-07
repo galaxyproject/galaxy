@@ -31,7 +31,8 @@ from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
     DataToolParameter,
     RuntimeValue,
-    workflow_building_modes
+    workflow_building_modes,
+    ConnectedValue
 )
 from galaxy.util.json import safe_loads
 from galaxy.util.sanitize_html import sanitize_html
@@ -1024,45 +1025,14 @@ class WorkflowContentsManager(UsesAnnotations):
                 # global_input_dicts[step.label]=input_dict
                 #continue
             # Step info
-            step_dict = {
+            step_dict={'out': []}
+            step_run_dict = {
                 'class' : 'Operation',
                 'doc' : '',
-                'id' : content_id
-                }
-#    class: Operation
-#    doc: Execute fastqc
-#    id: toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc/0.71
-#    inputs:
-#      input_file:
-#        doc: Need to complete from tool info
-#        format: Need to complete from tool info
-#        source: reads_1
-#        type: File
-#    outputs:
-#      text_file:
-#        doc: Need to complete from tool info
-#        format: Need to complete from tool info
-#        type: File
-
-
-#            step_dict = {
-#                'id': step.order_index,
-#                'type': module.type,
-#                'content_id': content_id,
-#                'tool_id': content_id,  # For workflows exported to older Galaxies,
-#                                        # eliminate after a few years...
-#                'tool_version': step.tool_version,
-#                'name': module.get_name(),
-#                'tool_state': json.dumps(tool_state),
-#                'errors': module.get_errors(),
-#                'uuid': str(step.uuid),
-#                'label': step.label or None,
-#                'annotation': annotation_str
-#            }
-            # Add tool shed repository information and post-job actions to step dict.
+                'id' : content_id,
             if module.type == 'tool':
                 if module.tool and module.tool.tool_shed:
-                    step_dict["tool_shed_repository"] = {
+                    step_run_dict["tool_shed_repository"] = {
                         'name': module.tool.repository_name,
                         'owner': module.tool.repository_owner,
                         'changeset_revision': module.tool.changeset_revision,
@@ -1078,151 +1048,124 @@ class WorkflowContentsManager(UsesAnnotations):
                         step_dict['content_id'] = None
                         step_dict['tool_id'] = None
 
+            ## how to handle subworkflows?
+            # if module.type == 'subworkflow':
+                # del step_dict['content_id']
+                # del step_dict['errors']
+                # del step_dict['tool_version']
+                # del step_dict['tool_state']
+                # subworkflow = step.subworkflow
+                # subworkflow_as_dict = self._workflow_to_dict_export(
+                    # trans,
+                    # stored=None,
+                    # workflow=subworkflow
+                # )
+                # step_dict['subworkflow'] = subworkflow_as_dict
 
-            if module.type == 'subworkflow':
-                del step_dict['content_id']
-                del step_dict['errors']
-                del step_dict['tool_version']
-                del step_dict['tool_state']
-                subworkflow = step.subworkflow
-                subworkflow_as_dict = self._workflow_to_dict_export(
-                    trans,
-                    stored=None,
-                    workflow=subworkflow
-                )
-                step_dict['subworkflow'] = subworkflow_as_dict
-
-            # Data inputs, legacy section not used anywhere within core
-            #input_dicts = []
             step_state = module.state.inputs or {}
 
 
-            #which cases fill this condition??? comment until i figure  out if it should be included
-            #if module.type != 'tool' and module.type != 'data_input':
-            #    print('module.type here is ' + str(module.type))
-            #    name = step_state.get("name") or module.label
-            #    if name:
-            #        #input_dicts.append({"name": name, "description": annotation_str})
-            #        input_dicts[name]={"type": 'File'}
-            #        #need to complete these fields too
-            #        #doc: Need to complete from tool info
-            #        #format: Need to complete from tool info
-            #        # source: 2/trimmed_reads_single
-            #        # type: File
+            if module.type != 'data_input':
+                step_inputs={}
+                for name, val in step_state.items():
+                    input_type = type(val)
+                    if input_type != ConnectedValue and module.type != 'data_input':
+                        if input_type == RuntimeValue:
+                            print("input_type is RuntimeValue class")
+                            input_dicts[name]={"name": name, "description": "runtime parameter for tool %s" % module.get_name()}
+                            source_id='previous_step_id/output_name'
+                        elif input_type == dict:
+                            ## ********** FIND AN EXAMPLE OF THIS CASE... INDEXED PARAMETERS..
+                            # Input type is described by a dict, e.g. indexed parameters.
+                            print("here i am")
+                            for partval in val.values():
+                                if type(partval) == RuntimeValue:
+                                    input_dicts.append({"name": name, "default":val,"description": "runtime parameter for tool %s" % module.get_name()})
+                        else:
+                            step_inputs_dict={"name": name, "default":val,"description": "runtime parameter for tool %s" % module.get_name()}
+                            input_dicts[name]=step_inputs_dict
+                            source_id= str(step.uuid) + '_' + str(name) #global_input_id
+                            global_input_dicts[source_id]=step_inputs_dict
+                            # print('input_type is: ' + str(input_type))
+                            # so.... i need to filter and only add if its a RuntimeValue or a dict in itself
+                    step_inputs[name]=source_id  # connect operation input name with source
+                    input_dicts[name]={"name": name, "description": "runtime parameter for tool %s" % module.get_name()}
+                    # else:
+                    ### this next loop should be outside of the step_state.items loop ?
+                inp_connections=step.input_connections
+                connection_num=1
+                for conn in inp_connections:   ## can you have multiple connections
+                    # the combination of input_step.uuid and input_name should be unique
+                    # the combination of output_step.uuid and output_name should be unique
+                    # print(connection_num)
+                    input_id=str(conn.input_step.uuid) + '_' + conn.input_name
+                    source_id=str(conn.output_step.uuid) + '/'+ conn.output_name
+                    connection_num+=1
 
-            for name, val in step_state.items():
-                input_type = type(val)
-                print('name and val are: '+ str(name)+ '=' + str(val) + ' of type ' + str(input_type))
-                # add all the name, val to the input list
-                ## Here I would like to add the default value as   "default":val
-                # but if I add it then I get errors with ConnectedValue objects
-                ## TypeError: <galaxy.tools.parameters.basic.ConnectedValue object at 0x7f59d1762810> is not JSON serializable
+                    #the input is not connected to a previous tool (data_input is not considered a step)
+                    if conn.output_step.type == 'data_input': 
+                        label = conn.output_step.label or 'User Input data'
+                        input_dict = {
+                            'format' : 'data',
+                            'type' : 'File',
+                            'name': label
+                        }
+                        source_id=str(conn.output_step.uuid) + '_'+ conn.output_name   # the data_input id is used to identify the file
+                        #input_uri=str(step.uuid)+'/'+name
+                        if source_id not in global_input_dicts:
+                            global_input_dicts[source_id]=input_dict
+                    step_inputs[name]=source_id
 
-                input_dicts[name]={"name": name, "description": "runtime parameter for tool %s" % module.get_name()}
-                # print('input_type is: ' + str(input_type))
-                # so.... i need to filter and only add if its a RuntimeValue or a dict in itself
-                if input_type == RuntimeValue:
-                    print("input_type is RuntimeValue class")
-                    # input_dicts.append({"name": name, "description": "runtime parameter for tool %s" % module.get_name()})
-                    #input_dicts[name]={"name": name, "description": "runtime parameter for tool %s" % module.get_name()}
-                elif input_type == dict:
-                    ## ********** FIND AN EXAMPLE OF THIS CASE... INDEXED PARAMETERS..
-                    # Input type is described by a dict, e.g. indexed parameters.
-                    print("here i am")
-                    for partval in val.values():
-                        if type(partval) == RuntimeValue:
-                            input_dicts.append({"name": name, "default":val,"description": "runtime parameter for tool %s" % module.get_name()})
-            if module.type == 'data_input':
-                input_dict = {
-                    'format' : 'data',
-                    'type' : 'File'
-                }
-                name = module.label or ('unnamed_input_' + str(input_index))
-                input_index+=1
-                input_uri=str(step.uuid)+'/'+name
-                global_input_dicts[name]=input_dict
-            step_dict['inputs'] = input_dicts
+                step_dict['in']=step_inputs
+                step_run_dict['inputs'] = input_dicts
 
-            # User outputs - Collect global wf outputs
+
+            #### *** if i want to include input data that is not connected to anything then:
+            #data_input step: do not add it to workflow steps. Add input to inputs list
+            #if module.type == 'data_input':
+            # else:
+                # input_dict = {
+                    # 'format' : 'data',
+                    # 'type' : 'File'
+                # }
+                # name = module.label or ('Unnamed_input_' + str(input_index))
+                # input_index+=1
+                # input_uri=str(step.uuid)+'/'+name
+                # global_input_dicts[name]=input_dict
+
+
+            # Global wf outputs and step wf output list
             #workflow_outputs_dicts = []
             for workflow_output in step.unique_workflow_outputs:
-                workflow_output_dict = dict(
-                    #output_name=workflow_output.output_name,
-                    label=workflow_output.label,
-                    uuid=str(workflow_output.uuid) if workflow_output.uuid is not None else None,
-                )
-                workflow_outputs_dicts[workflow_output.output_name]=workflow_output_dict
+                # do not list the User's inputs as wf outputs
+                if module.type != 'data_input':
+                    workflow_output_dict = dict(
+                        label=workflow_output.label,
+                        name=workflow_output.output_name,
+                        #uuid=str(workflow_output.uuid) if workflow_output.uuid is not None else None,
+                        output_source=str(step.uuid) + '/' + workflow_output.output_name
+                    )
+                    #workflow_output_dict['label']='User Input data'
+                    # collect the name, to put on the 
+                    workflow_outputs_dicts[str(workflow_output.uuid)]=workflow_output_dict
+                    step_dict['out'].append(workflow_output.output_name)
             #step_dict['workflow_outputs'] = workflow_outputs_dicts
 
             # All step outputs
             step_outputs_dict = {}
             if type(module) is ToolModule:
                 for output in module.get_data_outputs():
-                    ### should i use a different (unique) name? does the output always have a name?
-                    step_outputs_dict[output['name']]= {'type': output['extensions'][0]}
+                    step_outputs_dict[output['name']]= {'type': output['extensions'][0]}  #can add something in the doc?
 
-            step_dict['outputs']=step_outputs_dict
-            step_in = {}
-            for step_input in step.inputs:
-                if step_input.default_value_set:
-                    step_in[step_input.name] = {"default": step_input.default_value}
+            step_run_dict['outputs']=step_outputs_dict
 
-            if step_in:
-                step_dict["in"] = step_in
 
-            # Connections
-            input_connections = step.input_connections
-            if step.type is None or step.type == 'tool':
-                # Determine full (prefixed) names of valid input datasets
-                data_input_names = {}
 
-                def callback(input, prefixed_name, **kwargs):
-                    if isinstance(input, DataToolParameter) or isinstance(input, DataCollectionToolParameter):
-                        data_input_names[prefixed_name] = True
-                # FIXME: this updates modules silently right now; messages from updates should be provided.
-                module.check_and_update_state()
-                if module.tool:
-                    # If the tool is installed we attempt to verify input values
-                    # and connections, otherwise the last known state will be dumped without modifications.
-                    visit_input_values(module.tool.inputs, module.state.inputs, callback)
 
-            # Encode input connections as dictionary
-            input_conn_dict = {}
-            unique_input_names = set([conn.input_name for conn in input_connections])
-            for input_name in unique_input_names:
-                input_conn_dicts = []
-                for conn in input_connections:
-                    if conn.input_name != input_name:
-                        continue
-                    input_conn = dict(
-                        id=conn.output_step.order_index,
-                        output_name=conn.output_name
-                    )
-                    if conn.input_subworkflow_step is not None:
-                        subworkflow_step_id = conn.input_subworkflow_step.order_index
-                        input_conn["input_subworkflow_step_id"] = subworkflow_step_id
-
-                    input_conn_dicts.append(input_conn)
-                input_conn_dict[input_name] = input_conn_dicts
-
-            # Preserve backward compatibility. Previously Galaxy
-            # assumed input connections would be dictionaries not
-            # lists of dictionaries, so replace any singleton list
-            # with just the dictionary so that workflows exported from
-            # newer Galaxy instances can be used with older Galaxy
-            # instances if they do no include multiple input
-            # tools. This should be removed at some point. Mirrored
-            # hack in _workflow_from_raw_description should never be removed so
-            # existing workflow exports continue to function.
-            for input_name, input_conn in dict(input_conn_dict).items():
-                if len(input_conn) == 1:
-                    input_conn_dict[input_name] = input_conn[0]
-            #step_dict['input_connections'] = input_conn_dict
-            # Position
-            #step_dict['position'] = step.position
-            # Add to return value
             if module.type != 'data_input':
-                data['steps'][step.order_index] = step_dict
+                step_dict['run']=step_run_dict
+                #data['steps'][step.order_index] = step_dict
+                data['steps'][str(step.uuid)] = step_dict
         # add the global input and outputs to the return value
         data['outputs']=workflow_outputs_dicts
         data['inputs']=global_input_dicts
