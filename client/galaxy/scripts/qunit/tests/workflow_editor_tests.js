@@ -4,8 +4,8 @@ import testApp from "qunit/test-app";
 import sinon from "sinon";
 import Utils from "utils/utils";
 import App from "mvc/workflow/workflow-view";
-import Node from "mvc/workflow/workflow-node";
-import NodeView from "mvc/workflow/workflow-view-node";
+import { Node } from "mvc/workflow/workflow-node";
+import { NodeView } from "mvc/workflow/workflow-view-node";
 import Terminals from "mvc/workflow/workflow-terminals";
 import TerminalsView from "mvc/workflow/workflow-view-terminals";
 import Connector from "mvc/workflow/workflow-connector";
@@ -550,7 +550,7 @@ QUnit.module("Node view ", {
     },
     set_for_node: function(node) {
         var element = $("<div><div class='toolFormBody'></div></div>");
-        this.view = new NodeView({ node: node, el: element[0] });
+        this.view = new NodeView({ node: node, $el: element });
     },
     connectAttachedTerminal: function(inputType, outputType) {
         this.view.addDataInput({ name: "TestName", extensions: [inputType] });
