@@ -1223,11 +1223,11 @@ class BBIDataProvider(GenomeDataProvider):
 
             # Start with N samples.
             num_points = num_samples
-            step_size = int((end - start) / num_points)
+            step_size = (end - start) // num_points
             # Add additional points to sample in the remainder not covered by
             # the initial N samples.
             remainder_start = start + step_size * num_points
-            additional_points = int((end - remainder_start) / step_size)
+            additional_points = (end - remainder_start) // step_size
             num_points += additional_points
 
         result = summarize_region(bbi, chrom, start, end, num_points)
