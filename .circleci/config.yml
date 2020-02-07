@@ -97,24 +97,20 @@ jobs:
       - *restore_repo_cache
       - *install_tox
       - run: tox -e py27-unit
-  py27_docstring:
+  py35_docstring:
     docker:
-      - image: circleci/python:2.7
+      - image: circleci/python:3.5
     <<: *set_workdir
     steps:
       - *restore_repo_cache
       - *install_tox
-      - run: tox -e py27-lint_docstring_include_list
+      - run: tox -e py35-lint_docstring_include_list
   py27_first_startup:
     docker:
       - image: circleci/python:2.7
     <<: *set_workdir
     steps:
       - *restore_repo_cache
-      - run: sh scripts/common_startup.sh
-      - run: wget -q https://github.com/jmchilton/galaxy-downloads/raw/master/db_gx_rev_0127.sqlite
-      - run: mv db_gx_rev_0127.sqlite database/universe.sqlite
-      - run: sh manage_db.sh -c ./config/galaxy.yml.sample upgrade
       - *install_tox
       - run: tox -e py27-first_startup
   py35_lint:
@@ -200,7 +196,7 @@ workflows:
           <<: *requires_get_code
       - py27_first_startup:
           <<: *requires_get_code
-      - py27_docstring:
+      - py35_docstring:
           <<: *requires_get_code
       - py35_lint:
           <<: *requires_get_code

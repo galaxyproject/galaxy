@@ -121,7 +121,7 @@ if [ $SET_VENV -eq 1 ] && [ $CREATE_VENV -eq 1 ]; then
                     echo "Creating Conda environment for Galaxy: $GALAXY_CONDA_ENV"
                     echo "To avoid this, use the --no-create-venv flag or set \$GALAXY_CONDA_ENV to an"
                     echo "existing environment before starting Galaxy."
-                    $CONDA_EXE create --yes --override-channels --channel conda-forge --channel defaults --name "$GALAXY_CONDA_ENV" 'python=2.7' 'pip>=9' 'virtualenv>=16'
+                    $CONDA_EXE create --yes --override-channels --channel conda-forge --channel defaults --name "$GALAXY_CONDA_ENV" 'python=3.6' 'pip>=9' 'virtualenv>=16'
                     unset __CONDA_INFO
                 fi
                 conda_activate
@@ -133,13 +133,20 @@ if [ $SET_VENV -eq 1 ] && [ $CREATE_VENV -eq 1 ]; then
             echo "Creating Python virtual environment for Galaxy: $GALAXY_VIRTUAL_ENV"
             echo "To avoid this, use the --no-create-venv flag or set \$GALAXY_VIRTUAL_ENV to an"
             echo "existing environment before starting Galaxy."
-            python ./scripts/check_python.py || exit 1
+            if [ -z "$GALAXY_PYTHON" ]; then
+                if command -v python3 >/dev/null; then
+                    GALAXY_PYTHON=python3
+                else
+                    GALAXY_PYTHON=python
+                fi
+            fi
+            "$GALAXY_PYTHON" ./scripts/check_python.py || exit 1
             if command -v virtualenv >/dev/null; then
-                virtualenv -p "$(command -v python)" "$GALAXY_VIRTUAL_ENV"
+                virtualenv -p "$GALAXY_PYTHON" "$GALAXY_VIRTUAL_ENV"
             else
-                vvers=16.1.0
+                vvers=16.7.9
                 vurl="https://files.pythonhosted.org/packages/source/v/virtualenv/virtualenv-${vvers}.tar.gz"
-                vsha=f899fafcd92e1150f40c8215328be38ff24b519cd95357fa6e78e006c7638208
+                vsha=0d62c70883c0342d59c11d0ddac0d954d0431321a41ab20851facf2b222598f3
                 vtmp=$(mktemp -d -t galaxy-virtualenv-XXXXXX)
                 vsrc="$vtmp/$(basename $vurl)"
                 # SSL certificates are not checked to prevent problems with messed
@@ -151,16 +158,16 @@ if [ $SET_VENV -eq 1 ] && [ $CREATE_VENV -eq 1 ]; then
                 elif command -v wget >/dev/null; then
                     wget --no-check-certificate -O "$vsrc" "$vurl"
                 else
-                    python -c "try:
+                    "$GALAXY_PYTHON" -c "try:
     from urllib import urlretrieve
 except:
     from urllib.request import urlretrieve
 urlretrieve('$vurl', '$vsrc')"
                 fi
                 echo "Verifying $vsrc checksum is $vsha"
-                python -c "import hashlib; assert hashlib.sha256(open('$vsrc', 'rb').read()).hexdigest() == '$vsha', '$vsrc: invalid checksum'"
+                "$GALAXY_PYTHON" -c "import hashlib; assert hashlib.sha256(open('$vsrc', 'rb').read()).hexdigest() == '$vsha', '$vsrc: invalid checksum'"
                 tar zxf "$vsrc" -C "$vtmp"
-                python "$vtmp/virtualenv-$vvers/src/virtualenv.py" "$GALAXY_VIRTUAL_ENV"
+                "$GALAXY_PYTHON" "$vtmp/virtualenv-$vvers/virtualenv.py" "$GALAXY_VIRTUAL_ENV"
                 rm -rf "$vtmp"
             fi
         fi
