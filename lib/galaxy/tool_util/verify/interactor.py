@@ -167,7 +167,7 @@ class GalaxyInteractorApi(object):
         name = output_testdef.name
         self.wait_for_jobs(history_id, jobs, maxseconds)
         hid = self.__output_id(output_data)
-        # TODO: Twill version verifys dataset is 'ok' in here.
+        # TODO: Twill version verifies dataset is 'ok' in here.
         self.verify_output_dataset(history_id=history_id, hda_id=hid, outfile=outfile, attributes=attributes, tool_id=tool_id)
 
         primary_datasets = attributes.get('primary_datasets', {})
