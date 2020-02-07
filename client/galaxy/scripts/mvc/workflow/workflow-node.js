@@ -315,7 +315,7 @@ var Node = Backbone.Model.extend({
         }
         node.nodeView.renderToolErrors();
         // Update input rows
-        var old_body = nodeView.$("div.inputs");
+        var old_body = nodeView.$el.find("div.inputs");
         var new_body = nodeView.newInputsDiv();
         var newTerminalViews = {};
         _.each(data.inputs, input => {
