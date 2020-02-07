@@ -7,7 +7,7 @@ import _l from "utils/localization";
 import Utils from "utils/utils";
 import Workflow from "mvc/workflow/workflow-manager";
 import WorkflowCanvas from "mvc/workflow/workflow-canvas";
-import Node from "mvc/workflow/workflow-node";
+import { Node } from "mvc/workflow/workflow-node";
 import WorkflowIcons from "mvc/workflow/workflow-icons";
 import FormWrappers from "mvc/workflow/workflow-forms";
 import { mountWorkflowNode } from "components/Workflow/Editor/mount";
