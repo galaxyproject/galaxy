@@ -37,14 +37,6 @@ workflow_display()
 \`\`\`
 `;
 
-function add_node_icon($to_el, nodeType) {
-    var iconStyle = WorkflowIcons[nodeType];
-    if (iconStyle) {
-        var $icon = $('<i class="icon fa">&nbsp;</i>').addClass(iconStyle);
-        $to_el.before($icon);
-    }
-}
-
 // create form view
 export default Backbone.View.extend({
     initialize: function(options, reportsEditor) {
