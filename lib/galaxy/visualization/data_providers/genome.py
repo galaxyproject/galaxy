@@ -1243,7 +1243,7 @@ class BBIDataProvider(GenomeDataProvider):
 class BigBedDataProvider(BBIDataProvider):
     def _get_dataset(self):
         # Nothing converts to bigBed so we don't consider converted dataset
-        f = open(self.original_dataset.file_name)
+        f = open(self.original_dataset.file_name, 'rb')
         return f, BigBedFile(file=f)
 
 
@@ -1255,9 +1255,9 @@ class BigWigDataProvider(BBIDataProvider):
 
     def _get_dataset(self):
         if self.converted_dataset is not None:
-            f = open(self.converted_dataset.file_name)
+            f = open(self.converted_dataset.file_name, 'rb')
         else:
-            f = open(self.original_dataset.file_name)
+            f = open(self.original_dataset.file_name, 'rb')
         return f, BigWigFile(file=f)
 
 
