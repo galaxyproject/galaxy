@@ -147,54 +147,19 @@ class GalaxyInteractorApi(object):
         return response.json()
 
     def verify_output_collection(self, output_collection_def, output_collection_id, history, tool_id):
-        name = output_collection_def.name
         data_collection = self._get("dataset_collections/%s" % output_collection_id, data={"instance_type": "history"}).json()
 
-        def get_element(elements, id):
-            for element in elements:
-                if element["element_identifier"] == id:
-                    return element
-            return False
+        def verify_dataset(element, element_attrib, element_outfile):
+            hda = element["object"]
+            self.verify_output_dataset(
+                history,
+                hda_id=hda["id"],
+                outfile=element_outfile,
+                attributes=element_attrib,
+                tool_id=tool_id
+            )
 
-        expected_collection_type = output_collection_def.collection_type
-        if expected_collection_type:
-            collection_type = data_collection["collection_type"]
-            if expected_collection_type != collection_type:
-                template = "Expected output collection [%s] to be of type [%s], was of type [%s]."
-                message = template % (name, expected_collection_type, collection_type)
-                raise AssertionError(message)
-
-        expected_element_count = output_collection_def.count
-        if expected_element_count:
-            actual_element_count = len(data_collection["elements"])
-            if expected_element_count != actual_element_count:
-                template = "Expected output collection [%s] to have %s elements, but it had %s."
-                message = template % (name, expected_element_count, actual_element_count)
-                raise AssertionError(message)
-
-        def verify_elements(element_objects, element_tests):
-            for element_identifier, (element_outfile, element_attrib) in element_tests.items():
-                element = get_element(element_objects, element_identifier)
-                if not element:
-                    template = "Failed to find identifier [%s] for testing, tool generated collection elements [%s]"
-                    message = template % (element_identifier, element_objects)
-                    raise AssertionError(message)
-
-                element_type = element["element_type"]
-                if element_type != "dataset_collection":
-                    hda = element["object"]
-                    self.verify_output_dataset(
-                        history,
-                        hda_id=hda["id"],
-                        outfile=element_outfile,
-                        attributes=element_attrib,
-                        tool_id=tool_id
-                    )
-                if element_type == "dataset_collection":
-                    elements = element["object"]["elements"]
-                    verify_elements(elements, element_attrib.get("elements", {}))
-
-        verify_elements(data_collection["elements"], output_collection_def.element_tests)
+        verify_collection(output_collection_def, data_collection, verify_dataset)
 
     def verify_output(self, history_id, jobs, output_data, output_testdef, tool_id, maxseconds):
         outfile = output_testdef.outfile
@@ -722,6 +687,54 @@ def verify_hid(filename, hda_id, attributes, test_data_downloader, hid="", datas
         keep_outputs_dir=keep_outputs_dir,
         verify_extra_files=verify_extra_files,
     )
+
+
+def verify_collection(output_collection_def, data_collection, verify_dataset):
+    name = output_collection_def.name
+
+    def get_element(elements, id):
+        for element in elements:
+            if element["element_identifier"] == id:
+                return element
+        return False
+
+    expected_collection_type = output_collection_def.collection_type
+    if expected_collection_type:
+        collection_type = data_collection["collection_type"]
+        if expected_collection_type != collection_type:
+            template = "Expected output collection [%s] to be of type [%s], was of type [%s]."
+            message = template % (name, expected_collection_type, collection_type)
+            raise AssertionError(message)
+
+    expected_element_count = output_collection_def.count
+    if expected_element_count:
+        actual_element_count = len(data_collection["elements"])
+        if expected_element_count != actual_element_count:
+            template = "Expected output collection [%s] to have %s elements, but it had %s."
+            message = template % (name, expected_element_count, actual_element_count)
+            raise AssertionError(message)
+
+    def verify_elements(element_objects, element_tests):
+        for element_identifier, element_test in element_tests.items():
+            if isinstance(element_test, dict):
+                element_outfile, element_attrib = None, element_test
+            else:
+                element_outfile, element_attrib = element_test
+
+            element = get_element(element_objects, element_identifier)
+            if not element:
+                template = "Failed to find identifier [%s] for testing, tool generated collection elements [%s]"
+                message = template % (element_identifier, element_objects)
+                raise AssertionError(message)
+
+            element_type = element["element_type"]
+            if element_type != "dataset_collection":
+                verify_dataset(element, element_attrib, element_outfile)
+            if element_type == "dataset_collection":
+                elements = element["object"]["elements"]
+                verify_elements(elements, element_attrib.get("elements", {}))
+
+    verify_elements(data_collection["elements"], output_collection_def.element_tests)
 
 
 def _verify_composite_datatype_file_content(file_name, hda_id, base_name=None, attributes=None, dataset_fetcher=None, test_data_downloader=None, keep_outputs_dir=False, mode='file'):

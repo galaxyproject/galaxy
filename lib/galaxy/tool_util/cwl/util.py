@@ -354,17 +354,17 @@ class DirectoryUploadTarget(object):
         return "DirectoryUploadTarget[tar_path=%s]" % self.tar_path
 
 
-GalaxyOutput = namedtuple("GalaxyOutput", ["history_id", "history_content_type", "history_content_id"])
+GalaxyOutput = namedtuple("GalaxyOutput", ["history_id", "history_content_type", "history_content_id", "metadata"])
 
 
 def tool_response_to_output(tool_response, history_id, output_id):
     for output in tool_response["outputs"]:
         if output["output_name"] == output_id:
-            return GalaxyOutput(history_id, "dataset", output["id"])
+            return GalaxyOutput(history_id, "dataset", output["id"], None)
 
     for output_collection in tool_response["output_collections"]:
         if output_collection["output_name"] == output_id:
-            return GalaxyOutput(history_id, "dataset_collection", output_collection["id"])
+            return GalaxyOutput(history_id, "dataset_collection", output_collection["id"], None)
 
     raise Exception("Failed to find output with label [%s]" % output_id)
 
@@ -372,10 +372,10 @@ def tool_response_to_output(tool_response, history_id, output_id):
 def invocation_to_output(invocation, history_id, output_id):
     if output_id in invocation["outputs"]:
         dataset = invocation["outputs"][output_id]
-        galaxy_output = GalaxyOutput(history_id, "dataset", dataset["id"])
+        galaxy_output = GalaxyOutput(history_id, "dataset", dataset["id"], None)
     elif output_id in invocation["output_collections"]:
         collection = invocation["output_collections"][output_id]
-        galaxy_output = GalaxyOutput(history_id, "dataset_collection", collection["id"])
+        galaxy_output = GalaxyOutput(history_id, "dataset_collection", collection["id"], None)
     else:
         raise Exception("Failed to find output with label [%s] in [%s]" % (output_id, invocation))
 
@@ -391,14 +391,26 @@ def output_to_cwl_json(
     interface via Galaxy.
     """
     def element_to_cwl_json(element):
+        object = element["object"]
+        content_type = object.get("history_content_type")
+        metadata = None
+        if content_type is None:
+            content_type = "dataset_collection"
+            metadata = element["object"]
+            metadata["history_content_type"] = content_type
         element_output = GalaxyOutput(
             galaxy_output.history_id,
-            element["object"]["history_content_type"],
-            element["object"]["id"],
+            content_type,
+            object["id"],
+            metadata,
         )
         return output_to_cwl_json(element_output, get_metadata, get_dataset, get_extra_files, pseduo_location=pseduo_location)
 
-    output_metadata = get_metadata(galaxy_output.history_content_type, galaxy_output.history_content_id)
+    output_metadata = galaxy_output.metadata
+    if output_metadata is None:
+        output_metadata = get_metadata(galaxy_output.history_content_type, galaxy_output.history_content_id)
+
+    print(output_metadata)
 
     def dataset_dict_to_json_content(dataset_dict):
         if "content" in dataset_dict:
