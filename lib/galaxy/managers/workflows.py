@@ -488,10 +488,11 @@ class WorkflowContentsManager(UsesAnnotations):
             wf_dict = self._workflow_to_dict_export(trans, stored, workflow=workflow)
         else:
             raise exceptions.RequestParameterInvalidException('Unknown workflow style [%s]' % style)
-        if version is not None:
-            wf_dict['version'] = version
-        else:
-            wf_dict['version'] = len(stored.workflows) - 1
+        if style != "cwl_abstract":
+            if version is not None:
+                wf_dict['version'] = version
+            else:
+                wf_dict['version'] = len(stored.workflows) - 1
         return wf_dict
 
     def _sync_stored_workflow(self, trans, stored_workflow):
@@ -1030,6 +1031,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 'class' : 'Operation',
                 'doc' : '',
                 'id' : content_id,
+            }
             if module.type == 'tool':
                 if module.tool and module.tool.tool_shed:
                     step_run_dict["tool_shed_repository"] = {
@@ -1066,55 +1068,55 @@ class WorkflowContentsManager(UsesAnnotations):
 
 
             if module.type != 'data_input':
+                step_run_dict['doc']=module.get_name()
                 step_inputs={}
-                for name, val in step_state.items():
-                    input_type = type(val)
-                    if input_type != ConnectedValue and module.type != 'data_input':
-                        if input_type == RuntimeValue:
-                            print("input_type is RuntimeValue class")
-                            input_dicts[name]={"name": name, "description": "runtime parameter for tool %s" % module.get_name()}
-                            source_id='previous_step_id/output_name'
-                        elif input_type == dict:
-                            ## ********** FIND AN EXAMPLE OF THIS CASE... INDEXED PARAMETERS..
-                            # Input type is described by a dict, e.g. indexed parameters.
-                            print("here i am")
-                            for partval in val.values():
-                                if type(partval) == RuntimeValue:
-                                    input_dicts.append({"name": name, "default":val,"description": "runtime parameter for tool %s" % module.get_name()})
-                        else:
-                            step_inputs_dict={"name": name, "default":val,"description": "runtime parameter for tool %s" % module.get_name()}
-                            input_dicts[name]=step_inputs_dict
-                            source_id= str(step.uuid) + '_' + str(name) #global_input_id
-                            global_input_dicts[source_id]=step_inputs_dict
-                            # print('input_type is: ' + str(input_type))
-                            # so.... i need to filter and only add if its a RuntimeValue or a dict in itself
-                    step_inputs[name]=source_id  # connect operation input name with source
-                    input_dicts[name]={"name": name, "description": "runtime parameter for tool %s" % module.get_name()}
-                    # else:
-                    ### this next loop should be outside of the step_state.items loop ?
                 inp_connections=step.input_connections
                 connection_num=1
-                for conn in inp_connections:   ## can you have multiple connections
+                for conn in inp_connections:   ## can you have multiple connections?
                     # the combination of input_step.uuid and input_name should be unique
                     # the combination of output_step.uuid and output_name should be unique
                     # print(connection_num)
                     input_id=str(conn.input_step.uuid) + '_' + conn.input_name
                     source_id=str(conn.output_step.uuid) + '/'+ conn.output_name
                     connection_num+=1
-
+                    label = conn.input_name    ## this should be the input label 
                     #the input is not connected to a previous tool (data_input is not considered a step)
                     if conn.output_step.type == 'data_input': 
-                        label = conn.output_step.label or 'User Input data'
+                        label = "Input file(s) for tool " + module.get_name()
+
                         input_dict = {
-                            'format' : 'data',
-                            'type' : 'File',
-                            'name': label
-                        }
+                                'format' : 'data',
+                                'type' : 'File',
+                                'name': label
+                                }
                         source_id=str(conn.output_step.uuid) + '_'+ conn.output_name   # the data_input id is used to identify the file
                         #input_uri=str(step.uuid)+'/'+name
                         if source_id not in global_input_dicts:
                             global_input_dicts[source_id]=input_dict
-                    step_inputs[name]=source_id
+                    step_inputs[conn.input_name]=source_id
+                    input_dicts[conn.input_name]={"name": label, "description": "Input file(s) for tool %s" % module.get_name()}
+                for name, val in step_state.items():
+                    input_type = type(val)
+                    if input_type != ConnectedValue and module.type != 'data_input':
+                        if name not in step_inputs:  #not a connected value
+                            source_id= str(step.uuid) + '_' + str(name) #global_input_id
+                            if input_type == RuntimeValue:
+                                #print("input_type is RuntimeValue class")
+                                input_dicts[name]={"name": name, "description": "runtime parameter for tool %s" % module.get_name()}
+                            # elif input_type == dict:
+                                # ## ********** FIND AN EXAMPLE OF THIS CASE... INDEXED PARAMETERS..
+                                # # Input type is described by a dict, e.g. indexed parameters.
+                                # for partval in val.values():
+                                    # if type(partval) == RuntimeValue:
+                                        # input_dicts.append({"name": name, "default":val,"description": "runtime parameter for tool %s" % module.get_name()})
+                            else:
+                                step_inputs_dict={"name": name, "default":val,"description": "runtime parameter for tool %s" % module.get_name()}
+                                input_dicts[name]=step_inputs_dict
+                                global_input_dicts[source_id]=step_inputs_dict
+                                # print('input_type is: ' + str(input_type))
+                                # so.... i need to filter and only add if its a RuntimeValue or a dict in itself
+                            step_inputs[name]=source_id  # connect operation input name with source
+                            #input_dicts[name]={"name": name, "description": "runtime parameter for tool %s" % module.get_name()}
 
                 step_dict['in']=step_inputs
                 step_run_dict['inputs'] = input_dicts
