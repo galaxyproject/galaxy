@@ -1,7 +1,7 @@
 import $ from "jquery";
 import _ from "libs/underscore";
 import TerminalViews from "mvc/workflow/workflow-view-terminals";
-import DataViews from "mvc/workflow/workflow-view-data";
+import { DataInputView, DataOutputView, ParameterOutputView } from "mvc/workflow/workflow-view-data";
 
 export class NodeView {
     constructor(options) {
@@ -73,7 +73,7 @@ export class NodeView {
         }
         this.terminalViews[input.name] = terminalView;
         var terminalElement = terminalView.el;
-        var inputView = new DataViews.DataInputView({
+        var inputView = new DataInputView({
             terminalElement: terminalElement,
             input: input,
             nodeView: this,
@@ -98,7 +98,7 @@ export class NodeView {
     }
 
     outputViewforOutput(output, terminalView) {
-        const outputViewClass = output.parameter ? DataViews.ParameterOutputView : DataViews.DataOutputView;
+        const outputViewClass = output.parameter ? ParameterOutputView : DataOutputView;
         return new outputViewClass({
             output: output,
             terminalElement: terminalView.el,
