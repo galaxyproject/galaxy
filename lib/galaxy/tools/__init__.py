@@ -128,7 +128,6 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     "__DATA_FETCH__",
     # Legacy tools bundled with Galaxy.
     "laj_1",
-    "join1",
     "gff2bed1",
     "gff_filter_by_feature_count",
     "aggregate_scores_in_intervals2",
@@ -191,6 +190,7 @@ GALAXY_LIB_TOOLS_VERSIONED = {
     "sam_pileup": packaging.version.parse("1.1.3"),
     "vcf_to_maf_customtrack1": packaging.version.parse("1.0.1"),
     "secure_hash_message_digest": packaging.version.parse("0.0.2"),
+    "join1": packaging.version.parse("2.1.3"),
 }
 
 
