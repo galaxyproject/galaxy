@@ -3,10 +3,7 @@ import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import Utils from "utils/utils";
-import NodeView from "mvc/workflow/workflow-view-node";
-
-// unused
-//var StepParameterTypes = ["text", "integer", "float", "boolean", "color"];
+import { NodeView } from "./workflow-view-node";
 
 var Node = Backbone.Model.extend({
     initialize: function(app, attr) {
@@ -234,7 +231,7 @@ var Node = Backbone.Model.extend({
         this.workflow_outputs = data.workflow_outputs ? data.workflow_outputs : [];
         var node = this;
         var nodeView = new NodeView({
-            el: this.element[0],
+            $el: this.element,
             node: node
         });
         node.nodeView = nodeView;
