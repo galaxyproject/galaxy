@@ -41,6 +41,7 @@
       <converter file="to_coordinate_sorted_bam.xml" target_datatype="bam"/>
       <converter file="to_qname_sorted_bam.xml" target_datatype="qname_sorted.bam"/>
     </datatype>
+    <datatype extension="bam_native" type="galaxy.datatypes.binary:BamNative" mimetype="application/octet-stream" subclass="true"/>
     <datatype extension="probam" type="galaxy.datatypes.binary:ProBam" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="cram" type="galaxy.datatypes.binary:CRAM" mimetype="application/octet-stream" display_in_upload="true" description="CRAM is a file format for highly efficient and tunable reference-based compression of alignment data." description_url="http://www.ebi.ac.uk/ena/software/cram-usage">
       <converter file="cram_to_bam_converter.xml" target_datatype="bam"/>
