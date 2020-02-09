@@ -5,7 +5,6 @@ import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import Utils from "utils/utils";
 import Workflow from "mvc/workflow/workflow-manager";
-import WorkflowCanvas from "mvc/workflow/workflow-canvas";
 import WorkflowIcons from "mvc/workflow/workflow-icons";
 import FormWrappers from "mvc/workflow/workflow-forms";
 import "ui/editable-text";
@@ -39,13 +38,6 @@ export class WorkflowView {
         var self = (window.workflow_globals.app = this);
         this.options = options;
         this.reportsEditor = reportsEditor;
-
-        // Canvas overview management
-        this.canvas_manager = window.workflow_globals.canvas_manager = new WorkflowCanvas(
-            this,
-            $("#canvas-viewport"),
-            $("#overview")
-        );
 
         // Initialize workflow state
         this.reset();
@@ -134,8 +126,8 @@ export class WorkflowView {
                     self.reportsEditor.input = markdown;
                     self.workflow.has_changes = false;
                     self.workflow.fit_canvas_to_nodes();
-                    self.scroll_to_nodes();
-                    self.canvas_manager.draw_overview();
+                    self.workflow.scroll_to_nodes();
+                    self.workflow.canvas_manager.draw_overview();
                     self.build_version_select();
 
                     // Determine if any parameters were 'upgraded' and provide message
@@ -267,24 +259,6 @@ export class WorkflowView {
             this.workflow.remove_all();
         }
         this.workflow = window.workflow_globals.workflow = new Workflow(this, $("#canvas-container"));
-    }
-
-    scroll_to_nodes() {
-        var cv = $("#canvas-viewport");
-        var cc = $("#canvas-container");
-        var top;
-        var left;
-        if (cc.width() < cv.width()) {
-            left = (cv.width() - cc.width()) / 2;
-        } else {
-            left = 0;
-        }
-        if (cc.height() < cv.height()) {
-            top = (cv.height() - cc.height()) / 2;
-        } else {
-            top = 0;
-        }
-        cc.css({ left: left, top: top });
     }
 
     _workflowLoadAjax(workflowId, version, options) {
@@ -529,9 +503,6 @@ export class WorkflowView {
     }
 
     layout_editor() {
-        this.workflow.layout();
-        this.workflow.fit_canvas_to_nodes();
-        this.scroll_to_nodes();
-        this.canvas_manager.draw_overview();
+        this.workflow.layout_auto();
     }
 }

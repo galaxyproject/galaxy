@@ -106,7 +106,7 @@ class CanvasManager {
         this.cv.css("width", `${100 / this.canvasZoom}%`);
         this.cv.css("height", `${100 / this.canvasZoom}%`);
         // Update canvas size
-        this.app.workflow.fit_canvas_to_nodes();
+        this.app.fit_canvas_to_nodes();
     }
     initZoomControls() {
         var zoomControl = $('<div class="btn-group-horizontal workflow-canvas-content"/>').css({
@@ -233,11 +233,11 @@ class CanvasManager {
             // If it appears that the user is trying to copy/paste text, we
             // pass that through.
             if (window.getSelection().toString() === "") {
-                if (this.app.workflow.active_node && this.app.workflow.active_node.type !== "subworkflow") {
+                if (this.app.active_node && this.app.active_node.type !== "subworkflow") {
                     e.clipboardData.setData(
                         "application/json",
                         JSON.stringify({
-                            nodeId: this.app.workflow.active_node.id
+                            nodeId: this.app.active_node.id
                         })
                     );
                 }
@@ -259,8 +259,8 @@ class CanvasManager {
                 } catch (error) {
                     console.debug(error);
                 }
-                if (nodeId && Object.prototype.hasOwnProperty.call(this.app.workflow.nodes, nodeId)) {
-                    this.app.workflow.nodes[nodeId].clone();
+                if (nodeId && Object.prototype.hasOwnProperty.call(this.app.nodes, nodeId)) {
+                    this.app.nodes[nodeId].clone();
                 }
                 e.preventDefault();
             }
@@ -329,7 +329,7 @@ class CanvasManager {
         canvas_el.attr("width", o_w);
         canvas_el.attr("height", o_h);
         // Draw overview
-        $.each(this.app.workflow.nodes, (id, node) => {
+        $.each(this.app.nodes, (id, node) => {
             c.fillStyle = "gray";
             var node_element = $(node.element);
             var position = node_element.position();

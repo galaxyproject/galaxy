@@ -3,6 +3,7 @@ import Connector from "mvc/workflow/workflow-connector";
 import { Toast } from "ui/toast";
 import { Node } from "mvc/workflow/workflow-node";
 import { mountWorkflowNode } from "components/Workflow/Editor/mount";
+import WorkflowCanvas from "mvc/workflow/workflow-canvas";
 
 class Workflow {
     constructor(app, canvas_container) {
@@ -15,6 +16,13 @@ class Workflow {
         this.active_form_has_changes = false;
         this.workflowOutputLabels = {};
         this.workflow_version = 0;
+
+        // Canvas overview management
+        this.canvas_manager = window.workflow_globals.canvas_manager = new WorkflowCanvas(
+            this,
+            $("#canvas-viewport"),
+            $("#overview")
+        );
     }
     canLabelOutputWith(label) {
         if (label) {
@@ -64,7 +72,7 @@ class Workflow {
         var node = this.prebuildNode(type, title_text, content_id);
         this.add_node(node);
         this.fit_canvas_to_nodes();
-        this.app.canvas_manager.draw_overview();
+        this.canvas_manager.draw_overview();
         this.activate_node(node);
         return node;
     }
@@ -116,15 +124,15 @@ class Workflow {
         });
         $f.css("width", width);
         $f.bind("dragstart", () => {
-            self.workflow.activate_node(node);
+            self.activate_node(node);
         })
             .bind("dragend", function() {
-                self.workflow.node_changed(this);
-                self.workflow.fit_canvas_to_nodes();
+                self.node_changed(this);
+                self.fit_canvas_to_nodes();
                 self.canvas_manager.draw_overview();
             })
             .bind("dragclickonly", () => {
-                self.workflow.activate_node(node);
+                self.activate_node(node);
             })
             .bind("drag", function(e, d) {
                 // Move
@@ -397,6 +405,29 @@ class Workflow {
         }
         this.app.showWorkflowParameters();
     }
+    scroll_to_nodes() {
+        var cv = $("#canvas-viewport");
+        var cc = $("#canvas-container");
+        var top;
+        var left;
+        if (cc.width() < cv.width()) {
+            left = (cv.width() - cc.width()) / 2;
+        } else {
+            left = 0;
+        }
+        if (cc.height() < cv.height()) {
+            top = (cv.height() - cc.height()) / 2;
+        } else {
+            top = 0;
+        }
+        cc.css({ left: left, top: top });
+    }
+    layout_auto() {
+        this.layout();
+        this.fit_canvas_to_nodes();
+        this.scroll_to_nodes();
+        this.canvas_manager.draw_overview();
+    }
     layout() {
         this.check_changes_in_active_form();
         this.has_changes = true;
@@ -508,7 +539,7 @@ class Workflow {
             return 0;
         }
         // Span of all elements
-        var canvasZoom = this.app.canvas_manager.canvasZoom;
+        var canvasZoom = this.canvas_manager.canvasZoom;
         var bounds = this.bounds_for_all_nodes();
         var position = this.canvas_container.position();
         var parent = this.canvas_container.parent();

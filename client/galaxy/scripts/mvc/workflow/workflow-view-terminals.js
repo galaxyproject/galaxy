@@ -195,7 +195,7 @@ export class InputParameterTerminalView extends BaseInputTerminalView {
         super(options, {
             terminalMappingViewClass: InputTerminalMappingView,
             terminalMappingClass: Terminals.TerminalMapping
-       });
+        });
     }
     terminalForInput(input) {
         return new Terminals.InputParameterTerminal({
@@ -210,7 +210,7 @@ export class InputCollectionTerminalView extends BaseInputTerminalView {
         super(options, {
             terminalMappingViewClass: InputTerminalMappingView,
             terminalMappingClass: Terminals.TerminalMapping
-       });
+        });
     }
     terminalForInput(input = {}) {
         return new Terminals.InputCollectionTerminal({
@@ -428,7 +428,7 @@ export class OutputTerminalView extends BaseOutputTerminalView {
         super(options, {
             terminalMappingViewClass: TerminalMappingView,
             terminalMappingClass: Terminals.TerminalMapping
-       });
+        });
     }
     terminalForOutput(output) {
         var type = output.extensions;
@@ -446,7 +446,7 @@ export class OutputCollectionTerminalView extends BaseOutputTerminalView {
         super(options, {
             terminalMappingViewClass: TerminalMappingView,
             terminalMappingClass: Terminals.TerminalMapping
-       });
+        });
     }
     terminalForOutput(output) {
         var collection_type = output.collection_type;
@@ -467,7 +467,7 @@ export class OutputParameterTerminalView extends BaseOutputTerminalView {
         super(options, {
             terminalMappingViewClass: TerminalMappingView,
             terminalMappingClass: Terminals.TerminalMapping
-       });
+        });
     }
     terminalForOutput(output) {
         return new Terminals.OutputParameterTerminal({
