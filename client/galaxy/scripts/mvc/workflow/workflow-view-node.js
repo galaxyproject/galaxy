@@ -63,7 +63,7 @@ export class NodeView {
             terminalView = null;
         }
         if (!terminalView) {
-            terminalView = new terminalViewClass({
+            terminalView = new terminalViewClass(this.app, {
                 node: this.node,
                 input: input
             });

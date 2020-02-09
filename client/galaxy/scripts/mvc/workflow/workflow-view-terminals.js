@@ -72,8 +72,9 @@ class TerminalView {
 }
 
 class BaseInputTerminalView extends TerminalView {
-    constructor(options = {}, classes = {}) {
+    constructor(app, options = {}, classes = {}) {
         super();
+        this.app = app;
         this.terminalMappingViewClass = classes.terminalMappingViewClass;
         this.terminalMappingClass = classes.terminalMappingClass;
         this.el = document.createElement("div");
@@ -147,7 +148,7 @@ class BaseInputTerminalView extends TerminalView {
         d.proxy.dropTooltip = "";
         if (this.$el.hasClass("can-accept")) {
             const terminal = this.el.terminal;
-            new Connector(d.drag.terminal, terminal).redraw();
+            new Connector(this.app.canvas_manager, d.drag.terminal, terminal).redraw();
         }
     }
     onHover() {
@@ -176,8 +177,8 @@ class BaseInputTerminalView extends TerminalView {
 }
 
 export class InputTerminalView extends BaseInputTerminalView {
-    constructor(options = {}) {
-        super(options, {
+    constructor(app, options = {}) {
+        super(app, options, {
             terminalMappingViewClass: InputTerminalMappingView,
             terminalMappingClass: Terminals.TerminalMapping
         });
@@ -191,8 +192,8 @@ export class InputTerminalView extends BaseInputTerminalView {
 }
 
 export class InputParameterTerminalView extends BaseInputTerminalView {
-    constructor(options = {}) {
-        super(options, {
+    constructor(app, options = {}) {
+        super(app, options, {
             terminalMappingViewClass: InputTerminalMappingView,
             terminalMappingClass: Terminals.TerminalMapping
         });
@@ -206,8 +207,8 @@ export class InputParameterTerminalView extends BaseInputTerminalView {
 }
 
 export class InputCollectionTerminalView extends BaseInputTerminalView {
-    constructor(options = {}) {
-        super(options, {
+    constructor(app, options = {}) {
+        super(app, options, {
             terminalMappingViewClass: InputTerminalMappingView,
             terminalMappingClass: Terminals.TerminalMapping
         });
@@ -292,7 +293,7 @@ export class BaseOutputTerminalView extends TerminalView {
                     break;
                 case 32: // Space
                     removeMenu();
-                    new Connector(this.el.terminal, inputTerminal).redraw();
+                    new Connector(this.app.canvas_manager, this.el.terminal, inputTerminal).redraw();
                     ariaAlert("Node connected");
 
                     if (inputTerminal.connectors.length > 0) {
@@ -400,7 +401,7 @@ export class BaseOutputTerminalView extends TerminalView {
             }
         });
         h.terminal = new Terminals.OutputTerminal({ element: h });
-        var c = new Connector();
+        var c = new Connector(this.app.canvas_manager);
         c.dragging = true;
         c.connect(this.el.terminal, h.terminal);
         return h;

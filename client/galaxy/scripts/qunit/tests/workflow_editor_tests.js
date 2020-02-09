@@ -55,7 +55,7 @@ QUnit.module("Input terminal model test", {
     test_connector: function() {
         var outputTerminal = new Terminals.OutputTerminal({ datatypes: ["input"] });
         var inputTerminal = this.input_terminal;
-        return new Connector(outputTerminal, inputTerminal);
+        return new Connector({}, outputTerminal, inputTerminal);
     },
     with_test_connector: function(f) {
         this.test_connector();
@@ -231,12 +231,12 @@ QUnit.module("Connector test", {});
 QUnit.test("connects only if both valid handles", function(assert) {
     const input = { connect: sinon.spy() };
     const output = { connect: sinon.spy() };
-    new Connector(input, null);
-    new Connector(null, output);
+    new Connector({}, input, null);
+    new Connector({}, null, output);
     // Not attempts to connect...
     assert.ok(!input.connect.called);
     assert.ok(!output.connect.called);
-    new Connector(input, output);
+    new Connector({}, input, output);
     assert.ok(input.connect.called);
     assert.ok(output.connect.called);
 });
@@ -244,7 +244,7 @@ QUnit.test("connects only if both valid handles", function(assert) {
 QUnit.test("default attributes", function(assert) {
     const input = { connect: sinon.spy() };
     const output = { connect: sinon.spy() };
-    const connector = new Connector(input, output);
+    const connector = new Connector({}, input, output);
     assert.equal(connector.dragging, false);
     assert.equal(connector.canvas, null);
     assert.equal(connector.inner_color, "#FFFFFF");
@@ -254,7 +254,7 @@ QUnit.test("default attributes", function(assert) {
 QUnit.test("destroy", function(assert) {
     const input = { connect: sinon.spy(), disconnect: sinon.spy() };
     const output = { connect: sinon.spy(), disconnect: sinon.spy() };
-    const connector = new Connector(input, output);
+    const connector = new Connector({}, input, output);
     connector.destroy();
     assert.ok(input.disconnect.called);
     assert.ok(output.disconnect.called);
@@ -275,7 +275,7 @@ QUnit.test("initial redraw", function(assert) {
             return false;
         }
     };
-    const connector = new Connector(input, output);
+    const connector = new Connector({}, input, output);
     const n = $("#canvas-container").find("canvas").length;
     connector.redraw();
     // Ensure canvas gets set
@@ -484,7 +484,7 @@ QUnit.test("update_field_data preserves connectors", function(assert) {
         // Call init with one input and output.
         this.init_field_data_simple();
 
-        var connector = new Connector();
+        var connector = new Connector({});
         var old_input_terminal = node.input_terminals.input1;
         old_input_terminal.connectors.push(connector);
 
@@ -573,7 +573,7 @@ QUnit.module("Node view ", {
             disableMapOver: function() {},
             mapOver: Terminals.NULL_COLLECTION_TYPE_DESCRIPTION
         };
-        return new Connector(outputTerminal, terminal);
+        return new Connector({}, outputTerminal, terminal);
     },
     connectAttachedMultiInputTerminal: function(inputType, outputType) {
         this.view.addDataInput({ name: "TestName", extensions: [inputType], multiple: true });
@@ -594,7 +594,7 @@ QUnit.module("Node view ", {
             disableMapOver: function() {},
             mapOver: new Terminals.CollectionTypeDescription("list")
         };
-        return new Connector(outputTerminal, terminal);
+        return new Connector({}, outputTerminal, terminal);
     },
     connectAttachedMappedOutput: function() {
         this.view.addDataInput({ name: "TestName", extensions: ["txt"], input_type: "dataset_collection" });
@@ -615,7 +615,7 @@ QUnit.module("Node view ", {
             disableMapOver: function() {},
             mapOver: new Terminals.CollectionTypeDescription("list")
         };
-        return new Connector(outputTerminal, terminal);
+        return new Connector({}, outputTerminal, terminal);
     }
 });
 
@@ -703,10 +703,13 @@ QUnit.module("Input terminal view", {
     beforeEach: function() {
         this.node = { input_terminals: [] };
         this.input = { name: "i1", extensions: "txt", multiple: false };
-        this.view = new TerminalsView.InputTerminalView({
-            node: this.node,
-            input: this.input
-        });
+        this.view = new TerminalsView.InputTerminalView(
+            {},
+            {
+                node: this.node,
+                input: this.input
+            }
+        );
     }
 });
 
@@ -726,10 +729,13 @@ QUnit.module("Output terminal view", {
     beforeEach: function() {
         this.node = { output_terminals: [] };
         this.output = { name: "o1", extensions: "txt" };
-        this.view = new TerminalsView.OutputTerminalView({}, {
-            node: this.node,
-            output: this.output
-        });
+        this.view = new TerminalsView.OutputTerminalView(
+            {},
+            {
+                node: this.node,
+                output: this.output
+            }
+        );
     }
 });
 
@@ -934,7 +940,7 @@ QUnit.module("terminal mapping logic", {
         var node = terminal.node;
         if (connected) {
             var inputTerminal = self.newInputTerminal();
-            new Connector(inputTerminal, output);
+            new Connector({}, inputTerminal, output);
         }
         this._addTerminalTo(output, node.output_terminals);
         return output;
@@ -959,7 +965,7 @@ QUnit.module("terminal mapping logic", {
         var connectedInput = this.newInputTerminal();
         var node = terminal.node;
         var outputTerminal = self.newOutputTerminal();
-        new Connector(connectedInput, outputTerminal);
+        new Connector({}, connectedInput, outputTerminal);
         this._addTerminalTo(connectedInput, node.input_terminals);
         return connectedInput;
     },
