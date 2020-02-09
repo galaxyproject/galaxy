@@ -43,7 +43,8 @@ if TARGET_GIT_BRANCH.startswith('release_'):
     _target_ver = TARGET_GIT_BRANCH[len('release_'):]
 
 # Use tags to determine versions - a stable version will have a branch before it's released, but not a tag.
-for _tag in reversed(check_output(('git', 'tag')).splitlines()):
+tags = check_output(('git', 'tag')).decode().splitlines()
+for _tag in reversed(tags):
     if _tag.startswith('v') and _tag.count('.') == 1:
         # this version is released
         _ver = _tag[1:]
