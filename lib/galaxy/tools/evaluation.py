@@ -36,6 +36,7 @@ from galaxy.tools.wrappers import (
 from galaxy.util import (
     find_instance_nested,
     listify,
+    RW_R__R__,
     safe_makedirs,
     unicodify,
 )
@@ -621,7 +622,7 @@ class ToolEvaluator(object):
         with io.open(config_filename, "w", encoding='utf-8') as f:
             f.write(value)
         # For running jobs as the actual user, ensure the config file is globally readable
-        os.chmod(config_filename, 0o644)
+        os.chmod(config_filename, RW_R__R__)
 
     def __register_extra_file(self, name, local_config_path):
         """

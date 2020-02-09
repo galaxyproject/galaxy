@@ -29,7 +29,7 @@ log = logging.getLogger(__name__)
 
 __all__ = ('DRMAAJobRunner',)
 
-RETRY_EXCEPTIONS_LOWER = frozenset(['invalidjobexception', 'internalexception'])
+RETRY_EXCEPTIONS_LOWER = frozenset({'invalidjobexception', 'internalexception'})
 
 
 class DRMAAJobRunner(AsynchronousJobRunner):

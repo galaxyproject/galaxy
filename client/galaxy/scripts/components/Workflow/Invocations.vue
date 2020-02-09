@@ -30,7 +30,7 @@
                 <template v-slot:row-details="row">
                     <b-card>
                         <!-- set provideContext to false, since the table itself provides this information -->
-                        <workflow-invocation-state :invocationId="row.item.id" :provideContext="false" />
+                        <workflow-invocation-state :invocation-id="row.item.id" :provide-context="false" />
                     </b-card>
                 </template>
                 <template v-slot:cell(details)="data">

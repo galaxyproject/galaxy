@@ -8,7 +8,7 @@
                 <div>{{ row.item.description }}</div>
             </template>
             <template v-slot:row-details="row">
-                <RepositoryDetails :repo="row.item" :toolshedUrl="toolshedUrl" />
+                <RepositoryDetails :repo="row.item" :toolshed-url="toolshedUrl" />
             </template>
         </b-table>
         <div class="unavailable-message" v-if="noResultsFound">
@@ -20,7 +20,7 @@
 <script>
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { Services } from "../services.js";
+import { Services } from "../services";
 import LoadingSpan from "components/LoadingSpan";
 import RepositoryDetails from "../RepositoryDetails/Index.vue";
 

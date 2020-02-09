@@ -198,7 +198,7 @@ var SearchableModelMixin = {
         var attrVal = this.get(attrKey);
         //this.debug( 'searchAttribute', attrKey, attrVal, searchFor );
         // bail if empty searchFor or unsearchable values
-        if (!searchFor || (attrVal === undefined || attrVal === null)) {
+        if (!searchFor || attrVal === undefined || attrVal === null) {
             return false;
         }
         // pass to sep. fn for deep search of array attributes

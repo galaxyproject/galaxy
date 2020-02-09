@@ -435,7 +435,7 @@ def hash_conda_packages(conda_packages, conda_target=None):
 def install_conda(conda_context, force_conda_build=False):
     f, script_path = tempfile.mkstemp(suffix=".sh", prefix="conda_install")
     os.close(f)
-    download_cmd = commands.download_command(conda_link(), to=script_path, quote_url=False)
+    download_cmd = commands.download_command(conda_link(), to=script_path)
     install_cmd = ['bash', script_path, '-b', '-p', conda_context.conda_prefix]
     package_targets = [
         "conda=%s" % CONDA_VERSION,

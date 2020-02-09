@@ -4,7 +4,6 @@ uwsgi:
   processes: 1
   threads: 4
   offload-threads: 2
-  static-map: /static/style=static/style/blue
   static-map: /static=static
   static-map: /favicon.ico=static/favicon.ico
   master: false

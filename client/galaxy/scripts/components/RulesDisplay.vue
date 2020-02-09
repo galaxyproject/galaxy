@@ -3,16 +3,16 @@
         <ol class="rules">
             <rule-display-preview
                 v-for="(rule, index) in rules"
-                v-bind:rule="rule"
-                v-bind:index="index"
-                v-bind:key="index"
+                :rule="rule"
+                :index="index"
+                :key="index"
                 :col-headers="columnData.colHeadersPerRule[index]"
             />
             <identifier-display-preview
                 v-for="(map, index) in mapping"
                 v-bind="map"
-                v-bind:index="index"
-                v-bind:key="map.type"
+                :index="index"
+                :key="map.type"
                 :col-headers="colHeaders"
             />
         </ol>

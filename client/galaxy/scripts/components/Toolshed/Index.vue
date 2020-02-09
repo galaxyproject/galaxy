@@ -47,7 +47,10 @@ export default {
             total: 0,
             error: null,
             tabValue: true,
-            tabOptions: [{ text: "Search All", value: true }, { text: "Installed Only", value: false }]
+            tabOptions: [
+                { text: "Search All", value: true },
+                { text: "Installed Only", value: false }
+            ]
         };
     },
     watch: {

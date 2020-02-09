@@ -6,7 +6,7 @@
             </h4>
         </template>
         <table>
-            <tr v-for="(xref, index) in xrefs" v-bind:key="index">
+            <tr v-for="(xref, index) in xrefs" :key="index">
                 <th>- {{ xref.reftype }}:</th>
                 <td>
                     <template v-if="xref.reftype == 'bio.tools'">

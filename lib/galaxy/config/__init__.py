@@ -1044,6 +1044,8 @@ class ConfiguresGalaxyMixin(object):
         app_info = AppInfo(
             galaxy_root_dir=galaxy_root_dir,
             default_file_path=file_path,
+            tool_data_path=self.config.tool_data_path,
+            shed_tool_data_path=self.config.shed_tool_data_path,
             outputs_to_working_directory=self.config.outputs_to_working_directory,
             container_image_cache_path=self.config.container_image_cache_path,
             library_import_dir=self.config.library_import_dir,

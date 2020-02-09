@@ -228,11 +228,11 @@ class PageContentProcessor(HTMLParser, object):
     For now, processor renders embedded objects.
     """
     bare_ampersand = re.compile(r"&(?!#\d+;|#x[0-9a-fA-F]+;|\w+;)")
-    elements_no_end_tag = set([
+    elements_no_end_tag = {
         'area', 'base', 'basefont', 'br', 'col', 'command', 'embed', 'frame',
         'hr', 'img', 'input', 'isindex', 'keygen', 'link', 'meta', 'param',
         'source', 'track', 'wbr'
-    ])
+    }
 
     def __init__(self, trans, render_embed_html_fn):
         HTMLParser.__init__(self)

@@ -109,7 +109,7 @@ def type_representation_from_name(type_representation_name):
 
 
 def type_descriptions_for_field_types(field_types):
-    type_representation_names = set([])
+    type_representation_names = set()
     for field_type in field_types:
         if isinstance(field_type, dict) and field_type.get("type"):
             field_type = field_type.get("type")

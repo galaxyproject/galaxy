@@ -1,6 +1,18 @@
 Galaxy Testing
 ==============
 
-The Galaxy code base is large and contains many kinds of tests. Please
-run the command ``sh run_tests.sh --help`` from Galaxy's root for a
-description of each test type and location.
+The Galaxy codebase is large and contains many kinds of tests. The simpler
+tests can be run via `tox`, while the others via `./run_tests.sh` .
+
+## tox
+
+tox needs to be installed in your Python virtualenv with `pip install tox` .
+
+To view the list of available "test environments" for tox: `tox -l`
+
+To run the test for e.g. the `py35-lint` test environment: `tox -e py35-lint`
+
+## ./run_tests.sh
+
+To view the list of available tests and how to run them:
+`./run_tests.sh --help` from Galaxy root directory

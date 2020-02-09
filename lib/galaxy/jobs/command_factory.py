@@ -19,11 +19,11 @@ YIELD_CAPTURED_CODE = 'sh -c "exit $return_code"'
 SETUP_GALAXY_FOR_METADATA = """
 [ "$GALAXY_VIRTUAL_ENV" = "None" ] && GALAXY_VIRTUAL_ENV="$_GALAXY_VIRTUAL_ENV"; _galaxy_setup_environment True
 """
-PREPARE_DIRS = """mkdir -p working outputs
+PREPARE_DIRS = """mkdir -p working outputs configs
 if [ -d _working ]; then
-    rm -rf working/ outputs/; cp -R _working working; cp -R _outputs outputs
+    rm -rf working/ outputs/ configs/; cp -R _working working; cp -R _outputs outputs; cp -R _configs configs
 else
-    cp -R working _working; cp -R outputs _outputs
+    cp -R working _working; cp -R outputs _outputs; cp -R configs _configs
 fi
 cd working"""
 
@@ -85,7 +85,7 @@ def build_command(
             external_command_shell = container.shell
         else:
             external_command_shell = shell
-        externalized_commands = __externalize_commands(job_wrapper, external_command_shell, commands_builder, remote_command_params)
+        externalized_commands = __externalize_commands(job_wrapper, external_command_shell, commands_builder, remote_command_params, container=container)
         if container and modify_command_for_container:
             # Stop now and build command before handling metadata and copying
             # working directory files back. These should always happen outside
@@ -129,7 +129,7 @@ def build_command(
     return commands_builder.build()
 
 
-def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_params, script_name="tool_script.sh"):
+def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_params, script_name="tool_script.sh", container=None):
     local_container_script = join(job_wrapper.working_directory, script_name)
     tool_commands = commands_builder.build()
     config = job_wrapper.app.config
@@ -144,11 +144,15 @@ def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_
     set_e = ""
     if job_wrapper.strict_shell:
         set_e = "set -e\n"
-    script_contents = u"#!%s\n%s%s%s" % (
+    source_command = ""
+    if container:
+        source_command = container.source_environment
+    script_contents = u"#!%s\n%s%s%s%s" % (
         shell,
         integrity_injection,
         set_e,
-        tool_commands
+        source_command,
+        tool_commands,
     )
     write_script(local_container_script, script_contents, config)
     commands = "%s %s" % (shell, local_container_script)

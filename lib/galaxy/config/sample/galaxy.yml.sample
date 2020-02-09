@@ -41,10 +41,7 @@ uwsgi:
   # routing requests.
   offload-threads: 2
 
-  # Mapping to serve style content.
-  static-map: /static/style=static/style/blue
-
-  # Mapping to serve the remainder of the static content.
+  # Mapping to serve static content.
   static-map: /static=static
 
   # Mapping to serve the favicon.
@@ -211,7 +208,7 @@ galaxy:
   # Where dataset files are stored. It must be accessible at the same
   # path on any cluster nodes that will run Galaxy jobs, unless using
   # Pulsar.
-  #file_path: files
+  #file_path: objects
 
   # Where temporary files are stored. It must be accessible at the same
   # path on any cluster nodes that will run Galaxy jobs, unless using
@@ -620,9 +617,11 @@ galaxy:
   #object_store_config_file: object_store_conf.xml
 
   # What Dataset attribute is used to reference files in an ObjectStore
-  # implementation, default is 'id' but can also be set to 'uuid' for
-  # more de-centralized usage.
-  #object_store_store_by: id
+  # implementation, this can be 'uuid' or 'id'. The default will depend
+  # on how the object store is configured, starting with 20.05 Galaxy
+  # will try to default to 'uuid' if it can be sure this is a new Galaxy
+  # instance - but the default will be 'id' in many cases.
+  #object_store_store_by: null
 
   # Galaxy sends mail for various things: subscribing users to the
   # mailing list if they request it, password resets, reporting dataset
@@ -887,7 +886,7 @@ galaxy:
   # via a proxy server.  These options should be self explanatory and so
   # are not documented individually.  You can use these paths (or ones
   # in the proxy server) to point to your own styles.
-  #static_style_dir: static/june_2007_style/blue
+  #static_style_dir: static/style
 
   # Serve static content, which must be enabled if you're not serving it
   # via a proxy server.  These options should be self explanatory and so

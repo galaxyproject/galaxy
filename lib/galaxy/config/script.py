@@ -53,7 +53,6 @@ Start Galaxy by running the command from directory [{}]:
 # configs differently.
 GALAXY_CONFIG_SUBSTITUTIONS = {
     '  http: 127.0.0.1:8080': '  ${uwsgi_transport}: ${host}:${port}',
-    '  static-map: /static/style=static/style/blue': '  static-map: /static=${static_path}/style/blue',
     '  static-map: /static=static': '  static-map: /static=${static_path}',
     '  static-map: /favicon.ico=static/favicon.ico': '  static-map: /static=${static_path}/favicon.ico',
     '  static-safe: client/galaxy/images': '  ${client_path}/galaxy/images',

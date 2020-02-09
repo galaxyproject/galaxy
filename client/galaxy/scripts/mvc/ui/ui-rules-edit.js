@@ -77,9 +77,12 @@ var View = Backbone.View.extend({
             saveRulesFn: rules => this._handleRulesSave(rules),
             initialRules: value
         };
-        ListCollectionCreator.ruleBasedCollectionCreatorModal(elements, elementsType, importType, options).done(
-            () => {}
-        );
+        ListCollectionCreator.ruleBasedCollectionCreatorModal(
+            elements,
+            elementsType,
+            importType,
+            options
+        ).done(() => {});
     },
 
     _handleRulesSave: function(rules) {

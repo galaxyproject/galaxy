@@ -12,6 +12,7 @@ from galaxy_test.base.workflow_fixtures import (
 )
 from .framework import (
     retry_assertion_during_transitions,
+    retry_during_transitions,
     selenium_test,
     SeleniumTestCase
 )
@@ -339,7 +340,7 @@ steps:
 
     @selenium_test
     def test_workflow_bookmarking(self):
-        @retry_assertion_during_transitions
+        @retry_during_transitions
         def assert_workflow_bookmarked_status(target_status):
             name_matches = [c.text == new_workflow_name for c in self.components.tool_panel.workflow_names.all()]
             status = any(name_matches)
@@ -410,7 +411,7 @@ steps:
         name = self.workflow_upload_yaml_with_random_name(yaml_content)
         self.workflow_index_open()
         self.workflow_index_open_with_name(name)
-        self.workflow_editor_click_option("Auto Re-layout")
+        self.workflow_editor_click_option("Auto Layout")
 
     def workflow_editor_source_sink_terminal_ids(self, source, sink):
         editor = self.components.workflow_editor

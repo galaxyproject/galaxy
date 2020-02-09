@@ -9,6 +9,8 @@ class AppInfo(object):
         self,
         galaxy_root_dir=None,
         default_file_path=None,
+        tool_data_path=None,
+        shed_tool_data_path=None,
         outputs_to_working_directory=False,
         container_image_cache_path=None,
         library_import_dir=None,
@@ -20,6 +22,8 @@ class AppInfo(object):
     ):
         self.galaxy_root_dir = galaxy_root_dir
         self.default_file_path = default_file_path
+        self.tool_data_path = tool_data_path
+        self.shed_tool_data_path = shed_tool_data_path
         # TODO: Vary default value for docker_volumes based on this...
         self.outputs_to_working_directory = outputs_to_working_directory
         self.container_image_cache_path = container_image_cache_path
@@ -36,7 +40,7 @@ class ToolInfo(object):
     # variables they can consume (e.g. JVM options, license keys, etc..)
     # and add these to env_path_through
 
-    def __init__(self, container_descriptions=None, requirements=None, requires_galaxy_python_environment=False, env_pass_through=["GALAXY_SLOTS"], guest_ports=None, tool_id=None, tool_version=None):
+    def __init__(self, container_descriptions=None, requirements=None, requires_galaxy_python_environment=False, env_pass_through=["GALAXY_SLOTS"], guest_ports=None, tool_id=None, tool_version=None, profile=-1):
         if container_descriptions is None:
             container_descriptions = []
         if requirements is None:
@@ -48,6 +52,7 @@ class ToolInfo(object):
         self.guest_ports = guest_ports
         self.tool_id = tool_id
         self.tool_version = tool_version
+        self.profile = profile
 
 
 class JobInfo(object):

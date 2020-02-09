@@ -23,10 +23,7 @@ uwsgi:
   # routing requests.
   offload-threads: 2
 
-  # Mapping to serve style content.
-  static-map: /static/style=static/style/blue
-
-  # Mapping to serve the remainder of the static content.
+  # Mapping to serve static content.
   static-map: /static=static
 
   # Mapping to serve the favicon.
@@ -313,7 +310,7 @@ tool_shed:
   #static_scripts_dir: static/scripts/
 
   # Serving static files (needed if running standalone)
-  #static_style_dir: static/style/blue
+  #static_style_dir: static/style
 
   # Enables GDPR Compliance mode. This makes several changes to the way
   # Galaxy logs and exposes data externally such as removing

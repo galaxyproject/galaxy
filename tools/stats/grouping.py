@@ -117,7 +117,7 @@ def main():
     try:
         subprocess.check_output(command_line, stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as e:
-        stop_err("Sorting input dataset resulted in error: %s: %s" % (e.returncode, e.output))
+        stop_err("Sorting input dataset resulted in error: %s: %s" % (e.returncode, e.output.decode()))
 
     def is_new_item(line):
         try:

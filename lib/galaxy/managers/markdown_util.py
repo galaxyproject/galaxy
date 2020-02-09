@@ -503,7 +503,7 @@ history_dataset_display(output="%s")
 ```galaxy
 history_dataset_collection_display(output="%s")
 ```
-""" % (output_assoc.workflow_output.label)
+""" % (output_assoc.workflow_output.label, output_assoc.workflow_output.label)
         elif container == "invocation_inputs":
             for input_assoc in invocation.input_associations:
                 if not input_assoc.workflow_step.label:

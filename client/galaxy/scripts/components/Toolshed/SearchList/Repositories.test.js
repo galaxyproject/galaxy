@@ -2,6 +2,7 @@ import { mount } from "@vue/test-utils";
 import Repositories from "./Repositories";
 import { __RewireAPI__ as rewire } from "./Repositories";
 import Vue from "vue";
+import flushPromises from "flush-promises";
 
 describe("Repositories", () => {
     beforeEach(() => {
@@ -36,13 +37,17 @@ describe("Repositories", () => {
                 toolshedUrl: "toolshedUrl"
             }
         });
+        // Test initial state prior to the data fetch tick -- should be loading.
         expect(wrapper.find(".loading-message").text()).to.equal("Loading repositories...");
-        wrapper.vm.pageState = wrapper.vm.COMPLETE;
-        expect(wrapper.find(".unavailable-message").text()).to.equal("No matching repositories found.");
         await Vue.nextTick();
         const links = wrapper.findAll("a");
         expect(links.length).to.equal(2);
         expect(links.at(0).text()).to.equal("name_0");
         expect(links.at(1).text()).to.equal("name_1");
+        // Reset repositories and state to test empty.
+        wrapper.vm.repositories = [];
+        wrapper.vm.pageState = 2; // COMPLETE is '2'
+        await Vue.nextTick();
+        expect(wrapper.find(".unavailable-message").text()).to.equal("No matching repositories found.");
     });
 });

@@ -18,7 +18,7 @@
                     <tool-section
                         v-for="category in categories"
                         :category="category"
-                        :queryFilter="query"
+                        :query-filter="query"
                         :key="category.id"
                         @onClick="onOpen"
                     />
@@ -28,9 +28,9 @@
                 </div>
                 <div id="internal-workflows" class="toolSectionBody">
                     <div class="toolSectionBg" />
-                    <div class="toolTitle" v-for="workflow in this.workflows" :key="workflow.id">
-                        <a :href="workflow.href">
-                            {{ workflow.title }}
+                    <div class="toolTitle" v-for="wf in this.workflows" :key="wf.id">
+                        <a :href="wf.href">
+                            {{ wf.title }}
                         </a>
                     </div>
                 </div>
@@ -44,7 +44,7 @@ import ToolSection from "./Common/ToolSection";
 import ToolSearch from "./Common/ToolSearch";
 import UploadButton from "./Buttons/UploadButton";
 import FavoritesButton from "./Buttons/FavoritesButton";
-import { filterToolSections } from "./utilities.js";
+import { filterToolSections } from "./utilities";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
 import _l from "utils/localization";

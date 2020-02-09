@@ -20,10 +20,10 @@
                                 class="ml-2"
                                 :tool="el"
                                 :key="key"
-                                :toolKey="toolKey"
-                                :hideName="hideName"
-                                :operationTitle="operationTitle"
-                                :operationIcon="operationIcon"
+                                :tool-key="toolKey"
+                                :hide-name="hideName"
+                                :operation-title="operationTitle"
+                                :operation-icon="operationIcon"
                                 @onOperation="onOperation"
                                 @onClick="onClick"
                             />
@@ -39,9 +39,9 @@
             <tool
                 v-else
                 :tool="category"
-                :hideName="hideName"
-                :operationTitle="operationTitle"
-                :operationIcon="operationIcon"
+                :hide-name="hideName"
+                :operation-title="operationTitle"
+                :operation-icon="operationIcon"
                 @onOperation="onOperation"
                 @onClick="onClick"
             />

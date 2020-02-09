@@ -363,7 +363,10 @@ QUnit.module("Node unit test", {
     },
     update_field_data_with_new_input: function(option_overrides) {
         const new_data = Utils.merge(option_overrides, {
-            inputs: [{ name: "input1", extensions: ["data"] }, { name: "extra_0|input1", extensions: ["data"] }],
+            inputs: [
+                { name: "input1", extensions: ["data"] },
+                { name: "extra_0|input1", extensions: ["data"] }
+            ],
             outputs: [{ name: "output1", extensions: ["data"] }],
             post_job_actions: "{}",
             label: "New Label"
@@ -499,7 +502,10 @@ QUnit.test("update_field_data destroys old terminals", function(assert) {
     var node = this.node;
     this.expect_workflow_node_changed(assert, () => {
         var data = {
-            inputs: [{ name: "input1", extensions: ["data"] }, { name: "willDisappear", extensions: ["data"] }],
+            inputs: [
+                { name: "input1", extensions: ["data"] },
+                { name: "willDisappear", extensions: ["data"] }
+            ],
             outputs: [{ name: "output1", extensions: ["data"] }]
         };
         node.init_field_data(data);

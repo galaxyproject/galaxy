@@ -40,7 +40,7 @@ Some important benefits of using Galaxy InteractiveTools
 
 
 Server-side configuration of Galaxy InteractiveTools
--------------------------------------------------
+----------------------------------------------------
 
 The **galaxy.yml** file will need to be populated as seen in **config/galaxy.yml.interactivetools**.
 

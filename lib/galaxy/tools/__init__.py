@@ -263,7 +263,7 @@ class ToolBox(BaseGalaxyToolBox):
 
     @property
     def all_requirements(self):
-        reqs = set([req for _, tool in self.tools() for req in tool.tool_requirements])
+        reqs = {req for _, tool in self.tools() for req in tool.tool_requirements}
         return [r.to_dict() for r in reqs]
 
     @property
