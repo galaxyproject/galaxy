@@ -1,5 +1,8 @@
-<tool id="CONVERTER_interval_to_bed12_0" name="Convert Genomic Intervals To Strict BED12" version="1.0.0">
+<tool id="CONVERTER_interval_to_bed12_0" name="Convert Genomic Intervals To Strict BED12" version="1.0.0" profile="16.04">
     <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+    <requirements>
+        <requirement type="package" version="0.8.6">bx-python</requirement>
+    </requirements>
     <command>
         python '$__tool_directory__/interval_to_bedstrict_converter.py'
         '$output1' '$input1' ${input1.metadata.chromCol}
