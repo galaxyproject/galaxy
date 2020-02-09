@@ -552,7 +552,7 @@ QUnit.module("Node view ", {
     },
     set_for_node: function(node) {
         var element = $("<div><div class='toolFormBody'></div></div>");
-        this.view = new NodeView({ node: node, $el: element });
+        this.view = new NodeView({}, { node: node, $el: element });
     },
     connectAttachedTerminal: function(inputType, outputType) {
         this.view.addDataInput({ name: "TestName", extensions: [inputType] });
@@ -726,7 +726,7 @@ QUnit.module("Output terminal view", {
     beforeEach: function() {
         this.node = { output_terminals: [] };
         this.output = { name: "o1", extensions: "txt" };
-        this.view = new TerminalsView.OutputTerminalView({
+        this.view = new TerminalsView.OutputTerminalView({}, {
             node: this.node,
             output: this.output
         });

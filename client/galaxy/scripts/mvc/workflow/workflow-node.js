@@ -228,7 +228,7 @@ export class Node {
         this.uuid = data.uuid;
         this.workflow_outputs = data.workflow_outputs ? data.workflow_outputs : [];
         var node = this;
-        var nodeView = new NodeView({
+        var nodeView = new NodeView(this.app, {
             $el: this.element,
             node: node
         });

@@ -4,9 +4,6 @@ import Terminals from "mvc/workflow/workflow-terminals";
 import Connector from "mvc/workflow/workflow-connector";
 import ariaAlert from "utils/ariaAlert";
 
-// TODO; tie into Galaxy state?
-window.workflow_globals = window.workflow_globals || {};
-
 class TerminalMappingView {
     constructor(options = {}) {
         this.$el = $("<div class='fa-icon-button fa fa-folder-o' />");
@@ -221,8 +218,9 @@ export class InputCollectionTerminalView extends BaseInputTerminalView {
 }
 
 export class BaseOutputTerminalView extends TerminalView {
-    constructor(options, classes = {}) {
+    constructor(app, options, classes = {}) {
         super();
+        this.app = app;
         this.terminalMappingViewClass = classes.terminalMappingViewClass;
         this.terminalMappingClass = classes.terminalMappingClass;
         this.el = document.createElement("div");
@@ -364,8 +362,7 @@ export class BaseOutputTerminalView extends TerminalView {
     }
     onDrag(e, d = {}) {
         var onmove = () => {
-            // FIXME: global
-            var canvasZoom = window.workflow_globals.canvas_manager.canvasZoom;
+            var canvasZoom = this.app.canvas_manager.canvasZoom;
             var po = $(d.proxy)
                 .offsetParent()
                 .offset();
@@ -374,8 +371,7 @@ export class BaseOutputTerminalView extends TerminalView {
             var y = d.offsetY - po.top;
             $(d.proxy).css({ left: x / canvasZoom, top: y / canvasZoom });
             d.proxy.terminal.redraw();
-            // FIXME: global
-            window.workflow_globals.canvas_manager.update_viewport_overlay();
+            this.app.canvas_manager.update_viewport_overlay();
         };
         onmove();
         $("#canvas-container")
@@ -385,7 +381,7 @@ export class BaseOutputTerminalView extends TerminalView {
     onDragStart(e, d = {}) {
         $(d.available).addClass("input-terminal-active");
         // Save PJAs in the case of change datatype actions.
-        window.workflow_globals.workflow.check_changes_in_active_form();
+        this.app.check_changes_in_active_form();
         // Drag proxy div
         var h = $("<div class='drag-terminal'/>")
             .appendTo("#canvas-container")
@@ -424,8 +420,8 @@ export class BaseOutputTerminalView extends TerminalView {
 }
 
 export class OutputTerminalView extends BaseOutputTerminalView {
-    constructor(options = {}) {
-        super(options, {
+    constructor(app, options = {}) {
+        super(app, options, {
             terminalMappingViewClass: TerminalMappingView,
             terminalMappingClass: Terminals.TerminalMapping
         });
@@ -442,8 +438,8 @@ export class OutputTerminalView extends BaseOutputTerminalView {
 }
 
 export class OutputCollectionTerminalView extends BaseOutputTerminalView {
-    constructor(options = {}) {
-        super(options, {
+    constructor(app, options = {}) {
+        super(app, options, {
             terminalMappingViewClass: TerminalMappingView,
             terminalMappingClass: Terminals.TerminalMapping
         });
@@ -463,8 +459,8 @@ export class OutputCollectionTerminalView extends BaseOutputTerminalView {
 }
 
 export class OutputParameterTerminalView extends BaseOutputTerminalView {
-    constructor(options = {}) {
-        super(options, {
+    constructor(app, options = {}) {
+        super(app, options, {
             terminalMappingViewClass: TerminalMappingView,
             terminalMappingClass: Terminals.TerminalMapping
         });
@@ -481,8 +477,8 @@ export class OutputParameterTerminalView extends BaseOutputTerminalView {
 export default {
     InputTerminalView: InputTerminalView,
     InputParameterTerminalView: InputParameterTerminalView,
+    InputCollectionTerminalView: InputCollectionTerminalView,
     OutputTerminalView: OutputTerminalView,
     OutputParameterTerminalView: OutputParameterTerminalView,
-    InputCollectionTerminalView: InputCollectionTerminalView,
     OutputCollectionTerminalView: OutputCollectionTerminalView
 };
