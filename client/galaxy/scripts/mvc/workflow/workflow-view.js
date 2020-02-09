@@ -6,10 +6,8 @@ import _l from "utils/localization";
 import Utils from "utils/utils";
 import Workflow from "mvc/workflow/workflow-manager";
 import WorkflowCanvas from "mvc/workflow/workflow-canvas";
-import { Node } from "mvc/workflow/workflow-node";
 import WorkflowIcons from "mvc/workflow/workflow-icons";
 import FormWrappers from "mvc/workflow/workflow-forms";
-import { mountWorkflowNode } from "components/Workflow/Editor/mount";
 import "ui/editable-text";
 
 import { hide_modal, show_message, show_modal } from "layout/modal";
@@ -544,73 +542,5 @@ export class WorkflowView {
         this.workflow.fit_canvas_to_nodes();
         this.scroll_to_nodes();
         this.canvas_manager.draw_overview();
-    }
-
-    prebuildNode(type, title_text, content_id) {
-        var self = this;
-
-        // Create node wrapper
-        const container = document.createElement("div");
-        container.className = "toolForm toolFormInCanvas";
-        document.getElementById("canvas-container").appendChild(container);
-        var $f = $(container);
-
-        // Create backbone model and view
-        var node = new Node(this, { element: $f });
-        node.type = type;
-        node.content_id = content_id;
-
-        // Mount node component as child dom to node wrapper
-        const child = document.createElement("div");
-        container.appendChild(child);
-        mountWorkflowNode(child, {
-            id: content_id,
-            type: type,
-            title: title_text,
-            node: node
-        });
-
-        // Set initial scroll position
-        $f.css("left", $(window).scrollLeft() + 20);
-        $f.css("top", $(window).scrollTop() + 20);
-
-        // Position in container
-        var o = $("#canvas-container").position();
-        var p = $("#canvas-container").parent();
-        var width = $f.outerWidth() + 50;
-        var height = $f.height();
-        $f.css({
-            left: -o.left + p.width() / 2 - width / 2,
-            top: -o.top + p.height() / 2 - height / 2
-        });
-        $f.css("width", width);
-        $f.bind("dragstart", () => {
-            self.workflow.activate_node(node);
-        })
-            .bind("dragend", function() {
-                self.workflow.node_changed(this);
-                self.workflow.fit_canvas_to_nodes();
-                self.canvas_manager.draw_overview();
-            })
-            .bind("dragclickonly", () => {
-                self.workflow.activate_node(node);
-            })
-            .bind("drag", function(e, d) {
-                // Move
-                var po = $(this)
-                    .offsetParent()
-                    .offset();
-                // Find relative offset and scale by zoom
-                var x = (d.offsetX - po.left) / self.canvas_manager.canvasZoom;
-                var y = (d.offsetY - po.top) / self.canvas_manager.canvasZoom;
-                $(this).css({ left: x, top: y });
-                // Redraw
-                $(this)
-                    .find(".terminal")
-                    .each(function() {
-                        this.terminal.redraw();
-                    });
-            });
-        return node;
     }
 }

@@ -38,7 +38,8 @@ var create_app = function() {
 QUnit.module("Input terminal model test", {
     beforeEach: function() {
         testApp.create();
-        this.node = new Node(create_app(), {});
+        var app = create_app();
+        this.node = new Node(app.workflow, {});
         this.input = { extensions: ["txt"], multiple: false, optional: false };
         this.input_terminal = new Terminals.InputTerminal({ input: this.input });
         this.input_terminal.node = this.node;
@@ -286,7 +287,8 @@ QUnit.test("initial redraw", function(assert) {
 QUnit.module("Input collection terminal model test", {
     beforeEach: function() {
         testApp.create();
-        this.node = new Node(create_app(), {});
+        var app = create_app();
+        this.node = new Node(app.workflow, {});
         this.input = { extensions: ["txt"], collection_types: ["list"] };
         this.input_terminal = new Terminals.InputCollectionTerminal({ input: this.input });
         this.input_terminal.node = this.node;
@@ -336,7 +338,7 @@ QUnit.module("Node unit test", {
         this.input_terminal = { destroy: sinon.spy(), redraw: sinon.spy() };
         this.output_terminal = { destroy: sinon.spy(), redraw: sinon.spy() };
         this.app = create_app();
-        this.node = this.app.prebuildNode("tool", "newnode");
+        this.node = this.app.workflow.prebuildNode("tool", "newnode");
         this.element = this.node.element;
         this.node.input_terminals.i1 = this.input_terminal;
         this.node.output_terminals.o1 = this.output_terminal;
@@ -924,7 +926,8 @@ QUnit.module("terminal mapping logic", {
     },
     newNode: function() {
         var nodeEl = $("<div>")[0];
-        return new Node(create_app(), { element: nodeEl });
+        var app = create_app();
+        return new Node(app.workflow, { element: nodeEl });
     },
     _addExistingOutput: function(terminal, output, connected) {
         var self = this;

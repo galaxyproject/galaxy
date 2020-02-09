@@ -1,6 +1,8 @@
 import $ from "jquery";
 import Connector from "mvc/workflow/workflow-connector";
 import { Toast } from "ui/toast";
+import { Node } from "mvc/workflow/workflow-node";
+import { mountWorkflowNode } from "components/Workflow/Editor/mount";
 
 class Workflow {
     constructor(app, canvas_container) {
@@ -59,7 +61,7 @@ class Workflow {
         return true;
     }
     create_node(type, title_text, content_id) {
-        var node = this.app.prebuildNode(type, title_text, content_id);
+        var node = this.prebuildNode(type, title_text, content_id);
         this.add_node(node);
         this.fit_canvas_to_nodes();
         this.app.canvas_manager.draw_overview();
@@ -74,6 +76,73 @@ class Workflow {
         this.nodes[node.id] = node;
         this.has_changes = true;
         node.workflow = this;
+    }
+    prebuildNode(type, title_text, content_id) {
+        var self = this;
+
+        // Create node wrapper
+        const container = document.createElement("div");
+        container.className = "toolForm toolFormInCanvas";
+        document.getElementById("canvas-container").appendChild(container);
+        var $f = $(container);
+
+        // Create backbone model and view
+        var node = new Node(this, { element: $f });
+        node.type = type;
+        node.content_id = content_id;
+
+        // Mount node component as child dom to node wrapper
+        const child = document.createElement("div");
+        container.appendChild(child);
+        mountWorkflowNode(child, {
+            id: content_id,
+            type: type,
+            title: title_text,
+            node: node
+        });
+
+        // Set initial scroll position
+        $f.css("left", $(window).scrollLeft() + 20);
+        $f.css("top", $(window).scrollTop() + 20);
+
+        // Position in container
+        var o = $("#canvas-container").position();
+        var p = $("#canvas-container").parent();
+        var width = $f.outerWidth() + 50;
+        var height = $f.height();
+        $f.css({
+            left: -o.left + p.width() / 2 - width / 2,
+            top: -o.top + p.height() / 2 - height / 2
+        });
+        $f.css("width", width);
+        $f.bind("dragstart", () => {
+            self.workflow.activate_node(node);
+        })
+            .bind("dragend", function() {
+                self.workflow.node_changed(this);
+                self.workflow.fit_canvas_to_nodes();
+                self.canvas_manager.draw_overview();
+            })
+            .bind("dragclickonly", () => {
+                self.workflow.activate_node(node);
+            })
+            .bind("drag", function(e, d) {
+                // Move
+                var po = $(this)
+                    .offsetParent()
+                    .offset();
+                // Find relative offset and scale by zoom
+                var x = (d.offsetX - po.left) / self.canvas_manager.canvasZoom;
+                var y = (d.offsetY - po.top) / self.canvas_manager.canvasZoom;
+                $(this).css({ left: x, top: y });
+                // Redraw
+                $(this)
+                    .find(".terminal")
+                    .each(function() {
+                        this.terminal.redraw();
+                    });
+            });
+        return node;
     }
     remove_node(node) {
         if (this.active_node == node) {
@@ -220,7 +289,7 @@ class Workflow {
         wf.workflow_version = data.version;
         wf.report = data.report || {};
         $.each(data.steps, (id, step) => {
-            var node = wf.app.prebuildNode(step.type, step.name, step.content_id);
+            var node = wf.prebuildNode(step.type, step.name, step.content_id);
             // If workflow being copied into another, wipe UUID and let
             // Galaxy assign new ones.
             if (!initialImport) {
