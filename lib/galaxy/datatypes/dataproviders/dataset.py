@@ -52,7 +52,8 @@ class DatasetDataProvider(base.DataProvider):
         self.dataset = dataset
         # this dataset file is obviously the source
         # TODO: this might be a good place to interface with the object_store...
-        super(DatasetDataProvider, self).__init__(open(dataset.file_name, 'rb'))
+        mode = 'rb' if dataset.datatype.is_binary else 'r'
+        super(DatasetDataProvider, self).__init__(open(dataset.file_name, mode))
 
     # TODO: this is a bit of a mess
     @classmethod
