@@ -1,4 +1,4 @@
-<tool id="CONVERTER_maf_to_fasta_0" name="Convert MAF to Fasta" version="1.0.1">
+<tool id="CONVERTER_maf_to_fasta_0" name="Convert MAF to Fasta" version="1.0.2" profile="16.04">
     <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
     <command>python '$__tool_directory__/maf_to_fasta_converter.py' '$output1' '$input1'</command>
     <inputs>
