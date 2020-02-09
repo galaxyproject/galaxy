@@ -11,6 +11,12 @@
     <outputs>
         <data format="bgzip" name="output1"/>
     </outputs>
+    <tests>
+        <test>
+            <param name="input1" format="bed" value="droPer1.bed"/>
+            <output name="output1" format="bgzip" value="droPer1.bgzip"/>
+        </test>
+    </tests>
     <help>
     </help>
 </tool>

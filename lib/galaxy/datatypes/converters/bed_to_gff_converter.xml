@@ -11,6 +11,12 @@
     <outputs>
         <data format="gff" name="output1"/>
     </outputs>
+    <tests>
+        <test>
+            <param name="input1" format="bed" value="droPer1.bed"/>
+            <output name="output1" format="gff" value="droPer1.gff"/>
+        </test>
+    </tests>
     <help>
     </help>
 </tool>

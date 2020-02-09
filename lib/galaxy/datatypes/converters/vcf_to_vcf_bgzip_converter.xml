@@ -11,6 +11,12 @@
     <outputs>
         <data format="vcf_bgzip" name="output1"/>
     </outputs>
+    <tests>
+        <test>
+            <param name="input1" format="vcf" value="vcf_to_maf_in.vcf"/>
+            <output name="output1" format="vcf_bgzip" value="vcf_bgzip_to_maf_in.vcf_bgzip"/>
+        </test>
+    </tests>
     <help>
     </help>
 </tool>

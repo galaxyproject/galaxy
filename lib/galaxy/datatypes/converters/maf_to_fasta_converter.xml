@@ -7,6 +7,12 @@
     <outputs>
         <data format="fasta" name="output1"/>
     </outputs>
+    <tests>
+        <test>
+            <param name="input1" format="maf" value="interval2maf_3from28way.maf"/>
+            <output name="output1" format="fasta" value="interval2fasta_3from28way.fasta"/>
+        </test>
+    </tests>
     <help>
     </help>
 </tool>

@@ -10,6 +10,12 @@
     <outputs>
         <data format="tabular" name="tabular"/>
     </outputs>
+    <tests>
+        <test>
+            <param name="csv" format="csv" value="1.csv"/>
+            <output name="tabular" format="tabular" value="1.tabular"/>
+        </test>
+    </tests>
     <help>
     </help>
 </tool>

@@ -13,6 +13,12 @@
     <outputs>
         <data format="interval_index" name="output"/>
     </outputs>
+    <tests>
+        <test>
+            <param name="input" format="pileup" value="1.pileup"/>
+            <output name="output" format="interval_index" value="1.interval_index"/>
+        </test>
+    </tests>
     <help>
     </help>
 </tool>

@@ -11,6 +11,12 @@
     <outputs>
         <data format="bed" name="output1"/>
     </outputs>
+    <tests>
+        <test>
+            <param name="input1" format="interval" value="2.interval"/>
+            <output name="output1" format="bed" value="2.bed"/>
+        </test>
+    </tests>
     <help>
     </help>
 </tool>

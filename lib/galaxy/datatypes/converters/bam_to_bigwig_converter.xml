@@ -21,6 +21,12 @@ bedtools genomecov -bg -split -ibam '$input'
     <outputs>
         <data name="output" format="bigwig"/>
     </outputs>
+    <tests>
+        <test>
+            <param name="input" format="bam" value="srma_out2.bam"/>
+            <output name="output" format="bigwig" value="srma_out2.bigwig"/>
+        </test>
+    </tests>
     <help>
     </help>
 </tool>

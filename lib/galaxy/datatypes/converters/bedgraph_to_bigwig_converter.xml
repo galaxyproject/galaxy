@@ -10,6 +10,12 @@
     <outputs>
         <data format="bigwig" name="output"/>
     </outputs>
+    <tests>
+        <test>
+            <param name="input" format="bedgraph" value="gtf2bedgraph_out.bedgraph"/>
+            <output name="output" format="bigwig" value="gtf2bigwig_out.bigwig"/>
+        </test>
+    </tests>
     <help>
     </help>
 </tool>

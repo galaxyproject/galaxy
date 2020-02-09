@@ -9,6 +9,12 @@
     <outputs>
         <data format="qualsolexa" name="output1" />
     </outputs>
+    <tests>
+        <test>
+            <param name="input1" format="fastqsolexa" value="2.fastqsolexa"/>
+            <output name="output1" format="qualsolexa" value="2.qualsolexa"/>
+        </test>
+    </tests>
     <help>
     </help>
 </tool>

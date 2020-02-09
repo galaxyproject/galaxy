@@ -8,4 +8,10 @@
     <outputs>
         <data format="interval" name="out_file1" />
     </outputs>
+    <tests>
+        <test>
+            <param name="input" format="wig" value="aggregate_binned_scores_3.wig"/>
+            <output name="out_file1" format="interval" value="aggregate_binned_scores_3.interval"/>
+        </test>
+    </tests>
 </tool>

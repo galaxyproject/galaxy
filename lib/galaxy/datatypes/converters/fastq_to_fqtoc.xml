@@ -6,6 +6,12 @@
     <outputs>
         <data format="fqtoc" name="output1"/>
     </outputs>
+    <tests>
+        <test>
+            <param name="input1" format="fastq" value="shrimp_wrapper_test1.fastq"/>
+            <output name="output1" format="fqtoc" value="shrimp_wrapper_test1.fqtoc"/>
+        </test>
+    </tests>
     <help>
     </help>
 </tool>

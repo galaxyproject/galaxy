@@ -8,6 +8,12 @@
     <outputs>
         <data format="bed" name="output1"/>
     </outputs>
+    <tests>
+        <test>
+            <param name="input1" format="gff" value="gff_filter_by_feature_count_out2.gff"/>
+            <output name="output1" format="bed" value="bed_filter_by_feature_count_out2.bed"/>
+        </test>
+    </tests>
     <help>
     </help>
 </tool>

@@ -18,6 +18,12 @@
     <outputs>
         <data name="output" format="bowtie_base_index"/>
     </outputs>
+    <tests>
+        <test>
+            <param name="input" format="fasta" value="chr_m.fasta"/>
+            <output name="output" format="bowtie_base_index" value="chr_m.bowtie_base_index"/>
+        </test>
+    </tests>
     <help>
     </help>
 </tool>

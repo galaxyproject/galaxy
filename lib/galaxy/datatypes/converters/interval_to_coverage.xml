@@ -14,6 +14,12 @@
     <outputs>
         <data format="coverage" name="output1"/>
     </outputs>
+    <tests>
+        <test>
+            <param name="input1" format="interval" value="2.interval"/>
+            <output name="output1" format="coverage" value="2.coverage"/>
+        </test>
+    </tests>
     <help>
     </help>
 </tool>

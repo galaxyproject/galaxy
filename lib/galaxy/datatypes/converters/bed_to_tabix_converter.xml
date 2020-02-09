@@ -11,6 +11,12 @@
     <outputs>
         <data format="tabix" name="output1"/>
     </outputs>
+    <tests>
+        <test>
+            <param name="input1" format="bed" value="droPer1.bed"/>
+            <output name="output1" format="tabix" value="droPer1.tabix"/>
+        </test>
+    </tests>
     <help>
     </help>
 </tool>

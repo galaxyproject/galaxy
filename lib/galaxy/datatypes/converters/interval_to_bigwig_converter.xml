@@ -29,6 +29,12 @@
     <outputs>
         <data format="bigwig" name="output"/>
     </outputs>
+    <tests>
+        <test>
+            <param name="input1" format="interval" value="2.interval"/>
+            <output name="output" format="bigwig" value="2.bigwig"/>
+        </test>
+    </tests>
     <help>
     </help>
 </tool>

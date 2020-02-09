@@ -10,6 +10,12 @@
     <outputs>
         <data format="array_tree" name="output"/>
     </outputs>
+    <tests>
+        <test>
+            <param name="input" format="bedgraph" value="gtf2bedgraph_out.bedgraph"/>
+            <output name="output" format="array_tree" value="gtf2array_tree_out.array_tree"/>
+        </test>
+    </tests>
     <help>
     </help>
 </tool>

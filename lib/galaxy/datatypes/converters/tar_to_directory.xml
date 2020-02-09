@@ -11,6 +11,12 @@
     <outputs>
         <data format="directory" name="output1"/>
     </outputs>
+    <tests>
+        <test>
+            <param name="input1" format="tar" value="unsafe.tar"/>
+            <output name="output1" format="directory" value="unsafe.directory"/>
+        </test>
+    </tests>
     <help>
     </help>
 </tool>
