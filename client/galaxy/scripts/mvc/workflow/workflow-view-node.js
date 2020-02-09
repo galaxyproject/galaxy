@@ -100,7 +100,7 @@ export class NodeView {
 
     outputViewforOutput(output, terminalView) {
         const outputViewClass = output.parameter ? ParameterOutputView : DataOutputView;
-        return new outputViewClass({
+        return new outputViewClass(this.app, {
             output: output,
             terminalElement: terminalView.el,
             nodeView: this

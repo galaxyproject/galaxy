@@ -179,7 +179,7 @@ class CanvasManager {
                 move((d.offsetX + x_adjust) / this.canvasZoom, (d.offsetY + y_adjust) / this.canvasZoom);
             })
             .bind("dragend", () => {
-                self.app.workflow.fit_canvas_to_nodes();
+                self.app.fit_canvas_to_nodes();
                 self.draw_overview();
             });
         this.overview.click(e => {
@@ -193,7 +193,7 @@ class CanvasManager {
                 var new_x_offset = e.pageX - self.oc.offset().left - self.ov.width() / 2;
                 var new_y_offset = e.pageY - self.oc.offset().top - self.ov.height() / 2;
                 move(-((new_x_offset / o_w) * in_w), -((new_y_offset / o_h) * in_h));
-                self.app.workflow.fit_canvas_to_nodes();
+                self.app.fit_canvas_to_nodes();
                 self.draw_overview();
             }
         });
@@ -210,7 +210,7 @@ class CanvasManager {
             })
             .bind("dragend", () => {
                 self.overview.addClass("blockaclick");
-                self.app.workflow.fit_canvas_to_nodes();
+                self.app.fit_canvas_to_nodes();
                 self.draw_overview();
             });
         // Dragging for overview border (resize)
