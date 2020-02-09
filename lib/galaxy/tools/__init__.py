@@ -143,7 +143,6 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     "MAF_split_blocks_by_species1",
     "MAF_Limit_To_Species1",
     "maf_by_block_number1",
-    "wiggle2simple1",
     # Converters
     "CONVERTER_bed_to_fli_0",
     "CONVERTER_fastq_to_fqtoc0",
@@ -151,7 +150,6 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     "CONVERTER_gff_to_interval_index_0",
     "CONVERTER_maf_to_fasta_0",
     "CONVERTER_maf_to_interval_0",
-    "CONVERTER_wiggle_to_interval_0",
     "CONVERTER_tar_to_directory",
     # Tools improperly migrated to the tool shed (devteam)
     "qualityFilter",
@@ -191,6 +189,8 @@ GALAXY_LIB_TOOLS_VERSIONED = {
     "vcf_to_maf_customtrack1": packaging.version.parse("1.0.1"),
     "secure_hash_message_digest": packaging.version.parse("0.0.2"),
     "join1": packaging.version.parse("2.1.3"),
+    "wiggle2simple1": packaging.version.parse("1.0.1"),
+    "CONVERTER_wiggle_to_interval_0": packaging.version.parse("1.0.1"),
 }
 
 
