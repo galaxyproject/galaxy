@@ -4,6 +4,8 @@ import Terminals from "mvc/workflow/workflow-terminals";
 import Connector from "mvc/workflow/workflow-connector";
 import ariaAlert from "utils/ariaAlert";
 
+var NODEINDEX = 0;
+
 class TerminalMappingView {
     constructor(options = {}) {
         this.$el = $("<div class='fa-icon-button fa fa-folder-o' />");
@@ -80,6 +82,7 @@ class BaseInputTerminalView extends TerminalView {
         const node = options.node;
         const input = options.input;
         const name = input.name;
+        node.cid = NODEINDEX++;
         const id = `node-${node.cid}-input-${name}`;
         const terminal = this.terminalForInput(input);
         this.setupMappingView(terminal);
@@ -229,6 +232,7 @@ export class BaseOutputTerminalView extends TerminalView {
         const node = options.node;
         const output = options.output;
         const name = output.name;
+        node.cid = NODEINDEX++;
         const id = `node-${node.cid}-output-${name}`;
         const terminal = this.terminalForOutput(output);
         this.setupMappingView(terminal);

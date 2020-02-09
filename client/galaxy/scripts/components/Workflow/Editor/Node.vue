@@ -1,6 +1,6 @@
 <template>
     <div>
-        <div class="toolFormTitle unselectable">
+        <div class="toolFormTitle unselectable clearfix">
             <i :class="iconClass" />
             <span class="nodeTitle">{{ title }}</span>
             <span class="sr-only">&nbsp;Node</span>
