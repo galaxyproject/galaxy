@@ -38,10 +38,10 @@ var create_app = function() {
 QUnit.module("Input terminal model test", {
     beforeEach: function() {
         testApp.create();
-        var app = create_app();
-        this.node = new Node(app.workflow, {});
+        this.app = create_app();
+        this.node = new Node(this.app.workflow, {});
         this.input = { extensions: ["txt"], multiple: false, optional: false };
-        this.input_terminal = new Terminals.InputTerminal({ input: this.input });
+        this.input_terminal = new Terminals.InputTerminal({ app: this.app.workflow, input: this.input });
         this.input_terminal.node = this.node;
     },
     afterEach: function() {
@@ -287,10 +287,10 @@ QUnit.test("initial redraw", function(assert) {
 QUnit.module("Input collection terminal model test", {
     beforeEach: function() {
         testApp.create();
-        var app = create_app();
-        this.node = new Node(app.workflow, {});
+        this.app = create_app();
+        this.node = new Node(this.app.workflow, {});
         this.input = { extensions: ["txt"], collection_types: ["list"] };
-        this.input_terminal = new Terminals.InputCollectionTerminal({ input: this.input });
+        this.input_terminal = new Terminals.InputCollectionTerminal({ app: this.app.workflow, input: this.input });
         this.input_terminal.node = this.node;
     },
     afterEach: function() {
@@ -538,6 +538,8 @@ QUnit.test("node added to workflow", function(assert) {
 // global NodeView
 QUnit.module("Node view ", {
     beforeEach: function() {
+        testApp.create();
+        this.app = create_app();
         this.set_for_node({
             input_terminals: {},
             output_terminals: {},
@@ -552,7 +554,7 @@ QUnit.module("Node view ", {
     },
     set_for_node: function(node) {
         var element = $("<div><div class='toolFormBody'></div></div>");
-        this.view = new NodeView({}, { node: node, $el: element });
+        this.view = new NodeView(this.app.workflow, { node: node, $el: element });
     },
     connectAttachedTerminal: function(inputType, outputType) {
         this.view.addDataInput({ name: "TestName", extensions: [inputType] });
@@ -701,10 +703,12 @@ QUnit.test("replacing terminal on data collection input with simple input change
 // global InputTerminalView
 QUnit.module("Input terminal view", {
     beforeEach: function() {
+        testApp.create();
+        this.app = create_app();
         this.node = { input_terminals: [] };
         this.input = { name: "i1", extensions: "txt", multiple: false };
         this.view = new TerminalsView.InputTerminalView(
-            {},
+            this.app.workflow,
             {
                 node: this.node,
                 input: this.input
@@ -727,10 +731,12 @@ QUnit.test("terminal element", function(assert) {
 
 QUnit.module("Output terminal view", {
     beforeEach: function() {
+        testApp.create();
+        this.app = create_app();
         this.node = { output_terminals: [] };
         this.output = { name: "o1", extensions: "txt" };
         this.view = new TerminalsView.OutputTerminalView(
-            {},
+            this.app.workflow,
             {
                 node: this.node,
                 output: this.output
@@ -875,7 +881,8 @@ QUnit.module("terminal mapping logic", {
             input["extensions"] = ["data"];
         }
         var inputEl = $("<div>")[0];
-        var inputTerminal = new Terminals.InputTerminal({ element: inputEl, input: input });
+        const app = create_app();
+        var inputTerminal = new Terminals.InputTerminal({ app: app.workflow, element: inputEl, input: input });
         var inputTerminalMapping = new Terminals.TerminalMapping({ terminal: inputTerminal });
         inputTerminal.node = node;
         if (mapOver) {
@@ -890,7 +897,8 @@ QUnit.module("terminal mapping logic", {
             input["extensions"] = ["data"];
         }
         const inputEl = $("<div>")[0];
-        const inputTerminal = new Terminals.InputCollectionTerminal({ element: inputEl, input: input });
+        const app = create_app();
+        const inputTerminal = new Terminals.InputCollectionTerminal({ app: app.workflow, element: inputEl, input: input });
         new Terminals.TerminalMapping({ terminal: inputTerminal });
         inputTerminal.node = node;
         return inputTerminal;

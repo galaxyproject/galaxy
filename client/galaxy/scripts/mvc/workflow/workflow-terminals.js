@@ -255,6 +255,7 @@ var OutputTerminal = Terminal.extend({
 var BaseInputTerminal = Terminal.extend({
     initialize: function(attr) {
         Terminal.prototype.initialize.call(this, attr);
+        this.app = attr.app;
         this.update(attr.input); // subclasses should implement this...
     },
     canAccept: function(other) {
@@ -366,7 +367,7 @@ var BaseInputTerminal = Terminal.extend({
                 if (
                     other_datatype == "input" ||
                     other_datatype == "_sniff_" ||
-                    window.workflow_globals.app.isSubType(cat_outputs[other_datatype_i], thisDatatype)
+                    this.app.isSubType(cat_outputs[other_datatype_i], thisDatatype)
                 ) {
                     return new ConnectionAcceptable(true, null);
                 }

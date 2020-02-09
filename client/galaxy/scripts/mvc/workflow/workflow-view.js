@@ -39,9 +39,6 @@ export class WorkflowView {
         this.options = options;
         this.reportsEditor = reportsEditor;
 
-        // Initialize workflow state
-        this.reset();
-
         // get available datatypes for post job action options
         this.datatypes = JSON.parse(
             $.ajax({
@@ -61,6 +58,9 @@ export class WorkflowView {
         // set mapping sub lists
         this.ext_to_type = this.datatypes_mapping.ext_to_class_name;
         this.type_to_type = this.datatypes_mapping.class_to_classes;
+
+        // Initialize workflow state
+        this.reset();
 
         this.get_workflow_versions = function() {
             const _workflow_version_dropdown = {};
@@ -403,12 +403,6 @@ export class WorkflowView {
         $container.find(`#${id}`).show();
         $container.show();
         $container.scrollTop();
-    }
-
-    isSubType(child, parent) {
-        child = this.ext_to_type[child];
-        parent = this.ext_to_type[parent];
-        return this.type_to_type[child] && parent in this.type_to_type[child];
     }
 
     report_changed(report_markdown) {

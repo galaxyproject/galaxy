@@ -51,7 +51,6 @@ export class InputTerminalMappingView extends TerminalMappingView {
 
 class TerminalView {
     setupMappingView(terminal) {
-        console.log(this.terminalMappingClass);
         var terminalMapping = new this.terminalMappingClass({
             terminal: terminal
         });
@@ -185,6 +184,7 @@ export class InputTerminalView extends BaseInputTerminalView {
     }
     terminalForInput(input) {
         return new Terminals.InputTerminal({
+            app: this.app,
             element: this.el,
             input: input
         });
@@ -200,6 +200,7 @@ export class InputParameterTerminalView extends BaseInputTerminalView {
     }
     terminalForInput(input) {
         return new Terminals.InputParameterTerminal({
+            app: this.app,
             element: this.el,
             input: input
         });
@@ -215,6 +216,7 @@ export class InputCollectionTerminalView extends BaseInputTerminalView {
     }
     terminalForInput(input = {}) {
         return new Terminals.InputCollectionTerminal({
+            app: this.app,
             element: this.el,
             input: input
         });

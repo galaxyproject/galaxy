@@ -24,6 +24,11 @@ class Workflow {
             $("#overview")
         );
     }
+    isSubType(child, parent) {
+        child = this.app.ext_to_type[child];
+        parent = this.app.ext_to_type[parent];
+        return this.app.type_to_type[child] && parent in this.app.type_to_type[child];
+    }
     canLabelOutputWith(label) {
         if (label) {
             return !(label in this.workflowOutputLabels);
