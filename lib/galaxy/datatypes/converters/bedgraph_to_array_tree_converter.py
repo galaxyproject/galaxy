@@ -41,15 +41,17 @@ def main():
     input_fname = sys.argv[1]
     out_fname = sys.argv[2]
 
-    reader = BedGraphReader(open(input_fname))
+    with open(input_fname) as in_fh:
+        reader = BedGraphReader(in_fh)
 
-    # Fill array from reader
-    d = array_tree_dict_from_reader(reader, {}, block_size=BLOCK_SIZE)
+        # Fill array from reader
+        d = array_tree_dict_from_reader(reader, {}, block_size=BLOCK_SIZE)
 
-    for array_tree in d.values():
-        array_tree.root.build_summary()
+        for array_tree in d.values():
+            array_tree.root.build_summary()
 
-    FileArrayTreeDict.dict_to_file(d, open(out_fname, "w"))
+        with open(out_fname, 'w') as out:
+            FileArrayTreeDict.dict_to_file(d, out)
 
 
 if __name__ == "__main__":

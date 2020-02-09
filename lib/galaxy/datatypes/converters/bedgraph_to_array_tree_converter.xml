@@ -2,7 +2,7 @@
     <!-- Used internally to generate track indexes -->
     <requirements>
         <requirement type="package" version="0.8.6">bx-python</requirement>
-    </requirements
+    </requirements>
     <command>python '$__tool_directory__/bedgraph_to_array_tree_converter.py' '$input' '$output'</command>
     <inputs>
         <param format="bedgraph" name="input" type="data" label="Choose BedGraph"/>
