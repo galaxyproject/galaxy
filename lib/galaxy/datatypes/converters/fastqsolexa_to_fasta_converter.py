@@ -19,8 +19,7 @@ assert sys.version_info[:2] >= (2, 4)
 
 
 def stop_err(msg):
-    sys.stderr.write("%s" % msg)
-    sys.exit()
+    sys.exit("%s" % msg)
 
 
 def __main__():
