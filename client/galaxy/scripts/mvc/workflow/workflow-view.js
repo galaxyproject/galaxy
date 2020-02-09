@@ -348,15 +348,6 @@ export class WorkflowView {
         this._moduleInitAjax(node, { type: type, _: "true" });
     }
 
-    display_file_list(node) {
-        var addlist = "<select id='node_data_list' name='node_data_list'>";
-        for (var out_terminal in node.output_terminals) {
-            addlist += `<option value='${out_terminal}'>${out_terminal}</option>`;
-        }
-        addlist += "</select>";
-        return addlist;
-    }
-
     showWorkflowParameters() {
         var parameter_re = /\$\{.+?\}/g;
         var workflow_parameters = [];
