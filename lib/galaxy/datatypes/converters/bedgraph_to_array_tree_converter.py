@@ -5,12 +5,11 @@ from __future__ import division
 import sys
 
 from bx.arrays.array_tree import array_tree_dict_from_reader, FileArrayTreeDict
-from six import Iterator
 
 BLOCK_SIZE = 100
 
 
-class BedGraphReader(Iterator):
+class BedGraphReader(object):
     def __init__(self, f):
         self.f = f
 
