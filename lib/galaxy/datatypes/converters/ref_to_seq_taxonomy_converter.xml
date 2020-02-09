@@ -1,5 +1,8 @@
-<tool id="CONVERTER_ref_to_seq_taxomony" name="Convert Ref taxonomy to Seq Taxonomy" version="1.0.0">
+<tool id="CONVERTER_ref_to_seq_taxomony" name="Convert Ref taxonomy to Seq Taxonomy" version="1.0.1" profile="16.04">
   <description>converts 2 or 3 column sequence taxonomy file to a 2 column mothur taxonomy_outline format</description>
+  <requirements>
+    <requirement type="package" version="3.7">python</requirement>
+  </requirements>
   <command> python '$__tool_directory__/ref_to_seq_taxonomy_converter.py' '$input' '$output'</command>
   <inputs>
     <param name="input" type="data" format="mothur.ref.taxonomy" label="a Sequence Taxomony file"/>
