@@ -1,5 +1,8 @@
-<tool id="CONVERTER_interval_to_coverage_0" name="Convert Genomic Intervals To COVERAGE" version="1.0.0">
+<tool id="CONVERTER_interval_to_coverage_0" name="Convert Genomic Intervals To COVERAGE" version="1.0.1" profile="16.04">
     <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+    <requirements>
+        <requirement type="package" version="0.8.6">bx-python</requirement>
+    </requirements>
     <command>
         python '$__tool_directory__/interval_to_coverage.py' '$input1' '$output1'
         -1 ${input1.metadata.chromCol},${input1.metadata.startCol},${input1.metadata.endCol},${input1.metadata.strandCol}
