@@ -29,7 +29,8 @@ def main():
         index.add(chrom, start, start + 1, offset)
         offset += len(line)
 
-    index.write(open(output_fname, "w"))
+    with open(output_fname, 'w') as out:
+        index.write(out)
 
 
 if __name__ == "__main__":
