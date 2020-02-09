@@ -148,7 +148,6 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     "CONVERTER_gff_to_interval_index_0",
     "CONVERTER_maf_to_fasta_0",
     "CONVERTER_maf_to_interval_0",
-    "CONVERTER_tar_to_directory",
     # Tools improperly migrated to the tool shed (devteam)
     "qualityFilter",
     "winSplitter",
@@ -191,6 +190,7 @@ GALAXY_LIB_TOOLS_VERSIONED = {
     "CONVERTER_wiggle_to_interval_0": packaging.version.parse("1.0.1"),
     "aggregate_scores_in_intervals2": packaging.version.parse("1.1.4"),
     "CONVERTER_fastq_to_fqtoc0": packaging.version.parse("1.0.1"),
+    "CONVERTER_tar_to_directory": packaging.version.parse("1.0.1"),
 }
 
 
