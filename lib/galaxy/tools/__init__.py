@@ -144,7 +144,6 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     "maf_by_block_number1",
     # Converters
     "CONVERTER_bed_to_fli_0",
-    "CONVERTER_fastq_to_fqtoc0",
     "CONVERTER_gff_to_fli_0",
     "CONVERTER_gff_to_interval_index_0",
     "CONVERTER_maf_to_fasta_0",
@@ -191,6 +190,7 @@ GALAXY_LIB_TOOLS_VERSIONED = {
     "wiggle2simple1": packaging.version.parse("1.0.1"),
     "CONVERTER_wiggle_to_interval_0": packaging.version.parse("1.0.1"),
     "aggregate_scores_in_intervals2": packaging.version.parse("1.1.4"),
+    "CONVERTER_fastq_to_fqtoc0": packaging.version.parse("1.0.1"),
 }
 
 
