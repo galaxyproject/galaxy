@@ -4,6 +4,7 @@
 import Vue from "vue";
 import SidePanel from "components/Panels/SidePanel";
 import Index from "./Index";
+import Node from "./Node";
 import WorkflowPanel from "./WorkflowPanel";
 
 export const mountWorkflowEditor = editorConfig => {
@@ -22,4 +23,9 @@ export const mountWorkflowPanel = propsData => {
         },
         el: "#right"
     });
+};
+
+export const mountWorkflowNode = (container, propsData) => {
+    const component = Vue.extend(Node);
+    return new component({ propsData: propsData, el: container });
 };

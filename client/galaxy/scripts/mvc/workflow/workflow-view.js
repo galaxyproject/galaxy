@@ -1,15 +1,15 @@
 import _ from "underscore";
 import $ from "jquery";
-import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import Utils from "utils/utils";
 import Workflow from "mvc/workflow/workflow-manager";
 import WorkflowCanvas from "mvc/workflow/workflow-canvas";
-import Node from "mvc/workflow/workflow-node";
+import { Node } from "mvc/workflow/workflow-node";
 import WorkflowIcons from "mvc/workflow/workflow-icons";
 import FormWrappers from "mvc/workflow/workflow-forms";
+import { mountWorkflowNode } from "components/Workflow/Editor/mount";
 import "ui/editable-text";
 
 import { hide_modal, show_message, show_modal } from "layout/modal";
@@ -36,17 +36,8 @@ workflow_display()
 \`\`\`
 `;
 
-function add_node_icon($to_el, nodeType) {
-    var iconStyle = WorkflowIcons[nodeType];
-    if (iconStyle) {
-        var $icon = $('<i class="icon fa">&nbsp;</i>').addClass(iconStyle);
-        $to_el.before($icon);
-    }
-}
-
-// create form view
-export default Backbone.View.extend({
-    initialize: function(options, reportsEditor) {
+export class WorkflowView {
+    constructor(options, reportsEditor = {}) {
         var self = (window.workflow_globals.app = this);
         this.options = options;
         this.reportsEditor = reportsEditor;
@@ -216,9 +207,9 @@ export default Backbone.View.extend({
                 return "There are unsaved changes to your workflow which will be lost.";
             }
         };
-    },
+    }
 
-    copy_into_workflow: function(id, stepCount = 0) {
+    copy_into_workflow(id = null, stepCount = null) {
         const Galaxy = getGalaxyInstance();
         if (stepCount < 2) {
             this._copy_into_workflow_ajax(id);
@@ -239,9 +230,9 @@ export default Backbone.View.extend({
                 }
             });
         }
-    },
+    }
 
-    _copy_into_workflow_ajax: function(workflowId) {
+    _copy_into_workflow_ajax(workflowId) {
         // Load workflow definition
         var self = this;
         this._workflowLoadAjax(workflowId, null, {
@@ -266,21 +257,21 @@ export default Backbone.View.extend({
                     hide_modal();
                 }
             },
-            beforeSubmit: function(data) {
+            beforeSubmit: function() {
                 show_message("Importing workflow", "progress");
             }
         });
-    },
+    }
 
     // Global state for the whole workflow
-    reset: function() {
+    reset() {
         if (this.workflow) {
             this.workflow.remove_all();
         }
         this.workflow = window.workflow_globals.workflow = new Workflow(this, $("#canvas-container"));
-    },
+    }
 
-    scroll_to_nodes: function() {
+    scroll_to_nodes() {
         var cv = $("#canvas-viewport");
         var cc = $("#canvas-container");
         var top;
@@ -296,9 +287,9 @@ export default Backbone.View.extend({
             top = 0;
         }
         cc.css({ left: left, top: top });
-    },
+    }
 
-    _workflowLoadAjax: function(workflowId, version, options) {
+    _workflowLoadAjax(workflowId, version, options) {
         $.ajax(
             Utils.merge(options, {
                 url: `${getAppRoot()}workflow/load_workflow`,
@@ -307,9 +298,9 @@ export default Backbone.View.extend({
                 cache: false
             })
         );
-    },
+    }
 
-    _moduleInitAjax: function(node, request_data) {
+    _moduleInitAjax(node, request_data) {
         var self = this;
         Utils.request({
             type: "POST",
@@ -332,43 +323,43 @@ export default Backbone.View.extend({
                 self.workflow.activate_node(node);
             }
         });
-    },
+    }
 
     // Add a new step to the workflow by tool id
-    add_node_for_tool: function(id, title) {
+    add_node_for_tool(id, title) {
         var node = this.workflow.create_node("tool", title, id);
         this._moduleInitAjax(node, {
             type: "tool",
             tool_id: id,
             _: "true"
         });
-    },
+    }
 
     // Add a new step to the workflow by tool id
-    add_node_for_subworkflow: function(id, title) {
+    add_node_for_subworkflow(id, title) {
         var node = this.workflow.create_node("subworkflow", title, id);
         this._moduleInitAjax(node, {
             type: "subworkflow",
             content_id: id,
             _: "true"
         });
-    },
+    }
 
-    add_node_for_module: function(type, title) {
+    add_node_for_module(type, title) {
         var node = this.workflow.create_node(type, title);
         this._moduleInitAjax(node, { type: type, _: "true" });
-    },
+    }
 
-    display_file_list: function(node) {
+    display_file_list(node) {
         var addlist = "<select id='node_data_list' name='node_data_list'>";
         for (var out_terminal in node.output_terminals) {
             addlist += `<option value='${out_terminal}'>${out_terminal}</option>`;
         }
         addlist += "</select>";
         return addlist;
-    },
+    }
 
-    showWorkflowParameters: function() {
+    showWorkflowParameters() {
         var parameter_re = /\$\{.+?\}/g;
         var workflow_parameters = [];
         var wf_parm_container = $("#workflow-parameters-container");
@@ -418,14 +409,14 @@ export default Backbone.View.extend({
             wf_parm_container.html(new_parameter_content);
             wf_parm_box.hide();
         }
-    },
+    }
 
-    showAttributes: function() {
+    showAttributes() {
         $(".right-content").hide();
         $("#edit-attributes").show();
-    },
+    }
 
-    showForm: function(content, node) {
+    showForm(content, node) {
         const cls = "right-content";
         var id = `${cls}-${node.id}`;
         var $container = $(`#${cls}`);
@@ -449,18 +440,18 @@ export default Backbone.View.extend({
         $container.find(`#${id}`).show();
         $container.show();
         $container.scrollTop();
-    },
+    }
 
-    isSubType: function(child, parent) {
+    isSubType(child, parent) {
         child = this.ext_to_type[child];
         parent = this.ext_to_type[parent];
         return this.type_to_type[child] && parent in this.type_to_type[child];
-    },
+    }
 
     report_changed(report_markdown) {
         this.workflow.has_changes = true;
         this.workflow.report.markdown = report_markdown;
-    },
+    }
 
     save_current_workflow() {
         const self = this;
@@ -507,9 +498,9 @@ export default Backbone.View.extend({
                 show_modal("Saving workflow failed.", response.err_msg, { Ok: hide_modal });
             }
         });
-    },
+    }
 
-    workflow_save_as: function() {
+    workflow_save_as() {
         const self = this;
         var body = $(
             '<form><label style="display:inline-block; width: 100%;">Save as name: </label><input type="text" id="workflow_rename" style="width: 80%;" autofocus/>' +
@@ -546,73 +537,52 @@ export default Backbone.View.extend({
             },
             Cancel: hide_modal
         });
-    },
+    }
 
-    layout_editor: function() {
+    layout_editor() {
         this.workflow.layout();
         this.workflow.fit_canvas_to_nodes();
         this.scroll_to_nodes();
         this.canvas_manager.draw_overview();
-    },
+    }
 
-    prebuildNode: function(type, title_text, content_id) {
+    prebuildNode(type, title_text, content_id) {
         var self = this;
-        var $f = $(`<div class='toolForm toolFormInCanvas'/>`);
-        var $title = $(
-            `<div class='toolFormTitle unselectable'><span class='nodeTitle'>${title_text}</span><span class="sr-only">&nbspNode</span></div>`
-        );
-        add_node_icon($title.find(".nodeTitle"), type);
-        $f.append($title);
-        $f.css("left", $(window).scrollLeft() + 20);
-        $f.css("top", $(window).scrollTop() + 20);
-        $f.append($("<div class='toolFormBody'></div>"));
+
+        // Create node wrapper
+        const container = document.createElement("div");
+        container.className = "toolForm toolFormInCanvas";
+        document.getElementById("canvas-container").appendChild(container);
+        var $f = $(container);
+
+        // Create backbone model and view
         var node = new Node(this, { element: $f });
         node.type = type;
         node.content_id = content_id;
-        var tmp = `<div><img alt="loading" height='16' align='middle' src='${getAppRoot()}static/images/loading_small_white_bg.gif'/> loading tool info...</div>`;
-        $f.find(".toolFormBody").append(tmp);
-        // Fix width to computed width
-        // Now add floats
-        var buttons = $("<div class='buttons' style='float: right;'></div>");
-        if (type !== "subworkflow") {
-            buttons.append(
-                $("<a/>")
-                    .attr({
-                        "aria-label": "clone node",
-                        role: "button",
-                        href: "javascript:void(0)"
-                    })
-                    .addClass("fa-icon-button fa fa-files-o node-clone")
-                    .click(e => {
-                        node.clone();
-                    })
-            );
-        }
-        buttons.append(
-            $("<a/>")
-                .attr({
-                    "aria-label": "destroy node",
-                    role: "button",
-                    href: "javascript:void(0)"
-                })
-                .addClass("fa-icon-button fa fa-times node-destroy")
-                .click(e => {
-                    node.destroy();
-                })
-        );
-        // Place inside container
-        $f.appendTo("#canvas-container");
+
+        // Mount node component as child dom to node wrapper
+        const child = document.createElement("div");
+        container.appendChild(child);
+        mountWorkflowNode(child, {
+            id: content_id,
+            type: type,
+            title: title_text,
+            node: node
+        });
+
+        // Set initial scroll position
+        $f.css("left", $(window).scrollLeft() + 20);
+        $f.css("top", $(window).scrollTop() + 20);
+
         // Position in container
         var o = $("#canvas-container").position();
         var p = $("#canvas-container").parent();
-        var width = $f.width();
+        var width = $f.outerWidth() + 50;
         var height = $f.height();
         $f.css({
             left: -o.left + p.width() / 2 - width / 2,
             top: -o.top + p.height() / 2 - height / 2
         });
-        buttons.appendTo($f.find(".toolFormTitle"));
-        width += buttons.width() + 10;
         $f.css("width", width);
         $f.bind("dragstart", () => {
             self.workflow.activate_node(node);
@@ -643,4 +613,4 @@ export default Backbone.View.extend({
             });
         return node;
     }
-});
+}
