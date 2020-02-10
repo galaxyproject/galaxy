@@ -90,13 +90,13 @@ export default {
             return {
                 name: _l("Workflows"),
                 elems: this.workflows
-            }
+            };
         },
         dataManagerSection() {
             return {
                 name: _l("Data Managers"),
                 elems: this.dataManagers
-            }
+            };
         },
         categories() {
             return filterToolSections(this.toolsLayout, this.results);

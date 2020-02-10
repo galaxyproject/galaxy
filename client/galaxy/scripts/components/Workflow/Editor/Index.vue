@@ -58,12 +58,7 @@
         </div>
         <SidePanel id="right" side="right">
             <template v-slot:panel>
-                <WorkflowPanel
-                    :id="id"
-                    :name="name"
-                    :tags="tags"
-                    :annotation="annotation"
-                />
+                <WorkflowPanel :id="id" :name="name" :tags="tags" :annotation="annotation" />
             </template>
         </SidePanel>
     </div>

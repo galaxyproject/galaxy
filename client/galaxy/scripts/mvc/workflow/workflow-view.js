@@ -7,7 +7,6 @@ import Utils from "utils/utils";
 import Workflow from "mvc/workflow/workflow-manager";
 import WorkflowIcons from "mvc/workflow/workflow-icons";
 import FormWrappers from "mvc/workflow/workflow-forms";
-import "ui/editable-text";
 
 import { hide_modal, show_message, show_modal } from "layout/modal";
 
