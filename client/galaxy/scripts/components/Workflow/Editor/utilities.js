@@ -161,7 +161,6 @@ export function loadCurrent(workflow, id, version, reportsEditor = {}) {
     show_message("Loading workflow", "progress");
     loadWorkflow(id, version)
         .then(data => {
-            console.log(data);
             workflow.remove_all();
             workflow.from_simple(data, true);
             const report = data.report || {};

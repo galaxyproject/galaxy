@@ -125,13 +125,7 @@ export default {
         getDatatypes().then(response => {
             const datatypes = response.datatypes;
             const datatypes_mapping = response.datatypes_mapping;
-            this.manager = new WorkflowManager(
-                {
-                    datatypes: datatypes,
-                    datatypes_mapping: datatypes_mapping
-                },
-                this.$refs.canvas
-            );
+            this.manager = new WorkflowManager({ datatypes_mapping }, this.$refs.canvas);
             this.manager
                 .on("onClearActiveNode", () => {
                     showAttributes();
