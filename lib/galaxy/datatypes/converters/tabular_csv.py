@@ -17,7 +17,10 @@ def compat_open(file, mode):
         fh = open(file, mode, newline='')
     else:
         fh = open(file, mode + 'b')
-    yield fh
+    try:
+        yield fh
+    finally:
+        fh.close()
 
 def main():
     usage = "Usage: %prog [options]"
