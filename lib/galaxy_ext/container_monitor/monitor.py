@@ -9,6 +9,8 @@ import time
 # insert *this* galaxy before all others on sys.path
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir)))
 
+import requests
+
 from galaxy.tool_util.deps import docker_util
 
 
@@ -27,11 +29,12 @@ def parse_ports(container_name, connection_configuration):
 
 
 def main():
-    with open("container_config.json", "r") as f:
+    with open("../configs/container_config.json", "r") as f:
         container_config = json.load(f)
 
     container_type = container_config["container_type"]
     container_name = container_config["container_name"]
+    callback_url = container_config.get("callback_url")
     connection_configuration = container_config["connection_configuration"]
     if container_type != "docker":
         raise Exception("Monitoring container type [%s], not yet implemented." % container_type)
@@ -51,14 +54,17 @@ def main():
                     for key in ports:
                         if ports[key]['host'] == '0.0.0.0':
                             ports[key]['host'] = host_ip
-                with open("container_runtime.json", "w") as f:
-                    json.dump(ports, f)
+                if callback_url:
+                    requests.post(callback_url, json={"container_runtime": ports})
+                else:
+                    with open("container_runtime.json", "w") as f:
+                        json.dump(ports, f)
                 break
             else:
                 raise Exception("Failed to recover ports...")
         except Exception as e:
             with open("container_monitor_exception.txt", "a") as f:
-                f.write(str(e))
+                f.write(str(e) + "\n\n\n")
         time.sleep(i * 2)
 
 
