@@ -1,5 +1,10 @@
 <template>
     <div id="center" class="inbound">
+        <SidePanel id="#right"
+            side="right"
+            :current-panel="currentPanel"
+            :current-panel-properties="currentPanelProperties"
+        />
         <div class="unified-panel-header" unselectable="on">
             <div class="unified-panel-header-inner">
                 <span class="sr-only">Workflow Editor</span>
@@ -47,14 +52,29 @@
 import { WorkflowView } from "mvc/workflow/workflow-view";
 import WorkflowOptions from "./Options";
 import MarkdownEditor from "components/Markdown/MarkdownEditor";
+import SidePanel from "components/Panels/SidePanel";
 import { getAppRoot } from "onload/loadConfig";
 import { showReportHelp } from "./reportHelp";
+import WorkflowPanel from "./WorkflowPanel";
 
 export default {
-    components: { MarkdownEditor, WorkflowOptions },
+    components: { MarkdownEditor, WorkflowOptions, SidePanel, WorkflowPanel },
     props: {
         editorConfig: {
             type: Object
+        }
+    },
+    computed: {
+        currentPanelProperties() {
+            return {
+                id: this.editorConfig.id,
+                name: this.editorConfig.name,
+                tags: this.editorConfig.tags,
+                annotation: this.editorConfig.annotation
+            }
+        },
+        currentPanel() {
+            return WorkflowPanel;
         }
     },
     data() {

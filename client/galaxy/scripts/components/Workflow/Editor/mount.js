@@ -5,25 +5,10 @@ import Vue from "vue";
 import SidePanel from "components/Panels/SidePanel";
 import Index from "./Index";
 import Node from "./Node";
-import WorkflowPanel from "./WorkflowPanel";
 import ToolBoxWorkflow from "components/Panels/ToolBoxWorkflow";
 import _l from "utils/localization";
 
 export const mountWorkflowEditor = editorConfig => {
-    const rightPanel = Vue.extend(SidePanel);
-    new rightPanel({
-        propsData: {
-            side: "right",
-            currentPanel: WorkflowPanel,
-            currentPanelProperties: {
-                id: editorConfig.id,
-                name: editorConfig.name,
-                tags: editorConfig.tags,
-                annotation: editorConfig.annotation
-            }
-        },
-        el: "#right"
-    });
     const leftPanel = Vue.extend(SidePanel);
     new leftPanel({
         propsData: {
