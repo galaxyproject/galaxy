@@ -7,17 +7,7 @@ usage: %prog [--from-tabular] -i in_file -o out_file
 
 import argparse
 import csv
-import sys
 
-from contextlib import contextmanager
-
-@contextmanager
-def compat_open(file, mode):
-    if sys.version_info[0] > 2:
-        fh = open(file, mode, newline='')
-    else:
-        fh = open(file, mode + 'b')
-    yield fh
 
 def main():
     usage = "Usage: %prog [options]"
@@ -35,19 +25,17 @@ def main():
 
 
 def convert_to_tsv(input_fname, output_fname):
-    with compat_open(input_fname, 'r') as csvfile:
-        with compat_open(output_fname, 'w') as ofh:
-            reader = csv.reader(csvfile)
-            for line in reader:
-                ofh.write('\t'.join(line) + '\n')
+    with open(input_fname, newline="") as csvfile, open(output_fname, 'w') as ofh:
+        reader = csv.reader(csvfile)
+        for line in reader:
+            ofh.write('\t'.join(line) + '\n')
 
 
 def convert_to_csv(input_fname, output_fname):
-    with compat_open(input_fname, 'r') as tabfile:
-        with compat_open(output_fname, 'w') as ofh:
-            writer = csv.writer(ofh, delimiter=',')
-            for line in tabfile.readlines():
-                writer.writerow(line.strip().split('\t'))
+    with open(input_fname) as tabfile, open(output_fname, 'w', newline='') as ofh:
+        writer = csv.writer(ofh, delimiter=',')
+        for line in tabfile.readlines():
+            writer.writerow(line.strip().split('\t'))
 
 
 if __name__ == "__main__":
