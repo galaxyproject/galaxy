@@ -77,9 +77,6 @@ export default {
         workflowSection: {
             type: Object
         },
-        workflowView: {
-            type: Object
-        },
         dataManagers: {
             type: Object
         },
@@ -114,18 +111,18 @@ export default {
         },
         onInsertTool(tool, evt) {
             evt.preventDefault();
-            this.workflowView.add_node_for_tool(tool.id, tool.name);
+            this.$emit("onInsertTool", tool.id, tool.name);
         },
         onInsertModule(module, evt) {
             evt.preventDefault();
-            this.workflowView.add_node_for_module(module.name, module.title);
+            this.$emit("onInsertModule", module.name, module.title);
         },
         onInsertWorkflow(workflow, evt) {
             evt.preventDefault();
-            this.workflowView.add_node_for_subworkflow(workflow.latest_id, workflow.name);
+            this.$emit("onInsertWorkflow", workflow.latest_id, workflow.name);
         },
         onInsertWorkflowSteps(workflow) {
-            this.workflowView.copy_into_workflow(workflow.id, workflow.step_count);
+            this.$emit("onInsertWorkflowSteps", workflow.id, workflow.step_count);
         }
     }
 };

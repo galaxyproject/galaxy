@@ -1,11 +1,16 @@
 <template>
     <div id="columns">
-        <SidePanel
-            id="left"
-            side="left"
-            :current-panel="currentToolPanel"
-            :current-panel-properties="currentToolPanelProperties"
-        />
+        <SidePanel id="left" side="left">
+            <template v-slot:panel>
+                <ToolBoxWorkflow
+                    v-bind="currentToolPanelProperties"
+                    @onInsertTool="onInsertTool"
+                    @onInsertModule="onInsertModule"
+                    @onInsertWorkflow="onInsertWorkflow"
+                    @onInsertWorkflowSteps="onInsertWorkflowSteps"
+                />
+            </template>
+        </SidePanel>
         <div id="center" class="inbound">
             <div class="unified-panel-header" unselectable="on">
                 <div class="unified-panel-header-inner">
@@ -48,12 +53,11 @@
                 <markdown-editor ref="report-editor" initial-markdown="" :onupdate="onReportUpdate" :toolbar="false" />
             </div>
         </div>
-        <SidePanel
-            id="right"
-            side="right"
-            :current-panel="currentPanel"
-            :current-panel-properties="currentPanelProperties"
-        />
+        <SidePanel id="right" side="right">
+            <template v-slot:panel>
+                <WorkflowPanel v-bind="currentPanelProperties" />
+            </template>
+        </SidePanel>
     </div>
 </template>
 
@@ -69,7 +73,7 @@ import WorkflowPanel from "./WorkflowPanel";
 import _l from "utils/localization";
 
 export default {
-    components: { MarkdownEditor, WorkflowOptions, SidePanel },
+    components: { MarkdownEditor, WorkflowOptions, SidePanel, ToolBoxWorkflow, WorkflowPanel },
     props: {
         editorConfig: {
             type: Object
@@ -87,7 +91,6 @@ export default {
         currentToolPanelProperties() {
             return {
                 toolbox: this.editorConfig.toolbox,
-                workflowView: this.workflowView,
                 moduleSections: this.editorConfig.module_sections,
                 dataManagers: {
                     name: _l("Data Managers"),
@@ -98,12 +101,6 @@ export default {
                     elems: this.editorConfig.workflows
                 }
             };
-        },
-        currentPanel() {
-            return WorkflowPanel;
-        },
-        currentToolPanel() {
-            return ToolBoxWorkflow;
         }
     },
     data() {
@@ -115,6 +112,18 @@ export default {
         this.workflowView = new WorkflowView(this.editorConfig, this.$refs["report-editor"]);
     },
     methods: {
+        onInsertTool(tool_id, tool_name) {
+            this.workflowView.add_node_for_tool(tool_id, tool_name);
+        },
+        onInsertModule(module_id, module_name) {
+            this.workflowView.add_node_for_module(module_id, module_name);
+        },
+        onInsertWorkflow(workflow_id, workflow_name) {
+            this.workflowView.add_node_for_subworkflow(workflow_id, workflow_name);
+        },
+        onInsertWorkflowSteps(workflow_id, step_count) {
+            this.workflowView.add_node_for_tool(workflow_id, step_count);
+        },
         onDownload() {
             window.location = `${getAppRoot()}api/workflows/${this.editorConfig.id}/download?format=json-download`;
         },
