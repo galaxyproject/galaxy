@@ -171,7 +171,10 @@ def looks_like_xml(path, regex=TOOL_REGEX):
         return False
 
     with open(path, "r") as f:
-        start_contents = f.read(5 * 1024)
+        try:
+            start_contents = f.read(5 * 1024)
+        except UnicodeDecodeError:
+            return False
         if regex.search(start_contents):
             return True
 
