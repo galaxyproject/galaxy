@@ -170,7 +170,7 @@ class DockerSwarmInterface(DockerInterface):
 
     def service(self, id=None, name=None):
         try:
-            return self.services(id=id, name=name).next()
+            return next(self.services(id=id, name=name))
         except StopIteration:
             return None
 
@@ -193,7 +193,7 @@ class DockerSwarmInterface(DockerInterface):
 
     def node(self, id=None, name=None):
         try:
-            return self.nodes(id=id, name=name).next()
+            return next(self.nodes(id=id, name=name))
         except StopIteration:
             return None
 

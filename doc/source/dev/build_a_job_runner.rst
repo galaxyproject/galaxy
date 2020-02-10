@@ -234,7 +234,7 @@ Updated result after an iteration (after invocation of ``check_watched_item`` 6 
 
 Note: Iterating through the queue is already taken care by the framework.
 
-To inform galaxy about the status of the job:
+To inform Galaxy about the status of the job:
 
 -  Get the job status from external runner using the ``job_id``.
 
@@ -249,38 +249,38 @@ To inform galaxy about the status of the job:
 .. code-block:: python
 
     def check_watched_item(self, job_state):
-            !job_status = get_task_from_external_runner(job_state.job_id)
-            if job_status == "over_with_success":
-                job_state.running = False
-                job_state.job_wrapper.change_state(model.Job.states.OK)
-                !create_log_file()
-                self.mark_as_finished(job_state)
-                return None
+        job_status = get_task_from_external_runner(job_state.job_id)
+        if job_status == "over_with_success":
+            job_state.running = False
+            job_state.job_wrapper.change_state(model.Job.states.OK)
+            create_log_files()
+            self.mark_as_finished(job_state)
+            return None
 
-            elif job_status == "running":
-                job_state.running = True
-                job_state.job_wrapper.change_state(model.Job.states.RUNNING)
-                return job_state
+        elif job_status == "running":
+            job_state.running = True
+            job_state.job_wrapper.change_state(model.Job.states.RUNNING)
+            return job_state
 
-            elif job_status == "pending":
-                return job_state
+        elif job_status == "pending":
+            return job_state
 
-            elif job_status == "over_with_error":
-                job_state.running = False
-                job_state.job_wrapper.change_state(model.Job.states.ERROR)
-                !create_log_file()
-                self.mark_as_failed(job_state)
-                return None
+        elif job_status == "over_with_error":
+            job_state.running = False
+            job_state.job_wrapper.change_state(model.Job.states.ERROR)
+            create_log_files()
+            self.mark_as_failed(job_state)
+            return None
 
 Note:
 
--  Methods prefixed with ! are user-defined methods.
+-  ``get_task_from_external_runner`` and ``create_log_files`` are user-defined methods.
 
 -  Return value is ``job_state`` for running, pending jobs and None for rest of the states of jobs.
 
 ``create_log_files()`` are nothing but copying the files (``error_file``,
-``output_file``, ``exit_code_file``) from external runner's directory to
-working directory of Galaxy.
+``output_file``, ``exit_code_file``) from the external runner's directory to
+the working directory of Galaxy.
 
 Source of the files are from the output directory of your external
 runner. Destination of the files will be:

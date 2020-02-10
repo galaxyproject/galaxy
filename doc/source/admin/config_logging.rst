@@ -238,5 +238,5 @@ advanced logging configuration. For example:
 While Galaxy's custom log format fields can be used (as seen in the example), the ``filename_template`` handler
 configuration extension is only available in the YAML format configuration file.
 
-.. _logging levels: https://docs.python.org/2/library/logging.html#logging-levels
-.. _fileConfig file format: https://docs.python.org/2/library/logging.config.html#configuration-file-format
+.. _logging levels: https://docs.python.org/library/logging.html#logging-levels
+.. _fileConfig file format: https://docs.python.org/library/logging.config.html#configuration-file-format

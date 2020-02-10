@@ -5,7 +5,6 @@ import random
 import re
 import shlex
 import stat
-import string
 import tempfile
 import uuid
 from itertools import product
@@ -357,7 +356,7 @@ class InteractiveEnvironmentRequest(object):
                 envsets.append(item[2:])
             elif item.startswith('--env'):
                 envsets.append(item[5:])
-        return dict(map(lambda s: string.split(s, '=', 1), envsets))
+        return dict(_.split('=', 1) for _ in envsets)
 
     def container_run_args(self, image, env_override=None, volumes=None):
         if volumes is None:

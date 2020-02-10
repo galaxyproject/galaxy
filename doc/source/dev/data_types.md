@@ -35,27 +35,17 @@ tag section of the `datatypes_conf.xml` file. Sample
 
 where
 
--  `extension` - the data type's Dataset file
-   extension (e.g., `ab1`, `bed`, `gff`, `qual`,
-   etc.) `type` - the path to the class for that
-   data type.
+- `extension` - the data type's Dataset file extension (e.g., `ab1`, `bed`,
+  `gff`, `qual`, etc.)
+- `type` - the path to the class for that data type.
+- `mimetype` - if present (it's optional), the data type's mime type
+- `display_in_upload` - if present (it's optional and defaults to False), the
+  associated file extension will be displayed in the "File Format" select list
+  in the "Upload File from your computer" tool in the "Get Data" tool section of
+  the tool panel.
 
--  `mimetype` - if present (it's optional), the data
-   type's mime type `display_in_upload` - if present
-   (it's optional and defaults to False), the
-   associated file extension will be displayed in
-   the "File Format" select list in the "Upload File
-   from your computer" tool in the "Get Data" tool
-   section of the tool panel.
-```xml
-<datatypes>
-    <registration converters_path="lib/galaxy/datatypes/converters">
-        <datatype extension="ab1" type="galaxy.datatypes.images:Ab1" mimetype="application/octet-stream" display_in_upload="true"/>
-        <datatype extension="foo" type="galaxy.datatypes.tabular:Foobar" display_in_upload="true"/>
-        ...
-```
 **Note:** If you do not wish to add extended
-functionality to for a new datatype, but simply want
+functionality to a new datatype, but simply want
 to restrict the output of a set of tools to be used
 in another set of tools, you can add the flag
 `subclass="True"` to the datatype definition line.
@@ -560,7 +550,7 @@ from galaxy.datatypes.metadata import MetadataElement
 
 The use of `<converter>` tags contained within `<datatype>` tags is supported in the same way they are supported within the `datatypes_conf.xml.sample` file in the Galaxy distribution.
 ```xml
-<datatype extension="ref.taxonomy" type="galaxy.datatypes.metagenomics:RefTaxonomy" display_in_upload="true"
+<datatype extension="ref.taxonomy" type="galaxy.datatypes.metagenomics:RefTaxonomy" display_in_upload="true">
     <converter file="ref_to_seq_taxonomy_converter.xml" target_datatype="seq.taxonomy"/>
 </datatype>
 ```
