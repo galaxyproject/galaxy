@@ -10,13 +10,17 @@ import ToolBoxWorkflow from "components/Panels/ToolBoxWorkflow";
 import _l from "utils/localization";
 
 export const mountWorkflowEditor = editorConfig => {
-    const propsData = { editorConfig };
     const rightPanel = Vue.extend(SidePanel);
     new rightPanel({
         propsData: {
             side: "right",
             currentPanel: WorkflowPanel,
-            currentPanelProperties: editorConfig
+            currentPanelProperties: {
+                id: editorConfig.id,
+                name: editorConfig.name,
+                tags: editorConfig.tags,
+                annotation: editorConfig.annotation
+            }
         },
         el: "#right"
     });
@@ -42,7 +46,9 @@ export const mountWorkflowEditor = editorConfig => {
         el: "#left"
     });
     const component = Vue.extend(Index);
-    return new component({ propsData: propsData, el: "#center" });
+    return new component({ propsData: {
+        editorConfig
+    }, el: "#center" });
 };
 
 export const mountWorkflowNode = (container, propsData) => {
