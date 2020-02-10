@@ -164,7 +164,6 @@ export class Node {
             post_job_actions: this.post_job_actions
         };
         var node = this.app.create_node(this.type, this.name, this.content_id);
-
         Utils.request({
             type: "POST",
             url: `${getAppRoot()}api/workflows/build_module`,

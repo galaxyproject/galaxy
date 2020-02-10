@@ -1,15 +1,14 @@
 import $ from "jquery";
-import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import Utils from "utils/utils";
 import Form from "mvc/form/form-view";
-import ToolFormBase from "mvc/tool/tool-form-base";
+import ToolForm from "mvc/tool/tool-form-base";
 
 /** Default form wrapper for non-tool modules in the workflow editor. */
-var Default = Backbone.View.extend({
-    initialize: function(options) {
+class Default {
+    constructor(options) {
         var self = this;
         var node = options.node;
         this.form = new Form(
@@ -34,14 +33,14 @@ var Default = Backbone.View.extend({
         _addLabelAnnotation(this.form);
         this.form.render();
     }
-});
+}
 
 /** Tool form wrapper for the workflow editor. */
-var Tool = Backbone.View.extend({
-    initialize: function(options) {
+class Tool {
+    constructor(options) {
         var self = this;
         var node = options.node;
-        this.form = new ToolFormBase(
+        this.form = new ToolForm(
             Utils.merge(options, {
                 text_enable: "Set in Advance",
                 text_disable: "Set at Runtime",
@@ -90,9 +89,8 @@ var Tool = Backbone.View.extend({
                 }
             })
         );
-    },
-
-    _customize: function(form) {
+    }
+    _customize(form) {
         var options = form.model.attributes;
         Utils.deepeach(options.inputs, input => {
             if (input.type) {
@@ -119,7 +117,7 @@ var Tool = Backbone.View.extend({
         _addSections(form);
         _addLabelAnnotation(form);
     }
-});
+}
 
 /** Augments the module form definition by adding label and annotation fields */
 function _addLabelAnnotation(form) {
