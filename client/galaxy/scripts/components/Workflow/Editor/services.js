@@ -3,12 +3,6 @@ import { rethrowSimple } from "utils/simple-error";
 import { getAppRoot } from "onload/loadConfig";
 
 /** Workflow data request helper **/
-export class Services {
-    constructor(options = {}) {
-        this.root = options.root || getAppRoot();
-    }
-}
-
 export async function getVersions() {
     const url = `${getAppRoot()}api/workflows/${self.id}/versions`;
     try {
@@ -26,6 +20,24 @@ export async function getDatatypes() {
         const mappingRequest = await axios.get(`${getAppRoot()}api/datatypes/mapping`);
         const datatypes_mapping = mappingRequest.data;
         return { datatypes, datatypes_mapping };
+    } catch (e) {
+        rethrowSimple(e);
+    }
+}
+
+export async function getModule(request_data) {
+    try {
+        const response = await axios.post(`${getAppRoot()}api/workflows/build_module`, request_data);
+        return response.data;
+    } catch (e) {
+        rethrowSimple(e);
+    }
+}
+
+export async function loadWorkflow(id, version) {
+    try {
+        const response = await axios.get(`${getAppRoot()}workflow/load_workflow?id=${id}&version=${version}&_=true,`);
+        return response.data;
     } catch (e) {
         rethrowSimple(e);
     }

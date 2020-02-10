@@ -13,7 +13,7 @@ import FormData from "mvc/form/form-data";
 import ToolFormBase from "mvc/tool/tool-form-base";
 import Modal from "mvc/ui/ui-modal";
 import Webhooks from "mvc/webhooks";
-import WorkflowIcons from "mvc/workflow/workflow-icons";
+import WorkflowIcons from "components/Workflow/icons";
 import { mountWorkflowInvocationState } from "components/WorkflowInvocationState";
 
 var View = Backbone.View.extend({

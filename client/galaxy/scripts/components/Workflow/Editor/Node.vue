@@ -29,7 +29,7 @@
 </template>
 
 <script>
-import WorkflowIcons from "mvc/workflow/workflow-icons";
+import WorkflowIcons from "components/Workflow/icons";
 
 export default {
     props: {

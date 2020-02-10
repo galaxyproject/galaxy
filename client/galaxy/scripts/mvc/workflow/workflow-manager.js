@@ -1,14 +1,18 @@
 import $ from "jquery";
+import { getGalaxyInstance } from "app";
 import Connector from "mvc/workflow/workflow-connector";
 import { Toast } from "ui/toast";
 import { Node } from "mvc/workflow/workflow-node";
 import { mountWorkflowNode } from "components/Workflow/Editor/mount";
 import WorkflowCanvas from "mvc/workflow/workflow-canvas";
+import EventEmitter from "events";
 
-class Workflow {
-    constructor(app, canvas_container) {
-        this.app = app;
-        this.canvas_container = canvas_container;
+class Workflow extends EventEmitter {
+    constructor(options, canvas_container) {
+        super();
+        this.ext_to_type = options.datatypes_mapping.ext_to_class_name;
+        this.type_to_type = options.datatypes_mapping.class_to_classes;
+        this.canvas_container = $(canvas_container);
         this.id_counter = 0;
         this.nodes = {};
         this.name = null;
@@ -20,10 +24,26 @@ class Workflow {
         // Canvas overview management
         this.canvas_manager = new WorkflowCanvas(this, $("#canvas-viewport"), $("#overview"));
     }
+    set_node(node, data) {
+        const Galaxy = getGalaxyInstance();
+        node.init_field_data(data);
+        node.update_field_data(data);
+        // Post init/update, for new modules we want to default to
+        // nodes being outputs
+        // TODO: Overhaul the handling of all this when we modernize
+        // the editor, replace callout image manipulation with a simple
+        // class toggle, etc.
+        $.each(node.output_terminals, (ot_id, ot) => {
+            node.addWorkflowOutput(ot.name);
+            var callout = $(node.element).find(`.callout.${ot.name.replace(/(?=[()])/g, "\\")}`);
+            callout.find("img").attr("src", `${Galaxy.root}static/images/fugue/asterisk-small.png`);
+        });
+        this.activate_node(node);
+    }
     isSubType(child, parent) {
-        child = this.app.ext_to_type[child];
-        parent = this.app.ext_to_type[parent];
-        return this.app.type_to_type[child] && parent in this.app.type_to_type[child];
+        child = this.ext_to_type[child];
+        parent = this.ext_to_type[parent];
+        return this.type_to_type[child] && parent in this.type_to_type[child];
     }
     canLabelOutputWith(label) {
         if (label) {
@@ -386,13 +406,13 @@ class Workflow {
             this.active_node = null;
         }
         document.activeElement.blur();
-        this.app.showAttributes();
+        this.emit("onClearActiveNode");
     }
     activate_node(node) {
         if (this.active_node != node) {
             this.check_changes_in_active_form();
             this.clear_active_node();
-            this.app.showForm(node.config_form, node);
+            this.emit("onActiveNode", node.config_form, node);
             node.make_active();
             this.active_node = node;
         }
@@ -402,9 +422,8 @@ class Workflow {
         if (this.active_node == node && force) {
             // Force changes to be saved even on new connection (previously dumped)
             this.check_changes_in_active_form();
-            this.app.showForm(node.config_form, node);
+            this.emit("onNodeChange", node.config_form, node);
         }
-        this.app.showWorkflowParameters();
     }
     scroll_to_nodes() {
         var cv = $("#canvas-viewport");

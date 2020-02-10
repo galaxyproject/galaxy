@@ -35,7 +35,7 @@
             </div>
             <div class="unified-panel-body" id="workflow-canvas-body" v-show="isCanvas">
                 <div id="canvas-viewport" class="workflow-canvas-content">
-                    <div id="canvas-container" />
+                    <div ref="canvas" id="canvas-container" />
                 </div>
                 <div id="workflow-parameters-box">
                     <span class="workflow-parameters-box-title">
@@ -65,8 +65,18 @@
 </template>
 
 <script>
-import { getDatatypes } from "./services";
-import { WorkflowView } from "mvc/workflow/workflow-view";
+import { getDatatypes, getModule } from "./services";
+import {
+    showWorkflowParameters,
+    buildDropdowns,
+    copyIntoWorkflow,
+    showAttributes,
+    showForm,
+    saveAs,
+    saveCurrent,
+    loadCurrent
+} from "./utilities";
+import WorkflowManager from "mvc/workflow/workflow-manager";
 import WorkflowOptions from "./Options";
 import MarkdownEditor from "components/Markdown/MarkdownEditor";
 import ToolBoxWorkflow from "components/Panels/ToolBoxWorkflow";
@@ -113,41 +123,79 @@ export default {
     },
     created() {
         getDatatypes().then(response => {
-            this.workflowView = new WorkflowView(
+            const datatypes = response.datatypes;
+            const datatypes_mapping = response.datatypes_mapping;
+            this.manager = new WorkflowManager(
                 {
-                    id: this.id,
-                    version: this.version,
-                    datatypes: response.datatypes,
-                    datatypes_mapping: response.datatypes_mapping
+                    datatypes: datatypes,
+                    datatypes_mapping: datatypes_mapping
                 },
-                this.$refs["report-editor"]
+                this.$refs.canvas
             );
+            this.manager
+                .on("onClearActiveNode", () => {
+                    showAttributes();
+                })
+                .on("onActiveNode", (form, node) => {
+                    showForm(this.manager, form, node, datatypes);
+                })
+                .on("onNodeChange", (form, node) => {
+                    showForm(this.manager, form, node, datatypes);
+                    showWorkflowParameters(this.manager);
+                });
+
+            // Load workflow definition
+            loadCurrent(this.manager, this.id, this.version, this.$refs["report-editor"]);
+            buildDropdowns(this.manager, this.id);
         });
     },
     methods: {
         onInsertTool(tool_id, tool_name) {
-            this.workflowView.add_node_for_tool(tool_id, tool_name);
+            var node = this.manager.create_node("tool", tool_name, tool_id);
+            const requestData = {
+                type: "tool",
+                tool_id: tool_id,
+                _: "true"
+            };
+            getModule(requestData).then(response => {
+                this.manager.set_node(node, response);
+            });
         },
         onInsertModule(module_id, module_name) {
-            this.workflowView.add_node_for_module(module_id, module_name);
+            var node = this.manager.create_node(module_id, module_name);
+            const requestData = {
+                type: module_id,
+                _: "true"
+            };
+            getModule(requestData).then(response => {
+                this.manager.set_node(node, response);
+            });
         },
         onInsertWorkflow(workflow_id, workflow_name) {
-            this.workflowView.add_node_for_subworkflow(workflow_id, workflow_name);
+            var node = this.manager.create_node("tool", workflow_name, workflow_id);
+            const requestData = {
+                type: "subworkflow",
+                content_id: workflow_id,
+                _: "true"
+            };
+            getModule(requestData).then(response => {
+                this.manager.set_node(node, response);
+            });
         },
         onInsertWorkflowSteps(workflow_id, step_count) {
-            this.workflowView.copy_into_workflow(workflow_id, step_count);
+            copyIntoWorkflow(this.manager, workflow_id, step_count);
         },
         onDownload() {
             window.location = `${getAppRoot()}api/workflows/${this.id}/download?format=json-download`;
         },
         onSaveAs() {
-            this.workflowView.workflow_save_as();
+            saveAs();
         },
         onLayout() {
-            this.workflowView.workflow.layout_auto();
+            this.manager.layout_auto();
         },
         onAttributes() {
-            this.workflowView.workflow.clear_active_node();
+            this.manager.clear_active_node();
         },
         onEdit() {
             this.isCanvas = true;
@@ -156,13 +204,14 @@ export default {
             this.isCanvas = false;
         },
         onReportUpdate(markdown) {
-            this.workflowView.report_changed(markdown);
+            this.manager.has_changes = true;
+            this.manager.report.markdown = markdown;
         },
         onRun() {
             window.location = `${getAppRoot()}workflows/run?id=${this.id}`;
         },
         onSave() {
-            this.workflowView.save_current_workflow();
+            saveCurrent(this.manager, this.id, this.$refs["report-editor"]);
         },
         onReportHelp() {
             showReportHelp();
