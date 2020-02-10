@@ -33,7 +33,8 @@ workflow_display()
 export class WorkflowView {
     constructor(options, reportsEditor = {}) {
         var self = this;
-        this.options = options;
+        this.id = options.id;
+        this.version = options.version;
         this.reportsEditor = reportsEditor;
 
         // get available datatypes for post job action options
@@ -63,7 +64,7 @@ export class WorkflowView {
             const _workflow_version_dropdown = {};
             const workflow_versions = JSON.parse(
                 $.ajax({
-                    url: `${getAppRoot()}api/workflows/${self.options.id}/versions`,
+                    url: `${getAppRoot()}api/workflows/${self.id}/versions`,
                     async: false
                 }).responseText
             );
@@ -108,7 +109,7 @@ export class WorkflowView {
                             return;
                         }
                     }
-                    self.load_workflow(self.options.id, this.value);
+                    self.load_workflow(self.id, this.value);
                 }
             });
         };
@@ -169,7 +170,7 @@ export class WorkflowView {
         };
 
         // Load workflow definition
-        this.load_workflow(self.options.id, self.options.version);
+        this.load_workflow(self.id, self.version);
 
         // On load, set the size to the pref stored in local storage if it exists
         var overview_size = localStorage.getItem("overview-size");
@@ -417,7 +418,7 @@ export class WorkflowView {
         }
         self.workflow.rectify_workflow_outputs();
         Utils.request({
-            url: `${getAppRoot()}api/workflows/${self.options.id}`,
+            url: `${getAppRoot()}api/workflows/${self.id}`,
             type: "PUT",
             data: { workflow: self.workflow.to_simple(), from_tool_form: true },
             success: function(data) {

@@ -22,8 +22,8 @@
                     @onClick="onInsertModule"
                 />
                 <tool-section
-                    :category="dataManagers"
-                    :key="dataManagers.id"
+                    :category="dataManagerSection"
+                    :key="dataManagerSection.id"
                     :query-filter="query"
                     :disable-filter="true"
                     @onClick="onInsertTool"
@@ -53,6 +53,7 @@
 </template>
 
 <script>
+import _l from "utils/localization";
 import ToolSection from "./Common/ToolSection";
 import ToolSearch from "./Common/ToolSearch";
 import { filterToolSections } from "./utilities";
@@ -74,17 +75,29 @@ export default {
             type: Array,
             required: true
         },
-        workflowSection: {
-            type: Object
+        workflows: {
+            type: Array
         },
         dataManagers: {
-            type: Object
+            type: Array
         },
         moduleSections: {
             type: Array
         }
     },
     computed: {
+        workflowSection() {
+            return {
+                name: _l("Workflows"),
+                elems: this.workflows
+            }
+        },
+        dataManagerSection() {
+            return {
+                name: _l("Data Managers"),
+                elems: this.dataManagers
+            }
+        },
         categories() {
             return filterToolSections(this.toolsLayout, this.results);
         },

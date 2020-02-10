@@ -3,7 +3,10 @@
         <SidePanel id="left" side="left">
             <template v-slot:panel>
                 <ToolBoxWorkflow
-                    v-bind="currentToolPanelProperties"
+                    :toolbox="toolbox"
+                    :module-sections="module_sections"
+                    :data-managers="data_managers"
+                    :workflows="workflows"
                     @onInsertTool="onInsertTool"
                     @onInsertModule="onInsertModule"
                     @onInsertWorkflow="onInsertWorkflow"
@@ -55,7 +58,12 @@
         </div>
         <SidePanel id="right" side="right">
             <template v-slot:panel>
-                <WorkflowPanel v-bind="currentPanelProperties" />
+                <WorkflowPanel
+                    :id="id"
+                    :name="name"
+                    :tags="tags"
+                    :annotation="annotation"
+                />
             </template>
         </SidePanel>
     </div>
@@ -70,7 +78,6 @@ import SidePanel from "components/Panels/SidePanel";
 import { getAppRoot } from "onload/loadConfig";
 import { showReportHelp } from "./reportHelp";
 import WorkflowPanel from "./WorkflowPanel";
-import _l from "utils/localization";
 
 export default {
     components: { MarkdownEditor, WorkflowOptions, SidePanel, ToolBoxWorkflow, WorkflowPanel },
@@ -101,30 +108,6 @@ export default {
         },
         toolbox: {
             type: Array
-        }
-    },
-    computed: {
-        currentPanelProperties() {
-            return {
-                id: this.id,
-                name: this.name,
-                tags: this.tags,
-                annotation: this.annotation
-            };
-        },
-        currentToolPanelProperties() {
-            return {
-                toolbox: this.toolbox,
-                moduleSections: this.module_sections,
-                dataManagers: {
-                    name: _l("Data Managers"),
-                    elems: this.data_managers
-                },
-                workflowSection: {
-                    name: _l("Workflows"),
-                    elems: this.workflows
-                }
-            };
         }
     },
     data() {
