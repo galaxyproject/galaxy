@@ -1,8 +1,8 @@
 <template>
     <div>
         <ServerSelection
-            :toolshedUrl="toolshedUrl"
-            :toolshedUrls="toolshedUrls"
+            :toolshed-url="toolshedUrl"
+            :toolshed-urls="toolshedUrls"
             :total="total"
             :loading="loading"
             @onToolshed="setToolshed"
@@ -12,12 +12,12 @@
             <Repositories
                 :query="query"
                 :scrolled="scrolled"
-                :toolshedUrl="toolshedUrl"
+                :toolshed-url="toolshedUrl"
                 @onError="setError"
                 v-if="!queryEmpty"
             />
             <Categories
-                :toolshedUrl="toolshedUrl"
+                :toolshed-url="toolshedUrl"
                 :loading="loading"
                 @onCategory="setQuery"
                 @onTotal="setTotal"
@@ -49,7 +49,10 @@ export default {
             total: 0,
             error: null,
             tabCurrent: "true",
-            tabOptions: [{ text: "Search All", value: true }, { text: "Installed Only", value: false }]
+            tabOptions: [
+                { text: "Search All", value: true },
+                { text: "Installed Only", value: false }
+            ]
         };
     },
     created() {

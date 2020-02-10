@@ -355,7 +355,6 @@ uWSGI can be configured to serve HTTP and/or HTTPS directly:
   # listening options
   http: :8080
   https: :8443,server.crt,server.key
-  static-map: /static/style=static/style/blue
   static-map: /static=static
 ```
 
@@ -370,7 +369,6 @@ user and drop privileges to the Galaxy user with a configuration such as:
   https: =1
   uid: galaxy
   gid: galaxy
-  static-map: /static/style=static/style/blue
   static-map: /static=static
 ```
 

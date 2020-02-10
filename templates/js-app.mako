@@ -20,10 +20,12 @@
         <link rel="index" href="${ h.url_for( '/' ) }"/>
         
         ## TODO: use loaders to move everything but the essentials below the fold
+        ${ h.dist_css(
+            'base',
+        )}
         ${ h.css(
             'jquery-ui/smoothness/jquery-ui',
             'bootstrap-tour',
-            'base'
         )}
 
     </head>
@@ -36,15 +38,11 @@
 </html>
 
 <%def name="javascripts()">
-    ${ h.js(
-        'bundled/libs.chunk',
-        'bundled/base.chunk'
+    ${ h.dist_js(
+        'libs.chunk',
+        'base.chunk'
     )}
-    ${ h.js('bundled/' + js_app_name + '.bundled')}
-</%def>
-
-<%def name="javascript_entry()">
-    ${ h.js('bundled/' + js_app_name + '.bundled')}
+    ${ h.dist_js('%s.bundled' % js_app_name)}
 </%def>
 
 <%def name="javascript_app()">

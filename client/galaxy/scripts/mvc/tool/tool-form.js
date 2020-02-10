@@ -176,7 +176,10 @@ const View = Backbone.View.extend({
                 display: "radio",
                 ignore: "__ignore__",
                 value: "__ignore__",
-                options: [["Yes", options.job_id], ["No", "__ignore__"]],
+                options: [
+                    ["Yes", options.job_id],
+                    ["No", "__ignore__"]
+                ],
                 help: help
             });
         }
@@ -199,7 +202,10 @@ const View = Backbone.View.extend({
                 display: "radio",
                 ignore: "__ignore__",
                 value: "__ignore__",
-                options: [["No", false], ["Yes", true]]
+                options: [
+                    ["No", false],
+                    ["Yes", true]
+                ]
             });
         }
     },

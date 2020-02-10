@@ -85,7 +85,7 @@ import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import DependencyIndexMixin from "./DependencyIndexMixin";
 import ResolutionDetails from "./ResolutionDetails";
-import { getToolboxDependencies, installDependencies, uninstallDependencies } from "../AdminServices.js";
+import { getToolboxDependencies, installDependencies, uninstallDependencies } from "../AdminServices";
 
 Vue.use(BootstrapVue);
 

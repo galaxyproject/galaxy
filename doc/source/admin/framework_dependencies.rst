@@ -96,18 +96,6 @@ this script yourself to set up Galaxy pip and the dependencies without creating 
 .. code-block:: console
 
     (venv)$ PYTHONPATH= sh /srv/galaxy/server/scripts/common_startup.sh --no-create-venv
-    Requirement already satisfied: pip>=8.1 in /home/nate/.virtualenvs/test/lib/python2.7/site-packages
-    Collecting numpy==1.9.2 (from -r requirements.txt (line 4))
-      Downloading https://wheels.galaxyproject.org/packages/numpy-1.9.2-cp27-cp27mu-manylinux1_x86_64.whl (10.2MB)
-        100% |████████████████████████████████| 10.2MB 21.7MB/s 
-    Collecting bx-python==0.7.3 (from -r requirements.txt (line 5))
-      Downloading https://wheels.galaxyproject.org/packages/bx_python-0.7.3-cp27-cp27mu-manylinux1_x86_64.whl (2.1MB)
-        100% |████████████████████████████████| 2.2MB 97.2MB/s 
-
-        ...
-
-    Installing collected packages: numpy, bx-python, ...
-    Successfully installed numpy-1.9.2 bx-python-0.7.3 ...
 
 .. warning::
 
@@ -193,9 +181,9 @@ Galaxy can create a virtualenv using the adapted virtualenv package. Once a vali
         3. Start galaxy using ``sh run.sh`` or execute ``sh scripts/common_startup.sh``.
 
 
-    A Conda environment named ``_galaxy_`` will be created using python 2 and the appropriate virtualenv package will be installed into this environment.
+    A Conda environment named ``_galaxy_`` will be created and the appropriate virtualenv package will be installed into this environment.
     Using this environment a ``.venv`` is initialized. This is a one-time setup, and all other activation and dependency
-    management happens exactly as if a system python was used for creating ``.venv``.
+    management happens exactly as if a system Python was used for creating ``.venv``.
 
 .. _Conda: https://conda.io/
 .. _Conda environments: https://conda.io/docs/user-guide/tasks/manage-environments.html
@@ -254,12 +242,6 @@ Adding additional Galaxy dependencies
 -------------------------------------
 
 New packages can be added to Galaxy, or the versions of existing packages can be updated, using `pipenv`_ and `Starforge`_, Galaxy's Docker-based build system.
-
-.. note::
-
-    Dependency pinning management is being migrated to pipenv_. As of this release, pinning for packages used for Galaxy
-    development are managed by pipenv_, but pinning for regular runtime packages are still managed with manual changes
-    to ``pinned-requirements.txt``. See `Pull Request #4891`_ for details.
 
 The process is still under development and will be streamlined and automated over time. For the time being, please use
 the following process to add new packages and have their wheels built:

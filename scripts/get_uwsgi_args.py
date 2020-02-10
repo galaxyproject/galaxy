@@ -91,8 +91,7 @@ def _get_uwsgi_args(cliargs, kwargs):
         'threads': '4',
         'buffer-size': '16384',  # https://github.com/galaxyproject/galaxy/issues/1530
         'http': 'localhost:{port}'.format(port=DEFAULT_PORTS[cliargs.app]),
-        'static-map': ('/static/style={here}/static/style/blue'.format(here=os.getcwd()),
-                       '/static={here}/static'.format(here=os.getcwd()),
+        'static-map': ('/static={here}/static'.format(here=os.getcwd()),
                        '/favicon.ico={here}/static/favicon.ico'.format(here=os.getcwd())),
         'static-safe': ('{here}/client/galaxy/images'.format(here=os.getcwd())),
         'die-on-term': True,
@@ -120,7 +119,7 @@ def _get_uwsgi_args(cliargs, kwargs):
         # route: ^/static/scripts/bundled/ http:127.0.0.1:8081
         if hmr_server.lower() in ['1', 'true', 'default']:
             hmr_server = "http:127.0.0.1:8081"
-        __add_arg(args, 'route', '^/static/scripts/bundled/ {hmr_server}'.format(hmr_server=hmr_server))
+        __add_arg(args, 'route', '^/static/dist/ {hmr_server}'.format(hmr_server=hmr_server))
 
     for arg in DEFAULT_ARGS['_all_'] + DEFAULT_ARGS[cliargs.app]:
         if not __arg_set(arg, uwsgi_kwargs):

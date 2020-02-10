@@ -1002,7 +1002,7 @@
         </td>
     %else:
         <td>
-            <img src="${h.url_for('/static')}/june_2007_style/blue/ok_small.png"/>
+            <img src="${h.url_for('/static')}/style/ok_small.png"/>
             %if prepare_for_install:
                 Installed through ${dependency['dependency_type'].title() | h}
             %endif

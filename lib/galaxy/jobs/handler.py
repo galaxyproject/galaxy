@@ -96,10 +96,10 @@ class JobHandlerQueue(Monitors):
         self.__initialize_job_grabbing()
 
     def __initialize_job_grabbing(self):
-        grabbable_methods = set([
+        grabbable_methods = {
             HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION,
             HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED,
-        ])
+        }
         try:
             method = [m for m in self.app.job_config.handler_assignment_methods if m in grabbable_methods][0]
         except IndexError:

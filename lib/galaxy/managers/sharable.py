@@ -427,7 +427,7 @@ class SharableModelDeserializer(base.ModelDeserializer,
         unencoded_ids = [self.app.security.decode_id(id_) for id_ in val]
         new_users_shared_with = set(self.manager.user_manager.by_ids(unencoded_ids))
         current_shares = self.manager.get_share_assocs(item)
-        currently_shared_with = set([share.user for share in current_shares])
+        currently_shared_with = {share.user for share in current_shares}
 
         needs_adding = new_users_shared_with - currently_shared_with
         for user in needs_adding:

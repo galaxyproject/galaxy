@@ -11,7 +11,7 @@
 </template>
 <script>
 import BaseList from "./BaseList";
-import { getDisplayApplications, reloadDisplayApplications } from "./AdminServices.js";
+import { getDisplayApplications, reloadDisplayApplications } from "./AdminServices";
 
 export default {
     components: {

@@ -2170,7 +2170,7 @@ class Dataset(StorableObject, RepresentById):
     )
     ready_states = tuple(set(states.__dict__.values()) - set(non_ready_states))
     valid_input_states = tuple(
-        set(states.__dict__.values()) - set([states.ERROR, states.DISCARDED])
+        set(states.__dict__.values()) - {states.ERROR, states.DISCARDED}
     )
     terminal_states = (
         states.OK,
@@ -5707,8 +5707,14 @@ class UserAuthnzToken(UserMixin, RepresentById):
 
     @classmethod
     def create_user(cls, *args, **kwargs):
+        """
+        This is used by PSA authnz, do not use directly.
+        Prefer using the user manager.
+        """
         model = cls.user_model()
         instance = model(*args, **kwargs)
+        if cls.get_users_by_email(instance.email).first():
+            raise Exception("User with this email '%s' already exists." % instance.email)
         instance.set_random_password()
         cls.sa_session.add(instance)
         cls.sa_session.flush()

@@ -87,6 +87,9 @@ NULL_CHAR = b'\x00'
 BINARY_CHARS = [NULL_CHAR]
 FILENAME_VALID_CHARS = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
+RW_R__R__ = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
+RWXR_XR_X = stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH
+RWXRWXRWX = stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO
 
 defaultdict = collections.defaultdict
 
@@ -918,8 +921,8 @@ def parse_resource_parameters(resource_param_file):
 
 
 # asbool implementation pulled from PasteDeploy
-truthy = frozenset(['true', 'yes', 'on', 'y', 't', '1'])
-falsy = frozenset(['false', 'no', 'off', 'n', 'f', '0'])
+truthy = frozenset({'true', 'yes', 'on', 'y', 't', '1'})
+falsy = frozenset({'false', 'no', 'off', 'n', 'f', '0'})
 
 
 def asbool(obj):

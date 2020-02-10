@@ -40,9 +40,9 @@
                     <InstallationSettings
                         v-if="showSettings"
                         :repo="repo"
-                        :toolshedUrl="toolshedUrl"
-                        :changesetRevision="selectedChangeset"
-                        :requiresPanel="selectedRequiresPanel"
+                        :toolshed-url="toolshedUrl"
+                        :changeset-revision="selectedChangeset"
+                        :requires-panel="selectedRequiresPanel"
                         @hide="onHide"
                         @ok="onOk"
                     />
@@ -54,7 +54,7 @@
 <script>
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { Services } from "../services.js";
+import { Services } from "../services";
 import InstallationSettings from "./InstallationSettings.vue";
 import InstallationButton from "./InstallationButton.vue";
 import RepositoryTools from "./RepositoryTools.vue";

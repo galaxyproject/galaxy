@@ -4,7 +4,7 @@
             <b>Workflow Invocation State</b>
             <span v-if="createdTime"> (invoked at {{ createdTime }})</span>
         </span>
-        <div v-bind:class="{ 'context-wrapped': provideContext }">
+        <div :class="{ 'context-wrapped': provideContext }">
             <div>
                 Step Scheduling
                 <span
@@ -15,25 +15,25 @@
                     @click="cancelWorkflowScheduling"
                 ></span>
                 <div v-if="!stepCount">
-                    <progress-bar note="Loading step state summary" :loading="true" :infoProgress="1" />
+                    <progress-bar note="Loading step state summary" :loading="true" :info-progress="1" />
                 </div>
                 <div v-else-if="invocationState == 'cancelled'">
                     <progress-bar
                         note="Invocation scheduling cancelled - expected jobs and outputs may not be generated"
-                        :errorProgress="1"
+                        :error-progress="1"
                     />
                 </div>
                 <div v-else-if="invocationState == 'failed'">
                     <progress-bar
                         note="Invocation scheduling failed - Galaxy administrator may have additional details in logs"
-                        :errorProgress="1"
+                        :error-progress="1"
                     />
                 </div>
                 <div v-else>
                     <progress-bar
                         :note="stepStatesStr"
-                        :okProgress="stepScheduledPercent"
-                        :newProgress="stepOtherPercent"
+                        :ok-progress="stepScheduledPercent"
+                        :new-progress="stepOtherPercent"
                     />
                 </div>
             </div>
@@ -42,22 +42,22 @@
                 <div v-if="jobCount">
                     <progress-bar
                         :note="jobStatesStr"
-                        :okProgress="okPercent"
-                        :runningProgress="runningPercent"
-                        :newProgress="otherPercent"
-                        :errorProgress="errorPercent"
-                        :okMessage="okMessage"
-                        :runningMessage="runningMessage"
-                        :errorMessage="errorMessage"
+                        :ok-progress="okPercent"
+                        :running-progress="runningPercent"
+                        :new-progress="otherPercent"
+                        :error-progress="errorPercent"
+                        :ok-message="okMessage"
+                        :running-message="runningMessage"
+                        :error-message="errorMessage"
                     />
                 </div>
                 <div v-else>
-                    <progress-bar note="Loading job summary" :loading="true" :infoProgress="1" />
+                    <progress-bar note="Loading job summary" :loading="true" :info-progress="1" />
                 </div>
             </div>
             <span v-if="invocationSchedulingTerminal && jobStatesTerminal">
-                <a v-bind:href="invocationLink">View Invocation Report</a>
-                <a class="fa fa-print" v-bind:href="invocationPdfLink"></a>
+                <a :href="invocationLink">View Invocation Report</a>
+                <a class="fa fa-print" :href="invocationPdfLink"></a>
             </span>
         </div>
     </div>

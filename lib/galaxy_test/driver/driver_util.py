@@ -459,7 +459,7 @@ def _get_static_settings():
         static_images_dir=os.path.join(static_dir, 'images', ''),
         static_favicon_dir=os.path.join(static_dir, 'favicon.ico'),
         static_scripts_dir=os.path.join(static_dir, 'scripts', ''),
-        static_style_dir=os.path.join(static_dir, 'style', 'blue'),
+        static_style_dir=os.path.join(static_dir, 'style'),
         static_robots_txt=os.path.join(static_dir, 'robots.txt'),
     )
 

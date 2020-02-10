@@ -1,20 +1,15 @@
 import $ from "jquery";
-import Backbone from "backbone";
-// import { getAppRoot } from "onload/loadConfig";
 
 // TODO; tie into Galaxy state?
 window.workflow_globals = window.workflow_globals || {};
 
-const DataInputView = Backbone.View.extend({
-    className: "form-row dataRow input-data-row",
-
-    initialize: function(options) {
+export class DataInputView {
+    constructor(options = {}) {
         this.input = options.input;
         this.nodeView = options.nodeView;
         this.terminalElement = options.terminalElement;
-
+        this.$el = $("<div class='form-row dataRow input-data-row'/>");
         this.$el.attr("name", this.input.name).html(this.input.label || this.input.name);
-
         if (!options.skipResize) {
             this.$el.css({
                 position: "absolute",
@@ -33,20 +28,17 @@ const DataInputView = Backbone.View.extend({
             this.$el.remove();
         }
     }
-});
+}
 
-const DataOutputView = Backbone.View.extend({
-    className: "form-row dataRow",
-
-    initialize: function(options) {
+export class DataOutputView {
+    constructor(options = {}) {
+        this.$el = $("<div class='form-row dataRow'/>");
         this.output = options.output;
         this.terminalElement = options.terminalElement;
         this.nodeView = options.nodeView;
-
         const output = this.output;
         let label = output.label || output.name;
         const node = this.nodeView.node;
-
         const isInput = output.extensions.indexOf("input") >= 0;
         if (!isInput) {
             label = `${label} (${output.force_datatype || output.extensions.join(", ")})`;
@@ -78,26 +70,23 @@ const DataOutputView = Backbone.View.extend({
                 display: ""
             })
             .detach();
-    },
-    redrawWorkflowOutput: function() {
+    }
+    redrawWorkflowOutput() {
         if (this.calloutView) {
             this.calloutView.resetImage();
         }
     }
-});
+}
 
-const ParameterOutputView = Backbone.View.extend({
-    className: "form-row dataRow",
-
-    initialize: function(options) {
+export class ParameterOutputView {
+    constructor(options = {}) {
+        this.$el = $("<div class='form-row dataRow'/>");
         this.output = options.output;
         this.terminalElement = options.terminalElement;
         this.nodeView = options.nodeView;
-
         const output = this.output;
         const label = output.label || output.name;
         const node = this.nodeView.node;
-
         this.$el.html(label);
         this.calloutView = null;
         if (["tool", "subworkflow"].indexOf(node.type) >= 0) {
@@ -125,18 +114,17 @@ const ParameterOutputView = Backbone.View.extend({
                 display: ""
             })
             .detach();
-    },
-    redrawWorkflowOutput: function() {
+    }
+    redrawWorkflowOutput() {
         if (this.calloutView) {
             this.calloutView.resetImage();
         }
     }
-});
+}
 
-const OutputCalloutView = Backbone.View.extend({
-    tagName: "div",
-
-    initialize: function(options) {
+export class OutputCalloutView {
+    constructor(options = {}) {
+        this.$el = $("<div/>");
         this.label = options.label;
         this.node = options.node;
         this.output = options.output;
@@ -171,19 +159,12 @@ const OutputCalloutView = Backbone.View.extend({
         });
         this.$el.show();
         this.resetImage();
-    },
-
-    resetImage: function() {
+    }
+    resetImage() {
         if (!this.node.isWorkflowOutput(this.output.name)) {
-            this.$("icon").removeClass("mark-terminal-active");
+            this.$el.find("icon").removeClass("mark-terminal-active");
         } else {
-            this.$("icon").addClass("mark-terminal-active");
+            this.$el.find("icon").addClass("mark-terminal-active");
         }
     }
-});
-
-export default {
-    DataInputView: DataInputView,
-    DataOutputView: DataOutputView,
-    ParameterOutputView: ParameterOutputView
-};
+}

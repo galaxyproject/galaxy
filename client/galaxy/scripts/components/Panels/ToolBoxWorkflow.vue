@@ -12,27 +12,27 @@
             <div class="toolMenuContainer">
                 <tool-section
                     v-for="category in moduleSections"
-                    :hideName="true"
+                    :hide-name="true"
                     :category="category"
-                    toolKey="name"
-                    :sectionName="category.name"
-                    :queryFilter="query"
-                    :disableFilter="true"
+                    tool-key="name"
+                    :section-name="category.name"
+                    :query-filter="query"
+                    :disable-filter="true"
                     :key="category.name"
                     @onClick="onInsertModule"
                 />
                 <tool-section
                     :category="dataManagers"
                     :key="dataManagers.id"
-                    :queryFilter="query"
-                    :disableFilter="true"
+                    :query-filter="query"
+                    :disable-filter="true"
                     @onClick="onInsertTool"
                 />
                 <div class="toolMenu" id="workflow-tool-menu">
                     <tool-section
                         v-for="category in categories"
                         :category="category"
-                        :queryFilter="query"
+                        :query-filter="query"
                         :key="category.id"
                         @onClick="onInsertTool"
                     />
@@ -40,10 +40,10 @@
                 <tool-section
                     :category="workflowSection"
                     :key="workflowSection.name"
-                    operationIcon="fa fa-copy"
-                    operationTitle="Insert individual steps."
-                    :queryFilter="query"
-                    :disableFilter="true"
+                    operation-icon="fa fa-copy"
+                    operation-title="Insert individual steps."
+                    :query-filter="query"
+                    :disable-filter="true"
                     @onClick="onInsertWorkflow"
                     @onOperation="onInsertWorkflowSteps"
                 />
@@ -55,7 +55,7 @@
 <script>
 import ToolSection from "./Common/ToolSection";
 import ToolSearch from "./Common/ToolSearch";
-import { filterToolSections } from "./utilities.js";
+import { filterToolSections } from "./utilities";
 
 export default {
     name: "ToolBox",

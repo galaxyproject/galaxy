@@ -118,16 +118,12 @@ def _wait(cmds, **popen_kwds):
     return stdout
 
 
-def download_command(url, to=STDOUT_INDICATOR, quote_url=False):
+def download_command(url, to=STDOUT_INDICATOR):
     """Build a command line to download a URL.
 
     By default the URL will be downloaded to standard output but a specific
     file can be specified with the `to` argument.
     """
-    if quote_url:
-        url = "'%s'" % url
-        if to != STDOUT_INDICATOR:
-            to = "'%s'" % to
     if which("wget"):
         download_cmd = ["wget", "-q"]
         if to == STDOUT_INDICATOR:

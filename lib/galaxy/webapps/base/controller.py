@@ -275,6 +275,9 @@ class JSAppLauncher(BaseUIController):
         self._check_require_login(trans)
         return self._bootstrapped_client(trans, **kwd)
 
+    # This includes contextualized user options in the bootstrapped data; we
+    # don't want to cache it.
+    @web.do_not_cache
     def _bootstrapped_client(self, trans, app_name='analysis', **kwd):
         js_options = self._get_js_options(trans)
         js_options['config'].update(self._get_extended_config(trans))
@@ -310,15 +313,17 @@ class JSAppLauncher(BaseUIController):
         }
 
         # TODO: move to user
-        stored_workflow_menu_entries = config['stored_workflow_menu_entries'] = []
+        stored_workflow_menu_index = {}
+        stored_workflow_menu_entries = []
         for menu_item in getattr(trans.user, 'stored_workflow_menu_entries', []):
-            stored_workflow_menu_entries.append({
-                'encoded_stored_workflow_id': trans.security.encode_id(menu_item.stored_workflow_id),
-                'stored_workflow': {
+            encoded_stored_workflow_id = trans.security.encode_id(menu_item.stored_workflow_id)
+            if encoded_stored_workflow_id not in stored_workflow_menu_index:
+                stored_workflow_menu_index[encoded_stored_workflow_id] = True
+                stored_workflow_menu_entries.append({
+                    'id': encoded_stored_workflow_id,
                     'name': util.unicodify(menu_item.stored_workflow.name)
-                }
-            })
-
+                })
+        config['stored_workflow_menu_entries'] = stored_workflow_menu_entries
         return config
 
     def _get_site_configuration(self, trans):

@@ -481,6 +481,8 @@ class Data(object):
         If the data cannot reasonably be displayed, just indicate this and do
         not throw an exception.
         """
+        if self.file_ext in {'png', 'jpg'}:
+            return self.handle_dataset_as_image(dataset_instance)
         if self.is_binary:
             result = "*cannot display binary content*\n"
         else:

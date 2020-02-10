@@ -1,6 +1,6 @@
 <template>
     <span>
-        <span v-bind:class="spinnerClasses"></span>
+        <span :class="spinnerClasses"></span>
         <span class="loading-message">{{ message }}.<span class="blinking">..</span></span>
     </span>
 </template>

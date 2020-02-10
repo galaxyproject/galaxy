@@ -12,6 +12,7 @@ from galaxy_test.base.workflow_fixtures import (
 )
 from .framework import (
     retry_assertion_during_transitions,
+    retry_during_transitions,
     selenium_test,
     SeleniumTestCase
 )
@@ -24,10 +25,14 @@ class WorkflowEditorTestCase(SeleniumTestCase):
     @selenium_test
     def test_basics(self):
         editor = self.components.workflow_editor
-
-        name = self.workflow_create_new()
+        annotation = "basic_test"
+        name = self.workflow_create_new(annotation=annotation)
         edit_name_element = self.components.workflow_editor.edit_name.wait_for_visible()
-        assert name in edit_name_element.text, edit_name_element.text
+        actual_name = edit_name_element.get_attribute("value")
+        assert name in actual_name, "'%s' unequal name '%s'" % (name, actual_name)
+        edit_annotation_element = self.components.workflow_editor.edit_annotation.wait_for_visible()
+        actual_annotation = edit_annotation_element.get_attribute("value")
+        assert annotation in actual_annotation, "'%s' unequal annotation '%s'" % (annotation, actual_annotation)
 
         editor.canvas_body.wait_for_visible()
         editor.tool_menu.wait_for_visible()
@@ -335,7 +340,7 @@ steps:
 
     @selenium_test
     def test_workflow_bookmarking(self):
-        @retry_assertion_during_transitions
+        @retry_during_transitions
         def assert_workflow_bookmarked_status(target_status):
             name_matches = [c.text == new_workflow_name for c in self.components.tool_panel.workflow_names.all()]
             status = any(name_matches)
@@ -406,7 +411,7 @@ steps:
         name = self.workflow_upload_yaml_with_random_name(yaml_content)
         self.workflow_index_open()
         self.workflow_index_open_with_name(name)
-        self.workflow_editor_click_option("Auto Re-layout")
+        self.workflow_editor_click_option("Auto Layout")
 
     def workflow_editor_source_sink_terminal_ids(self, source, sink):
         editor = self.components.workflow_editor

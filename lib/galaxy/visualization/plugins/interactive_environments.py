@@ -5,7 +5,6 @@ import random
 import re
 import shlex
 import stat
-import string
 import tempfile
 import uuid
 from itertools import product
@@ -28,13 +27,13 @@ from galaxy.util.bunch import Bunch
 
 IS_OS_X = _platform == "darwin"
 CONTAINER_NAME_PREFIX = 'gie_'
-ENV_OVERRIDE_CAPITALIZE = frozenset([
+ENV_OVERRIDE_CAPITALIZE = frozenset({
     'notebook_username',
     'notebook_password',
     'dataset_hid',
     'dataset_filename',
     'additional_ids',
-])
+})
 
 log = logging.getLogger(__name__)
 
@@ -357,7 +356,7 @@ class InteractiveEnvironmentRequest(object):
                 envsets.append(item[2:])
             elif item.startswith('--env'):
                 envsets.append(item[5:])
-        return dict(map(lambda s: string.split(s, '=', 1), envsets))
+        return dict(_.split('=', 1) for _ in envsets)
 
     def container_run_args(self, image, env_override=None, volumes=None):
         if volumes is None:

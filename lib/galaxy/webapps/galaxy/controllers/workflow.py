@@ -574,7 +574,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             return {'id': trans.security.encode_id(stored_workflow.id), 'message': 'Workflow %s has been created.' % workflow_name}
 
     @web.json
-    def save_workflow_as(self, trans, workflow_name, workflow_data, workflow_annotation=""):
+    def save_workflow_as(self, trans, workflow_name, workflow_data, workflow_annotation="", from_tool_form=False):
         """
             Creates a new workflow based on Save As command. It is a new workflow, but
             is created with workflow_data already present.
@@ -604,6 +604,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
                     trans,
                     stored_workflow,
                     workflow_data,
+                    from_tool_form=from_tool_form,
                 )
             except workflows.MissingToolsException as e:
                 return dict(
@@ -690,36 +691,29 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             'latest_id'           : trans.security.encode_id(workflow.latest_workflow.id),
             'step_count'          : len(workflow.latest_workflow.steps),
             'name'                : workflow.name
-        } for workflow in workflows]
+        } for workflow in workflows if workflow.id != stored.id]
+
+        # identify item tags
+        item_tags = [tag for tag in stored.tags if tag.user == trans.user]
+        item_tag_names = []
+        for ta in item_tags:
+            item_tag_names.append(escape(ta.tag.name))
 
         # build workflow editor model
         editor_config = {
             'id'                      : trans.security.encode_id(stored.id),
             'name'                    : stored.name,
+            'tags'                    : item_tag_names,
+            'version'                 : version,
+            'annotation'              : self.get_item_annotation_str(trans.sa_session, trans.user, stored),
             'toolbox'                 : trans.app.toolbox.to_dict(trans),
             'module_sections'         : module_sections,
             'data_managers'           : data_managers,
-            'workflows'               : workflows,
-            'urls'    : {
-                'tool_search'         : url_for('/api/tools'),
-                'get_datatypes'       : url_for('/api/datatypes/mapping'),
-                'load_workflow'       : url_for(controller='workflow', action='load_workflow'),
-                'run_workflow'        : url_for(controller='root', action='index', workflow_id=trans.security.encode_id(stored.id)),
-                'rename_async'        : url_for(controller='workflow', action='rename_async', id=trans.security.encode_id(stored.id)),
-                'annotate_async'      : url_for(controller='workflow', action='annotate_async', id=trans.security.encode_id(stored.id)),
-                'get_new_module_info' : url_for(controller='workflow', action='get_new_module_info'),
-                'workflow_index'      : url_for('/workflows/list'),
-                'save_workflow'       : url_for(controller='workflow', action='save_workflow'),
-                'workflow_save_as'    : url_for(controller='workflow', action='save_workflow_as')
-            }
+            'workflows'               : workflows
         }
 
         # parse to mako
-        return trans.fill_template("workflow/editor.mako",
-                                   editor_config=editor_config,
-                                   stored=stored,
-                                   version=version,
-                                   annotation=self.get_item_annotation_str(trans.sa_session, trans.user, stored))
+        return trans.fill_template("workflow/editor.mako", editor_config=editor_config)
 
     @web.json
     def load_workflow(self, trans, id, version=None):

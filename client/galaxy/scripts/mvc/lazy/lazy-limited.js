@@ -22,7 +22,7 @@ export default Backbone.View.extend({
 
     /** Checks if the limit has been reached */
     _done: function() {
-        var done = _.size(this.content_list) > this.max;
+        var done = _.size(this.content_list) >= this.max;
         this.$message[done ? "show" : "hide"]();
         return done;
     },

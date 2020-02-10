@@ -3,9 +3,9 @@ import $ from "jquery";
 import testApp from "qunit/test-app";
 import sinon from "sinon";
 import Utils from "utils/utils";
-import App from "mvc/workflow/workflow-view";
-import Node from "mvc/workflow/workflow-node";
-import NodeView from "mvc/workflow/workflow-view-node";
+import { WorkflowView } from "mvc/workflow/workflow-view";
+import { Node } from "mvc/workflow/workflow-node";
+import { NodeView } from "mvc/workflow/workflow-view-node";
 import Terminals from "mvc/workflow/workflow-terminals";
 import TerminalsView from "mvc/workflow/workflow-view-terminals";
 import Connector from "mvc/workflow/workflow-connector";
@@ -28,7 +28,7 @@ var create_app = function() {
     );
 
     // build app
-    return new App({
+    return new WorkflowView({
         id: null,
         urls: { get_datatypes: getAppRoot() + "api/datatypes/mapping" },
         workflows: []
@@ -363,7 +363,10 @@ QUnit.module("Node unit test", {
     },
     update_field_data_with_new_input: function(option_overrides) {
         const new_data = Utils.merge(option_overrides, {
-            inputs: [{ name: "input1", extensions: ["data"] }, { name: "extra_0|input1", extensions: ["data"] }],
+            inputs: [
+                { name: "input1", extensions: ["data"] },
+                { name: "extra_0|input1", extensions: ["data"] }
+            ],
             outputs: [{ name: "output1", extensions: ["data"] }],
             post_job_actions: "{}",
             label: "New Label"
@@ -499,7 +502,10 @@ QUnit.test("update_field_data destroys old terminals", function(assert) {
     var node = this.node;
     this.expect_workflow_node_changed(assert, () => {
         var data = {
-            inputs: [{ name: "input1", extensions: ["data"] }, { name: "willDisappear", extensions: ["data"] }],
+            inputs: [
+                { name: "input1", extensions: ["data"] },
+                { name: "willDisappear", extensions: ["data"] }
+            ],
             outputs: [{ name: "output1", extensions: ["data"] }]
         };
         node.init_field_data(data);
@@ -544,7 +550,7 @@ QUnit.module("Node view ", {
     },
     set_for_node: function(node) {
         var element = $("<div><div class='toolFormBody'></div></div>");
-        this.view = new NodeView({ node: node, el: element[0] });
+        this.view = new NodeView({ node: node, $el: element });
     },
     connectAttachedTerminal: function(inputType, outputType) {
         this.view.addDataInput({ name: "TestName", extensions: [inputType] });

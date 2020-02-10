@@ -52,7 +52,7 @@ class EmailAction(DefaultJobAction):
                 host = socket.getfqdn()
             frm = 'galaxy-no-reply@%s' % host
         to = job.user.email
-        subject = "Galaxy workflow step notification '%s'" % (job.history.name)
+        subject = "Galaxy job completion notification from history '%s'" % (job.history.name)
         outdata = ', '.join(ds.dataset.display_name() for ds in job.output_datasets)
         body = "Your Galaxy job generating dataset '%s' is complete as of %s." % (outdata, datetime.datetime.now().strftime("%I:%M"))
         try:

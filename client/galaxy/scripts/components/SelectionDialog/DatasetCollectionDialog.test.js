@@ -1,7 +1,7 @@
 import MockAdapter from "axios-mock-adapter";
 import axios from "axios";
 import DatasetCollectionDialog from "./DatasetCollectionDialog.vue";
-import { __RewireAPI__ as rewire } from "./DatasetCollectionDialog";
+import { setupTestGalaxy } from "qunit/test-app";
 import SelectionDialog from "./SelectionDialog.vue";
 
 import { shallowMount, createLocalVue } from "@vue/test-utils";
@@ -12,10 +12,6 @@ const mockOptions = {
     history: "f2db41e1fa331b3e"
 };
 
-const galaxyInstance = {
-    root: "/"
-};
-
 describe("DatasetCollectionDialog.vue", () => {
     let wrapper;
     let localVue;
@@ -23,7 +19,7 @@ describe("DatasetCollectionDialog.vue", () => {
 
     beforeEach(() => {
         axiosMock = new MockAdapter(axios);
-        rewire.__Rewire__("getGalaxyInstance", () => galaxyInstance);
+        setupTestGalaxy();
         localVue = createLocalVue();
         wrapper = shallowMount(DatasetCollectionDialog, {
             propsData: mockOptions,

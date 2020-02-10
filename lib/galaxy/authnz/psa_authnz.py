@@ -129,9 +129,6 @@ class PSAAuthnz(IdentityProvider):
         this_config = self.config.get(setting_name(name), DEFAULTS.get(name, None))
         return do_import and module_member(this_config) or this_config
 
-    def _get_current_user(self, trans):
-        return trans.user if trans.user is not None else None
-
     def _load_backend(self, strategy, redirect_uri):
         backends = self._get_helper('AUTHENTICATION_BACKENDS')
         backend = get_backend(backends, BACKENDS_NAME[self.config['provider']])
@@ -159,7 +156,7 @@ class PSAAuthnz(IdentityProvider):
         redirect_url = do_complete(
             backend,
             login=lambda backend, user, social_user: self._login_user(backend, user, social_user),
-            user=self._get_current_user(trans),
+            user=trans.user,
             state=state_token)
         return redirect_url, self.config.get('user', None)
 
@@ -169,7 +166,7 @@ class PSAAuthnz(IdentityProvider):
             disconnect_redirect_url if disconnect_redirect_url is not None else ()
         strategy = Strategy(trans.request, trans.session, Storage, self.config)
         backend = self._load_backend(strategy, self.config['redirect_uri'])
-        response = do_disconnect(backend, self._get_current_user(trans), association_id)
+        response = do_disconnect(backend, trans.user, association_id)
         if isinstance(response, six.string_types):
             return True, "", response
         return response.get('success', False), response.get('message', ""), ""

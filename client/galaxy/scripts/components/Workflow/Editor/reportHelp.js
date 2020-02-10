@@ -47,7 +47,7 @@ workflow_display()
 
 <pre>
 \`\`\`galaxy
-job_parameters(step=qc)
+job_parameters(step="qc")
 \`\`\`
 </pre>
 

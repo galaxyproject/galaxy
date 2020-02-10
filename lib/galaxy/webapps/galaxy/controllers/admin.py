@@ -1602,7 +1602,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             # install the dependencies for the tools in the selected_tool_ids list
             if not isinstance(selected_tool_ids, list):
                 selected_tool_ids = [selected_tool_ids]
-            requirements = set([tools_by_id[tid].tool_requirements for tid in selected_tool_ids])
+            requirements = {tools_by_id[tid].tool_requirements for tid in selected_tool_ids}
             if install_dependencies:
                 [view.install_dependencies(r) for r in requirements]
             elif uninstall_dependencies:

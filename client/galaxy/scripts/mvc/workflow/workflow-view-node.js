@@ -1,11 +1,11 @@
 import $ from "jquery";
 import _ from "libs/underscore";
-import Backbone from "backbone";
 import TerminalViews from "mvc/workflow/workflow-view-terminals";
-import DataViews from "mvc/workflow/workflow-view-data";
+import { DataInputView, DataOutputView, ParameterOutputView } from "mvc/workflow/workflow-view-data";
 
-export default Backbone.View.extend({
-    initialize: function(options) {
+export class NodeView {
+    constructor(options) {
+        this.$el = options.$el;
         this.node = options.node;
         this.output_width = Math.max(150, this.$el.width());
         this.tool_body = this.$el.find(".toolFormBody");
@@ -13,39 +13,39 @@ export default Backbone.View.extend({
         this.newInputsDiv().appendTo(this.tool_body);
         this.terminalViews = {};
         this.outputViews = {};
-    },
+    }
 
-    render: function() {
+    render() {
         this.renderToolLabel();
         this.renderToolErrors();
         this.$el.css("width", Math.min(250, Math.max(this.$el.width(), this.output_width)));
-    },
+    }
 
-    renderToolLabel: function() {
-        this.$(".nodeTitle").text(this.node.label || this.node.name);
+    renderToolLabel() {
+        this.$el.find(".nodeTitle").text(this.node.label || this.node.name);
         this.$el.attr("node-label", this.node.label);
-    },
+    }
 
-    renderToolErrors: function() {
+    renderToolErrors() {
         this.node.errors ? this.$el.addClass("tool-node-error") : this.$el.removeClass("tool-node-error");
-    },
+    }
 
-    newInputsDiv: function() {
+    newInputsDiv() {
         return $("<div/>").addClass("inputs");
-    },
+    }
 
-    updateMaxWidth: function(newWidth) {
+    updateMaxWidth(newWidth) {
         this.output_width = Math.max(this.output_width, newWidth);
-    },
+    }
 
-    addRule: function() {
+    addRule() {
         this.tool_body.append($("<div/>").addClass("rule"));
-    },
+    }
 
-    addDataInput: function(input, body) {
+    addDataInput(input, body) {
         var skipResize = true;
         if (!body) {
-            body = this.$(".inputs");
+            body = this.$el.find(".inputs");
             // initial addition to node - resize input to help calculate node
             // width.
             skipResize = false;
@@ -73,7 +73,7 @@ export default Backbone.View.extend({
         }
         this.terminalViews[input.name] = terminalView;
         var terminalElement = terminalView.el;
-        var inputView = new DataViews.DataInputView({
+        var inputView = new DataInputView({
             terminalElement: terminalElement,
             input: input,
             nodeView: this,
@@ -82,9 +82,9 @@ export default Backbone.View.extend({
         var ib = inputView.$el;
         body.append(ib.prepend(terminalView.terminalElements()));
         return terminalView;
-    },
+    }
 
-    terminalViewForOutput: function(output) {
+    terminalViewForOutput(output) {
         let terminalViewClass = TerminalViews.OutputTerminalView;
         if (output.collection) {
             terminalViewClass = TerminalViews.OutputCollectionTerminalView;
@@ -95,32 +95,32 @@ export default Backbone.View.extend({
             node: this.node,
             output: output
         });
-    },
+    }
 
-    outputViewforOutput: function(output, terminalView) {
-        const outputViewClass = output.parameter ? DataViews.ParameterOutputView : DataViews.DataOutputView;
+    outputViewforOutput(output, terminalView) {
+        const outputViewClass = output.parameter ? ParameterOutputView : DataOutputView;
         return new outputViewClass({
             output: output,
             terminalElement: terminalView.el,
             nodeView: this
         });
-    },
+    }
 
-    addDataOutput: function(output) {
+    addDataOutput(output) {
         const terminalView = this.terminalViewForOutput(output);
         const outputView = this.outputViewforOutput(output, terminalView);
         this.outputViews[output.name] = outputView;
         this.tool_body.append(outputView.$el.append(terminalView.terminalElements()));
-    },
+    }
 
-    redrawWorkflowOutputs: function() {
+    redrawWorkflowOutputs() {
         _.each(this.outputViews, outputView => {
             outputView.redrawWorkflowOutput();
         });
-    },
+    }
 
-    updateDataOutput: function(output) {
+    updateDataOutput(output) {
         var outputTerminal = this.node.output_terminals[output.name];
         outputTerminal.update(output);
     }
-});
+}

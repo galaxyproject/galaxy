@@ -22,7 +22,7 @@
 </template>
 <script>
 import DependencyIndexWrapper from "./DependencyIndexWrapper";
-import { getDependencyUnusedPaths, deletedUnusedPaths } from "../AdminServices.js";
+import { getDependencyUnusedPaths, deletedUnusedPaths } from "../AdminServices";
 
 export default {
     components: { DependencyIndexWrapper },
