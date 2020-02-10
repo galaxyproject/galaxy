@@ -2,6 +2,7 @@
     <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
     <requirements>
         <requirement type="package" version="0.8.6">bx-python</requirement>
+        <requirement type="package" version="3.6">python</requirement>
     </requirements>
     <command>
         python '$__tool_directory__/interval_to_bedstrict_converter.py'
