@@ -23,7 +23,7 @@ lint_tool_types = ["*"]
 
 def lint_general(tool_source, lint_ctx):
     """Check tool version, name, and id."""
-    version = tool_source.parse_version()
+    version = tool_source.parse_version() or ''
     parsed_version = packaging.version.parse(version)
     if not version:
         lint_ctx.error(ERROR_VERSION_MSG)
