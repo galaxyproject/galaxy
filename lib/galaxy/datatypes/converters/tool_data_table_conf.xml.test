@@ -1,0 +1,7 @@
+<tables>
+    <!-- Locations of dbkeys and len files under genome directory -->
+    <table name="__dbkeys__" comment_char="#" allow_duplicate_entries="False">
+        <columns>value, name, len_path</columns>
+        <file path="${__HERE__}/dbkeys.loc.test" />
+    </table>
+</tables>
