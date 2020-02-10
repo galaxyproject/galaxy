@@ -47,7 +47,6 @@ $.extend(Connector.prototype, {
         const endRibbon = handle2 && handle2.isMappedOver();
         const canvasClass = `${startRibbon ? "start-ribbon" : ""} ${endRibbon ? "end-ribbon" : ""}`;
         var canvas_container = $("#canvas-container");
-        // FIXME: global
         var canvasZoom = this.manager.canvasZoom;
         if (!this.canvas) {
             this.canvas = document.createElement("canvas");

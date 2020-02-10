@@ -1,6 +1,7 @@
 import $ from "jquery";
 import _ from "underscore";
 import Backbone from "backbone";
+import EventEmitter from "events";
 
 function CollectionTypeDescription(collectionType) {
     this.collectionType = collectionType;
@@ -103,22 +104,21 @@ $.extend(CollectionTypeDescription.prototype, {
     }
 });
 
-var TerminalMapping = Backbone.Model.extend({
-    initialize: function(attr) {
+class TerminalMapping extends EventEmitter {
+    constructor(attr) {
+        super();
         this.mapOver = attr.mapOver || NULL_COLLECTION_TYPE_DESCRIPTION;
         this.terminal = attr.terminal;
         this.terminal.terminalMapping = this;
-    },
-    disableMapOver: function() {
-        this.setMapOver(NULL_COLLECTION_TYPE_DESCRIPTION);
-    },
-    setMapOver: function(collectionTypeDescription) {
-        // TODO: Can I use "attributes" or something to auto trigger "change"
-        // event?
-        this.mapOver = collectionTypeDescription;
-        this.trigger("change");
     }
-});
+    disableMapOver() {
+        this.setMapOver(NULL_COLLECTION_TYPE_DESCRIPTION);
+    }
+    setMapOver(collectionTypeDescription) {
+        this.mapOver = collectionTypeDescription;
+        this.emit("change");
+    }
+}
 
 var Terminal = Backbone.Model.extend({
     initialize: function(attr) {

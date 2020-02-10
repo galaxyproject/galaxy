@@ -1,5 +1,4 @@
 import $ from "jquery";
-import _ from "underscore";
 import Terminals from "mvc/workflow/workflow-terminals";
 import Connector from "mvc/workflow/workflow-connector";
 import ariaAlert from "utils/ariaAlert";
@@ -12,7 +11,7 @@ class TerminalMappingView {
         var mapText = "Run tool in parallel over collection";
         this.$el.tooltip({ delay: 500, title: mapText });
         this.model = options.model;
-        this.model.bind("change", _.bind(this.render, this));
+        this.model.on("change", this.render.bind(this));
     }
     render() {
         if (this.model.mapOver && this.model.mapOver.isCollection) {
@@ -43,7 +42,6 @@ export class InputTerminalMappingView extends TerminalMappingView {
     onClick() {
         var model = this.model;
         if (!model.terminal.connected() && model.mapOver.isCollection) {
-            // TODO: Consider prompting...
             model.terminal.resetMapping();
         }
     }
