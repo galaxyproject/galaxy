@@ -492,8 +492,4 @@ export class WorkflowView {
             Cancel: hide_modal
         });
     }
-
-    layout_editor() {
-        this.workflow.layout_auto();
-    }
 }

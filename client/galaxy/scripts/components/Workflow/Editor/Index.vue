@@ -15,7 +15,7 @@
             <div class="unified-panel-header" unselectable="on">
                 <div class="unified-panel-header-inner">
                     <span class="sr-only">Workflow Editor</span>
-                    {{ editorConfig.name }}
+                    {{ name }}
                     <WorkflowOptions
                         :canvas="isCanvas"
                         @onSave="onSave"
@@ -75,30 +75,54 @@ import _l from "utils/localization";
 export default {
     components: { MarkdownEditor, WorkflowOptions, SidePanel, ToolBoxWorkflow, WorkflowPanel },
     props: {
-        editorConfig: {
-            type: Object
+        id: {
+            type: String
+        },
+        version: {
+            type: Number
+        },
+        name: {
+            type: String
+        },
+        tags: {
+            type: Array
+        },
+        annotation: {
+            type: String
+        },
+        module_sections: {
+            type: Array
+        },
+        data_managers: {
+            type: Array
+        },
+        workflows: {
+            type: Array
+        },
+        toolbox: {
+            type: Array
         }
     },
     computed: {
         currentPanelProperties() {
             return {
-                id: this.editorConfig.id,
-                name: this.editorConfig.name,
-                tags: this.editorConfig.tags,
-                annotation: this.editorConfig.annotation
+                id: this.id,
+                name: this.name,
+                tags: this.tags,
+                annotation: this.annotation
             };
         },
         currentToolPanelProperties() {
             return {
-                toolbox: this.editorConfig.toolbox,
-                moduleSections: this.editorConfig.module_sections,
+                toolbox: this.toolbox,
+                moduleSections: this.module_sections,
                 dataManagers: {
                     name: _l("Data Managers"),
-                    elems: this.editorConfig.data_managers
+                    elems: this.data_managers
                 },
                 workflowSection: {
                     name: _l("Workflows"),
-                    elems: this.editorConfig.workflows
+                    elems: this.workflows
                 }
             };
         }
@@ -109,7 +133,13 @@ export default {
         };
     },
     created() {
-        this.workflowView = new WorkflowView(this.editorConfig, this.$refs["report-editor"]);
+        this.workflowView = new WorkflowView(
+            {
+                id: this.id,
+                version: this.version
+            },
+            this.$refs["report-editor"]
+        );
     },
     methods: {
         onInsertTool(tool_id, tool_name) {
@@ -125,13 +155,13 @@ export default {
             this.workflowView.copy_into_workflow(workflow_id, step_count);
         },
         onDownload() {
-            window.location = `${getAppRoot()}api/workflows/${this.editorConfig.id}/download?format=json-download`;
+            window.location = `${getAppRoot()}api/workflows/${this.id}/download?format=json-download`;
         },
         onSaveAs() {
             this.workflowView.workflow_save_as();
         },
         onLayout() {
-            this.workflowView.layout_editor();
+            this.workflowView.workflow.layout_auto();
         },
         onAttributes() {
             this.workflowView.workflow.clear_active_node();
@@ -146,7 +176,7 @@ export default {
             this.workflowView.report_changed(markdown);
         },
         onRun() {
-            window.location = `${getAppRoot()}workflows/run?id=${this.editorConfig.id}`;
+            window.location = `${getAppRoot()}workflows/run?id=${this.id}`;
         },
         onSave() {
             this.workflowView.save_current_workflow();

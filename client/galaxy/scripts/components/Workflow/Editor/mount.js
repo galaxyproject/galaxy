@@ -5,12 +5,10 @@ import Vue from "vue";
 import Index from "./Index";
 import Node from "./Node";
 
-export const mountWorkflowEditor = editorConfig => {
+export const mountWorkflowEditor = propsData => {
     const component = Vue.extend(Index);
     return new component({
-        propsData: {
-            editorConfig
-        },
+        propsData: propsData,
         el: "#columns"
     });
 };
