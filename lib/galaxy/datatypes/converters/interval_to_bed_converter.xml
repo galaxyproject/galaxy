@@ -14,7 +14,7 @@
     <tests>
         <test>
             <param name="input1" format="interval" value="2.interval"/>
-            <output name="output1" format="bed" value="2.bed"/>
+            <output name="output1" format="bed" value="2.interval_to_bed.bed"/>
         </test>
     </tests>
     <help>
