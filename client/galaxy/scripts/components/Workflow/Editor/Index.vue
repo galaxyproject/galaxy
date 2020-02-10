@@ -1,55 +1,59 @@
 <template>
-    <div id="center" class="inbound">
-        <SidePanel id="#right"
-            side="right"
-            :current-panel="currentPanel"
-            :current-panel-properties="currentPanelProperties"
-        />
-        <SidePanel id="#left"
+    <div id="columns" class="inbound">
+        <SidePanel
+            id="left"
             side="left"
             :current-panel="currentToolPanel"
             :current-panel-properties="currentToolPanelProperties"
         />
-        <div class="unified-panel-header" unselectable="on">
-            <div class="unified-panel-header-inner">
-                <span class="sr-only">Workflow Editor</span>
-                {{ editorConfig.name }}
-                <WorkflowOptions
-                    :canvas="isCanvas"
-                    @onSave="onSave"
-                    @onSaveAs="onSaveAs"
-                    @onRun="onRun"
-                    @onDownload="onDownload"
-                    @onReport="onReport"
-                    @onReportHelp="onReportHelp"
-                    @onLayout="onLayout"
-                    @onEdit="onEdit"
-                    @onAttributes="onAttributes"
-                />
+        <div id="center" class="inbound">
+            <div class="unified-panel-header" unselectable="on">
+                <div class="unified-panel-header-inner">
+                    <span class="sr-only">Workflow Editor</span>
+                    {{ editorConfig.name }}
+                    <WorkflowOptions
+                        :canvas="isCanvas"
+                        @onSave="onSave"
+                        @onSaveAs="onSaveAs"
+                        @onRun="onRun"
+                        @onDownload="onDownload"
+                        @onReport="onReport"
+                        @onReportHelp="onReportHelp"
+                        @onLayout="onLayout"
+                        @onEdit="onEdit"
+                        @onAttributes="onAttributes"
+                    />
+                </div>
             </div>
-        </div>
-        <div class="unified-panel-body" id="workflow-canvas-body" v-show="isCanvas">
-            <div id="canvas-viewport" class="workflow-canvas-content">
-                <div id="canvas-container" />
-            </div>
-            <div id="workflow-parameters-box">
-                <span class="workflow-parameters-box-title">
-                    Workflow Parameters
-                </span>
-                <div id="workflow-parameters-container" />
-            </div>
-            <div class="workflow-overview" aria-hidden="true">
-                <div class="workflow-overview-body">
-                    <div id="overview">
-                        <canvas width="0" height="0" id="overview-canvas" />
-                        <div id="overview-viewport" />
+            <div class="unified-panel-body" id="workflow-canvas-body" v-show="isCanvas">
+                <div id="canvas-viewport" class="workflow-canvas-content">
+                    <div id="canvas-container" />
+                </div>
+                <div id="workflow-parameters-box">
+                    <span class="workflow-parameters-box-title">
+                        Workflow Parameters
+                    </span>
+                    <div id="workflow-parameters-container" />
+                </div>
+                <div class="workflow-overview" aria-hidden="true">
+                    <div class="workflow-overview-body">
+                        <div id="overview">
+                            <canvas width="0" height="0" id="overview-canvas" />
+                            <div id="overview-viewport" />
+                        </div>
                     </div>
                 </div>
             </div>
+            <div class="unified-panel-body workflow-report-body" v-show="!isCanvas">
+                <markdown-editor ref="report-editor" initial-markdown="" :onupdate="onReportUpdate" :toolbar="false" />
+            </div>
         </div>
-        <div class="unified-panel-body workflow-report-body" v-show="!isCanvas">
-            <markdown-editor ref="report-editor" initial-markdown="" :onupdate="onReportUpdate" :toolbar="false" />
-        </div>
+        <SidePanel
+            id="right"
+            side="right"
+            :current-panel="currentPanel"
+            :current-panel-properties="currentPanelProperties"
+        />
     </div>
 </template>
 

@@ -9,7 +9,7 @@ export const mountWorkflowEditor = editorConfig => {
     const component = Vue.extend(Index);
     return new component({ propsData: {
         editorConfig
-    }, el: "#center" });
+    }, el: "#columns" });
 };
 
 export const mountWorkflowNode = (container, propsData) => {
