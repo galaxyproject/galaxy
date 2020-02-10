@@ -31,7 +31,7 @@
     </outputs>
     <tests>
         <test>
-            <param name="input1" format="interval" value="2.interval"/>
+            <param name="input1" format="interval" value="2.interval" dbkey="hg17"/>
             <output name="output" format="bigwig" value="2.bigwig"/>
         </test>
     </tests>

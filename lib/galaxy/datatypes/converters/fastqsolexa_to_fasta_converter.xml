@@ -13,7 +13,7 @@
     <tests>
         <test>
             <param name="input" format="fastqsolexa" value="2.fastqsolexa"/>
-            <output name="output" format="fasta" value="2.fasta"/>
+            <output name="output" format="fasta" value="2.fastqsolexa.fasta"/>
         </test>
     </tests>
     <help>
