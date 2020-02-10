@@ -46,12 +46,12 @@ def main():
                 except Exception:
                     # doesn't work on OS X
                     host_ip = None
+                ports = docker_util.parse_port_text(ports_raw)
+                if host_ip is not None:
+                    for key in ports:
+                        if ports[key]['host'] == '0.0.0.0':
+                            ports[key]['host'] = host_ip
                 with open("container_runtime.json", "w") as f:
-                    ports = docker_util.parse_port_text(ports_raw)
-                    if host_ip is not None:
-                        for key in ports:
-                            if ports[key]['host'] == '0.0.0.0':
-                                ports[key]['host'] = host_ip
                     json.dump(ports, f)
                 break
             else:
