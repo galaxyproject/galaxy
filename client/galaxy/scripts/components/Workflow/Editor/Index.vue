@@ -122,7 +122,7 @@ export default {
             this.workflowView.add_node_for_subworkflow(workflow_id, workflow_name);
         },
         onInsertWorkflowSteps(workflow_id, step_count) {
-            this.workflowView.add_node_for_tool(workflow_id, step_count);
+            this.workflowView.copy_into_workflow(workflow_id, step_count);
         },
         onDownload() {
             window.location = `${getAppRoot()}api/workflows/${this.editorConfig.id}/download?format=json-download`;
