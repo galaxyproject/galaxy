@@ -707,13 +707,10 @@ QUnit.module("Input terminal view", {
         this.app = create_app();
         this.node = { input_terminals: [] };
         this.input = { name: "i1", extensions: "txt", multiple: false };
-        this.view = new TerminalsView.InputTerminalView(
-            this.app.workflow,
-            {
-                node: this.node,
-                input: this.input
-            }
-        );
+        this.view = new TerminalsView.InputTerminalView(this.app.workflow, {
+            node: this.node,
+            input: this.input
+        });
     }
 });
 
@@ -735,13 +732,10 @@ QUnit.module("Output terminal view", {
         this.app = create_app();
         this.node = { output_terminals: [] };
         this.output = { name: "o1", extensions: "txt" };
-        this.view = new TerminalsView.OutputTerminalView(
-            this.app.workflow,
-            {
-                node: this.node,
-                output: this.output
-            }
-        );
+        this.view = new TerminalsView.OutputTerminalView(this.app.workflow, {
+            node: this.node,
+            output: this.output
+        });
     }
 });
 
@@ -898,7 +892,11 @@ QUnit.module("terminal mapping logic", {
         }
         const inputEl = $("<div>")[0];
         const app = create_app();
-        const inputTerminal = new Terminals.InputCollectionTerminal({ app: app.workflow, element: inputEl, input: input });
+        const inputTerminal = new Terminals.InputCollectionTerminal({
+            app: app.workflow,
+            element: inputEl,
+            input: input
+        });
         new Terminals.TerminalMapping({ terminal: inputTerminal });
         inputTerminal.node = node;
         return inputTerminal;

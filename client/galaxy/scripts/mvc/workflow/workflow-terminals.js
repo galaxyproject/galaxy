@@ -2,9 +2,6 @@ import $ from "jquery";
 import _ from "underscore";
 import Backbone from "backbone";
 
-// TODO; tie into Galaxy state?
-window.workflow_globals = window.workflow_globals || {};
-
 function CollectionTypeDescription(collectionType) {
     this.collectionType = collectionType;
     this.isCollection = true;

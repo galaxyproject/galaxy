@@ -7,9 +7,12 @@ import Node from "./Node";
 
 export const mountWorkflowEditor = editorConfig => {
     const component = Vue.extend(Index);
-    return new component({ propsData: {
-        editorConfig
-    }, el: "#columns" });
+    return new component({
+        propsData: {
+            editorConfig
+        },
+        el: "#columns"
+    });
 };
 
 export const mountWorkflowNode = (container, propsData) => {

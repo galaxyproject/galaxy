@@ -1,5 +1,5 @@
 <template>
-    <div id="columns" class="inbound">
+    <div id="columns">
         <SidePanel
             id="left"
             side="left"
@@ -69,7 +69,7 @@ import WorkflowPanel from "./WorkflowPanel";
 import _l from "utils/localization";
 
 export default {
-    components: { MarkdownEditor, WorkflowOptions, SidePanel, WorkflowPanel, ToolBoxWorkflow },
+    components: { MarkdownEditor, WorkflowOptions, SidePanel },
     props: {
         editorConfig: {
             type: Object
@@ -82,12 +82,12 @@ export default {
                 name: this.editorConfig.name,
                 tags: this.editorConfig.tags,
                 annotation: this.editorConfig.annotation
-            }
+            };
         },
         currentToolPanelProperties() {
             return {
                 toolbox: this.editorConfig.toolbox,
-                workflowGlobals: this.editorConfig.workflow_globals,
+                workflowView: this.workflowView,
                 moduleSections: this.editorConfig.module_sections,
                 dataManagers: {
                     name: _l("Data Managers"),
@@ -97,7 +97,7 @@ export default {
                     name: _l("Workflows"),
                     elems: this.editorConfig.workflows
                 }
-            }
+            };
         },
         currentPanel() {
             return WorkflowPanel;
@@ -111,7 +111,7 @@ export default {
             isCanvas: true
         };
     },
-    mounted() {
+    created() {
         this.workflowView = new WorkflowView(this.editorConfig, this.$refs["report-editor"]);
     },
     methods: {

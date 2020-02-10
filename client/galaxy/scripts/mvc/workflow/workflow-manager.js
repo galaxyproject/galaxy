@@ -18,11 +18,7 @@ class Workflow {
         this.workflow_version = 0;
 
         // Canvas overview management
-        this.canvas_manager = window.workflow_globals.canvas_manager = new WorkflowCanvas(
-            this,
-            $("#canvas-viewport"),
-            $("#overview")
-        );
+        this.canvas_manager = new WorkflowCanvas(this, $("#canvas-viewport"), $("#overview"));
     }
     isSubType(child, parent) {
         child = this.app.ext_to_type[child];

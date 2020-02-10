@@ -11,9 +11,6 @@ import "ui/editable-text";
 
 import { hide_modal, show_message, show_modal } from "layout/modal";
 
-// TODO; tie into Galaxy state?
-window.workflow_globals = window.workflow_globals || {};
-
 const DEFAULT_INVOCATION_REPORT = `
 # Workflow Execution Report
 
@@ -35,7 +32,7 @@ workflow_display()
 
 export class WorkflowView {
     constructor(options, reportsEditor = {}) {
-        var self = (window.workflow_globals.app = this);
+        var self = this;
         this.options = options;
         this.reportsEditor = reportsEditor;
 
@@ -258,7 +255,7 @@ export class WorkflowView {
         if (this.workflow) {
             this.workflow.remove_all();
         }
-        this.workflow = window.workflow_globals.workflow = new Workflow(this, $("#canvas-container"));
+        this.workflow = new Workflow(this, $("#canvas-container"));
     }
 
     _workflowLoadAjax(workflowId, version, options) {

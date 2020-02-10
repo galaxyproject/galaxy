@@ -1,8 +1,5 @@
 import $ from "jquery";
 
-// TODO; tie into Galaxy state?
-window.workflow_globals = window.workflow_globals || {};
-
 export class DataInputView {
     constructor(options = {}) {
         this.input = options.input;
