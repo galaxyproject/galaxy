@@ -43,7 +43,7 @@ def test_load_config_from_schema(mock_init):
     assert type(config.raw_config['property4']) is bool
 
 
-def test_updateraw_config_from_kwargs(mock_init):
+def test_update_raw_config_from_kwargs(mock_init):
     config = GalaxyAppConfiguration(property2=2, property3=2.0, another_key=66)
 
     assert len(config.raw_config) == 6   # no change: another_key NOT added
@@ -60,7 +60,7 @@ def test_updateraw_config_from_kwargs(mock_init):
     assert type(config.raw_config['property4']) is bool
 
 
-def test_updateraw_config_from_string_kwargs(mock_init):
+def test_update_raw_config_from_string_kwargs(mock_init):
     # kwargs may be passed as strings: property data types should not be affected
     config = GalaxyAppConfiguration(property1='b', property2='2', property3='2.0', property4='false')
 
@@ -76,7 +76,7 @@ def test_updateraw_config_from_string_kwargs(mock_init):
     assert type(config.raw_config['property4']) is bool
 
 
-def test_updateraw_config_from_kwargs_with_none(mock_init):
+def test_update_raw_config_from_kwargs_with_none(mock_init):
     # should be able to set to null regardless of property's datatype
     config = GalaxyAppConfiguration(
         property1=None, property2=None, property3=None, property4=None, property5=None, property6=None,
@@ -90,7 +90,7 @@ def test_updateraw_config_from_kwargs_with_none(mock_init):
     assert config.raw_config['property6'] is None
 
 
-def test_updateraw_config_from_kwargs_falsy_not_none(mock_init):
+def test_update_raw_config_from_kwargs_falsy_not_none(mock_init):
     # if kwargs supplies a falsy value, it should not evaluate to null
     # (ensures code is 'if value is not None' vs. 'if value')
     config = GalaxyAppConfiguration(property1=0)
