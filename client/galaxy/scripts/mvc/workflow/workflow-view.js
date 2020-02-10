@@ -37,20 +37,10 @@ export class WorkflowView {
         this.reportsEditor = reportsEditor;
 
         // get available datatypes for post job action options
-        this.datatypes = JSON.parse(
-            $.ajax({
-                url: `${getAppRoot()}api/datatypes`,
-                async: false
-            }).responseText
-        );
+        this.datatypes = options.datatypes;
 
         // get datatype mapping options
-        this.datatypes_mapping = JSON.parse(
-            $.ajax({
-                url: `${getAppRoot()}api/datatypes/mapping`,
-                async: false
-            }).responseText
-        );
+        this.datatypes_mapping = options.datatypes_mapping;
 
         // set mapping sub lists
         this.ext_to_type = this.datatypes_mapping.ext_to_class_name;

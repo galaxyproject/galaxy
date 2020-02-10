@@ -65,6 +65,7 @@
 </template>
 
 <script>
+import { getDatatypes } from "./services";
 import { WorkflowView } from "mvc/workflow/workflow-view";
 import WorkflowOptions from "./Options";
 import MarkdownEditor from "components/Markdown/MarkdownEditor";
@@ -111,13 +112,17 @@ export default {
         };
     },
     created() {
-        this.workflowView = new WorkflowView(
-            {
-                id: this.id,
-                version: this.version
-            },
-            this.$refs["report-editor"]
-        );
+        getDatatypes().then(response => {
+            this.workflowView = new WorkflowView(
+                {
+                    id: this.id,
+                    version: this.version,
+                    datatypes: response.datatypes,
+                    datatypes_mapping: response.datatypes_mapping
+                },
+                this.$refs["report-editor"]
+            );
+        });
     },
     methods: {
         onInsertTool(tool_id, tool_name) {
