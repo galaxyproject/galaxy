@@ -12,7 +12,7 @@
     <tests>
         <test>
             <param name="input" format="biom1" value="input_taxonomy.biom1"/>
-            <output name="output" format="biom2" value="input_taxonomy.biom2"/>
+            <output name="output" format="biom2" value="input_taxonomy.biom2" compare="sim_size"/>
         </test>
     </tests>
     <help>
