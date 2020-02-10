@@ -852,7 +852,7 @@ QUnit.test("disableMapOver", function(assert) {
         mapOver: new Terminals.CollectionTypeDescription("list")
     });
     var changeSpy = sinon.spy();
-    mapping.bind("change", changeSpy);
+    mapping.on("change", changeSpy);
     mapping.disableMapOver();
     assert.ok(mapping.mapOver === Terminals.NULL_COLLECTION_TYPE_DESCRIPTION);
     assert.ok(changeSpy.called);
