@@ -8,8 +8,8 @@ usage: %prog [--from-tabular] -i in_file -o out_file
 import argparse
 import csv
 import sys
-
 from contextlib import contextmanager
+
 
 @contextmanager
 def compat_open(file, mode):
@@ -21,6 +21,7 @@ def compat_open(file, mode):
         yield fh
     finally:
         fh.close()
+
 
 def main():
     usage = "Usage: %prog [options]"
