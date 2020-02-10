@@ -13,8 +13,8 @@
     </outputs>
     <tests>
         <test>
-            <param name="input1" format="tar" value="unsafe.tar"/>
-            <output name="output1" format="directory" value="unsafe.directory"/>
+            <param name="input1" format="tar" value="testdir1.tar"/>
+            <output name="output1" format="directory" value="testdir1.tar.directory"/>
         </test>
     </tests>
     <help>
