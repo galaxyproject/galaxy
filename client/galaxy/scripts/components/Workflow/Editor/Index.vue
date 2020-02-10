@@ -5,6 +5,11 @@
             :current-panel="currentPanel"
             :current-panel-properties="currentPanelProperties"
         />
+        <SidePanel id="#left"
+            side="left"
+            :current-panel="currentToolPanel"
+            :current-panel-properties="currentToolPanelProperties"
+        />
         <div class="unified-panel-header" unselectable="on">
             <div class="unified-panel-header-inner">
                 <span class="sr-only">Workflow Editor</span>
@@ -52,13 +57,15 @@
 import { WorkflowView } from "mvc/workflow/workflow-view";
 import WorkflowOptions from "./Options";
 import MarkdownEditor from "components/Markdown/MarkdownEditor";
+import ToolBoxWorkflow from "components/Panels/ToolBoxWorkflow";
 import SidePanel from "components/Panels/SidePanel";
 import { getAppRoot } from "onload/loadConfig";
 import { showReportHelp } from "./reportHelp";
 import WorkflowPanel from "./WorkflowPanel";
+import _l from "utils/localization";
 
 export default {
-    components: { MarkdownEditor, WorkflowOptions, SidePanel, WorkflowPanel },
+    components: { MarkdownEditor, WorkflowOptions, SidePanel, WorkflowPanel, ToolBoxWorkflow },
     props: {
         editorConfig: {
             type: Object
@@ -73,8 +80,26 @@ export default {
                 annotation: this.editorConfig.annotation
             }
         },
+        currentToolPanelProperties() {
+            return {
+                toolbox: this.editorConfig.toolbox,
+                workflowGlobals: this.editorConfig.workflow_globals,
+                moduleSections: this.editorConfig.module_sections,
+                dataManagers: {
+                    name: _l("Data Managers"),
+                    elems: this.editorConfig.data_managers
+                },
+                workflowSection: {
+                    name: _l("Workflows"),
+                    elems: this.editorConfig.workflows
+                }
+            }
+        },
         currentPanel() {
             return WorkflowPanel;
+        },
+        currentToolPanel() {
+            return ToolBoxWorkflow;
         }
     },
     data() {
