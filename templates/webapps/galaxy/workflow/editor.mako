@@ -19,8 +19,6 @@
         config.addInitialization(function(galaxy, config) {
             console.log("workflow/editor.mako, editorConfig", editorConfig);
             window.bundleEntries.mountWorkflowEditor(editorConfig);
-            window.bundleEntries.mountToolBoxWorkflow(editorConfig);
-            window.bundleEntries.mountWorkflowPanel(editorConfig);
         });
     </script>
 </%def>

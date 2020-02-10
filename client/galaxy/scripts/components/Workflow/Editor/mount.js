@@ -6,23 +6,43 @@ import SidePanel from "components/Panels/SidePanel";
 import Index from "./Index";
 import Node from "./Node";
 import WorkflowPanel from "./WorkflowPanel";
+import ToolBoxWorkflow from "components/Panels/ToolBoxWorkflow";
+import _l from "utils/localization";
 
 export const mountWorkflowEditor = editorConfig => {
     const propsData = { editorConfig };
-    const component = Vue.extend(Index);
-    return new component({ propsData: propsData, el: "#center" });
-};
-
-export const mountWorkflowPanel = propsData => {
-    const component = Vue.extend(SidePanel);
-    return new component({
+    const rightPanel = Vue.extend(SidePanel);
+    new rightPanel({
         propsData: {
             side: "right",
             currentPanel: WorkflowPanel,
-            currentPanelProperties: propsData
+            currentPanelProperties: editorConfig
         },
         el: "#right"
     });
+    const leftPanel = Vue.extend(SidePanel);
+    new leftPanel({
+        propsData: {
+            side: "left",
+            currentPanel: ToolBoxWorkflow,
+            currentPanelProperties: {
+                toolbox: editorConfig.toolbox,
+                workflowGlobals: editorConfig.workflow_globals,
+                moduleSections: editorConfig.module_sections,
+                dataManagers: {
+                    name: _l("Data Managers"),
+                    elems: editorConfig.data_managers
+                },
+                workflowSection: {
+                    name: _l("Workflows"),
+                    elems: editorConfig.workflows
+                }
+            }
+        },
+        el: "#left"
+    });
+    const component = Vue.extend(Index);
+    return new component({ propsData: propsData, el: "#center" });
 };
 
 export const mountWorkflowNode = (container, propsData) => {
