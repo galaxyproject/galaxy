@@ -13,7 +13,7 @@
     <tests>
         <test>
             <param name="csv" format="csv" value="1.csv"/>
-            <output name="tabular" format="tabular" value="1.tabular"/>
+            <output name="tabular" format="tabular" value="1.csv_to_tabular.tabular"/>
         </test>
     </tests>
     <help>
