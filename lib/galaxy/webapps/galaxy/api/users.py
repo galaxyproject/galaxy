@@ -779,9 +779,9 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         """
         user = self._get_user(trans, id)
         dbkeys = json.loads(user.preferences['dbkeys']) if 'dbkeys' in user.preferences else {}
+        valid_dbkeys = {}
         update = False
-        for key in dbkeys:
-            dbkey = dbkeys[key]
+        for key, dbkey in dbkeys.items():
             if 'count' not in dbkey and 'linecount' in dbkey:
                 chrom_count_dataset = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).filter_by(
                     deleted=false(),
@@ -790,11 +790,14 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
                 if chrom_count_dataset:
                     chrom_count = int(open(chrom_count_dataset.file_name).readline())
                     dbkey['count'] = chrom_count
+                    valid_dbkeys[key] = dbkey
                     update = True
+            else:
+                valid_dbkeys[key] = dbkey
         if update:
-            user.preferences['dbkeys'] = json.dumps(dbkeys)
+            user.preferences['dbkeys'] = json.dumps(valid_dbkeys)
         dbkey_collection = []
-        for key, attributes in dbkeys.items():
+        for key, attributes in valid_dbkeys.items():
             attributes['id'] = key
             dbkey_collection.append(attributes)
         return dbkey_collection
