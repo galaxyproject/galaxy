@@ -1,6 +1,5 @@
 import json
 import os
-import socket
 import subprocess
 import sys
 import tempfile
@@ -10,19 +9,7 @@ import time
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir)))
 
 from galaxy.tool_util.deps import docker_util
-
-
-def get_ip():
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    try:
-        # doesn't even have to be reachable
-        s.connect(('10.255.255.255', 1))
-        ip = s.getsockname()[0]
-    except Exception:
-        ip = None
-    finally:
-        s.close()
-    return ip
+from galaxy.util.sockets import get_ip
 
 
 def parse_ports(container_name, connection_configuration):
