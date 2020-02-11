@@ -5,7 +5,7 @@ import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import Utils from "utils/utils";
 import WorkflowIcons from "components/Workflow/icons";
-import FormWrappers from "mvc/workflow/workflow-forms";
+import {DefaultForm, ToolForm} from "mvc/workflow/workflow-forms";
 import { loadWorkflow } from "./services";
 import { hide_modal, show_message, show_modal } from "layout/modal";
 
@@ -85,7 +85,7 @@ export function showAttributes() {
 }
 
 export function showForm(workflow, content, node, datatypes) {
-    if (content && node && node.id) {
+    if (node && content) {
         const cls = "right-content";
         var id = `${cls}-${node.id}`;
         var $container = $(`#${cls}`);
@@ -96,8 +96,13 @@ export function showForm(workflow, content, node, datatypes) {
             content.datatypes = datatypes;
             content.icon = WorkflowIcons[node.type];
             content.cls = "ui-portlet-section";
-            var form_type = node.type == "tool" ? "Tool" : "Default";
-            $el.append(new FormWrappers[form_type](content).form.$el);
+            let formWrapper = null;
+            if (node.type == "tool") {
+                formWrapper = new ToolForm(content);
+            } else {
+                formWrapper = new DefaultForm(content);
+            }
+            $el.append(formWrapper.form.$el);
             $container.append($el);
         }
         $(`.${cls}`).hide();
@@ -139,7 +144,7 @@ export function getWorkflowParameters(nodes) {
     const parameter_re = /\$\{.+?\}/g;
     const parameters = [];
     let matches = [];
-    $.each(nodes, (k, node) => {
+    Object.entries(nodes).forEach(([k, node]) => {
         if (node.config_form && node.config_form.inputs) {
             Utils.deepeach(node.config_form.inputs, d => {
                 if (typeof d.value == "string") {
@@ -151,9 +156,9 @@ export function getWorkflowParameters(nodes) {
             });
         }
         if (node.post_job_actions) {
-            $.each(node.post_job_actions, (k, pja) => {
+            Object.entries(node.post_job_actions).forEach(([k, pja]) => {
                 if (pja.action_arguments) {
-                    $.each(pja.action_arguments, (k, action_argument) => {
+                    Object.entries(pja.action_arguments).forEach(([k, action_argument]) => {
                         if (typeof action_argument === "string") {
                             const arg_matches = action_argument.match(parameter_re);
                             if (arg_matches) {
@@ -165,14 +170,14 @@ export function getWorkflowParameters(nodes) {
             });
         }
         if (matches) {
-            $.each(matches, (k, element) => {
-                if ($.inArray(element, parameters) === -1) {
+            Object.entries(matches).forEach(([k, element]) => {
+                if (parameters.indexOf(element) === -1) {
                     parameters.push(element);
                 }
             });
         }
     });
-    $.each(parameters, (k, element) => {
+    Object.entries(parameters).forEach(([k, element]) => {
         parameters[k] = element.substring(2, element.length - 1);
     });
     return parameters;

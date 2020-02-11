@@ -4,10 +4,10 @@ import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import Utils from "utils/utils";
 import Form from "mvc/form/form-view";
-import ToolForm from "mvc/tool/tool-form-base";
+import ToolFormBase from "mvc/tool/tool-form-base";
 
 /** Default form wrapper for non-tool modules in the workflow editor. */
-class Default {
+export class DefaultForm {
     constructor(options) {
         var self = this;
         var node = options.node;
@@ -36,11 +36,11 @@ class Default {
 }
 
 /** Tool form wrapper for the workflow editor. */
-class Tool {
+export class ToolForm {
     constructor(options) {
         var self = this;
         var node = options.node;
-        this.form = new ToolForm(
+        this.form = new ToolFormBase(
             Utils.merge(options, {
                 text_enable: "Set in Advance",
                 text_disable: "Set at Runtime",
@@ -389,8 +389,3 @@ function _addSections(form) {
         }
     }
 }
-
-export default {
-    Default: Default,
-    Tool: Tool
-};

@@ -172,7 +172,7 @@ class Workflow extends EventEmitter {
             self.activate_node(node);
         })
             .bind("dragend", function() {
-                self.node_changed(this);
+                self.node_changed(node);
                 self.fit_canvas_to_nodes();
                 self.canvas_manager.draw_overview();
             })
@@ -436,9 +436,9 @@ class Workflow extends EventEmitter {
         if (this.active_node != node) {
             this.check_changes_in_active_form();
             this.clear_active_node();
-            this.emit("onActiveNode", node.config_form, node);
             node.make_active();
             this.active_node = node;
+            this.emit("onActiveNode", node.config_form, node);
         }
     }
     node_changed(node, force) {
