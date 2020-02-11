@@ -6,6 +6,7 @@ import _l from "utils/localization";
 import Utils from "utils/utils";
 import WorkflowIcons from "components/Workflow/icons";
 import FormWrappers from "mvc/workflow/workflow-forms";
+import { loadWorkflow } from "./services";
 import { hide_modal, show_message, show_modal } from "layout/modal";
 
 export function buildDropdowns(workflow, id) {
