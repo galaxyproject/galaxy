@@ -783,11 +783,8 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         update = False
         for key, dbkey in dbkeys.items():
             if 'count' not in dbkey and 'linecount' in dbkey:
-                chrom_count_dataset = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).filter_by(
-                    deleted=false(),
-                    state=trans.app.model.HistoryDatasetAssociation.states.OK,
-                ).get(dbkey['linecount'])
-                if chrom_count_dataset:
+                chrom_count_dataset = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(dbkey['linecount'])
+                if chrom_count_dataset and not chrom_count_dataset.deleted and chrom_count_dataset.state == trans.app.model.HistoryDatasetAssociation.states.OK:
                     chrom_count = int(open(chrom_count_dataset.file_name).readline())
                     dbkey['count'] = chrom_count
                     valid_dbkeys[key] = dbkey
