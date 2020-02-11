@@ -257,7 +257,6 @@ export default {
                     showWorkflowParameters(this.manager);
                     getVersions(this.id).then(versions => {
                         this.versions = versions;
-                        hide_modal();
                     });
                 })
                 .catch(response => {
