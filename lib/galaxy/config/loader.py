@@ -4,9 +4,6 @@ import os
 from galaxy.exceptions import ConfigurationError
 from galaxy.util import string_as_bool
 
-GALAXY_APP_NAME = 'galaxy'
-GALAXY_CONFIG_SCHEMA_PATH = 'lib/galaxy/webapps/galaxy/config_schema.yml'
-
 log = logging.getLogger(__name__)
 
 
