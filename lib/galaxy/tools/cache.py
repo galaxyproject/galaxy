@@ -149,12 +149,22 @@ class ToolShedRepositoryCache(object):
         self.repos_by_tuple[(repository.tool_shed, repository.owner, repository.name)].append(repository)
 
     def rebuild(self):
-        self.repositories = self.app.install_model.context.current.query(self.app.install_model.ToolShedRepository).options(
+        session = self.app.install_model.context.current
+        self.repositories = session.query(self.app.install_model.ToolShedRepository).options(
             defer(self.app.install_model.ToolShedRepository.metadata),
             joinedload('tool_dependencies').subqueryload('tool_shed_repository').options(
                 defer(self.app.install_model.ToolShedRepository.metadata)
             ),
         ).all()
+        for r in self.repositories:
+            # We use sqlalchemy's expire_on_commit option for sessions,
+            # which means that attributes are fetched from the database
+            # after a commit occurs.
+            # The session used for establishing the cache however may have been closed,
+            # leading to ParentInstanceDetached errors.
+            # Expunging the repo prevents the refresh and should be
+            # safe since the cache will be rebuilt upon repository installations and uninstallations.
+            session.expunge(r)
         repos_by_tuple = defaultdict(list)
         for repository in self.repositories + self.local_repositories:
             repos_by_tuple[(repository.tool_shed, repository.owner, repository.name)].append(repository)
