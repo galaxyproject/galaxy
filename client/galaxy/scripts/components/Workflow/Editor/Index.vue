@@ -191,7 +191,7 @@ export default {
             window.location = `${getAppRoot()}api/workflows/${this.id}/download?format=json-download`;
         },
         onSaveAs() {
-            saveAs();
+            saveAs(this.manager);
         },
         onLayout() {
             this.manager.layout_auto();
