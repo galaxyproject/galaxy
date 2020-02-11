@@ -22,7 +22,7 @@ Highlights
    :alt: Workflow invocatios
 
 **Galay Markdown Pages and Workflow Reports as PDF**
-  An additional link has been added to Galaxy Markdown Pahes and Workflow reports
+  An additional link has been added to Galaxy Markdown Pages and Workflow reports
   that exports your document as a standalone PDF.
 
 .. figure:: https://user-images.githubusercontent.com/6804901/73776256-b7524280-4787-11ea-821f-d9a8c6339ee9.png
