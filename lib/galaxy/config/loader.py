@@ -10,7 +10,7 @@ GALAXY_CONFIG_SCHEMA_PATH = 'lib/galaxy/webapps/galaxy/config_schema.yml'
 log = logging.getLogger(__name__)
 
 
-class ConfigurationLoader():
+class ConfigurationLoader(object):
 
     def load(self, appconfig, kwargs):
         self._appschema = appconfig.appschema
