@@ -54,3 +54,13 @@ def test_get_installed_repository(tool_shed_repository_cache, repos, tool_conf_r
         assert repo
     else:
         assert repo is None
+
+
+def test_repo_cache_expunge(tool_shed_repository_cache, repos):
+    tool_shed_repository_cache.rebuild()
+    assert len(tool_shed_repository_cache.repositories) == 10
+    repo = tool_shed_repository_cache.repositories[0]
+    repo.name = 'new name'
+    tool_shed_repository_cache.app.install_model.session.flush()
+    tool_shed_repository_cache.app.install_model.session.remove()
+    assert repo.changeset_revision == "1"
