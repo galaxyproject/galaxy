@@ -31,7 +31,7 @@
 </%def>
 
 <%def name="overlay(visible=False)">
-    ${parent.overlay( "Loading workflow editor...",
+    ${parent.overlay( "Loading workflow...",
                       "<div class='progress progress-striped progress-info active'><div class='progress-bar' style='width: 100%;'></div></div>", self.overlay_visible )}
 </%def>
 

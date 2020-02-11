@@ -213,15 +213,20 @@ export default {
             window.location = `${getAppRoot()}workflows/run?id=${this.id}`;
         },
         onSave() {
-            show_message("Saving workflow", "progress");
-            saveWorkflow(this.manager, this.id).then(data => {
-                showWarnings(data);
-                showWorkflowParameters(this.manager);
-                getVersions(this.id).then(versions => {
-                    this.versions = versions;
+            show_message("Saving workflow...", "progress");
+            saveWorkflow(this.manager, this.id)
+                .then(data => {
+                    showWarnings(data);
+                    showWorkflowParameters(this.manager);
+                    getVersions(this.id).then(versions => {
+                        this.versions = versions;
+                        hide_modal();
+                    });
+                })
+                .catch(response => {
                     hide_modal();
+                    alert("Saving workflow failed.");
                 });
-            });
         },
         onReportHelp() {
             showReportHelp();
@@ -242,7 +247,7 @@ export default {
             }
         },
         loadCurrent(id, version) {
-            show_message("Loading workflow", "progress");
+            show_message("Loading workflow...", "progress");
             loadWorkflow(this.manager, id, version)
                 .then(data => {
                     const report = data.report || {};
@@ -252,10 +257,11 @@ export default {
                     showWorkflowParameters(this.manager);
                     getVersions(this.id).then(versions => {
                         this.versions = versions;
+                        hide_modal();
                     });
-                    hide_modal();
                 })
                 .catch(response => {
+                    hide_modal();
                     alert("Loading workflow failed.");
                 });
         }
