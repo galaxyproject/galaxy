@@ -20,11 +20,9 @@ import bx.intervals
 from six.moves import xrange
 
 try:
-    from string import maketrans
-except ImportError:
     maketrans = str.maketrans
-
-assert sys.version_info[:2] >= (2, 6)
+except AttributeError:
+    from string import maketrans
 
 log = logging.getLogger(__name__)
 
