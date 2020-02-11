@@ -846,28 +846,27 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
                 trans.sa_session.flush()
                 counter = 0
                 lines_skipped = 0
-                f = open(new_len.file_name, 'w')
-                # LEN files have format:
-                #   <chrom_name><tab><chrom_length>
-                for line in len_value.split('\n'):
-                    # Splits at the last whitespace in the line
-                    lst = line.strip().rsplit(None, 1)
-                    if not lst or len(lst) < 2:
-                        lines_skipped += 1
-                        continue
-                    chrom, length = lst[0], lst[1]
-                    try:
-                        length = int(length)
-                    except ValueError:
-                        lines_skipped += 1
-                        continue
-                    if chrom != escape(chrom):
-                        build_dict['message'] = 'Invalid chromosome(s) with HTML detected and skipped.'
-                        lines_skipped += 1
-                        continue
-                    counter += 1
-                    f.write('%s\t%s\n' % (chrom, length))
-                f.close()
+                with open(new_len.file_name, 'w') as f:
+                    # LEN files have format:
+                    #   <chrom_name><tab><chrom_length>
+                    for line in len_value.split('\n'):
+                        # Splits at the last whitespace in the line
+                        lst = line.strip().rsplit(None, 1)
+                        if not lst or len(lst) < 2:
+                            lines_skipped += 1
+                            continue
+                        chrom, length = lst[0], lst[1]
+                        try:
+                            length = int(length)
+                        except ValueError:
+                            lines_skipped += 1
+                            continue
+                        if chrom != escape(chrom):
+                            build_dict['message'] = 'Invalid chromosome(s) with HTML detected and skipped.'
+                            lines_skipped += 1
+                            continue
+                        counter += 1
+                        f.write('%s\t%s\n' % (chrom, length))
                 build_dict['len'] = new_len.id
                 build_dict['count'] = counter
             else:
