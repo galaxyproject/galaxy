@@ -157,6 +157,10 @@ class ToolShedRepositoryCache(object):
                     defer(self.app.install_model.ToolShedRepository.metadata)
                 ),
             ).all()
+            for r in self.repositories:
+                # Shouldn't be necessary, this is just to convince myself that the session is truly independent
+                # and that there are no side-effects in the tool shed tests
+                session.expunge(r)
             repos_by_tuple = defaultdict(list)
             for repository in self.repositories + self.local_repositories:
                 repos_by_tuple[(repository.tool_shed, repository.owner, repository.name)].append(repository)
