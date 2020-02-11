@@ -1,4 +1,5 @@
 import pytest
+from sqlalchemy.orm.exc import DetachedInstanceError
 
 from .conftest import create_repo
 
@@ -64,3 +65,7 @@ def test_repo_cache_expunge(tool_shed_repository_cache, repos):
     tool_shed_repository_cache.app.install_model.session.flush()
     tool_shed_repository_cache.app.install_model.session.remove()
     assert repo.changeset_revision == "1"
+    with pytest.raises(DetachedInstanceError):
+        # Make sure this still raises DetachedInstanceError,
+        # keeping this in memory would be expensive
+        repo.metadata
