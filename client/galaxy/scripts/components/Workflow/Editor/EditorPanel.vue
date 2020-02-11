@@ -2,7 +2,7 @@
     <div class="unified-panel">
         <div class="unified-panel-header" unselectable="on">
             <div class="unified-panel-header-inner">
-                <div class="panel-header-text">Details</div>
+                <slot name="buttons" />
             </div>
         </div>
         <div class="unified-panel-body workflow-right">
@@ -21,6 +21,14 @@
                             {{ v.label }}
                         </b-form-select-option>
                     </b-form-select>
+                </div>
+                <div v-if="hasParameters" id="workflow-parameters-area" class="mt-2">
+                    <b>Parameters</b>
+                    <b-list-group>
+                        <b-list-group-item v-for="[key, p] in parameters.entries()" :key="key"
+                            >{{ key + 1 }}: {{ p }}
+                        </b-list-group-item>
+                    </b-list-group>
                 </div>
                 <div id="workflow-annotation-area" class="mt-2">
                     <b>Annotation</b>
@@ -78,12 +86,18 @@ export default {
         },
         versions: {
             type: Array
+        },
+        parameters: {
+            type: Array
         }
     },
     created() {
         this.services = new Services();
     },
     computed: {
+        hasParameters() {
+            return this.parameters.length > 0;
+        },
         versionOptions() {
             const versions = [];
             for (let i = 0; i < this.versions.length; i++) {
@@ -117,11 +131,16 @@ export default {
             });
         },
         onRename(name) {
-            this.services.updateWorkflow(this.id, { name }).catch(error => {
-                this.onError(error);
-            });
+            this.services
+                .updateWorkflow(this.id, { name })
+                .then(() => {
+                    this.$emit("onRename", name);
+                })
+                .catch(error => {
+                    this.onError(error);
+                });
         },
-        onVersion(version) {
+        onVersion() {
             this.$emit("onVersion", this.versionCurrent);
         },
         onError: function(message) {

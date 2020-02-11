@@ -85,29 +85,26 @@ export function showAttributes() {
 }
 
 export function showForm(workflow, content, node, datatypes) {
-    const cls = "right-content";
-    var id = `${cls}-${node.id}`;
-    var $container = $(`#${cls}`);
-    const Galaxy = getGalaxyInstance();
-    if (content && $container.find(`#${id}`).length === 0) {
-        var $el = $(`<div id="${id}" class="${cls}"/>`);
-        content.node = node;
-        content.workflow = workflow;
-        content.datatypes = datatypes;
-        content.icon = WorkflowIcons[node.type];
-        content.cls = "ui-portlet-section";
-        if (node) {
+    if (content && node && node.id) {
+        const cls = "right-content";
+        var id = `${cls}-${node.id}`;
+        var $container = $(`#${cls}`);
+        if ($container.find(`#${id}`).length === 0) {
+            var $el = $(`<div id="${id}" class="${cls}"/>`);
+            content.node = node;
+            content.workflow = workflow;
+            content.datatypes = datatypes;
+            content.icon = WorkflowIcons[node.type];
+            content.cls = "ui-portlet-section";
             var form_type = node.type == "tool" ? "Tool" : "Default";
             $el.append(new FormWrappers[form_type](content).form.$el);
             $container.append($el);
-        } else {
-            Galaxy.emit.debug("workflow-view::initialize()", "Node not found in workflow.");
         }
+        $(`.${cls}`).hide();
+        $container.find(`#${id}`).show();
+        $container.show();
+        $container.scrollTop();
     }
-    $(`.${cls}`).hide();
-    $container.find(`#${id}`).show();
-    $container.show();
-    $container.scrollTop();
 }
 
 export function showUpgradeMessage(workflow, data) {
@@ -138,14 +135,11 @@ export function showUpgradeMessage(workflow, data) {
     }
 }
 
-export function showWorkflowParameters(workflow) {
-    var parameter_re = /\$\{.+?\}/g;
-    var workflow_parameters = [];
-    var wf_parm_container = $("#workflow-parameters-container");
-    var wf_parm_box = $("#workflow-parameters-box");
-    var new_parameter_content = "";
-    var matches = [];
-    $.each(workflow.nodes, (k, node) => {
+export function getWorkflowParameters(nodes) {
+    const parameter_re = /\$\{.+?\}/g;
+    const parameters = [];
+    let matches = [];
+    $.each(nodes, (k, node) => {
         if (node.config_form && node.config_form.inputs) {
             Utils.deepeach(node.config_form.inputs, d => {
                 if (typeof d.value == "string") {
@@ -172,22 +166,16 @@ export function showWorkflowParameters(workflow) {
         }
         if (matches) {
             $.each(matches, (k, element) => {
-                if ($.inArray(element, workflow_parameters) === -1) {
-                    workflow_parameters.push(element);
+                if ($.inArray(element, parameters) === -1) {
+                    parameters.push(element);
                 }
             });
         }
     });
-    if (workflow_parameters && workflow_parameters.length !== 0) {
-        $.each(workflow_parameters, (k, element) => {
-            new_parameter_content += `<div>${element.substring(2, element.length - 1)}</div>`;
-        });
-        wf_parm_container.html(new_parameter_content);
-        wf_parm_box.show();
-    } else {
-        wf_parm_container.html(new_parameter_content);
-        wf_parm_box.hide();
-    }
+    $.each(parameters, (k, element) => {
+        parameters[k] = element.substring(2, element.length - 1);
+    });
+    return parameters;
 }
 
 export function saveAs(workflow) {

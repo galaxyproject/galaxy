@@ -446,8 +446,8 @@ class Workflow extends EventEmitter {
         if (this.active_node == node && force) {
             // Force changes to be saved even on new connection (previously dumped)
             this.check_changes_in_active_form();
-            this.emit("onNodeChange", node.config_form, node);
         }
+        this.emit("onNodeChange", node.config_form, node);
     }
     scroll_to_nodes() {
         var cv = $("#canvas-viewport");

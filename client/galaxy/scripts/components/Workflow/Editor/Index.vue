@@ -19,29 +19,11 @@
                 <div class="unified-panel-header-inner">
                     <span class="sr-only">Workflow Editor</span>
                     {{ name }}
-                    <WorkflowOptions
-                        :canvas="isCanvas"
-                        @onSave="onSave"
-                        @onSaveAs="onSaveAs"
-                        @onRun="onRun"
-                        @onDownload="onDownload"
-                        @onReport="onReport"
-                        @onReportHelp="onReportHelp"
-                        @onLayout="onLayout"
-                        @onEdit="onEdit"
-                        @onAttributes="onAttributes"
-                    />
                 </div>
             </div>
             <div class="unified-panel-body" id="workflow-canvas-body" v-show="isCanvas">
                 <div id="canvas-viewport" class="workflow-canvas-content">
                     <div ref="canvas" id="canvas-container" />
-                </div>
-                <div id="workflow-parameters-box">
-                    <span class="workflow-parameters-box-title">
-                        Workflow Parameters
-                    </span>
-                    <div id="workflow-parameters-container" />
                 </div>
                 <div class="workflow-overview" aria-hidden="true">
                     <div class="workflow-overview-body">
@@ -62,11 +44,28 @@
                     :id="id"
                     :name="name"
                     :tags="tags"
+                    :parameters="parameters"
                     :annotation="annotation"
                     :version="currentVersion"
                     :versions="versions"
                     @onVersion="onVersion"
-                />
+                    @onRename="onRename"
+                >
+                    <template v-slot:buttons>
+                        <WorkflowOptions
+                            :canvas="isCanvas"
+                            @onSave="onSave"
+                            @onSaveAs="onSaveAs"
+                            @onRun="onRun"
+                            @onDownload="onDownload"
+                            @onReport="onReport"
+                            @onReportHelp="onReportHelp"
+                            @onLayout="onLayout"
+                            @onEdit="onEdit"
+                            @onAttributes="onAttributes"
+                        />
+                    </template>
+                </EditorPanel>
             </template>
         </SidePanel>
     </div>
@@ -76,9 +75,9 @@
 import { getDatatypes, getModule, getVersions, saveWorkflow, loadWorkflow } from "./services";
 import {
     showWarnings,
-    showWorkflowParameters,
     showUpgradeMessage,
     copyIntoWorkflow,
+    getWorkflowParameters,
     showAttributes,
     showForm,
     saveAs
@@ -95,7 +94,13 @@ import EditorPanel from "./EditorPanel";
 import { hide_modal, show_message } from "layout/modal";
 
 export default {
-    components: { MarkdownEditor, WorkflowOptions, SidePanel, ToolBoxWorkflow, EditorPanel },
+    components: {
+        MarkdownEditor,
+        WorkflowOptions,
+        SidePanel,
+        ToolBoxWorkflow,
+        EditorPanel
+    },
     props: {
         id: {
             type: String
@@ -129,7 +134,8 @@ export default {
         return {
             isCanvas: true,
             versions: [],
-            currentVersion: this.version
+            currentVersion: this.version,
+            parameters: []
         };
     },
     created() {
@@ -145,8 +151,12 @@ export default {
                     showForm(this.manager, form, node, datatypes);
                 })
                 .on("onNodeChange", (form, node) => {
-                    showForm(this.manager, form, node, datatypes);
-                    showWorkflowParameters(this.manager);
+                    this.parameters = getWorkflowParameters(this.manager.nodes);
+                    if (form) {
+                        showForm(this.manager, form, node, datatypes);
+                    } else {
+                        showAttributes();
+                    }
                 });
             this.loadCurrent(this.id, this.version);
         });
@@ -205,6 +215,9 @@ export default {
         onReport() {
             this.isCanvas = false;
         },
+        onRename(name) {
+            this.name = name;
+        },
         onReportUpdate(markdown) {
             this.manager.has_changes = true;
             this.manager.report.markdown = markdown;
@@ -217,7 +230,6 @@ export default {
             saveWorkflow(this.manager, this.id)
                 .then(data => {
                     showWarnings(data);
-                    showWorkflowParameters(this.manager);
                     getVersions(this.id).then(versions => {
                         this.versions = versions;
                         hide_modal();
@@ -254,7 +266,6 @@ export default {
                     const markdown = report.markdown || reportDefault;
                     this.$refs["report-editor"].input = markdown;
                     showUpgradeMessage(this.manager, data);
-                    showWorkflowParameters(this.manager);
                     getVersions(this.id).then(versions => {
                         this.versions = versions;
                     });
@@ -293,25 +304,6 @@ export default {
     position: absolute;
     width: 100%;
     height: 100%;
-}
-
-#workflow-parameters-box {
-    display: none;
-    position: absolute;
-    right: 0px;
-    border: solid grey 1px;
-    padding: 5px;
-    background: #eeeeee;
-    z-index: 20000;
-    overflow: auto;
-    max-width: 300px;
-    max-height: 300px;
-}
-
-.workflow-parameters-box-title {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
 }
 
 #overview {
