@@ -353,7 +353,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                 # Handle URLs as files
                 filename = file_element.get('url', None)
                 if filename:
-                    tmp_file = NamedTemporaryFile(prefix='TTDT_URL_%s-' % self.name)
+                    tmp_file = NamedTemporaryFile(prefix='TTDT_URL_%s-' % self.name, mode='w')
                     try:
                         tmp_file.write(requests.get(filename, timeout=url_timeout).text)
                     except Exception as e:

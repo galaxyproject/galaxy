@@ -210,7 +210,7 @@ class Interval(Tabular):
 
     def as_ucsc_display_file(self, dataset, **kwd):
         """Returns file contents with only the bed data"""
-        with tempfile.NamedTemporaryFile(delete=False) as fh:
+        with tempfile.NamedTemporaryFile(delete=False, mode='w') as fh:
             c, s, e, t, n = dataset.metadata.chromCol, dataset.metadata.startCol, dataset.metadata.endCol, dataset.metadata.strandCol or 0, dataset.metadata.nameCol or 0
             c, s, e, t, n = int(c) - 1, int(s) - 1, int(e) - 1, int(t) - 1, int(n) - 1
             if t >= 0:  # strand column (should) exists

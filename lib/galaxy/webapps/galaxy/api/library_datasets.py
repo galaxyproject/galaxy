@@ -7,6 +7,10 @@ import string
 import tempfile
 import zipfile
 from json import dumps
+try:
+    from string import maketrans
+except ImportError:
+    maketrans = str.maketrans
 
 from paste.httpexceptions import HTTPBadRequest, HTTPInternalServerError
 
@@ -575,7 +579,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         if format in ['zip', 'tgz', 'tbz']:
             # error = False
             killme = string.punctuation + string.whitespace
-            trantab = string.maketrans(killme, '_' * len(killme))
+            trantab = maketrans(killme, '_' * len(killme))
             try:
                 outext = 'zip'
                 if format == 'zip':

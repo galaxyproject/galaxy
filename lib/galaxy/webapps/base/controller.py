@@ -904,11 +904,12 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
             bookmarks = unpack_bookmarks(config['bookmarks'])
             vis_rev.config = {"view": view_content, "bookmarks": bookmarks}
             # Viewport from payload
-            if 'viewport' in config:
-                chrom = config['viewport']['chrom']
-                start = config['viewport']['start']
-                end = config['viewport']['end']
-                overview = config['viewport']['overview']
+            viewport = config.get('viewport')
+            if viewport:
+                chrom = viewport['chrom']
+                start = viewport['start']
+                end = viewport['end']
+                overview = viewport['overview']
                 vis_rev.config["viewport"] = {'chrom': chrom, 'start': start, 'end': end, 'overview': overview}
         else:
             # Default action is to save the config as is with no validation.
@@ -1027,7 +1028,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
                         tracks.append(pack_collection(drawable_dict))
 
             config = {"title": visualization.title,
-                      "vis_id": trans.security.encode_id(visualization.id),
+                      "vis_id": trans.security.encode_id(visualization.id) if visualization.id is not None else None,
                       "tracks": tracks,
                       "bookmarks": bookmarks,
                       "chrom": "",
