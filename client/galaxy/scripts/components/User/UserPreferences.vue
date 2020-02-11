@@ -5,16 +5,16 @@
             {{ message }}
         </b-alert>
         <p>
-            You are logged in as <strong>{{ email }}</strong
+            You are logged in as <strong id="user-preferences-current-email">{{ email }}</strong
             >.
         </p>
         <b-row class="ml-3 mb-1" v-for="(link, index) in activeLinks" :key="index">
             <i :class="['pref-icon pt-1 fa fa-lg', link.icon]" />
             <div class="pref-content pr-1">
-                <a v-if="link.onclick" @click="link.onclick" href="javascript:void(0)"
+                <a :id="link.id" v-if="link.onclick" @click="link.onclick" href="javascript:void(0)"
                     ><b>{{ link.title }}</b></a
                 >
-                <a v-else :href="`${baseUrl}/${link.action}`"
+                <a :id="link.id" v-else :href="`${baseUrl}/${link.action}`"
                     ><b>{{ link.title }}</b></a
                 >
                 <div class="form-text text-muted">

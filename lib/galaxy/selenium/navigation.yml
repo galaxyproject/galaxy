@@ -60,12 +60,28 @@ masthead:
     # user menu
     logout: 'Logout'
     custom_builds: 'Custom Builds'
+    preferences: 'Preferences'
     histories: 'Histories'
     pages: 'Pages'
 
     # Shared data
     libraries: 'Data Libraries'
     published_histories: 'Histories'
+
+preferences:
+  selectors:
+    manage_information: '#edit-preferences-information'
+    current_email: "#user-preferences-current-email"
+
+change_user_email:
+  selectors:
+    submit: '#submit'
+
+change_user_address:
+  selectors:
+    address_button:
+      type: xpath
+      selector: '//span[contains(text(), "Insert Address")]'
 
 history_panel:
   menu:
