@@ -35,7 +35,8 @@ export async function getModule(request_data) {
 
 export async function loadWorkflow(workflow, id, version) {
     try {
-        const { data } = await axios.get(`${getAppRoot()}workflow/load_workflow?id=${id}&version=${version}&_=true`);
+        const versionQuery = version ? `version=${version}` : "";
+        const { data } = await axios.get(`${getAppRoot()}workflow/load_workflow?_=true&id=${id}&${versionQuery}`);
         workflow.remove_all();
         workflow.from_simple(data, true);
         workflow.has_changes = false;

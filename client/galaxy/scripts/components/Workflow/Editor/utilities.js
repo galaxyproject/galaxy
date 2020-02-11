@@ -1,7 +1,6 @@
 import _ from "underscore";
 import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
-import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import Utils from "utils/utils";
 import WorkflowIcons from "components/Workflow/icons";
@@ -10,11 +9,10 @@ import { loadWorkflow } from "./services";
 import { hide_modal, show_message, show_modal } from "layout/modal";
 
 export function copyIntoWorkflow(workflow, id = null, stepCount = null) {
-    const Galaxy = getGalaxyInstance();
-    var _copy_into_workflow_ajax = function(workflow, workflowId) {
+    const _copy_into_workflow_ajax = () => {
         // Load workflow definition
         show_message("Importing workflow", "progress");
-        loadWorkflow(workflowId, null).then(data => {
+        loadWorkflow(workflow, id, null).then(data => {
             workflow.from_simple(data, false);
             // Determine if any parameters were 'upgraded' and provide message
             var upgrade_message = "";
@@ -37,22 +35,17 @@ export function copyIntoWorkflow(workflow, id = null, stepCount = null) {
         });
     };
     if (stepCount < 2) {
-        _copy_into_workflow_ajax(workflow, id);
+        _copy_into_workflow_ajax();
     } else {
         // don't ruin the workflow by adding 50 steps unprompted.
-        Galaxy.modal.show({
-            title: _l("Warning"),
-            body: `This will copy ${stepCount} new steps into your workflow.`,
-            buttons: {
-                Cancel: function() {
-                    Galaxy.modal.hide();
-                },
-                Copy: function() {
-                    Galaxy.modal.hide();
-                    _copy_into_workflow_ajax(workflow, id);
-                }
+        show_modal(
+            _l("Warning"),
+            `This will copy ${stepCount} new steps into your workflow.`,
+            {
+                Cancel: hide_modal,
+                Copy: _copy_into_workflow_ajax
             }
-        });
+        );
     }
 }
 
