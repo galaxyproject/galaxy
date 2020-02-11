@@ -40,17 +40,20 @@
         </div>
         <SidePanel id="right" side="right">
             <template v-slot:panel>
-                <EditorPanel
-                    :id="id"
-                    :name="name"
-                    :tags="tags"
-                    :parameters="parameters"
-                    :annotation="annotation"
-                    :version="currentVersion"
-                    :versions="versions"
-                    @onVersion="onVersion"
-                    @onRename="onRename"
-                >
+                <EditorPanel>
+                    <template v-slot:attributes>
+                        <WorkflowAttributes
+                            :id="id"
+                            :name="name"
+                            :tags="tags"
+                            :parameters="parameters"
+                            :annotation="annotation"
+                            :version="version"
+                            :versions="versions"
+                            @onVersion="onVersion"
+                            @onRename="onRename"
+                        />
+                    </template>
                     <template v-slot:buttons>
                         <WorkflowOptions
                             :canvas="isCanvas"
@@ -92,6 +95,7 @@ import reportDefault from "./reportDefault";
 import { showReportHelp } from "./reportHelp";
 import EditorPanel from "./EditorPanel";
 import { hide_modal, show_message } from "layout/modal";
+import WorkflowAttributes from "./Attributes";
 
 export default {
     components: {
@@ -99,7 +103,8 @@ export default {
         WorkflowOptions,
         SidePanel,
         ToolBoxWorkflow,
-        EditorPanel
+        EditorPanel,
+        WorkflowAttributes
     },
     props: {
         id: {
@@ -135,7 +140,7 @@ export default {
             isCanvas: true,
             versions: [],
             currentVersion: this.version,
-            parameters: []
+            parameters: [],
         };
     },
     created() {

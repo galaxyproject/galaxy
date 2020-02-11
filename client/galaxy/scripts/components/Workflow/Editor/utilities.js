@@ -5,7 +5,7 @@ import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import Utils from "utils/utils";
 import WorkflowIcons from "components/Workflow/icons";
-import {DefaultForm, ToolForm} from "mvc/workflow/workflow-forms";
+import { DefaultForm, ToolForm } from "mvc/workflow/workflow-forms";
 import { loadWorkflow } from "./services";
 import { hide_modal, show_message, show_modal } from "layout/modal";
 
