@@ -9,32 +9,6 @@ import FormWrappers from "mvc/workflow/workflow-forms";
 import { loadWorkflow } from "./services";
 import { hide_modal, show_message, show_modal } from "layout/modal";
 
-export function buildDropdowns(workflow, id) {
-    // On load, set the size to the pref stored in local storage if it exists
-    var overview_size = localStorage.getItem("overview-size");
-    if (overview_size !== undefined) {
-        $(".workflow-overview").css({
-            width: overview_size,
-            height: overview_size
-        });
-    }
-
-    // Stores the size of the overview into local storage when it's resized
-    $(".workflow-overview").bind("dragend", function(e, d) {
-        var op = $(this).offsetParent();
-        var opo = op.offset();
-        var new_size = Math.max(op.width() - (d.offsetX - opo.left), op.height() - (d.offsetY - opo.top));
-        localStorage.setItem("overview-size", `${new_size}px`);
-    });
-
-    // Unload handler
-    window.onbeforeunload = () => {
-        if (workflow && workflow.has_changes) {
-            return "There are unsaved changes to your workflow which will be lost.";
-        }
-    };
-}
-
 export function copyIntoWorkflow(workflow, id = null, stepCount = null) {
     const Galaxy = getGalaxyInstance();
     var _copy_into_workflow_ajax = function(workflow, workflowId) {

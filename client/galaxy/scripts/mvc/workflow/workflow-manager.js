@@ -23,6 +23,30 @@ class Workflow extends EventEmitter {
 
         // Canvas overview management
         this.canvas_manager = new WorkflowCanvas(this, $("#canvas-viewport"), $("#overview"));
+
+        // On load, set the size to the pref stored in local storage if it exists
+        var overview_size = localStorage.getItem("overview-size");
+        if (overview_size !== undefined) {
+            $(".workflow-overview").css({
+                width: overview_size,
+                height: overview_size
+            });
+        }
+
+        // Stores the size of the overview into local storage when it's resized
+        $(".workflow-overview").bind("dragend", function(e, d) {
+            var op = $(this).offsetParent();
+            var opo = op.offset();
+            var new_size = Math.max(op.width() - (d.offsetX - opo.left), op.height() - (d.offsetY - opo.top));
+            localStorage.setItem("overview-size", `${new_size}px`);
+        });
+
+        // Unload handler
+        window.onbeforeunload = () => {
+            if (this.has_changes) {
+                return "There are unsaved changes to your workflow which will be lost.";
+            }
+        };
     }
     set_node(node, data) {
         const Galaxy = getGalaxyInstance();
