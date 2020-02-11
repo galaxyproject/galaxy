@@ -187,7 +187,7 @@ GALAXY_LIB_TOOLS_VERSIONED = {
     "lastz_wrapper_2": packaging.version.parse("1.3"),
     "PEsortedSAM2readprofile": packaging.version.parse("1.1.1"),
     "sam_to_bam": packaging.version.parse("1.1.3"),
-    "sam_pileup": packaging.version.parse("1.1.2"),
+    "sam_pileup": packaging.version.parse("1.1.3"),
 }
 
 
