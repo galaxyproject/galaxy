@@ -148,12 +148,7 @@ export default {
                     showForm(this.manager, form, node, datatypes);
                     showWorkflowParameters(this.manager);
                 });
-
-            // Load workflow definition
             this.loadCurrent(this.id, this.version);
-            getVersions(this.id).then(versions => {
-                this.versions = versions;
-            });
         });
     },
     methods: {
@@ -255,6 +250,9 @@ export default {
                     this.$refs["report-editor"].input = markdown;
                     showUpgradeMessage(this.manager, data);
                     showWorkflowParameters(this.manager);
+                    getVersions(this.id).then(versions => {
+                        this.versions = versions;
+                    });
                     hide_modal();
                 })
                 .catch(response => {
