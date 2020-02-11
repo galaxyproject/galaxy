@@ -587,6 +587,14 @@ mapping:
           will use a less efficient monitoring scheme that may work in wider range of scenarios than
           the watchdog default.
 
+      build_sites_config_file:
+        type: str
+        default: config/build_sites.yml.sample
+        required: false
+        desc: |
+          File that defines the builds (dbkeys) available at sites used by display applications
+          and the URL to those sites.
+
       builds_file_path:
         type: str
         default: shared/ucsc/builds.txt
