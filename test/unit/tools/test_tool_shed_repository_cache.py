@@ -60,11 +60,11 @@ def test_get_installed_repository(tool_shed_repository_cache, repos, tool_conf_r
 def test_repo_cache_expunge(tool_shed_repository_cache, repos):
     tool_shed_repository_cache.rebuild()
     assert len(tool_shed_repository_cache.repositories) == 10
-    # Modify and commit a repo, will expire in memory attributes of orm objects (unless expunged)
+    # Modify and commit a repo, will expire in memory attributes of orm objects (unless using a different session)
     repo = tool_shed_repository_cache.repositories[0]
     repo.name = 'new name'
     tool_shed_repository_cache.app.install_model.session.flush()
-    # remove session, so access to expired attributes will raise exception
+    # remove session, should demonstrate the separate session is in use
     tool_shed_repository_cache.app.install_model.session.remove()
     assert repo.changeset_revision == "1"
     assert repo.tool_dependencies[0].name == 'Name'

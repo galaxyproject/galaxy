@@ -149,26 +149,20 @@ class ToolShedRepositoryCache(object):
         self.repos_by_tuple[(repository.tool_shed, repository.owner, repository.name)].append(repository)
 
     def rebuild(self):
-        session = self.app.install_model.context.current
-        self.repositories = session.query(self.app.install_model.ToolShedRepository).options(
-            defer(self.app.install_model.ToolShedRepository.metadata),
-            joinedload('tool_dependencies').subqueryload('tool_shed_repository').options(
-                defer(self.app.install_model.ToolShedRepository.metadata)
-            ),
-        ).all()
-        for r in self.repositories:
-            # We use sqlalchemy's expire_on_commit option for sessions,
-            # which means that attributes are fetched from the database
-            # after a commit occurs.
-            # The session used for establishing the cache however may have been closed,
-            # leading to ParentInstanceDetached errors.
-            # Expunging the repo prevents the refresh and should be
-            # safe since the cache will be rebuilt upon repository installations and uninstallations.
-            session.expunge(r)
-        repos_by_tuple = defaultdict(list)
-        for repository in self.repositories + self.local_repositories:
-            repos_by_tuple[(repository.tool_shed, repository.owner, repository.name)].append(repository)
-        self.repos_by_tuple = repos_by_tuple
+        try:
+            session = self.app.install_model.context.current.session_factory()
+            self.repositories = session.query(self.app.install_model.ToolShedRepository).options(
+                defer(self.app.install_model.ToolShedRepository.metadata),
+                joinedload('tool_dependencies').subqueryload('tool_shed_repository').options(
+                    defer(self.app.install_model.ToolShedRepository.metadata)
+                ),
+            ).all()
+            repos_by_tuple = defaultdict(list)
+            for repository in self.repositories + self.local_repositories:
+                repos_by_tuple[(repository.tool_shed, repository.owner, repository.name)].append(repository)
+            self.repos_by_tuple = repos_by_tuple
+        finally:
+            session.close()
 
     def get_installed_repository(self, tool_shed=None, name=None, owner=None, installed_changeset_revision=None, changeset_revision=None, repository_id=None):
         if repository_id:
