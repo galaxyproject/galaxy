@@ -58,23 +58,30 @@
         </div>
         <SidePanel id="right" side="right">
             <template v-slot:panel>
-                <WorkflowPanel :id="id" :name="name" :tags="tags" :annotation="annotation" />
+                <EditorPanel
+                    :id="id"
+                    :name="name"
+                    :tags="tags"
+                    :annotation="annotation"
+                    :version="currentVersion"
+                    :versions="versions"
+                    @onVersion="onVersion"
+                />
             </template>
         </SidePanel>
     </div>
 </template>
 
 <script>
-import { getDatatypes, getModule } from "./services";
+import { getDatatypes, getModule, getVersions, saveWorkflow, loadWorkflow } from "./services";
 import {
+    showWarnings,
     showWorkflowParameters,
-    buildDropdowns,
+    showUpgradeMessage,
     copyIntoWorkflow,
     showAttributes,
     showForm,
-    saveAs,
-    saveCurrent,
-    loadCurrent
+    saveAs
 } from "./utilities";
 import WorkflowManager from "mvc/workflow/workflow-manager";
 import WorkflowOptions from "./Options";
@@ -82,11 +89,13 @@ import MarkdownEditor from "components/Markdown/MarkdownEditor";
 import ToolBoxWorkflow from "components/Panels/ToolBoxWorkflow";
 import SidePanel from "components/Panels/SidePanel";
 import { getAppRoot } from "onload/loadConfig";
+import reportDefault from "./reportDefault";
 import { showReportHelp } from "./reportHelp";
-import WorkflowPanel from "./WorkflowPanel";
+import EditorPanel from "./EditorPanel";
+import { hide_modal, show_message } from "layout/modal";
 
 export default {
-    components: { MarkdownEditor, WorkflowOptions, SidePanel, ToolBoxWorkflow, WorkflowPanel },
+    components: { MarkdownEditor, WorkflowOptions, SidePanel, ToolBoxWorkflow, EditorPanel },
     props: {
         id: {
             type: String
@@ -118,7 +127,9 @@ export default {
     },
     data() {
         return {
-            isCanvas: true
+            isCanvas: true,
+            versions: [],
+            currentVersion: this.version
         };
     },
     created() {
@@ -139,8 +150,10 @@ export default {
                 });
 
             // Load workflow definition
-            loadCurrent(this.manager, this.id, this.version, this.$refs["report-editor"]);
-            buildDropdowns(this.manager, this.id);
+            this.loadCurrent(this.id, this.version);
+            getVersions(this.id).then(versions => {
+                this.versions = versions;
+            });
         });
     },
     methods: {
@@ -205,10 +218,48 @@ export default {
             window.location = `${getAppRoot()}workflows/run?id=${this.id}`;
         },
         onSave() {
-            saveCurrent(this.manager, this.id, this.$refs["report-editor"]);
+            show_message("Saving workflow", "progress");
+            saveWorkflow(this.manager, this.id).then(data => {
+                showWarnings(data);
+                showWorkflowParameters(this.manager);
+                getVersions(this.id).then(versions => {
+                    this.versions = versions;
+                    hide_modal();
+                });
+            });
         },
         onReportHelp() {
             showReportHelp();
+        },
+        onVersion(version) {
+            if (version != this.manager.workflow_version) {
+                if (this.manager.has_changes) {
+                    const r = window.confirm(
+                        "There are unsaved changes to your workflow which will be lost. Continue ?"
+                    );
+                    if (r == false) {
+                        this.currentVersion = this.manager.workflow_version;
+                        return;
+                    }
+                }
+                this.currentVersion = version;
+                this.loadCurrent(this.id, version);
+            }
+        },
+        loadCurrent(id, version) {
+            show_message("Loading workflow", "progress");
+            loadWorkflow(this.manager, id, version)
+                .then(data => {
+                    const report = data.report || {};
+                    const markdown = report.markdown || reportDefault;
+                    this.$refs["report-editor"].input = markdown;
+                    showUpgradeMessage(this.manager, data);
+                    showWorkflowParameters(this.manager);
+                    hide_modal();
+                })
+                .catch(response => {
+                    alert("Loading workflow failed.");
+                });
         }
     }
 };

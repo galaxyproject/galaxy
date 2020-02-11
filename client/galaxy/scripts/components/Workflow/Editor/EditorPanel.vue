@@ -16,11 +16,11 @@
                 </div>
                 <div id="workflow-version-area" class="mt-2">
                     <b>Version</b>
-                    <div class="ui-select">
-                        <select class="ui-input" id="workflow-version-switch">
-                            Select version
-                        </select>
-                    </div>
+                    <b-form-select v-model="versionCurrent" @change="onVersion">
+                        <b-form-select-option v-for="v in versionOptions" :key="v.version" :value="v.version">
+                            {{ v.label }}
+                        </b-form-select-option>
+                    </b-form-select>
                 </div>
                 <div id="workflow-annotation-area" class="mt-2">
                     <b>Annotation</b>
@@ -53,7 +53,8 @@ export default {
     data() {
         return {
             message: null,
-            messageVariant: null
+            messageVariant: null,
+            versionCurrent: this.version
         };
     },
     props: {
@@ -71,10 +72,33 @@ export default {
         },
         annotation: {
             type: String
+        },
+        version: {
+            type: Number
+        },
+        versions: {
+            type: Array
         }
     },
     created() {
         this.services = new Services();
+    },
+    computed: {
+        versionOptions() {
+            const versions = [];
+            for (let i = 0; i < this.versions.length; i++) {
+                const current_wf = this.versions[i];
+                let label = `Version ${current_wf.version}, ${current_wf.steps} steps`;
+                if (i == this.version) {
+                    label = `${label} (active)`;
+                }
+                versions.push({
+                    version: i,
+                    label: label
+                });
+            }
+            return versions;
+        }
     },
     methods: {
         onTags(tags) {
@@ -96,6 +120,9 @@ export default {
             this.services.updateWorkflow(this.id, { name }).catch(error => {
                 this.onError(error);
             });
+        },
+        onVersion(version) {
+            this.$emit("onVersion", this.versionCurrent);
         },
         onError: function(message) {
             this.message = message;

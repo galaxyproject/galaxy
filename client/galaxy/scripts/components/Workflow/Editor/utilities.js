@@ -6,27 +6,7 @@ import _l from "utils/localization";
 import Utils from "utils/utils";
 import WorkflowIcons from "components/Workflow/icons";
 import FormWrappers from "mvc/workflow/workflow-forms";
-import { loadWorkflow } from "./services";
 import { hide_modal, show_message, show_modal } from "layout/modal";
-
-const DEFAULT_INVOCATION_REPORT = `
-# Workflow Execution Report
-
-## Workflow Inputs
-\`\`\`galaxy
-invocation_inputs()
-\`\`\`
-
-## Workflow Outputs
-\`\`\`galaxy
-invocation_outputs()
-\`\`\`
-
-## Workflow
-\`\`\`galaxy
-workflow_display()
-\`\`\`
-`;
 
 export function buildDropdowns(workflow, id) {
     // On load, set the size to the pref stored in local storage if it exists
@@ -52,31 +32,6 @@ export function buildDropdowns(workflow, id) {
             return "There are unsaved changes to your workflow which will be lost.";
         }
     };
-}
-
-export function getWorkflowVersions(workflow, id) {
-    const _workflow_version_dropdown = {};
-    const workflow_versions = JSON.parse(
-        $.ajax({
-            url: `${getAppRoot()}api/workflows/${id}/versions`,
-            async: false
-        }).responseText
-    );
-
-    for (let i = 0; i < workflow_versions.length; i++) {
-        const current_wf = workflow_versions[i];
-        let version_text = `Version ${current_wf.version}, ${current_wf.steps} steps`;
-        let selected = false;
-        if (i == workflow.workflow_version) {
-            version_text = `${version_text} (active)`;
-            selected = true;
-        }
-        _workflow_version_dropdown[version_text] = {
-            version: i,
-            selected: selected
-        };
-    }
-    return _workflow_version_dropdown;
 }
 
 export function copyIntoWorkflow(workflow, id = null, stepCount = null) {
@@ -126,6 +81,29 @@ export function copyIntoWorkflow(workflow, id = null, stepCount = null) {
     }
 }
 
+export function showWarnings(data) {
+    const body = $("<div/>").text(data.message);
+    if (data.errors) {
+        body.addClass("warningmark");
+        var errlist = $("<ul/>");
+        $.each(data.errors, (i, v) => {
+            $("<li/>")
+                .text(v)
+                .appendTo(errlist);
+        });
+        body.append(errlist);
+    } else {
+        body.addClass("donemark");
+    }
+    if (data.errors) {
+        show_modal("Saving workflow", body, {
+            Ok: hide_modal
+        });
+    } else {
+        hide_modal();
+    }
+}
+
 export function showAttributes() {
     $(".right-content").hide();
     $("#edit-attributes").show();
@@ -157,83 +135,32 @@ export function showForm(workflow, content, node, datatypes) {
     $container.scrollTop();
 }
 
-export function loadCurrent(workflow, id, version, reportsEditor = {}) {
-    show_message("Loading workflow", "progress");
-    loadWorkflow(id, version)
-        .then(data => {
-            workflow.remove_all();
-            workflow.from_simple(data, true);
-            const report = data.report || {};
-            const markdown = report.markdown || DEFAULT_INVOCATION_REPORT;
-            reportsEditor.input = markdown;
-            workflow.has_changes = false;
-            workflow.fit_canvas_to_nodes();
-            workflow.scroll_to_nodes();
-            workflow.canvas_manager.draw_overview();
-            buildVersionSelect(workflow, id, reportsEditor);
-
-            // Determine if any parameters were 'upgraded' and provide message
-            var upgrade_message = "";
-            _.each(data.steps, (step, step_id) => {
-                var details = "";
-                if (step.errors) {
-                    details += `<li>${step.errors}</li>`;
-                }
-                _.each(data.upgrade_messages[step_id], m => {
-                    details += `<li>${m}</li>`;
-                });
-                if (details) {
-                    upgrade_message += `<li>Step ${parseInt(step_id, 10) + 1}: ${
-                        workflow.nodes[step_id].name
-                    }<ul>${details}</ul></li>`;
-                }
-            });
-            if (upgrade_message) {
-                show_modal(
-                    "Issues loading this workflow",
-                    `Please review the following issues, possibly resulting from tool upgrades or changes.<p><ul>${upgrade_message}</ul></p>`,
-                    { Continue: hide_modal }
-                );
-            } else {
-                hide_modal();
-            }
-            showWorkflowParameters(workflow);
-        })
-        .catch(response => {
-            show_modal("Loading workflow failed.", response.err_msg, {
-                Ok: () => {
-                    window.onbeforeunload = undefined;
-                    window.document.location = `${getAppRoot()}workflows/list`;
-                }
-            });
+export function showUpgradeMessage(workflow, data) {
+    // Determine if any parameters were 'upgraded' and provide message
+    var upgrade_message = "";
+    _.each(data.steps, (step, step_id) => {
+        var details = "";
+        if (step.errors) {
+            details += `<li>${step.errors}</li>`;
+        }
+        _.each(data.upgrade_messages[step_id], m => {
+            details += `<li>${m}</li>`;
         });
-}
-
-export function buildVersionSelect(workflow, id, reportsEditor = {}) {
-    const versions = getWorkflowVersions(workflow, id);
-    $("#workflow-version-switch").empty();
-    $.each(versions, function(k, v) {
-        $("#workflow-version-switch").append(
-            $("<option></option>")
-                .html(k)
-                .val(v.version)
-                .selected(v.selected)
-        );
-    });
-    $("#workflow-version-switch").on("change", function() {
-        $("#workflow-version-switch").unbind("change");
-        if (this.value != workflow.workflow_version) {
-            if (workflow && workflow.has_changes) {
-                const r = window.confirm("There are unsaved changes to your workflow which will be lost. Continue ?");
-                if (r == false) {
-                    // We rebuild the version select list, to reset the selected version
-                    buildVersionSelect();
-                    return;
-                }
-            }
-            loadCurrent(id, this.value, reportsEditor);
+        if (details) {
+            upgrade_message += `<li>Step ${parseInt(step_id, 10) + 1}: ${
+                workflow.nodes[step_id].name
+            }<ul>${details}</ul></li>`;
         }
     });
+    if (upgrade_message) {
+        show_modal(
+            "Issues loading this workflow",
+            `Please review the following issues, possibly resulting from tool upgrades or changes.<p><ul>${upgrade_message}</ul></p>`,
+            { Continue: hide_modal }
+        );
+    } else {
+        hide_modal();
+    }
 }
 
 export function showWorkflowParameters(workflow) {
@@ -286,52 +213,6 @@ export function showWorkflowParameters(workflow) {
         wf_parm_container.html(new_parameter_content);
         wf_parm_box.hide();
     }
-}
-
-export function saveCurrent(workflow, id, reportsEditor = {}) {
-    show_message("Saving workflow", "progress");
-    workflow.check_changes_in_active_form();
-    if (!workflow.has_changes) {
-        hide_modal();
-        return;
-    }
-    workflow.rectify_workflow_outputs();
-    Utils.request({
-        url: `${getAppRoot()}api/workflows/${id}`,
-        type: "PUT",
-        data: { workflow: workflow.to_simple(), from_tool_form: true },
-        success: function(data) {
-            var body = $("<div/>").text(data.message);
-            if (data.errors) {
-                body.addClass("warningmark");
-                var errlist = $("<ul/>");
-                $.each(data.errors, (i, v) => {
-                    $("<li/>")
-                        .text(v)
-                        .appendTo(errlist);
-                });
-                body.append(errlist);
-            } else {
-                body.addClass("donemark");
-            }
-            workflow.name = data.name;
-            workflow.has_changes = false;
-            workflow.stored = true;
-            workflow.workflow_version = data.version;
-            showWorkflowParameters(workflow);
-            buildVersionSelect(workflow, id, reportsEditor);
-            if (data.errors) {
-                show_modal("Saving workflow", body, {
-                    Ok: hide_modal
-                });
-            } else {
-                hide_modal();
-            }
-        },
-        error: function(response) {
-            show_modal("Saving workflow failed.", response.err_msg, { Ok: hide_modal });
-        }
-    });
 }
 
 export function saveAs(workflow) {
