@@ -67,6 +67,7 @@ def test_repo_cache_expunge(tool_shed_repository_cache, repos):
     # remove session, so access to expired attributes will raise exception
     tool_shed_repository_cache.app.install_model.session.remove()
     assert repo.changeset_revision == "1"
+    assert repo.tool_dependencies[0].name == 'Name'
     with pytest.raises(DetachedInstanceError):
         # Make sure this still raises DetachedInstanceError,
         # keeping this in memory would be expensive
