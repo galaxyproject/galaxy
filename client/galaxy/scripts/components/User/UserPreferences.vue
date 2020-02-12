@@ -91,19 +91,19 @@ export default {
                     activeLinks[key] = UserPreferencesModel[key];
                     switch (key) {
                         case "make_data_private":
-                            activeLinks[key]["onclick"] = this.makeDataPrivate;
+                            activeLinks[key].onclick = this.makeDataPrivate;
                             break;
                         case "custom_builds":
-                            activeLinks[key]["onclick"] = this.openManageCustomBuilds;
+                            activeLinks[key].onclick = this.openManageCustomBuilds;
                             break;
                         case "genomespace":
-                            activeLinks[key]["onclick"] = this.requestGenomeSpace;
+                            activeLinks[key].onclick = this.requestGenomeSpace;
                             break;
                         case "logout":
-                            activeLinks[key]["onclick"] = this.signOut;
+                            activeLinks[key].onclick = this.signOut;
                             break;
                         default:
-                            activeLinks[key]["action"] = key;
+                            activeLinks[key].action = key;
                     }
                 }
             }
