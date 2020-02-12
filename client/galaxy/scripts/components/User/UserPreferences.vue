@@ -48,10 +48,18 @@ import $ from "jquery";
 Vue.use(BootstrapVue);
 
 export default {
+    props: {
+        userId: {
+            type: String,
+            required: true
+        },
+        enableQuotas: {
+            type: Boolean,
+            required: true
+        }
+    },
     data() {
-        const Galaxy = getGalaxyInstance();
         return {
-            user: Galaxy.user,
             email: "",
             diskUsage: "",
             quotaUsageString: "",
@@ -61,18 +69,16 @@ export default {
         };
     },
     created() {
-        const Galaxy = getGalaxyInstance();
-        const config = Galaxy.config;
         const message = QueryStringParsing.get("message");
         const status = QueryStringParsing.get("status");
         if (message && status) {
             this.message = message;
             this.messageVariant = status;
         }
-        axios.get(`${getAppRoot()}api/users/${Galaxy.user.id}`).then(response => {
+        axios.get(`${getAppRoot()}api/users/${this.userId}`).then(response => {
             this.email = response.data.email;
             this.diskUsage = response.data.nice_total_disk_usage;
-            this.quotaUsageString = config.enable_quotas
+            this.quotaUsageString = this.enableQuotas
                 ? `Your disk quota is: <strong>${response.data.quota}</strong>.`
                 : "";
         });
