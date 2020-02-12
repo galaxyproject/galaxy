@@ -21,6 +21,8 @@ jobs:
       with:
         path: ~/.cache/pip
         key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('requirements.txt') }}
+    - name: fetch test data
+      run: git clone https://github.com/galaxyproject/galaxy-test-data && cp -R galaxy-test-data/* test-data
     - name: Install planemo
       run: pip install planemo
     - name: Run tests
