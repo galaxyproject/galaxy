@@ -48,6 +48,14 @@ glob.sync("./galaxy/docs/galaxy-*.md").forEach(file => {
 
 const sections = [
     {
+        name: "Galaxy styles",
+        sections: galaxyStyleDocs
+    },
+    {
+        name: "Basic Bootstrap Styles",
+        content: "./galaxy/docs/bootstrap.md"
+    },
+    {
         name: "Components",
         // Components that are directories will get their own section
         sections: glob
@@ -62,15 +70,7 @@ const sections = [
             })
             .filter(v => v),
         // ...while top level components are handled here.
-        components: "./galaxy/scripts/components/*.vue"
-    },
-    {
-        name: "Galaxy styles",
-        sections: galaxyStyleDocs
-    },
-    {
-        name: "Basic Bootstrap Styles",
-        content: "./galaxy/docs/bootstrap.md"
+        //components: "./galaxy/scripts/components/*.vue"
     }
 ];
 
