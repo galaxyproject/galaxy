@@ -172,15 +172,16 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         """
         test_counts_by_tool = {}
         for id, tool in self.app.toolbox.tools():
-            tests = tool.tests
-            if tests:
-                if tool.id not in test_counts_by_tool:
-                    test_counts_by_tool[tool.id] = {}
-                available_versions = test_counts_by_tool[tool.id]
-                available_versions[tool.version] = {
-                    "tool_name": tool.name,
-                    "count": len(tests),
-                }
+            if not tool.is_datatype_converter:
+                tests = tool.tests
+                if tests:
+                    if tool.id not in test_counts_by_tool:
+                        test_counts_by_tool[tool.id] = {}
+                    available_versions = test_counts_by_tool[tool.id]
+                    available_versions[tool.version] = {
+                        "tool_name": tool.name,
+                        "count": len(tests),
+                    }
         return test_counts_by_tool
 
     @expose_api_raw_anonymous_and_sessionless
