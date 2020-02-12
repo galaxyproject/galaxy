@@ -70,7 +70,7 @@ const sections = [
             })
             .filter(v => v),
         // ...while top level components are handled here.
-        //components: "./galaxy/scripts/components/*.vue"
+        components: "./galaxy/scripts/components/*.vue"
     }
 ];
 
