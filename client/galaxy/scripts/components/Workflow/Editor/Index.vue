@@ -140,7 +140,7 @@ export default {
             isCanvas: true,
             versions: [],
             currentVersion: this.version,
-            parameters: [],
+            parameters: []
         };
     },
     created() {

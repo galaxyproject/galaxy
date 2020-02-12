@@ -38,14 +38,10 @@ export function copyIntoWorkflow(workflow, id = null, stepCount = null) {
         _copy_into_workflow_ajax();
     } else {
         // don't ruin the workflow by adding 50 steps unprompted.
-        show_modal(
-            _l("Warning"),
-            `This will copy ${stepCount} new steps into your workflow.`,
-            {
-                Cancel: hide_modal,
-                Copy: _copy_into_workflow_ajax
-            }
-        );
+        show_modal(_l("Warning"), `This will copy ${stepCount} new steps into your workflow.`, {
+            Cancel: hide_modal,
+            Copy: _copy_into_workflow_ajax
+        });
     }
 }
 
