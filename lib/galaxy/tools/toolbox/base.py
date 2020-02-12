@@ -141,6 +141,16 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 config_filenames.remove(config_filename)
                 config_filenames.extend(directory_config_files)
         for config_filename in config_filenames:
+            if config_filename == self.app.config.shed_tool_config_file and not self.app.config.shed_tool_config_file_set:
+                if self.dynamic_confs():
+                    # Do not load or create a default shed_tool_config_file if another shed_tool_config file has already been loaded
+                    continue
+                elif self.app.config.tool_config_file_set:
+                    log.warning(
+                        "The default shed tool config file (%s) has been added to the tool_config_file option, if this is "
+                        "not the desired behavior, please set shed_tool_config_file to your primary shed-enabled tool "
+                        "config file", self.app.config.shed_tool_config_file
+                    )
             try:
                 self._init_tools_from_config(config_filename)
             except ParseError:
