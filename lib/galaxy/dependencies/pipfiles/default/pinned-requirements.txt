@@ -28,7 +28,7 @@ boltons==19.3.0
 boto3==1.9.114
 boto==2.49.0
 botocore==1.12.253
-bx-python==0.8.6
+bx-python==0.8.7
 bz2file==0.98 ; python_version < '3.3'
 cachecontrol==0.11.7
 cachetools==3.1.1
