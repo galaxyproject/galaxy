@@ -1,0 +1,27 @@
+name: Converter tests
+on: [push, pull_request]
+jobs:
+
+  test:
+    name: Test
+    runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        python-version: [3.7]
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        fetch-depth: 1
+    - uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Cache venv dir
+      uses: actions/cache@v1
+      id: pip-cache
+      with:
+        path: ~/.cache/pip
+        key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('requirements.txt') }}
+    - name: Install planemo
+      run: pip install planemo
+    - name: Run tests
+      run: 'planemo test --biocontainers --galaxy_python_version ${{ matrix.python-version }} --galaxy_root .  lib/galaxy/datatypes/converters/*xml'
