@@ -113,7 +113,7 @@ export const getAnalysisRouter = Galaxy =>
             const Galaxy = getGalaxyInstance();
             this._display_vue_helper(UserPreferences, {
                 enableQuotas: Galaxy.config.enable_quotas,
-                userId : Galaxy.user.id
+                userId: Galaxy.user.id
             });
         },
 

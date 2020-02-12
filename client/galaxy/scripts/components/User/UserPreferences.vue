@@ -43,7 +43,6 @@ import QueryStringParsing from "utils/query-string-parsing";
 import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import $ from "jquery";
 
 Vue.use(BootstrapVue);
 
@@ -90,7 +89,6 @@ export default {
             for (const key in UserPreferencesModel) {
                 if (UserPreferencesModel[key].shouldRender !== false) {
                     activeLinks[key] = UserPreferencesModel[key];
-
                     switch (key) {
                         case "make_data_private":
                             activeLinks[key]["onclick"] = this.makeDataPrivate;
@@ -133,12 +131,12 @@ export default {
                     )
                 )
             ) {
-                $.post(`${Galaxy.root}history/make_private`, { all_histories: true }, () => {
+                axios.post(`${getAppRoot()}history/make_private?all_histories=true`).then(response => {
                     Galaxy.modal.show({
                         title: _l("Datasets are now private"),
                         body: `All of your histories and datsets have been made private.  If you'd like to make all *future* histories private please use the <a href="${Galaxy.root}user/permissions">User Permissions</a> interface.`,
                         buttons: {
-                            Close: function() {
+                            Close: () => {
                                 Galaxy.modal.hide();
                             }
                         }
