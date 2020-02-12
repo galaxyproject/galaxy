@@ -24,4 +24,4 @@ jobs:
     - name: Install planemo
       run: pip install planemo
     - name: Run tests
-      run: 'planemo test --biocontainers --galaxy_python_version ${{ matrix.python-version }} --galaxy_root .  lib/galaxy/datatypes/converters/*xml'
+      run: 'planemo test --galaxy_python_version ${{ matrix.python-version }} --galaxy_root .  lib/galaxy/datatypes/converters/*xml'
