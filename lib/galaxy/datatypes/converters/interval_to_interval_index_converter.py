@@ -44,7 +44,7 @@ def main():
         index.add(chrom, chrom_start, chrom_end, offset)
         offset += len(line)
 
-    with open(output_fname, 'w') as out:
+    with open(output_fname, 'wb') as out:
         index.write(out)
 
 
