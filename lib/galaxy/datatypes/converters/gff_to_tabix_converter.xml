@@ -14,6 +14,7 @@
     <tests>
         <test>
             <param name="input1" format="gff" value="gff_filter_by_feature_count_out2.gff"/>
+            <param name="bgzip" format="gff.gz" value="gff_filter_by_feature_count_out2.gff"/>
             <output name="output1" format="tabix" value="tabix_filter_by_feature_count_out2.tabix"/>
         </test>
     </tests>
