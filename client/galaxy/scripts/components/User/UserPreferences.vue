@@ -1,6 +1,9 @@
 <template>
     <b-container fluid class="p-0">
         <h2>User preferences</h2>
+        <b-alert :variant="messageVariant" :show="!!message">
+            {{ message }}
+        </b-alert>
         <p>
             You are logged in as <strong>{{ email }}</strong
             >.
@@ -36,7 +39,6 @@ import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
 import axios from "axios";
-import Ui from "mvc/ui/ui-misc";
 import QueryStringParsing from "utils/query-string-parsing";
 import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
 import Vue from "vue";
@@ -53,7 +55,9 @@ export default {
             email: "",
             diskUsage: "",
             quotaUsageString: "",
-            baseUrl: `${getAppRoot()}user`
+            baseUrl: `${getAppRoot()}user`,
+            messageVariant: null,
+            message: null
         };
     },
     created() {
@@ -61,11 +65,10 @@ export default {
         const config = Galaxy.config;
         const message = QueryStringParsing.get("message");
         const status = QueryStringParsing.get("status");
-
         if (message && status) {
-            $(this.$el).prepend(new Ui.Message({ message: message, status: status }).$el);
+            this.message = message;
+            this.messageVariant = status;
         }
-
         axios.get(`${getAppRoot()}api/users/${Galaxy.user.id}`).then(response => {
             this.email = response.data.email;
             this.diskUsage = response.data.nice_total_disk_usage;
@@ -78,7 +81,6 @@ export default {
         activeLinks() {
             const activeLinks = {};
             const UserPreferencesModel = getUserPreferencesModel();
-
             for (const key in UserPreferencesModel) {
                 if (UserPreferencesModel[key].shouldRender !== false) {
                     activeLinks[key] = UserPreferencesModel[key];
