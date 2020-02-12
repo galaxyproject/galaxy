@@ -1,6 +1,7 @@
 """Utilities for loading and reasoning about unparsed tools in directories."""
 import fnmatch
 import glob
+import io
 import logging
 import os
 import re
@@ -170,8 +171,11 @@ def looks_like_xml(path, regex=TOOL_REGEX):
        checkers.is_zip(full_path)):
         return False
 
-    with open(path, "r") as f:
-        start_contents = f.read(5 * 1024)
+    with io.open(path, "r", encoding='utf-8') as f:
+        try:
+            start_contents = f.read(5 * 1024)
+        except UnicodeDecodeError:
+            return False
         if regex.search(start_contents):
             return True
 
