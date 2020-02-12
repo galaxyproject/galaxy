@@ -177,8 +177,6 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     "gd_phylogenetic_tree",
     "gd_population_structure",
     "gd_prepare_population_structure",
-    # Datasources
-    "genomespace_importer"
 ]
 # Tools that needed galaxy on the PATH in the past but no longer do along
 # with the version at which they were fixed.

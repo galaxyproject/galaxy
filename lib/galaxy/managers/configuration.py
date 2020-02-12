@@ -51,7 +51,6 @@ class ConfigSerializer(base.ModelSerializer):
             'search_url'                        : _required_attribute,
             'mailing_lists'                     : _defaults_to(self.app.config.mailing_lists_url),
             'screencasts_url'                   : _required_attribute,
-            'genomespace_ui_url'                : _required_attribute,
             'citation_url'                      : _required_attribute,
             'support_url'                       : _required_attribute,
             'helpsite_url'                      : _required_attribute,
