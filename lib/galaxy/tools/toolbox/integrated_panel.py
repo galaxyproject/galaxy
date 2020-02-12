@@ -102,13 +102,13 @@ $INTEGRATED_TOOL_PANEL
         tool_panel_description = '\n    '.join([l for l in INTEGRATED_TOOL_PANEL_DESCRIPTION.split("\n") if l])
         tp_string = template.substitute(INTEGRATED_TOOL_PANEL_DESCRIPTION=tool_panel_description,
                                         INTEGRATED_TOOL_PANEL='\n'.join(integrated_tool_panel))
-        with RenamedTemporaryFile(filename, mode='w') as integrated_tool_panel_file:
-            integrated_tool_panel_file.write(tp_string)
+        with RenamedTemporaryFile(filename, mode='w') as f:
+            f.write(tp_string)
         if tracking_directory:
-            open(filename + ".stack", "w").write(''.join(traceback.format_stack()))
+            with open(filename + ".stack", "w") as f:
+                f.write(''.join(traceback.format_stack()))
             shutil.copy(filename, filename + ".copy")
-            filename = filename + ".copy"
-            shutil.move(filename, destination)
+            shutil.move(filename + ".copy", destination)
         try:
             os.chmod(destination, 0o644)
         except OSError:
