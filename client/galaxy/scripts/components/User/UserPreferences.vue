@@ -9,16 +9,14 @@
             >.
         </p>
         <b-row class="ml-3 mb-1" v-for="(link, index) in activeLinks" :key="index">
-            <i :class="`pref-icon pt-1 fa fa-lg ${link.icon}`"></i>
+            <i :class="['pref-icon pt-1 fa fa-lg', link.icon]"/>
             <div class="pref-content pr-1">
-                <div>
-                    <a v-if="link.onclick" @click="link.onclick" href="javascript:void(0)"
-                        ><b>{{ link.title }}</b></a
-                    >
-                    <a v-else :href="`${baseUrl}/${link.action}`"
-                        ><b>{{ link.title }}</b></a
-                    >
-                </div>
+                <a v-if="link.onclick" @click="link.onclick" href="javascript:void(0)"
+                    ><b>{{ link.title }}</b></a
+                >
+                <a v-else :href="`${baseUrl}/${link.action}`"
+                    ><b>{{ link.title }}</b></a
+                >
                 <div class="form-text text-muted">
                     {{ link.description }}
                 </div>
@@ -35,14 +33,14 @@
 </template>
 
 <script>
+import Vue from "vue";
+import BootstrapVue from "bootstrap-vue";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
 import axios from "axios";
 import QueryStringParsing from "utils/query-string-parsing";
 import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
 
 Vue.use(BootstrapVue);
 
@@ -168,11 +166,11 @@ export default {
 };
 </script>
 
-<style>
+<style scoped>
 .pref-content {
-    width: calc(100% - 40px);
+    width: calc(100% - 3rem);
 }
 .pref-icon {
-    width: 40px;
+    width: 3rem;
 }
 </style>
