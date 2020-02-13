@@ -100,7 +100,7 @@ class AdminActions(object):
         else:
             try:
                 new_amount = util.size_to_bytes(params.amount)
-            except AssertionError:
+            except (AssertionError, ValueError):
                 new_amount = False
         if not params.amount:
             raise ActionInputError('Enter a valid amount.')
