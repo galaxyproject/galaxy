@@ -6,14 +6,28 @@
             </div>
         </div>
         <div class="unified-panel-body workflow-right">
-            <slot name="attributes" />
-            <div id="right-content" class="right-content" />
+            <div v-if="canvas">
+                <slot name="attributes" />
+                <div id="right-content" class="right-content" />
+            </div>
+            <ReportHelp v-else />
         </div>
     </div>
 </template>
 
 <script>
+import ReportHelp from "./ReportHelp";
+
 export default {
-    name: "EditorPanel"
+    name: "EditorPanel",
+    components: {
+        ReportHelp
+    },
+    props: {
+        canvas: {
+            type: Boolean,
+            required: true
+        }
+    }
 };
 </script>

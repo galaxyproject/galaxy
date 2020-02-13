@@ -59,19 +59,6 @@
         </span>
         <span v-else>
             <b-button
-                id="workflow-report-help-button"
-                role="button"
-                title="Report Syntax Help"
-                sm="size"
-                variant="link"
-                aria-label="Report Syntax Help"
-                v-b-tooltip.hover
-                v-b-tooltip.bottom
-                @click="$emit('onReportHelp')"
-            >
-                <span class="fa fa-question" />
-            </b-button>
-            <b-button
                 id="workflow-canvas-button"
                 role="button"
                 title="Return to Workflow"

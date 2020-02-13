@@ -35,12 +35,12 @@
                 </div>
             </div>
             <div class="unified-panel-body workflow-report-body" v-show="!isCanvas">
-                <markdown-editor ref="report-editor" initial-markdown="" :onupdate="onReportUpdate" :toolbar="false" />
+                <MarkdownEditor ref="report-editor" initial-markdown="" :onupdate="onReportUpdate" :toolbar="false" />
             </div>
         </div>
         <SidePanel id="right" side="right">
             <template v-slot:panel>
-                <EditorPanel>
+                <EditorPanel :canvas="isCanvas">
                     <template v-slot:attributes>
                         <WorkflowAttributes
                             :id="id"
@@ -62,7 +62,6 @@
                             @onRun="onRun"
                             @onDownload="onDownload"
                             @onReport="onReport"
-                            @onReportHelp="onReportHelp"
                             @onLayout="onLayout"
                             @onEdit="onEdit"
                             @onAttributes="onAttributes"
@@ -92,18 +91,17 @@ import ToolBoxWorkflow from "components/Panels/ToolBoxWorkflow";
 import SidePanel from "components/Panels/SidePanel";
 import { getAppRoot } from "onload/loadConfig";
 import reportDefault from "./reportDefault";
-import { showReportHelp } from "./reportHelp";
 import EditorPanel from "./EditorPanel";
 import { hide_modal, show_message, show_modal } from "layout/modal";
 import WorkflowAttributes from "./Attributes";
 
 export default {
     components: {
+        EditorPanel,
         MarkdownEditor,
-        WorkflowOptions,
         SidePanel,
         ToolBoxWorkflow,
-        EditorPanel,
+        WorkflowOptions,
         WorkflowAttributes
     },
     props: {
@@ -238,9 +236,6 @@ export default {
                 .catch(response => {
                     show_modal("Saving workflow failed...", response, { Ok: hide_modal });
                 });
-        },
-        onReportHelp() {
-            showReportHelp();
         },
         onVersion(version) {
             if (version != this.manager.workflow_version) {
