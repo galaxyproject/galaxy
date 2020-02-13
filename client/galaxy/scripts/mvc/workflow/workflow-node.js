@@ -243,7 +243,7 @@ export class Node {
             nodeView.addDataOutput(output);
         });
         nodeView.render();
-        this.app.node_changed(this, true);
+        this.app.node_changed(this);
     }
     update_field_data(data) {
         var node = this;

@@ -385,8 +385,6 @@ export class BaseOutputTerminalView extends TerminalView {
     }
     onDragStart(e, d = {}) {
         $(d.available).addClass("input-terminal-active");
-        // Save PJAs in the case of change datatype actions.
-        this.app.check_changes_in_active_form();
         // Drag proxy div
         var h = $("<div class='drag-terminal'/>")
             .appendTo("#canvas-container")
@@ -408,10 +406,6 @@ export class BaseOutputTerminalView extends TerminalView {
     }
     onDragEnd(e, d = {}) {
         var connector = d.proxy.terminal.connectors[0];
-        // check_changes_in_active_form may change the state and cause a
-        // the connection to have already been destroyed. There must be better
-        // ways to handle this but the following check fixes some serious GUI
-        // bugs for now.
         if (connector) {
             connector.destroy();
         }

@@ -94,7 +94,7 @@ import { getAppRoot } from "onload/loadConfig";
 import reportDefault from "./reportDefault";
 import { showReportHelp } from "./reportHelp";
 import EditorPanel from "./EditorPanel";
-import { hide_modal, show_message } from "layout/modal";
+import { hide_modal, show_message, show_modal } from "layout/modal";
 import WorkflowAttributes from "./Attributes";
 
 export default {
@@ -236,8 +236,7 @@ export default {
                     });
                 })
                 .catch(response => {
-                    hide_modal();
-                    alert("Saving workflow failed.");
+                    show_modal("Saving workflow failed...", response, { Ok: hide_modal });
                 });
         },
         onReportHelp() {

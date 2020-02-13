@@ -50,7 +50,6 @@ export async function loadWorkflow(workflow, id, version) {
 }
 
 export async function saveWorkflow(workflow, id) {
-    workflow.check_changes_in_active_form();
     workflow.rectify_workflow_outputs();
     if (workflow.has_changes) {
         try {

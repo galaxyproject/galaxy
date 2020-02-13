@@ -17,7 +17,6 @@ class Workflow extends EventEmitter {
         this.nodes = {};
         this.name = null;
         this.has_changes = false;
-        this.active_form_has_changes = false;
         this.workflowOutputLabels = {};
         this.workflow_version = 0;
 
@@ -406,17 +405,6 @@ class Workflow extends EventEmitter {
             }
         });
     }
-    check_changes_in_active_form() {
-        // If active form has changed, save it
-        if (this.active_form_has_changes) {
-            this.has_changes = true;
-            // Submit form.
-            $("#right-content")
-                .find("form")
-                .submit();
-            this.active_form_has_changes = false;
-        }
-    }
     reload_active_node() {
         if (this.active_node) {
             var node = this.active_node;
@@ -434,19 +422,14 @@ class Workflow extends EventEmitter {
     }
     activate_node(node) {
         if (this.active_node != node) {
-            this.check_changes_in_active_form();
             this.clear_active_node();
             node.make_active();
             this.active_node = node;
         }
         this.emit("onActiveNode", node.config_form, node);
     }
-    node_changed(node, force) {
+    node_changed(node) {
         this.has_changes = true;
-        if (this.active_node == node && force) {
-            // Force changes to be saved even on new connection (previously dumped)
-            this.check_changes_in_active_form();
-        }
         this.emit("onNodeChange", node.config_form, node);
     }
     scroll_to_nodes() {
@@ -473,7 +456,6 @@ class Workflow extends EventEmitter {
         this.canvas_manager.draw_overview();
     }
     layout() {
-        this.check_changes_in_active_form();
         this.has_changes = true;
         // Prepare predecessor / successor tracking
         var n_pred = {};
