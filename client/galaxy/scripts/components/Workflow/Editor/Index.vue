@@ -157,7 +157,6 @@ export default {
                 })
                 .on("onNodeChange", (form, node) => {
                     this.parameters = getWorkflowParameters(this.manager.nodes);
-                    showForm(this.manager, form, node, datatypes);
                 });
             this.loadCurrent(this.id, this.version);
         });
