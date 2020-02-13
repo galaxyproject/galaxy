@@ -779,19 +779,22 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         """
         user = self._get_user(trans, id)
         dbkeys = json.loads(user.preferences['dbkeys']) if 'dbkeys' in user.preferences else {}
+        valid_dbkeys = {}
         update = False
-        for key in dbkeys:
-            dbkey = dbkeys[key]
+        for key, dbkey in dbkeys.items():
             if 'count' not in dbkey and 'linecount' in dbkey:
                 chrom_count_dataset = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(dbkey['linecount'])
-                if chrom_count_dataset.state == trans.app.model.Job.states.OK:
+                if chrom_count_dataset and not chrom_count_dataset.deleted and chrom_count_dataset.state == trans.app.model.HistoryDatasetAssociation.states.OK:
                     chrom_count = int(open(chrom_count_dataset.file_name).readline())
                     dbkey['count'] = chrom_count
+                    valid_dbkeys[key] = dbkey
                     update = True
+            else:
+                valid_dbkeys[key] = dbkey
         if update:
-            user.preferences['dbkeys'] = json.dumps(dbkeys)
+            user.preferences['dbkeys'] = json.dumps(valid_dbkeys)
         dbkey_collection = []
-        for key, attributes in dbkeys.items():
+        for key, attributes in valid_dbkeys.items():
             attributes['id'] = key
             dbkey_collection.append(attributes)
         return dbkey_collection
@@ -840,28 +843,27 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
                 trans.sa_session.flush()
                 counter = 0
                 lines_skipped = 0
-                f = open(new_len.file_name, 'w')
-                # LEN files have format:
-                #   <chrom_name><tab><chrom_length>
-                for line in len_value.split('\n'):
-                    # Splits at the last whitespace in the line
-                    lst = line.strip().rsplit(None, 1)
-                    if not lst or len(lst) < 2:
-                        lines_skipped += 1
-                        continue
-                    chrom, length = lst[0], lst[1]
-                    try:
-                        length = int(length)
-                    except ValueError:
-                        lines_skipped += 1
-                        continue
-                    if chrom != escape(chrom):
-                        build_dict['message'] = 'Invalid chromosome(s) with HTML detected and skipped.'
-                        lines_skipped += 1
-                        continue
-                    counter += 1
-                    f.write('%s\t%s\n' % (chrom, length))
-                f.close()
+                with open(new_len.file_name, 'w') as f:
+                    # LEN files have format:
+                    #   <chrom_name><tab><chrom_length>
+                    for line in len_value.split('\n'):
+                        # Splits at the last whitespace in the line
+                        lst = line.strip().rsplit(None, 1)
+                        if not lst or len(lst) < 2:
+                            lines_skipped += 1
+                            continue
+                        chrom, length = lst[0], lst[1]
+                        try:
+                            length = int(length)
+                        except ValueError:
+                            lines_skipped += 1
+                            continue
+                        if chrom != escape(chrom):
+                            build_dict['message'] = 'Invalid chromosome(s) with HTML detected and skipped.'
+                            lines_skipped += 1
+                            continue
+                        counter += 1
+                        f.write('%s\t%s\n' % (chrom, length))
                 build_dict['len'] = new_len.id
                 build_dict['count'] = counter
             else:

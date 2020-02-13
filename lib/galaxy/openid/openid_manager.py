@@ -47,12 +47,12 @@ class OpenIDManager(object):
     def get_session(self, trans):
         session_file = os.path.join(self.session_path, str(trans.galaxy_session.id))
         if not os.path.exists(session_file):
-            pickle.dump(dict(), open(session_file, 'w'))
-        return pickle.load(open(session_file))
+            pickle.dump(dict(), open(session_file, 'wb'))
+        return pickle.load(open(session_file, 'rb'))
 
     def persist_session(self, trans, oidconsumer):
         session_file = os.path.join(self.session_path, str(trans.galaxy_session.id))
-        pickle.dump(oidconsumer.session, open(session_file, 'w'))
+        pickle.dump(oidconsumer.session, open(session_file, 'wb'))
 
     def get_consumer(self, trans):
         return consumer.Consumer(self.get_session(trans), self.store)

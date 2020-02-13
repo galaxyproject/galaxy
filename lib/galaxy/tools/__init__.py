@@ -165,7 +165,6 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     "lastz_paired_reads_wrapper",
     "subRate1",
     "substitutions1",
-    "sam_pileup",
     "find_diag_hits",
     "cufflinks",
     # Tools improperly migrated to the tool shed (iuc)
@@ -191,6 +190,7 @@ GALAXY_LIB_TOOLS_VERSIONED = {
     "lastz_wrapper_2": packaging.version.parse("1.3"),
     "PEsortedSAM2readprofile": packaging.version.parse("1.1.1"),
     "sam_to_bam": packaging.version.parse("1.1.3"),
+    "sam_pileup": packaging.version.parse("1.1.3"),
 }
 
 
@@ -257,6 +257,19 @@ class ToolBox(BaseGalaxyToolBox):
             tool_root_dir=tool_root_dir,
             app=app,
         )
+
+    def can_load_config_file(self, config_filename):
+        if config_filename == self.app.config.shed_tool_config_file and not self.app.config.shed_tool_config_file_set:
+            if self.dynamic_confs():
+                # Do not load or create a default shed_tool_config_file if another shed_tool_config file has already been loaded
+                return False
+        elif self.app.config.tool_config_file_set:
+            log.warning(
+                "The default shed tool config file (%s) has been added to the tool_config_file option, if this is "
+                "not the desired behavior, please set shed_tool_config_file to your primary shed-enabled tool "
+                "config file", self.app.config.shed_tool_config_file
+            )
+        return True
 
     def has_reloaded(self, other_toolbox):
         return self._reload_count != other_toolbox._reload_count
