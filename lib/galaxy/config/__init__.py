@@ -217,9 +217,11 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
     deprecated_dirs = {'config_dir': 'config', 'data_dir': 'database'}
 
     def __init__(self, **kwargs):
-        self._load_schema()  # Load schema from schema definition file
-        self._load_config_from_schema()  # Load default propery values from schema
-        self._validate_schema_paths()  # check that paths can be resolved
+        self.schema = self._load_schema()  # Load schema from schema definition file
+        self.appschema = self.schema.app_schema
+        self._raw_config = self.schema.defaults.copy()  # keeps track of startup values (kwargs or schema default)
+
+        self._load_schema()
         self._update_raw_config_from_kwargs(kwargs)  # Overwrite default values passed as kwargs
         self._create_attributes_from_raw_config()  # Create attributes for LOADED properties
 
@@ -227,57 +229,11 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.root = find_root(kwargs)
         self._set_config_base(kwargs)  # must be called prior to _resolve_paths()
 
-        self._resolve_paths(kwargs)  # Overwrite attributes (not _raw_config) w/resolved paths
+        self._resolve_paths(self.schema.paths_to_resolve)  # Overwrite attributes (not _raw_config) w/resolved paths
         self._process_config(kwargs)  # Finish processing configuration
 
     def _load_schema(self):
-        self.schema = AppSchema(GALAXY_CONFIG_SCHEMA_PATH, GALAXY_APP_NAME)
-        self.appschema = self.schema.app_schema
-
-    def _load_config_from_schema(self):
-        self._raw_config = {}  # keeps track of startup values (kwargs or schema default)
-        self.reloadable_options = set()  # config options we can reload at runtime
-        self._paths_to_resolve = {}  # {config option: referenced config option}
-        for key, data in self.appschema.items():
-            self._raw_config[key] = data.get('default')
-            if data.get('reloadable'):
-                self.reloadable_options.add(key)
-            if data.get('path_resolves_to'):
-                self._paths_to_resolve[key] = data.get('path_resolves_to')
-
-    def _validate_schema_paths(self):
-
-        def check_exists(option, key):
-            if not option:
-                message = "Invalid schema: property '{}' listed as path resolution target " \
-                    "for '{}' does not exist".format(resolves_to, key)
-                raise_error(message)
-
-        def check_type_is_str(option, key):
-            if option.get('type') != 'str':
-                message = "Invalid schema: property '{}' should have type 'str'".format(key)
-                raise_error(message)
-
-        def check_is_dag():
-            visited = set()
-            for key in self._paths_to_resolve:
-                visited.clear()
-                while key:
-                    visited.add(key)
-                    key = self.appschema[key].get('path_resolves_to')
-                    if key and key in visited:
-                        raise_error('Invalid schema: cycle detected')
-
-        def raise_error(message):
-            log.error(message)
-            raise ConfigurationError(message)
-
-        for key, resolves_to in self._paths_to_resolve.items():
-            parent = self.appschema.get(resolves_to)
-            check_exists(parent, key)
-            check_type_is_str(parent, key)
-            check_type_is_str(self.appschema[key], key)
-        check_is_dag()  # must be called last: walks entire graph
+        return AppSchema(GALAXY_CONFIG_SCHEMA_PATH, GALAXY_APP_NAME)
 
     def _update_raw_config_from_kwargs(self, kwargs):
 
@@ -316,7 +272,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
                 raise ConfigurationError("Attempting to override existing attribute '%s'" % key)
             setattr(self, key, value)
 
-    def _resolve_paths(self, kwargs):
+    def _resolve_paths(self, paths_to_resolve):
 
         def resolve(key):
             if key in _cache:  # resolve each path only once
@@ -337,7 +293,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             return path
 
         _cache = {}
-        for key in self._paths_to_resolve:
+        for key in paths_to_resolve:
             resolve(key)
 
     def _process_config(self, kwargs):
@@ -897,7 +853,7 @@ Configuration = GalaxyAppConfiguration
 def reload_config_options(current_config):
     """ Reload modified reloadable config options """
     modified_config = read_properties_from_file(current_config.config_file)
-    for option in current_config.reloadable_options:
+    for option in current_config.schema.reloadable_options:
         if option in modified_config:
             # compare to raw value, as that one is set only on load and reload
             if current_config._raw_config[option] != modified_config[option]:

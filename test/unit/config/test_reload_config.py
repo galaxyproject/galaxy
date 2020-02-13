@@ -6,9 +6,13 @@ R1, R2, N1, N2 = 'reloadable1', 'reloadable2', 'nonrelodable1', 'nonreloadable2'
 
 
 class MockGalaxyAppConfiguration():
+
+    class MockSchema():
+        reloadable_options = {R1, R2}
+
     def __init__(self, properties):
         self.config_file = None
-        self.reloadable_options = {R1, R2}
+        self.schema = self.MockSchema
         self._raw_config = {}
         for key, value in properties.items():
             setattr(self, key, value)

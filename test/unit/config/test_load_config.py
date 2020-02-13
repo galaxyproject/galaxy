@@ -1,27 +1,59 @@
 import pytest
 
 from galaxy.config import GalaxyAppConfiguration
+from galaxy.config.schema import AppSchema
+from galaxy.util.yaml_util import (
+    ordered_load,
+    OrderedLoader,
+)
 
 
-MOCK_PROPERTIES = {
-    'property1': {'default': 'a', 'type': 'str'},  # str
-    'property2': {'default': 1, 'type': 'int'},  # int
-    'property3': {'default': 1.0, 'type': 'float'},  # float
-    'property4': {'default': True, 'type': 'bool'},  # bool
-    'property5': {'something_else': 'b', 'type': 'invalid'},
-    'property6': {'something_else': 'b'},  # no type
-}
+MOCK_YAML = '''
+    type: map
+    desc: mocked schema
+    mapping:
+      mockgalaxy:
+        type: map
+        mapping:
+          property1:
+            default: a
+            type: str
+          property2:
+            default: 1
+            type: int
+            reloadable: true
+          property3:
+            default: 1.0
+            type: float
+            reloadable: true
+          property4:
+            default: true
+            type: bool
+          property5:
+            something_else: b
+            type: invalid
+          property6:
+            something_else: b
+    '''
 
 
 @pytest.fixture
 def mock_init(monkeypatch):
 
+    def mock_read_schema(self, path):
+        return ordered_load(MOCK_YAML)
+
+    def mock_init(self, stream):
+        super(OrderedLoader, self).__init__(stream)
+
     def mock_load_schema(self):
-        self.appschema = MOCK_PROPERTIES
+        return AppSchema('no path', 'mockgalaxy')
 
     def mock_process_config(self, kwargs):
         pass
 
+    monkeypatch.setattr(AppSchema, '_read_schema', mock_read_schema)
+    monkeypatch.setattr(OrderedLoader, '__init__', mock_init)
     monkeypatch.setattr(GalaxyAppConfiguration, '_load_schema', mock_load_schema)
     monkeypatch.setattr(GalaxyAppConfiguration, '_process_config', mock_process_config)
 
