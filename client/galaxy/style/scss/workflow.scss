@@ -1,8 +1,6 @@
 .workflow-client {
     .workflow-panel {
         background: $white;
-        margin: 3px;
-        margin-bottom: 10px;
     }
     .workflow-center {
         z-index: 0;
@@ -116,13 +114,15 @@
                 position: absolute;
             }
             .workflow-overview {
+                border-top-left-radius: 0.3rem;
+                cursor: pointer;
                 position: absolute;
                 width: 150px;
                 height: 150px;
                 right: 0px;
                 bottom: 0px;
-                border-top: solid gray 1px;
-                border-left: solid grey 1px;
+                border-top: solid $border-color 1px;
+                border-left: solid $border-color 1px;
                 padding: 7px 0 0 7px;
                 background: $workflow-overview-bg no-repeat url("../../images/resizable.png");
                 z-index: 20000;
@@ -136,8 +136,6 @@
                     overflow: hidden;
                     width: 100%;
                     height: 100%;
-                    border-top: solid gray 1px;
-                    border-left: solid grey 1px;
                 }
             }
             #input-choices-menu {
@@ -156,15 +154,17 @@
             position: absolute;
         }
         #overview-canvas {
-            background: white;
             width: 100%;
             height: 100%;
         }
         #overview-viewport {
+            @extend .rounded;
             position: absolute;
             width: 0px;
             height: 0px;
-            border: solid blue 1px;
+            border: solid $brand-info 3px;
+            background: $white;
+            opacity: 0.8;
             z-index: 10;
         }
         canvas {

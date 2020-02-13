@@ -1,5 +1,15 @@
 import $ from "jquery";
 
+// Colors used to render nodes in the workflow overview
+const NODE_COLOR = "#25537b";
+const NODE_ERROR_COLOR = "#e31a1e";
+
+// Zoom levels to use for zooming the workflow canvas
+export const zoomLevels = [0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.33, 1.5, 2, 2.5, 3, 4];
+
+// Default zoome level
+export const defaultZoomLevel = 7;
+
 // FIXME: merge scroll panel into CanvasManager, clean up hardcoded stuff.
 class ScrollPanel {
     constructor(panel) {
@@ -72,12 +82,6 @@ class ScrollPanel {
         window.clearTimeout(this.timeout);
     }
 }
-
-// Zoom levels to use for zooming the workflow canvas
-export const zoomLevels = [0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.33, 1.5, 2, 2.5, 3, 4];
-
-// Default zoome level
-export const defaultZoomLevel = 7;
 
 class CanvasManager {
     constructor(app, canvas_viewport, overview) {
@@ -297,7 +301,7 @@ class CanvasManager {
         canvas_el.attr("height", o_h);
         // Draw overview
         $.each(this.app.nodes, (id, node) => {
-            c.fillStyle = "gray";
+            c.fillStyle = NODE_COLOR;
             var node_element = $(node.element);
             var position = node_element.position();
             var x = (position.left / in_w) * o_w;
@@ -305,7 +309,7 @@ class CanvasManager {
             var w = (node_element.width() / in_w) * o_w;
             var h = (node_element.height() / in_h) * o_h;
             if (node.errors) {
-                c.fillStyle = "#e31a1e";
+                c.fillStyle = NODE_ERROR_COLOR;
             }
             c.fillRect(x, y, w, h);
         });

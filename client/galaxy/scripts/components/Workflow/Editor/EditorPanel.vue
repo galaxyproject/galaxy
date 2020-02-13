@@ -6,7 +6,7 @@
             </div>
         </div>
         <div class="unified-panel-body workflow-right">
-            <div v-if="canvas">
+            <div v-if="canvas" class="m-1">
                 <slot name="attributes" />
                 <div id="right-content" class="right-content" />
             </div>
