@@ -184,7 +184,7 @@ export default {
             });
         },
         onInsertWorkflow(workflow_id, workflow_name) {
-            var node = this.manager.create_node("tool", workflow_name, workflow_id);
+            var node = this.manager.create_node("subworkflow", workflow_name, workflow_id);
             const requestData = {
                 type: "subworkflow",
                 content_id: workflow_id,
