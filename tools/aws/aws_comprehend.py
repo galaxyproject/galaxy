@@ -41,9 +41,11 @@ def main():
     else:
         mediaLength = len(stt.result.transcript)
 
-    # If the text doesn't exist, exit
+    # If we have a blank file, don't error.  Create another blank json file to pass to the next process
     if mediaLength == 0:
-        exit(1)
+        result.media = EntityExtractionMedia(mediaLength, input_file)
+        write_json_file(result, json_file)
+        exit(0)
     
     # Create a temp file to upload to S3
     tmpfile = create_temp_transcript_file(jobName, stt.result.transcript)

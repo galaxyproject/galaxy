@@ -22,13 +22,20 @@ def main():
     # Load English tokenizer, tagger, parser, NER and word vectors
     nlp = spacy.load("en_core_web_lg")
 
+    # Create the result object
+    result = EntityExtraction()
+
     with open(input_file, 'r') as file:
         stt = SpeechToText().from_json(json.load(file))
 
-    doc = nlp(stt.result.transcript)
+    # If we have a blank file, don't error.  Create another blank json file to pass to the next process
+    if(stt is None or stt.result is None):
+        result.media = EntityExtractionMedia(len(stt.result.transcript), input_file)
+        # Write the json file
+        write_json_file(result, json_file)
+        exit(0)
 
-    # Create the result object
-    result = EntityExtraction()
+    doc = nlp(stt.result.transcript)
 
     # Add the media information
     result.media = EntityExtractionMedia(len(stt.result.transcript), input_file)
