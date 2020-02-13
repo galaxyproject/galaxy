@@ -9,7 +9,7 @@
             >.
         </p>
         <b-row class="ml-3 mb-1" v-for="(link, index) in activeLinks" :key="index">
-            <i :class="['pref-icon pt-1 fa fa-lg', link.icon]"/>
+            <i :class="['pref-icon pt-1 fa fa-lg', link.icon]" />
             <div class="pref-content pr-1">
                 <a v-if="link.onclick" @click="link.onclick" href="javascript:void(0)"
                     ><b>{{ link.title }}</b></a
