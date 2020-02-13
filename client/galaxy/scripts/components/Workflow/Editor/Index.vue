@@ -149,13 +149,13 @@ export default {
             const datatypes_mapping = response.datatypes_mapping;
             this.manager = new WorkflowManager({ datatypes_mapping }, this.$refs.canvas);
             this.manager
-                .on("onClearActiveNode", () => {
+                .on("onRemoveNode", () => {
                     showAttributes();
                 })
-                .on("onActiveNode", (form, node) => {
-                    showForm(this.manager, form, node, datatypes);
+                .on("onActiveNode", node => {
+                    showForm(this.manager, node, datatypes);
                 })
-                .on("onNodeChange", (form, node) => {
+                .on("onNodeChange", () => {
                     this.parameters = getWorkflowParameters(this.manager.nodes);
                 });
             this.loadCurrent(this.id, this.version);
@@ -207,7 +207,7 @@ export default {
             this.manager.layout_auto();
         },
         onAttributes() {
-            this.manager.clear_active_node();
+            showAttributes();
         },
         onEdit() {
             this.isCanvas = true;

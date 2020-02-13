@@ -202,6 +202,7 @@ class Workflow extends EventEmitter {
         }
         delete this.nodes[node.id];
         this.has_changes = true;
+        this.emit("onRemoveNode");
     }
     remove_all() {
         var wf = this;
@@ -426,11 +427,11 @@ class Workflow extends EventEmitter {
             node.make_active();
             this.active_node = node;
         }
-        this.emit("onActiveNode", node.config_form, node);
+        this.emit("onActiveNode", node);
     }
     node_changed(node) {
         this.has_changes = true;
-        this.emit("onNodeChange", node.config_form, node);
+        this.emit("onNodeChange", node);
     }
     scroll_to_nodes() {
         var cv = $("#canvas-viewport");

@@ -73,8 +73,9 @@ export function showAttributes() {
     $("#edit-attributes").show();
 }
 
-export function showForm(workflow, content, node, datatypes) {
-    if (node && content) {
+export function showForm(workflow, node, datatypes) {
+    if (node && node.config_form) {
+        const content = node.config_form;
         const cls = "right-content";
         var id = `${cls}-${node.id}`;
         var $container = $(`#${cls}`);
