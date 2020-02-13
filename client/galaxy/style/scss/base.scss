@@ -517,7 +517,6 @@ div.metadataHelpBody {
 }
 
 // Forms
-
 div.toolFormBody div.toolFormTitle {
     background: transparent;
     border: none;
@@ -546,43 +545,6 @@ div.toolHelpBody {
 
 div.toolFormRow {
     position: relative;
-}
-
-.toolForm.toolFormInCanvas {
-    @extend .card;
-    z-index: 100;
-    position: absolute;
-    border-color: $brand-primary;
-    &.toolForm-active {
-        z-index: 1001;
-        box-shadow: 0 0 0 2px $brand-primary;
-    }
-    .toolFormTitle {
-        @extend .card-header;
-        @extend .py-1;
-        @extend .px-2;
-        cursor: move;
-        background: $brand-secondary;
-    }
-    .toolFormBody {
-        @extend .card-body;
-        @extend .p-0;
-        @extend .mx-2;
-        .rule {
-            height: 0;
-            border: none;
-            border-bottom: dotted black 1px;
-            margin: 0 5px;
-        }
-    }
-}
-
-.toolForm.toolFormInCanvas.tool-node-error {
-    border-color: $state-danger-border;
-    .toolFormTitle {
-        background: $state-danger-bg;
-        border-color: $state-danger-border;
-    }
 }
 
 div.form,
@@ -655,18 +617,6 @@ div.form-row-input label {
 #run-workflow {
     @extend .float-right;
     @extend .mt-3;
-}
-
-.workflow-right {
-    background: $white;
-}
-
-.workflow-right .right-content {
-    margin: 3px;
-}
-
-.workflow-right .right-content .section-row {
-    margin-bottom: 10px;
 }
 
 .form-row {

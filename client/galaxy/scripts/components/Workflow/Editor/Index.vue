@@ -1,5 +1,5 @@
 <template>
-    <div id="columns">
+    <div id="columns" class="workflow-client">
         <SidePanel id="left" side="left">
             <template v-slot:panel>
                 <ToolBoxWorkflow
@@ -14,7 +14,7 @@
                 />
             </template>
         </SidePanel>
-        <div id="center" class="workflow-client inbound">
+        <div id="center" class="workflow-center inbound">
             <div class="unified-panel-header" unselectable="on">
                 <div class="unified-panel-header-inner">
                     <span class="sr-only">Workflow Editor</span>
@@ -41,7 +41,7 @@
         </div>
         <SidePanel id="right" side="right">
             <template v-slot:panel>
-                <EditorPanel :canvas="isCanvas">
+                <EditorPanel :canvas="isCanvas" class="workflow-panel">
                     <template v-slot:attributes>
                         <WorkflowAttributes
                             :id="id"
