@@ -90,7 +90,6 @@ class CanvasManager {
         // Initialize zooming
         this.zoomLevel = defaultZoomLevel;
         this.canvasZoom = zoomLevels[defaultZoomLevel];
-        this.initZoomControls();
         // Make overview box draggable
         this.init_drag();
         // Initialize Copy & Paste events
@@ -107,39 +106,7 @@ class CanvasManager {
         this.cv.css("height", `${100 / this.canvasZoom}%`);
         // Update canvas size
         this.app.fit_canvas_to_nodes();
-    }
-    initZoomControls() {
-        var zoomControl = $('<div class="btn-group-horizontal workflow-canvas-content"/>').css({
-            position: "absolute",
-            left: "1rem",
-            bottom: "1rem",
-            cursor: "pointer"
-        });
-        const zoomButton = $(
-            `<a class="btn btn-light" title="Reset Zoom Level">${zoomLevels[defaultZoomLevel] * 100}%</a>`
-        ).css({
-            width: "4rem"
-        });
-
-        zoomControl.append(
-            $('<a class="btn btn-secondary fa fa-minus"/>').click(() => {
-                this.setZoom(this.zoomLevel - 1);
-                zoomButton.text(Math.floor(zoomLevels[this.zoomLevel] * 100) + "%");
-            })
-        );
-        zoomControl.append(
-            zoomButton.click(() => {
-                this.setZoom(defaultZoomLevel);
-                zoomButton.text(Math.floor(zoomLevels[this.zoomLevel] * 100) + "%");
-            })
-        );
-        zoomControl.append(
-            $('<a class="btn btn-secondary fa fa-plus"/>').click(() => {
-                this.setZoom(this.zoomLevel + 1);
-                zoomButton.text(Math.floor(zoomLevels[this.zoomLevel] * 100) + "%");
-            })
-        );
-        this.cv.closest("#workflow-canvas-body").append(zoomControl);
+        return this.zoomLevel;
     }
 
     init_drag() {

@@ -22,6 +22,7 @@
                 </div>
             </div>
             <div class="unified-panel-body" id="workflow-canvas-body" v-show="isCanvas">
+                <ZoomControl :zoom-level="zoomLevel" @onZoom="onZoom" />
                 <div id="canvas-viewport" class="workflow-canvas-content">
                     <div ref="canvas" id="canvas-container" />
                 </div>
@@ -94,6 +95,7 @@ import reportDefault from "./reportDefault";
 import EditorPanel from "./EditorPanel";
 import { hide_modal, show_message, show_modal } from "layout/modal";
 import WorkflowAttributes from "./Attributes";
+import ZoomControl from "./ZoomControl";
 
 export default {
     components: {
@@ -102,7 +104,8 @@ export default {
         SidePanel,
         ToolBoxWorkflow,
         WorkflowOptions,
-        WorkflowAttributes
+        WorkflowAttributes,
+        ZoomControl
     },
     props: {
         id: {
@@ -137,7 +140,8 @@ export default {
         return {
             isCanvas: true,
             versions: [],
-            parameters: []
+            parameters: [],
+            zoomLevel: 7
         };
     },
     created() {
@@ -237,6 +241,9 @@ export default {
         },
         onRun() {
             window.location = `${getAppRoot()}workflows/run?id=${this.id}`;
+        },
+        onZoom(zoomLevel) {
+            this.zoomLevel = this.manager.canvas_manager.setZoom(zoomLevel);
         },
         onSave() {
             show_message("Saving workflow...", "progress");
