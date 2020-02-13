@@ -49,7 +49,7 @@ export class DataOutputView {
                 node: node
             });
             this.calloutView = calloutView;
-            this.$el.append(calloutView.el);
+            this.$el.append(calloutView.$el);
         }
         this.$el.css({
             position: "absolute",
@@ -93,7 +93,7 @@ export class ParameterOutputView {
                 node: node
             });
             this.calloutView = calloutView;
-            this.$el.append(calloutView.el);
+            this.$el.append(calloutView.$el);
         }
         this.$el.css({
             position: "absolute",
@@ -135,10 +135,10 @@ export class OutputCalloutView {
                     const outputName = view.output.name;
                     if (node.isWorkflowOutput(outputName)) {
                         node.removeWorkflowOutput(outputName);
-                        view.$("icon").removeClass("mark-terminal-active");
+                        view.$el.find("icon").removeClass("mark-terminal-active");
                     } else {
                         node.addWorkflowOutput(outputName);
-                        view.$("icon").addClass("mark-terminal-active");
+                        view.$el.find("icon").addClass("mark-terminal-active");
                     }
                     app.has_changes = true;
                     app.canvas_manager.draw_overview();
