@@ -21,7 +21,7 @@ class Workflow extends EventEmitter {
         this.workflow_version = 0;
 
         // Canvas overview management
-        this.canvas_manager = new WorkflowCanvas(this, $("#canvas-viewport"), $("#overview"));
+        this.canvas_manager = new WorkflowCanvas(this, $("#canvas-viewport"), $("#overview-container"));
 
         // On load, set the size to the pref stored in local storage if it exists
         var overview_size = localStorage.getItem("overview-size");

@@ -1,0 +1,137 @@
+.workflow-client {
+    z-index: 0;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    .workflow-canvas {
+        #canvas-viewport {
+            background: $workflow-editor-bg url("../../images/light_gray_grid.gif");
+            width: 100%;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+        .base-terminal {
+            @extend .fa;
+            @extend .fa-circle;
+            @extend .mt-1;
+            color: $brand-light;
+            position: absolute;
+            z-index: 1500;
+            > icon {
+                @extend .fa;
+                @extend .fa-chevron-circle-right;
+                color: $brand-primary;
+                position: absolute;
+                left: 0px;
+                top: 0px;
+            }
+        }
+        .input-terminal {
+            @extend .base-terminal;
+            left: -9px;
+        }
+        .output-terminal {
+            @extend .base-terminal;
+            right: -9px;
+            &:hover > icon {
+                color: $brand-success;
+            }
+        }
+        .input-terminal-active.can-accept > icon {
+            color: $brand-success;
+        }
+        .input-terminal-active.cannot-accept > icon {
+            color: $brand-warning;
+        }
+        .drag-terminal {
+            @extend .fa;
+            @extend .fa-circle;
+            color: $brand-success;
+            position: absolute;
+            z-index: 1500;
+        }
+        .mark-terminal {
+            cursor: pointer;
+            color: $text-muted;
+            &.mark-terminal-active {
+                color: $brand-success;
+            }
+        }
+        .delete-terminal {
+            @extend .btn;
+            @extend .btn-sm;
+            @extend .btn-primary;
+            @extend .fa;
+            @extend .fa-minus-circle;
+            @extend .p-1;
+            @extend .mt-1;
+            position: absolute;
+            z-index: 2500;
+            top: 0px;
+            left: -15px;
+        }
+        .callout-terminal {
+            position: absolute;
+        }
+        .workflow-overview {
+            position: absolute;
+            width: 150px;
+            height: 150px;
+            right: 0px;
+            bottom: 0px;
+            border-top: solid gray 1px;
+            border-left: solid grey 1px;
+            padding: 7px 0 0 7px;
+            background: $workflow-overview-bg no-repeat url("../../images/resizable.png");
+            z-index: 20000;
+            overflow: hidden;
+            max-width: 300px;
+            max-height: 300px;
+            min-width: 50px;
+            min-height: 50px;
+            .workflow-overview-body {
+                position: relative;
+                overflow: hidden;
+                width: 100%;
+                height: 100%;
+                border-top: solid gray 1px;
+                border-left: solid grey 1px;
+            }
+        }
+        #input-choices-menu {
+            color: black;
+        }
+    }
+    .workflow-report-body {
+        display: flex;
+    }
+    #canvas-container {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+    }
+    #overview-container {
+        position: absolute;
+    }
+    #overview-canvas {
+        background: white;
+        width: 100%;
+        height: 100%;
+    }
+    #overview-viewport {
+        position: absolute;
+        width: 0px;
+        height: 0px;
+        border: solid blue 1px;
+        z-index: 10;
+    }
+    canvas {
+        position: absolute;
+        z-index: 10;
+    }
+    canvas.dragging {
+        position: absolute;
+        z-index: 1000;
+    }
+}

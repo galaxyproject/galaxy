@@ -14,21 +14,21 @@
                 />
             </template>
         </SidePanel>
-        <div id="center" class="inbound">
+        <div id="center" class="workflow-client inbound">
             <div class="unified-panel-header" unselectable="on">
                 <div class="unified-panel-header-inner">
                     <span class="sr-only">Workflow Editor</span>
                     {{ name }}
                 </div>
             </div>
-            <div class="unified-panel-body" id="workflow-canvas-body" v-show="isCanvas">
+            <div class="unified-panel-body workflow-canvas" v-show="isCanvas">
                 <ZoomControl :zoom-level="zoomLevel" @onZoom="onZoom" />
-                <div id="canvas-viewport" class="workflow-canvas-content">
+                <div id="canvas-viewport">
                     <div ref="canvas" id="canvas-container" />
                 </div>
                 <div class="workflow-overview" aria-hidden="true">
                     <div class="workflow-overview-body">
-                        <div id="overview">
+                        <div id="overview-container">
                             <canvas width="0" height="0" id="overview-canvas" />
                             <div id="overview-viewport" />
                         </div>
@@ -294,60 +294,3 @@ export default {
     }
 };
 </script>
-
-<style scoped>
-#center {
-    z-index: 0;
-    display: flex;
-    flex-direction: column;
-    flex-grow: 1;
-}
-
-.workflow-report-body {
-    display: flex;
-}
-
-.workflow-overview-body {
-    position: relative;
-    overflow: hidden;
-    width: 100%;
-    height: 100%;
-    border-top: solid gray 1px;
-    border-left: solid grey 1px;
-}
-
-#canvas-container {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-}
-
-#overview {
-    position: absolute;
-}
-
-#overview-canvas {
-    background: white;
-    width: 100%;
-    height: 100%;
-}
-
-#overview-viewport {
-    position: absolute;
-    width: 0px;
-    height: 0px;
-    border: solid blue 1px;
-    z-index: 10;
-}
-</style>
-
-<style>
-canvas {
-    position: absolute;
-    z-index: 10;
-}
-canvas.dragging {
-    position: absolute;
-    z-index: 1000;
-}
-</style>
