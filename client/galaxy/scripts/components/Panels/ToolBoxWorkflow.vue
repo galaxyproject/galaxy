@@ -40,7 +40,7 @@
                 <tool-section
                     :category="workflowSection"
                     :key="workflowSection.name"
-                    operation-icon="fa fa-copy"
+                    operation-icon="fa fa-files-o"
                     operation-title="Insert individual steps."
                     :query-filter="query"
                     :disable-filter="true"
