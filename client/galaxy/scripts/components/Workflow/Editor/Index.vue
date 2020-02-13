@@ -137,7 +137,6 @@ export default {
         return {
             isCanvas: true,
             versions: [],
-            currentVersion: this.version,
             parameters: []
         };
     },
@@ -161,6 +160,10 @@ export default {
     },
     methods: {
         onInsertTool(tool_id, tool_name) {
+            if (!this.isCanvas) {
+                this.isCanvas = true;
+                return;
+            }
             var node = this.manager.create_node("tool", tool_name, tool_id);
             const requestData = {
                 type: "tool",
@@ -172,6 +175,10 @@ export default {
             });
         },
         onInsertModule(module_id, module_name) {
+            if (!this.isCanvas) {
+                this.isCanvas = true;
+                return;
+            }
             var node = this.manager.create_node(module_id, module_name);
             const requestData = {
                 type: module_id,
@@ -182,6 +189,10 @@ export default {
             });
         },
         onInsertWorkflow(workflow_id, workflow_name) {
+            if (!this.isCanvas) {
+                this.isCanvas = true;
+                return;
+            }
             var node = this.manager.create_node("subworkflow", workflow_name, workflow_id);
             const requestData = {
                 type: "subworkflow",
@@ -193,6 +204,10 @@ export default {
             });
         },
         onInsertWorkflowSteps(workflow_id, step_count) {
+            if (!this.isCanvas) {
+                this.isCanvas = true;
+                return;
+            }
             copyIntoWorkflow(this.manager, workflow_id, step_count);
         },
         onDownload() {
@@ -244,11 +259,11 @@ export default {
                         "There are unsaved changes to your workflow which will be lost. Continue ?"
                     );
                     if (r == false) {
-                        this.currentVersion = this.manager.workflow_version;
+                        this.version = this.manager.workflow_version;
                         return;
                     }
                 }
-                this.currentVersion = version;
+                this.version = version;
                 this.loadCurrent(this.id, version);
             }
         },
