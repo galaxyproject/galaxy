@@ -1673,8 +1673,8 @@ div.toolSectionTitle {
 #canvas-viewport {
     background: $workflow-editor-bg url("../../images/light_gray_grid.gif");
     width: 100%;
-    height: calc(100% - 2.5rem);
-    position: absolute;
+    height: 100%;
+    position: relative;
     overflow: hidden;
 }
 

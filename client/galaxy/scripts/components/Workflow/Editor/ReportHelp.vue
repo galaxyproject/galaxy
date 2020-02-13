@@ -1,5 +1,5 @@
 <template>
-    <div class="p-2">
+    <div class="p-4">
         <h3>Workflow Reports</h3>
         <p>
             The <b>Markdown</b> document you see will be used to generate a workflow invocation report. You can use
