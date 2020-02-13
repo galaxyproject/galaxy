@@ -438,8 +438,8 @@ class Workflow extends EventEmitter {
             this.clear_active_node();
             node.make_active();
             this.active_node = node;
-            this.emit("onActiveNode", node.config_form, node);
         }
+        this.emit("onActiveNode", node.config_form, node);
     }
     node_changed(node, force) {
         this.has_changes = true;
