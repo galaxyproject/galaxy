@@ -127,6 +127,9 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
     def create_dynamic_tool(self, dynamic_tool):
         raise NotImplementedError()
 
+    def can_load_config_file(self, config_filename):
+        return True
+
     def _init_tools_from_configs(self, config_filenames):
         """ Read through all tool config files and initialize tools in each
         with init_tools_from_config below.
@@ -141,6 +144,8 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 config_filenames.remove(config_filename)
                 config_filenames.extend(directory_config_files)
         for config_filename in config_filenames:
+            if not self.can_load_config_file(config_filename):
+                continue
             try:
                 self._init_tools_from_config(config_filename)
             except ParseError:

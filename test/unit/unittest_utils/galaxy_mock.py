@@ -145,6 +145,8 @@ class MockAppConfig(Bunch):
         self.builds_file_path = os.path.join('tool-data', 'shared', 'ucsc', 'builds.txt.sample')
 
         self.migrated_tools_config = "/tmp/migrated_tools_conf.xml"
+        self.shed_tool_config_file = "config/shed_tool_conf.xml"
+        self.shed_tool_config_file_set = False
         self.preserve_python_environment = "always"
         self.enable_beta_gdpr = False
         self.legacy_eager_objectstore_initialization = True
