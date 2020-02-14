@@ -1180,14 +1180,6 @@ mapping:
         desc: |
           The URL linked by the "Videos" link in the "Help" menu.
 
-      genomespace_ui_url:
-        type: str
-        default: https://gsui.genomespace.org/jsui/
-        required: false
-        desc: |
-          Points to the GenomeSpace UI service which will be used by
-          the GenomeSpace importer and exporter tools
-
       terms_url:
         type: str
         required: false
