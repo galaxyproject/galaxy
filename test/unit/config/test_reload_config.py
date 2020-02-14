@@ -1,37 +1,41 @@
+import pytest
+
 from galaxy import config
+from galaxy.config import GalaxyAppConfiguration
 from galaxy.config import reload_config_options
+from galaxy.config.schema import AppSchema
 
 
 R1, R2, N1, N2 = 'reloadable1', 'reloadable2', 'nonrelodable1', 'nonreloadable2'  # config options
 
-
-class MockGalaxyAppConfiguration():
-
-    class MockSchema():
-        reloadable_options = {R1, R2}
-
-    def __init__(self, properties):
-        self.config_file = None
-        self.schema = self.MockSchema
-        self._raw_config = {}
-        for key, value in properties.items():
-            setattr(self, key, value)
-            self._raw_config[key] = value
-
-    def update_reloadable_property(self, key, value):
-        setattr(self, key, value)
+MOCK_SCHEMA = {
+    R1: {'reloadable': True, 'default': 1},
+    R2: {'reloadable': True, 'default': 2},
+    N1: {'default': 3},
+    N2: {'default': 4},
+}
 
 
-def test_update_property(monkeypatch):
+def get_schema(app_mapping):
+    return {'mapping': {'galaxy': {'mapping': app_mapping}}}
+
+
+@pytest.fixture
+def mock_init(monkeypatch):
+
+    monkeypatch.setattr(AppSchema, '_read_schema', lambda a, b: get_schema(MOCK_SCHEMA))
+    monkeypatch.setattr(GalaxyAppConfiguration, '_process_config', lambda a, b: None)
+
+
+def test_update_property(mock_init, monkeypatch):
     # This also covers adding a property. When a config file does not set a property,
     # that property is set to its default value. Thus, if we add a reloadable property
     # to the config file, it's the same as modifying that property's value.
-    appconfig = MockGalaxyAppConfiguration({R1: 1, R2: 2, N1: 3})
 
-    def mock_read_properties_from_file(values):
-        return {R1: 1, R2: 42, N1: 99}  # edits: R2, N1 modified
+    # edits to config file: R2, N1 modified
+    monkeypatch.setattr(config, 'read_properties_from_file', lambda _: {R1: 1, R2: 42, N1: 99})
 
-    monkeypatch.setattr(config, 'read_properties_from_file', mock_read_properties_from_file)
+    appconfig = GalaxyAppConfiguration()
 
     assert getattr(appconfig, R1) == 1
     assert getattr(appconfig, R2) == 2
@@ -44,7 +48,7 @@ def test_update_property(monkeypatch):
     assert getattr(appconfig, N1) == 3  # no change: option modified but is non-relodable
 
 
-def test_overwrite_reloadable_attribute(monkeypatch):
+def test_overwrite_reloadable_attribute(mock_init, monkeypatch):
     # This is similar to test_update_property, but here we overwrite the attribute before reloading.
     # This can happen if a config property is modified AFTER it has been loaded from schema or kwargs.
     # For example: load `foo` (from schema or kwargs), but then, in a # subsequent step while initializing
@@ -52,12 +56,11 @@ def test_overwrite_reloadable_attribute(monkeypatch):
     # is not what was initially loaded, and if `foo` is reloadable, it will be reset to its default as soon
     # as the config file is modified. To prevent this, we compare the values read from the modified file
     # to the `_raw_config` dict. This test ensures this works correctly.
-    appconfig = MockGalaxyAppConfiguration({R1: 1, R2: 2, N1: 3})
 
-    def mock_read_properties_from_file(values):
-        return {R1: 1, R2: 42}  # edits: R2 modified
+    # edits to config file: R2 modified
+    monkeypatch.setattr(config, 'read_properties_from_file', lambda _: {R1: 1, R2: 42})
 
-    monkeypatch.setattr(config, 'read_properties_from_file', mock_read_properties_from_file)
+    appconfig = GalaxyAppConfiguration()
 
     assert getattr(appconfig, R1) == 1
     assert getattr(appconfig, R2) == 2
@@ -71,16 +74,15 @@ def test_overwrite_reloadable_attribute(monkeypatch):
     assert getattr(appconfig, R2) == 42  # change: reloadable option modified
 
 
-def test_cant_delete_property(monkeypatch):
+def test_cant_delete_property(mock_init, monkeypatch):
     # A property should not be deleted: we don't know whether it was initially
     # set to a default, loaded from a config file, env var, etc. Therefore, if a property
     # is removed from the config file, it will not be modified or deleted.
-    appconfig = MockGalaxyAppConfiguration({R1: 1, R2: 2, N1: 3, N2: 4})
 
-    def mock_read_properties_from_file(values):
-        return {R1: 1, N1: 3}  # edits: R2, N2 deleted
+    # edits to config file: R2, N2 deleted
+    monkeypatch.setattr(config, 'read_properties_from_file', lambda _: {R1: 1, N1: 3})
 
-    monkeypatch.setattr(config, 'read_properties_from_file', mock_read_properties_from_file)
+    appconfig = GalaxyAppConfiguration()
 
     assert getattr(appconfig, R1) == 1
     assert getattr(appconfig, R2) == 2
