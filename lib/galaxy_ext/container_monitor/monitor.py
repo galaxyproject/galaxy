@@ -29,7 +29,11 @@ def parse_ports(container_name, connection_configuration):
 
 
 def main():
-    with open("../configs/container_config.json", "r") as f:
+    if not os.path.exists("configs"):
+        # on Pulsar and in tool working directory instead of job directory
+        os.chdir("..")
+
+    with open("configs/container_config.json", "r") as f:
         container_config = json.load(f)
 
     container_type = container_config["container_type"]
