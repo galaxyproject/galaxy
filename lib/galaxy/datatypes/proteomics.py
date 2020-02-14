@@ -55,12 +55,22 @@ class Wiff(Binary):
 
 @build_sniff_from_prefix
 class MzTab(Text):
-    """exchange format for proteomics and metabolomics results"""
+    """
+    exchange format for proteomics and metabolomics results
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.mztab')
+    >>> MzTab().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.mztab2')
+    >>> MzTab().sniff(fname)
+    False
+    """
     edam_data = "data_3681"
     file_ext = "mztab"
     # section names (except MTD)
     __sections = ["PRH", "PRT", "PEH", "PEP", "PSH", "PSM", "SMH", "SML", "COM"]
-    __version_re = r"([0-9]{1,2})(\.[0-9])?(\.[0-9])?$"
+    __version_re = r"(1)(\.[0-9])?(\.[0-9])?"
 
     def __init__(self, **kwd):
         super(MzTab, self).__init__(**kwd)
@@ -97,10 +107,20 @@ class MzTab(Text):
 
 
 class MzTab2(MzTab):
-    """exchange format for proteomics and metabolomics results"""
+    """
+    exchange format for proteomics and metabolomics results
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.mztab2')
+    >>> mztab2().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.mztab')
+    >>> mztab2().sniff(fname)
+    False
+    """
     file_ext = "mztab2"
     __sections = ["SMH", "SML", "SFH", "SMF", "SEH", "SME", "COM"]
-    __version_re = r"([0-9]{1,2})(\.[0-9])?(\.[0-9])?-M$"
+    __version_re = r"(2)(\.[0-9])?(\.[0-9])?-M$"
 
     def __init__(self, **kwd):
         super(MzTab2, self).__init__(**kwd)
@@ -117,7 +137,17 @@ class MzTab2(MzTab):
 
 @build_sniff_from_prefix
 class Kroenik(Tabular):
-    """ Kroenik (HardKloer sibling) files"""
+    """
+    Kroenik (HardKloer sibling) files
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.kroenik')
+    >>> Kroenik().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.peplist')
+    >>> Kroenik().sniff(fname)
+    False
+    """
     file_ext = "kroenik"
 
     def __init__(self, **kwd):
@@ -147,6 +177,14 @@ class PepList(Tabular):
     """
     Peplist file as used in OpenMS
     https://github.com/OpenMS/OpenMS/blob/0fc8765670a0ad625c883f328de60f738f7325a4/src/openms/source/FORMAT/FileHandler.cpp#L432
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.peplist')
+    >>> PepList().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.psms')
+    >>> PepList().sniff(fname)
+    False
     """
     file_ext = "peplist"
 
@@ -175,6 +213,14 @@ class PSMS(Tabular):
 
     Note that the data rows can have more columns than the header line
     since ProteinIds are listed tab-separated.
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.psms')
+    >>> PSMS().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.kroenik')
+    >>> PSMS().sniff(fname)
+    False
     """
     file_ext = "psms"
 
@@ -277,6 +323,14 @@ class Dta2d(TabularData):
 
     Note: sniffer detects (tab or space separated) dta2d files with correct
     header, wo header seems to generic
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.dta2d')
+    >>> Dta2d().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.edta')
+    >>> Dta2d().sniff(fname)
+    False
     """
     file_ext = "dta2d"
     comment_lines = 0
@@ -370,6 +424,14 @@ class Edta(TabularData):
        (or rt1). All other column names for sub-features are faithfully ignored.
 
     Note the sniffer only detects files with header.
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.edta')
+    >>> Edta().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.dta2d')
+    >>> Edta().sniff(fname)
+    False
     """
     file_ext = "edta"
     comment_lines = 0

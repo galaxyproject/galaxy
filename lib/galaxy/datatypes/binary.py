@@ -1571,7 +1571,17 @@ class MzSQlite(SQlite):
 
 
 class PQP(SQlite):
-    """Class describing a Peptide query parameters file"""
+    """
+    Class describing a Peptide query parameters file
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.pqp')
+    >>> PQP().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.osw')
+    >>> PQP().sniff(fname)
+    False
+    """
     file_ext = "pqp"
 
     def set_meta(self, dataset, overwrite=True, **kwd):
@@ -1590,7 +1600,17 @@ class PQP(SQlite):
 
 
 class OSW(PQP):
-    """Class describing OpenSwath output"""
+    """
+    Class describing OpenSwath output
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.osw')
+    >>> OSW().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.sqmass')
+    >>> OSW().sniff(fname)
+    False
+    """
     file_ext = "osw"
 
     def set_meta(self, dataset, overwrite=True, **kwd):
@@ -1604,7 +1624,17 @@ class OSW(PQP):
 
 
 class SQmass(SQlite):
-    """Class describing a Sqmass database """
+    """
+    Class describing a Sqmass database
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.sqmass')
+    >>> SQmass().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.pqp')
+    >>> SQmass().sniff(fname)
+    False
+    """
     file_ext = "sqmass"
 
     def set_meta(self, dataset, overwrite=True, **kwd):
