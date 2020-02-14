@@ -38,6 +38,12 @@
     <outputs>
         <data format="bigwig" name="output"/>
     </outputs>
+    <tests>
+        <test>
+            <param name="input" format="bed" value="droPer1.bed" dbkey="hg17"/>
+            <output name="output" format="bigwig" value="droPer1.bigwig"/>
+        </test>
+    </tests>
     <help>
     </help>
 </tool>

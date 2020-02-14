@@ -538,6 +538,10 @@ class Tool(Dictifiable):
         return not tool_versions or self.version == self.tool_versions[-1]
 
     @property
+    def is_datatype_converter(self):
+        return self in self.app.datatypes_registry.converter_tools
+
+    @property
     def tool_shed_repository(self):
         # If this tool is included in an installed tool shed repository, return it.
         if self.tool_shed:

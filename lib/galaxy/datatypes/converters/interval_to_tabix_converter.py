@@ -42,7 +42,7 @@ def to_tabix(bgzip_fname, out_fname, preset=None, chrom_col=None, start_col=None
                                         start_col=(start_col - 1), end_col=(end_col - 1),
                                         keep_original=True, index=out_fname, force=True)
     if os.path.getsize(out_fname) == 0:
-        sys.stderr.write("The converted tabix index file is empty, meaning the input data is invalid.")
+        sys.exit("The converted tabix index file is empty, meaning the input data is invalid.")
     return bgzip_fname
 
 
