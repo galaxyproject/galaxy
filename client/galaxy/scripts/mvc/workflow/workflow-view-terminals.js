@@ -61,7 +61,7 @@ class TerminalView {
     }
     terminalElements() {
         if (this.terminalMappingView) {
-            return [this.terminalMappingView.el, this.el];
+            return [this.terminalMappingView.$el, this.el];
         } else {
             return [this.el];
         }

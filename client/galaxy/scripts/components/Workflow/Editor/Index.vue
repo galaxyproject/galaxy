@@ -21,7 +21,7 @@
                     {{ name }}
                 </div>
             </div>
-            <div class="unified-panel-body workflow-canvas" v-show="isCanvas">
+            <div id="workflow-canvas" class="unified-panel-body workflow-canvas" v-show="isCanvas">
                 <ZoomControl :zoom-level="zoomLevel" @onZoom="onZoom" />
                 <div id="canvas-viewport">
                     <div ref="canvas" id="canvas-container" />
