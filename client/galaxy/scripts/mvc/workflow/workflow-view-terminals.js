@@ -22,37 +22,12 @@ class TerminalMappingView {
     }
 }
 
-export class InputTerminalMappingView extends TerminalMappingView {
-    constructor(options = {}) {
-        super(options);
-        const self = this;
-        this.$el.on("click", () => self.onClick());
-        this.$el.on("mouseenter", () => self.onMouseEnter());
-        this.$el.on("mouseleave", () => self.onMouseLeave());
-    }
-    onMouseEnter() {
-        var model = this.model;
-        if (!model.terminal.connected() && model.mapOver.isCollection) {
-            this.$el.css("color", "red");
-        }
-    }
-    onMouseLeave() {
-        this.$el.css("color", "black");
-    }
-    onClick() {
-        var model = this.model;
-        if (!model.terminal.connected() && model.mapOver.isCollection) {
-            model.terminal.resetMapping();
-        }
-    }
-}
-
 class TerminalView {
-    setupMappingView(terminal) {
-        var terminalMapping = new this.terminalMappingClass({
+    setupMappingView(terminalMappingClass, terminal) {
+        var terminalMapping = new terminalMappingClass({
             terminal: terminal
         });
-        var terminalMappingView = new this.terminalMappingViewClass({
+        var terminalMappingView = new TerminalMappingView({
             model: terminalMapping
         });
         terminalMappingView.render();
@@ -60,11 +35,7 @@ class TerminalView {
         this.terminalMappingView = terminalMappingView;
     }
     terminalElements() {
-        if (this.terminalMappingView) {
-            return [this.terminalMappingView.$el, this.el];
-        } else {
-            return [this.el];
-        }
+        return [this.terminalMappingView.$el, this.el];
     }
 }
 
@@ -72,8 +43,6 @@ class BaseInputTerminalView extends TerminalView {
     constructor(app, options = {}, classes = {}) {
         super();
         this.app = app;
-        this.terminalMappingViewClass = classes.terminalMappingViewClass;
-        this.terminalMappingClass = classes.terminalMappingClass;
         this.el = document.createElement("div");
         this.el.className = "terminal input-terminal";
         this.$el = $(this.el);
@@ -83,7 +52,7 @@ class BaseInputTerminalView extends TerminalView {
         node.cid = NODEINDEX++;
         const id = `node-${node.cid}-input-${name}`;
         const terminal = this.terminalForInput(input);
-        this.setupMappingView(terminal);
+        this.setupMappingView(classes.terminalMappingClass, terminal);
         this.el.terminal = terminal;
         this.$el.attr("input-name", name);
         this.$el.attr("id", id);
@@ -176,7 +145,6 @@ class BaseInputTerminalView extends TerminalView {
 export class InputTerminalView extends BaseInputTerminalView {
     constructor(app, options = {}) {
         super(app, options, {
-            terminalMappingViewClass: InputTerminalMappingView,
             terminalMappingClass: Terminals.TerminalMapping
         });
     }
@@ -192,7 +160,6 @@ export class InputTerminalView extends BaseInputTerminalView {
 export class InputParameterTerminalView extends BaseInputTerminalView {
     constructor(app, options = {}) {
         super(app, options, {
-            terminalMappingViewClass: InputTerminalMappingView,
             terminalMappingClass: Terminals.TerminalMapping
         });
     }
@@ -208,7 +175,6 @@ export class InputParameterTerminalView extends BaseInputTerminalView {
 export class InputCollectionTerminalView extends BaseInputTerminalView {
     constructor(app, options = {}) {
         super(app, options, {
-            terminalMappingViewClass: InputTerminalMappingView,
             terminalMappingClass: Terminals.TerminalMapping
         });
     }
@@ -225,8 +191,6 @@ export class BaseOutputTerminalView extends TerminalView {
     constructor(app, options, classes = {}) {
         super();
         this.app = app;
-        this.terminalMappingViewClass = classes.terminalMappingViewClass;
-        this.terminalMappingClass = classes.terminalMappingClass;
         this.el = document.createElement("div");
         this.el.className = "terminal output-terminal";
         this.$el = $(this.el);
@@ -236,7 +200,7 @@ export class BaseOutputTerminalView extends TerminalView {
         node.cid = NODEINDEX++;
         const id = `node-${node.cid}-output-${name}`;
         const terminal = this.terminalForOutput(output);
-        this.setupMappingView(terminal);
+        this.setupMappingView(classes.terminalMappingClass, terminal);
         this.el.terminal = terminal;
         this.$el.attr(
             "aria-label",
@@ -421,7 +385,6 @@ export class BaseOutputTerminalView extends TerminalView {
 export class OutputTerminalView extends BaseOutputTerminalView {
     constructor(app, options = {}) {
         super(app, options, {
-            terminalMappingViewClass: TerminalMappingView,
             terminalMappingClass: Terminals.TerminalMapping
         });
     }
@@ -439,7 +402,6 @@ export class OutputTerminalView extends BaseOutputTerminalView {
 export class OutputCollectionTerminalView extends BaseOutputTerminalView {
     constructor(app, options = {}) {
         super(app, options, {
-            terminalMappingViewClass: TerminalMappingView,
             terminalMappingClass: Terminals.TerminalMapping
         });
     }
@@ -460,7 +422,6 @@ export class OutputCollectionTerminalView extends BaseOutputTerminalView {
 export class OutputParameterTerminalView extends BaseOutputTerminalView {
     constructor(app, options = {}) {
         super(app, options, {
-            terminalMappingViewClass: TerminalMappingView,
             terminalMappingClass: Terminals.TerminalMapping
         });
     }
