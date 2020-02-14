@@ -38,13 +38,14 @@ class AppSchema(Schema):
         self.description = self.raw_schema.get("desc", None)
         app_schema = self.raw_schema['mapping'][app_name]['mapping']
         self._preprocess(app_schema)
-        super().__init__(app_schema)
+        super(AppSchema, self).__init__(app_schema)
 
     def _read_schema(self, path):
         with open(path, "r") as f:
             return ordered_load(f)
 
     def _preprocess(self, app_schema):
+        """Populate schema collections used for app configuration."""
         self._defaults = {}  # {config option: default value or null}
         self._reloadable_options = set()  # config options we can reload at runtime
         self._paths_to_resolve = {}  # {config option: referenced config option}
@@ -68,8 +69,9 @@ class AppSchema(Schema):
         return self._reloadable_options
 
     def validate_path_resolution_graph(self):
-        # This method is for tests only: we SHOULD validate the schema's path resolution graph
-        # as part of automated testing; but we should NOT validate it at runtime.
+        """This method is for tests only: we SHOULD validate the schema's path resolution graph
+           as part of automated testing; but we should NOT validate it at runtime.
+        """
         def check_exists(option, key):
             if not option:
                 message = "Invalid schema: property '{}' listed as path resolution target " \
