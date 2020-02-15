@@ -137,12 +137,15 @@ class DatasetsApiTestCase(ApiTestCase):
         assert 'name:tag_d' in updated_hda['tags']
         assert 'name:tag_e' in updated_hda['tags']
 
-    def test_update_dataset(self):
+    def test_update_datatype(self):
         hda_id = self.dataset_populator.new_dataset(self.history_id)['id']
-        payload = {
-            'extension': 'txt'
-        }
-        self._put("extension", payload).json()
-        updated_hda = self._get(
+        original_hda = self._get(
             "histories/{history_id}/contents/{hda_id}".format(history_id=self.history_id, hda_id=hda_id)).json()
-        assert updated_hda['extension'] == 'txt'
+        assert original_hda['extension'] == 'txt'
+        update_payload = {
+            'extension': 'dat'
+        }
+        updated_hda = self._put(
+            "histories/{history_id}/contents/{hda_id}".format(history_id=self.history_id, hda_id=hda_id),
+            update_payload).json()
+        assert updated_hda['extension'] == 'dat'
