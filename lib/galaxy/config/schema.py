@@ -1,12 +1,16 @@
 import logging
 
 from galaxy.exceptions import ConfigurationError
-from galaxy.util.yaml_util import (
-    OPTION_DEFAULTS,
-    ordered_load,
-)
+from galaxy.util.yaml_util import ordered_load
 
 log = logging.getLogger(__name__)
+
+OPTION_DEFAULTS = {
+    "type": "str",
+    "unknown_option": False,
+    "default": None,
+    "desc": None,
+}
 
 UNKNOWN_OPTION = {
     "type": "str",
