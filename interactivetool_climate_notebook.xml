@@ -1,6 +1,6 @@
-<tool id="interactive_tool_climate_notebook" tool_type="interactive" name="Interactive Climate Notebook" version="0.1">
+<tool id="interactive_tool_climate_notebook" tool_type="interactive" name="Interactive Climate Notebook" version="0.2">
     <requirements>
-        <container type="docker">nordicesmhub/docker-climate-notebook:1.0</container>
+        <container type="docker">nordicesmhub/docker-climate-notebook:1.2</container>
     </requirements>
     <entry_points>
         <entry_point name="Climate Interactive Tool" requires_domain="True">
@@ -21,8 +21,10 @@
         mkdir -p ./jupyter/outputs/ &&
         mkdir -p ./jupyter/data &&
 
-        #set $cleaned_name = re.sub('[^\w\-\.]', '_', str($input.element_identifier))
-        ln -sf '$input' './jupyter/data/${cleaned_name}' &&
+        #if $input:
+            #set $cleaned_name = re.sub('[^\w\-\.]', '_', str($input.element_identifier))
+            cp '$input' './jupyter/data/${cleaned_name}' &&
+        #end if
 
         ## change into the directory where the notebooks are located
         cd ./jupyter/ &&
