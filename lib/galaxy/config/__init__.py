@@ -218,7 +218,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
 
     def __init__(self, **kwargs):
         self.schema = self._load_schema()  # Load schema from schema definition file
-        self.appschema = self.schema.app_schema
         self._raw_config = self.schema.defaults.copy()  # keeps track of startup values (kwargs or schema default)
 
         self._load_schema()
@@ -238,14 +237,14 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
     def _update_raw_config_from_kwargs(self, kwargs):
 
         def convert_datatype(key, value):
-            datatype = self.appschema[key].get('type')
+            datatype = self.schema.app_schema[key].get('type')
             # check for `not None` explicitly (value can be falsy)
             if value is not None and datatype in type_converters:
                 return type_converters[datatype](value)
             return value
 
         def strip_deprecated_dir(key, value):
-            resolves_to = self.appschema[key].get('path_resolves_to')
+            resolves_to = self.schema.paths_to_resolve.get(key)
             if resolves_to:  # value is a path that will be resolved
                 first_dir = value.split(os.sep)[0]  # get first directory component
                 if first_dir == self.deprecated_dirs[resolves_to]:  # first_dir is deprecated for this option
@@ -260,7 +259,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         type_converters = {'bool': string_as_bool, 'int': int, 'float': float, 'str': str}
 
         for key, value in kwargs.items():
-            if key in self.appschema:
+            if key in self.schema.app_schema:
                 value = convert_datatype(key, value)
                 if value:
                     value = strip_deprecated_dir(key, value)
@@ -280,7 +279,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
                 return _cache[key]
 
             path = getattr(self, key)  # path prior to being resolved
-            parent = self.appschema[key].get('path_resolves_to')
+            parent = paths_to_resolve.get(key)
             if not parent:  # base case: nothing else needs resolving
                 return path
             parent_path = resolve(parent)  # recursively resolve parent path
@@ -483,7 +482,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         if self.tool_dependency_dir and self.tool_dependency_dir.lower() == 'none':
             self.tool_dependency_dir = None
         if self.involucro_path is None:
-            target_dir = self.tool_dependency_dir or self.appschema['tool_dependency_dir'].get('default')
+            target_dir = self.tool_dependency_dir or self.schema.defaults['tool_dependency_dir']
             self.involucro_path = os.path.join(self.data_dir, target_dir, "involucro")
         self.involucro_path = os.path.join(self.root, self.involucro_path)
         if self.mulled_channels:
