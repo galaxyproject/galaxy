@@ -564,7 +564,7 @@ class SimplifiedToolBox(ToolBox):
         app.tool_cache = ToolCache() if not hasattr(app, 'tool_cache') else app.tool_cache
         app.job_config.get_tool_resource_parameters = lambda tool_id: None
         app.config.update_integrated_tool_panel = True
-        app.config.appschema = {
+        app.config.schema.app_schema = {
             'tool_dependency_dir': {
                 'default': 'dependencies',
             }
