@@ -9,11 +9,13 @@ module.exports = {
     path: path.resolve(__dirname, '..', 'static')
   },
   plugins: [
+      /*
     new webpack.ProvidePlugin({
       $: "jquery",
       d3: "d3",
       _: "underscore"
     }),
+    */
     new MiniCssExtractPlugin()
   ],
   module: {
