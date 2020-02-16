@@ -100,22 +100,78 @@ LOGGING_CONFIG_DEFAULT = {
 
 
 def find_root(kwargs):
-    root = os.path.abspath(kwargs.get('root_dir', '.'))
-    return root
+    return os.path.abspath(kwargs.get('root_dir', '.'))
 
 
 class BaseAppConfiguration(object):
 
     def __init__(self, **kwargs):
-        self.schema = self._load_schema()  # Load schema from schema definition file
-        self._raw_config = self.schema.defaults.copy()  # keeps track of startup values (kwargs or schema default)
-        self._load_schema()
-        self._update_raw_config_from_kwargs(kwargs)  # Overwrite default values passed as kwargs
-        self._create_attributes_from_raw_config()  # Create attributes for LOADED properties
         self.config_dict = kwargs
         self.root = find_root(kwargs)
-        self._set_config_base(kwargs)  # must be called prior to _resolve_paths()
-        self._resolve_paths(self.schema.paths_to_resolve)  # Overwrite attributes (not _raw_config) w/resolved paths
+        self._set_config_base(kwargs)
+        self.schema = self._load_schema()  # Load schema from schema definition file
+        self._raw_config = self.schema.defaults.copy()  # Save schema defaults as initial config values (raw_config)
+        self._update_raw_config_from_kwargs(kwargs)  # Overwrite raw_config with values passed in kwargs
+        self._create_attributes_from_raw_config()  # Create attributes based on raw_config
+        self._resolve_paths(self.schema.paths_to_resolve)  # Overwrite attribute values with resolved paths
+
+    def _set_config_base(self, config_kwargs):
+
+        def _set_global_conf():
+            self.config_file = find_config_file('galaxy')
+            self.global_conf = config_kwargs.get('global_conf')
+            self.global_conf_parser = configparser.ConfigParser()
+            if not self.config_file and self.global_conf and "__file__" in self.global_conf:
+                self.config_file = os.path.join(self.root, self.global_conf['__file__'])
+
+            if self.config_file is None:
+                log.warning("No Galaxy config file found, running from current working directory: %s", os.getcwd())
+            else:
+                try:
+                    self.global_conf_parser.read(self.config_file)
+                except (IOError, OSError):
+                    raise
+                except Exception:
+                    pass  # Not an INI file
+
+        def _set_config_directories():
+            # Set config_dir to value from kwargs OR dirname of config_file OR None
+            _config_dir = os.path.dirname(self.config_file) if self.config_file else None
+            self.config_dir = config_kwargs.get('config_dir', _config_dir)
+            # Make path absolute before using it as base for other paths
+            if self.config_dir:
+                self.config_dir = os.path.abspath(self.config_dir)
+
+            self.data_dir = config_kwargs.get('data_dir')
+            self.sample_config_dir = os.path.join(os.path.dirname(__file__), 'sample')
+            self.managed_config_dir = config_kwargs.get('managed_config_dir')
+            if self.managed_config_dir:
+                self.managed_config_dir = os.path.abspath(self.managed_config_dir)
+
+            if running_from_source:
+                if not self.config_dir:
+                    self.config_dir = os.path.join(self.root, 'config')
+                if not self.data_dir:
+                    self.data_dir = os.path.join(self.root, 'database')
+                if not self.managed_config_dir:
+                    self.managed_config_dir = self.config_dir
+            else:
+                if not self.config_dir:
+                    self.config_dir = os.getcwd()
+                if not self.data_dir:
+                    self.data_dir = self._in_config_dir('data')
+                if not self.managed_config_dir:
+                    self.managed_config_dir = self._in_data_dir('config')
+
+            # TODO: do we still need to support ../shed_tools when running_from_source?
+            self.shed_tools_dir = self._in_data_dir('shed_tools')
+
+            log.debug("Configuration directory is %s", self.config_dir)
+            log.debug("Data directory is %s", self.data_dir)
+            log.debug("Managed config directory is %s", self.managed_config_dir)
+
+        _set_global_conf()
+        _set_config_directories()
 
     def _load_schema(self):
         # Override in subclasses
@@ -188,64 +244,6 @@ class BaseAppConfiguration(object):
         _cache = {}
         for key in paths_to_resolve:
             resolve(key)
-
-    def _set_config_base(self, config_kwargs):
-
-        def _set_global_conf():
-            self.config_file = find_config_file('galaxy')
-            self.global_conf = config_kwargs.get('global_conf')
-            self.global_conf_parser = configparser.ConfigParser()
-            if not self.config_file and self.global_conf and "__file__" in self.global_conf:
-                self.config_file = os.path.join(self.root, self.global_conf['__file__'])
-
-            if self.config_file is None:
-                log.warning("No Galaxy config file found, running from current working directory: %s", os.getcwd())
-            else:
-                try:
-                    self.global_conf_parser.read(self.config_file)
-                except (IOError, OSError):
-                    raise
-                except Exception:
-                    pass  # Not an INI file
-
-        def _set_config_directories():
-            # Set config_dir to value from kwargs OR dirname of config_file OR None
-            _config_dir = os.path.dirname(self.config_file) if self.config_file else None
-            self.config_dir = config_kwargs.get('config_dir', _config_dir)
-            # Make path absolute before using it as base for other paths
-            if self.config_dir:
-                self.config_dir = os.path.abspath(self.config_dir)
-
-            self.data_dir = config_kwargs.get('data_dir')
-            self.sample_config_dir = os.path.join(os.path.dirname(__file__), 'sample')
-            self.managed_config_dir = config_kwargs.get('managed_config_dir')
-            if self.managed_config_dir:
-                self.managed_config_dir = os.path.abspath(self.managed_config_dir)
-
-            if running_from_source:
-                if not self.config_dir:
-                    self.config_dir = os.path.join(self.root, 'config')
-                if not self.data_dir:
-                    self.data_dir = os.path.join(self.root, 'database')
-                if not self.managed_config_dir:
-                    self.managed_config_dir = self.config_dir
-            else:
-                if not self.config_dir:
-                    self.config_dir = os.getcwd()
-                if not self.data_dir:
-                    self.data_dir = self._in_config_dir('data')
-                if not self.managed_config_dir:
-                    self.managed_config_dir = self._in_data_dir('config')
-
-            # TODO: do we still need to support ../shed_tools when running_from_source?
-            self.shed_tools_dir = self._in_data_dir('shed_tools')
-
-            log.debug("Configuration directory is %s", self.config_dir)
-            log.debug("Data directory is %s", self.data_dir)
-            log.debug("Managed config directory is %s", self.managed_config_dir)
-
-        _set_global_conf()
-        _set_config_directories()
 
     def _in_managed_config_dir(self, path):
         return os.path.join(self.managed_config_dir, path)
