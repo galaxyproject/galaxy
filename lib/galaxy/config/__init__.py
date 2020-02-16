@@ -105,6 +105,83 @@ def find_root(kwargs):
 
 
 class BaseAppConfiguration(object):
+
+    def __init__(self, **kwargs):
+        self.schema = self._load_schema()  # Load schema from schema definition file
+        self._raw_config = self.schema.defaults.copy()  # keeps track of startup values (kwargs or schema default)
+        self._load_schema()
+        self._update_raw_config_from_kwargs(kwargs)  # Overwrite default values passed as kwargs
+        self._create_attributes_from_raw_config()  # Create attributes for LOADED properties
+        self.config_dict = kwargs
+        self.root = find_root(kwargs)
+        self._set_config_base(kwargs)  # must be called prior to _resolve_paths()
+        self._resolve_paths(self.schema.paths_to_resolve)  # Overwrite attributes (not _raw_config) w/resolved paths
+
+    def _load_schema(self):
+        raise Exception('Not implemented')
+
+    def _update_raw_config_from_kwargs(self, kwargs):
+
+        def convert_datatype(key, value):
+            datatype = self.schema.app_schema[key].get('type')
+            # check for `not None` explicitly (value can be falsy)
+            if value is not None and datatype in type_converters:
+                return type_converters[datatype](value)
+            return value
+
+        def strip_deprecated_dir(key, value):
+            resolves_to = self.schema.paths_to_resolve.get(key)
+            if resolves_to:  # value is a path that will be resolved
+                first_dir = value.split(os.sep)[0]  # get first directory component
+                if first_dir == self.deprecated_dirs[resolves_to]:  # first_dir is deprecated for this option
+                    ignore = first_dir + os.sep
+                    log.warning(
+                        "Paths for the '%s' option are now relative to '%s', remove the leading '%s' "
+                        "to suppress this warning: %s", key, resolves_to, ignore, value
+                    )
+                    return value[len(ignore):]
+            return value
+
+        type_converters = {'bool': string_as_bool, 'int': int, 'float': float, 'str': str}
+
+        for key, value in kwargs.items():
+            if key in self.schema.app_schema:
+                value = convert_datatype(key, value)
+                if value:
+                    value = strip_deprecated_dir(key, value)
+                self._raw_config[key] = value
+
+    def _create_attributes_from_raw_config(self):
+        for key, value in self._raw_config.items():
+            if not hasattr(self, key):
+                setattr(self, key, value)
+            else:
+                log.debug("Attribute '%s' is set and cannot be overwritten with value '%s'" % (key, value))
+
+    def _resolve_paths(self, paths_to_resolve):
+
+        def resolve(key):
+            if key in _cache:  # resolve each path only once
+                return _cache[key]
+
+            path = getattr(self, key)  # path prior to being resolved
+            parent = paths_to_resolve.get(key)
+            if not parent:  # base case: nothing else needs resolving
+                return path
+            parent_path = resolve(parent)  # recursively resolve parent path
+            if path is not None:
+                path = os.path.join(parent_path, path)  # resolve path
+            else:
+                path = parent_path  # or use parent path
+
+            setattr(self, key, path)  # update property
+            _cache[key] = path  # cache it!
+            return path
+
+        _cache = {}
+        for key in paths_to_resolve:
+            resolve(key)
+
     def _set_config_base(self, config_kwargs):
 
         def _set_global_conf():
@@ -217,84 +294,11 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
     deprecated_dirs = {'config_dir': 'config', 'data_dir': 'database'}
 
     def __init__(self, **kwargs):
-        self.schema = self._load_schema()  # Load schema from schema definition file
-        self._raw_config = self.schema.defaults.copy()  # keeps track of startup values (kwargs or schema default)
-
-        self._load_schema()
-        self._update_raw_config_from_kwargs(kwargs)  # Overwrite default values passed as kwargs
-        self._create_attributes_from_raw_config()  # Create attributes for LOADED properties
-
-        self.config_dict = kwargs
-        self.root = find_root(kwargs)
-        self._set_config_base(kwargs)  # must be called prior to _resolve_paths()
-
-        self._resolve_paths(self.schema.paths_to_resolve)  # Overwrite attributes (not _raw_config) w/resolved paths
-        self._process_config(kwargs)  # Finish processing configuration
+        super(GalaxyAppConfiguration, self).__init__(**kwargs)
+        self._process_config(kwargs)
 
     def _load_schema(self):
         return AppSchema(GALAXY_CONFIG_SCHEMA_PATH, GALAXY_APP_NAME)
-
-    def _update_raw_config_from_kwargs(self, kwargs):
-
-        def convert_datatype(key, value):
-            datatype = self.schema.app_schema[key].get('type')
-            # check for `not None` explicitly (value can be falsy)
-            if value is not None and datatype in type_converters:
-                return type_converters[datatype](value)
-            return value
-
-        def strip_deprecated_dir(key, value):
-            resolves_to = self.schema.paths_to_resolve.get(key)
-            if resolves_to:  # value is a path that will be resolved
-                first_dir = value.split(os.sep)[0]  # get first directory component
-                if first_dir == self.deprecated_dirs[resolves_to]:  # first_dir is deprecated for this option
-                    ignore = first_dir + os.sep
-                    log.warning(
-                        "Paths for the '%s' option are now relative to '%s', remove the leading '%s' "
-                        "to suppress this warning: %s", key, resolves_to, ignore, value
-                    )
-                    return value[len(ignore):]
-            return value
-
-        type_converters = {'bool': string_as_bool, 'int': int, 'float': float, 'str': str}
-
-        for key, value in kwargs.items():
-            if key in self.schema.app_schema:
-                value = convert_datatype(key, value)
-                if value:
-                    value = strip_deprecated_dir(key, value)
-                self._raw_config[key] = value
-
-    def _create_attributes_from_raw_config(self):
-        for key, value in self._raw_config.items():
-            if not hasattr(self, key):
-                setattr(self, key, value)
-            else:
-                log.debug("Attribute '%s' is set and cannot be overwritten with value '%s'" % (key, value))
-
-    def _resolve_paths(self, paths_to_resolve):
-
-        def resolve(key):
-            if key in _cache:  # resolve each path only once
-                return _cache[key]
-
-            path = getattr(self, key)  # path prior to being resolved
-            parent = paths_to_resolve.get(key)
-            if not parent:  # base case: nothing else needs resolving
-                return path
-            parent_path = resolve(parent)  # recursively resolve parent path
-            if path is not None:
-                path = os.path.join(parent_path, path)  # resolve path
-            else:
-                path = parent_path  # or use parent path
-
-            setattr(self, key, path)  # update property
-            _cache[key] = path  # cache it!
-            return path
-
-        _cache = {}
-        for key in paths_to_resolve:
-            resolve(key)
 
     def _process_config(self, kwargs):
         # Resolve paths of other config files

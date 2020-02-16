@@ -10,6 +10,7 @@ from datetime import timedelta
 from six.moves import configparser
 
 from galaxy.config import BaseAppConfiguration
+from galaxy.config.schema import AppSchema
 from galaxy.util import string_as_bool
 from galaxy.version import VERSION, VERSION_MAJOR
 from galaxy.web.formatting import expand_pretty_datetime_format
@@ -18,6 +19,9 @@ log = logging.getLogger(__name__)
 
 ts_webapp_path = os.path.abspath(os.path.dirname(__file__))
 templates_path = os.path.join(ts_webapp_path, "templates")
+
+TOOLSHED_APP_NAME = 'tool_shed'
+TOOLSHED_CONFIG_SCHEMA_PATH = 'lib/tool_shed/webapp/config_schema.yml'
 
 
 def resolve_path(path, root):
@@ -33,6 +37,18 @@ class ConfigurationError(Exception):
 
 class ToolShedAppConfiguration(BaseAppConfiguration):
     default_config_file_name = 'tool_shed.yml'
+
+    def _load_schema():
+        return AppSchema(TOOLSHED_CONFIG_SCHEMA_PATH, TOOLSHED_APP_NAME)
+
+    def _update_raw_config_from_kwargs(self, kwargs):
+        pass  # Intentionally does nothing. Remove to enable.
+
+    def _create_attributes_from_raw_config(self):
+        pass  # Intentionally does nothing. Remove to enable.
+
+    def _resolve_paths(self, paths_to_resolve):
+        pass  # Intentionally does nothing. Remove to enable.
 
     def __init__(self, **kwargs):
         self.config_dict = kwargs
