@@ -287,8 +287,7 @@ export default {
                     });
                 })
                 .catch(response => {
-                    hide_modal();
-                    alert("Loading workflow failed.");
+                    show_modal("Loading workflow failed...", response, { Ok: hide_modal });
                 });
         }
     }
