@@ -51,10 +51,7 @@ class ToolShedAppConfiguration(BaseAppConfiguration):
         pass  # Intentionally does nothing. To enable, remove + call base __init__().
 
     def __init__(self, **kwargs):
-        self.config_dict = kwargs
-        self.root = kwargs.get('root_dir', '.')
-
-        self._set_config_base(kwargs)
+        super(ToolShedAppConfiguration, self).__init__(**kwargs)
 
         # Resolve paths of other config files
         self.parse_config_file_options(kwargs)
@@ -66,34 +63,16 @@ class ToolShedAppConfiguration(BaseAppConfiguration):
         self.version_major = VERSION_MAJOR
         self.version = VERSION
         # Database related configuration
-        self.database_connection = kwargs.get("database_connection", False)
         self.database_connection = kwargs.get("database_connection",
                                               "sqlite:///%s?isolation_level=IMMEDIATE" % resolve_path("community.sqlite", self.data_dir))
         self.database_engine_options = get_database_engine_options(kwargs)
         self.database_create_tables = string_as_bool(kwargs.get("database_create_tables", "True"))
-        # Repository and Tool search API
-        self.toolshed_search_on = string_as_bool(kwargs.get("toolshed_search_on", True))
-        self.whoosh_index_dir = kwargs.get("whoosh_index_dir", 'database/toolshed_whoosh_indexes')
-        self.repo_name_boost = kwargs.get("repo_name_boost", 0.9)
-        self.repo_description_boost = kwargs.get("repo_description_boost", 0.6)
-        self.repo_long_description_boost = kwargs.get("repo_long_description_boost", 0.5)
-        self.repo_homepage_url_boost = kwargs.get("repo_homepage_url_boost", 0.3)
-        self.repo_remote_repository_url_boost = kwargs.get("repo_remote_repository_url_boost", 0.2)
-        self.repo_owner_username_boost = kwargs.get("repo_owner_username_boost", 0.3)
-        self.tool_name_boost = kwargs.get("tool_name_boost", 1.2)
-        self.tool_description_boost = kwargs.get("tool_description_boost", 0.6)
-        self.tool_help_boost = kwargs.get("tool_help_boost", 0.4)
-        self.tool_repo_owner_username = kwargs.get("tool_repo_owner_username", 0.3)
-        # Analytics
-        self.ga_code = kwargs.get("ga_code", None)
-        self.session_duration = int(kwargs.get('session_duration', 0))
         # Where dataset files are stored
-        self.file_path = resolve_path(kwargs.get("file_path", "database/community_files"), self.root)
-        self.new_file_path = resolve_path(kwargs.get("new_file_path", "database/tmp"), self.root)
+        self.file_path = resolve_path(self.file_path, self.root)
+        self.new_file_path = resolve_path(self.new_file_path, self.root)
         self.cookie_path = kwargs.get("cookie_path", None)
         self.cookie_domain = kwargs.get("cookie_domain", None)
         self.enable_quotas = string_as_bool(kwargs.get('enable_quotas', False))
-        self.id_secret = kwargs.get("id_secret", "changethisinproductiontoo")
         # Tool stuff
         self.tool_path = resolve_path(kwargs.get("tool_path", "tools"), self.root)
         self.tool_secret = kwargs.get("tool_secret", "")
@@ -105,11 +84,8 @@ class ToolShedAppConfiguration(BaseAppConfiguration):
         self.ftp_upload_dir = kwargs.get('ftp_upload_dir', None)
         self.update_integrated_tool_panel = False
         # Galaxy flavor Docker Image
-        self.enable_galaxy_flavor_docker_image = string_as_bool(kwargs.get("enable_galaxy_flavor_docker_image", "False"))
-        self.use_remote_user = string_as_bool(kwargs.get("use_remote_user", "False"))
         self.user_activation_on = None
         self.registration_warning_message = kwargs.get('registration_warning_message', None)
-        self.terms_url = kwargs.get('terms_url', None)
         self.blacklist_location = kwargs.get('blacklist_file', None)
         self.blacklist_content = None
         self.whitelist_location = kwargs.get('whitelist_file', None)
@@ -118,41 +94,26 @@ class ToolShedAppConfiguration(BaseAppConfiguration):
         self.remote_user_header = kwargs.get("remote_user_header", 'HTTP_REMOTE_USER')
         self.remote_user_logout_href = kwargs.get("remote_user_logout_href", None)
         self.remote_user_secret = kwargs.get("remote_user_secret", None)
-        self.require_login = string_as_bool(kwargs.get("require_login", "False"))
-        self.allow_user_creation = string_as_bool(kwargs.get("allow_user_creation", "True"))
-        self.allow_user_deletion = string_as_bool(kwargs.get("allow_user_deletion", "False"))
         self.template_path = templates_path
         self.template_cache_path = resolve_path(kwargs.get("template_cache_path", "database/compiled_templates/community"), self.root)
-        self.admin_users = kwargs.get("admin_users", "")
         self.admin_users_list = [u.strip() for u in self.admin_users.split(',') if u]
-        self.mailing_join_addr = kwargs.get('mailing_join_addr', "galaxy-announce-join@bx.psu.edu")
         self.error_email_to = kwargs.get('error_email_to', None)
         self.smtp_server = kwargs.get('smtp_server', None)
-        self.smtp_username = kwargs.get('smtp_username', None)
-        self.smtp_password = kwargs.get('smtp_password', None)
         self.smtp_ssl = kwargs.get('smtp_ssl', None)
         self.email_from = kwargs.get('email_from', None)
         self.nginx_upload_path = kwargs.get('nginx_upload_path', False)
         self.log_actions = string_as_bool(kwargs.get('log_actions', 'False'))
-        self.brand = kwargs.get('brand', None)
-        self.pretty_datetime_format = expand_pretty_datetime_format(kwargs.get('pretty_datetime_format', '$locale (UTC)'))
+        self.pretty_datetime_format = expand_pretty_datetime_format(self.pretty_datetime_format)
         # Configuration for the message box directly below the masthead.
-        self.message_box_visible = string_as_bool(kwargs.get('message_box_visible', False))
-        self.message_box_content = kwargs.get('message_box_content', None)
-        self.message_box_class = kwargs.get('message_box_class', 'info')
-        self.support_url = kwargs.get('support_url', 'https://galaxyproject.org/support')
         self.wiki_url = kwargs.get('wiki_url', 'https://galaxyproject.org/')
         self.blog_url = kwargs.get('blog_url', None)
         self.screencasts_url = kwargs.get('screencasts_url', None)
         self.log_events = False
         self.cloud_controller_instance = False
         self.server_name = ''
-        # Error logging with sentry
-        self.sentry_dsn = kwargs.get('sentry_dsn', None)
         # Where the tool shed hgweb.config file is stored - the default is the Galaxy installation directory.
-        self.hgweb_config_dir = resolve_path(kwargs.get('hgweb_config_dir', ''), self.root)
+        self.hgweb_config_dir = resolve_path(self.hgweb_config_dir, self.root)
         # Proxy features
-        self.apache_xsendfile = kwargs.get('apache_xsendfile', False)
         self.nginx_x_accel_redirect_base = kwargs.get('nginx_x_accel_redirect_base', False)
         self.drmaa_external_runjob_script = kwargs.get('drmaa_external_runjob_script', None)
         # Parse global_conf and save the parser
