@@ -46,14 +46,14 @@ def test_deprecated_prefixes_set_correctly(monkeypatch):
     monkeypatch.setattr(GalaxyAppConfiguration, '_process_config', lambda a, b: None)
 
     config = GalaxyAppConfiguration()
-    assert config._deprecated_dirs() == {'config_dir': 'config', 'data_dir': 'database'}
+    assert config.deprecated_dirs == {'config_dir': 'config', 'data_dir': 'database'}
 
 
 @pytest.fixture
 def mock_init(monkeypatch):
     monkeypatch.setattr(AppSchema, '_read_schema', lambda a, b: get_schema(MOCK_SCHEMA))
     monkeypatch.setattr(GalaxyAppConfiguration, '_process_config', lambda a, b: None)
-    monkeypatch.setattr(GalaxyAppConfiguration, '_deprecated_dirs', lambda a: MOCK_DEPRECATED_DIRS)
+    monkeypatch.setattr(GalaxyAppConfiguration, 'deprecated_dirs', MOCK_DEPRECATED_DIRS)
 
 
 def test_mock_schema_is_loaded(mock_init):

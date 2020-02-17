@@ -104,6 +104,9 @@ def find_root(kwargs):
 
 
 class BaseAppConfiguration(object):
+    # Override in subclasses (optional): {KEY: config option, VALUE: deprecated directory name}
+    # If VALUE == first directory in a user-supplied path that resolves to KEY, it will be stripped from that path
+    deprecated_dirs = None
 
     def __init__(self, **kwargs):
         self.config_dict = kwargs
@@ -113,7 +116,7 @@ class BaseAppConfiguration(object):
         self._raw_config = self.schema.defaults.copy()  # Save schema defaults as initial config values (raw_config)
         self._update_raw_config_from_kwargs(kwargs)  # Overwrite raw_config with values passed in kwargs
         self._create_attributes_from_raw_config()  # Create attributes based on raw_config
-        self._resolve_paths(self.schema.paths_to_resolve)  # Overwrite attribute values with resolved paths
+        self._resolve_paths()  # Overwrite attribute values with resolved paths
 
     def _set_config_base(self, config_kwargs):
 
@@ -177,12 +180,6 @@ class BaseAppConfiguration(object):
         # Override in subclasses
         raise Exception('Not implemented')
 
-    def _deprecated_dirs(self):
-        # Override in subclasses (optional)
-        # {KEY: config option, VALUE: deprecated directory name}
-        # If VALUE == first directory in a user path that resolves to KEY, it will be stripped from the path
-        return None
-
     def _update_raw_config_from_kwargs(self, kwargs):
 
         def convert_datatype(key, value):
@@ -196,7 +193,7 @@ class BaseAppConfiguration(object):
             resolves_to = self.schema.paths_to_resolve.get(key)
             if resolves_to:  # value is a path that will be resolved
                 first_dir = value.split(os.sep)[0]  # get first directory component
-                if first_dir == self._deprecated_dirs().get(resolves_to):  # first_dir is deprecated for this option
+                if first_dir == self.deprecated_dirs.get(resolves_to):  # first_dir is deprecated for this option
                     ignore = first_dir + os.sep
                     log.warning(
                         "Paths for the '%s' option are now relative to '%s', remove the leading '%s' "
@@ -210,7 +207,7 @@ class BaseAppConfiguration(object):
         for key, value in kwargs.items():
             if key in self.schema.app_schema:
                 value = convert_datatype(key, value)
-                if value and self._deprecated_dirs():
+                if value and self.deprecated_dirs:
                     value = strip_deprecated_dir(key, value)
                 self._raw_config[key] = value
 
@@ -221,14 +218,14 @@ class BaseAppConfiguration(object):
             else:
                 log.debug("Attribute '%s' is set and cannot be overwritten with value '%s'" % (key, value))
 
-    def _resolve_paths(self, paths_to_resolve):
+    def _resolve_paths(self):
 
         def resolve(key):
             if key in _cache:  # resolve each path only once
                 return _cache[key]
 
             path = getattr(self, key)  # path prior to being resolved
-            parent = paths_to_resolve.get(key)
+            parent = self.schema.paths_to_resolve.get(key)
             if not parent:  # base case: nothing else needs resolving
                 return path
             parent_path = resolve(parent)  # recursively resolve parent path
@@ -242,7 +239,7 @@ class BaseAppConfiguration(object):
             return path
 
         _cache = {}
-        for key in paths_to_resolve:
+        for key in self.schema.paths_to_resolve:
             resolve(key)
 
     def _in_managed_config_dir(self, path):
@@ -294,6 +291,7 @@ class BaseAppConfiguration(object):
 class GalaxyAppConfiguration(BaseAppConfiguration):
     deprecated_options = ('database_file', 'track_jobs_in_database')
     default_config_file_name = 'galaxy.yml'
+    deprecated_dirs = {'config_dir': 'config', 'data_dir': 'database'}
 
     def __init__(self, **kwargs):
         super(GalaxyAppConfiguration, self).__init__(**kwargs)
@@ -301,9 +299,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
 
     def _load_schema(self):
         return AppSchema(GALAXY_CONFIG_SCHEMA_PATH, GALAXY_APP_NAME)
-
-    def _deprecated_dirs(self):
-        return {'config_dir': 'config', 'data_dir': 'database'}
 
     def _process_config(self, kwargs):
         # Resolve paths of other config files
