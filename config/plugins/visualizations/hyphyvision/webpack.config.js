@@ -1,6 +1,6 @@
-const webpack = require("webpack"),
-    path = require("path"),
-    MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const webpack = require("webpack");
+const path = require("path");
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 
 module.exports = {
     entry: path.resolve(__dirname, "src/index.js"),
@@ -9,7 +9,14 @@ module.exports = {
         path: path.resolve(__dirname, "static")
     },
     plugins: [
-        new MiniCssExtractPlugin()
+        new MiniCssExtractPlugin(),
+        new webpack.ProvidePlugin({
+            $: "jquery",
+            jQuery: "jquery",
+            d3: "d3",
+            //datamonkey: "datamonkey",
+            _: "underscore"
+        })
     ],
     module: {
         rules: [
@@ -32,6 +39,37 @@ module.exports = {
                 test: /\.svg(\?v=\d+\.\d+\.\d+)?$/,
                 loaders: "url-loader",
                 options: { limit: 10000, mimetype: "image/svg+xml" }
+            },
+            {
+                test: require.resolve("jquery"),
+                use: [
+                    {
+                        loader: "expose-loader",
+                        query: "jQuery"
+                    },
+                    {
+                        loader: "expose-loader",
+                        query: "$"
+                    }
+                ]
+            },
+            {
+                test: require.resolve("d3"),
+                use: [
+                    {
+                        loader: "expose-loader",
+                        query: "d3"
+                    }
+                ]
+            },
+            {
+                test: require.resolve("underscore"),
+                use: [
+                    {
+                        loader: "expose-loader",
+                        query: "_"
+                    }
+                ]
             }
         ]
     },
