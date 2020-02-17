@@ -38,17 +38,17 @@ class ConfigurationError(Exception):
 class ToolShedAppConfiguration(BaseAppConfiguration):
     default_config_file_name = 'tool_shed.yml'
 
-    def _load_schema():
+    def _load_schema(self):
         return AppSchema(TOOLSHED_CONFIG_SCHEMA_PATH, TOOLSHED_APP_NAME)
 
     def _update_raw_config_from_kwargs(self, kwargs):
-        pass  # Intentionally does nothing. Remove to enable.
+        pass  # Intentionally does nothing. To enable, remove + call base __init__().
 
     def _create_attributes_from_raw_config(self):
-        pass  # Intentionally does nothing. Remove to enable.
+        pass  # Intentionally does nothing. To enable, remove + call base __init__().
 
     def _resolve_paths(self, paths_to_resolve):
-        pass  # Intentionally does nothing. Remove to enable.
+        pass  # Intentionally does nothing. To enable, remove + call base __init__().
 
     def __init__(self, **kwargs):
         self.config_dict = kwargs
