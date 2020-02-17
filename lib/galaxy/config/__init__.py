@@ -177,7 +177,7 @@ class BaseAppConfiguration(object):
         # Override in subclasses
         raise Exception('Not implemented')
 
-    def _deprecated_dirs():
+    def _deprecated_dirs(self):
         # Override in subclasses (optional)
         # {KEY: config option, VALUE: deprecated directory name}
         # If VALUE == first directory in a user path that resolves to KEY, it will be stripped from the path
