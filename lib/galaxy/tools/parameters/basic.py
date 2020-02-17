@@ -648,19 +648,6 @@ class FTPFileToolParameter(ToolParameter):
         return d
 
 
-class GenomespaceFileToolParameter(ToolParameter):
-    """
-    Parameter that takes one of two values.
-    """
-
-    def __init__(self, tool, input_source):
-        super(GenomespaceFileToolParameter, self).__init__(tool, input_source)
-        self.value = input_source.get('value')
-
-    def get_initial_value(self, trans, other_values):
-        return self.value
-
-
 class HiddenToolParameter(ToolParameter):
     """
     Parameter that takes one of two values.
@@ -2351,7 +2338,6 @@ parameter_types = dict(
     baseurl=BaseURLToolParameter,
     file=FileToolParameter,
     ftpfile=FTPFileToolParameter,
-    genomespacefile=GenomespaceFileToolParameter,
     data=DataToolParameter,
     data_collection=DataCollectionToolParameter,
     library_data=LibraryDatasetToolParameter,

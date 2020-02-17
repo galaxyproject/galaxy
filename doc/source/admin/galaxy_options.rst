@@ -1587,17 +1587,6 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~
-``genomespace_ui_url``
-~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Points to the GenomeSpace UI service which will be used by the
-    GenomeSpace importer and exporter tools
-:Default: ``https://gsui.genomespace.org/jsui/``
-:Type: str
-
-
 ~~~~~~~~~~~~~
 ``terms_url``
 ~~~~~~~~~~~~~
