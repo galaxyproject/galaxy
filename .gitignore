@@ -176,3 +176,5 @@ packages/*/*.egg-info
 
 # Plugin build artifacts -- TODO make this more generic as a part of the standard plugin interface
 config/plugins/visualizations/**/static/script.js
+# TODO: Really need to follow up on this and make it standard.
+config/plugins/visualizations/**/static/main.css
