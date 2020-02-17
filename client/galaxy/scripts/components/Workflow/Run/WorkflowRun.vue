@@ -6,7 +6,7 @@
         <b-alert v-if="loading" variant="info" show>
             <loading-span message="Loading workflow run data" />
         </b-alert>
-        <workflow-run-success v-else-if="invocations != null" :invocations="invocations" :workflowName="workflowName" />
+        <workflow-run-success v-else-if="invocations != null" :invocations="invocations" :workflow-name="workflowName" />
         <div v-else ref="run" class="ui-form-composite">
             <div class="ui-form-composite-messages mb-4">
                 <b-alert v-if="hasUpgradeMessages" variant="warning" show>
@@ -30,7 +30,7 @@
                     icon="fa-check"
                     :disabled="!runButtonEnabled"
                     :waiting="!runButtonEnabled"
-                    :waitText="runButtonWaitText"
+                    :wait-text="runButtonWaitText"
                     :percentage="runButtonPercentage"
                     @click="execute"
                 >
