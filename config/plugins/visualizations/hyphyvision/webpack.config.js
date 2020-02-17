@@ -3,19 +3,12 @@ const webpack = require("webpack"),
     MiniCssExtractPlugin = require("mini-css-extract-plugin");
 
 module.exports = {
-    entry: "index.js",
+    entry: path.resolve(__dirname, "src/index.js"),
     output: {
         filename: "bundle.js",
-        path: path.resolve(__dirname, "..", "static")
+        path: path.resolve(__dirname, "static")
     },
     plugins: [
-        /*
-    new webpack.ProvidePlugin({
-      $: "jquery",
-      d3: "d3",
-      _: "underscore"
-    }),
-    */
         new MiniCssExtractPlugin()
     ],
     module: {
@@ -43,9 +36,9 @@ module.exports = {
         ]
     },
     resolve: {
-        modules: ["src"],
+        modules: ["node_modules"],
         alias: {
-            "phylotree.css": __dirname + "/node_modules/phylotree/phylotree.css",
+            "phylotree.css": __dirname + "/node_modules/phylotree/build/phylotree.css",
             "hyphy-vision.css": __dirname + "/node_modules/hyphy-vision/dist/hyphyvision.css"
         }
     }
