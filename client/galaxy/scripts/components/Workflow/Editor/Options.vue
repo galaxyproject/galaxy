@@ -8,7 +8,6 @@
                 variant="link"
                 aria-label="Save Workflow"
                 v-b-tooltip.hover
-                v-b-tooltip.bottom
                 @click="$emit('onSave')"
             >
                 <span class="fa fa-floppy-o" />
@@ -20,7 +19,6 @@
                 variant="link"
                 aria-label="Edit Report"
                 v-b-tooltip.hover
-                v-b-tooltip.bottom
                 @click="$emit('onReport')"
             >
                 <span class="fa fa-edit" />
@@ -34,7 +32,6 @@
                 variant="link"
                 aria-label="Workflow Options"
                 v-b-tooltip.hover
-                v-b-tooltip.bottom
             >
                 <template v-slot:button-content>
                     <span class="fa fa-cog" />
@@ -51,26 +48,12 @@
                 variant="link"
                 aria-label="Run Workflow"
                 v-b-tooltip.hover
-                v-b-tooltip.bottom
                 @click="$emit('onRun')"
             >
                 <span class="fa fa-play" />
             </b-button>
         </span>
         <span v-else>
-            <b-button
-                id="workflow-report-help-button"
-                role="button"
-                title="Report Syntax Help"
-                sm="size"
-                variant="link"
-                aria-label="Report Syntax Help"
-                v-b-tooltip.hover
-                v-b-tooltip.bottom
-                @click="$emit('onReportHelp')"
-            >
-                <span class="fa fa-question" />
-            </b-button>
             <b-button
                 id="workflow-canvas-button"
                 role="button"

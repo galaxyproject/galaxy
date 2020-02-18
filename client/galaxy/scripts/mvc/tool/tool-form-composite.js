@@ -11,7 +11,7 @@ import Form from "mvc/form/form-view";
 import FormData from "mvc/form/form-data";
 import ToolFormBase from "mvc/tool/tool-form-base";
 import Modal from "mvc/ui/ui-modal";
-import WorkflowIcons from "mvc/workflow/workflow-icons";
+import WorkflowIcons from "components/Workflow/icons";
 
 var View = Backbone.View.extend({
     initialize: function(options) {

@@ -270,7 +270,7 @@ workflow_editor:
     selectors:
       _: "[node-label='${label}']"
 
-      title: '${_} .nodeTitle'
+      title: '${_} .node-title'
       destroy: '${_} .node-destroy'
       clone: '${_} .node-clone'
 
@@ -280,8 +280,7 @@ workflow_editor:
       input_mapping_icon: "${_} [name='${name}'] .fa-folder-o"
 
   selectors:
-    canvas_body: '#workflow-canvas-body'
-    canvas_title: '#workflow-canvas-title'
+    canvas_body: '#workflow-canvas'
     edit_annotation: '#workflow-annotation'
     edit_name: '#workflow-name'
 

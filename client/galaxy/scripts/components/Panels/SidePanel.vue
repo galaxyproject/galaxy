@@ -1,6 +1,8 @@
 <template>
     <div :id="side" class="unified-panel-outer-wrap" :style="styles">
-        <component :is="currentPanel" v-bind="currentPanelProperties" />
+        <slot name="panel">
+            <component :is="currentPanel" v-bind="currentPanelProperties" />
+        </slot>
         <div class="unified-panel-footer">
             <div
                 class="panel-collapse"

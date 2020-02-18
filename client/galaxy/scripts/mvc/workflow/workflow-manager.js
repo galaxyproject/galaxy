@@ -1,18 +1,72 @@
 import $ from "jquery";
+import { getGalaxyInstance } from "app";
 import Connector from "mvc/workflow/workflow-connector";
 import { Toast } from "ui/toast";
+import { Node } from "mvc/workflow/workflow-node";
+import { mountWorkflowNode } from "components/Workflow/Editor/mount";
+import WorkflowCanvas from "mvc/workflow/workflow-canvas";
+import EventEmitter from "events";
 
-class Workflow {
-    constructor(app, canvas_container) {
-        this.app = app;
-        this.canvas_container = canvas_container;
+class Workflow extends EventEmitter {
+    constructor(options, canvas_container) {
+        super();
+        this.ext_to_type = options.datatypes_mapping.ext_to_class_name;
+        this.type_to_type = options.datatypes_mapping.class_to_classes;
+        this.canvas_container = $(canvas_container);
         this.id_counter = 0;
         this.nodes = {};
         this.name = null;
         this.has_changes = false;
-        this.active_form_has_changes = false;
         this.workflowOutputLabels = {};
         this.workflow_version = 0;
+
+        // Canvas overview management
+        this.canvas_manager = new WorkflowCanvas(this, $("#canvas-viewport"), $("#overview-container"));
+
+        // On load, set the size to the pref stored in local storage if it exists
+        var overview_size = localStorage.getItem("overview-size");
+        if (overview_size !== undefined) {
+            $(".workflow-overview").css({
+                width: overview_size,
+                height: overview_size
+            });
+        }
+
+        // Stores the size of the overview into local storage when it's resized
+        $(".workflow-overview").bind("dragend", function(e, d) {
+            var op = $(this).offsetParent();
+            var opo = op.offset();
+            var new_size = Math.max(op.width() - (d.offsetX - opo.left), op.height() - (d.offsetY - opo.top));
+            localStorage.setItem("overview-size", `${new_size}px`);
+        });
+
+        // Unload handler
+        window.onbeforeunload = () => {
+            if (this.has_changes) {
+                return "There are unsaved changes to your workflow which will be lost.";
+            }
+        };
+    }
+    set_node(node, data) {
+        const Galaxy = getGalaxyInstance();
+        node.init_field_data(data);
+        node.update_field_data(data);
+        // Post init/update, for new modules we want to default to
+        // nodes being outputs
+        // TODO: Overhaul the handling of all this when we modernize
+        // the editor, replace callout image manipulation with a simple
+        // class toggle, etc.
+        $.each(node.output_terminals, (ot_id, ot) => {
+            node.addWorkflowOutput(ot.name);
+            var callout = $(node.element).find(`.callout.${ot.name.replace(/(?=[()])/g, "\\")}`);
+            callout.find("img").attr("src", `${Galaxy.root}static/images/fugue/asterisk-small.png`);
+        });
+        this.activate_node(node);
+    }
+    isSubType(child, parent) {
+        child = this.ext_to_type[child];
+        parent = this.ext_to_type[parent];
+        return this.type_to_type[child] && parent in this.type_to_type[child];
     }
     canLabelOutputWith(label) {
         if (label) {
@@ -59,10 +113,10 @@ class Workflow {
         return true;
     }
     create_node(type, title_text, content_id) {
-        var node = this.app.prebuildNode(type, title_text, content_id);
+        var node = this.prebuildNode(type, title_text, content_id);
         this.add_node(node);
         this.fit_canvas_to_nodes();
-        this.app.canvas_manager.draw_overview();
+        this.canvas_manager.draw_overview();
         this.activate_node(node);
         return node;
     }
@@ -75,12 +129,80 @@ class Workflow {
         this.has_changes = true;
         node.workflow = this;
     }
+    prebuildNode(type, title_text, content_id) {
+        var self = this;
+
+        // Create node wrapper
+        const container = document.createElement("div");
+        container.className = "toolForm toolFormInCanvas";
+        document.getElementById("canvas-container").appendChild(container);
+        var $f = $(container);
+
+        // Create backbone model and view
+        var node = new Node(this, { element: $f });
+        node.type = type;
+        node.content_id = content_id;
+
+        // Mount node component as child dom to node wrapper
+        const child = document.createElement("div");
+        container.appendChild(child);
+        mountWorkflowNode(child, {
+            id: content_id,
+            type: type,
+            title: title_text,
+            node: node
+        });
+
+        // Set initial scroll position
+        $f.css("left", $(window).scrollLeft() + 20);
+        $f.css("top", $(window).scrollTop() + 20);
+
+        // Position in container
+        var o = $("#canvas-container").position();
+        var p = $("#canvas-container").parent();
+        var width = $f.outerWidth() + 50;
+        var height = $f.height();
+        $f.css({
+            left: -o.left + p.width() / 2 - width / 2,
+            top: -o.top + p.height() / 2 - height / 2
+        });
+        $f.css("width", width);
+        $f.bind("dragstart", () => {
+            self.activate_node(node);
+        })
+            .bind("dragend", function() {
+                self.node_changed(node);
+                self.fit_canvas_to_nodes();
+                self.canvas_manager.draw_overview();
+            })
+            .bind("dragclickonly", () => {
+                self.activate_node(node);
+            })
+            .bind("drag", function(e, d) {
+                // Move
+                var po = $(this)
+                    .offsetParent()
+                    .offset();
+                // Find relative offset and scale by zoom
+                var x = (d.offsetX - po.left) / self.canvas_manager.canvasZoom;
+                var y = (d.offsetY - po.top) / self.canvas_manager.canvasZoom;
+                $(this).css({ left: x, top: y });
+                // Redraw
+                $(this)
+                    .find(".terminal")
+                    .each(function() {
+                        this.terminal.redraw();
+                    });
+            });
+        return node;
+    }
     remove_node(node) {
         if (this.active_node == node) {
             this.clear_active_node();
         }
         delete this.nodes[node.id];
         this.has_changes = true;
+        this.emit("onRemoveNode");
     }
     remove_all() {
         var wf = this;
@@ -220,7 +342,7 @@ class Workflow {
         wf.workflow_version = data.version;
         wf.report = data.report || {};
         $.each(data.steps, (id, step) => {
-            var node = wf.app.prebuildNode(step.type, step.name, step.content_id);
+            var node = wf.prebuildNode(step.type, step.name, step.content_id);
             // If workflow being copied into another, wipe UUID and let
             // Galaxy assign new ones.
             if (!initialImport) {
@@ -266,7 +388,7 @@ class Workflow {
                     }
                     $.each(v, (l, x) => {
                         var other_node = wf.nodes[parseInt(x.id) + offset];
-                        var c = new Connector();
+                        var c = new Connector(this.canvas_manager);
                         c.connect(other_node.output_terminals[x.output_name], node.input_terminals[k]);
                         c.redraw();
                     });
@@ -284,17 +406,6 @@ class Workflow {
             }
         });
     }
-    check_changes_in_active_form() {
-        // If active form has changed, save it
-        if (this.active_form_has_changes) {
-            this.has_changes = true;
-            // Submit form.
-            $("#right-content")
-                .find("form")
-                .submit();
-            this.active_form_has_changes = false;
-        }
-    }
     reload_active_node() {
         if (this.active_node) {
             var node = this.active_node;
@@ -308,28 +419,44 @@ class Workflow {
             this.active_node = null;
         }
         document.activeElement.blur();
-        this.app.showAttributes();
+        this.emit("onClearActiveNode");
     }
     activate_node(node) {
         if (this.active_node != node) {
-            this.check_changes_in_active_form();
             this.clear_active_node();
-            this.app.showForm(node.config_form, node);
             node.make_active();
             this.active_node = node;
         }
+        this.emit("onActiveNode", node);
     }
-    node_changed(node, force) {
+    node_changed(node) {
         this.has_changes = true;
-        if (this.active_node == node && force) {
-            // Force changes to be saved even on new connection (previously dumped)
-            this.check_changes_in_active_form();
-            this.app.showForm(node.config_form, node);
+        this.emit("onNodeChange", node);
+    }
+    scroll_to_nodes() {
+        var cv = $("#canvas-viewport");
+        var cc = $("#canvas-container");
+        var top;
+        var left;
+        if (cc.width() < cv.width()) {
+            left = (cv.width() - cc.width()) / 2;
+        } else {
+            left = 0;
         }
-        this.app.showWorkflowParameters();
+        if (cc.height() < cv.height()) {
+            top = (cv.height() - cc.height()) / 2;
+        } else {
+            top = 0;
+        }
+        cc.css({ left: left, top: top });
+    }
+    layout_auto() {
+        this.layout();
+        this.fit_canvas_to_nodes();
+        this.scroll_to_nodes();
+        this.canvas_manager.draw_overview();
     }
     layout() {
-        this.check_changes_in_active_form();
         this.has_changes = true;
         // Prepare predecessor / successor tracking
         var n_pred = {};
@@ -439,7 +566,7 @@ class Workflow {
             return 0;
         }
         // Span of all elements
-        var canvasZoom = this.app.canvas_manager.canvasZoom;
+        var canvasZoom = this.canvas_manager.canvasZoom;
         var bounds = this.bounds_for_all_nodes();
         var position = this.canvas_container.position();
         var parent = this.canvas_container.parent();

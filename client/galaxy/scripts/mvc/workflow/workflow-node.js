@@ -54,7 +54,7 @@ export class Node {
             changed = this.addWorkflowOutput(outputName, label);
         }
         if (changed) {
-            this.app.workflow.updateOutputLabel(oldLabel, label);
+            this.app.updateOutputLabel(oldLabel, label);
             this.markChanged();
             this.nodeView.redrawWorkflowOutputs();
         }
@@ -163,8 +163,7 @@ export class Node {
             annotation: this.annotation,
             post_job_actions: this.post_job_actions
         };
-        var node = this.app.workflow.create_node(this.type, this.name, this.content_id);
-
+        var node = this.app.create_node(this.type, this.name, this.content_id);
         Utils.request({
             type: "POST",
             url: `${getAppRoot()}api/workflows/build_module`,
@@ -177,7 +176,7 @@ export class Node {
                 var newData = Object.assign({}, data, copiedData);
                 node.init_field_data(newData);
                 node.update_field_data(newData);
-                this.app.workflow.activate_node(node);
+                this.app.activate_node(node);
             }
         });
     }
@@ -188,7 +187,7 @@ export class Node {
         $.each(this.output_terminals, (k, t) => {
             t.destroy();
         });
-        this.app.workflow.remove_node(this);
+        this.app.remove_node(this);
         $(this.element).remove();
     }
     make_active() {
@@ -228,7 +227,7 @@ export class Node {
         this.uuid = data.uuid;
         this.workflow_outputs = data.workflow_outputs ? data.workflow_outputs : [];
         var node = this;
-        var nodeView = new NodeView({
+        var nodeView = new NodeView(this.app, {
             $el: this.element,
             node: node
         });
@@ -244,7 +243,7 @@ export class Node {
             nodeView.addDataOutput(output);
         });
         nodeView.render();
-        this.app.workflow.node_changed(this, true);
+        this.app.node_changed(this);
     }
     update_field_data(data) {
         var node = this;
@@ -347,9 +346,9 @@ export class Node {
         var tmp = `<div style='color: red; text-style: italic;'>${text}</div>`;
         this.config_form = tmp;
         b.html(tmp);
-        this.app.workflow.node_changed(this);
+        this.app.node_changed(this);
     }
     markChanged() {
-        this.app.workflow.node_changed(this);
+        this.app.node_changed(this);
     }
 }
