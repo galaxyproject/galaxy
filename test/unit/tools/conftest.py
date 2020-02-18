@@ -65,4 +65,13 @@ def create_repo(app, changeset, installed_changeset, config_filename=None):
     repository.deleted = False
     repository.uninstalled = False
     app.install_model.context.add(repository)
+    app.install_model.context.flush()
+    tool_dependency = tool_shed_install.ToolDependency(
+        name='Name',
+        version='100',
+        type='package',
+        status='ok',
+        tool_shed_repository_id=repository.id,
+    )
+    app.install_model.context.add(tool_dependency)
     return repository
