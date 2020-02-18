@@ -24,6 +24,8 @@ If Galaxy complains about the version of Python you are using, check that
         % ln -s /path/to/python ~/galaxy-python/python
         % export PATH=~/galaxy-python:$PATH
         ```
+        
+    - If using Galaxy with a conda environment, remove conda environment (e.g. ```rm -rf /path/to/conda/__galaxy__```)
 
 3. Start Galaxy again.
 
