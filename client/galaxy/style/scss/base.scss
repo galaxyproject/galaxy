@@ -402,7 +402,7 @@ body {
     .navbar-brand {
         @extend .position-absolute;
         @extend .font-weight-bold;
-        font-family: verdana;
+        font-family: sans-serif;
         font-size: 1.25rem;
         left: 0.8rem;
         line-height: 0rem;
@@ -845,7 +845,7 @@ table.colored tr.header {
     background: $table-heading-bg;
     background-repeat: repeat-x;
     background-position: top;
-    border-bottom: solid $table-border-color 1px;
+    border-bottom: solid $brand-secondary 1px;
     font-weight: bold;
 }
 

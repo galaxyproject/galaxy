@@ -1,5 +1,5 @@
 .navbar-fixed-top .navbar-brand {
-    font-family: Verdana;
+    font-family: sans-serif;
     font-weight: bold;
     font-size: 160%;
 }
@@ -25,7 +25,7 @@ pre {
 }
 
 .btn-secondary {
-    border: $border-default;
+    border: none;
 }
 
 .popover .popover-body {
@@ -137,6 +137,7 @@ pre.code {
     a {
         font-weight: bold;
     }
+    border-color: transparent;
 }
 
 // increase visibility of dropdown menu section headers

@@ -29,10 +29,10 @@
         font-size: $font-size-base;
         line-height: $line-height-base;
         color: $text-color;
-        border: $border-default;
+        border: none;
         @include border-radius($border-radius-extralarge);
         max-width: auto;
-        background: $white;
+        background: $brand-secondary;
     }
     .search-query:focus {
         border-color: $brand-info;

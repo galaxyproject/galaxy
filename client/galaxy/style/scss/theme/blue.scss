@@ -19,7 +19,7 @@ $brand-masthead-text-hover: $brand-toggle;
 $text-color: $brand-dark;
 $text-muted: lighten($text-color, 10%);
 $text-light: lighten($text-color, 20%);
-$border-color: lighten($text-color, 60%);
+$border-color: $brand-secondary;
 
 // Light grays for backgrounds
 $white: lighten($brand-light, 15%); // body background
@@ -136,7 +136,7 @@ $border-default: 1px solid $border-color;
 // Buttons
 $btn-default-color: $text-color;
 $btn-default-bg: $gray-200;
-$btn-default-border: $border-color;
+$btn-default-border: none;
 
 // Forms
 $form-heading-bg: $panel-bg-color;
@@ -145,7 +145,7 @@ $form-border: darken($form-heading-bg, 20%);
 // Table
 $table-heading-bg: $panel-bg-color;
 $table-bg-accent: darken($panel-bg-color, 5%);
-$table-border-color: $border-color;
+$table-border-color: rgba(0, 0, 0, 0);
 
 // Additional state colors
 $state-default-bg: $gray-200;
