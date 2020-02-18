@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<job_conf>
+    <plugins workers="4">
+        <!-- "workers" is the number of threads for the runner's work queue.
+             The default from <plugins> is used if not defined for a <plugin>.
+          -->
+        <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="3"/>
+        <plugin id="hmgm" type="runner" load="galaxy.jobs.runners.hmgm:HmgmRunner" workers="1"/>
+     </plugins>
+    <destinations default="local">
+        <destination id="local" runner="local"/>
+        <destination id="hmgm-container" runner="hmgm"/>
+    </destinations>
+    <tools>
+        <tool id="hmgmtest" destination="hmgm-container"/>
+    </tools>
+</job_conf>

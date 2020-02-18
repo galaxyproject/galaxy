@@ -31,6 +31,9 @@
     <tool file="spacy/spacy.xml"/>
     <tool file="aws/aws_comprehend.xml"/>
   </section>
+  <section id="hmgm" name="Human MGM">
+    <tool id="hmgmtest" file="hmgm/hmgm_sample.xml"/>
+  </section>
   <section id="collection_operations" name="Collection Operations">
     <tool file="${model_tools_path}/unzip_collection.xml" labels="new" />
     <tool file="${model_tools_path}/zip_collection.xml" labels="new" />

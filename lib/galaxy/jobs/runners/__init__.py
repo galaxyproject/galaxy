@@ -679,6 +679,7 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
                     stderr = shrink_stream_by_size(stderr_file, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True)
                 break
             except Exception as e:
+                log.error(e)
                 if which_try == self.app.config.retry_job_output_collection:
                     stdout = ''
                     stderr = job_state.runner_states.JOB_OUTPUT_NOT_RETURNED_FROM_CLUSTER
