@@ -4,6 +4,7 @@ import sys
 import tarfile
 import zipfile
 
+import chardet
 from six import BytesIO
 from six.moves import filter
 
@@ -60,6 +61,9 @@ def check_binary(name, file_path=True):
     else:
         temp = BytesIO(name)
     try:
+        chunk = temp.read(1024)
+        if chardet.detect(chunk)['encoding']:
+            return False
         return util.is_binary(temp.read(1024))
     finally:
         temp.close()

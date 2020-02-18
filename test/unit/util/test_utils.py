@@ -1,5 +1,7 @@
 from tempfile import NamedTemporaryFile
 
+import pytest
+
 from galaxy import util
 
 SECTION_XML = """<?xml version="1.0" ?>
@@ -27,6 +29,19 @@ def test_strip_control_characters_nested():
     assert util.strip_control_characters_nested(l)[0] == stripped_s
     assert util.strip_control_characters_nested(t)[0] == stripped_s
     assert util.strip_control_characters_nested(d)[42] == stripped_s
+
+
+@pytest.mark.parametrize('b,encoding', [
+    (b'ABCDEF', 'utf-8'),
+    ('héllo@galaxy'.encode('ISO-8859-1'), 'ISO-8859-1'),
+    (b'\x1f\x8b\x08\x04\x00\x00\x00\x00\x00\xff\x06\x00BC\x02\x00\xeb\r\x9dZModW\x11\xf5\xb0', None),
+])
+def test_guess_encoding(b, encoding):
+    with NamedTemporaryFile(mode='wb') as fh:
+        fh.write(b)
+        fh.flush()
+        guessed_encoding = util.guess_encoding(fh.name)
+    assert guessed_encoding == encoding, "Expected encoding %s, got %s" % (encoding, guessed_encoding)
 
 
 def test_parse_xml_string():
