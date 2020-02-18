@@ -41,10 +41,15 @@
 </template>
 
 <script>
+import Vue from "vue";
+import BootstrapVue from "bootstrap-vue";
 import { Services } from "components/Workflow/services";
 import Tags from "components/Common/Tags";
+
+Vue.use(BootstrapVue);
+
 export default {
-    name: "EditorAttributes",
+    name: "Attributes",
     components: {
         Tags
     },
@@ -108,28 +113,14 @@ export default {
     methods: {
         onTags(tags) {
             this.tagsCurrent = tags;
-            this.services
-                .updateWorkflow(this.id, {
-                    tags: tags
-                })
-                .catch(error => {
-                    this.onError(error);
-                });
+            this.onAttributes({ tags });
         },
         onAnnotation(annotation) {
-            this.services.updateWorkflow(this.id, { annotation }).catch(error => {
-                this.onError(error);
-            });
+            this.onAttributes({ annotation });
         },
         onRename(name) {
-            this.services
-                .updateWorkflow(this.id, { name })
-                .then(() => {
-                    this.$emit("onRename", name);
-                })
-                .catch(error => {
-                    this.onError(error);
-                });
+            this.onAttributes({ name });
+            this.$emit("onRename", name);
         },
         onVersion() {
             this.$emit("onVersion", this.versionCurrent);
@@ -137,6 +128,11 @@ export default {
         onError(error) {
             this.message = error;
             this.messageVariant = "danger";
+        },
+        onAttributes(data) {
+            this.services.updateWorkflow(this.id, data).catch(error => {
+                this.onError(error);
+            });
         }
     }
 };
