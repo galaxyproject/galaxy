@@ -23,7 +23,7 @@ export class NodeView {
     }
 
     renderToolLabel() {
-        this.$el.find(".nodeTitle").text(this.node.label || this.node.name);
+        this.$el.find(".node-title").text(this.node.label || this.node.name);
         this.$el.attr("node-label", this.node.label);
     }
 
