@@ -429,7 +429,7 @@ QUnit.test("init_field_data data", function(assert) {
         assert.equal(this.$(".input-terminal").length, 1);
         assert.equal(this.$(".rule").length, 1);
         assert.equal(this.$(".toolFormBody").children().length, 3);
-        assert.equal(this.$(".nodeTitle").text(), "newnode");
+        assert.equal(this.$(".node-title").text(), "newnode");
         assert.ok(
             this.$(".toolFormTitle")
                 .find("i")
@@ -441,14 +441,14 @@ QUnit.test("init_field_data data", function(assert) {
 QUnit.test("node title behavior", function(assert) {
     this.expect_workflow_node_changed(assert, () => {
         // Node created with name newnode
-        assert.equal(this.$(".nodeTitle").text(), "newnode");
+        assert.equal(this.$(".node-title").text(), "newnode");
         // init_field_data_simple doesn't change label, so it should
         // remain original name.
         this.init_field_data_simple();
-        assert.equal(this.$(".nodeTitle").text(), "newnode");
+        assert.equal(this.$(".node-title").text(), "newnode");
         // Despite awkward name, update does change the label...
         this.update_field_data_with_new_input();
-        assert.equal(this.$(".nodeTitle").text(), "New Label");
+        assert.equal(this.$(".node-title").text(), "New Label");
     });
 });
 
