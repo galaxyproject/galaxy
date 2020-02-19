@@ -2476,7 +2476,12 @@ class SetMetadataTool(Tool):
                 # Revert dataset.state to fall back to dataset.dataset.state
                 dataset._state = None
             # Need to reset the peek, which may rely on metadata
-            dataset.set_peek()
+            # TODO: move this into metadata setting, setting the peek requires dataset access,
+            # and large chunks of the dataset may be read here.
+            try:
+                dataset.set_peek()
+            except Exception:
+                log.exception()
             self.sa_session.add(dataset)
             self.sa_session.flush()
 
