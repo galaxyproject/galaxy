@@ -45,8 +45,9 @@ class DoiCache(object):
 
     def _raw_get_bibtex(self, doi):
         doi_url = "https://doi.org/" + doi
-        headers = {'Accept': 'text/bibliography; style=bibtex, application/x-bibtex'}
+        headers = {'Accept': 'application/x-bibtex'}
         req = requests.get(doi_url, headers=headers)
+        req.encoding = req.apparent_encoding
         return req.text
 
     def get_bibtex(self, doi):
