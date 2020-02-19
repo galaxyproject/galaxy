@@ -73,11 +73,6 @@ export const getUserPreferencesModel = () => {
             description: _l("Add or remove custom builds using history datasets."),
             icon: "fa-cubes"
         },
-        genomespace: {
-            title: _l("Request GenomeSpace Token"),
-            description: _l("Requests token through OpenID."),
-            icon: "fa-openid"
-        },
         logout: {
             title: _l("Sign Out"),
             description: _l("Click here to sign out of all sessions."),

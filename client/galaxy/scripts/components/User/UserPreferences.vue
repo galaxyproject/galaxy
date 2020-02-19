@@ -94,9 +94,6 @@ export default {
                         case "custom_builds":
                             activeLinks[key].onclick = this.openManageCustomBuilds;
                             break;
-                        case "genomespace":
-                            activeLinks[key].onclick = this.requestGenomeSpace;
-                            break;
                         case "logout":
                             activeLinks[key].onclick = this.signOut;
                             break;
@@ -141,9 +138,6 @@ export default {
                     });
                 });
             }
-        },
-        requestGenomeSpace() {
-            window.location.href = `${getAppRoot()}openid/openid_auth?openid_provider=genomespace`;
         },
         signOut() {
             const Galaxy = getGalaxyInstance();

@@ -2,7 +2,7 @@
     <div>
         <div class="toolFormTitle unselectable clearfix">
             <i :class="iconClass" />
-            <span class="nodeTitle">{{ title }}</span>
+            <span class="node-title">{{ title }}</span>
             <span class="sr-only">&nbsp;Node</span>
             <div class="buttons float-right">
                 <a
@@ -23,15 +23,21 @@
             </div>
         </div>
         <div class="toolFormBody">
-            <div><span class="fa fa-spinner fa-spin" /> Loading details...</div>
+            <div>
+                <loading-span message="Loading details" />
+            </div>
         </div>
     </div>
 </template>
 
 <script>
-import WorkflowIcons from "mvc/workflow/workflow-icons";
+import WorkflowIcons from "components/Workflow/icons";
+import LoadingSpan from "components/LoadingSpan";
 
 export default {
+    components: {
+        LoadingSpan
+    },
     props: {
         id: {
             type: String

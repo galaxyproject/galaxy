@@ -4,7 +4,8 @@ import TerminalViews from "mvc/workflow/workflow-view-terminals";
 import { DataInputView, DataOutputView, ParameterOutputView } from "mvc/workflow/workflow-view-data";
 
 export class NodeView {
-    constructor(options) {
+    constructor(app, options) {
+        this.app = app;
         this.$el = options.$el;
         this.node = options.node;
         this.output_width = Math.max(150, this.$el.width());
@@ -22,7 +23,7 @@ export class NodeView {
     }
 
     renderToolLabel() {
-        this.$el.find(".nodeTitle").text(this.node.label || this.node.name);
+        this.$el.find(".node-title").text(this.node.label || this.node.name);
         this.$el.attr("node-label", this.node.label);
     }
 
@@ -62,7 +63,7 @@ export class NodeView {
             terminalView = null;
         }
         if (!terminalView) {
-            terminalView = new terminalViewClass({
+            terminalView = new terminalViewClass(this.app, {
                 node: this.node,
                 input: input
             });
@@ -91,7 +92,7 @@ export class NodeView {
         } else if (output.parameter) {
             terminalViewClass = TerminalViews.OutputParameterTerminalView;
         }
-        return new terminalViewClass({
+        return new terminalViewClass(this.app, {
             node: this.node,
             output: output
         });
@@ -99,7 +100,7 @@ export class NodeView {
 
     outputViewforOutput(output, terminalView) {
         const outputViewClass = output.parameter ? ParameterOutputView : DataOutputView;
-        return new outputViewClass({
+        return new outputViewClass(this.app, {
             output: output,
             terminalElement: terminalView.el,
             nodeView: this

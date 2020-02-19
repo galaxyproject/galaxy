@@ -65,33 +65,26 @@ describe("ToolSection", () => {
             }
         });
         expect(wrapper.vm.opened).to.equal(true);
-
         const $sectionName = wrapper.find(".name");
         $sectionName.trigger("click");
         await Vue.nextTick();
         expect(wrapper.vm.opened).to.equal(false);
-
-        wrapper.vm.queryFilter = "";
+        wrapper.setProps({ queryFilter: "" });
         await Vue.nextTick();
         expect(wrapper.vm.opened).to.equal(false);
-
-        wrapper.vm.queryFilter = "test";
+        wrapper.setProps({ queryFilter: "test" });
         await Vue.nextTick();
         expect(wrapper.vm.opened).to.equal(true);
-
-        wrapper.vm.disableFilter = true;
+        wrapper.setProps({ disableFilter: true });
         await Vue.nextTick();
         expect(wrapper.vm.opened).to.equal(true);
-
-        wrapper.vm.queryFilter = "";
+        wrapper.setProps({ queryFilter: "" });
         await Vue.nextTick();
         expect(wrapper.vm.opened).to.equal(false);
-
         $sectionName.trigger("click");
         await Vue.nextTick();
         expect(wrapper.vm.opened).to.equal(true);
-
-        wrapper.vm.queryFilter = "test";
+        wrapper.setProps({ queryFilter: "test" });
         await Vue.nextTick();
         expect(wrapper.vm.opened).to.equal(false);
     });

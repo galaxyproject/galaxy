@@ -22,8 +22,8 @@
                     @onClick="onInsertModule"
                 />
                 <tool-section
-                    :category="dataManagers"
-                    :key="dataManagers.id"
+                    :category="dataManagerSection"
+                    :key="dataManagerSection.id"
                     :query-filter="query"
                     :disable-filter="true"
                     @onClick="onInsertTool"
@@ -40,7 +40,7 @@
                 <tool-section
                     :category="workflowSection"
                     :key="workflowSection.name"
-                    operation-icon="fa fa-copy"
+                    operation-icon="fa fa-files-o"
                     operation-title="Insert individual steps."
                     :query-filter="query"
                     :disable-filter="true"
@@ -53,6 +53,7 @@
 </template>
 
 <script>
+import _l from "utils/localization";
 import ToolSection from "./Common/ToolSection";
 import ToolSearch from "./Common/ToolSearch";
 import { filterToolSections } from "./utilities";
@@ -74,20 +75,29 @@ export default {
             type: Array,
             required: true
         },
-        workflowSection: {
-            type: Object
-        },
-        workflowGlobals: {
-            type: Object
+        workflows: {
+            type: Array
         },
         dataManagers: {
-            type: Object
+            type: Array
         },
         moduleSections: {
             type: Array
         }
     },
     computed: {
+        workflowSection() {
+            return {
+                name: _l("Workflows"),
+                elems: this.workflows
+            };
+        },
+        dataManagerSection() {
+            return {
+                name: _l("Data Managers"),
+                elems: this.dataManagers
+            };
+        },
         categories() {
             return filterToolSections(this.toolsLayout, this.results);
         },
@@ -114,18 +124,18 @@ export default {
         },
         onInsertTool(tool, evt) {
             evt.preventDefault();
-            this.workflowGlobals.app.add_node_for_tool(tool.id, tool.name);
+            this.$emit("onInsertTool", tool.id, tool.name);
         },
         onInsertModule(module, evt) {
             evt.preventDefault();
-            this.workflowGlobals.app.add_node_for_module(module.name, module.title);
+            this.$emit("onInsertModule", module.name, module.title);
         },
         onInsertWorkflow(workflow, evt) {
             evt.preventDefault();
-            this.workflowGlobals.app.add_node_for_subworkflow(workflow.latest_id, workflow.name);
+            this.$emit("onInsertWorkflow", workflow.latest_id, workflow.name);
         },
         onInsertWorkflowSteps(workflow) {
-            this.workflowGlobals.app.copy_into_workflow(workflow.id, workflow.step_count);
+            this.$emit("onInsertWorkflowSteps", workflow.id, workflow.step_count);
         }
     }
 };

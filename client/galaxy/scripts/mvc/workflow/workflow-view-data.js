@@ -1,8 +1,5 @@
 import $ from "jquery";
 
-// TODO; tie into Galaxy state?
-window.workflow_globals = window.workflow_globals || {};
-
 export class DataInputView {
     constructor(options = {}) {
         this.input = options.input;
@@ -31,7 +28,7 @@ export class DataInputView {
 }
 
 export class DataOutputView {
-    constructor(options = {}) {
+    constructor(app, options = {}) {
         this.$el = $("<div class='form-row dataRow'/>");
         this.output = options.output;
         this.terminalElement = options.terminalElement;
@@ -46,13 +43,13 @@ export class DataOutputView {
         this.$el.html(label);
         this.calloutView = null;
         if (["tool", "subworkflow"].indexOf(node.type) >= 0) {
-            const calloutView = new OutputCalloutView({
+            const calloutView = new OutputCalloutView(app, {
                 label: label,
                 output: output,
                 node: node
             });
             this.calloutView = calloutView;
-            this.$el.append(calloutView.el);
+            this.$el.append(calloutView.$el);
         }
         this.$el.css({
             position: "absolute",
@@ -79,7 +76,7 @@ export class DataOutputView {
 }
 
 export class ParameterOutputView {
-    constructor(options = {}) {
+    constructor(app, options = {}) {
         this.$el = $("<div class='form-row dataRow'/>");
         this.output = options.output;
         this.terminalElement = options.terminalElement;
@@ -90,13 +87,13 @@ export class ParameterOutputView {
         this.$el.html(label);
         this.calloutView = null;
         if (["tool", "subworkflow"].indexOf(node.type) >= 0) {
-            const calloutView = new OutputCalloutView({
+            const calloutView = new OutputCalloutView(app, {
                 label: label,
                 output: output,
                 node: node
             });
             this.calloutView = calloutView;
-            this.$el.append(calloutView.el);
+            this.$el.append(calloutView.$el);
         }
         this.$el.css({
             position: "absolute",
@@ -123,7 +120,7 @@ export class ParameterOutputView {
 }
 
 export class OutputCalloutView {
-    constructor(options = {}) {
+    constructor(app, options = {}) {
         this.$el = $("<div/>");
         this.label = options.label;
         this.node = options.node;
@@ -138,13 +135,13 @@ export class OutputCalloutView {
                     const outputName = view.output.name;
                     if (node.isWorkflowOutput(outputName)) {
                         node.removeWorkflowOutput(outputName);
-                        view.$("icon").removeClass("mark-terminal-active");
+                        view.$el.find("icon").removeClass("mark-terminal-active");
                     } else {
                         node.addWorkflowOutput(outputName);
-                        view.$("icon").addClass("mark-terminal-active");
+                        view.$el.find("icon").addClass("mark-terminal-active");
                     }
-                    window.workflow_globals.workflow.has_changes = true;
-                    window.workflow_globals.canvas_manager.draw_overview();
+                    app.has_changes = true;
+                    app.canvas_manager.draw_overview();
                 })
             )
             .tooltip({

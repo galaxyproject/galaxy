@@ -21,6 +21,10 @@ describe("SelectionDialog.vue", () => {
                 options: "<tree-options />",
                 search: "<cool-search />"
             },
+            stubs: {
+                "tree-options": "<div id='tree-options'/>",
+                "cool-search": "<div id='cool-search'/>"
+            },
             propsData: mockOptions,
             localVue
         });
@@ -29,16 +33,16 @@ describe("SelectionDialog.vue", () => {
     it("loads correctly in loading state, shows options when optionsShow becomes true", async () => {
         expect(wrapper.find(".fa-spinner").text()).to.equals("");
         expect(wrapper.contains(".fa-spinner")).to.equals(true);
-        expect(wrapper.contains("tree-options")).to.equals(false);
+        expect(wrapper.contains("#tree-options")).to.equals(false);
         wrapper.setProps({ optionsShow: true });
         await localVue.nextTick();
         expect(wrapper.contains(".fa-spinner")).to.equals(false);
-        expect(wrapper.contains("tree-options")).to.equals(true);
+        expect(wrapper.contains("#tree-options")).to.equals(true);
     });
 
     it("loads search correctly", async () => {
         await localVue.nextTick();
-        expect(wrapper.contains("cool-search")).to.equals(true);
+        expect(wrapper.contains("#cool-search")).to.equals(true);
     });
 
     it("hideModal called on click cancel", async () => {

@@ -31,13 +31,11 @@ import WorkflowList from "components/Workflow/WorkflowList.vue";
 import HistoryImport from "components/HistoryImport.vue";
 import HistoryView from "components/HistoryView.vue";
 import WorkflowInvocationReport from "components/WorkflowInvocationReport.vue";
+import WorkflowRun from "components/Workflow/Run/WorkflowRun.vue";
 import RecentInvocations from "components/User/RecentInvocations.vue";
 import HistoryList from "mvc/history/history-list";
 import PluginList from "components/PluginList.vue";
-import ToolFormComposite from "mvc/tool/tool-form-composite";
 import QueryStringParsing from "utils/query-string-parsing";
-import Utils from "utils/utils";
-import Ui from "mvc/ui/ui-misc";
 import DatasetError from "mvc/dataset/dataset-error";
 import DatasetEditAttributes from "mvc/dataset/dataset-edit-attributes";
 import Citations from "components/Citations.vue";
@@ -94,9 +92,12 @@ export const getAnalysisRouter = Galaxy =>
             return (Galaxy.user && Galaxy.user.id) || this.require_login.indexOf(name) == -1;
         },
 
-        _display_vue_helper: function(component, propsData = {}) {
+        _display_vue_helper: function(component, propsData = {}, active_tab = null) {
             const instance = Vue.extend(component);
             const container = document.createElement("div");
+            if (active_tab) {
+                container.active_tab = active_tab;
+            }
             this.page.display(container);
             new instance({ store, propsData }).$mount(container);
         },
@@ -407,21 +408,7 @@ export const getAnalysisRouter = Galaxy =>
 
         /** load workflow by its url in run mode */
         _loadWorkflow: function() {
-            Utils.get({
-                url: `${getAppRoot()}api/workflows/${Utils.getQueryString("id")}/download?style=run`,
-                success: response => {
-                    this.page.display(new ToolFormComposite.View(_.extend(response, { active_tab: "workflow" })));
-                },
-                error: response => {
-                    const error_msg = response.err_msg || "Error occurred while loading the resource.";
-                    const options = {
-                        message: error_msg,
-                        status: "danger",
-                        persistent: true,
-                        active_tab: "workflow"
-                    };
-                    this.page.display(new Ui.Message(options));
-                }
-            });
+            const workflowId = QueryStringParsing.get("id");
+            this._display_vue_helper(WorkflowRun, { workflowId: workflowId }, "workflow");
         }
     });

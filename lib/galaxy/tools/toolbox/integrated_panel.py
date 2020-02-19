@@ -1,12 +1,12 @@
 import os
 import shutil
 import string
-import tempfile
 import time
 import traceback
 from xml.sax.saxutils import escape
 
 from galaxy.util import RW_R__R__
+from galaxy.util.renamed_temporary_file import RenamedTemporaryFile
 from .panel import (
     panel_item_types,
     ToolPanelElements
@@ -52,14 +52,15 @@ class ManagesIntegratedToolPanelMixin(object):
         Write the current in-memory version of the integrated_tool_panel.xml file to disk.  Since Galaxy administrators
         use this file to manage the tool panel, we'll not use xml_to_string() since it doesn't write XML quite right.
         """
+        destination = os.path.abspath(self._integrated_tool_panel_config)
         tracking_directory = self._integrated_tool_panel_tracking_directory
-        if not tracking_directory:
-            fd, filename = tempfile.mkstemp()
-        else:
+        if tracking_directory:
             if not os.path.exists(tracking_directory):
                 os.makedirs(tracking_directory)
             name = "integrated_tool_panel_%.10f.xml" % time.time()
             filename = os.path.join(tracking_directory, name)
+        else:
+            filename = destination
         template = string.Template("""<?xml version="1.0"?>
 <toolbox>
     <!--
@@ -102,14 +103,13 @@ $INTEGRATED_TOOL_PANEL
         tool_panel_description = '\n    '.join(l for l in INTEGRATED_TOOL_PANEL_DESCRIPTION.split("\n") if l)
         tp_string = template.substitute(INTEGRATED_TOOL_PANEL_DESCRIPTION=tool_panel_description,
                                         INTEGRATED_TOOL_PANEL='\n'.join(integrated_tool_panel))
-        with open(filename, "w") as integrated_tool_panel_file:
-            integrated_tool_panel_file.write(tp_string)
-        destination = os.path.abspath(self._integrated_tool_panel_config)
+        with RenamedTemporaryFile(filename, mode='w') as f:
+            f.write(tp_string)
         if tracking_directory:
-            open(filename + ".stack", "w").write(''.join(traceback.format_stack()))
+            with open(filename + ".stack", "w") as f:
+                f.write(''.join(traceback.format_stack()))
             shutil.copy(filename, filename + ".copy")
-            filename = filename + ".copy"
-        shutil.move(filename, destination)
+            shutil.move(filename + ".copy", destination)
         try:
             os.chmod(destination, RW_R__R__)
         except OSError:
