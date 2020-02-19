@@ -36,7 +36,7 @@ class JobPortsView(object):
         # Verify job is active. Don't update the contents of complete jobs.
         sa_session = self._app.model.context.current
         job = sa_session.query(model.Job).get(job_id)
-        if job.finished:
+        if not job.running:
             error_message = "Attempting to read or modify the files of a job that has already completed."
             raise exceptions.ItemAccessibilityException(error_message)
         return job

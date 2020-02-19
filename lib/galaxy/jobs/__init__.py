@@ -35,6 +35,7 @@ from galaxy.job_execution.datasets import (
     TaskPathRewriter
 )
 from galaxy.job_execution.output_collect import collect_extra_files
+from galaxy.job_execution.setup import ensure_configs_directory
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.jobs.mapper import JobMappingException, JobRunnerMapper
 from galaxy.jobs.runners import BaseJobRunner, JobState
@@ -2096,12 +2097,9 @@ class JobWrapper(HasResourceParameters):
         if not container or not self.tool.produces_entry_points:
             return None
 
-        from os.path import abspath
-        from os import getcwd
-        exec_dir = kwds.get('exec_dir', abspath(getcwd()))
+        exec_dir = kwds.get('exec_dir', os.path.abspath(os.getcwd()))
         work_dir = self.working_directory
-        configs_dir = os.path.join(work_dir, "configs")
-        util.safe_makedirs(configs_dir)
+        configs_dir = ensure_configs_directory(work_dir)
         container_config = os.path.join(configs_dir, "container_config.json")
         self.extra_filenames.append(container_config)
 

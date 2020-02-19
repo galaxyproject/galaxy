@@ -727,6 +727,10 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         self.state_history.append(JobStateHistory(self))
 
     @property
+    def running(self):
+        return self.state == Job.states.RUNNING
+
+    @property
     def finished(self):
         states = self.states
         return self.state in [
