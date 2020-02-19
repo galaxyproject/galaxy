@@ -78,9 +78,9 @@ function buildPlugins(callback){
             files.map( file => {
                 const f = path.join(process.cwd(), file).slice(0, -12);
                 console.log("Installing Dependencies for", f);
-                spawn('yarn', ['install', '--network-timeout', '300000', '--check-files'], { cwd: f, stdio: 'inherit' });
+                spawn('yarn', ['install', '--network-timeout', '300000', '--check-files'], { cwd: f, stdio: 'inherit', shell: true });
                 console.log("Building ", f);
-                spawn('yarn', ['build'], { cwd: f, stdio: 'inherit' });
+                spawn('yarn', ['build'], { cwd: f, stdio: 'inherit', shell: true });
             });
         });
     });
