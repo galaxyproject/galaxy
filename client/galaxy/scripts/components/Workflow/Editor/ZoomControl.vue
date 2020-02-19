@@ -34,7 +34,12 @@
 </template>
 
 <script>
+import Vue from "vue";
+import BootstrapVue from "bootstrap-vue";
 import { zoomLevels } from "mvc/workflow/workflow-canvas";
+
+Vue.use(BootstrapVue);
+
 export default {
     props: {
         zoomLevel: {
