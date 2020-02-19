@@ -111,10 +111,11 @@ export const getAnalysisRouter = Galaxy =>
         },
 
         show_user: function() {
-            const UserPreferencesInstance = Vue.extend(UserPreferences);
-            const vm = document.createElement("div");
-            this.page.display(vm);
-            new UserPreferencesInstance().$mount(vm);
+            const Galaxy = getGalaxyInstance();
+            this._display_vue_helper(UserPreferences, {
+                enableQuotas: Galaxy.config.enable_quotas,
+                userId: Galaxy.user.id
+            });
         },
 
         show_user_form: function(form_id) {
