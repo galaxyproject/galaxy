@@ -1,7 +1,7 @@
 <tool id="tabular_to_dbnsfp" name="Convert tabular to dbnsfp" version="1.0.1" profile="16.04">
     <description></description>
     <requirements>
-        <requirement type="package" version="3.7">python</requirement>
+        <requirement type="package" version="0.15.4">pysam</requirement>
     </requirements>
     <command>python '$__tool_directory__/tabular_to_dbnsfp.py' '$input' '$dbnsfp.extra_files_path/dbNSFP.gz'</command>
     <inputs>

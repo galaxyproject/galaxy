@@ -159,8 +159,6 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     "substitutions1",
     "find_diag_hits",
     "cufflinks",
-    # Tools improperly migrated to the tool shed (iuc)
-    "tabular_to_dbnsfp",
     # Tools improperly migrated using Galaxy (from shed other)
     "column_join",
     "gd_coverage_distributions",  # Genome Diversity tools from miller-lab
@@ -189,6 +187,7 @@ GALAXY_LIB_TOOLS_VERSIONED = {
     "aggregate_scores_in_intervals2": packaging.version.parse("1.1.4"),
     "CONVERTER_fastq_to_fqtoc0": packaging.version.parse("1.0.1"),
     "CONVERTER_tar_to_directory": packaging.version.parse("1.0.1"),
+    "tabular_to_dbnsfp": packaging.version.parse("1.0.1"),
 }
 
 
