@@ -104,6 +104,9 @@ PULSAR_PARAM_SPECS = dict(
         map=specs.to_str_or_none,
         default=None,
     ),
+    pulsar_app_config=dict(
+        default=None,
+    ),
     manager=dict(
         map=specs.to_str_or_none,
         default=None,
@@ -203,7 +206,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
         self._init_monitor_thread()
 
     def __init_client_manager(self):
-        pulsar_conf = self.runner_params.get('app', None)
+        pulsar_conf = self.runner_params.get('pulsar_app_config', None)
         pulsar_conf_file = None
         if pulsar_conf is None:
             pulsar_conf_file = self.runner_params.get('pulsar_config', None)

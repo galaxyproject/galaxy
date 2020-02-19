@@ -699,10 +699,17 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         # indicate if this was not set explicitly, so dependending on the context a better default
         # can be used (request url in a web thread, Docker parent in IE stuff, etc.)
         self.galaxy_infrastructure_url_set = kwargs.get('galaxy_infrastructure_url') is not None
-
         if "HOST_IP" in self.galaxy_infrastructure_url:
             self.galaxy_infrastructure_url = string.Template(self.galaxy_infrastructure_url).safe_substitute({
                 'HOST_IP': socket.gethostbyname(socket.gethostname())
+            })
+        if "UWSGI_PORT" in self.galaxy_infrastructure_url:
+            import uwsgi
+            http = unicodify(uwsgi.opt['http'])
+            host, port = http.split(":", 1)
+            assert port, "galaxy_infrastructure_url depends on dynamic PORT determination but port unknown"
+            self.galaxy_infrastructure_url = string.Template(self.galaxy_infrastructure_url).safe_substitute({
+                'UWSGI_PORT': port
             })
 
     @property
