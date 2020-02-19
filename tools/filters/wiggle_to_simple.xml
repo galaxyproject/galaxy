@@ -1,7 +1,7 @@
 <tool id="wiggle2simple1" name="Wiggle-to-Interval" version="1.0.1" profile="16.04">
   <description>converter</description>
   <requirements>
-    <requirement type="package" version="19.09">galaxy-util</requirement>
+    <requirement type="package" version="19.9">galaxy-util</requirement>
     <requirement type="package" version="0.8.6">bx-python</requirement>
   </requirements>
   <command>python '$__tool_directory__/wiggle_to_simple.py' '$input' '$out_file1'</command>
