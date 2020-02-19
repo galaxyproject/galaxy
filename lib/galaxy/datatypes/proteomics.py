@@ -69,8 +69,13 @@ class MzTab(Text):
     edam_data = "data_3681"
     file_ext = "mztab"
     # section names (except MTD)
-    __sections = ["PRH", "PRT", "PEH", "PEP", "PSH", "PSM", "SMH", "SML", "COM"]
-    __version_re = r"(1)(\.[0-9])?(\.[0-9])?"
+    _sections = ["PRH", "PRT", "PEH", "PEP", "PSH", "PSM", "SMH", "SML", "COM"]
+    # mandatory metadata fields and list of allowed entries (in lower case)
+    # (or None if everything is allowed)
+    _man_mtd = {"mzTab-mode": ["complete", "summary"],
+                "mzTab-type": ['quantification', 'identification'],
+                "description": None}
+    _version_re = r"(1)(\.[0-9])?(\.[0-9])?"
 
     def __init__(self, **kwd):
         super(MzTab, self).__init__(**kwd)
@@ -87,23 +92,21 @@ class MzTab(Text):
     def sniff_prefix(self, file_prefix):
         """ Determines whether the file is the correct type. """
         has_version = False
-        has_mode = False
-        has_type = False
-
+        found_man_mtd = set()
+        cnt = 0
         contents = file_prefix.string_io()
-        while True:
-            line = contents.readline().split("\t")
+        for line in contents:
+            if re.match(r"^\s*$", line):
+                continue
+            line = line.strip("\r\n").split("\t")
             if line[0] == "MTD":
-                if line[1] == "mzTab-version" and re.match(self.__version_re, line) is not None:
+                if line[1] == "mzTab-version" and re.match(self._version_re, line[2]) is not None:
                     has_version = True
-                elif line[1] == "mzTab-mode" and line[2].lowercase() in ["complete", "summary"]:
-                    has_mode = True
-                elif line[1] == "mzTab-type" and line[2].lowercase() in ['quantification', 'identification']:
-                    has_type = True
-            elif not line[0] in self.__sections:
+                elif line[1] in self._man_mtd and (self._man_mtd[line[1]] is None or line[2].lower() in self._man_mtd[line[1]]):
+                    found_man_mtd.add(line[1])
+            elif not line[0] in self._sections:
                 return False
-
-        return has_version and has_mode and has_type
+        return has_version and found_man_mtd == set(self._man_mtd.keys())
 
 
 class MzTab2(MzTab):
@@ -119,8 +122,9 @@ class MzTab2(MzTab):
     False
     """
     file_ext = "mztab2"
-    __sections = ["SMH", "SML", "SFH", "SMF", "SEH", "SME", "COM"]
-    __version_re = r"(2)(\.[0-9])?(\.[0-9])?-M$"
+    _sections = ["SMH", "SML", "SFH", "SMF", "SEH", "SME", "COM"]
+    _version_re = r"(2)(\.[0-9])?(\.[0-9])?-M$"
+    _man_mtd = {"mzTab-ID": None}
 
     def __init__(self, **kwd):
         super(MzTab2, self).__init__(**kwd)
@@ -467,14 +471,14 @@ class Edta(TabularData):
 
     def _parse_dataline(self, line, tpe):
         if tpe == 2 or tpe == 3:
-            l = 4
+            idx = 4
         else:
-            l = 3
+            idx = 3
         try:
-            line = [float(_) for _ in line[:l]]
+            line = [float(_) for _ in line[:idx]]
         except ValueError:
             return False
-        if not all(_ >= 0 for _ in line[:l]):
+        if not all(_ >= 0 for _ in line[:idx]):
             return False
         return True
 
