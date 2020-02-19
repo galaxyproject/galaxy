@@ -280,7 +280,8 @@
     Tool config maintained by tool migration scripts.  If you use the
     migration scripts to install tools that have been migrated to the
     tool shed upon a new release, they will be added to this tool
-    config file.
+    config file.  The value of this option will be resolved with
+    respect to <mutable_config_dir>.
 :Default: ``config/migrated_tools_conf.xml``
 :Type: str
 
@@ -294,7 +295,8 @@
     panel config files integrated into a single file that defines the
     tool panel layout.  This file can be changed by the Galaxy
     administrator to alter the layout of the tool panel.  If not
-    present, Galaxy will create it.
+    present, Galaxy will create it.  The value of this option will be
+    resolved with respect to <mutable_config_dir>.
 :Default: ``integrated_tool_panel.xml``
 :Type: str
 
