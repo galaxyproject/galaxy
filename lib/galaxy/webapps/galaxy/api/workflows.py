@@ -1113,9 +1113,27 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                         tools.append(software_prerequisite['uri']['uri'])
                 except Exception:
                     continue
-            # method to grab the workflow inputs? [WIP] TODO
-            if step.workflow_step.type != 'tool':
-                input_subdomain.append(step.workflow_step)
+
+            if step.workflow_step.type == 'data_input':
+                for output_assoc in step.output_datasets:
+                    encoded_dataset_id =  trans.security.encode_id(output_assoc.dataset.id)
+                input_obj = {
+                    'filename': step.workflow_step.label,
+                    'uri': url_for('history_content', history_id=encoded_history_id, id=encoded_dataset_id, qualified=True),
+                    'access_time': step.workflow_step.update_time.isoformat(),
+                }
+                input_subdomain.append(input_obj)
+
+            if step.workflow_step.type == 'data_collection_input':
+                encoded_dataset_id = trans.security.encode_id(step.workflow_step.id)
+                input_obj = []
+                input_obj = {
+                    'filename': step.workflow_step.label,
+                    'uri': url_for('history_content', history_id=encoded_history_id, id=encoded_dataset_id, qualified=True),
+                    'access_time': step.workflow_step.update_time.isoformat(),
+                }
+                input_subdomain.append(input_obj)
+
         usability_domain = []
         for a in stored_workflow.annotations:
             usability_domain.append(a.annotation)
@@ -1141,7 +1159,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         }
 
         galaxy_extension = []  # TODO
-        input_subdomain = []  # TODO
+        input_subdomain = input_subdomain  # TODO
 
         ret_dict = {
             'bco_id': url_for('invocation_export_bco', invocation_id=invocation_id, qualified=True),
