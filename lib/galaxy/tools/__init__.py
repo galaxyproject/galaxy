@@ -127,13 +127,9 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     "send_to_cloud",
     "__DATA_FETCH__",
     # Legacy tools bundled with Galaxy.
-    "vcf_to_maf_customtrack1",
     "laj_1",
-    "secure_hash_message_digest",
-    "join1",
     "gff2bed1",
     "gff_filter_by_feature_count",
-    "aggregate_scores_in_intervals2",
     "Interval_Maf_Merged_Fasta2",
     "GeneBed_Maf_Fasta2",
     "maf_stats1",
@@ -146,16 +142,12 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     "MAF_split_blocks_by_species1",
     "MAF_Limit_To_Species1",
     "maf_by_block_number1",
-    "wiggle2simple1",
     # Converters
     "CONVERTER_bed_to_fli_0",
-    "CONVERTER_fastq_to_fqtoc0",
     "CONVERTER_gff_to_fli_0",
     "CONVERTER_gff_to_interval_index_0",
     "CONVERTER_maf_to_fasta_0",
     "CONVERTER_maf_to_interval_0",
-    "CONVERTER_wiggle_to_interval_0",
-    "CONVERTER_tar_to_directory",
     # Tools improperly migrated to the tool shed (devteam)
     "qualityFilter",
     "winSplitter",
@@ -189,6 +181,14 @@ GALAXY_LIB_TOOLS_VERSIONED = {
     "PEsortedSAM2readprofile": packaging.version.parse("1.1.1"),
     "sam_to_bam": packaging.version.parse("1.1.3"),
     "sam_pileup": packaging.version.parse("1.1.3"),
+    "vcf_to_maf_customtrack1": packaging.version.parse("1.0.1"),
+    "secure_hash_message_digest": packaging.version.parse("0.0.2"),
+    "join1": packaging.version.parse("2.1.3"),
+    "wiggle2simple1": packaging.version.parse("1.0.1"),
+    "CONVERTER_wiggle_to_interval_0": packaging.version.parse("1.0.1"),
+    "aggregate_scores_in_intervals2": packaging.version.parse("1.1.4"),
+    "CONVERTER_fastq_to_fqtoc0": packaging.version.parse("1.0.1"),
+    "CONVERTER_tar_to_directory": packaging.version.parse("1.0.1"),
 }
 
 
@@ -536,6 +536,10 @@ class Tool(Dictifiable):
     def is_latest_version(self):
         tool_versions = self.tool_versions
         return not tool_versions or self.version == self.tool_versions[-1]
+
+    @property
+    def is_datatype_converter(self):
+        return self in self.app.datatypes_registry.converter_tools
 
     @property
     def tool_shed_repository(self):

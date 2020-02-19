@@ -42,13 +42,11 @@ def rgConv(inpedfilepath, outhtmlname, outfilepath):
     try:
         mf = open(inmap, 'r')
     except Exception:
-        sys.stderr.write('%s cannot open inmap file %s - do you have permission?\n' % (prog, inmap))
-        sys.exit(1)
+        sys.exit('%s cannot open inmap file %s - do you have permission?\n' % (prog, inmap))
     try:
         rsl = [x.split()[1] for x in mf]
     except Exception:
-        sys.stderr.write('## cannot parse %s' % inmap)
-        sys.exit(1)
+        sys.exit('## cannot parse %s' % inmap)
     try:
         os.makedirs(outfilepath)
     except Exception:
@@ -85,8 +83,7 @@ def main():
     """
     nparm = 3
     if len(sys.argv) < nparm:
-        sys.stderr.write('## %s called with %s - needs %d parameters \n' % (prog, sys.argv, nparm))
-        sys.exit(1)
+        sys.exit('## %s called with %s - needs %d parameters \n' % (prog, sys.argv, nparm))
     inpedfilepath = sys.argv[1]
     outhtmlname = sys.argv[2]
     outfilepath = sys.argv[3]

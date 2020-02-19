@@ -23,7 +23,7 @@ ALIASES = {
     'module': ('mount',),   # mount is not actually an alias for module, but we don't want to set module if mount is set
 }
 DEFAULT_ARGS = {
-    '_all_': ('pythonpath', 'threads', 'buffer-size', 'http', 'static-map', 'static-safe', 'die-on-term', 'hook-master-start', 'enable-threads', 'umask'),
+    '_all_': ('pythonpath', 'threads', 'buffer-size', 'http', 'static-map', 'die-on-term', 'hook-master-start', 'enable-threads', 'umask'),
     'galaxy': ('py-call-osafterfork',),
     'reports': (),
     'tool_shed': ('cron',),
@@ -93,7 +93,6 @@ def _get_uwsgi_args(cliargs, kwargs):
         'http': 'localhost:{port}'.format(port=DEFAULT_PORTS[cliargs.app]),
         'static-map': ('/static={here}/static'.format(here=os.getcwd()),
                        '/favicon.ico={here}/static/favicon.ico'.format(here=os.getcwd())),
-        'static-safe': ('{here}/client/galaxy/images'.format(here=os.getcwd())),
         'die-on-term': True,
         'enable-threads': True,
         'hook-master-start': ('unix_signal:2 gracefully_kill_them_all',
@@ -120,6 +119,8 @@ def _get_uwsgi_args(cliargs, kwargs):
         if hmr_server.lower() in ['1', 'true', 'default']:
             hmr_server = "http:127.0.0.1:8081"
         __add_arg(args, 'route', '^/static/dist/ {hmr_server}'.format(hmr_server=hmr_server))
+    # We always want to append client/galaxy/images as static-safe.
+    __add_arg(args, 'static-safe', '{here}/client/galaxy/images'.format(here=os.getcwd()))
 
     for arg in DEFAULT_ARGS['_all_'] + DEFAULT_ARGS[cliargs.app]:
         if not __arg_set(arg, uwsgi_kwargs):

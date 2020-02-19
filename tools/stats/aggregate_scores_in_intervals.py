@@ -99,8 +99,7 @@ class FileBinnedArrayDir(Mapping):
 
 
 def stop_err(msg):
-    sys.stderr.write(msg)
-    sys.exit()
+    sys.exit(msg)
 
 
 def load_scores_wiggle(fname, chrom_buffer_size=3):

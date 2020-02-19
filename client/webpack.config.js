@@ -15,7 +15,7 @@ module.exports = (env = {}, argv = {}) => {
     // environment name based on -d, -p, webpack flag
     const targetEnv = argv.mode || "development";
 
-    let buildconfig = {
+    const buildconfig = {
         entry: {
             login: ["polyfills", "bundleEntries", "entry/login"],
             analysis: ["polyfills", "bundleEntries", "entry/analysis"],

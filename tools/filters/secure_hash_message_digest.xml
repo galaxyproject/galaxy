@@ -1,6 +1,10 @@
-<tool id="secure_hash_message_digest" name="Secure Hash / Message Digest" version="0.0.1">
+<tool id="secure_hash_message_digest" name="Secure Hash / Message Digest" version="0.0.2" profile="18.01">
     <description>on a dataset</description>
-    <command interpreter="python">secure_hash_message_digest.py --input "${input1}" --output "${out_file1}"
+    <requirements>
+        <requirement type="package" version="3.7">python</requirement>
+    </requirements>
+    <command>
+    python '$__tool_directory__/secure_hash_message_digest.py' --input '${input1}' --output '${out_file1}'
         #if $algorithms.value:
             #for $algorithm in str( $algorithms ).split( "," ):
                 --algorithm "${algorithm}"
