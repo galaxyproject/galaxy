@@ -156,6 +156,8 @@ $state-running-border: $border-color;
 
 // Workflow editor
 $workflow-editor-bg: $white;
+$workflow-editor-grid-size: 0.7rem;
+$workflow-editor-grid-color: lighten($brand-primary, 60%);
 $workflow-overview-bg: $panel-bg-color;
 $worfklow-node-width: 10rem;
 

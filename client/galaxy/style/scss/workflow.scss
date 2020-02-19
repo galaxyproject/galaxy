@@ -45,7 +45,11 @@
         }
         .workflow-canvas {
             #canvas-viewport {
-                background: $workflow-editor-bg url("../../images/light_gray_grid.gif");
+                @extend .rounded;
+                background: $workflow-editor-bg;
+                background-size: $workflow-editor-grid-size $workflow-editor-grid-size;
+                background-image: linear-gradient(to right, $workflow-editor-grid-color 1px, transparent 1px),
+                    linear-gradient(to bottom, $workflow-editor-grid-color 1px, transparent 1px);
                 width: 100%;
                 height: 100%;
                 position: relative;
