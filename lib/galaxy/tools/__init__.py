@@ -2460,7 +2460,7 @@ class SetMetadataTool(Tool):
                     external_metadata.load_metadata(dataset, name, sa_session, working_directory=working_directory)
                 except Exception:
                     metadata_set_successfully = False
-                    log.exception()
+                    log.exception("Exception occured while loading metadata results")
             if not metadata_set_successfully:
                 dataset._state = model.Dataset.states.FAILED_METADATA
                 self.sa_session.add(dataset)
