@@ -2,7 +2,7 @@
     <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
     <!-- Used on the metadata edit page. -->
     <requirements>
-      <requirement type="package" version="19.09">galaxy-util</requirement>
+      <requirement type="package" version="19.9">galaxy-util</requirement>
       <requirement type="package" version="0.8.6">bx-python</requirement>
     </requirements>
     <command>python '$__tool_directory__/wiggle_to_simple_converter.py' '$input' '$out_file1'</command>
