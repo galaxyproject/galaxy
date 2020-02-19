@@ -2452,9 +2452,16 @@ class SetMetadataTool(Tool):
         for name, dataset in inp_data.items():
             external_metadata = get_metadata_compute_strategy(app.config, job.id)
             sa_session = app.model.context
-            if external_metadata.external_metadata_set_successfully(dataset, name, sa_session, working_directory=working_directory):
-                external_metadata.load_metadata(dataset, name, sa_session, working_directory=working_directory)
-            else:
+            metadata_set_successfully = external_metadata.external_metadata_set_successfully(dataset, name, sa_session, working_directory=working_directory)
+            if metadata_set_successfully:
+                try:
+                    # external_metadata_set_successfully is only an approximation (the metadata json file exists),
+                    # things can still go wrong, but we don't want to fail here since it can lead to a resubmission loop
+                    external_metadata.load_metadata(dataset, name, sa_session, working_directory=working_directory)
+                except Exception:
+                    metadata_set_successfully = False
+                    log.exception()
+            if not metadata_set_successfully:
                 dataset._state = model.Dataset.states.FAILED_METADATA
                 self.sa_session.add(dataset)
                 self.sa_session.flush()
