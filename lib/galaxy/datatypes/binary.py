@@ -1409,9 +1409,9 @@ class SQlite(Binary):
             result = c.execute(tables_query).fetchall()
             result = (_[0] for _ in result)
             if equality:
-                return set(result) == set(table_names)
+                return set(table_names) == set(result)
             else:
-                return set(result).issubset(set(table_names))
+                return set(table_names).issubset(set(result))
         except Exception as e:
             log.warning('%s, sniff Exception: %s', self, e)
         return False
