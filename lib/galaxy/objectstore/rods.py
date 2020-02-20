@@ -1,26 +1,20 @@
 """
 Object Store plugin for the Integrated Rule-Oriented Data Store (iRODS)
 """
+from datetime import datetime
 import logging
-import multiprocessing
 import os
 from pathlib import Path
 import shutil
-import subprocess
 import threading
 import time
-from datetime import datetime
 
-from posixpath import (
-    basename as path_basename,
-    dirname as path_dirname,
-    join as path_join
-)
 try:
     import irods
     import irods.keywords as kw
     from irods.exception import CollectionDoesNotExist
     from irods.exception import DataObjectDoesNotExist
+    from irods.exception import NetworkException
     from irods.session import iRODSSession
 except ImportError:
     irods = None
@@ -31,13 +25,10 @@ from galaxy.exceptions import (
 )
 from galaxy.util import (
     directory_hash_id,
-    string_as_bool,
     umask_fix_perms,
-    which,
 )
 from galaxy.util.path import safe_relpath
 from galaxy.util.sleeper import Sleeper
-from .s3_multipart_upload import multipart_upload
 from ..objectstore import (
     DiskObjectStore,
     local_extra_dirs,
@@ -49,7 +40,6 @@ IRODS_IMPORT_MESSAGE = ('The Python irods package is required to use this featur
 log = logging.getLogger(__name__)
 
 def parse_config_xml(config_xml):
-    print('IRODS2: inside parse_config_xml')
     try:
         a_xml = config_xml.findall('auth')[0]
         username = a_xml.get('username')
@@ -111,7 +101,6 @@ def parse_config_xml(config_xml):
 class CloudConfigMixin(object):
 
     def _config_to_dict(self):
-        print('IRODS2: inside _config_to_dict')
         return {
             'auth': {
                 'username': self.username,
@@ -135,19 +124,17 @@ class CloudConfigMixin(object):
 
 class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
     """
-    Object store that stores objects as data objects in an iRODS collection. A local cache 
+    Object store that stores objects as data objects in an iRODS collections. A local cache 
     exists that is used as an intermediate location for files between Galaxy and iRODS.
     """
     
     store_type = 'irods'
     
     #def _get_bucket(self, bucket_name):
-    #def _get_size_in_s3(self, rel_path):
     #def _key_exists(self, rel_path):
 
     def __init__(self, config, config_dict):
         super(IRODSObjectStore, self).__init__(config, config_dict)
-        print('IRODS2: inside __init__')
 
         auth_dict = config_dict['auth']
         self.username = auth_dict.get('username')
@@ -176,7 +163,6 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         self._initialize()
         
     def __del__(self):
-        print('IRODS2: inside __del__')
         self.session.cleanup()
 
     def _initialize(self):
@@ -185,8 +171,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
 
         self.home =  "/" + self.zone + "/home/" + self.username
 
-        self.session = self._configure_connection()
-        #self.bucket = self._get_bucket(self.bucket)
+        self.session = self._configure_connection(host=self.host, port=self.port, user=self.username, password=self.password, zone=self.zone)
         # Clean cache only if value is set in galaxy.ini
         if self.cache_size != -1:
             # Convert GBs to bytes for comparison
@@ -196,25 +181,18 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             self.cache_monitor_thread = threading.Thread(target=self.__cache_monitor)
             self.cache_monitor_thread.start()
             log.info("Cache cleaner manager started")
-        # Test if 'axel' is available for parallel download and pull the key into cache
-        if which('axel'):
-            self.use_axel = True
-        else:
-            self.use_axel = False
 
     def _configure_connection(self, host='localhost', port='1247', user='rods', password='rods', zone='tempZone'):
-         with iRODSSession(host=host, port=port, user=user, password=password, zone=zone) as session:
-            ###assert session.pool.get_connection() == 1, 'Failed to establish iRODS session'
-            print('IRODS2: inside iRODSSession')
+        with iRODSSession(host=host, port=port, user=user, password=password, zone=zone) as session:
+            # Throws NetworkException if connection fails  
+            session.pool.get_connection()
             return session
 
     @classmethod
     def parse_xml(cls, config_xml):
-        print('IRODS2: inside parse_xml')
         return parse_config_xml(config_xml)
 
     def to_dict(self):
-        print('IRODS: inside to_dict') 
         as_dict = super(IRODSObjectStore, self).to_dict()
         as_dict.update(self._config_to_dict())
         return as_dict
@@ -283,8 +261,6 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                 log.debug("Cache cleaning done. Total space freed: %s", convert_bytes(deleted_amount))
                 return
 
-   # def _get_bucket(self, bucket_name):
-
     def _fix_permissions(self, rel_path):
         """ Set permissions on rel_path"""
         for basedir, _, files in os.walk(rel_path):
@@ -297,7 +273,6 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                 umask_fix_perms(path, self.config.umask, 0o666, self.config.gid)
 
     def _construct_path(self, obj, base_dir=None, dir_only=None, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False, **kwargs):
-        print('************* Entering _construct_path **************')
         # extra_dir should never be constructed from provided data but just
         # make sure there are no shenannigans afoot
         if extra_dir and extra_dir != os.path.normpath(extra_dir):
@@ -313,80 +288,61 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             # follow them, so if they are valid we normalize them out
             alt_name = os.path.normpath(alt_name)
         rel_path = os.path.join(*directory_hash_id(obj.id))
-        print('obj.id: ', obj.id)
-        print('rel_path: ', rel_path)
         if extra_dir is not None:
             if extra_dir_at_root:
                 rel_path = os.path.join(extra_dir, rel_path)
-                print('rel_path: ', rel_path)
             else:
                 rel_path = os.path.join(rel_path, extra_dir)
-                print('rel_path: ', rel_path)
 
         # for JOB_WORK directory
         if obj_dir:
             rel_path = os.path.join(rel_path, str(obj.id))
         if base_dir:
             base = self.extra_dirs.get(base_dir)
-            print('************* Exiting 1 _construct_path **************')
             return os.path.join(base, rel_path)
-
-        # S3 folders are marked by having trailing '/' so add it now
-        ###rel_path = '%s/' % rel_path
 
         if not dir_only:
             rel_path = os.path.join(rel_path, alt_name if alt_name else "dataset_%s.dat" % obj.id)
-        print('************* Exiting 2 _construct_path **************')
         return rel_path
 
     def _get_cache_path(self, rel_path):
         return os.path.abspath(os.path.join(self.staging_path, rel_path))
 
-    #def _get_transfer_progress(self):
-    #    return self.transfer_progress
-
-    #def _get_size_in_s3(self, rel_path):
-
+    # rel_path is file or folder?
     def _get_size_in_irods(self, rel_path):
-        '''
-        try:
-            key = self.bucket.get_key(rel_path)
-            if key:
-                return key.size
-        except S3ResponseError:
-            log.exception("Could not get size of key '%s' from S3", rel_path)
-            return -1
-        '''
+        p = Path(rel_path)
+        data_object_name =  p.stem + p.suffix
+        subcollection_name = p.parent
 
-    def _data_object_exists(self, rel_path):
-        exists = False
+        collection_path = self.home + "/" + str(subcollection_name)
+        data_object_path = collection_path + "/" + str(data_object_name) 
+
         try:
-            # A hackish way of testing if the rel_path is a folder vs a file
-            is_dir = rel_path[-1] == '/'
-            if is_dir:
-                keyresult = self.bucket.get_all_keys(prefix=rel_path)
-                if len(keyresult) > 0:
-                    exists = True
-                else:
-                    exists = False
-            else:
-                key = Key(self.bucket, rel_path)
-                exists = key.exists()
-        except S3ResponseError:
-            log.exception("Trouble checking existence of S3 key '%s'", rel_path)
-            return False
-        if rel_path[0] == '/':
-            raise
-        return exists
+            data_obj = self.session.data_objects.get(data_object_path)
+            return data_obj.__sizeof__()
+        except (DataObjectDoesNotExist, CollectionDoesNotExist):
+            log.warn("Collection or data object (%s) does not exist", data_object_path)
+            return -1
+
+    # rel_path is file or folder?
+    def _data_object_exists(self, rel_path):
+        p = Path(rel_path)
+        data_object_name =  p.stem + p.suffix
+        subcollection_name = p.parent
+
+        collection_path = self.home + "/" + str(subcollection_name)
+        data_object_path = collection_path + "/" + str(data_object_name) 
+
+        try:
+            self.session.data_objects.get(data_object_path)
+            return True 
+        except (DataObjectDoesNotExist, CollectionDoesNotExist):
+            log.warn("Collection or data object (%s) does not exist", data_object_path)
+            return False 
 
     def _in_cache(self, rel_path):
         """ Check if the given dataset is in the local cache and return True if so. """
-        # log.debug("------ Checking cache for rel_path %s" % rel_path)
-        print('*************** Entering _in_cache() *****************')
         cache_path = self._get_cache_path(rel_path)
-        print('cache_path: ', cache_path)
-        print('os.path.exists: ', os.path.exists(cache_path))
-        print('*************** Exiting _in_cache() *****************')
         return os.path.exists(cache_path)
         # TODO: Part of checking if a file is in cache should be to ensure the
         # size of the cached file matches that on S3. Once the upload tool explicitly
@@ -421,33 +377,34 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         self._fix_permissions(self._get_cache_path(rel_path_dir))
         return file_ok
 
-    #def _transfer_cb(self, complete, total):
-    #    self.transfer_progress += 10
-
     def _download(self, rel_path):
+        log.debug("Pulling data object '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
+
+        p = Path(rel_path)
+        data_object_name =  p.stem + p.suffix
+        subcollection_name = p.parent
+
+        collection_path = self.home + "/" + str(subcollection_name)
+        data_object_path = collection_path + "/" + str(data_object_name) 
+        data_obj = None
+
         try:
-            log.debug("Pulling key '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
-            key = self.bucket.get_key(rel_path)
-            # Test if cache is large enough to hold the new file
-            if self.cache_size > 0 and key.size > self.cache_size:
-                log.critical("File %s is larger (%s) than the cache size (%s). Cannot download.",
-                             rel_path, key.size, self.cache_size)
-                return False
-            if self.use_axel:
-                log.debug("Parallel pulled key '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
-                ncores = multiprocessing.cpu_count()
-                url = key.generate_url(7200)
-                ret_code = subprocess.call(['axel', '-a', '-n', ncores, url])
-                if ret_code == 0:
-                    return True
-            else:
-                log.debug("Pulled key '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
-                self.transfer_progress = 0  # Reset transfer progress counter
-                key.get_contents_to_filename(self._get_cache_path(rel_path), cb=self._transfer_cb, num_cb=10)
-                return True
-        except S3ResponseError:
-            log.exception("Problem downloading key '%s' from S3 bucket '%s'", rel_path, self.bucket.name)
-        return False
+            data_obj = self.session.data_objects.get(data_object_path)
+        except (DataObjectDoesNotExist, CollectionDoesNotExist):
+            log.warn("Collection or data object (%s) does not exist", data_object_path)
+            return False 
+
+        if self.cache_size > 0 and data_obj.__sizeof__() > self.cache_size:
+            log.critical("File %s is larger (%s) than the cache size (%s). Cannot download.",
+                         rel_path, data_obj.__sizeof__(), self.cache_size)
+            return False
+
+        log.debug("Pulled data object '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
+        
+        with data_obj.open('rb') as data_obj_fp, open(self._get_cache_path(rel_path), "wb") as cache_fp:
+            content = data_obj_fp.read()
+            cache_fp.write(content)
+        return True
 
     def _push_to_os(self, rel_path, source_file=None, from_string=None):
         """
@@ -455,69 +412,52 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         from rel_path as iRODS collection name, and extract file name from rel_path
         as iRODS data object name.
         If ``source_file`` is provided, push that file instead while
-        still using ``rel_path`` for collection and object tore names.
-        If ``from_string`` is provided, set contents of the file to the value of
-        the string.
+        still using ``rel_path`` for collection and object store names.
+        If ``from_string`` is provided, set contents of the file to the value of the string.
         """
-        print('**** Entering _push_to_os ****')
-        print('IRODS: rel_path: ', rel_path)
         p = Path(rel_path)
-        print('p: ', p)
-        print('p.parent: ', p.parent)
-        print('p.stem: ', p.stem)
-        print('p.suffix: ', p.suffix)
-
-        data_object =  p.stem + p.suffix
-        subcollection = p.parent
-        print('data_object: ', data_object)
-        print('subcollection: ', subcollection)
+        data_object_name =  p.stem + p.suffix
+        subcollection_name = p.parent
 
         source_file = source_file if source_file else self._get_cache_path(rel_path)
-        print('IRODS: source_file: ', source_file)
-
         options = {kw.FORCE_FLAG_KW: ''}
 
         if os.path.exists(source_file):
             # Check if the data object exists in iRODS
-            subcollection_path = self.home + "/" + str(subcollection)
-            full_irods_path = subcollection_path + "/" + str(data_object) 
-            print('full_irods_path: ', full_irods_path)
-            exists = self.session.data_objects.exists(full_irods_path)
+            collection_path = self.home + "/" + str(subcollection_name)
+            data_object_path = collection_path + "/" + str(data_object_name) 
+            exists = self.session.data_objects.exists(data_object_path)
             if os.path.getsize(source_file) == 0 and exists:
                 log.debug("Wanted to push file '%s' to iRODS collection '%s' but its size is 0; skipping.", source_file, rel_path)
-                print('**** Exiting 1 _push_to_os ****')
                 return True
             if from_string:
-                data_obj = self.session.data_objects.create(full_irods_path, recurse=True, **options)
+                data_obj = self.session.data_objects.create(data_object_path, recurse=True, **options)
                 with data_obj.open('w') as data_obj_fp:
                     data_obj_fp.write(from_string)
-                log.debug("Pushed data from string '%s' to collection '%s'", from_string, full_irods_path)
+                log.debug("Pushed data from string '%s' to collection '%s'", from_string, data_object_path)
             else:
                 start_time = datetime.now()
                 log.debug("Pushing cache file '%s' of size %s bytes to collection '%s'", source_file, os.path.getsize(source_file), rel_path)
                 
                 # Create sub-collection first
-                self.session.collections.create(subcollection_path)
+                self.session.collections.create(collection_path, recurse=True)
 
                 file_content = None
                 with open(source_file, 'rb') as content_file:
                     file_content = content_file.read()
                 
                 # Write to file in subcollection created above
-                data_obj = self.session.data_objects.create(full_irods_path, recurse=True, **options)
+                data_obj = self.session.data_objects.create(data_object_path, recurse=True, **options)
                 with data_obj.open('w') as data_obj_fp:
                     data_obj_fp.write(file_content)
 
                 end_time = datetime.now()
                 log.debug("Pushed cache file '%s' to collection '%s' (%s bytes transfered in %s sec)",
                           source_file, rel_path, os.path.getsize(source_file), end_time - start_time)
-            print('**** Exiting 2 _push_to_os ****')
             return True
         else:
             log.error("Tried updating key '%s' from source file '%s', but source file does not exist.",
                       rel_path, source_file)
-
-        print('**** Exiting 3 _push_to_os ****')
         return False
 
     def file_ready(self, obj, **kwargs):
@@ -528,53 +468,43 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         rel_path = self._construct_path(obj, **kwargs)
         # Make sure the size in cache is available in its entirety
         if self._in_cache(rel_path):
-            if os.path.getsize(self._get_cache_path(rel_path)) == self._get_size_in_s3(rel_path):
+            if os.path.getsize(self._get_cache_path(rel_path)) == self._get_size_in_irods(rel_path):
                 return True
             log.debug("Waiting for dataset %s to transfer from OS: %s/%s", rel_path,
-                      os.path.getsize(self._get_cache_path(rel_path)), self._get_size_in_s3(rel_path))
+                      os.path.getsize(self._get_cache_path(rel_path)), self._get_size_in_irods(rel_path))
         return False
 
     def exists(self, obj, **kwargs):
-        print('*************Entering exists()*************')
         in_cache = in_irods = False
-        for key, value in kwargs.items():
-            print("The value of {} is {}".format(key, value))
         rel_path = self._construct_path(obj, **kwargs)
-        print('rel_path: ', rel_path)
 
         # Check cache
         if self._in_cache(rel_path):
             in_cache = True
         # Check iRODS 
-        ###in_irods = self._data_object_exists(rel_path)
+        in_irods = self._data_object_exists(rel_path)
 
         # dir_only does not get synced so shortcut the decision
         dir_only = kwargs.get('dir_only', False)
         base_dir = kwargs.get('base_dir', None)
         if dir_only:
             if in_cache or in_irods:
-                print('*************Exiting  1 exists()*************')
                 return True
             # for JOB_WORK directory
             elif base_dir:
                 if not os.path.exists(rel_path):
                     os.makedirs(rel_path)
-                print('*************Exiting  2 exists()*************')
                 return True
             else:
-                print('*************Exiting  3 exists()*************')
                 return False
 
         # TODO: Sync should probably not be done here. Add this to an async upload stack?
         if in_cache and not in_irods:
             self._push_to_os(rel_path, source_file=self._get_cache_path(rel_path))
-            print('*************Exiting  4 exists()*************')
             return True
         elif in_irods:
-            print('*************Exiting  5 exists()*************')
             return True
         else:
-            print('*************Exiting  6 exists()*************')
             return False
 
     def create(self, obj, **kwargs):
@@ -601,12 +531,6 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             if not os.path.exists(cache_dir):
                 os.makedirs(cache_dir)
 
-            # Although not really necessary to create S3 folders (because S3 has
-            # flat namespace), do so for consistency with the regular file system
-            # S3 folders are marked by having trailing '/' so add it now
-            # s3_dir = '%s/' % rel_path
-            # self._push_to_os(s3_dir, from_string='')
-            # If instructed, create the dataset in cache & in S3
             if not dir_only:
                 rel_path = os.path.join(rel_path, alt_name if alt_name else "dataset_%s.dat" % obj.id)
                 open(os.path.join(self.staging_path, rel_path), 'w').close()
@@ -620,22 +544,15 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                                  % (str(obj), str(kwargs)))
 
     def size(self, obj, **kwargs):
-        print('*************** Entering size ****************')
         rel_path = self._construct_path(obj, **kwargs)
         if self._in_cache(rel_path):
             try:
-                print('*************** Exiting 1 size ****************')
                 return os.path.getsize(self._get_cache_path(rel_path))
             except OSError as ex:
                 log.info("Could not get size of file '%s' in local cache, will try S3. Error: %s", rel_path, ex)
         elif self.exists(obj, **kwargs):
-            print('*************** Exiting 2 size ****************')
-            ## 
-            ## TODO
-            ## 
-            return self._get_size_in_s3(rel_path)
+            return self._get_size_in_irods(rel_path)
         log.warning("Did not find dataset '%s', returning 0 for size", rel_path)
-        print('*************** Exiting 3 size ****************')
         return 0
 
     def delete(self, obj, entire_dir=False, **kwargs):
@@ -651,9 +568,12 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                 return True
 
             # For the case of extra_files, because we don't have a reference to
-            # individual files/keys we need to remove the entire directory structure
+            # individual files we need to remove the entire directory structure
             # with all the files in it. This is easy for the local file system,
-            # but requires iterating through each individual key in S3 and deleing it.
+            # but requires iterating through each individual key in irods and deleing it.
+            #
+            # TODO!!!
+            #
             if entire_dir and extra_dir:
                 shutil.rmtree(self._get_cache_path(rel_path))
                 results = self.bucket.get_all_keys(prefix=rel_path)
@@ -664,14 +584,23 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             else:
                 # Delete from cache first
                 os.unlink(self._get_cache_path(rel_path))
-                # Delete from S3 as well
-                if self._key_exists(rel_path):
-                    key = Key(self.bucket, rel_path)
-                    log.debug("Deleting key %s", key.name)
-                    key.delete()
+                # Delete from irods as well
+                p = Path(rel_path)
+                data_object_name =  p.stem + p.suffix
+                subcollection_name = p.parent
+
+                collection_path = self.home + "/" + str(subcollection_name)
+                data_object_path = collection_path + "/" + str(data_object_name) 
+
+                try:
+                    data_obj = self.session.data_objects.get(data_object_path)
+                    # remove object
+                    data_obj.unlink(force=True)
                     return True
-        except S3ResponseError:
-            log.exception("Could not delete key '%s' from S3", rel_path)
+                except (DataObjectDoesNotExist, CollectionDoesNotExist):
+                    log.info("Collection or data object (%s) does not exist", data_object_path)
+                    return True 
+
         except OSError:
             log.exception('%s delete error', self.get_filename(obj, **kwargs))
         return False
@@ -699,7 +628,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             return os.path.abspath(rel_path)
 
         cache_path = self._get_cache_path(rel_path)
-        # S3 does not recognize directories as files so cannot check if those exist.
+        # iRODS does not recognize directories as files so cannot check if those exist.
         # So, if checking dir only, ensure given dir exists in cache and return
         # the expected cache path.
         # dir_only = kwargs.get('dir_only', False)
@@ -750,43 +679,19 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             raise ObjectNotFound('objectstore.update_from_file, object does not exist: %s, kwargs: %s'
                                  % (str(obj), str(kwargs)))
 
+    # Unlike S3, url is not really applicable to iRODS
     def get_object_url(self, obj, **kwargs):
         if self.exists(obj, **kwargs):
             rel_path = self._construct_path(obj, **kwargs)
-            try:
-                key = Key(self.bucket, rel_path)
-                return key.generate_url(expires_in=86400)  # 24hrs
-            except S3ResponseError:
-                log.exception("Trouble generating URL for dataset '%s'", rel_path)
-        return None
+
+            p = Path(rel_path)
+            data_object_name =  p.stem + p.suffix
+            subcollection_name = p.parent
+
+            collection_path = self.home + "/" + str(subcollection_name)
+            data_object_path = collection_path + "/" + str(data_object_name)
+            
+            return data_object_path
 
     def get_store_usage_percent(self):
         return 0.0
-
-'''
-        ###########################################################        
-        ## These should be read from env variables or a config file
-        ###########################################################        
-        # host='localhost' 
-        host='127.0.0.1' 
-        port='1247' 
-        user='rods'  
-        password='rods' 
-        zone='tempZone'
-        ###defaultResource = 'demoResc'
-
-        # Connect to iRODS (AssertionErrors will be raised if anything goes wrong)
-        self.session = irods_connect(host, port, user, password, zone)
-
-        # Set iRODS home path
-        ###self.home_path = "/" + zone + "/home/" + user + '/galaxy_data'
-        self.home_path = "/" + zone + "/home/" + user
-        assert self.home_path != '', "Unable to initialize iRODS Object Store: irods_home cannot be determined."
-
-        # Will return a collection object regardless of whether it exists
-        self.root_collection = self.session.collections.get(self.home_path)
-        if self.root_collection.path != self.home_path:
-            log.warning("iRODS root collection does not exist, will attempt to create: %s", self.home_path)
-            self.root_collection = self.session.collections.create(self.home_path)
-            assert self.root_collection.path == self.home_path, "iRODS root collection creation failed: %s" % self.home_path
-'''
