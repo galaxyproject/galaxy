@@ -999,10 +999,9 @@ class WorkflowContentsManager(UsesAnnotations):
             data['doc'] = workflow.name + ': ' + annotation_str
         else:
             data['doc'] = workflow.name
-        # how can I make use of tags ?
+        # how can I make use of tags in the cwl-abstract?
         #data['tags'] = tag_str
         data['steps'] = {}
-        # For each step, rebuild the form and encode the state
         global_input_dicts={}
         workflow_outputs_dicts={}  #global outputs
         input_index=0
@@ -1012,19 +1011,12 @@ class WorkflowContentsManager(UsesAnnotations):
             if not module:
                 raise exceptions.MessageException('Unrecognized step type: %s' % step.type)
             # Get user annotation.
-            print('step.type is:' + str(step.type))
             annotation_str = self.get_item_annotation_str(trans.sa_session, trans.user, step) or ''
             content_id = module.get_content_id()
             # Export differences for backward compatibility
             tool_state = module.get_export_state()
             input_dicts = {}
-            # if module.type == 'data_input':   #user's input, do not list as step. only shown in the inputs section
-                # input_dict = {
-                    # 'format' : 'data',
-                    # 'type' : 'File'
-                # }
-                # global_input_dicts[step.label]=input_dict
-                #continue
+
             # Step info
             step_dict={'out': []}
             step_run_dict = {
@@ -1051,19 +1043,6 @@ class WorkflowContentsManager(UsesAnnotations):
                         step_dict['tool_id'] = None
 
             ## how to handle subworkflows?
-            # if module.type == 'subworkflow':
-                # del step_dict['content_id']
-                # del step_dict['errors']
-                # del step_dict['tool_version']
-                # del step_dict['tool_state']
-                # subworkflow = step.subworkflow
-                # subworkflow_as_dict = self._workflow_to_dict_export(
-                    # trans,
-                    # stored=None,
-                    # workflow=subworkflow
-                # )
-                # step_dict['subworkflow'] = subworkflow_as_dict
-
             step_state = module.state.inputs or {}
 
 
@@ -1072,16 +1051,15 @@ class WorkflowContentsManager(UsesAnnotations):
                 step_inputs={}
                 inp_connections=step.input_connections
                 connection_num=1
-                for conn in inp_connections:   ## can you have multiple connections?
+                for conn in inp_connections:
                     # the combination of input_step.uuid and input_name should be unique
                     # the combination of output_step.uuid and output_name should be unique
-                    # print(connection_num)
                     input_id=str(conn.input_step.uuid) + '_' + conn.input_name
                     source_id=str(conn.output_step.uuid) + '/'+ conn.output_name
                     connection_num+=1
-                    label = conn.input_name    ## this should be the input label 
+                    label = conn.input_name
                     #the input is not connected to a previous tool (data_input is not considered a step)
-                    if conn.output_step.type == 'data_input': 
+                    if conn.output_step.type == 'data_input':
                         label = "Input file(s) for tool " + module.get_name()
 
                         input_dict = {
@@ -1090,7 +1068,6 @@ class WorkflowContentsManager(UsesAnnotations):
                                 'name': label
                                 }
                         source_id=str(conn.output_step.uuid) + '_'+ conn.output_name   # the data_input id is used to identify the file
-                        #input_uri=str(step.uuid)+'/'+name
                         if source_id not in global_input_dicts:
                             global_input_dicts[source_id]=input_dict
                     step_inputs[conn.input_name]=source_id
@@ -1101,57 +1078,28 @@ class WorkflowContentsManager(UsesAnnotations):
                         if name not in step_inputs:  #not a connected value
                             source_id= str(step.uuid) + '_' + str(name) #global_input_id
                             if input_type == RuntimeValue:
-                                #print("input_type is RuntimeValue class")
                                 input_dicts[name]={"name": name, "description": "runtime parameter for tool %s" % module.get_name()}
-                            # elif input_type == dict:
-                                # ## ********** FIND AN EXAMPLE OF THIS CASE... INDEXED PARAMETERS..
-                                # # Input type is described by a dict, e.g. indexed parameters.
-                                # for partval in val.values():
-                                    # if type(partval) == RuntimeValue:
-                                        # input_dicts.append({"name": name, "default":val,"description": "runtime parameter for tool %s" % module.get_name()})
                             else:
                                 step_inputs_dict={"name": name, "default":val,"description": "runtime parameter for tool %s" % module.get_name()}
                                 input_dicts[name]=step_inputs_dict
                                 global_input_dicts[source_id]=step_inputs_dict
-                                # print('input_type is: ' + str(input_type))
-                                # so.... i need to filter and only add if its a RuntimeValue or a dict in itself
                             step_inputs[name]=source_id  # connect operation input name with source
-                            #input_dicts[name]={"name": name, "description": "runtime parameter for tool %s" % module.get_name()}
 
                 step_dict['in']=step_inputs
                 step_run_dict['inputs'] = input_dicts
 
 
-            #### *** if i want to include input data that is not connected to anything then:
-            #data_input step: do not add it to workflow steps. Add input to inputs list
-            #if module.type == 'data_input':
-            # else:
-                # input_dict = {
-                    # 'format' : 'data',
-                    # 'type' : 'File'
-                # }
-                # name = module.label or ('Unnamed_input_' + str(input_index))
-                # input_index+=1
-                # input_uri=str(step.uuid)+'/'+name
-                # global_input_dicts[name]=input_dict
-
-
             # Global wf outputs and step wf output list
-            #workflow_outputs_dicts = []
             for workflow_output in step.unique_workflow_outputs:
                 # do not list the User's inputs as wf outputs
                 if module.type != 'data_input':
                     workflow_output_dict = dict(
                         label=workflow_output.label,
                         name=workflow_output.output_name,
-                        #uuid=str(workflow_output.uuid) if workflow_output.uuid is not None else None,
                         output_source=str(step.uuid) + '/' + workflow_output.output_name
                     )
-                    #workflow_output_dict['label']='User Input data'
-                    # collect the name, to put on the 
                     workflow_outputs_dicts[str(workflow_output.uuid)]=workflow_output_dict
                     step_dict['out'].append(workflow_output.output_name)
-            #step_dict['workflow_outputs'] = workflow_outputs_dicts
 
             # All step outputs
             step_outputs_dict = {}
@@ -1160,13 +1108,8 @@ class WorkflowContentsManager(UsesAnnotations):
                     step_outputs_dict[output['name']]= {'type': output['extensions'][0]}  #can add something in the doc?
 
             step_run_dict['outputs']=step_outputs_dict
-
-
-
-
             if module.type != 'data_input':
                 step_dict['run']=step_run_dict
-                #data['steps'][step.order_index] = step_dict
                 data['steps'][str(step.uuid)] = step_dict
         # add the global input and outputs to the return value
         data['outputs']=workflow_outputs_dicts
