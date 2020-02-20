@@ -93,7 +93,6 @@ class MzTab(Text):
         """ Determines whether the file is the correct type. """
         has_version = False
         found_man_mtd = set()
-        cnt = 0
         contents = file_prefix.string_io()
         for line in contents:
             if re.match(r"^\s*$", line):
@@ -115,10 +114,10 @@ class MzTab2(MzTab):
 
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname('test.mztab2')
-    >>> mztab2().sniff(fname)
+    >>> MzTab2().sniff(fname)
     True
     >>> fname = get_test_fname('test.mztab')
-    >>> mztab2().sniff(fname)
+    >>> MzTab2().sniff(fname)
     False
     """
     file_ext = "mztab2"
