@@ -1395,15 +1395,23 @@ class SQlite(Binary):
         except Exception:
             return False
 
-    def sniff_table_names(self, filename, table_names):
+    def sniff_table_names(self, filename, table_names, equality=False):
+        """
+        test if the tables defined in the SQLite DB (filename) are
+        a subset of given list of tables (tablenames). if equality
+        is true the test is for equality
+        """
         # All table names should be in the schema
         try:
             conn = sqlite.connect(filename)
             c = conn.cursor()
             tables_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
             result = c.execute(tables_query).fetchall()
-            result = [_[0] for _ in result]
-            return set(result) == set(table_names)
+            result = (_[0] for _ in result)
+            if equality:
+                return set(result) == set(table_names)
+            else:
+                return set(result).issubset(set(table_names))
         except Exception as e:
             log.warning('%s, sniff Exception: %s', self, e)
         return False
