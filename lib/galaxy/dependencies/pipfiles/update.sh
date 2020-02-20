@@ -74,6 +74,7 @@ for env in $ENVS; do
                 -e "s/^\(subprocess32==[^ ;]\{1,\}\).*$/\1 ; python_version < '3.0'/" \
                 -e "s/^\(typing==[^ ;]\{1,\}\).*$/\1 ; python_version < '3.5'/" \
                 -e "s/^\(urllib3==[^ ;]\{1,\}\).*$/\1/" \
+                -e "s/^\(wcwidth==[^ ;]\{1,\}\).*$/\1/" \
                 pinned-requirements.txt pinned-dev-requirements.txt
     if ! grep '==' pinned-dev-requirements.txt ; then
         rm -f pinned-dev-requirements.txt
