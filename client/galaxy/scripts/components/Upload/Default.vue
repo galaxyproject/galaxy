@@ -1,5 +1,5 @@
 <template>
-    <upload-wrapper ref="wrapper" :top-info="topInfo">
+    <upload-wrapper ref="wrapper" :top-info="topInfo" :hightlight-box="hightlightBox">
         <div class="upload-helper" v-show="showHelper"><i class="fa fa-files-o" />Drop files here</div>
         <table class="upload-table ui-table-striped" v-show="!showHelper" ref="uploadTable">
             <thead>
@@ -114,6 +114,7 @@ export default {
     data() {
         return {
             topInfo: "",
+            hightlightBox: false,
             showHelper: true,
             extension: this.app.defaultExtension,
             genome: this.app.defaultGenome,
