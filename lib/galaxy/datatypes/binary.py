@@ -1596,10 +1596,10 @@ class PQP(SQlite):
         table_names = ['COMPOUND', 'PEPTIDE', 'PEPTIDE_PROTEIN_MAPPING', 'PRECURSOR',
                        'PRECURSOR_COMPOUND_MAPPING', 'PRECURSOR_PEPTIDE_MAPPING', 'PROTEIN',
                        'TRANSITION', 'TRANSITION_PEPTIDE_MAPPING', 'TRANSITION_PRECURSOR_MAPPING']
-        return super(PQP, self).sniff(filename) and self.sniff_table_names(filename, table_names)
+        return super(PQP, self).sniff(filename) and self.sniff_table_names(filename, table_names, True)
 
 
-class OSW(PQP):
+class OSW(SQlite):
     """
     Class describing OpenSwath output
 
@@ -1619,8 +1619,11 @@ class OSW(PQP):
     def sniff(self, filename):
         # osw seems to be an extension of pqp (few tables are added)
         # see also here https://github.com/OpenMS/OpenMS/issues/4365
-        table_names = ['FEATURE', 'FEATURE_MS1', 'FEATURE_MS2', 'FEATURE_TRANSITION', 'RUN']
-        return super(OSW, self).sniff(filename) and self.sniff_table_names(filename, table_names)
+        table_names = ['COMPOUND', 'PEPTIDE', 'PEPTIDE_PROTEIN_MAPPING', 'PRECURSOR',
+                       'PRECURSOR_COMPOUND_MAPPING', 'PRECURSOR_PEPTIDE_MAPPING', 'PROTEIN',
+                       'TRANSITION', 'TRANSITION_PEPTIDE_MAPPING', 'TRANSITION_PRECURSOR_MAPPING',
+                       'FEATURE', 'FEATURE_MS1', 'FEATURE_MS2', 'FEATURE_TRANSITION', 'RUN']
+        return super(OSW, self).sniff(filename) and self.sniff_table_names(filename, table_names, True)
 
 
 class SQmass(SQlite):
