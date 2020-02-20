@@ -1596,7 +1596,8 @@ class PQP(SQlite):
         table_names = ['COMPOUND', 'PEPTIDE', 'PEPTIDE_PROTEIN_MAPPING', 'PRECURSOR',
                        'PRECURSOR_COMPOUND_MAPPING', 'PRECURSOR_PEPTIDE_MAPPING', 'PROTEIN',
                        'TRANSITION', 'TRANSITION_PEPTIDE_MAPPING', 'TRANSITION_PRECURSOR_MAPPING']
-        return super(PQP, self).sniff(filename) and self.sniff_table_names(filename, table_names, True)
+        osw_table_names = ['FEATURE', 'FEATURE_MS1', 'FEATURE_MS2', 'FEATURE_TRANSITION', 'RUN']
+        return super(PQP, self).sniff(filename) and self.sniff_table_names(filename, table_names) and not self.sniff_table_names(filename, osw_table_names)
 
 
 class OSW(SQlite):
@@ -1623,7 +1624,7 @@ class OSW(SQlite):
                        'PRECURSOR_COMPOUND_MAPPING', 'PRECURSOR_PEPTIDE_MAPPING', 'PROTEIN',
                        'TRANSITION', 'TRANSITION_PEPTIDE_MAPPING', 'TRANSITION_PRECURSOR_MAPPING',
                        'FEATURE', 'FEATURE_MS1', 'FEATURE_MS2', 'FEATURE_TRANSITION', 'RUN']
-        return super(OSW, self).sniff(filename) and self.sniff_table_names(filename, table_names, True)
+        return super(OSW, self).sniff(filename) and self.sniff_table_names(filename, table_names)
 
 
 class SQmass(SQlite):
