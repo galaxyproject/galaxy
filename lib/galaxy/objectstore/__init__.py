@@ -913,7 +913,7 @@ def type_to_object_store_class(store, fsmon=False):
         objectstore_class = HierarchicalObjectStore
         objectstore_constructor_kwds["fsmon"] = fsmon
     elif store == 'irods':
-        from .rods import IRODSObjectStore
+        from .irods import IRODSObjectStore
         objectstore_class = IRODSObjectStore
     elif store == 'azure_blob':
         from .azure_blob import AzureBlobObjectStore
