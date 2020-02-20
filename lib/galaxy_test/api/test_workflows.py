@@ -1358,7 +1358,7 @@ steps:
             self.assertEqual(bco['spec_version'], 'https://w3id.org/biocompute/1.4.0/')
             self.assertEqual(bco['provenance_domain']['name'], "Simple Workflow")
             self._assert_has_keys(bco['description_domain'], "keywords", "xref", "platform", "pipeline_steps")
-#            if 'extension_domain' in bco: self._assert_has_keys(bco['extension_domain'], "extension_schema")
+            # if 'extension_domain' in bco: self._assert_has_keys(bco['extension_domain'], "extension_schema")
             self._assert_has_keys(bco['execution_domain'], "script_access_type", "script", "script_driver", "software_prerequisites", "external_data_endpoints", "environment_variables")
             for p in bco['parametric_domain']:
                 self._assert_has_keys(p, "param", "value", "step")
