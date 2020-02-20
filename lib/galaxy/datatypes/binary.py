@@ -1403,10 +1403,7 @@ class SQlite(Binary):
             tables_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
             result = c.execute(tables_query).fetchall()
             result = [_[0] for _ in result]
-            for table_name in table_names:
-                if table_name not in result:
-                    return False
-            return True
+            return set(result) == set(table_names)
         except Exception as e:
             log.warning('%s, sniff Exception: %s', self, e)
         return False
