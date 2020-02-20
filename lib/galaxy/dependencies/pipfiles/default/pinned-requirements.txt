@@ -23,7 +23,7 @@ bcrypt==3.1.6
 bdbag==1.4.1
 beaker==1.10.1
 bioblend==0.12.0
-bleach==3.1.0
+bleach==3.1.1
 boltons==19.1.0
 boto3==1.9.114
 boto==2.49.0
