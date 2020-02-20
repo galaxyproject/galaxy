@@ -32,7 +32,7 @@
         border: transparent;
         @include border-radius($border-radius-extralarge);
         max-width: auto;
-        background: white;
+        background: $white;
     }
     .search-query:focus {
         border-color: $brand-info;
