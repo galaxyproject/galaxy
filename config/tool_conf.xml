@@ -31,6 +31,10 @@
     <tool file="spacy/spacy.xml"/>
     <tool file="aws/aws_comprehend.xml"/>
   </section>
+
+  <section id="video_ocr" name="Video OCR">
+    <tool file="video_tools/tesseract.xml"/>
+  </section>
   <section id="hmgm" name="Human MGM">
     <tool id="hmgmtest" file="hmgm/hmgm_sample.xml"/>
   </section>
