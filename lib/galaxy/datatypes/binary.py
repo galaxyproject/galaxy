@@ -1407,11 +1407,11 @@ class SQlite(Binary):
             c = conn.cursor()
             tables_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
             result = c.execute(tables_query).fetchall()
-            result = (_[0] for _ in result)
+            result = set(_[0] for _ in result)
             if equality:
-                return set(table_names) == set(result)
+                return set(table_names) == result
             else:
-                return set(table_names).issubset(set(result))
+                return set(table_names).issubset(result)
         except Exception as e:
             log.warning('%s, sniff Exception: %s', self, e)
         return False
