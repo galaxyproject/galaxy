@@ -727,6 +727,10 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         self.state_history.append(JobStateHistory(self))
 
     @property
+    def running(self):
+        return self.state == Job.states.RUNNING
+
+    @property
     def finished(self):
         states = self.states
         return self.state in [
@@ -1881,34 +1885,27 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName, RepresentById):
         return galaxy.util.nice_size(self.disk_size)
 
     @property
+    def active_dataset_and_roles_query(self):
+        db_session = object_session(self)
+        return (db_session.query(HistoryDatasetAssociation)
+            .filter(HistoryDatasetAssociation.table.c.history_id == self.id)
+            .filter(not_(HistoryDatasetAssociation.deleted))
+            .order_by(HistoryDatasetAssociation.table.c.hid.asc())
+            .options(joinedload("dataset"),
+                     joinedload("dataset.actions"),
+                     joinedload("dataset.actions.role"),
+                     joinedload("tags")))
+
+    @property
     def active_datasets_and_roles(self):
         if not hasattr(self, '_active_datasets_and_roles'):
-            db_session = object_session(self)
-            query = (db_session.query(HistoryDatasetAssociation)
-                .filter(HistoryDatasetAssociation.table.c.history_id == self.id)
-                .filter(not_(HistoryDatasetAssociation.deleted))
-                .order_by(HistoryDatasetAssociation.table.c.hid.asc())
-                .options(joinedload("dataset"),
-                         joinedload("dataset.actions"),
-                         joinedload("dataset.actions.role"),
-                         joinedload("tags")))
-            self._active_datasets_and_roles = query.all()
+            self._active_datasets_and_roles = self.active_dataset_and_roles_query.all()
         return self._active_datasets_and_roles
 
     @property
     def active_visible_datasets_and_roles(self):
         if not hasattr(self, '_active_visible_datasets_and_roles'):
-            db_session = object_session(self)
-            query = (db_session.query(HistoryDatasetAssociation)
-                .filter(HistoryDatasetAssociation.table.c.history_id == self.id)
-                .filter(not_(HistoryDatasetAssociation.deleted))
-                .filter(HistoryDatasetAssociation.visible)
-                .order_by(HistoryDatasetAssociation.table.c.hid.asc())
-                .options(joinedload("dataset"),
-                         joinedload("dataset.actions"),
-                         joinedload("dataset.actions.role"),
-                         joinedload("tags")))
-            self._active_visible_datasets_and_roles = query.all()
+            self._active_visible_datasets_and_roles = self.active_dataset_and_roles_query.filter(HistoryDatasetAssociation.visible).all()
         return self._active_visible_datasets_and_roles
 
     @property

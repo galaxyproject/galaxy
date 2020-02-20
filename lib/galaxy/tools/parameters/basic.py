@@ -1947,7 +1947,7 @@ class DataToolParameter(BaseDataToolParameter):
         def append(list, hda, name, src, keep=False, subcollection_type=None):
             value = {
                 'id'   : trans.security.encode_id(hda.id),
-                'hid'  : hda.hid,
+                'hid'  : hda.hid if hda.hid is not None else -1,
                 'name' : name,
                 'tags' : [t.user_tname if not t.value else "%s:%s" % (t.user_tname, t.value) for t in hda.tags],
                 'src'  : src,

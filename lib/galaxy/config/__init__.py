@@ -712,10 +712,17 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         # indicate if this was not set explicitly, so dependending on the context a better default
         # can be used (request url in a web thread, Docker parent in IE stuff, etc.)
         self.galaxy_infrastructure_url_set = kwargs.get('galaxy_infrastructure_url') is not None
-
         if "HOST_IP" in self.galaxy_infrastructure_url:
             self.galaxy_infrastructure_url = string.Template(self.galaxy_infrastructure_url).safe_substitute({
                 'HOST_IP': socket.gethostbyname(socket.gethostname())
+            })
+        if "UWSGI_PORT" in self.galaxy_infrastructure_url:
+            import uwsgi
+            http = unicodify(uwsgi.opt['http'])
+            host, port = http.split(":", 1)
+            assert port, "galaxy_infrastructure_url depends on dynamic PORT determination but port unknown"
+            self.galaxy_infrastructure_url = string.Template(self.galaxy_infrastructure_url).safe_substitute({
+                'UWSGI_PORT': port
             })
 
     @property
@@ -757,7 +764,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             job_metrics_config_file=[self._in_config_dir('job_metrics_conf.xml'), self._in_sample_dir('job_metrics_conf.xml.sample')],
             job_resource_params_file=[self._in_config_dir('job_resource_params_conf.xml')],
             local_conda_mapping_file=[self._in_config_dir('local_conda_mapping.yml')],
-            migrated_tools_config=[self._in_config_dir('migrated_tools_conf.xml')],
+            migrated_tools_config=[self._in_mutable_config_dir('migrated_tools_conf.xml')],
             modules_mapping_files=[self._in_config_dir('environment_modules_mapping.yml')],
             object_store_config_file=[self._in_config_dir('object_store_conf.xml')],
             oidc_backends_config_file=[self._in_config_dir('oidc_backends_config.xml')],

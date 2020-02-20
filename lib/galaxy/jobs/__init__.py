@@ -44,6 +44,7 @@ from galaxy.job_execution.datasets import (
     TaskPathRewriter
 )
 from galaxy.job_execution.output_collect import collect_extra_files
+from galaxy.job_execution.setup import ensure_configs_directory
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.jobs.mapper import (
     JobMappingException,
@@ -1091,6 +1092,7 @@ class JobWrapper(HasResourceParameters):
 
         tool_evaluator = self._get_tool_evaluator(job)
         compute_environment = compute_environment or self.default_compute_environment(job)
+        self.galaxy_url = compute_environment.galaxy_url
         tool_evaluator.set_compute_environment(compute_environment, get_special=get_special)
 
         self.sa_session.flush()
@@ -2114,26 +2116,34 @@ class JobWrapper(HasResourceParameters):
         if not container or not self.tool.produces_entry_points:
             return None
 
-        from os.path import abspath
-        from os import getcwd
-        exec_dir = kwds.get('exec_dir', abspath(getcwd()))
+        exec_dir = kwds.get('exec_dir', os.path.abspath(os.getcwd()))
         work_dir = self.working_directory
-        container_config = os.path.join(work_dir, "container_config.json")
+        configs_dir = ensure_configs_directory(work_dir)
+        container_config = os.path.join(configs_dir, "container_config.json")
+        self.extra_filenames.append(container_config)
 
-        # TODO: implement callback via URL callback for configuring ports instead
-        #       of fs polling.
-        # if self.app.config.galaxy_infrastructure_url_set:
-        #    # TODO: settable from job destination...
-        #    infrastructure_url = self.app.config.galaxy_infrastructure_url
-        # else:
-        #    infrastructure_url = "host.docker.internal"
+        # What should be done with the result... 'file' or 'callback'
+        result = self.get_destination_configuration("container_monitor_result", "file")
+        galaxy_url = self.galaxy_url()
+        container_config_dict = {
+            "container_name": container.container_name,
+            "container_type": container.container_type,
+            "connection_configuration": container.connection_configuration,
+        }
+        if result == "callback":
+            job_id = self.job_id
+            encoded_job_id = self.app.security.encode_id(job_id)
+            job_key = self.app.security.encode_id(job_id, kind="jobs_files")
+            endpoint_base = "%s/api/jobs/%s/ports?job_key=%s"
+            callback_url = endpoint_base % (
+                galaxy_url,
+                encoded_job_id,
+                job_key
+            )
+            container_config_dict["callback_url"] = callback_url
 
         with open(container_config, "w") as f:
-            json.dump({
-                "container_name": container.container_name,
-                "container_type": container.container_type,
-                "connection_configuration": container.connection_configuration,
-            }, f)
+            json.dump(container_config_dict, f)
 
         return "(python '%s'/lib/galaxy_ext/container_monitor/monitor.py &); sleep 1 " % exec_dir
 
@@ -2316,7 +2326,8 @@ class TaskWrapper(JobWrapper):
 
         self.sa_session.flush()
 
-        self.command_line, self.extra_filenames, self.environment_variables = tool_evaluator.build()
+        self.command_line, extra_filenames, self.environment_variables = tool_evaluator.build()
+        self.extra_filenames.extend(extra_filenames)
 
         # Ensure galaxy_lib_dir is set in case there are any later chdirs
         self.galaxy_lib_dir

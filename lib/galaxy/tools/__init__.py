@@ -159,8 +159,6 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     "substitutions1",
     "find_diag_hits",
     "cufflinks",
-    # Tools improperly migrated to the tool shed (iuc)
-    "tabular_to_dbnsfp",
     # Tools improperly migrated using Galaxy (from shed other)
     "column_join",
     "gd_coverage_distributions",  # Genome Diversity tools from miller-lab
@@ -189,6 +187,7 @@ GALAXY_LIB_TOOLS_VERSIONED = {
     "aggregate_scores_in_intervals2": packaging.version.parse("1.1.4"),
     "CONVERTER_fastq_to_fqtoc0": packaging.version.parse("1.0.1"),
     "CONVERTER_tar_to_directory": packaging.version.parse("1.0.1"),
+    "tabular_to_dbnsfp": packaging.version.parse("1.0.1"),
 }
 
 
@@ -2453,9 +2452,16 @@ class SetMetadataTool(Tool):
         for name, dataset in inp_data.items():
             external_metadata = get_metadata_compute_strategy(app.config, job.id)
             sa_session = app.model.context
-            if external_metadata.external_metadata_set_successfully(dataset, name, sa_session, working_directory=working_directory):
-                external_metadata.load_metadata(dataset, name, sa_session, working_directory=working_directory)
-            else:
+            metadata_set_successfully = external_metadata.external_metadata_set_successfully(dataset, name, sa_session, working_directory=working_directory)
+            if metadata_set_successfully:
+                try:
+                    # external_metadata_set_successfully is only an approximation (the metadata json file exists),
+                    # things can still go wrong, but we don't want to fail here since it can lead to a resubmission loop
+                    external_metadata.load_metadata(dataset, name, sa_session, working_directory=working_directory)
+                except Exception:
+                    metadata_set_successfully = False
+                    log.exception("Exception occured while loading metadata results")
+            if not metadata_set_successfully:
                 dataset._state = model.Dataset.states.FAILED_METADATA
                 self.sa_session.add(dataset)
                 self.sa_session.flush()
@@ -2470,7 +2476,12 @@ class SetMetadataTool(Tool):
                 # Revert dataset.state to fall back to dataset.dataset.state
                 dataset._state = None
             # Need to reset the peek, which may rely on metadata
-            dataset.set_peek()
+            # TODO: move this into metadata setting, setting the peek requires dataset access,
+            # and large chunks of the dataset may be read here.
+            try:
+                dataset.set_peek()
+            except Exception:
+                log.exception()
             self.sa_session.add(dataset)
             self.sa_session.flush()
 

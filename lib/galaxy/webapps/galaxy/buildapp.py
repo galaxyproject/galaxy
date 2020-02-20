@@ -956,6 +956,12 @@ def populate_api_routes(webapp, app):
                            name_prefix="job_",
                            path_prefix='/api/jobs/{job_id}',
                            parent_resources=dict(member_name="job", collection_name="jobs"))
+    webapp.mapper.resource('port',
+                           'ports',
+                           controller="job_ports",
+                           name_prefix="job_",
+                           path_prefix='/api/jobs/{job_id}',
+                           parent_resources=dict(member_name="job", collection_name="jobs"))
 
     _add_item_extended_metadata_controller(webapp,
                                            name_prefix="history_dataset_",

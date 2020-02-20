@@ -174,7 +174,7 @@ ${json.dumps( __fill_options )}
       <output name="out_file1" file="joiner_out7.tab"/>
     </test>
   </tests>
-  <help><![CDATA
+  <help><![CDATA[
 
 .. class:: warningmark
 

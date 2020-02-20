@@ -43,7 +43,7 @@ def src_split(src):
 def src_merge(spec, chrom, contig=None):
     if None in [spec, chrom]:
         spec = chrom = spec or chrom
-    return bx.align.maf.src_merge(spec, chrom, contig)
+    return bx.align.src_merge(spec, chrom, contig)
 
 
 def get_species_in_block(block):
