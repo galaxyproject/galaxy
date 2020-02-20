@@ -56,8 +56,13 @@
                 </div>
             </div>
             <span v-if="invocationSchedulingTerminal && jobStatesTerminal">
-                <a :href="invocationLink">View Invocation Report</a>
-                <a class="fa fa-print" :href="invocationPdfLink"></a>
+                <div>
+                    <a :href="invocationLink">View Invocation Report</a>
+                    <a class="fa fa-print" :href="invocationPdfLink"></a>
+                </div>
+                <div>
+                    <a :href="bcoLink">Create BioCompute Object</a>
+                </div>
             </span>
         </div>
     </div>
@@ -139,6 +144,9 @@ export default {
             return stepStates;
         },
         invocationLink: function() {
+            return getUrl(`workflows/invocations/report?id=${this.invocationId}`);
+        },
+        bcoLink: function() {
             return getUrl(`workflows/invocations/report?id=${this.invocationId}`);
         },
         invocationPdfLink: function() {
