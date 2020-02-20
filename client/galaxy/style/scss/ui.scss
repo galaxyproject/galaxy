@@ -191,6 +191,7 @@ $ui-margin-horizontal-large: $margin-v * 2;
         @extend .card-header;
         @extend .rounded;
         background: $portlet-bg-color;
+        border-color: transparent;
         .portlet-title {
             .portlet-title-text.collapsible {
                 cursor: pointer;

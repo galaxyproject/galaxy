@@ -148,13 +148,11 @@ body {
     @extend .unified-panel;
     left: 0px;
     width: $panel-width;
-    border-right: $layout-border;
 }
 #right {
     @extend .unified-panel;
     right: 0px;
     width: $panel-width;
-    border-left: $layout-border;
 }
 #right > .unified-panel-footer {
     .drag {
@@ -251,7 +249,6 @@ body {
     height: $panel_footer_height;
     line-height: $panel_footer_height;
     width: 100%;
-    border-top: $layout-border;
     background: $panel-footer-bg-color;
     color: $panel-header-text-color;
     a {
@@ -403,7 +400,7 @@ body {
     .navbar-brand {
         @extend .position-absolute;
         @extend .font-weight-bold;
-        font-family: verdana;
+        font-family: Verdana, sans-serif;
         font-size: 1.25rem;
         left: 0.8rem;
         line-height: 0rem;
@@ -796,7 +793,6 @@ table.colored tr.header {
     background: $table-heading-bg;
     background-repeat: repeat-x;
     background-position: top;
-    border-bottom: solid $table-border-color 1px;
     font-weight: bold;
 }
 
