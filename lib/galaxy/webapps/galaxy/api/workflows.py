@@ -1116,7 +1116,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
             if step.workflow_step.type == 'data_input':
                 for output_assoc in step.output_datasets:
-                    encoded_dataset_id =  trans.security.encode_id(output_assoc.dataset.id)
+                    encoded_dataset_id = trans.security.encode_id(output_assoc.dataset.id)
                 input_obj = {
                     'filename': step.workflow_step.label,
                     'uri': url_for('history_content', history_id=encoded_history_id, id=encoded_dataset_id, qualified=True),
