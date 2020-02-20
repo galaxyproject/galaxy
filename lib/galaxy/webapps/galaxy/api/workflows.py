@@ -990,7 +990,10 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         # h_contents = self.history_contents_manager.contained(history)
 
         # TODO add a keyword option/function to determine the spec_version used in BCO creation, and populate it accordingly
-        spec_version = 'https://w3id.org/biocompute/1.4.0/'
+        try:
+            spec_version = kwd.get('spec_version', '')
+        except Exception:
+            spec_version = 'https://w3id.org/biocompute/1.4.0/'
 
         # listing the versions of the workflow for 'version' and 'derived_from'
         versions = []
@@ -1126,7 +1129,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
             if step.workflow_step.type == 'data_collection_input':
                 encoded_dataset_id = trans.security.encode_id(step.workflow_step.id)
-                input_obj = []
                 input_obj = {
                     'filename': step.workflow_step.label,
                     'uri': url_for('history_content', history_id=encoded_history_id, id=encoded_dataset_id, qualified=True),
