@@ -551,9 +551,14 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         for job in vars.get('jobs', []):
             rval['jobs'].append(self.encode_all_ids(trans, job.to_dict(view='collection'), recursive=True))
             if inputs.get('send_email_notification', False):
-                job_email_action = trans.model.PostJobAction('EmailAction')
-                job.add_post_job_action(job_email_action)
-                new_pja_flush = True
+                # Unless an anonymous user is invoking this via the API it
+                # should never be an option, but check and enforce that here
+                if trans.user is None:
+                    raise exceptions.ToolExecutionError("Anonymously run jobs cannot send an email notification.")
+                else:
+                    job_email_action = trans.model.PostJobAction('EmailAction')
+                    job.add_post_job_action(job_email_action)
+                    new_pja_flush = True
 
         if new_pja_flush:
             trans.sa_session.flush()
