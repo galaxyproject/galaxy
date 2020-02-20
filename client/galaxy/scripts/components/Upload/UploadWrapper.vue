@@ -4,7 +4,7 @@
         <div class="upload-top">
             <div class="upload-top-info" v-html="topInfo"></div>
         </div>
-        <div class="upload-box" ref="uploadBox" :style="boxStyle" :class="{ highlight: hightlightBox }">
+        <div class="upload-box" ref="uploadBox" :style="boxStyle" :class="{ highlight: highlightBox }">
             <slot />
         </div>
         <div class="upload-footer" v-if="hasFooter">
@@ -28,7 +28,7 @@ export default {
             type: String,
             default: "upload-view-default"
         },
-        hightlightBox: {
+        highlightBox: {
             type: Boolean,
             default: false
         }
