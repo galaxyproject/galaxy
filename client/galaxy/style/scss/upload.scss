@@ -67,11 +67,11 @@
 
 .upload-view-default {
     .upload-box.highlight {
-        border-color: $table-border-color;
+        border-color: $border-color;
         border-width: 2px;
         padding: 7px !important;
         .upload-helper {
-            color: $table-border-color;
+            color: $border-color;
         }
     }
     .upload-icon {

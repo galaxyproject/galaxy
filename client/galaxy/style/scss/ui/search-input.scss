@@ -29,7 +29,7 @@
         font-size: $font-size-base;
         line-height: $line-height-base;
         color: $text-color;
-        border: transparent;
+        border: $border-default;
         @include border-radius($border-radius-extralarge);
         max-width: auto;
         background: $white;

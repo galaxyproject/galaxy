@@ -122,11 +122,6 @@ $panel_footer_height: 25px;
 // Portlets
 $portlet-bg-color: $gray-200;
 
-// Layout
-$layout_top_padding: 0px;
-$layout-border-color: $gray-900;
-$layout-border: transparent;
-
 // Borders
 $border-radius-base: 0.1875rem;
 $border-radius-large: 0.3125rem;
@@ -136,7 +131,7 @@ $border-default: 1px solid $border-color;
 // Buttons
 $btn-default-color: $text-color;
 $btn-default-bg: $gray-200;
-$btn-default-border: $border-color;
+$btn-default-border: transparent;
 
 // Forms
 $form-heading-bg: $panel-bg-color;
