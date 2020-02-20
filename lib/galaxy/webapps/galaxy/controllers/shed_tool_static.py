@@ -53,4 +53,4 @@ class ShedToolStatic(BaseUIController):
                     trans.response.set_content_type(mime)
             return open(asset_path, 'rb')
         else:
-            return None
+            raise RequestParameterInvalidException()
