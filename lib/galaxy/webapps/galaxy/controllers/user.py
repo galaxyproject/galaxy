@@ -195,6 +195,8 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         Function resends the verification email in case user wants to log in with an inactive account or he clicks the resend link.
         """
         if email is None:  # User is coming from outside registration form, load email from trans
+            if not trans.user:
+                trans.show_error_message("No session found, cannot send activation email.")
             email = trans.user.email
         if username is None:  # User is coming from outside registration form, load email from trans
             username = trans.user.username
