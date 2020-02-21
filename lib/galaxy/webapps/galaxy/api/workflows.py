@@ -990,10 +990,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         # h_contents = self.history_contents_manager.contained(history)
 
         # TODO add a keyword option/function to determine the spec_version used in BCO creation, and populate it accordingly
-        try:
-            spec_version = kwd.get('spec_version', '')
-        except Exception:
-            spec_version = 'https://w3id.org/biocompute/1.4.0/'
+        spec_version = kwd.get('spec_version', 'https://w3id.org/biocompute/1.4.0/')
 
         # listing the versions of the workflow for 'version' and 'derived_from'
         versions = []
