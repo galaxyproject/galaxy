@@ -191,7 +191,7 @@ export class Node {
         $(this.element).remove();
     }
     make_active() {
-        $(this.element).addClass("toolForm-active");
+        $(this.element).addClass("node-active");
     }
     make_inactive() {
         // Keep inactive nodes stacked from most to least recently active
@@ -202,7 +202,7 @@ export class Node {
             p.appendChild(element);
         })(element.parentNode);
         // Remove active class
-        $(element).removeClass("toolForm-active");
+        $(element).removeClass("node-active");
     }
     set_tool_version() {
         if (this.type === "tool" && this.config_form) {
@@ -341,7 +341,7 @@ export class Node {
         this.redraw();
     }
     error(text) {
-        var b = $(this.element).find(".toolFormBody");
+        var b = $(this.element).find(".node-body");
         b.find("div").remove();
         var tmp = `<div style='color: red; text-style: italic;'>${text}</div>`;
         this.config_form = tmp;

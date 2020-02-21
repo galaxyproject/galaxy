@@ -9,7 +9,7 @@ export class NodeView {
         this.$el = options.$el;
         this.node = options.node;
         this.output_width = Math.max(150, this.$el.width());
-        this.tool_body = this.$el.find(".toolFormBody");
+        this.tool_body = this.$el.find(".node-body");
         this.tool_body.find("div").remove();
         this.newInputsDiv().appendTo(this.tool_body);
         this.terminalViews = {};
@@ -28,7 +28,7 @@ export class NodeView {
     }
 
     renderToolErrors() {
-        this.node.errors ? this.$el.addClass("tool-node-error") : this.$el.removeClass("tool-node-error");
+        this.node.errors ? this.$el.addClass("node-error") : this.$el.removeClass("node-error");
     }
 
     newInputsDiv() {

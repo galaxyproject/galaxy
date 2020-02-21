@@ -134,7 +134,7 @@ class Workflow extends EventEmitter {
 
         // Create node wrapper
         const container = document.createElement("div");
-        container.className = "toolForm toolFormInCanvas";
+        container.className = "workflow-node";
         document.getElementById("canvas-container").appendChild(container);
         var $f = $(container);
 
