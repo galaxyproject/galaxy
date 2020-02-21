@@ -571,16 +571,29 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             # individual files we need to remove the entire directory structure
             # with all the files in it. This is easy for the local file system,
             # but requires iterating through each individual key in irods and deleing it.
-            #
-            # TODO!!!
-            #
             if entire_dir and extra_dir:
                 shutil.rmtree(self._get_cache_path(rel_path))
-                results = self.bucket.get_all_keys(prefix=rel_path)
-                for key in results:
-                    log.debug("Deleting key %s", key.name)
-                    key.delete()
+
+                col_path = self.home + "/" + str(rel_path)
+                col = None
+                try:
+                    col = self.session.collections.get(col_path)
+                except CollectionDoesNotExist:
+                    log.warn("Collection (%s) does not exist!", col_path)
+                    return False
+
+                cols = col.walk()
+                # Traverse the tree only one level deep 
+                for _ in range(2):
+                    # get next result
+                    _, _, data_objects = next(cols)
+
+                    # Delete data objects
+                    for data_object in data_objects:
+                        data_object.unlink(force=True)
+
                 return True
+
             else:
                 # Delete from cache first
                 os.unlink(self._get_cache_path(rel_path))
