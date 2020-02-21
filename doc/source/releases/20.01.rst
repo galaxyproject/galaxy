@@ -34,8 +34,14 @@ Enhancements
   `Pull Request 9062`_
 * IT fixes and 3 new ITs
   `Pull Request 9141`_
+* Remove GenomeSpace tools, OpenID, UI and requirements
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9363`_
 
 .. enhancement_tag_viz
+
+* Hyphy-vision fixes and updates.
+  `Pull Request 9384`_
 
 .. enhancement_tag_datatypes
 
@@ -51,7 +57,7 @@ Enhancements
 * Add new GROMACS datatypes: ndx, xvg, edr
   (thanks to `@simonbray <https://github.com/simonbray>`__).
   `Pull Request 8964`_
-* add gff3.gz and gff3.bz2 datatypes
+* Add gff3.gz and gff3.bz2 datatypes
   (thanks to `@FredericBGA <https://github.com/FredericBGA>`__).
   `Pull Request 8967`_
 * Make mol2 visible
@@ -60,14 +66,15 @@ Enhancements
 * Add a datatype subclass for CAT (Contig Annotation Tool)
   (thanks to `@jj-umn <https://github.com/jj-umn>`__).
   `Pull Request 9087`_
+* Add tabular.gz datatype and add embl to uploadable formats
+  `Pull Request 9293`_
 
 .. enhancement_tag_tools
 
 * Upgrade askomics interactive tool
   (thanks to `@xgaia <https://github.com/xgaia>`__).
   `Pull Request 8517`_
-* Remove collection ID character restriction from 'Relabel collection from
-  file' tool
+* Remove collection ID character restriction from 'Relabel collection from file' tool
   (thanks to `@brinkmanlab <https://github.com/brinkmanlab>`__).
   `Pull Request 8571`_
 * Allow space, dot and comma in relabel identifier tool
@@ -77,6 +84,8 @@ Enhancements
   `Pull Request 8888`_
 * Allow admins to import tools/workflows from paths.
   `Pull Request 9003`_
+* Move sam_pileup to GALAXY_LIB_TOOLS_VERSIONED
+  `Pull Request 9320`_
 
 .. enhancement_tag_workflows
 
@@ -105,8 +114,7 @@ Enhancements
   `Pull Request 8708`_
 * JobMetrics.vue unit test.
   `Pull Request 8732`_
-* Fix the flexible Data Dialog to work independent of the page layout
-  initialization hooks.
+* Fix the flexible Data Dialog to work independent of the page layout initialization hooks.
   `Pull Request 8744`_
 * axios-mock-adapter for cleaner, more expansive testing
   `Pull Request 8749`_
@@ -134,6 +142,10 @@ Enhancements
   `Pull Request 8997`_
 * Fix deletion of outputs and working before job
   `Pull Request 9245`_
+* Mount tool_data_path (ro) when running containerized tools
+  `Pull Request 9314`_
+* Allow remote jobs to configure Interactive Tool entry points.
+  `Pull Request 9349`_
 
 .. enhancement_tag_admin
 
@@ -147,7 +159,7 @@ Enhancements
 
 * Use official "login with" buttons for OIDC
   (thanks to `@hexylena <https://github.com/hexylena>`__).
-  `Pull Request 8107`_
+  `Pull Request 8107`_, `Pull Request 9102`_
 * Add data types to docs.galaxyproject.org
   (thanks to `@selten <https://github.com/selten>`__).
   `Pull Request 8531`_
@@ -178,8 +190,7 @@ Enhancements
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 8690`_
 * LDAP search member of filter
-  (thanks to `@BioinformaticsPlatformWIV-ISP
-  <https://github.com/BioinformaticsPlatformWIV-ISP>`__).
+  (thanks to `@BioinformaticsPlatformWIV-ISP <https://github.com/BioinformaticsPlatformWIV-ISP>`__).
   `Pull Request 8697`_
 * Rebuild and prettify config sample and doc
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
@@ -280,6 +291,8 @@ Enhancements
   `Pull Request 9128`_
 * mulled: use threading.Event in PrintProgress to avoid unnecessary wai…
   `Pull Request 9163`_
+* Set Conda environment variables  when running biocontainers
+  `Pull Request 9170`_
 * Update my username
   (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 9195`_
@@ -291,6 +304,10 @@ Enhancements
   `Pull Request 9210`_
 * Extended base annotation fixes
   `Pull Request 9224`_
+* External auth login refinement
+  `Pull Request 9233`_
+* Fixes for IGV GEDA handling of genomes
+  `Pull Request 9413`_
 
 .. small_enhancement
 
@@ -386,7 +403,10 @@ Enhancements
 * Update github username @erasche to @hexylena and correct inconsistencies
   (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 9194`_
-
+* Add requirements, fix legacy tools and move them out of GALAXY_LIB_TOOLS_UNVERSIONED
+  `Pull Request 9336`_
+* Add requirements to (almost) all converters, profile and minor fixes
+  `Pull Request 9345`_
 
 
 Fixes
@@ -403,13 +423,13 @@ Fixes
 * Ensure visible overflow on navbar container
   (thanks to `@kaukrise <https://github.com/kaukrise>`__).
   `Pull Request 9217`_
-
+* Various python 3 fixes from sentry
+  `Pull Request 9337`_
 
 .. bug_tag_datatypes
 
 * Fix cool sniffing on python3
   `Pull Request 9153`_
-
 
 .. bug_tag_tools
 
@@ -418,7 +438,13 @@ Fixes
   `Pull Request 8953`_
 * Add requirements to interval_to_bed_converter.xml
   `Pull Request 9041`_
-
+* Fix version in which ``sam_pileup`` was fixed
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9350`_
+* Expunge tool shed repository objects, prevents ParentInstanceDetachedError
+  `Pull Request 9354`_
+* Fix maf tools
+  `Pull Request 9393`_
 
 .. bug_tag_workflows
 
@@ -426,13 +452,10 @@ Fixes
   `Pull Request 9055`_
 * Rev gxformat2 dependency to fix various export issues.
   `Pull Request 9075`_
-
-.. bug_tag_ui
-
-* Run prettier after `#8107
-  <https://github.com/galaxyproject/galaxy/issues/8107>`__
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 9102`_
+* Fix workflow editor save as functionality
+  `Pull Request 9315`_
+* Various fixes and enhancements to reports
+  `Pull Request 9316`_
 
 .. bug_tag_jobs
 
@@ -462,6 +485,13 @@ Fixes
 * fix bug introduced in https://github.com/galaxyproject/galaxy/pull/9246
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 9253`_
+* Email notifications aren't used from just workflow steps anymore.
+  `Pull Request 9276`_
+* Use requests for slots instead of limit
+  (thanks to `@nuwang <https://github.com/nuwang>`__).
+  `Pull Request 9322`_
+* Make set metadata exec after process more robust
+  `Pull Request 9395`_
 
 .. bug_tag_admin
 
@@ -473,9 +503,10 @@ Fixes
   `Pull Request 8900`_
 * Assorted admin panel fixes
   `Pull Request 9097`_
-* Run integration tests on github, fix various bugs (interactive tools,
-  kubernetes, test framework)
+* Run integration tests on github, fix various bugs (interactive tools, kubernetes, test framework)
   `Pull Request 9193`_
+* Always add shed_tool_config file to tool_configs
+  `Pull Request 9364`_
 
 .. bug
 
@@ -510,8 +541,7 @@ Fixes
 * GRT: Ensure correct encoding, no partial lines
   (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 8712`_
-* Revise toolshed config dependency check error message in repository install
-  manager
+* Revise toolshed config dependency check error message in repository install manager
   `Pull Request 8720`_
 * Fix data dialog height, modal test case and table slots
   `Pull Request 8724`_
@@ -559,8 +589,7 @@ Fixes
 * make pgcleanup also delete HDAs
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 8908`_
-* Fix unbounded variable error in `GET /api/datasets/{encoded_dataset_id}`
-  exception handling
+* Fix unbounded variable error in `GET /api/datasets/{encoded_dataset_id}` exception handling
   `Pull Request 8935`_
 * Set `deleted` attribute of history datasets when purging histories from grid
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
@@ -642,8 +671,7 @@ Fixes
   `Pull Request 9168`_
 * Add static-safe mapping to config management
   `Pull Request 9179`_
-* Fix tool shed tests for `#9168
-  <https://github.com/galaxyproject/galaxy/issues/9168>`__.
+* Fix tool shed tests for `#9168 <https://github.com/galaxyproject/galaxy/issues/9168>`__.
   `Pull Request 9182`_
 * Add require_login bypass for entire authnz controller.
   `Pull Request 9192`_
@@ -669,7 +697,62 @@ Fixes
   `Pull Request 9267`_
 * backport 9268: Fix target_str_to_targets
   `Pull Request 9269`_
-
+* Backwards compatible build number parsing
+  `Pull Request 9278`_
+* Tag display fixes for ui-select.
+  `Pull Request 9281`_
+* Python3: don't check for has_key attribute
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9290`_
+* Prevent caching of bootstrapped client data
+  `Pull Request 9294`_
+* Add build_sites_config_file option to config_schema
+  `Pull Request 9297`_
+* Backport reports config/py3 fix
+  `Pull Request 9309`_
+* Python3: unicodify the output of ``subprocess.check_output()``
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9319`_
+* Fix reports disk usage query for python 3
+  `Pull Request 9321`_
+* Fix string module use
+  `Pull Request 9327`_
+* Fix Python 3 error in containers lib
+  `Pull Request 9329`_
+* Fix use of next() as a meethod instead of a function
+  `Pull Request 9330`_
+* Automatically resolve and add static-safe mappings for client-based images
+  `Pull Request 9331`_
+* Various doc fixes
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9334`_
+* Fix app reference in guess_shed_config
+  `Pull Request 9339`_
+* Make linters more robust on python 3
+  `Pull Request 9348`_
+* Use RenamedTemporaryFile for safer integrated_tool_panel_file writing
+  `Pull Request 9359`_
+* Only get non-deleted datasets when listing custom dbkeys
+  `Pull Request 9360`_
+* Prevent duplicate listing of doi link and link (text, with href doi link)
+  `Pull Request 9366`_
+* Styleguide fixes
+  `Pull Request 9367`_
+* Prevent tool execution getting stuck in history when a chromInfo data…
+  `Pull Request 9385`_
+* Move migrated_tools_conf > mutable_config_dir (`#9376 <https://github.com/galaxyproject/galaxy/issues/9376>`__)
+  `Pull Request 9388`_
+* Fix dependency for CONVERTER_tar_to_directory
+  `Pull Request 9389`_
+* Fix for qp method used in GEDAs.
+  `Pull Request 9391`_
+* Fix hid comparison failing with hdas without hid
+  `Pull Request 9398`_
+* Don't raise exception if anon goes to <galaxy_url>/user/resend_verification
+  `Pull Request 9404`_
+* Update bleach to 3.1.1
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9408`_
 
 .. include:: 20.01_prs.rst
 
