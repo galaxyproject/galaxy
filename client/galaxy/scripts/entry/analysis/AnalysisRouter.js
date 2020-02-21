@@ -24,7 +24,6 @@ import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
 import CustomBuilds from "components/User/CustomBuilds.vue";
 import Tours from "mvc/tours";
 import GridView from "mvc/grid/grid-view";
-import EntryPointGridView from "mvc/entrypoints/view";
 import GridShared from "mvc/grid/grid-shared";
 import WorkflowImport from "components/Workflow/WorkflowImport.vue";
 import InteractiveTools from "components/InteractiveTools/InteractiveTools.vue";
