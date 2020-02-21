@@ -1,0 +1,99 @@
+<?xml version="1.0"?>
+<display id="igv_genbank" version="1.0.0" name="display with IGV">
+    <!-- Load links from file: one line to one link -->
+    <dynamic_links site_type="igv" skip_startswith="#" id="0" name="1">
+        <!-- Define parameters by column from file, allow splitting on builds -->
+        <dynamic_param name="site_id" value="0"/>
+        <dynamic_param name="site_name" value="1"/>
+        <dynamic_param name="site_link" value="2"/>
+        <dynamic_param name="site_dbkeys" value="3" split="True" separator="," />
+        <dynamic_param name="site_organisms" value="4" split="True" separator="," />
+        <!-- Filter out some of the links based upon matching site_dbkeys to dataset dbkey -->
+        <filter>${$site_id.startswith( 'local_' ) or $dataset.dbkey in $site_dbkeys}</filter>
+        <!-- We define url and params as normal, but values defined in dynamic_param are available by specified name -->
+        <url>${redirect_url}</url>
+        <param type="data" name="genbank_file" url="galaxy_${DATASET_HASH}.gb" format="genbank" />
+        <param type="template" name="site_organism" strip="True" >
+            #if ($dataset.dbkey in $site_dbkeys)
+                $site_organisms[ $site_dbkeys.index( $genbank_file.dbkey ) ]
+            #else:
+                $genbank_file.dbkey
+            #end if
+        </param>
+        <param type="template" name="site_organism_query_param" strip="True">
+            #if str($site_organism) not in ['','?']:
+                &amp;genome=${qp($site_organism)}
+            #end if
+        </param>
+        <param type="template" name="jnlp" url="galaxy_${DATASET_HASH}.jnlp" viewable="True" mimetype="application/x-java-jnlp-file"><![CDATA[
+<?xml version="1.0" encoding="utf-8"?>
+<jnlp
+  spec="1.0+"
+  codebase="${site_link}">
+  <information>
+    <title>IGV 1.5</title>
+    <vendor>The Broad Institute</vendor>
+    <homepage href="http://www.broadinstitute.org/igv"/>
+    <description>IGV Software</description>
+    <description kind="short">IGV</description>
+  </information>
+  <security>
+      <all-permissions/>
+  </security>
+  <resources>
+<j2se version="1.5+" initial-heap-size="256m" max-heap-size="1100m"/>
+    <jar href="igv.jar" download="eager" main="true"/>
+    <jar href="batik-codec.jar" download="eager"/>
+    <property name="apple.laf.useScreenMenuBar" value="true"/>
+    <property name="com.apple.mrj.application.growbox.intrudes" value="false"/>
+    <property name="com.apple.mrj.application.live-resize" value="true"/>
+    <property name="com.apple.macos.smallTabs" value="true"/>
+  </resources>
+    <resources os="Mac" arch="i386">
+        <property name="apple.awt.graphics.UseQuartz" value="false"/>
+        <nativelib href="hdfnative-macintel.jar"/>
+    </resources>
+    <resources os="Mac" arch="ppc">
+        <property name="apple.awt.graphics.UseQuartz" value="false"/>
+        <nativelib href="hdfnative-macppc.jar"/>
+    </resources>
+    <resources os="Mac" arch="PowerPC">
+        <property name="apple.awt.graphics.UseQuartz" value="false"/>
+        <nativelib href="hdfnative-macppc.jar"/>
+    </resources>
+    <resources os="Windows">
+        <property name="sun.java2d.noddraw" value="true"/>
+        <nativelib href="hdfnative-win.jar"/>
+    </resources>
+    <resources os="Linux">
+        <nativelib href="hdfnative-linux64.jar"/>
+    </resources>
+  <application-desc main-class="org.broad.igv.ui.IGVMainFrame">
+     #if str($site_organism) not in ['?','']:
+     <argument>-g</argument>
+     <argument>${site_organism}</argument>
+     #end if
+     <argument>${genbank_file.url}</argument>
+  </application-desc>
+</jnlp>
+]]>
+        </param>
+        <param type="template" name="redirect_url" strip="True" >
+            #if $site_id.startswith( 'local_' )
+                ${site_link}?file=${genbank_file.qp}${site_organism_query_param}&amp;merge=true&amp;name=${qp( ( $genbank_file.name or $DATASET_HASH ).replace( ',', ';' ) )}
+            #elif $site_id.startswith( 'web_link_' ):
+                ${site_link}?sessionURL=${genbank_file.qp}${site_organism_query_param}&amp;merge=true&amp;name=${qp( ( $genbank_file.name or $DATASET_HASH ).replace( ',', ';' ) )}
+            #else:
+                ${jnlp.url}
+            #end if
+        </param>
+    </dynamic_links>
+    <dynamic_links from_data_table="igv_broad_genomes" skip_startswith="#" id="value" name="name">
+        <!-- Our input data table is one line per dbkey -->
+        <filter>${ $dataset.dbkey == $value }</filter>
+        <!-- We define url and params as normal, but values defined in dynamic_param are available by specified name -->
+        <url>http://www.broadinstitute.org/igv/projects/current/igv.php?sessionURL=${genbank_file.qp}&amp;genome=${qp($genbank_file.dbkey)}&amp;merge=true&amp;name=${qp( ( $genbank_file.name or $DATASET_HASH ).replace( ',', ';' ) )}</url>
+        <param type="data" name="genbank_file" url="galaxy_${DATASET_HASH}.gb" format="genbank" />
+    </dynamic_links>
+</display>
+<!-- Dan Blankenberg -->
