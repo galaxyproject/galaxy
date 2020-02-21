@@ -73,9 +73,9 @@
         </param>
         <param type="template" name="redirect_url" strip="True" >
             #if $site_id.startswith( 'local_' )
-                ${site_link}?file=${bed_file.qp}&amp;genome=${site_organism}&amp;merge=true&amp;name=${qp( ( $bed_file.name or $DATASET_HASH ).replace( ',', ';' ) )}
+                ${site_link}?file=${bed_file.qp}&amp;genome=${qp($site_organism)}&amp;merge=true&amp;name=${qp( ( $bed_file.name or $DATASET_HASH ).replace( ',', ';' ) )}
             #elif $site_id.startswith( 'web_link_' ):
-                ${site_link}?sessionURL=${bed_file.qp}&amp;genome=${site_organism}&amp;merge=true&amp;name=${qp( ( $bed_file.name or $DATASET_HASH ).replace( ',', ';' ) )}
+                ${site_link}?sessionURL=${bed_file.qp}&amp;genome=${qp($site_organism)}&amp;merge=true&amp;name=${qp( ( $bed_file.name or $DATASET_HASH ).replace( ',', ';' ) )}
             #else:
                 ${jnlp.url}
             #end if
@@ -85,7 +85,7 @@
         <!-- Our input data table is one line per dbkey -->
         <filter>${ $dataset.dbkey == $value }</filter>
         <!-- We define url and params as normal, but values defined in dynamic_param are available by specified name -->
-        <url>http://www.broadinstitute.org/igv/projects/current/igv.php?sessionURL=${bed_file.qp}&amp;genome=${bed_file.dbkey}&amp;merge=true&amp;name=${qp( ( $bed_file.name or $DATASET_HASH ).replace( ',', ';' ) )}</url>
+        <url>http://www.broadinstitute.org/igv/projects/current/igv.php?sessionURL=${bed_file.qp}&amp;genome=${qp($bed_file.dbkey)}&amp;merge=true&amp;name=${qp( ( $bed_file.name or $DATASET_HASH ).replace( ',', ';' ) )}</url>
         <param type="data" name="bed_file" url="galaxy_${DATASET_HASH}.bed" format="bedstrict" />
     </dynamic_links>
 </display>

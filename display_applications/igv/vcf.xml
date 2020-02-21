@@ -74,9 +74,9 @@
         </param>
         <param type="template" name="redirect_url" strip="True" >
             #if $site_id.startswith( 'local_' )
-                ${site_link}?file=${bgzip_file.qp}&amp;genome=${site_organism}&amp;merge=true&amp;name=${qp( ( $bgzip_file.name or $DATASET_HASH ).replace( ',', ';' ) )}
+                ${site_link}?file=${bgzip_file.qp}&amp;genome=${qp($site_organism)}&amp;merge=true&amp;name=${qp( ( $bgzip_file.name or $DATASET_HASH ).replace( ',', ';' ) )}
             #elif $site_id.startswith( 'web_link_' ):
-                ${site_link}?sessionURL=${bgzip_file.qp}&amp;genome=${site_organism}&amp;merge=true&amp;name=${qp( ( $bgzip_file.name or $DATASET_HASH ).replace( ',', ';' ) )}
+                ${site_link}?sessionURL=${bgzip_file.qp}&amp;genome=${qp($site_organism)}&amp;merge=true&amp;name=${qp( ( $bgzip_file.name or $DATASET_HASH ).replace( ',', ';' ) )}
             #else:
                 ${jnlp.url}
             #end if
@@ -86,7 +86,7 @@
         <!-- Our input data table is one line per dbkey -->
         <filter>${ $dataset.dbkey == $value }</filter>
         <!-- We define url and params as normal, but values defined in dynamic_param are available by specified name -->
-        <url>http://www.broadinstitute.org/igv/projects/current/igv.php?sessionURL=${bgzip_file.qp}&amp;genome=$bgzip_file.dbkey&amp;merge=true&amp;name=${qp( ( $bgzip_file.name or $DATASET_HASH ).replace( ',', ';' ) )}</url>
+        <url>http://www.broadinstitute.org/igv/projects/current/igv.php?sessionURL=${bgzip_file.qp}&amp;genome=${qp($bgzip_file.dbkey)}&amp;merge=true&amp;name=${qp( ( $bgzip_file.name or $DATASET_HASH ).replace( ',', ';' ) )}</url>
         <param type="data" name="bgzip_file" url="galaxy_${DATASET_HASH}.vcf.gz" format="vcf_bgzip" />
         <param type="data" name="tabix_file" dataset="bgzip_file" url="galaxy_${DATASET_HASH}.vcf.gz.tbi" format="tabix" />
     </dynamic_links>
