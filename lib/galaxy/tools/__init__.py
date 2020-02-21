@@ -2636,7 +2636,7 @@ class DatabaseOperationTool(Tool):
                 if not input_dataset_collection.collection.populated:
                     raise ToolInputsNotReadyException("An input collection is not populated.")
 
-            map(check_dataset_instance, input_dataset_collection.dataset_instances)
+            list(map(check_dataset_instance, input_dataset_collection.dataset_instances))
 
     def _add_datasets_to_history(self, history, elements, datasets_visible=False):
         datasets = []

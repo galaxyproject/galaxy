@@ -1088,7 +1088,7 @@ class ToolTestDescription(object):
         return {
             "inputs": inputs_dict,
             "outputs": self.outputs,
-            "output_collections": map(lambda o: o.to_dict(), self.output_collections),
+            "output_collections": list(map(lambda o: o.to_dict(), self.output_collections)),
             "num_outputs": self.num_outputs,
             "command_line": self.command_line,
             "command_version": self.command_version,

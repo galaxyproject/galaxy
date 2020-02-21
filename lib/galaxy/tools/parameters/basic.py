@@ -936,7 +936,7 @@ class SelectToolParameter(ToolParameter):
         # FIXME: Currently only translating values back to labels if they
         #        are not dynamic
         if self.is_dynamic:
-            rval = map(str, value)
+            rval = [str(_) for _ in value]
         else:
             options = list(self.static_options)
             rval = []
