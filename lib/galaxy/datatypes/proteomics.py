@@ -782,7 +782,7 @@ class ThermoRAW(Binary):
     """Class describing a Thermo Finnigan binary RAW file"""
     edam_data = "data_2536"
     edam_format = "format_3712"
-    file_ext = "raw"
+    file_ext = "thermo.raw"
 
     def sniff(self, filename):
         # Thermo Finnigan RAW format is proprietary and hence not well documented.
