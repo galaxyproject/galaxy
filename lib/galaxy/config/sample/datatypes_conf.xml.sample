@@ -248,6 +248,7 @@
     <datatype extension="mzid" type="galaxy.datatypes.proteomics:MzIdentML" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="idxml" type="galaxy.datatypes.proteomics:IdXML" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="tandem" type="galaxy.datatypes.proteomics:TandemXML" mimetype="application/xml" display_in_upload="true"/>
+    <datatype extension="sirius.ms" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="false"/>
     <datatype extension="thermo.raw" type="galaxy.datatypes.proteomics:ThermoRAW" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="brukerbaf.d.tar" type="galaxy.datatypes.binary:BafTar" display_in_upload="true"/>
     <datatype extension="agilentbrukeryep.d.tar" type="galaxy.datatypes.binary:YepTar" display_in_upload="true"/>
