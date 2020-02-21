@@ -1593,11 +1593,13 @@ class PQP(SQlite):
         for now VERSION GENE PEPTIDE_GENE_MAPPING are excluded, since
         there is test data wo these tables, see also here https://github.com/OpenMS/OpenMS/issues/4365
         """
+        if not super(PQP, self).sniff(filename):
+            return False
         table_names = ['COMPOUND', 'PEPTIDE', 'PEPTIDE_PROTEIN_MAPPING', 'PRECURSOR',
                        'PRECURSOR_COMPOUND_MAPPING', 'PRECURSOR_PEPTIDE_MAPPING', 'PROTEIN',
                        'TRANSITION', 'TRANSITION_PEPTIDE_MAPPING', 'TRANSITION_PRECURSOR_MAPPING']
         osw_table_names = ['FEATURE', 'FEATURE_MS1', 'FEATURE_MS2', 'FEATURE_TRANSITION', 'RUN']
-        return super(PQP, self).sniff(filename) and self.sniff_table_names(filename, table_names) and not self.sniff_table_names(filename, osw_table_names)
+        return self.sniff_table_names(filename, table_names) and not self.sniff_table_names(filename, osw_table_names)
 
 
 class OSW(SQlite):
@@ -1620,11 +1622,13 @@ class OSW(SQlite):
     def sniff(self, filename):
         # osw seems to be an extension of pqp (few tables are added)
         # see also here https://github.com/OpenMS/OpenMS/issues/4365
+        if not super(OSW, self).sniff(filename):
+            return False
         table_names = ['COMPOUND', 'PEPTIDE', 'PEPTIDE_PROTEIN_MAPPING', 'PRECURSOR',
                        'PRECURSOR_COMPOUND_MAPPING', 'PRECURSOR_PEPTIDE_MAPPING', 'PROTEIN',
                        'TRANSITION', 'TRANSITION_PEPTIDE_MAPPING', 'TRANSITION_PRECURSOR_MAPPING',
                        'FEATURE', 'FEATURE_MS1', 'FEATURE_MS2', 'FEATURE_TRANSITION', 'RUN']
-        return super(OSW, self).sniff(filename) and self.sniff_table_names(filename, table_names)
+        return self.sniff_table_names(filename, table_names)
 
 
 class SQmass(SQlite):
