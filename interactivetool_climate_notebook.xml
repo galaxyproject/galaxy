@@ -41,7 +41,7 @@
         #else:
             #set $cleaned_name = re.sub('[^\w\-\.]', '_', str($mode.ipynb.element_identifier))
             get -t hid -i '${mode.ipynb.hid}' &&
-            ln -sf '/import/${mode.ipynb.hid}' './data/${cleaned_name}'
+            ln -sf '/import/${mode.ipynb.hid}' './data/${cleaned_name}' &&
             jupyter trust ./${cleaned_name} &&
 
             #if $mode.run_it:
