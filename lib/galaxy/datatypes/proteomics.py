@@ -7,6 +7,7 @@ import re
 from galaxy.datatypes import data
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import Text
+from galaxy.datatypes.sequence import Sequence
 from galaxy.datatypes.sniff import build_sniff_from_prefix
 from galaxy.datatypes.tabular import Tabular, TabularData
 from galaxy.datatypes.xml import GenericXml
@@ -241,6 +242,31 @@ class PSMS(Tabular):
         if line == self.column_names:
             return True
         return False
+
+
+@build_sniff_from_prefix
+class PEFF(Sequence):
+    """
+    PSI Extended FASTA Format
+    https://github.com/HUPO-PSI/PEFF
+    """
+    file_ext = "peff"
+
+    def sniff_prefix(self, file_prefix):
+        """
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( 'test.peff' )
+        >>> PEFF().sniff( fname )
+        True
+        >>> fname = get_test_fname( 'sequence.fasta' )
+        >>> PEFF().sniff( fname )
+        False
+        """
+        fh = file_prefix.string_io()
+        if re.match(r"# PEFF \d+.\d+", fh.readline()):
+            return True
+        else:
+            return False
 
 
 class PepXmlReport(Tabular):
