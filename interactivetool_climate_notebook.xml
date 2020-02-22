@@ -23,7 +23,8 @@
 
         #if $input:
             #set $cleaned_name = re.sub('[^\w\-\.]', '_', str($input.element_identifier))
-            cp '$input' './jupyter/data/${cleaned_name}' &&
+	    get -t hid -i '${input.hid}' &&
+	    ln -sf '/import/${input.hid}' './jupyter/data/${cleaned_name}' &&
         #end if
 
         ## change into the directory where the notebooks are located
@@ -32,15 +33,16 @@
 
         #if $mode.mode_select == 'scratch':
             ## copy default notebook
-            cp '$__tool_directory__/default_notebook.ipynb' ./ipython_galaxy_notebook.ipynb &&
+            cp '/home/jovyan/default_notebook.ipynb' ./ipython_galaxy_notebook.ipynb &&
             jupyter trust ./ipython_galaxy_notebook.ipynb &&
             jupyter lab --allow-root --no-browser --NotebookApp.shutdown_button=True &&
             cp ./ipython_galaxy_notebook.ipynb '$jupyter_notebook'
 
         #else:
-            #set $cleaned_name = re.sub('[^\w\-\.]', '_', str($input.element_identifier))
-            cp '$mode.ipynb' ./${cleaned_name}.ipynb &&
-            jupyter trust ./${cleaned_name}.ipynb &&
+            #set $cleaned_name = re.sub('[^\w\-\.]', '_', str($mode.ipynb.element_identifier))
+	    get -t hid -i '${mode.ipynb.hid}' &&
+	    ln -sf '/import/${mode.ipynb.hid}' './jupyter/data/${cleaned_name}' &&
+            jupyter trust ./${cleaned_name} &&
 
             #if $mode.run_it:
                 jupyter nbconvert --to notebook --execute --output ./ipython_galaxy_notebook.ipynb --allow-errors  ./*.ipynb &&
