@@ -359,8 +359,6 @@
       <converter file="tabular_to_csv.xml" target_datatype="csv"/>
     </datatype>
     <datatype extension="twobit" type="galaxy.datatypes.binary:TwoBit" mimetype="application/octet-stream" display_in_upload="true"/>
-    <datatype extension="pqp" type="galaxy.datatypes.binary:SQlite" mimetype="application/octet-stream" display_in_upload="true"/>
-    <datatype extension="osw" type="galaxy.datatypes.binary:SQlite" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="sqmass" type="galaxy.datatypes.binary:SQmass" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="gemini.sqlite" type="galaxy.datatypes.binary:GeminiSQLite" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="cuffdiff.sqlite" type="galaxy.datatypes.binary:CuffDiffSQlite" display_in_upload="true"/>
