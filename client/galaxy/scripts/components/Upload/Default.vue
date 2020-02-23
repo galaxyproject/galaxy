@@ -1,5 +1,5 @@
 <template>
-    <upload-wrapper ref="wrapper" :top-info="topInfo">
+    <upload-wrapper ref="wrapper" :top-info="topInfo" :highlight-box="highlightBox">
         <div class="upload-helper" v-show="showHelper"><i class="fa fa-files-o" />Drop files here</div>
         <table class="upload-table ui-table-striped" v-show="!showHelper" ref="uploadTable">
             <thead>
@@ -114,6 +114,7 @@ export default {
     data() {
         return {
             topInfo: "",
+            highlightBox: false,
             showHelper: true,
             extension: this.app.defaultExtension,
             genome: this.app.defaultGenome,
@@ -171,10 +172,10 @@ export default {
                 this._eventComplete();
             },
             ondragover: () => {
-                this.hightlightBox = true;
+                this.highlightBox = true;
             },
             ondragleave: () => {
-                this.hightlightBox = false;
+                this.highlightBox = false;
             }
         });
         this.collection.on("remove", model => {
