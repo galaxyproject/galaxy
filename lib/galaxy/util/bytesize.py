@@ -45,7 +45,7 @@ class ByteSize(object):
 
 
 def parse_bytesize(value):
-    if isinstance(value, int):
+    if isinstance(value, int) or isinstance(value, float):
         # Assume bytes
         return value
     value = value.upper()
