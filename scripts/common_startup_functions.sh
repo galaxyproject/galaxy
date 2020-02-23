@@ -88,9 +88,9 @@ conda_activate() {
         echo "         starting Galaxy."
         PATH="$(get_conda_env_path $GALAXY_CONDA_ENV)/bin:$PATH"
         CONDA_DEFAULT_ENV="$GALAXY_CONDA_ENV"
-        CONDA_PREFIX="$(get_conda_root_path)"
+        CONDA_PREFIX="$(get_conda_active_prefix)"
     else
-        source activate "$GALAXY_CONDA_ENV"
+        source "$(get_conda_root_prefix)"/bin/activate "$GALAXY_CONDA_ENV"
     fi
 }
 
@@ -225,7 +225,13 @@ set_conda_info() {
     fi
 }
 
-get_conda_root_path() {
+get_conda_active_prefix() {
+    set_conda_info
+    printf "%s" "$__CONDA_INFO" \
+        | python -c "import json, sys; print(json.load(sys.stdin)['active_prefix'])"
+}
+
+get_conda_root_prefix() {
     set_conda_info
     printf "%s" "$__CONDA_INFO" \
         | python -c "import json, sys; print(json.load(sys.stdin)['root_prefix'])"
