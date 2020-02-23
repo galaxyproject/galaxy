@@ -556,7 +556,7 @@ var View = Backbone.View.extend({
                         this.submissionErrorModal(job_def, response);
                     }
                 },
-                error: function(response) {
+                error: response => {
                     Galaxy.emit.debug("tool-form-composite::submit", "Submission failed.", response);
                     var input_found = false;
                     if (response && response.err_data) {
