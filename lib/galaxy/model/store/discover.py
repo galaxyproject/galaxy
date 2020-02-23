@@ -58,6 +58,7 @@ class ModelPersistenceContext(object):
         sources=[],
         hashes=[],
         created_from_basename=None,
+        final_job_state='ok',
     ):
         sa_session = self.sa_session
 
@@ -103,10 +104,10 @@ class ModelPersistenceContext(object):
                                                                      flush=False,
                                                                      sa_session=sa_session)
                 ld.library_dataset_dataset_association = ldda
-                ldda.raw_set_dataset_state(ldda.states.OK)
 
                 self.add_library_dataset_to_folder(library_folder, ld)
                 primary_data = ldda
+        primary_data.raw_set_dataset_state(final_job_state)
 
         for source_dict in sources:
             source = galaxy.model.DatasetSource()
@@ -165,20 +166,28 @@ class ModelPersistenceContext(object):
                 dataset_att_name = dataset_att_by_name.get(att_set, att_set)
                 setattr(primary_data, dataset_att_name, dataset_attributes.get(att_set, getattr(primary_data, dataset_att_name)))
 
-        metadata_dict = dataset_attributes.get('metadata', None)
-        if metadata_dict:
-            if "dbkey" in dataset_attributes:
-                metadata_dict["dbkey"] = dataset_attributes["dbkey"]
-            # branch tested with tool_provided_metadata_3 / tool_provided_metadata_10
-            primary_data.metadata.from_JSON_dict(json_dict=metadata_dict)
-        else:
-            primary_data.set_meta()
+        try:
+            metadata_dict = dataset_attributes.get('metadata', None)
+            if metadata_dict:
+                if "dbkey" in dataset_attributes:
+                    metadata_dict["dbkey"] = dataset_attributes["dbkey"]
+                # branch tested with tool_provided_metadata_3 / tool_provided_metadata_10
+                primary_data.metadata.from_JSON_dict(json_dict=metadata_dict)
+            else:
+                primary_data.set_meta()
+        except Exception:
+            if primary_data.state == galaxy.model.HistoryDatasetAssociation.states.OK:
+                primary_data.state = galaxy.model.HistoryDatasetAssociation.states.FAILED_METADATA
+            log.exception("Exception occured while setting metdata")
 
-        primary_data.set_peek()
+        try:
+            primary_data.set_peek()
+        except Exception:
+            log.exception("Exception occured while setting dataset peek")
 
         return primary_data
 
-    def populate_collection_elements(self, collection, root_collection_builder, filenames, name=None, metadata_source_name=None):
+    def populate_collection_elements(self, collection, root_collection_builder, filenames, name=None, metadata_source_name=None, final_job_state='ok'):
         # TODO: allow configurable sorting.
         #    <sort by="lexical" /> <!-- default -->
         #    <sort by="reverse_lexical" />
@@ -225,6 +234,7 @@ class ModelPersistenceContext(object):
                 sources=sources,
                 hashes=hashes,
                 created_from_basename=created_from_basename,
+                final_job_state=final_job_state,
             )
             log.debug(
                 "(%s) Created dynamic collection dataset for path [%s] with element identifier [%s] for output [%s] %s",
@@ -255,8 +265,6 @@ class ModelPersistenceContext(object):
             element_identifier_str = ":".join(element_identifiers)
             association_name = '__new_primary_file_%s|%s__' % (name, element_identifier_str)
             self.add_output_dataset_association(association_name, dataset)
-
-            dataset.raw_set_dataset_state('ok')
 
         self.flush()
 
@@ -511,7 +519,7 @@ def persist_elements_to_folder(model_persistence_context, elements, library_fold
             )
 
 
-def persist_hdas(elements, model_persistence_context):
+def persist_hdas(elements, model_persistence_context, final_job_state='ok'):
     # discover files as individual datasets for the target history
     datasets = []
 
@@ -553,8 +561,8 @@ def persist_hdas(elements, model_persistence_context):
                     sources=sources,
                     hashes=hashes,
                     created_from_basename=created_from_basename,
+                    final_job_state=final_job_state,
                 )
-                dataset.raw_set_dataset_state('ok')
                 if not hda_id:
                     datasets.append(dataset)
 
