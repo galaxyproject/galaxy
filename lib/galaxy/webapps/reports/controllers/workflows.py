@@ -64,14 +64,14 @@ class SpecifiedDateListGrid(grids.Grid):
             # so we need to figure out which type of date we have
             if column_filter.count('-') == 2:
                 # We are filtering on a date like YYYY-MM-DD
-                year, month, day = map(int, column_filter.split("-"))
+                year, month, day = list(map(int, column_filter.split("-")))
                 start_date = date(year, month, day)
                 end_date = start_date + timedelta(days=1)
                 return query.filter(and_(self.model_class.table.c.create_time >= start_date,
                                          self.model_class.table.c.create_time < end_date))
             if column_filter.count('-') == 1:
                 # We are filtering on a month like YYYY-MM
-                year, month = map(int, column_filter.split("-"))
+                year, month = list(map(int, column_filter.split("-")))
                 start_date = date(year, month, 1)
                 end_date = start_date + timedelta(days=calendar.monthrange(year, month)[1])
                 return query.filter(and_(self.model_class.table.c.create_time >= start_date,

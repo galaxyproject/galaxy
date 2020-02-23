@@ -163,7 +163,7 @@ class CwlPageSource(PageSource):
 
     def __init__(self, tool_proxy):
         cwl_instances = tool_proxy.input_instances()
-        self._input_list = map(self._to_input_source, cwl_instances)
+        self._input_list = list(map(self._to_input_source, cwl_instances))
 
     def _to_input_source(self, input_instance):
         as_dict = input_instance.to_dict()

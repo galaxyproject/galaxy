@@ -144,7 +144,7 @@ def wrap_with_safe_string(value, no_wrap_classes=None):
             return safe_class(value, safe_string_wrapper_function=__do_wrap)
         for this_type in __WRAP_SEQUENCES__ + __WRAP_SETS__:
             if isinstance(value, this_type):
-                return this_type(map(__do_wrap, value))
+                return this_type(list(map(__do_wrap, value)))
         for this_type in __WRAP_MAPPINGS__:
             if isinstance(value, this_type):
                 # Wrap both key and value
