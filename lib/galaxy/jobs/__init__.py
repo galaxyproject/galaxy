@@ -1703,7 +1703,7 @@ class JobWrapper(HasResourceParameters):
         if not extended_metadata:
             # importing metadata will discover outputs if extended metadata
             # is enabled.
-            self.discover_outputs(job, inp_data, out_data, out_collections)
+            self.discover_outputs(job, inp_data, out_data, out_collections, final_job_state=final_job_state)
 
         # Certain tools require tasks to be completed after job execution
         # ( this used to be performed in the "exec_after_process" hook, but hooks are deprecated ).
@@ -1751,7 +1751,7 @@ class JobWrapper(HasResourceParameters):
         self.cleanup(delete_files=delete_files)
         log.debug(finish_timer.to_str(job_id=self.job_id, tool_id=job.tool_id))
 
-    def discover_outputs(self, job, inp_data, out_data, out_collections):
+    def discover_outputs(self, job, inp_data, out_data, out_collections, final_job_state):
         # Try to just recover input_ext and dbkey from job parameters (used and set in
         # galaxy.tools.actions). Old jobs may have not set these in the job parameters
         # before persisting them.
@@ -1784,6 +1784,7 @@ class JobWrapper(HasResourceParameters):
             inp_data=inp_data,
             input_ext=input_ext,
             input_dbkey=input_dbkey,
+            final_job_state=final_job_state,
         )
 
     def check_tool_output(self, tool_stdout, tool_stderr, tool_exit_code, job, job_stdout=None, job_stderr=None):
