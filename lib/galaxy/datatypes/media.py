@@ -105,6 +105,32 @@ class Mpg(Video):
         return 'mpegvideo' in metadata['format_name'].split(',')
 
 
+class Mov(Video):
+    file_ext = "mov"
+
+    def sniff(self, filename):
+        metadata, streams = ffprobe(filename)
+        return 'mov' in metadata['format_name'].split(',')
+
+
+class Avi(Video):
+    file_ext = "avi"
+
+    def sniff(self, filename):
+        metadata, streams = ffprobe(filename)
+        return 'avi' in metadata['format_name'].split(',')
+
+
+class Ogv(Video):
+    file_ext = "ogv"
+
+    def sniff(self, filename):
+        metadata, streams = ffprobe(filename)
+        # Must be ogg format in metadata plus must include at least one 'video' stream
+        return 'ogg' in metadata['format_name'].split(',') and \
+            any([stream['codec_type'] == 'video' for stream in streams])
+
+
 class Mp3(Audio):
     """Class that reads MP3 audio file
     >>> from galaxy.datatypes.sniff import get_test_fname
@@ -120,6 +146,17 @@ class Mp3(Audio):
     def sniff(self, filename):
         metadata, streams = ffprobe(filename)
         return 'mp3' in metadata['format_name'].split(',')
+
+
+class Oga(Audio):
+    file_ext = "oga"
+
+    def sniff(self, filename):
+        metadata, streams = ffprobe(filename)
+        # Must be ogg format in metadata plus must include at least one 'video' stream
+        return 'ogg' in metadata['format_name'].split(',') and \
+            not any([stream['codec_type'] == 'video' for stream in streams]) and \
+            any([stream['codec_type'] == 'audio' for stream in streams])
 
 
 class WAV(Binary):
