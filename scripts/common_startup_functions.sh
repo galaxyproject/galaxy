@@ -88,9 +88,9 @@ conda_activate() {
         echo "         starting Galaxy."
         PATH="$(get_conda_env_path $GALAXY_CONDA_ENV)/bin:$PATH"
         CONDA_DEFAULT_ENV="$GALAXY_CONDA_ENV"
-        CONDA_PREFIX="$(get_conda_root_path)"
+        CONDA_PREFIX="$(get_conda_active_prefix)"
     else
-        source activate "$GALAXY_CONDA_ENV"
+        source "$(get_conda_root_prefix)"/bin/activate "$GALAXY_CONDA_ENV"
     fi
 }
 
@@ -99,7 +99,7 @@ setup_python() {
     # should run this instance in.
     : ${GALAXY_VIRTUAL_ENV:=.venv}
     # $GALAXY_CONDA_ENV isn't set here to avoid running the version check if not using Conda
-    if [ -d "$GALAXY_VIRTUAL_ENV" -a -z "$skip_venv" ]; then
+    if [ -d "$GALAXY_VIRTUAL_ENV" ] && [ -z "$skip_venv" ]; then
         [ -n "$PYTHONPATH" ] && { echo 'Unsetting $PYTHONPATH'; unset PYTHONPATH; }
         echo "Activating virtualenv at $GALAXY_VIRTUAL_ENV"
         . "$GALAXY_VIRTUAL_ENV/bin/activate"
@@ -148,7 +148,7 @@ find_server() {
     APP_WEBSERVER=${APP_WEBSERVER:-$default_webserver}
     if [ "$APP_WEBSERVER" = "uwsgi" ]; then
         # Look for uwsgi
-        if [ -z "$skip_venv" -a -x $GALAXY_VIRTUAL_ENV/bin/uwsgi ]; then
+        if [ -z "$skip_venv" ] && [ -x $GALAXY_VIRTUAL_ENV/bin/uwsgi ]; then
             UWSGI=$GALAXY_VIRTUAL_ENV/bin/uwsgi
         elif command -v uwsgi >/dev/null 2>&1; then
             UWSGI=uwsgi
@@ -160,7 +160,7 @@ find_server() {
         [ -n "$server_app" ] && arg_getter_args="$arg_getter_args --app $server_app"
         run_server="$UWSGI"
         server_args=
-        if [ -z "$stop_daemon_arg_set" -a -z "$restart_arg_set" ]; then
+        if [ -z "$stop_daemon_arg_set" ] && [ -z "$restart_arg_set" ]; then
             server_args="$(eval python ./scripts/get_uwsgi_args.py $arg_getter_args)"
         fi
         server_args="$server_args $uwsgi_args"
@@ -193,13 +193,13 @@ find_server() {
 # to the `conda` script in the base environment. Thus in Conda 4.4, it may not be possible to locate `conda` even if you
 # are using Conda.
 set_conda_exe() {
-    [ -z "$_CONDA_EXE_SET" ] || return 0
+    [ -n "$CONDA_EXE" ] || [ -n "$_CONDA_EXE_SET" ] && return 0
     if python -V 2>&1 | grep -q -e 'Anaconda' -e 'Continuum Analytics' || \
             python -c 'import sys; print(sys.version.replace("\n", " "))' | grep -q -e 'packaged by conda-forge' ; then
-        : ${CONDA_EXE:=$(command -v conda)}
+        CONDA_EXE=$(command -v conda)
         if [ -z "$CONDA_EXE" ]; then
             echo "WARNING: \`python\` is from conda, but the \`conda\` command cannot be found."
-            pydir="$(dirname $(command -v python))"
+            pydir="$(dirname "$(command -v python)")"
             for CONDA_EXE in $pydir/conda $pydir/../../../bin/conda; do
                 [ -x "$CONDA_EXE" ] && break || unset CONDA_EXE
             done
@@ -209,7 +209,7 @@ set_conda_exe() {
                 echo "         $ conda activate base"
             else
                 echo "Guessed conda location: $CONDA_EXE"
-                PATH="$(dirname $CONDA_EXE):$PATH"
+                PATH="$(dirname "$CONDA_EXE"):$PATH"
             fi
         else
             echo "Found conda at: $CONDA_EXE"
@@ -220,12 +220,18 @@ set_conda_exe() {
 
 set_conda_info() {
     # cache conda info to avoid the cost of running it multiple times
-    if [ -z "$__CONDA_INFO" -o "$1" = "reset" ]; then
+    if [ -z "$__CONDA_INFO" ]; then
         __CONDA_INFO="$(${CONDA_EXE:-conda} info --json)"
     fi
 }
 
-get_conda_root_path() {
+get_conda_active_prefix() {
+    set_conda_info
+    printf "%s" "$__CONDA_INFO" \
+        | python -c "import json, sys; print(json.load(sys.stdin)['active_prefix'])"
+}
+
+get_conda_root_prefix() {
     set_conda_info
     printf "%s" "$__CONDA_INFO" \
         | python -c "import json, sys; print(json.load(sys.stdin)['root_prefix'])"
