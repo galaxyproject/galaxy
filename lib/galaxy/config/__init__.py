@@ -741,7 +741,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         """
         defaults = dict(
             auth_config_file=[self._in_config_dir('auth_conf.xml')],
-            build_sites_config_file=[self._in_config_dir('build_sites.yml')],
+            build_sites_config_file=[self._in_config_dir('build_sites.yml'), self._in_sample_dir('build_sites.yml.sample')],
             containers_config_file=[self._in_config_dir('containers_conf.yml')],
             data_manager_config_file=[self._in_config_dir('data_manager_conf.xml')],
             datatypes_config_file=[self._in_config_dir('datatypes_conf.xml'), self._in_sample_dir('datatypes_conf.xml.sample')],
