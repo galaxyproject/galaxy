@@ -11,7 +11,12 @@ jobs:
     steps:
     - uses: actions/checkout@v2
       with:
-        fetch-depth: 1
+        path: 'galaxy root'
+    - name: Clone galaxyproject/galaxy-test-data
+      uses: actions/checkout@v2
+      with:
+        repository: galaxyproject/galaxy-test-data
+        path: galaxy-test-data
     - uses: actions/setup-python@v1
       with:
         python-version: ${{ matrix.python-version }}
@@ -20,10 +25,10 @@ jobs:
       id: pip-cache
       with:
         path: ~/.cache/pip
-        key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('requirements.txt') }}
-    - name: fetch test data
-      run: git clone https://github.com/galaxyproject/galaxy-test-data && cp -R galaxy-test-data/* test-data
+        key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
+    - name: Move test data
+      run: rsync -av --remove-source-files --exclude .git galaxy-test-data/ 'galaxy root/test-data/'
     - name: Install planemo
       run: pip install planemo
     - name: Run tests
-      run: 'planemo test --galaxy_python_version ${{ matrix.python-version }} --galaxy_root .  lib/galaxy/datatypes/converters/*xml'
+      run: planemo test --galaxy_python_version ${{ matrix.python-version }} --galaxy_root 'galaxy root' 'galaxy root'/lib/galaxy/datatypes/converters/*xml
