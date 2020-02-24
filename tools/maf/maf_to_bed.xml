@@ -1,4 +1,4 @@
-<tool id="MAF_To_BED1" name="MAF to BED" version="1.0.0">
+<tool id="MAF_To_BED1" name="MAF to BED" version="1.0.0" profile="16.04">
     <description>Converts a MAF formatted file to the BED format</description>
     <macros>
         <import>macros.xml</import>

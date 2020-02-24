@@ -3,17 +3,21 @@ from __future__ import print_function
 
 import collections
 import hashlib
+import logging
+import re
 import sys
+import tarfile
 import threading
-import time
+from io import BytesIO
 
 import packaging.version
-try:
-    import requests
-except ImportError:
-    requests = None
+import requests
 
-MULLED_TAG_CACHE = collections.defaultdict(dict)
+log = logging.getLogger(__name__)
+
+QUAY_REPOSITORY_API_ENDPOINT = 'https://quay.io/api/v1/repository'
+BUILD_NUMBER_REGEX = re.compile(r'\d+$')
+PARSED_TAG = collections.namedtuple('ParsedTag', 'tag version build_string build_number')
 
 
 def create_repository(namespace, repo_name, oauth_token):
@@ -36,15 +40,12 @@ def quay_versions(namespace, pkg_name):
         return []
 
     if 'tags' not in data:
-        raise Exception("Unexpected response from quay.io - not tags description found [%s]" % data)
+        raise Exception("Unexpected response from quay.io - no tags description found [%s]" % data)
 
-    return [tag for tag in data['tags'] if tag != 'latest']
+    return [tag for tag in data['tags'].keys() if tag != 'latest']
 
 
 def quay_repository(namespace, pkg_name):
-    if requests is None:
-        raise Exception("requets library is unavailable, functionality not available.")
-
     assert namespace is not None
     assert pkg_name is not None
     url = 'https://quay.io/api/v1/repository/%s/%s' % (namespace, pkg_name)
@@ -53,24 +54,56 @@ def quay_repository(namespace, pkg_name):
     return data
 
 
-def mulled_tags_for(namespace, image, tag_prefix=None):
+def _namespace_has_repo_name(namespace, repo_name, resolution_cache):
+    """
+    Get all quay containers in the biocontainers repo
+    """
+    cache_key = "galaxy.tool_util.deps.container_resolvers.mulled.util:namespace_repo_names"
+    if resolution_cache is not None and cache_key in resolution_cache:
+        repo_names = resolution_cache.get(cache_key)
+    else:
+        repos_parameters = {'public': 'true', 'namespace': namespace}
+        repos_headers = {'Accept-encoding': 'gzip', 'Accept': 'application/json'}
+        repos_response = requests.get(
+            QUAY_REPOSITORY_API_ENDPOINT, headers=repos_headers, params=repos_parameters, timeout=None)
+
+        repos = repos_response.json()['repositories']
+        repo_names = [r["name"] for r in repos]
+        if resolution_cache is not None:
+            resolution_cache[cache_key] = repo_names
+    return repo_name in repo_names
+
+
+def mulled_tags_for(namespace, image, tag_prefix=None, resolution_cache=None):
     """Fetch remote tags available for supplied image name.
 
     The result will be sorted so newest tags are first.
     """
+    if resolution_cache is not None:
+        # Following check is pretty expensive against biocontainers... don't even bother doing it
+        # if can't cache the response.
+        if not _namespace_has_repo_name(namespace, image, resolution_cache):
+            log.debug("skipping mulled_tags_for [%s] no repository" % image)
+            return []
+
+    cache_key = "galaxy.tool_util.deps.container_resolvers.mulled.util:tag_cache"
+    if resolution_cache is not None:
+        if cache_key not in resolution_cache:
+            resolution_cache[cache_key] = collections.defaultdict(dict)
+        tag_cache = resolution_cache.get(cache_key)
+    else:
+        tag_cache = collections.defaultdict(dict)
+
     tags_cached = False
-    if namespace in MULLED_TAG_CACHE:
-        if image in MULLED_TAG_CACHE[namespace]:
-            tags, last_checked = MULLED_TAG_CACHE[namespace][image]
-            if not tags and time.time() - last_checked < 300:
-                # it's possible we haven't seen the tags before, we check every 5 minutes
-                tags_cached = False
-            else:
-                tags_cached = True
+    if namespace in tag_cache:
+        if image in tag_cache[namespace]:
+            tags = tag_cache[namespace][image]
+            tags_cached = True
+
     if not tags_cached:
         tags = quay_versions(namespace, image)
-        last_checked = time.time()
-        MULLED_TAG_CACHE[namespace][image] = (tags, last_checked)
+        tag_cache[namespace][image] = tags
+
     if tag_prefix is not None:
         tags = [t for t in tags if t.startswith(tag_prefix)]
     tags = version_sorted(tags)
@@ -78,18 +111,36 @@ def mulled_tags_for(namespace, image, tag_prefix=None):
 
 
 def split_tag(tag):
-    """Split mulled image name into conda version and conda build."""
-    version = tag.split('--', 1)[0]
-    build = tag.split('--', 1)[1]
-    return version, build
+    """Split mulled image tag into conda version and conda build."""
+    return tag.rsplit('--', 1)
+
+
+def parse_tag(tag):
+    """Decompose tag of mulled images into version, build string and build number."""
+    version = tag
+    build_string = "-1"
+    if '--' in tag:
+        version, build_string = tag.rsplit('--', 1)
+    elif '-' in tag:
+        # Should be mulled multi-container image tag
+        version, build_string = tag.rsplit('-', 1)
+    build_number = int(BUILD_NUMBER_REGEX.search(tag).group(0))
+    return PARSED_TAG(tag=tag,
+                      version=packaging.version.parse(version),
+                      build_string=packaging.version.parse(build_string),
+                      build_number=build_number)
 
 
 def version_sorted(elements):
     """Sort iterable based on loose description of "version" from newest to oldest."""
-    return sorted(elements, key=packaging.version.parse, reverse=True)
+    elements = (parse_tag(tag) for tag in elements)
+    elements = sorted(elements, key=lambda tag: tag.build_string, reverse=True)
+    elements = sorted(elements, key=lambda tag: tag.build_number, reverse=True)
+    elements = sorted(elements, key=lambda tag: tag.version)
+    return [e.tag for e in elements]
 
 
-Target = collections.namedtuple("Target", ["package_name", "version", "build"])
+Target = collections.namedtuple("Target", ["package_name", "version", "build", "package"])
 
 
 def build_target(package_name, version=None, build=None, tag=None):
@@ -99,7 +150,7 @@ def build_target(package_name, version=None, build=None, tag=None):
         assert build is None
         version, build = split_tag(tag)
 
-    return Target(package_name, version, build)
+    return Target(package_name, version, build, package_name)
 
 
 def conda_build_target_str(target):
@@ -117,14 +168,14 @@ def _simple_image_name(targets, image_build=None):
     target = targets[0]
     suffix = ""
     if target.version is not None:
-        if image_build is not None:
+        build = target.build
+        if build is None and image_build is not None and image_build != "0":
+            # Special case image_build == "0", which has been built without a suffix
             print("WARNING: Hard-coding image build instead of using Conda build - this is not recommended.")
-            suffix = image_build
-        else:
-            suffix += ":%s" % target.version
-            build = target.build
-            if build is not None:
-                suffix += "--%s" % build
+            build = image_build
+        suffix += ":%s" % target.version
+        if build is not None:
+            suffix += "--%s" % build
     return "%s%s" % (target.package_name, suffix)
 
 
@@ -176,6 +227,15 @@ def v2_image_name(targets, image_build=None, name_override=None):
     >>> single_targets = [build_target("samtools", version="1.3.1")]
     >>> v2_image_name(single_targets)
     'samtools:1.3.1'
+    >>> single_targets = [build_target("samtools", version="1.3.1", build="py_1")]
+    >>> v2_image_name(single_targets)
+    'samtools:1.3.1--py_1'
+    >>> single_targets = [build_target("samtools", version="1.3.1")]
+    >>> v2_image_name(single_targets, image_build="0")
+    'samtools:1.3.1'
+    >>> single_targets = [build_target("samtools", version="1.3.1", build="py_1")]
+    >>> v2_image_name(single_targets, image_build="0")
+    'samtools:1.3.1--py_1'
     >>> multi_targets = [build_target("samtools", version="1.3.1"), build_target("bwa", version="0.7.13")]
     >>> v2_image_name(multi_targets)
     'mulled-v2-fe8faa35dbf6dc65a0f7f5d4ea12e31a79f73e40:4d0535c94ef45be8459f429561f0894c3fe0ebcf'
@@ -223,16 +283,31 @@ def v2_image_name(targets, image_build=None, name_override=None):
         return "mulled-v2-%s%s" % (package_hash.hexdigest(), suffix)
 
 
+def get_file_from_recipe_url(url):
+    """Downloads file at url and returns tarball"""
+    r = requests.get(url)
+    return tarfile.open(mode="r:bz2", fileobj=BytesIO(r.content))
+
+
+def split_container_name(name):
+    """
+    Takes a container name (e.g. samtools:1.7--1) and returns a list (e.g. ['samtools', '1.7', '1'])
+    >>> split_container_name('samtools:1.7--1')
+    ['samtools', '1.7', '1']
+    """
+    return name.replace('--', ':').split(':')
+
+
 class PrintProgress(object):
     def __init__(self):
         self.thread = threading.Thread(target=self.progress)
-        self.stop = False
+        self.stop = threading.Event()
 
     def progress(self):
-        while not self.stop:
+        while not self.stop.is_set():
             print(".", end="")
             sys.stdout.flush()
-            time.sleep(60)
+            self.stop.wait(60)
         print("")
 
     def __enter__(self):
@@ -240,7 +315,7 @@ class PrintProgress(object):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.stop = True
+        self.stop.set()
         self.thread.join()
 
 
@@ -252,6 +327,7 @@ __all__ = (
     "image_name",
     "mulled_tags_for",
     "quay_versions",
+    "split_container_name",
     "split_tag",
     "Target",
     "v1_image_name",

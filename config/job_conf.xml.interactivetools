@@ -18,13 +18,15 @@
           <param id="docker_set_user"></param>
           <!-- InteractiveTools do need real hostnames or URLs to work - simply specifying IPs will not work.
                If you develop interactive tools on your 'localhost' and don't have a proper domain name
-               you need to tell all Docker containers a hostname where Galaxy is running. 
-               This can be done via the --add-host parameter during the `docker run` command.
+               you need to tell all Docker containers a hostname where Galaxy is running.
+               This can be done via the add-host parameter during the `docker run` command.
                'my-hostname' here is an arbritrary hostname that matches the IP address of your
                Galaxy host. Make sure this hostname ('my-hostname') is also set in your galaxy.yml file, e.g.
-               `galaxy_infrastructure_url: http://my-hostname:8080`. 
+               `galaxy_infrastructure_url: http://my-hostname:8080`.
+              Note: XML does not allow double hyphens in comments, hence the line below has them escaped as &#45;
           -->
-          <!--param id="docker_run_extra_arguments">--add-host my-hostname:10.1.2.3</param-->
+          <!-- <param id="docker_run_extra_arguments">&#45;&#45;add-host my-hostname:10.1.2.3</param> -->
+
         </destination>
 
         <destination id="docker_dispatch" runner="dynamic">
@@ -35,4 +37,4 @@
 
     </destinations>
 
-</job_conf> 
+</job_conf>

@@ -46,6 +46,7 @@ valid_strand = ['+', '-', '.']
 
 DOWNLOAD_FILENAME_PATTERN_DATASET = "Galaxy${hid}-[${name}].${ext}"
 DOWNLOAD_FILENAME_PATTERN_COLLECTION_ELEMENT = "Galaxy${hdca_hid}-[${hdca_name}__${element_identifier}].${ext}"
+DEFAULT_MAX_PEEK_SIZE = 1000000  # 1 MB
 
 
 class DatatypeValidation(object):
@@ -402,8 +403,7 @@ class Data(object):
             return smart_str(data)
         if filename and filename != "index":
             # For files in extra_files_path
-            store_by = data.dataset.object_store.store_by
-            extra_dir = 'dataset_%s_files' % getattr(data.dataset, store_by)
+            extra_dir = data.dataset.extra_files_path_name
             file_path = trans.app.object_store.get_filename(data.dataset, extra_dir=extra_dir, alt_name=filename)
             if os.path.exists(file_path):
                 if os.path.isdir(file_path):
@@ -453,7 +453,7 @@ class Data(object):
                 return open(data.file_name, 'rb')
         if not os.path.exists(data.file_name):
             raise webob.exc.HTTPNotFound("File Not Found (%s)." % data.file_name)
-        max_peek_size = 1000000  # 1 MB
+        max_peek_size = DEFAULT_MAX_PEEK_SIZE  # 1 MB
         if isinstance(data.datatype, datatypes.text.Html):
             max_peek_size = 10000000  # 10 MB for html
         preview = util.string_as_bool(preview)
@@ -464,6 +464,33 @@ class Data(object):
             return trans.stream_template_mako("/dataset/large_file.mako",
                                               truncated_data=open(data.file_name, 'rb').read(max_peek_size),
                                               data=data)
+
+    def display_as_markdown(self, dataset_instance, markdown_format_helpers):
+        """Prepare for embedding dataset into a basic Markdown document.
+
+        This is a somewhat experimental interface and should not be implemented
+        on datatypes not tightly tied to a Galaxy version (e.g. datatypes in the
+        Tool Shed).
+
+        Speaking very losely - the datatype should should load a bounded amount
+        of data from the supplied dataset instance and prepare for embedding it
+        into Markdown. This should be relatively vanilla Markdown - the result of
+        this is bleached and it should not contain nested Galaxy Markdown
+        directives.
+
+        If the data cannot reasonably be displayed, just indicate this and do
+        not throw an exception.
+        """
+        if self.file_ext in {'png', 'jpg'}:
+            return self.handle_dataset_as_image(dataset_instance)
+        if self.is_binary:
+            result = "*cannot display binary content*\n"
+        else:
+            contents = open(dataset_instance.file_name, "r").read(DEFAULT_MAX_PEEK_SIZE)
+            result = markdown_format_helpers.literal_via_fence(contents)
+            if len(contents) == DEFAULT_MAX_PEEK_SIZE:
+                result += markdown_format_helpers.indicate_data_truncated()
+        return result
 
     def _yield_user_file_content(self, trans, from_dataset, filename):
         """This method is responsible for sanitizing the HTML if needed."""

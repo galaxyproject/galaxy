@@ -531,6 +531,7 @@ def _test_elem_to_dict(test_elem, i):
         inputs=__parse_input_elems(test_elem, i),
         expect_num_outputs=test_elem.get("expect_num_outputs"),
         command=__parse_assert_list_from_elem(test_elem.find("assert_command")),
+        command_version=__parse_assert_list_from_elem(test_elem.find("assert_command_version")),
         stdout=__parse_assert_list_from_elem(test_elem.find("assert_stdout")),
         stderr=__parse_assert_list_from_elem(test_elem.find("assert_stderr")),
         expect_exit_code=test_elem.get("expect_exit_code"),
@@ -1082,7 +1083,7 @@ class XmlInputSource(InputSource):
         return static_options
 
     def parse_optional(self, default=None):
-        """ Return boolean indicating wheter parameter is optional. """
+        """ Return boolean indicating whether parameter is optional. """
         elem = self.input_elem
         if self.get('type') == "data_column":
             # Allow specifing force_select for backward compat., but probably

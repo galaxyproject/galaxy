@@ -57,17 +57,6 @@ class AdminToolshed(AdminGalaxy):
                                                         message=message,
                                                         status=status))
 
-    @web.expose
-    @web.require_admin
-    def browse_repository(self, trans, **kwd):
-        message = escape(kwd.get('message', ''))
-        status = kwd.get('status', 'done')
-        repository = repository_util.get_installed_tool_shed_repository(trans.app, kwd['id'])
-        return trans.fill_template('/admin/tool_shed_repository/browse_repository.mako',
-                                   repository=repository,
-                                   message=message,
-                                   status=status)
-
     @web.legacy_expose_api
     @web.require_admin
     def browse_repositories(self, trans, **kwd):
@@ -203,10 +192,8 @@ class AdminToolshed(AdminGalaxy):
 
     @web.json
     @web.require_admin
+    @web.do_not_cache
     def get_file_contents(self, trans, file_path, repository_id):
-        # Avoid caching
-        trans.response.headers['Pragma'] = 'no-cache'
-        trans.response.headers['Expires'] = '0'
         return suc.get_repository_file_contents(trans.app, file_path, repository_id, is_admin=True)
 
     @web.expose
@@ -974,10 +961,8 @@ class AdminToolshed(AdminGalaxy):
                                    reinstalling=True)
 
     @web.json
+    @web.do_not_cache
     def repository_installation_status_updates(self, trans, ids=None, status_list=None):
-        # Avoid caching
-        trans.response.headers['Pragma'] = 'no-cache'
-        trans.response.headers['Expires'] = '0'
         # Create new HTML for any ToolShedRepository records whose status that has changed.
         rval = []
         if ids is not None and status_list is not None:
@@ -1164,27 +1149,6 @@ class AdminToolshed(AdminGalaxy):
                                    message=message,
                                    status=status)
 
-    @web.json
-    def tool_dependency_status_updates(self, trans, ids=None, status_list=None):
-        # Avoid caching
-        trans.response.headers['Pragma'] = 'no-cache'
-        trans.response.headers['Expires'] = '0'
-        # Create new HTML for any ToolDependency records whose status that has changed.
-        rval = []
-        if ids is not None and status_list is not None:
-            ids = util.listify(ids)
-            status_list = util.listify(status_list)
-            for tup in zip(ids, status_list):
-                id, status = tup
-                tool_dependency = trans.install_model.context.query(trans.install_model.ToolDependency).get(trans.security.decode_id(id))
-                if tool_dependency.status != status:
-                    rval.append(dict(id=id,
-                                     status=tool_dependency.status,
-                                     html_status=unicodify(trans.fill_template("admin/tool_shed_repository/tool_dependency_installation_status.mako",
-                                                                               tool_dependency=tool_dependency),
-                                                           'utf-8')))
-        return rval
-
     @web.expose
     @web.require_admin
     def uninstall_tool_dependencies(self, trans, **kwd):
@@ -1296,14 +1260,5 @@ class AdminToolshed(AdminGalaxy):
         return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
                                                         action='manage_repository',
                                                         id=trans.security.encode_id(repository.id),
-                                                        message=message,
-                                                        status=status))
-
-    @web.expose
-    @web.require_admin
-    def update_tool_shed_status_for_installed_repository(self, trans, **kwd):
-        message, status = repository_util.check_for_updates(trans.app, trans.install_model, kwd.get('id', None))
-        return trans.response.send_redirect(web.url_for(controller='admin',
-                                                        action='repositories',
                                                         message=message,
                                                         status=status))

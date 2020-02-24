@@ -59,11 +59,17 @@ def find_conda_prefix(conda_prefix=None):
         home = os.path.expanduser("~")
         miniconda_2_dest = os.path.join(home, "miniconda2")
         miniconda_3_dest = os.path.join(home, "miniconda3")
+        anaconda_2_dest = os.path.join(home, "anaconda2")
+        anaconda_3_dest = os.path.join(home, "anaconda3")
         # Prefer miniconda3 install if both available
         if os.path.exists(miniconda_3_dest):
             return miniconda_3_dest
         elif os.path.exists(miniconda_2_dest):
             return miniconda_2_dest
+        elif os.path.exists(anaconda_3_dest):
+            return anaconda_3_dest
+        elif os.path.exists(anaconda_2_dest):
+            return anaconda_2_dest
         else:
             return miniconda_3_dest
     return conda_prefix
@@ -429,7 +435,7 @@ def hash_conda_packages(conda_packages, conda_target=None):
 def install_conda(conda_context, force_conda_build=False):
     f, script_path = tempfile.mkstemp(suffix=".sh", prefix="conda_install")
     os.close(f)
-    download_cmd = commands.download_command(conda_link(), to=script_path, quote_url=False)
+    download_cmd = commands.download_command(conda_link(), to=script_path)
     install_cmd = ['bash', script_path, '-b', '-p', conda_context.conda_prefix]
     package_targets = [
         "conda=%s" % CONDA_VERSION,
@@ -493,14 +499,23 @@ def cleanup_failed_install(conda_target, conda_context=None):
     cleanup_failed_install_of_environment(conda_target.install_environment, conda_context=conda_context)
 
 
-def best_search_result(conda_target, conda_context, channels_override=None, offline=False):
+def best_search_result(conda_target, conda_context, channels_override=None, offline=False, platform=None):
     """Find best "conda search" result for specified target.
 
     Return ``None`` if no results match.
     """
-    search_cmd = [conda_context.conda_exec, "search", "--full-name", "--json"]
+    search_cmd = []
+    conda_exec = conda_context.conda_exec
+    if isinstance(conda_exec, list):
+        # for CondaInDockerContext
+        search_cmd.extend(conda_exec)
+    else:
+        search_cmd.append(conda_exec)
+    search_cmd.extend(["search", "--full-name", "--json"])
     if offline:
         search_cmd.append("--offline")
+    if platform:
+        search_cmd.extend(['--platform', platform])
     if channels_override:
         search_cmd.append("--override-channels")
         for channel in channels_override:
@@ -511,7 +526,12 @@ def best_search_result(conda_target, conda_context, channels_override=None, offl
     try:
         res = commands.execute(search_cmd)
         res = unicodify(res)
-        hits = json.loads(res).get(conda_target.package, [])
+        # Use python's stable list sorting to sort by date,
+        # then build_number, then version. The top of the list
+        # then is the newest version with the newest build and
+        # the latest update time.
+        hits = json.loads(res).get(conda_target.package, [])[::-1]
+        hits = sorted(hits, key=lambda hit: hit['build_number'], reverse=True)
         hits = sorted(hits, key=lambda hit: packaging.version.parse(hit['version']), reverse=True)
     except CommandLineException:
         log.error("Could not execute: '%s'", search_cmd)

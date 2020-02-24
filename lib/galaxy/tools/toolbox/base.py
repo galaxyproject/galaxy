@@ -127,6 +127,9 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
     def create_dynamic_tool(self, dynamic_tool):
         raise NotImplementedError()
 
+    def can_load_config_file(self, config_filename):
+        return True
+
     def _init_tools_from_configs(self, config_filenames):
         """ Read through all tool config files and initialize tools in each
         with init_tools_from_config below.
@@ -141,6 +144,8 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 config_filenames.remove(config_filename)
                 config_filenames.extend(directory_config_files)
         for config_filename in config_filenames:
+            if not self.can_load_config_file(config_filename):
+                continue
             try:
                 self._init_tools_from_config(config_filename)
             except ParseError:
@@ -828,16 +833,19 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 return None
 
         tool_loaded = False
+        if not os.path.isdir(directory):
+            log.error("Failed to read tool directory %s.", directory)
+            return
         for name in os.listdir(directory):
-            if name.startswith('.' or '_'):
+            if name.startswith(('.', '_')):
                 # Very unlikely that we want to load tools from a hidden or private folder
                 continue
             child_path = os.path.join(directory, name)
             if os.path.isdir(child_path) and recursive:
                 self.__watch_directory(child_path, elems, integrated_elems, load_panel_dict, recursive)
             elif self._looks_like_a_tool(child_path):
-                quick_load(child_path, async_load=False)
-                tool_loaded = True
+                tool_id = quick_load(child_path, async_load=False)
+                tool_loaded = bool(tool_id)
         if (tool_loaded or force_watch) and self._tool_watcher:
             self._tool_watcher.watch_directory(directory, quick_load)
 
@@ -867,8 +875,6 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         if not tool.id.startswith("__"):
             # do not monitor special tools written to tmp directory - no reason
             # to monitor such a large directory.
-            if self._tool_watcher:
-                self._tool_watcher.watch_file(tool.config_file, tool.id)
             if self._tool_config_watcher:
                 [self._tool_config_watcher.watch_file(macro_path) for macro_path in tool._macro_paths]
 

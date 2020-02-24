@@ -61,7 +61,7 @@ class Users(BaseUIController, ReportQueryBuilder):
         # If specified_date is not received, we'll default to the current month
         specified_date = kwd.get('specified_date', datetime.utcnow().strftime("%Y-%m-%d"))
         specified_month = specified_date[:7]
-        year, month = map(int, specified_month.split("-"))
+        year, month = list(map(int, specified_month.split("-")))
         start_date = date(year, month, 1)
         end_date = start_date + timedelta(days=calendar.monthrange(year, month)[1])
         month_label = start_date.strftime("%B")
@@ -91,7 +91,7 @@ class Users(BaseUIController, ReportQueryBuilder):
         message = escape(util.restore_text(kwd.get('message', '')))
         # If specified_date is not received, we'll default to the current month
         specified_date = kwd.get('specified_date', datetime.utcnow().strftime("%Y-%m-%d"))
-        year, month, day = map(int, specified_date.split("-"))
+        year, month, day = list(map(int, specified_date.split("-")))
         start_date = date(year, month, day)
         end_date = start_date + timedelta(days=1)
         day_of_month = start_date.strftime("%d")
@@ -178,7 +178,9 @@ class Users(BaseUIController, ReportQueryBuilder):
 
         user_cutoff = int(kwd.get('user_cutoff', 60))
         # disk_usage isn't indexed
-        users = sorted(trans.sa_session.query(galaxy.model.User).all(), key=operator.attrgetter(str(sort_id)), reverse=_order)
+        all_users = trans.sa_session.query(galaxy.model.User).all()
+        sort_attrgetter = operator.attrgetter(str(sort_id))
+        users = sorted(all_users, key=lambda x: sort_attrgetter(x) or 0, reverse=_order)
         if user_cutoff:
             users = users[:user_cutoff]
         return trans.fill_template('/webapps/reports/users_user_disk_usage.mako',

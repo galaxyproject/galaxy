@@ -1,4 +1,5 @@
 import Backbone from "backbone";
+import IMask from "imask";
 
 import Utils from "utils/utils";
 
@@ -23,20 +24,23 @@ const View = Backbone.View.extend({
         this.$text = this.$(".ui-form-slider-text");
         this.$slider = this.$(".ui-form-slider-element");
 
-        // add text field event
-        this.$text
-            .on("change", e => {
-                this.value(e.currentTarget.value);
-            })
-            .on("input", e => {
-                const input = e.currentTarget;
-                if (this._isParameter(input.value)) {
-                    return;
-                } else if (!this.model.get("precise")) {
-                    input.value = input.value.split(".")[0];
+        IMask(this.$text[0], {
+            mask: value => {
+                if (this._isParameter(value)) {
+                    return true;
                 }
-                input.value = input.value.replace(/[^0-9eE.-]/g, "");
-            });
+                if (!this.model.get("precise")) {
+                    if (value != value.split(".")[0]) {
+                        return false;
+                    }
+                }
+                return value == value.replace(/[^0-9eE.-]/g, "");
+            }
+        });
+
+        this.$text[0].addEventListener("change", e => {
+            this.value(e.currentTarget.value);
+        });
 
         // build slider, cannot be rebuild in render
         const opts = this.model.attributes;

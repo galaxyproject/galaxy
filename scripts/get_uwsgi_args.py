@@ -23,7 +23,7 @@ ALIASES = {
     'module': ('mount',),   # mount is not actually an alias for module, but we don't want to set module if mount is set
 }
 DEFAULT_ARGS = {
-    '_all_': ('pythonpath', 'threads', 'buffer-size', 'http', 'static-map', 'static-safe', 'die-on-term', 'hook-master-start', 'enable-threads'),
+    '_all_': ('pythonpath', 'threads', 'buffer-size', 'http', 'static-map', 'die-on-term', 'hook-master-start', 'enable-threads', 'umask'),
     'galaxy': ('py-call-osafterfork',),
     'reports': (),
     'tool_shed': ('cron',),
@@ -91,16 +91,15 @@ def _get_uwsgi_args(cliargs, kwargs):
         'threads': '4',
         'buffer-size': '16384',  # https://github.com/galaxyproject/galaxy/issues/1530
         'http': 'localhost:{port}'.format(port=DEFAULT_PORTS[cliargs.app]),
-        'static-map': ('/static/style={here}/static/style/blue'.format(here=os.getcwd()),
-                       '/static={here}/static'.format(here=os.getcwd()),
+        'static-map': ('/static={here}/static'.format(here=os.getcwd()),
                        '/favicon.ico={here}/static/favicon.ico'.format(here=os.getcwd())),
-        'static-safe': ('{here}/client/galaxy/images'.format(here=os.getcwd())),
         'die-on-term': True,
         'enable-threads': True,
         'hook-master-start': ('unix_signal:2 gracefully_kill_them_all',
                               'unix_signal:15 gracefully_kill_them_all'),
         'py-call-osafterfork': True,
         'cron': '0 -1 -1 -1 -1 python scripts/tool_shed/build_ts_whoosh_index.py %s --config-section tool_shed -d' % ts_cron_config_option,
+        'umask': '027',
     }
     __add_config_file_arg(args, config_file, cliargs.app)
     if not __arg_set('module', uwsgi_kwargs):
@@ -119,7 +118,9 @@ def _get_uwsgi_args(cliargs, kwargs):
         # route: ^/static/scripts/bundled/ http:127.0.0.1:8081
         if hmr_server.lower() in ['1', 'true', 'default']:
             hmr_server = "http:127.0.0.1:8081"
-        __add_arg(args, 'route', '^/static/scripts/bundled/ {hmr_server}'.format(hmr_server=hmr_server))
+        __add_arg(args, 'route', '^/static/dist/ {hmr_server}'.format(hmr_server=hmr_server))
+    # We always want to append client/galaxy/images as static-safe.
+    __add_arg(args, 'static-safe', '{here}/client/galaxy/images'.format(here=os.getcwd()))
 
     for arg in DEFAULT_ARGS['_all_'] + DEFAULT_ARGS[cliargs.app]:
         if not __arg_set(arg, uwsgi_kwargs):

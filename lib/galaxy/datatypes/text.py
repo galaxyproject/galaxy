@@ -570,7 +570,7 @@ class SnpEffDb(Text):
     def getSnpeffVersionFromFile(self, path):
         snpeff_version = None
         try:
-            with gzip.open(path, 'rb') as fh:
+            with gzip.open(path, 'rt') as fh:
                 buf = fh.read(100)
                 lines = buf.splitlines()
                 m = re.match(r'^(SnpEff)\s+(\d+\.\d+).*$', lines[0].strip())
@@ -682,7 +682,7 @@ class SnpSiftDbNSFP(Text):
                     if fname.endswith('.gz'):
                         dataset.metadata.bgzip = fname
                         try:
-                            with gzip.open(os.path.join(efp, fname), 'r') as fh:
+                            with gzip.open(os.path.join(efp, fname), 'rt') as fh:
                                 buf = fh.read(5000)
                                 lines = buf.splitlines()
                                 headers = lines[0].split('\t')

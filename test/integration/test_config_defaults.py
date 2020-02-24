@@ -1,13 +1,3 @@
-import os
-from collections import namedtuple
-from datetime import timedelta
-
-import pytest
-
-from galaxy.util import listify
-from galaxy_test.driver.driver_util import GalaxyTestDriver
-
-
 """
 This tests: (1) automatic creation of configuration properties; and
 (2) assignment of default values that are specified in the schema and, in
@@ -35,9 +25,16 @@ Configuration options NOT tested:
 - job_config (no obvious testable defaults)
 """
 
+import os
+from collections import namedtuple
+from datetime import timedelta
 
-OptionData = namedtuple('OptionData', 'key, expected, loaded')
+import pytest
 
+from galaxy.util import listify
+from galaxy_test.driver.driver_util import GalaxyTestDriver
+
+OptionData = namedtuple('OptionData', ('key', 'expected', 'loaded'))
 
 # Configuration properties that are paths should be absolute paths, by default resolved w.r.t root.
 PATH_CONFIG_PROPERTIES = [
@@ -68,6 +65,9 @@ PATH_CONFIG_PROPERTIES = [
     'job_working_directory',
     'len_file_path',
     'library_import_dir',
+    'markdown_export_css',
+    'markdown_export_css_pages',
+    'markdown_export_css_invocation_reports',
     'migrated_tools_config',
     'new_file_path',
     'nginx_upload_job_files_path',
@@ -152,9 +152,11 @@ DO_NOT_TEST = [
     'allow_user_deletion',  # broken: default overridden
     'amqp_internal_connection',  # may or may not be testable; refactor config/
     'api_allow_run_as',  # may or may not be testable: test value assigned
+    'build_sites_config_file',  # broken: remove 'config/' prefix from schema
     'chunk_upload_size',  # broken: default overridden
     'cleanup_job',  # broken: default overridden
     'conda_auto_init',  # broken: default overridden
+    'config_dir',  # value overridden for testing
     'data_dir',  # value overridden for testing
     'data_manager_config_file',  # broken: remove 'config/' prefix from schema
     'database_connection',  # untestable; refactor config/__init__ to test
@@ -178,6 +180,9 @@ DO_NOT_TEST = [
     'job_working_directory',  # broken; may or may not be able to test
     'library_import_dir',  # broken: default overridden
     'logging',  # mapping loaded in config/
+    'markdown_export_css',  # default not used?
+    'markdown_export_css_pages',  # default not used?
+    'markdown_export_css_invocation_reports',  # default not used?
     'master_api_key',  # broken: default value assigned outside of config/
     'migrated_tools_config',  # needs more work (should work)
     'monitor_thread_join_timeout',  # broken: default overridden
@@ -197,7 +202,7 @@ DO_NOT_TEST = [
     'user_tool_label_filters',  # broken: default overridden
     'user_tool_section_filters',  # broken: default overridden
     'webhooks_dir',  # broken; also remove 'config/' prefix from schema
-    'workflow_resource_params_mapper',  # broken
+    'workflow_resource_params_mapper',  # broken: remove 'config/' prefix from schema
 ]
 
 

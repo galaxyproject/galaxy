@@ -77,7 +77,7 @@ class ToolValidator(GalaxyToolValidator):
         """
         stripped_filename = basic_util.strip_path(filename)
         for changeset in hg_util.reversed_upper_bounded_changelog(repo, changeset_revision):
-            manifest_ctx = repo.changectx(changeset)
+            manifest_ctx = repo[changeset]
             for ctx_file in manifest_ctx.files():
                 ctx_file_name = basic_util.strip_path(ctx_file)
                 if ctx_file_name == stripped_filename:
@@ -109,7 +109,7 @@ class ToolValidator(GalaxyToolValidator):
         deleted_sample_files = []
         sample_files = []
         for changeset in hg_util.reversed_upper_bounded_changelog(repo, changeset_revision):
-            changeset_ctx = repo.changectx(changeset)
+            changeset_ctx = repo[changeset]
             for ctx_file in changeset_ctx.files():
                 ctx_file_name = basic_util.strip_path(ctx_file)
                 # If we decide in the future that files deleted later in the changelog should

@@ -316,6 +316,144 @@ steps:
 """
 
 
+WORKFLOW_PARAMETER_INPUT_INTEGER_REQUIRED = """
+class: GalaxyWorkflow
+inputs:
+  data_input: data
+  int_input: integer
+steps:
+  random:
+    tool_id: random_lines1
+    in:
+      input: data_input
+      num_lines: int_input
+    state:
+      seed_source:
+        seed_source_selector: set_seed
+        seed: asdf
+"""
+
+
+WORKFLOW_PARAMETER_INPUT_INTEGER_OPTIONAL = """
+class: GalaxyWorkflow
+inputs:
+  data_input: data
+  int_input:
+    type: integer
+    optional: true
+steps:
+  random:
+    tool_id: random_lines1
+    in:
+      input: data_input
+      num_lines: int_input
+    state:
+      seed_source:
+        seed_source_selector: set_seed
+        seed: asdf
+"""
+
+
+WORKFLOW_PARAMETER_INPUT_INTEGER_DEFAULT = """
+class: GalaxyWorkflow
+inputs:
+  data_input: data
+  int_input:
+    type: integer
+    default: 3
+steps:
+  random:
+    tool_id: random_lines1
+    in:
+      input: data_input
+      num_lines: int_input
+    state:
+      seed_source:
+        seed_source_selector: set_seed
+        seed: asdf
+"""
+
+
+WORKFLOW_OPTIONAL_TRUE_INPUT_DATA = """
+class: GalaxyWorkflow
+inputs:
+  input1:
+    type: data
+    optional: true
+outputs:
+  out1:
+    outputSource: the_tool/out1
+steps:
+  the_tool:
+    tool_id: multi_data_optional
+    in:
+      input1: input1
+    out:
+      out1: out1
+"""
+
+
+# Same workflow but non-optional input
+WORKFLOW_OPTIONAL_FALSE_INPUT_DATA = """
+class: GalaxyWorkflow
+inputs:
+  input1:
+    type: data
+    optional: false
+outputs:
+  out1:
+    outputSource: the_tool/out1
+steps:
+  the_tool:
+    tool_id: multi_data_optional
+    in:
+      input1: input1
+    out:
+      out1: out1
+"""
+
+
+WORKFLOW_OPTIONAL_TRUE_INPUT_COLLECTION = """
+class: GalaxyWorkflow
+inputs:
+  input1:
+    type: collection
+    collection_type: paired
+    optional: true
+outputs:
+  out1:
+    outputSource: the_tool/out1
+steps:
+  the_tool:
+    tool_id: collection_optional_param
+    in:
+      f1: input1
+    out:
+      out1: out1
+"""
+
+
+# Same workflow but non-optional input
+WORKFLOW_OPTIONAL_FALSE_INPUT_COLLECTION = """
+class: GalaxyWorkflow
+inputs:
+  input1:
+    type: collection
+    collection_type: paired
+    optional: false
+outputs:
+  out1:
+    outputSource: the_tool/out1
+steps:
+  the_tool:
+    tool_id: collection_optional_param
+    in:
+      f1: input1
+    out:
+      out1: out1
+"""
+
+
 WORKFLOW_RUNTIME_PARAMETER_SIMPLE = """
 class: GalaxyWorkflow
 inputs:

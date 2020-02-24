@@ -56,6 +56,20 @@ if not found:
     subprocess.check_call(cmd, shell=True)
 EOF
 '''
+SOURCE_CONDA_ACTIVATE = """
+# Check if container was created by installing conda packages,
+# and if so, source scripts to populate environment variables
+# that would be set by activating the conda environment.
+if [ -d /usr/local/etc/conda/activate.d ]; then
+  export CONDA_PREFIX=/usr/local
+  for f in /usr/local/etc/conda/activate.d/*.sh; do
+    case "$f" in
+      "/usr/local/etc/conda/activate.d/activate-"*) :;;
+      *) . "$f" ;;
+    esac;
+  done
+fi
+"""
 
 
 @six.add_metaclass(ABCMeta)
@@ -82,6 +96,12 @@ class Container(object):
     @property
     def shell(self):
         return DEFAULT_CONTAINER_SHELL if not self.container_description else self.container_description.shell
+
+    @property
+    def source_environment(self):
+        if self.container_description and not self.container_description.explicit:
+            return SOURCE_CONDA_ACTIVATE
+        return ""
 
     @abstractmethod
     def containerize_command(self, command):
@@ -162,9 +182,12 @@ class HasDockerLikeVolumes(object):
         add_var("tmp_directory", self.job_info.tmp_directory)
         add_var("job_directory", self.job_info.job_directory)
         add_var("tool_directory", self.job_info.tool_directory)
+        add_var("home_directory", self.job_info.home_directory)
         add_var("galaxy_root", self.app_info.galaxy_root_dir)
         add_var("default_file_path", self.app_info.default_file_path)
         add_var("library_import_dir", self.app_info.library_import_dir)
+        add_var('tool_data_path', self.app_info.tool_data_path)
+        add_var('shed_tool_data_path', self.app_info.shed_tool_data_path)
 
         if self.job_info.job_directory and self.job_info.job_directory_type == "pulsar":
             # We have a Pulsar job directory, so everything needed (excluding index
@@ -178,9 +201,13 @@ class HasDockerLikeVolumes(object):
             if self.job_info.tool_directory:
                 defaults += ",$tool_directory:default_ro"
             if self.job_info.job_directory:
-                defaults += ",$job_directory:default_ro"
+                defaults += ",$job_directory:default_ro,$job_directory/outputs:rw"
+                if self.tool_info.profile <= 19.09:
+                    defaults += ",$job_directory/configs:rw"
             if self.job_info.tmp_directory is not None:
                 defaults += ",$tmp_directory:rw"
+            if self.job_info.home_directory is not None:
+                defaults += ",$home_directory:rw"
             if self.app_info.outputs_to_working_directory:
                 # Should need default_file_path (which is of course an estimate given
                 # object stores anyway).
@@ -190,6 +217,10 @@ class HasDockerLikeVolumes(object):
 
         if self.app_info.library_import_dir:
             defaults += ",$library_import_dir:default_ro"
+        if self.app_info.tool_data_path:
+            defaults += ",$tool_data_path:default_ro"
+        if self.app_info.shed_tool_data_path:
+            defaults += ",$shed_tool_data_path:default_ro"
 
         # Define $defaults that can easily be extended with external library and
         # index data without deployer worrying about above details.

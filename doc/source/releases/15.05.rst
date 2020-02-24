@@ -55,10 +55,10 @@ Enhancements
   `Pull Request 143`_
 * Add NCBI SRA datatype - thanks to Matt Shirley. `Pull Request 87`_
 * Stronger toolbox filtering. `Pull Request 119`_
-* Allow updating Tool Shed repositories via the API - thanks to Eric Rasche.
+* Allow updating Tool Shed repositories via the API - thanks to Helena Rasche.
   `Pull Request 30`_
 * Expose category list in show call for Tool Shed repositories - thanks to
-  Eric Rasche. `Pull Request 29`_
+  Helena Rasche. `Pull Request 29`_
 * Add API endpoint to create Tool Shed repositories. `Pull Request 2`_
 * Do not configure Galaxy to use the test Tool Shed by default.
   `Pull Request 38`_
@@ -67,7 +67,7 @@ Enhancements
 * Enhance multi-selection widgets to allow key combinations ``Ctrl-A``
   and ``Ctrl-X``. e8564d7_, `Trello <https://trello.com/c/3QhD5l5h>`__
 * New, consistent button for displaying citation BibTeX. `Pull Request 19`_
-* Improved ``README`` reflecting move to Github - thanks in part to Eric
+* Improved ``README`` reflecting move to Github - thanks in part to Helena
   Rasche. `PR #2 (old repo)
   <https://github.com/galaxyproject/galaxy-beta1/pull/2>`__,
   226e826_, 2650d09_, 7d5dde8_
@@ -87,14 +87,14 @@ Enhancements
 * Preserve spaces in ``Count1`` tool (``tools/filters/uniq.xml``) - thanks to
   Peter Cock. `Pull Request 13`_
 * `Interactive Environments`_ improvements and fixes from multiple
-  developers including Eric Rasche and  Björn Grüning. `Pull Request 69`_,
+  developers including Helena Rasche and  Björn Grüning. `Pull Request 69`_,
   `Pull Request 73`_, `Pull Request 131`_, `Pull Request 135`_,
   `Pull Request 152`_, `Pull Request 197`_
-* Enable multi-part upload for exporting files with the GenomeSpace export 
+* Enable multi-part upload for exporting files with the GenomeSpace export
   tool. `Pull Request 74`_, `Trello <https://trello.com/c/28O46iln>`__
 * Large refactoring, expansion, and increase in test coverage for "managers".
   `Pull Request 76`_
-* Improved display of headers in tool help. 157eba6_, 
+* Improved display of headers in tool help. 157eba6_,
   `Biostar <https://biostar.usegalaxy.org/p/11211/>`__
 * Uniform configuration of "From" field for sent emails - thanks to Nicola
   Soranzo. `Pull Request 23`_
@@ -112,8 +112,8 @@ Enhancements
 * Add test tool demonstrating citing a Github repository. 65def71_
 * Add option to track all automated changes to the integrated tool panel.
   10bb492_
-* Make tool version explicit in all distribution tool - thanks to Peter Cock. 
-  `Pull Request 14`_. 
+* Make tool version explicit in all distribution tool - thanks to Peter Cock.
+  `Pull Request 14`_.
 * Relocate the external metadata setting script. `Pull Request 7`_
 * Parameterize script used to pull new builds from the UCSC Browser.
   e4e5df0_
@@ -141,7 +141,7 @@ Fixes
   properly. `Pull Request 198`_, `Trello <https://trello.com/c/WVlaLsOh>`__
 * Fix scatter plot API communications for certain proxied Galaxy instances -
   thanks to @yhoogstrate. `Pull Request 89`_
-* Fix bug in collectl_ job metrics plugin - thanks to Carrie Ganote. 
+* Fix bug in collectl_ job metrics plugin - thanks to Carrie Ganote.
   `Pull Request 231`_
 * Fix late validation of tool parameters. `Pull Request 115`_
 * Fix ``fasta_to_tabular_converter.py`` (for implicit conversion) - thanks to
@@ -161,7 +161,7 @@ Fixes
 * Fix to remove redundant version ids in tool version selector.
   `Pull Request 244`_
 * Fix for downloading metadata files. `Pull Request 234`_
-* Fix for history failing to render if it contains more exotic dataset 
+* Fix for history failing to render if it contains more exotic dataset
   collection types. `Pull Request 196`_
 * Fixes for BaseURLToolParameter. `Pull Request 247`_
 * Fix to suppress pysam binary incompatibility warning when using datatypes

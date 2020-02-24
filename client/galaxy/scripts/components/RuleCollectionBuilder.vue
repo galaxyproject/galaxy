@@ -30,14 +30,14 @@
             <!-- column-headers -->
             <div
                 class="rule-builder-body vertically-spaced"
-                v-bind:class="{ 'flex-column-container': vertical }"
+                :class="{ 'flex-column-container': vertical }"
                 v-if="ruleView == 'normal'"
             >
                 <!-- width: 30%; -->
-                <div class="rule-column" v-bind:class="orientation">
+                <div class="rule-column" :class="orientation">
                     <div
                         class="rules-container"
-                        v-bind:class="{
+                        :class="{
                             'rules-container-vertical': initialElements && vertical,
                             'rules-container-horizontal': initialElements && horizontal,
                             'rules-container-full': initialElements == null
@@ -267,7 +267,7 @@
                             </label>
                         </rule-component>
                         <div v-if="displayRuleType == 'mapping'">
-                            <div class="map" v-for="(map, index) in mapping" v-bind:index="index" v-bind:key="map.type">
+                            <div class="map" v-for="(map, index) in mapping" :index="index" :key="map.type">
                                 <column-selector
                                     :class="'rule-map-' + map.type.replace(/_/g, '-')"
                                     :label="mappingTargets()[map.type].label"
@@ -300,8 +300,8 @@
                                 <div class="dropdown-menu" role="menu">
                                     <a
                                         v-for="target in unmappedTargets"
-                                        v-bind:index="target"
-                                        v-bind:key="target"
+                                        :index="target"
+                                        :key="target"
                                         class="dropdown-item"
                                         href="javascript:void(0)"
                                         :class="'rule-add-mapping-' + target.replace(/_/g, '-')"
@@ -337,9 +337,9 @@
                                 <!-- Example at the end of https://vuejs.org/v2/guide/list.html -->
                                 <rule-display
                                     v-for="(rule, index) in rules"
-                                    v-bind:rule="rule"
-                                    v-bind:index="index"
-                                    v-bind:key="index"
+                                    :rule="rule"
+                                    :index="index"
+                                    :key="index"
                                     @edit="editRule(rule, index)"
                                     @remove="removeRule(index)"
                                     :col-headers="colHeadersPerRule[index]"
@@ -347,12 +347,12 @@
                                 <identifier-display
                                     v-for="(map, index) in mapping"
                                     v-bind="map"
-                                    v-bind:index="index"
-                                    v-bind:key="map.type"
+                                    :index="index"
+                                    :key="map.type"
                                     @remove="removeMapping(index)"
                                     @edit="displayRuleType = 'mapping'"
-                                    v-on:mouseover.native="map.columns.forEach(col => highlightColumn(col))"
-                                    v-on:mouseout.native="map.columns.forEach(col => unhighlightColumn(col))"
+                                    @mouseover.native="map.columns.forEach(col => highlightColumn(col))"
+                                    @mouseout.native="map.columns.forEach(col => unhighlightColumn(col))"
                                     :col-headers="colHeaders"
                                 />
                                 <div v-if="mapping.length == 0">
@@ -439,19 +439,14 @@
                 </div>
                 <!--  flex-column column -->
                 <!--  style="width: 70%;" -->
-                <div
-                    class="table-column"
-                    v-bind:class="orientation"
-                    style="width: 100%;"
-                    v-if="initialElements !== null"
-                >
+                <div class="table-column" :class="orientation" style="width: 100%;" v-if="initialElements !== null">
                     <hot-table
                         id="hot-table"
                         ref="hotTable"
                         :data="hotData.data"
-                        :colHeaders="colHeadersDisplay"
-                        :readOnly="true"
-                        stretchH="all"
+                        :col-headers="colHeadersDisplay"
+                        :read-only="true"
+                        stretch-h="all"
                     >
                     </hot-table>
                 </div>

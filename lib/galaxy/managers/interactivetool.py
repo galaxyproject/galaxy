@@ -270,7 +270,7 @@ class InteractiveToolManager(object):
         entry_point = trans.sa_session.query(model.InteractiveToolEntryPoint).get(entry_point_id)
         if self.app.interactivetool_manager.can_access_entry_point(trans, entry_point):
             if entry_point.active:
-                return self.target_if_active(entry_point)
+                return self.target_if_active(trans, entry_point)
             elif entry_point.deleted:
                 raise exceptions.MessageException('InteractiveTool has ended. You will have to start a new one.')
             else:

@@ -137,7 +137,7 @@ class ToolShedRepository(object):
                 self.shed_config_filename = shed_tool_conf_dict['config_filename']
                 return shed_tool_conf_dict
         # Very last resort, get default shed_tool_config file for this instance
-        shed_tool_conf_dict = self.app.toolbox.default_shed_tool_conf_dict()
+        shed_tool_conf_dict = app.toolbox.default_shed_tool_conf_dict()
         self.shed_config_filename = shed_tool_conf_dict['config_filename']
         return shed_tool_conf_dict
 

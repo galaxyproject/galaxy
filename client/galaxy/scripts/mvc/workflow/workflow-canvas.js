@@ -1,5 +1,15 @@
 import $ from "jquery";
 
+// Colors used to render nodes in the workflow overview
+const NODE_COLOR = "#25537b";
+const NODE_ERROR_COLOR = "#e31a1e";
+
+// Zoom levels to use for zooming the workflow canvas
+export const zoomLevels = [0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.33, 1.5, 2, 2.5, 3, 4];
+
+// Default zoome level
+export const defaultZoomLevel = 7;
+
 // FIXME: merge scroll panel into CanvasManager, clean up hardcoded stuff.
 class ScrollPanel {
     constructor(panel) {
@@ -73,12 +83,6 @@ class ScrollPanel {
     }
 }
 
-// Zoom levels to use for zooming the workflow canvas
-const zoomLevels = [0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.33, 1.5, 2, 2.5, 3, 4];
-
-// Default zoome level (1)
-const defaultZoomLevel = 7;
-
 class CanvasManager {
     constructor(app, canvas_viewport, overview) {
         this.app = app;
@@ -90,7 +94,6 @@ class CanvasManager {
         // Initialize zooming
         this.zoomLevel = defaultZoomLevel;
         this.canvasZoom = zoomLevels[defaultZoomLevel];
-        this.initZoomControls();
         // Make overview box draggable
         this.init_drag();
         // Initialize Copy & Paste events
@@ -106,40 +109,8 @@ class CanvasManager {
         this.cv.css("width", `${100 / this.canvasZoom}%`);
         this.cv.css("height", `${100 / this.canvasZoom}%`);
         // Update canvas size
-        this.app.workflow.fit_canvas_to_nodes();
-    }
-    initZoomControls() {
-        var zoomControl = $('<div class="btn-group-horizontal workflow-canvas-content"/>').css({
-            position: "absolute",
-            left: "1rem",
-            bottom: "1rem",
-            cursor: "pointer"
-        });
-        const zoomButton = $(
-            `<a class="btn btn-light" title="Reset Zoom Level">${zoomLevels[defaultZoomLevel] * 100}%</a>`
-        ).css({
-            width: "4rem"
-        });
-
-        zoomControl.append(
-            $('<a class="btn btn-secondary fa fa-minus"/>').click(() => {
-                this.setZoom(this.zoomLevel - 1);
-                zoomButton.text(Math.floor(zoomLevels[this.zoomLevel] * 100) + "%");
-            })
-        );
-        zoomControl.append(
-            zoomButton.click(() => {
-                this.setZoom(defaultZoomLevel);
-                zoomButton.text(Math.floor(zoomLevels[this.zoomLevel] * 100) + "%");
-            })
-        );
-        zoomControl.append(
-            $('<a class="btn btn-secondary fa fa-plus"/>').click(() => {
-                this.setZoom(this.zoomLevel + 1);
-                zoomButton.text(Math.floor(zoomLevels[this.zoomLevel] * 100) + "%");
-            })
-        );
-        this.cv.closest("#workflow-canvas-body").append(zoomControl);
+        this.app.fit_canvas_to_nodes();
+        return this.zoomLevel;
     }
 
     init_drag() {
@@ -179,7 +150,7 @@ class CanvasManager {
                 move((d.offsetX + x_adjust) / this.canvasZoom, (d.offsetY + y_adjust) / this.canvasZoom);
             })
             .bind("dragend", () => {
-                self.app.workflow.fit_canvas_to_nodes();
+                self.app.fit_canvas_to_nodes();
                 self.draw_overview();
             });
         this.overview.click(e => {
@@ -193,7 +164,7 @@ class CanvasManager {
                 var new_x_offset = e.pageX - self.oc.offset().left - self.ov.width() / 2;
                 var new_y_offset = e.pageY - self.oc.offset().top - self.ov.height() / 2;
                 move(-((new_x_offset / o_w) * in_w), -((new_y_offset / o_h) * in_h));
-                self.app.workflow.fit_canvas_to_nodes();
+                self.app.fit_canvas_to_nodes();
                 self.draw_overview();
             }
         });
@@ -210,7 +181,7 @@ class CanvasManager {
             })
             .bind("dragend", () => {
                 self.overview.addClass("blockaclick");
-                self.app.workflow.fit_canvas_to_nodes();
+                self.app.fit_canvas_to_nodes();
                 self.draw_overview();
             });
         // Dragging for overview border (resize)
@@ -233,11 +204,11 @@ class CanvasManager {
             // If it appears that the user is trying to copy/paste text, we
             // pass that through.
             if (window.getSelection().toString() === "") {
-                if (this.app.workflow.active_node && this.app.workflow.active_node.type !== "subworkflow") {
+                if (this.app.active_node && this.app.active_node.type !== "subworkflow") {
                     e.clipboardData.setData(
                         "application/json",
                         JSON.stringify({
-                            nodeId: this.app.workflow.active_node.id
+                            nodeId: this.app.active_node.id
                         })
                     );
                 }
@@ -259,8 +230,8 @@ class CanvasManager {
                 } catch (error) {
                     console.debug(error);
                 }
-                if (nodeId && Object.prototype.hasOwnProperty.call(this.app.workflow.nodes, nodeId)) {
-                    this.app.workflow.nodes[nodeId].clone();
+                if (nodeId && Object.prototype.hasOwnProperty.call(this.app.nodes, nodeId)) {
+                    this.app.nodes[nodeId].clone();
                 }
                 e.preventDefault();
             }
@@ -329,8 +300,8 @@ class CanvasManager {
         canvas_el.attr("width", o_w);
         canvas_el.attr("height", o_h);
         // Draw overview
-        $.each(this.app.workflow.nodes, (id, node) => {
-            c.fillStyle = "gray";
+        $.each(this.app.nodes, (id, node) => {
+            c.fillStyle = NODE_COLOR;
             var node_element = $(node.element);
             var position = node_element.position();
             var x = (position.left / in_w) * o_w;
@@ -338,7 +309,7 @@ class CanvasManager {
             var w = (node_element.width() / in_w) * o_w;
             var h = (node_element.height() / in_h) * o_h;
             if (node.errors) {
-                c.fillStyle = "#e31a1e";
+                c.fillStyle = NODE_ERROR_COLOR;
             }
             c.fillRect(x, y, w, h);
         });

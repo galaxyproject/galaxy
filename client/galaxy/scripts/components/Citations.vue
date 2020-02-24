@@ -150,14 +150,11 @@ export default {
                     fields.howpublished
                 )}${this._asSentence(fields.note)}`;
             }
-            let doiUrl = "";
             if (fields.doi) {
-                doiUrl = `https://doi.org/${fields.doi}`;
-                ref += `[<a href="${doiUrl}" target="_blank">doi:${fields.doi}</a>]`;
+                ref += `[<a href="https://doi.org/${fields.doi}" target="_blank">doi:${fields.doi}</a>]`;
             }
-            const url = fields.url || doiUrl;
-            if (url) {
-                ref += `[<a href="${url}" target="_blank">Link</a>]`;
+            if (fields.url) {
+                ref += `[<a href="${fields.url}" target="_blank">Link</a>]`;
             }
             return convertLaTeX({ onError: (error, latex) => `{${stringifyLaTeX(latex)}}` }, ref);
         },

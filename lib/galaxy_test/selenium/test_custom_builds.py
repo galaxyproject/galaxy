@@ -42,23 +42,18 @@ class CustomBuildsTestcase(SharedStateSeleniumTestCase):
         self.submit_login(self.user_email, retries=2)
 
     def add_custom_build(self, build_name, build_key):
-        name_div = self.wait_for_selector('div[tour_id="name"')
-        name_input = name_div.find_element_by_css_selector('.ui-form-field input')
-        name_input.click()
+        name_input = self.wait_for_selector('input[tour_id="name"]')
         name_input.send_keys(build_name)
 
-        key_div = self.wait_for_selector('div[tour_id="id"')
-        key_input = key_div.find_element_by_css_selector('.ui-form-field input')
-        key_input.click()
+        key_input = self.wait_for_selector('input[tour_id="id"]')
         key_input.send_keys(build_key)
 
-        len_type_div = self.wait_for_selector('div[tour_id="len|type')
-        len_type_select = len_type_div.find_element_by_css_selector('.ui-form-field .ui-select')
+        len_type_select = self.wait_for_selector('select[tour_id="type"]')
         len_type_select.click()
 
-        option = self.wait_for_sizzle_selector_clickable('div[role="option"]:contains("Len-file by copy/paste")')
+        option = self.wait_for_sizzle_selector_clickable('option[value="text"]')
         option.click()
-        content_area = self.wait_for_and_click_selector('.ui-form-field > textarea')
+        content_area = self.wait_for_and_click_selector('textarea[id="len-file-text-area"]')
         content_area.send_keys('content')
 
         self.wait_for_and_click_selector('button#save')
@@ -70,7 +65,7 @@ class CustomBuildsTestcase(SharedStateSeleniumTestCase):
             td = row.find_elements_by_tag_name('td')
             name = td[0].text
             if name == build_name:
-                delete_button = td[3].find_element_by_css_selector('.ui-button-icon-plain')
+                delete_button = td[3].find_element_by_css_selector('.fa-trash-o')
                 break
 
         if delete_button is None:

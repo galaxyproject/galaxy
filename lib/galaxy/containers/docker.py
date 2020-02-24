@@ -99,7 +99,7 @@ class DockerInterface(ContainerInterface):
 
     @property
     def host(self):
-        return self.__host_iter.next()
+        return next(self.__host_iter)
 
     @property
     def host_iter(self):
@@ -255,7 +255,7 @@ class DockerAPIClient(object):
     def _init_client():
         kwargs = DockerAPIClient._client_kwargs.copy()
         if DockerAPIClient._host_iter is not None and 'base_url' not in kwargs:
-            kwargs['base_url'] = DockerAPIClient._host_iter.next()
+            kwargs['base_url'] = next(DockerAPIClient._host_iter)
         DockerAPIClient._client = docker.APIClient(*DockerAPIClient._client_args, **kwargs)
         log.info('Initialized Docker API client for server: %s', kwargs.get('base_url', 'localhost'))
 
@@ -501,7 +501,7 @@ class DockerAPIInterface(DockerInterface):
             map_spec = option_map[key]
             _kwopt_to_arg(map_spec, key, map_spec['default'])
         # don't allow kwopts that start with _, those are reserved for "child" object params
-        for kwopt in filter(lambda k: not k.startswith('_') and k in option_map, kwopts.keys()):
+        for kwopt in filter(lambda k: not k.startswith('_') and k in option_map, list(kwopts.keys())):
             map_spec = option_map[kwopt]
             _v = kwopts.pop(kwopt)
             _kwopt_to_arg(map_spec, kwopt, _v)

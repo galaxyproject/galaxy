@@ -1,6 +1,9 @@
 <template>
     <div class="markdown-wrapper">
         <div v-html="markdownRendered"></div>
+        <a :href="exportLink" class="markdown-export" v-if="effectiveExportLink">
+            <i class="fa fa-4x fa-download"></i>
+        </a>
     </div>
 </template>
 
@@ -16,6 +19,7 @@ import MarkdownIt from "markdown-it";
 import JOB_STATES_MODEL from "mvc/history/job-states-model";
 import HDCAModel from "mvc/history/hdca-model";
 import HDCAListItemEdit from "mvc/history/hdca-li-edit";
+import HDCAListItem from "mvc/history/hdca-li";
 
 const FUNCTION_CALL_LINE_TEMPLATE = /\s*(\w+)\s*\((\s*\w+\s*=\s*\w+\s*)\)\s*/m;
 
@@ -26,7 +30,7 @@ const default_fence = md.renderer.rules.fence;
 const RENDER_FUNCTIONS = {
     history_dataset_display: (action, args, content) => {
         const history_dataset_id = args.history_dataset_id;
-        return `<div class='embedded-item display dataset'>
+        return `<div class='embedded-item display dataset' data-item-url="${getAppRoot()}dataset/get_item_content_async?id=${history_dataset_id}">
             <div class='title'>
                 <div style="float: left">
                 <a class="display_in_embed icon-button toggle-expand" title="Show Dataset content"></a>
@@ -37,10 +41,18 @@ const RENDER_FUNCTIONS = {
                 <a href="${getAppRoot()}dataset/imp?dataset_id=${history_dataset_id}" class="icon-button import" title="Import dataset"></a>
                 </div>
                 <a class="toggle-embed"><h4>Galaxy Dataset | <span class="render-name" history_dataset_id="${history_dataset_id}"></span</h4></a>
-                <input type="hidden" name="ajax-item-content-url" value="${getAppRoot()}dataset/get_item_content_async?id=${history_dataset_id}">
             </div>
             <div class='summary-content'>
             </div>
+            <div class='expanded-content'>
+                <div class='item-content'>
+                </div>
+            </div>
+        </div>`;
+    },
+    history_dataset_embedded: (action, args, content) => {
+        const history_dataset_id = args.history_dataset_id;
+        return `<div class='embedded-item display expanded' data-item-url="${getAppRoot()}dataset/get_item_content_async?id=${history_dataset_id}">
             <div class='expanded-content'>
                 <div class='item-content'>
                 </div>
@@ -140,6 +152,14 @@ export default {
     props: {
         markdownConfig: {
             type: Object
+        },
+        readOnly: {
+            type: Boolean,
+            default: true
+        },
+        exportLink: {
+            type: String,
+            required: false
         }
     },
     data() {
@@ -150,6 +170,12 @@ export default {
             workflows: {},
             jobs: {}
         };
+    },
+    computed: {
+        effectiveExportLink() {
+            const Galaxy = getGalaxyInstance();
+            return Galaxy.config.enable_beta_markdown_export ? this.exportLink : null;
+        }
     },
     watch: {
         markdownConfig: function(mConfig, oldVal) {
@@ -190,8 +216,8 @@ export default {
                     jobStateSummariesCollection.historyId = hdca["history_id"];
                     jobStateSummariesCollection.monitor();
                     jobStateSummariesCollection.trackModel(hdcaModel);
-
-                    return new HDCAListItemEdit.HDCAListItemEdit({
+                    const viewClass = this.readOnly ? HDCAListItem.HDCAListItemView : HDCAListItemEdit.HDCAListItemEdit;
+                    return new viewClass({
                         model: hdcaModel,
                         el: $(el),
                         linkTarget: "galaxy_main",
@@ -210,5 +236,15 @@ export default {
 @import "embed_item";
 .toggle {
     display: none;
+}
+
+.markdown-export {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    z-index: 2000;
+    padding: 1rem;
+    color: gray;
+    opacity: 0.5;
 }
 </style>

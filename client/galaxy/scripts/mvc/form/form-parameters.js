@@ -9,7 +9,6 @@ import Ui from "mvc/ui/ui-misc";
 import SelectContent from "mvc/ui/ui-select-content";
 import SelectLibrary from "mvc/ui/ui-select-library";
 import SelectFtp from "mvc/ui/ui-select-ftp";
-import SelectGenomeSpace from "mvc/ui/ui-select-genomespace";
 import RulesEdit from "mvc/ui/ui-rules-edit";
 import ColorPicker from "mvc/ui/ui-color-picker";
 import DataPicker from "mvc/ui/ui-data-picker";
@@ -38,7 +37,6 @@ export default Backbone.Model.extend({
         ftpfile: "_fieldFtp",
         upload: "_fieldUpload",
         rules: "_fieldRulesEdit",
-        genomespacefile: "_fieldGenomeSpace",
         data_dialog: "_fieldDialog"
     },
 
@@ -91,6 +89,19 @@ export default Backbone.Model.extend({
             radiobutton: Ui.RadioButton
         };
         var SelectClass = classes[input_def.display] || Ui.Select;
+        // use Select2 fields or regular select fields in workflow launch form?
+        // check select_type_workflow_threshold option
+        const Galaxy = getGalaxyInstance();
+        var searchable = true;
+        if (input_def.flavor == "workflow") {
+            if (Galaxy.config.select_type_workflow_threshold == -1) {
+                searchable = false;
+            } else if (Galaxy.config.select_type_workflow_threshold == 0) {
+                searchable = true;
+            } else if (Galaxy.config.select_type_workflow_threshold < input_def.options.length) {
+                searchable = false;
+            }
+        }
         return new Ui.TextSelect({
             id: `field-${input_def.id}`,
             data: input_def.data,
@@ -102,7 +113,7 @@ export default Backbone.Model.extend({
             optional: input_def.optional,
             onchange: input_def.onchange,
             individual: input_def.individual,
-            searchable: input_def.flavor !== "workflow",
+            searchable: searchable,
             textable: input_def.textable,
             SelectClass: SelectClass
         });
@@ -182,7 +193,10 @@ export default Backbone.Model.extend({
     _fieldBoolean: function(input_def) {
         return new Ui.RadioButton.View({
             id: `field-${input_def.id}`,
-            data: [{ label: "Yes", value: "true" }, { label: "No", value: "false" }],
+            data: [
+                { label: "Yes", value: "true" },
+                { label: "No", value: "false" }
+            ],
             onchange: input_def.onchange
         });
     },
@@ -220,15 +234,6 @@ export default Backbone.Model.extend({
             id: `field-${input_def.id}`,
             optional: input_def.optional,
             multiple: input_def.multiple,
-            onchange: input_def.onchange
-        });
-    },
-
-    /** GenomeSpace file select field
-     */
-    _fieldGenomeSpace: function(input_def) {
-        return new SelectGenomeSpace.View({
-            id: `field-${input_def.id}`,
             onchange: input_def.onchange
         });
     },

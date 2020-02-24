@@ -113,7 +113,7 @@ class ToolSource(object):
         return ["TMPDIR", "TMP", "TEMP"]
 
     def parse_docker_env_pass_through(self):
-        return ["GALAXY_SLOTS", "HOME"] + self.parse_tmp_directory_vars()
+        return ["GALAXY_SLOTS", "HOME", "_GALAXY_JOB_HOME_DIR", "_GALAXY_JOB_TMP_DIR"] + self.parse_tmp_directory_vars()
 
     @abstractmethod
     def parse_interpreter(self):
@@ -399,7 +399,7 @@ class TestCollectionDef(object):
             "model_class": "TestCollectionDef",
             "attributes": self.attrib,
             "collection_type": self.collection_type,
-            "elements": map(element_to_dict, self.elements or []),
+            "elements": list(map(element_to_dict, self.elements or [])),
             "name": self.name,
         }
 

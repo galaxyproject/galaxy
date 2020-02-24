@@ -180,12 +180,24 @@ class ProvidesHistoryContext(object):
             # The API presents a Bunch for a history.  Until the API is
             # more fully featured for handling this, also return None.
             return None
-        datasets = self.sa_session.query(self.app.model.HistoryDatasetAssociation) \
-                                  .filter_by(deleted=False, history_id=self.history.id, extension="len")
+        non_ready_or_ok = set(self.app.model.Dataset.non_ready_states)
+        non_ready_or_ok.add(self.app.model.HistoryDatasetAssociation.states.OK)
+        datasets = self.sa_session.query(
+            self.app.model.HistoryDatasetAssociation
+        ).filter_by(
+            deleted=False,
+            history_id=self.history.id,
+            extension="len"
+        ).filter(
+            self.app.model.HistoryDatasetAssociation._state.in_(non_ready_or_ok),
+        )
+        valid_ds = None
         for ds in datasets:
-            if dbkey == ds.dbkey:
-                return ds
-        return None
+            if ds.dbkey == dbkey:
+                if ds.state == self.app.model.HistoryDatasetAssociation.states.OK:
+                    return ds
+                valid_ds = ds
+        return valid_ds
 
     @property
     def db_builds(self):

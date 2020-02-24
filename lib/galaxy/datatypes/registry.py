@@ -13,6 +13,7 @@ from xml.etree.ElementTree import Element
 import yaml
 
 import galaxy.util
+from galaxy.util import RW_R__R__
 from galaxy.util.bunch import Bunch
 from . import (
     binary,
@@ -45,6 +46,7 @@ class Registry(object):
         self.datatype_converters = OrderedDict()
         # Converters defined in local datatypes_conf.xml
         self.converters = []
+        self.converter_tools = set()
         # Converters defined in datatypes_conf.xml included in installed tool shed repositories.
         self.proprietary_converters = []
         self.converter_deps = {}
@@ -247,13 +249,14 @@ class Registry(object):
                                         for mod in fields:
                                             module = getattr(module, mod)
                                         datatype_class = getattr(module, datatype_class_name)
-                                        self.log.debug('Retrieved datatype module %s:%s from the datatype registry.' % (str(datatype_module), datatype_class_name))
+                                        self.log.debug('Retrieved datatype module %s:%s from the datatype registry for extension %s.' % (str(datatype_module), datatype_class_name, extension))
                                     except Exception:
                                         self.log.exception('Error importing datatype module %s', str(datatype_module))
                                         ok = False
                         elif type_extension is not None:
                             try:
                                 datatype_class = self.datatypes_by_extension[type_extension].__class__
+                                self.log.debug('Retrieved datatype module %s from type_extension %s for extension %s.' % (str(datatype_class.__name__), type_extension, extension))
                             except Exception:
                                 self.log.exception('Error determining datatype_class for type_extension %s', str(type_extension))
                                 ok = False
@@ -612,6 +615,7 @@ class Registry(object):
             try:
                 config_path = os.path.join(converter_path, tool_config)
                 converter = toolbox.load_tool(config_path, use_cached=use_cached)
+                self.converter_tools.add(converter)
                 if installed_repository_dict:
                     # If the converter is included in an installed tool shed repository, set the tool
                     # shed related tool attributes.
@@ -973,7 +977,7 @@ class Registry(object):
                                                                             datatype_elems=datatype_elems,
                                                                             sniffer_elems=sniffer_elems)
         with open(os.path.abspath(path), 'w') as registry_xml:
-            os.chmod(path, 0o644)
+            os.chmod(path, RW_R__R__)
             registry_xml.write(self._registry_xml_string)
 
     def get_extension(self, elem):

@@ -344,8 +344,8 @@ def release_issue(argv):
 def do_release(argv):
     release_name = argv[2]
     release_file = _release_file(release_name + ".rst")
-    enhancement_targets = "\n\n".join([".. enhancement_tag_%s" % a for a in GROUPPED_TAGS.values()])
-    bug_targets = "\n\n".join([".. bug_tag_%s" % a for a in GROUPPED_TAGS.values()])
+    enhancement_targets = "\n\n".join(".. enhancement_tag_%s" % a for a in GROUPPED_TAGS.values())
+    bug_targets = "\n\n".join(".. bug_tag_%s" % a for a in GROUPPED_TAGS.values())
     template = TEMPLATE
     template = template.replace(".. enhancement", "%s\n\n.. enhancement" % enhancement_targets)
     template = template.replace(".. bug", "%s\n\n.. bug" % bug_targets)
@@ -774,7 +774,7 @@ def wrap(message):
     message_lines = message.splitlines()
     first_lines = "\n".join(wrapper.wrap(message_lines[0]))
     wrapper.initial_indent = "  "
-    rest_lines = "\n".join(["\n".join(wrapper.wrap(m)) for m in message_lines[1:]])
+    rest_lines = "\n".join("\n".join(wrapper.wrap(m)) for m in message_lines[1:])
     return first_lines + ("\n" + rest_lines if rest_lines else "")
 
 

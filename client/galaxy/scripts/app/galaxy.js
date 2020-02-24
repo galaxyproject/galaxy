@@ -7,7 +7,7 @@ import metricsLogger from "utils/metrics-logger";
 import addLogging from "utils/add-logging";
 import localize from "utils/localization";
 import { getGalaxyInstance } from "app";
-import { create, dialog } from "utils/data.js";
+import { create, dialog } from "utils/data";
 
 // ============================================================================
 /** Base galaxy client-side application.

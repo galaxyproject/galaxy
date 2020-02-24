@@ -110,6 +110,7 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
         """
         filter_params = self.parse_filter_params(kwd)
         filters = self.history_contents_filters.parse_filters(filter_params)
+        view = kwd.get('view', 'summary')
         order_by = self._parse_order_by(manager=self.history_contents_manager, order_by_string=kwd.get('order', 'create_time-dsc'))
         container = None
         if history_id:
@@ -117,7 +118,7 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
         contents = self.history_contents_manager.contents(
             container=container, filters=filters, limit=limit, offset=offset, order_by=order_by, user_id=trans.user.id,
         )
-        return [self.serializer_by_type[content.history_content_type].serialize_to_view(content, user=trans.user, trans=trans, view='summary') for content in contents]
+        return [self.serializer_by_type[content.history_content_type].serialize_to_view(content, user=trans.user, trans=trans, view=view) for content in contents]
 
     @web.legacy_expose_api_anonymous
     def show(self, trans, id, hda_ldda='hda', data_type=None, provider=None, **kwd):
@@ -397,12 +398,10 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
         rval = ''
         try:
             hda = self.hda_manager.get_accessible(decoded_content_id, trans.user)
-
             if raw:
                 if filename and filename != 'index':
                     object_store = trans.app.object_store
-                    store_by = getattr(object_store, "store_by", "id")
-                    dir_name = 'dataset_%s_files' % getattr(hda.dataset, store_by)
+                    dir_name = hda.dataset.extra_files_path_name
                     file_path = object_store.get_filename(hda.dataset,
                                                           extra_dir=dir_name,
                                                           alt_name=filename)

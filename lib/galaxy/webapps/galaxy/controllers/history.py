@@ -29,6 +29,7 @@ from galaxy.util import (
     Params,
     parse_int,
     sanitize_text,
+    string_as_bool,
     unicodify
 )
 from galaxy.web import url_for
@@ -456,8 +457,8 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         return trans.fill_template_mako(
             "history/as_xml.mako",
             history=history,
-            show_deleted=galaxy.util.string_as_bool(show_deleted),
-            show_hidden=galaxy.util.string_as_bool(show_hidden))
+            show_deleted=string_as_bool(show_deleted),
+            show_hidden=string_as_bool(show_hidden))
 
     @web.expose
     @web.json
@@ -554,9 +555,9 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         """
         View a history. If a history is importable, then it is viewable by any user.
         """
-        show_deleted = galaxy.util.string_as_bool(show_deleted)
-        show_hidden = galaxy.util.string_as_bool(show_hidden)
-        use_panels = galaxy.util.string_as_bool(use_panels)
+        show_deleted = string_as_bool(show_deleted)
+        show_hidden = string_as_bool(show_hidden)
+        use_panels = string_as_bool(use_panels)
 
         history_dictionary = {}
         user_is_owner = False
@@ -602,7 +603,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         """
         current_history_id = trans.security.encode_id(trans.history.id)
         # TODO: allow specifying user_id for admin?
-        include_deleted_histories = galaxy.util.string_as_bool(include_deleted_histories)
+        include_deleted_histories = string_as_bool(include_deleted_histories)
         limit = parse_int(limit, min_val=1, default=10, allow_none=True)
 
         return trans.fill_template_mako("history/view_multiple.mako", current_history_id=current_history_id,
@@ -690,6 +691,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         permissions for the history to private, for future datasets.
         """
         histories = []
+        all_histories = string_as_bool(all_histories)
         if all_histories:
             histories = trans.user.histories
         elif history_id:
@@ -1074,7 +1076,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
     @web.expose
     def resume_paused_jobs(self, trans, current=False, ids=None):
         """Resume paused jobs the active history -- this does not require a logged in user."""
-        if not ids and galaxy.util.string_as_bool(current):
+        if not ids and string_as_bool(current):
             histories = [trans.get_history()]
             refresh_frames = ['history']
         else:
@@ -1228,10 +1230,9 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
     # TODO: combine these next two - poss. with a redirect flag
     # @web.require_login( "switch to a history" )
     @web.json
+    @web.do_not_cache
     def set_as_current(self, trans, id):
         """Change the current user's current history to one with `id`."""
-        # Prevent IE11 from caching this, since we actually use it via GET.
-        trans.response.headers['Cache-Control'] = ["max-age=0", "no-cache", "no-store"]
         try:
             history = self.history_manager.get_owned(self.decode_id(id), trans.user, current_history=trans.history)
             trans.set_history(history)
@@ -1241,10 +1242,9 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             return {'err_msg': msg_exc.err_msg, 'err_code': msg_exc.err_code.code}
 
     @web.json
+    @web.do_not_cache
     def current_history_json(self, trans):
         """Return the current user's current history in a serialized, dictionary form."""
-        # Prevent IE11 from caching this
-        trans.response.headers['Cache-Control'] = ["max-age=0", "no-cache", "no-store"]
         history = trans.get_history(most_recent=True, create=True)
         return self.history_data(trans, history)
 

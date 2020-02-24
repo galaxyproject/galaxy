@@ -2,7 +2,8 @@ import $ from "jquery";
 
 import { Toast } from "ui/toast";
 
-function Connector(handle1, handle2) {
+function Connector(manager, handle1, handle2) {
+    this.manager = manager;
     this.canvas = null;
     this.dragging = false;
     this.inner_color = "#FFFFFF";
@@ -46,8 +47,7 @@ $.extend(Connector.prototype, {
         const endRibbon = handle2 && handle2.isMappedOver();
         const canvasClass = `${startRibbon ? "start-ribbon" : ""} ${endRibbon ? "end-ribbon" : ""}`;
         var canvas_container = $("#canvas-container");
-        // FIXME: global
-        var canvasZoom = window.workflow_globals.canvas_manager.canvasZoom;
+        var canvasZoom = this.manager.canvasZoom;
         if (!this.canvas) {
             this.canvas = document.createElement("canvas");
             canvas_container.append($(this.canvas));

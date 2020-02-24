@@ -1,4 +1,7 @@
-<tool id="CONVERTER_neostorezip_to_neostore" name="Convert neostore.zip files to neostore" version="1.0.0" hidden="true">
+<tool id="CONVERTER_neostorezip_to_neostore" name="Convert neostore.zip files to neostore" version="1.0.0" hidden="true" profile="16.04">
+  <requirements>
+    <requirement type="package" version="6.0">unzip</requirement>
+  </requirements>
   <command><![CDATA[
         unzip '${input1.extra_files_path}/neostore_file.zip' -d '${output1.files_path}' > $output1
         ]]>

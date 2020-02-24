@@ -5,7 +5,7 @@
             v-if="status !== 'error'"
             :columns="columns"
             :rows="dataTypes"
-            :isLoaded="isDataLoaded"
+            :is-loaded="isDataLoaded"
             id="data-types-grid"
         >
             <template v-slot:title>

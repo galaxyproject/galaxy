@@ -415,7 +415,10 @@ Graph.prototype.createEdge = function(sourceName, targetName, directed, data) {
 
 /** Walk over all the edges of the graph using the vertex.eachEdge iterator */
 Graph.prototype.edges = function(propsOrFn) {
-    return Array.prototype.concat.apply([], this.eachVertex(vertex => vertex.eachEdge(propsOrFn)));
+    return Array.prototype.concat.apply(
+        [],
+        this.eachVertex(vertex => vertex.eachEdge(propsOrFn))
+    );
 };
 
 /** Iterate over all the vertices in the graph */

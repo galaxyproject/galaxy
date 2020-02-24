@@ -50,11 +50,15 @@ Here is a short introduction:
 Search for containers
 ^^^^^^^^^^^^^^^^^^^^^
 
-This will search for containers in the biocontainers organization.
+This will search for Docker containers (in the biocontainers organisation on quay.io), Singularity containers (located at https://depot.galaxyproject.org/singularity/), Conda packages (in the bioconda channel), and GitHub files (on the bioconda-recipes repository. 
 
 .. code-block:: bash
 
-   $ mulled-search -s vsearch -o biocontainers
+   $ mulled-search --destination docker conda --search vsearch
+
+The user can specify the location(s) for a search using the ``--destination`` option. The search term is specified using ``--search``. Multiple search terms can be specified simultaneously; in this case, the search will also encompass multi-package containers. For example, ``--search samtools bamtools``, will return ``mulled-v2-0560a8046fc82aa4338588eca29ff18edab2c5aa:c17ce694dd57ab0ac1a2b86bb214e65fedef760e-0``, in addition to all individual samtools and bamtools results.
+
+If the user wishes to specify a quay.io organization or Conda channel for the search, this may be done using the ``--organization`` and ``--channel`` options respectively, e.g. ``--channel conda-forge``. Enabling ``--json`` causes results to be returned in JSON format.
 
 
 Build all packages from bioconda from the last 24h
@@ -117,6 +121,43 @@ you could do something along these lines.
   
    $ mulled-build push 'pandoc=1.17.2--0' --test 'pandoc --help' -n biocontainers
 
+Build Singularity containers from Docker containers
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Singularity containers can be built from Docker containers using the mulled-update-singularity-containers command.
+
+To generate a single container:
+
+.. code-block:: bash
+
+   $ mulled-update-singularity-containers --containers samtools:1.6--0 --logfile /tmp/sing/test.log --filepath /tmp/sing/ --installation /usr/local/bin/singularity
+
+``--containers`` indicates the container name (here ``samtools:1.6--0``), ``--filepath`` the location where the containers should be placed, and ``--installation`` the location of the Singularity installation. (This can be found using ``whereis singularity``.)
+
+Multiple containers can be installed simultaneously by giving ``--containers`` more than one argument:
+
+.. code-block:: bash
+
+   $ mulled-update-singularity-containers --containers samtools:1.6--0 bamtools:2.4.1--0 --filepath /tmp/sing/ --installation /usr/local/bin/singularity
+
+.. code-block:: bash
+
+For a large number of containers, it may be more convenient to employ the ``--container-list`` option:
+
+.. code-block:: bash
+
+   $ mulled-update-singularity-containers --container-list list.txt --filepath /tmp/sing/ --installation /usr/local/bin/singularity
+
+Here ``list.txt`` should contain a list of containers, each on a new line.
+
+In order to generate the list file the ``mulled-list`` command may be useful. The following command returns a list of all Docker containers available on the quay.io biocontainers organization, excluding those already available as Singularity containers via https://depot.galaxyproject.org/singularity/.:: bash
+
+   $ mulled-list --source docker --not-singularity --blacklist blacklist.txt --file output.txt
+
+The list of containers will be saved as ``output.txt``. The (optional) ``--blacklist`` option may be used to exclude containers which should not included in the output; ``blacklist.txt`` should contain a list of the 'blacklisted' containers, each on a new line.
+
+Containers, once generated, should be tested. This can be achieved by affixing ``--testing test-output.log`` to the command, or alternatively, by use of the dedicated ``mulled-singularity-testing`` tool.:: bash
+
+   $ mulled-singularity-testing --container-list list.txt --filepath /tmp/sing/ --installation /usr/local/bin/singularity --logfile test-output.txt
 
 .. _Galaxy Conda documentation: ./conda_faq.rst
 .. _IUC: https://galaxyproject.org/iuc/

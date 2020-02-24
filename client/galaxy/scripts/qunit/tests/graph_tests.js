@@ -144,8 +144,16 @@ function testSampleNonDirectedGraph(assert, graph) {
 }
 
 var nodeLinkData = {
-    nodes: [{ name: "A", data: 100 }, { name: "B", data: 200 }, { name: "C", data: 300 }],
-    links: [{ source: 0, target: 1 }, { source: 0, target: 2 }, { source: 1, target: 2 }]
+    nodes: [
+        { name: "A", data: 100 },
+        { name: "B", data: 200 },
+        { name: "C", data: 300 }
+    ],
+    links: [
+        { source: 0, target: 1 },
+        { source: 0, target: 2 },
+        { source: 1, target: 2 }
+    ]
 };
 
 QUnit.test("Test nodes and links data input on *non-directed* graph", function(assert) {
@@ -159,8 +167,16 @@ QUnit.test("Test nodes and links data input on *directed* graph", function(asser
 });
 
 var vertexEdgeData = {
-    vertices: [{ name: "A", data: 100 }, { name: "B", data: 200 }, { name: "C", data: 300 }],
-    edges: [{ source: "A", target: "B" }, { source: "A", target: "C" }, { source: "B", target: "C" }]
+    vertices: [
+        { name: "A", data: 100 },
+        { name: "B", data: 200 },
+        { name: "C", data: 300 }
+    ],
+    edges: [
+        { source: "A", target: "B" },
+        { source: "A", target: "C" },
+        { source: "B", target: "C" }
+    ]
 };
 
 QUnit.test("Test vertex and edge data input on *non-directed* graph", function(assert) {
@@ -192,7 +208,11 @@ QUnit.test("Test graph eachVertex", function(assert) {
         graph.eachVertex(function(v) {
             return { n: v.name, d: v.degree };
         }),
-        [{ n: "A", d: 2 }, { n: "B", d: 1 }, { n: "C", d: 0 }]
+        [
+            { n: "A", d: 2 },
+            { n: "B", d: 1 },
+            { n: "C", d: 0 }
+        ]
     );
     assert.ok(graph.eachVertex({ degree: 2 })[0] === graph.vertices.A);
 });
@@ -315,7 +335,10 @@ QUnit.test("BreadthFirstSearch on undirected graph", function(assert) {
         tree = bfs.searchTree("A");
     assert.deepEqual(search, {
         discovered: { A: true, B: true, C: true },
-        edges: [{ source: "A", target: "B" }, { source: "A", target: "C" }]
+        edges: [
+            { source: "A", target: "B" },
+            { source: "A", target: "C" }
+        ]
     });
     assert.ok(tree instanceof GRAPH.Graph);
     assert.deepEqual(tree.vertices.A.toJSON(), graph.vertices.A.toJSON());
@@ -326,8 +349,14 @@ QUnit.test("BreadthFirstSearch on undirected graph", function(assert) {
         [2, 0, 0]
     );
 
-    assert.deepEqual(bfs.search("B").edges, [{ source: "B", target: "A" }, { source: "B", target: "C" }]);
-    assert.deepEqual(bfs.search("C").edges, [{ source: "C", target: "A" }, { source: "C", target: "B" }]);
+    assert.deepEqual(bfs.search("B").edges, [
+        { source: "B", target: "A" },
+        { source: "B", target: "C" }
+    ]);
+    assert.deepEqual(bfs.search("C").edges, [
+        { source: "C", target: "A" },
+        { source: "C", target: "B" }
+    ]);
     assert.ok(typeof bfs._cache.A === "object");
     assert.deepEqual(Object.keys(bfs._cache), ["A", "B", "C"]);
 });
@@ -342,7 +371,10 @@ QUnit.test("BreadthFirstSearch on directed graph", function(assert) {
         tree = bfs.searchTree("A");
     assert.deepEqual(search, {
         discovered: { A: true, B: true, C: true },
-        edges: [{ source: "A", target: "B" }, { source: "A", target: "C" }]
+        edges: [
+            { source: "A", target: "B" },
+            { source: "A", target: "C" }
+        ]
     });
     assert.ok(tree instanceof GRAPH.Graph);
     assert.deepEqual(tree.vertices.A.toJSON(), graph.vertices.A.toJSON());
@@ -456,7 +488,10 @@ QUnit.test("DepthFirstSearch on directed graph", function(assert) {
         [2, 1, 1, 0, 1, 0]
     );
 
-    assert.deepEqual(dfs.search("B").edges, [{ source: "B", target: "C" }, { source: "C", target: "D" }]);
+    assert.deepEqual(dfs.search("B").edges, [
+        { source: "B", target: "C" },
+        { source: "C", target: "D" }
+    ]);
 
     assert.ok(typeof dfs._cache.A === "object");
     assert.deepEqual(Object.keys(dfs._cache), ["A", "B"]);
@@ -467,7 +502,10 @@ QUnit.test("DepthFirstSearch on directed graph", function(assert) {
 QUnit.test("weakComponents on undirected graph", function(assert) {
     var graph = new GRAPH.Graph(false, {
         vertices: [{ name: "A" }, { name: "B" }, { name: "C" }, { name: "D" }, { name: "E" }],
-        edges: [{ source: "A", target: "B" }, { source: "C", target: "D" }]
+        edges: [
+            { source: "A", target: "B" },
+            { source: "C", target: "D" }
+        ]
     });
     assert.equal(graph.numEdges, 4);
     var components = graph.weakComponents();
@@ -478,7 +516,10 @@ QUnit.test("weakComponents on directed graph", function(assert) {
     var graph, components;
     graph = new GRAPH.Graph(true, {
         vertices: [{ name: "A" }, { name: "B" }, { name: "C" }, { name: "D" }, { name: "E" }],
-        edges: [{ source: "A", target: "B" }, { source: "D", target: "C" }]
+        edges: [
+            { source: "A", target: "B" },
+            { source: "D", target: "C" }
+        ]
     });
     assert.equal(graph.numEdges, 2);
 

@@ -123,7 +123,23 @@ const View = Backbone.View.extend({
     },
 
     _customize: function(form) {
+        const Galaxy = getGalaxyInstance();
         const options = form.model.attributes;
+        var inputs = options.inputs;
+        /* only append notification interface if
+           Galaxy has the server mail configured
+        */
+        if (Galaxy.config.server_mail_configured && !Galaxy.user.isAnonymous()) {
+            inputs.push({
+                name: `send_email_notification`,
+                label: "Email notification",
+                type: "boolean",
+                value: "false",
+                ignore: "false",
+                help: _l("Send an email notification when the job completes.")
+            });
+        }
+
         // build execute button
         const execute_button = new Ui.Button({
             icon: "fa-check",
@@ -161,13 +177,15 @@ const View = Backbone.View.extend({
                 display: "radio",
                 ignore: "__ignore__",
                 value: "__ignore__",
-                options: [["Yes", options.job_id], ["No", "__ignore__"]],
+                options: [
+                    ["Yes", options.job_id],
+                    ["No", "__ignore__"]
+                ],
                 help: help
             });
         }
 
         // Job Re-use Options
-        const Galaxy = getGalaxyInstance();
         let extra_user_preferences = {};
         if (Galaxy.user.attributes.preferences && "extra_user_preferences" in Galaxy.user.attributes.preferences) {
             extra_user_preferences = JSON.parse(Galaxy.user.attributes.preferences.extra_user_preferences);
@@ -185,7 +203,10 @@ const View = Backbone.View.extend({
                 display: "radio",
                 ignore: "__ignore__",
                 value: "__ignore__",
-                options: [["No", false], ["Yes", true]]
+                options: [
+                    ["No", false],
+                    ["Yes", true]
+                ]
             });
         }
     },

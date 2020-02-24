@@ -73,7 +73,7 @@ class SelectorTemplate(Target):
         selector = self._selector
         if self.__kwds is not None:
             selector = string.Template(selector).substitute(self.__kwds)
-        selector = selector + "".join([".%s" % c for c in self.with_classes])
+        selector = selector + "".join(".%s" % c for c in self.with_classes)
         return selector
 
     @property
