@@ -9,7 +9,10 @@ from math import isinf
 import packaging.version
 
 from galaxy.tool_util.deps import requirements
-from galaxy.tool_util.parser.util import DEFAULT_DELTA
+from galaxy.tool_util.parser.util import (
+    DEFAULT_DELTA,
+    DEFAULT_DELTA_FRAC
+)
 from galaxy.util import string_as_bool, xml_text, xml_to_string
 from .interface import (
     InputSource,
@@ -614,6 +617,7 @@ def __parse_test_attributes(output_elem, attrib, parse_elements=False, parse_dis
     attributes['lines_diff'] = int(attrib.pop('lines_diff', '0'))
     # Allow a file size to vary if sim_size compare
     attributes['delta'] = int(attrib.pop('delta', DEFAULT_DELTA))
+    attributes['delta_frac'] = float(attrib['delta_frac']) if 'delta_frac' in attrib else DEFAULT_DELTA_FRAC
     attributes['sort'] = string_as_bool(attrib.pop('sort', False))
     attributes['decompress'] = string_as_bool(attrib.pop('decompress', False))
     extra_files = []
