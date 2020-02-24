@@ -492,7 +492,9 @@ galaxy:
 
   # File that defines the builds (dbkeys) available at sites used by
   # display applications and the URL to those sites.
-  #build_sites_config_file: config/build_sites.yml.sample
+  # The value of this option will be resolved with respect to
+  # <config_dir>.
+  #build_sites_config_file: build_sites.yml
 
   # File containing old-style genome builds.
   # The value of this option will be resolved with respect to
