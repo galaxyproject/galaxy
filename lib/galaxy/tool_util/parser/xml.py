@@ -9,7 +9,7 @@ from math import isinf
 import packaging.version
 
 from galaxy.tool_util.deps import requirements
-from galaxy.tool_util.parser import DEFAULT_DELTA
+from galaxy.tool_util.parser.util import DEFAULT_DELTA
 from galaxy.util import string_as_bool, xml_text, xml_to_string
 from .interface import (
     InputSource,

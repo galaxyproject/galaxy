@@ -16,7 +16,7 @@ try:
 except ImportError:
     pysam = None
 
-from galaxy.tool_util.parser import DEFAULT_DELTA
+from galaxy.tool_util.parser.util import DEFAULT_DELTA
 from galaxy.util import unicodify
 from galaxy.util.compression_utils import get_fileobj
 from .asserts import verify_assertions
