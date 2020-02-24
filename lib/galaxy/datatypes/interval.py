@@ -167,40 +167,36 @@ class Interval(Tabular):
             start = sys.maxsize
             end = 0
             max_col = max(chrom_col, start_col, end_col)
-            fh = open(dataset.file_name)
-            while True:
-                line = fh.readline(VIEWPORT_READLINE_BUFFER_SIZE)
-                # Stop if at end of file
-                if not line:
-                    break
-                # Skip comment lines
-                if not line.startswith('#'):
-                    try:
-                        fields = line.rstrip().split('\t')
-                        if len(fields) > max_col:
-                            if chrom is None or chrom == fields[chrom_col]:
-                                start = min(start, int(fields[start_col]))
-                                end = max(end, int(fields[end_col]))
-                                # Set chrom last, in case start and end are not integers
-                                chrom = fields[chrom_col]
-                            viewport_feature_count -= 1
-                    except Exception:
-                        # Most likely a non-integer field has been encountered
-                        # for start / stop. Just ignore and make sure we finish
-                        # reading the line and decrementing the counters.
-                        pass
-                # Make sure we are at the next new line
-                readline_count = VIEWPORT_MAX_READS_PER_LINE
-                while line.rstrip('\n\r') == line:
-                    assert readline_count > 0, Exception('Viewport readline count exceeded for dataset %s.' % dataset.id)
-                    line = fh.readline(VIEWPORT_READLINE_BUFFER_SIZE)
-                    if not line:
-                        break  # EOF
-                    readline_count -= 1
-                max_line_count -= 1
-                if not viewport_feature_count or not max_line_count:
-                    # exceeded viewport or total line count to check
-                    break
+            with open(dataset.file_name) as fh:
+                for line in util.iter_start_of_line(fh, VIEWPORT_READLINE_BUFFER_SIZE):
+                    # Skip comment lines
+                    if not line.startswith('#'):
+                        try:
+                            fields = line.rstrip().split('\t')
+                            if len(fields) > max_col:
+                                if chrom is None or chrom == fields[chrom_col]:
+                                    start = min(start, int(fields[start_col]))
+                                    end = max(end, int(fields[end_col]))
+                                    # Set chrom last, in case start and end are not integers
+                                    chrom = fields[chrom_col]
+                                viewport_feature_count -= 1
+                        except Exception:
+                            # Most likely a non-integer field has been encountered
+                            # for start / stop. Just ignore and make sure we finish
+                            # reading the line and decrementing the counters.
+                            pass
+                    # Make sure we are at the next new line
+                    readline_count = VIEWPORT_MAX_READS_PER_LINE
+                    while line.rstrip('\n\r') == line:
+                        assert readline_count > 0, Exception('Viewport readline count exceeded for dataset %s.' % dataset.id)
+                        line = fh.readline(VIEWPORT_READLINE_BUFFER_SIZE)
+                        if not line:
+                            break  # EOF
+                        readline_count -= 1
+                    max_line_count -= 1
+                    if not viewport_feature_count or not max_line_count:
+                        # exceeded viewport or total line count to check
+                        break
             if chrom is not None:
                 return (chrom, str(start), str(end))  # Necessary to return strings?
         except Exception:
@@ -712,66 +708,63 @@ class Gff(Tabular, _RemoteCallMixin):
                 seqid = None
                 start = sys.maxsize
                 stop = 0
-                fh = open(dataset.file_name)
-                while True:
-                    line = fh.readline(VIEWPORT_READLINE_BUFFER_SIZE)
-                    if not line:
-                        break  # EOF
-                    try:
-                        if line.startswith('##sequence-region'):  # ##sequence-region IV 6000000 6030000
-                            elems = line.rstrip('\n\r').split()
-                            if len(elems) > 3:
-                                # line looks like:
-                                # sequence-region   ctg123 1 1497228
-                                seqid = elems[1]  # IV
-                                start = int(elems[2])  # 6000000
-                                stop = int(elems[3])  # 6030000
-                                break  # use location declared in file
-                            elif len(elems) == 2 and elems[1].find('..') > 0:
-                                # line looks like this:
-                                # sequence-region X:120000..140000
-                                elems = elems[1].split(':')
-                                seqid = elems[0]
-                                start = int(elems[1].split('..')[0])
-                                stop = int(elems[1].split('..')[1])
-                                break  # use location declared in file
-                            else:
-                                log.exception("line (%s) uses an unsupported ##sequence-region definition." % str(line))
-                                # break #no break, if bad definition, we try another method
-                        elif line.startswith("browser position"):
-                            # Allow UCSC style browser and track info in the GFF file
-                            pos_info = line.split()[-1]
-                            seqid, startend = pos_info.split(":")
-                            start, stop = map(int, startend.split("-"))
-                            break  # use location declared in file
-                        elif True not in map(line.startswith, ('#', 'track', 'browser')):  # line.startswith() does not accept iterator in python2.4
-                            viewport_feature_count -= 1
-                            elems = line.rstrip('\n\r').split('\t')
-                            if len(elems) > 3:
-                                if not seqid:
-                                    # We can only set the viewport for a single chromosome
+                with open(dataset.file_name) as fh:
+                    for line in util.iter_start_of_line(fh, VIEWPORT_READLINE_BUFFER_SIZE):
+                        try:
+                            if line.startswith('##sequence-region'):  # ##sequence-region IV 6000000 6030000
+                                elems = line.rstrip('\n\r').split()
+                                if len(elems) > 3:
+                                    # line looks like:
+                                    # sequence-region   ctg123 1 1497228
+                                    seqid = elems[1]  # IV
+                                    start = int(elems[2])  # 6000000
+                                    stop = int(elems[3])  # 6030000
+                                    break  # use location declared in file
+                                elif len(elems) == 2 and elems[1].find('..') > 0:
+                                    # line looks like this:
+                                    # sequence-region X:120000..140000
+                                    elems = elems[1].split(':')
                                     seqid = elems[0]
-                                if seqid == elems[0]:
-                                    # Make sure we have not spanned chromosomes
-                                    start = min(start, int(elems[3]))
-                                    stop = max(stop, int(elems[4]))
-                    except Exception:
-                        # most likely start/stop is not an int or not enough fields
-                        pass
-                    # make sure we are at the next new line
-                    readline_count = VIEWPORT_MAX_READS_PER_LINE
-                    while line.rstrip('\n\r') == line:
-                        assert readline_count > 0, Exception('Viewport readline count exceeded for dataset %s.' % dataset.id)
-                        line = fh.readline(VIEWPORT_READLINE_BUFFER_SIZE)
-                        if not line:
-                            break  # EOF
-                        readline_count -= 1
-                    max_line_count -= 1
-                    if not viewport_feature_count or not max_line_count:
-                        # exceeded viewport or total line count to check
-                        break
-                if seqid is not None:
-                    return (seqid, str(start), str(stop))  # Necessary to return strings?
+                                    start = int(elems[1].split('..')[0])
+                                    stop = int(elems[1].split('..')[1])
+                                    break  # use location declared in file
+                                else:
+                                    log.debug("line (%s) uses an unsupported ##sequence-region definition." % str(line))
+                                    # break #no break, if bad definition, we try another line
+                            elif line.startswith("browser position"):
+                                # Allow UCSC style browser and track info in the GFF file
+                                pos_info = line.split()[-1]
+                                seqid, startend = pos_info.split(":")
+                                start, stop = map(int, startend.split("-"))
+                                break  # use location declared in file
+                            elif not line.startswith(('#', 'track', 'browser')):
+                                viewport_feature_count -= 1
+                                elems = line.rstrip('\n\r').split('\t')
+                                if len(elems) > 3:
+                                    if not seqid:
+                                        # We can only set the viewport for a single chromosome
+                                        seqid = elems[0]
+                                    if seqid == elems[0]:
+                                        # Make sure we have not spanned chromosomes
+                                        start = min(start, int(elems[3]))
+                                        stop = max(stop, int(elems[4]))
+                        except Exception:
+                            # most likely start/stop is not an int or not enough fields
+                            pass
+                        # make sure we are at the next new line
+                        readline_count = VIEWPORT_MAX_READS_PER_LINE
+                        while line.rstrip('\n\r') == line:
+                            assert readline_count > 0, Exception('Viewport readline count exceeded for dataset %s.' % dataset.id)
+                            line = fh.readline(VIEWPORT_READLINE_BUFFER_SIZE)
+                            if not line:
+                                break  # EOF
+                            readline_count -= 1
+                        max_line_count -= 1
+                        if not viewport_feature_count or not max_line_count:
+                            # exceeded viewport or total line count to check
+                            break
+                    if seqid is not None:
+                        return (seqid, str(start), str(stop))  # Necessary to return strings?
             except Exception:
                 log.exception('Unexpected error')
         return (None, None, None)  # could not determine viewport
@@ -1091,53 +1084,50 @@ class Wiggle(Tabular, _RemoteCallMixin):
                 end = 0
                 span = 1
                 step = None
-                fh = open(dataset.file_name)
-                while True:
-                    line = fh.readline(VIEWPORT_READLINE_BUFFER_SIZE)
-                    if not line:
-                        break  # EOF
-                    try:
-                        if line.startswith("browser"):
-                            chr_info = line.rstrip('\n\r').split()[-1]
-                            chrom, coords = chr_info.split(":")
-                            start, end = map(int, coords.split("-"))
-                            break  # use the browser line
-                        # variableStep chrom=chr20
-                        if line and (line.lower().startswith("variablestep") or line.lower().startswith("fixedstep")):
-                            if chrom is not None:
-                                break  # different chrom or different section of the chrom
-                            chrom = line.rstrip('\n\r').split("chrom=")[1].split()[0]
-                            if 'span=' in line:
-                                span = int(line.rstrip('\n\r').split("span=")[1].split()[0])
-                            if 'step=' in line:
-                                step = int(line.rstrip('\n\r').split("step=")[1].split()[0])
-                                start = int(line.rstrip('\n\r').split("start=")[1].split()[0])
-                        else:
-                            fields = line.rstrip('\n\r').split()
-                            if fields:
-                                if step is not None:
-                                    if not end:
-                                        end = start + span
+                with open(dataset.file_name) as fh:
+                    for line in util.iter_readline_count(fh, VIEWPORT_READLINE_BUFFER_SIZE):
+                        try:
+                            if line.startswith("browser"):
+                                chr_info = line.rstrip('\n\r').split()[-1]
+                                chrom, coords = chr_info.split(":")
+                                start, end = map(int, coords.split("-"))
+                                break  # use the browser line
+                            # variableStep chrom=chr20
+                            if line and (line.lower().startswith("variablestep") or line.lower().startswith("fixedstep")):
+                                if chrom is not None:
+                                    break  # different chrom or different section of the chrom
+                                chrom = line.rstrip('\n\r').split("chrom=")[1].split()[0]
+                                if 'span=' in line:
+                                    span = int(line.rstrip('\n\r').split("span=")[1].split()[0])
+                                if 'step=' in line:
+                                    step = int(line.rstrip('\n\r').split("step=")[1].split()[0])
+                                    start = int(line.rstrip('\n\r').split("start=")[1].split()[0])
+                            else:
+                                fields = line.rstrip('\n\r').split()
+                                if fields:
+                                    if step is not None:
+                                        if not end:
+                                            end = start + span
+                                        else:
+                                            end += step
                                     else:
-                                        end += step
-                                else:
-                                    start = min(int(fields[0]), start)
-                                    end = max(end, int(fields[0]) + span)
-                                viewport_feature_count -= 1
-                    except Exception:
-                        pass
-                    # make sure we are at the next new line
-                    readline_count = VIEWPORT_MAX_READS_PER_LINE
-                    while line.rstrip('\n\r') == line:
-                        assert readline_count > 0, Exception('Viewport readline count exceeded for dataset %s.' % dataset.id)
-                        line = fh.readline(VIEWPORT_READLINE_BUFFER_SIZE)
-                        if not line:
-                            break  # EOF
-                        readline_count -= 1
-                    max_line_count -= 1
-                    if not viewport_feature_count or not max_line_count:
-                        # exceeded viewport or total line count to check
-                        break
+                                        start = min(int(fields[0]), start)
+                                        end = max(end, int(fields[0]) + span)
+                                    viewport_feature_count -= 1
+                        except Exception:
+                            pass
+                        # make sure we are at the next new line
+                        readline_count = VIEWPORT_MAX_READS_PER_LINE
+                        while line.rstrip('\n\r') == line:
+                            assert readline_count > 0, Exception('Viewport readline count exceeded for dataset %s.' % dataset.id)
+                            line = fh.readline(VIEWPORT_READLINE_BUFFER_SIZE)
+                            if not line:
+                                break  # EOF
+                            readline_count -= 1
+                        max_line_count -= 1
+                        if not viewport_feature_count or not max_line_count:
+                            # exceeded viewport or total line count to check
+                            break
                 if chrom is not None:
                     return (chrom, str(start), str(end))  # Necessary to return strings?
             except Exception:
@@ -1278,49 +1268,46 @@ class CustomTrack(Tabular):
         span = 1
         if self.displayable(dataset):
             try:
-                fh = open(dataset.file_name)
-                while True:
-                    line = fh.readline(VIEWPORT_READLINE_BUFFER_SIZE)
-                    if not line:
-                        break  # EOF
-                    if not line.startswith('#'):
-                        try:
-                            if variable_step_wig:
-                                fields = line.rstrip().split()
-                                if len(fields) == 2:
-                                    start = int(fields[0])
-                                    return (chrom, str(start), str(start + span))
-                            elif line and (line.lower().startswith("variablestep") or line.lower().startswith("fixedstep")):
-                                chrom = line.rstrip('\n\r').split("chrom=")[1].split()[0]
-                                if 'span=' in line:
-                                    span = int(line.rstrip('\n\r').split("span=")[1].split()[0])
-                                if 'start=' in line:
-                                    start = int(line.rstrip('\n\r').split("start=")[1].split()[0])
-                                    return (chrom, str(start), str(start + span))
+                with open(dataset.file_name) as fh:
+                    for line in util.iter_start_of_line(fh, VIEWPORT_READLINE_BUFFER_SIZE):
+                        if not line.startswith('#'):
+                            try:
+                                if variable_step_wig:
+                                    fields = line.rstrip().split()
+                                    if len(fields) == 2:
+                                        start = int(fields[0])
+                                        return (chrom, str(start), str(start + span))
+                                elif line and (line.lower().startswith("variablestep") or line.lower().startswith("fixedstep")):
+                                    chrom = line.rstrip('\n\r').split("chrom=")[1].split()[0]
+                                    if 'span=' in line:
+                                        span = int(line.rstrip('\n\r').split("span=")[1].split()[0])
+                                    if 'start=' in line:
+                                        start = int(line.rstrip('\n\r').split("start=")[1].split()[0])
+                                        return (chrom, str(start), str(start + span))
+                                    else:
+                                        variable_step_wig = True
                                 else:
-                                    variable_step_wig = True
-                            else:
-                                fields = line.rstrip().split('\t')
-                                if len(fields) >= 3:
-                                    chrom = fields[0]
-                                    start = int(fields[1])
-                                    end = int(fields[2])
-                                    return (chrom, str(start), str(end))
-                        except Exception:
-                            # most likely a non-integer field has been encountered for start / stop
-                            continue
-                    # make sure we are at the next new line
-                    readline_count = VIEWPORT_MAX_READS_PER_LINE
-                    while line.rstrip('\n\r') == line:
-                        assert readline_count > 0, Exception('Viewport readline count exceeded for dataset %s.' % dataset.id)
-                        line = fh.readline(VIEWPORT_READLINE_BUFFER_SIZE)
-                        if not line:
-                            break  # EOF
-                        readline_count -= 1
-                    max_line_count -= 1
-                    if not max_line_count:
-                        # exceeded viewport or total line count to check
-                        break
+                                    fields = line.rstrip().split('\t')
+                                    if len(fields) >= 3:
+                                        chrom = fields[0]
+                                        start = int(fields[1])
+                                        end = int(fields[2])
+                                        return (chrom, str(start), str(end))
+                            except Exception:
+                                # most likely a non-integer field has been encountered for start / stop
+                                continue
+                        # make sure we are at the next new line
+                        readline_count = VIEWPORT_MAX_READS_PER_LINE
+                        while line.rstrip('\n\r') == line:
+                            assert readline_count > 0, Exception('Viewport readline count exceeded for dataset %s.' % dataset.id)
+                            line = fh.readline(VIEWPORT_READLINE_BUFFER_SIZE)
+                            if not line:
+                                break  # EOF
+                            readline_count -= 1
+                        max_line_count -= 1
+                        if not max_line_count:
+                            # exceeded viewport or total line count to check
+                            break
             except Exception:
                 log.exception('Unexpected error')
         return (None, None, None)  # could not determine viewport
