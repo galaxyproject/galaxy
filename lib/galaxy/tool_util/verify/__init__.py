@@ -131,7 +131,7 @@ def verify(
             elif compare == 're_match_multiline':
                 files_re_match_multiline(local_name, temp_name, attributes=attributes)
             elif compare == 'sim_size':
-                delta = attributes.get('delta', '100')
+                delta = attributes.get('delta', '10000')
                 s1 = len(output_content)
                 s2 = os.path.getsize(local_name)
                 if abs(s1 - s2) > int(delta):
