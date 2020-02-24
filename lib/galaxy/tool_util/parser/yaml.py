@@ -1,8 +1,8 @@
 from collections import OrderedDict
 
 import packaging.version
-
 from galaxy.tool_util.deps import requirements
+from galaxy.tool_util.parser.util import DEFAULT_DELTA
 from .interface import (
     InputSource,
     PageSource,
@@ -218,7 +218,7 @@ def _parse_test(i, test_dict):
         defaults = {
             'compare': 'diff',
             'lines_diff': 0,
-            'delta': 1000,
+            'delta': DEFAULT_DELTA,
             'sort': False,
         }
         # TODO
