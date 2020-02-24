@@ -61,7 +61,7 @@ class Users(BaseUIController, ReportQueryBuilder):
         # If specified_date is not received, we'll default to the current month
         specified_date = kwd.get('specified_date', datetime.utcnow().strftime("%Y-%m-%d"))
         specified_month = specified_date[:7]
-        year, month = list(map(int, specified_month.split("-")))
+        year, month = map(int, specified_month.split("-"))
         start_date = date(year, month, 1)
         end_date = start_date + timedelta(days=calendar.monthrange(year, month)[1])
         month_label = start_date.strftime("%B")
@@ -91,7 +91,7 @@ class Users(BaseUIController, ReportQueryBuilder):
         message = escape(util.restore_text(kwd.get('message', '')))
         # If specified_date is not received, we'll default to the current month
         specified_date = kwd.get('specified_date', datetime.utcnow().strftime("%Y-%m-%d"))
-        year, month, day = list(map(int, specified_date.split("-")))
+        year, month, day = map(int, specified_date.split("-"))
         start_date = date(year, month, day)
         end_date = start_date + timedelta(days=1)
         day_of_month = start_date.strftime("%d")

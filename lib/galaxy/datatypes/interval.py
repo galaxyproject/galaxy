@@ -735,7 +735,7 @@ class Gff(Tabular, _RemoteCallMixin):
                                 # Allow UCSC style browser and track info in the GFF file
                                 pos_info = line.split()[-1]
                                 seqid, startend = pos_info.split(":")
-                                start, stop = list(map(int, startend.split("-")))
+                                start, stop = map(int, startend.split("-"))
                                 break  # use location declared in file
                             elif not line.startswith(('#', 'track', 'browser')):
                                 viewport_feature_count -= 1
@@ -1090,7 +1090,7 @@ class Wiggle(Tabular, _RemoteCallMixin):
                             if line.startswith("browser"):
                                 chr_info = line.rstrip('\n\r').split()[-1]
                                 chrom, coords = chr_info.split(":")
-                                start, end = list(map(int, coords.split("-")))
+                                start, end = map(int, coords.split("-"))
                                 break  # use the browser line
                             # variableStep chrom=chr20
                             if line and (line.lower().startswith("variablestep") or line.lower().startswith("fixedstep")):
