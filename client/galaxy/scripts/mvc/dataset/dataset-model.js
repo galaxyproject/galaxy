@@ -101,25 +101,27 @@ var DatasetAssociation = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
                     this.log(`${this} has changed state:`, currModel, newState);
                     if (this.inReadyState()) {
                         this.trigger("state:ready", currModel, newState, this.previous("state"));
-                        if (newState != "discarded"){
-                            if(newState === "ok"){
+                        if (newState != "discarded") {
+                            if (newState === "ok") {
+                                console.log("helloworld");
                                 new Notification(`Job complete: ${this.get("name")}`, {
-                                icon: "static/favicon.ico"
-                                      });
-                                if(TAB_UPDATES.is_hidden()){
+                                    icon: "static/favicon.ico"
+                                });
+                                new Notification("HELLO");
+                                if (TAB_UPDATES.is_hidden()) {
                                     TAB_UPDATES.hidden_count(hiddenupdates);
                                     hiddenupdates++;
                                 }
-                            } else if(newState == "error"){
+                            } else if (newState == "error") {
+                                console.log("goodbye");
                                 new Notification(`Job failure: ${this.get("name")}`, {
-                                icon: "static/erricon.ico"
-                                      });
-                                if(TAB_UPDATES.is_hidden() && Notification.permission == "granted"){
-                                    TAB_UPDATES.change_favicon("static/erricon.ico")
+                                    icon: "static/erricon.ico"
+                                });
+                                if (TAB_UPDATES.is_hidden() && Notification.permission == "granted") {
+                                    TAB_UPDATES.change_favicon("static/erricon.ico");
                                 }
                             }
-
-                          }
+                        }
                     }
                 });
                 // the download url (currently) relies on having a correct file extension
@@ -370,8 +372,9 @@ var DatasetAssociationCollection = Backbone.Collection.extend(BASE_MVC.LoggableM
     }
 );
 
-window.addEventListener("focus", function(){
-    if(document.getElementById('tabicon').href.search("erricon") != -1){
+window.addEventListener("focus", function() {
+    const testing = document.getElementById("tabicon");
+    if (testing && testing.href.search("erricon") != -1) {
         TAB_UPDATES.change_favicon("static/favicon.ico");
     }
     document.title = "Galaxy";
