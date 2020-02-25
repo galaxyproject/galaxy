@@ -23,10 +23,13 @@
             </div>
         </b-row>
         <b-row class="ml-3 mb-1">
-            <i class="fa-plus-square-o" />
+            <i class="pref-icon pt-1 fa fa-lg fa-plus-square-o" />
             <div class="pref-content pr-1">
                 <a @click="toggleNotifications" href="javascript:void(0)"><b>Enable notifications</b></a>
-                <div class="form-text text-muted">Allow push and tab notifcations on job completion/failure</div>
+                <div class="form-text text-muted">
+                    Allow push and tab notifcations on job completion. To disable, revoke the site notification
+                    privilege in your browser.
+                </div>
             </div>
         </b-row>
         <p class="mt-2">
