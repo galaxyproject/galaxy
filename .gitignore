@@ -79,7 +79,6 @@ shed_tool_data_table_conf.xml
 job_conf.xml
 data_manager_conf.xml
 shed_data_manager_conf.xml
-object_store_conf.xml
 job_metrics_conf.xml
 workflow_schedulers_conf.xml
 config/*
