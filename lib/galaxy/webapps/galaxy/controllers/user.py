@@ -139,10 +139,9 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
             trans.app.model.User.table.c.username == login
         )).first()
         if not user and login.lower() != login:
-            user = trans.sa_session.query(trans.app.model.User).filter(or_(
-                func.lower(trans.app.model.User.table.c.email) == login.lower(),
-                trans.app.model.User.table.c.username == login
-            )).first()
+            user = trans.sa_session.query(trans.app.model.User).filter(
+                func.lower(trans.app.model.User.table.c.email) == login.lower()
+            ).first()
         log.debug("trans.app.config.auth_config_file: %s" % trans.app.config.auth_config_file)
         if user is None:
             message, user = self.__autoregistration(trans, login, password)
