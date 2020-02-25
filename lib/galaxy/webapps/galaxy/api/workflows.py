@@ -353,7 +353,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 uploaded_file = archive_file.file
                 uploaded_file_name = uploaded_file.name
                 if os.path.getsize(os.path.abspath(uploaded_file_name)) > 0:
-                    archive_data = uploaded_file.read()
+                    archive_data = util.unicodify(uploaded_file.read())
                 else:
                     raise exceptions.MessageException("You attempted to upload an empty file.")
             else:
