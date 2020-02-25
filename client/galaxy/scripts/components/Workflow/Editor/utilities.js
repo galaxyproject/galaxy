@@ -263,7 +263,7 @@ function get_workflow_path(wf_steps, current_node_id, current_node_name) {
         return step_names_list.join(",");
 }
 
-export function getToolRecommendations(node) {
+export function getToolRecommendations(node, workflow) {
         let workflow_simple = window.workflow_globals.workflow.to_simple(),
         toolId = getToolId(node.content_id);
         console.log(workflow_simple);

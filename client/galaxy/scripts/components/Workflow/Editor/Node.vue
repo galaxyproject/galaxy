@@ -42,7 +42,9 @@
 <script>
 import WorkflowIcons from "components/Workflow/icons";
 import LoadingSpan from "components/LoadingSpan";
+import { getDatatypes } from "./services";
 import { getToolRecommendations } from "./utilities";
+import WorkflowManager from "mvc/workflow/workflow-manager";
 
 export default {
     components: {
@@ -93,10 +95,16 @@ export default {
         onClone() {
             this.node.clone();
         },
-        onGetRecommendations () {
-            getToolRecommendations(this.node);
+        onGetRecommendations() {
+            console.log(this);
+            getDatatypes().then(response => {
+                const datatypes = response.datatypes;
+                const datatypes_mapping = response.datatypes_mapping;
+                let workflow = new WorkflowManager({ datatypes_mapping }, $("#canvas-container"));
+                console.log(workflow);
+                getToolRecommendations(this.node, workflow);
+            });
         }
-        
     }
 };
 </script>
