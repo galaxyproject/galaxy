@@ -135,9 +135,14 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         if not login or not password:
             return self.message_exception(trans, "Please specify a username and password.")
         user = trans.sa_session.query(trans.app.model.User).filter(or_(
-            func.lower(trans.app.model.User.table.c.email) == login.lower(),
+            trans.app.model.User.table.c.email == login,
             trans.app.model.User.table.c.username == login
         )).first()
+        if not user and login.lower() != login:
+            user = trans.sa_session.query(trans.app.model.User).filter(or_(
+                func.lower(trans.app.model.User.table.c.email) == login.lower(),
+                trans.app.model.User.table.c.username == login
+            )).first()
         log.debug("trans.app.config.auth_config_file: %s" % trans.app.config.auth_config_file)
         if user is None:
             message, user = self.__autoregistration(trans, login, password)
