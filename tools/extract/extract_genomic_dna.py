@@ -222,7 +222,7 @@ def __main__():
                 continue
         elif seq_path and os.path.isfile(seq_path):
             if not(twobitfile):
-                twobitfile = bx.seq.twobit.TwoBitFile(open(seq_path))
+                twobitfile = bx.seq.twobit.TwoBitFile(open(seq_path, 'rb'))
             try:
                 if options.gff and interpret_features:
                     # Create sequence from intervals within a feature.
