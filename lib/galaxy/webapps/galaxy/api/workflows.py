@@ -687,14 +687,14 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 self.all_tools[t_id_renamed] = (tool_id, tool.name)
             # read the hdf5 attributes
             trained_model = h5py.File(self.tool_recommendation_model_path, 'r')
-            model_config = json.loads(trained_model.get('model_config').value)
+            model_config = json.loads(trained_model['model_config'].value)
             self.loaded_model = model_from_json(model_config)
             # set the dictionary of tools
-            self.model_data_dictionary = json.loads(trained_model.get('data_dictionary').value)
+            self.model_data_dictionary = json.loads(trained_model['data_dictionary'].value)
             self.reverse_dictionary = dict((v, k) for k, v in self.model_data_dictionary.items())
             # set the list of compatible tools
-            self.compatible_tools = json.loads(trained_model.get('compatible_tools').value)
-            self.tool_weights = json.loads(trained_model.get('class_weights').value)
+            self.compatible_tools = json.loads(trained_model['compatible_tools'].value)
+            self.tool_weights = json.loads(trained_model['class_weights'].value)
             self.tool_weights_sorted = dict()
             # sort the tools' usage dictionary
             tool_pos_sorted = [int(key) for key in self.tool_weights.keys()]
@@ -704,7 +704,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             for item in trained_model.keys():
                 if "weight_" in item:
                     d_key = "weight_" + str(counter_layer_weights)
-                    weights = trained_model.get(d_key).value
+                    weights = trained_model[d_key].value
                     model_weights.append(weights)
                     counter_layer_weights += 1
             # set the model weights
