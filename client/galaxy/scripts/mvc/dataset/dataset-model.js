@@ -103,17 +103,14 @@ var DatasetAssociation = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
                         this.trigger("state:ready", currModel, newState, this.previous("state"));
                         if (newState != "discarded") {
                             if (newState === "ok") {
-                                console.log("helloworld");
                                 new Notification(`Job complete: ${this.get("name")}`, {
                                     icon: "static/favicon.ico"
                                 });
-                                new Notification("HELLO");
                                 if (TAB_UPDATES.is_hidden()) {
                                     TAB_UPDATES.hidden_count(hiddenupdates);
                                     hiddenupdates++;
                                 }
                             } else if (newState == "error") {
-                                console.log("goodbye");
                                 new Notification(`Job failure: ${this.get("name")}`, {
                                     icon: "static/erricon.ico"
                                 });
