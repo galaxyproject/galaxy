@@ -549,9 +549,9 @@ class DownloadByUrl(Download, RecipeStep):
         if is_binary:
             log_file = os.path.join(install_environment.install_dir, basic_util.INSTALLATION_LOG)
             if os.path.exists(log_file):
-                logfile = open(log_file, 'ab')
+                logfile = open(log_file, 'a')
             else:
-                logfile = open(log_file, 'wb')
+                logfile = open(log_file, 'w')
             logfile.write('Successfully downloaded from url: %s\n' % action_dict['url'])
             logfile.close()
         log.debug('Successfully downloaded from url: %s' % action_dict['url'])
