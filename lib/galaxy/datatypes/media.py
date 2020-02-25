@@ -5,10 +5,11 @@ import wave
 
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.metadata import ListParameter, MetadataElement
+from galaxy.util import unicodify
 
 
 def ffprobe(path):
-    data = json.loads(subprocess.check_output(['ffprobe', '-loglevel', 'quiet', '-show_format', '-show_streams', '-of', 'json', path]))
+    data = json.loads(unicodify(subprocess.check_output(['ffprobe', '-loglevel', 'quiet', '-show_format', '-show_streams', '-of', 'json', path])))
     return data['format'], data['streams']
 
 
@@ -198,8 +199,8 @@ class WAV(Binary):
         False
         """
 
-        fp = wave.open(filename, 'rb')
-        fp.close()
+        with open(filename, 'rb') as fh:
+            wave.open(fh)
         return True
 
     def set_meta(self, dataset, overwrite=True, **kwd):
