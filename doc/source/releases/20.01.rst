@@ -492,6 +492,10 @@ Fixes
   `Pull Request 9322`_
 * Make set metadata exec after process more robust
   `Pull Request 9395`_
+* Make dataset discovery respect final_job_state
+  `Pull Request 9406`_
+* Strip unicode null characters from traceback and job_messages
+  `Pull Request 9430`_
 
 .. bug_tag_admin
 
@@ -753,6 +757,30 @@ Fixes
 * Update bleach to 3.1.1
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 9408`_
+* Fix shed image resolution
+  `Pull Request 9411`_
+* Fixes for get_estimated_display_viewport
+  `Pull Request 9415`_
+* Fix wrong map use in many places
+  `Pull Request 9416`_
+* Conda startup fixes
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9421`_
+* fix two cases of opening a file binary
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 9424`_
+* Remove '.sample' from default value; rebuild schema
+  `Pull Request 9427`_
+* Fix login to accounts using different email capitalization
+  `Pull Request 9432`_
+* Fix TwoBitFile handle not opened in binary mode
+  `Pull Request 9433`_
+* Fix uploading workflow archives
+  `Pull Request 9434`_
+* Fix to_dict for upload1 tool
+  `Pull Request 9441`_
+* Fix data tables vue display
+  `Pull Request 9442`_
 
 .. include:: 20.01_prs.rst
 
