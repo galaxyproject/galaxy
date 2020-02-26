@@ -18,25 +18,25 @@ class IrodsObjectStoreIntegrationTestCase(integration_util.IntegrationTestCase):
     container_name = "irods_server"
 
     @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        config["object_store_config_file"] = "object_store_conf.xml" 
+
+    @classmethod
     def setUpClass(cls):
-        print('Starting setUpClass')
         super(IrodsObjectStoreIntegrationTestCase, cls).setUpClass()
         IrodsObjectStoreIntegrationTestCase.start_irods_server(container_name=IrodsObjectStoreIntegrationTestCase.container_name)
 
         # Let the server start before running the test
         time.sleep(10)
-        print('Finishing setUpClass')
 
     @classmethod
     def tearDownClass(cls): 
-        print('Starting tearDownClass')
         super(IrodsObjectStoreIntegrationTestCase, cls).tearDownClass()
         IrodsObjectStoreIntegrationTestCase.stop_irods_server(container_name=IrodsObjectStoreIntegrationTestCase.container_name)       
-        print('Finishing tearDownClass')
 
     @classmethod
-    def start_irods_server(cls, container_name, postgres_port=5432, irods_port=1247, docker_image='kxk302/irods-server:0.1'):
-        start_server = ['docker', 'run', '-h', 'localhost', '-p', '{port}:5432'.format(port=postgres_port), '-p', '{port}:1247'.format(port=irods_port), '-d', '--name', container_name, docker_image]
+    def start_irods_server(cls, container_name, irods_port=1247, docker_image='kxk302/irods-server:0.1'):
+        start_server = ['docker', 'run', '-h', 'localhost', '-p', '{port}:1247'.format(port=irods_port), '-d', '--name', container_name, docker_image]
         subprocess.check_call(start_server) 
         
     @classmethod
@@ -117,7 +117,7 @@ class IrodsObjectStoreIntegrationTestCase(integration_util.IntegrationTestCase):
 
             with pytest.raises(CollectionDoesNotExist):
                 coll = session.collections.get(newCollection)
-
+ 
     def test_populate_fetch_new_data_object(self):
         with iRODSSession(host='localhost', 
             port='1247', 

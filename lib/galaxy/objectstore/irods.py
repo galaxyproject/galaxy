@@ -24,6 +24,7 @@ from galaxy.exceptions import (
     ObjectNotFound
 )
 from galaxy.util import (
+    bytesize,
     directory_hash_id,
     umask_fix_perms,
 )
@@ -172,10 +173,10 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         self.home =  "/" + self.zone + "/home/" + self.username
 
         self.session = self._configure_connection(host=self.host, port=self.port, user=self.username, password=self.password, zone=self.zone)
-        # Clean cache only if value is set in galaxy.ini
+        # Clean cache only if value is set in galaxy config file
         if self.cache_size != -1:
             # Convert GBs to bytes for comparison
-            self.cache_size = self.cache_size * 1073741824
+            self.cache_size = self.cache_size * bytesize.SUFFIX_TO_BYTES['GI']
             # Helper for interruptable sleep
             self.sleeper = Sleeper()
             self.cache_monitor_thread = threading.Thread(target=self.__cache_monitor)
@@ -686,7 +687,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                     log.exception("Trouble copying source file '%s' to cache '%s'", source_file, cache_file)
             else:
                 source_file = self._get_cache_path(rel_path)
-            # Update the file on S3
+            # Update the file on iRODS 
             self._push_to_os(rel_path, source_file)
         else:
             raise ObjectNotFound('objectstore.update_from_file, object does not exist: %s, kwargs: %s'

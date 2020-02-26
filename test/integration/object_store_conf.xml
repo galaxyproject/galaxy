@@ -1,6 +1,5 @@
 <?xml version="1.0"?>
 <object_store type="irods"> 
-    <files_dir path="database/files3"/>
     <auth username="rods" password="rods" />
     <resource name="demoResc" />
     <zone name="tempZone" />
