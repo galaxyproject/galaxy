@@ -2111,8 +2111,7 @@ class SearchGuiArchive(CompressedArchive):
                 with zipfile.ZipFile(dataset.file_name) as tempzip:
                     if 'searchgui.properties' in tempzip.namelist():
                         with tempzip.open('searchgui.properties') as fh:
-                            for line in fh:
-                                line = line.decode()
+                            for line in io.TextIOWrapper(fh):
                                 if line.startswith('searchgui.version'):
                                     version = line.split('=')[1].strip()
                                     dataset.metadata.searchgui_version = version
