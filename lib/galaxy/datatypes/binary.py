@@ -3,6 +3,7 @@ from __future__ import print_function
 
 import binascii
 import gzip
+import io
 import logging
 import os
 import shutil
@@ -2167,7 +2168,7 @@ class SearchGuiArchive(CompressedArchive):
                 with zipfile.ZipFile(dataset.file_name) as tempzip:
                     if 'searchgui.properties' in tempzip.namelist():
                         with tempzip.open('searchgui.properties') as fh:
-                            for line in fh:
+                            for line in io.TextIOWrapper(fh):
                                 if line.startswith('searchgui.version'):
                                     version = line.split('=')[1].strip()
                                     dataset.metadata.searchgui_version = version
