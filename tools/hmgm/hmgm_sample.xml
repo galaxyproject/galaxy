@@ -1,4 +1,4 @@
-<tool id="hmgm_sample" name="Hmgm Test" version="1.0.2">
+<tool id="hmgm_sample" name="Hmgm Sample" version="1.0.2">
   <description>Sample HMGM</description>
   <command detect_errors="exit_code">$__tool_directory__/hmgm_sample_wrapper.py $json_out</command>
   <outputs>
