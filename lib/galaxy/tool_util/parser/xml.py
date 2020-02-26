@@ -613,7 +613,6 @@ def __parse_test_attributes(output_elem, attrib, parse_elements=False, parse_dis
     # Number of lines to allow to vary in logs (for dates, etc)
     attributes['lines_diff'] = int(attrib.pop('lines_diff', '0'))
     # Allow a file size to vary if sim_size compare
-    attributes['delta'] = int(attrib.pop('delta', '10000'))
     attributes['delta'] = int(attrib.pop('delta', DEFAULT_DELTA))
     attributes['sort'] = string_as_bool(attrib.pop('sort', False))
     attributes['decompress'] = string_as_bool(attrib.pop('decompress', False))
