@@ -36,7 +36,13 @@ If Galaxy complains about the version of Python you are using:
               % export PATH=~/galaxy-python:$PATH
               ```
 
-4. Start Galaxy again.
+4. Remove compiled mako templates when upgrading from Python 2:
+     ```sh
+     % rm -rf /path/to/galaxy/database/compiled_templates/
+     ```
+   These templated will be regenerated automatically when starting Galaxy.
+
+5. Start Galaxy again.
 
 N.B. If you have compiled your own Python interpreter from source, please ensure
 that the `ssl`, `sqlite3`, `curses` and `bz2` modules were built and can be
