@@ -12,6 +12,6 @@
         <destination id="hmgm-container" runner="hmgm"/>
     </destinations>
     <tools>
-        <tool id="hmgmtest" destination="hmgm-container"/>
+        <tool id="hmgm_sample" destination="hmgm-container"/>
     </tools>
 </job_conf>

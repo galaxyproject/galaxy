@@ -36,7 +36,7 @@
     <tool file="video_tools/tesseract.xml"/>
   </section>
   <section id="hmgm" name="Human MGM">
-    <tool id="hmgmtest" file="hmgm/hmgm_sample.xml"/>
+    <tool id="hmgm_sample" file="hmgm/hmgm_sample.xml"/>
   </section>
   <section id="collection_operations" name="Collection Operations">
     <tool file="${model_tools_path}/unzip_collection.xml" labels="new" />
