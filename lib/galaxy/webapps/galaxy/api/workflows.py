@@ -10,6 +10,9 @@ import os
 
 import requests
 import yaml
+
+from gxformat2._yaml import ordered_dump
+
 from galaxy import exceptions, model, util
 from galaxy.managers import histories, workflows
 from galaxy.managers.jobs import fetch_job_states, invocation_job_source_iter
@@ -22,16 +25,16 @@ from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import (expose_api, expose_api_anonymous_and_sessionless,
                         expose_api_raw, format_return_as_json)
 from galaxy.webapps.base.controller import (BaseAPIController, SharableMixin,
-                                            UsesStoredWorkflowMixin, url_for)
+                                            url_for, UsesStoredWorkflowMixin)
 from galaxy.workflow.extract import extract_workflow
 from galaxy.workflow.modules import module_factory
 from galaxy.workflow.reports import generate_report
 from galaxy.workflow.run import invoke, queue_invoke
 from galaxy.workflow.run_request import build_workflow_run_configs
-from gxformat2._yaml import ordered_dump
-from markupsafe import escape
 
 import h5py
+
+from markupsafe import escape
 import numpy as np
 from keras.models import model_from_json
 from sqlalchemy import desc, false, or_, true
