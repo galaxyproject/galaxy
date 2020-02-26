@@ -10,34 +10,19 @@ import os
 
 import requests
 import yaml
-from galaxy import (
-    exceptions,
-    model,
-    util
-)
-from galaxy.managers import (
-    histories,
-    workflows
-)
+from galaxy import exceptions, model, util
+from galaxy.managers import histories, workflows
 from galaxy.managers.jobs import fetch_job_states, invocation_job_source_iter
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
+from galaxy.tool_shed.galaxy_install.install_manager import \
+    InstallRepositoryManager
 from galaxy.tools.parameters import populate_state
 from galaxy.tools.parameters.basic import workflow_building_modes
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.web import (
-    expose_api,
-    expose_api_anonymous_and_sessionless,
-    expose_api_raw,
-    format_return_as_json,
-)
-from galaxy.webapps.base.controller import (
-    BaseAPIController,
-    SharableMixin,
-    url_for,
-    UsesStoredWorkflowMixin
-)
-
+from galaxy.web import (expose_api, expose_api_anonymous_and_sessionless,
+                        expose_api_raw, format_return_as_json)
+from galaxy.webapps.base.controller import (BaseAPIController, SharableMixin,
+                                            UsesStoredWorkflowMixin, url_for)
 from galaxy.workflow.extract import extract_workflow
 from galaxy.workflow.modules import module_factory
 from galaxy.workflow.reports import generate_report
