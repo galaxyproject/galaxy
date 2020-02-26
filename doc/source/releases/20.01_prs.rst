@@ -337,5 +337,7 @@
 .. _Pull Request 9432: https://github.com/galaxyproject/galaxy/pull/9432
 .. _Pull Request 9433: https://github.com/galaxyproject/galaxy/pull/9433
 .. _Pull Request 9434: https://github.com/galaxyproject/galaxy/pull/9434
+.. _Pull Request 9437: https://github.com/galaxyproject/galaxy/pull/9437
 .. _Pull Request 9441: https://github.com/galaxyproject/galaxy/pull/9441
 .. _Pull Request 9442: https://github.com/galaxyproject/galaxy/pull/9442
+.. _Pull Request 9446: https://github.com/galaxyproject/galaxy/pull/9446

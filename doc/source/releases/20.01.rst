@@ -430,6 +430,9 @@ Fixes
 
 * Fix cool sniffing on python3
   `Pull Request 9153`_
+* Fix `SearchGuiArchive.set_meta()`
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 9437`_
 
 .. bug_tag_tools
 
@@ -778,6 +781,9 @@ Fixes
   `Pull Request 9441`_
 * Fix data tables vue display
   `Pull Request 9442`_
+* Fix `UserManager.get_reset_token()` after `#9432 <https://github.com/galaxyproject/galaxy/issues/9432>`__
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9446`_
 
 .. include:: 20.01_prs.rst
 
