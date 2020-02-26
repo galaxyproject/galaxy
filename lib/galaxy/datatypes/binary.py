@@ -3,6 +3,7 @@ from __future__ import print_function
 
 import binascii
 import gzip
+import io
 import logging
 import os
 import shutil
