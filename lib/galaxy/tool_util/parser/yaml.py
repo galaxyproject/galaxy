@@ -1,6 +1,7 @@
 from collections import OrderedDict
 
 import packaging.version
+
 from galaxy.tool_util.deps import requirements
 from galaxy.tool_util.parser.util import DEFAULT_DELTA
 from .interface import (
