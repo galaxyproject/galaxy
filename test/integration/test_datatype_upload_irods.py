@@ -20,7 +20,7 @@ TestData = collections.namedtuple('UploadDatatypesData', 'path datatype uploadab
 GALAXY_ROOT = os.path.abspath('%s/../../' % SCRIPT_DIRECTORY)
 DATATYPES_CONFIG = os.path.join(GALAXY_ROOT, 'lib/galaxy/config/sample/datatypes_conf.xml.sample')
 PARENT_SNIFFER_MAP = {'fastqsolexa': 'fastq'}
-OBJECT_STORE_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "object_store_conf.xml")
+OBJECT_STORE_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "irods_object_store_conf.xml")
 
 
 def find_datatype(registry, filename):
