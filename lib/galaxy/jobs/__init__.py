@@ -1254,7 +1254,7 @@ class JobWrapper(HasResourceParameters):
             if exception:
                 # Save the traceback immediately in case we generate another
                 # below
-                job.traceback = traceback.format_exc()
+                job.traceback = unicodify(traceback.format_exc(), strip_null=True)
                 # Get the exception and let the tool attempt to generate
                 # a better message
                 etype, evalue, tb = sys.exc_info()
