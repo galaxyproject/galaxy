@@ -10,9 +10,9 @@ var ToolRecommendationView = Backbone.View.extend({
 
     initialize: function(options) {
         let toolId = options.toolId || "";
-        let self = this;
+        const self = this;
         if (toolId.indexOf("/") > 0) {
-            let toolIdSlash = toolId.split("/");
+            const toolIdSlash = toolId.split("/");
             toolId = toolIdSlash[toolIdSlash.length - 2];
         }
         Utils.request({
@@ -21,26 +21,26 @@ var ToolRecommendationView = Backbone.View.extend({
             data: {"tool_sequence": toolId},
             success: data => {
                 // get datatypes mapping
-                let datatypes_mapping = JSON.parse(
+                const datatypes_mapping = JSON.parse(
                     $.ajax({
                         url: `${getAppRoot()}api/datatypes/mapping`,
                         async: false
                     }).responseText
                 );
-                let extToType = datatypes_mapping.ext_to_class_name;
-                let typeToType = datatypes_mapping.class_to_classes;
-                let predData = data.predicted_data;
+                const extToType = datatypes_mapping.ext_to_class_name;
+                const typeToType = datatypes_mapping.class_to_classes;
+                const predData = data.predicted_data;
                 if (data !== null && predData.children.length > 0) {
-                    let filteredData = {};
-                    let compatibleTools = {};
-                    let filteredChildren = [];
-                    let outputDatatypes = predData["o_extensions"];
-                    for (const [index, nameObj] of predData.children.entries()) {
-                        let inputDatatypes = nameObj["i_extensions"];
+                    const filteredData = {};
+                    const compatibleTools = {};
+                    const filteredChildren = [];
+                    const outputDatatypes = predData["o_extensions"];
+                    for (const [_, nameObj] of predData.children.entries()) {
+                        const inputDatatypes = nameObj["i_extensions"];
                         for (const out_t of outputDatatypes.entries()) {
                             for(const in_t of inputDatatypes.entries()) {
-                                let child = extToType[out_t[1]];
-                                let parent = extToType[in_t[1]];
+                                const child = extToType[out_t[1]];
+                                const parent = extToType[in_t[1]];
                                 if (((typeToType[child] && parent in typeToType[child]) === true) ||
                                      out_t[1] === "input" ||
                                      out_t[1] === "_sniff_" ||
@@ -51,8 +51,8 @@ var ToolRecommendationView = Backbone.View.extend({
                             }
                         }
                     }
-                    for (let id in compatibleTools) {
-                        for (const [index, nameObj] of predData.children.entries()) {
+                    for (const id in compatibleTools) {
+                        for (const [_, nameObj] of predData.children.entries()) {
                             if (nameObj["tool_id"] === id) {
                                 filteredChildren.push(nameObj);
                                 break
@@ -75,33 +75,32 @@ var ToolRecommendationView = Backbone.View.extend({
     },
 
     render_tree: function(predicted_data) {
-        let margin = {top: 20, right: 30, bottom: 20, left: 250},
+        const margin = {top: 20, right: 30, bottom: 20, left: 250},
             width = 900 - margin.right - margin.left,
-            height = 300 - margin.top - margin.bottom;
-        let i = 0,
-            duration = 750,
-            root;
-        let tree = d3.layout.tree()
+            height = 300 - margin.top - margin.bottom,
+            duration = 750;
+        const tree = d3.layout.tree()
             .size([height, width]);
-        let diagonal = d3.svg.diagonal()
-            .projection(d => { return [d.y, d.x]; });
-        let svg = d3.select("#tool-recommendation-view").append("svg")
+        const diagonal = d3.svg.diagonal()
+            .projection(d => { return [d.y, d.x]; })
+        const svg = d3.select("#tool-recommendation-view").append("svg")
             .attr("width", width + margin.right + margin.left)
             .attr("height", height + margin.top + margin.bottom)
             .append("g")
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
+        let i = 0,
+            root = null;
         function update(source) {
             // Compute the new tree layout.
-            let nodes = tree.nodes(root).reverse(),
-                links = tree.links(nodes);
+            const nodes = tree.nodes(root).reverse();
+            const links = tree.links(nodes);
             // Normalize for fixed-depth.
             nodes.forEach(d => { d.y = d.depth * 180; });
             // Update the nodes…
-            let node = svg.selectAll("g.node")
+            const node = svg.selectAll("g.node")
                 .data(nodes, d => { return d.id || (d.id = ++i); });
             // Enter any new nodes at the parent's previous position.
-            let nodeEnter = node.enter().append("g")
+            const nodeEnter = node.enter().append("g")
                 .attr("class", "node")
                 .attr("transform", d => { return "translate(" + source.y0 + "," + source.x0 + ")"; })
                 .on("click", click);
@@ -117,7 +116,7 @@ var ToolRecommendationView = Backbone.View.extend({
             nodeEnter.append("title")
                 .text(d => { return d.children || d._children ? "Click to collapse" : "Click to open tool definition"; })
             // Transition nodes to their new position.
-            let nodeUpdate = node.transition()
+            const nodeUpdate = node.transition()
                 .duration(duration)
                 .attr("transform", d => { return "translate(" + d.y + "," + d.x + ")"; });
             nodeUpdate.select("circle")
@@ -126,7 +125,7 @@ var ToolRecommendationView = Backbone.View.extend({
             nodeUpdate.select("text")
                 .style("fill-opacity", 1);
             // Transition exiting nodes to the parent's new position.
-            let nodeExit = node.exit().transition()
+            const nodeExit = node.exit().transition()
                 .duration(duration)
                 .attr("transform", d => { return "translate(" + source.y + "," + source.x + ")"; })
                 .remove();
@@ -135,7 +134,7 @@ var ToolRecommendationView = Backbone.View.extend({
             nodeExit.select("text")
                 .style("fill-opacity", 1e-6);
             // Update the links…
-            let link = svg.selectAll("path.link")
+            const link = svg.selectAll("path.link")
                 .data(links, d => { return d.target.id; });
             // Enter any new links at the parent's previous position.
             link.enter().insert("path", "g")
@@ -152,7 +151,7 @@ var ToolRecommendationView = Backbone.View.extend({
             link.exit().transition()
                 .duration(duration)
                 .attr("d", d => {
-                    let o = {x: source.x, y: source.y};
+                    const o = {x: source.x, y: source.y};
                     return diagonal({source: o, target: o});
                 })
                 .remove();

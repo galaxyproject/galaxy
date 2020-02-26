@@ -5,6 +5,7 @@ from __future__ import absolute_import
 
 import io
 import json
+import yaml
 import logging
 import os
 
@@ -12,10 +13,10 @@ import requests
 from gxformat2._yaml import ordered_dump
 from markupsafe import escape
 from sqlalchemy import desc, false, or_, true
+import h5py
+import numpy as np
 from sqlalchemy.orm import joinedload
 
-import numpy as np
-import h5py
 from keras.models import model_from_json
 
 from galaxy import (
