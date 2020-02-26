@@ -147,7 +147,7 @@ class BaseAppConfiguration(object):
                 if self.config_dir is None:
                     self.config_dir = os.getcwd()
                 if self.data_dir is None:
-                    self.data_dir = os.path.join(self.config_dir, 'data')
+                    self.data_dir = self._in_config_dir('data')
                 if self.managed_config_dir is None:
                     self.managed_config_dir = self._in_data_dir('config')
 
