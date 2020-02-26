@@ -149,7 +149,7 @@ class BaseAppConfiguration(object):
                 if self.data_dir is None:
                     self.data_dir = os.path.join(self.config_dir, 'data')
                 if self.managed_config_dir is None:
-                    self.managed_config_dir = os.path.join(self.data_dir, 'config')
+                    self.managed_config_dir = self._in_data_dir('config')
 
             # TODO: do we still need to support ../shed_tools when running_from_source?
             self.shed_tools_dir = self._in_data_dir('shed_tools')
