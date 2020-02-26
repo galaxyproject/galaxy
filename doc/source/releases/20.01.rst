@@ -481,10 +481,7 @@ Fixes
   `Pull Request 9243`_
 * python3 fixes for setups using drmaa and realuser setups
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
-  `Pull Request 9246`_
-* fix bug introduced in https://github.com/galaxyproject/galaxy/pull/9246
-  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
-  `Pull Request 9253`_
+  `Pull Request 9246`_, `Pull Request 9253`_
 * Email notifications aren't used from just workflow steps anymore.
   `Pull Request 9276`_
 * Use requests for slots instead of limit
