@@ -218,7 +218,7 @@ def _parse_test(i, test_dict):
         defaults = {
             'compare': 'diff',
             'lines_diff': 0,
-            'delta': DEFAULT_DELTA,
+            'delta': int(DEFAULT_DELTA),
             'sort': False,
         }
         # TODO
