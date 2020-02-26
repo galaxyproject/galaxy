@@ -33,24 +33,24 @@ class ShedToolStatic(BaseUIController):
         guid = '/'.join((shed, 'repos', owner, repo, tool, version))
         tool = trans.app.toolbox.get_tool(guid)
         repo_path = os.path.abspath(tool._repository_dir)
-        asset_path = os.path.abspath(join(repo_path, image_file))
+        found_path = None
 
-        # test specified image_file path exactly first, then fail through to
-        # other locations.
-        # Might want to swap this around and check for static/images first if
-        # that's the new(?) standard.
-        if not _asset_exists_and_is_safe(repo_path, asset_path):
-            if 'static/images' not in image_file:
-                asset_path = join(repo_path, 'static', 'images', image_file)
-                if not _asset_exists_and_is_safe(repo_path, asset_path):
-                    asset_path = None
+        if 'static/images' not in image_file:
+            asset_path = os.path.abspath(join(repo_path, 'static', 'images', image_file))
+            if _asset_exists_and_is_safe(repo_path, asset_path):
+                found_path = asset_path
 
-        if asset_path:
+        if not found_path:
+            asset_path = os.path.abspath(join(repo_path, image_file))
+            if _asset_exists_and_is_safe(repo_path, asset_path):
+                found_path = asset_path
+
+        if found_path:
             ext = os.path.splitext(image_file)[-1].lstrip('.')
             if ext:
                 mime = trans.app.datatypes_registry.get_mimetype_by_extension(ext)
                 if mime:
                     trans.response.set_content_type(mime)
-            return open(asset_path, 'rb')
+            return open(found_path, 'rb')
         else:
             raise RequestParameterInvalidException()
