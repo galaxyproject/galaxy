@@ -56,6 +56,13 @@ To update an existing Galaxy repository run:
 
 See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
 
+Updates to Tools and Converters in the Galaxy distribution
+==========================================================
+
+Many tools and Converters have been updated in the 20.01 release.
+As a consequence deployers need to install dependencies for these in the
+Admin Menu -> Manage Dependencies.
+
 Deprecation Notice
 ==================
 
