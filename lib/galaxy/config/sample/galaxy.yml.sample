@@ -1979,7 +1979,7 @@ galaxy:
   # removed from the recommendations and another is for adding
   # additional tools to be recommended along side those from the deep
   # learning model.
-  #admin_tool_recommendations_path: null
+  #admin_tool_recommendations_path: tool_recommendations_overwrite.yml
 
   # Overwrite or append to the tool recommendations by the deep learning
   # model. When set to true, all the recommendations by the deep

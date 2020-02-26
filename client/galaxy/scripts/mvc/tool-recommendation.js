@@ -26,35 +26,36 @@ var ToolRecommendationView = Backbone.View.extend({
                         url: `${getAppRoot()}api/datatypes/mapping`,
                         async: false
                     }).responseText
-                );
-                const extToType = datatypes_mapping.ext_to_class_name;
-                const typeToType = datatypes_mapping.class_to_classes;
-                const predData = data.predicted_data;
+                ),
+                extToType = datatypes_mapping.ext_to_class_name,
+                typeToType = datatypes_mapping.class_to_classes,
+                predData = data.predicted_data;
                 if (data !== null && predData.children.length > 0) {
-                    const filteredData = {};
-                    const compatibleTools = {};
-                    const filteredChildren = [];
-                    const outputDatatypes = predData["o_extensions"];
-                    for (const [_, nameObj] of predData.children.entries()) {
-                        const inputDatatypes = nameObj["i_extensions"];
+                    const filteredData = {},
+                        compatibleTools = {},
+                        filteredChildren = [],
+                        outputDatatypes = predData["o_extensions"],
+                        children = predData.children;
+                    for (const nameObj of children.entries()) {
+                        const inputDatatypes = nameObj[1]["i_extensions"];
                         for (const out_t of outputDatatypes.entries()) {
                             for(const in_t of inputDatatypes.entries()) {
-                                const child = extToType[out_t[1]];
-                                const parent = extToType[in_t[1]];
+                                const child = extToType[out_t[1]],
+                                    parent = extToType[in_t[1]];
                                 if (((typeToType[child] && parent in typeToType[child]) === true) ||
                                      out_t[1] === "input" ||
                                      out_t[1] === "_sniff_" ||
                                      out_t[1] === "input_collection") {
-                                    compatibleTools[nameObj["tool_id"]] = nameObj["name"];
+                                    compatibleTools[nameObj[1]["tool_id"]] = nameObj[1]["name"];
                                     break
                                 }
                             }
                         }
                     }
                     for (const id in compatibleTools) {
-                        for (const [_, nameObj] of predData.children.entries()) {
-                            if (nameObj["tool_id"] === id) {
-                                filteredChildren.push(nameObj);
+                        for (const nameObj of children.entries()) {
+                            if (nameObj[1]["tool_id"] === id) {
+                                filteredChildren.push(nameObj[1]);
                                 break
                             }
                         }
@@ -92,8 +93,8 @@ var ToolRecommendationView = Backbone.View.extend({
             root = null;
         function update(source) {
             // Compute the new tree layout.
-            const nodes = tree.nodes(root).reverse();
-            const links = tree.links(nodes);
+            const nodes = tree.nodes(root).reverse(),
+                links = tree.links(nodes);
             // Normalize for fixed-depth.
             nodes.forEach(d => { d.y = d.depth * 180; });
             // Update the nodes…
@@ -140,7 +141,7 @@ var ToolRecommendationView = Backbone.View.extend({
             link.enter().insert("path", "g")
                 .attr("class", "link")
                 .attr("d", d => {
-                    let o = {x: source.x0, y: source.y0};
+                    const o = {x: source.x0, y: source.y0};
                     return diagonal({source: o, target: o});
                 });
             // Transition links to their new position.

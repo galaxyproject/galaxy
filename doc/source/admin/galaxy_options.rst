@@ -4056,7 +4056,7 @@
     removed from the recommendations and another is for adding
     additional tools to be recommended along side those from the deep
     learning model.
-:Default: ``None``
+:Default: ``tool_recommendations_overwrite.yml``
 :Type: str
 
 

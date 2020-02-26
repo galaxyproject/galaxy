@@ -5,20 +5,11 @@ from __future__ import absolute_import
 
 import io
 import json
-import yaml
 import logging
 import os
 
 import requests
-from gxformat2._yaml import ordered_dump
-from markupsafe import escape
-from sqlalchemy import desc, false, or_, true
-import h5py
-import numpy as np
-from sqlalchemy.orm import joinedload
-
-from keras.models import model_from_json
-
+import yaml
 from galaxy import (
     exceptions,
     model,
@@ -46,11 +37,20 @@ from galaxy.webapps.base.controller import (
     url_for,
     UsesStoredWorkflowMixin
 )
+
 from galaxy.workflow.extract import extract_workflow
 from galaxy.workflow.modules import module_factory
 from galaxy.workflow.reports import generate_report
 from galaxy.workflow.run import invoke, queue_invoke
 from galaxy.workflow.run_request import build_workflow_run_configs
+from gxformat2._yaml import ordered_dump
+from markupsafe import escape
+
+import h5py
+import numpy as np
+from keras.models import model_from_json
+from sqlalchemy import desc, false, or_, true
+from sqlalchemy.orm import joinedload
 
 log = logging.getLogger(__name__)
 
@@ -688,14 +688,14 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 self.all_tools[t_id_renamed] = (tool_id, tool.name)
             # read the hdf5 attributes
             trained_model = h5py.File(self.tool_recommendation_model_path, 'r')
-            model_config = json.loads(trained_model['model_config'].value)
+            model_config = json.loads(trained_model['model_config'][()])
             self.loaded_model = model_from_json(model_config)
             # set the dictionary of tools
-            self.model_data_dictionary = json.loads(trained_model['data_dictionary'].value)
+            self.model_data_dictionary = json.loads(trained_model['data_dictionary'][()])
             self.reverse_dictionary = dict((v, k) for k, v in self.model_data_dictionary.items())
             # set the list of compatible tools
-            self.compatible_tools = json.loads(trained_model['compatible_tools'].value)
-            self.tool_weights = json.loads(trained_model['class_weights'].value)
+            self.compatible_tools = json.loads(trained_model['compatible_tools'][()])
+            self.tool_weights = json.loads(trained_model['class_weights'][()])
             self.tool_weights_sorted = dict()
             # sort the tools' usage dictionary
             tool_pos_sorted = [int(key) for key in self.tool_weights.keys()]
@@ -705,7 +705,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             for item in trained_model.keys():
                 if "weight_" in item:
                     d_key = "weight_" + str(counter_layer_weights)
-                    weights = trained_model[d_key].value
+                    weights = trained_model[d_key][()]
                     model_weights.append(weights)
                     counter_layer_weights += 1
             # set the model weights
@@ -719,16 +719,17 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         """
         if not self.admin_tool_recommendations_path and admin_path is not None:
             self.admin_tool_recommendations_path = os.path.join(os.getcwd(), admin_path)
-            with open(self.admin_tool_recommendations_path) as admin_recommendations:
-                admin_recommendation_preferences = yaml.safe_load(admin_recommendations)
-                if admin_recommendation_preferences:
-                    for tool_id in admin_recommendation_preferences:
-                        tool_info = admin_recommendation_preferences[tool_id]
-                        if 'is_deprecated' in tool_info[0]:
-                            self.deprecated_tools[tool_id] = tool_info[0]["text_message"]
-                        else:
-                            if tool_id not in self.admin_recommendations:
-                                self.admin_recommendations[tool_id] = tool_info
+            if os.path.exists(self.admin_tool_recommendations_path):
+                with open(self.admin_tool_recommendations_path) as admin_recommendations:
+                    admin_recommendation_preferences = yaml.safe_load(admin_recommendations)
+                    if admin_recommendation_preferences:
+                        for tool_id in admin_recommendation_preferences:
+                            tool_info = admin_recommendation_preferences[tool_id]
+                            if 'is_deprecated' in tool_info[0]:
+                                self.deprecated_tools[tool_id] = tool_info[0]["text_message"]
+                            else:
+                                if tool_id not in self.admin_recommendations:
+                                    self.admin_recommendations[tool_id] = tool_info
 
     def __download_model(self, model_url, download_local='database/'):
         """

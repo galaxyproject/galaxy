@@ -272,7 +272,7 @@ const View = Backbone.View.extend({
                 if (enable_tool_recommendations === true || enable_tool_recommendations === 'true') {
                     // show tool recommendations
                     this.$el.append($("<div/>", { id: "tool-recommendation-view" }));
-                    const toolRecommendation = new ToolRecommendation.ToolRecommendationView({
+                    new ToolRecommendation.ToolRecommendationView({
                         toolId: job_def.tool_id
                     });
                 }

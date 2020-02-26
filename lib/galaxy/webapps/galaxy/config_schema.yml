@@ -2986,6 +2986,8 @@ mapping:
       admin_tool_recommendations_path:
         type: str
         required: false
+        default: 'tool_recommendations_overwrite.yml'
+        path_resolves_to: config_dir
         desc: |
           Set path to the additional tool preferences from Galaxy admins.
           It has two blocks. One for listing deprecated tools which will be removed from the recommendations and
