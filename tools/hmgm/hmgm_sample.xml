@@ -1,6 +1,10 @@
-<tool id="hmgm_sample" name="Hmgm Sample" version="1.0.2">
+<tool id="hmgm_sample" name="Sample HMGM" version="1.0.2">
   <description>Sample HMGM</description>
   <command detect_errors="exit_code">$__tool_directory__/hmgm_sample_wrapper.py $json_out</command>
+  <inputs>
+    <param name="input" type="data" format="json" label="Input JSON file" help="A JSON file"/>
+    <param name="context" type="string" label="Human MGM Task Context" help="Context information needed for creating Human MGM tasks"/> 
+  </inputs>
   <outputs>
     <data format="json" name="json_out" />
   </outputs>
@@ -9,7 +13,7 @@
   <help>
 .. class:: infomark
 
-This is a sample dummy HMGM for testing purpose
+This is a dummy HMGM as a sample for testing purpose. Do not use this in real workflow.
 
   </help>
 </tool>
