@@ -13,7 +13,6 @@ import numpy as np
 import requests
 import yaml
 from gxformat2._yaml import ordered_dump
-from keras.models import model_from_json
 from markupsafe import escape
 from sqlalchemy import desc, false, or_, true
 from sqlalchemy.orm import joinedload
@@ -675,6 +674,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         Create model and associated dictionaries for recommendations
         """
         if not self.tool_recommendation_model_path:
+            # import moves from the top of file: in case the tool recommendation feature is disabled,
+            # keras is not downloaded because of conditional requirement and Galaxy does not build
+            from keras.models import model_from_json
             self.tool_recommendation_model_path = self.__download_model(remote_model_url)
             self.all_tools = dict()
             model_weights = list()
