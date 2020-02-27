@@ -135,6 +135,8 @@ class BaseAppConfiguration(object):
             self.data_dir = config_kwargs.get('data_dir')
             self.sample_config_dir = os.path.join(os.path.dirname(__file__), 'sample')
             self.managed_config_dir = config_kwargs.get('managed_config_dir')
+            if self.managed_config_dir:
+                self.managed_config_dir = os.path.abspath(self.managed_config_dir)
 
             if running_from_source:
                 if not self.config_dir:
