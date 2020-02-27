@@ -40,38 +40,46 @@ IRODS_IMPORT_MESSAGE = ('The Python irods package is required to use this featur
 
 log = logging.getLogger(__name__)
 
+def _parse_error(tag):
+    msg = 'No {tag} element in XML tree'.format(tag=tag)
+    log.error(msg)
+    raise Exception(msg)
+
 def parse_config_xml(config_xml):
     try:
-        a_xml = config_xml.findall('auth')[0]
-        username = a_xml.get('username')
-        password = a_xml.get('password')
+        a_xml = config_xml.findall('auth')
+        if not a_xml:
+            _parse_error('auth')
+        username = a_xml[0].get('username')
+        password = a_xml[0].get('password')
 
-        b_xml = config_xml.findall('resource')[0]
-        resource_name = b_xml.get('name')
+        r_xml = config_xml.findall('resource')
+        if not r_xml:
+            _parse_error('resource')
+        resource_name = r_xml[0].get('name')
 
-        b_xml = config_xml.findall('zone')[0]
-        zone_name = b_xml.get('name')
+        z_xml = config_xml.findall('zone')
+        if not z_xml:
+            _parse_error('zone')
+        zone_name = z_xml[0].get('name')
 
-        cn_xml = config_xml.findall('connection')
-        if not cn_xml:
-            cn_xml = {}
-        else:
-            cn_xml = cn_xml[0]
+        c_xml = config_xml.findall('connection')
+        if not c_xml:
+            _parse_error('connection')
+        host = c_xml[0].get('host', None)
+        port = int(c_xml[0].get('port', 0))
 
-        host = cn_xml.get('host', None)
-        port = int(cn_xml.get('port', 0))
+        c_xml = config_xml.findall('cache')
+        if not c_xml:
+            _parse_error('cache')
+        cache_size = float(c_xml[0].get('size', -1))
+        staging_path = c_xml[0].get('path', None)
 
-        c_xml = config_xml.findall('cache')[0]
-        cache_size = float(c_xml.get('size', -1))
-        staging_path = c_xml.get('path', None)
-
-        tag, attrs = 'extra_dir', ('type', 'path')
-        extra_dirs = config_xml.findall(tag)
-        if not extra_dirs:
-            msg = 'No {tag} element in XML tree'.format(tag=tag)
-            log.error(msg)
-            raise Exception(msg)
-        extra_dirs = [dict(((k, e.get(k)) for k in attrs)) for e in extra_dirs]
+        attrs = ('type', 'path')
+        e_xml = config_xml.findall('extra_dir')
+        if not e_xml:
+            _parse_error('extra_dir')
+        extra_dirs = [dict(((k, e.get(k)) for k in attrs)) for e in e_xml]
 
         return {
             'auth': {
@@ -96,7 +104,7 @@ def parse_config_xml(config_xml):
         }
     except Exception:
         # Toss it back up after logging, we can't continue loading at this point.
-        log.exception("Malformed iRODS ObjectStore Configuration XML -- unable to continue")
+        log.exception("Malformed iRODS ObjectStore Configuration XML -- unable to continue.")
         raise
 
 class CloudConfigMixin(object):

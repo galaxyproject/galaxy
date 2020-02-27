@@ -27,6 +27,7 @@ sphinx_rtd_theme = "*"
 testfixtures = "*"
 twill = {version = "==0.9.1", markers = "python_version < '3'"}
 watchdog = "*"
+python-irodsclient = "*"
 
 [packages]
 numpy = "*"
