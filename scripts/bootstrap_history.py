@@ -743,8 +743,10 @@ def _releases():
 
 def _github_client():
     try:
-        github_json = os.path.expanduser("~/.github.json")
-        github = Github(**json.load(open(github_json, "r")))
+        github_json_path = os.path.expanduser("~/.github.json")
+        with open(github_json_path, "r") as fh:
+            github_json_dict = json.load(fh)
+        github = Github(**github_json_dict)
     except Exception:
         log.exception()
         github = None
