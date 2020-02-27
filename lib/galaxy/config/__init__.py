@@ -137,18 +137,18 @@ class BaseAppConfiguration(object):
             self.managed_config_dir = config_kwargs.get('managed_config_dir')
 
             if running_from_source:
-                if self.config_dir is None:
+                if not self.config_dir:
                     self.config_dir = os.path.join(self.root, 'config')
-                if self.data_dir is None:
+                if not self.data_dir:
                     self.data_dir = os.path.join(self.root, 'database')
-                if self.managed_config_dir is None:
+                if not self.managed_config_dir:
                     self.managed_config_dir = self.config_dir
             else:
-                if self.config_dir is None:
+                if not self.config_dir:
                     self.config_dir = os.getcwd()
-                if self.data_dir is None:
+                if not self.data_dir:
                     self.data_dir = self._in_config_dir('data')
-                if self.managed_config_dir is None:
+                if not self.managed_config_dir:
                     self.managed_config_dir = self._in_data_dir('config')
 
             # TODO: do we still need to support ../shed_tools when running_from_source?
