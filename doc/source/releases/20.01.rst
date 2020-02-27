@@ -9,11 +9,6 @@
 Enhancements
 -------------------------------
 
-.. major_feature
-
-
-.. feature
-
 * CLI tools for installing/testing Docker and Singularity containers
   (thanks to `@simonbray <https://github.com/simonbray>`__).
   `Pull Request 7936`_
@@ -37,14 +32,8 @@ Enhancements
 * Remove GenomeSpace tools, OpenID, UI and requirements
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 9363`_
-
-.. enhancement_tag_viz
-
 * Hyphy-vision fixes and updates.
   `Pull Request 9384`_
-
-.. enhancement_tag_datatypes
-
 * Datatypes for MassSpec DIA dlib,elib
   (thanks to `@jj-umn <https://github.com/jj-umn>`__).
   `Pull Request 8657`_
@@ -68,9 +57,6 @@ Enhancements
   `Pull Request 9087`_
 * Add tabular.gz datatype and add embl to uploadable formats
   `Pull Request 9293`_
-
-.. enhancement_tag_tools
-
 * Upgrade askomics interactive tool
   (thanks to `@xgaia <https://github.com/xgaia>`__).
   `Pull Request 8517`_
@@ -86,9 +72,6 @@ Enhancements
   `Pull Request 9003`_
 * Move sam_pileup to GALAXY_LIB_TOOLS_VERSIONED
   `Pull Request 9320`_
-
-.. enhancement_tag_workflows
-
 * Interactive modification of invocation report.
   `Pull Request 8691`_
 * User-facing Workflow Invocation Grid
@@ -107,9 +90,6 @@ Enhancements
   `Pull Request 9099`_
 * add option select_type_workflow_threshold (rebase)
   `Pull Request 9105`_
-
-.. enhancement_tag_ui
-
 * Upgrade eslint (major version), fix compliance with new standard rules.
   `Pull Request 8708`_
 * JobMetrics.vue unit test.
@@ -120,9 +100,6 @@ Enhancements
   `Pull Request 8749`_
 * Added client-side application configs for each target environment
   `Pull Request 8827`_
-
-.. enhancement_tag_jobs
-
 * Small cleanup for job runners kill
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 8523`_
@@ -146,17 +123,11 @@ Enhancements
   `Pull Request 9314`_
 * Allow remote jobs to configure Interactive Tool entry points.
   `Pull Request 9349`_
-
-.. enhancement_tag_admin
-
 * Add Tool Manager Component for Admin Panel
   `Pull Request 8601`_
 * Add process ID to worker_process table
   (thanks to `@selten <https://github.com/selten>`__).
   `Pull Request 8972`_
-
-.. enhancement
-
 * Use official "login with" buttons for OIDC
   (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 8107`_, `Pull Request 9102`_
@@ -308,9 +279,6 @@ Enhancements
   `Pull Request 9233`_
 * Fixes for IGV GEDA handling of genomes
   `Pull Request 9413`_
-
-.. small_enhancement
-
 * Factor out yaml read/write from config_manage.py
   `Pull Request 8509`_
 * Implementation of the workflow list as vue component
@@ -412,11 +380,6 @@ Enhancements
 Fixes
 -------------------------------
 
-.. major_bug
-
-
-.. bug_tag_viz
-
 * Wrap SQL statement in a text() function as required by sqlalchemy
   (thanks to `@kaukrise <https://github.com/kaukrise>`__).
   `Pull Request 9216`_
@@ -425,17 +388,11 @@ Fixes
   `Pull Request 9217`_
 * Various python 3 fixes from sentry
   `Pull Request 9337`_
-
-.. bug_tag_datatypes
-
 * Fix cool sniffing on python3
   `Pull Request 9153`_
 * Fix `SearchGuiArchive.set_meta()`
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 9437`_
-
-.. bug_tag_tools
-
 * grouping: strip newlines
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 8953`_
@@ -448,9 +405,6 @@ Fixes
   `Pull Request 9354`_
 * Fix maf tools
   `Pull Request 9393`_
-
-.. bug_tag_workflows
-
 * Exports reports with workflows (if configured).
   `Pull Request 9055`_
 * Rev gxformat2 dependency to fix various export issues.
@@ -459,9 +413,6 @@ Fixes
   `Pull Request 9315`_
 * Various fixes and enhancements to reports
   `Pull Request 9316`_
-
-.. bug_tag_jobs
-
 * Small fixes for k8s.
   `Pull Request 8759`_
 * Fix output.file_path writing to read-only path on Docker
@@ -496,9 +447,6 @@ Fixes
   `Pull Request 9406`_
 * Strip unicode null characters from traceback and job_messages
   `Pull Request 9430`_
-
-.. bug_tag_admin
-
 * Encode lines in filter_file_fields
   (thanks to `@selten <https://github.com/selten>`__).
   `Pull Request 8652`_
@@ -511,9 +459,6 @@ Fixes
   `Pull Request 9193`_
 * Always add shed_tool_config file to tool_configs
   `Pull Request 9364`_
-
-.. bug
-
 * Documentation update
   (thanks to `@selten <https://github.com/selten>`__).
   `Pull Request 8508`_
