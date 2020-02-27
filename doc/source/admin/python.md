@@ -21,8 +21,8 @@ If Galaxy complains about the version of Python you are using:
         1. Make sure a supported version of Python is installed.
         2. Verify that the Python interpreter you want to use is first in the
            output of `which -a python3 python` (or `which -a python` if you are
-           using Galaxy <=20.01). If this is not the case:
-           - If you are using Galaxy >= 20.05, just execute:
+           using Galaxy <=19.09). If this is not the case:
+           - If you are using Galaxy >= 20.01, just execute:
              `export GALAXY_PYTHON=/path/to/python`
            - If instead you are using an older version of Galaxy, you can
             manipulate your shell's `PATH` variable to place the correct version
@@ -36,7 +36,13 @@ If Galaxy complains about the version of Python you are using:
               % export PATH=~/galaxy-python:$PATH
               ```
 
-4. Start Galaxy again.
+4. Remove compiled mako templates when upgrading from Python 2:
+     ```sh
+     % rm -rf /path/to/galaxy/database/compiled_templates/
+     ```
+   These templated will be regenerated automatically when starting Galaxy.
+
+5. Start Galaxy again.
 
 N.B. If you have compiled your own Python interpreter from source, please ensure
 that the `ssl`, `sqlite3`, `curses` and `bz2` modules were built and can be
@@ -45,4 +51,3 @@ compilation process and are required by the Galaxy framework. If building on
 Linux, you may need to install the appropriate `-dev` packages for OpenSSL and
 Bzip2. You may also need to build Python with shared libraries
 (`--enable-shared`).
-
