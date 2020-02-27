@@ -181,7 +181,7 @@ Galaxy can create a virtualenv using the adapted virtualenv package. Once a vali
         3. Start galaxy using ``sh run.sh`` or execute ``sh scripts/common_startup.sh``.
 
 
-    A Conda environment named ``_galaxy_`` will be created using python 2 and the appropriate virtualenv package will be installed into this environment.
+    A Conda environment named ``_galaxy_`` will be created and the appropriate virtualenv package will be installed into this environment.
     Using this environment a ``.venv`` is initialized. This is a one-time setup, and all other activation and dependency
     management happens exactly as if a system Python was used for creating ``.venv``.
 
