@@ -34,7 +34,6 @@ pluggy==0.13.1
 port-for==0.4
 psutil==5.6.7
 py==1.8.0
-pygithub3==0.5.1 ; python_version < '3'
 pygments==2.5.2
 pyparsing==2.4.5
 pytest-cov==2.8.1
