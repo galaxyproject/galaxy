@@ -1085,7 +1085,9 @@ galaxy:
   # this file are trusted and will not have their HTML sanitized on
   # display.  This can be manually edited or manipulated through the
   # Admin control panel -- see "Manage Display Whitelist"
-  #sanitize_whitelist_file: config/sanitize_whitelist.txt
+  # The value of this option will be resolved with respect to
+  # <mutable_config_dir>.
+  #sanitize_whitelist_file: sanitize_whitelist.txt
 
   # By default Galaxy will serve non-HTML tool output that may
   # potentially contain browser executable JavaScript content as plain
