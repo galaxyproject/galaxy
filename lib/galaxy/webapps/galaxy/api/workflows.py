@@ -51,7 +51,6 @@ from galaxy.workflow.reports import generate_report
 from galaxy.workflow.run import invoke, queue_invoke
 from galaxy.workflow.run_request import build_workflow_run_configs
 
-
 log = logging.getLogger(__name__)
 
 
