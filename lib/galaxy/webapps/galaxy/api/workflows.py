@@ -8,17 +8,21 @@ import json
 import logging
 import os
 
+import h5py
+import numpy as np
 import requests
 import yaml
-
 from gxformat2._yaml import ordered_dump
+from keras.models import model_from_json
+from markupsafe import escape
+from sqlalchemy import desc, false, or_, true
+from sqlalchemy.orm import joinedload
 
 from galaxy import exceptions, model, util
 from galaxy.managers import histories, workflows
 from galaxy.managers.jobs import fetch_job_states, invocation_job_source_iter
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.tool_shed.galaxy_install.install_manager import \
-    InstallRepositoryManager
+from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
 from galaxy.tools.parameters import populate_state
 from galaxy.tools.parameters.basic import workflow_building_modes
 from galaxy.util.sanitize_html import sanitize_html
@@ -32,13 +36,6 @@ from galaxy.workflow.reports import generate_report
 from galaxy.workflow.run import invoke, queue_invoke
 from galaxy.workflow.run_request import build_workflow_run_configs
 
-import h5py
-
-from markupsafe import escape
-import numpy as np
-from keras.models import model_from_json
-from sqlalchemy import desc, false, or_, true
-from sqlalchemy.orm import joinedload
 
 log = logging.getLogger(__name__)
 
