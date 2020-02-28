@@ -188,7 +188,10 @@ GalaxyApp.prototype._initLocale = function _initLocale(options) {
 /** add the localize fn to this object and the window namespace (as '_l') */
 GalaxyApp.prototype._initUserLocale = function _initUserLocale(options) {
     // Choose best locale
-    const global_locale = this.config.default_locale ? this.config.default_locale.toLowerCase() : false;
+    const global_locale =
+        this.config.default_locale && this.config.default_locale != "auto"
+            ? this.config.default_locale.toLowerCase()
+            : false;
 
     let extra_user_preferences = {};
     if (this.user && this.user.attributes.preferences && "extra_user_preferences" in this.user.attributes.preferences) {
@@ -209,7 +212,7 @@ GalaxyApp.prototype._initUserLocale = function _initUserLocale(options) {
             ? "__root"
             : (navigator.language || navigator.userLanguage || "__root").toLowerCase();
 
-    const locale = user_locale || global_locale || nav_locale;
+    const locale = user_locale || nav_locale || global_locale;
 
     sessionStorage.setItem("currentLocale", locale);
 };
