@@ -209,7 +209,7 @@ GalaxyApp.prototype._initUserLocale = function _initUserLocale(options) {
             ? "__root"
             : (navigator.language || navigator.userLanguage || "__root").toLowerCase();
 
-    const locale = user_locale || global_locale || nav_locale;
+    const locale = user_locale || nav_locale || global_locale;
 
     sessionStorage.setItem("currentLocale", locale);
 };
