@@ -253,7 +253,6 @@ const Collection = Backbone.Collection.extend({
                     cls: "loggedout-only",
                     tooltip: _l("Login"),
                     url: "login",
-                    target: "galaxy_main",
                     noscratchbook: true
                 };
             }
