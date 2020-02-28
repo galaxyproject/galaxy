@@ -40,45 +40,48 @@ IRODS_IMPORT_MESSAGE = ('The Python irods package is required to use this featur
 
 log = logging.getLogger(__name__)
 
-def _parse_error(tag):
-    msg = 'No {tag} element in XML tree'.format(tag=tag)
-    log.error(msg)
+def _config_xml_error(tag):
+    msg = 'No {tag} element in config XML tree'.format(tag=tag)
+    raise Exception(msg)
+
+def _config_dict_error(key):
+    msg = 'No {key} key in config dictionary'.forma(key=key)
     raise Exception(msg)
 
 def parse_config_xml(config_xml):
     try:
         a_xml = config_xml.findall('auth')
         if not a_xml:
-            _parse_error('auth')
+            _config_xml_error('auth')
         username = a_xml[0].get('username')
         password = a_xml[0].get('password')
 
         r_xml = config_xml.findall('resource')
         if not r_xml:
-            _parse_error('resource')
+            _config_xml_error('resource')
         resource_name = r_xml[0].get('name')
 
         z_xml = config_xml.findall('zone')
         if not z_xml:
-            _parse_error('zone')
+            _config_xml_error('zone')
         zone_name = z_xml[0].get('name')
 
         c_xml = config_xml.findall('connection')
         if not c_xml:
-            _parse_error('connection')
+            _config_xml_error('connection')
         host = c_xml[0].get('host', None)
         port = int(c_xml[0].get('port', 0))
 
         c_xml = config_xml.findall('cache')
         if not c_xml:
-            _parse_error('cache')
+            _config_xml_error('cache')
         cache_size = float(c_xml[0].get('size', -1))
         staging_path = c_xml[0].get('path', None)
 
         attrs = ('type', 'path')
         e_xml = config_xml.findall('extra_dir')
         if not e_xml:
-            _parse_error('extra_dir')
+            _config_xml_error('extra_dir')
         extra_dirs = [dict(((k, e.get(k)) for k in attrs)) for e in e_xml]
 
         return {
@@ -139,35 +142,58 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
     
     store_type = 'irods'
     
-    #def _get_bucket(self, bucket_name):
-    #def _key_exists(self, rel_path):
-
     def __init__(self, config, config_dict):
         super(IRODSObjectStore, self).__init__(config, config_dict)
 
-        auth_dict = config_dict['auth']
+        auth_dict = config_dict.get('auth')
+        if auth_dict is None:
+            _config_dict_error('auth')
+
         self.username = auth_dict.get('username')
+        if self.username is None:
+            _config_dict_error('auth->username')
         self.password = auth_dict.get('password')
+        if self.password is None:
+            _config_dict_error('auth->password')
 
         resource_dict = config_dict['resource']
+        if resource_dict is None:
+            _config_dict_error('resource')
         self.resource = resource_dict.get('name')
+        if self.resource is None:
+            _config_dict_error('resource->name')
 
         zone_dict = config_dict['zone']
+        if zone_dict is None:
+            _config_dict_error('zone')
         self.zone = zone_dict.get('name')
+        if self.zone is None:
+            _config_dict_error('zone->name')
 
         connection_dict = config_dict['connection']
+        if connection_dict is None:
+            _config_dict_error('connection')
         self.host = connection_dict.get('host')
+        if self.host is None:
+            _config_dict_error('connection->host')
         self.port = connection_dict.get('port')
+        if self.port is None:
+            _config_dict_error('connection->port')
 
         cache_dict = config_dict['cache']
+        if cache_dict is None:
+            _config_dict_error('cache')
         self.cache_size = cache_dict.get('size', -1)
+        if self.cache_size is None:
+            _config_dict_error('cache->size')
         self.staging_path = cache_dict.get('path') or self.config.object_store_cache_path
+        if self.staging_path is None:
+            _config_dict_error('cache->path')
 
         extra_dirs = dict((e['type'], e['path']) for e in config_dict.get('extra_dirs', []))
+        if not extra_dirs:
+            _config_dict_error('extra_dirs')
         self.extra_dirs.update(extra_dirs)
-
-        log.debug("Object cache dir: %s", self.staging_path)
-        log.debug("Job work dir: %s", self.extra_dirs['job_work'])
 
         self._initialize()
         
@@ -193,8 +219,12 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
 
     def _configure_connection(self, host='localhost', port='1247', user='rods', password='rods', zone='tempZone'):
         with iRODSSession(host=host, port=port, user=user, password=password, zone=zone) as session:
-            # Throws NetworkException if connection fails  
-            session.pool.get_connection()
+            # Throws NetworkException if connection fails
+            try:  
+                session.pool.get_connection()
+            except NetworkException as e:
+                log.error('Could not create iRODS session: ' + str(e))
+                raise
             return session
 
     @classmethod
@@ -207,7 +237,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         return as_dict
 
     def __cache_monitor(self):
-        time.sleep(2)  # Wait for things to load before starting the monitor
+        time.sleep(5)  # Wait for things to load before starting the monitor
         while self.running:
             total_size = 0
             # Is this going to be too expensive of an operation to be done frequently?
