@@ -3,9 +3,11 @@
   <section id="getext" name="Get Data">
     <tool file="data_source/upload.xml" />
   </section>
+  
   <section id="send" name="Send Data">
     <tool file="cloud/send.xml" />
   </section>
+  
   <section id="media" name="Media Tools">
     <tool file="media/extract_audio.xml"/>
     <!--
@@ -13,6 +15,7 @@
     <tool file="media/sox_trim.xml"/>
     -->
   </section>
+  
   <section id="silence" name="Silence Tools">
     <tool file="silence_remove/extract_silence.xml"/>
   </section>
@@ -21,12 +24,14 @@
     <tool file="aws/transcribe.xml"/>
     <tool file="kaldi/kaldi_local.xml"/>
   </section>
+  
   <section id="Segmentation" name="Segmentation">
     <tool file="ina_speech_segmenter/ina_speech_segmenter.xml"/>
     <tool file="ina_speech_segmenter/remove_silence_music.xml"/>
     <tool file="ina_speech_segmenter/remove_silence_speech.xml"/>
     <tool file="amp_json_schema/adjust_timestamps.xml"/>
   </section>
+  
   <section id="nlp" name="Natural Language Processing">
     <tool file="spacy/spacy.xml"/>
     <tool file="aws/aws_comprehend.xml"/>
@@ -35,9 +40,11 @@
   <section id="video_ocr" name="Video OCR">
     <tool file="video_tools/tesseract.xml"/>
   </section>
+  
   <section id="hmgm" name="Human MGM">
-    <tool id="hmgmtest" file="hmgm/hmgm_sample.xml"/>
+    <tool file="hmgm/hmgm_sample.xml"/>
   </section>
+  
   <section id="collection_operations" name="Collection Operations">
     <tool file="${model_tools_path}/unzip_collection.xml" labels="new" />
     <tool file="${model_tools_path}/zip_collection.xml" labels="new" />
