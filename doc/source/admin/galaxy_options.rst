@@ -697,19 +697,6 @@
 :Type: int
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``manage_dependency_relationships``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Enable use of an in-memory registry with bi-directional
-    relationships between repositories (i.e., in addition to lists of
-    dependencies for a repository, keep an in-memory registry of
-    dependent items for each repository.
-:Default: ``false``
-:Type: bool
-
-
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``tool_data_table_config_path``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
