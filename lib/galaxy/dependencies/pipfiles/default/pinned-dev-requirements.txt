@@ -10,6 +10,7 @@ commonmark==0.9.1
 configparser==4.0.2 ; python_version < '3.2'
 contextlib2==0.6.0.post1 ; python_version < '3.5'
 coverage==5.0.3
+deprecated==1.2.7
 docutils==0.15.2
 funcsigs==1.0.2 ; python_version < '3.3'
 future==0.18.2
@@ -33,7 +34,9 @@ pluggy==0.13.1
 port-for==0.4
 psutil==5.7.0
 py==1.8.1
+pygithub==1.45
 pygments==2.5.2
+pyjwt==1.7.1
 pyparsing==2.4.6
 pytest-cov==2.8.1
 pytest-html==1.22.1
