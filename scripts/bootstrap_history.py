@@ -400,10 +400,9 @@ def do_release(argv):
 
 
 def check_release(argv):
-    github = _github_client()
     release_name = argv[2]
     for pr in _get_prs(release_name):
-        _text_target(github, pr, labels=_pr_to_labels(pr))
+        _text_target(pr, labels=_pr_to_labels(pr))
 
 
 def check_blocking_prs(argv):
@@ -501,9 +500,6 @@ def _get_prs(release_name, state="closed", pr_cache=[]):
 
 
 def main(argv):
-    if requests is None:
-        raise Exception("Requests library not found, please pip install requests")
-    github = _github_client()
     newest_release = None
 
     if argv[1] == "--print-next-minor-version":
@@ -558,6 +554,8 @@ def main(argv):
 
     ident = argv[1]
 
+    if requests is None:
+        raise Exception("Requests library not found, please pip install requests")
     message = ""
     if len(argv) > 2:
         message = argv[2]
@@ -568,13 +566,13 @@ def main(argv):
         commit = req["commit"]
         message = commit["message"]
         message = get_first_sentence(message)
-    elif requests is not None and ident.startswith("pr"):
+    elif ident.startswith("pr"):
         pull_request = ident[len("pr"):]
         api_url = urljoin(PROJECT_API, "pulls/%s" % pull_request)
         if req is None:
             req = requests.get(api_url).json()
         message = req["title"]
-    elif requests is not None and ident.startswith("issue"):
+    elif ident.startswith("issue"):
         issue = ident[len("issue"):]
         api_url = urljoin(PROJECT_API, "issues/%s" % issue)
         if req is None:
@@ -600,11 +598,10 @@ def main(argv):
                 owner, owner,
             )
         to_doc += "\n`Pull Request {0}`_".format(pull_request)
-        if github:
-            labels = None
-            if req and 'labels' in req:
-                labels = req['labels']
-            text_target = _text_target(github, pull_request, labels=labels)
+        labels = None
+        if req and 'labels' in req:
+            labels = req['labels']
+        text_target = _text_target(pull_request, labels=labels)
     elif ident.startswith("issue"):
         issue = ident[len("issue"):]
         text = ".. _Issue {0}: {1}/issues/{0}".format(issue, PROJECT_URL)
@@ -642,7 +639,7 @@ def _write_file(path, contents):
         f.write(contents)
 
 
-def _text_target(github, pull_request, labels=None):
+def _text_target(pull_request, labels=None):
     pr_number = None
     if isinstance(pull_request, string_types):
         pr_number = pull_request
@@ -652,6 +649,7 @@ def _text_target(github, pull_request, labels=None):
     if labels is None:
         labels = []
         try:
+            github = _github_client()
             labels = github.issues.labels.list_by_issue(int(pr_number), user=PROJECT_OWNER, repo=PROJECT_NAME)
             labels = [l.name.lower() for l in labels]
         except Exception as e:
