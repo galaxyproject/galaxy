@@ -1,16 +1,17 @@
 import $ from "jquery";
-
+import * as d3 from "d3";
 import { Toast } from "ui/toast";
 
-function Connector(manager, handle1, handle2) {
+function Connector(manager) {
     this.manager = manager;
-    this.canvas = null;
     this.dragging = false;
     this.inner_color = "#FFFFFF";
     this.outer_color = "#25537b";
-    if (handle1 && handle2) {
-        this.connect(handle1, handle2);
-    }
+    this.canvas = document.createElement("div");
+    this.canvas.style.position = "absolute";
+    const container = document.getElementById("canvas-container");
+    container.appendChild(this.canvas);
+    this.svg = d3.select(this.canvas).append("svg");
 }
 $.extend(Connector.prototype, {
     connect: function(t1, t2) {
@@ -30,7 +31,7 @@ $.extend(Connector.prototype, {
         if (this.handle2) {
             this.handle2.disconnect(this);
         }
-        $(this.canvas).remove();
+        this.canvas.remove();
     },
     destroyIfInvalid: function(warn) {
         if (this.handle1 && this.handle2 && !this.handle2.attachable(this.handle1).canAccept) {
@@ -48,12 +49,8 @@ $.extend(Connector.prototype, {
         const canvasClass = `${startRibbon ? "start-ribbon" : ""} ${endRibbon ? "end-ribbon" : ""}`;
         var canvas_container = $("#canvas-container");
         var canvasZoom = this.manager.canvasZoom;
-        if (!this.canvas) {
-            this.canvas = document.createElement("canvas");
-            canvas_container.append($(this.canvas));
-            if (this.dragging) {
-                this.canvas.style.zIndex = "300";
-            }
+        if (this.dragging) {
+            this.canvas.style.zIndex = 1000;
         }
         this.canvas.setAttribute(
             "handle1-id",
@@ -73,6 +70,7 @@ $.extend(Connector.prototype, {
         var start_y = relativeTop(handle1.element) + 5;
         var end_x = relativeLeft(handle2.element) + 5;
         var end_y = relativeTop(handle2.element) + 5;
+
         // Calculate canvas area
         var canvas_extra = 100;
         var canvas_min_x = Math.min(start_x, end_x);
@@ -84,20 +82,32 @@ $.extend(Connector.prototype, {
         var canvas_top = canvas_min_y - canvas_extra;
         var canvas_width = canvas_max_x - canvas_min_x + 2 * canvas_extra;
         var canvas_height = canvas_max_y - canvas_min_y + 2 * canvas_extra;
+
         // Place the canvas
         this.canvas.style.left = `${canvas_left}px`;
         this.canvas.style.top = `${canvas_top}px`;
-        this.canvas.setAttribute("width", canvas_width);
-        this.canvas.setAttribute("height", canvas_height);
+        this.svg.style("width", `${canvas_width}px`);
+        this.svg.style("height", `${canvas_height}px`);
         this.canvas.setAttribute("class", canvasClass);
+
         // Adjust points to be relative to the canvas
         start_x -= canvas_left;
         start_y -= canvas_top;
         end_x -= canvas_left;
         end_y -= canvas_top;
 
-        // Draw the line
+        this.draw_outlined_curve(
+            start_x,
+            start_y,
+            end_x,
+            end_y,
+            0,
+            0,
+            0,
+            0
+        );
 
+        /*/ Draw the line
         var start_offsets = null;
         var end_offsets = null;
         var num_offsets = 1;
@@ -133,7 +143,7 @@ $.extend(Connector.prototype, {
                 start_offsets[i % start_offsets.length],
                 end_offsets[i % end_offsets.length]
             );
-        }
+        }*/
     },
     draw_outlined_curve: function(
         start_x,
@@ -146,37 +156,23 @@ $.extend(Connector.prototype, {
         offset_start,
         offset_end
     ) {
-        var c = this.canvas.getContext("2d");
         offset_start = offset_start || 0;
         offset_end = offset_end || 0;
-        c.lineCap = "round";
-        c.strokeStyle = this.outer_color;
-        c.lineWidth = outer_width;
-        c.beginPath();
-        c.moveTo(start_x, start_y + offset_start);
-        c.bezierCurveTo(
-            start_x + cp_shift,
-            start_y + offset_start,
-            end_x - cp_shift,
-            end_y + offset_end,
-            end_x,
-            end_y + offset_end
-        );
-        c.stroke();
-        // Inner line
-        c.strokeStyle = this.inner_color;
-        c.lineWidth = inner_width;
-        c.beginPath();
-        c.moveTo(start_x, start_y + offset_start);
-        c.bezierCurveTo(
-            start_x + cp_shift,
-            start_y + offset_start,
-            end_x - cp_shift,
-            end_y + offset_end,
-            end_x,
-            end_y + offset_end
-        );
-        c.stroke();
+        var lineData = [
+            { x: start_x, y: start_y + offset_start },
+            //{ x: start_x + cp_shift,   y: start_y + offset_start},
+            //{ x: end_x - cp_shift,  y: end_y + offset_end },
+            { x: end_x,  y: end_y + offset_end } ];
+        var lineFunction = d3.svg.line()
+                            .x(function(d) { return d.x; })
+                            .y(function(d) { return d.y; })
+                            .interpolate("linear");
+        // The line SVG Path we draw
+        this.svg.selectAll("*").remove();
+        this.svg.append("path")
+                .attr("d", lineFunction(lineData))
+                .attr("stroke", "blue")
+                .attr("stroke-width", 2);
     }
 });
 export default Connector;

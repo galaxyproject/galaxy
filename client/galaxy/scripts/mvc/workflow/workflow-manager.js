@@ -380,15 +380,15 @@ class Workflow extends EventEmitter {
         wf.id_counter = max_id + 1;
         // Second pass, connections
         $.each(data.steps, (id, step) => {
-            var node = wf.nodes[parseInt(id) + offset];
+            const node = wf.nodes[parseInt(id) + offset];
             $.each(step.input_connections, (k, v) => {
                 if (v) {
                     if (!$.isArray(v)) {
                         v = [v];
                     }
                     $.each(v, (l, x) => {
-                        var other_node = wf.nodes[parseInt(x.id) + offset];
-                        var c = new Connector(this.canvas_manager);
+                        const other_node = wf.nodes[parseInt(x.id) + offset];
+                        const c = new Connector(this.canvas_manager);
                         c.connect(other_node.output_terminals[x.output_name], node.input_terminals[k]);
                         c.redraw();
                     });

@@ -23,9 +23,6 @@
                 @extend .px-2;
                 cursor: move;
                 background: $brand-secondary;
-                .header {
-                    width: 7rem;
-                }
             }
             .node-body {
                 @extend .card-body;
