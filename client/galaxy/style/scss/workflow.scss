@@ -55,6 +55,20 @@
                 position: relative;
                 overflow: hidden;
             }
+            .ribbon {
+                .ribbon-outer {
+                    stroke: $brand-primary;
+                }
+                .ribbon-inner {
+                    stroke: $white;
+                }
+                .ribbon-inner-valid {
+                    stroke: $brand-success;
+                }
+                .ribbon-inner-invalid {
+                    stroke: $brand-warning;
+                }
+            }
             .base-terminal {
                 @extend .fa;
                 @extend .fa-circle;
