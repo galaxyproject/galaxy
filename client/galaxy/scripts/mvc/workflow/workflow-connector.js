@@ -15,7 +15,7 @@ const ribbonInnerMultiple = 1;
 const ribbonOuterMultiple = 3;
 
 class Connector {
-    constructor(manager) {
+    constructor(manager = {}, handle1 = null, handle2 = null) {
         this.manager = manager;
         this.dragging = false;
         this.innerClass = "ribbon-inner";
@@ -25,6 +25,9 @@ class Connector {
         container.appendChild(this.canvas);
         this.svg = d3.select(this.canvas).append("svg");
         this.svg.attr("class", "ribbon");
+        if (handle1 && handle2) {
+            this.connect(handle1, handle2);
+        }
     }
     connect(t1, t2) {
         this.handle1 = t1;

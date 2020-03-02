@@ -114,8 +114,7 @@ class BaseInputTerminalView extends TerminalView {
         d.proxy.dropTooltip = "";
         if (this.$el.hasClass("can-accept")) {
             const terminal = this.el.terminal;
-            const c = new Connector(this.app.canvas_manager);
-            c.connect(d.drag.terminal, terminal);
+            const c = new Connector(this.app.canvas_manager, d.drag.terminal, terminal);
             c.redraw();
         }
     }
@@ -253,7 +252,7 @@ export class BaseOutputTerminalView extends TerminalView {
                     break;
                 case 32: // Space
                     removeMenu();
-                    new Connector(this.app.canvas_manager).connect(this.el.terminal, inputTerminal).redraw();
+                    new Connector(this.app.canvas_manager, this.el.terminal, inputTerminal).redraw();
                     ariaAlert("Node connected");
 
                     if (inputTerminal.connectors.length > 0) {
