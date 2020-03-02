@@ -120,7 +120,7 @@ class Connector {
         end_y -= canvas_top;
 
         // Determine line shift
-        const cp_shift = Math.min(Math.max(Math.abs(canvas_max_y - canvas_min_y) / 2, cpFactor), 300 / cpFactor);
+        const cp_shift = Math.min(Math.max(Math.abs(canvas_max_y - canvas_min_y) / 2, cpFactor), 3 * cpFactor);
 
         // Draw ribbons
         this.drawRibbon(handle1, handle2, cp_shift, start_x, start_y, end_x, end_y);
