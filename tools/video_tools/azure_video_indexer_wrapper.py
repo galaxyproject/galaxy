@@ -45,7 +45,7 @@ def main():
 		if state != "Uploaded" and state != "Processing":
 			break
 		# Wait a bit before checking again
-		time.sleep(1)
+		time.sleep(30)
 
 	# Turn on HTTP debugging here
 	http_client.HTTPConnection.debuglevel = 1
