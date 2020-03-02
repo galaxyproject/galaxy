@@ -107,13 +107,5 @@ class ManageInformationTestCase(SeleniumTestCase):
         element.clear()
         element.send_keys(new_input_text)
 
-    # Since ids are not permanent we need to search with xpath
     def get_address_input_field(self, address_form, input_field_label):
-        # . in the beginning = search only within current element
-        # span[.="variable"] find a span where text equals a variable
-        # //ancestor::div[@class = 'ui-form-title']" get an ancestor of found element with 'ui-form-title' classname
-        parent_element = address_form.find_element_by_xpath(
-            ".//span[.='" + input_field_label + "']//ancestor::div[@class = 'ui-form-title']")
-        # we cannot get to the desired parent directly (@class='ui-form-element section-row'),
-        # because then it will match the entire form. Thus, we need to use '..' to get one element up and get input tag
-        return parent_element.find_element_by_xpath('./..').find_element_by_tag_name('input')
+        return address_form.find_element_by_css_selector("[data-label='" + input_field_label + "'] > input")
