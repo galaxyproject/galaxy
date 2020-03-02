@@ -23,6 +23,9 @@
                 @extend .px-2;
                 cursor: move;
                 background: $brand-secondary;
+                .header {
+                    width: $worfklow-node-width - 2rem;
+                }
             }
             .node-body {
                 @extend .card-body;
