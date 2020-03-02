@@ -377,11 +377,11 @@ QUnit.test("destroy", function(assert) {
 });
 
 QUnit.test("error", function(assert) {
-    // Test body of toolFormBody div updated and workflow notified of change.
+    // Test body of div updated and workflow notified of change.
     var test = this;
     this.expect_workflow_node_changed(assert, function() {
-        test.node.error("TOOL ERROR");
-        assert.equal($(test.$(".node-body").children()[0]).html(), "TOOL ERROR");
+        test.node.init_field_data({ errors: "NODE ERROR", inputs: [], outputs: [] });
+        assert.equal(test.$(".node-body").html(), "NODE ERROR");
     });
 });
 
