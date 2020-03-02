@@ -2,19 +2,19 @@ import $ from "jquery";
 import * as d3 from "d3";
 import { Toast } from "ui/toast";
 
-function Connector(manager) {
-    this.manager = manager;
-    this.dragging = false;
-    this.inner_color = "#FFFFFF";
-    this.outer_color = "#25537b";
-    this.canvas = document.createElement("div");
-    this.canvas.style.position = "absolute";
-    const container = document.getElementById("canvas-container");
-    container.appendChild(this.canvas);
-    this.svg = d3.select(this.canvas).append("svg");
-}
-$.extend(Connector.prototype, {
-    connect: function(t1, t2) {
+class Connector {
+    constructor(manager) {
+        this.manager = manager;
+        this.dragging = false;
+        this.inner_color = "#FFFFFF";
+        this.outer_color = "#25537b";
+        this.canvas = document.createElement("div");
+        this.canvas.style.position = "absolute";
+        const container = document.getElementById("canvas-container");
+        container.appendChild(this.canvas);
+        this.svg = d3.select(this.canvas).append("svg");
+    }
+    connect(t1, t2) {
         this.handle1 = t1;
         if (this.handle1) {
             this.handle1.connect(this);
@@ -23,8 +23,8 @@ $.extend(Connector.prototype, {
         if (this.handle2) {
             this.handle2.connect(this);
         }
-    },
-    destroy: function() {
+    }
+    destroy() {
         if (this.handle1) {
             this.handle1.disconnect(this);
         }
@@ -32,16 +32,16 @@ $.extend(Connector.prototype, {
             this.handle2.disconnect(this);
         }
         this.canvas.remove();
-    },
-    destroyIfInvalid: function(warn) {
+    }
+    destroyIfInvalid(warn) {
         if (this.handle1 && this.handle2 && !this.handle2.attachable(this.handle1).canAccept) {
             if (warn) {
                 Toast.warning("Destroying a connection because collection type has changed.");
             }
             this.destroy();
         }
-    },
-    redraw: function() {
+    }
+    redraw() {
         const handle1 = this.handle1;
         const handle2 = this.handle2;
         const startRibbon = handle1 && handle1.isMappedOver();
@@ -133,8 +133,8 @@ $.extend(Connector.prototype, {
                 end_offsets[i % end_offsets.length]
             );
         }
-    },
-    draw_outlined_curve: function(
+    }
+    draw_outlined_curve(
         start_x,
         start_y,
         end_x,
@@ -169,5 +169,5 @@ $.extend(Connector.prototype, {
                 .attr("stroke-width", outer_width)
                 .attr("fill", "none");
     }
-});
+}
 export default Connector;
