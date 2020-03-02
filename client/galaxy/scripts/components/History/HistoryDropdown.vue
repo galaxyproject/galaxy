@@ -38,7 +38,7 @@ export default {
         }
     },
     methods: {
-        onSwitch: function() {
+        onSwitch() {
             const Galaxy = getGalaxyInstance();
             Galaxy.currHistoryPanel.switchToHistory(this.history.id);
         }
