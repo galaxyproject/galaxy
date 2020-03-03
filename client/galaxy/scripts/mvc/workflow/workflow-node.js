@@ -116,7 +116,7 @@ export class Node {
     _connectedMappedTerminals(terminals) {
         var mapped_outputs = [];
         $.each(terminals, (_, t) => {
-            var mapOver = t.mapOver();
+            var mapOver = t.mapOver;
             if (mapOver.isCollection) {
                 if (t.connectors.length > 0) {
                     mapped_outputs.push(t);
@@ -131,7 +131,7 @@ export class Node {
     _mappedTerminals(terminals) {
         var mappedTerminals = [];
         $.each(terminals, (_, t) => {
-            var mapOver = t.mapOver();
+            var mapOver = t.mapOver;
             if (mapOver.isCollection) {
                 mappedTerminals.push(t);
             }
@@ -141,7 +141,7 @@ export class Node {
     hasMappedOverInputTerminals() {
         var found = false;
         _.each(this.input_terminals, t => {
-            var mapOver = t.mapOver();
+            var mapOver = t.mapOver;
             if (mapOver.isCollection) {
                 found = true;
             }
