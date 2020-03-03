@@ -1,5 +1,5 @@
 <template>
-    <upload-wrapper ref="wrapper" :top-info="topInfo" :hightlight-box="hightlightBox">
+    <upload-wrapper ref="wrapper" :top-info="topInfo" :highlight-box="highlightBox">
         <div class="upload-helper" v-show="showHelper"><i class="fa fa-files-o" />Drop files here</div>
         <table class="upload-table ui-table-striped" v-show="!showHelper" ref="uploadTable">
             <thead>
@@ -149,7 +149,7 @@ export default {
             enableStart: false,
             enableSources: false,
             enableBuild: false,
-            hightlightBox: false,
+            highlightBox: false,
             rowUploadModel: UploadRow,
             btnLocalTitle: _l("Choose local files"),
             btnCreateTitle: _l("Paste/Fetch data"),
@@ -193,10 +193,10 @@ export default {
                 this._eventComplete();
             },
             ondragover: () => {
-                this.hightlightBox = true;
+                this.highlightBox = true;
             },
             ondragleave: () => {
-                this.hightlightBox = false;
+                this.highlightBox = false;
             }
         });
         this.collection.on("remove", model => {

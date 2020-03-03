@@ -26,6 +26,7 @@ import xml.dom.minidom
 from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from functools import partial
 from hashlib import md5
 from os.path import relpath
 from xml.etree import ElementInclude, ElementTree
@@ -191,6 +192,14 @@ def synchronized(func):
     return caller
 
 
+def iter_start_of_line(fh, chunk_size=None):
+    """
+    Iterate over fh and call readline(chunk_size)
+    """
+    for line in iter(partial(fh.readline, chunk_size), ""):
+        yield line
+
+
 def file_iter(fname, sep=None):
     """
     This generator iterates over a file and yields its lines
@@ -201,9 +210,10 @@ def file_iter(fname, sep=None):
     >>> len(lines) !=  0
     True
     """
-    for line in open(fname):
-        if line and line[0] != '#':
-            yield line.split(sep)
+    with open(fname) as fh:
+        for line in fh:
+            if line and line[0] != '#':
+                yield line.split(sep)
 
 
 def file_reader(fp, chunk_size=CHUNK_SIZE):

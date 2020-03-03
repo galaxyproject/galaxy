@@ -13,7 +13,7 @@ gunicorn = "*"
 lxml = "!=4.2.2"
 mock = "*"
 NoseHTML = "*"
-pygithub3 = {version = "*", markers = "python_version < '3'"}
+pygithub = "*"
 pytest = "*"
 pytest-cov = "*"
 pytest-html = "*"

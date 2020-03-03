@@ -40,8 +40,6 @@
                 striped
                 id="jobs-table"
             >
-                <!-- Enable cell formatting for the command line column -->
-                <span slot="html" slot-scope="data" v-html="data.value"> </span>
                 <template v-slot:cell(actions)="row">
                     <b-button-group>
                         <b-button v-b-tooltip.hover title="Rerun" target="_top" :href="jobs[row.index]['runUrl']">

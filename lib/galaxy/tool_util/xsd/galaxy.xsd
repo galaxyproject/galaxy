@@ -1314,7 +1314,7 @@ When this attribute is true and ``compare`` is set to ``diff``, try to decompres
     </xs:attribute>
     <xs:attribute name="delta" type="xs:integer">
       <xs:annotation>
-        <xs:documentation xml:lang="en">If ``compare`` is set to ``sim_size``, this is the number of bytes different allowed.</xs:documentation>
+        <xs:documentation xml:lang="en">If ``compare`` is set to ``sim_size``, this is the number of bytes different allowed (default 10000).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>

@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<display id="igv_bam" version="1.0.0" name="display with IGV">
+<display id="igv_genbank" version="1.0.0" name="display with IGV">
     <!-- Load links from file: one line to one link -->
     <dynamic_links site_type="igv" skip_startswith="#" id="0" name="1">
         <!-- Define parameters by column from file, allow splitting on builds -->
@@ -12,13 +12,12 @@
         <filter>${$site_id.startswith( 'local_' ) or $dataset.dbkey in $site_dbkeys}</filter>
         <!-- We define url and params as normal, but values defined in dynamic_param are available by specified name -->
         <url>${redirect_url}</url>
-        <param type="data" name="bam_file" url="galaxy_${DATASET_HASH}.bam" />
-        <param type="data" name="bai_file" url="galaxy_${DATASET_HASH}.bam.bai" metadata="bam_index" />
+        <param type="data" name="genbank_file" url="galaxy_${DATASET_HASH}.gb" format="genbank" />
         <param type="template" name="site_organism" strip="True" >
             #if ($dataset.dbkey in $site_dbkeys)
-                $site_organisms[ $site_dbkeys.index( $bam_file.dbkey ) ]
+                $site_organisms[ $site_dbkeys.index( $genbank_file.dbkey ) ]
             #else:
-                $bam_file.dbkey
+                $genbank_file.dbkey
             #end if
         </param>
         <param type="template" name="site_organism_query_param" strip="True">
@@ -74,16 +73,16 @@
      <argument>-g</argument>
      <argument>${site_organism}</argument>
      #end if
-     <argument>${bam_file.url}</argument>
+     <argument>${genbank_file.url}</argument>
   </application-desc>
 </jnlp>
 ]]>
         </param>
         <param type="template" name="redirect_url" strip="True" >
             #if $site_id.startswith( 'local_' )
-                ${site_link}?file=${bam_file.qp}${site_organism_query_param}&amp;merge=true&amp;name=${qp( ( $bam_file.name or $DATASET_HASH ).replace( ',', ';' ) )}
+                ${site_link}?file=${genbank_file.qp}${site_organism_query_param}&amp;merge=true&amp;name=${qp( ( $genbank_file.name or $DATASET_HASH ).replace( ',', ';' ) )}
             #elif $site_id.startswith( 'web_link_' ):
-                ${site_link}?sessionURL=${bam_file.qp}${site_organism_query_param}&amp;merge=true&amp;name=${qp( ( $bam_file.name or $DATASET_HASH ).replace( ',', ';' ) )}
+                ${site_link}?sessionURL=${genbank_file.qp}${site_organism_query_param}&amp;merge=true&amp;name=${qp( ( $genbank_file.name or $DATASET_HASH ).replace( ',', ';' ) )}
             #else:
                 ${jnlp.url}
             #end if
@@ -93,9 +92,8 @@
         <!-- Our input data table is one line per dbkey -->
         <filter>${ $dataset.dbkey == $value }</filter>
         <!-- We define url and params as normal, but values defined in dynamic_param are available by specified name -->
-        <url>http://www.broadinstitute.org/igv/projects/current/igv.php?sessionURL=${bam_file.qp}&amp;genome=${qp($bam_file.dbkey)}&amp;merge=true&amp;name=${qp( ( $bam_file.name or $DATASET_HASH ).replace( ',', ';' ) )}</url>
-        <param type="data" name="bam_file" url="galaxy_${DATASET_HASH}.bam" />
-        <param type="data" name="bai_file" url="galaxy_${DATASET_HASH}.bam.bai" metadata="bam_index" />
+        <url>http://www.broadinstitute.org/igv/projects/current/igv.php?sessionURL=${genbank_file.qp}&amp;genome=${qp($genbank_file.dbkey)}&amp;merge=true&amp;name=${qp( ( $genbank_file.name or $DATASET_HASH ).replace( ',', ';' ) )}</url>
+        <param type="data" name="genbank_file" url="galaxy_${DATASET_HASH}.gb" format="genbank" />
     </dynamic_links>
 </display>
 <!-- Dan Blankenberg -->

@@ -41,7 +41,7 @@
                         </b-link>
                         <div>{{ row.item.description }}</div>
                     </template>
-                    <template slot="row-details" slot-scope="row">
+                    <template v-slot:row-details="row">
                         <RepositoryDetails :repo="row.item" />
                     </template>
                 </b-table>

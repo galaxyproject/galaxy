@@ -133,37 +133,38 @@ class BaseAppConfiguration(object):
                 self.config_dir = os.path.abspath(self.config_dir)
 
             self.data_dir = config_kwargs.get('data_dir')
-            # mutable_config_dir is intentionally not configurable. You can
-            # override individual mutable configs with config options, but they
-            # should be considered Galaxy-controlled data files and will by default
-            # just live in the data dir
             self.sample_config_dir = os.path.join(os.path.dirname(__file__), 'sample')
+            self.managed_config_dir = config_kwargs.get('managed_config_dir')
+            if self.managed_config_dir:
+                self.managed_config_dir = os.path.abspath(self.managed_config_dir)
 
             if running_from_source:
-                if self.config_dir is None:
+                if not self.config_dir:
                     self.config_dir = os.path.join(self.root, 'config')
-                if self.data_dir is None:
+                if not self.data_dir:
                     self.data_dir = os.path.join(self.root, 'database')
-                self.mutable_config_dir = self.config_dir
+                if not self.managed_config_dir:
+                    self.managed_config_dir = self.config_dir
             else:
-                if self.config_dir is None:
+                if not self.config_dir:
                     self.config_dir = os.getcwd()
-                if self.data_dir is None:
-                    self.data_dir = os.path.join(self.config_dir, 'data')
-                self.mutable_config_dir = os.path.join(self.data_dir, 'config')
+                if not self.data_dir:
+                    self.data_dir = self._in_config_dir('data')
+                if not self.managed_config_dir:
+                    self.managed_config_dir = self._in_data_dir('config')
 
             # TODO: do we still need to support ../shed_tools when running_from_source?
-            self.shed_tools_dir = os.path.join(self.data_dir, 'shed_tools')
+            self.shed_tools_dir = self._in_data_dir('shed_tools')
 
             log.debug("Configuration directory is %s", self.config_dir)
             log.debug("Data directory is %s", self.data_dir)
-            log.debug("Mutable config directory is %s", self.mutable_config_dir)
+            log.debug("Managed config directory is %s", self.managed_config_dir)
 
         _set_global_conf()
         _set_config_directories()
 
-    def _in_mutable_config_dir(self, path):
-        return os.path.join(self.mutable_config_dir, path)
+    def _in_managed_config_dir(self, path):
+        return os.path.join(self.managed_config_dir, path)
 
     def _in_config_dir(self, path):
         return os.path.join(self.config_dir, path)
@@ -380,7 +381,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.oidc_config = kwargs.get("oidc_config_file", self.oidc_config_file)
         self.oidc_backends_config = kwargs.get("oidc_backends_config_file", self.oidc_backends_config_file)
         self.oidc = []
-        self.integrated_tool_panel_config = os.path.join(self.mutable_config_dir, self.integrated_tool_panel_config)
+        self.integrated_tool_panel_config = self._in_managed_config_dir(self.integrated_tool_panel_config)
         integrated_tool_panel_tracking_directory = kwargs.get('integrated_tool_panel_tracking_directory')
         if integrated_tool_panel_tracking_directory:
             self.integrated_tool_panel_tracking_directory = os.path.join(self.root, integrated_tool_panel_tracking_directory)
@@ -754,7 +755,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         """
         defaults = dict(
             auth_config_file=[self._in_config_dir('auth_conf.xml')],
-            build_sites_config_file=[self._in_config_dir('build_sites.yml')],
+            build_sites_config_file=[self._in_config_dir('build_sites.yml'), self._in_sample_dir('build_sites.yml.sample')],
             containers_config_file=[self._in_config_dir('containers_conf.yml')],
             data_manager_config_file=[self._in_config_dir('data_manager_conf.xml')],
             datatypes_config_file=[self._in_config_dir('datatypes_conf.xml'), self._in_sample_dir('datatypes_conf.xml.sample')],
@@ -764,14 +765,14 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             job_metrics_config_file=[self._in_config_dir('job_metrics_conf.xml'), self._in_sample_dir('job_metrics_conf.xml.sample')],
             job_resource_params_file=[self._in_config_dir('job_resource_params_conf.xml')],
             local_conda_mapping_file=[self._in_config_dir('local_conda_mapping.yml')],
-            migrated_tools_config=[self._in_mutable_config_dir('migrated_tools_conf.xml')],
+            migrated_tools_config=[self._in_managed_config_dir('migrated_tools_conf.xml')],
             modules_mapping_files=[self._in_config_dir('environment_modules_mapping.yml')],
             object_store_config_file=[self._in_config_dir('object_store_conf.xml')],
             oidc_backends_config_file=[self._in_config_dir('oidc_backends_config.xml')],
             oidc_config_file=[self._in_config_dir('oidc_config.xml')],
-            shed_data_manager_config_file=[self._in_mutable_config_dir('shed_data_manager_conf.xml')],
-            shed_tool_config_file=[self._in_mutable_config_dir('shed_tool_conf.xml')],
-            shed_tool_data_table_config=[self._in_mutable_config_dir('shed_tool_data_table_conf.xml')],
+            shed_data_manager_config_file=[self._in_managed_config_dir('shed_data_manager_conf.xml')],
+            shed_tool_config_file=[self._in_managed_config_dir('shed_tool_conf.xml')],
+            shed_tool_data_table_config=[self._in_managed_config_dir('shed_tool_data_table_conf.xml')],
             tool_destinations_config_file=[self._in_config_dir('tool_destinations.yml')],
             tool_sheds_config_file=[self._in_config_dir('tool_sheds_conf.xml')],
             user_preferences_extra_conf_path=[self._in_config_dir('user_preferences_extra_conf.yml')],
@@ -829,7 +830,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
                 raise ConfigurationError("Unable to create missing directory: %s\n%s" % (path, unicodify(e)))
 
     def check(self):
-        paths_to_check = [self.tool_data_path, self.data_dir, self.mutable_config_dir]
+        paths_to_check = [self.tool_data_path, self.data_dir, self.managed_config_dir]
         # Check that required directories exist
         for path in paths_to_check:
             if path not in [None, False] and not os.path.isdir(path):

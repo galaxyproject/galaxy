@@ -50,8 +50,8 @@ def check_output(stdio_regexes, stdio_exit_codes, stdout, stderr, tool_exit_code
     # has a bug but the tool was ok, and it lets a workflow continue.
     state = DETECTED_JOB_STATE.OK
 
-    stdout = unicodify(stdout)
-    stderr = unicodify(stderr)
+    stdout = unicodify(stdout, strip_null=True)
+    stderr = unicodify(stderr, strip_null=True)
 
     # messages (descriptions of the detected exit_code and regexes)
     # to be prepended to the stdout/stderr after all exit code and regex tests

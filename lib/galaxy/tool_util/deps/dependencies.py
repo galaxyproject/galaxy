@@ -99,7 +99,7 @@ class DependenciesDescription(object):
         requirements_dicts = as_dict.get('requirements', [])
         requirements = ToolRequirements.from_list(requirements_dicts)
         installed_tool_dependencies_dicts = as_dict.get('installed_tool_dependencies', [])
-        installed_tool_dependencies = map(DependenciesDescription._toolshed_install_dependency_from_dict, installed_tool_dependencies_dicts)
+        installed_tool_dependencies = list(map(DependenciesDescription._toolshed_install_dependency_from_dict, installed_tool_dependencies_dicts))
         return DependenciesDescription(
             requirements=requirements,
             installed_tool_dependencies=installed_tool_dependencies

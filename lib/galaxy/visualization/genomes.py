@@ -392,7 +392,7 @@ class Genomes(object):
 
         # Read and return reference data.
         try:
-            twobit = TwoBitFile(open(twobit_file_name))
+            twobit = TwoBitFile(open(twobit_file_name, 'rb'))
             if chrom in twobit:
                 seq_data = twobit[chrom].get(int(low), int(high))
                 return GenomeRegion(chrom=chrom, start=low, end=high, sequence=seq_data)

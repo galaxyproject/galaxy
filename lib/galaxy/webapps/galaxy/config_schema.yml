@@ -34,6 +34,15 @@ mapping:
           other Galaxy config files (e.g. datatypes_config_file). Defaults to the
           directory in which galaxy.yml is located.
 
+      managed_config_dir:
+        type: str
+        required: false
+        desc: |
+          The directory that will be prepended to relative paths in options specifying
+          config files controlled by Galaxy (such as shed_tool_config_file, etc.). Must be
+          writable by the user running Galaxy.  Defaults to `<config_dir>/` if running
+          Galaxy from source or `<data_dir>/config` otherwise.
+
       data_dir:
         type: str
         required: false
@@ -223,7 +232,7 @@ mapping:
           installation, whereas Galaxy will fail to start if any files in
           tool_config_file cannot be read.
 
-          The value of this option will be resolved with respect to <mutable_config_dir>.
+          The value of this option will be resolved with respect to <managed_config_dir>.
 
       check_migrate_tools:
         type: bool
@@ -245,7 +254,7 @@ mapping:
           scripts to install tools that have been migrated to the tool shed upon a new
           release, they will be added to this tool config file.
 
-          The value of this option will be resolved with respect to <mutable_config_dir>.
+          The value of this option will be resolved with respect to <managed_config_dir>.
 
       integrated_tool_panel_config:
         type: str
@@ -257,7 +266,7 @@ mapping:
           file can be changed by the Galaxy administrator to alter the layout of the
           tool panel.  If not present, Galaxy will create it.
 
-          The value of this option will be resolved with respect to <mutable_config_dir>.
+          The value of this option will be resolved with respect to <managed_config_dir>.
 
       tool_path:
         type: str
@@ -558,7 +567,7 @@ mapping:
           entries are automatically added to the following file, which is parsed and
           applied to the ToolDataTableManager at server start up.
 
-          The value of this option will be resolved with respect to <mutable_config_dir>.
+          The value of this option will be resolved with respect to <managed_config_dir>.
 
       tool_data_path:
         type: str
@@ -591,11 +600,13 @@ mapping:
 
       build_sites_config_file:
         type: str
-        default: config/build_sites.yml.sample
+        default: build_sites.yml
         required: false
         desc: |
           File that defines the builds (dbkeys) available at sites used by display applications
           and the URL to those sites.
+
+          The value of this option will be resolved with respect to <config_dir>.
 
       builds_file_path:
         type: str
@@ -2444,7 +2455,7 @@ mapping:
           File where Tool Shed based Data Managers are configured. This file will be created
           automatically upon data manager installation.
 
-          The value of this option will be resolved with respect to <mutable_config_dir>.
+          The value of this option will be resolved with respect to <managed_config_dir>.
 
       galaxy_data_manager_data_path:
         type: str

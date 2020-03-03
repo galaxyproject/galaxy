@@ -10,6 +10,20 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~
+``managed_config_dir``
+~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The directory that will be prepended to relative paths in options
+    specifying config files controlled by Galaxy (such as
+    shed_tool_config_file, etc.). Must be writable by the user running
+    Galaxy.  Defaults to `<config_dir>/` if running Galaxy from source
+    or `<data_dir>/config` otherwise.
+:Default: ``None``
+:Type: str
+
+
 ~~~~~~~~~~~~
 ``data_dir``
 ~~~~~~~~~~~~
@@ -272,7 +286,7 @@
     upon tool installation, whereas Galaxy will fail to start if any
     files in tool_config_file cannot be read.
     The value of this option will be resolved with respect to
-    <mutable_config_dir>.
+    <managed_config_dir>.
 :Default: ``shed_tool_conf.xml``
 :Type: str
 
@@ -303,7 +317,7 @@
     tool shed upon a new release, they will be added to this tool
     config file.
     The value of this option will be resolved with respect to
-    <mutable_config_dir>.
+    <managed_config_dir>.
 :Default: ``migrated_tools_conf.xml``
 :Type: str
 
@@ -319,7 +333,7 @@
     administrator to alter the layout of the tool panel.  If not
     present, Galaxy will create it.
     The value of this option will be resolved with respect to
-    <mutable_config_dir>.
+    <managed_config_dir>.
 :Default: ``integrated_tool_panel.xml``
 :Type: str
 
@@ -735,7 +749,7 @@
     following file, which is parsed and applied to the
     ToolDataTableManager at server start up.
     The value of this option will be resolved with respect to
-    <mutable_config_dir>.
+    <managed_config_dir>.
 :Default: ``shed_tool_data_table_conf.xml``
 :Type: str
 
@@ -789,7 +803,9 @@
 :Description:
     File that defines the builds (dbkeys) available at sites used by
     display applications and the URL to those sites.
-:Default: ``config/build_sites.yml.sample``
+    The value of this option will be resolved with respect to
+    <config_dir>.
+:Default: ``build_sites.yml``
 :Type: str
 
 
@@ -3305,7 +3321,7 @@
     File where Tool Shed based Data Managers are configured. This file
     will be created automatically upon data manager installation.
     The value of this option will be resolved with respect to
-    <mutable_config_dir>.
+    <managed_config_dir>.
 :Default: ``shed_data_manager_conf.xml``
 :Type: str
 
