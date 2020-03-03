@@ -78,7 +78,7 @@
                 color: $brand-light;
                 position: absolute;
                 z-index: 101;
-                > icon {
+                icon {
                     @extend .fa;
                     @extend .fa-chevron-circle-right;
                     color: $brand-primary;
@@ -86,18 +86,14 @@
                     left: 0px;
                     top: 0px;
                 }
-                > icon.multiple {
+                icon.multiple {
                     @extend .fa;
                     @extend .fa-chevron-circle-right;
-                    @extend .btn;
-                    @extend .btn-sm;
-                    @extend .btn-primary;
-                    @extend .p-1;
-                    @extend .mt-1;
-                    color: $white;
+                    color: $brand-primary;
                     position: absolute;
-                    left: -8px;
-                    top: -8px;
+                    font-size: 1.2rem;
+                    left: -5px;
+                    top: -5px;
                 }
             }
             .input-terminal {

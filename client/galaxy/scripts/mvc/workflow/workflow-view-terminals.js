@@ -31,15 +31,14 @@ class BaseInputTerminalView {
         this.$el.on("dropend", (e, d) => self.onDropEnd(e, d));
         this.$el.on("drop", (e, d) => self.onDrop(e, d));
         this.$el.on("hover", () => self.onHover());
-        //this.terminal.on("change", this.render.bind(this));
+        this.terminal.on("change", this.render.bind(this));
     }
     render() {
-        console.log("here");
-        /*if (this.terminal.mapOver && this.terminal.mapOver.isCollection) {
-             this.$el.addClass("multiple");
-         } else {
-             this.$el.removeClass("multiple");
-         }*/
+        if (this.terminal.mapOver && this.terminal.mapOver.isCollection) {
+            this.$el.find("icon").addClass("multiple");
+        } else {
+            this.$el.find("icon").removeClass("multiple");
+        }
     }
     onDropInit(e, d = {}) {
         var terminal = this.terminal;
@@ -182,6 +181,14 @@ export class BaseOutputTerminalView {
         this.$el.on("dragstart", (d, e) => self.onDragStart(d, e));
         this.$el.on("dragend", (d, e) => self.onDragEnd(d, e));
         this.$el.on("keydown", e => self.screenReaderSelectOutputNode(e));
+        this.terminal.on("change", this.render.bind(this));
+    }
+    render() {
+        if (this.terminal.mapOver && this.terminal.mapOver.isCollection) {
+            this.$el.find("icon").addClass("multiple");
+        } else {
+            this.$el.find("icon").removeClass("multiple");
+        }
     }
     screenReaderSelectOutputNode(e) {
         const inputChoiceKeyDown = e => {
