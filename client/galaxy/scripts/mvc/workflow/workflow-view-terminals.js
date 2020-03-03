@@ -17,9 +17,6 @@ class BaseInputTerminalView {
         node.cid = NODEINDEX++;
         const id = `node-${node.cid}-input-${name}`;
         const terminal = this.terminalForInput(input);
-        new Terminals.TerminalMapping({
-            terminal: terminal
-        });
         this.el.terminal = terminal;
         this.$el.attr("input-name", name);
         this.$el.attr("id", id);
@@ -161,9 +158,6 @@ export class BaseOutputTerminalView {
         node.cid = NODEINDEX++;
         const id = `node-${node.cid}-output-${name}`;
         const terminal = this.terminalForOutput(output);
-        new Terminals.TerminalMapping({
-            terminal: terminal
-        });
         this.el.terminal = terminal;
         this.$el.attr(
             "aria-label",
