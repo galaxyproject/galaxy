@@ -319,7 +319,7 @@ export class Node {
         });
         // Cleanup any leftover terminals
         _.each(_.difference(_.values(nodeView.terminalViews), _.values(newTerminalViews)), unusedView => {
-            unusedView.el.terminal.destroy();
+            unusedView.terminal.destroy();
         });
         nodeView.terminalViews = newTerminalViews;
         node.nodeView.render();

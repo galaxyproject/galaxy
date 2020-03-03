@@ -10,33 +10,39 @@ class BaseInputTerminalView {
         this.app = app;
         this.el = document.createElement("div");
         this.el.className = "terminal input-terminal";
-        this.$el = $(this.el);
         const node = options.node;
         const input = options.input;
         const name = input.name;
-        node.cid = NODEINDEX++;
-        const id = `node-${node.cid}-input-${name}`;
-        const terminal = this.terminalForInput(input);
-        this.el.terminal = terminal;
+        const nodeIndex = NODEINDEX++;
+        this.id = `node-${nodeIndex}-input-${name}`;
+        this.terminal = this.terminalForInput(input);
+        this.terminal.node = node;
+        this.terminal.name = name;
+        this.terminal.label = input.label;
+        node.input_terminals[name] = this.terminal;
+        this.el.terminal = this.terminal;
+        this.$el = $(this.el);
         this.$el.attr("input-name", name);
-        this.$el.attr("id", id);
+        this.$el.attr("id", this.id);
         this.$el.append($("<icon/>"));
-        this.id = id;
-
-        terminal.node = node;
-        terminal.name = name;
-        terminal.label = input.label;
-        node.input_terminals[name] = terminal;
-
         const self = this;
         this.$el.on("dropinit", (e, d) => self.onDropInit(e, d));
         this.$el.on("dropstart", (e, d) => self.onDropStart(e, d));
         this.$el.on("dropend", (e, d) => self.onDropEnd(e, d));
         this.$el.on("drop", (e, d) => self.onDrop(e, d));
         this.$el.on("hover", () => self.onHover());
+        //this.terminal.on("change", this.render.bind(this));
+    }
+    render() {
+        console.log("here");
+        /*if (this.terminal.mapOver && this.terminal.mapOver.isCollection) {
+             this.$el.addClass("multiple");
+         } else {
+             this.$el.removeClass("multiple");
+         }*/
     }
     onDropInit(e, d = {}) {
-        var terminal = this.el.terminal;
+        var terminal = this.terminal;
         // Accept a dragable if it is an output terminal and has a
         // compatible type
         var connectionAcceptable = $(d.drag).hasClass("output-terminal") && terminal.canAccept(d.drag.terminal);
@@ -77,14 +83,13 @@ class BaseInputTerminalView {
     onDrop(e, d = {}) {
         d.proxy.dropTooltip = "";
         if (this.$el.hasClass("can-accept")) {
-            const terminal = this.el.terminal;
+            const terminal = this.terminal;
             const c = new Connector(this.app.canvas_manager, d.drag.terminal, terminal);
             c.redraw();
         }
     }
     onHover() {
-        const element = this.el;
-        const terminal = element.terminal;
+        const terminal = this.terminal;
         // If connected, create a popup to allow disconnection
         if (terminal.connectors.length > 0) {
             const t = $("<div/>")
@@ -100,7 +105,7 @@ class BaseInputTerminalView {
                 .on("mouseleave", () => {
                     t.remove();
                 });
-            $(element)
+            $(this.el)
                 .parent()
                 .append(t);
         }
@@ -151,28 +156,27 @@ export class BaseOutputTerminalView {
         this.app = app;
         this.el = document.createElement("div");
         this.el.className = "terminal output-terminal";
-        this.$el = $(this.el);
         const node = options.node;
         const output = options.output;
         const name = output.name;
-        node.cid = NODEINDEX++;
-        const id = `node-${node.cid}-output-${name}`;
-        const terminal = this.terminalForOutput(output);
-        this.el.terminal = terminal;
+        const nodeIndex = NODEINDEX++;
+        this.id = `node-${nodeIndex}-output-${name}`;
+        this.terminal = this.terminalForOutput(output);
+        this.terminal.node = node;
+        this.terminal.name = name;
+        this.terminal.label = output.label;
+        node.output_terminals[name] = this.terminal;
+        this.el.terminal = this.terminal;
+        this.$el = $(this.el);
+        this.$el.attr("output-name", name);
+        this.$el.attr("id", this.id);
+        this.$el.append($("<icon/>"));
         this.$el.attr(
             "aria-label",
             `connect output ${name} from ${node.name} to input. Press space to see a list of available inputs`
         );
-        this.$el.attr("output-name", name);
-        this.$el.attr("id", id);
         this.$el.attr("tabindex", "0");
         this.$el.attr("aria-grabbed", "false");
-        this.$el.append($("<icon/>"));
-        terminal.node = node;
-        terminal.name = name;
-        terminal.label = output.label;
-        node.output_terminals[name] = terminal;
-
         const self = this;
         this.$el.on("drag", (d, e) => self.onDrag(d, e));
         this.$el.on("dragstart", (d, e) => self.onDragStart(d, e));
@@ -214,7 +218,7 @@ export class BaseOutputTerminalView {
                     break;
                 case 32: // Space
                     removeMenu();
-                    new Connector(this.app.canvas_manager, this.el.terminal, inputTerminal).redraw();
+                    new Connector(this.app.canvas_manager, this.terminal, inputTerminal).redraw();
                     ariaAlert("Node connected");
 
                     if (inputTerminal.connectors.length > 0) {
@@ -259,7 +263,7 @@ export class BaseOutputTerminalView {
             $(".input-terminal").each((i, el) => {
                 const input = $(el);
                 const inputTerminal = input.context.terminal;
-                const connectionAcceptable = inputTerminal.canAccept(this.el.terminal);
+                const connectionAcceptable = inputTerminal.canAccept(this.terminal);
                 if (connectionAcceptable.canAccept) {
                     const inputChoiceItem = document.createElement("li");
                     inputChoiceItem.textContent = `${inputTerminal.name} in ${inputTerminal.node.name} node`;
@@ -322,7 +326,7 @@ export class BaseOutputTerminalView {
         h.terminal = new Terminals.OutputTerminal({ element: h });
         const c = new Connector(this.app.canvas_manager);
         c.dragging = true;
-        c.connect(this.el.terminal, h.terminal);
+        c.connect(this.terminal, h.terminal);
         return h;
     }
     onDragEnd(e, d = {}) {

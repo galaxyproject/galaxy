@@ -132,17 +132,19 @@ export class OutputCalloutView {
             .attr("class", `callout-terminal ${outputName}`)
             .css({ display: "none" })
             .append(
-                $("<icon />").addClass("mark-terminal fa fa-asterisk").click(() => {
-                    if (node.isWorkflowOutput(outputName)) {
-                        node.removeWorkflowOutput(outputName);
-                        view.$el.find("icon").removeClass("mark-terminal-active");
-                    } else {
-                        node.addWorkflowOutput(outputName);
-                        view.$el.find("icon").addClass("mark-terminal-active");
-                    }
-                    app.has_changes = true;
-                    app.canvas_manager.draw_overview();
-                })
+                $("<icon />")
+                    .addClass("mark-terminal fa fa-asterisk")
+                    .click(() => {
+                        if (node.isWorkflowOutput(outputName)) {
+                            node.removeWorkflowOutput(outputName);
+                            view.$el.find("icon").removeClass("mark-terminal-active");
+                        } else {
+                            node.addWorkflowOutput(outputName);
+                            view.$el.find("icon").addClass("mark-terminal-active");
+                        }
+                        app.has_changes = true;
+                        app.canvas_manager.draw_overview();
+                    })
             )
             .tooltip({
                 delay: 500,

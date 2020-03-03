@@ -64,7 +64,7 @@ export class NodeView {
             terminalViewClass = TerminalViews.InputParameterTerminalView;
         }
         if (terminalView && !(terminalView instanceof terminalViewClass)) {
-            terminalView.el.terminal.destroy();
+            terminalView.terminal.destroy();
             terminalView = null;
         }
         if (!terminalView) {
@@ -73,7 +73,7 @@ export class NodeView {
                 input: input
             });
         } else {
-            var terminal = terminalView.el.terminal;
+            var terminal = terminalView.terminal;
             terminal.update(input);
             terminal.destroyInvalidConnections();
         }

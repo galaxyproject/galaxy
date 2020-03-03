@@ -86,6 +86,19 @@
                     left: 0px;
                     top: 0px;
                 }
+                > icon.multiple {
+                    @extend .fa;
+                    @extend .fa-chevron-circle-right;
+                    @extend .btn;
+                    @extend .btn-sm;
+                    @extend .btn-primary;
+                    @extend .p-1;
+                    @extend .mt-1;
+                    color: $white;
+                    position: absolute;
+                    left: -8px;
+                    top: -8px;
+                }
             }
             .input-terminal {
                 @extend .base-terminal;
