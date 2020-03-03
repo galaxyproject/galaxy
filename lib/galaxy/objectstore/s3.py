@@ -123,9 +123,10 @@ class CloudConfigMixin(object):
                 'conn_path': self.conn_path,
             },
             'cache': {
-                'size': -1,  # disable cache cleaning when starting an exported object store in set_metadata.py
+                'size': self.cache_size,
                 'path': self.staging_path,
-            }
+            },
+            'enable_cache_monitor': False,
         }
 
 
@@ -146,6 +147,7 @@ class S3ObjectStore(ObjectStore, CloudConfigMixin):
         bucket_dict = config_dict['bucket']
         connection_dict = config_dict.get('connection', {})
         cache_dict = config_dict['cache']
+        self.enable_cache_monitor = config_dict.get('enable_cache_monitor', True)
 
         self.access_key = auth_dict.get('access_key')
         self.secret_key = auth_dict.get('secret_key')
@@ -190,8 +192,16 @@ class S3ObjectStore(ObjectStore, CloudConfigMixin):
 
         self._configure_connection()
         self._bucket = self._get_bucket(self.bucket)
+        self.start_cache_monitor()
+        # Test if 'axel' is available for parallel download and pull the key into cache
+        if which('axel'):
+            self.use_axel = True
+        else:
+            self.use_axel = False
+
+    def start_cache_monitor(self):
         # Clean cache only if value is set in galaxy.ini
-        if self.cache_size != -1:
+        if self.cache_size != -1 and self.enable_cache_monitor:
             # Convert GBs to bytes for comparison
             self.cache_size = self.cache_size * 1073741824
             # Helper for interruptable sleep
@@ -199,11 +209,6 @@ class S3ObjectStore(ObjectStore, CloudConfigMixin):
             self.cache_monitor_thread = threading.Thread(target=self.__cache_monitor)
             self.cache_monitor_thread.start()
             log.info("Cache cleaner manager started")
-        # Test if 'axel' is available for parallel download and pull the key into cache
-        if which('axel'):
-            self.use_axel = True
-        else:
-            self.use_axel = False
 
     def _configure_connection(self):
         log.debug("Configuring S3 Connection")
