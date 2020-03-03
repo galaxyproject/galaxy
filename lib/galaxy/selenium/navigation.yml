@@ -294,7 +294,7 @@ workflow_editor:
     label_input: "[tour_id='__label'] input"
     annotation_input: "[tour_id='__annotation'] textarea"
 
-    connector_for: "canvas[handle1-id='${source_id}'][handle2-id='${sink_id}']"
+    connector_for: "div[handle1-id='${source_id}'][handle2-id='${sink_id}']"
 
     connector_destroy_callout: '.delete-terminal'
 
