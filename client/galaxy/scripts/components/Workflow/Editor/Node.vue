@@ -1,7 +1,6 @@
 <template>
     <div>
         <div class="node-header unselectable clearfix">
-            <span class="node-title">{{ title }}</span>
             <b-dropdown right no-caret class="float-right" toggle-class="py-0" offset="50" variant="info" size="sm">
                 <template v-slot:button-content>
                     <i :class="iconClass" />
@@ -28,6 +27,7 @@
                     Remove
                 </b-dropdown-item>
             </b-dropdown>
+            <span class="node-title">{{ title }}</span>
         </div>
         <div class="node-body">
             <div>
