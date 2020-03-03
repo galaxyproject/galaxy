@@ -23,7 +23,7 @@ module.exports = {
         "prefer-const": "error",
 
         "vue/valid-v-slot": "error",
-        //"vue/v-slot-style": "error",
+        "vue/v-slot-style": ["error", {"atComponent": "v-slot", "default": "v-slot", "named": "longform"}],
 
         // Vue TODO (enable these)
         "vue/require-default-prop": "off",
