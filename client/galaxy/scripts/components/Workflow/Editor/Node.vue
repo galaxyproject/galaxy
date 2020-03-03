@@ -1,11 +1,11 @@
 <template>
     <div>
         <div class="node-header unselectable clearfix">
-            <div class="header float-left">
-                <i :class="iconClass" />
-                <span class="node-title">{{ title }}</span>
-            </div>
-            <b-dropdown right class="float-right" toggle-class="py-0" offset="50" variant="primary" size="sm">
+            <span class="node-title">{{ title }}</span>
+            <b-dropdown right no-caret class="float-right" toggle-class="py-0" offset="50" variant="info" size="sm">
+                <template v-slot:button-content>
+                    <i :class="iconClass" />
+                </template>
                 <b-dropdown-item
                     v-if="canClone"
                     aria-label="clone node"
