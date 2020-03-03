@@ -23,10 +23,8 @@
                 @extend .py-1;
                 @extend .px-2;
                 cursor: move;
-                background: $brand-secondary;
-                .header {
-                    width: $worfklow-node-width - 2rem;
-                }
+                background: $brand-primary;
+                color: $white;
             }
             .node-body {
                 @extend .card-body;

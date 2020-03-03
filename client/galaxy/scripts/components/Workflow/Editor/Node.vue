@@ -14,7 +14,7 @@
                     class="node-clone"
                     @click="onClone"
                 >
-                    <span class="fa-icon-button fa fa-files-o" />
+                    <span class="fa fa-fw fa-files-o" />
                     Duplicate
                 </b-dropdown-item>
                 <b-dropdown-item
@@ -24,7 +24,7 @@
                     class="node-destroy"
                     @click="onDestroy"
                 >
-                    <span class="fa-icon-button fa fa-fw fa-trash" />
+                    <span class="fa fa-fw fa-trash" />
                     Remove
                 </b-dropdown-item>
             </b-dropdown>
