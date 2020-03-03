@@ -137,6 +137,7 @@ class Terminal extends EventEmitter {
         $.each(this.connectors.slice(), (_, c) => {
             c.destroy();
         });
+        this.emit("change");
     }
     destroyInvalidConnections() {
         _.each(this.connectors, connector => {
@@ -144,6 +145,7 @@ class Terminal extends EventEmitter {
                 connector.destroyIfInvalid();
             }
         });
+        this.emit("change");
     }
     setMapOver(val) {
         let output_val = val;
