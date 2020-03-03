@@ -22,6 +22,9 @@ module.exports = {
         "no-unused-vars": ["error", { args: "none" }],
         "prefer-const": "error",
 
+        "vue/valid-v-slot": "error",
+        //"vue/v-slot-style": "error",
+
         // Vue TODO (enable these)
         "vue/require-default-prop": "off",
         "vue/require-prop-types": "off",
