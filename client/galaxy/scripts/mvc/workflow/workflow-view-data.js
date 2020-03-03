@@ -127,12 +127,12 @@ export class OutputCalloutView {
         this.output = options.output;
         const view = this;
         const node = this.node;
+        const outputName = view.output.name;
         this.$el
-            .attr("class", `callout-terminal ${this.label}`)
+            .attr("class", `callout-terminal ${outputName}`)
             .css({ display: "none" })
             .append(
-                $("<icon class='mark-terminal fa fa-asterisk'/>").click(() => {
-                    const outputName = view.output.name;
+                $("<icon />").addClass("mark-terminal fa fa-asterisk").click(() => {
                     if (node.isWorkflowOutput(outputName)) {
                         node.removeWorkflowOutput(outputName);
                         view.$el.find("icon").removeClass("mark-terminal-active");
