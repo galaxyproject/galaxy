@@ -23,13 +23,9 @@
                 @extend .py-1;
                 @extend .px-2;
                 cursor: move;
-                background: $brand-primary;
-                color: $white;
+                background: $brand-secondary;
                 .header {
                     width: $worfklow-node-width - 2rem;
-                }
-                .button {
-                    color: $white;
                 }
             }
             .node-body {
