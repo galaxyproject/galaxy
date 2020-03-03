@@ -164,8 +164,6 @@ class S3ObjectStore(ObjectStore, CloudConfigMixin):
 
         self.cache_size = cache_dict.get('size', -1)
         self.staging_path = cache_dict.get('path') or self.config.object_store_cache_path
-        self.store_by = config_dict.get("store_by", None) or getattr(config, "object_store_store_by", "id")
-        assert self.store_by in ["id", "uuid"]
 
         extra_dirs = dict(
             (e['type'], e['path']) for e in config_dict.get('extra_dirs', []))
