@@ -5,40 +5,8 @@ import ariaAlert from "utils/ariaAlert";
 
 var NODEINDEX = 0;
 
-class TerminalMappingView {
-    constructor(options = {}) {
-        this.$el = $("<div class='fa-icon-button fa fa-folder-o' />");
-        var mapText = "Run tool in parallel over collection";
-        this.$el.tooltip({ delay: 500, title: mapText });
-        this.model = options.model;
-        this.model.on("change", this.render.bind(this));
-    }
-    render() {
-        if (this.model.mapOver && this.model.mapOver.isCollection) {
-            this.$el.show();
-        } else {
-            this.$el.hide();
-        }
-    }
-}
-
-class TerminalView {
-    setupMappingView(terminalMappingClass, terminal) {
-        var terminalMapping = new terminalMappingClass({
-            terminal: terminal
-        });
-        var terminalMappingView = new TerminalMappingView({
-            model: terminalMapping
-        });
-        terminalMappingView.render();
-        terminal.terminalMappingView = terminalMappingView;
-        this.terminalMappingView = terminalMappingView;
-    }
-}
-
-class BaseInputTerminalView extends TerminalView {
-    constructor(app, options = {}, terminalMappingClass = null) {
-        super();
+class BaseInputTerminalView {
+    constructor(app, options = {}) {
         this.app = app;
         this.el = document.createElement("div");
         this.el.className = "terminal input-terminal";
@@ -49,7 +17,9 @@ class BaseInputTerminalView extends TerminalView {
         node.cid = NODEINDEX++;
         const id = `node-${node.cid}-input-${name}`;
         const terminal = this.terminalForInput(input);
-        this.setupMappingView(terminalMappingClass, terminal);
+        new Terminals.TerminalMapping({
+            terminal: terminal
+        });
         this.el.terminal = terminal;
         this.$el.attr("input-name", name);
         this.$el.attr("id", id);
@@ -142,7 +112,7 @@ class BaseInputTerminalView extends TerminalView {
 
 export class InputTerminalView extends BaseInputTerminalView {
     constructor(app, options = {}) {
-        super(app, options, Terminals.TerminalMapping);
+        super(app, options);
     }
     terminalForInput(input) {
         return new Terminals.InputTerminal({
@@ -155,7 +125,7 @@ export class InputTerminalView extends BaseInputTerminalView {
 
 export class InputParameterTerminalView extends BaseInputTerminalView {
     constructor(app, options = {}) {
-        super(app, options, Terminals.TerminalMapping);
+        super(app, options);
     }
     terminalForInput(input) {
         return new Terminals.InputParameterTerminal({
@@ -168,7 +138,7 @@ export class InputParameterTerminalView extends BaseInputTerminalView {
 
 export class InputCollectionTerminalView extends BaseInputTerminalView {
     constructor(app, options = {}) {
-        super(app, options, Terminals.TerminalMapping);
+        super(app, options);
     }
     terminalForInput(input = {}) {
         return new Terminals.InputCollectionTerminal({
@@ -179,9 +149,8 @@ export class InputCollectionTerminalView extends BaseInputTerminalView {
     }
 }
 
-export class BaseOutputTerminalView extends TerminalView {
-    constructor(app, options, terminalMappingClass = null) {
-        super();
+export class BaseOutputTerminalView {
+    constructor(app, options) {
         this.app = app;
         this.el = document.createElement("div");
         this.el.className = "terminal output-terminal";
@@ -192,7 +161,9 @@ export class BaseOutputTerminalView extends TerminalView {
         node.cid = NODEINDEX++;
         const id = `node-${node.cid}-output-${name}`;
         const terminal = this.terminalForOutput(output);
-        this.setupMappingView(terminalMappingClass, terminal);
+        new Terminals.TerminalMapping({
+            terminal: terminal
+        });
         this.el.terminal = terminal;
         this.$el.attr(
             "aria-label",
@@ -376,7 +347,7 @@ export class BaseOutputTerminalView extends TerminalView {
 
 export class OutputTerminalView extends BaseOutputTerminalView {
     constructor(app, options = {}) {
-        super(app, options, Terminals.TerminalMapping);
+        super(app, options);
     }
     terminalForOutput(output) {
         var type = output.extensions;
@@ -391,7 +362,7 @@ export class OutputTerminalView extends BaseOutputTerminalView {
 
 export class OutputCollectionTerminalView extends BaseOutputTerminalView {
     constructor(app, options = {}) {
-        super(app, options, Terminals.TerminalMapping);
+        super(app, options);
     }
     terminalForOutput(output) {
         var collection_type = output.collection_type;
@@ -409,7 +380,7 @@ export class OutputCollectionTerminalView extends BaseOutputTerminalView {
 
 export class OutputParameterTerminalView extends BaseOutputTerminalView {
     constructor(app, options = {}) {
-        super(app, options, Terminals.TerminalMapping);
+        super(app, options);
     }
     terminalForOutput(output) {
         return new Terminals.OutputParameterTerminal({
