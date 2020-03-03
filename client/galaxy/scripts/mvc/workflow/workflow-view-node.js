@@ -86,7 +86,7 @@ export class NodeView {
             skipResize: skipResize
         });
         var ib = inputView.$el;
-        body.append(ib.prepend(terminalView.terminalElements()));
+        body.append(ib.prepend(terminalView.el));
         return terminalView;
     }
 
@@ -116,7 +116,7 @@ export class NodeView {
         const terminalView = this.terminalViewForOutput(output);
         const outputView = this.outputViewforOutput(output, terminalView);
         this.outputViews[output.name] = outputView;
-        this.node_body.append(outputView.$el.append(terminalView.terminalElements()));
+        this.node_body.append(outputView.$el.append(terminalView.el));
     }
 
     redrawWorkflowOutputs() {

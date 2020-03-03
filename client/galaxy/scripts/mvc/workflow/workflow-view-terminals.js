@@ -34,9 +34,6 @@ class TerminalView {
         terminal.terminalMappingView = terminalMappingView;
         this.terminalMappingView = terminalMappingView;
     }
-    terminalElements() {
-        return [this.terminalMappingView.$el, this.el];
-    }
 }
 
 class BaseInputTerminalView extends TerminalView {
