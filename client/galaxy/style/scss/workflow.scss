@@ -136,6 +136,7 @@
                 @extend .fa-minus-circle;
                 @extend .p-1;
                 @extend .mt-1;
+                cursor: pointer;
                 position: absolute;
                 z-index: 2500;
                 top: 2px;
