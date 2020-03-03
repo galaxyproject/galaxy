@@ -215,10 +215,6 @@ class InstallToolDependencyManager(object):
                         if tool_dependency and tool_dependency.status in [self.install_model.ToolDependency.installation_status.INSTALLED,
                                                                           self.install_model.ToolDependency.installation_status.ERROR]:
                             installed_packages.append(tool_dependency)
-                            if self.app.config.manage_dependency_relationships:
-                                # Add the tool_dependency to the in-memory dictionaries in the installed_repository_manager.
-                                self.app.installed_repository_manager.handle_tool_dependency_install(tool_shed_repository,
-                                                                                                     tool_dependency)
         return installed_packages
 
     def install_via_fabric(self, tool_shed_repository, tool_dependency, install_dir, package_name=None, custom_fabfile_path=None,
@@ -946,10 +942,6 @@ class InstallRepositoryManager(object):
                 basic_util.remove_dir(work_dir)
             self.update_tool_shed_repository_status(tool_shed_repository,
                                                     self.install_model.ToolShedRepository.installation_status.INSTALLED)
-            if self.app.config.manage_dependency_relationships:
-                # Add the installed repository and any tool dependencies to the in-memory dictionaries
-                # in the installed_repository_manager.
-                self.app.installed_repository_manager.handle_repository_install(tool_shed_repository)
         else:
             # An error occurred while cloning the repository, so reset everything necessary to enable another attempt.
             repository_util.set_repository_attributes(self.app,
