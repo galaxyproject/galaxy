@@ -716,6 +716,14 @@ class S3ObjectStore(ObjectStore, CloudConfigMixin):
     def get_store_usage_percent(self):
         return 0.0
 
+    def shutdown(self):
+        self.running = False
+        thread = getattr(self, 'cache_monitor_thread', None)
+        if thread:
+            log.debug("Shutting down thread")
+            self.sleeper.wake()
+            thread.join(5)
+
 
 class SwiftObjectStore(S3ObjectStore):
     """
