@@ -1,6 +1,7 @@
 
 import os
 import string
+import subprocess
 
 from galaxy_test.driver import integration_util
 
@@ -48,11 +49,44 @@ TEST_TOOL_IDS = [
 ]
 
 
+def start_minio(container_name):
+    minio_start_args = [
+        'docker',
+        'run',
+        '-p',
+        '{port}:9000'.format(port=OBJECT_STORE_PORT),
+        '-d',
+        '--name',
+        container_name,
+        # '--rm',
+        'minio/minio:latest',
+        'server',
+        '/tmp/data']
+    subprocess.check_call(minio_start_args)
+
+
+def stop_minio(container_name):
+    subprocess.check_call(['docker', 'stop', container_name])
+
+
+@integration_util.skip_unless_docker()
 class SwiftObjectStoreIntegrationTestCase(integration_util.IntegrationTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.container_name = "%s_container" % cls.__name__
+        start_minio(cls.container_name)
+        super(SwiftObjectStoreIntegrationTestCase, cls).setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        stop_minio(cls.container_name)
+        super(SwiftObjectStoreIntegrationTestCase, cls).tearDownClass()
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         temp_directory = cls._test_driver.mkdtemp()
+        cls.container_name = os.path.basename(temp_directory)
         cls.object_stores_parent = temp_directory
         config_path = os.path.join(temp_directory, "object_store_conf.xml")
         config["object_store_store_by"] = "uuid"
