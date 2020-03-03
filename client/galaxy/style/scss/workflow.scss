@@ -79,7 +79,7 @@
                 @extend .mt-1;
                 color: $brand-light;
                 position: absolute;
-                z-index: 1500;
+                z-index: 101;
                 > icon {
                     @extend .fa;
                     @extend .fa-chevron-circle-right;
@@ -111,7 +111,7 @@
                 @extend .fa-circle;
                 color: $brand-success;
                 position: absolute;
-                z-index: 1500;
+                z-index: 101;
             }
             .mark-terminal {
                 cursor: pointer;
