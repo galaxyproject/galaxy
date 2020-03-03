@@ -11,8 +11,7 @@ export class Services {
         const url = `${this.root}api/entry_points?running=true`;
         try {
             const response = await axios.get(url);
-            const activeInteractiveTools = response.data;
-            return activeInteractiveTools;
+            return response.data;
         } catch (e) {
             rethrowSimple(e);
         }

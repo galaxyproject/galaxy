@@ -1,6 +1,6 @@
 <template>
     <div>
-        <b-alert :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
+        <b-alert :name="message" :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
         <h2>Active Interactive Tools</h2>
         <b-row class="mb-3">
             <b-col cols="6">
@@ -24,12 +24,17 @@
             @filtered="filtered"
         >
             <template v-slot:cell(checkbox)="row">
-                <b-form-checkbox v-model="row.item.marked" />
+                <b-form-checkbox :id="createId('checkbox', row.item.id)" v-model="row.item.marked" />
             </template>
             <template v-slot:cell(name)="row">
-                <a :index="row.index" :href="row.item.target" target="_blank" :name="row.item.name">{{
-                    row.item.name
-                }}</a>
+                <a
+                    :index="row.index"
+                    :id="createId('link', row.item.id)"
+                    :href="row.item.target"
+                    target="_blank"
+                    :name="row.item.name"
+                    >{{ row.item.name }}</a
+                >
             </template>
             <template v-slot:cell(job_info)="row">
                 <label v-if="row.item.active">
@@ -52,6 +57,7 @@
             >.
         </div>
         <b-button
+            id="stopInteractiveTool"
             v-if="isCheckboxMarked"
             v-b-tooltip.hover.bottom
             title="Terminate selected tools"
@@ -63,8 +69,12 @@
 
 <script>
 import { Services } from "./services";
+import Vue from "vue";
 import { getAppRoot } from "onload/loadConfig";
 import UtcDate from "components/UtcDate";
+import BootstrapVue from "bootstrap-vue";
+
+Vue.use(BootstrapVue);
 
 export default {
     components: {
@@ -76,8 +86,7 @@ export default {
             fields: [
                 {
                     label: "",
-                    key: "checkbox",
-                    sortable: true
+                    key: "checkbox"
                 },
                 {
                     label: "Name",
@@ -128,7 +137,6 @@ export default {
     },
     methods: {
         load() {
-            this.loading = true;
             this.filter = "";
             this.services
                 .getActiveInteractiveTools()
@@ -150,6 +158,9 @@ export default {
                 this.message = response.message;
                 this.activeInteractiveTools = this.activeInteractiveTools.filter(tool => !tool.marked);
             });
+        },
+        createId(tagLabel, id) {
+            return tagLabel + "-" + id;
         }
     }
 };
