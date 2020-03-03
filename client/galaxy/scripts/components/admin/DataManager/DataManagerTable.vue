@@ -17,11 +17,7 @@
                             <b-container>
                                 <b-row align-v="center">
                                     <b-col cols="auto">
-                                        <b-button
-                                            @click="reload()"
-                                            v-b-tooltip.hover
-                                            :title="buttonLabel"
-                                        >
+                                        <b-button @click="reload()" v-b-tooltip.hover :title="buttonLabel">
                                             <span class="fa fa-refresh" />
                                         </b-button>
                                     </b-col>
@@ -71,7 +67,7 @@ export default {
     },
     computed: {
         dataTableName() {
-            return this.dataTable && this.dataTable.name ? this.dataTable.name : 'null';
+            return this.dataTable && this.dataTable.name ? this.dataTable.name : "null";
         },
         buttonLabel() {
             return `Reload ${this.dataTableName} tool data table`;
