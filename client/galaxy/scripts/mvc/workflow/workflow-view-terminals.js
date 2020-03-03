@@ -35,9 +35,9 @@ class BaseInputTerminalView {
     }
     render() {
         if (this.terminal.mapOver && this.terminal.mapOver.isCollection) {
-            this.$el.find("icon").addClass("multiple");
+            this.$el.addClass("multiple");
         } else {
-            this.$el.find("icon").removeClass("multiple");
+            this.$el.removeClass("multiple");
         }
     }
     onDropInit(e, d = {}) {
@@ -185,9 +185,9 @@ export class BaseOutputTerminalView {
     }
     render() {
         if (this.terminal.mapOver && this.terminal.mapOver.isCollection) {
-            this.$el.find("icon").addClass("multiple");
+            this.$el.addClass("multiple");
         } else {
-            this.$el.find("icon").removeClass("multiple");
+            this.$el.removeClass("multiple");
         }
     }
     screenReaderSelectOutputNode(e) {

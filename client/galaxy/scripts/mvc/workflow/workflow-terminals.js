@@ -126,6 +126,7 @@ class Terminal extends EventEmitter {
                 connector.handle2.resetCollectionTypeSource();
             }
         }
+        this.emit("change");
     }
     redraw() {
         $.each(this.connectors, (_, c) => {

@@ -86,15 +86,6 @@
                     left: 0px;
                     top: 0px;
                 }
-                icon.multiple {
-                    @extend .fa;
-                    @extend .fa-chevron-circle-right;
-                    color: $brand-primary;
-                    position: absolute;
-                    font-size: 1.2rem;
-                    left: -5px;
-                    top: -5px;
-                }
             }
             .input-terminal {
                 @extend .base-terminal;
@@ -106,6 +97,16 @@
                 &:hover > icon {
                     color: $brand-success;
                 }
+            }
+            .input-terminal.multiple {
+                font-size: 1.2rem;
+                left: -12px;
+                top: 2px;
+            }
+            .output-terminal.multiple {
+                font-size: 1.2rem;
+                right: -12px;
+                top: 2px;
             }
             .input-terminal-active.can-accept > icon {
                 color: $brand-success;
@@ -130,7 +131,7 @@
             .delete-terminal {
                 @extend .btn;
                 @extend .btn-sm;
-                @extend .btn-primary;
+                @extend .btn-info;
                 @extend .fa;
                 @extend .fa-minus-circle;
                 @extend .p-1;
