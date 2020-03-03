@@ -1611,6 +1611,10 @@ galaxy:
   # see dataset paths.
   #expose_dataset_path: false
 
+  # XML config file that contains the job metric collection
+  # configuration.
+  #job_metrics_config_file: config/job_metrics_conf.xml
+
   # This option allows users to see the job metrics (except for
   # environment variables).
   #expose_potentially_sensitive_job_metrics: false
@@ -1815,7 +1819,7 @@ galaxy:
   #markdown_export_css_pages: markdown_export_pages.css
 
   # CSS file to apply to invocation report exports to PDF. Generally
-  # prefer  markdown_export_css, but this is here for deployments that
+  # prefer markdown_export_css, but this is here for deployments that
   # would like to tailor different kinds of exports.
   #markdown_export_css_invocation_reports: markdown_export_invocation_reports.css
 
