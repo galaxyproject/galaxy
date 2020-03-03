@@ -15,7 +15,6 @@ module.exports = {
         parser: "babel-eslint",
         sourceType: "module"
     },
-    plugins: ["html"],
     rules: {
         // Standard rules
         "no-console": "off",
