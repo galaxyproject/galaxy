@@ -5,23 +5,29 @@
                 <i :class="iconClass" />
                 <span class="node-title">{{ title }}</span>
             </div>
-            <div class="buttons float-right">
-                <a
+            <b-dropdown right class="float-right" toggle-class="py-0" offset="50" variant="primary" size="sm">
+                <b-dropdown-item
                     v-if="canClone"
-                    class="fa-icon-button fa fa-files-o node-clone"
                     aria-label="clone node"
                     role="button"
                     href="#"
+                    class="node-clone"
                     @click="onClone"
-                />
-                <a
-                    class="fa-icon-button fa fa-times node-destroy"
+                >
+                    <span class="fa-icon-button fa fa-files-o" />
+                    Duplicate
+                </b-dropdown-item>
+                <b-dropdown-item
                     aria-label="destroy node"
                     role="button"
                     href="#"
+                    class="node-destroy"
                     @click="onDestroy"
-                />
-            </div>
+                >
+                    <span class="fa-icon-button fa fa-fw fa-trash" />
+                    Remove
+                </b-dropdown-item>
+            </b-dropdown>
         </div>
         <div class="node-body">
             <div>
