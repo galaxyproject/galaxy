@@ -189,7 +189,7 @@ class S3ObjectStore(ObjectStore, CloudConfigMixin):
                          'conn_path': self.conn_path}
 
         self._configure_connection()
-        self.__bucket = self._get_bucket(self.bucket)
+        self._bucket = self._get_bucket(self.bucket)
         # Clean cache only if value is set in galaxy.ini
         if self.cache_size != -1:
             # Convert GBs to bytes for comparison
@@ -356,7 +356,7 @@ class S3ObjectStore(ObjectStore, CloudConfigMixin):
 
     def _get_size_in_s3(self, rel_path):
         try:
-            key = self.__bucket.get_key(rel_path)
+            key = self._bucket.get_key(rel_path)
             if key:
                 return key.size
         except S3ResponseError:
@@ -369,13 +369,13 @@ class S3ObjectStore(ObjectStore, CloudConfigMixin):
             # A hackish way of testing if the rel_path is a folder vs a file
             is_dir = rel_path[-1] == '/'
             if is_dir:
-                keyresult = self.__bucket.get_all_keys(prefix=rel_path)
+                keyresult = self._bucket.get_all_keys(prefix=rel_path)
                 if len(keyresult) > 0:
                     exists = True
                 else:
                     exists = False
             else:
-                key = Key(self.__bucket, rel_path)
+                key = Key(self._bucket, rel_path)
                 exists = key.exists()
         except S3ResponseError:
             log.exception("Trouble checking existence of S3 key '%s'", rel_path)
@@ -427,7 +427,7 @@ class S3ObjectStore(ObjectStore, CloudConfigMixin):
     def _download(self, rel_path):
         try:
             log.debug("Pulling key '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
-            key = self.__bucket.get_key(rel_path)
+            key = self._bucket.get_key(rel_path)
             # Test if cache is large enough to hold the new file
             if self.cache_size > 0 and key.size > self.cache_size:
                 log.critical("File %s is larger (%s) than the cache size (%s). Cannot download.",
@@ -446,7 +446,7 @@ class S3ObjectStore(ObjectStore, CloudConfigMixin):
                 key.get_contents_to_filename(self._get_cache_path(rel_path), cb=self._transfer_cb, num_cb=10)
                 return True
         except S3ResponseError:
-            log.exception("Problem downloading key '%s' from S3 bucket '%s'", rel_path, self.__bucket.name)
+            log.exception("Problem downloading key '%s' from S3 bucket '%s'", rel_path, self._bucket.name)
         return False
 
     def _push_to_os(self, rel_path, source_file=None, from_string=None):
@@ -460,7 +460,7 @@ class S3ObjectStore(ObjectStore, CloudConfigMixin):
         try:
             source_file = source_file if source_file else self._get_cache_path(rel_path)
             if os.path.exists(source_file):
-                key = Key(self.__bucket, rel_path)
+                key = Key(self._bucket, rel_path)
                 if os.path.getsize(source_file) == 0 and key.exists():
                     log.debug("Wanted to push file '%s' to S3 key '%s' but its size is 0; skipping.", source_file, rel_path)
                     return True
@@ -478,7 +478,7 @@ class S3ObjectStore(ObjectStore, CloudConfigMixin):
                                                        cb=self._transfer_cb,
                                                        num_cb=10)
                     else:
-                        multipart_upload(self.s3server, self.__bucket, key.name, source_file, mb_size)
+                        multipart_upload(self.s3server, self._bucket, key.name, source_file, mb_size)
                     end_time = datetime.now()
                     log.debug("Pushed cache file '%s' to key '%s' (%s bytes transfered in %s sec)",
                               source_file, rel_path, os.path.getsize(source_file), end_time - start_time)
@@ -609,7 +609,7 @@ class S3ObjectStore(ObjectStore, CloudConfigMixin):
             # but requires iterating through each individual key in S3 and deleing it.
             if entire_dir and extra_dir:
                 shutil.rmtree(self._get_cache_path(rel_path))
-                results = self.__bucket.get_all_keys(prefix=rel_path)
+                results = self._bucket.get_all_keys(prefix=rel_path)
                 for key in results:
                     log.debug("Deleting key %s", key.name)
                     key.delete()
@@ -619,7 +619,7 @@ class S3ObjectStore(ObjectStore, CloudConfigMixin):
                 os.unlink(self._get_cache_path(rel_path))
                 # Delete from S3 as well
                 if self._key_exists(rel_path):
-                    key = Key(self.__bucket, rel_path)
+                    key = Key(self._bucket, rel_path)
                     log.debug("Deleting key %s", key.name)
                     key.delete()
                     return True
@@ -707,7 +707,7 @@ class S3ObjectStore(ObjectStore, CloudConfigMixin):
         if self.exists(obj, **kwargs):
             rel_path = self._construct_path(obj, **kwargs)
             try:
-                key = Key(self.__bucket, rel_path)
+                key = Key(self._bucket, rel_path)
                 return key.generate_url(expires_in=86400)  # 24hrs
             except S3ResponseError:
                 log.exception("Trouble generating URL for dataset '%s'", rel_path)
