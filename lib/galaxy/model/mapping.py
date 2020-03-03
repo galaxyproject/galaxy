@@ -42,6 +42,7 @@ from galaxy.model.custom_types import JSONType, MetadataType, TrimmedString, UUI
 from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.orm.now import now
 from galaxy.model.security import GalaxyRBACAgent
+from galaxy.model.triggers import install_timestamp_triggers
 
 log = logging.getLogger(__name__)
 
@@ -907,7 +908,8 @@ model.HistoryDatasetCollectionAssociation.table = Table(
     Column("implicit_output_name", Unicode(255), nullable=True),
     Column("job_id", ForeignKey("job.id"), index=True, nullable=True),
     Column("implicit_collection_jobs_id", ForeignKey("implicit_collection_jobs.id"), index=True, nullable=True),
-)
+    Column("create_time", DateTime, default=now),
+    Column("update_time", DateTime, default=now, onupdate=now))
 
 model.LibraryDatasetCollectionAssociation.table = Table(
     "library_dataset_collection_association", metadata,
@@ -2873,6 +2875,7 @@ def init(file_path, url, engine_options=None, create_tables=False, map_install_m
     # Create tables if needed
     if create_tables:
         metadata.create_all()
+        install_timestamp_triggers(engine)
         # metadata.engine.commit()
 
     result.create_tables = create_tables

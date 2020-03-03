@@ -58,18 +58,24 @@ import { getAppRoot } from "onload/loadConfig";
 import { Services } from "./services";
 export default {
     props: ["workflow"],
-    data() {
-        return {
-            urlEdit: `${getAppRoot()}workflow/editor?id=${this.workflow.id}`,
-            urlDownload: `${getAppRoot()}api/workflows/${this.workflow.id}/download?format=json-download`,
-            urlShare: `${getAppRoot()}workflow/sharing?id=${this.workflow.id}`,
-            urlView: `${getAppRoot()}workflow/display_by_id?id=${this.workflow.id}`,
-            urlViewShared: `${getAppRoot()}workflow/display_by_username_and_slug?username=${this.workflow.owner}&slug=${
-                this.workflow.slug
-            }`
-        };
-    },
     computed: {
+        urlEdit() {
+            return `${getAppRoot()}workflow/editor?id=${this.workflow.id}`;
+        },
+        urlDownload() {
+            return `${getAppRoot()}api/workflows/${this.workflow.id}/download?format=json-download`;
+        },
+        urlShare() {
+            return `${getAppRoot()}workflow/sharing?id=${this.workflow.id}`;
+        },
+        urlView() {
+            return `${getAppRoot()}workflow/display_by_id?id=${this.workflow.id}`;
+        },
+        urlViewShared() {
+            return `${getAppRoot()}workflow/display_by_username_and_slug?username=${this.workflow.owner}&slug=${
+                this.workflow.slug
+            }`;
+        },
         icon() {
             if (this.workflow.shared) {
                 return "fa fa-share-alt";

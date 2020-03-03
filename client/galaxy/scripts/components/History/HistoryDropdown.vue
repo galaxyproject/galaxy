@@ -23,18 +23,22 @@ import { getGalaxyInstance } from "app";
 
 export default {
     props: ["history"],
-    data() {
-        return {
-            urlView: `${getAppRoot()}histories/view?id=${this.history.id}`,
-            urlShowStructure: `${getAppRoot()}histories/show_structure?id=${this.history.id}`,
-            urlSharing: `${getAppRoot()}histories/sharing?id=${this.history.id}`
-        };
-    },
     created() {
         this.root = getAppRoot();
     },
+    computed: {
+        urlView() {
+            return `${getAppRoot()}histories/view?id=${this.history.id}`;
+        },
+        urlShowStructure() {
+            return `${getAppRoot()}histories/show_structure?id=${this.history.id}`;
+        },
+        urlSharing() {
+            return `${getAppRoot()}histories/sharing?id=${this.history.id}`;
+        }
+    },
     methods: {
-        onSwitch: function() {
+        onSwitch() {
             const Galaxy = getGalaxyInstance();
             Galaxy.currHistoryPanel.switchToHistory(this.history.id);
         }

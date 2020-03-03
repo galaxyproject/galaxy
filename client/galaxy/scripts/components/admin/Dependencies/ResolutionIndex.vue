@@ -50,7 +50,7 @@
                 <template v-slot:cell(tool)="row">
                     <tool-display :tool-id="row.item.tool" />
                 </template>
-                <template slot="row-details" slot-scope="row">
+                <template v-slot:row-details="row">
                     <resolution-details :resolution="row.item" />
                 </template>
             </b-table>

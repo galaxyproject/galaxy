@@ -95,7 +95,9 @@ jobs:
     <<: *set_workdir
     steps:
       - *restore_repo_cache
-      - *install_tox
+      # Temporary virtualenv pin added due to https://github.com/pypa/virtualenv/issues/1670
+      #- *install_tox
+      - run: sudo pip install tox virtualenv==20.0.4
       - run: tox -e py27-unit
   py35_docstring:
     docker:
@@ -135,6 +137,10 @@ jobs:
     <<: *set_workdir
     steps:
       - *restore_repo_cache
+      - run: sh scripts/common_startup.sh
+      - run: wget -q https://github.com/jmchilton/galaxy-downloads/raw/master/db_gx_rev_0127.sqlite
+      - run: mv db_gx_rev_0127.sqlite database/universe.sqlite
+      - run: sh manage_db.sh -c ./config/galaxy.yml.sample upgrade
       - *install_tox
       - run: tox -e py35-first_startup
   validate_test_tools:

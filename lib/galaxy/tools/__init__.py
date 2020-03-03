@@ -2039,6 +2039,11 @@ class Tool(Dictifiable):
             tool_help = self.help.render(static_path=self.app.url_for('/static'), host_url=self.app.url_for('/', qualified=True))
             tool_help = unicodify(tool_help, 'utf-8')
 
+        if isinstance(self.action, tuple):
+            action = self.action[0] + self.app.url_for(self.action[1])
+        else:
+            action = self.app.url_for(self.action)
+
         # update tool model
         tool_model.update({
             'id'            : self.id,
@@ -2056,7 +2061,7 @@ class Tool(Dictifiable):
             'job_remap'     : self._get_job_remap(job),
             'history_id'    : trans.security.encode_id(history.id) if history else None,
             'display'       : self.display_interface,
-            'action'        : self.app.url_for(self.action),
+            'action'        : action,
             'method'        : self.method,
             'enctype'       : self.enctype
         })

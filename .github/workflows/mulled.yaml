@@ -22,7 +22,7 @@ jobs:
         path: ~/.cache/pip
         key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
     - name: Install tox
-      run: pip install tox 'virtualenv<20'
+      run: pip install tox
     - name: run tests
       run: tox -e mulled
       working-directory: 'galaxy root'

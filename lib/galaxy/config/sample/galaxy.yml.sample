@@ -113,6 +113,13 @@ galaxy:
   #config_dir: null
 
   # The directory that will be prepended to relative paths in options
+  # specifying config files controlled by Galaxy (such as
+  # shed_tool_config_file, etc.). Must be writable by the user running
+  # Galaxy.  Defaults to `<config_dir>/` if running Galaxy from source
+  # or `<data_dir>/config` otherwise.
+  #managed_config_dir: null
+
+  # The directory that will be prepended to relative paths in options
   # specifying Galaxy data/cache directories and files (such as the
   # default SQLite database, file_path, etc.). Defaults to `database/`
   # if running Galaxy from source or `<config_dir>/data` otherwise.
@@ -233,7 +240,7 @@ galaxy:
   # installation, whereas Galaxy will fail to start if any files in
   # tool_config_file cannot be read.
   # The value of this option will be resolved with respect to
-  # <mutable_config_dir>.
+  # <managed_config_dir>.
   #shed_tool_config_file: shed_tool_conf.xml
 
   # Enable / disable checking if any tools defined in the above non-shed
@@ -249,7 +256,7 @@ galaxy:
   # tool shed upon a new release, they will be added to this tool config
   # file.
   # The value of this option will be resolved with respect to
-  # <mutable_config_dir>.
+  # <managed_config_dir>.
   #migrated_tools_config: migrated_tools_conf.xml
 
   # File that contains the XML section and tool tags from all tool panel
@@ -258,7 +265,7 @@ galaxy:
   # to alter the layout of the tool panel.  If not present, Galaxy will
   # create it.
   # The value of this option will be resolved with respect to
-  # <mutable_config_dir>.
+  # <managed_config_dir>.
   #integrated_tool_panel_config: integrated_tool_panel.xml
 
   # Default path to the directory containing the tools defined in
@@ -463,7 +470,7 @@ galaxy:
   # is parsed and applied to the ToolDataTableManager at server start
   # up.
   # The value of this option will be resolved with respect to
-  # <mutable_config_dir>.
+  # <managed_config_dir>.
   #shed_tool_data_table_config: shed_tool_data_table_conf.xml
 
   # Directory where data used by tools is located.  See the samples in
@@ -1621,7 +1628,7 @@ galaxy:
   # File where Tool Shed based Data Managers are configured. This file
   # will be created automatically upon data manager installation.
   # The value of this option will be resolved with respect to
-  # <mutable_config_dir>.
+  # <managed_config_dir>.
   #shed_data_manager_config_file: shed_data_manager_conf.xml
 
   # Directory to store Data Manager based tool-data. Defaults to the

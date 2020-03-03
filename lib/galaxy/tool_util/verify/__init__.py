@@ -16,6 +16,7 @@ try:
 except ImportError:
     pysam = None
 
+from galaxy.tool_util.parser.util import DEFAULT_DELTA
 from galaxy.util import unicodify
 from galaxy.util.compression_utils import get_fileobj
 from .asserts import verify_assertions
@@ -131,7 +132,7 @@ def verify(
             elif compare == 're_match_multiline':
                 files_re_match_multiline(local_name, temp_name, attributes=attributes)
             elif compare == 'sim_size':
-                delta = attributes.get('delta', '100')
+                delta = int(attributes.get('delta', DEFAULT_DELTA))
                 s1 = len(output_content)
                 s2 = os.path.getsize(local_name)
                 if abs(s1 - s2) > int(delta):
