@@ -169,9 +169,6 @@ class S3ObjectStore(ObjectStore, CloudConfigMixin):
             (e['type'], e['path']) for e in config_dict.get('extra_dirs', []))
         self.extra_dirs.update(extra_dirs)
 
-        log.debug("Object cache dir:    %s", self.staging_path)
-        log.debug("       job work dir: %s", self.extra_dirs['job_work'])
-
         self._initialize()
 
     def _initialize(self):
