@@ -123,7 +123,7 @@ class CloudConfigMixin(object):
                 'conn_path': self.conn_path,
             },
             'cache': {
-                'size': self.cache_size,
+                'size': -1,  # disable cache cleaning when starting an exported object store in set_metadata.py
                 'path': self.staging_path,
             }
         }
