@@ -66,7 +66,7 @@ def start_minio(container_name):
 
 
 def stop_minio(container_name):
-    subprocess.check_call(['docker', 'stop', container_name])
+    subprocess.check_call(['docker', 'rm', '-f', container_name])
 
 
 @integration_util.skip_unless_docker()
@@ -86,7 +86,6 @@ class SwiftObjectStoreIntegrationTestCase(integration_util.IntegrationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         temp_directory = cls._test_driver.mkdtemp()
-        cls.container_name = os.path.basename(temp_directory)
         cls.object_stores_parent = temp_directory
         config_path = os.path.join(temp_directory, "object_store_conf.xml")
         config["object_store_store_by"] = "uuid"
