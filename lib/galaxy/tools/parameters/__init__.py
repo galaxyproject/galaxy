@@ -208,7 +208,7 @@ def params_to_strings(params, param_values, app, nested=False):
     return rval
 
 
-def params_from_strings(params, param_values, app, ignore_errors=False):
+def params_from_strings(params, param_values, app, ignore_errors=False, preloaded=False):
     """
     Convert a dictionary of strings as produced by `params_to_strings`
     back into parameter values (decode the json representation and then
@@ -218,7 +218,8 @@ def params_from_strings(params, param_values, app, ignore_errors=False):
     rval = dict()
     param_values = param_values or {}
     for key, value in param_values.items():
-        value = safe_loads(value)
+        if preloaded is False:
+            value = safe_loads(value)
         if key in params:
             value = params[key].value_from_basic(value, app, ignore_errors)
         rval[key] = value
