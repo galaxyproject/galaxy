@@ -1,3 +1,4 @@
+import logging
 import os
 import shutil
 import string
@@ -10,6 +11,8 @@ from .panel import (
     panel_item_types,
     ToolPanelElements
 )
+
+log = logging.getLogger(__name__)
 
 INTEGRATED_TOOL_PANEL_DESCRIPTION = """
 This is Galaxy's integrated tool panel and should be modified directly only for
@@ -52,6 +55,7 @@ class ManagesIntegratedToolPanelMixin(object):
         use this file to manage the tool panel, we'll not use xml_to_string() since it doesn't write XML quite right.
         """
         destination = os.path.abspath(self._integrated_tool_panel_config)
+        log.debug("Writing integrated tool panel config file to '%s'", destination)
         tracking_directory = self._integrated_tool_panel_tracking_directory
         if tracking_directory:
             if not os.path.exists(tracking_directory):
