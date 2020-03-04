@@ -2419,7 +2419,7 @@ mapping:
 
       job_metrics_config_file:
         type: str
-        default: config/job_metrics_conf.xml
+        default: job_metrics_conf.xml
         required: false
         desc: |
           XML config file that contains the job metric collection configuration.
