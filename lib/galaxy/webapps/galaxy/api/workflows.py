@@ -653,13 +653,17 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             remote_model_url = trans.app.config.tool_recommendation_model_path
         if 'tool_sequence' not in payload or remote_model_url is None:
             return
-        tool_sequence = payload.get('tool_sequence', "")
+        isModelSet = True
+        recommended_tools = dict()
+        tool_sequence = ""
         # collect tool recommendation preferences if set by admin
         self.__collect_admin_preferences(trans.app.config.admin_tool_recommendations_path)
         # recreate the neural network model to be used for prediction
-        self.__set_model(trans, remote_model_url)
-        # get the recommended tools for a tool sequence
-        recommended_tools = self.__compute_tool_prediction(trans, tool_sequence)
+        isModelSet = self.__set_model(trans, remote_model_url)
+        if isModelSet is True:
+            # get the recommended tools for a tool sequence
+            tool_sequence = payload.get('tool_sequence', "")
+            recommended_tools = self.__compute_tool_prediction(trans, tool_sequence)
         return {
             "current_tool": tool_sequence,
             "predicted_data": recommended_tools
@@ -676,7 +680,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         if not self.tool_recommendation_model_path:
             # import moves from the top of file: in case the tool recommendation feature is disabled,
             # keras is not downloaded because of conditional requirement and Galaxy does not build
-            from keras.models import model_from_json
+            try:
+                from keras.models import model_from_json
+            except Exception as e:
+                trans.response.status = 400
+                return False
             self.tool_recommendation_model_path = self.__download_model(remote_model_url)
             self.all_tools = dict()
             model_weights = list()
@@ -711,6 +719,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                     counter_layer_weights += 1
             # set the model weights
             self.loaded_model.set_weights(model_weights)
+        return True
 
     def __collect_admin_preferences(self, admin_path):
         """
