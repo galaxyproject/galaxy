@@ -682,7 +682,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             # keras is not downloaded because of conditional requirement and Galaxy does not build
             try:
                 from keras.models import model_from_json
-            except Exception as e:
+            except Exception:
                 trans.response.status = 400
                 return False
             self.tool_recommendation_model_path = self.__download_model(remote_model_url)
