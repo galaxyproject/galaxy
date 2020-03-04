@@ -14,7 +14,15 @@ describe("ToolsView/ToolsView.vue", () => {
 
     beforeEach(async () => {
         axiosMock = new MockAdapter(axios);
-        wrapper = mount(InteractiveTools);
+        wrapper = mount(InteractiveTools, {
+            computed: {
+                currentHistory() {
+                    return {
+                        loadCurrentHistory() {}
+                    };
+                }
+            }
+        });
         emitted = wrapper.emitted();
         axiosMock.onGet("/api/entry_points?running=true").reply(200, testInteractiveToolsResponse);
         axiosMock.onPost("/interactivetool/list").reply(200, { status: "ok", message: "ok" });
@@ -36,6 +44,7 @@ describe("ToolsView/ToolsView.vue", () => {
         function checkIfExists(tag, toolId) {
             return wrapper.find(tag + toolId).exists();
         }
+
         const toolId = testInteractiveToolsResponse[0].id;
         const tool = wrapper.vm.activeInteractiveTools.find(tool => tool.id === toolId);
 

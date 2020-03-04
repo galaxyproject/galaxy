@@ -72,6 +72,7 @@ import { Services } from "./services";
 import Vue from "vue";
 import { getAppRoot } from "onload/loadConfig";
 import UtcDate from "components/UtcDate";
+import { getGalaxyInstance } from "app";
 import BootstrapVue from "bootstrap-vue";
 
 Vue.use(BootstrapVue);
@@ -128,6 +129,9 @@ export default {
         },
         showMessage() {
             return !!this.message;
+        },
+        currentHistory() {
+            return getGalaxyInstance().currHistoryPanel;
         }
     },
     created() {
@@ -157,6 +161,7 @@ export default {
                 else this.messageVariant = "danger";
                 this.message = response.message;
                 this.activeInteractiveTools = this.activeInteractiveTools.filter(tool => !tool.marked);
+                this.currentHistory.loadCurrentHistory();
             });
         },
         createId(tagLabel, id) {
