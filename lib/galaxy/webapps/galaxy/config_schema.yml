@@ -2423,6 +2423,8 @@ mapping:
         required: false
         desc: |
           XML config file that contains the job metric collection configuration.
+          
+          The value of this option will be resolved with respect to <config_dir>.
 
       expose_potentially_sensitive_job_metrics:
         type: bool
