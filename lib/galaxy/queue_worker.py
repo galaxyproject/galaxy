@@ -163,19 +163,19 @@ def reload_tool(app, **kwargs):
         log.error("Reload tool invoked without tool id.")
 
 
-def reload_toolbox(app, **kwargs):
+def reload_toolbox(app, save_integrated_tool_panel=True, **kwargs):
     reload_timer = util.ExecutionTimer()
     log.debug("Executing toolbox reload on '%s'", app.config.server_name)
     reload_count = app.toolbox._reload_count
     if hasattr(app, 'tool_cache'):
         app.tool_cache.cleanup()
-    _get_new_toolbox(app)
+    _get_new_toolbox(app, save_integrated_tool_panel)
     app.toolbox._reload_count = reload_count + 1
     send_local_control_task(app, 'rebuild_toolbox_search_index')
     log.debug("Toolbox reload %s", reload_timer)
 
 
-def _get_new_toolbox(app):
+def _get_new_toolbox(app, save_integrated_tool_panel=True):
     """
     Generate a new toolbox, by constructing a toolbox from the config files,
     and then adding pre-existing data managers from the old toolbox to the new toolbox.
@@ -186,7 +186,7 @@ def _get_new_toolbox(app):
         app.tool_shed_repository_cache.rebuild()
     tool_configs = app.config.tool_configs
 
-    new_toolbox = tools.ToolBox(tool_configs, app.config.tool_path, app)
+    new_toolbox = tools.ToolBox(tool_configs, app.config.tool_path, app, save_integrated_tool_panel=save_integrated_tool_panel)
     new_toolbox.data_manager_tools = app.toolbox.data_manager_tools
     app.datatypes_registry.load_datatype_converters(new_toolbox, use_cached=True)
     app.datatypes_registry.load_external_metadata_tool(new_toolbox)
