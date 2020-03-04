@@ -26,11 +26,15 @@ class ConfigWatchers(object):
         # and will be blind to further changes in these tools.
 
         def reload_toolbox():
+            save_integrated_tool_panel = False
             try:
+                # Run and wait for toolbox reload on the process that watches the config files.
+                # The toolbpox reload will update the integrated_tool_panel_file
                 self.app.queue_worker.send_local_control_task('reload_toolbox', get_response=True),
             except Exception:
-                log.exception()
-            self.app.queue_worker.send_control_task('reload_toolbox', kwargs={'save_integrated_tool_panel': False}),
+                save_integrated_tool_panel = True
+                log.exception("Exception occured while reloading toolbox")
+            self.app.queue_worker.send_control_task('reload_toolbox', noop_self=True, kwargs={'save_integrated_tool_panel': save_integrated_tool_panel}),
 
         self.tool_config_watcher = get_tool_conf_watcher(
             reload_callback=reload_toolbox,
