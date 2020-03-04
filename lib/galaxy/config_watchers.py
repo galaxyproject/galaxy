@@ -1,3 +1,4 @@
+import logging
 from os.path import dirname
 
 from galaxy.queue_worker import job_rule_modules
@@ -6,6 +7,8 @@ from galaxy.tools.toolbox.watcher import (
     get_tool_watcher,
 )
 from galaxy.util.watcher import get_watcher
+
+log = logging.getLogger(__name__)
 
 
 class ConfigWatchers(object):
@@ -21,8 +24,16 @@ class ConfigWatchers(object):
         # If there are multiple ToolConfWatcher objects for the same handler or web process a race condition occurs between the two cache_cleanup functions.
         # If the reload_data_managers callback wins, the cache will miss the tools that had been removed from the cache
         # and will be blind to further changes in these tools.
+
+        def reload_toolbox():
+            try:
+                self.app.queue_worker.send_local_control_task('reload_toolbox', get_response=True),
+            except Exception:
+                log.exception()
+            self.app.queue_worker.send_control_task('reload_toolbox', kwargs={'save_integrated_tool_panel': False}),
+
         self.tool_config_watcher = get_tool_conf_watcher(
-            reload_callback=lambda: self.app.queue_worker.send_control_task('reload_toolbox'),
+            reload_callback=reload_toolbox,
             tool_cache=self.app.tool_cache,
         )
         self.data_manager_config_watcher = get_tool_conf_watcher(

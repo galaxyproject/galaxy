@@ -42,7 +42,7 @@ def send_local_control_task(app, task, get_response=False, kwargs=None):
     """
     if kwargs is None:
         kwargs = {}
-    log.info("Queuing async task %s for %s." % (task, app.config.server_name))
+    log.info("Queuing %s task %s for %s." % ("sync" if get_response else "async", task, app.config.server_name))
     payload = {'task': task,
                'kwargs': kwargs}
     routing_key = 'control.%s@%s' % (app.config.server_name, socket.gethostname())
@@ -352,8 +352,8 @@ class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):
     def send_control_task(self, task, noop_self=False, get_response=False, routing_key='control.*', kwargs=None):
         return send_control_task(app=self.app, task=task, noop_self=noop_self, get_response=get_response, routing_key=routing_key, kwargs=kwargs)
 
-    def send_local_control_task(self, task, kwargs=None):
-        return send_local_control_task(app=self.app, task=task, kwargs=kwargs)
+    def send_local_control_task(self, task, get_response=False, kwargs=None):
+        return send_local_control_task(app=self.app, get_response=get_response, task=task, kwargs=kwargs)
 
     @property
     def declare_queues(self):
