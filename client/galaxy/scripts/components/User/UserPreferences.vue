@@ -22,6 +22,16 @@
                 </div>
             </div>
         </b-row>
+        <b-row class="ml-3 mb-1">
+            <i class="pref-icon pt-1 fa fa-lg fa-plus-square-o" />
+            <div class="pref-content pr-1">
+                <a @click="toggleNotifications" href="javascript:void(0)"><b>Enable notifications</b></a>
+                <div class="form-text text-muted">
+                    Allow push and tab notifcations on job completion. To disable, revoke the site notification
+                    privilege in your browser.
+                </div>
+            </div>
+        </b-row>
         <p class="mt-2">
             You are using <strong>{{ diskUsage }}</strong> of disk space in this Galaxy instance.
             <span v-html="quotaUsageString"></span>
@@ -107,6 +117,18 @@ export default {
         }
     },
     methods: {
+        toggleNotifications() {
+            Notification.requestPermission().then(function(permission) {
+                //If the user accepts, let's create a notification
+                if (permission === "granted") {
+                    new Notification("Notifications enabled", {
+                        icon: "static/favicon.ico"
+                    });
+                } else {
+                    alert("Notifications disabled, please re-enable through browser settings.");
+                }
+            });
+        },
         openManageCustomBuilds() {
             const Galaxy = getGalaxyInstance();
             Galaxy.page.router.push(`${getAppRoot()}custom_builds`);
