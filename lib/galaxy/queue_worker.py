@@ -114,7 +114,7 @@ class ControlTask(object):
             callback_queue = [self.callback_queue]
             self.correlation_id = uuid()
         try:
-            with producers[self.connection].acquire(block=True) as producer:
+            with producers[self.connection].acquire(block=True, timeout=10) as producer:
                 producer.publish(
                     payload,
                     exchange=None if local else self.exchange,
