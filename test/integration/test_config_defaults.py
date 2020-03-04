@@ -178,6 +178,7 @@ DO_NOT_TEST = [
     'id_secret',  # broken: default overridden
     'job_config',  # no obvious testable defaults
     'job_config_file',  # broken: remove 'config/' prefix from schema
+    'job_metrics_config_file',
     'job_working_directory',  # broken; may or may not be able to test
     'library_import_dir',  # broken: default overridden
     'logging',  # mapping loaded in config/
