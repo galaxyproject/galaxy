@@ -65,7 +65,7 @@ export default {
         iconClass() {
             const iconType = WorkflowIcons[this.type];
             if (iconType) {
-                return `icon fa ${iconType}`;
+                return `icon fa fa-fw ${iconType}`;
             }
             return null;
         },
