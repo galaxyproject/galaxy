@@ -11,6 +11,7 @@ import requests
 from galaxy import exceptions
 from galaxy import web
 from galaxy.web import url_for
+from galaxy.util import url_get
 from galaxy.webapps.base.controller import JSAppLauncher
 
 log = logging.getLogger(__name__)
@@ -130,3 +131,11 @@ class OIDC(JSAppLauncher):
         idp_provider = trans.get_cookie(name=PROVIDER_COOKIE_NAME)
         if idp_provider:
             return trans.response.send_redirect(url_for(controller='authnz', action='logout', provider=idp_provider))
+
+    @web.expose
+    @web.json
+    def get_cilogon_idps(self, trans, **kwargs):
+        try:
+            return json.loads(url_get('https://cilogon.org/idplist/', params=dict(kwargs)))
+        except Exception as e:
+            raise Exception("Invalid server response. %s." % str(e))
