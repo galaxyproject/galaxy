@@ -1,3 +1,4 @@
+import inspect
 import logging
 import os
 from collections import OrderedDict
@@ -206,7 +207,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         def json_encodeify(obj):
             if isinstance(obj, OrderedDict):
                 return dict(obj)
-            elif isinstance(obj, map):
+            elif inspect.isclass(map) and isinstance(obj, map):
                 return list(obj)
             else:
                 return obj
