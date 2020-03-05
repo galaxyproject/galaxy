@@ -69,9 +69,6 @@ def create_or_verify_database(url, galaxy_config_file, engine_options={}, app=No
         db_schema = schema.ControlledSchema(engine, migrate_repository)
         assert db_schema.version == current_version
         migrate()
-        if app:
-            # skips the tool migration process.
-            app.new_installation = True
 
     meta = MetaData(bind=engine)
     if new_database:
