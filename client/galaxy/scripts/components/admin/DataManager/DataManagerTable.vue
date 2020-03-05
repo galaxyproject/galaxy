@@ -13,22 +13,20 @@
             <b-row>
                 <b-col>
                     <b-card id="data-table-card" flush>
-                        <b-container v-slot:header>
-                            <b-row align-v="center">
-                                <b-col cols="auto">
-                                    <b-button
-                                        @click="reload()"
-                                        v-b-tooltip.hover
-                                        :title="'Reload ' + this.dataTable['name'] + ' tool data table'"
-                                    >
-                                        <span class="fa fa-refresh" />
-                                    </b-button>
-                                </b-col>
-                                <b-col>
-                                    <b>{{ this.dataTable["name"] }}</b>
-                                </b-col>
-                            </b-row>
-                        </b-container>
+                        <template v-slot:header>
+                            <b-container>
+                                <b-row align-v="center">
+                                    <b-col cols="auto">
+                                        <b-button @click="reload()" v-b-tooltip.hover :title="buttonLabel">
+                                            <span class="fa fa-refresh" />
+                                        </b-button>
+                                    </b-col>
+                                    <b-col>
+                                        <b>{{ dataTableName }}</b>
+                                    </b-col>
+                                </b-row>
+                            </b-container>
+                        </template>
                         <b-table
                             :fields="fields(this.dataTable['columns'])"
                             :items="dataTable['data']"
@@ -68,6 +66,12 @@ export default {
         };
     },
     computed: {
+        dataTableName() {
+            return this.dataTable && this.dataTable.name ? this.dataTable.name : "null";
+        },
+        buttonLabel() {
+            return `Reload ${this.dataTableName} tool data table`;
+        },
         breadcrumbItems() {
             return [
                 {
@@ -75,7 +79,7 @@ export default {
                     to: "/"
                 },
                 {
-                    text: this.dataTable["name"]
+                    text: this.dataTableName
                 }
             ];
         }
@@ -88,7 +92,7 @@ export default {
         },
         reload() {
             axios
-                .get(`${getAppRoot()}data_manager/reload_tool_data_tables?table_name=${this.dataTable["name"]}`)
+                .get(`${getAppRoot()}data_manager/reload_tool_data_tables?table_name=${this.dataTableName}`)
                 .then(response => {
                     if (response.data.dataTable) {
                         this.dataTable = response.data.dataTable;

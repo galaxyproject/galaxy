@@ -537,15 +537,6 @@ mapping:
           server process should be able to check for repository updates.  The
           setting for hours_between_check should be an integer between 1 and 24.
 
-      manage_dependency_relationships:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Enable use of an in-memory registry with bi-directional relationships between
-          repositories (i.e., in addition to lists of dependencies for a repository,
-          keep an in-memory registry of dependent items for each repository.
-
       tool_data_table_config_path:
         type: str
         default: config/tool_data_table_conf.xml
