@@ -105,7 +105,7 @@ def parse_json(input_file, output_file, advanced_json, simple_json):
 	amp_ocr.media = amp_media
 
 	# Create a dictionary of all the frames [FrameNum : List of Terms]
-	frame_dict=createFrameDictionary(simple_json['videos'], framerate)
+	frame_dict = createFrameDictionary(simple_json['videos'], framerate)
 	
 	# Convert to amp frame objects with bounding boxes
 	amp_frames = createAmpFrames(frame_dict, framerate)
@@ -234,9 +234,9 @@ def upload_video(apiUrl, location, accountId, auth_token, input_file):
 	upload_url = apiUrl + "/trial" +  "/Accounts/" + accountId + "/Videos"
 	params = {'accessToken':auth_token,
 				'name':'file_' + str(millis),
-				'description':'tododescription',
+				'description':'AMP File Upload',
 				'privacy':'private',
-				'partition':'todopartition'}
+				'partition':'No Partition'}
 
 
 	r = requests.post(url = upload_url, params = params, files = files) 
