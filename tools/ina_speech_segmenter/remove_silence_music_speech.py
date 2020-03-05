@@ -123,12 +123,16 @@ def concat_files(segments, output_file):
 	# Create the ffmpeg command, adding an input file for each segment created
 	if segments > 1:
 		ffmpegCmd = ['ffmpeg']
+		streams = ""
 		for s in range(0, segments):
+			streams = streams + "[" + str(s) + ":0]"
 			this_segment_name = "tmp_" + str(s) + ".wav"
 			ffmpegCmd.append("-i")
 			ffmpegCmd.append(this_segment_name)
-		ffmpegCmd.extend(['-filter_complex', "[0:0][1:0][2:0]concat=n=" + str(segments) + ":v=0:a=1[out]", "-map", "[out]", "output.wav"])
+		streams = streams +  "concat=n=" + str(segments) + ":v=0:a=1[out]"
+		ffmpegCmd.extend(['-filter_complex', streams, "-map", "[out]", "output.wav"])
 
+		print(ffmpegCmd)
 		# Run ffmpeg 
 		ffmpeg_out = subprocess.Popen(ffmpegCmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 		stdout, stderr = ffmpeg_out.communicate()
