@@ -110,7 +110,11 @@ class CustosAuthnz(IdentityProvider):
                             len(trans.app.auth_manager.authenticators) == 0):
                         user = existing_user
                     else:
-                        raise Exception("There already exists a user with email %s.  To associate this external login, you must first be logged in as that existing account." % email)
+                        message = 'There already exists a user with email {}.  To associate this external login, you must first be logged in as that existing account.' \
+                            '{}'.format(email, e.message)
+                        log.exception(message)
+                        raise exceptions.AuthenticationDuplicate(e.message)
+                        #raise Exception("There already exists a user with email %s.  To associate this external login, you must first be logged in as that existing account." % email)
                 else:
                     user = trans.app.user_manager.create(email=email, username=username)
                     user.set_random_password()

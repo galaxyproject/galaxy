@@ -38,7 +38,11 @@ class OIDC(JSAppLauncher):
         """
         rtv = []
         for authnz in trans.user.social_auth:
-            rtv.append({'id': trans.app.security.encode_id(authnz.id), 'provider': authnz.provider})
+            rtv.append({'id': trans.app.security.encode_id(authnz.id), 'provider': authnz.provider, 'email': authnz.uid})
+        #add cilogon and custos identities
+        for token in trans.user.custos_auth:
+            print "\n\n\n\nCUSTOS AUTH ", token
+            rtv.append({'id': trans.app.security.encode_id(token.id), 'provider': token.provider, 'email': token.uid})
         return rtv
 
     @web.json
@@ -70,13 +74,19 @@ class OIDC(JSAppLauncher):
             return trans.show_error_message('Failed to handle authentication callback from {}. '
                                             'Please try again, and if the problem persists, contact '
                                             'the Galaxy instance admin'.format(provider))
-        success, message, (redirect_url, user) = trans.app.authnz_manager.callback(provider,
-                                                                                   #kwargs['state'],
-                                                                                   kwargs.get('state', ' '),
-                                                                                   kwargs['code'],
-                                                                                   trans,
-                                                                                   login_redirect_url=url_for('/'),
-                                                                                   idphint=idphint)
+        try:
+            success, message, (redirect_url, user) = trans.app.authnz_manager.callback(provider,
+                                                                                kwargs.get('state', ' '),
+                                                                                kwargs['code'],
+                                                                                trans,
+                                                                                login_redirect_url=url_for('/'),
+                                                                                idphint=idphint)
+        except exceptions.AuthenticationDuplicate as e:
+            print "\n\n\nEXCEPTION4444", e.message, "\n\n\nEND"
+            #return trans.response.send_redirect(url_for(controller='authnz', action='login', provider=provider))# + "?error=" + e.message)
+            return trans.response.send_redirect(trans.request.base + url_for('/') + 'login?message=' + (e.message or "Duplicate Email"))
+
+        print "\n\n\n\nSUCCESS: %s, MESSAGE: %s", success, message
         if success is False:
             return trans.show_error_message(message)
         user = user if user is not None else trans.user

@@ -260,43 +260,11 @@ class AuthnzManager(object):
         except Exception as e:
             msg = 'The following error occurred when handling callback from `{}` identity provider: ' \
                   '{}'.format(provider, e.message)
-            log.exception(msg)
-            return False, msg, (None, None)
+            log.exception(message)
+            raise exceptions.AuthenticationDuplicate(e.message)
+            return False, message, (None, None)
 
-<<<<<<< HEAD
-    def logout(self, provider, trans, post_logout_redirect_url=None):
-        """
-        Log the user out of the identity provider.
-
-        :type provider: string
-        :param provider: set the name of the identity provider.
-        :type trans: GalaxyWebTransaction
-        :param trans: Galaxy web transaction.
-        :type post_logout_redirect_url: string
-        :param post_logout_redirect_url: (Optional) URL for identity provider
-            to redirect to after logging user out.
-        :return: a tuple (success boolean, message, redirect URI)
-        """
-        try:
-            # check if logout is enabled for this idp and return false if not
-            unified_provider_name = self._unify_provider_name(provider)
-            if self.oidc_backends_config[unified_provider_name]['enable_idp_logout'] is False:
-                return False, "IDP logout is not enabled for {}".format(provider), None
-
-            success, message, backend = self._get_authnz_backend(provider)
-            if success is False:
-                return False, message, None
-            return True, message, backend.logout(trans, post_logout_redirect_url)
-        except Exception as e:
-            msg = 'The following error occurred when logging out from `{}` identity provider: ' \
-                  '{}'.format(provider, e.message)
-            log.exception(msg)
-            return False, msg, None
-
-    def disconnect(self, provider, trans, disconnect_redirect_url=None):
-=======
     def disconnect(self, provider, trans, disconnect_redirect_url=None, idphint=None):
->>>>>>> 1683238e71... Implement Login via CILogon
         try:
             success, message, backend = self._get_authnz_backend(provider, idphint=idphint)
             if success is False:
