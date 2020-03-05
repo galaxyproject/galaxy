@@ -39,6 +39,7 @@
 
   <section id="video_ocr" name="Video OCR">
     <tool file="video_tools/tesseract.xml"/>
+    <tool file="video_tools/azure_video_indexer.xml"/>
   </section>
   
   <section id="hmgm" name="Human MGM">
