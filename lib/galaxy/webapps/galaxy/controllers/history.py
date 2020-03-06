@@ -1061,7 +1061,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 if not hda.deleted or hda.purged:
                     continue
                 if trans.user:
-                    if len(hda.dataset.active_storage_media_associations) == 0:
+                    if not hda.dataset.has_active_storage_media():
                         trans.user.adjust_total_disk_usage(-hda.quota_amount(trans.user))
                     else:
                         for assoc in hda.dataset.active_storage_media_associations:

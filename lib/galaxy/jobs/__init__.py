@@ -1713,7 +1713,7 @@ class JobWrapper(HasResourceParameters):
         for dataset_assoc in job.output_datasets:
             if not dataset_assoc.dataset.dataset.purged:
                 dataset_assoc.dataset.dataset.set_total_size()
-                if len(dataset_assoc.dataset.dataset.active_storage_media_associations) == 0:
+                if not dataset_assoc.dataset.dataset.has_active_storage_media():
                     collected_bytes += dataset_assoc.dataset.dataset.get_total_size()
                 else:
                     for assoc in dataset_assoc.dataset.dataset.active_storage_media_associations:

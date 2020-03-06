@@ -1737,7 +1737,7 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName, RepresentById):
             if set_hid:
                 dataset.hid = self._next_hid()
         if quota and self.user:
-            if len(dataset.dataset.active_storage_media_associations) == 0:
+            if not dataset.dataset.has_active_storage_media():
                 self.user.adjust_total_disk_usage(dataset.quota_amount(self.user))
             else:
                 for assoc in dataset.dataset.active_storage_media_associations:
@@ -1761,7 +1761,7 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName, RepresentById):
             if self.user:
                 disk_usage = 0
                 for dataset in datasets:
-                    if len(dataset.dataset.active_storage_media_associations) == 0:
+                    if not dataset.dataset.has_active_storage_media():
                         disk_usage += dataset.get_total_size()
                     else:
                         for assoc in dataset.dataset.active_storage_media_associations:

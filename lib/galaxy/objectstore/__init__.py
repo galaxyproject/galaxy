@@ -570,7 +570,7 @@ class NestedObjectStore(ObjectStore):
     def create(self, obj, ignore_media=False, **kwargs):
         """Create a backing file in a random backend."""
         if hasattr(obj, "active_storage_media_associations") and \
-                len(obj.active_storage_media_associations) > 0 and \
+                obj.has_active_storage_media() and \
                 not ignore_media:
             media = UserObjectStore(obj.active_storage_media_associations, self)
             return media.call_method("create", obj, **kwargs)
@@ -628,7 +628,7 @@ class NestedObjectStore(ObjectStore):
 
     def _call_method(self, method, obj, default, default_is_exception, ignore_media=False, **kwargs):
         if hasattr(obj, "active_storage_media_associations") and \
-                len(obj.active_storage_media_associations) > 0 and \
+                obj.has_active_storage_media() and \
                 not ignore_media:
             media = UserObjectStore(obj.active_storage_media_associations, self)
             return media.call_method(method, obj, default, default_is_exception, **kwargs)
@@ -887,7 +887,7 @@ class HierarchicalObjectStore(NestedObjectStore):
     def exists(self, obj, ignore_media=False, **kwargs):
         """Check all child object stores."""
         if hasattr(obj, "active_storage_media_associations") and \
-                len(obj.active_storage_media_associations) > 0 and \
+                obj.has_active_storage_media() and \
                 not ignore_media:
             media = UserObjectStore(obj.active_storage_media_associations, self)
             return media.call_method("exists", obj, **kwargs)
@@ -905,7 +905,7 @@ class HierarchicalObjectStore(NestedObjectStore):
         # - `galaxy.model.Dataset`
         # - `galaxy.model.Job`
         if hasattr(obj, "active_storage_media_associations") and \
-                len(obj.active_storage_media_associations) > 0 and \
+                obj.has_active_storage_media() and \
                 not ignore_media:
             media = UserObjectStore(obj.active_storage_media_associations, self)
             return media.call_method("create", obj, **kwargs)
