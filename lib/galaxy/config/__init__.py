@@ -468,7 +468,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         #  Create whitelist file to accept only certain email domains
         self.whitelist_content = None
         if self.whitelist_file:
-            self.whitelist_file = os.path.join(self.root, self.whitelist_file)
             try:
                 with open(self.whitelist_file) as f:
                     self.whitelist_content = [line.rstrip() for line in f]
