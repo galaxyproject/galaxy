@@ -7,7 +7,6 @@ import re
 
 from galaxy import (
     exceptions,
-    model,
     util
 )
 from galaxy.managers import (

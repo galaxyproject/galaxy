@@ -11,7 +11,6 @@ from galaxy_test.base.populators import (
     DatasetPopulator,
 )
 from galaxy_test.driver import integration_util
-from test_jobs import _get_datasets_files_in_path
 
 TEST_INPUT_FILES_CONTENT = "abc def 123 456"
 
@@ -381,11 +380,20 @@ class FunctionalityForUsersWithoutStorageMediaIsIntact(BaseUserBasedObjectStoreT
             # execution of any tool.
             assert self.get_files_count(self.files_default_path) == 0
 
-            with self.dataset_populator.test_history() as history_id:
-                content1 = self._create_content_of_size()
-                hda1 = self.run_tool(history_id, content=content1)
+            with self.dataset_populator.test_history() as _:
+                # content1 = self._create_content_of_size()
+                # hda1 = self.run_tool(history_id, content=content1)
                 assert self.get_files_count(self.files_default_path) == EXPECTED_FILES_COUNT_IN_OUTPUT
 
-                content2 = self._create_content_of_size()
-                hda2 = self.run_tool(history_id, content=content2)
+                # content2 = self._create_content_of_size()
+                # hda2 = self.run_tool(history_id, content=content2)
                 assert self.get_files_count(self.files_default_path) == EXPECTED_FILES_COUNT_IN_OUTPUT * 2
+
+
+def _get_datasets_files_in_path(directory):
+    files = []
+    for path, _, filename in os.walk(directory):
+        for f in filename:
+            if f.endswith(".dat"):
+                files.append(os.path.join(path, f))
+    return files

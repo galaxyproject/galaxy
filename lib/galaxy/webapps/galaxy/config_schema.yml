@@ -817,7 +817,8 @@ mapping:
 
       default_storage_media_jobs_directory:
         type: str
-        default: database/job_working_directory_storage_media
+        default: job_working_directory_storage_media
+        path_resolves_to: data_dir
         required: false
         desc: |
           Sets a base default jobs working directory for all users storage media, where each
@@ -827,7 +828,8 @@ mapping:
 
       default_storage_media_cache_path:
         type: str
-        default: database/storage_media_cache
+        default: storage_media_cache
+        path_resolves_to: data_dir
         required: false
         desc: |
           Sets a base default cache path for all users storage media, where each storage media

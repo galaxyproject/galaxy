@@ -15,7 +15,6 @@ from webob.compat import cgi_FieldStorage
 
 import galaxy.model
 from galaxy import util
-from galaxy.model import StorageMedia
 from galaxy.tool_util.parser import get_input_source as ensure_input_source
 from galaxy.util import (
     sanitize_param,
