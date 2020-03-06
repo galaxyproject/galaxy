@@ -687,13 +687,13 @@ galaxy:
   # Example value 'config/disposable_email_blacklist.conf'
   #blacklist_file: null
 
-  # E-mail domains whitelist is used for filtering out users that are
-  # using email address not belonging to the instition/company domains
-  # during the registration. If their address domain matches any domain
-  # in the whitelist, they are refused the registration. This is a more
-  # restrictive option than blacklist, and therefore, in case the
-  # previous one is defined this one will be ignored.
-  #whitelist_file: config/disposable_email_whitelist.conf
+  # E-mail domains whitelist is used to specify allowed email address
+  # domains. If the list is non-empty and a user attempts registration
+  # using an email address belonging to a domain that is not on the
+  # list, registration will be enied. This is a more restrictive option
+  # than <blacklist_file>, and therefore, in case <blacklist_file> is
+  # defined, <whitelist_file> will be ignored.
+  #whitelist_file: disposable_email_whitelist.conf
 
   # Registration warning message is used to discourage people from
   # registering multiple accounts.  Applies mostly for the main Galaxy
