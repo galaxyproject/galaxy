@@ -589,6 +589,13 @@ mapping:
           will use a less efficient monitoring scheme that may work in wider range of scenarios than
           the watchdog default.
 
+      refgenie_config_file:
+        type: str
+        default: null
+        required: false
+        desc: |
+          File containing refgenie configuration. Can be used by refgenie backed data tables.
+
       build_sites_config_file:
         type: str
         default: build_sites.yml

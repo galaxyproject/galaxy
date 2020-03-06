@@ -19,6 +19,7 @@ from glob import glob
 from tempfile import NamedTemporaryFile
 from xml.etree import ElementTree
 
+import refgenconf
 import requests
 
 from galaxy import util
@@ -68,13 +69,14 @@ class ToolDataPathFiles(object):
 class ToolDataTableManager(object):
     """Manages a collection of tool data tables"""
 
-    def __init__(self, tool_data_path, config_filename=None, tool_data_table_config_path_set=None):
+    def __init__(self, tool_data_path, config_filename=None, tool_data_table_config_path_set=None, other_config_dict=None):
         self.tool_data_path = tool_data_path
         # This stores all defined data table entries from both the tool_data_table_conf.xml file and the shed_tool_data_table_conf.xml file
         # at server startup. If tool shed repositories are installed that contain a valid file named tool_data_table_conf.xml.sample, entries
         # from that file are inserted into this dict at the time of installation.
         self.data_tables = {}
         self.tool_data_path_files = ToolDataPathFiles(self.tool_data_path)
+        self.other_config_dict = other_config_dict or {}
         for single_config_filename in util.listify(config_filename):
             if not single_config_filename:
                 continue
@@ -118,7 +120,7 @@ class ToolDataTableManager(object):
             tree = util.parse_xml(filename)
             root = tree.getroot()
             for table_elem in root.findall('table'):
-                table = ToolDataTable.from_elem(table_elem, tool_data_path, from_shed_config, filename=filename, tool_data_path_files=self.tool_data_path_files)
+                table = ToolDataTable.from_elem(table_elem, tool_data_path, from_shed_config, filename=filename, tool_data_path_files=self.tool_data_path_files, other_config_dict=self.other_config_dict)
                 table_elems.append(table_elem)
                 if table.name not in self.data_tables:
                     self.data_tables[table.name] = table
@@ -240,12 +242,12 @@ class ToolDataTableManager(object):
 class ToolDataTable(object):
 
     @classmethod
-    def from_elem(cls, table_elem, tool_data_path, from_shed_config, filename, tool_data_path_files):
+    def from_elem(cls, table_elem, tool_data_path, from_shed_config, filename, tool_data_path_files, other_config_dict=None):
         table_type = table_elem.get('type', 'tabular')
-        assert table_type in tool_data_table_types, "Unknown data table type '%s'" % type
-        return tool_data_table_types[table_type](table_elem, tool_data_path, from_shed_config=from_shed_config, filename=filename, tool_data_path_files=tool_data_path_files)
+        assert table_type in tool_data_table_types, "Unknown data table type '%s'" % table_type
+        return tool_data_table_types[table_type](table_elem, tool_data_path, from_shed_config=from_shed_config, filename=filename, tool_data_path_files=tool_data_path_files, other_config_dict=other_config_dict)
 
-    def __init__(self, config_element, tool_data_path, from_shed_config=False, filename=None, tool_data_path_files=None):
+    def __init__(self, config_element, tool_data_path, from_shed_config=False, filename=None, tool_data_path_files=None, other_config_dict=None):
         self.name = config_element.get('name')
         self.comment_char = config_element.get('comment_char')
         self.empty_field_value = config_element.get('empty_field_value', '')
@@ -255,6 +257,7 @@ class ToolDataTable(object):
         self.filenames = OrderedDict()
         self.tool_data_path = tool_data_path
         self.tool_data_path_files = tool_data_path_files
+        self.other_config_dict = other_config_dict or {}
         self.missing_index_file = None
         # increment this variable any time a new entry is added, or when the table is totally reloaded
         # This value has no external meaning, and does not represent an abstract version of the underlying data
@@ -323,8 +326,8 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
 
     type_key = 'tabular'
 
-    def __init__(self, config_element, tool_data_path, from_shed_config=False, filename=None, tool_data_path_files=None):
-        super(TabularToolDataTable, self).__init__(config_element, tool_data_path, from_shed_config, filename, tool_data_path_files)
+    def __init__(self, config_element, tool_data_path, from_shed_config=False, filename=None, tool_data_path_files=None, other_config_dict=None):
+        super(TabularToolDataTable, self).__init__(config_element, tool_data_path, from_shed_config, filename, tool_data_path_files, other_config_dict=other_config_dict)
         self.config_element = config_element
         self.data = []
         self.configure_and_load(config_element, tool_data_path, from_shed_config)
@@ -362,6 +365,10 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                     log.debug('Loading Data Table URL "%s" as filename "%s".', filename, tmp_file.name)
                     filename = tmp_file.name
                     tmp_file.flush()
+                else:
+                    # Pull the filename from a global config
+                    filename = file_element.get('from_config', None)
+                    filename = self.other_config_dict.get(filename, None)
             filename = file_path = expand_here_template(filename, here=self.here)
             found = False
             if file_path is None:
@@ -506,7 +513,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
 
     def extend_data_with(self, filename, errors=None):
         here = os.path.dirname(os.path.abspath(filename))
-        self.data.extend(self.parse_file_fields(open(filename), errors=errors, here=here))
+        self.data.extend(self.parse_file_fields(filename, errors=errors, here=here))
         if not self.allow_duplicate_entries:
             self._deduplicate_data()
 
@@ -517,7 +524,8 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
         TODO: Allow named access to fields using the column names.
         """
         separator_char = "<TAB>" if self.separator == "\t" else self.separator
-
+        if isinstance(reader, str):
+            reader = open(reader)
         rval = []
         for i, line in enumerate(reader):
             if line.lstrip().startswith(self.comment_char):
@@ -786,6 +794,97 @@ class TabularToolDataField(Dictifiable):
         return rval
 
 
+class RefgenieToolDataTable(TabularToolDataTable):
+    """
+    Data stored in refgenie
+    <table name="all_fasta" type="refgenie" asset="fasta" >
+        <file path="refgenie.yml" />
+        <field name="value" value="refgenie:uuid"/>
+        <field name="dbkey" value="refgenie:genome"/>
+        <field name="name" value="refgenie:display_name"/>
+        <field name="path" value="refgenie:asset"/>
+    </table>
+    """
+    dict_collection_visible_keys = ['name']
+
+    type_key = 'refgenie'
+
+    def __init__(self, config_element, tool_data_path, from_shed_config=False, filename=None, tool_data_path_files=None, other_config_dict=None):
+        super(RefgenieToolDataTable, self).__init__(config_element, tool_data_path, from_shed_config, filename, tool_data_path_files, other_config_dict=other_config_dict)
+        self.config_element = config_element
+        self.data = []
+        self.configure_and_load(config_element, tool_data_path, from_shed_config)
+
+    def configure_and_load(self, config_element, tool_data_path, from_shed_config=False, url_timeout=10):
+        self.rg_asset = config_element.get('asset', None)
+        assert self.rg_asset, ValueError('You must specify an asset attribute.')
+        super(RefgenieToolDataTable, self).configure_and_load(config_element, tool_data_path, from_shed_config=from_shed_config, url_timeout=url_timeout)
+
+    def parse_column_spec(self, config_element):
+        self.columns = {}
+        self.key_map = {}
+        self.largest_index = 0
+        for i, elem in enumerate(config_element.findall('field')):
+            name = elem.get('name', None)
+            assert name, ValueError('You must provide a name refgenie field element.')
+            value = elem.get('value', None)
+            self.key_map[name] = value
+            column_index = int(elem.get('column_index', i))
+
+            empty_field_value = elem.get('empty_field_value', None)
+            if empty_field_value is not None:
+                self.empty_field_values[name] = empty_field_value
+
+            self.columns[name] = column_index
+            self.largest_index = max(self.largest_index, column_index)
+        if 'name' not in self.columns:
+            self.columns['name'] = self.columns['value']
+
+    def parse_file_fields(self, filename, errors=None, here="__HERE__"):
+        rgc = refgenconf.RefGenConf(filename)
+        rval = []
+        for genome in rgc.list_genomes_by_asset(self.rg_asset):
+            genome_attributes = rgc.get_genome_attributes(genome)
+            description = genome_attributes.get('description', None)
+            asset_list = rgc.assets_dict(genome, include_tags=True)[genome]
+            for tagged_asset in asset_list:
+                asset, tag = tagged_asset.rsplit(':', 1)
+                if asset != self.rg_asset:
+                    continue
+                digest = rgc.get_asset_digest(genome, asset, tag=tag)
+                uuid = 'refgenie:%s:%s:%s:%s' % (genome, tag, self.rg_asset, digest)
+                display_name = description or '%s:%s' % (genome, tagged_asset)
+
+                fields = [''] * (self.largest_index + 1)
+                for name, index in self.columns.items():
+                    rg_value = self.key_map[name]
+                    if rg_value == 'refgenie:uuid':
+                        rg_value = uuid
+                    elif rg_value == 'refgenie:genome':
+                        rg_value = genome
+                    elif rg_value == 'refgenie:display_name':
+                        rg_value = display_name
+                    elif rg_value == 'refgenie:asset':
+                        rg_value = rgc.get_asset(genome, asset, tag_name=tag)
+                    elif rg_value.startswith('refgenie:seek_key:'):
+                        rg_value = rg_value.split('refgenie:seek_key:', 1)[1]
+                        rg_value = rgc.get_asset(genome, asset, tag_name=tag, seek_key=rg_value)
+                    # Default is hard-coded value
+                    fields[index] = rg_value
+                rval.append(fields)
+        log.debug("Loaded %i entries from refgenie '%s' asset '%s' for '%s'", len(rval), filename, self.rg_asset, self.name)
+        return rval
+
+    def _add_entry(self, entry, allow_duplicates=True, persist=False, persist_on_error=False, entry_source=None, **kwd):
+        raise NotImplementedError("Not supported")
+
+    def _remove_entry(self, values):
+        raise NotImplementedError("Not supported")
+
+    def filter_file_fields(self, loc_file, values):
+        raise NotImplementedError("Not supported")
+
+
 def expand_here_template(content, here=None):
     if here and content:
         content = string.Template(content).safe_substitute({"__HERE__": here})
@@ -793,4 +892,4 @@ def expand_here_template(content, here=None):
 
 
 # Registry of tool data types by type_key
-tool_data_table_types = dict([(cls.type_key, cls) for cls in [TabularToolDataTable]])
+tool_data_table_types = dict([(cls.type_key, cls) for cls in [TabularToolDataTable, RefgenieToolDataTable]])

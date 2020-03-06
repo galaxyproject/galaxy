@@ -110,4 +110,20 @@
         <columns>value, name, url</columns>
         <file path="tool-data/icn3d_simple_display.loc" />
     </table>
+    <!-- Refgenie all_fasta -->
+    <table name="all_fasta" type="refgenie" asset="fasta" >
+        <file from_config="refgenie_config_file" />
+        <field name="value" value="refgenie:uuid"/>
+        <field name="dbkey" value="refgenie:genome"/>
+        <field name="name" value="refgenie:display_name"/>
+        <field name="path" value="refgenie:asset"/>
+    </table>
+    <!-- Refgenie bowtie2_indexes -->
+    <table name="bowtie2_indexes" type="refgenie" asset="bowtie2_index" >
+        <file from_config="refgenie_config_file" />
+        <field name="value" value="refgenie:uuid"/>
+        <field name="dbkey" value="refgenie:genome"/>
+        <field name="name" value="refgenie:display_name"/>
+        <field name="path" value="refgenie:asset"/>
+    </table>
 </tables>

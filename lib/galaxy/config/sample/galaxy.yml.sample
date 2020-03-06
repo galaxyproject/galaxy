@@ -488,6 +488,10 @@ galaxy:
   # scenarios than the watchdog default.
   #watch_tool_data_dir: 'false'
 
+  # File containing refgenie configuration. Can be used by refgenie
+  # backed data tables.
+  #refgenie_config_file: null
+
   # File that defines the builds (dbkeys) available at sites used by
   # display applications and the URL to those sites.
   # The value of this option will be resolved with respect to

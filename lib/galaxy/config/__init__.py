@@ -1058,7 +1058,8 @@ class ConfiguresGalaxyMixin(object):
 
         # Initialize tool data tables using the config defined by self.config.tool_data_table_config_path.
         self.tool_data_tables = ToolDataTableManager(tool_data_path=self.config.tool_data_path,
-                                                     config_filename=self.config.tool_data_table_config_path)
+                                                     config_filename=self.config.tool_data_table_config_path,
+                                                     other_config_dict=self.config)
         # Load additional entries defined by self.config.shed_tool_data_table_config into tool data tables.
         try:
             self.tool_data_tables.load_from_config_file(config_filename=self.config.shed_tool_data_table_config,
