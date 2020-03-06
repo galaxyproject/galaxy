@@ -904,7 +904,8 @@ mapping:
 
       whitelist_file:
         type: str
-        default: config/disposable_email_whitelist.conf
+        default: disposable_email_whitelist.conf
+        path_resolves_to: config_dir
         required: false
         desc: |
           E-mail domains whitelist is used to specify allowed email address domains.
