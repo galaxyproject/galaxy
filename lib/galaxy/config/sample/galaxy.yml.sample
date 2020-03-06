@@ -1607,7 +1607,9 @@ galaxy:
 
   # XML config file that contains the job metric collection
   # configuration.
-  #job_metrics_config_file: config/job_metrics_conf.xml
+  # The value of this option will be resolved with respect to
+  # <config_dir>.
+  #job_metrics_config_file: job_metrics_conf.xml
 
   # This option allows users to see the job metrics (except for
   # environment variables).
