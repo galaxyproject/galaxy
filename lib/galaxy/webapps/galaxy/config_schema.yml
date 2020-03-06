@@ -910,7 +910,9 @@ mapping:
           E-mail domains whitelist is used for filtering out users that are using
           email address not belonging to the instition/company domains during the
           registration. If their address domain matches any domain in the whitelist,
-          they are refused the registration.
+          they are refused the registration. This is a more restrictive option than
+          blacklist, and therefore, in case the previous one is defined this one
+          will be ignored.
 
       registration_warning_message:
         type: str
