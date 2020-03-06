@@ -687,6 +687,14 @@ galaxy:
   # Example value 'config/disposable_email_blacklist.conf'
   #blacklist_file: null
 
+  # E-mail domains whitelist is used for filtering out users that are
+  # using email address not belonging to the instition/company domains
+  # during the registration. If their address domain matches any domain
+  # in the whitelist, they are refused the registration. This is a more
+  # restrictive option than blacklist, and therefore, in case the
+  # previous one is defined this one will be ignored.
+  #whitelist_file: config/disposable_email_whitelist.conf
+
   # Registration warning message is used to discourage people from
   # registering multiple accounts.  Applies mostly for the main Galaxy
   # instance. If no message specified the warning box will not be shown.
@@ -1607,7 +1615,9 @@ galaxy:
 
   # XML config file that contains the job metric collection
   # configuration.
-  #job_metrics_config_file: config/job_metrics_conf.xml
+  # The value of this option will be resolved with respect to
+  # <config_dir>.
+  #job_metrics_config_file: job_metrics_conf.xml
 
   # This option allows users to see the job metrics (except for
   # environment variables).
