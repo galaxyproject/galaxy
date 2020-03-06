@@ -1127,9 +1127,10 @@ class ObjectStorePopulator(object):
     datasets from a job end up with the same object_store_id.
     """
 
-    def __init__(self, app):
+    def __init__(self, app, user=None):
         self.object_store = app.object_store
         self.object_store_id = None
+        self.user = user
 
     def set_object_store_id(self, data, **kwargs):
         # Create an empty file immediately.  The first dataset will be
@@ -1137,7 +1138,7 @@ class ObjectStorePopulator(object):
         # the same store as the first.
         data.dataset.object_store_id = self.object_store_id
         try:
-            self.object_store.create(data.dataset)
+            self.object_store.create(data.dataset, user=self.user)
         except ObjectInvalid:
             raise Exception('Unable to create output dataset: object store is full')
         self.object_store_id = data.dataset.object_store_id  # these will be the same thing after the first output
