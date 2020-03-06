@@ -482,16 +482,6 @@ mapping:
           disposable email address during the registration.  If their address domain
           matches any domain in the blacklist, they are refused the registration.
 
-      whitelist_file:
-        type: str
-        default: config/disposable_email_whitelist.conf
-        required: false
-        desc: |
-          E-mail domains whitelist is used for filtering out users that are using
-          email address not belonging to the instition/company domains during the
-          registration. If their address domain matches any domain in the whitelist,
-          they are refused the registration.
-
       brand:
         type: str
         default: null
