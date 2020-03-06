@@ -691,8 +691,8 @@ galaxy:
   # domains. If the list is non-empty and a user attempts registration
   # using an email address belonging to a domain that is not on the
   # list, registration will be enied. This is a more restrictive option
-  # than <blacklist_file>, and therefore, in case <blacklist_file> is
-  # defined, <whitelist_file> will be ignored.
+  # than <blacklist_file>, and therefore, in case <whitelist_file> is
+  # defined, <blacklist_file> will be ignored.
   #whitelist_file: disposable_email_whitelist.conf
 
   # Registration warning message is used to discourage people from

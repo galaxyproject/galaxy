@@ -1231,7 +1231,7 @@
     using an email address belonging to a domain that is not on the
     list, registration will be enied. This is a more restrictive
     option than <blacklist_file>, and therefore, in case
-    <blacklist_file> is defined, <whitelist_file> will be ignored.
+    <whitelist_file> is defined, <blacklist_file> will be ignored.
 :Default: ``disposable_email_whitelist.conf``
 :Type: str
 
