@@ -46,6 +46,13 @@ def validate_email(trans, email, user=None, check_dup=True, allow_empty=False):
             domain = ('.').join(domain.split('.')[-2:])
         if domain in trans.app.config.blacklist_content:
             message = "Please enter your permanent email address."
+    #  If the whitelist is not empty filter out any domain not in the list.
+    elif trans.app.config.whitelist_content is not None:
+        domain = email.split('@')[1]
+        if len(domain.split('.')) > 2:
+            domain = ('.').join(domain.split('.')[-2:])
+        if domain not in trans.app.config.whitelist_content:
+            message = "Please enter an allowed domain email address for this server."
     return message
 
 
