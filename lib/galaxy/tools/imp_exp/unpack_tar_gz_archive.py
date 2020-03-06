@@ -29,14 +29,13 @@ def url_to_file(url, dest_file):
     assert url_reader.ok, "History import failed, server returned '%s'" % url_reader.reason
     CHUNK = 10 * 1024  # 10k
     total = 0
-    fp = open(dest_file, 'wb')
-    for chunk in url_reader.iter_content(chunk_size=CHUNK):
-        if chunk:
-            fp.write(chunk)
-            total += CHUNK
-            if total > MAX_SIZE:
-                break
-    fp.close()
+    with open(dest_file, 'wb') as fp:
+        for chunk in url_reader.iter_content(chunk_size=CHUNK):
+            if chunk:
+                fp.write(chunk)
+                total += CHUNK
+                if total > MAX_SIZE:
+                    break
     return dest_file
 
 
