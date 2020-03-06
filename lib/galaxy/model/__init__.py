@@ -592,6 +592,9 @@ class User(Dictifiable, RepresentById):
     def is_active(self):
         return self.active
 
+    def has_active_storage_media(self):
+        return len(self.active_storage_media) > 0
+
     def is_authenticated(self):
         # TODO: is required for python social auth (PSA); however, a user authentication is relative to the backend.
         # For instance, a user who is authenticated with Google, is not necessarily authenticated
@@ -2482,6 +2485,9 @@ class Dataset(StorableObject, RepresentById):
         )
         serialization_options.attach_identifier(id_encoder, self, rval)
         return rval
+
+    def has_active_storage_media(self):
+        return len(self.active_storage_media_associations) > 0
 
 
 class DatasetSource(RepresentById):

@@ -565,7 +565,7 @@ class JobHandlerQueue(Monitors):
         # exception(s).
         if state == JOB_READY and self.app.config.enable_quotas and \
                 (job.user is not None and
-                 (job.user.active_storage_media is None or len(job.user.active_storage_media) == 0)):
+                 (job.user.active_storage_media is None or not job.users.has_active_storage_media())):
             quota = self.app.quota_agent.get_quota(job.user)
             if quota is not None:
                 try:
