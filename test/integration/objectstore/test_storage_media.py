@@ -221,8 +221,8 @@ class DataPersistedOnUserMedia(BaseUserBasedObjectStoreTestCase):
 
     def test_anonymous_user_should_be_able_to_store_data_without_having_to_plug_a_media(self):
         """
-        This test asserts if an anonymous user is able to user Galaxy without
-        having to plug a media. In general, it asserts if an anonymous user
+        This test asserts if an anonymous user is able to use Galaxy without
+        having to plug a media. In general, this test asserts if an anonymous user
         is able to upload a dataset, run a tool, and successfully delete/purge
         datasets without having to plug a media.
         """
@@ -380,13 +380,13 @@ class FunctionalityForUsersWithoutStorageMediaIsIntact(BaseUserBasedObjectStoreT
             # execution of any tool.
             assert self.get_files_count(self.files_default_path) == 0
 
-            with self.dataset_populator.test_history() as _:
-                # content1 = self._create_content_of_size()
-                # hda1 = self.run_tool(history_id, content=content1)
+            with self.dataset_populator.test_history() as history_id:
+                content1 = self._create_content_of_size()
+                self.run_tool(history_id, content=content1)
                 assert self.get_files_count(self.files_default_path) == EXPECTED_FILES_COUNT_IN_OUTPUT
 
-                # content2 = self._create_content_of_size()
-                # hda2 = self.run_tool(history_id, content=content2)
+                content2 = self._create_content_of_size()
+                self.run_tool(history_id, content=content2)
                 assert self.get_files_count(self.files_default_path) == EXPECTED_FILES_COUNT_IN_OUTPUT * 2
 
 

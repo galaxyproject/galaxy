@@ -607,19 +607,19 @@ galaxy:
   # this path named with the media's encoded ID. This attribute is set
   # for each media independency in storage_media table; hence, admins
   # may modify records in that table to define user/media-specific path.
-  #default_storage_media_jobs_directory: database/job_working_directory_storage_media
+  #default_storage_media_jobs_directory: job_working_directory_storage_media
 
   # Sets a base default cache path for all users storage media, where
   # each storage media will have a separate folder under this path named
   # with the media's encoded ID. This attribute is set for each media
   # independency in storage_media table; hence, admins may modify
   # records in that table to define user/media-specific path.
-  #default_storage_media_cache_path: database/storage_media_cache
+  #default_storage_media_cache_path: storage_media_cache
 
   # Sets a default cache size for all users storage media; in Gigabytes.
   # This attribute is set for each media independency in storage_media
-  # table; hence, admins may modify records in that table to define user
-  # /media-specific path.
+  # table; hence, admins may modify records in that table to define
+  # user/media-specific path.
   #default_storage_media_cache_size: 100
 
   # Galaxy sends mail for various things: subscribing users to the

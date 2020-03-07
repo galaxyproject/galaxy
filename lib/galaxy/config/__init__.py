@@ -548,7 +548,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             os.path.join(self.data_dir, "job_working_directory_storage_media")))
         self.default_storage_media_cache_path = self.resolve_path(kwargs.get(
             "default_storage_media_cache_path",
-            os.path.join(self.data_dir, "database/storage_media_cache")))
+            os.path.join(self.data_dir, "storage_media_cache")))
         self.default_storage_media_cache_size = kwargs.get(
             "default_storage_media_cache_size",
             100)
