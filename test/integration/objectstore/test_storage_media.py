@@ -265,7 +265,7 @@ class DataPersistedOnUserMedia(BaseUserBasedObjectStoreTestCase):
         is purged and other users data is intact. For this, this test asserts the
         following:
 
-        1- creates 10 users, plugs separate media for each, and asserts if
+        1- creates 2 users, plugs separate media for each, and asserts if
         the media is empty before running any job;
 
         2- for each user, runs a tool that creates 10 datasets, and waits for
@@ -279,7 +279,7 @@ class DataPersistedOnUserMedia(BaseUserBasedObjectStoreTestCase):
             a- all the files in that user's media are deleted;
             b- for all other users, checks if the data in their media is intact.
         """
-        users_count = 11
+        users_count = 2
         users_data = {}
         for i in range(1, users_count):
             rnd_user_id = self._rnd_str_generator()
