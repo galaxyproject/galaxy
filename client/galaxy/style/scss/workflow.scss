@@ -122,9 +122,12 @@
                 z-index: 101;
             }
             .mark-terminal {
-                cursor: pointer;
+                @extend .far;
+                @extend .fa-square;
                 color: $text-muted;
+                cursor: pointer;
                 &.mark-terminal-active {
+                    @extend .fa-check-square;
                     color: $brand-success;
                 }
             }
@@ -143,7 +146,8 @@
                 left: -0.8rem;
             }
             .callout-terminal {
-                position: absolute;
+                @extend .float-left;
+                @extend .mr-1;
             }
             .workflow-overview {
                 border-top-left-radius: 0.3rem;

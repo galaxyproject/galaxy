@@ -5,7 +5,7 @@ export class DataInputView {
         this.input = options.input;
         this.nodeView = options.nodeView;
         this.terminalElement = options.terminalElement;
-        this.$el = $("<div class='form-row dataRow input-data-row'/>");
+        this.$el = $(`<div class="form-row dataRow input-data-row"/>`);
         this.$el.attr("name", this.input.name).html(this.input.label || this.input.name);
         if (!options.skipResize) {
             this.$el.css({
@@ -29,7 +29,7 @@ export class DataInputView {
 
 export class DataOutputView {
     constructor(app, options = {}) {
-        this.$el = $("<div class='form-row dataRow'/>");
+        this.$el = $(`<div class="form-row dataRow"/>`);
         this.output = options.output;
         this.terminalElement = options.terminalElement;
         this.nodeView = options.nodeView;
@@ -37,8 +37,9 @@ export class DataOutputView {
         let label = output.label || output.name;
         const node = this.nodeView.node;
         const isInput = output.extensions.indexOf("input") >= 0;
+        const datatype = output.force_datatype || output.extensions.join(", ");
         if (!isInput) {
-            label = `${label} (${output.force_datatype || output.extensions.join(", ")})`;
+            label = `${label} (${datatype})`;
         }
         this.$el.html(label);
         this.calloutView = null;
@@ -49,7 +50,7 @@ export class DataOutputView {
                 node: node
             });
             this.calloutView = calloutView;
-            this.$el.append(calloutView.$el);
+            this.$el.prepend(calloutView.$el);
         }
         this.$el.css({
             position: "absolute",
@@ -70,14 +71,14 @@ export class DataOutputView {
     }
     redrawWorkflowOutput() {
         if (this.calloutView) {
-            this.calloutView.resetImage();
+            this.calloutView.render();
         }
     }
 }
 
 export class ParameterOutputView {
     constructor(app, options = {}) {
-        this.$el = $("<div class='form-row dataRow'/>");
+        this.$el = $(`<div class="form-row dataRow"/>`);
         this.output = options.output;
         this.terminalElement = options.terminalElement;
         this.nodeView = options.nodeView;
@@ -114,7 +115,7 @@ export class ParameterOutputView {
     }
     redrawWorkflowOutput() {
         if (this.calloutView) {
-            this.calloutView.resetImage();
+            this.calloutView.render();
         }
     }
 }
@@ -130,18 +131,17 @@ export class OutputCalloutView {
         const outputName = view.output.name;
         this.$el
             .attr("class", `callout-terminal ${outputName}`)
-            .css({ display: "none" })
             .append(
                 $("<icon />")
-                    .addClass("mark-terminal fa fa-asterisk")
+                    .addClass("mark-terminal")
                     .click(() => {
+                        this.render();
                         if (node.isWorkflowOutput(outputName)) {
                             node.removeWorkflowOutput(outputName);
-                            view.$el.find("icon").removeClass("mark-terminal-active");
                         } else {
                             node.addWorkflowOutput(outputName);
-                            view.$el.find("icon").addClass("mark-terminal-active");
                         }
+                        this.render();
                         app.has_changes = true;
                         app.canvas_manager.draw_overview();
                     })
@@ -150,16 +150,9 @@ export class OutputCalloutView {
                 delay: 500,
                 title: "Mark dataset as a workflow output. All unmarked datasets will be hidden."
             });
-
-        this.$el.css({
-            top: "50%",
-            margin: "-8px 0px 0px 0px",
-            right: 8
-        });
-        this.$el.show();
-        this.resetImage();
+        this.render();
     }
-    resetImage() {
+    render() {
         if (!this.node.isWorkflowOutput(this.output.name)) {
             this.$el.find("icon").removeClass("mark-terminal-active");
         } else {

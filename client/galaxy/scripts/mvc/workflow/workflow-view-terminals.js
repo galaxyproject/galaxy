@@ -227,7 +227,6 @@ export class BaseOutputTerminalView {
                     removeMenu();
                     new Connector(this.app.canvas_manager, this.terminal, inputTerminal).redraw();
                     ariaAlert("Node connected");
-
                     if (inputTerminal.connectors.length > 0) {
                         const t = $("<div/>")
                             .addClass("delete-terminal")
@@ -266,7 +265,6 @@ export class BaseOutputTerminalView {
             inputChoicesMenu.setAttribute("role", "menu");
             this.$el.attr("aria-grabbed", "true");
             this.$el.attr("aria-owns", "input-choices-menu");
-
             $(".input-terminal").each((i, el) => {
                 const input = $(el);
                 const inputTerminal = input.context.terminal;
@@ -290,7 +288,6 @@ export class BaseOutputTerminalView {
                 ariaAlert("There are no available inputs for this selected output");
             }
         };
-
         if (e.keyCode === 32) {
             //Space
             ariaAlert("Node selected");
@@ -321,9 +318,7 @@ export class BaseOutputTerminalView {
         var h = $("<div class='drag-terminal'/>")
             .appendTo("#canvas-container")
             .get(0);
-
         h.dropTooltip = "";
-
         // Terminal and connection to display noodle while dragging
         $(h).tooltip({
             title: function() {
