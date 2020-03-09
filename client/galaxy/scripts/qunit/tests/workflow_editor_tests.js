@@ -199,9 +199,7 @@ QUnit.test("can accept list collection for empty multiple inputs", function(asse
     var other = {
         node: {},
         datatypes: ["tabular"],
-        mapOver: function() {
-            return new Terminals.CollectionTypeDescription("list");
-        }
+        mapOver: new Terminals.CollectionTypeDescription("list")
     };
     this.multiple();
     assert.ok(this.test_accept(other));
@@ -211,9 +209,7 @@ QUnit.test("cannot accept list collection for multiple input if collection alrea
     var other = {
         node: {},
         datatypes: ["tabular"],
-        mapOver: function() {
-            return new Terminals.CollectionTypeDescription("list");
-        }
+        mapOver: new Terminals.CollectionTypeDescription("list")
     };
     this.multiple();
     this.with_test_connector(() => {
