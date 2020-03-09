@@ -1,9 +1,9 @@
+from selenium.common.exceptions import NoSuchElementException
+
 from .framework import (
     selenium_test,
     SeleniumTestCase
 )
-from selenium.common.exceptions import NoSuchElementException
-
 
 
 class HistoryMultiViewTestCase(SeleniumTestCase):
@@ -64,7 +64,6 @@ class HistoryMultiViewTestCase(SeleniumTestCase):
         self.copy_history(history_id)
         self.assert_history(history_id, histories_number=2)
 
-
     @selenium_test
     def test_delete_history(self):
         history_id = self.current_history_id()
@@ -78,7 +77,6 @@ class HistoryMultiViewTestCase(SeleniumTestCase):
         self.sleep_for(self.wait_types.UX_RENDER)
 
         self.assert_history(history_id, should_exist=False)
-
 
     @selenium_test
     def test_purge_history(self):
@@ -131,7 +129,6 @@ class HistoryMultiViewTestCase(SeleniumTestCase):
 
         # assert that empty history is present
         self.components.multi_history_view.empty_message_check.wait_for_present()
-
 
     def assert_history(self, history_id, histories_number=1, should_exist=True):
         histories = self.components.multi_history_view.histories.all()
