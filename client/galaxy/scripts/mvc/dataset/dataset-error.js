@@ -103,11 +103,15 @@ var View = Backbone.View.extend({
             ${this.job_summary(job)}
             <h3>Troubleshooting</h3>
             <p>
-                There are a number of help resources to self diagnose and
+                There are a number of helpful resources to self diagnose and
                 correct problems.
-                Start here: <a
-                href="https://galaxyproject.org/support/tool-error/"
-                target="_blank"> My job ended with an error. What can I do?</a>
+                <br>
+                Start here:
+                <b>
+                    <a href="https://galaxyproject.org/support/tool-error/" target="_blank">
+                        My job ended with an error. What can I do?
+                    </a>
+                </b>
             </p>`);
         const Galaxy = getGalaxyInstance();
         if (Galaxy.user.id) {
