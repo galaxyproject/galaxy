@@ -172,9 +172,30 @@ multi_history_view:
 
   selectors:
     _: '.multi-panel-history'
+    histories: '.middle .history-column'
     current_label: '.current-label'
     create_new_button: '.create-new'
     drag_drop_help: '.history-drop-target-help'
+    switch_history: '.switch-to'
+    history_dropdown_btn: '[history-dropdown-btn="${history_id}"]'
+    copy: '.copy-history'
+    delete: '.copy-history'
+    current_history_check: '#history-column-${history_id} .current-label'
+    empty_message_check: '.empty-message'
+
+
+  history_dropdown_menu:
+    selectors:
+      _: '[history-dropdown-menu="${history_id}"]'
+      delete:  '[history-dropdown-menu="${history_id}"] > .delete-history'
+      purge:  '[history-dropdown-menu="${history_id}"] > .purge-history'
+  copy_history_modal:
+    selectors:
+      _: '.modal-dialog'
+      copy_btn:
+        type: xpath
+        selector: '//button[contains(text(), "Copy")]'
+
 
 history_copy_elements:
 
