@@ -169,10 +169,16 @@ var View = Backbone.View.extend({
 
     /** Convert tab template */
     _getBugFormTemplate: function(dataset, job) {
+        const Galaxy = getGalaxyInstance();
         const form = new Form({
             inputs: [
                 {
-                    options: [],
+                    type: "text",
+                    hidden: true,
+                    name: "email",
+                    value: Galaxy.user.email
+                },
+                {
                     type: "text",
                     area: true,
                     name: "message",
