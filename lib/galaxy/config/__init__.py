@@ -212,11 +212,14 @@ class BaseAppConfiguration(object):
                 self._raw_config[key] = value
 
     def _create_attributes_from_raw_config(self):
+        # `base_configs` are a special case: these attributes have been created and will be ignored
+        # by the code below. Trying to overwrite any other existing attributes will raise an error.
+        base_configs = {'config_dir', 'data_dir', 'managed_config_dir'}
         for key, value in self._raw_config.items():
             if not hasattr(self, key):
                 setattr(self, key, value)
-            else:
-                log.debug("Attribute '%s' is set and cannot be overwritten with value '%s'" % (key, value))
+            elif key not in base_configs:
+                raise ConfigurationError("Attempting to override existing attribute '%s'" % key)
 
     def _resolve_paths(self):
 
