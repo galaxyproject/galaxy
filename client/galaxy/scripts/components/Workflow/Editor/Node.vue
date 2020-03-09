@@ -1,7 +1,7 @@
 <template>
     <div>
         <div class="node-header unselectable clearfix">
-            <b-dropdown right no-caret class="float-right" toggle-class="py-0" offset="50" variant="info" size="sm">
+            <b-dropdown right no-caret class="node-dropdown float-right" toggle-class="py-0" offset="50" variant="info" size="sm">
                 <template v-slot:button-content>
                     <i :class="iconClass" />
                 </template>
