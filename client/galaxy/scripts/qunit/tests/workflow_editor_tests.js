@@ -184,7 +184,6 @@ QUnit.test("can accept already connected inputs if input is multiple", function(
 
 QUnit.test("cannot accept already connected inputs if input is multiple but datatypes don't match", function(assert) {
     var other = { node: {}, datatypes: ["binary"] }; // binary is not txt
-
     this.multiple();
     this.with_test_connector(() => {
         assert.ok(!this.test_accept(other));
@@ -525,8 +524,7 @@ QUnit.module("Node view ", {
             output_terminals: {},
             markChanged: function() {},
             hasConnectedOutputTerminals: function() {},
-            connectedMappedInputTerminals: function() {},
-            disableMapOver: function() {}
+            connectedMappedInputTerminals: function() {}
         });
     },
     afterEach: function() {
@@ -543,7 +541,6 @@ QUnit.module("Node view ", {
         var outputTerminal = new Terminals.OutputTerminal({
             name: "TestOuptut",
             datatypes: [outputType],
-            disableMapOver: function() {},
             mapOver: Terminals.NULL_COLLECTION_TYPE_DESCRIPTION
         });
         outputTerminal.node = {
@@ -565,7 +562,6 @@ QUnit.module("Node view ", {
         var outputTerminal = new Terminals.OutputTerminal({
             name: "TestOuptut",
             datatypes: ["txt"],
-            disableMapOver: function() {},
             mapOver: new Terminals.CollectionTypeDescription("list")
         });
         outputTerminal.node = {
@@ -587,7 +583,6 @@ QUnit.module("Node view ", {
         var outputTerminal = new Terminals.OutputTerminal({
             name: "TestOuptut",
             datatypes: ["txt"],
-            disableMapOver: function() {},
             mapOver: new Terminals.CollectionTypeDescription("list")
         });
         outputTerminal.node = {
@@ -802,25 +797,28 @@ QUnit.test("equal", function(assert) {
 });
 
 QUnit.test("default constructor", function(assert) {
-    var terminal = new Terminals({});
+    var terminal = new Terminals.InputTerminal({});
     assert.ok(terminal.mapOver === Terminals.NULL_COLLECTION_TYPE_DESCRIPTION);
 });
 
 QUnit.test("constructing with mapOver", function(assert) {
-    var terminal = new Terminals({
+    var terminal = new Terminals.InputTerminal({
         mapOver: new Terminals.CollectionTypeDescription("list")
     });
     assert.ok(terminal.mapOver.collectionType == "list");
 });
 
-QUnit.test("disableMapOver", function(assert) {
-    var terminal = new Terminals({
+QUnit.test("resetMapping", function(assert) {
+    var terminal = new Terminals.InputTerminal({
         terminal: terminal,
         mapOver: new Terminals.CollectionTypeDescription("list")
     });
+    terminal.node = {
+        hasMappedOverInputTerminals: () => true
+    };
     var changeSpy = sinon.spy();
     terminal.on("change", changeSpy);
-    terminal.disableMapOver();
+    terminal.resetMapping();
     assert.ok(terminal.mapOver === Terminals.NULL_COLLECTION_TYPE_DESCRIPTION);
     assert.ok(changeSpy.called);
 });

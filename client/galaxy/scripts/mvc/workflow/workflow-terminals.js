@@ -171,6 +171,7 @@ class Terminal extends EventEmitter {
     }
     resetMapping() {
         this.mapOver = NULL_COLLECTION_TYPE_DESCRIPTION;
+        this.emit("change");
     }
     resetCollectionTypeSource() {
         const node = this.node;
@@ -375,7 +376,7 @@ class BaseInputTerminal extends Terminal {
 }
 
 class InputTerminal extends BaseInputTerminal {
-    update(input) {
+    update(input = {}) {
         this.datatypes = input.extensions;
         this.multiple = input.multiple;
         this.optional = input.optional;
