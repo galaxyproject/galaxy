@@ -701,7 +701,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                                 else:
                                     file_name = value.file_name
                                 content_length = os.path.getsize(file_name)
-                                rval = open(file_name)
+                                rval = open(file_name, 'rb')
                             except OSError as e:
                                 log.debug("Unable to access requested file in display application: %s", e)
                                 return paste.httpexceptions.HTTPNotFound("This file is no longer available.")
