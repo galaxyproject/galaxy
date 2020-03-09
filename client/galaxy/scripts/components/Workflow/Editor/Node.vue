@@ -38,8 +38,12 @@
 </template>
 
 <script>
+import Vue from "vue";
+import BootstrapVue from "bootstrap-vue";
 import WorkflowIcons from "components/Workflow/icons";
 import LoadingSpan from "components/LoadingSpan";
+
+Vue.use(BootstrapVue);
 
 export default {
     components: {
