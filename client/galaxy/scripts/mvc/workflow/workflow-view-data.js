@@ -135,7 +135,6 @@ export class OutputCalloutView {
                 $("<icon />")
                     .addClass("mark-terminal")
                     .click(() => {
-                        this.render();
                         if (node.isWorkflowOutput(outputName)) {
                             node.removeWorkflowOutput(outputName);
                         } else {
