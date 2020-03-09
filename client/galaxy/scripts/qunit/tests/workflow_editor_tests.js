@@ -526,7 +526,7 @@ QUnit.module("Node view ", {
             markChanged: function() {},
             hasConnectedOutputTerminals: function() {},
             connectedMappedInputTerminals: function() {},
-            terminalMapping: { disableMapOver: function() {} }
+            disableMapOver: function() {}
         });
     },
     afterEach: function() {
@@ -540,7 +540,12 @@ QUnit.module("Node view ", {
         this.view.addDataInput({ name: "TestName", extensions: [inputType] });
         var terminal = this.view.node.input_terminals["TestName"];
 
-        var outputTerminal = new Terminals.OutputTerminal({ name: "TestOuptut", datatypes: [outputType] });
+        var outputTerminal = new Terminals.OutputTerminal({
+            name: "TestOuptut",
+            datatypes: [outputType],
+            disableMapOver: function() {},
+            mapOver: Terminals.NULL_COLLECTION_TYPE_DESCRIPTION
+        });
         outputTerminal.node = {
             markChanged: function() {},
             post_job_actions: [],
@@ -550,10 +555,6 @@ QUnit.module("Node view ", {
             hasConnectedOutputTerminals: function() {
                 return true;
             }
-        };
-        outputTerminal.terminalMapping = {
-            disableMapOver: function() {},
-            mapOver: Terminals.NULL_COLLECTION_TYPE_DESCRIPTION
         };
         return new Connector({}, outputTerminal, terminal);
     },
@@ -561,7 +562,12 @@ QUnit.module("Node view ", {
         this.view.addDataInput({ name: "TestName", extensions: [inputType], multiple: true });
         var terminal = this.view.node.input_terminals["TestName"];
 
-        var outputTerminal = new Terminals.OutputTerminal({ name: "TestOuptut", datatypes: ["txt"] });
+        var outputTerminal = new Terminals.OutputTerminal({
+            name: "TestOuptut",
+            datatypes: ["txt"],
+            disableMapOver: function() {},
+            mapOver: new Terminals.CollectionTypeDescription("list")
+        });
         outputTerminal.node = {
             markChanged: function() {},
             post_job_actions: [],
@@ -571,10 +577,6 @@ QUnit.module("Node view ", {
             hasConnectedOutputTerminals: function() {
                 return true;
             }
-        };
-        outputTerminal.terminalMapping = {
-            disableMapOver: function() {},
-            mapOver: new Terminals.CollectionTypeDescription("list")
         };
         return new Connector({}, outputTerminal, terminal);
     },
@@ -582,7 +584,12 @@ QUnit.module("Node view ", {
         this.view.addDataInput({ name: "TestName", extensions: ["txt"], input_type: "dataset_collection" });
         var terminal = this.view.node.input_terminals["TestName"];
 
-        var outputTerminal = new Terminals.OutputTerminal({ name: "TestOuptut", datatypes: ["txt"] });
+        var outputTerminal = new Terminals.OutputTerminal({
+            name: "TestOuptut",
+            datatypes: ["txt"],
+            disableMapOver: function() {},
+            mapOver: new Terminals.CollectionTypeDescription("list")
+        });
         outputTerminal.node = {
             markChanged: function() {},
             post_job_actions: [],
@@ -592,10 +599,6 @@ QUnit.module("Node view ", {
             hasConnectedOutputTerminals: function() {
                 return true;
             }
-        };
-        outputTerminal.terminalMapping = {
-            disableMapOver: function() {},
-            mapOver: new Terminals.CollectionTypeDescription("list")
         };
         return new Connector({}, outputTerminal, terminal);
     }
@@ -799,31 +802,26 @@ QUnit.test("equal", function(assert) {
 });
 
 QUnit.test("default constructor", function(assert) {
-    var terminal = {};
-    var mapping = new Terminals.TerminalMapping({ terminal: terminal });
-    assert.ok(terminal.terminalMapping === mapping);
-    assert.ok(mapping.mapOver === Terminals.NULL_COLLECTION_TYPE_DESCRIPTION);
+    var terminal = new Terminals({});
+    assert.ok(terminal.mapOver === Terminals.NULL_COLLECTION_TYPE_DESCRIPTION);
 });
 
 QUnit.test("constructing with mapOver", function(assert) {
-    var terminal = {};
-    var mapping = new Terminals.TerminalMapping({
-        terminal: terminal,
+    var terminal = new Terminals({
         mapOver: new Terminals.CollectionTypeDescription("list")
     });
-    assert.ok(mapping.mapOver.collectionType == "list");
+    assert.ok(terminal.mapOver.collectionType == "list");
 });
 
 QUnit.test("disableMapOver", function(assert) {
-    var terminal = {};
-    var mapping = new Terminals.TerminalMapping({
+    var terminal = new Terminals({
         terminal: terminal,
         mapOver: new Terminals.CollectionTypeDescription("list")
     });
     var changeSpy = sinon.spy();
-    mapping.on("change", changeSpy);
-    mapping.disableMapOver();
-    assert.ok(mapping.mapOver === Terminals.NULL_COLLECTION_TYPE_DESCRIPTION);
+    terminal.on("change", changeSpy);
+    terminal.disableMapOver();
+    assert.ok(terminal.mapOver === Terminals.NULL_COLLECTION_TYPE_DESCRIPTION);
     assert.ok(changeSpy.called);
 });
 
@@ -837,7 +835,6 @@ QUnit.module("terminal mapping logic", {
         var inputEl = $("<div>")[0];
         const app = create_app();
         var inputTerminal = new Terminals.InputTerminal({ app: app, element: inputEl, input: input });
-        new Terminals.TerminalMapping({ terminal: inputTerminal });
         inputTerminal.node = node;
         if (mapOver) {
             inputTerminal.setMapOver(new Terminals.CollectionTypeDescription(mapOver));
@@ -857,7 +854,6 @@ QUnit.module("terminal mapping logic", {
             element: inputEl,
             input: input
         });
-        new Terminals.TerminalMapping({ terminal: inputTerminal });
         inputTerminal.node = node;
         return inputTerminal;
     },
@@ -869,7 +865,6 @@ QUnit.module("terminal mapping logic", {
         }
         const outputEl = $("<div>")[0];
         const outputTerminal = new Terminals.OutputTerminal({ element: outputEl, datatypes: output.extensions });
-        new Terminals.TerminalMapping({ terminal: outputTerminal });
         outputTerminal.node = node;
         if (mapOver) {
             outputTerminal.setMapOver(new Terminals.CollectionTypeDescription(mapOver));
@@ -889,7 +884,6 @@ QUnit.module("terminal mapping logic", {
             datatypes: output.extensions,
             collection_type: collectionType
         });
-        new Terminals.TerminalMapping({ terminal: outputTerminal });
         outputTerminal.node = node;
         if (mapOver) {
             outputTerminal.setMapOver(new Terminals.CollectionTypeDescription(mapOver));
@@ -973,10 +967,10 @@ QUnit.module("terminal mapping logic", {
         assert.ok(!inputTerminal.attachable(outputTerminal).canAccept);
     },
     verifyMappedOver: function(assert, terminal) {
-        assert.ok(terminal.terminalMapping.mapOver.isCollection);
+        assert.ok(terminal.mapOver.isCollection);
     },
     verifyNotMappedOver: function(assert, terminal) {
-        assert.ok(!terminal.terminalMapping.mapOver.isCollection);
+        assert.ok(!terminal.mapOver.isCollection);
     }
 });
 
