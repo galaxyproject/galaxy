@@ -108,9 +108,11 @@ var View = Backbone.View.extend({
                 Start here: <a
                 href="https://galaxyproject.org/support/tool-error/"
                 target="_blank"> My job ended with an error. What can I do?</a>
-            </p>
-            <h3>Issue Report</h3>`);
-        this.$el.append(this._getBugFormTemplate(dataset, job));
+            </p>`);
+        const Galaxy = getGalaxyInstance();
+        if (Galaxy.user.id) {
+            this.$el.append("<h3>Issue Report</h3>").append(this._getBugFormTemplate(dataset, job));
+        }
     },
 
     job_summary: function(job) {
