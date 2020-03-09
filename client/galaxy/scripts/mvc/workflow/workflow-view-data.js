@@ -148,7 +148,7 @@ export class OutputCalloutView {
             )
             .tooltip({
                 delay: 500,
-                title: "Mark dataset as a workflow output. All unmarked datasets will be hidden."
+                title: "Check dataset as output, unchecked datasets will be hidden."
             });
         this.render();
     }
