@@ -25,6 +25,10 @@
                 cursor: move;
                 background: $brand-primary;
                 color: $white;
+                .node-dropdown {
+                    @extend .rounded;
+                    border: solid $border-color 1px;
+                }
             }
             .node-body {
                 @extend .card-body;
@@ -124,11 +128,11 @@
             .mark-terminal {
                 @extend .far;
                 @extend .fa-square;
-                color: $text-muted;
+                color: $brand-primary;
                 cursor: pointer;
                 &.mark-terminal-active {
+                    @extend .fa;
                     @extend .fa-check-square;
-                    color: $brand-success;
                 }
             }
             .delete-terminal {

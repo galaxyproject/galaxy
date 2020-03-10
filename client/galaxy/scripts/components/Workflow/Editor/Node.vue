@@ -7,7 +7,7 @@
                 class="node-dropdown float-right"
                 toggle-class="py-0"
                 offset="50"
-                variant="info"
+                variant="primary"
                 size="sm"
             >
                 <template v-slot:button-content>
