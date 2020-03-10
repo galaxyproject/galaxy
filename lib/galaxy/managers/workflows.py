@@ -28,11 +28,11 @@ from galaxy.tools.parameters import (
     visit_input_values
 )
 from galaxy.tools.parameters.basic import (
+    ConnectedValue,
     DataCollectionToolParameter,
     DataToolParameter,
     RuntimeValue,
-    workflow_building_modes,
-    ConnectedValue
+    workflow_building_modes
 )
 from galaxy.util.json import safe_loads
 from galaxy.util.sanitize_html import sanitize_html
@@ -982,12 +982,10 @@ class WorkflowContentsManager(UsesAnnotations):
             data['steps'][step.order_index] = step_dict
         return data
 
-
     def _workflow_to_dict_cwl_abstract(self, trans, stored=None, workflow=None):
         """ Return a cwl-abstract workflow schema in a dictionary ready for YAMLification and export.
         """
         annotation_str = ""
-        tag_str = ""
         if stored is not None:
             annotation_str = self.get_item_annotation_str(trans.sa_session, trans.user, stored) or ''
             tag_str = stored.make_tag_string_list()
@@ -1000,11 +998,11 @@ class WorkflowContentsManager(UsesAnnotations):
         else:
             data['doc'] = workflow.name
         # how can I make use of tags in the cwl-abstract?
-        #data['tags'] = tag_str
+        # data['tags'] = tag_str
         data['steps'] = {}
         global_input_dicts = {}
-        workflow_outputs_dicts = {}  #global outputs
-        input_index = 0
+        #global outputs
+        workflow_outputs_dicts = {}
         for step in workflow.steps:
             # Load from database representation
             module = module_factory.from_workflow_step(trans, step)
@@ -1017,7 +1015,7 @@ class WorkflowContentsManager(UsesAnnotations):
             tool_state = module.get_export_state()
             input_dicts = {}
             # Step info
-            step_dict={'out': []}
+            step_dict = {'out': []}
             step_run_dict = {
                 'class' : 'Operation',
                 'doc' : '',
@@ -1040,7 +1038,7 @@ class WorkflowContentsManager(UsesAnnotations):
                         step_dict['content_id'] = None
                         step_dict['tool_id'] = None
 
-            ## how to handle subworkflows?
+            # how to handle subworkflows?
             step_state = module.state.inputs or {}
             if module.type != 'data_input':
                 step_run_dict['doc'] = module.get_name()
@@ -1050,37 +1048,44 @@ class WorkflowContentsManager(UsesAnnotations):
                 for conn in inp_connections:
                     # the combination of input_step.uuid and input_name should be unique
                     # the combination of output_step.uuid and output_name should be unique
-                    input_id = str(conn.input_step.uuid) + '_' + conn.input_name
+                    # should i use    input_id = str(conn.input_step.uuid) + '_' + conn.input_name
                     source_id = str(conn.output_step.uuid) + '/'+ conn.output_name
                     connection_num += 1
                     label = conn.input_name
-                    #the input is not connected to a previous tool (data_input is not considered a step)
+                    # the input is not connected to a previous tool (data_input is not considered a step)
                     if conn.output_step.type == 'data_input':
                         label = "Input file(s) for tool " + module.get_name()
-
                         input_dict = {
-                                'format' : 'data',
-                                'type' : 'File',
+                                'format': 'data',
+                                'type': 'File',
                                 'name': label
                                 }
-                        source_id = str(conn.output_step.uuid) + '_'+ conn.output_name   # the data_input id is used to identify the file
+                        source_id = str(conn.output_step.uuid) + '_' + conn.output_name   # the data_input id is used to identify the file
                         if source_id not in global_input_dicts:
                             global_input_dicts[source_id] = input_dict
                     step_inputs[conn.input_name] = source_id
                     ## case when input is not connected from a previous step. Assume it is a value and not a File?
-                    input_dicts[conn.input_name] = {"name": label, "description": "Input value for tool %s" % module.get_name(), "type": "Any"}
+                    input_dicts[conn.input_name] = {'name': label,
+                                                    'description': 'Input value for tool %s' % module.get_name(),
+                                                    'type': 'Any'
+                                                    }
                 for name, val in step_state.items():
                     input_type = type(val)
                     if input_type != ConnectedValue and module.type != 'data_input':
                         if name not in step_inputs:  #not a connected value
-                            source_id = str(step.uuid) + '_' + str(name) #global_input_id
+                            source_id = str(step.uuid) + '_' + str(name)  #global_input_id
                             if input_type == RuntimeValue:
-                                input_dicts[name] = {"name": name, "description": "runtime parameter for tool %s" % module.get_name()}
+                                input_dicts[name] = {'name': name,
+                                                     'description': 'runtime parameter for tool %s' % module.get_name()
+                                                    }
                             else:
-                                step_inputs_dict = {"name": name, "default":val,"description": "runtime parameter for tool %s" % module.get_name()}
+                                step_inputs_dict = {'name': name,
+                                                    'default': val,
+                                                    'description': 'runtime parameter for tool %s' % module.get_name()
+                                                   }
                                 input_dicts[name] = step_inputs_dict
                                 global_input_dicts[source_id] = step_inputs_dict
-                            step_inputs[name] = source_id  # connect operation input name with source
+                            step_inputs[name] = source_id   # connect operation input name with source
 
                 step_dict['in'] = step_inputs
                 step_run_dict['inputs'] = input_dicts
@@ -1088,12 +1093,11 @@ class WorkflowContentsManager(UsesAnnotations):
             for workflow_output in step.unique_workflow_outputs:
                 # do not list the User's inputs as wf outputs
                 if module.type != 'data_input':
-                    workflow_output_dict = dict(
-                        label = workflow_output.label,
-                        name = workflow_output.output_name,
-                        outputSource = str(step.uuid) + '/' + workflow_output.output_name,
-                        type = "Any"
-                    )
+                    workflow_output_dict = {'label': workflow_output.label,
+                                            'name': workflow_output.output_name,
+                                            'outputSource': str(step.uuid) + '/' + workflow_output.output_name,
+                                            'type': 'Any'
+                                           }
                     workflow_outputs_dicts[str(workflow_output.uuid)] = workflow_output_dict
                     step_dict['out'].append(workflow_output.output_name)
 

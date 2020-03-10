@@ -5,10 +5,10 @@ from __future__ import absolute_import
 
 import io
 import json
-import yaml
 import logging
 import os
 
+import yaml
 import requests
 from gxformat2._yaml import ordered_dump
 from markupsafe import escape
