@@ -1,10 +1,14 @@
 <template>
     <div id="tool-recommendation-view">
-        <div v-if="deprecated == false" class='infomessagelarge'>
-            You have used {{ getToolId }} tool. For further analysis, you could try using the following/recommended tools. The recommended tools are shown in the decreasing order of their scores predicted using machine learning analysis on workflows. A tool with a higher score (closer to 100%) may fit better as the following tool than a tool with a lower score. Please click on one of the following/recommended tools to open its definition.
-        </div>   
-        <div v-if="deprecated == true" class='warningmessagelarge'>
-            You have used {{ getToolId }} tool. {{deprecatedMessage}}
+        <div v-if="deprecated == false" class="infomessagelarge">
+            You have used {{ getToolId }} tool. For further analysis, you could try using the following/recommended
+            tools. The recommended tools are shown in the decreasing order of their scores predicted using machine
+            learning analysis on workflows. A tool with a higher score (closer to 100%) may fit better as the following
+            tool than a tool with a lower score. Please click on one of the following/recommended tools to open its
+            definition.
+        </div>
+        <div v-if="deprecated == true" class="warningmessagelarge">
+            You have used {{ getToolId }} tool. {{ deprecatedMessage }}
         </div>
     </div>
 </template>
@@ -48,31 +52,31 @@ export default {
             Utils.request({
                 type: "POST",
                 url: `${getAppRoot()}api/workflows/get_tool_predictions`,
-                data: {tool_sequence: toolId},
+                data: { tool_sequence: toolId },
                 success: data => {
                     // get datatypes mapping
                     const datatypes_mapping = JSON.parse(
-                        $.ajax({
-                            url: `${getAppRoot()}api/datatypes/mapping`,
-                            async: false
-                        }).responseText
-                    ),
-                    extToType = datatypes_mapping.ext_to_class_name,
-                    typeToType = datatypes_mapping.class_to_classes,
-                    predData = data.predicted_data;
+                            $.ajax({
+                                url: `${getAppRoot()}api/datatypes/mapping`,
+                                async: false
+                            }).responseText
+                        ),
+                        extToType = datatypes_mapping.ext_to_class_name,
+                        typeToType = datatypes_mapping.class_to_classes,
+                        predData = data.predicted_data;
                     this.deprecated = predData["is_deprecated"];
                     if (data !== null && predData.children.length > 0) {
                         const filteredData = {},
-                        compatibleTools = {},
-                        filteredChildren = [],
-                        outputDatatypes = predData["o_extensions"],
-                        children = predData.children;
+                            compatibleTools = {},
+                            filteredChildren = [],
+                            outputDatatypes = predData["o_extensions"],
+                            children = predData.children;
                         for (const nameObj of children.entries()) {
                             const inputDatatypes = nameObj[1]["i_extensions"];
                             for (const out_t of outputDatatypes.entries()) {
                                 for (const in_t of inputDatatypes.entries()) {
                                     const child = extToType[out_t[1]],
-                                    parent = extToType[in_t[1]];
+                                        parent = extToType[in_t[1]];
                                     if (
                                         (typeToType[child] && parent in typeToType[child]) === true ||
                                         out_t[1] === "input" ||
@@ -98,8 +102,7 @@ export default {
                         filteredData["children"] = filteredChildren;
                         if (filteredChildren.length > 0 && this.deprecated === false) {
                             self.renderD3Tree(filteredData);
-                        }
-                        else if (this.deprecated === true) {
+                        } else if (this.deprecated === true) {
                             this.deprecatedMessage = predData["message"];
                         }
                     }
@@ -108,9 +111,9 @@ export default {
         },
         renderD3Tree: function(predictedTools) {
             const margin = { top: 20, right: 30, bottom: 20, left: 250 },
-            width = 900 - margin.right - margin.left,
-            height = 300 - margin.top - margin.bottom,
-            duration = 750;
+                width = 900 - margin.right - margin.left,
+                height = 300 - margin.top - margin.bottom,
+                duration = 750;
             const tree = d3.layout.tree().size([height, width]);
             const diagonal = d3.svg.diagonal().projection(d => {
                 return [d.y, d.x];
@@ -122,11 +125,11 @@ export default {
                 .append("g")
                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
             let i = 0,
-            root = null;
+                root = null;
             function update(source) {
                 // Compute the new tree layout.
                 const nodes = tree.nodes(root).reverse(),
-                links = tree.links(nodes);
+                    links = tree.links(nodes);
                 // Normalize for fixed-depth.
                 nodes.forEach(d => {
                     d.y = d.depth * 180;
@@ -144,9 +147,7 @@ export default {
                         return "translate(" + source.y0 + "," + source.x0 + ")";
                     })
                     .on("click", click);
-                nodeEnter
-                    .append("circle")
-                    .attr("r", 1e-6)
+                nodeEnter.append("circle").attr("r", 1e-6);
                 nodeEnter
                     .append("text")
                     .attr("x", d => {
@@ -170,11 +171,8 @@ export default {
                     .attr("transform", d => {
                         return "translate(" + d.y + "," + d.x + ")";
                     });
-                nodeUpdate
-                    .select("circle")
-                    .attr("r", 4.5)
-                nodeUpdate.select("text")
-                    .attr("class", "node-update")
+                nodeUpdate.select("circle").attr("r", 4.5);
+                nodeUpdate.select("text").attr("class", "node-update");
                 // Transition exiting nodes to the parent's new position.
                 const nodeExit = node
                     .exit()
@@ -184,10 +182,8 @@ export default {
                         return "translate(" + source.y + "," + source.x + ")";
                     })
                     .remove();
-                nodeExit.select("circle")
-                    .attr("r", 1e-6);
-                nodeExit.select("text")
-                    .attr("class", "node-enter");
+                nodeExit.select("circle").attr("r", 1e-6);
+                nodeExit.select("text").attr("class", "node-enter");
                 // Update the links
                 const link = svg.selectAll("path.link").data(links, d => {
                     return d.target.id;
@@ -197,8 +193,8 @@ export default {
                     .insert("path", "g")
                     .attr("class", "link")
                     .attr("d", d => {
-                        const o = {x: source.x0, y: source.y0};
-                        return diagonal({source: o, target: o});
+                        const o = { x: source.x0, y: source.y0 };
+                        return diagonal({ source: o, target: o });
                     });
                 // Transition links to their new position.
                 link.transition()
