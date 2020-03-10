@@ -5,20 +5,30 @@
             {{ message }}
         </b-alert>
         <p>
-            You are logged in as <strong>{{ email }}</strong
+            You are logged in as <strong id="user-preferences-current-email">{{ email }}</strong
             >.
         </p>
         <b-row class="ml-3 mb-1" v-for="(link, index) in activeLinks" :key="index">
             <i :class="['pref-icon pt-1 fa fa-lg', link.icon]" />
             <div class="pref-content pr-1">
-                <a v-if="link.onclick" @click="link.onclick" href="javascript:void(0)"
+                <a :id="link.id" v-if="link.onclick" @click="link.onclick" href="javascript:void(0)"
                     ><b>{{ link.title }}</b></a
                 >
-                <a v-else :href="`${baseUrl}/${link.action}`"
+                <a :id="link.id" v-else :href="`${baseUrl}/${link.action}`"
                     ><b>{{ link.title }}</b></a
                 >
                 <div class="form-text text-muted">
                     {{ link.description }}
+                </div>
+            </div>
+        </b-row>
+        <b-row class="ml-3 mb-1">
+            <i class="pref-icon pt-1 fa fa-lg fa-plus-square-o" />
+            <div class="pref-content pr-1">
+                <a @click="toggleNotifications" href="javascript:void(0)"><b>Enable notifications</b></a>
+                <div class="form-text text-muted">
+                    Allow push and tab notifcations on job completion. To disable, revoke the site notification
+                    privilege in your browser.
                 </div>
             </div>
         </b-row>
@@ -107,6 +117,18 @@ export default {
         }
     },
     methods: {
+        toggleNotifications() {
+            Notification.requestPermission().then(function(permission) {
+                //If the user accepts, let's create a notification
+                if (permission === "granted") {
+                    new Notification("Notifications enabled", {
+                        icon: "static/favicon.ico"
+                    });
+                } else {
+                    alert("Notifications disabled, please re-enable through browser settings.");
+                }
+            });
+        },
         openManageCustomBuilds() {
             const Galaxy = getGalaxyInstance();
             Galaxy.page.router.push(`${getAppRoot()}custom_builds`);

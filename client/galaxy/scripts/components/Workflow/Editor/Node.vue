@@ -1,9 +1,10 @@
 <template>
     <div>
-        <div class="toolFormTitle unselectable clearfix">
-            <i :class="iconClass" />
-            <span class="node-title">{{ title }}</span>
-            <span class="sr-only">&nbsp;Node</span>
+        <div class="node-header unselectable clearfix">
+            <div class="header float-left">
+                <i :class="iconClass" />
+                <span class="node-title">{{ title }}</span>
+            </div>
             <div class="buttons float-right">
                 <a
                     v-if="canClone"
@@ -22,7 +23,7 @@
                 />
             </div>
         </div>
-        <div class="toolFormBody">
+        <div class="node-body">
             <div>
                 <loading-span message="Loading details" />
             </div>

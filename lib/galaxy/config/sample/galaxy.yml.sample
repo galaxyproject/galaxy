@@ -451,12 +451,6 @@ galaxy:
   # between 1 and 24.
   #hours_between_check: 12
 
-  # Enable use of an in-memory registry with bi-directional
-  # relationships between repositories (i.e., in addition to lists of
-  # dependencies for a repository, keep an in-memory registry of
-  # dependent items for each repository.
-  #manage_dependency_relationships: false
-
   # XML config file that contains data table entries for the
   # ToolDataTableManager.  This file is manually # maintained by the
   # Galaxy administrator (.sample used if default does not exist).
@@ -692,6 +686,14 @@ galaxy:
   # the registration.
   # Example value 'config/disposable_email_blacklist.conf'
   #blacklist_file: null
+
+  # E-mail domains whitelist is used to specify allowed email address
+  # domains. If the list is non-empty and a user attempts registration
+  # using an email address belonging to a domain that is not on the
+  # list, registration will be enied. This is a more restrictive option
+  # than <blacklist_file>, and therefore, in case <whitelist_file> is
+  # defined, <blacklist_file> will be ignored.
+  #whitelist_file: disposable_email_whitelist.conf
 
   # Registration warning message is used to discourage people from
   # registering multiple accounts.  Applies mostly for the main Galaxy
@@ -1611,6 +1613,12 @@ galaxy:
   # see dataset paths.
   #expose_dataset_path: false
 
+  # XML config file that contains the job metric collection
+  # configuration.
+  # The value of this option will be resolved with respect to
+  # <config_dir>.
+  #job_metrics_config_file: job_metrics_conf.xml
+
   # This option allows users to see the job metrics (except for
   # environment variables).
   #expose_potentially_sensitive_job_metrics: false
@@ -1815,7 +1823,7 @@ galaxy:
   #markdown_export_css_pages: markdown_export_pages.css
 
   # CSS file to apply to invocation report exports to PDF. Generally
-  # prefer  markdown_export_css, but this is here for deployments that
+  # prefer markdown_export_css, but this is here for deployments that
   # would like to tailor different kinds of exports.
   #markdown_export_css_invocation_reports: markdown_export_invocation_reports.css
 

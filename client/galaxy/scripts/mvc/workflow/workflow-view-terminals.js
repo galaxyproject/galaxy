@@ -91,10 +91,10 @@ class BaseInputTerminalView extends TerminalView {
     onDropStart(e, d = {}) {
         if (d.proxy.terminal) {
             if (this.$el.hasClass("can-accept")) {
-                d.proxy.terminal.connectors[0].inner_color = "#BBFFBB";
+                d.proxy.terminal.connectors[0].dropStart(true);
                 d.proxy.dropTooltip = "";
             } else {
-                d.proxy.terminal.connectors[0].inner_color = "#fe7f02";
+                d.proxy.terminal.connectors[0].dropStart(false);
                 if (this.reason) {
                     d.proxy.dropTooltip = this.reason;
                     $(d.proxy).tooltip("show");
@@ -107,14 +107,15 @@ class BaseInputTerminalView extends TerminalView {
     onDropEnd(e, d = {}) {
         d.proxy.dropTooltip = "";
         if (d.proxy.terminal) {
-            d.proxy.terminal.connectors[0].inner_color = "#FFFFFF";
+            d.proxy.terminal.connectors[0].dropEnd();
         }
     }
     onDrop(e, d = {}) {
         d.proxy.dropTooltip = "";
         if (this.$el.hasClass("can-accept")) {
             const terminal = this.el.terminal;
-            new Connector(this.app.canvas_manager, d.drag.terminal, terminal).redraw();
+            const c = new Connector(this.app.canvas_manager, d.drag.terminal, terminal);
+            c.redraw();
         }
     }
     onHover() {
@@ -357,7 +358,7 @@ export class BaseOutputTerminalView extends TerminalView {
             }
         });
         h.terminal = new Terminals.OutputTerminal({ element: h });
-        var c = new Connector(this.app.canvas_manager);
+        const c = new Connector(this.app.canvas_manager);
         c.dragging = true;
         c.connect(this.el.terminal, h.terminal);
         return h;

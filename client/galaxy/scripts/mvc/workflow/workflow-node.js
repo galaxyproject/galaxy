@@ -10,7 +10,7 @@ export class Node {
         this.element = attr.element;
         this.input_terminals = {};
         this.output_terminals = {};
-        this.errors = {};
+        this.errors = null;
         this.workflow_outputs = [];
     }
     getWorkflowOutput(outputName) {
@@ -191,7 +191,7 @@ export class Node {
         $(this.element).remove();
     }
     make_active() {
-        $(this.element).addClass("toolForm-active");
+        $(this.element).addClass("node-active");
     }
     make_inactive() {
         // Keep inactive nodes stacked from most to least recently active
@@ -202,7 +202,7 @@ export class Node {
             p.appendChild(element);
         })(element.parentNode);
         // Remove active class
-        $(element).removeClass("toolForm-active");
+        $(element).removeClass("node-active");
     }
     set_tool_version() {
         if (this.type === "tool" && this.config_form) {
@@ -309,7 +309,7 @@ export class Node {
             var pja_in = data.post_job_actions;
             this.post_job_actions = pja_in ? pja_in : {};
         }
-        node.nodeView.renderToolErrors();
+        node.nodeView.renderErrors();
         // Update input rows
         var old_body = nodeView.$el.find("div.inputs");
         var new_body = nodeView.newInputsDiv();
@@ -339,14 +339,6 @@ export class Node {
         // If active, reactivate with new config_form
         this.markChanged();
         this.redraw();
-    }
-    error(text) {
-        var b = $(this.element).find(".toolFormBody");
-        b.find("div").remove();
-        var tmp = `<div style='color: red; text-style: italic;'>${text}</div>`;
-        this.config_form = tmp;
-        b.html(tmp);
-        this.app.node_changed(this);
     }
     markChanged() {
         this.app.node_changed(this);

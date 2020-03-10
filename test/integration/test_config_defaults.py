@@ -178,6 +178,7 @@ DO_NOT_TEST = [
     'id_secret',  # broken: default overridden
     'job_config',  # no obvious testable defaults
     'job_config_file',  # broken: remove 'config/' prefix from schema
+    'job_metrics_config_file',
     'job_working_directory',  # broken; may or may not be able to test
     'library_import_dir',  # broken: default overridden
     'logging',  # mapping loaded in config/
@@ -253,7 +254,7 @@ def get_config_data():
 
     create_driver()  # create + setup DRIVER
     parent_dirs = load_parent_dirs()  # called after DRIVER is setup
-    items = ((k, v) for k, v in DRIVER.app.config.appschema.items() if k not in DO_NOT_TEST)
+    items = ((k, v) for k, v in DRIVER.app.config.schema.app_schema.items() if k not in DO_NOT_TEST)
     for key, data in items:
         expected_value = get_expected(key, data, parent_dirs)
         loaded_value = getattr(DRIVER.app.config, key)

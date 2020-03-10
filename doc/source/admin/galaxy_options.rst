@@ -711,19 +711,6 @@
 :Type: int
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``manage_dependency_relationships``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Enable use of an in-memory registry with bi-directional
-    relationships between repositories (i.e., in addition to lists of
-    dependencies for a repository, keep an in-memory registry of
-    dependent items for each repository.
-:Default: ``false``
-:Type: bool
-
-
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``tool_data_table_config_path``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1231,6 +1218,21 @@
     refused the registration.
     Example value 'config/disposable_email_blacklist.conf'
 :Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~
+``whitelist_file``
+~~~~~~~~~~~~~~~~~~
+
+:Description:
+    E-mail domains whitelist is used to specify allowed email address
+    domains. If the list is non-empty and a user attempts registration
+    using an email address belonging to a domain that is not on the
+    list, registration will be enied. This is a more restrictive
+    option than <blacklist_file>, and therefore, in case
+    <whitelist_file> is defined, <blacklist_file> will be ignored.
+:Default: ``disposable_email_whitelist.conf``
 :Type: str
 
 
@@ -3271,6 +3273,19 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``job_metrics_config_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    XML config file that contains the job metric collection
+    configuration.
+    The value of this option will be resolved with respect to
+    <config_dir>.
+:Default: ``job_metrics_conf.xml``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``expose_potentially_sensitive_job_metrics``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -3673,7 +3688,7 @@
 
 :Description:
     CSS file to apply to "Galaxy Page" exports to PDF. Generally
-    prefer  markdown_export_css, but this is here for deployments that
+    prefer markdown_export_css, but this is here for deployments that
     would like to tailor different kinds of exports.
 :Default: ``markdown_export_pages.css``
 :Type: str
@@ -3685,7 +3700,7 @@
 
 :Description:
     CSS file to apply to invocation report exports to PDF. Generally
-    prefer  markdown_export_css, but this is here for deployments that
+    prefer markdown_export_css, but this is here for deployments that
     would like to tailor different kinds of exports.
 :Default: ``markdown_export_invocation_reports.css``
 :Type: str

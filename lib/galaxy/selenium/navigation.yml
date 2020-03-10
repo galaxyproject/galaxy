@@ -60,12 +60,28 @@ masthead:
     # user menu
     logout: 'Logout'
     custom_builds: 'Custom Builds'
+    preferences: 'Preferences'
     histories: 'Histories'
     pages: 'Pages'
 
     # Shared data
     libraries: 'Data Libraries'
     published_histories: 'Histories'
+
+preferences:
+  selectors:
+    manage_information: '#edit-preferences-information'
+    current_email: "#user-preferences-current-email"
+
+change_user_email:
+  selectors:
+    submit: '#submit'
+
+change_user_address:
+  selectors:
+    address_button:
+      type: xpath
+      selector: '//span[contains(text(), "Insert Address")]'
 
 history_panel:
   menu:
@@ -294,7 +310,7 @@ workflow_editor:
     label_input: "[tour_id='__label'] input"
     annotation_input: "[tour_id='__annotation'] textarea"
 
-    connector_for: "canvas[handle1-id='${source_id}'][handle2-id='${sink_id}']"
+    connector_for: "div[handle1-id='${source_id}'][handle2-id='${sink_id}']"
 
     connector_destroy_callout: '.delete-terminal'
 

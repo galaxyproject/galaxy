@@ -9,26 +9,31 @@ export class NodeView {
         this.$el = options.$el;
         this.node = options.node;
         this.output_width = Math.max(150, this.$el.width());
-        this.tool_body = this.$el.find(".toolFormBody");
-        this.tool_body.find("div").remove();
-        this.newInputsDiv().appendTo(this.tool_body);
+        this.node_body = this.$el.find(".node-body");
+        this.node_body.find("div").remove();
+        this.newInputsDiv().appendTo(this.node_body);
         this.terminalViews = {};
         this.outputViews = {};
     }
 
     render() {
-        this.renderToolLabel();
-        this.renderToolErrors();
+        this.renderLabel();
+        this.renderErrors();
         this.$el.css("width", Math.min(250, Math.max(this.$el.width(), this.output_width)));
     }
 
-    renderToolLabel() {
+    renderLabel() {
         this.$el.find(".node-title").text(this.node.label || this.node.name);
         this.$el.attr("node-label", this.node.label);
     }
 
-    renderToolErrors() {
-        this.node.errors ? this.$el.addClass("tool-node-error") : this.$el.removeClass("tool-node-error");
+    renderErrors() {
+        if (this.node.errors) {
+            this.$el.addClass("node-error");
+            this.node_body.text(this.node.errors);
+        } else {
+            this.$el.removeClass("node-error");
+        }
     }
 
     newInputsDiv() {
@@ -40,7 +45,7 @@ export class NodeView {
     }
 
     addRule() {
-        this.tool_body.append($("<div/>").addClass("rule"));
+        this.node_body.append($("<div/>").addClass("rule"));
     }
 
     addDataInput(input, body) {
@@ -111,7 +116,7 @@ export class NodeView {
         const terminalView = this.terminalViewForOutput(output);
         const outputView = this.outputViewforOutput(output, terminalView);
         this.outputViews[output.name] = outputView;
-        this.tool_body.append(outputView.$el.append(terminalView.terminalElements()));
+        this.node_body.append(outputView.$el.append(terminalView.terminalElements()));
     }
 
     redrawWorkflowOutputs() {

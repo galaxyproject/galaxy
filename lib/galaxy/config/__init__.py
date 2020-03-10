@@ -100,11 +100,24 @@ LOGGING_CONFIG_DEFAULT = {
 
 
 def find_root(kwargs):
-    root = os.path.abspath(kwargs.get('root_dir', '.'))
-    return root
+    return os.path.abspath(kwargs.get('root_dir', '.'))
 
 
 class BaseAppConfiguration(object):
+    # Override in subclasses (optional): {KEY: config option, VALUE: deprecated directory name}
+    # If VALUE == first directory in a user-supplied path that resolves to KEY, it will be stripped from that path
+    deprecated_dirs = None
+
+    def __init__(self, **kwargs):
+        self.config_dict = kwargs
+        self.root = find_root(kwargs)
+        self._set_config_base(kwargs)
+        self.schema = self._load_schema()  # Load schema from schema definition file
+        self._raw_config = self.schema.defaults.copy()  # Save schema defaults as initial config values (raw_config)
+        self._update_raw_config_from_kwargs(kwargs)  # Overwrite raw_config with values passed in kwargs
+        self._create_attributes_from_raw_config()  # Create attributes based on raw_config
+        self._resolve_paths()  # Overwrite attribute values with resolved paths
+
     def _set_config_base(self, config_kwargs):
 
         def _set_global_conf():
@@ -163,6 +176,75 @@ class BaseAppConfiguration(object):
         _set_global_conf()
         _set_config_directories()
 
+    def _load_schema(self):
+        # Override in subclasses
+        raise Exception('Not implemented')
+
+    def _update_raw_config_from_kwargs(self, kwargs):
+
+        def convert_datatype(key, value):
+            datatype = self.schema.app_schema[key].get('type')
+            # check for `not None` explicitly (value can be falsy)
+            if value is not None and datatype in type_converters:
+                return type_converters[datatype](value)
+            return value
+
+        def strip_deprecated_dir(key, value):
+            resolves_to = self.schema.paths_to_resolve.get(key)
+            if resolves_to:  # value is a path that will be resolved
+                first_dir = value.split(os.sep)[0]  # get first directory component
+                if first_dir == self.deprecated_dirs.get(resolves_to):  # first_dir is deprecated for this option
+                    ignore = first_dir + os.sep
+                    log.warning(
+                        "Paths for the '%s' option are now relative to '%s', remove the leading '%s' "
+                        "to suppress this warning: %s", key, resolves_to, ignore, value
+                    )
+                    return value[len(ignore):]
+            return value
+
+        type_converters = {'bool': string_as_bool, 'int': int, 'float': float, 'str': str}
+
+        for key, value in kwargs.items():
+            if key in self.schema.app_schema:
+                value = convert_datatype(key, value)
+                if value and self.deprecated_dirs:
+                    value = strip_deprecated_dir(key, value)
+                self._raw_config[key] = value
+
+    def _create_attributes_from_raw_config(self):
+        # `base_configs` are a special case: these attributes have been created and will be ignored
+        # by the code below. Trying to overwrite any other existing attributes will raise an error.
+        base_configs = {'config_dir', 'data_dir', 'managed_config_dir'}
+        for key, value in self._raw_config.items():
+            if not hasattr(self, key):
+                setattr(self, key, value)
+            elif key not in base_configs:
+                raise ConfigurationError("Attempting to override existing attribute '%s'" % key)
+
+    def _resolve_paths(self):
+
+        def resolve(key):
+            if key in _cache:  # resolve each path only once
+                return _cache[key]
+
+            path = getattr(self, key)  # path prior to being resolved
+            parent = self.schema.paths_to_resolve.get(key)
+            if not parent:  # base case: nothing else needs resolving
+                return path
+            parent_path = resolve(parent)  # recursively resolve parent path
+            if path is not None:
+                path = os.path.join(parent_path, path)  # resolve path
+            else:
+                path = parent_path  # or use parent path
+
+            setattr(self, key, path)  # update property
+            _cache[key] = path  # cache it!
+            return path
+
+        _cache = {}
+        for key in self.schema.paths_to_resolve:
+            resolve(key)
+
     def _in_managed_config_dir(self, path):
         return os.path.join(self.managed_config_dir, path)
 
@@ -212,133 +294,14 @@ class BaseAppConfiguration(object):
 class GalaxyAppConfiguration(BaseAppConfiguration):
     deprecated_options = ('database_file', 'track_jobs_in_database')
     default_config_file_name = 'galaxy.yml'
-    # {key: config option, value: deprecated directory name}
-    # If value == first dir in a user path that resolves to key, it will be stripped from the path
     deprecated_dirs = {'config_dir': 'config', 'data_dir': 'database'}
 
     def __init__(self, **kwargs):
-        self._load_schema()  # Load schema from schema definition file
-        self._load_config_from_schema()  # Load default propery values from schema
-        self._validate_schema_paths()  # check that paths can be resolved
-        self._update_raw_config_from_kwargs(kwargs)  # Overwrite default values passed as kwargs
-        self._create_attributes_from_raw_config()  # Create attributes for LOADED properties
-
-        self.config_dict = kwargs
-        self.root = find_root(kwargs)
-        self._set_config_base(kwargs)  # must be called prior to _resolve_paths()
-
-        self._resolve_paths(kwargs)  # Overwrite attributes (not _raw_config) w/resolved paths
-        self._process_config(kwargs)  # Finish processing configuration
+        super(GalaxyAppConfiguration, self).__init__(**kwargs)
+        self._process_config(kwargs)
 
     def _load_schema(self):
-        self.schema = AppSchema(GALAXY_CONFIG_SCHEMA_PATH, GALAXY_APP_NAME)
-        self.appschema = self.schema.app_schema
-
-    def _load_config_from_schema(self):
-        self._raw_config = {}  # keeps track of startup values (kwargs or schema default)
-        self.reloadable_options = set()  # config options we can reload at runtime
-        self._paths_to_resolve = {}  # {config option: referenced config option}
-        for key, data in self.appschema.items():
-            self._raw_config[key] = data.get('default')
-            if data.get('reloadable'):
-                self.reloadable_options.add(key)
-            if data.get('path_resolves_to'):
-                self._paths_to_resolve[key] = data.get('path_resolves_to')
-
-    def _validate_schema_paths(self):
-
-        def check_exists(option, key):
-            if not option:
-                message = "Invalid schema: property '{}' listed as path resolution target " \
-                    "for '{}' does not exist".format(resolves_to, key)
-                raise_error(message)
-
-        def check_type_is_str(option, key):
-            if option.get('type') != 'str':
-                message = "Invalid schema: property '{}' should have type 'str'".format(key)
-                raise_error(message)
-
-        def check_is_dag():
-            visited = set()
-            for key in self._paths_to_resolve:
-                visited.clear()
-                while key:
-                    visited.add(key)
-                    key = self.appschema[key].get('path_resolves_to')
-                    if key and key in visited:
-                        raise_error('Invalid schema: cycle detected')
-
-        def raise_error(message):
-            log.error(message)
-            raise ConfigurationError(message)
-
-        for key, resolves_to in self._paths_to_resolve.items():
-            parent = self.appschema.get(resolves_to)
-            check_exists(parent, key)
-            check_type_is_str(parent, key)
-            check_type_is_str(self.appschema[key], key)
-        check_is_dag()  # must be called last: walks entire graph
-
-    def _update_raw_config_from_kwargs(self, kwargs):
-
-        def convert_datatype(key, value):
-            datatype = self.appschema[key].get('type')
-            # check for `not None` explicitly (value can be falsy)
-            if value is not None and datatype in type_converters:
-                return type_converters[datatype](value)
-            return value
-
-        def strip_deprecated_dir(key, value):
-            resolves_to = self.appschema[key].get('path_resolves_to')
-            if resolves_to:  # value is a path that will be resolved
-                first_dir = value.split(os.sep)[0]  # get first directory component
-                if first_dir == self.deprecated_dirs[resolves_to]:  # first_dir is deprecated for this option
-                    ignore = first_dir + os.sep
-                    log.warning(
-                        "Paths for the '%s' option are now relative to '%s', remove the leading '%s' "
-                        "to suppress this warning: %s", key, resolves_to, ignore, value
-                    )
-                    return value[len(ignore):]
-            return value
-
-        type_converters = {'bool': string_as_bool, 'int': int, 'float': float, 'str': str}
-
-        for key, value in kwargs.items():
-            if key in self.appschema:
-                value = convert_datatype(key, value)
-                if value:
-                    value = strip_deprecated_dir(key, value)
-                self._raw_config[key] = value
-
-    def _create_attributes_from_raw_config(self):
-        for key, value in self._raw_config.items():
-            if hasattr(self, key):
-                raise ConfigurationError("Attempting to override existing attribute '%s'" % key)
-            setattr(self, key, value)
-
-    def _resolve_paths(self, kwargs):
-
-        def resolve(key):
-            if key in _cache:  # resolve each path only once
-                return _cache[key]
-
-            path = getattr(self, key)  # path prior to being resolved
-            parent = self.appschema[key].get('path_resolves_to')
-            if not parent:  # base case: nothing else needs resolving
-                return path
-            parent_path = resolve(parent)  # recursively resolve parent path
-            if path is not None:
-                path = os.path.join(parent_path, path)  # resolve path
-            else:
-                path = parent_path  # or use parent path
-
-            setattr(self, key, path)  # update property
-            _cache[key] = path  # cache it!
-            return path
-
-        _cache = {}
-        for key in self._paths_to_resolve:
-            resolve(key)
+        return AppSchema(GALAXY_CONFIG_SCHEMA_PATH, GALAXY_APP_NAME)
 
     def _process_config(self, kwargs):
         # Resolve paths of other config files
@@ -465,6 +428,15 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             except IOError:
                 log.error("CONFIGURATION ERROR: Can't open supplied blacklist file from path: %s", self.blacklist_file)
 
+        #  Create whitelist file to accept only certain email domains
+        self.whitelist_content = None
+        if self.whitelist_file:
+            try:
+                with open(self.whitelist_file) as f:
+                    self.whitelist_content = [line.rstrip() for line in f]
+            except IOError:
+                log.error("CONFIGURATION ERROR: Can't open supplied whitelist file from path: %s", self.whitelist_file)
+
         self.persistent_communication_rooms = listify(self.persistent_communication_rooms, do_strip=True)
         # The transfer manager and deferred job queue
         self.enable_beta_job_managers = string_as_bool(kwargs.get('enable_beta_job_managers', 'False'))
@@ -526,7 +498,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         if self.tool_dependency_dir and self.tool_dependency_dir.lower() == 'none':
             self.tool_dependency_dir = None
         if self.involucro_path is None:
-            target_dir = self.tool_dependency_dir or self.appschema['tool_dependency_dir'].get('default')
+            target_dir = self.tool_dependency_dir or self.schema.defaults['tool_dependency_dir']
             self.involucro_path = os.path.join(self.data_dir, target_dir, "involucro")
         self.involucro_path = os.path.join(self.root, self.involucro_path)
         if self.mulled_channels:
@@ -897,7 +869,7 @@ Configuration = GalaxyAppConfiguration
 def reload_config_options(current_config):
     """ Reload modified reloadable config options """
     modified_config = read_properties_from_file(current_config.config_file)
-    for option in current_config.reloadable_options:
+    for option in current_config.schema.reloadable_options:
         if option in modified_config:
             # compare to raw value, as that one is set only on load and reload
             if current_config._raw_config[option] != modified_config[option]:
