@@ -711,19 +711,6 @@
 :Type: int
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``manage_dependency_relationships``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Enable use of an in-memory registry with bi-directional
-    relationships between repositories (i.e., in addition to lists of
-    dependencies for a repository, keep an in-memory registry of
-    dependent items for each repository.
-:Default: ``false``
-:Type: bool
-
-
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``tool_data_table_config_path``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -3271,6 +3258,17 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``job_metrics_config_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    XML config file that contains the job metric collection
+    configuration.
+:Default: ``config/job_metrics_conf.xml``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``expose_potentially_sensitive_job_metrics``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -3673,7 +3671,7 @@
 
 :Description:
     CSS file to apply to "Galaxy Page" exports to PDF. Generally
-    prefer  markdown_export_css, but this is here for deployments that
+    prefer markdown_export_css, but this is here for deployments that
     would like to tailor different kinds of exports.
 :Default: ``markdown_export_pages.css``
 :Type: str
@@ -3685,7 +3683,7 @@
 
 :Description:
     CSS file to apply to invocation report exports to PDF. Generally
-    prefer  markdown_export_css, but this is here for deployments that
+    prefer markdown_export_css, but this is here for deployments that
     would like to tailor different kinds of exports.
 :Default: ``markdown_export_invocation_reports.css``
 :Type: str

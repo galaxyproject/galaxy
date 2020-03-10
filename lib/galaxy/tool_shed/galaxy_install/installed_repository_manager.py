@@ -79,9 +79,6 @@ class InstalledRepositoryManager(object):
         # whose values are a list of tuples defining tool_dependency objects (whose status is 'Installed') that require the key
         # at runtime.  The value defines the entire tool dependency tree.
         self.installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies = {}
-        if app.config.manage_dependency_relationships:
-            # Load defined dependency relationships for installed tool shed repositories and their contents.
-            self.load_dependency_relationships()
 
     def activate_repository(self, repository):
         """Activate an installed tool shed repository that has been marked as deactivated."""
@@ -651,90 +648,6 @@ class InstalledRepositoryManager(object):
                     deleted_tool_dependency_names.append(original_dependency_val_dict['name'])
         return updated_tool_dependency_names, deleted_tool_dependency_names
 
-    def handle_repository_install(self, repository):
-        """Load the dependency relationships for a repository that was just installed or reinstalled."""
-        # Populate self.repository_dependencies_of_installed_repositories.
-        self.add_entry_to_repository_dependencies_of_installed_repositories(repository)
-        # Populate self.installed_repository_dependencies_of_installed_repositories.
-        self.add_entry_to_installed_repository_dependencies_of_installed_repositories(repository)
-        # Populate self.tool_dependencies_of_installed_repositories.
-        self.add_entry_to_tool_dependencies_of_installed_repositories(repository)
-        # Populate self.installed_tool_dependencies_of_installed_repositories.
-        self.add_entry_to_installed_tool_dependencies_of_installed_repositories(repository)
-        for tool_dependency in repository.tool_dependencies:
-            # Populate self.runtime_tool_dependencies_of_installed_tool_dependencies.
-            self.add_entry_to_runtime_tool_dependencies_of_installed_tool_dependencies(tool_dependency)
-            # Populate self.installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies.
-            self.add_entry_to_installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies(tool_dependency)
-
-    def handle_repository_uninstall(self, repository):
-        """Remove the dependency relationships for a repository that was just uninstalled."""
-        for tool_dependency in repository.tool_dependencies:
-            tool_dependency_tup = self.get_tool_dependency_tuple_for_installed_repository_manager(tool_dependency)
-            # Remove this tool_dependency from all values in
-            # self.installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies
-            altered_installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies = {}
-            for (td_tup, installed_runtime_dependent_tool_dependency_tups) in self.installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies.items():
-                if tool_dependency_tup in installed_runtime_dependent_tool_dependency_tups:
-                    # Remove the tool_dependency from the list.
-                    installed_runtime_dependent_tool_dependency_tups.remove(tool_dependency_tup)
-                # Add the possibly altered list to the altered dictionary.
-                altered_installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies[td_tup] = \
-                    installed_runtime_dependent_tool_dependency_tups
-            self.installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies = \
-                altered_installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies
-            # Remove the entry for this tool_dependency from self.runtime_tool_dependencies_of_installed_tool_dependencies.
-            self.remove_entry_from_runtime_tool_dependencies_of_installed_tool_dependencies(tool_dependency)
-            # Remove the entry for this tool_dependency from
-            # self.installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies.
-            self.remove_entry_from_installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies(tool_dependency)
-        # Remove this repository's entry from self.installed_tool_dependencies_of_installed_repositories.
-        self.remove_entry_from_installed_tool_dependencies_of_installed_repositories(repository)
-        # Remove this repository's entry from self.tool_dependencies_of_installed_repositories
-        self.remove_entry_from_tool_dependencies_of_installed_repositories(repository)
-        # Remove this repository's entry from self.installed_repository_dependencies_of_installed_repositories.
-        self.remove_entry_from_installed_repository_dependencies_of_installed_repositories(repository)
-        # Remove this repository's entry from self.repository_dependencies_of_installed_repositories.
-        self.remove_entry_from_repository_dependencies_of_installed_repositories(repository)
-
-    def handle_tool_dependency_install(self, repository, tool_dependency):
-        """Load the dependency relationships for a tool dependency that was just installed independently of its containing repository."""
-        # The received repository must have a status of 'Installed'.  The value of tool_dependency.status will either be
-        # 'Installed' or 'Error', but we only need to change the in-memory dictionaries if it is 'Installed'.
-        if tool_dependency.is_installed:
-            # Populate self.installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies.
-            self.add_entry_to_installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies(tool_dependency)
-            # Populate self.installed_tool_dependencies_of_installed_repositories.
-            repository_tup = self.get_repository_tuple_for_installed_repository_manager(repository)
-            tool_dependency_tup = self.get_tool_dependency_tuple_for_installed_repository_manager(tool_dependency)
-            if repository_tup in self.installed_tool_dependencies_of_installed_repositories:
-                self.installed_tool_dependencies_of_installed_repositories[repository_tup].append(tool_dependency_tup)
-            else:
-                self.installed_tool_dependencies_of_installed_repositories[repository_tup] = [tool_dependency_tup]
-
-    def load_dependency_relationships(self):
-        """Load relationships for all installed repositories and tool dependencies into in-memnory dictionaries."""
-        # Get the list of installed tool shed repositories.
-        for repository in self.context.query(self.app.install_model.ToolShedRepository) \
-                                      .filter(self.app.install_model.ToolShedRepository.table.c.status ==
-                                              self.app.install_model.ToolShedRepository.installation_status.INSTALLED):
-            # Populate self.repository_dependencies_of_installed_repositories.
-            self.add_entry_to_repository_dependencies_of_installed_repositories(repository)
-            # Populate self.installed_repository_dependencies_of_installed_repositories.
-            self.add_entry_to_installed_repository_dependencies_of_installed_repositories(repository)
-            # Populate self.tool_dependencies_of_installed_repositories.
-            self.add_entry_to_tool_dependencies_of_installed_repositories(repository)
-            # Populate self.installed_tool_dependencies_of_installed_repositories.
-            self.add_entry_to_installed_tool_dependencies_of_installed_repositories(repository)
-        # Get the list of installed tool dependencies.
-        for tool_dependency in self.context.query(self.app.install_model.ToolDependency) \
-                                           .filter(self.app.install_model.ToolDependency.table.c.status ==
-                                                   self.app.install_model.ToolDependency.installation_status.INSTALLED):
-            # Populate self.runtime_tool_dependencies_of_installed_tool_dependencies.
-            self.add_entry_to_runtime_tool_dependencies_of_installed_tool_dependencies(tool_dependency)
-            # Populate self.installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies.
-            self.add_entry_to_installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies(tool_dependency)
-
     def load_proprietary_datatypes(self):
         cdl = custom_datatype_manager.CustomDatatypeLoader(self.app)
         for tool_shed_repository in self.context.query(self.install_model.ToolShedRepository) \
@@ -814,10 +727,6 @@ class InstalledRepositoryManager(object):
         if remove_from_disk:
             repository.status = self.app.install_model.ToolShedRepository.installation_status.UNINSTALLED
             repository.error_message = None
-            if self.app.config.manage_dependency_relationships:
-                # Remove the uninstalled repository and any tool dependencies from the in-memory dictionaries in the
-                # installed_repository_manager.
-                self.handle_repository_uninstall(repository)
         else:
             repository.status = self.app.install_model.ToolShedRepository.installation_status.DEACTIVATED
         self.app.install_model.context.current.add(repository)
