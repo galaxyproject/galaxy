@@ -3265,7 +3265,9 @@
 :Description:
     XML config file that contains the job metric collection
     configuration.
-:Default: ``config/job_metrics_conf.xml``
+    The value of this option will be resolved with respect to
+    <config_dir>.
+:Default: ``job_metrics_conf.xml``
 :Type: str
 
 
