@@ -78,6 +78,7 @@ def condor_submit(submit_file):
     try:
         submit = Popen(('condor_submit', submit_file), stdout=PIPE, stderr=STDOUT)
         message, _ = submit.communicate()
+        message = unicodify(message)
         if submit.returncode == 0:
             external_id = parse_external_id(message, type='condor')
         else:
