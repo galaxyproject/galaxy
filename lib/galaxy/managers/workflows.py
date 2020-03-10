@@ -1040,7 +1040,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
             # how to handle subworkflows?
             step_state = module.state.inputs or {}
-            if module.type != 'data_input':
+            if module.type not in ['data_input', 'data_collection_input']:
                 step_run_dict['doc'] = module.get_name()
                 step_inputs = {}
                 inp_connections = step.input_connections
@@ -1053,10 +1053,11 @@ class WorkflowContentsManager(UsesAnnotations):
                     connection_num += 1
                     label = conn.input_name
                     # the input is not connected to a previous tool (data_input is not considered a step)
-                    if conn.output_step.type == 'data_input':
+                    if conn.output_step.type in ['data_input', 'data_collection_input']:
+                        format_description = 'data' if conn.output_step.type == 'data_input' else 'collection'
                         label = "Input file(s) for tool " + module.get_name()
                         input_dict = {
-                                'format': 'data',
+                                'format': format_description,
                                 'type': 'File',
                                 'name': label
                                 }
@@ -1066,7 +1067,7 @@ class WorkflowContentsManager(UsesAnnotations):
                     step_inputs[conn.input_name] = source_id
                     ## case when input is not connected from a previous step. Assume it is a value and not a File?
                     input_dicts[conn.input_name] = {'name': label,
-                                                    'description': 'Input value for tool %s' % module.get_name(),
+                                                    'doc': 'Input value for tool %s' % module.get_name(),
                                                     'type': 'Any'
                                                     }
                 for name, val in step_state.items():
@@ -1076,12 +1077,14 @@ class WorkflowContentsManager(UsesAnnotations):
                             source_id = str(step.uuid) + '_' + str(name)  #global_input_id
                             if input_type == RuntimeValue:
                                 input_dicts[name] = {'name': name,
-                                                     'description': 'runtime parameter for tool %s' % module.get_name()
+                                                     'type': 'Any',
+                                                     'doc': 'runtime parameter for tool %s' % module.get_name()
                                                     }
                             else:
                                 step_inputs_dict = {'name': name,
                                                     'default': val,
-                                                    'description': 'runtime parameter for tool %s' % module.get_name()
+                                                    'type': 'Any',
+                                                    'doc': 'runtime parameter for tool %s' % module.get_name()
                                                    }
                                 input_dicts[name] = step_inputs_dict
                                 global_input_dicts[source_id] = step_inputs_dict
@@ -1092,7 +1095,7 @@ class WorkflowContentsManager(UsesAnnotations):
             # Global wf outputs and step wf output list
             for workflow_output in step.unique_workflow_outputs:
                 # do not list the User's inputs as wf outputs
-                if module.type != 'data_input':
+                if module.type not in ['data_input', 'data_collection_input']:
                     workflow_output_dict = {'label': workflow_output.label,
                                             'name': workflow_output.output_name,
                                             'outputSource': str(step.uuid) + '/' + workflow_output.output_name,
@@ -1105,9 +1108,9 @@ class WorkflowContentsManager(UsesAnnotations):
             step_outputs_dict = {}
             if type(module) is ToolModule:
                 for output in module.get_data_outputs():
-                    step_outputs_dict[output['name']] = {'type': output['extensions'][0]}  #can add something in the doc?
+                    step_outputs_dict[output['name']] = {'type': 'File' }  # can get more info from output['extensions'][0] ?
             step_run_dict['outputs'] = step_outputs_dict
-            if module.type != 'data_input':
+            if module.type not in ['data_input', 'data_collection_input']:
                 step_dict['run'] = step_run_dict
                 data['steps'][str(step.uuid)] = step_dict
         # add the global input and outputs to the return value
