@@ -44,7 +44,7 @@ export default {
     methods: {
         loadRecommendations: function() {
             const self = this;
-            let toolId = this.getToolId;
+            const toolId = this.getToolId;
             Utils.request({
                 type: "POST",
                 url: `${getAppRoot()}api/workflows/get_tool_predictions`,
