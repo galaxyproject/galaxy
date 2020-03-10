@@ -1650,23 +1650,3 @@ body.reports {
     bottom: 0;
     background: url(../../images/largespinner.gif) no-repeat center center fixed;
 }
-
-/* For collapsible D3 tree */
-
-.node {
-    cursor: pointer;
-}
-.node circle {
-    fill: #000;
-    stroke: #c2ebc2;
-    stroke-width: 0.3rem;
-}
-.node text {
-    font: 0.75rem sans-serif;
-}
-
-.link {
-    fill: none;
-    stroke: #c2ebc2;
-    stroke-width: 0.3rem;
-}
