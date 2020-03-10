@@ -428,6 +428,15 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             except IOError:
                 log.error("CONFIGURATION ERROR: Can't open supplied blacklist file from path: %s", self.blacklist_file)
 
+        #  Create whitelist file to accept only certain email domains
+        self.whitelist_content = None
+        if self.whitelist_file:
+            try:
+                with open(self.whitelist_file) as f:
+                    self.whitelist_content = [line.rstrip() for line in f]
+            except IOError:
+                log.error("CONFIGURATION ERROR: Can't open supplied whitelist file from path: %s", self.whitelist_file)
+
         self.persistent_communication_rooms = listify(self.persistent_communication_rooms, do_strip=True)
         # The transfer manager and deferred job queue
         self.enable_beta_job_managers = string_as_bool(kwargs.get('enable_beta_job_managers', 'False'))
