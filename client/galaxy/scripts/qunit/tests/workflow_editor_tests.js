@@ -242,9 +242,7 @@ QUnit.test("default attributes", function(assert) {
     const output = { connect: sinon.spy() };
     const connector = new Connector({}, input, output);
     assert.equal(connector.dragging, false);
-    assert.equal(connector.canvas, null);
-    assert.equal(connector.inner_color, "#FFFFFF");
-    assert.equal(connector.outer_color, "#25537b");
+    assert.equal(connector.svg.attr("class"), "ribbon");
 });
 
 QUnit.test("destroy", function(assert) {
@@ -271,13 +269,12 @@ QUnit.test("initial redraw", function(assert) {
             return false;
         }
     };
+    const n = $("#canvas-container").find("svg").length;
     const connector = new Connector({}, input, output);
-    const n = $("#canvas-container").find("canvas").length;
-    connector.redraw();
     // Ensure canvas gets set
     assert.ok(connector.canvas);
     // Ensure it got added to canvas container
-    assert.equal(n + 1, $("#canvas-container").find("canvas").length);
+    assert.equal(n + 1, $("#canvas-container").find("svg").length);
 });
 
 QUnit.module("Input collection terminal model test", {
@@ -366,9 +363,9 @@ QUnit.module("Node unit test", {
 });
 
 QUnit.test("make active", function(assert) {
-    assert.ok(!this.element.hasClass("toolForm-active"));
+    assert.ok(!this.element.hasClass("node-active"));
     this.node.make_active();
-    assert.ok(this.element.hasClass("toolForm-active"));
+    assert.ok(this.element.hasClass("node-active"));
 });
 
 QUnit.test("destroy", function(assert) {
@@ -380,11 +377,11 @@ QUnit.test("destroy", function(assert) {
 });
 
 QUnit.test("error", function(assert) {
-    // Test body of toolFormBody div updated and workflow notified of change.
+    // Test body of div updated and workflow notified of change.
     var test = this;
     this.expect_workflow_node_changed(assert, function() {
-        test.node.error("TOOL ERROR");
-        assert.equal($(test.$(".toolFormBody").children()[0]).html(), "TOOL ERROR");
+        test.node.init_field_data({ errors: "NODE ERROR", inputs: [], outputs: [] });
+        assert.equal(test.$(".node-body").html(), "NODE ERROR");
     });
 });
 
@@ -428,10 +425,10 @@ QUnit.test("init_field_data data", function(assert) {
         assert.equal(this.$(".output-terminal").length, 1);
         assert.equal(this.$(".input-terminal").length, 1);
         assert.equal(this.$(".rule").length, 1);
-        assert.equal(this.$(".toolFormBody").children().length, 3);
+        assert.equal(this.$(".node-body").children().length, 3);
         assert.equal(this.$(".node-title").text(), "newnode");
         assert.ok(
-            this.$(".toolFormTitle")
+            this.$(".node-header")
                 .find("i")
                 .hasClass("fa-wrench")
         );
@@ -607,10 +604,10 @@ QUnit.module("Node view ", {
 QUnit.test("tool error styling", function(assert) {
     this.set_for_node({ errors: false });
     this.view.render();
-    assert.ok(!this.view.$el.hasClass("tool-node-error"));
+    assert.ok(!this.view.$el.hasClass("node-error"));
     this.set_for_node({ errors: true });
     this.view.render();
-    assert.ok(this.view.$el.hasClass("tool-node-error"));
+    assert.ok(this.view.$el.hasClass("node-error"));
 });
 
 QUnit.test("rendering correct width", function(assert) {
