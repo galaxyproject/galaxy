@@ -272,14 +272,14 @@ const View = Backbone.View.extend({
                 if (enable_tool_recommendations === true || enable_tool_recommendations === "true") {
                     // show tool recommendations
                     const ToolRecommendationInstance = Vue.extend(ToolRecommendation);
-                        const vm = document.createElement("div");
-                        this.$el.append(vm);
-                        const instance = new ToolRecommendationInstance({
-                            propsData: {
-                                toolId: job_def.tool_id
-                            }
-                        });
-                        instance.$mount(vm);
+                    const vm = document.createElement("div");
+                    this.$el.append(vm);
+                    const instance = new ToolRecommendationInstance({
+                        propsData: {
+                            toolId: job_def.tool_id
+                        }
+                    });
+                    instance.$mount(vm);
                 }
                 this.$el.parent().scrollTop(0);
                 // Show Webhook if job is running
