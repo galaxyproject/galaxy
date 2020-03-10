@@ -113,10 +113,7 @@ var View = Backbone.View.extend({
                     </a>
                 </b>
             </p>`);
-        const Galaxy = getGalaxyInstance();
-        if (Galaxy.user.id) {
-            this.$el.append("<h3>Issue Report</h3>").append(this._getBugFormTemplate(dataset, job));
-        }
+        this.$el.append("<h3>Issue Report</h3>").append(this._getBugFormTemplate(dataset, job));
     },
 
     job_summary: function(job) {
@@ -170,13 +167,15 @@ var View = Backbone.View.extend({
     /** Convert tab template */
     _getBugFormTemplate: function(dataset, job) {
         const Galaxy = getGalaxyInstance();
+        const userEmail = Galaxy.user.get("email");
         const form = new Form({
             inputs: [
                 {
                     type: "text",
-                    hidden: true,
+                    hidden: !!userEmail,
                     name: "email",
-                    value: Galaxy.user.get("email")
+                    value: userEmail,
+                    label: "Please provide your email:"
                 },
                 {
                     type: "text",
