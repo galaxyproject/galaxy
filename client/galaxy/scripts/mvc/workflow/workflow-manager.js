@@ -51,6 +51,7 @@ class Workflow extends EventEmitter {
         node.update_field_data(data);
         $.each(node.output_terminals, (ot_id, ot) => {
             node.addWorkflowOutput(ot.name);
+            node.markWorkflowOutput(ot.name);
         });
         this.activate_node(node);
     }
