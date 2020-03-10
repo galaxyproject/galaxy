@@ -126,9 +126,8 @@ export class OutputCalloutView {
         this.label = options.label;
         this.node = options.node;
         this.output = options.output;
-        const view = this;
         const node = this.node;
-        const outputName = view.output.name;
+        const outputName = this.output.name;
         this.$el
             .attr("class", `callout-terminal ${outputName}`)
             .append(
@@ -147,7 +146,7 @@ export class OutputCalloutView {
             )
             .tooltip({
                 delay: 500,
-                title: "Check dataset as output, unchecked datasets will be hidden."
+                title: "Unchecked output datasets will be hidden."
             });
         this.render();
     }
