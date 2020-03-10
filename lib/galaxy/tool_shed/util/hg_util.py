@@ -113,10 +113,8 @@ def get_repo_for_repository(app, repository=None, repo_path=None):
         hg,
         ui
     )
-    if repository is not None:
-        return hg.repository(ui.ui(), repository.repo_path(app))
-    if repo_path is not None:
-        return hg.repository(ui.ui(), repo_path)
+    repo_path = repo_path if repo_path else repository.repo_path(app)
+    return hg.repository(ui.ui(), repo_path.encode('utf-8'))
 
 
 def pull_repository(repo_path, repository_clone_url, ctx_rev):
