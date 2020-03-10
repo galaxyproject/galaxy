@@ -219,7 +219,7 @@ class Repository(Dictifiable):
     def allow_push(self):
         hgrc_file = hg_util.get_hgrc_path(self.repo_path())
         with open(hgrc_file, 'r') as fh:
-            for line in fh:
+            for line in fh.read().splitlines():
                 if line.startswith('allow_push = '):
                     return line[len('allow_push = '):]
         return ''
