@@ -176,7 +176,7 @@ var View = Backbone.View.extend({
                     type: "text",
                     hidden: true,
                     name: "email",
-                    value: Galaxy.user.email
+                    value: Galaxy.user.get("email")
                 },
                 {
                     type: "text",
