@@ -115,7 +115,7 @@ Some **example test InteractiveTools** have been defined, and can be added to th
 
 .. code-block:: xml
 
-        <tool file="interactive/interactivetool_juypter_notebook.xml" />
+        <tool file="interactive/interactivetool_jupyter_notebook.xml" />
         <tool file="interactive/interactivetool_cellxgene.xml" />
 
 
