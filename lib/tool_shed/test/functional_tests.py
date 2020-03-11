@@ -132,7 +132,7 @@ class ToolShedTestDriver(driver_util.TestDriver):
             os.environ['GALAXY_TEST_SHED_TOOL_CONF'] = galaxy_shed_tool_conf_file
             # Generate shed_data_manager_conf.xml
             if not os.environ.get('GALAXY_SHED_DATA_MANAGER_CONF'):
-                open(galaxy_shed_data_manager_conf_file, 'wb').write(shed_data_manager_conf_xml_template)
+                open(galaxy_shed_data_manager_conf_file, 'w').write(shed_data_manager_conf_xml_template)
             kwargs = dict(migrated_tools_config=galaxy_migrated_tool_conf_file,
                           shed_data_manager_config_file=galaxy_shed_data_manager_conf_file,
                           shed_tool_path=galaxy_shed_tool_path,
