@@ -100,5 +100,5 @@ class HgWebConfigManager(object):
 
     def write_config(self):
         """Writing the in-memory configuration to the hgweb.config file on disk."""
-        with open(self.hgweb_config, 'wb') as config_file:
+        with open(self.hgweb_config, 'w') as config_file:
             self.in_memory_config.write(config_file)
