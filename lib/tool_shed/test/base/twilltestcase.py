@@ -13,16 +13,15 @@ from xml.etree import ElementTree
 # imported by twill.
 import pyparsing  # noqa: F401
 import requests
-import twill
-import twill.commands as tc
+import twill3.commands as tc
 from mercurial import commands, hg, ui
-from six import string_types, StringIO
+from six import string_types
 from six.moves.urllib.parse import (
     quote_plus,
     urlencode,
     urlparse
 )
-from twill.other_packages._mechanize_dist import ClientForm
+from twill3.other_packages._mechanize_dist import ClientForm
 
 import galaxy.model.tool_shed_install as galaxy_model
 import galaxy.util
@@ -41,8 +40,6 @@ from . import common, test_db_util
 repository_installation_timeout = 600
 
 # Force twill to log to a buffer -- FIXME: Should this go to stdout and be captured by nose?
-buffer = StringIO()
-twill.set_output(buffer)
 tc.config('use_tidy', 0)
 
 # Dial ClientCookie logging down (very noisy)
@@ -253,7 +250,7 @@ class ShedTwillTestCase(FunctionalTestCase):
     def logout(self):
         self.visit_url("%s/user/logout" % self.url)
         self.check_page_for_string("You have been logged out")
-        tc.browser.cj.clear()
+        tc.clear_cookies()
 
     def showforms(self):
         """Shows form, helpful for debugging new tests"""
@@ -944,7 +941,7 @@ class ShedTwillTestCase(FunctionalTestCase):
 
     def galaxy_logout(self):
         self.visit_galaxy_url("/user/logout", params=dict(session_csrf_token=self.galaxy_token()))
-        tc.browser.cj.clear()
+        tc.browser.clear_cookies()
 
     def generate_complex_dependency_xml(self, filename, filepath, repository_tuples, package, version):
         file_path = os.path.join(filepath, filename)
