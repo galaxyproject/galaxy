@@ -124,21 +124,21 @@ class ShedTwillTestCase(FunctionalTestCase):
         invalid_username = False
         try:
             self.check_page_for_string("Created new user account")
-        except Exception:
+        except AssertionError:
             try:
                 # May have created the account in a previous test run...
                 self.check_page_for_string("User with email '%s' already exists." % email)
                 previously_created = True
-            except Exception:
+            except AssertionError:
                 try:
                     self.check_page_for_string('Public name is taken; please choose another')
                     username_taken = True
-                except Exception:
+                except AssertionError:
+                    # Note that we're only checking if the usr name is >< 4 chars here...
                     try:
-                        # Note that we're only checking if the usr name is >< 4 chars here...
                         self.check_page_for_string('Public name must be at least 4 characters in length')
                         invalid_username = True
-                    except Exception:
+                    except AssertionError:
                         pass
         return previously_created, username_taken, invalid_username
 
@@ -147,7 +147,7 @@ class ShedTwillTestCase(FunctionalTestCase):
 
     def get_form_controls(self, form):
         formcontrols = []
-        for i, control in enumerate(form.controls):
+        for i, control in enumerate(form.inputs):
             formcontrols.append("control %d: %s" % (i, str(control)))
         return formcontrols
 
@@ -265,11 +265,11 @@ class ShedTwillTestCase(FunctionalTestCase):
             if i == form_no:
                 break
         # To help with debugging a tool, print out the form controls when the test fails
-        print("form '%s' contains the following controls ( note the values )" % f.name)
+        # print("form '%s' contains the following controls ( note the values )" % f.get('name'))
         controls = {}
         formcontrols = self.get_form_controls(f)
         hc_prefix = '<HiddenControl('
-        for i, control in enumerate(f.controls):
+        for i, control in enumerate(f.inputs):
             if hc_prefix not in str(control):
                 try:
                     # check if a repeat element needs to be added
@@ -296,7 +296,7 @@ class ShedTwillTestCase(FunctionalTestCase):
                             control.clear()
                             # kwd[control.name] should be a singlelist
                             for elem in kwd[control.name]:
-                                tc.fv(f.name, control.name, str(elem))
+                                tc.fv(f.get('name'), control.name, str(elem))
                             # Create a new submit control, allows form to refresh, instead of going to next page
                             control = ClientForm.SubmitControl('SubmitControl', '___refresh_grouping___', {'name': 'refresh_grouping'})
                             control.add_to_form(f)
@@ -317,71 +317,72 @@ class ShedTwillTestCase(FunctionalTestCase):
             if not isinstance(control_value, list):
                 control_value = [control_value]
             control = controls[control_name]
-            control.clear()
-            if control.is_of_kind("text"):
-                tc.fv(f.name, control.name, ",".join(control_value))
-            elif control.is_of_kind("list"):
-                try:
-                    if control.is_of_kind("multilist"):
-                        if control.type == "checkbox":
-                            def is_checked(value):
-                                # Copied from form_builder.CheckboxField
-                                if value is True:
-                                    return True
-                                if isinstance(value, list):
-                                    value = value[0]
-                                return isinstance(value, string_types) and value.lower() in ("yes", "true", "on")
-                            try:
-                                checkbox = control.get()
-                                checkbox.selected = is_checked(control_value)
-                            except Exception as e1:
-                                print("Attempting to set checkbox selected value threw exception: ", e1)
-                                # if there's more than one checkbox, probably should use the behaviour for
-                                # ClientForm.ListControl ( see twill code ), but this works for now...
+            control_type = getattr(control, "type", None)
+            if control_type:
+                if control_type in ("text", "textfield", "submit"):
+                    tc.fv(f.get('name'), control.name, ",".join(control_value))
+                elif control.type == "list":
+                    try:
+                        if control.type in ("multilist", "checkbox"):
+                            if control.type == "checkbox":
+                                def is_checked(value):
+                                    # Copied from form_builder.CheckboxField
+                                    if value is True:
+                                        return True
+                                    if isinstance(value, list):
+                                        value = value[0]
+                                    return isinstance(value, string_types) and value.lower() in ("yes", "true", "on")
+                                try:
+                                    checkbox = control.get()
+                                    checkbox.selected = is_checked(control_value)
+                                except Exception as e1:
+                                    print("Attempting to set checkbox selected value threw exception: ", e1)
+                                    # if there's more than one checkbox, probably should use the behaviour for
+                                    # ClientForm.ListControl ( see twill code ), but this works for now...
+                                    for elem in control_value:
+                                        control.get(name=elem).selected = True
+                            else:
                                 for elem in control_value:
-                                    control.get(name=elem).selected = True
-                        else:
+                                    try:
+                                        # Doubt this case would ever work, but want
+                                        # to preserve backward compat.
+                                        control.get(name=elem).selected = True
+                                    except Exception:
+                                        # ... anyway this is really what we want to
+                                        # do, probably even want to try the len(
+                                        # elem ) > 30 check below.
+                                        control.get(label=elem).selected = True
+                        else:  # control.is_of_kind( "singlelist" )
                             for elem in control_value:
                                 try:
-                                    # Doubt this case would ever work, but want
-                                    # to preserve backward compat.
-                                    control.get(name=elem).selected = True
+                                    tc.fv(f.get('name'), control.name, str(elem))
                                 except Exception:
-                                    # ... anyway this is really what we want to
-                                    # do, probably even want to try the len(
-                                    # elem ) > 30 check below.
-                                    control.get(label=elem).selected = True
-                    else:  # control.is_of_kind( "singlelist" )
-                        for elem in control_value:
-                            try:
-                                tc.fv(f.name, control.name, str(elem))
-                            except Exception:
-                                try:
-                                    # Galaxy truncates long file names in the dataset_collector in galaxy/tools/parameters/basic.py
-                                    if len(elem) > 30:
-                                        elem_name = '%s..%s' % (elem[:17], elem[-11:])
-                                        tc.fv(f.name, control.name, str(elem_name))
-                                        pass
-                                    else:
+                                    try:
+                                        # Galaxy truncates long file names in the dataset_collector in galaxy/tools/parameters/basic.py
+                                        if len(elem) > 30:
+                                            elem_name = '%s..%s' % (elem[:17], elem[-11:])
+                                            tc.fv(f.get('name'), control.name, str(elem_name))
+                                            pass
+                                        else:
+                                            raise
+                                    except Exception:
                                         raise
                                 except Exception:
-                                    raise
-                            except Exception:
-                                for formcontrol in formcontrols:
-                                    log.debug(formcontrol)
-                                log.exception("Attempting to set control '%s' to value '%s' (also tried '%s') threw exception.", control.name, elem, elem_name)
-                                pass
-                except Exception as exc:
-                    for formcontrol in formcontrols:
-                        log.debug(formcontrol)
-                    errmsg = "Attempting to set field '%s' to value '%s' in form '%s' threw exception: %s\n" % (control_name, str(control_value), f.name, str(exc))
-                    errmsg += "control: %s\n" % str(control)
-                    errmsg += "If the above control is a DataToolparameter whose data type class does not include a sniff() method,\n"
-                    errmsg += "make sure to include a proper 'ftype' attribute to the tag for the control within the <test> tag set.\n"
-                    raise AssertionError(errmsg)
-            else:
-                # Add conditions for other control types here when necessary.
-                pass
+                                    for formcontrol in formcontrols:
+                                        log.debug(formcontrol)
+                                    log.exception("Attempting to set control '%s' to value '%s' (also tried '%s') threw exception.", control.name, elem, elem_name)
+                                    pass
+                    except Exception as exc:
+                        for formcontrol in formcontrols:
+                            log.debug(formcontrol)
+                        errmsg = "Attempting to set field '%s' to value '%s' in form '%s' threw exception: %s\n" % (control.name, str(control_value), f.get('name'), str(exc))
+                        errmsg += "control: %s\n" % str(control)
+                        errmsg += "If the above control is a DataToolparameter whose data type class does not include a sniff() method,\n"
+                        errmsg += "make sure to include a proper 'ftype' attribute to the tag for the control within the <test> tag set.\n"
+                        raise AssertionError(errmsg)
+                else:
+                    # Add conditions for other control types here when necessary.
+                    pass
         tc.submit(button)
 
     def visit_url(self, url, params=None, doseq=False, allowed_codes=[200]):
@@ -1503,7 +1504,7 @@ class ShedTwillTestCase(FunctionalTestCase):
         the field does not exist in the provided form, return a dict without that index.
         '''
         form_id = form.attrs.get('id')
-        controls = [control for control in form.controls if str(control.name) == field_name]
+        controls = [control for control in form.inputs if str(control.name) == field_name]
         if len(controls) > 0:
             log.debug('Setting field %s of form %s to %s.' % (field_name, form_id, str(field_value)))
             tc.formvalue(form_id, field_name, str(field_value))
@@ -1534,7 +1535,7 @@ class ShedTwillTestCase(FunctionalTestCase):
         self.display_manage_repository_page(repository, changeset_revision=changeset_revision)
         form = tc.browser.get_form('skip_tool_tests')
         assert form is not None, 'Could not find form skip_tool_tests.'
-        for control in form.controls:
+        for control in form.inputs:
             control_name = str(control.name)
             if control_name == 'skip_tool_tests' and control.type == 'checkbox':
                 checkbox = control.get()
