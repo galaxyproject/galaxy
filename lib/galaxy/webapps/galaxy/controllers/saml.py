@@ -51,7 +51,7 @@ class SAML(JSAppLauncher):
 
     def init_saml_auth(self, trans):
         req = self.prepare_request(trans.request)
-        return OneLogin_Saml2_Auth(req, custom_base_path=trans.app.config.saml_config_dir)
+        return req, OneLogin_Saml2_Auth(req, custom_base_path=trans.app.config.saml_config_dir)
 
     @web.json
     @web.expose
@@ -62,7 +62,7 @@ class SAML(JSAppLauncher):
             log.debug(msg)
             return trans.show_error_message(msg)
         log.debug("Loading config from " + trans.app.config.saml_config_dir)
-        auth = self.init_saml_auth(trans)
+        req, auth = self.init_saml_auth(trans)
         log.debug("Create auth object")
         return_to = trans.request.host_url
         redirect = auth.login(return_to)
@@ -116,8 +116,7 @@ class SAML(JSAppLauncher):
 
     @web.expose
     def assertion_consumer_service(self, trans, *args, **kwargs):
-        # req = prepare_request(request)
-        auth = self.init_saml_auth(trans)
+        req, auth = self.init_saml_auth(trans)
 
         session = kwargs #trans.galaxy_session
         request_id = None
