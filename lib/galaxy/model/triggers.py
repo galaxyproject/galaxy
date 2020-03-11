@@ -1,8 +1,181 @@
 """
 Database trigger installation and removal
+
+Recommended trigger naming convention: tr_{table name}_{when}_{operation}_{action details}, where:
+    table_name: table on which the trigger is created
+    when: b|a|i for before, after, or instead of
+    operation: i|u|d for insert, update, or delete
+    action details: specify what the trigger does
 """
 
 from sqlalchemy import DDL
+
+
+def create_triggers(engine):
+    JobStateTrigger(engine).create()
+    install_timestamp_triggers(engine)
+
+
+class Trigger(object):
+    """
+    Base class for triggers. A concrete trigger class should extend this class and override
+    the `get_sql_create_postgres_trigger()` and `get_sql_create_sqlite_trigger()` methods.
+    """
+    POSTGRES = 0
+    SQLITE = 1
+
+    def __init__(self, engine, table_name, trigger_name):
+        self.engine = engine
+        self.table = table_name
+        self.trigger = trigger_name  # for postgres, used for both trigger and function name
+        self._set_db_type()
+
+    def create(self):
+        if self.db == Trigger.POSTGRES:
+            sql = self.get_sql_create_postgres_trigger()
+        else:
+            sql = self.get_sql_create_sqlite_trigger()
+        self.engine.execute(sql)
+
+    def drop(self):
+        if self.db == Trigger.POSTGRES:
+            sql = self.get_sql_drop_postgres_trigger()
+        else:
+            sql = self.get_sql_drop_sqlite_trigger()
+        self.engine.execute(sql)
+
+    def get_sql_create_postgres_trigger(self):
+        raise Exception('Not implemented')
+
+    def get_sql_create_sqlite_trigger(self):
+        raise Exception('Not implemented')
+
+    def get_sql_drop_postgres_trigger(self):
+        sql = []
+        sql.append('DROP TRIGGER IF EXISTS {trigger} on {table};'.format(
+            trigger=self.trigger, table=self.table))
+        sql.append('DROP FUNCTION IF EXISTS {trigger};'.format(trigger=self.trigger))
+        return '\n'.join(sql)
+
+    def get_sql_drop_sqlite_trigger(self):
+        return 'DROP TRIGGER IF EXISTS {trigger};'.format(trigger=self.trigger)
+
+    def _set_db_type(self):
+        if self.engine.name in ['postgres', 'postgresql']:
+            self.db = Trigger.POSTGRES
+        elif self.engine.name in ['sqlite']:
+            self.db = Trigger.SQLITE
+        else:
+            raise Exception('Unsupported database type: %s' % self.engine.name)
+
+
+class JobStateTrigger(Trigger):
+
+    def __init__(self, engine):
+        super(JobStateTrigger, self).__init__(engine, 'job', 'tr_job_au_update_datasets')
+
+    def get_sql_create_postgres_trigger(self):
+
+        def get_function():
+            sql = '''
+                CREATE FUNCTION {trigger}() RETURNS trigger AS $$
+                    BEGIN
+                        UPDATE dataset d
+                        SET
+                            state = NEW.state,
+                            update_time = NEW.update_time
+                        FROM history_dataset_association hda, job_to_output_dataset jtod
+                        WHERE hda.id = jtod.dataset_id AND d.id = hda.dataset_id AND jtod.job_id = NEW.id;
+
+                        UPDATE dataset d
+                        SET
+                            state = NEW.state,
+                            update_time = NEW.update_time
+                        FROM library_dataset_dataset_association ldda, job_to_output_library_dataset jtold
+                        WHERE ldda.id = jtold.ldda_id AND d.id = ldda.dataset_id AND jtold.job_id = NEW.id;
+
+                        UPDATE history_dataset_association hda
+                        SET
+                            info = NEW.info,
+                            update_time = NEW.update_time
+                        FROM job_to_output_dataset jtod
+                        WHERE jtod.dataset_id = hda.id AND jtod.job_id = NEW.id;
+
+                        UPDATE library_dataset_dataset_association ldda
+                        SET
+                            info = NEW.info,
+                            update_time = NEW.update_time
+                        FROM job_to_output_library_dataset jtold
+                        WHERE jtold.ldda_id = ldda.id AND jtold.job_id = NEW.id;
+
+                        RETURN NULL;
+                    END;
+                $$ LANGUAGE plpgsql;
+            '''.format(trigger=self.trigger)
+            return sql
+
+        def get_trigger():
+            sql = '''
+                CREATE TRIGGER {trigger}
+                    AFTER UPDATE OF state, info
+                    ON {table}
+                    FOR EACH ROW
+                    EXECUTE FUNCTION {function}();
+            '''.format(trigger=self.trigger, table=self.table, function=self.trigger)
+            return sql
+
+        sql = []
+        sql.append(self.get_sql_drop_postgres_trigger())
+        sql.append(get_function())
+        sql.append(get_trigger())
+        return '\n'.join(sql)
+
+    def get_sql_create_sqlite_trigger(self):
+        sql = '''
+            CREATE TRIGGER IF NOT EXISTS {trigger}
+                AFTER UPDATE OF state, info
+                ON {table}
+                FOR EACH ROW
+                BEGIN
+                    UPDATE dataset
+                    SET
+                        state = NEW.state,
+                        update_time = NEW.update_time
+                    WHERE id IN (
+                        SELECT hda.dataset_id FROM history_dataset_association hda
+                        INNER JOIN job_to_output_dataset jtod
+                        ON jtod.dataset_id = hda.id AND jtod.job_id = NEW.id
+                    );
+                    UPDATE dataset
+                    SET
+                        state = NEW.state,
+                        update_time = NEW.update_time
+                    WHERE id IN (
+                        SELECT ldda.dataset_id FROM library_dataset_dataset_association ldda
+                        INNER JOIN job_to_output_library_dataset jtold
+                        ON jtold.ldda_id = ldda.id AND jtold.job_id = NEW.id
+                    );
+                    UPDATE history_dataset_association
+                    SET
+                        info = NEW.info,
+                        update_time = NEW.update_time
+                    WHERE id IN (
+                        SELECT jtod.dataset_id
+                        FROM job_to_output_dataset jtod
+                        WHERE jtod.job_id = NEW.id
+                    );
+                    UPDATE library_dataset_dataset_association
+                    SET
+                        info = NEW.info,
+                        update_time = NEW.update_time
+                    WHERE id IN (
+                        SELECT jtold.ldda_id
+                        FROM job_to_output_library_dataset jtold
+                        WHERE jtold.job_id = NEW.id
+                    );
+                END;
+        '''.format(trigger=self.trigger, table=self.table)
+        return sql
 
 
 def install_timestamp_triggers(engine):
