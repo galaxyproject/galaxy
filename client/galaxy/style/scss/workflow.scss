@@ -25,10 +25,6 @@
                 cursor: move;
                 background: $brand-primary;
                 color: $white;
-                .node-dropdown {
-                    @extend .rounded;
-                    border: solid $border-color 1px;
-                }
             }
             .node-body {
                 @extend .card-body;

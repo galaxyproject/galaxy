@@ -308,7 +308,6 @@ workflow_editor:
       _: "[node-label='${label}']"
 
       title: '${_} .node-title'
-      dropdown: '${_} .node-dropdown'
       destroy: '${_} .node-destroy'
       clone: '${_} .node-clone'
 

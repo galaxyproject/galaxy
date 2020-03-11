@@ -1,40 +1,26 @@
 <template>
     <div>
         <div class="node-header unselectable clearfix">
-            <b-dropdown
-                right
-                no-caret
-                class="node-dropdown float-right"
-                toggle-class="py-0"
-                offset="50"
+            <b-button
+                class="node-destroy py-0 float-right"
                 variant="primary"
                 size="sm"
+                aria-label="clone node"
+                @click="onDestroy"
             >
-                <template v-slot:button-content>
-                    <i :class="iconClass" />
-                </template>
-                <b-dropdown-item
-                    v-if="canClone"
-                    aria-label="clone node"
-                    role="button"
-                    href="#"
-                    class="node-clone"
-                    @click="onClone"
-                >
-                    <span class="fa fa-fw fa-files-o" />
-                    Duplicate
-                </b-dropdown-item>
-                <b-dropdown-item
-                    aria-label="destroy node"
-                    role="button"
-                    href="#"
-                    class="node-destroy"
-                    @click="onDestroy"
-                >
-                    <span class="fa fa-fw fa-trash" />
-                    Remove
-                </b-dropdown-item>
-            </b-dropdown>
+                <i class="fa fa-times" />
+            </b-button>
+            <b-button
+                v-if="canClone"
+                class="node-clone py-0 float-right"
+                variant="primary"
+                size="sm"
+                aria-label="clone node"
+                @click="onClone"
+            >
+                <i class="fa fa-files-o" />
+            </b-button>
+            <i :class="iconClass" />
             <span class="node-title">{{ title }}</span>
         </div>
         <div class="node-body">
