@@ -119,7 +119,7 @@ class SAML(JSAppLauncher):
         # req = prepare_request(request)
         auth = self.init_saml_auth(trans)
 
-        session = trans.galaxy_session
+        session = kwargs #trans.galaxy_session
         request_id = None
         if 'AuthNRequestID' in session:
             request_id = session['AuthNRequestID']
