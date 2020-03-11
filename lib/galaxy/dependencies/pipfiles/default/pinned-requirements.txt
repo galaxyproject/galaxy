@@ -152,7 +152,7 @@ pyuwsgi==2.0.18.post0
 pyyaml==5.3
 rdflib-jsonld==0.4.0
 rdflib==4.2.2
-refgenie==0.8.2
+refgenconf==0.6.2
 repoze.lru==0.7
 requests-oauthlib==1.3.0
 requests-toolbelt==0.9.1

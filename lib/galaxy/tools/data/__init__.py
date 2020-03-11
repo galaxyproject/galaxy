@@ -26,6 +26,7 @@ from galaxy import util
 from galaxy.util import RW_R__R__
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.renamed_temporary_file import RenamedTemporaryFile
+from galaxy.util.template import fill_template
 
 log = logging.getLogger(__name__)
 
@@ -799,10 +800,10 @@ class RefgenieToolDataTable(TabularToolDataTable):
     Data stored in refgenie
     <table name="all_fasta" type="refgenie" asset="fasta" >
         <file path="refgenie.yml" />
-        <field name="value" value="refgenie:uuid"/>
-        <field name="dbkey" value="refgenie:genome"/>
-        <field name="name" value="refgenie:display_name"/>
-        <field name="path" value="refgenie:asset"/>
+        <field name="value" template="true">${__REFGENIE_UUID__}</field>
+        <field name="dbkey" template="true">${__REFGENIE_GENOME__}</field>
+        <field name="name" template="true">${__REFGENIE_DISPLAY_NAME__}</field>
+        <field name="path" template="true">${__REFGENIE_ASSET__}</field>
     </table>
     """
     dict_collection_visible_keys = ['name']
@@ -823,17 +824,22 @@ class RefgenieToolDataTable(TabularToolDataTable):
     def parse_column_spec(self, config_element):
         self.columns = {}
         self.key_map = {}
+        self.template_for_column = {}
+        self.strip_for_column = {}
         self.largest_index = 0
         for i, elem in enumerate(config_element.findall('field')):
             name = elem.get('name', None)
             assert name, ValueError('You must provide a name refgenie field element.')
-            value = elem.get('value', None)
+            value = elem.text
             self.key_map[name] = value
             column_index = int(elem.get('column_index', i))
 
             empty_field_value = elem.get('empty_field_value', None)
             if empty_field_value is not None:
                 self.empty_field_values[name] = empty_field_value
+
+            self.template_for_column[name] = util.asbool(elem.get('template', False))
+            self.strip_for_column[name] = util.asbool(elem.get('strip', False))
 
             self.columns[name] = column_index
             self.largest_index = max(self.largest_index, column_index)
@@ -854,22 +860,28 @@ class RefgenieToolDataTable(TabularToolDataTable):
                 digest = rgc.get_asset_digest(genome, asset, tag=tag)
                 uuid = 'refgenie:%s:%s:%s:%s' % (genome, tag, self.rg_asset, digest)
                 display_name = description or '%s:%s' % (genome, tagged_asset)
-
+                def _seek_key(key):
+                    return rgc.get_asset(genome, asset, tag_name=tag, seek_key=key)
+                template_dict = {
+                                '__REFGENIE_UUID__': uuid,
+                                '__REFGENIE_GENOME__': genome,
+                                '__REFGENIE_TAG__': tag,
+                                '__REFGENIE_DISPLAY_NAME__': display_name,
+                                '__REFGENIE_ASSET__': rgc.get_asset(genome, asset, tag_name=tag),
+                                '__REFGENIE_ASSET_NAME__': rgc.get_asset(genome, asset, tag_name=tag),
+                                '__REFGENIE_DIGEST__': digest,
+                                '__REFGENIE_GENOME_ATTRIBUTES__': genome_attributes,
+                                '__REFGENIE__': rgc,
+                                '__REFGENIE_SEEK_KEY__': _seek_key,
+                                }
                 fields = [''] * (self.largest_index + 1)
                 for name, index in self.columns.items():
                     rg_value = self.key_map[name]
-                    if rg_value == 'refgenie:uuid':
-                        rg_value = uuid
-                    elif rg_value == 'refgenie:genome':
-                        rg_value = genome
-                    elif rg_value == 'refgenie:display_name':
-                        rg_value = display_name
-                    elif rg_value == 'refgenie:asset':
-                        rg_value = rgc.get_asset(genome, asset, tag_name=tag)
-                    elif rg_value.startswith('refgenie:seek_key:'):
-                        rg_value = rg_value.split('refgenie:seek_key:', 1)[1]
-                        rg_value = rgc.get_asset(genome, asset, tag_name=tag, seek_key=rg_value)
                     # Default is hard-coded value
+                    if self.template_for_column.get(name, False):
+                        rg_value = fill_template(rg_value, template_dict)
+                    if self.strip_for_column.get(name, False):
+                        rg_value = rg_value.strip()
                     fields[index] = rg_value
                 rval.append(fields)
         log.debug("Loaded %i entries from refgenie '%s' asset '%s' for '%s'", len(rval), filename, self.rg_asset, self.name)

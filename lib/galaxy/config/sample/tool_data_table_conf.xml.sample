@@ -113,17 +113,17 @@
     <!-- Refgenie all_fasta -->
     <table name="all_fasta" type="refgenie" asset="fasta" >
         <file from_config="refgenie_config_file" />
-        <field name="value" value="refgenie:uuid"/>
-        <field name="dbkey" value="refgenie:genome"/>
-        <field name="name" value="refgenie:display_name"/>
-        <field name="path" value="refgenie:asset"/>
+        <field name="value" template="true">${__REFGENIE_UUID__}</field>
+        <field name="dbkey" template="true">${__REFGENIE_GENOME__}</field>
+        <field name="name" template="true">${__REFGENIE_DISPLAY_NAME__}</field>
+        <field name="path" template="true">${__REFGENIE_ASSET__}</field>
     </table>
     <!-- Refgenie bowtie2_indexes -->
     <table name="bowtie2_indexes" type="refgenie" asset="bowtie2_index" >
         <file from_config="refgenie_config_file" />
-        <field name="value" value="refgenie:uuid"/>
-        <field name="dbkey" value="refgenie:genome"/>
-        <field name="name" value="refgenie:display_name"/>
-        <field name="path" value="refgenie:asset"/>
+        <field name="value" template="true">${__REFGENIE_UUID__}</field>
+        <field name="dbkey" template="true">${__REFGENIE_GENOME__}</field>
+        <field name="name" template="true">${__REFGENIE_DISPLAY_NAME__}</field>
+        <field name="path" template="true">${__REFGENIE_ASSET__}${__REFGENIE_GENOME__}</field>
     </table>
 </tables>
