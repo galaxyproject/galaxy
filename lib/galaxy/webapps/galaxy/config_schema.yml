@@ -2290,6 +2290,21 @@ mapping:
 
           The value of this option will be resolved with respect to <config_dir>.
 
+      enable_saml:
+        type: bool
+        default: true
+        required: false
+        desc: |
+          Enables SAML authentication.
+
+      saml_config_dir:
+        type: str
+        default: saml
+        required: false
+        desc: |
+          Set the SAML configuration directory for python3-saml. This directory must
+          contain the settings.json and advanced_settings.json files and certs directory.
+
       auth_config_file:
         type: str
         default: auth_conf.xml

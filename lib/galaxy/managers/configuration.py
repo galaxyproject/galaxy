@@ -65,6 +65,8 @@ class ConfigSerializer(base.ModelSerializer):
             'allow_user_impersonation'          : _use_config,
             'allow_user_creation'               : _defaults_to(False),  # schema default is True
             'use_remote_user'                   : _defaults_to(None),  # schema default is False; or config.single_user
+            'saml_config_dir'                   : _use_config,
+            'enable_saml'                       : _use_config,
             'enable_oidc'                       : _use_config,
             'oidc'                              : _use_config,
             'enable_quotas'                     : _use_config,

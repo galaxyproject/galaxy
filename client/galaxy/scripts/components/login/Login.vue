@@ -38,15 +38,32 @@
                         </b-card-footer>
                     </b-card>
                 </b-form>
+                <div v-if="enable_saml" class="card-spacer">
+                    <b-card no-body header="SAML Federated Login">
+                        <b-card-body>
+                            If you belong to an institution or organization that is a member of <a href="https://www.incommon.org">InCommon</a> or
+                            <a href="https://edugain.org">EduGain</a> then you may be able to sign in with your organization's IdP.
+                            <div style="margin-top: 10px">
+                                <b-button v-on:click="submitSamlLogin()">
+                                    Login
+                                </b-button>
+                            </div>
+                            <p>SAML config dir: {{ config_dir }}</p>
+                        </b-card-body>
+                        <b-card-footer>
+                            <strong>Hint</strong> If you are able to use <a href="https://www.eduroam.org">EduRoam</a> you will most likely be able to use this.
+                        </b-card-footer>
+                    </b-card>
+                </div>
                 <div v-for="idp in oidc_idps" :key="idp" style="margin:0.5em">
                     <span v-if="oidc_idps_icons[idp]">
                         <b-button variant="link" class="d-block mt-3" @click="submitOIDCLogin(idp)">
-                            <img :src="oidc_idps_icons[idp]" height="45" :alt="idp" />
+                            <img v-bind:src="oidc_idps_icons[idp]" height="45" v-bind:alt="idp" />
                         </b-button>
                     </span>
                     <span v-else>
                         <b-button class="d-block mt-3" @click="submitOIDCLogin(idp)">
-                            <i :class="oidc_idps[idp]" /> Sign in with
+                            <i v-bind:class="oidc_idps[idp]" /> Sign in with
                             {{ idp.charAt(0).toUpperCase() + idp.slice(1) }}
                         </b-button>
                     </span>
@@ -97,7 +114,9 @@ export default {
             session_csrf_token: galaxy.session_csrf_token,
             enable_oidc: galaxy.config.enable_oidc,
             oidc_idps: galaxy.config.oidc,
-            oidc_idps_icons: oidc_idps_icons
+            oidc_idps_icons: oidc_idps_icons,
+            enable_saml: galaxy.config.enable_saml,
+            config_dir: galaxy.config.saml_config_dir
         };
     },
     computed: {
@@ -149,6 +168,23 @@ export default {
                     this.messageText = message || "Login failed for an unknown reason.";
                 });
         },
+        submitSamlLogin: function() {
+            const rootUrl = getAppRoot();
+            // alert("SAML Login performed.")
+            axios
+                .post(`${rootUrl}authnz/saml/login`)
+                .then(response => {
+                    this.messageVariant = 'success'
+                    this.messageTest = "You have been logged in."
+                    window.location = response.data.redirect_uri
+                })
+                .catch(error => {
+                    this.messageVariant = 'danger'
+                    const message = error.response.data && error.response.data.err_msg;
+                    this.messageText = message || "Login failed for an unknown reason.";
+                    window.location = `${rootUrl}`;
+                })
+        },
         reset: function(ev) {
             const rootUrl = getAppRoot();
             ev.preventDefault();
@@ -167,3 +203,8 @@ export default {
     }
 };
 </script>
+<style scoped>
+    .card-spacer {
+        margin-top: 2rem;
+    }
+</style>
