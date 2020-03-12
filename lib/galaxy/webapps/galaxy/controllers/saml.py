@@ -4,6 +4,9 @@ SAML 2 Authentication Controller.
 
 from __future__ import absolute_import
 
+import random
+import string
+
 import logging
 
 from sqlalchemy.orm.exc import NoResultFound
@@ -71,47 +74,46 @@ class SAML(JSAppLauncher):
         # return trans.response.send_redirect(redirect)
         return {"redirect_uri": redirect}
 
-    def _old_login(self, trans, provider):
-        log.debug("Handling SAML authentication")
-        if not trans.app.config.enable_saml:
-            msg = "Login to Galaxy using SAML identities is not enabled on this Galaxy instance."
-            log.debug(msg)
-            return trans.show_error_message(msg)
-        # success, message, redirect_uri = trans.app.authnz_manager.authenticate(provider, trans)
-        success = True
-        login = "galaxy@lappsgrid.org"
-        user = trans.sa_session.query(trans.app.model.User).filter(
-            trans.app.model.User.table.c.email == login
-        ).first()
-
-        # user = trans.app.user_manager.create(email=email, username=username)
-        # user.set_random_password()
-        # trans.sa_session.add(user)
-        # trans.sa_session.flush()
-        if user is None:
-            log.debug("Attempting to create user.")
-            try:
-                user = trans.app.user_manager.create(email=login, username="galaxy")
-                # message, user = self.__autoregistration(trans, login, "")
-                # if message:
-                #     return self.message_exception(trans, message)
-            except:
-                return self.message_exception(trans, "Unable to create user.")
-            user.active = True
-            log.debug("User created. Setting password")
-            user.set_random_password()
-            log.debug("Password set. Adding user")
+    def get_or_create_user(self, trans, remote_user_email):
+        """
+        Create a remote user with the email remote_user_email and return it
+        """
+        user = trans.sa_session.query(trans.app.model.User).filter(trans.app.model.User.table.c.email == remote_user_email).first()
+        if user:
+            # GVK: June 29, 2009 - This is to correct the behavior of a previous bug where a private
+            # role and default user / history permissions were not set for remote users.  When a
+            # remote user authenticates, we'll look for this information, and if missing, create it.
+            if not trans.app.security_agent.get_private_user_role(user):
+                trans.app.security_agent.create_private_user_role(user)
+            if 'webapp' not in trans.environ or trans.environ['webapp'] != 'tool_shed':
+                if not user.default_permissions:
+                    trans.app.security_agent.user_set_default_permissions(user)
+                    trans.app.security_agent.user_set_default_permissions(user, history=True, dataset=True)
+        elif user is None:
+            username = remote_user_email.split('@', 1)[0].lower()
+            random.seed()
+            user = trans.app.model.User(email=remote_user_email)
+            user.set_random_password(length=12)
+            user.external = True
+            # Replace invalid characters in the username
+            for char in [x for x in username if x not in string.ascii_lowercase + string.digits + '-' + '.']:
+                username = username.replace(char, '-')
+            # Find a unique username - user can change it later
+            if trans.sa_session.query(trans.app.model.User).filter_by(username=username).first():
+                i = 1
+                while trans.sa_session.query(trans.app.model.User).filter_by(username=(username + '-' + str(i))).first():
+                    i += 1
+                username += '-' + str(i)
+            user.username = username
             trans.sa_session.add(user)
-            log.debug("User added. Flushing session")
             trans.sa_session.flush()
-            log.debug("Session flushed")
+            trans.app.security_agent.create_private_user_role(user)
+            # We set default user permissions, before we log in and set the default history permissions
+            if 'webapp' not in self.environ or self.environ['webapp'] != 'tool_shed':
+                trans.app.security_agent.user_set_default_permissions(user)
+            # self.log_event( "Automatically created account '%s'", user.email )
+        return user
 
-        if success:
-            log.debug("handling user login.")
-            trans.handle_user_login(user)
-            return {"redirect_uri": url_for("/")}
-        else:
-            raise exceptions.AuthenticationFailed("Authentication failed.")
 
 
     @web.expose
@@ -130,17 +132,11 @@ class SAML(JSAppLauncher):
             log.debug("User is authenticated")
         else:
             log.debug("User is NOT authenticated")
+            return trans.show_error_message("Authentication failed.")
 
         if len(errors) == 0:
-            user = trans.sa_session.query(trans.app.model.User).filter(
-                trans.app.model.User.table.c.email == auth.get_nameid()
-            ).first()
-            if user is not None:
-                log.debug("Existing user logged in.")
-                trans.handle_user_login(user)
-            else:
-                log.debug("No such user " + auth.get_nameid())
-                
+            user = self.get_or_create_user(trans, auth.get_nameid())
+            trans.handle_user_login(user)
             # if 'AuthNRequestID' in session:
             #     del session['AuthNRequestID']
             # session['samlUserdata'] = auth.get_attributes()
