@@ -112,7 +112,7 @@ class ToolShedAppConfiguration(BaseAppConfiguration):
         self.terms_url = kwargs.get('terms_url', None)
         self.blacklist_location = kwargs.get('blacklist_file', None)
         self.blacklist_content = None
-        self.whitelist_location = kwargs.get('blacklist_file', None)
+        self.whitelist_location = kwargs.get('whitelist_file', None)
         self.whitelist_content = None
         self.remote_user_maildomain = kwargs.get("remote_user_maildomain", None)
         self.remote_user_header = kwargs.get("remote_user_header", 'HTTP_REMOTE_USER')
