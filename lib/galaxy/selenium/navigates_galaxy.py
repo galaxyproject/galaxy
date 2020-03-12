@@ -208,8 +208,9 @@ class NavigatesGalaxy(HasDriver):
         return self.history_panel_name_element().text
 
     def current_history(self):
-        history = self.api_get("histories")[0]
-        return history
+        full_url = self.build_url("history/current_history_json", for_selenium=False)
+        response = requests.get(full_url, cookies=self.selenium_to_requests_cookies())
+        return response.json()
 
     def current_history_id(self):
         return self.current_history()["id"]

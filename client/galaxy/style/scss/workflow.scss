@@ -7,40 +7,44 @@
         display: flex;
         flex-direction: column;
         flex-grow: 1;
-        .toolForm.toolFormInCanvas {
+        .workflow-node {
             @extend .card;
+            @extend .position-absolute;
             z-index: 100;
             width: $worfklow-node-width;
-            position: absolute;
-            border-color: $brand-primary;
-            &.toolForm-active {
+            border: solid $brand-primary 1px;
+            &.node-active {
                 z-index: 1001;
+                border: solid $white 1px;
                 box-shadow: 0 0 0 2px $brand-primary;
             }
-            .toolFormTitle {
+            .node-header {
                 @extend .card-header;
                 @extend .py-1;
                 @extend .px-2;
                 cursor: move;
                 background: $brand-secondary;
+                .header {
+                    width: $worfklow-node-width - 2rem;
+                }
             }
-            .toolFormBody {
+            .node-body {
                 @extend .card-body;
                 @extend .p-0;
                 @extend .mx-2;
                 .rule {
                     height: 0;
                     border: none;
-                    border-bottom: dotted black 1px;
+                    border-bottom: dotted $brand-primary 1px;
                     margin: 0 5px;
                 }
             }
         }
-        .toolForm.toolFormInCanvas.tool-node-error {
-            border-color: $state-danger-border;
-            .toolFormTitle {
-                background: $state-danger-bg;
-                border-color: $state-danger-border;
+        .workflow-node.node-error {
+            border-color: $brand-danger;
+            .node-header {
+                background: $brand-danger;
+                border-color: $brand-danger;
             }
         }
         .workflow-canvas {
@@ -54,6 +58,20 @@
                 height: 100%;
                 position: relative;
                 overflow: hidden;
+            }
+            .ribbon {
+                .ribbon-outer {
+                    stroke: $brand-primary;
+                }
+                .ribbon-inner {
+                    stroke: $white;
+                }
+                .ribbon-inner-valid {
+                    stroke: $brand-success;
+                }
+                .ribbon-inner-invalid {
+                    stroke: $brand-warning;
+                }
             }
             .base-terminal {
                 @extend .fa;

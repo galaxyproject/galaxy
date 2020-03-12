@@ -177,6 +177,7 @@ export default Backbone.View.extend({
             this.$title_text.show().text(this.model.get("label"));
             this.$collapsible.hide();
         }
+        this.$field.attr("data-label", this.model.get("label"));
     },
 
     _template: function() {

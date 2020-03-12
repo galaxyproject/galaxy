@@ -1,6 +1,7 @@
 import pytest
 
 from galaxy.config import GalaxyAppConfiguration
+from galaxy.config.schema import AppSchema
 
 
 MOCK_DEPRECATED_DIRS = {
@@ -35,34 +36,23 @@ MOCK_SCHEMA = {
 }
 
 
+def get_schema(app_mapping):
+    return {'mapping': {'galaxy': {'mapping': app_mapping}}}
+
+
 def test_deprecated_prefixes_set_correctly(monkeypatch):
     # Before we mock them, check that correct values are assigned
-    def mock_load_schema(self):
-        self.appschema = {}
-
-    def mock_process_config(self, kwargs):
-        pass
-
-    monkeypatch.setattr(GalaxyAppConfiguration, '_load_schema', mock_load_schema)
-    monkeypatch.setattr(GalaxyAppConfiguration, '_process_config', mock_process_config)
+    monkeypatch.setattr(AppSchema, '_read_schema', lambda a, b: get_schema(MOCK_SCHEMA))
+    monkeypatch.setattr(GalaxyAppConfiguration, '_process_config', lambda a, b: None)
 
     config = GalaxyAppConfiguration()
-    expected_deprecated_dirs = {'config_dir': 'config', 'data_dir': 'database'}
-
-    assert config.deprecated_dirs == expected_deprecated_dirs
+    assert config.deprecated_dirs == {'config_dir': 'config', 'data_dir': 'database'}
 
 
 @pytest.fixture
 def mock_init(monkeypatch):
-
-    def mock_load_schema(self):
-        self.appschema = MOCK_SCHEMA
-
-    def mock_process_config(self, kwargs):
-        pass  # because we're done before this is called
-
-    monkeypatch.setattr(GalaxyAppConfiguration, '_load_schema', mock_load_schema)
-    monkeypatch.setattr(GalaxyAppConfiguration, '_process_config', mock_process_config)
+    monkeypatch.setattr(AppSchema, '_read_schema', lambda a, b: get_schema(MOCK_SCHEMA))
+    monkeypatch.setattr(GalaxyAppConfiguration, '_process_config', lambda a, b: None)
     monkeypatch.setattr(GalaxyAppConfiguration, 'deprecated_dirs', MOCK_DEPRECATED_DIRS)
 
 

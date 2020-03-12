@@ -902,6 +902,18 @@ mapping:
 
           Example value 'config/disposable_email_blacklist.conf'
 
+      whitelist_file:
+        type: str
+        default: disposable_email_whitelist.conf
+        path_resolves_to: config_dir
+        required: false
+        desc: |
+          E-mail domains whitelist is used to specify allowed email address domains.
+          If the list is non-empty and a user attempts registration using an email
+          address belonging to a domain that is not on the list, registration will be
+          enied. This is a more restrictive option than <blacklist_file>, and therefore,
+          in case <whitelist_file> is defined, <blacklist_file> will be ignored.
+
       registration_warning_message:
         type: str
         default: >-
@@ -2414,7 +2426,7 @@ mapping:
         required: false
         desc: |
           XML config file that contains the job metric collection configuration.
-          
+
           The value of this option will be resolved with respect to <config_dir>.
 
       expose_potentially_sensitive_job_metrics:

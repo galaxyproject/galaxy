@@ -1221,6 +1221,21 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~
+``whitelist_file``
+~~~~~~~~~~~~~~~~~~
+
+:Description:
+    E-mail domains whitelist is used to specify allowed email address
+    domains. If the list is non-empty and a user attempts registration
+    using an email address belonging to a domain that is not on the
+    list, registration will be enied. This is a more restrictive
+    option than <blacklist_file>, and therefore, in case
+    <whitelist_file> is defined, <blacklist_file> will be ignored.
+:Default: ``disposable_email_whitelist.conf``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``registration_warning_message``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -3265,7 +3280,9 @@
 :Description:
     XML config file that contains the job metric collection
     configuration.
-:Default: ``config/job_metrics_conf.xml``
+    The value of this option will be resolved with respect to
+    <config_dir>.
+:Default: ``job_metrics_conf.xml``
 :Type: str
 
 
