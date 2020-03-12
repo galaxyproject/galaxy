@@ -74,14 +74,7 @@ class SAML(JSAppLauncher):
         # return trans.response.send_redirect(redirect)
         return {"redirect_uri": redirect}
 
-    def get_or_create_user(self, trans, user_email):
-        previousValue = trans.app.config.use_remote_user
-        trans.app.config.use_remote_user = True
-        user = trans.get_or_create_remote_user(user_email)
-        trans.app.config.use_remote_user = previousValue
-        return user
-
-    def _get_or_create_user(self, trans, remote_user_email):
+    def get_or_create_user(self, trans, remote_user_email):
         """
         Create a remote user with the email remote_user_email and return it
         """
