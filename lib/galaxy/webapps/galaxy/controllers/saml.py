@@ -98,6 +98,8 @@ class SAML(JSAppLauncher):
             user = trans.app.model.User(email=remote_user_email)
             user.set_random_password(length=12)
             user.external = True
+            user.active = True
+
             # Replace invalid characters in the username
             for char in [x for x in username if x not in string.ascii_lowercase + string.digits + '-' + '.']:
                 username = username.replace(char, '-')
@@ -145,14 +147,6 @@ class SAML(JSAppLauncher):
             user = self.get_or_create_user(trans, auth.get_nameid())
             log.debug("handling user login")
             trans.handle_user_login(user)
-            # if 'AuthNRequestID' in session:
-            #     del session['AuthNRequestID']
-            # session['samlUserdata'] = auth.get_attributes()
-            # session['samlNameId'] = auth.get_nameid()
-            # session['samlNameIdFormat'] = auth.get_nameid_format()
-            # session['samlNameIdNameQualifier'] = auth.get_nameid_nq()
-            # session['samlNameIdSPNameQualifier'] = auth.get_nameid_spnq()
-            # session['samlSessionIndex'] = auth.get_session_index()
             self_url = OneLogin_Saml2_Utils.get_self_url(req)
             form = trans.request.POST
             if 'RelayState' in form and self_url != form['RelayState']:
