@@ -109,7 +109,7 @@ class SAML(JSAppLauncher):
             trans.sa_session.flush()
             trans.app.security_agent.create_private_user_role(user)
             # We set default user permissions, before we log in and set the default history permissions
-            if 'webapp' not in self.environ or self.environ['webapp'] != 'tool_shed':
+            if 'webapp' not in trans.environ or trans.environ['webapp'] != 'tool_shed':
                 trans.app.security_agent.user_set_default_permissions(user)
             # self.log_event( "Automatically created account '%s'", user.email )
         return user
