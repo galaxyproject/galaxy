@@ -125,25 +125,40 @@ class SAML(JSAppLauncher):
 
         auth.process_response(request_id=request_id)
         errors = auth.get_errors()
-        not_auth_warn = not auth.is_authenticated()
+        # not_auth_warn = not auth.is_authenticated()
+        if auth.is_authenticated():
+            log.debug("Using is authenticated")
+        else:
+            log.debug("User is NOT authenticated")
+
         if len(errors) == 0:
-            if 'AuthNRequestID' in session:
-                del session['AuthNRequestID']
-            session['samlUserdata'] = auth.get_attributes()
-            session['samlNameId'] = auth.get_nameid()
-            session['samlNameIdFormat'] = auth.get_nameid_format()
-            session['samlNameIdNameQualifier'] = auth.get_nameid_nq()
-            session['samlNameIdSPNameQualifier'] = auth.get_nameid_spnq()
-            session['samlSessionIndex'] = auth.get_session_index()
+            user = trans.sa_session.query(trans.app.model.User).filter(
+                trans.app.model.User.table.c.email == auth.get_nameid()
+            ).first()
+            if user is not None:
+                log.debug("Existing user logged in.")
+                trans.handle_user_login(user)
+
+            # if 'AuthNRequestID' in session:
+            #     del session['AuthNRequestID']
+            # session['samlUserdata'] = auth.get_attributes()
+            # session['samlNameId'] = auth.get_nameid()
+            # session['samlNameIdFormat'] = auth.get_nameid_format()
+            # session['samlNameIdNameQualifier'] = auth.get_nameid_nq()
+            # session['samlNameIdSPNameQualifier'] = auth.get_nameid_spnq()
+            # session['samlSessionIndex'] = auth.get_session_index()
             self_url = OneLogin_Saml2_Utils.get_self_url(req)
             form = trans.request.POST
             if 'RelayState' in form and self_url != form['RelayState']:
                 redirect_to = auth.redirect_to(form['RelayState'])
-                return {"redirect_uri": redirect_to}
+                log.debug("Redirecting to " + redirect_to)
+                return trans.response.send_redirect(redirect_to)
         elif auth.get_settings().is_debug_active():
             error_reason = auth.get_last_error_reason()
-        #return { "redirect_uri": url_for("/") }
+            return trans.show_error_message(error_reason)
+
         return trans.response.send_redirect(url_for("/"))
+
 
     @web.expose
     def logout(self, trans, *args, **kwargs):
