@@ -2,7 +2,7 @@ name: Integration
 on: [push, pull_request]
 env:
   GALAXY_TEST_DBURI: 'postgres://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
-  GALAXY_TEST_AMQP_URL: 'amqp://rabbitmq:5672//'
+  GALAXY_TEST_AMQP_URL: 'amqp://localhost:5672//'
 jobs:
   test:
     name: Test
