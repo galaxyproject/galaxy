@@ -127,7 +127,7 @@ class SAML(JSAppLauncher):
         errors = auth.get_errors()
         # not_auth_warn = not auth.is_authenticated()
         if auth.is_authenticated():
-            log.debug("Using is authenticated")
+            log.debug("User is authenticated")
         else:
             log.debug("User is NOT authenticated")
 
@@ -138,7 +138,9 @@ class SAML(JSAppLauncher):
             if user is not None:
                 log.debug("Existing user logged in.")
                 trans.handle_user_login(user)
-
+            else:
+                log.debug("No such user " + auth.get_nameid())
+                
             # if 'AuthNRequestID' in session:
             #     del session['AuthNRequestID']
             # session['samlUserdata'] = auth.get_attributes()
@@ -151,12 +153,13 @@ class SAML(JSAppLauncher):
             form = trans.request.POST
             if 'RelayState' in form and self_url != form['RelayState']:
                 redirect_to = auth.redirect_to(form['RelayState'])
-                log.debug("Redirecting to " + redirect_to)
+                log.debug("RelayState set. Redirecting to " + redirect_to)
                 return trans.response.send_redirect(redirect_to)
         elif auth.get_settings().is_debug_active():
             error_reason = auth.get_last_error_reason()
+            log.error(error_reason)
             return trans.show_error_message(error_reason)
-
+        log.debug("There were errors during authentication.")
         return trans.response.send_redirect(url_for("/"))
 
 
