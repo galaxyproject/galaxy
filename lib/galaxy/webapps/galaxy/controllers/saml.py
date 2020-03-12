@@ -142,7 +142,8 @@ class SAML(JSAppLauncher):
                 return {"redirect_uri": redirect_to}
         elif auth.get_settings().is_debug_active():
             error_reason = auth.get_last_error_reason()
-        return { "redirect_uri": url_for("/") }
+        #return { "redirect_uri": url_for("/") }
+        return trans.response.send_redirect(url_for("/"))
 
     @web.expose
     def logout(self, trans, *args, **kwargs):
