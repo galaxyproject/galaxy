@@ -78,8 +78,10 @@ class SAML(JSAppLauncher):
         """
         Create a remote user with the email remote_user_email and return it
         """
+        log.debug("Getting user.")
         user = trans.sa_session.query(trans.app.model.User).filter(trans.app.model.User.table.c.email == remote_user_email).first()
         if user:
+            log.debug("Existing user found.")
             # GVK: June 29, 2009 - This is to correct the behavior of a previous bug where a private
             # role and default user / history permissions were not set for remote users.  When a
             # remote user authenticates, we'll look for this information, and if missing, create it.
@@ -90,6 +92,7 @@ class SAML(JSAppLauncher):
                     trans.app.security_agent.user_set_default_permissions(user)
                     trans.app.security_agent.user_set_default_permissions(user, history=True, dataset=True)
         elif user is None:
+            log.debug("Creating new user " + remote_user_email)
             username = remote_user_email.split('@', 1)[0].lower()
             random.seed()
             user = trans.app.model.User(email=remote_user_email)
@@ -105,11 +108,15 @@ class SAML(JSAppLauncher):
                     i += 1
                 username += '-' + str(i)
             user.username = username
+            log.debug("Adding the session")
             trans.sa_session.add(user)
+            log.debug("Flushing the session")
             trans.sa_session.flush()
+            log.debug("Creating private user role")
             trans.app.security_agent.create_private_user_role(user)
             # We set default user permissions, before we log in and set the default history permissions
             if 'webapp' not in trans.environ or trans.environ['webapp'] != 'tool_shed':
+                log.debug("Setting default permissions")
                 trans.app.security_agent.user_set_default_permissions(user)
             # self.log_event( "Automatically created account '%s'", user.email )
         return user
@@ -136,6 +143,7 @@ class SAML(JSAppLauncher):
 
         if len(errors) == 0:
             user = self.get_or_create_user(trans, auth.get_nameid())
+            log.debug("handling user login")
             trans.handle_user_login(user)
             # if 'AuthNRequestID' in session:
             #     del session['AuthNRequestID']
