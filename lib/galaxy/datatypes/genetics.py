@@ -1159,6 +1159,36 @@ class AllegroLOD(LinkageStudies):
         return True
 
 
+class HyPhy(Html):
+    """Class describing a HyPhy composite dataset to be consumed by the HyPhy Visualization plugin"""
+    MetadataElement(name="base_name", desc="base name for HyPhy dataset", default="HyPhy", readonly=True, set_in_upload=True)
+    file_ext = "hyphy"
+    composite_type = 'auto_primary_file'
+    allow_datatype_change = False
+
+    def __init__(self, **kwd):
+        Html.__init__(self, **kwd)
+        self.add_composite_file('hyphy.json', description='HyPhy Output')
+        self.add_composite_file('hyphy.structure', description='Protein Structure')
+        self.add_composite_file('hyphy.fasta', description='Sequence Alignment')
+
+    def generate_primary_file(self, dataset=None):
+        rval = ['<html><head><title>HyPhy Composite Dataset</title></head><p/>']
+        rval.append('<div>This composite dataset is composed of the following files:<p/><ul>')
+        for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
+            fn = composite_name
+            desc = composite_file.get('description')
+            opt_text = ''
+            if composite_file.optional:
+                opt_text = ' (optional)'
+            if composite_file.get('description'):
+                rval.append('<li><a href="%s" type="text/plain">%s (%s)</a>%s</li>' % (fn, fn, desc, opt_text))
+            else:
+                rval.append('<li><a href="%s" type="text/plain">%s</a>%s</li>' % (fn, fn, opt_text))
+        rval.append('</ul></div></html>')
+        return "\n".join(rval)
+
+
 if __name__ == '__main__':
     import doctest
     doctest.testmod(sys.modules[__name__])
