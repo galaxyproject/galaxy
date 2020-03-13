@@ -111,7 +111,7 @@
         html = ''
         for index in range( 1, 6 ):
             html += '<input name="%s" type="radio" class="star" value="%s" %s' % ( str( name ), str( index ), disabled_str )
-            if rating > ( index - 0.5 ) and rating < ( index + 0.5 ):
+            if rating or 0 > ( index - 0.5 ) and rating or 0 < ( index + 0.5 ):
                 html += ' checked="checked"'
             html += '/>'
     %>

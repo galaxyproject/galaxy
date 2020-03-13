@@ -39,9 +39,8 @@ def build_readme_files_dict(app, repository, changeset_revision, metadata, tool_
                         full_path_to_readme_file = os.path.abspath(relative_path_to_readme_file)
                     text = None
                     try:
-                        f = open(full_path_to_readme_file, 'r')
-                        text = unicodify(f.read())
-                        f.close()
+                        with open(full_path_to_readme_file, 'rb') as f:
+                            text = unicodify(f.read())
                     except Exception:
                         log.exception("Error reading README file '%s' from disk", relative_path_to_readme_file)
                         text = None
