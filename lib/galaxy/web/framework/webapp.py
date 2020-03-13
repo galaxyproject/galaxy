@@ -717,21 +717,30 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
              otherwise associate the current session's history with the user
            - add the disk usage of the current session to the user's total disk usage
         """
+        log.debug("Running user checks")
         self.user_checks(user)
+        log.debug("Create user role")
         self.app.security_agent.create_user_role(user, self.app)
         # Set the previous session
+        log.debug("Invalidating previous session")
         prev_galaxy_session = self.galaxy_session
         prev_galaxy_session.is_valid = False
         # Define a new current_session
+        log.debug("Creating new galaxy_session")
         self.galaxy_session = self.__create_new_session(prev_galaxy_session, user)
         if self.webapp.name == 'galaxy':
+            log.debug("webapp is galaxy")
             cookie_name = 'galaxysession'
             self._associate_user_history(user, prev_galaxy_session)
         else:
+            log.debug("webapp is NOT galaxy")
             cookie_name = 'galaxycommunitysession'
             self.sa_session.add_all((prev_galaxy_session, self.galaxy_session))
+
+        log.debug("Flushing sa_session")
         self.sa_session.flush()
         # This method is not called from the Galaxy reports, so the cookie will always be galaxysession
+        log.debug("updating session cookie")
         self.__update_session_cookie(name=cookie_name)
 
     def handle_user_logout(self, logout_all=False):
