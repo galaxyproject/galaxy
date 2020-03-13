@@ -31,12 +31,14 @@
                 @filter="filterOption = arguments[2]"
             >
                 <b-card v-for="(info, index) in buffer" :key="index" ref="cards" class="m-2" style="width: 23rem;">
-                    <div slot="header">
-                        <b-link :href="info.url" target="_blank">
-                            <h4 class="tools-view-name">{{ info.name }}</h4>
-                        </b-link>
-                        <b-badge class="tools-view-section">{{ info.section }}</b-badge>
-                    </div>
+                    <template v-slot:header>
+                        <div>
+                            <b-link :href="info.url" target="_blank">
+                                <h4 class="tools-view-name">{{ info.name }}</h4>
+                            </b-link>
+                            <b-badge class="tools-view-section">{{ info.section }}</b-badge>
+                        </div>
+                    </template>
                     <p class="card-text" v-html="helpSummary(info.help) || info.description" />
                     <p class="card-text">
                         <b-btn :index="index" v-b-modal="'modal-' + '-' + index">Info</b-btn>
