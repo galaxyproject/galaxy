@@ -19,7 +19,7 @@ OPEN_PROJECT = "OpenProject"
 REDMINE = "Redmine"
 
 
-# Usage: hmgm_main.py task_type root_dir context_json input_json output_json task_json 
+# Usage: hmgm_main.py task_type root_dir input_json output_json task_json context_json 
 def main():
     # parse command line arguments
     task_type = sys.argv[1]     # type of HMGM task: (Transcript, NER, Segmentation, OCR), there is one HMGM wrapper per type
