@@ -9,36 +9,15 @@ import string
 
 import logging
 
-from sqlalchemy.orm.exc import NoResultFound
-
-from datetime import datetime, timedelta
 from galaxy import web
-from galaxy.exceptions import Conflict
-from galaxy.web import url_for
 from galaxy.webapps.base.controller import JSAppLauncher
-from galaxy import (
-    exceptions,
-    model,
-    util
-)
-from galaxy.managers import (
-    api_keys,
-    base,
-    deletable
-)
-from galaxy.security.validate_user_input import (
-    validate_email,
-    validate_password,
-    validate_publicname
-)
-from galaxy.util.hash_util import new_secure_hash
+
 from galaxy.web import url_for
 
 log = logging.getLogger(__name__)
 
 from onelogin.saml2.auth import OneLogin_Saml2_Auth
 from onelogin.saml2.utils import OneLogin_Saml2_Utils
-import json
 
 class SAML(JSAppLauncher):
 
@@ -99,7 +78,6 @@ class SAML(JSAppLauncher):
             log.debug("Creating new user " + remote_user_email)
             username = remote_user_email.split('@', 1)[0].lower()
             random.seed()
-
             # Replace invalid characters in the username
             for char in [x for x in username if x not in string.ascii_lowercase + string.digits + '-' + '.']:
                 username = username.replace(char, '-')
@@ -109,26 +87,7 @@ class SAML(JSAppLauncher):
                 while trans.sa_session.query(trans.app.model.User).filter_by(username=(username + '-' + str(i))).first():
                     i += 1
                 username += '-' + str(i)
-
-            # user = trans.app.model.User(email=remote_user_email)
             user = trans.app.user_manager.create(email=remote_user_email, username=username)
-            #user.set_random_password(length=12)
-            # user.set_password_cleartext
-            # user.external = True
-            # user.active = True
-
-            # user.username = username
-            # log.debug("Adding the session")
-            # trans.sa_session.add(user)
-            # log.debug("Flushing the session")
-            # trans.sa_session.flush()
-            # log.debug("Creating private user role")
-            # trans.app.security_agent.create_private_user_role(user)
-            # We set default user permissions, before we log in and set the default history permissions
-            # if 'webapp' not in trans.environ or trans.environ['webapp'] != 'tool_shed':
-            #     log.debug("Setting default permissions")
-            #     trans.app.security_agent.user_set_default_permissions(user)
-            # self.log_event( "Automatically created account '%s'", user.email )
         return user
 
 
