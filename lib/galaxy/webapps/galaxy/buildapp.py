@@ -67,11 +67,6 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     # Force /activate to go to the controller
     webapp.add_route('/activate', controller='user', action='activate')
 
-    # SAML authentication
-    webapp.add_route('/saml/login', controller='saml', action='login', provider=None)
-    # webapp.add_route('/authnz/saml/acs', controller='saml', action='acs', provider=None)
-    # webapp.add_route('/authnz/saml/logout', controller='saml', action='logout', provider=None)
-
     # SAML authentication. This needs to come before the OIDC config because we
     # hijack (piggyback on?) their /authnz namespace.
     webapp.add_route('/authnz/saml/login', controller='saml', action='login', provider=None)
