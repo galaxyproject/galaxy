@@ -1,4 +1,3 @@
-import time
 from .framework import (
     selenium_test,
     SeleniumTestCase
@@ -51,7 +50,6 @@ class ChangePasswordTestCase(SeleniumTestCase):
         username = email.split("@")[0]
         self.register(email, password, username, confirm)
         self.navigate_to_password()
-        time.sleep(5)
         self.fill_input_fields("4444444", "123123", "123123")
         self.assert_error_message(contains='Invalid current password.')
 
