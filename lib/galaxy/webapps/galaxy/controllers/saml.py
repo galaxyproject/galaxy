@@ -76,7 +76,11 @@ class SAML(JSAppLauncher):
 
     def get_or_create_user(self, trans, remote_user_email):
         """
-        Create a remote user with the email remote_user_email and return it
+        Create a remote user with the email remote_user_email and return it.
+
+        This code was snipped from get_or_create_remote_user in the GalaxyWebTransaction class,
+        but without the check to see if use_remote_user was set in the config. The
+        fact that we are doing SAML authentication implies a remote user.
         """
         log.debug("Getting user.")
         user = trans.sa_session.query(trans.app.model.User).filter(trans.app.model.User.table.c.email == remote_user_email).first()
@@ -110,7 +114,7 @@ class SAML(JSAppLauncher):
             user = trans.app.user_manager.create(email=remote_user_email, username=username)
             #user.set_random_password(length=12)
             # user.set_password_cleartext
-            # user.external = True
+            user.external = True
             # user.active = True
 
             # user.username = username
