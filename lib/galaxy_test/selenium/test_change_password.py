@@ -83,9 +83,9 @@ class ChangePasswordTestCase(SeleniumTestCase):
         self.components.masthead.preferences.wait_for_and_click()
         self.components.preferences.change_password.wait_for_and_click()
 
-    def fill_input_fields(self, password, new_password, password_confirm):
+    def fill_input_fields(self, current, password, confirm):
         self.sleep_for(self.wait_types.UX_TRANSITION)
-        self.driver.find_element_by_id('field-uid-5').send_keys(password)
-        self.driver.find_element_by_id('field-uid-6').send_keys(new_password)
-        self.driver.find_element_by_id('field-uid-7').send_keys(password_confirm)
+        self.driver.find_element_by_css_selector("[tour_id='current'] input").send_keys(current)
+        self.driver.find_element_by_css_selector("[tour_id='password'] input").send_keys(password)
+        self.driver.find_element_by_css_selector("[tour_id='confirm'] input").send_keys(confirm)
         self.components.change_user_password.submit.wait_for_and_click()
