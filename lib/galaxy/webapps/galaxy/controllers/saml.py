@@ -114,7 +114,7 @@ class SAML(JSAppLauncher):
             user = trans.app.user_manager.create(email=remote_user_email, username=username)
             #user.set_random_password(length=12)
             # user.set_password_cleartext
-            user.external = True
+            # user.external = True
             # user.active = True
 
             # user.username = username
