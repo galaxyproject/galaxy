@@ -107,22 +107,23 @@ class SAML(JSAppLauncher):
                 username += '-' + str(i)
 
             # user = trans.app.model.User(email=remote_user_email)
-            user = trans.app.user_manager.create(email=remote_user_email, username=username)
-            user.set_random_password(length=12)
+            user = trans.app.user_manager.create(email=remote_user_email, username=username, password='password')
+            #user.set_random_password(length=12)
+            # user.set_password_cleartext
             user.external = True
             user.active = True
 
             # user.username = username
-            log.debug("Adding the session")
-            trans.sa_session.add(user)
-            log.debug("Flushing the session")
-            trans.sa_session.flush()
-            log.debug("Creating private user role")
-            trans.app.security_agent.create_private_user_role(user)
+            # log.debug("Adding the session")
+            # trans.sa_session.add(user)
+            # log.debug("Flushing the session")
+            # trans.sa_session.flush()
+            # log.debug("Creating private user role")
+            # trans.app.security_agent.create_private_user_role(user)
             # We set default user permissions, before we log in and set the default history permissions
-            if 'webapp' not in trans.environ or trans.environ['webapp'] != 'tool_shed':
-                log.debug("Setting default permissions")
-                trans.app.security_agent.user_set_default_permissions(user)
+            # if 'webapp' not in trans.environ or trans.environ['webapp'] != 'tool_shed':
+            #     log.debug("Setting default permissions")
+            #     trans.app.security_agent.user_set_default_permissions(user)
             # self.log_event( "Automatically created account '%s'", user.email )
         return user
 
