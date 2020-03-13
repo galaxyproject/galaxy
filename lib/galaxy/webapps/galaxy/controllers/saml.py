@@ -107,7 +107,7 @@ class SAML(JSAppLauncher):
                 username += '-' + str(i)
 
             # user = trans.app.model.User(email=remote_user_email)
-            user = trans.app.user_manager.create(email=remote_user_email, username=username, password='password')
+            user = trans.app.user_manager.create(email=remote_user_email, username=username)
             #user.set_random_password(length=12)
             # user.set_password_cleartext
             # user.external = True
