@@ -70,10 +70,15 @@ masthead:
 
 preferences:
   selectors:
+    change_password: "#edit-preferences-password"
     manage_information: '#edit-preferences-information'
     current_email: "#user-preferences-current-email"
 
 change_user_email:
+  selectors:
+    submit: '#submit'
+
+change_user_password:
   selectors:
     submit: '#submit'
 
