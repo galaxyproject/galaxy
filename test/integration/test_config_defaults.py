@@ -115,7 +115,7 @@ RESOLVE = {
     'object_store_config_file': 'config_dir',
     'oidc_backends_config_file': 'config_dir',
     'oidc_config_file': 'config_dir',
-    'sanitize_whitelist_file': 'root_dir',
+    'sanitize_whitelist_file': 'managed_config_dir',
     'shed_data_manager_config_file': 'managed_config_dir',
     'shed_tool_config_file': 'managed_config_dir',
     'shed_tool_data_path': 'tool_data_path',
