@@ -95,10 +95,6 @@ class SAML(JSAppLauncher):
             log.debug("Creating new user " + remote_user_email)
             username = remote_user_email.split('@', 1)[0].lower()
             random.seed()
-            user = trans.app.model.User(email=remote_user_email)
-            user.set_random_password(length=12)
-            user.external = True
-            user.active = True
 
             # Replace invalid characters in the username
             for char in [x for x in username if x not in string.ascii_lowercase + string.digits + '-' + '.']:
@@ -109,7 +105,14 @@ class SAML(JSAppLauncher):
                 while trans.sa_session.query(trans.app.model.User).filter_by(username=(username + '-' + str(i))).first():
                     i += 1
                 username += '-' + str(i)
-            user.username = username
+
+            # user = trans.app.model.User(email=remote_user_email)
+            user = trans.app.user_manager.create(email=remote_user_email, username=username)
+            user.set_random_password(length=12)
+            user.external = True
+            user.active = True
+
+            # user.username = username
             log.debug("Adding the session")
             trans.sa_session.add(user)
             log.debug("Flushing the session")
@@ -145,6 +148,7 @@ class SAML(JSAppLauncher):
 
         if len(errors) == 0:
             user = self.get_or_create_user(trans, auth.get_nameid())
+            # trans.app.user_manager.create(email=auth.get_nameid(), username=)
             log.debug("handling user login")
             trans.handle_user_login(user)
             self_url = OneLogin_Saml2_Utils.get_self_url(req)
