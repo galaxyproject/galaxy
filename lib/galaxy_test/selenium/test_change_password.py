@@ -3,6 +3,7 @@ from .framework import (
     SeleniumTestCase
 )
 
+
 class ChangePasswordTestCase(SeleniumTestCase):
     @selenium_test
     def test_change_password(self):
@@ -13,7 +14,7 @@ class ChangePasswordTestCase(SeleniumTestCase):
         username = email.split("@")[0]
         self.register(email, password, username, confirm)
         self.navigate_to_password()
-        self.fill_input_fields(password, "123123", "123123")        
+        self.fill_input_fields(password, "123123", "123123")
         self.logout_if_needed()
         self.submit_login(email, "123123")
 
