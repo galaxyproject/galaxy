@@ -74,12 +74,20 @@ class ShedTwillTestCase(FunctionalTestCase):
     """Class of FunctionalTestCase geared toward HTML interactions using the Twill library."""
 
     def check_for_strings(self, strings_displayed=[], strings_not_displayed=[]):
-        if strings_displayed:
-            for check_str in strings_displayed:
-                self.check_page_for_string(check_str)
-        if strings_not_displayed:
-            for check_str in strings_not_displayed:
-                self.check_string_not_in_page(check_str)
+        try:
+            if strings_displayed:
+                for check_str in strings_displayed:
+                    self.check_page_for_string(check_str)
+        except AssertionError:
+            log.error("%s not found in page", check_str)
+            raise
+        try:
+            if strings_not_displayed:
+                for check_str in strings_not_displayed:
+                    self.check_string_not_in_page(check_str)
+        except AssertionError:
+            log.error("%s found in page", check_str)
+            raise
 
     def check_page(self, strings_displayed, strings_displayed_count, strings_not_displayed):
         """Checks a page for strings displayed, not displayed and number of occurrences of a string"""
@@ -237,10 +245,10 @@ class ShedTwillTestCase(FunctionalTestCase):
         # test@bx.psu.edu is configured as an admin user
         previously_created, username_taken, invalid_username = \
             self.create(email=email, password=password, username=username, redirect=redirect)
+        # The acount has previously been created, so just login.
+        # HACK: don't use panels because late_javascripts() messes up the twill browser and it
+        # can't find form fields (and hence user can't be logged in).
         if previously_created:
-            # The acount has previously been created, so just login.
-            # HACK: don't use panels because late_javascripts() messes up the twill browser and it
-            # can't find form fields (and hence user can't be logged in).
             params = {
                 'use_panels': False
             }
@@ -248,7 +256,7 @@ class ShedTwillTestCase(FunctionalTestCase):
             self.submit_form('login', 'login_button', login=email, redirect=redirect, password=password)
 
     def logout(self):
-        self.visit_url("%s/user/logout" % self.url)
+        self.visit_url("/user/logout")
         self.check_page_for_string("You have been logged out")
         tc.clear_cookies()
 
@@ -315,74 +323,78 @@ class ShedTwillTestCase(FunctionalTestCase):
             if control_name not in controls:
                 continue  # these cannot be handled safely - cause the test to barf out
             if not isinstance(control_value, list):
-                control_value = [control_value]
+                control_value = [str(control_value)]
             control = controls[control_name]
             control_type = getattr(control, "type", None)
-            if control_type:
-                if control_type in ("text", "textfield", "submit"):
-                    tc.fv(f.get('name'), control.name, ",".join(control_value))
-                elif control.type == "list":
-                    try:
-                        if control.type in ("multilist", "checkbox"):
-                            if control.type == "checkbox":
-                                def is_checked(value):
-                                    # Copied from form_builder.CheckboxField
-                                    if value is True:
-                                        return True
-                                    if isinstance(value, list):
-                                        value = value[0]
-                                    return isinstance(value, string_types) and value.lower() in ("yes", "true", "on")
-                                try:
-                                    checkbox = control.get()
-                                    checkbox.selected = is_checked(control_value)
-                                except Exception as e1:
-                                    print("Attempting to set checkbox selected value threw exception: ", e1)
-                                    # if there's more than one checkbox, probably should use the behaviour for
-                                    # ClientForm.ListControl ( see twill code ), but this works for now...
-                                    for elem in control_value:
-                                        control.get(name=elem).selected = True
-                            else:
+            try:
+                log.debug("Control type: %s, Control: %s, value: %s", control_type, control_name, ",".join(control_value))
+            except Exception:
+                pass
+            if control_type in ("text", "textfield", "submit", "password", "TextareaElement", "checkbox", "radio", None):
+                tc.fv(f.get('name'), control.name, ",".join(control_value))
+            elif control_type in ("list", "multilist, checkbox"):
+                try:
+                    if control_type in ("multilist", "checkbox"):
+                        if control_type == "checkbox":
+                            def is_checked(value):
+                                # Copied from form_builder.CheckboxField
+                                if value is True:
+                                    return True
+                                if isinstance(value, list):
+                                    value = value[0]
+                                return isinstance(value, string_types) and value.lower() in ("yes", "true", "on")
+                            try:
+                                checkbox = control.get()
+                                checkbox.selected = is_checked(control_value)
+                            except Exception as e1:
+                                log.exception(e1)
+                                print("Attempting to set checkbox selected value threw exception: ", e1)
+                                # if there's more than one checkbox, probably should use the behaviour for
+                                # ClientForm.ListControl ( see twill code ), but this works for now...
                                 for elem in control_value:
-                                    try:
-                                        # Doubt this case would ever work, but want
-                                        # to preserve backward compat.
-                                        control.get(name=elem).selected = True
-                                    except Exception:
-                                        # ... anyway this is really what we want to
-                                        # do, probably even want to try the len(
-                                        # elem ) > 30 check below.
-                                        control.get(label=elem).selected = True
-                        else:  # control.is_of_kind( "singlelist" )
+                                    control.get(name=elem).selected = True
+                        else:
                             for elem in control_value:
                                 try:
-                                    tc.fv(f.get('name'), control.name, str(elem))
+                                    # Doubt this case would ever work, but want
+                                    # to preserve backward compat.
+                                    control.get(name=elem).selected = True
                                 except Exception:
-                                    try:
-                                        # Galaxy truncates long file names in the dataset_collector in galaxy/tools/parameters/basic.py
-                                        if len(elem) > 30:
-                                            elem_name = '%s..%s' % (elem[:17], elem[-11:])
-                                            tc.fv(f.get('name'), control.name, str(elem_name))
-                                            pass
-                                        else:
-                                            raise
-                                    except Exception:
+                                    # ... anyway this is really what we want to
+                                    # do, probably even want to try the len(
+                                    # elem ) > 30 check below.
+                                    control.get(label=elem).selected = True
+                    else:  # control.is_of_kind( "singlelist" )
+                        for elem in control_value:
+                            try:
+                                tc.fv(f.get('name'), control.name, str(elem))
+                            except Exception:
+                                try:
+                                    # Galaxy truncates long file names in the dataset_collector in galaxy/tools/parameters/basic.py
+                                    if len(elem) > 30:
+                                        elem_name = '%s..%s' % (elem[:17], elem[-11:])
+                                        tc.fv(f.get('name'), control.name, str(elem_name))
+                                        pass
+                                    else:
                                         raise
                                 except Exception:
-                                    for formcontrol in formcontrols:
-                                        log.debug(formcontrol)
-                                    log.exception("Attempting to set control '%s' to value '%s' (also tried '%s') threw exception.", control.name, elem, elem_name)
-                                    pass
-                    except Exception as exc:
-                        for formcontrol in formcontrols:
-                            log.debug(formcontrol)
-                        errmsg = "Attempting to set field '%s' to value '%s' in form '%s' threw exception: %s\n" % (control.name, str(control_value), f.get('name'), str(exc))
-                        errmsg += "control: %s\n" % str(control)
-                        errmsg += "If the above control is a DataToolparameter whose data type class does not include a sniff() method,\n"
-                        errmsg += "make sure to include a proper 'ftype' attribute to the tag for the control within the <test> tag set.\n"
-                        raise AssertionError(errmsg)
-                else:
-                    # Add conditions for other control types here when necessary.
-                    pass
+                                    raise
+                            except Exception:
+                                for formcontrol in formcontrols:
+                                    log.debug(formcontrol)
+                                log.exception("Attempting to set control '%s' to value '%s' (also tried '%s') threw exception.", control.name, elem, elem_name)
+                                pass
+                except Exception as exc:
+                    for formcontrol in formcontrols:
+                        log.debug(formcontrol)
+                    errmsg = "Attempting to set field '%s' to value '%s' in form '%s' threw exception: %s\n" % (control.name, str(control_value), f.get('name'), str(exc))
+                    errmsg += "control: %s\n" % str(control)
+                    errmsg += "If the above control is a DataToolparameter whose data type class does not include a sniff() method,\n"
+                    errmsg += "make sure to include a proper 'ftype' attribute to the tag for the control within the <test> tag set.\n"
+                    raise AssertionError(errmsg)
+            else:
+                # Add conditions for other control types here when necessary.
+                pass
         tc.submit(button)
 
     def visit_url(self, url, params=None, doseq=False, allowed_codes=[200]):
@@ -732,8 +744,8 @@ class ShedTwillTestCase(FunctionalTestCase):
                 files_to_delete.append(os.path.join(basepath, filename))
         self.browse_repository(repository)
         # Twill sets hidden form fields to read-only by default. We need to write to this field.
-        form = tc.browser.get_form('select_files_to_delete')
-        form.find_control("selected_files_to_delete").readonly = False
+        # form = tc.browser.get_form('select_files_to_delete')
+        # form.find_control("selected_files_to_delete").readonly = False
         tc.fv("2", "selected_files_to_delete", ','.join(files_to_delete))
         tc.submit('select_files_to_delete_button')
         self.check_for_strings(strings_displayed, strings_not_displayed)
@@ -1022,7 +1034,7 @@ class ShedTwillTestCase(FunctionalTestCase):
             return os.path.abspath(os.path.join(self.file_dir, filename))
 
     def get_hg_repo(self, path):
-        return hg.repository(ui.ui(), path)
+        return hg.repository(ui.ui(), path.encode('utf-8'))
 
     def get_last_reviewed_revision_by_user(self, user, repository):
         changelog_tuples = self.get_repository_changelog_tuples(repository)
