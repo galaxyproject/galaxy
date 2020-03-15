@@ -322,7 +322,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.database_engine_options = get_database_engine_options(kwargs)
         self.database_create_tables = string_as_bool(kwargs.get('database_create_tables', 'True'))
         self.database_encoding = kwargs.get('database_encoding')  # Create new databases with this encoding
-        self.database_log_query_counts = string_as_bool(kwargs.get("database_log_query_counts", 'False'))
         self.thread_local_log = None
         if self.enable_per_request_sql_debugging:
             self.thread_local_log = threading.local()
@@ -337,7 +336,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.tool_path = os.path.join(self.root, self.tool_path)
         self.tool_data_path = os.path.join(self.root, self.tool_data_path)
         if not running_from_source and kwargs.get("tool_data_path") is None:
-            self.tool_data_path = os.path.join(self.data_dir, "tool-data")
+            self.tool_data_path = self._in_data_dir(self.schema.defaults['tool_data_path'])
         self.builds_file_path = os.path.join(self.tool_data_path, self.builds_file_path)
         self.len_file_path = os.path.join(self.tool_data_path, self.len_file_path)
         # Galaxy OIDC settings.
@@ -525,17 +524,15 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.object_store = kwargs.get('object_store', 'disk')
         self.object_store_check_old_style = string_as_bool(kwargs.get('object_store_check_old_style', False))
         self.object_store_cache_path = self.resolve_path(kwargs.get("object_store_cache_path", os.path.join(self.data_dir, "object_store_cache")))
-        object_store_store_by = kwargs.get('object_store_store_by', None)
-        if object_store_store_by is None:
+        if self.object_store_store_by is None:
             if not self.file_path_set:
                 if self.file_path.endswith('objects'):
-                    object_store_store_by = 'uuid'
+                    self.object_store_store_by = 'uuid'
                 else:
-                    object_store_store_by = 'id'
+                    self.object_store_store_by = 'id'
             else:
-                object_store_store_by = 'id'
-        assert object_store_store_by in ['id', 'uuid'], "Invalid value for object_store_store_by [%s]" % object_store_store_by
-        self.object_store_store_by = object_store_store_by
+                self.object_store_store_by = 'id'
+        assert self.object_store_store_by in ['id', 'uuid'], "Invalid value for object_store_store_by [%s]" % self.object_store_store_by
         # Handle AWS-specific config options for backward compatibility
         if kwargs.get('aws_access_key') is not None:
             self.os_access_key = kwargs.get('aws_access_key')
@@ -617,7 +614,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         # This is for testing new library browsing capabilities.
         self.new_lib_browse = string_as_bool(kwargs.get('new_lib_browse', False))
         # Logging configuration with logging.config.configDict:
-        self.logging = kwargs.get('logging')
         # Statistics and profiling with statsd
         self.statsd_host = kwargs.get('statsd_host', '')
 
