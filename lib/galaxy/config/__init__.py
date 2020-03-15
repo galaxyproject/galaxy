@@ -525,13 +525,9 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.object_store_check_old_style = string_as_bool(kwargs.get('object_store_check_old_style', False))
         self.object_store_cache_path = self.resolve_path(kwargs.get("object_store_cache_path", os.path.join(self.data_dir, "object_store_cache")))
         if self.object_store_store_by is None:
-            if not self.file_path_set:
-                if self.file_path.endswith('objects'):
-                    self.object_store_store_by = 'uuid'
-                else:
-                    self.object_store_store_by = 'id'
-            else:
-                self.object_store_store_by = 'id'
+            self.object_store_store_by = 'id'
+            if not self.file_path_set and self.file_path.endswith('objects'):
+                self.object_store_store_by = 'uuid'
         assert self.object_store_store_by in ['id', 'uuid'], "Invalid value for object_store_store_by [%s]" % self.object_store_store_by
         # Handle AWS-specific config options for backward compatibility
         if kwargs.get('aws_access_key') is not None:
