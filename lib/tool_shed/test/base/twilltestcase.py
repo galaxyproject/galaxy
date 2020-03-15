@@ -22,6 +22,7 @@ from six.moves.urllib.parse import (
     urlparse
 )
 from twill3.other_packages._mechanize_dist import ClientForm
+from twill3.utils import ResultWrapper
 
 import galaxy.model.tool_shed_install as galaxy_model
 import galaxy.util
@@ -258,20 +259,26 @@ class ShedTwillTestCase(FunctionalTestCase):
     def logout(self):
         self.visit_url("/user/logout")
         self.check_page_for_string("You have been logged out")
-        tc.clear_cookies()
+        try:
+            del tc.browser._session.cookies['galaxycommunitysession']
+        except KeyError:
+            log.exception('Error removing toolshed session cookie')
 
     def showforms(self):
         """Shows form, helpful for debugging new tests"""
         return tc.showforms()
 
-    def submit_form(self, form_no=0, button="runtool_btn", **kwd):
+    def submit_form(self, form_no=0, button="runtool_btn", form=None, **kwd):
         """Populates and submits a form from the keyword arguments."""
         # An HTMLForm contains a sequence of Controls.  Supported control classes are:
         # TextControl, FileControl, ListControl, RadioControl, CheckboxControl, SelectControl,
         # SubmitControl, ImageControl
-        for i, f in enumerate(self.showforms()):
-            if i == form_no:
-                break
+        if form:
+            f = form
+        else:
+            for i, f in enumerate(self.showforms()):
+                if i == form_no:
+                    break
         # To help with debugging a tool, print out the form controls when the test fails
         # print("form '%s' contains the following controls ( note the values )" % f.get('name'))
         controls = {}
@@ -1266,21 +1273,34 @@ class ShedTwillTestCase(FunctionalTestCase):
         }
         self.visit_url('/repository/install_repositories_by_revision', params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed)
-        # This section is tricky, due to the way twill handles form submission. The tool dependency checkbox needs to
-        # be hacked in through tc.browser, putting the form field in kwd doesn't work.
         form = tc.browser.get_form('select_tool_panel_section')
         if form is None:
             form = tc.browser.get_form('select_shed_tool_panel_config')
         assert form is not None, 'Could not find form select_shed_tool_panel_config or select_tool_panel_section.'
-        kwd = self.set_form_value(form, kwd, 'install_tool_dependencies', install_tool_dependencies)
-        kwd = self.set_form_value(form, kwd, 'install_repository_dependencies', install_repository_dependencies)
-        kwd = self.set_form_value(form, kwd, 'install_resolver_dependencies', install_resolver_dependencies)
-        kwd = self.set_form_value(form, kwd, 'shed_tool_conf', self.shed_tool_conf)
+        kwds = {
+            'install_tool_dependencies': install_tool_dependencies,
+            'install_repository_dependencies': install_repository_dependencies,
+            'install_resolver_dependencies': install_resolver_dependencies,
+            'shed_tool_conf': self.shed_tool_conf,
+        }
         if new_tool_panel_section_label is not None:
-            kwd = self.set_form_value(form, kwd, 'new_tool_panel_section_label', new_tool_panel_section_label)
-        submit_button_control = form.find_control(type='submit')
-        assert submit_button_control is not None, 'No submit button found for form %s.' % form.attrs.get('id')
-        self.submit_form(form.attrs.get('id'), str(submit_button_control.name), **kwd)
+            kwds['new_tool_panel_section_label'] = new_tool_panel_section_label
+        submit_button = [inp.name for inp in form.inputs if getattr(inp, 'type', None) == 'submit']
+        if len(submit_button) == 0:
+            # TODO: refactor, use regular TS install API
+            submit_kwargs = {inp.name: inp.value for inp in tc.browser.get_all_forms()[0].inputs if getattr(inp, 'type', None) == 'submit'}
+            payload = {_: form.inputs[_].value for _ in form.fields.keys()}
+            payload.update(kwds)
+            payload.update(submit_kwargs)
+            r = tc.browser._session.post(
+                self.galaxy_url + form.action,
+                data=payload,
+            )
+            tc.browser.result = ResultWrapper(r)
+        else:
+            assert len(submit_button) == 1, 'Expected to find a single submit button, found %s (%s)' % (len(submit_button), ','.join(submit_button))
+            submit_button = submit_button[0]
+            self.submit_form(form=form, button=submit_button, **kwds)
         self.check_for_strings(post_submit_strings_displayed, strings_not_displayed)
         repository_ids = self.initiate_installation_process(new_tool_panel_section_label=new_tool_panel_section_label)
         log.debug('Waiting for the installation of repository IDs: %s' % str(repository_ids))
@@ -1515,7 +1535,7 @@ class ShedTwillTestCase(FunctionalTestCase):
         Set the form field field_name to field_value if it exists, and return the provided dict containing that value. If
         the field does not exist in the provided form, return a dict without that index.
         '''
-        form_id = form.attrs.get('id')
+        form_id = form.attrib.get('id')
         controls = [control for control in form.inputs if str(control.name) == field_name]
         if len(controls) > 0:
             log.debug('Setting field %s of form %s to %s.' % (field_name, form_id, str(field_value)))
