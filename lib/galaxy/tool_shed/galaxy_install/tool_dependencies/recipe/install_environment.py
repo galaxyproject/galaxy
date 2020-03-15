@@ -19,7 +19,8 @@ from galaxy.util import (
     DATABASE_MAX_STRING_SIZE,
     DATABASE_MAX_STRING_SIZE_PRETTY,
     shrink_string_by_size,
-    unicodify
+    smart_str,
+    unicodify,
 )
 
 log = logging.getLogger(__name__)
@@ -78,12 +79,12 @@ class InstallEnvironment(object):
         """
         stdout_logger = logging.getLogger('install_environment.STDOUT')
         stderr_logger = logging.getLogger('install_environment.STDERR')
-        for line in iter(stdout.readline, ''):
+        for line in iter(stdout.readline, b''):
             output = line.rstrip()
             stdout_logger.debug(output)
             stdout_queue.put(output)
         stdout_queue.put(None)
-        for line in iter(stderr.readline, ''):
+        for line in iter(stderr.readline, b''):
             output = line.rstrip()
             stderr_logger.debug(output)
             stderr_queue.put(output)
@@ -232,11 +233,11 @@ class InstallEnvironment(object):
         # Close subprocess' file descriptors.
         self.close_file_descriptor(process_handle.stdout)
         self.close_file_descriptor(process_handle.stderr)
-        stdout = '\n'.join(stdout_reader.lines)
-        stderr = '\n'.join(stderr_reader.lines)
+        stdout = b'\n'.join(stdout_reader.lines)
+        stderr = b'\n'.join(stderr_reader.lines)
         # Handle error condition (deal with stdout being None, too)
-        output = _AttributeString(stdout.strip() if stdout else "")
-        errors = _AttributeString(stderr.strip() if stderr else "")
+        output = _AttributeString(stdout.strip() if stdout else b"")
+        errors = _AttributeString(stderr.strip() if stderr else b"")
         # Make sure the process has finished.
         process_handle.poll()
         output.return_code = process_handle.returncode
@@ -245,19 +246,18 @@ class InstallEnvironment(object):
 
     def log_results(self, command, fabric_AttributeString, file_path):
         """Write attributes of fabric.operations._AttributeString to a specified log file."""
-        if os.path.exists(file_path):
-            logfile = open(file_path, 'ab')
-        else:
-            logfile = open(file_path, 'wb')
-        logfile.write("\n#############################################\n")
-        logfile.write('%s\nSTDOUT\n' % command)
-        logfile.write(str(fabric_AttributeString.stdout))
-        logfile.write("\n#############################################\n")
-        logfile.write("\n#############################################\n")
-        logfile.write('%s\nSTDERR\n' % command)
-        logfile.write(str(fabric_AttributeString.stderr))
-        logfile.write("\n#############################################\n")
-        logfile.close()
+        mode = 'ab' if os.path.exists(file_path) else 'wb'
+        with open(file_path, mode) as logfile:
+            logfile.write(b"\n#############################################\n")
+            logfile.write(smart_str(command))
+            logfile.write(b'\nSTDOUT\n')
+            logfile.write(smart_str(fabric_AttributeString.stdout))
+            logfile.write(b"\n#############################################\n")
+            logfile.write(b"\n#############################################\n")
+            logfile.write(smart_str(command))
+            logfile.write(b'\nSTDERR\n')
+            logfile.write(smart_str(fabric_AttributeString.stderr))
+            logfile.write(b"\n#############################################\n")
 
     @contextmanager
     def use_tmp_dir(self):
