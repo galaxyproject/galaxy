@@ -14,7 +14,6 @@
 </template>
 
 <script>
-import Utils from "utils/utils";
 import * as d3 from "d3";
 import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
