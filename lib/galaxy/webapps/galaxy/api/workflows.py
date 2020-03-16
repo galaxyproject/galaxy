@@ -23,6 +23,7 @@ from galaxy.managers import (
     histories,
     workflows
 )
+from galaxy.tools import tool_recommendations
 from galaxy.managers.jobs import fetch_job_states, invocation_job_source_iter
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
@@ -46,7 +47,6 @@ from galaxy.workflow.modules import module_factory
 from galaxy.workflow.reports import generate_report
 from galaxy.workflow.run import invoke, queue_invoke
 from galaxy.workflow.run_request import build_workflow_run_configs
-from galaxy.tools import tool_recommendations
 
 log = logging.getLogger(__name__)
 
