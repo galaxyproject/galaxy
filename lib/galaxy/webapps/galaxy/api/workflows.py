@@ -23,10 +23,10 @@ from galaxy.managers import (
     histories,
     workflows
 )
-from galaxy.tools import tool_recommendations
 from galaxy.managers.jobs import fetch_job_states, invocation_job_source_iter
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
+from galaxy.tools import tool_recommendations
 from galaxy.tools.parameters import populate_state
 from galaxy.tools.parameters.basic import workflow_building_modes
 from galaxy.util.sanitize_html import sanitize_html
