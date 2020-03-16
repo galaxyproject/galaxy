@@ -24,13 +24,6 @@ TOOLSHED_APP_NAME = 'tool_shed'
 TOOLSHED_CONFIG_SCHEMA_PATH = 'lib/tool_shed/webapp/config_schema.yml'
 
 
-def resolve_path(path, root):
-    """If 'path' is relative make absolute by prepending 'root'"""
-    if not(os.path.isabs(path)):
-        path = os.path.join(root, path)
-    return path
-
-
 class ConfigurationError(Exception):
     pass
 
@@ -54,24 +47,24 @@ class ToolShedAppConfiguration(BaseAppConfiguration):
         self.version_major = VERSION_MAJOR
         self.version = VERSION
         # Database related configuration
-        self.database_connection = kwargs.get("database_connection",
-                                              "sqlite:///%s?isolation_level=IMMEDIATE" % resolve_path("community.sqlite", self.data_dir))
+        if not self.database_connection:  # Provide default if not supplied by user
+            self.database_connection = 'sqlite:///%s?isolation_level=IMMEDIATE' % self._in_data_dir('community.sqlite')
         self.database_engine_options = get_database_engine_options(kwargs)
         self.database_create_tables = string_as_bool(kwargs.get("database_create_tables", "True"))
         # Where dataset files are stored
-        self.file_path = resolve_path(self.file_path, self.root)
-        self.new_file_path = resolve_path(self.new_file_path, self.root)
+        self.file_path = self._in_root_dir(self.file_path)
+        self.new_file_path = self._in_root_dir(self.new_file_path)
         self.cookie_path = kwargs.get("cookie_path", None)
         self.cookie_domain = kwargs.get("cookie_domain", None)
         self.enable_quotas = string_as_bool(kwargs.get('enable_quotas', False))
         # Tool stuff
-        self.tool_path = resolve_path(kwargs.get("tool_path", "tools"), self.root)
+        self.tool_path = self._in_root_dir(kwargs.get("tool_path", "tools"))
         self.tool_secret = kwargs.get("tool_secret", "")
-        self.tool_data_path = resolve_path(kwargs.get("tool_data_path", "shed-tool-data"), os.getcwd())
+        self.tool_data_path = os.path.join(os.getcwd(), kwargs.get("tool_data_path", "shed-tool-data"))
         self.tool_data_table_config_path = None
-        self.integrated_tool_panel_config = resolve_path(kwargs.get('integrated_tool_panel_config', 'integrated_tool_panel.xml'), self.root)
-        self.builds_file_path = resolve_path(kwargs.get("builds_file_path", os.path.join(self.tool_data_path, 'shared', 'ucsc', 'builds.txt')), self.root)
-        self.len_file_path = resolve_path(kwargs.get("len_file_path", os.path.join(self.tool_data_path, 'shared', 'ucsc', 'chrom')), self.root)
+        self.integrated_tool_panel_config = self._in_root_dir(kwargs.get('integrated_tool_panel_config', 'integrated_tool_panel.xml'))
+        self.builds_file_path = self._in_root_dir(kwargs.get("builds_file_path", os.path.join(self.tool_data_path, 'shared', 'ucsc', 'builds.txt')))
+        self.len_file_path = self._in_root_dir(kwargs.get("len_file_path", os.path.join(self.tool_data_path, 'shared', 'ucsc', 'chrom')))
         self.ftp_upload_dir = kwargs.get('ftp_upload_dir', None)
         self.update_integrated_tool_panel = False
         # Galaxy flavor Docker Image
@@ -86,7 +79,7 @@ class ToolShedAppConfiguration(BaseAppConfiguration):
         self.remote_user_logout_href = kwargs.get("remote_user_logout_href", None)
         self.remote_user_secret = kwargs.get("remote_user_secret", None)
         self.template_path = templates_path
-        self.template_cache_path = resolve_path(kwargs.get("template_cache_path", "database/compiled_templates/community"), self.root)
+        self.template_cache_path = self._in_root_dir(kwargs.get("template_cache_path", "database/compiled_templates/community"))
         self.admin_users_list = [u.strip() for u in self.admin_users.split(',') if u]
         self.error_email_to = kwargs.get('error_email_to', None)
         self.smtp_server = kwargs.get('smtp_server', None)
@@ -103,7 +96,7 @@ class ToolShedAppConfiguration(BaseAppConfiguration):
         self.cloud_controller_instance = False
         self.server_name = ''
         # Where the tool shed hgweb.config file is stored - the default is the Galaxy installation directory.
-        self.hgweb_config_dir = resolve_path(self.hgweb_config_dir, self.root)
+        self.hgweb_config_dir = self._in_root_dir(self.hgweb_config_dir)
         # Proxy features
         self.nginx_x_accel_redirect_base = kwargs.get('nginx_x_accel_redirect_base', False)
         self.drmaa_external_runjob_script = kwargs.get('drmaa_external_runjob_script', None)
@@ -115,8 +108,8 @@ class ToolShedAppConfiguration(BaseAppConfiguration):
             global_conf_parser.read(global_conf['__file__'])
         self.running_functional_tests = string_as_bool(kwargs.get('running_functional_tests', False))
         self.citation_cache_type = kwargs.get("citation_cache_type", "file")
-        self.citation_cache_data_dir = resolve_path(kwargs.get("citation_cache_data_dir", "database/tool_shed_citations/data"), self.root)
-        self.citation_cache_lock_dir = resolve_path(kwargs.get("citation_cache_lock_dir", "database/tool_shed_citations/locks"), self.root)
+        self.citation_cache_data_dir = self._in_root_dir(kwargs.get("citation_cache_data_dir", "database/tool_shed_citations/data"))
+        self.citation_cache_lock_dir = self._in_root_dir(kwargs.get("citation_cache_lock_dir", "database/tool_shed_citations/locks"))
         self.password_expiration_period = timedelta(days=int(kwargs.get("password_expiration_period", 0)))
 
         # Security/Policy Compliance
