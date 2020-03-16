@@ -136,13 +136,15 @@ class ToolShedAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
 
     def check(self):
         # Check that required directories exist.
-        paths_to_check = [self.root, self.file_path, self.hgweb_config_dir, self.tool_data_path, self.template_path]
+        paths_to_check = [self.file_path, self.hgweb_config_dir, self.tool_data_path, self.template_path]
+
         for path in paths_to_check:
             if path not in [None, False] and not os.path.isdir(path):
                 try:
                     os.makedirs(path)
                 except Exception as e:
                     raise ConfigurationError("Unable to create missing directory: %s\n%s" % (path, e))
+
         # Create the directories that it makes sense to create.
         for path in self.file_path, \
             self.template_cache_path, \
@@ -152,6 +154,7 @@ class ToolShedAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
                     os.makedirs(path)
                 except Exception as e:
                     raise ConfigurationError("Unable to create missing directory: %s\n%s" % (path, e))
+
         # Check that required files exist.
         if not os.path.isfile(self.datatypes_config):
             raise ConfigurationError("File not found: %s" % self.datatypes_config)
