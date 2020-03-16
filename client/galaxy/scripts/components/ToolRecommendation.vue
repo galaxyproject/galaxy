@@ -17,7 +17,7 @@
 import Utils from "utils/utils";
 import * as d3 from "d3";
 import { getAppRoot } from "onload/loadConfig";
-import $ from "jquery";
+import axios from "axios";
 
 export default {
     props: {
@@ -47,67 +47,64 @@ export default {
     },
     methods: {
         loadRecommendations: function() {
-            const self = this;
-            const toolId = this.getToolId;
-            Utils.request({
-                type: "POST",
-                url: `${getAppRoot()}api/workflows/get_tool_predictions`,
-                data: { tool_sequence: toolId },
-                success: data => {
-                    // get datatypes mapping
-                    const datatypes_mapping = JSON.parse(
-                            $.ajax({
-                                url: `${getAppRoot()}api/datatypes/mapping`,
-                                async: false
-                            }).responseText
-                        ),
-                        extToType = datatypes_mapping.ext_to_class_name,
-                        typeToType = datatypes_mapping.class_to_classes,
-                        predData = data.predicted_data;
-                    this.deprecated = predData["is_deprecated"];
-                    if (data !== null && predData.children.length > 0) {
-                        const filteredData = {},
-                            compatibleTools = {},
-                            filteredChildren = [],
-                            outputDatatypes = predData["o_extensions"],
-                            children = predData.children;
-                        for (const nameObj of children.entries()) {
-                            const inputDatatypes = nameObj[1]["i_extensions"];
-                            for (const out_t of outputDatatypes.entries()) {
-                                for (const in_t of inputDatatypes.entries()) {
-                                    const child = extToType[out_t[1]],
-                                        parent = extToType[in_t[1]];
-                                    if (
-                                        (typeToType[child] && parent in typeToType[child]) === true ||
-                                        out_t[1] === "input" ||
-                                        out_t[1] === "_sniff_" ||
-                                        out_t[1] === "input_collection"
-                                    ) {
-                                        compatibleTools[nameObj[1]["tool_id"]] = nameObj[1]["name"];
+            const self = this,
+                toolId = this.getToolId,
+                url = getAppRoot() + "api/workflows/get_tool_predictions";
+            axios
+                .post(url, {
+                    tool_sequence: toolId
+                })
+                .then(response => {
+                    axios.get(getAppRoot() + "api/datatypes/mapping").then(responseMapping => {
+                        const predData = response.data.predicted_data,
+                            datatypesMapping = responseMapping.data,
+                            extToType = datatypesMapping.ext_to_class_name,
+                            typeToType = datatypesMapping.class_to_classes;
+                        self.deprecated = predData.is_deprecated;
+
+                        if (response.data !== null && predData.children.length > 0) {
+                            const filteredData = {},
+                                compatibleTools = {},
+                                filteredChildren = [],
+                                outputDatatypes = predData.o_extensions,
+                                children = predData.children;
+                            for (const nameObj of children.entries()) {
+                                const inputDatatypes = nameObj[1].i_extensions;
+                                for (const out_t of outputDatatypes.entries()) {
+                                    for (const in_t of inputDatatypes.entries()) {
+                                        const child = extToType[out_t[1]],
+                                            parent = extToType[in_t[1]];
+                                        if (
+                                            (typeToType[child] && parent in typeToType[child]) === true ||
+                                            out_t[1] === "input" ||
+                                            out_t[1] === "_sniff_" ||
+                                            out_t[1] === "input_collection"
+                                        ) {
+                                            compatibleTools[nameObj[1]["tool_id"]] = nameObj[1]["name"];
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            for (const id in compatibleTools) {
+                                for (const nameObj of children.entries()) {
+                                    if (nameObj[1]["tool_id"] === id) {
+                                        filteredChildren.push(nameObj[1]);
                                         break;
                                     }
                                 }
                             }
-                        }
-                        for (const id in compatibleTools) {
-                            for (const nameObj of children.entries()) {
-                                if (nameObj[1]["tool_id"] === id) {
-                                    filteredChildren.push(nameObj[1]);
-                                    break;
-                                }
+                            filteredData["o_extensions"] = predData.o_extensions;
+                            filteredData["name"] = predData.name;
+                            filteredData["children"] = filteredChildren;
+                            if (filteredChildren.length > 0 && self.deprecated === false) {
+                                self.renderD3Tree(filteredData);
+                            } else if (self.deprecated === true) {
+                                self.deprecatedMessage = predData.message;
                             }
                         }
-                        filteredData["o_extensions"] = predData["o_extensions"];
-                        filteredData["name"] = predData["name"];
-                        filteredData["children"] = filteredChildren;
-                        if (filteredChildren.length > 0 && this.deprecated === false) {
-                            self.renderD3Tree(filteredData);
-                        } else if (this.deprecated === true) {
-                            this.deprecatedMessage = predData["message"];
-                        }
-                    }
-                }
-            });
+                    });
+                });
         },
         renderD3Tree: function(predictedTools) {
             const margin = { top: 20, right: 30, bottom: 20, left: 250 },
@@ -226,7 +223,7 @@ export default {
                 }
                 update(d);
                 if (d.tool_id !== undefined && d.tool_id !== "undefined" && d.tool_id !== null && d.tool_id !== "") {
-                    document.location.href = `${getAppRoot()}` + "tool_runner?tool_id=" + d.tool_id;
+                    document.location.href = getAppRoot() + "tool_runner?tool_id=" + d.tool_id;
                 }
             }
             function collapse(d) {
