@@ -118,6 +118,10 @@ class BaseAppConfiguration(object):
         self._create_attributes_from_raw_config()  # Create attributes based on raw_config
         self._resolve_paths()  # Overwrite attribute values with resolved paths
 
+    def resolve_path(self, path):
+        """Resolve a path relative to Galaxy's root."""
+        return self._in_root_dir(path)
+
     def _set_config_base(self, config_kwargs):
 
         def _set_global_conf():
@@ -244,6 +248,9 @@ class BaseAppConfiguration(object):
         _cache = {}
         for key in self.schema.paths_to_resolve:
             resolve(key)
+
+    def _in_root_dir(self, path):
+        return os.path.join(self.root, path)
 
     def _in_managed_config_dir(self, path):
         return self._in_dir(self.managed_config_dir, path)
@@ -402,7 +409,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         ]
         self.template_path = os.path.join(self.root, kwargs.get("template_path", "templates"))
         self.job_queue_cleanup_interval = int(kwargs.get("job_queue_cleanup_interval", "5"))
-        self.cluster_files_directory = self.resolve_path(self.cluster_files_directory)
+        self.cluster_files_directory = self._in_root_dir(self.cluster_files_directory)
 
         # Fall back to legacy job_working_directory config variable if set.
         self.jobs_directory = os.path.join(self.data_dir, kwargs.get("jobs_directory", self.job_working_directory))
@@ -414,7 +421,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         # should probably drop the backward compatiblity to save the path check.
         self.container_image_cache_path = os.path.join(self.data_dir, kwargs.get("container_image_cache_path", "container_images"))
         if not os.path.exists(self.container_image_cache_path):
-            self.container_image_cache_path = self.resolve_path(kwargs.get("container_image_cache_path", os.path.join(self.data_dir, "container_cache")))
+            self.container_image_cache_path = self._in_root_dir(kwargs.get("container_image_cache_path", os.path.join(self.data_dir, "container_cache")))
         self.output_size_limit = int(kwargs.get('output_size_limit', 0))
         # activation_email was used until release_15.03
         activation_email = kwargs.get('activation_email')
@@ -451,7 +458,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             workflow_resource_params_mapper = None
         elif ":" not in workflow_resource_params_mapper:
             # Assume it is not a Python function, so a file
-            workflow_resource_params_mapper = self.resolve_path(workflow_resource_params_mapper)
+            workflow_resource_params_mapper = self._in_root_dir(workflow_resource_params_mapper)
         # else: a Python a function!
         self.workflow_resource_params_mapper = workflow_resource_params_mapper
 
@@ -526,7 +533,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             self.nginx_upload_store = os.path.abspath(self.nginx_upload_store)
         self.object_store = kwargs.get('object_store', 'disk')
         self.object_store_check_old_style = string_as_bool(kwargs.get('object_store_check_old_style', False))
-        self.object_store_cache_path = self.resolve_path(kwargs.get("object_store_cache_path", os.path.join(self.data_dir, "object_store_cache")))
+        self.object_store_cache_path = self._in_root_dir(kwargs.get("object_store_cache_path", os.path.join(self.data_dir, "object_store_cache")))
         if self.object_store_store_by is None:
             self.object_store_store_by = 'id'
             if not self.file_path_set and self.file_path.endswith('objects'):
@@ -625,7 +632,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.manage_dynamic_proxy = self.dynamic_proxy_manage  # Set to false if being launched externally
 
         # InteractiveTools propagator mapping file
-        self.interactivetools_map = self.resolve_path(kwargs.get("interactivetools_map", os.path.join(self.data_dir, "interactivetools_map.sqlite")))
+        self.interactivetools_map = self._in_root_dir(kwargs.get("interactivetools_map", os.path.join(self.data_dir, "interactivetools_map.sqlite")))
         self.interactivetool_prefix = kwargs.get("interactivetools_prefix", "interactivetool")
         self.interactivetool_proxy_host = kwargs.get("interactivetool_proxy_host", None)
 
@@ -728,9 +735,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             return None
 
     def parse_config_file_options(self, kwargs):
-        """
-        Backwards compatibility for config files moved to the config/ dir.
-        """
+        """Backwards compatibility for config files moved to the config/ dir."""
         defaults = dict(
             auth_config_file=[self._in_config_dir('auth_conf.xml')],
             build_sites_config_file=[self._in_config_dir('build_sites.yml'), self._in_sample_dir('build_sites.yml.sample')],
@@ -843,11 +848,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         """
         return user is not None and user.email in self.admin_users_list
 
-    def resolve_path(self, path):
-        """ Resolve a path relative to Galaxy's root.
-        """
-        return os.path.join(self.root, path)
-
     @staticmethod
     def _parse_allowed_origin_hostnames(kwargs):
         """
@@ -873,7 +873,7 @@ Configuration = GalaxyAppConfiguration
 
 
 def reload_config_options(current_config):
-    """ Reload modified reloadable config options """
+    """Reload modified reloadable config options."""
     modified_config = read_properties_from_file(current_config.config_file)
     for option in current_config.schema.reloadable_options:
         if option in modified_config:
@@ -974,8 +974,7 @@ def configure_logging(config):
 
 
 class ConfiguresGalaxyMixin(object):
-    """ Shared code for configuring Galaxy-like app objects.
-    """
+    """Shared code for configuring Galaxy-like app objects."""
 
     def _configure_genome_builds(self, data_table_name="__dbkeys__", load_old_style=True):
         self.genome_builds = GenomeBuilds(self, data_table_name=data_table_name, load_old_style=load_old_style)
@@ -1112,9 +1111,7 @@ class ConfiguresGalaxyMixin(object):
             self.tool_shed_registry = galaxy.tool_shed.tool_shed_registry.Registry()
 
     def _configure_models(self, check_migrate_databases=False, check_migrate_tools=False, config_file=None):
-        """
-        Preconditions: object_store must be set on self.
-        """
+        """Preconditions: object_store must be set on self."""
         db_url = get_database_url(self.config)
         install_db_url = self.config.install_database_connection
         # TODO: Consider more aggressive check here that this is not the same
