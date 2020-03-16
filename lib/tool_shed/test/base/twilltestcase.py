@@ -12,14 +12,14 @@ from json import loads
 # imported by twill.
 import pyparsing  # noqa: F401
 import requests
-import twill3.commands as tc
+import twill.commands as tc
 from mercurial import commands, hg, ui
 from six.moves.urllib.parse import (
     quote_plus,
     urlencode,
     urlparse
 )
-from twill3.utils import ResultWrapper
+from twill.utils import ResultWrapper
 
 import galaxy.model.tool_shed_install as galaxy_model
 import galaxy.util
@@ -189,7 +189,7 @@ class ShedTwillTestCase(FunctionalTestCase):
         # An HTMLForm contains a sequence of Controls.  Supported control classes are:
         # TextControl, FileControl, ListControl, RadioControl, CheckboxControl, SelectControl,
         # SubmitControl, ImageControl
-        if form:
+        if form is not None:
             f = form
         else:
             for i, f in enumerate(self.showforms()):
