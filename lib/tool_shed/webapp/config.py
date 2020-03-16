@@ -9,7 +9,7 @@ from datetime import timedelta
 
 from six.moves import configparser
 
-from galaxy.config import BaseAppConfiguration
+from galaxy.config import BaseAppConfiguration, CommonConfigurationMixin
 from galaxy.config.schema import AppSchema
 from galaxy.util import string_as_bool
 from galaxy.version import VERSION, VERSION_MAJOR
@@ -28,7 +28,7 @@ class ConfigurationError(Exception):
     pass
 
 
-class ToolShedAppConfiguration(BaseAppConfiguration):
+class ToolShedAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     default_config_file_name = 'tool_shed.yml'
 
     def _load_schema(self):
@@ -80,7 +80,6 @@ class ToolShedAppConfiguration(BaseAppConfiguration):
         self.remote_user_secret = kwargs.get("remote_user_secret", None)
         self.template_path = templates_path
         self.template_cache_path = self._in_root_dir(kwargs.get("template_cache_path", "database/compiled_templates/community"))
-        self.admin_users_list = [u.strip() for u in self.admin_users.split(',') if u]
         self.error_email_to = kwargs.get('error_email_to', None)
         self.smtp_server = kwargs.get('smtp_server', None)
         self.smtp_ssl = kwargs.get('smtp_ssl', None)
@@ -182,13 +181,6 @@ class ToolShedAppConfiguration(BaseAppConfiguration):
         # Check that required files exist.
         if not os.path.isfile(self.datatypes_config):
             raise ConfigurationError("File not found: %s" % self.datatypes_config)
-
-    def is_admin_user(self, user):
-        """
-        Determine if the provided user is listed in `admin_users`.
-        """
-        admin_users = self.get("admin_users", "").split(",")
-        return user is not None and user.email in admin_users
 
 
 Configuration = ToolShedAppConfiguration
