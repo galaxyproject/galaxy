@@ -18,6 +18,8 @@ import * as d3 from "d3";
 import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 
+const margin = { top: 20, right: 30, bottom: 20, left: 250 };
+
 export default {
     props: {
         toolId: {
@@ -106,8 +108,7 @@ export default {
                 });
         },
         renderD3Tree: function(predictedTools) {
-            const margin = { top: 20, right: 30, bottom: 20, left: 250 },
-                width = 900 - margin.right - margin.left,
+            const width = 900 - margin.right - margin.left,
                 height = 300 - margin.top - margin.bottom,
                 duration = 750;
             const tree = d3.layout.tree().size([height, width]);
@@ -241,38 +242,3 @@ export default {
     }
 };
 </script>
-
-<style>
-.node {
-    cursor: pointer;
-}
-
-.node circle {
-    fill: #000;
-    stroke: #c2ebc2;
-    stroke-width: 0.3rem;
-}
-
-.node text {
-    font: 0.75rem sans-serif;
-}
-
-.node-enter {
-    fill-opacity: 1e-6;
-}
-
-.node-update {
-    fill-opacity: 1;
-}
-
-.tree-size {
-    width: 100%;
-    height: 450px;
-}
-
-.link {
-    fill: none;
-    stroke: #c2ebc2;
-    stroke-width: 0.3rem;
-}
-</style>
