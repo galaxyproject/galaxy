@@ -298,7 +298,27 @@ class BaseAppConfiguration(object):
             setattr(self, var, [os.path.join(self.root, x) for x in paths])
 
 
-class GalaxyAppConfiguration(BaseAppConfiguration):
+class CommonConfigurationMixin(object):
+    """Shared configuration settings code for Galaxy and ToolShed."""
+
+    @property
+    def admin_users(self):
+        return self._admin_users
+
+    @admin_users.setter
+    def admin_users(self, value):
+        self._admin_users = value
+        if value:
+            self.admin_users_list = [u.strip() for u in value.split(',') if u]
+        else:  # provide empty list for convenience (check membership, etc.)
+            self.admin_users_list = []
+
+    def is_admin_user(self, user):
+        """Determine if the provided user is listed in `admin_users`."""
+        return user is not None and user.email in self.admin_users_list
+
+
+class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     deprecated_options = ('database_file', 'track_jobs_in_database')
     default_config_file_name = 'galaxy.yml'
     deprecated_dirs = {'config_dir': 'config', 'data_dir': 'database'}
@@ -705,18 +725,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             })
 
     @property
-    def admin_users(self):
-        return self._admin_users
-
-    @admin_users.setter
-    def admin_users(self, value):
-        self._admin_users = value
-        if value:
-            self.admin_users_list = [u.strip() for u in value.split(',') if u]
-        else:  # provide empty list for convenience (check membership, etc.)
-            self.admin_users_list = []
-
-    @property
     def sentry_dsn_public(self):
         """
         Sentry URL with private key removed for use in client side scripts,
@@ -831,15 +839,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         for key in self.config_dict.keys():
             if key in self.deprecated_options:
                 log.warning("Config option '%s' is deprecated and will be removed in a future release.  Please consult the latest version of the sample configuration file." % key)
-
-    def is_admin_user(self, user):
-        """
-        Determine if the provided user is listed in `admin_users`.
-
-        NOTE: This is temporary, admin users will likely be specified in the
-              database in the future.
-        """
-        return user is not None and user.email in self.admin_users_list
 
     @staticmethod
     def _parse_allowed_origin_hostnames(kwargs):
