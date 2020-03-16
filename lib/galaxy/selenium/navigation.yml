@@ -213,6 +213,11 @@ multi_history_view:
         selector: '//button[contains(text(), "Copy")]'
 
 
+multiple_histories:
+  selectors:
+    _: '#history-column-${history_id}'
+    switch_button: '${_} button.switch-to'
+
 history_copy_elements:
 
   selectors:
