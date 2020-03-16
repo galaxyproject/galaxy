@@ -337,6 +337,13 @@ class CommonConfigurationMixin(object):
         # Warning: the value of self.config_dict['foo'] may be different from self.foo
         return self.config_dict.get(key, default)
 
+    def _ensure_directory(self, path):
+        if path not in [None, False] and not os.path.isdir(path):
+            try:
+                os.makedirs(path)
+            except Exception as e:
+                raise ConfigurationError("Unable to create missing directory: %s\n%s" % (path, unicodify(e)))
+
 
 class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     deprecated_options = ('database_file', 'track_jobs_in_database')
@@ -806,26 +813,21 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     def ensure_tempdir(self):
         self._ensure_directory(self.new_file_path)
 
-    def _ensure_directory(self, path):
-        if path not in [None, False] and not os.path.isdir(path):
-            try:
-                os.makedirs(path)
-            except Exception as e:
-                raise ConfigurationError("Unable to create missing directory: %s\n%s" % (path, unicodify(e)))
-
     def check(self):
-        paths_to_check = [self.tool_data_path, self.data_dir, self.managed_config_dir]
-        # Check that required directories exist
+        # Check that required directories exist; attempt to create otherwise
+        paths_to_check = [
+            self.data_dir,
+            self.ftp_upload_dir,
+            self.library_import_dir,
+            self.managed_config_dir,
+            self.new_file_path,
+            self.nginx_upload_store,
+            self.object_store_cache_path,
+            self.template_cache_path,
+            self.tool_data_path,
+            self.user_library_import_dir,
+        ]
         for path in paths_to_check:
-            if path not in [None, False] and not os.path.isdir(path):
-                try:
-                    os.makedirs(path)
-                except Exception as e:
-                    raise ConfigurationError("Unable to create missing directory: %s\n%s" % (path, unicodify(e)))
-        # Create the directories that it makes sense to create
-        for path in (self.new_file_path, self.template_cache_path, self.ftp_upload_dir,
-                     self.library_import_dir, self.user_library_import_dir,
-                     self.nginx_upload_store, self.object_store_cache_path):
             self._ensure_directory(path)
         # Check that required files exist
         tool_configs = self.tool_configs
