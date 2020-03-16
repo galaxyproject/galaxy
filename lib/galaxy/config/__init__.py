@@ -326,6 +326,17 @@ class CommonConfigurationMixin(object):
         if self.sentry_dsn:
             return re.sub(r"^([^:/?#]+:)?//(\w+):(\w+)", r"\1//\2", self.sentry_dsn)
 
+    def get_bool(self, key, default):  
+        # Warning: the value of self.config_dict['foo'] may be different from self.foo
+        if key in self.config_dict:
+            return string_as_bool(self.config_dict[key])
+        else:
+            return default
+
+    def get(self, key, default=None):
+        # Warning: the value of self.config_dict['foo'] may be different from self.foo
+        return self.config_dict.get(key, default)
+
 
 class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     deprecated_options = ('database_file', 'track_jobs_in_database')
@@ -791,15 +802,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         except IOError:
             if explicit:
                 log.warning("Sanitize log file explicitly specified as '%s' but does not exist, continuing with no tools whitelisted.", self.sanitize_whitelist_file)
-
-    def get(self, key, default=None):
-        return self.config_dict.get(key, default)
-
-    def get_bool(self, key, default):
-        if key in self.config_dict:
-            return string_as_bool(self.config_dict[key])
-        else:
-            return default
 
     def ensure_tempdir(self):
         self._ensure_directory(self.new_file_path)

@@ -134,15 +134,6 @@ class ToolShedAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         # Backwards compatibility for names used in too many places to fix
         self.datatypes_config = self.datatypes_config_file
 
-    def get(self, key, default=None):
-        return self.config_dict.get(key, default)
-
-    def get_bool(self, key, default):
-        if key in self.config_dict:
-            return string_as_bool(self.config_dict[key])
-        else:
-            return default
-
     def check(self):
         # Check that required directories exist.
         paths_to_check = [self.root, self.file_path, self.hgweb_config_dir, self.tool_data_path, self.template_path]
