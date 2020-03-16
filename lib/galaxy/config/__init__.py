@@ -317,6 +317,15 @@ class CommonConfigurationMixin(object):
         """Determine if the provided user is listed in `admin_users`."""
         return user is not None and user.email in self.admin_users_list
 
+    @property
+    def sentry_dsn_public(self):
+        """
+        Sentry URL with private key removed for use in client side scripts,
+        sentry server will need to be configured to accept events
+        """
+        if self.sentry_dsn:
+            return re.sub(r"^([^:/?#]+:)?//(\w+):(\w+)", r"\1//\2", self.sentry_dsn)
+
 
 class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     deprecated_options = ('database_file', 'track_jobs_in_database')
@@ -723,17 +732,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             self.galaxy_infrastructure_url = string.Template(self.galaxy_infrastructure_url).safe_substitute({
                 'UWSGI_PORT': port
             })
-
-    @property
-    def sentry_dsn_public(self):
-        """
-        Sentry URL with private key removed for use in client side scripts,
-        sentry server will need to be configured to accept events
-        """
-        if self.sentry_dsn:
-            return re.sub(r"^([^:/?#]+:)?//(\w+):(\w+)", r"\1//\2", self.sentry_dsn)
-        else:
-            return None
 
     def parse_config_file_options(self, kwargs):
         """Backwards compatibility for config files moved to the config/ dir."""
