@@ -196,6 +196,7 @@ class ShedTwillTestCase(FunctionalTestCase):
                 if i == form_no:
                     break
         controls = {c.name: c for c in f.inputs}
+        form_name = f.get('name')
         for control_name, control_value in kwd.items():
             if control_name not in controls:
                 continue  # these cannot be handled safely - cause the test to barf out
