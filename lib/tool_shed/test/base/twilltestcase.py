@@ -204,7 +204,8 @@ class ShedTwillTestCase(FunctionalTestCase):
             control = controls[control_name]
             control_type = getattr(control, "type", None)
             if control_type in ("text", "textfield", "submit", "password", "TextareaElement", "checkbox", "radio", None):
-                tc.fv(f.get('name'), control.name, ",".join(control_value))
+                for cv in control_value:
+                    tc.fv(form_name, control.name, cv)
             else:
                 # Add conditions for other control types here when necessary.
                 pass
