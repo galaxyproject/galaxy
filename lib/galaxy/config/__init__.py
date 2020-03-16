@@ -326,7 +326,7 @@ class CommonConfigurationMixin(object):
         if self.sentry_dsn:
             return re.sub(r"^([^:/?#]+:)?//(\w+):(\w+)", r"\1//\2", self.sentry_dsn)
 
-    def get_bool(self, key, default):  
+    def get_bool(self, key, default):
         # Warning: the value of self.config_dict['foo'] may be different from self.foo
         if key in self.config_dict:
             return string_as_bool(self.config_dict[key])
