@@ -169,10 +169,6 @@ export default {
             console.log(this.items);
         },
         onDisconnect(doomed) {
-<<<<<<< HEAD
-            console.log(this.doomedItem);
-=======
->>>>>>> dbca7769c9... Implement External Id disconnect UI
             this.doomedItem = doomed;
             if (doomed.id) {
                 if (this.items.length > 1) {

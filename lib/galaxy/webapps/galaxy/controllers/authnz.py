@@ -13,6 +13,7 @@ from galaxy import web
 from galaxy.web import url_for
 from galaxy.util import url_get
 from galaxy.webapps.base.controller import JSAppLauncher
+#from galaxy.authnz.custos_authnz import get_useremail
 
 log = logging.getLogger(__name__)
 
@@ -42,8 +43,9 @@ class OIDC(JSAppLauncher):
             rtv.append({'id': trans.app.security.encode_id(authnz.id), 'provider': authnz.provider, 'email': authnz.uid})
         #add cilogon and custos identities
         for token in trans.user.custos_auth:
-            print "\n\n\n\nCUSTOS AUTH ", token
-            rtv.append({'id': trans.app.security.encode_id(token.id), 'provider': token.provider, 'email': token.uid})
+            uinfo = requests.get("https://cilogon.org/oauth2/userinfo", params = {'access_token': token.access_token})
+            userinfo = uinfo.json()
+            rtv.append({'id': trans.app.security.encode_id(token.id), 'provider': token.provider, 'email': userinfo['email']})
         return rtv
 
     @web.json
@@ -83,11 +85,7 @@ class OIDC(JSAppLauncher):
                                                                                 login_redirect_url=url_for('/'),
                                                                                 idphint=idphint)
         except exceptions.AuthenticationDuplicate as e:
-            print "\n\n\nEXCEPTION4444", e.message, "\n\n\nEND"
-            #return trans.response.send_redirect(url_for(controller='authnz', action='login', provider=provider))# + "?error=" + e.message)
-            return trans.response.send_redirect(trans.request.base + url_for('/') + 'login?message=' + (e.message or "Duplicate Email"))
-
-        print "\n\n\n\nSUCCESS: %s, MESSAGE: %s", success, message
+            return trans.response.send_redirect(trans.request.base + url_for('/') + 'root/login?message=' + (e.message or "Duplicate Email"))
         if success is False:
             return trans.show_error_message(message)
         user = user if user is not None else trans.user

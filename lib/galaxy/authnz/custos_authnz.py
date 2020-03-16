@@ -110,11 +110,9 @@ class CustosAuthnz(IdentityProvider):
                             len(trans.app.auth_manager.authenticators) == 0):
                         user = existing_user
                     else:
-                        message = 'There already exists a user with email {}.  To associate this external login, you must first be logged in as that existing account.' \
-                            '{}'.format(email, e.message)
+                        message = 'There already exists a user this email.  To associate this external login, you must first be logged in as that existing account.'
                         log.exception(message)
-                        raise exceptions.AuthenticationDuplicate(e.message)
-                        #raise Exception("There already exists a user with email %s.  To associate this external login, you must first be logged in as that existing account." % email)
+                        raise exceptions.AuthenticationDuplicate(message)
                 else:
                     user = trans.app.user_manager.create(email=email, username=username)
                     user.set_random_password()
@@ -179,6 +177,9 @@ class CustosAuthnz(IdentityProvider):
 
     def _fetch_token(self, oauth2_session, trans):
         client_secret = self.config['client_secret']
+
+        idsec = self.config['client_id'] + ":" + self.config['client_secret']
+        encodedIdSec = base64.b64encode(idsec)
         token_endpoint = self.config['token_endpoint']
         return oauth2_session.fetch_token(
             token_endpoint,
@@ -189,7 +190,7 @@ class CustosAuthnz(IdentityProvider):
     def _get_userinfo(self, oauth2_session):
         userinfo_endpoint = self.config['userinfo_endpoint']
         return oauth2_session.get(userinfo_endpoint,
-                                  verify=self._get_verify_param()).json()
+                                  verify=self._get_verify_param()).json()                        
 
     def _get_custos_authnz_token(self, sa_session, user_id, provider):
         return sa_session.query(CustosAuthnzToken).filter_by(
