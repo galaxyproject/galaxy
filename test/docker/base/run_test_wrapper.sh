@@ -16,10 +16,9 @@ echo "Creating galaxy group with gid $GALAXY_TEST_UID - it may already exist and
 groupadd -r galaxy -g "$GALAXY_TEST_UID" | true
 echo "Creating galaxy user with uid $GALAXY_TEST_UID - it may already exist and this is fine."
 useradd -u $GALAXY_TEST_UID -r -g galaxy -d /home/galaxy -c "Galaxy User" galaxy -s /bin/bash | true
-mkdir -p /home/galaxy/.singularity
 echo "Setting galaxy user password - the operation may fail."
 echo "galaxy:galaxy" | chpasswd | true
-chown -R "$GALAXY_TEST_UID:$GALAXY_TEST_UID" "${GALAXY_VIRTUAL_ENV:-/galaxy_venv}" /home/galaxy/
+chown -R "$GALAXY_TEST_UID:$GALAXY_TEST_UID" "${GALAXY_VIRTUAL_ENV:-/galaxy_venv}"
 
 : ${GALAXY_TEST_DATABASE_TYPE:-"postgres"}
 if [ "$GALAXY_TEST_DATABASE_TYPE" = "postgres" ];
@@ -49,15 +48,8 @@ cd /galaxy
 
 : ${GALAXY_VIRTUAL_ENV:=.venv}
 
-HOME=/home/galaxy
-
 echo "Running common startup for updated dependencies (if any)"
 sudo -E -u "#${GALAXY_TEST_UID}" ./scripts/common_startup.sh --dev-wheels || { echo "common_startup.sh failed"; exit 1; }
-
-echo "Upgrading test database..."
-sudo -E -u "#${GALAXY_TEST_UID}" GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION="$GALAXY_TEST_DBURI" sh manage_db.sh upgrade
-echo "Upgrading tool shed database... $TOOL_SHED_CONFIG_OVERRIDE_DATABASE_CONNECTION"
-sudo -E -u "#${GALAXY_TEST_UID}" TOOL_SHED_CONFIG_OVERRIDE_DATABASE_CONNECTION="$TOOL_SHED_TEST_DBURI" sh manage_db.sh upgrade tool_shed
 
 # Ensure Selenium is running before starting tests.
 if [ ! -z "$USE_SELENIUM" ];
