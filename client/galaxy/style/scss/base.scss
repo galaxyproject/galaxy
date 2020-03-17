@@ -1656,7 +1656,7 @@ body.reports {
     cursor: pointer;
     circle {
         fill: none;
-        stroke: lighten($brand-success, 20%);
+        stroke: lighten($brand-primary, 20%);
         stroke-width: 0.3rem;
     }
     text {
@@ -1680,6 +1680,6 @@ body.reports {
 
 .link {
     fill: none;
-    stroke: lighten($brand-success, 20%);
+    stroke: lighten($brand-primary, 20%);
     stroke-width: 0.3rem;
 }

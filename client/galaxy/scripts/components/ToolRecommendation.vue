@@ -1,6 +1,7 @@
 <template>
     <div id="tool-recommendation-view">
         <div v-if="deprecated == false" class="infomessagelarge">
+            <h4>Tool recommendation</h4>
             You have used {{ getToolId }} tool. For further analysis, you could try using the following/recommended
             tools. The recommended tools are shown in the decreasing order of their scores predicted using machine
             learning analysis on workflows. A tool with a higher score (closer to 100%) may fit better as the following
