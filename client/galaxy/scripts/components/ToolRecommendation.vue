@@ -18,8 +18,6 @@ import * as d3 from "d3";
 import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 
-const margin = { top: 20, right: 30, bottom: 20, left: 250 };
-
 export default {
     props: {
         toolId: {
@@ -108,19 +106,19 @@ export default {
                 });
         },
         renderD3Tree: function(predictedTools) {
-            const width = 900 - margin.right - margin.left,
-                height = 300 - margin.top - margin.bottom,
-                duration = 750;
-            const tree = d3.layout.tree().size([height, width]);
-            const diagonal = d3.svg.diagonal().projection(d => {
-                return [d.y, d.x];
-            });
-            const svg = d3
-                .select("#tool-recommendation-view")
-                .append("svg")
-                .attr("class", "tree-size")
-                .append("g")
-                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+            const duration = 750,
+                x = 620,
+                y = 260,
+                tree = d3.layout.tree().size([y, x]),
+                diagonal = d3.svg.diagonal().projection(d => {
+                    return [d.y, d.x];
+                }),
+                svg = d3
+                    .select("#tool-recommendation-view")
+                    .append("svg")
+                    .attr("class", "tree-size")
+                    .append("g")
+                    .attr("transform", "translate(" + 250 + "," + 20 + ")");
             let i = 0,
                 root = null;
             function update(source) {
@@ -235,7 +233,7 @@ export default {
                 }
             }
             root = predictedTools;
-            root.x0 = height / 2;
+            root.x0 = y / 2;
             root.y0 = 0;
             root.children.forEach(collapse);
             update(root);
