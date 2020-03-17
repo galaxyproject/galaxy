@@ -105,18 +105,9 @@ class ToolShedAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.blacklist_content = None
         self.whitelist_location = kwargs.get('whitelist_file')
         self.whitelist_content = None
-        self.remote_user_maildomain = kwargs.get('remote_user_maildomain')
-        self.remote_user_header = kwargs.get('remote_user_header', 'HTTP_REMOTE_USER')
-        self.remote_user_logout_href = kwargs.get('remote_user_logout_href')
-        self.remote_user_secret = kwargs.get('remote_user_secret')
         self.template_path = templates_path
         self.template_cache_path = self._in_root_dir(kwargs.get('template_cache_path', 'database/compiled_templates/community'))
         self.error_email_to = kwargs.get('error_email_to')
-        self.smtp_server = kwargs.get('smtp_server')
-        self.smtp_ssl = kwargs.get('smtp_ssl')
-        self.email_from = kwargs.get('email_from')
-        self.nginx_upload_path = kwargs.get('nginx_upload_path', False)
-        self.log_actions = string_as_bool(kwargs.get('log_actions', 'False'))
         self.pretty_datetime_format = expand_pretty_datetime_format(self.pretty_datetime_format)
         # Configuration for the message box directly below the masthead.
         self.wiki_url = kwargs.get('wiki_url', 'https://galaxyproject.org/')
@@ -128,7 +119,6 @@ class ToolShedAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         # Where the tool shed hgweb.config file is stored - the default is the Galaxy installation directory.
         self.hgweb_config_dir = self._in_root_dir(self.hgweb_config_dir)
         # Proxy features
-        self.nginx_x_accel_redirect_base = kwargs.get('nginx_x_accel_redirect_base', False)
         self.drmaa_external_runjob_script = kwargs.get('drmaa_external_runjob_script')
         # Parse global_conf and save the parser
         global_conf = kwargs.get('global_conf')
@@ -137,10 +127,9 @@ class ToolShedAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         if global_conf and '__file__' in global_conf and '.yml' not in global_conf['__file__']:
             global_conf_parser.read(global_conf['__file__'])
         self.running_functional_tests = string_as_bool(kwargs.get('running_functional_tests', False))
-        self.citation_cache_type = kwargs.get('citation_cache_type', 'file')
         self.citation_cache_data_dir = self._in_root_dir(kwargs.get('citation_cache_data_dir', 'database/tool_shed_citations/data'))
         self.citation_cache_lock_dir = self._in_root_dir(kwargs.get('citation_cache_lock_dir', 'database/tool_shed_citations/locks'))
-        self.password_expiration_period = timedelta(days=int(kwargs.get('password_expiration_period', 0)))
+        self.password_expiration_period = timedelta(days=int(self.password_expiration_period))
 
         # Security/Policy Compliance
         self.redact_username_during_deletion = False
