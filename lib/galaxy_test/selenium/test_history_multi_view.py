@@ -118,7 +118,7 @@ class HistoryMultiViewTestCase(SeleniumTestCase):
         self.screenshot("multi_history_switch_created_history")
         self.assertNotEqual(original_history_id, new_history_id)
         # Switch back to the original history
-        switch_button = self.components.multiple_histories._(history_id=original_history_id).switch_button
+        switch_button = self.components.multi_history_view.switch_button(history_id=original_history_id)
         switch_button.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("multi_history_switch_changed_history")
