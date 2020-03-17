@@ -818,8 +818,8 @@ class ReadPainter extends FeaturePainter {
         var // Parse cigar operations out and update/create blocks as needed.
             parsed_cigar = _.map(cigar_str.match(/[0-9]+[MIDNSHP=X]/g), op => {
                 // Get operation length, character.
-                var op_len = parseInt(op.slice(0, -1), 10),
-                    op_char = op.slice(-1);
+                var op_len = parseInt(op.slice(0, -1), 10);
+                var op_char = op.slice(-1);
 
                 // Update drawing block.
                 if (op_char === "N") {

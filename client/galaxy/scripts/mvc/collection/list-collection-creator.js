@@ -1131,7 +1131,9 @@ function createListCollection(contents, defaultHideSourceItems) {
 }
 
 function createCollectionViaRules(selection, defaultHideSourceItems) {
-    let elements, elementsType, importType;
+    let elements;
+    let elementsType;
+    let importType;
     const selectionType = selection.selectionType;
     const copyElements = !defaultHideSourceItems;
     if (!selectionType) {

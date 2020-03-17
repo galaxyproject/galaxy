@@ -933,7 +933,8 @@ const RuleModalFooter = {
 export default {
     data: function() {
         let orientation = "vertical";
-        let mapping, rules;
+        let mapping;
+        let rules;
         if (this.initialRules) {
             mapping = this.initialRules.mapping.slice();
             rules = this.initialRules.rules.slice();
@@ -1334,7 +1335,9 @@ export default {
             return valid;
         },
         hotData() {
-            let data, sources, columns;
+            let data;
+            let sources;
+            let columns;
             if (
                 this.elementsType == "datasets" ||
                 this.elementsType == "library_datasets" ||
@@ -1593,7 +1596,8 @@ export default {
             } else {
                 const Galaxy = getGalaxyInstance();
                 const historyId = Galaxy.currHistoryPanel.model.id;
-                let elements, targets;
+                let elements;
+                let targets;
                 if (collectionType) {
                     targets = [];
                     const elementsByCollectionName = this.creationElementsForFetch();
