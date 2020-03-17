@@ -208,7 +208,6 @@ mapping:
 
       remote_user_maildomain:
         type: str
-        default: null
         required: false
         desc: |
           If use_remote_user is enabled and your external authentication
@@ -228,7 +227,6 @@ mapping:
 
       remote_user_logout_href:
         type: str
-        default: null
         required: false
         desc: |
           If use_remote_user is enabled, you can set this to a URL that will log your
@@ -457,7 +455,6 @@ mapping:
 
       nginx_x_accel_redirect_base:
         type: str
-        default: null
         required: false
         desc: |
           The same download handling can be done by nginx using X-Accel-Redirect.  This
@@ -466,7 +463,6 @@ mapping:
 
       nginx_upload_path:
         type: str
-        default: null
         required: false
         desc: |
           This value overrides the action set on the file upload form, e.g. the web
@@ -496,7 +492,6 @@ mapping:
 
       brand:
         type: str
-        default: null
         required: false
         desc: |
           Append "/{brand}" to the "Galaxy" text in the masthead.
@@ -549,7 +544,6 @@ mapping:
 
       sentry_dsn:
         type: str
-        default: null
         required: false
         desc: |
           Log to Sentry
@@ -569,7 +563,6 @@ mapping:
 
       terms_url:
         type: str
-        default: null
         required: false
         desc: |
           The URL linked by the "Terms and Conditions" link in the "Help" menu, as well
