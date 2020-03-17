@@ -314,7 +314,7 @@ workflow_editor:
       output_terminal: "${_} [output-name='${name}']"
       input_terminal: "${_} [input-name='${name}']"
 
-      input_mapping_icon: "${_} [name='${name}'] .fa-folder-o"
+      input_mapping_icon: "${_} [name='${name}'] .multiple"
 
   selectors:
     canvas_body: '#workflow-canvas'

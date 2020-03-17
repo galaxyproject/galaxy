@@ -45,6 +45,7 @@ export async function loadWorkflow(workflow, id, version) {
         workflow.canvas_manager.draw_overview();
         return data;
     } catch (e) {
+        console.debug(e);
         rethrowSimple(e);
     }
 }
