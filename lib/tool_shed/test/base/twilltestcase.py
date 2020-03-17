@@ -37,12 +37,10 @@ from . import common, test_db_util
 # Set a 10 minute timeout for repository installation.
 repository_installation_timeout = 600
 
-# Force twill to log to a buffer -- FIXME: Should this go to stdout and be captured by nose?
-tc.config('use_tidy', 0)
-
 # Dial ClientCookie logging down (very noisy)
 logging.getLogger("ClientCookie.cookies").setLevel(logging.WARNING)
 log = logging.getLogger(__name__)
+tc.options['equiv_refresh_interval'] = 0
 
 
 class ShedTwillTestCase(FunctionalTestCase):
@@ -153,10 +151,10 @@ class ShedTwillTestCase(FunctionalTestCase):
         Return the last visited page (usually HTML, but can binary data as
         well).
         """
-        return tc.browser.get_html()
+        return tc.browser.html
 
     def last_url(self):
-        return tc.browser.get_url()
+        return tc.browser.url
 
     def login(self, email='test@bx.psu.edu', password='testuser', username='admin-user', redirect='', logout_first=True):
         # Clear cookies.
@@ -178,11 +176,10 @@ class ShedTwillTestCase(FunctionalTestCase):
     def logout(self):
         self.visit_url("/user/logout")
         self.check_page_for_string("You have been logged out")
-        tc.browser.clear_cookies()
 
     def showforms(self):
         """Shows form, helpful for debugging new tests"""
-        return tc.browser.get_all_forms()
+        return tc.browser.forms
 
     def submit_form(self, form_no=0, button="runtool_btn", form=None, **kwd):
         """Populates and submits a form from the keyword arguments."""
@@ -227,7 +224,7 @@ class ShedTwillTestCase(FunctionalTestCase):
         if params:
             url += '?%s' % urlencode(params, doseq=doseq)
         new_url = tc.go(url)
-        return_code = tc.browser.get_code()
+        return_code = tc.browser.code
         assert return_code in allowed_codes, 'Invalid HTTP return code %s, allowed codes: %s' % \
             (return_code, ', '.join(str(code) for code in allowed_codes))
         return new_url
@@ -765,7 +762,6 @@ class ShedTwillTestCase(FunctionalTestCase):
 
     def galaxy_logout(self):
         self.visit_galaxy_url("/user/logout", params=dict(session_csrf_token=self.galaxy_token()))
-        tc.browser.clear_cookies()
 
     def generate_complex_dependency_xml(self, filename, filepath, repository_tuples, package, version):
         file_path = os.path.join(filepath, filename)
@@ -1077,9 +1073,9 @@ class ShedTwillTestCase(FunctionalTestCase):
         }
         self.visit_url('/repository/install_repositories_by_revision', params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed)
-        form = tc.browser.get_form('select_tool_panel_section')
+        form = tc.browser.form('select_tool_panel_section')
         if form is None:
-            form = tc.browser.get_form('select_shed_tool_panel_config')
+            form = tc.browser.form('select_shed_tool_panel_config')
         assert form is not None, 'Could not find form select_shed_tool_panel_config or select_tool_panel_section.'
         kwds = {
             'install_tool_dependencies': install_tool_dependencies,
@@ -1092,7 +1088,7 @@ class ShedTwillTestCase(FunctionalTestCase):
         submit_button = [inp.name for inp in form.inputs if getattr(inp, 'type', None) == 'submit']
         if len(submit_button) == 0:
             # TODO: refactor, use regular TS install API
-            submit_kwargs = {inp.name: inp.value for inp in tc.browser.get_all_forms()[0].inputs if getattr(inp, 'type', None) == 'submit'}
+            submit_kwargs = {inp.name: inp.value for inp in tc.browser.forms[0].inputs if getattr(inp, 'type', None) == 'submit'}
             payload = {_: form.inputs[_].value for _ in form.fields.keys()}
             payload.update(kwds)
             payload.update(submit_kwargs)
@@ -1369,7 +1365,7 @@ class ShedTwillTestCase(FunctionalTestCase):
         if changeset_revision is None:
             changeset_revision = self.get_repository_tip(repository)
         self.display_manage_repository_page(repository, changeset_revision=changeset_revision)
-        form = tc.browser.get_form('skip_tool_tests')
+        form = tc.browser.form('skip_tool_tests')
         assert form is not None, 'Could not find form skip_tool_tests.'
         for control in form.inputs:
             control_name = str(control.name)
