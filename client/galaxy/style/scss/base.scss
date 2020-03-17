@@ -1655,8 +1655,8 @@ body.reports {
 .node {
     cursor: pointer;
     circle {
-        fill: rgb(0, 0, 0);
-        stroke: rgb(194, 235, 194);
+        fill: none;
+        stroke: lighten($brand-success, 20%);
         stroke-width: 0.3rem;
     }
     text {
@@ -1680,6 +1680,6 @@ body.reports {
 
 .link {
     fill: none;
-    stroke: rgb(194, 235, 194);
+    stroke: lighten($brand-success, 20%);
     stroke-width: 0.3rem;
 }
