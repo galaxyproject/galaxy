@@ -50,13 +50,13 @@ export default {
         loadRecommendations: function() {
             const self = this,
                 toolId = this.getToolId,
-                url = getAppRoot() + "api/workflows/get_tool_predictions";
+                url = `${getAppRoot()}api/workflows/get_tool_predictions`;
             axios
                 .post(url, {
                     tool_sequence: toolId
                 })
                 .then(response => {
-                    axios.get(getAppRoot() + "api/datatypes/mapping").then(responseMapping => {
+                    axios.get(`${getAppRoot()}api/datatypes/mapping`).then(responseMapping => {
                         const predData = response.data.predicted_data,
                             datatypesMapping = responseMapping.data,
                             extToType = datatypesMapping.ext_to_class_name,
@@ -222,8 +222,9 @@ export default {
                     d._children = null;
                 }
                 update(d);
-                if (d.tool_id !== undefined && d.tool_id !== "undefined" && d.tool_id !== null && d.tool_id !== "") {
-                    document.location.href = getAppRoot() + "tool_runner?tool_id=" + d.tool_id;
+                const tId = d.tool_id;
+                if (tId !== undefined && tId !== "undefined" && tId !== null && tId !== "") {
+                    document.location.href = `${getAppRoot()}tool_runner?tool_id=${tId}`;
                 }
             }
             function collapse(d) {
