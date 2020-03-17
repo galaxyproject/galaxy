@@ -332,7 +332,7 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase):
         return upload_response
 
     def test_get_tool_predictions(self):
-        request = {"tool_sequence": "Cut1", "remote_model_url": "https://github.com/anuprulez/download_store/raw/tool_recommendation_model/tool_recommendation_model/tool_recommendation_model.hdf5"}
+        request = {"tool_sequence": "Cut1", "remote_model_url": "https://github.com/galaxyproject/galaxy-test-data/raw/master/tool_recommendation_model.hdf5"}
         actual_recommendations = ['Filter1', 'cat1', 'addValue', 'comp1', 'Grep1']
         route = "workflows/get_tool_predictions"
         response = self._post(route, data=request)

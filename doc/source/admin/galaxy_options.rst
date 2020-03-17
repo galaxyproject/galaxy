@@ -4058,9 +4058,8 @@
 
 :Description:
     Set remote path of the trained model (HDF5 file) for tool
-    recommendation. It is required to be set if
-    'enable_tool_recommendations' property is enabled and set to true.
-:Default: ``https://github.com/anuprulez/download_store/raw/tool_recommendation_model/tool_recommendation_model/tool_recommendation_model.hdf5``
+    recommendation.
+:Default: ``https://github.com/galaxyproject/galaxy-test-data/raw/master/tool_recommendation_model.hdf5``
 :Type: str
 
 

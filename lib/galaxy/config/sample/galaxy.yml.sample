@@ -1981,9 +1981,8 @@ galaxy:
   #enable_tool_recommendations: false
 
   # Set remote path of the trained model (HDF5 file) for tool
-  # recommendation. It is required to be set if
-  # 'enable_tool_recommendations' property is enabled and set to true.
-  #tool_recommendation_model_path: https://github.com/anuprulez/download_store/raw/tool_recommendation_model/tool_recommendation_model/tool_recommendation_model.hdf5
+  # recommendation.
+  #tool_recommendation_model_path: https://github.com/galaxyproject/galaxy-test-data/raw/master/tool_recommendation_model.hdf5
 
   # Set the number of predictions/recommendations to be made by the
   # model

@@ -2991,11 +2991,10 @@ mapping:
 
       tool_recommendation_model_path:
         type: str
-        default: 'https://github.com/anuprulez/download_store/raw/tool_recommendation_model/tool_recommendation_model/tool_recommendation_model.hdf5'
+        default: 'https://github.com/galaxyproject/galaxy-test-data/raw/master/tool_recommendation_model.hdf5'
         required: false
         desc: |
           Set remote path of the trained model (HDF5 file) for tool recommendation.
-          It is required to be set if 'enable_tool_recommendations' property is enabled and set to true.
 
       topk_recommendations:
         type: int
