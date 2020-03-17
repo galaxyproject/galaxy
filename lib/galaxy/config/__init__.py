@@ -457,7 +457,17 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.pbs_dataset_server = kwargs.get('pbs_dataset_server', "")
         self.pbs_dataset_path = kwargs.get('pbs_dataset_path', "")
         self.pbs_stage_path = kwargs.get('pbs_stage_path', "")
-        self.sanitize_whitelist_file = os.path.join(self.root, self.sanitize_whitelist_file)
+
+        _sanitize_whitelist_path = self._in_managed_config_dir(self.sanitize_whitelist_file)
+        if not os.path.isfile(_sanitize_whitelist_path):  # then check old default location
+            deprecated = os.path.join(self.root, 'config/sanitize_whitelist.txt')
+            if os.path.isfile(deprecated):
+                log.warning("The path '%s' for the 'sanitize_whitelist_file' config option is "
+                    "deprecated and will be no longer checked in a future release. Please consult "
+                    "the latest version of the sample configuration file." % deprecated)
+                _sanitize_whitelist_path = deprecated
+        self.sanitize_whitelist_file = _sanitize_whitelist_path
+
         self.allowed_origin_hostnames = self._parse_allowed_origin_hostnames(kwargs)
         if "trust_jupyter_notebook_conversion" not in kwargs:
             # if option not set, check IPython-named alternative, falling back to schema default if not set either

@@ -2152,7 +2152,9 @@
     this file are trusted and will not have their HTML sanitized on
     display.  This can be manually edited or manipulated through the
     Admin control panel -- see "Manage Display Whitelist"
-:Default: ``config/sanitize_whitelist.txt``
+    The value of this option will be resolved with respect to
+    <mutable_config_dir>.
+:Default: ``sanitize_whitelist.txt``
 :Type: str
 
 

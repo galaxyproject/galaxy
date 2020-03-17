@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-__version__ = '20.1.0.dev6'
+__version__ = '20.5.0.dev2'
 
 PROJECT_NAME = "galaxy-tool-util"
 PROJECT_OWNER = PROJECT_USERAME = "galaxyproject"

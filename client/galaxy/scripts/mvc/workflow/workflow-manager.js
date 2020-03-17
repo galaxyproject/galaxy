@@ -1,5 +1,4 @@
 import $ from "jquery";
-import { getGalaxyInstance } from "app";
 import Connector from "mvc/workflow/workflow-connector";
 import { Toast } from "ui/toast";
 import { Node } from "mvc/workflow/workflow-node";
@@ -48,18 +47,11 @@ class Workflow extends EventEmitter {
         };
     }
     set_node(node, data) {
-        const Galaxy = getGalaxyInstance();
         node.init_field_data(data);
         node.update_field_data(data);
-        // Post init/update, for new modules we want to default to
-        // nodes being outputs
-        // TODO: Overhaul the handling of all this when we modernize
-        // the editor, replace callout image manipulation with a simple
-        // class toggle, etc.
         $.each(node.output_terminals, (ot_id, ot) => {
             node.addWorkflowOutput(ot.name);
-            var callout = $(node.element).find(`.callout.${ot.name.replace(/(?=[()])/g, "\\")}`);
-            callout.find("img").attr("src", `${Galaxy.root}static/images/fugue/asterisk-small.png`);
+            node.markWorkflowOutput(ot.name);
         });
         this.activate_node(node);
     }
@@ -102,7 +94,6 @@ class Workflow extends EventEmitter {
     attemptUpdateOutputLabel(node, outputName, label) {
         if (this.canLabelOutputWith(label)) {
             node.labelWorkflowOutput(outputName, label);
-            node.nodeView.redrawWorkflowOutputs();
             return true;
         } else {
             return false;

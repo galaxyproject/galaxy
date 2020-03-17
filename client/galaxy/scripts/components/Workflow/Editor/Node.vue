@@ -1,27 +1,27 @@
 <template>
     <div>
         <div class="node-header unselectable clearfix">
-            <div class="header float-left">
-                <i :class="iconClass" />
-                <span class="node-title">{{ title }}</span>
-            </div>
-            <div class="buttons float-right">
-                <a
-                    v-if="canClone"
-                    class="fa-icon-button fa fa-files-o node-clone"
-                    aria-label="clone node"
-                    role="button"
-                    href="#"
-                    @click="onClone"
-                />
-                <a
-                    class="fa-icon-button fa fa-times node-destroy"
-                    aria-label="destroy node"
-                    role="button"
-                    href="#"
-                    @click="onDestroy"
-                />
-            </div>
+            <b-button
+                class="node-destroy py-0 float-right"
+                variant="primary"
+                size="sm"
+                aria-label="clone node"
+                @click="onDestroy"
+            >
+                <i class="fa fa-times" />
+            </b-button>
+            <b-button
+                v-if="canClone"
+                class="node-clone py-0 float-right"
+                variant="primary"
+                size="sm"
+                aria-label="clone node"
+                @click="onClone"
+            >
+                <i class="fa fa-files-o" />
+            </b-button>
+            <i :class="iconClass" />
+            <span class="node-title">{{ title }}</span>
         </div>
         <div class="node-body">
             <div>
@@ -32,8 +32,12 @@
 </template>
 
 <script>
+import Vue from "vue";
+import BootstrapVue from "bootstrap-vue";
 import WorkflowIcons from "components/Workflow/icons";
 import LoadingSpan from "components/LoadingSpan";
+
+Vue.use(BootstrapVue);
 
 export default {
     components: {
@@ -59,7 +63,7 @@ export default {
         iconClass() {
             const iconType = WorkflowIcons[this.type];
             if (iconType) {
-                return `icon fa ${iconType}`;
+                return `icon fa fa-fw ${iconType}`;
             }
             return null;
         },

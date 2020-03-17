@@ -117,7 +117,7 @@ def read_properties_from_file(config_file, config_section=None):
         else:
             properties.update(parser.defaults())
     else:
-        raise InvalidFileFormatError()
+        raise InvalidFileFormatError("File '%s' doesn't have a supported extension" % config_file)
     return properties
 
 
