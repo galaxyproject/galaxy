@@ -24,9 +24,9 @@ import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
 import CustomBuilds from "components/User/CustomBuilds.vue";
 import Tours from "mvc/tours";
 import GridView from "mvc/grid/grid-view";
-import EntryPointGridView from "mvc/entrypoints/view";
 import GridShared from "mvc/grid/grid-shared";
 import WorkflowImport from "components/Workflow/WorkflowImport.vue";
+import InteractiveTools from "components/InteractiveTools/InteractiveTools.vue";
 import WorkflowList from "components/Workflow/WorkflowList.vue";
 import HistoryImport from "components/HistoryImport.vue";
 import HistoryView from "components/HistoryView.vue";
@@ -126,12 +126,7 @@ export const getAnalysisRouter = Galaxy =>
         },
 
         show_interactivetool_list: function() {
-            this.page.display(
-                new EntryPointGridView({
-                    url_base: `${getAppRoot()}interactivetool/list`,
-                    active_tab: "analysis"
-                })
-            );
+            this._display_vue_helper(InteractiveTools);
         },
 
         show_cloud_auth: function() {

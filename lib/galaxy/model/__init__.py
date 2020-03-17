@@ -1491,8 +1491,8 @@ class JobContainerAssociation(RepresentById):
 
 
 class InteractiveToolEntryPoint(Dictifiable, RepresentById):
-    dict_collection_visible_keys = ['id', 'name', 'active']
-    dict_element_visible_keys = ['id', 'name', 'active']
+    dict_collection_visible_keys = ['id', 'name', 'active', 'created_time', 'modified_time']
+    dict_element_visible_keys = ['id', 'name', 'active', 'created_time', 'modified_time']
 
     def __init__(self, job=None, name=None, token=None, tool_port=None, host=None, port=None, protocol=None,
                  entry_url=None, info=None, configured=False, deleted=False):
