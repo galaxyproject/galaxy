@@ -25,7 +25,7 @@ chown -R "$GALAXY_TEST_UID:$GALAXY_TEST_UID" "${GALAXY_VIRTUAL_ENV:-/galaxy_venv
 if [ "$GALAXY_TEST_DATABASE_TYPE" = "postgres" ];
 then
     echo "Starting postgres and then sleeping for 3 seconds"
-    su -c '/usr/lib/postgresql/9.5/bin/pg_ctl -o "-F" start -D /opt/galaxy/db' postgres
+    su -c '/usr/lib/postgresql/10/bin/pg_ctl -o "-F" start -D /opt/galaxy/db' postgres
     sleep 3
     GALAXY_TEST_INSTALL_DB_MERGED="true"
     GALAXY_TEST_DBURI="postgresql://root@localhost:5930/galaxy?client_encoding=utf8"
