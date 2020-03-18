@@ -32,11 +32,11 @@ export default {
             deprecatedMessage: ""
         };
     },
-    created: function() {
+    created() {
         this.loadRecommendations();
     },
     computed: {
-        getToolId: function() {
+        getToolId() {
             let toolId = this.toolId || "";
             if (toolId.indexOf("/") > 0) {
                 const toolIdSlash = toolId.split("/");
@@ -46,7 +46,7 @@ export default {
         }
     },
     methods: {
-        loadRecommendations: function() {
+        loadRecommendations() {
             const toolId = this.getToolId;
             const url = `${getAppRoot()}api/workflows/get_tool_predictions`;
             axios
