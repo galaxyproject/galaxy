@@ -239,7 +239,7 @@ class HistoriesApiTestCase(ApiTestCase):
 
     @skip_without_tool("job_properties")
     def test_import_export_failed_job(self):
-        history_name = "for_export_include_deleted"
+        history_name = "for_export_include_failed_job"
         history_id = self.dataset_populator.new_history(name=history_name)
         self.dataset_populator.run_tool('job_properties', inputs={'failbool': True}, history_id=history_id, assert_ok=False)
         self.dataset_populator.wait_for_history(history_id, assert_ok=False)
