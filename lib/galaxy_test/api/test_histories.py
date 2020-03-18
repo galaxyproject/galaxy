@@ -182,7 +182,7 @@ class HistoriesApiTestCase(ApiTestCase):
         history_name = "for_export_default"
         history_id = self.dataset_populator.new_history(name=history_name)
         self.dataset_populator.new_dataset(history_id, content="1 2 3")
-        deleted_hda = self.dataset_populator.new_dataset(history_id, content="1 2 3")
+        deleted_hda = self.dataset_populator.new_dataset(history_id, content="1 2 3", wait=True)
         self.dataset_populator.delete_dataset(history_id, deleted_hda["id"])
         deleted_details = self.dataset_populator.get_history_dataset_details(history_id, id=deleted_hda["id"])
         assert deleted_details["deleted"]
@@ -214,7 +214,7 @@ class HistoriesApiTestCase(ApiTestCase):
         history_name = "for_export_include_deleted"
         history_id = self.dataset_populator.new_history(name=history_name)
         self.dataset_populator.new_dataset(history_id, content="1 2 3")
-        deleted_hda = self.dataset_populator.new_dataset(history_id, content="1 2 3")
+        deleted_hda = self.dataset_populator.new_dataset(history_id, content="1 2 3", wait=True)
         self.dataset_populator.delete_dataset(history_id, deleted_hda["id"])
 
         imported_history_id = self._reimport_history(history_id, history_name, wait_on_history_length=2, export_kwds={"include_deleted": "True"})
@@ -223,12 +223,13 @@ class HistoriesApiTestCase(ApiTestCase):
         def upload_job_check(job):
             assert job["tool_id"] == "upload1"
 
-        def check_ok(hda):
+        def check_deleted_not_purged(hda):
             assert hda["state"] == "ok", hda
             assert hda["deleted"] is True, hda
+            assert hda["purged"] is False, hda
 
         self._check_imported_dataset(history_id=imported_history_id, hid=1, job_checker=upload_job_check)
-        self._check_imported_dataset(history_id=imported_history_id, hid=2, hda_checker=check_ok, job_checker=upload_job_check)
+        self._check_imported_dataset(history_id=imported_history_id, hid=2, hda_checker=check_deleted_not_purged, job_checker=upload_job_check)
 
         imported_content = self.dataset_populator.get_history_dataset_content(
             history_id=imported_history_id,
