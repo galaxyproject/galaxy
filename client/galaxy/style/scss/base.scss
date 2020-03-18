@@ -1656,7 +1656,7 @@ body.reports {
     .node {
         cursor: pointer;
         circle {
-            fill: none;
+            fill: lighten($brand-primary, 20%);
             stroke: lighten($brand-primary, 20%);
             stroke-width: 0.3rem;
         }
