@@ -57,6 +57,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         trackster = util.string_as_bool(kwds.get('trackster', 'False'))
         q = kwds.get('q', '')
         tool_id = kwds.get('tool_id', '')
+        tool_help = util.string_as_bool(kwds.get('tool_help', 'False'))
 
         # Find whether to search.
         if q:
@@ -88,7 +89,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
 
         # Return everything.
         try:
-            return self.app.toolbox.to_dict(trans, in_panel=in_panel, trackster=trackster)
+            return self.app.toolbox.to_dict(trans, in_panel=in_panel, trackster=trackster, tool_help=tool_help)
         except Exception:
             raise exceptions.InternalServerError("Error: Could not convert toolbox to dictionary")
 
