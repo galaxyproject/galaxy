@@ -1,7 +1,7 @@
 module.exports = {
     extends: [
         "eslint:recommended",
-        "plugin:vue/strongly-recommended",
+        "plugin:vue/strongly-recommended"
         //"airbnb-base", eventually
     ],
     env: {
@@ -20,9 +20,10 @@ module.exports = {
         "no-console": "off",
         "no-unused-vars": ["error", { args: "none" }],
         "prefer-const": "error",
+        "one-var": ["error", "never"],
 
         "vue/valid-v-slot": "error",
-        "vue/v-slot-style": ["error", {"atComponent": "v-slot", "default": "v-slot", "named": "longform"}],
+        "vue/v-slot-style": ["error", { atComponent: "v-slot", default: "v-slot", named: "longform" }],
 
         // Vue TODO (enable these)
         "vue/require-default-prop": "warn",

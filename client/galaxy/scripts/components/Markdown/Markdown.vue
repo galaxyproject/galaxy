@@ -117,9 +117,9 @@ const RENDER_FUNCTIONS = {
 };
 
 md.renderer.rules.fence = function(tokens, idx, options, env, slf) {
-    const token = tokens[idx],
-        info = token.info ? token.info.trim() : "",
-        content = token.content;
+    const token = tokens[idx];
+    const info = token.info ? token.info.trim() : "";
+    const content = token.content;
     if (info == "galaxy") {
         const arr = FUNCTION_CALL_LINE_TEMPLATE.exec(content);
         const action = arr[1];

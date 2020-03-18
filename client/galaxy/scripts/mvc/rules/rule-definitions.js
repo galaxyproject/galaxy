@@ -357,8 +357,8 @@ const RULES = {
             function newRow(row) {
                 const newRow = row.slice();
                 const originalValue = row[target];
-                let start = 0,
-                    end = originalValue.length;
+                let start = 0;
+                let end = originalValue.length;
                 if (type == "keep_prefix") {
                     end = length;
                 } else if (type == "drop_prefix") {
@@ -727,8 +727,8 @@ const RULES = {
             const targets1 = rule.target_columns_1;
 
             const splitRow = function(row) {
-                const newRow0 = [],
-                    newRow1 = [];
+                const newRow0 = [];
+                const newRow1 = [];
                 for (let index in row) {
                     index = parseInt(index, 10);
                     if (targets0.indexOf(index) > -1) {
