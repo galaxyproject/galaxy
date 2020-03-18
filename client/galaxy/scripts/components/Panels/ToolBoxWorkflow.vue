@@ -77,13 +77,16 @@ export default {
         },
         workflows: {
             type: Array,
+            required: true
         },
         dataManagers: {
             type: Array,
+            required: true
         },
         moduleSections: {
             type: Array,
-        },
+            required: true
+        }
     },
     computed: {
         workflowSection() {

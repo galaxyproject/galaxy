@@ -316,8 +316,7 @@ class Workflow extends EventEmitter {
         const report = this.report;
         return { steps: nodes, report: report };
     }
-    from_simple(data, initialImport_) {
-        var initialImport = initialImport_ === undefined ? true : initialImport_;
+    from_simple(data, initialImport = true) {
         var wf = this;
         var offset = 0;
         if (initialImport) {
