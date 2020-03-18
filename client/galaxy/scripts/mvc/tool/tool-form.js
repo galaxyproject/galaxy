@@ -160,7 +160,8 @@ const View = Backbone.View.extend({
 
         // remap feature
         if (options.job_id && options.job_remap) {
-            let label, help;
+            let label;
+            let help;
             if (options.job_remap === "job_produced_collection_elements") {
                 label = "Replace elements in collection ?";
                 help =

@@ -105,8 +105,8 @@ export default {
         },
         showStructure: function() {
             const Galaxy = getGalaxyInstance();
-            const displayStructureInstance = Vue.extend(DisplayStructure),
-                mountView = document.createElement("div");
+            const displayStructureInstance = Vue.extend(DisplayStructure);
+            const mountView = document.createElement("div");
             Galaxy.page.center.display(mountView);
             new displayStructureInstance({ propsData: { id: QueryStringParsing.get("id") } }).$mount(mountView);
         },

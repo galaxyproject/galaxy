@@ -116,9 +116,9 @@ var ToolParameterTree = Backbone.Model.extend({
 
         var // Creates tree data recursively.
             create_tree_data = (params_samples, index) => {
-                var param_samples = params_samples[index],
-                    param = param_samples.param,
-                    settings = param_samples.samples;
+                var param_samples = params_samples[index];
+                var param = param_samples.param;
+                var settings = param_samples.samples;
 
                 // Create leaves when last parameter setting is reached.
                 if (params_samples.length - 1 === index) {
