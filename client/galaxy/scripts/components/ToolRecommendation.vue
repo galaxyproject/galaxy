@@ -47,20 +47,19 @@ export default {
     },
     methods: {
         loadRecommendations: function() {
-            const self = this,
-                toolId = this.getToolId,
-                url = `${getAppRoot()}api/workflows/get_tool_predictions`;
+            const toolId = this.getToolId;
+            const url = `${getAppRoot()}api/workflows/get_tool_predictions`;
             axios
                 .post(url, {
                     tool_sequence: toolId
                 })
                 .then(response => {
                     axios.get(`${getAppRoot()}api/datatypes/mapping`).then(responseMapping => {
-                        const predData = response.data.predicted_data,
-                            datatypesMapping = responseMapping.data,
-                            extToType = datatypesMapping.ext_to_class_name,
-                            typeToType = datatypesMapping.class_to_classes;
-                        self.deprecated = predData.is_deprecated;
+                        const predData = response.data.predicted_data;
+                        const datatypesMapping = responseMapping.data;
+                        const extToType = datatypesMapping.ext_to_class_name;
+                        const typeToType = datatypesMapping.class_to_classes;
+                        this.deprecated = predData.is_deprecated;
 
                         if (response.data !== null && predData.children.length > 0) {
                             const filteredData = {},
@@ -80,7 +79,7 @@ export default {
                                             out_t[1] === "_sniff_" ||
                                             out_t[1] === "input_collection"
                                         ) {
-                                            compatibleTools[nameObj[1]["tool_id"]] = nameObj[1]["name"];
+                                            compatibleTools[nameObj[1].tool_id] = nameObj[1].name;
                                             break;
                                         }
                                     }
@@ -88,44 +87,44 @@ export default {
                             }
                             for (const id in compatibleTools) {
                                 for (const nameObj of children.entries()) {
-                                    if (nameObj[1]["tool_id"] === id) {
+                                    if (nameObj[1].tool_id === id) {
                                         filteredChildren.push(nameObj[1]);
                                         break;
                                     }
                                 }
                             }
-                            filteredData["o_extensions"] = predData.o_extensions;
-                            filteredData["name"] = predData.name;
-                            filteredData["children"] = filteredChildren;
-                            if (filteredChildren.length > 0 && self.deprecated === false) {
-                                self.renderD3Tree(filteredData);
-                            } else if (self.deprecated === true) {
-                                self.deprecatedMessage = predData.message;
+                            filteredData.o_extensions = predData.o_extensions;
+                            filteredData.name = predData.name;
+                            filteredData.children = filteredChildren;
+                            if (filteredChildren.length > 0 && this.deprecated === false) {
+                                this.renderD3Tree(filteredData);
+                            } else if (this.deprecated === true) {
+                                this.deprecatedMessage = predData.message;
                             }
                         }
                     });
                 });
         },
-        renderD3Tree: function(predictedTools) {
-            const duration = 750,
-                x = 620,
-                y = 260,
-                tree = d3.layout.tree().size([y, x]),
-                diagonal = d3.svg.diagonal().projection(d => {
-                    return [d.y, d.x];
-                }),
-                svg = d3
-                    .select("#tool-recommendation-view")
-                    .append("svg")
-                    .attr("class", "tree-size")
-                    .append("g")
-                    .attr("transform", "translate(" + 250 + "," + 20 + ")");
+        renderD3Tree: predictedTools => {
+            const duration = 750;
+            const x = 620;
+            const y = 260;
+            const tree = d3.layout.tree().size([y, x]);
+            const diagonal = d3.svg.diagonal().projection(d => {
+                return [d.y, d.x];
+            });
+            const svg = d3
+                .select("#tool-recommendation-view")
+                .append("svg")
+                .attr("class", "tree-size")
+                .append("g")
+                .attr("transform", "translate(" + 250 + "," + 20 + ")");
             let i = 0,
                 root = null;
-            function update(source) {
+            const update = source => {
                 // Compute the new tree layout.
-                const nodes = tree.nodes(root).reverse(),
-                    links = tree.links(nodes);
+                const nodes = tree.nodes(root).reverse();
+                const links = tree.links(nodes);
                 // Normalize for fixed-depth.
                 nodes.forEach(d => {
                     d.y = d.depth * 180;
@@ -210,9 +209,9 @@ export default {
                     d.x0 = d.x;
                     d.y0 = d.y;
                 });
-            }
+            };
             // Toggle children on click.
-            function click(d) {
+            const click = d => {
                 if (d.children) {
                     d._children = d.children;
                     d.children = null;
@@ -225,14 +224,14 @@ export default {
                 if (tId !== undefined && tId !== "undefined" && tId !== null && tId !== "") {
                     document.location.href = `${getAppRoot()}tool_runner?tool_id=${tId}`;
                 }
-            }
-            function collapse(d) {
+            };
+            const collapse = d => {
                 if (d.children) {
                     d._children = d.children;
                     d._children.forEach(collapse);
                     d.children = null;
                 }
-            }
+            };
             root = predictedTools;
             root.x0 = y / 2;
             root.y0 = 0;
