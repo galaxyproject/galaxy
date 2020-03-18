@@ -84,6 +84,14 @@ export default {
                     document.getElementById("center").style.transition = "";
                 }, 250);
             }
+        },
+        hide() {
+            this.show = false;
+            document.getElementById("center").style.transition = `${this.side} 200ms linear`;
+            document.getElementById("center").style[this.side] = "0";
+            setTimeout(() => {
+                document.getElementById("center").style.transition = "";
+            }, 250);
         }
     }
 };
