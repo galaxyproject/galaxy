@@ -828,6 +828,7 @@ class DirectoryImportModelStore1901(BaseDirectoryImportModelStore):
         for output_key in job_attrs['output_datasets']:
             output_hda = _find_hda(output_key)
             if output_hda:
+                output_hda.state = imported_job.state
                 imported_job.add_output_dataset(output_hda.name, output_hda)
 
         if 'input_mapping' in job_attrs:
@@ -890,6 +891,7 @@ class DirectoryImportModelStoreLatest(BaseDirectoryImportModelStore):
                 for output_key in output_keys:
                     output_hda = _find_hda(output_key)
                     if output_hda:
+                        output_hda.state = imported_job.state
                         imported_job.add_output_dataset(output_name, output_hda)
 
         if 'output_dataset_collection_mapping' in job_attrs:

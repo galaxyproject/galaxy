@@ -9,6 +9,7 @@ from requests import (
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
+    skip_without_tool,
 )
 from ._framework import ApiTestCase
 
@@ -235,6 +236,24 @@ class HistoriesApiTestCase(ApiTestCase):
         )
         assert imported_content == "1 2 3\n"
 
+    @skip_without_tool("job_properties")
+    def test_import_export_failed_job(self):
+        history_name = "for_export_include_deleted"
+        history_id = self.dataset_populator.new_history(name=history_name)
+        self.dataset_populator.run_tool('job_properties', inputs={'failbool': True}, history_id=history_id, assert_ok=False)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=False)
+
+        imported_history_id = self._reimport_history(history_id, history_name, assert_ok=False, wait_on_history_length=4, export_kwds={"include_deleted": "True"})
+        self._assert_history_length(imported_history_id, 4)
+
+        def check_failed(hda_or_job):
+            print(hda_or_job)
+            assert hda_or_job["state"] == "error", hda_or_job
+
+        self.dataset_populator._summarize_history(imported_history_id)
+
+        self._check_imported_dataset(history_id=imported_history_id, hid=1, assert_ok=False, hda_checker=check_failed, job_checker=check_failed)
+
     def test_import_metadata_regeneration(self):
         history_name = "for_import_metadata_regeneration"
         history_id = self.dataset_populator.new_history(name=history_name)
@@ -303,9 +322,9 @@ class HistoriesApiTestCase(ApiTestCase):
 
         self._check_imported_collection(imported_history_id, hid=1, collection_type="list:paired", elements_checker=check_elements)
 
-    def _reimport_history(self, history_id, history_name, wait_on_history_length=None, export_kwds={}):
+    def _reimport_history(self, history_id, history_name, wait_on_history_length=None, assert_ok=True, export_kwds={}):
         # Ensure the history is ready to go...
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=assert_ok)
 
         return self.dataset_populator.reimport_history(
             history_id, history_name, wait_on_history_length=wait_on_history_length, export_kwds=export_kwds, url=self.url, api_key=self.galaxy_interactor.api_key
@@ -326,10 +345,11 @@ class HistoriesApiTestCase(ApiTestCase):
         contents = contents_response.json()
         assert len(contents) == n, contents
 
-    def _check_imported_dataset(self, history_id, hid, has_job=True, hda_checker=None, job_checker=None):
+    def _check_imported_dataset(self, history_id, hid, assert_ok=True, has_job=True, hda_checker=None, job_checker=None):
         imported_dataset_metadata = self.dataset_populator.get_history_dataset_details(
             history_id=history_id,
             hid=hid,
+            assert_ok=assert_ok,
         )
         assert imported_dataset_metadata["history_content_type"] == "dataset"
         assert imported_dataset_metadata["history_id"] == history_id
