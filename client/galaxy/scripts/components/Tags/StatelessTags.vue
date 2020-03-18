@@ -11,7 +11,7 @@ upstream component or environment that is accessed through props and events -->
             class="toggle-link"
             @click.prevent="toggleTagDisplay"
         >
-            {{ linkText | localize }}
+            {{ linkText }}
         </a>
         <vue-tags-input
             v-if="tagsVisible"
@@ -20,7 +20,7 @@ upstream component or environment that is accessed through props and events -->
             :tags="tagModels"
             :autocomplete-items="autocompleteTags"
             :disabled="disabled"
-            :placeholder="'Add Tags' | localize"
+            placeholder="Add Tags"
             :add-on-key="triggerKeys"
             @before-adding-tag="beforeAddingTag"
             @before-deleting-tag="beforeDeletingTag"

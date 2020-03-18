@@ -20,6 +20,7 @@ from gxformat2 import (
     convert_and_import_workflow,
     ImporterGalaxyInterface,
 )
+from gxformat2._yaml import ordered_load
 from pkg_resources import resource_string
 from six import StringIO
 
@@ -282,14 +283,30 @@ class BaseDatasetPopulator(object):
         delete_response = self._delete("histories/%s/contents/%s" % (history_id, content_id))
         return delete_response
 
-    def create_tool(self, representation):
+    def create_tool_from_path(self, tool_path):
+        tool_directory = os.path.dirname(os.path.abspath(tool_path))
+        payload = dict(
+            src="from_path",
+            path=tool_path,
+            tool_directory=tool_directory,
+        )
+        return self._create_tool_raw(payload)
+
+    def create_tool(self, representation, tool_directory=None):
         if isinstance(representation, dict):
             representation = json.dumps(representation)
         payload = dict(
             representation=representation,
+            tool_directory=tool_directory,
         )
-        create_response = self._post("dynamic_tools", data=payload, admin=True)
-        assert create_response.status_code == 200, create_response
+        return self._create_tool_raw(payload)
+
+    def _create_tool_raw(self, payload):
+        try:
+            create_response = self._post("dynamic_tools", data=payload, admin=True)
+        except TypeError:
+            create_response = self._post("dynamic_tools", data=payload)
+        assert create_response.status_code == 200, create_response.json()
         return create_response.json()
 
     def list_dynamic_tools(self):
@@ -833,7 +850,10 @@ class BaseWorkflowPopulator(object):
             params["style"] = style
         response = self._get("workflows/%s/download" % workflow_id, data=params)
         api_asserts.assert_status_code_is(response, 200)
-        return response.json()
+        if style != "format2":
+            return response.json()
+        else:
+            return ordered_load(response.text)
 
     def update_workflow(self, workflow_id, workflow_object):
         data = dict(
@@ -886,6 +906,9 @@ class BaseWorkflowPopulator(object):
         invocation_response = workflow_populator.invoke_workflow_raw(workflow_id, workflow_request)
         api_asserts.assert_status_code_is(invocation_response, expected_response)
         invocation = invocation_response.json()
+        if expected_response != 200:
+            assert not assert_ok
+            return invocation
         invocation_id = invocation.get('id')
         if invocation_id:
             # Wait for workflow to become fully scheduled and then for all jobs

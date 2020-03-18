@@ -3,6 +3,7 @@ from __future__ import print_function
 
 import binascii
 import gzip
+import io
 import logging
 import os
 import shutil
@@ -1119,8 +1120,8 @@ class Cool(H5):
         if super(Cool, self).sniff(filename):
             keys = ['chroms', 'bins', 'pixels', 'indexes']
             with h5py.File(filename, 'r') as handle:
-                fmt = handle.attrs.get('format')
-                url = handle.attrs.get('format-url')
+                fmt = util.unicodify(handle.attrs.get('format'))
+                url = util.unicodify(handle.attrs.get('format-url'))
                 if fmt == MAGIC or url == URL:
                     if not all(name in handle.keys() for name in keys):
                         return False
@@ -1179,8 +1180,8 @@ class MCool(H5):
                     return False
                 res0 = list(handle['resolutions'].keys())[0]
                 keys = ['chroms', 'bins', 'pixels', 'indexes']
-                fmt = handle['resolutions'][res0].attrs.get('format')
-                url = handle['resolutions'][res0].attrs.get('format-url')
+                fmt = util.unicodify(handle['resolutions'][res0].attrs.get('format'))
+                url = util.unicodify(handle['resolutions'][res0].attrs.get('format-url'))
                 if fmt == MAGIC or url == URL:
                     if not all(name in handle['resolutions'][res0].keys() for name in keys):
                         return False
@@ -1738,7 +1739,7 @@ class GAFASQLite(SQlite):
 
     def sniff(self, filename):
         if super(IdpDB, self).sniff(filename):
-            table_names = frozenset(['gene', 'gene_family', 'gene_family_member', 'meta', 'transcript'])
+            table_names = frozenset({'gene', 'gene_family', 'gene_family_member', 'meta', 'transcript'})
             return self.sniff_table_names(filename, table_names)
         return False
 
@@ -2167,7 +2168,7 @@ class SearchGuiArchive(CompressedArchive):
                 with zipfile.ZipFile(dataset.file_name) as tempzip:
                     if 'searchgui.properties' in tempzip.namelist():
                         with tempzip.open('searchgui.properties') as fh:
-                            for line in fh:
+                            for line in io.TextIOWrapper(fh):
                                 if line.startswith('searchgui.version'):
                                     version = line.split('=')[1].strip()
                                     dataset.metadata.searchgui_version = version

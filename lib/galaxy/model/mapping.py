@@ -42,6 +42,7 @@ from galaxy.model.custom_types import JSONType, MetadataType, TrimmedString, UUI
 from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.orm.now import now
 from galaxy.model.security import GalaxyRBACAgent
+from galaxy.model.triggers import install_timestamp_triggers
 
 log = logging.getLogger(__name__)
 
@@ -54,6 +55,7 @@ model.WorkerProcess.table = Table(
     Column("id", Integer, primary_key=True),
     Column("server_name", String(255), index=True),
     Column("hostname", String(255)),
+    Column("pid", Integer),
     Column("update_time", DateTime, default=now, onupdate=now),
     UniqueConstraint('server_name', 'hostname'),
 )
@@ -850,7 +852,7 @@ model.Task.table = Table(
 model.PostJobAction.table = Table(
     "post_job_action", metadata,
     Column("id", Integer, primary_key=True),
-    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True, nullable=False),
+    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True, nullable=True),
     Column("action_type", String(255), nullable=False),
     Column("output_name", String(255), nullable=True),
     Column("action_arguments", JSONType, nullable=True))
@@ -906,7 +908,8 @@ model.HistoryDatasetCollectionAssociation.table = Table(
     Column("implicit_output_name", Unicode(255), nullable=True),
     Column("job_id", ForeignKey("job.id"), index=True, nullable=True),
     Column("implicit_collection_jobs_id", ForeignKey("implicit_collection_jobs.id"), index=True, nullable=True),
-)
+    Column("create_time", DateTime, default=now),
+    Column("update_time", DateTime, default=now, onupdate=now))
 
 model.LibraryDatasetCollectionAssociation.table = Table(
     "library_dataset_collection_association", metadata,
@@ -1134,6 +1137,15 @@ model.WorkflowInvocationOutputDatasetCollectionAssociation.table = Table(
     Column("workflow_output_id", Integer, ForeignKey("workflow_output.id", name='fk_wiodca_woi')),
 )
 
+model.WorkflowInvocationOutputValue.table = Table(
+    "workflow_invocation_output_value", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id"), index=True),
+    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id")),
+    Column("workflow_output_id", Integer, ForeignKey("workflow_output.id"), index=True),
+    Column("value", JSONType),
+)
+
 model.WorkflowInvocationStepOutputDatasetAssociation.table = Table(
     "workflow_invocation_step_output_dataset_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -1236,7 +1248,8 @@ model.PageRevision.table = Table(
     Column("update_time", DateTime, default=now, onupdate=now),
     Column("page_id", Integer, ForeignKey("page.id"), index=True, nullable=False),
     Column("title", TEXT),
-    Column("content", TEXT))
+    Column("content", TEXT),
+    Column("content_format", TrimmedString(32)))
 
 model.PageUserShareAssociation.table = Table(
     "page_user_share_association", metadata,
@@ -2604,6 +2617,14 @@ simple_mapping(
 
 
 simple_mapping(
+    model.WorkflowInvocationOutputValue,
+    workflow_invocation=relation(model.WorkflowInvocation, backref="output_values"),
+    workflow_step=relation(model.WorkflowStep),
+    workflow_output=relation(model.WorkflowOutput),
+)
+
+
+simple_mapping(
     model.WorkflowInvocationStepOutputDatasetAssociation,
     workflow_invocation_step=relation(model.WorkflowInvocationStep, backref="output_datasets"),
     dataset=relation(model.HistoryDatasetAssociation),
@@ -2854,6 +2875,7 @@ def init(file_path, url, engine_options=None, create_tables=False, map_install_m
     # Create tables if needed
     if create_tables:
         metadata.create_all()
+        install_timestamp_triggers(engine)
         # metadata.engine.commit()
 
     result.create_tables = create_tables

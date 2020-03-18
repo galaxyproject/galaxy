@@ -8,14 +8,14 @@
                 </b-card>
             </span>
             <div v-else>
-                <RepositoryDetails :repo="toolshedRepository" :toolshedUrl="repo.tool_shed_url" />
+                <RepositoryDetails :repo="toolshedRepository" :toolshed-url="repo.tool_shed_url" />
             </div>
         </div>
     </div>
 </template>
 <script>
 import { getAppRoot } from "onload/loadConfig";
-import { Services } from "../services.js";
+import { Services } from "../services";
 import RepositoryDetails from "../RepositoryDetails/Index.vue";
 import LoadingSpan from "components/LoadingSpan";
 

@@ -2,8 +2,7 @@
     <div class="container">
         <div class="row justify-content-md-center">
             <div class="col" :class="{ 'col-lg-6': !isAdmin }">
-                <b-alert :show="registration_warning_message" variant="danger">
-                    {{ registration_warning_message }}
+                <b-alert v-html="registration_warning_message" :show="showRegistrationWarning" variant="info">
                 </b-alert>
                 <b-alert :show="messageShow" :variant="messageVariant" v-html="messageText" />
                 <b-form id="registration" @submit.prevent="submit()">
@@ -44,6 +43,9 @@
                     </b-card>
                 </b-form>
             </div>
+            <div v-if="terms_url" class="col">
+                <b-embed type="iframe" :src="terms_url" aspect="1by1" />
+            </div>
         </div>
     </div>
 </template>
@@ -73,6 +75,10 @@ export default {
         redirect: {
             type: String,
             required: false
+        },
+        terms_url: {
+            type: String,
+            required: false
         }
     },
     data() {
@@ -93,6 +99,9 @@ export default {
     computed: {
         messageShow() {
             return this.messageText != null;
+        },
+        showRegistrationWarning() {
+            return this.registration_warning_message != null;
         }
     },
     methods: {

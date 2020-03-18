@@ -99,6 +99,8 @@ Please mind `http` and `https`.
         <!-- <well_known_oidc_config_uri>https://.../.well-known/openid-configuration</well_known_oidc_config_uri> -->
         <!-- (Optional) Override the default idp hint -->
         <!-- <idphint>cilogon</idphint> -->
+        <!-- (Optional) Enable logging out of the IDP when user logs out of Galaxy -->
+        <!-- <enable_idp_logout>true</enable_idp_logout> -->
     </provider>
     <!-- Documentation: https://galaxyproject.org/authnz/config/oidc/idps/elixir-aai  -->
     <provider name="Elixir">

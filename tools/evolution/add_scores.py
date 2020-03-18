@@ -100,7 +100,7 @@ def main():
                 score_val = 'NA'
             else:
                 die('%s line %d: chrom=%s, start=%d, score_list_len = %d' % (input_filename, line_number, chrom, start, score_list_len))
-            print('\t'.join([line, score_val]), file=ofh)
+            print('\t'.join((line, score_val)), file=ofh)
         else:
             print(line, file=ofh)
 

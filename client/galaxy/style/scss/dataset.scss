@@ -1,71 +1,26 @@
 @import "sprite-history-states.scss";
 @import "sprite-history-buttons.scss";
+@import "~@fortawesome/fontawesome-free/scss/_variables";
 
 // ---------------------------------------------------------------------------- dataset states
 //.dataset .state-icon {
+
 .state-icon {
     @extend .fa;
     display: inline-block;
     margin-right: 4px;
     vertical-align: middle;
-    width: 16px;
-    height: 16px;
-    line-height: 16px;
+    width: 14px;
+    height: 14px;
+    line-height: 14px;
     text-align: center;
-    font-size: 16px;
+    font-size: 14px;
 }
 
-// ............................................................................ animated or composite state icons
 .state-icon-running {
-    //TODO: couldn't find a way to do this with fa/spinning.scss as mixin
-    -webkit-animation: spin 2s infinite linear;
-    -moz-animation: spin 2s infinite linear;
-    -o-animation: spin 2s infinite linear;
-    animation: spin 2s infinite linear;
-
-    @-moz-keyframes spin {
-        0% {
-            -moz-transform: rotate(0deg);
-        }
-        100% {
-            -moz-transform: rotate(359deg);
-        }
-    }
-    @-webkit-keyframes spin {
-        0% {
-            -webkit-transform: rotate(0deg);
-        }
-        100% {
-            -webkit-transform: rotate(359deg);
-        }
-    }
-    @-o-keyframes spin {
-        0% {
-            -o-transform: rotate(0deg);
-        }
-        100% {
-            -o-transform: rotate(359deg);
-        }
-    }
-    @-ms-keyframes spin {
-        0% {
-            -ms-transform: rotate(0deg);
-        }
-        100% {
-            -ms-transform: rotate(359deg);
-        }
-    }
-    @keyframes spin {
-        0% {
-            transform: rotate(0deg);
-        }
-        100% {
-            transform: rotate(359deg);
-        }
-    }
-    &:before {
-        content: $fa-var-spinner;
-    }
+    @extend .fa-spin;
+    @extend .fa-spinner;
+    filter: blur(0);
 }
 
 .state-icon-upload {
@@ -118,7 +73,7 @@
                 transform: translate(0px, -16px);
             }
         }
-        content: $fa-var-arrow-up;
+        content: fa-content($fa-var-arrow-up);
     }
 }
 
@@ -129,7 +84,7 @@
         font-size: 20px;
         line-height: 16px;
         color: red;
-        content: $fa-var-times-circle;
+        content: fa-content($fa-var-times-circle);
     }
 }
 
@@ -163,7 +118,7 @@
         background: $state-default-bg;
         .state-icon {
             &:before {
-                content: $fa-var-clock-o;
+                content: fa-content($fa-var-clock);
             }
         }
     }
@@ -180,7 +135,7 @@
         background: $state-paused-bg;
         .state-icon {
             &:before {
-                content: $fa-var-pause;
+                content: fa-content($fa-var-pause);
             }
         }
     }
@@ -189,7 +144,7 @@
         background: $state-default-bg;
         .state-icon {
             &:before {
-                content: $fa-var-trash-o;
+                content: fa-content($fa-var-trash);
             }
         }
     }
@@ -202,7 +157,7 @@
         .state-icon {
             font-size: 20px;
             &:before {
-                content: $fa-var-lock;
+                content: fa-content($fa-var-lock);
             }
         }
     }
@@ -211,7 +166,7 @@
         background: $state-default-bg;
         .state-icon {
             &:before {
-                content: $fa-var-clock-o;
+                content: fa-content($fa-var-clock);
             }
         }
     }

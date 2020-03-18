@@ -28,8 +28,8 @@ from galaxy.util import (
 from galaxy.util.path import safe_relpath
 from galaxy.util.sleeper import Sleeper
 from ..objectstore import (
+    ConcreteObjectStore,
     convert_bytes,
-    ObjectStore
 )
 
 NO_BLOBSERVICE_ERROR_MESSAGE = ("ObjectStore configured, but no azure.storage.blob dependency available."
@@ -81,7 +81,7 @@ def parse_config_xml(config_xml):
         raise
 
 
-class AzureBlobObjectStore(ObjectStore):
+class AzureBlobObjectStore(ConcreteObjectStore):
     """
     Object store that stores objects as blobs in an Azure Blob Container. A local
     cache exists that is used as an intermediate location for files between

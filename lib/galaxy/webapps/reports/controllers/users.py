@@ -178,7 +178,9 @@ class Users(BaseUIController, ReportQueryBuilder):
 
         user_cutoff = int(kwd.get('user_cutoff', 60))
         # disk_usage isn't indexed
-        users = sorted(trans.sa_session.query(galaxy.model.User).all(), key=operator.attrgetter(str(sort_id)), reverse=_order)
+        all_users = trans.sa_session.query(galaxy.model.User).all()
+        sort_attrgetter = operator.attrgetter(str(sort_id))
+        users = sorted(all_users, key=lambda x: sort_attrgetter(x) or 0, reverse=_order)
         if user_cutoff:
             users = users[:user_cutoff]
         return trans.fill_template('/webapps/reports/users_user_disk_usage.mako',

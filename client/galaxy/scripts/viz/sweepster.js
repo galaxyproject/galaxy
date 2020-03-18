@@ -11,7 +11,7 @@ import _l from "utils/localization";
 import * as d3 from "d3";
 import visualization from "viz/visualization";
 import tracks from "viz/trackster/tracks";
-import tools from "mvc/tool/tools";
+import tools from "viz/tools";
 import { Dataset } from "mvc/dataset/data";
 import config from "utils/config";
 import mod_icon_btn from "mvc/ui/icon-button";
@@ -116,9 +116,9 @@ var ToolParameterTree = Backbone.Model.extend({
 
         var // Creates tree data recursively.
             create_tree_data = (params_samples, index) => {
-                var param_samples = params_samples[index],
-                    param = param_samples.param,
-                    settings = param_samples.samples;
+                var param_samples = params_samples[index];
+                var param = param_samples.param;
+                var settings = param_samples.samples;
 
                 // Create leaves when last parameter setting is reached.
                 if (params_samples.length - 1 === index) {

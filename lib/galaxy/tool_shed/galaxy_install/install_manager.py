@@ -215,10 +215,6 @@ class InstallToolDependencyManager(object):
                         if tool_dependency and tool_dependency.status in [self.install_model.ToolDependency.installation_status.INSTALLED,
                                                                           self.install_model.ToolDependency.installation_status.ERROR]:
                             installed_packages.append(tool_dependency)
-                            if self.app.config.manage_dependency_relationships:
-                                # Add the tool_dependency to the in-memory dictionaries in the installed_repository_manager.
-                                self.app.installed_repository_manager.handle_tool_dependency_install(tool_shed_repository,
-                                                                                                     tool_dependency)
         return installed_packages
 
     def install_via_fabric(self, tool_shed_repository, tool_dependency, install_dir, package_name=None, custom_fabfile_path=None,
@@ -699,6 +695,18 @@ class InstallRepositoryManager(object):
                                                                                            name,
                                                                                            owner,
                                                                                            changeset_revision)
+        if changeset_revision != repository_revision_dict['changeset_revision']:
+            # Demanded installation of a non-installable revision. Stop here if repository already installed.
+            repo = repository_util.get_installed_repository(
+                app=self.app,
+                tool_shed=tool_shed_url,
+                name=name,
+                owner=owner,
+                changeset_revision=repository_revision_dict['changeset_revision'],
+            )
+            if repo and repo.is_installed:
+                # Repo installed. Returning empty list indicated repo already installed.
+                return []
         installed_tool_shed_repositories = self.__initiate_and_install_repositories(
             tool_shed_url,
             repository_revision_dict,
@@ -724,27 +732,22 @@ class InstallRepositoryManager(object):
             includes_tools_for_display_in_tool_panel = repository_revision_dict['includes_tools_for_display_in_tool_panel']
         except KeyError:
             raise exceptions.InternalServerError("Tool shed response missing required parameter 'includes_tools_for_display_in_tool_panel'.")
-        # Get the information about the Galaxy components (e.g., tool pane section, tool config file, etc) that will contain the repository information.
+        # Get the information about the Galaxy components (e.g., tool panel section, tool config file, etc) that will contain the repository information.
         install_repository_dependencies = install_options.get('install_repository_dependencies', False)
         install_resolver_dependencies = install_options.get('install_resolver_dependencies', False)
         install_tool_dependencies = install_options.get('install_tool_dependencies', False)
         new_tool_panel_section_label = install_options.get('new_tool_panel_section_label', '')
         tool_panel_section_mapping = install_options.get('tool_panel_section_mapping', {})
-        shed_tool_conf = install_options.get('shed_tool_conf', None)
+        shed_tool_conf = install_options.get('shed_tool_conf')
         if install_tool_dependencies and self.app.tool_dependency_dir is None:
             raise exceptions.ConfigDoesNotAllowException("Tool dependency installation is disabled in your configuration files.")
         if shed_tool_conf:
             # Get the tool_path setting.
-            shed_conf_dict = self.tpm.get_shed_tool_conf_dict(shed_tool_conf)
-            tool_path = shed_conf_dict['tool_path']
+            shed_config_dict = self.tpm.get_shed_tool_conf_dict(shed_tool_conf)
         else:
-            # Don't use migrated_tools_conf.xml.
-            try:
-                shed_config_dict = self.app.toolbox.dynamic_confs(include_migrated_tool_conf=False)[0]
-            except IndexError:
-                raise exceptions.RequestParameterMissingException("Missing required parameter 'shed_tool_conf'.")
-            shed_tool_conf = shed_config_dict['config_filename']
-            tool_path = shed_config_dict['tool_path']
+            shed_config_dict = self.app.toolbox.default_shed_tool_conf_dict()
+        shed_tool_conf = shed_config_dict['config_filename']
+        tool_path = shed_config_dict['tool_path']
         tool_panel_section_id = self.app.toolbox.find_section_id(install_options.get('tool_panel_section_id', ''))
         # Build the dictionary of information necessary for creating tool_shed_repository database records
         # for each repository being installed.
@@ -884,9 +887,15 @@ class InstallRepositoryManager(object):
         relative_clone_dir = repository_util.generate_tool_shed_repository_install_dir(repository_clone_url,
                                                                                        tool_shed_repository.installed_changeset_revision)
         relative_install_dir = os.path.join(relative_clone_dir, tool_shed_repository.name)
-        install_dir = os.path.join(tool_path, relative_install_dir)
+        install_dir = os.path.abspath(os.path.join(tool_path, relative_install_dir))
         log.info("Cloning repository '%s' at %s:%s", repository_clone_url, ctx_rev, tool_shed_repository.changeset_revision)
-        cloned_ok, error_message = hg_util.clone_repository(repository_clone_url, os.path.abspath(install_dir), ctx_rev)
+        if os.path.exists(install_dir):
+            # May exist from a previous failed install attempt, just try updating instead of cloning.
+            hg_util.pull_repository(install_dir, repository_clone_url, ctx_rev)
+            hg_util.update_repository(install_dir, ctx_rev)
+            cloned_ok = True
+        else:
+            cloned_ok, error_message = hg_util.clone_repository(repository_clone_url, install_dir, ctx_rev)
         if cloned_ok:
             if reinstalling:
                 # Since we're reinstalling the repository we need to find the latest changeset revision to
@@ -912,7 +921,7 @@ class InstallRepositoryManager(object):
                 self.update_tool_shed_repository_status(tool_shed_repository,
                                                         self.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES)
                 new_tools = [self.app.toolbox._tools_by_id.get(tool_d['guid'], None) for tool_d in metadata['tools']]
-                new_requirements = set([tool.requirements.packages for tool in new_tools if tool])
+                new_requirements = {tool.requirements.packages for tool in new_tools if tool}
                 [self._view.install_dependencies(r) for r in new_requirements]
                 dependency_manager = self.app.toolbox.dependency_manager
                 if dependency_manager.cached:
@@ -933,10 +942,6 @@ class InstallRepositoryManager(object):
                 basic_util.remove_dir(work_dir)
             self.update_tool_shed_repository_status(tool_shed_repository,
                                                     self.install_model.ToolShedRepository.installation_status.INSTALLED)
-            if self.app.config.manage_dependency_relationships:
-                # Add the installed repository and any tool dependencies to the in-memory dictionaries
-                # in the installed_repository_manager.
-                self.app.installed_repository_manager.handle_repository_install(tool_shed_repository)
         else:
             # An error occurred while cloning the repository, so reset everything necessary to enable another attempt.
             repository_util.set_repository_attributes(self.app,
@@ -960,7 +965,12 @@ class InstallRepositoryManager(object):
         else:
             repo_files_dir = os.path.abspath(os.path.join(relative_install_dir, repository.name))
         repository_clone_url = os.path.join(tool_shed_url, 'repos', repository.owner, repository.name)
+        # Set a status, even though we're probably not cloning.
+        self.update_tool_shed_repository_status(repository, status=repository.installation_status.CLONING)
         log.info("Updating repository '%s' to %s:%s", repository.name, latest_ctx_rev, latest_changeset_revision)
+        if not os.path.exists(repo_files_dir):
+            log.debug("Repository directory '%s' does not exist, cloning repository instead of updating repository", repo_files_dir)
+            hg_util.clone_repository(repository_clone_url=repository_clone_url, repository_file_dir=repo_files_dir, ctx_rev=latest_ctx_rev)
         hg_util.pull_repository(repo_files_dir, repository_clone_url, latest_ctx_rev)
         hg_util.update_repository(repo_files_dir, latest_ctx_rev)
         # Remove old Data Manager entries
@@ -982,6 +992,7 @@ class InstallRepositoryManager(object):
                                                   persist=True)
         irmm.generate_metadata_for_changeset_revision()
         irmm_metadata_dict = irmm.get_metadata_dict()
+        self.update_tool_shed_repository_status(repository, status=repository.installation_status.INSTALLED)
         if 'tools' in irmm_metadata_dict:
             tool_panel_dict = irmm_metadata_dict.get('tool_panel_section', None)
             if tool_panel_dict is None:

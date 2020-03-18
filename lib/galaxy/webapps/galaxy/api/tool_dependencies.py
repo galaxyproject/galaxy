@@ -19,24 +19,24 @@ class ToolDependenciesAPIController(BaseAPIController):
         super(ToolDependenciesAPIController, self).__init__(app)
         self._view = views.DependencyResolversView(app)
 
-    @expose_api
     @require_admin
+    @expose_api
     def index(self, trans, **kwd):
         """
         GET /api/dependency_resolvers
         """
         return self._view.index()
 
-    @expose_api
     @require_admin
+    @expose_api
     def show(self, trans, id):
         """
         GET /api/dependency_resolvers/<id>
         """
         return self._view.show(id)
 
-    @expose_api
     @require_admin
+    @expose_api
     def update(self, trans):
         """
         PUT /api/dependency_resolvers
@@ -45,8 +45,8 @@ class ToolDependenciesAPIController(BaseAPIController):
         """
         return self._view.reload()
 
-    @expose_api
     @require_admin
+    @expose_api
     def resolver_dependency(self, trans, id, **kwds):
         """
         GET /api/dependency_resolvers/{index}/dependency
@@ -71,11 +71,12 @@ class ToolDependenciesAPIController(BaseAPIController):
         """
         return self._view.resolver_dependency(id, **kwds)
 
-    @expose_api
     @require_admin
+    @expose_api
     def install_dependency(self, trans, id=None, **kwds):
         """
         POST /api/dependency_resolvers/{index}/dependency
+        POST /api/dependency_resolvers/dependency
 
         Install described requirement against specified dependency resolver.
 
@@ -90,6 +91,8 @@ class ToolDependenciesAPIController(BaseAPIController):
         :type   exact:    bool
         :param  exact:    require an exact match to specify requirement (do not discard
                           version information to resolve dependency).
+        :type   tool_id:  str
+        :param  tool_id:  tool_id to install requirements for
 
         :rtype:     dict
         :returns:   a dictified description of the dependency, with attribute
@@ -98,8 +101,8 @@ class ToolDependenciesAPIController(BaseAPIController):
         self._view.install_dependency(id, **kwds)
         return self._view.manager_dependency(**kwds)
 
-    @expose_api
     @require_admin
+    @expose_api
     def manager_dependency(self, trans, **kwds):
         """
         GET /api/dependency_resolvers/dependency
@@ -125,8 +128,8 @@ class ToolDependenciesAPIController(BaseAPIController):
         """
         return self._view.manager_dependency(**kwds)
 
-    @expose_api
     @require_admin
+    @expose_api
     def resolver_requirements(self, trans, id, **kwds):
         """
         GET /api/dependency_resolvers/{index}/requirements
@@ -144,8 +147,8 @@ class ToolDependenciesAPIController(BaseAPIController):
         """
         return self._view.resolver_requirements(id)
 
-    @expose_api
     @require_admin
+    @expose_api
     def manager_requirements(self, trans, **kwds):
         """
         GET /api/dependency_resolvers/requirements
@@ -163,8 +166,8 @@ class ToolDependenciesAPIController(BaseAPIController):
         """
         return self._view.manager_requirements()
 
-    @expose_api
     @require_admin
+    @expose_api
     def clean(self, trans, id=None, **kwds):
         """
         POST /api/dependency_resolvers/{index}/clean
@@ -181,3 +184,127 @@ class ToolDependenciesAPIController(BaseAPIController):
                     the corresponding resolver (keyed on 'index').
         """
         return self._view.clean(id, **kwds)
+
+    @expose_api
+    @require_admin
+    def summarize_toolbox(self, trans, **kwds):
+        """
+        GET /api/dependency_resolvers/toolbox
+
+        Summarize requirements across toolbox (for Tool Management grid). This is an experiemental
+        API particularly tied to the GUI - expect breaking changes until this notice is removed.
+
+        Container resolution via this API is especially experimental and the container resolution
+        API should be used to summarize this information instead in most cases.
+
+        :type   index:    int
+        :param  index:    index of the dependency resolver
+        :type   tool_ids: str
+        :param  tool_ids: tool_id to install dependency for
+        :type   resolver_type:  str
+        :param  resolver_type:  restrict to uninstall to specified resolver type
+        :type   include_containers: bool
+        :param  include_containers: include container resolvers in resolution
+        :type   container_type: str
+        :param  container_type: restrict to uninstall to specified container type
+        :type   index_by: str
+        :param  index_by: By default consider only context of requirements, group tools by requirements.
+                          Set this to 'tools' to summarize across all tools though. Tools may provide additional
+                          context for container resolution for instance.
+
+        :rtype:     list
+        :returns:   dictified descriptions of the dependencies, with attribute
+                    ``dependency_type: None`` if no match was found.
+        """
+        kwds["for_json"] = True
+        index_by = kwds.get("index_by", "requirements")
+        if index_by == "requirements":
+            return self._view.summarize_requirements(**kwds)
+        else:
+            return self._view.summarize_tools(**kwds)
+
+    @expose_api
+    @require_admin
+    def toolbox_install(self, trans, payload, index=None, **kwds):
+        """
+        POST /api/dependency_resolvers/{index}/toolbox/install
+        POST /api/dependency_resolvers/toolbox/install
+
+        Install described requirement against specified dependency resolver(s). This is an experiemental
+        API particularly tied to the GUI - expect breaking changes until this notice is removed.
+
+        :type   index:          int
+        :param  index:          index of the dependency resolver
+        :type   tool_ids:       str
+        :param  tool_ids:       tool_id to install dependency for
+        :type   resolver_type:  str
+        :param  resolver_type:  restrict to uninstall to specified resolver type
+        :type   include_containers: bool
+        :param  include_containers: include container resolvers in resolution
+        :type   container_type: str
+        :param  container_type: restrict to uninstall to specified container type
+        """
+        tools_by_id = trans.app.toolbox.tools_by_id.copy()
+        tool_ids = payload.get("tool_ids")
+        requirements = {tools_by_id[tid].tool_requirements for tid in tool_ids}
+        install_kwds = {}
+        for source in [payload, kwds]:
+            if 'include_containers' in source:
+                install_kwds['include_containers'] = source['container_type']
+            if 'container_type' in kwds:
+                install_kwds['container_type'] = source['container_type']
+            if 'resolver_type' in source:
+                install_kwds['resolver_type'] = source['resolver_type']
+        [self._view.install_dependencies(requirements=r, index=index, **install_kwds) for r in requirements]
+
+    @expose_api
+    @require_admin
+    def toolbox_uninstall(self, trans, payload, index=None, **kwds):
+        """
+        POST /api/dependency_resolvers/{index}/toolbox/uninstall
+        POST /api/dependency_resolvers/toolbox/uninstall
+
+        Uninstall described requirement against specified dependency resolver(s). This is an experiemental
+        API particularly tied to the GUI - expect breaking changes until this notice is removed.
+
+        :type   index:          int
+        :param  index:          index of the dependency resolver
+        :type   tool_ids:       str
+        :param  tool_ids:       tool_id to install dependency for
+        :type   include_containers: bool
+        :param  include_containers: include container resolvers in resolution
+        :type   container_type: str
+        :param  container_type: restrict to uninstall to specified container type
+        :type   resolver_type:  str
+        :param  resolver_type:  restrict to uninstall to specified resolver type
+        """
+        tools_by_id = trans.app.toolbox.tools_by_id.copy()
+        tool_ids = payload.get("tool_ids")
+        requirements = {tools_by_id[tid].tool_requirements for tid in tool_ids}
+        install_kwds = {}
+        for source in [payload, kwds]:
+            if 'include_containers' in source:
+                install_kwds['include_containers'] = source['container_type']
+            if 'container_type' in kwds:
+                install_kwds['container_type'] = source['container_type']
+            if 'resolver_type' in source:
+                install_kwds['resolver_type'] = source['resolver_type']
+
+        [self._view.uninstall_dependencies(index=index, requirements=r, **install_kwds) for r in requirements]
+
+    @expose_api
+    @require_admin
+    def unused_dependency_paths(self, trans, **kwds):
+        """
+        GET /api/dependency_resolvers/unused_paths
+        """
+        return list(self._view.unused_dependency_paths)
+
+    @expose_api
+    @require_admin
+    def delete_unused_dependency_paths(self, trans, payload, **kwds):
+        """
+        PUT /api/dependency_resolvers/unused_paths
+        """
+        paths = payload.get("paths")
+        self._view.remove_unused_dependency_paths(paths)

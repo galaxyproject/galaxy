@@ -40,7 +40,7 @@ Some important benefits of using Galaxy InteractiveTools
 
 
 Server-side configuration of Galaxy InteractiveTools
--------------------------------------------------
+----------------------------------------------------
 
 The **galaxy.yml** file will need to be populated as seen in **config/galaxy.yml.interactivetools**.
 
@@ -115,7 +115,7 @@ Some **example test InteractiveTools** have been defined, and can be added to th
 
 .. code-block:: xml
 
-        <tool file="../test/functional/tools/interactive_juypter_notebook.xml" />
-        <tool file="../test/functional/tools/interactive_cellxgene.xml" />
+        <tool file="interactive/interactivetool_jupyter_notebook.xml" />
+        <tool file="interactive/interactivetool_cellxgene.xml" />
 
 

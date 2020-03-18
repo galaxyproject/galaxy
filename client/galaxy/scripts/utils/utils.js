@@ -260,10 +260,10 @@ export function roundToDecimalPlaces(number, numPlaces) {
 
 // calculate on import
 var kb = 1024;
-
 var mb = kb * kb;
 var gb = mb * kb;
 var tb = gb * kb;
+
 /**
  * Format byte size to string with units
  * @param{Integer}   size           - Size in bytes
@@ -357,9 +357,9 @@ export function setWindowTitle(title) {
  * @returns {integer}
  */
 export function hashFnv32a(str) {
-    var i,
-        l,
-        hval = 0x811c9dc5;
+    var i;
+    var l;
+    var hval = 0x811c9dc5;
 
     for (i = 0, l = str.length; i < l; i++) {
         hval ^= str.charCodeAt(i);

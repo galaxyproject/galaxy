@@ -69,18 +69,19 @@ class ToolSection(Dictifiable, HasPanelItems):
         copy.elems = self.elems.copy()
         return copy
 
-    def to_dict(self, trans, link_details=False, toolbox=None):
+    def to_dict(self, trans, link_details=False, tool_help=False, toolbox=None):
         """ Return a dict that includes section's attributes. """
 
         section_dict = super(ToolSection, self).to_dict()
         section_elts = []
         kwargs = dict(
             trans=trans,
-            link_details=link_details
+            link_details=link_details,
+            tool_help=tool_help
         )
         for elt in self.elems.values():
             if hasattr(elt, "tool_type") and toolbox:
-                section_elts.append(toolbox.get_tool_to_dict(trans, elt))
+                section_elts.append(toolbox.get_tool_to_dict(trans, elt, tool_help=tool_help))
             else:
                 section_elts.append(elt.to_dict(**kwargs))
         section_dict['elems'] = section_elts
@@ -96,7 +97,6 @@ class ToolSectionLabel(Dictifiable):
     A label for a set of tools that can be displayed above groups of tools
     and sections in the user interface
     """
-
     dict_collection_visible_keys = ['id', 'text', 'version']
 
     def __init__(self, item):

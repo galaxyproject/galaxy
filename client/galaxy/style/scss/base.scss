@@ -8,8 +8,16 @@
 @import "overrides.scss";
 
 // Fontawesome configuration.
-$fa-font-path: "../../../node_modules/font-awesome/fonts/";
-@import "../../../node_modules/font-awesome/scss/font-awesome.scss";
+//$fa-font-path: "../../../node_modules/font-awesome/fonts/";
+//@import "../../../node_modules/font-awesome/scss/font-awesome.scss";
+
+$fa-font-path: "../../../node_modules/@fortawesome/fontawesome-free/webfonts/";
+@import "../../../node_modules/@fortawesome/fontawesome-free/scss/fontawesome";
+@import "../../../node_modules/@fortawesome/fontawesome-free/scss/brands";
+@import "../../../node_modules/@fortawesome/fontawesome-free/scss/regular";
+@import "../../../node_modules/@fortawesome/fontawesome-free/scss/solid";
+@import "../../../node_modules/@fortawesome/fontawesome-free/scss/v4-shims";
+@import "../../../node_modules/@fortawesome/fontawesome-free/scss/_variables";
 
 @import "select2.scss";
 @import "jquery.rating.scss";
@@ -28,6 +36,7 @@ $fa-font-path: "../../../node_modules/font-awesome/fonts/";
 @import "charts.scss";
 @import "message.scss";
 @import "toolshed.scss";
+@import "workflow.scss";
 
 // ==== Select2 ====
 /* fix for zero width select2 - remove when fixed there */
@@ -139,13 +148,11 @@ body {
     @extend .unified-panel;
     left: 0px;
     width: $panel-width;
-    border-right: $layout-border;
 }
 #right {
     @extend .unified-panel;
     right: 0px;
     width: $panel-width;
-    border-left: $layout-border;
 }
 #right > .unified-panel-footer {
     .drag {
@@ -184,11 +191,12 @@ body {
 }
 
 // ==== Unified panel styles ====
-
 .unified-panel {
     display: flex;
-    @extend .flex-column;
+    flex-flow: column;
     background: $panel-bg-color;
+    height: 100%;
+    overflow: auto;
 }
 .unified-panel-header {
     @extend .unselectable;
@@ -241,7 +249,6 @@ body {
     height: $panel_footer_height;
     line-height: $panel_footer_height;
     width: 100%;
-    border-top: $layout-border;
     background: $panel-footer-bg-color;
     color: $panel-header-text-color;
     a {
@@ -393,7 +400,7 @@ body {
     .navbar-brand {
         @extend .position-absolute;
         @extend .font-weight-bold;
-        font-family: verdana;
+        font-family: Verdana, sans-serif;
         font-size: 1.25rem;
         left: 0.8rem;
         line-height: 0rem;
@@ -507,7 +514,6 @@ div.metadataHelpBody {
 }
 
 // Forms
-
 div.toolFormBody div.toolFormTitle {
     background: transparent;
     border: none;
@@ -536,43 +542,6 @@ div.toolHelpBody {
 
 div.toolFormRow {
     position: relative;
-}
-
-.toolForm.toolFormInCanvas {
-    @extend .card;
-    z-index: 100;
-    position: absolute;
-    border-color: $brand-primary;
-    &.toolForm-active {
-        z-index: 1001;
-        box-shadow: 0 0 0 2px $brand-primary;
-    }
-    .toolFormTitle {
-        @extend .card-header;
-        @extend .py-1;
-        @extend .px-2;
-        cursor: move;
-        background: $brand-secondary;
-    }
-    .toolFormBody {
-        @extend .card-body;
-        @extend .p-0;
-        @extend .mx-2;
-        .rule {
-            height: 0;
-            border: none;
-            border-bottom: dotted black 1px;
-            margin: 0 5px;
-        }
-    }
-}
-
-.toolForm.toolFormInCanvas.tool-node-error {
-    border-color: $state-danger-border;
-    .toolFormTitle {
-        background: $state-danger-bg;
-        border-color: $state-danger-border;
-    }
 }
 
 div.form,
@@ -645,18 +614,6 @@ div.form-row-input label {
 #run-workflow {
     @extend .float-right;
     @extend .mt-3;
-}
-
-.workflow-right {
-    background: $white;
-}
-
-.workflow-right .right-content {
-    margin: 3px;
-}
-
-.workflow-right .right-content .section-row {
-    margin-bottom: 10px;
 }
 
 .form-row {
@@ -836,7 +793,6 @@ table.colored tr.header {
     background: $table-heading-bg;
     background-repeat: repeat-x;
     background-position: top;
-    border-bottom: solid $table-border-color 1px;
     font-weight: bold;
 }
 
@@ -1204,6 +1160,11 @@ div.popmenu-wrapper {
         float: none;
     }
 }
+.dropdown-menu {
+    .dropdown-item.disabled {
+        color: $text-light;
+    }
+}
 
 .popup-arrow {
     cursor: pointer;
@@ -1358,9 +1319,6 @@ div.permissionContainer {
     }
     background: $panel-bg-color;
     min-height: 100%;
-    .tool-old-link {
-        font-weight: bold;
-    }
 }
 
 div.toolSectionTitle {
@@ -1368,7 +1326,7 @@ div.toolSectionTitle {
     font-size: $h4-font-size;
 }
 
-div.toolPanelLabel {
+.toolPanelLabel {
     @extend .pb-1;
     @extend .pt-2;
     @extend .px-3;
@@ -1378,9 +1336,8 @@ div.toolPanelLabel {
     text-transform: uppercase;
 }
 
-div.toolSectionTitle,
 div.toolTitle,
-div.toolTitleNoSection {
+div.toolSectionTitle {
     display: block;
     .labels {
         float: right;
@@ -1394,17 +1351,10 @@ div.toolTitleNoSection {
             background: darken($panel-bg-color, 5%);
         }
     }
-    &.text-muted a {
+    a.text-muted {
         &:hover {
             background: inherit;
         }
-    }
-}
-
-div.toolSectionWrapper {
-    div.toolTitle a {
-        @extend .pl-4;
-        font-size: inherit;
     }
 }
 
@@ -1666,102 +1616,6 @@ div.toolSectionWrapper {
 .hidden_description_layer.dragover {
     visibility: visible;
     opacity: 1;
-}
-
-/* TEMPORARY, REFACTOR THIS -- This is only image-related styles from the
- * workflow editor; everything should be moved out of the mako and into its own
- * file */
-
-#canvas-viewport {
-    background: $workflow-editor-bg url("../../images/light_gray_grid.gif");
-    width: 100%;
-    height: 100%;
-    position: absolute;
-    overflow: hidden;
-}
-
-.base-terminal {
-    @extend .fa;
-    @extend .fa-circle;
-    @extend .mt-1;
-    color: $brand-light;
-    position: absolute;
-    z-index: 1500;
-    > icon {
-        @extend .fa;
-        @extend .fa-chevron-circle-right;
-        color: $brand-primary;
-        position: absolute;
-        left: 0px;
-        top: 0px;
-    }
-}
-.input-terminal {
-    @extend .base-terminal;
-    left: -9px;
-}
-.output-terminal {
-    @extend .base-terminal;
-    right: -9px;
-    &:hover > icon {
-        color: $brand-success;
-    }
-}
-.input-terminal-active.can-accept > icon {
-    color: $brand-success;
-}
-.input-terminal-active.cannot-accept > icon {
-    color: $brand-warning;
-}
-.drag-terminal {
-    @extend .fa;
-    @extend .fa-circle;
-    color: $brand-success;
-    position: absolute;
-    z-index: 1500;
-}
-.mark-terminal {
-    cursor: pointer;
-    color: $text-muted;
-    &.mark-terminal-active {
-        color: $brand-success;
-    }
-}
-.delete-terminal {
-    @extend .btn;
-    @extend .btn-sm;
-    @extend .btn-primary;
-    @extend .fa;
-    @extend .fa-minus-circle;
-    @extend .p-1;
-    @extend .mt-1;
-    position: absolute;
-    z-index: 2500;
-    top: 0px;
-    left: -15px;
-}
-.callout-terminal {
-    position: absolute;
-}
-.workflow-overview {
-    position: absolute;
-    width: 150px;
-    height: 150px;
-    right: 0px;
-    bottom: 0px;
-    border-top: solid gray 1px;
-    border-left: solid grey 1px;
-    padding: 7px 0 0 7px;
-    background: $workflow-overview-bg no-repeat url("../../images/resizable.png");
-    z-index: 20000;
-    overflow: hidden;
-    max-width: 300px;
-    max-height: 300px;
-    min-width: 50px;
-    min-height: 50px;
-}
-#input-choices-menu {
-    color: black;
 }
 
 /* For Vue */

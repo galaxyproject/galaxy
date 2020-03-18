@@ -30,9 +30,12 @@ const mutations = {
 };
 
 const actions = {
-    async $init({ commit }) {
+    async loadUser({ commit, dispatch }) {
         const user = await getCurrentUser();
         commit("setCurrentUser", user);
+    },
+    async $init({ dispatch }) {
+        await dispatch("loadUser");
     }
 };
 

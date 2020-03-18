@@ -463,7 +463,8 @@ class FeaturePainter extends Painter {
             // (b) there's overlap between the feature and drawing region.
             if (
                 (this.mode === "Dense" || slot !== null) &&
-                (feature_start < this.view_end && feature_end > this.view_start)
+                feature_start < this.view_end &&
+                feature_end > this.view_start
             ) {
                 x_draw_coords = this.draw_element(
                     ctx,
@@ -817,8 +818,8 @@ class ReadPainter extends FeaturePainter {
         var // Parse cigar operations out and update/create blocks as needed.
             parsed_cigar = _.map(cigar_str.match(/[0-9]+[MIDNSHP=X]/g), op => {
                 // Get operation length, character.
-                var op_len = parseInt(op.slice(0, -1), 10),
-                    op_char = op.slice(-1);
+                var op_len = parseInt(op.slice(0, -1), 10);
+                var op_char = op.slice(-1);
 
                 // Update drawing block.
                 if (op_char === "N") {

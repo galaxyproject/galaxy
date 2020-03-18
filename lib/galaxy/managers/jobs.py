@@ -19,7 +19,8 @@ from galaxy.managers.hdas import HDAManager
 from galaxy.managers.lddas import LDDAManager
 from galaxy.util import (
     defaultdict,
-    ExecutionTimer
+    ExecutionTimer,
+    listify,
 )
 
 log = logging.getLogger(__name__)
@@ -64,6 +65,15 @@ class JobManager(object):
                     raise ItemAccessibilityException("You are not allowed to rerun this job.")
         trans.sa_session.refresh(job)
         return job
+
+    def stop(self, job, message=None):
+        if not job.finished:
+            job.mark_deleted(self.app.config.track_jobs_in_database)
+            self.app.model.context.current.flush()
+            self.app.job_manager.stop(job, message=message)
+            return True
+        else:
+            return False
 
 
 class JobSearch(object):
@@ -460,3 +470,119 @@ def summarize_jobs_to_dict(sa_session, jobs_source):
                 states[row[0]] = row[1]
             rval["states"] = states
     return rval
+
+
+def summarize_job_metrics(trans, job):
+    """Produce a dict-ified version of job metrics ready for tabular rendering.
+
+    Precondition: the caller has verified the job is accessible to the user
+    represented by the trans parameter.
+    """
+    if not trans.user_is_admin and not trans.app.config.expose_potentially_sensitive_job_metrics:
+        return []
+
+    def metric_to_dict(metric):
+        metric_name = metric.metric_name
+        metric_value = metric.metric_value
+        metric_plugin = metric.plugin
+        title, value = trans.app.job_metrics.format(metric_plugin, metric_name, metric_value)
+        return dict(
+            title=title,
+            value=value,
+            plugin=metric_plugin,
+            name=metric_name,
+            raw_value=str(metric_value),
+        )
+
+    metrics = [m for m in job.metrics if m.plugin != 'env' or trans.user_is_admin]
+    return list(map(metric_to_dict, metrics))
+
+
+def summarize_job_parameters(trans, job):
+    """Produce a dict-ified version of job parameters ready for tabular rendering.
+
+    Precondition: the caller has verified the job is accessible to the user
+    represented by the trans parameter.
+    """
+    def inputs_recursive(input_params, param_values, depth=1, upgrade_messages=None):
+        if upgrade_messages is None:
+            upgrade_messages = {}
+
+        rval = []
+
+        for input_index, input in enumerate(input_params.values()):
+            if input.name in param_values:
+                if input.type == "repeat":
+                    for i in range(len(param_values[input.name])):
+                        rval.extend(inputs_recursive(input.inputs, param_values[input.name][i], depth=depth + 1))
+                elif input.type == "section":
+                    # Get the value of the current Section parameter
+                    rval.append(dict(text=input.name, depth=depth))
+                    rval.extend(inputs_recursive(input.inputs, param_values[input.name], depth=depth + 1, upgrade_messages=upgrade_messages.get(input.name)))
+                elif input.type == "conditional":
+                    try:
+                        current_case = param_values[input.name]['__current_case__']
+                        is_valid = True
+                    except Exception:
+                        current_case = None
+                        is_valid = False
+                    if is_valid:
+                        rval.append(dict(text=input.test_param.label, depth=depth, value=input.cases[current_case].value))
+                        rval.extend(inputs_recursive(input.cases[current_case].inputs, param_values[input.name], depth=depth + 1, upgrade_messages=upgrade_messages.get(input.name)))
+                    else:
+                        rval.append(dict(text=input.name, depth=depth, notes="The previously used value is no longer valid.", error=True))
+                elif input.type == "upload_dataset":
+                    rval.append(dict(text=input.group_title(param_values), depth=depth, value="%s uploaded datasets" % len(param_values[input.name])))
+                elif input.type == "data":
+                    value = []
+                    for i, element in enumerate(listify(param_values[input.name])):
+                        if element.history_content_type == "dataset":
+                            hda = element
+                            encoded_id = trans.security.encode_id(hda.id)
+                            value.append({"src": "hda", "id": encoded_id, "hid": hda.hid, "name": hda.name})
+                        else:
+                            value.append({"hid": element.hid, "name": element.name})
+                    rval.append(dict(text=input.label, depth=depth, value=value))
+                elif input.visible:
+                    if hasattr(input, "label") and input.label:
+                        label = input.label
+                    else:
+                        # value for label not required, fallback to input name (same as tool panel)
+                        label = input.name
+                    rval.append(dict(text=label, depth=depth, value=input.value_to_display_text(param_values[input.name]), notes=upgrade_messages.get(input.name, '')))
+            else:
+                # Parameter does not have a stored value.
+                # Get parameter label.
+                if input.type == "conditional":
+                    label = input.test_param.label
+                elif input.type == "repeat":
+                    label = input.label()
+                else:
+                    label = input.label or input.name
+                rval.append(dict(text=label, depth=depth, notes="not used (parameter was added after this job was run)"))
+
+        return rval
+
+    # Load the tool
+    app = trans.app
+    toolbox = app.toolbox
+    tool = toolbox.get_tool(job.tool_id, job.tool_version)
+    assert tool is not None, 'Requested tool has not been loaded.'
+
+    params_objects = None
+    upgrade_messages = {}
+    has_parameter_errors = False
+
+    # Load parameter objects, if a parameter type has changed, it's possible for the value to no longer be valid
+    try:
+        params_objects = job.get_param_values(app, ignore_errors=False)
+    except Exception:
+        params_objects = job.get_param_values(app, ignore_errors=True)
+        # use different param_objects in the following line, since we want to display original values as much as possible
+        upgrade_messages = tool.check_and_update_param_values(job.get_param_values(app, ignore_errors=True),
+                                                              trans,
+                                                              update_values=False)
+        has_parameter_errors = True
+
+    parameters = inputs_recursive(tool.inputs, params_objects, depth=1, upgrade_messages=upgrade_messages)
+    return {"parameters": parameters, "has_parameter_errors": has_parameter_errors}

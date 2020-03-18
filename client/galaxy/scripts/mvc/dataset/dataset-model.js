@@ -5,8 +5,10 @@ import { getAppRoot } from "onload/loadConfig";
 import STATES from "mvc/dataset/states";
 import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
+import TAB_UPDATES from "mvc/user/tab-updates";
 
 var logNamespace = "dataset";
+var hiddenupdates = 1;
 //==============================================================================
 var searchableMixin = BASE_MVC.SearchableModelMixin;
 /** @class base model for any DatasetAssociation (HDAs, LDDAs, DatasetCollectionDAs).
@@ -99,6 +101,24 @@ var DatasetAssociation = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
                     this.log(`${this} has changed state:`, currModel, newState);
                     if (this.inReadyState()) {
                         this.trigger("state:ready", currModel, newState, this.previous("state"));
+                        if (newState != "discarded") {
+                            if (newState === "ok") {
+                                new Notification(`Job complete: ${this.get("name")}`, {
+                                    icon: "static/favicon.ico"
+                                });
+                                if (TAB_UPDATES.is_hidden()) {
+                                    TAB_UPDATES.hidden_count(hiddenupdates);
+                                    hiddenupdates++;
+                                }
+                            } else if (newState == "error") {
+                                new Notification(`Job failure: ${this.get("name")}`, {
+                                    icon: "static/erricon.ico"
+                                });
+                                if (TAB_UPDATES.is_hidden() && Notification.permission == "granted") {
+                                    TAB_UPDATES.change_favicon("static/erricon.ico");
+                                }
+                            }
+                        }
                     }
                 });
                 // the download url (currently) relies on having a correct file extension
@@ -349,6 +369,14 @@ var DatasetAssociationCollection = Backbone.Collection.extend(BASE_MVC.LoggableM
     }
 );
 
+window.addEventListener("focus", function() {
+    const testing = document.getElementById("tabicon");
+    if (testing && testing.href.search("erricon") != -1) {
+        TAB_UPDATES.change_favicon("static/favicon.ico");
+    }
+    document.title = "Galaxy";
+    hiddenupdates = 1;
+});
 //==============================================================================
 export default {
     DatasetAssociation: DatasetAssociation,

@@ -190,14 +190,16 @@ def set_metadata_portable():
         filename_results_code = os.path.join("metadata/metadata_results_%s" % output_name)
         override_metadata = os.path.join("metadata/metadata_override_%s" % output_name)
         dataset_filename_override = output_dict["filename_override"]
+        # pre-20.05 this was a per job parameter and not a per dataset parameter, drop in 21.XX
+        legacy_object_store_store_by = metadata_params.get("object_store_store_by", "id")
 
         # Same block as below...
         set_meta_kwds = stringify_dictionary_keys(json.load(open(filename_kwds)))  # load kwds; need to ensure our keywords are not unicode
         try:
             dataset.dataset.external_filename = dataset_filename_override
-            store_by = metadata_params.get("object_store_store_by", "id")
+            store_by = output_dict.get("object_store_store_by", legacy_object_store_store_by)
             extra_files_dir_name = "dataset_%s_files" % getattr(dataset.dataset, store_by)
-            files_path = os.path.abspath(os.path.join(tool_job_working_directory, extra_files_dir_name))
+            files_path = os.path.abspath(os.path.join(tool_job_working_directory, "working", extra_files_dir_name))
             dataset.dataset.external_extra_files_path = files_path
             file_dict = tool_provided_metadata.get_dataset_meta(output_name, dataset.dataset.id, dataset.dataset.uuid)
             if 'ext' in file_dict:
@@ -279,7 +281,15 @@ def set_metadata_portable():
         # discover extra outputs...
         from galaxy.job_execution.output_collect import collect_dynamic_outputs, collect_primary_datasets, SessionlessJobContext
 
-        job_context = SessionlessJobContext(metadata_params, tool_provided_metadata, object_store, export_store, import_model_store, os.path.join(tool_job_working_directory, "working"))
+        job_context = SessionlessJobContext(
+            metadata_params,
+            tool_provided_metadata,
+            object_store,
+            export_store,
+            import_model_store,
+            os.path.join(tool_job_working_directory, "working"),
+            final_job_state=final_job_state,
+        )
 
         output_collections = {}
         for name, output_collection in metadata_params["output_collections"].items():
@@ -337,7 +347,9 @@ def set_metadata_legacy():
         try:
             dataset = cPickle.load(open(filename_in, 'rb'))  # load DatasetInstance
             dataset.dataset.external_filename = dataset_filename_override
-            files_path = os.path.abspath(os.path.join(tool_job_working_directory, "dataset_%s_files" % (dataset.dataset.id)))
+            store_by = "id"
+            extra_files_dir_name = "dataset_%s_files" % getattr(dataset.dataset, store_by)
+            files_path = os.path.abspath(os.path.join(tool_job_working_directory, "working", extra_files_dir_name))
             dataset.dataset.external_extra_files_path = files_path
             file_dict = tool_provided_metadata.get_dataset_meta(None, dataset.dataset.id, dataset.dataset.uuid)
             if 'ext' in file_dict:

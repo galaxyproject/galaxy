@@ -8,6 +8,7 @@ import pytest
 from requests import get
 from six import BytesIO
 
+from galaxy.util import galaxy_root_path
 from galaxy_test.base import rules_test_data
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
@@ -916,6 +917,22 @@ class ToolsTestCase(ApiTestCase):
         output_element_hda_0 = output_element_0["object"]
         assert output_element_hda_0["metadata_column_types"] is not None
 
+    @skip_without_tool("collection_creates_dynamic_nested")
+    @uses_test_history(require_new=False)
+    def test_dynamic_list_output_datasets_in_failed_state(self, history_id):
+        inputs = {
+            'fail_bool': True
+        }
+        create = self._run("collection_creates_dynamic_nested", history_id, inputs, assert_ok=False, wait_for_job=True)
+        self._assert_status_code_is(create, 200)
+        collection = self._get("dataset_collections/%s" % create.json()["output_collections"][0]["id"], data={"instance_type": "history"}).json()
+        assert collection['element_count'] == 3
+        for nested_collection in collection['elements']:
+            nested_collection = nested_collection['object']
+            assert nested_collection['element_count'] == 2
+            for element in nested_collection['elements']:
+                assert element['object']['state'] == 'error'
+
     def test_nonadmin_users_cannot_create_tools(self):
         payload = dict(
             representation=json.dumps(MINIMAL_TOOL),
@@ -935,6 +952,21 @@ class ToolsTestCase(ApiTestCase):
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         output_content = self.dataset_populator.get_history_dataset_content(history_id)
         self.assertEqual(output_content, "Hello World\n")
+
+    def test_dynamic_tool_from_path(self):
+        # Create tool.
+        dynamic_tool_path = os.path.join(galaxy_root_path, "lib", "galaxy_test", "base", "data", "minimal_tool_no_id.json")
+        tool_response = self.dataset_populator.create_tool_from_path(dynamic_tool_path)
+        self._assert_has_keys(tool_response, "uuid")
+
+        # Run tool.
+        history_id = self.dataset_populator.new_history()
+        inputs = {}
+        self._run(history_id=history_id, inputs=inputs, tool_uuid=tool_response["uuid"])
+
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        output_content = self.dataset_populator.get_history_dataset_content(history_id)
+        self.assertEqual(output_content, "Hello World 2\n")
 
     def test_dynamic_tool_no_id(self):
         # Create tool.
@@ -1605,7 +1637,7 @@ class ToolsTestCase(ApiTestCase):
         self.assertEqual(len(outputs), 1)
         output1 = outputs[0]
         output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
-        self.assertEqual(output1_content.strip(), '\n'.join([d['name'] for d in element_identifiers]))
+        self.assertEqual(output1_content.strip(), '\n'.join(d['name'] for d in element_identifiers))
 
     @skip_without_tool("identifier_in_actions")
     @uses_test_history(require_new=False)

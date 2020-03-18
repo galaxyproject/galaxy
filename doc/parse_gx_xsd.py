@@ -68,7 +68,7 @@ class Tag(object):
 
     @property
     def _pretty_title(self):
-        return " > ".join(["``%s``" % p for p in self.title.split("|")])
+        return " > ".join("``%s``" % p for p in self.title.split("|"))
 
     def build_toc_entry(self):
         return "* [%s](%s)" % (self._pretty_title, self._anchor)

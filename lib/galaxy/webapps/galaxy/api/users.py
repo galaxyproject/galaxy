@@ -110,18 +110,18 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
                     query = query.filter(trans.app.model.User.username.like("%%%s%%" % f_any))
 
         if deleted:
-            query = query.filter(trans.app.model.User.table.c.deleted == true())
             # only admins can see deleted users
             if not trans.user_is_admin:
                 return []
+            query = query.filter(trans.app.model.User.table.c.deleted == true())
         else:
-            query = query.filter(trans.app.model.User.table.c.deleted == false())
             # special case: user can see only their own user
             # special case2: if the galaxy admin has specified that other user email/names are
             #   exposed, we don't want special case #1
             if not trans.user_is_admin and not trans.app.config.expose_user_name and not trans.app.config.expose_user_email:
                 item = trans.user.to_dict(value_mapper={'id': trans.security.encode_id})
                 return [item]
+            query = query.filter(trans.app.model.User.table.c.deleted == false())
         for user in query:
             item = user.to_dict(value_mapper={'id': trans.security.encode_id})
             # If NOT configured to expose_email, do not expose email UNLESS the user is self, or
@@ -188,9 +188,9 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
             username = payload['username']
             email = payload['email']
             password = payload['password']
-            message = "\n".join([validate_email(trans, email),
+            message = "\n".join((validate_email(trans, email),
                                  validate_password(trans, password, password),
-                                 validate_publicname(trans, username)]).rstrip()
+                                 validate_publicname(trans, username))).rstrip()
             if message:
                 raise exceptions.RequestParameterInvalidException(message)
             else:
@@ -229,8 +229,8 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         self.user_deserializer.deserialize(user_to_update, payload, user=current_user, trans=trans)
         return self.user_serializer.serialize_to_view(user_to_update, view='detailed')
 
-    @expose_api
     @web.require_admin
+    @expose_api
     def delete(self, trans, id, **kwd):
         """
         DELETE /api/users/{id}
@@ -251,8 +251,8 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
             self.user_manager.delete(user)
         return self.user_serializer.serialize_to_view(user, view='detailed')
 
-    @expose_api
     @web.require_admin
+    @expose_api
     def undelete(self, trans, id, **kwd):
         """
         POST /api/users/deleted/{id}/undelete
@@ -644,7 +644,11 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         for name, value in user.preferences.items():
             if name in filter_types:
                 saved_values[name] = listify(value, do_strip=True)
-        inputs = []
+        inputs = [{
+            'type': 'hidden',
+            'name': 'helptext',
+            'label': 'In this section you may enable or disable Toolbox filters. Please contact your admin to configure filters as necessary.'
+        }]
         errors = {}
         factory = FilterFactory(trans.app.toolbox)
         for filter_type in filter_types:
@@ -779,19 +783,22 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         """
         user = self._get_user(trans, id)
         dbkeys = json.loads(user.preferences['dbkeys']) if 'dbkeys' in user.preferences else {}
+        valid_dbkeys = {}
         update = False
-        for key in dbkeys:
-            dbkey = dbkeys[key]
+        for key, dbkey in dbkeys.items():
             if 'count' not in dbkey and 'linecount' in dbkey:
                 chrom_count_dataset = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(dbkey['linecount'])
-                if chrom_count_dataset.state == trans.app.model.Job.states.OK:
+                if chrom_count_dataset and not chrom_count_dataset.deleted and chrom_count_dataset.state == trans.app.model.HistoryDatasetAssociation.states.OK:
                     chrom_count = int(open(chrom_count_dataset.file_name).readline())
                     dbkey['count'] = chrom_count
+                    valid_dbkeys[key] = dbkey
                     update = True
+            else:
+                valid_dbkeys[key] = dbkey
         if update:
-            user.preferences['dbkeys'] = json.dumps(dbkeys)
+            user.preferences['dbkeys'] = json.dumps(valid_dbkeys)
         dbkey_collection = []
-        for key, attributes in dbkeys.items():
+        for key, attributes in valid_dbkeys.items():
             attributes['id'] = key
             dbkey_collection.append(attributes)
         return dbkey_collection
@@ -840,28 +847,27 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
                 trans.sa_session.flush()
                 counter = 0
                 lines_skipped = 0
-                f = open(new_len.file_name, 'w')
-                # LEN files have format:
-                #   <chrom_name><tab><chrom_length>
-                for line in len_value.split('\n'):
-                    # Splits at the last whitespace in the line
-                    lst = line.strip().rsplit(None, 1)
-                    if not lst or len(lst) < 2:
-                        lines_skipped += 1
-                        continue
-                    chrom, length = lst[0], lst[1]
-                    try:
-                        length = int(length)
-                    except ValueError:
-                        lines_skipped += 1
-                        continue
-                    if chrom != escape(chrom):
-                        build_dict['message'] = 'Invalid chromosome(s) with HTML detected and skipped.'
-                        lines_skipped += 1
-                        continue
-                    counter += 1
-                    f.write('%s\t%s\n' % (chrom, length))
-                f.close()
+                with open(new_len.file_name, 'w') as f:
+                    # LEN files have format:
+                    #   <chrom_name><tab><chrom_length>
+                    for line in len_value.split('\n'):
+                        # Splits at the last whitespace in the line
+                        lst = line.strip().rsplit(None, 1)
+                        if not lst or len(lst) < 2:
+                            lines_skipped += 1
+                            continue
+                        chrom, length = lst[0], lst[1]
+                        try:
+                            length = int(length)
+                        except ValueError:
+                            lines_skipped += 1
+                            continue
+                        if chrom != escape(chrom):
+                            build_dict['message'] = 'Invalid chromosome(s) with HTML detected and skipped.'
+                            lines_skipped += 1
+                            continue
+                        counter += 1
+                        f.write('%s\t%s\n' % (chrom, length))
                 build_dict['len'] = new_len.id
                 build_dict['count'] = counter
             else:

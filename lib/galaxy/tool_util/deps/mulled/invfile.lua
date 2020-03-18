@@ -19,13 +19,13 @@ local repo = VAR.REPO
 local channel_args = ''
 local channels = VAR.CHANNELS:split(",")
 for i = 1, #channels do
-    channel_args = channel_args .. " -c " .. channels[i]
+    channel_args = channel_args .. " -c '" .. channels[i] .. "'"
 end
 
 local target_args = ''
 local targets = VAR.TARGETS:split(",")
 for i = 1, #targets do
-    target_args = target_args .. " " .. targets[i]
+    target_args = target_args .. " '" .. targets[i] .. "'"
 end
 
 local bind_args = {}
@@ -101,10 +101,11 @@ inv.task('build')
 if VAR.SINGULARITY ~= '' then
     inv.task('singularity')
         .using(singularity_image)
-        .withHostConfig({binds = {"build:/data",singularity_image_dir .. ":/import"}, privileged = true})
+        .withHostConfig({binds = {"build:/data", "'" .. singularity_image_dir .. "':/import"}, privileged = true})
         .withConfig({entrypoint = {'/bin/sh', '-c'}})
-        .run('mkdir -p /usr/local/var/singularity/mnt/container && singularity build /import/' .. VAR.SINGULARITY_IMAGE_NAME .. ' /import/Singularity.def')
-        .run('chown ' .. VAR.USER_ID .. ' /import/' .. VAR.SINGULARITY_IMAGE_NAME)
+        .run('mkdir', '-p', '/usr/local/var/singularity/mnt/container')
+        .run('singularity', 'build', '/import/' .. VAR.SINGULARITY_IMAGE_NAME, '/import/Singularity.def')
+        .run('chown', VAR.USER_ID, '/import/' .. VAR.SINGULARITY_IMAGE_NAME)
 end
 
 inv.task('cleanup')

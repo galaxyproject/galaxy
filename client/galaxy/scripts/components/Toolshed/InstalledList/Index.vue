@@ -25,7 +25,7 @@
                     id="repository-table"
                     striped
                     :fields="fields"
-                    :sortBy="sortBy"
+                    :sort-by="sortBy"
                     :items="repositories"
                     :filter="filter"
                     @filtered="filtered"
@@ -41,7 +41,7 @@
                         </b-link>
                         <div>{{ row.item.description }}</div>
                     </template>
-                    <template slot="row-details" slot-scope="row">
+                    <template v-slot:row-details="row">
                         <RepositoryDetails :repo="row.item" />
                     </template>
                 </b-table>
@@ -60,7 +60,7 @@
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { getAppRoot } from "onload/loadConfig";
-import { Services } from "../services.js";
+import { Services } from "../services";
 import LoadingSpan from "components/LoadingSpan";
 import Monitor from "./Monitor";
 import RepositoryDetails from "./Details";

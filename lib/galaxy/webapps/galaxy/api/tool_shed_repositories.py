@@ -23,7 +23,11 @@ from galaxy.tool_shed.util.repository_util import (
 )
 from galaxy.tool_shed.util.shed_util_common import have_shed_tool_conf_for_install
 from galaxy.tool_shed.util.tool_util import generate_message_for_invalid_tools
-from galaxy.web import expose_api, require_admin, url_for
+from galaxy.web import (
+    expose_api,
+    require_admin,
+    url_for
+)
 from galaxy.webapps.base.controller import BaseAPIController
 
 
@@ -90,8 +94,8 @@ class ToolShedRepositoriesController(BaseAPIController):
             tool_shed_repository_dicts.append(tool_shed_repository_dict)
         return tool_shed_repository_dicts
 
-    @expose_api
     @require_admin
+    @expose_api
     def install_repository_revision(self, trans, payload, **kwd):
         """
         POST /api/tool_shed_repositories/install_repository_revision
@@ -145,8 +149,8 @@ class ToolShedRepositoriesController(BaseAPIController):
         message = "No repositories were installed, possibly because the selected repository has already been installed."
         return dict(status="ok", message=message)
 
-    @expose_api
     @require_admin
+    @expose_api
     def install_repository_revisions(self, trans, payload, **kwd):
         """
         POST /api/tool_shed_repositories/install_repository_revisions
@@ -225,8 +229,8 @@ class ToolShedRepositoriesController(BaseAPIController):
                 all_installed_tool_shed_repositories.extend(installed_tool_shed_repositories)
         return all_installed_tool_shed_repositories
 
-    @expose_api
     @require_admin
+    @expose_api
     def uninstall_repository(self, trans, id=None, **kwd):
         """
         DELETE /api/tool_shed_repositories/id
@@ -240,6 +244,7 @@ class ToolShedRepositoriesController(BaseAPIController):
                     'changeset_revision': Changeset revision to uninstall
                     'tool_shed_url'     : Tool Shed URL
         """
+        remove_from_disk = util.asbool(kwd.get('remove_from_disk', True))
         if id:
             try:
                 repository = get_tool_shed_repository_by_id(self.app, id)
@@ -259,9 +264,9 @@ class ToolShedRepositoriesController(BaseAPIController):
             if not repository:
                 raise HTTPBadRequest(detail="Repository not found")
         irm = InstalledRepositoryManager(app=self.app)
-        errors = irm.uninstall_repository(repository=repository, remove_from_disk=kwd.get('remove_from_disk', True))
+        errors = irm.uninstall_repository(repository=repository, remove_from_disk=remove_from_disk)
         if not errors:
-            action = 'removed' if kwd.get('remove_from_disk', True) else 'deactivated'
+            action = 'removed' if remove_from_disk else 'deactivated'
             return {'message': 'The repository named %s has been %s.' % (repository.name, action)}
         else:
             raise Exception('Attempting to uninstall tool dependencies for repository named %s resulted in errors: %s' % (repository.name, errors))
@@ -286,8 +291,8 @@ class ToolShedRepositoriesController(BaseAPIController):
 
         return tool_shed_url, name, owner, changeset_revision
 
-    @expose_api
     @require_admin
+    @expose_api
     def check_for_updates(self, trans, **kwd):
         '''
         GET /api/tool_shed_repositories/check_for_updates
@@ -299,8 +304,8 @@ class ToolShedRepositoriesController(BaseAPIController):
         message, status = check_for_updates(self.app, trans.install_model, repository_id)
         return {'status': status, 'message': message}
 
-    @expose_api
     @require_admin
+    @expose_api
     def reset_metadata_on_selected_installed_repositories(self, trans, **kwd):
         repository_ids = util.listify(kwd.get("repository_ids"))
         if repository_ids:

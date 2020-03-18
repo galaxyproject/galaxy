@@ -18,7 +18,6 @@ ${ h.dumps( dictionary, indent=( 2 if trans.debug else 0 ) ) }
 
         var options = {
             root: '${h.url_for( "/" )}',
-            config: ${ render_json( get_config_dict() )},
             user: ${ render_json( get_user_dict() )},
             session_csrf_token: '${ trans.session_csrf_token }'
         };
@@ -69,28 +68,6 @@ ${ h.dumps( dictionary, indent=( 2 if trans.debug else 0 ) ) }
             console.warn("Missing google analytics code");
         %endif
     </script>
-</%def>
-
-
-
-## ----------------------------------------------------------------------------
-<%def name="get_config_dict()">
-    ## Return a dictionary of galaxy.ini settings
-    <%
-        config_dict = {}
-        try:
-            controller = trans.webapp.api_controllers.get( 'configuration', None )
-            if controller:
-                config_dict = controller.get_config_dict( trans, trans.user_is_admin )
-        except Exception as exc:
-            pass
-        return config_dict
-    %>
-</%def>
-
-<%def name="get_config_json()">
-    ## Conv. fn to write as JSON
-${ h.dumps( get_config_dict() )}
 </%def>
 
 

@@ -161,10 +161,6 @@ class ShellJobRunner(AsynchronousJobRunner):
                 if ajs.job_wrapper.get_state() == model.Job.states.DELETED:
                     continue
 
-                external_metadata = not asbool(ajs.job_wrapper.job_destination.params.get("embed_metadata_in_job", DEFAULT_EMBED_METADATA_IN_JOB))
-                if external_metadata:
-                    self._handle_metadata_externally(ajs.job_wrapper, resolve_requirements=True)
-
                 log.debug("(%s/%s) job not found in batch state check" % (id_tag, external_job_id))
                 shell_params, job_params = self.parse_destination_params(ajs.job_destination.params)
                 shell, job_interface = self.get_cli_plugins(shell_params, job_params)
@@ -187,12 +183,18 @@ class ShellJobRunner(AsynchronousJobRunner):
                 ajs.running = True
             ajs.old_state = state
             if state == model.Job.states.OK:
+                external_metadata = not asbool(ajs.job_wrapper.job_destination.params.get("embed_metadata_in_job", DEFAULT_EMBED_METADATA_IN_JOB))
+                if external_metadata:
+                    self.work_queue.put((self.handle_metadata_externally, ajs))
                 log.debug('(%s/%s) job execution finished, running job wrapper finish method' % (id_tag, external_job_id))
                 self.work_queue.put((self.finish_job, ajs))
             else:
                 new_watched.append(ajs)
         # Replace the watch list with the updated version
         self.watched = new_watched
+
+    def handle_metadata_externally(self, ajs):
+        self._handle_metadata_externally(ajs.job_wrapper, resolve_requirements=True)
 
     def __handle_out_of_memory(self, ajs, external_job_id):
         shell_params, job_params = self.parse_destination_params(ajs.job_destination.params)

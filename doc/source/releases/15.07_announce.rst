@@ -10,7 +10,7 @@ Highlights
 
 **Interactive Environments**
   The interactive environments (IE) framework features several updates this release
-  and Galaxy is now distributed with a new IE for RStudio implemented by Eric Rasche.
+  and Galaxy is now distributed with a new IE for RStudio implemented by Helena Rasche.
 
 **Workflow Editor Enhancements**
   The workflow editor has been significantly revamped - it now uses newer tool form
@@ -18,9 +18,9 @@ Highlights
   output collections.
 
 **Policies for Committers and Pull Requests**
-  The process for adding committers to the project and fielding pull requests has 
+  The process for adding committers to the project and fielding pull requests has
   been formalized and documented in the source code. Three new committers have been
-  added to the project - Björn Grüning, Nicola Soranzo, and Eric Rasche.
+  added to the project - Björn Grüning, Nicola Soranzo, and Helena Rasche.
 
 
 `Github <https://github.com/galaxyproject/galaxy>`__
@@ -28,17 +28,17 @@ Highlights
 
 New
   .. code-block:: shell
-  
+
       % git clone -b master https://github.com/galaxyproject/galaxy.git
 
 Update to latest stable release
   .. code-block:: shell
-  
+
       % git checkout master && pull --ff-only origin master
 
 Update to exact version
   .. code-block:: shell
-  
+
       % git checkout v15.07
 
 
@@ -47,8 +47,8 @@ Update to exact version
 
 Upgrade
   .. code-block:: shell
-  
-      % hg pull 
+
+      % hg pull
       % hg update latest_15.07
 
 

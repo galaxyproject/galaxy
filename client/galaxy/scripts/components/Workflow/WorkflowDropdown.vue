@@ -8,46 +8,79 @@
             aria-expanded="false"
         >
             <span :class="icon" />
-            {{ workflow.name }}
+            <span>{{ workflow.name }}</span>
         </b-link>
-        <p>{{ workflow.description }}</p>
+        <p v-if="workflow.description">{{ workflow.description }}</p>
         <div v-if="workflow.shared" class="dropdown-menu" aria-labelledby="workflow-dropdown">
-            <a class="dropdown-item" href="#" @click="onCopy">Copy</a>
-            <a class="dropdown-item" :href="urlViewShared">View</a>
+            <a class="dropdown-item" href="#" @click.prevent="onCopy">
+                <span class="fa fa-copy fa-fw mr-1" />
+                <span>Copy</span>
+            </a>
+            <a class="dropdown-item" :href="urlViewShared">
+                <span class="fa fa-eye fa-fw mr-1" />
+                <span>View</span>
+            </a>
         </div>
         <div v-else class="dropdown-menu" aria-labelledby="workflow-dropdown">
-            <a class="dropdown-item" :href="urlEdit">Edit</a>
-            <a class="dropdown-item" href="#" @click="onCopy">Copy</a>
-            <a class="dropdown-item" :href="urlDownload">Download</a>
-            <a class="dropdown-item" href="#" @click="onRename">Rename</a>
-            <a class="dropdown-item" :href="urlShare">Share</a>
-            <a class="dropdown-item" :href="urlView">View</a>
-            <a class="dropdown-item" href="#" @click="onDelete">Delete</a>
+            <a class="dropdown-item" :href="urlEdit">
+                <span class="fa fa-edit fa-fw mr-1" />
+                <span>Edit</span>
+            </a>
+            <a class="dropdown-item" href="#" @click.prevent="onCopy">
+                <span class="fa fa-copy fa-fw mr-1" />
+                <span>Copy</span>
+            </a>
+            <a class="dropdown-item" :href="urlDownload">
+                <span class="fa fa-download fa-fw mr-1" />
+                <span>Download</span>
+            </a>
+            <a class="dropdown-item" href="#" @click.prevent="onRename">
+                <span class="fa fa-signature fa-fw mr-1" />
+                <span>Rename</span>
+            </a>
+            <a class="dropdown-item" :href="urlShare">
+                <span class="fa fa-share-alt fa-fw mr-1" />
+                <span>Share</span>
+            </a>
+            <a class="dropdown-item" :href="urlView">
+                <span class="fa fa-eye fa-fw mr-1" />
+                <span>View</span>
+            </a>
+            <a class="dropdown-item" href="#" @click.prevent="onDelete">
+                <span class="fa fa-trash fa-fw mr-1" />
+                <span>Delete</span>
+            </a>
         </div>
     </div>
 </template>
 <script>
 import { getAppRoot } from "onload/loadConfig";
-import { Services } from "./services.js";
+import { Services } from "./services";
 export default {
     props: ["workflow"],
-    data() {
-        return {
-            urlEdit: `${getAppRoot()}workflow/editor?id=${this.workflow.id}`,
-            urlDownload: `${getAppRoot()}api/workflows/${this.workflow.id}/download?format=json-download`,
-            urlShare: `${getAppRoot()}workflow/sharing?id=${this.workflow.id}`,
-            urlView: `${getAppRoot()}workflow/display_by_id?id=${this.workflow.id}`,
-            urlViewShared: `${getAppRoot()}workflow/display_by_username_and_slug?username=${this.workflow.owner}&slug=${
-                this.workflow.slug
-            }`
-        };
-    },
     computed: {
+        urlEdit() {
+            return `${getAppRoot()}workflow/editor?id=${this.workflow.id}`;
+        },
+        urlDownload() {
+            return `${getAppRoot()}api/workflows/${this.workflow.id}/download?format=json-download`;
+        },
+        urlShare() {
+            return `${getAppRoot()}workflow/sharing?id=${this.workflow.id}`;
+        },
+        urlView() {
+            return `${getAppRoot()}workflow/display_by_id?id=${this.workflow.id}`;
+        },
+        urlViewShared() {
+            return `${getAppRoot()}workflow/display_by_username_and_slug?username=${this.workflow.owner}&slug=${
+                this.workflow.slug
+            }`;
+        },
         icon() {
             if (this.workflow.shared) {
                 return "fa fa-share-alt";
             }
-            return null;
+            return "fa fa-caret-down";
         }
     },
     created() {

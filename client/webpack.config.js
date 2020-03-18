@@ -12,11 +12,10 @@ const styleBase = path.join(__dirname, "galaxy/style");
 const imageBase = path.join(__dirname, "../static/style");
 
 module.exports = (env = {}, argv = {}) => {
-
     // environment name based on -d, -p, webpack flag
     const targetEnv = argv.mode || "development";
 
-    let buildconfig = {
+    const buildconfig = {
         entry: {
             login: ["polyfills", "bundleEntries", "entry/login"],
             analysis: ["polyfills", "bundleEntries", "entry/analysis"],
@@ -24,8 +23,8 @@ module.exports = (env = {}, argv = {}) => {
             generic: ["polyfills", "bundleEntries", "entry/generic"]
         },
         output: {
-            path: path.join(__dirname, "../", "lib/galaxy/web/framework/static/scripts/bundled"),
-            publicPath: "/static/scripts/bundled/",
+            path: path.join(__dirname, "../", "/static/dist"),
+            publicPath: "/static/dist/",
             filename: "[name].bundled.js",
             chunkFilename: "[name].chunk.js"
         },
@@ -36,6 +35,9 @@ module.exports = (env = {}, argv = {}) => {
                 jquery$: `${libsBase}/jquery.custom.js`,
                 jqueryVendor$: `${libsBase}/jquery/jquery.js`,
                 storemodern$: "store/dist/store.modern.js",
+                "popper.js": path.resolve(__dirname, "node_modules/popper.js/"),
+                moment: path.resolve(__dirname, "node_modules/moment"),
+                underscore: path.resolve(__dirname, "node_modules/underscore"),
                 // client-side application config
                 config$: path.join(__dirname, "galaxy", "config", targetEnv) + ".js"
             }
@@ -66,27 +68,19 @@ module.exports = (env = {}, argv = {}) => {
                 },
                 {
                     test: /\.js$/,
-                    // Pretty sure we don't want anything except node_modules here
-                    exclude: [
-                        /(node_modules\/(?!(handsontable)\/)|bower_components)/,
-                        libsBase
-                    ],
+                    /*
+                     * Babel transpile excludes for:
+                     * - all node_modules except for handsontable, bootstrap-vue
+                     * - statically included libs (like old jquery plugins, etc.)
+                    */
+                    exclude: [/(node_modules\/(?!(handsontable|bootstrap-vue)\/))/, libsBase],
                     loader: "babel-loader",
                     options: {
                         cacheDirectory: true,
                         cacheCompression: false,
-                        presets: [
-                            ["@babel/preset-env", { modules: false }]
-                        ],
-                        plugins: [
-                            "transform-vue-template",
-                            "@babel/plugin-syntax-dynamic-import"
-                        ],
-                        ignore: [
-                            "i18n.js",
-                            "utils/localization.js",
-                            "nls/*"
-                        ]
+                        presets: [["@babel/preset-env", { modules: false }]],
+                        plugins: ["transform-vue-template", "@babel/plugin-syntax-dynamic-import"],
+                        ignore: ["i18n.js", "utils/localization.js", "nls/*"]
                     }
                 },
                 {
@@ -121,7 +115,7 @@ module.exports = (env = {}, argv = {}) => {
                         loader: "file-loader",
                         options: {
                             outputPath: "assets",
-                            publicPath: "../scripts/bundled/assets/"
+                            publicPath: "../dist/assets/"
                         }
                     }
                 },
@@ -148,30 +142,23 @@ module.exports = (env = {}, argv = {}) => {
                     ]
                 },
                 {
-                    test: /\.css$/,
+                    test: /\.(sa|sc|c)ss$/,
                     use: [
-                        MiniCssExtractPlugin.loader,
                         {
-                            loader: "css-loader",
-                            options: { sourceMap: true }
-                        }
-                    ]
-                },
-                {
-                    test: /\.scss$/,
-                    use: [
-                        MiniCssExtractPlugin.loader,
+                            loader: MiniCssExtractPlugin.loader,
+                            options: {
+                                hmr: process.env.NODE_ENV === "development"
+                            }
+                        },
                         {
                             loader: "css-loader",
                             options: { sourceMap: true }
                         },
                         {
-                            loader: 'postcss-loader',
+                            loader: "postcss-loader",
                             options: {
-                                plugins: function () {
-                                    return [
-                                        require('autoprefixer')
-                                    ];
+                                plugins: function() {
+                                    return [require("autoprefixer")];
                                 }
                             }
                         },
@@ -179,10 +166,9 @@ module.exports = (env = {}, argv = {}) => {
                             loader: "sass-loader",
                             options: {
                                 sourceMap: true,
-                                includePaths: [
-                                    "galaxy/style/scss",
-                                    path.resolve(__dirname, './node_modules')
-                                ]
+                                sassOptions: {
+                                    includePaths: ["galaxy/style/scss", path.resolve(__dirname, "./node_modules")]
+                                }
                             }
                         }
                     ]
@@ -228,7 +214,10 @@ module.exports = (env = {}, argv = {}) => {
                 }
             }),
             new DuplicatePackageCheckerPlugin()
-        ]
+        ],
+        devServer: {
+            hot: true
+        }
     };
 
     if (process.env.GXY_BUILD_SOURCEMAPS || process.env.NODE_ENV == "development") {
@@ -236,4 +225,4 @@ module.exports = (env = {}, argv = {}) => {
     }
 
     return buildconfig;
-}
+};

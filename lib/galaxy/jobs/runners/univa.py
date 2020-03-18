@@ -30,8 +30,12 @@ import signal
 import subprocess
 import time
 
-from galaxy import util
 from galaxy.jobs.runners.drmaa import DRMAAJobRunner
+from galaxy.util import (
+    size_to_bytes,
+    unicodify
+)
+
 log = logging.getLogger(__name__)
 
 __all__ = ('UnivaJobRunner',)
@@ -155,6 +159,7 @@ class UnivaJobRunner(DRMAAJobRunner):
         cmd = ['qstat', '-u', '"*"']
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = p.communicate()
+        stdout, stderr = unicodify(stdout).strip(), unicodify(stderr).strip()
         if p.returncode != 0 or stderr != "":
             log.exception('`%s` returned %d, stderr: %s' % (' '.join(cmd), p.returncode, stderr))
             raise self.drmaa.InternalException()
@@ -198,7 +203,7 @@ class UnivaJobRunner(DRMAAJobRunner):
         while True:
             p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             stdout, stderr = p.communicate()
-            stderr = stderr.strip()
+            stdout, stderr = unicodify(stdout).strip(), unicodify(stderr).strip()
             if p.returncode != 0:
                 if slp <= 32 and "job id {jobid} not found".format(jobid=job_id) in stderr:
                     # log.debug('`%s` returned %s, stderr: %s => retry after %ds' % (' '.join(cmd), p.returncode, stderr, slp))
@@ -243,7 +248,7 @@ class UnivaJobRunner(DRMAAJobRunner):
         # qdel       100     137          user@mail
 
         extinfo["time_wasted"] = _parse_time(qacct["wallclock"])
-        extinfo["memory_wasted"] = util.size_to_bytes(qacct["maxvmem"])
+        extinfo["memory_wasted"] = size_to_bytes(qacct["maxvmem"])
         extinfo["slots"] = int(qacct["slots"])
 
         # deleted_by
@@ -569,7 +574,7 @@ def _parse_native_specs(job_id, native_spec):
     # parse memory
     m = re.search(r"mem=([\d.]+[KGMT]?)[\s,]*", native_spec)
     if m is not None:
-        mem = util.size_to_bytes(m.group(1))
+        mem = size_to_bytes(m.group(1))
         # mem = _parse_mem(m.group(1))
         if mem is None:
             log.error("DRMAAUniva: job {job_id} has unparsable memory native spec {spec}".format(job_id=job_id, spec=native_spec))

@@ -1,0 +1,60 @@
+<tool id="interactive_tool_wallace" tool_type="interactive" name="Wallace" version="0.1">
+    <description>Webbased Interactive modeling of species niches and distributions</description>
+    <requirements>
+        <container type="docker">ylebras/wallace-docker</container>
+    </requirements>
+    <entry_points>
+        <entry_point name="Wallace visualisation" requires_domain="True">
+            <port>3838</port>
+            <url>/sample-apps/SIG/wallace/shiny/</url>
+        </entry_point>
+    </entry_points>
+    <environment_variables>
+
+        <environment_variable name="HISTORY_ID" strip="True">${__app__.security.encode_id($outfile.history_id)}</environment_variable> <!-- FIXME: Warning: The use of __app__ is deprecated and will break backward compatibility in the near future -->
+        <environment_variable name="REMOTE_HOST">${__app__.config.galaxy_infrastructure_url}</environment_variable> <!-- FIXME: Warning: The use of __app__ is deprecated and will break backward compatibility in the near future -->
+        <environment_variable name="GALAXY_WEB_PORT">8080</environment_variable>
+        <environment_variable name="GALAXY_URL">$__galaxy_url__</environment_variable>
+        <environment_variable name="API_KEY" inject="api_key" />
+    </environment_variables>
+    <command><![CDATA[
+
+        /usr/bin/shiny-server.sh
+
+    ]]>
+    </command>
+    <inputs>
+        <!--param name="infile" type="data" format="csv" label="csv file with for first columns: 'name', 'longitude', 'latitude' informations"/-->
+    </inputs>
+    <outputs>
+        <data name="outfile" format="txt" />
+    </outputs>
+    <tests>
+    </tests>
+    <help>
+<![CDATA[
+
+
+
+
+`Wallace <https://wallaceecomod.github.io/>`_ is a flexible platform for reproducible modeling of species niches and distributions.
+
+.. class:: infomark
+
+Example input file (TAB separated)::
+
+  "name"	"longitude"	"latitude"	"countryCode"
+  Accipiter striatus Vieillot, 1808	-60.291838	46.328137	CA
+  Accipiter striatus Vieillot, 1808	-114.58927	35.022485	US
+  Accipiter striatus Vieillot, 1808	-93.37406	30.00586	US
+  Accipiter striatus Vieillot, 1808	-79.336288	43.682218	CA
+  Accipiter striatus Vieillot, 1808	-109.156024	31.904185	US
+  Accipiter striatus Vieillot, 1808	-71.098031	42.297408	US
+  Accipiter striatus Vieillot, 1808	-110.927215	32.18203	US
+
+]]>
+    </help>
+    <citations>
+        <citation type="doi">10.1111/2041-210X.12945</citation>
+    </citations>
+</tool>

@@ -9,6 +9,7 @@ import jwt
 import requests
 from oauthlib.common import generate_nonce
 from requests_oauthlib import OAuth2Session
+from six.moves.urllib.parse import quote
 
 from galaxy import util
 from galaxy.model import CustosAuthnzToken, User
@@ -39,6 +40,7 @@ class CustosAuthnz(IdentityProvider):
             self.config['authorization_endpoint'] = well_known_oidc_config['authorization_endpoint']
             self.config['token_endpoint'] = well_known_oidc_config['token_endpoint']
             self.config['userinfo_endpoint'] = well_known_oidc_config['userinfo_endpoint']
+            self.config['end_session_endpoint'] = well_known_oidc_config['end_session_endpoint']
         else:
             realm = oidc_backend_config['realm']
             self._load_config_for_provider_and_realm(self.config['provider'], realm)
@@ -88,9 +90,27 @@ class CustosAuthnz(IdentityProvider):
         # Create or update custos_authnz_token record
         custos_authnz_token = self._get_custos_authnz_token(trans.sa_session, user_id, self.config['provider'])
         if custos_authnz_token is None:
-            user = self._get_current_user(trans)
+            user = trans.user
             if not user:
-                user = self._create_user(trans.sa_session, username, email)
+                existing_user = trans.sa_session.query(User).filter_by(email=email).first()
+                if existing_user:
+                    # If there is only a single external authentication
+                    # provider in use, trust the user provided and
+                    # automatically associate.
+                    # TODO: Future work will expand on this and provide an
+                    # interface for when there are multiple auth providers
+                    # allowing explicit authenticated association.
+                    if (trans.app.config.enable_oidc and
+                            len(trans.app.config.oidc) == 1 and
+                            len(trans.app.auth_manager.authenticators) == 0):
+                        user = existing_user
+                    else:
+                        raise Exception("There already exists a user with email %s.  To associate this external login, you must first be logged in as that existing account." % email)
+                else:
+                    user = trans.app.user_manager.create(email=email, username=username)
+                    user.set_random_password()
+                    trans.sa_session.add(user)
+                    trans.sa_session.flush()
             custos_authnz_token = CustosAuthnzToken(user=user,
                                    external_user_id=user_id,
                                    provider=self.config['provider'],
@@ -124,6 +144,16 @@ class CustosAuthnz(IdentityProvider):
         except Exception as e:
             return False, "Failed to disconnect provider {}: {}".format(provider, util.unicodify(e)), None
 
+    def logout(self, trans, post_logout_redirect_url=None):
+        try:
+            redirect_url = self.config['end_session_endpoint']
+            if post_logout_redirect_url is not None:
+                redirect_url += "?redirect_uri={}".format(quote(post_logout_redirect_url))
+            return redirect_url
+        except Exception as e:
+            log.error("Failed to generate logout redirect_url", exc_info=e)
+            return None
+
     def _create_oauth2_session(self, state=None, scope=None):
         client_id = self.config['client_id']
         redirect_uri = self.config['redirect_uri']
@@ -156,16 +186,6 @@ class CustosAuthnz(IdentityProvider):
         return sa_session.query(CustosAuthnzToken).filter_by(
             external_user_id=user_id, provider=provider).one_or_none()
 
-    def _get_current_user(self, trans):
-        return trans.user if trans.user else None
-
-    def _create_user(self, sa_session, username, email):
-        user = User(email=email, username=username)
-        user.set_random_password()
-        sa_session.add(user)
-        sa_session.flush()
-        return user
-
     def _hash_nonce(self, nonce):
         return hashlib.sha256(util.smart_str(nonce)).hexdigest()
 
@@ -183,6 +203,7 @@ class CustosAuthnz(IdentityProvider):
         self.config['authorization_endpoint'] = well_known_oidc_config['authorization_endpoint']
         self.config['token_endpoint'] = well_known_oidc_config['token_endpoint']
         self.config['userinfo_endpoint'] = well_known_oidc_config['userinfo_endpoint']
+        self.config['end_session_endpoint'] = well_known_oidc_config['end_session_endpoint']
 
     def _get_well_known_uri_for_provider_and_realm(self, provider, realm):
         # TODO: Look up this URL from a Python library

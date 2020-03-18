@@ -53,7 +53,7 @@ export class Services {
     getRecord(record) {
         record.details = record.extension || record.description;
         record.time = record.update_time || record.create_time;
-        record.isDataset = this.isDataset(record);
+        record.isLeaf = this.isDataset(record);
         if (record.time) {
             record.time = record.time.substring(0, 16).replace("T", " ");
         }

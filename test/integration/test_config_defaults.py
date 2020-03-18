@@ -1,13 +1,3 @@
-import os
-from collections import namedtuple
-from datetime import timedelta
-
-import pytest
-
-from galaxy.util import listify
-from galaxy_test.driver.driver_util import GalaxyTestDriver
-
-
 """
 This tests: (1) automatic creation of configuration properties; and
 (2) assignment of default values that are specified in the schema and, in
@@ -29,15 +19,23 @@ Test assumptions for a default configuration:
 Configuration options NOT tested:
 - config_dir (value overridden for testing)
 - data_dir (value overridden for testing)
+- managed_config_dir (value depends on config_dir: see note above)
 - new_file_path (value overridden for testing)
 - logging (mapping loaded in config/; TODO)
 - dependency_resolution (nested properties; TODO)
 - job_config (no obvious testable defaults)
 """
 
+import os
+from collections import namedtuple
+from datetime import timedelta
 
-OptionData = namedtuple('OptionData', 'key, expected, loaded')
+import pytest
 
+from galaxy.util import listify
+from galaxy_test.driver.driver_util import GalaxyTestDriver
+
+OptionData = namedtuple('OptionData', ('key', 'expected', 'loaded'))
 
 # Configuration properties that are paths should be absolute paths, by default resolved w.r.t root.
 PATH_CONFIG_PROPERTIES = [
@@ -45,7 +43,7 @@ PATH_CONFIG_PROPERTIES = [
     'root',
     'config_file',
     'config_dir',
-    'mutable_config_dir',
+    'managed_config_dir',
     'data_dir',
     'auth_config_file',
     'blacklist_file',
@@ -68,6 +66,9 @@ PATH_CONFIG_PROPERTIES = [
     'job_working_directory',
     'len_file_path',
     'library_import_dir',
+    'markdown_export_css',
+    'markdown_export_css_pages',
+    'markdown_export_css_invocation_reports',
     'migrated_tools_config',
     'new_file_path',
     'nginx_upload_job_files_path',
@@ -107,18 +108,18 @@ RESOLVE = {
     'auth_config_file': 'config_dir',
     'builds_file_path': 'tool_data_path',
     'dependency_resolvers_config_file': 'config_dir',
-    'integrated_tool_panel_config': 'config_dir',
+    'integrated_tool_panel_config': 'managed_config_dir',
     'involucro_path': 'root_dir',
     'job_resource_params_file': 'config_dir',
     'len_file_path': 'tool_data_path',
     'object_store_config_file': 'config_dir',
     'oidc_backends_config_file': 'config_dir',
     'oidc_config_file': 'config_dir',
-    'sanitize_whitelist_file': 'root_dir',
-    'shed_data_manager_config_file': 'mutable_config_dir',
-    'shed_tool_config_file': 'mutable_config_dir',
+    'sanitize_whitelist_file': 'managed_config_dir',
+    'shed_data_manager_config_file': 'managed_config_dir',
+    'shed_tool_config_file': 'managed_config_dir',
     'shed_tool_data_path': 'tool_data_path',
-    'shed_tool_data_table_config': 'mutable_config_dir',
+    'shed_tool_data_table_config': 'managed_config_dir',
     'tool_data_path': 'root_dir',
     'tool_path': 'root_dir',
     'tool_sheds_config_file': 'config_dir',
@@ -152,9 +153,11 @@ DO_NOT_TEST = [
     'allow_user_deletion',  # broken: default overridden
     'amqp_internal_connection',  # may or may not be testable; refactor config/
     'api_allow_run_as',  # may or may not be testable: test value assigned
+    'build_sites_config_file',  # broken: remove 'config/' prefix from schema
     'chunk_upload_size',  # broken: default overridden
     'cleanup_job',  # broken: default overridden
     'conda_auto_init',  # broken: default overridden
+    'config_dir',  # value overridden for testing
     'data_dir',  # value overridden for testing
     'data_manager_config_file',  # broken: remove 'config/' prefix from schema
     'database_connection',  # untestable; refactor config/__init__ to test
@@ -175,9 +178,14 @@ DO_NOT_TEST = [
     'id_secret',  # broken: default overridden
     'job_config',  # no obvious testable defaults
     'job_config_file',  # broken: remove 'config/' prefix from schema
+    'job_metrics_config_file',
     'job_working_directory',  # broken; may or may not be able to test
     'library_import_dir',  # broken: default overridden
     'logging',  # mapping loaded in config/
+    'managed_config_dir',  # depends on config_dir: see note above
+    'markdown_export_css',  # default not used?
+    'markdown_export_css_pages',  # default not used?
+    'markdown_export_css_invocation_reports',  # default not used?
     'master_api_key',  # broken: default value assigned outside of config/
     'migrated_tools_config',  # needs more work (should work)
     'monitor_thread_join_timeout',  # broken: default overridden
@@ -197,7 +205,7 @@ DO_NOT_TEST = [
     'user_tool_label_filters',  # broken: default overridden
     'user_tool_section_filters',  # broken: default overridden
     'webhooks_dir',  # broken; also remove 'config/' prefix from schema
-    'workflow_resource_params_mapper',  # broken
+    'workflow_resource_params_mapper',  # broken: remove 'config/' prefix from schema
 ]
 
 
@@ -224,7 +232,7 @@ def get_config_data():
         return {
             'root_dir': DRIVER.app.config.root,
             'config_dir': DRIVER.app.config.config_dir,
-            'mutable_config_dir': DRIVER.app.config.mutable_config_dir,
+            'managed_config_dir': DRIVER.app.config.managed_config_dir,
             'data_dir': DRIVER.app.config.data_dir,
             'tool_data_path': DRIVER.app.config.tool_data_path,
         }
@@ -246,7 +254,7 @@ def get_config_data():
 
     create_driver()  # create + setup DRIVER
     parent_dirs = load_parent_dirs()  # called after DRIVER is setup
-    items = ((k, v) for k, v in DRIVER.app.config.appschema.items() if k not in DO_NOT_TEST)
+    items = ((k, v) for k, v in DRIVER.app.config.schema.app_schema.items() if k not in DO_NOT_TEST)
     for key, data in items:
         expected_value = get_expected(key, data, parent_dirs)
         loaded_value = getattr(DRIVER.app.config, key)

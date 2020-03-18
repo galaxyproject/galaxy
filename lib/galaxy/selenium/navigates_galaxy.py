@@ -208,8 +208,9 @@ class NavigatesGalaxy(HasDriver):
         return self.history_panel_name_element().text
 
     def current_history(self):
-        history = self.api_get("histories")[0]
-        return history
+        full_url = self.build_url("history/current_history_json", for_selenium=False)
+        response = requests.get(full_url, cookies=self.selenium_to_requests_cookies())
+        return response.json()
 
     def current_history_id(self):
         return self.current_history()["id"]
@@ -816,7 +817,7 @@ class NavigatesGalaxy(HasDriver):
         return self.wait_for_and_click_selector("#workflow-options-button")
 
     def workflow_editor_options_menu_element(self):
-        return self.wait_for_selector_visible("#workflow-options-button-menu")
+        return self.wait_for_selector_visible("#workflow-options-button")
 
     def workflow_editor_click_run(self):
         return self.wait_for_and_click_selector("#workflow-run-button")

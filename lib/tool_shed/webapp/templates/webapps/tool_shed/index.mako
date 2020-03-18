@@ -126,9 +126,6 @@
                         <div class="toolTitle">
                             <a target="galaxy_main" href="${h.url_for( controller='repository', action='create_repository' )}">Create new repository</a>
                         </div>
-                        <div class="toolTitle">
-                            <a target="galaxy_main" href="${h.url_for( controller='repository', action='upload_capsule' )}">Import repository capsule</a>
-                        </div>
                         %if trans.app.config.enable_galaxy_flavor_docker_image:
                             <div class="toolTitle">
                                 <a target="galaxy_main" href="${h.url_for( controller='repository', action='create_galaxy_docker_image' )}">Create Galaxy Docker Image</a>

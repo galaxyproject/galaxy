@@ -4,47 +4,47 @@ from contextlib import contextmanager
 from os import path
 from shutil import rmtree
 
+import pytest
+
 from galaxy.tools.toolbox import watcher
 from galaxy.util import bunch
 
 
+@pytest.mark.skipif(not watcher.can_watch, reason="watchdog not available")
 def test_watcher():
-    if not watcher.can_watch:
-        from nose.plugins.skip import SkipTest
-        raise SkipTest()
-
     with __test_directory() as t:
         tool_path = path.join(t, "test.xml")
         toolbox = Toolbox()
-        open(tool_path, "w").write("a")
+        with open(tool_path, "w") as f:
+            f.write("a")
         tool_watcher = watcher.get_tool_watcher(toolbox, bunch.Bunch(
             watch_tools=True
         ))
         tool_watcher.start()
-        time.sleep(1)
         tool_watcher.watch_file(tool_path, "cool_tool")
+        time.sleep(2)
         assert not toolbox.was_reloaded("cool_tool")
-        open(tool_path, "w").write("b")
+        with open(tool_path, "w") as f:
+            f.write("b")
         wait_for_reload(lambda: toolbox.was_reloaded("cool_tool"))
         tool_watcher.shutdown()
         assert tool_watcher.observer is None
 
 
+@pytest.mark.skipif(not watcher.can_watch, reason="watchdog not available")
 def test_tool_conf_watcher():
-    if not watcher.can_watch:
-        from nose.plugins.skip import SkipTest
-        raise SkipTest()
-
     callback = CallbackRecorder()
     conf_watcher = watcher.get_tool_conf_watcher(callback.call)
     conf_watcher.start()
 
     with __test_directory() as t:
         tool_conf_path = path.join(t, "test_conf.xml")
-        open(tool_conf_path, "w").write("a")
+        with open(tool_conf_path, "w") as f:
+            f.write("a")
         conf_watcher.watch_file(tool_conf_path)
-        time.sleep(1)
-        open(tool_conf_path, "w").write("b")
+        time.sleep(2)
+        with open(tool_conf_path, "w") as f:
+            f.write("b")
         wait_for_reload(lambda: callback.called)
         conf_watcher.shutdown()
         assert conf_watcher.thread is None

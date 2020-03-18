@@ -55,7 +55,7 @@
             .annotation {
                 background: white;
                 border-radius: 3px;
-                border: 1px solid fade-out($layout-border-color, 0.5);
+                border: 1px solid fade-out($border-color, 0.5);
                 padding: 4px;
                 white-space: pre-wrap;
                 overflow: auto;

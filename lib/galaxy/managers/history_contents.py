@@ -122,27 +122,18 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
     # order_by parsing - similar to FilterParser but not enough yet to warrant a class?
     def parse_order_by(self, order_by_string, default=None):
         """Return an ORM compatible order_by using the given string"""
-        if order_by_string in ('hid', 'hid-dsc'):
-            return desc('hid')
-        if order_by_string == 'hid-asc':
-            return asc('hid')
-        if order_by_string in ('create_time', 'create_time-dsc'):
-            return desc('create_time')
-        if order_by_string == 'create_time-asc':
-            return asc('create_time')
-        if order_by_string in ('update_time', 'update_time-dsc'):
-            return desc('update_time')
-        if order_by_string == 'update_time-asc':
-            return asc('update_time')
-        if order_by_string in ('name', 'name-asc'):
-            return asc('name')
-        if order_by_string == 'name-dsc':
-            return desc('name')
+        available = ['create_time', 'extension', 'hid', 'history_id', 'name', 'update_time']
+        for attribute in available:
+            attribute_dsc = '%s-dsc' % attribute
+            attribute_asc = '%s-asc' % attribute
+            if order_by_string in (attribute, attribute_dsc):
+                return desc(attribute)
+            if order_by_string == attribute_asc:
+                return asc(attribute)
         if default:
             return self.parse_order_by(default)
-        # TODO: allow order_by None
         raise glx_exceptions.RequestParameterInvalidException('Unknown order_by', order_by=order_by_string,
-            available=['create_time', 'update_time', 'name', 'hid'])
+            available=available)
 
     # history specific methods
     def state_counts(self, history):
@@ -492,6 +483,10 @@ class HistoryContentsFilters(base.ModelFilterParser,
                     return sql.column(attr) >= self.parse_date(val)
                 if op == 'le':
                     return sql.column(attr) <= self.parse_date(val)
+                if op == 'gt':
+                    return sql.column(attr) > self.parse_date(val)
+                if op == 'lt':
+                    return sql.column(attr) < self.parse_date(val)
                 self.raise_filter_err(attr, op, val, 'bad op in filter')
 
             if attr == 'state':
@@ -516,7 +511,7 @@ class HistoryContentsFilters(base.ModelFilterParser,
     def decode_type_id(self, type_id):
         TYPE_ID_SEP = '-'
         split = type_id.split(TYPE_ID_SEP, 1)
-        return TYPE_ID_SEP.join([split[0], str(self.app.security.decode_id(split[1]))])
+        return TYPE_ID_SEP.join((split[0], str(self.app.security.decode_id(split[1]))))
 
     def parse_type_id_list(self, type_id_list_string, sep=','):
         """
@@ -539,6 +534,6 @@ class HistoryContentsFilters(base.ModelFilterParser,
             'name'          : {'op': ('eq', 'contains', 'like')},
             'state'         : {'op': ('eq', 'in')},
             'visible'       : {'op': ('eq'), 'val': self.parse_bool},
-            'create_time'   : {'op': ('le', 'ge'), 'val': self.parse_date},
-            'update_time'   : {'op': ('le', 'ge'), 'val': self.parse_date},
+            'create_time'   : {'op': ('le', 'ge', 'lt', 'gt'), 'val': self.parse_date},
+            'update_time'   : {'op': ('le', 'ge', 'lt', 'gt'), 'val': self.parse_date},
         })

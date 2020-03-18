@@ -9,6 +9,7 @@ from math import isinf
 import packaging.version
 
 from galaxy.tool_util.deps import requirements
+from galaxy.tool_util.parser.util import DEFAULT_DELTA
 from galaxy.util import string_as_bool, xml_text, xml_to_string
 from .interface import (
     InputSource,
@@ -531,6 +532,7 @@ def _test_elem_to_dict(test_elem, i):
         inputs=__parse_input_elems(test_elem, i),
         expect_num_outputs=test_elem.get("expect_num_outputs"),
         command=__parse_assert_list_from_elem(test_elem.find("assert_command")),
+        command_version=__parse_assert_list_from_elem(test_elem.find("assert_command_version")),
         stdout=__parse_assert_list_from_elem(test_elem.find("assert_stdout")),
         stderr=__parse_assert_list_from_elem(test_elem.find("assert_stderr")),
         expect_exit_code=test_elem.get("expect_exit_code"),
@@ -611,7 +613,7 @@ def __parse_test_attributes(output_elem, attrib, parse_elements=False, parse_dis
     # Number of lines to allow to vary in logs (for dates, etc)
     attributes['lines_diff'] = int(attrib.pop('lines_diff', '0'))
     # Allow a file size to vary if sim_size compare
-    attributes['delta'] = int(attrib.pop('delta', '10000'))
+    attributes['delta'] = int(attrib.pop('delta', DEFAULT_DELTA))
     attributes['sort'] = string_as_bool(attrib.pop('sort', False))
     attributes['decompress'] = string_as_bool(attrib.pop('decompress', False))
     extra_files = []
@@ -1082,7 +1084,7 @@ class XmlInputSource(InputSource):
         return static_options
 
     def parse_optional(self, default=None):
-        """ Return boolean indicating wheter parameter is optional. """
+        """ Return boolean indicating whether parameter is optional. """
         elem = self.input_elem
         if self.get('type') == "data_column":
             # Allow specifing force_select for backward compat., but probably

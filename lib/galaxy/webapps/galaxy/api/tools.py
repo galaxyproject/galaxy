@@ -57,6 +57,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         trackster = util.string_as_bool(kwds.get('trackster', 'False'))
         q = kwds.get('q', '')
         tool_id = kwds.get('tool_id', '')
+        tool_help = util.string_as_bool(kwds.get('tool_help', 'False'))
 
         # Find whether to search.
         if q:
@@ -88,7 +89,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
 
         # Return everything.
         try:
-            return self.app.toolbox.to_dict(trans, in_panel=in_panel, trackster=trackster)
+            return self.app.toolbox.to_dict(trans, in_panel=in_panel, trackster=trackster, tool_help=tool_help)
         except Exception:
             raise exceptions.InternalServerError("Error: Could not convert toolbox to dictionary")
 
@@ -123,8 +124,8 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         tool = self._get_tool(id, tool_version=tool_version, user=trans.user)
         return tool.to_json(trans, kwd.get('inputs', kwd))
 
-    @expose_api
     @web.require_admin
+    @expose_api
     def test_data_path(self, trans, id, **kwd):
         """
         GET /api/tools/{tool_id}/test_data_path?tool_version={tool_version}
@@ -172,15 +173,16 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         """
         test_counts_by_tool = {}
         for id, tool in self.app.toolbox.tools():
-            tests = tool.tests
-            if tests:
-                if tool.id not in test_counts_by_tool:
-                    test_counts_by_tool[tool.id] = {}
-                available_versions = test_counts_by_tool[tool.id]
-                available_versions[tool.version] = {
-                    "tool_name": tool.name,
-                    "count": len(tests),
-                }
+            if not tool.is_datatype_converter:
+                tests = tool.tests
+                if tests:
+                    if tool.id not in test_counts_by_tool:
+                        test_counts_by_tool[tool.id] = {}
+                    available_versions = test_counts_by_tool[tool.id]
+                    available_versions[tool.version] = {
+                        "tool_name": tool.name,
+                        "count": len(tests),
+                    }
         return test_counts_by_tool
 
     @expose_api_raw_anonymous_and_sessionless
@@ -212,8 +214,8 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         result = [t.to_dict() for t in tool.tests]
         return safe_dumps(result, default=json_encodeify)
 
-    @expose_api
     @web.require_admin
+    @expose_api
     def reload(self, trans, id, **kwd):
         """
         GET /api/tools/{tool_id}/reload
@@ -225,8 +227,8 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
             raise exceptions.MessageException(message)
         return {'message': message}
 
-    @expose_api
     @web.require_admin
+    @expose_api
     def all_requirements(self, trans, **kwds):
         """
         GET /api/tools/all_requirements
@@ -235,8 +237,8 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
 
         return trans.app.toolbox.all_requirements
 
-    @expose_api
     @web.require_admin
+    @expose_api
     def requirements(self, trans, id, **kwds):
         """
         GET /api/tools/{tool_id}/requirements
@@ -246,8 +248,8 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         tool = self._get_tool(id, user=trans.user)
         return tool.tool_requirements_status
 
-    @expose_api
     @web.require_admin
+    @expose_api
     def install_dependencies(self, trans, id, **kwds):
         """
         POST /api/tools/{tool_id}/dependencies
@@ -272,8 +274,8 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         # _view.install_dependencies should return a dict with stdout, stderr and success status
         return tool.tool_requirements_status
 
-    @expose_api
     @web.require_admin
+    @expose_api
     def uninstall_dependencies(self, trans, id, **kwds):
         """
         DELETE /api/tools/{tool_id}/dependencies
@@ -289,8 +291,8 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         # TODO: rework resolver install system to log and report what has been done.
         return tool.tool_requirements_status
 
-    @expose_api
     @web.require_admin
+    @expose_api
     def build_dependency_cache(self, trans, id, **kwds):
         """
         POST /api/tools/{tool_id}/build_dependency_cache
@@ -304,8 +306,8 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         # TODO: Should also have a more meaningful return.
         return tool.tool_requirements_status
 
-    @expose_api
     @web.require_admin
+    @expose_api
     def diagnostics(self, trans, id, **kwd):
         """
         GET /api/tools/{tool_id}/diagnostics
@@ -407,8 +409,8 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         tool = self._get_tool(id, user=trans.user)
         return tool.xrefs
 
-    @web.legacy_expose_api_raw
     @web.require_admin
+    @web.legacy_expose_api_raw
     def download(self, trans, id, **kwds):
         tool_tarball = trans.app.toolbox.package_tool(trans, id)
         trans.response.set_content_type('application/x-gzip')
@@ -446,8 +448,8 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         create_payload.update(files_payload)
         return self._create(trans, create_payload, **kwd)
 
-    @expose_api
     @web.require_admin
+    @expose_api
     def error_stack(self, trans, **kwd):
         """
         GET /api/tools/error_stack
@@ -546,8 +548,21 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
             output_dict['output_name'] = output_name
             outputs.append(trans.security.encode_dict_ids(output_dict, skip_startswith="metadata_"))
 
+        new_pja_flush = False
         for job in vars.get('jobs', []):
             rval['jobs'].append(self.encode_all_ids(trans, job.to_dict(view='collection'), recursive=True))
+            if inputs.get('send_email_notification', False):
+                # Unless an anonymous user is invoking this via the API it
+                # should never be an option, but check and enforce that here
+                if trans.user is None:
+                    raise exceptions.ToolExecutionError("Anonymously run jobs cannot send an email notification.")
+                else:
+                    job_email_action = trans.model.PostJobAction('EmailAction')
+                    job.add_post_job_action(job_email_action)
+                    new_pja_flush = True
+
+        if new_pja_flush:
+            trans.sa_session.flush()
 
         for output_name, collection_instance in vars.get('output_collections', []):
             history = target_history or trans.history

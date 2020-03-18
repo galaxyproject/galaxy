@@ -51,6 +51,8 @@ ENTRY_POINTS = '''
         mulled-search=galaxy.tool_util.deps.mulled.mulled_search:main
         mulled-build-tool=galaxy.tool_util.deps.mulled.mulled_build_tool:main
         mulled-build-files=galaxy.tool_util.deps.mulled.mulled_build_files:main
+        mulled-list=galaxy.tool_util.deps.mulled.mulled_list:main
+        mulled-update-singularity-containers=galaxy.tool_util.deps.mulled.mulled_update_singularity_containers:main
 '''
 PACKAGE_DATA = {
     # Be sure to update MANIFEST.in for source dist.
@@ -94,6 +96,9 @@ setup(
     package_dir=PACKAGE_DIR,
     include_package_data=True,
     install_requires=requirements,
+    extras_require={
+        'condatesting': ['jinja2'],
+    },
     license="AFL",
     zip_safe=False,
     keywords='galaxy',

@@ -3,6 +3,7 @@ import sys
 import time
 
 import galaxy.model
+from galaxy.config import configure_logging
 from galaxy.security import idencoding
 from galaxy.web_stack import application_stack_instance
 from . import config
@@ -19,7 +20,7 @@ class UniverseApplication(object):
         # Read config file and check for errors
         self.config = config.Configuration(**kwargs)
         self.config.check()
-        config.configure_logging(self.config)
+        configure_logging(self.config)
         self.application_stack = application_stack_instance()
         # Determine the database url
         if self.config.database_connection:

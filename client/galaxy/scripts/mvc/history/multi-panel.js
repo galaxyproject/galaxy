@@ -212,10 +212,14 @@ var HistoryViewColumn = Backbone.View.extend(baseMVC.LoggableMixin).extend({
         `<div class="text-right col-4">
             <% if( !data.history.purged ){ %>
                 <div class="panel-menu btn-group">
-                    <button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown">
+                    <button 
+                    history-dropdown-btn="<%= data.history.id %>" 
+                    type="button"
+                    class="btn btn-secondary dropdown-toggle"
+                    data-toggle="dropdown">
                         <span class="caret"></span>
                     </button>
-                    <div class="dropdown-menu" role="menu">
+                    <div history-dropdown-menu="<%= data.history.id %>"  class="dropdown-menu" role="menu">
                         <% if( !data.history.deleted ){ %>
                             <a class="dropdown-item copy-history" href="javascript:void(0);">
                                 ${_l("Copy")}

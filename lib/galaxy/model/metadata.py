@@ -473,7 +473,7 @@ class ColumnTypesParameter(MetadataParameter):
 class ListParameter(MetadataParameter):
 
     def to_string(self, value):
-        return ",".join([str(x) for x in value])
+        return ",".join(str(x) for x in value)
 
 
 class DictParameter(MetadataParameter):

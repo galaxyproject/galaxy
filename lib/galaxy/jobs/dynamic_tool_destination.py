@@ -67,10 +67,12 @@ def get_keys_from_dict(dl, keys_list):
     This function builds a list using the keys from nest dictionaries
     """
     if isinstance(dl, dict):
-        keys_list += dl.keys()
-        map(lambda x: get_keys_from_dict(x, keys_list), dl.values())
+        keys_list.extend(dl.keys())
+        for x in dl.values():
+            get_keys_from_dict(x, keys_list)
     elif isinstance(dl, list):
-        map(lambda x: get_keys_from_dict(x, keys_list), dl)
+        for x in dl:
+            get_keys_from_dict(x, keys_list)
 
 
 class RuleValidator(object):

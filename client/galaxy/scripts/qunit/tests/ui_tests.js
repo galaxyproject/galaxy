@@ -214,7 +214,10 @@ QUnit.test("options", function(assert) {
         value: null,
         length: 0
     });
-    radio.model.set("data", [{ value: "valuea", label: "labela" }, { value: "valueb", label: "labelb" }]);
+    radio.model.set("data", [
+        { value: "valuea", label: "labela" },
+        { value: "valueb", label: "labelb" }
+    ]);
     _test(radio, {
         menu_visible: true,
         message_visible: false,
@@ -321,7 +324,10 @@ QUnit.test("options", function(assert) {
         length: 0,
         all_icon: "fa-square-o"
     });
-    check.model.set("data", [{ value: "valuea", label: "labela" }, { value: "valueb", label: "labelb" }]);
+    check.model.set("data", [
+        { value: "valuea", label: "labela" },
+        { value: "valueb", label: "labelb" }
+    ]);
     _test(check, {
         menu_visible: true,
         message_visible: false,
@@ -380,7 +386,10 @@ QUnit.test("options", function(assert) {
 
     var radiobutton = new Ui.RadioButton.View({});
     $("body").prepend(radiobutton.$el);
-    radiobutton.model.set("data", [{ value: "valuea", label: "labela" }, { value: "valueb", label: "labelb" }]);
+    radiobutton.model.set("data", [
+        { value: "valuea", label: "labela" },
+        { value: "valueb", label: "labelb" }
+    ]);
     _test(radiobutton, {
         menu_visible: true,
         message_visible: false,
@@ -414,7 +423,10 @@ QUnit.test("options", function(assert) {
                 {
                     value: "valued",
                     name: "labeld",
-                    options: [{ value: "valuee", name: "labele" }, { value: "valuef", name: "labelf" }]
+                    options: [
+                        { value: "valuee", name: "labele" },
+                        { value: "valuef", name: "labelf" }
+                    ]
                 }
             ]
         },
@@ -508,7 +520,10 @@ QUnit.test("select-default", function(assert) {
         visible: true,
         count: 1
     });
-    select.model.set("data", [{ value: "valuea", label: "labela" }, { value: "valueb", label: "labelb" }]);
+    select.model.set("data", [
+        { value: "valuea", label: "labela" },
+        { value: "valueb", label: "labelb" }
+    ]);
     _test({
         value: "valuea",
         label: "labela",
@@ -540,7 +555,10 @@ QUnit.test("select-default", function(assert) {
     select.model.set({
         visible: true,
         value: "valueb",
-        data: [{ value: "valuea", label: "labela" }, { value: "valueb", label: "labelb" }]
+        data: [
+            { value: "valuea", label: "labela" },
+            { value: "valueb", label: "labelb" }
+        ]
     });
     _test({
         value: "valueb",
@@ -744,7 +762,10 @@ QUnit.test("select-content", function(assert) {
 
     assert.ok(select.button_type.value() == 0, "Initial mode selected by default.");
     select.model.set("data", {
-        hda: [{ id: "id0", name: "name0", hid: "hid0" }, { id: "id1", name: "name1", hid: "hid1" }],
+        hda: [
+            { id: "id0", name: "name0", hid: "hid0" },
+            { id: "id1", name: "name1", hid: "hid1" }
+        ],
         hdca: [
             { id: "id2", name: "name2", hid: "hid2" },
             { id: "id3", name: "name3", hid: "hid3" },
@@ -849,7 +870,12 @@ QUnit.test("select-content", function(assert) {
 
     assert.ok(select.config[select.model.get("current")].src == "hda", "Matched dataset field");
     assert.ok(!select.config[select.model.get("current")].multiple, "Matched single select field");
-    select.model.set("value", { values: [{ id: "id0", src: "hda" }, { id: "id1", src: "hda" }] });
+    select.model.set("value", {
+        values: [
+            { id: "id0", src: "hda" },
+            { id: "id1", src: "hda" }
+        ]
+    });
     assert.ok(select.config[select.model.get("current")].multiple, "Matched multiple field");
     assert.ok(
         JSON.stringify(select.value()) ==

@@ -82,7 +82,7 @@ class ObjectStore(object):
         000/obj.id)
     """
 
-    def __init__(self, config, config_dict={}, **kwargs):
+    def __init__(self, config, config_dict=None, **kwargs):
         """
         :type config: object
         :param config: An object, most likely populated from
@@ -95,11 +95,11 @@ class ObjectStore(object):
               parent directory those directories will be created.
             * new_file_path -- Used to set the 'temp' extra_dir.
         """
+        if config_dict is None:
+            config_dict = {}
         self.running = True
         self.config = config
         self.check_old_style = config.object_store_check_old_style
-        self.store_by = config_dict.get("store_by", None) or getattr(config, "object_store_store_by", "id")
-        assert self.store_by in ["id", "uuid"]
         extra_dirs = {}
         extra_dirs['job_work'] = config.jobs_directory
         extra_dirs['temp'] = config.new_file_path
@@ -212,6 +212,13 @@ class ObjectStore(object):
         """Return the percentage indicating how full the store is."""
         raise NotImplementedError()
 
+    def get_store_by(self, obj):
+        """Return how object is stored (by 'uuid', 'id', or None if not yet saved).
+
+        Certain Galaxy remote data features aren't available if objects are stored by 'id'.
+        """
+        raise NotImplementedError()
+
     @classmethod
     def parse_xml(clazz, config_xml):
         """Parse an XML description of a configuration for this object store.
@@ -233,7 +240,6 @@ class ObjectStore(object):
         return {
             'config': config_to_dict(self.config),
             'extra_dirs': extra_dirs,
-            'store_by': self.store_by,
             'type': self.store_type,
         }
 
@@ -246,7 +252,39 @@ class ObjectStore(object):
             return obj.id
 
 
-class DiskObjectStore(ObjectStore):
+class ConcreteObjectStore(ObjectStore):
+    """Subclass of ObjectStore for stores that don't delegate (non-nested).
+
+    Currently only adds store_by functionality. Which doesn't make
+    sense for the delegating object stores.
+    """
+
+    def __init__(self, config, config_dict={}, **kwargs):
+        """
+        :type config: object
+        :param config: An object, most likely populated from
+            `galaxy/config.ini`, having the following attributes:
+
+            * object_store_check_old_style (only used by the
+              :class:`DiskObjectStore` subclass)
+            * jobs_directory -- Each job is given a unique empty directory
+              as its current working directory. This option defines in what
+              parent directory those directories will be created.
+            * new_file_path -- Used to set the 'temp' extra_dir.
+        """
+        super(ConcreteObjectStore, self).__init__(config=config, config_dict=config_dict, **kwargs)
+        self.store_by = config_dict.get("store_by", None) or getattr(config, "object_store_store_by", "id")
+
+    def to_dict(self):
+        rval = super(ConcreteObjectStore, self).to_dict()
+        rval["store_by"] = self.store_by
+        return rval
+
+    def get_store_by(self, obj):
+        return self.store_by
+
+
+class DiskObjectStore(ConcreteObjectStore):
     """
     Standard Galaxy object store.
 
@@ -288,6 +326,9 @@ class DiskObjectStore(ObjectStore):
         extra_dirs = []
         config_dict = {}
         if config_xml is not None:
+            store_by = config_xml.attrib.get('store_by', None)
+            if store_by is not None:
+                config_dict['store_by'] = store_by
             for e in config_xml:
                 if e.tag == 'files_dir':
                     config_dict["files_dir"] = e.get('path')
@@ -569,6 +610,9 @@ class NestedObjectStore(ObjectStore):
         """For the first backend that has this `obj`, get its URL."""
         return self._call_method('get_object_url', obj, None, False, **kwargs)
 
+    def get_store_by(self, obj):
+        return self._call_method('get_store_by', obj, None, False)
+
     def _repr_object_for_exception(self, obj):
         try:
             # there are a few objects in python that don't have __class__
@@ -632,7 +676,10 @@ class DistributedObjectStore(NestedObjectStore):
             extra_dirs = backend_def.get("extra_dirs", [])
             maxpctfull = backend_def.get("max_percent_full", 0)
             weight = backend_def["weight"]
+            store_by = backend_def.get("store_by")
             disk_config_dict = dict(files_dir=file_path, extra_dirs=extra_dirs)
+            if store_by is not None:
+                disk_config_dict['store_by'] = store_by
             self.backends[backened_id] = DiskObjectStore(config, disk_config_dict)
             self.max_percent_full[backened_id] = maxpctfull
             log.debug("Loaded disk backend '%s' with weight %s and file_path: %s" % (backened_id, weight, file_path))
@@ -670,7 +717,7 @@ class DistributedObjectStore(NestedObjectStore):
             weight = int(elem.get('weight', 1))
             maxpctfull = float(elem.get('maxpctfull', 0))
             elem_type = elem.get('type', 'disk')
-
+            store_by = elem.get('store_by', None)
             if elem_type:
                 path = None
                 extra_dirs = []
@@ -689,6 +736,8 @@ class DistributedObjectStore(NestedObjectStore):
                     'extra_dirs': extra_dirs,
                     'type': elem_type,
                 }
+                if store_by is not None:
+                    backend_dict['store_by'] = store_by
                 backends.append(backend_dict)
 
         return config_dict

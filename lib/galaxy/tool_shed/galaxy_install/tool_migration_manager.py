@@ -26,6 +26,7 @@ from galaxy.tool_shed.util.repository_util import create_or_update_tool_shed_rep
 from galaxy.tool_shed.util.tool_dependency_util import create_tool_dependency_objects
 from galaxy.tools.toolbox import ToolSection
 from galaxy.tools.toolbox.parser import ensure_tool_conf_item
+from galaxy.util import RW_R__R__
 from galaxy.util.tool_shed import common_util
 from galaxy.util.tool_shed.xml_util import parse_xml
 
@@ -260,7 +261,7 @@ class ToolMigrationManager(object):
                 tree.write(tmp_filename, encoding='utf-8', xml_declaration=True)
                 fh.close()
                 shutil.move(tmp_filename, os.path.abspath(proprietary_tool_conf))
-                os.chmod(proprietary_tool_conf, 0o644)
+                os.chmod(proprietary_tool_conf, RW_R__R__)
 
     def get_containing_tool_sections(self, tool_config):
         """

@@ -425,7 +425,7 @@ mapping:
 
       static_style_dir:
         type: str
-        default: static/style/blue
+        default: static/style
         required: false
         desc: |
           Serving static files (needed if running standalone)
@@ -481,6 +481,18 @@ mapping:
           E-mail domains blacklist is used for filtering out users that are using
           disposable email address during the registration.  If their address domain
           matches any domain in the blacklist, they are refused the registration.
+
+      whitelist_file:
+        type: str
+        default: disposable_email_whitelist.conf
+        path_resolves_to: config_dir
+        required: false
+        desc: |
+          E-mail domains whitelist is used to specify allowed email address domains.
+          If the list is non-empty and a user attempts registration using an email
+          address belonging to a domain that is not on the list, registration will be
+          enied. This is a more restrictive option than <blacklist_file>, and therefore,
+          in case <whitelist_file> is defined, <blacklist_file> will be ignored.
 
       brand:
         type: str

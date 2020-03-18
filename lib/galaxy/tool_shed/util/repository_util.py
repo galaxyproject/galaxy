@@ -4,7 +4,6 @@ import re
 import shutil
 
 from markupsafe import escape
-from six.moves import configparser
 from six.moves.urllib.error import HTTPError
 from sqlalchemy import and_, false, or_
 
@@ -16,16 +15,6 @@ from galaxy.util.tool_shed import common_util, encoding_util
 log = logging.getLogger(__name__)
 
 VALID_REPOSITORYNAME_RE = re.compile(r"^[a-z0-9\_]+$")
-
-
-def change_repository_name_in_hgrc_file(hgrc_file, new_name):
-    config = configparser.ConfigParser()
-    config.read(hgrc_file)
-    config.read(hgrc_file)
-    config.set('web', 'name', new_name)
-    new_file = open(hgrc_file, 'wb')
-    config.write(new_file)
-    new_file.close()
 
 
 def check_for_updates(app, model, repository_id=None):
@@ -172,7 +161,7 @@ def generate_tool_shed_repository_install_dir(repository_clone_url, changeset_re
     tool_shed_url = items[0]
     repo_path = items[1]
     tool_shed_url = common_util.remove_port_from_tool_shed_url(tool_shed_url)
-    return '/'.join([tool_shed_url, 'repos', repo_path, changeset_revision])
+    return '/'.join((tool_shed_url, 'repos', repo_path, changeset_revision))
 
 
 def get_absolute_path_to_file_in_repository(repo_files_dir, file_name):
@@ -617,7 +606,6 @@ def set_repository_attributes(app, repository, status, error_message, deleted, u
 
 
 __all__ = (
-    'change_repository_name_in_hgrc_file',
     'check_for_updates',
     'check_or_update_tool_shed_status_for_installed_repository',
     'create_or_update_tool_shed_repository',

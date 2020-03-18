@@ -38,7 +38,7 @@ Enhancements
 * disable 'hg push' to TS repositories
   `Pull Request 2033`_
 * Generic GIE Launcher, GIE Image Chooser, multiple datasets
-  (thanks to `@erasche <https://github.com/erasche>`__.)
+  (thanks to `@hexylena <https://github.com/hexylena>`__.)
   `Pull Request 1403`_
 * The entire Python source code is now continuously checked with flake8 for
   PEP-8 style consistency and common errors. The last 3500 errors were fixed in
@@ -49,7 +49,7 @@ Enhancements
 .. enhancement
 
 * Implement new GIE proxy
-  (thanks to `@erasche <https://github.com/erasche>`__.)
+  (thanks to `@hexylena <https://github.com/hexylena>`__.)
   `Pull Request 1807`_
 * Workflow editor overview click navigation
   `Pull Request 1843`_
@@ -58,7 +58,7 @@ Enhancements
 * datalibs: introduce folder management; fix various glitches; refactor
   `Pull Request 1562`_
 * Add makefile target for release process
-  (thanks to `@erasche <https://github.com/erasche>`__.)
+  (thanks to `@hexylena <https://github.com/hexylena>`__.)
   `Pull Request 1433`_
 * libraries: provide select all/none options when importing
   `Pull Request 1970`_
@@ -152,7 +152,7 @@ Enhancements
 * Implement dataset empty input validator.
   `Pull Request 1808`_
 * Makefile help target + formatting
-  (thanks to `@erasche <https://github.com/erasche>`__.)
+  (thanks to `@hexylena <https://github.com/hexylena>`__.)
   `Pull Request 1824`_
 * Add license and repository information to package.json.
   `Pull Request 1829`_
@@ -228,7 +228,7 @@ Enhancements
 * make new beta TS tools installation via API configurable
   `Pull Request 2088`_
 * Patch in visual separation of section parameters
-  (thanks to `@erasche <https://github.com/erasche>`__.)
+  (thanks to `@hexylena <https://github.com/hexylena>`__.)
   `Pull Request 2091`_
 * Add sample supervisor config
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__.)
@@ -447,7 +447,7 @@ Fixes
 * Fix farbtastic's use of deprecated jquery fns by loading jq-migrate in galaxy.panels.mako .
   `Pull Request 1972`_
 * Remove duplicate help target
-  (thanks to `@erasche <https://github.com/erasche>`__.)
+  (thanks to `@hexylena <https://github.com/hexylena>`__.)
   `Pull Request 1980`_
 * Fix booleans in workflow editor
   `Pull Request 1990`_
@@ -477,7 +477,7 @@ Fixes
 * Show sections in workflow run
   `Pull Request 2087`_
 * Workflow section fix backport
-  (thanks to `@erasche <https://github.com/erasche>`__.)
+  (thanks to `@hexylena <https://github.com/hexylena>`__.)
   `Pull Request 2092`_
 * Run external local set_metadata jobs in the job's working directory
   `Pull Request 2094`_

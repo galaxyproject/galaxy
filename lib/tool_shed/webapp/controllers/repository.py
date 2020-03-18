@@ -24,7 +24,6 @@ from galaxy.tools.repositories import ValidationContext
 from galaxy.web.form_builder import CheckboxField, SelectField
 from galaxy.webapps.base.controller import BaseUIController
 from galaxy.webapps.reports.framework import grids
-from tool_shed.capsule import capsule_manager
 from tool_shed.dependencies.repository import relation_builder
 from tool_shed.galaxy_install import dependency_display
 from tool_shed.metadata import repository_metadata_manager
@@ -647,7 +646,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                 # to which we need to update.
                 update_to_changeset_hash = None
                 for changeset in repo.changelog:
-                    changeset_hash = str(repo.changectx(changeset))
+                    changeset_hash = str(repo[changeset])
                     hg_util.get_changectx_for_changeset(repo, changeset_hash)
                     if update_to_changeset_hash:
                         if changeset_hash == repository.tip(trans.app):
@@ -935,73 +934,6 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         return trans.response.send_redirect(download_url)
 
     @web.expose
-    def export(self, trans, repository_id, changeset_revision, **kwd):
-        message = escape(kwd.get('message', ''))
-        status = kwd.get('status', 'done')
-        export_repository_dependencies = kwd.get('export_repository_dependencies', '')
-        repository = repository_util.get_repository_in_tool_shed(trans.app, repository_id)
-        if kwd.get('export_repository_button', False):
-            # We'll currently support only gzip-compressed tar archives.
-            export_repository_dependencies = CheckboxField.is_checked(export_repository_dependencies)
-            tool_shed_url = web.url_for('/', qualified=True)
-            erm = capsule_manager.ExportRepositoryManager(app=trans.app,
-                                                          user=trans.user,
-                                                          tool_shed_url=tool_shed_url,
-                                                          repository=repository,
-                                                          changeset_revision=changeset_revision,
-                                                          export_repository_dependencies=export_repository_dependencies,
-                                                          using_api=False)
-            repositories_archive, error_message = erm.export_repository()
-            repositories_archive_filename = os.path.basename(repositories_archive.name)
-            if error_message:
-                message = error_message
-                status = 'error'
-            else:
-                trans.response.set_content_type('application/x-gzip')
-                trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % (repositories_archive_filename)
-                opened_archive = open(repositories_archive.name)
-                # Make sure the file is removed from disk after the contents have been downloaded.
-                os.unlink(repositories_archive.name)
-                repositories_archive_path, file_name = os.path.split(repositories_archive.name)
-                basic_util.remove_dir(repositories_archive_path)
-                return opened_archive
-        repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(trans.app, repository_id, changeset_revision)
-        metadata = repository_metadata.metadata
-        toolshed_base_url = str(web.url_for('/', qualified=True)).rstrip('/')
-        # Initialize the repository dependency RelationBuilder.
-        rb = relation_builder.RelationBuilder(trans.app, repository, repository_metadata, toolshed_base_url)
-        # Work-around to ensure repositories that contain packages needed only for compiling
-        # a dependent package are included in the capsule.
-        rb.set_filter_dependencies_needed_for_compiling(False)
-        # Get a dictionary of all repositories upon which the contents of the current repository_metadata record depend.
-        repository_dependencies = rb.get_repository_dependencies_for_changeset_revision()
-        if repository_dependencies:
-            # Only display repository dependencies if they exist.
-            exclude = ['datatypes', 'invalid_repository_dependencies', 'invalid_tool_dependencies', 'invalid_tools',
-                       'readme_files', 'tool_dependencies', 'tools', 'workflows', 'data_manager']
-            tsucm = ToolShedUtilityContainerManager(trans.app)
-            containers_dict = tsucm.build_repository_containers(repository,
-                                                                changeset_revision,
-                                                                repository_dependencies,
-                                                                repository_metadata,
-                                                                exclude=exclude)
-            export_repository_dependencies_check_box = CheckboxField('export_repository_dependencies', value=True)
-        else:
-            containers_dict = None
-            export_repository_dependencies_check_box = None
-        revision_label = hg_util.get_revision_label(trans.app, repository, changeset_revision, include_date=True)
-        return trans.fill_template("/webapps/tool_shed/repository/export_repository.mako",
-                                   changeset_revision=changeset_revision,
-                                   containers_dict=containers_dict,
-                                   export_repository_dependencies_check_box=export_repository_dependencies_check_box,
-                                   repository=repository,
-                                   repository_metadata=repository_metadata,
-                                   revision_label=revision_label,
-                                   metadata=metadata,
-                                   message=message,
-                                   status=status)
-
-    @web.expose
     def export_via_api(self, trans, **kwd):
         """Return an exported gzip compressed repository archive file opened for reading."""
         encoded_repositories_archive_name = kwd.get('encoded_repositories_archive_name', None)
@@ -1182,8 +1114,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                     includes_tools = False
                     has_repository_dependencies = False
                     has_repository_dependencies_only_if_compiling_contained_td = False
-                    changeset_hash = str(repo.changectx(changeset))
-                    hg_util.get_changectx_for_changeset(repo, changeset_hash)
+                    changeset_hash = str(repo[changeset])
                     if update_to_changeset_hash:
                         update_to_repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(trans.app,
                                                                                                                     trans.security.encode_id(repository.id),
@@ -1236,10 +1167,8 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         return ''
 
     @web.json
+    @web.do_not_cache
     def get_file_contents(self, trans, file_path, repository_id):
-        # Avoid caching
-        trans.response.headers['Pragma'] = 'no-cache'
-        trans.response.headers['Expires'] = '0'
         is_admin = trans.user_is_admin
         return suc.get_repository_file_contents(trans.app, file_path, repository_id, is_admin)
 
@@ -1444,7 +1373,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         repo = hg_util.get_repo_for_repository(trans.app, repository=repository)
         tool_version_dicts = []
         for changeset in repo.changelog:
-            current_changeset_revision = str(repo.changectx(changeset))
+            current_changeset_revision = str(repo[changeset])
             repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(trans.app,
                                                                                               trans.security.encode_id(repository.id),
                                                                                               current_changeset_revision)
@@ -1541,49 +1470,6 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         message = escape(kwd.get('message', ''))
         status = kwd.get('status', 'done')
         return trans.fill_template('/webapps/tool_shed/repository/help.mako', message=message, status=status, **kwd)
-
-    @web.expose
-    def import_capsule(self, trans, **kwd):
-        message = escape(kwd.get('message', ''))
-        status = kwd.get('status', 'done')
-        capsule_file_name = kwd.get('capsule_file_name', None)
-        encoded_file_path = kwd.get('encoded_file_path', None)
-        file_path = encoding_util.tool_shed_decode(encoded_file_path)
-        export_info_file_path = os.path.join(file_path, 'export_info.xml')
-        irm = capsule_manager.ImportRepositoryManager(trans.app,
-                                                      trans.request.host,
-                                                      trans.user,
-                                                      trans.user_is_admin)
-        export_info_dict = irm.get_export_info_dict(export_info_file_path)
-        manifest_file_path = os.path.join(file_path, 'manifest.xml')
-        # The manifest.xml file has already been validated, so no error_message should be returned here.
-        repository_info_dicts, error_message = irm.get_repository_info_from_manifest(manifest_file_path)
-        # Determine the status for each exported repository archive contained within the capsule.
-        repository_status_info_dicts = irm.get_repository_status_from_tool_shed(repository_info_dicts)
-        if 'import_capsule_button' in kwd:
-            # Generate a list of repository name / import results message tuples for display after the capsule is imported.
-            import_results_tups = []
-            # Only create repositories that do not yet exist and that the current user is authorized to create.  The
-            # status will be None for repositories that fall into the intersection of these 2 categories.
-            for repository_status_info_dict in repository_status_info_dicts:
-                # Add the capsule_file_name and encoded_file_path to the repository_status_info_dict.
-                repository_status_info_dict['capsule_file_name'] = capsule_file_name
-                repository_status_info_dict['encoded_file_path'] = encoded_file_path
-                import_results_tups = irm.create_repository_and_import_archive(repository_status_info_dict,
-                                                                               import_results_tups)
-            irm.check_status_and_reset_downloadable(import_results_tups)
-            basic_util.remove_dir(file_path)
-            return trans.fill_template('/webapps/tool_shed/repository/import_capsule_results.mako',
-                                       export_info_dict=export_info_dict,
-                                       import_results_tups=import_results_tups,
-                                       message=message,
-                                       status=status)
-        return trans.fill_template('/webapps/tool_shed/repository/import_capsule.mako',
-                                   encoded_file_path=encoded_file_path,
-                                   export_info_dict=export_info_dict,
-                                   repository_status_info_dicts=repository_status_info_dicts,
-                                   message=message,
-                                   status=status)
 
     @web.expose
     def index(self, trans, **kwd):
@@ -2057,10 +1943,8 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         return ''
 
     @web.json
+    @web.do_not_cache
     def open_folder(self, trans, folder_path, repository_id):
-        # Avoid caching
-        trans.response.headers['Pragma'] = 'no-cache'
-        trans.response.headers['Expires'] = '0'
         is_admin = trans.user_is_admin
         return suc.open_repository_files_folder(trans.app, folder_path, repository_id, is_admin)
 
@@ -2161,7 +2045,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                 for changeset in hg_util.reversed_lower_upper_bounded_changelog(repo,
                                                                                 lower_bound_changeset_revision,
                                                                                 changeset_revision):
-                    changeset_hashes.append(str(repo.changectx(changeset)))
+                    changeset_hashes.append(str(repo[changeset]))
                 if changeset_hashes:
                     changeset_hashes_str = ','.join(changeset_hashes)
                     return changeset_hashes_str
@@ -2541,36 +2425,6 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         return ''
 
     @web.expose
-    def upload_capsule(self, trans, **kwd):
-        message = escape(kwd.get('message', ''))
-        status = kwd.get('status', 'done')
-        url = kwd.get('url', '')
-        if 'upload_capsule_button' in kwd:
-            irm = capsule_manager.ImportRepositoryManager(trans.app,
-                                                          trans.request.host,
-                                                          trans.user,
-                                                          trans.user_is_admin)
-            capsule_dict = irm.upload_capsule(**kwd)
-            status = capsule_dict.get('status', 'error')
-            if status == 'error':
-                message = capsule_dict.get('error_message', '')
-            else:
-                capsule_dict = irm.extract_capsule_files(**capsule_dict)
-                capsule_dict = irm.validate_capsule(**capsule_dict)
-                status = capsule_dict.get('status', 'error')
-                if status == 'ok':
-                    return trans.response.send_redirect(web.url_for(controller='repository',
-                                                                    action='import_capsule',
-                                                                    **capsule_dict))
-                else:
-                    message = 'The capsule contents are invalid and cannot be imported:<br/>%s' % \
-                        str(capsule_dict.get('error_message', ''))
-        return trans.fill_template('/webapps/tool_shed/repository/upload_capsule.mako',
-                                   url=url,
-                                   message=message,
-                                   status=status)
-
-    @web.expose
     def view_changelog(self, trans, id, **kwd):
         message = escape(kwd.get('message', ''))
         status = kwd.get('status', 'done')
@@ -2578,7 +2432,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         repo = hg_util.get_repo_for_repository(trans.app, repository=repository)
         changesets = []
         for changeset in repo.changelog:
-            ctx = repo.changectx(changeset)
+            ctx = repo[changeset]
             if metadata_util.get_repository_metadata_by_changeset_revision(trans.app, id, str(ctx)):
                 has_metadata = True
             else:

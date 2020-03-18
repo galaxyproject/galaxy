@@ -14,12 +14,26 @@ function logoutClick() {
     const galaxy = getGalaxyInstance();
     const session_csrf_token = galaxy.session_csrf_token;
     const url = `${galaxy.root}user/logout?session_csrf_token=${session_csrf_token}`;
-    axios.get(url).then(() => {
-        if (galaxy.user) {
-            galaxy.user.clearSessionStorage();
-        }
-        window.top.location.href = `${galaxy.root}login`;
-    });
+    axios
+        .get(url)
+        .then(() => {
+            if (galaxy.user) {
+                galaxy.user.clearSessionStorage();
+            }
+            // Check if we need to logout of OIDC IDP
+            if (galaxy.config.enable_oidc) {
+                return axios.get(`${galaxy.root}authnz/logout`);
+            } else {
+                return {};
+            }
+        })
+        .then(response => {
+            if (response.data && response.data.redirect_uri) {
+                window.top.location.href = response.data.redirect_uri;
+            } else {
+                window.top.location.href = `${galaxy.root}root/login?is_logout_redirect=true`;
+            }
+        });
 }
 
 const Collection = Backbone.Collection.extend({
@@ -253,7 +267,6 @@ const Collection = Backbone.Collection.extend({
                     cls: "loggedout-only",
                     tooltip: _l("Login"),
                     url: "login",
-                    target: "galaxy_main",
                     noscratchbook: true
                 };
             }
@@ -266,7 +279,8 @@ const Collection = Backbone.Collection.extend({
                 tooltip: _l("Account and saved data"),
                 menu: [
                     {
-                        title: `${_l("Logged in as")} ${Galaxy.user.get("email")}`
+                        title: `${_l("Logged in as")} ${Galaxy.user.get("email")}`,
+                        class: "dropdown-item disabled"
                     },
                     {
                         title: _l("Preferences"),
@@ -301,6 +315,11 @@ const Collection = Backbone.Collection.extend({
                     {
                         title: _l("Pages"),
                         url: "pages/list",
+                        target: "__use_router__"
+                    },
+                    {
+                        title: _l("Workflow Invocations"),
+                        url: "workflows/invocations",
                         target: "__use_router__"
                     }
                 ]
@@ -420,6 +439,7 @@ const Tab = Backbone.View.extend({
             .addClass("dropdown-item")
             .attr("href", options.url)
             .attr("target", options.target)
+            .attr("class", options.class)
             .attr("role", "menuitem")
             .html(options.title)
             .on("click", e => {
@@ -496,7 +516,12 @@ const Tab = Backbone.View.extend({
 
     /** Url formatting */
     _formatUrl: function(url) {
-        return typeof url == "string" && url.indexOf("//") === -1 && url.charAt(0) != "/" ? getAppRoot() + url : url;
+        return typeof url == "string" &&
+            url.indexOf("mailto:") === -1 &&
+            url.indexOf("//") === -1 &&
+            url.charAt(0) != "/"
+            ? getAppRoot() + url
+            : url;
     },
 
     /** body tempate */

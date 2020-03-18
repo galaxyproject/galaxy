@@ -44,10 +44,7 @@ const currentConfig$ = new BehaviorSubject(defaultConfigs);
 mergedConfigs.subscribe(currentConfig$);
 
 // debounce, filter out initial null and other invalid stuff
-export const config$ = currentConfig$.asObservable().pipe(
-    filter(Boolean),
-    debounceTime(100)
-);
+export const config$ = currentConfig$.asObservable().pipe(filter(Boolean), debounceTime(100));
 
 /**
  * Adds config objects into the global configuration.

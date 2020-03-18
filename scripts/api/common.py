@@ -24,7 +24,7 @@ def make_url(api_key, url, args=None):
         argsep = '?'
     if '?key=' not in url and '&key=' not in url:
         args.insert(0, ('key', api_key))
-    return url + argsep + '&'.join(['='.join(t) for t in args])
+    return url + argsep + '&'.join('='.join(t) for t in args)
 
 
 def get(api_key, url):

@@ -26,6 +26,7 @@ import xml.dom.minidom
 from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from functools import partial
 from hashlib import md5
 from os.path import relpath
 from xml.etree import ElementInclude, ElementTree
@@ -87,6 +88,9 @@ NULL_CHAR = b'\x00'
 BINARY_CHARS = [NULL_CHAR]
 FILENAME_VALID_CHARS = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
+RW_R__R__ = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
+RWXR_XR_X = stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH
+RWXRWXRWX = stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO
 
 defaultdict = collections.defaultdict
 
@@ -188,6 +192,14 @@ def synchronized(func):
     return caller
 
 
+def iter_start_of_line(fh, chunk_size=None):
+    """
+    Iterate over fh and call readline(chunk_size)
+    """
+    for line in iter(partial(fh.readline, chunk_size), ""):
+        yield line
+
+
 def file_iter(fname, sep=None):
     """
     This generator iterates over a file and yields its lines
@@ -198,9 +210,10 @@ def file_iter(fname, sep=None):
     >>> len(lines) !=  0
     True
     """
-    for line in open(fname):
-        if line and line[0] != '#':
-            yield line.split(sep)
+    with open(fname) as fh:
+        for line in fh:
+            if line and line[0] != '#':
+                yield line.split(sep)
 
 
 def file_reader(fp, chunk_size=CHUNK_SIZE):
@@ -271,12 +284,12 @@ def xml_to_string(elem, pretty=False):
     except TypeError as e:
         # we assume this is a comment
         if hasattr(elem, 'text'):
-            return "<!-- %s -->\n" % elem.text
+            return u"<!-- %s -->\n" % elem.text
         else:
             raise e
     if xml_str and pretty:
         pretty_string = xml.dom.minidom.parseString(xml_str).toprettyxml(indent='    ')
-        return "\n".join([line for line in pretty_string.split('\n') if not re.match(r'^[\s\\nb\']*$', line)])
+        return "\n".join(line for line in pretty_string.split('\n') if not re.match(r'^[\s\\nb\']*$', line))
     return xml_str
 
 
@@ -918,8 +931,8 @@ def parse_resource_parameters(resource_param_file):
 
 
 # asbool implementation pulled from PasteDeploy
-truthy = frozenset(['true', 'yes', 'on', 'y', 't', '1'])
-falsy = frozenset(['false', 'no', 'off', 'n', 'f', '0'])
+truthy = frozenset({'true', 'yes', 'on', 'y', 't', '1'})
+falsy = frozenset({'false', 'no', 'off', 'n', 'f', '0'})
 
 
 def asbool(obj):
@@ -979,7 +992,9 @@ def listify(item, do_strip=False):
     """
     if not item:
         return []
-    elif isinstance(item, list) or isinstance(item, tuple):
+    elif isinstance(item, list):
+        return item
+    elif isinstance(item, tuple):
         return list(item)
     elif isinstance(item, string_types) and item.count(','):
         if do_strip:

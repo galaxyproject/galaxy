@@ -32,7 +32,7 @@ def add_changeset(repo_path, path_to_filename_in_archive):
     except Exception as e:
         error_message = "Error adding '%s' to repository: %s" % (path_to_filename_in_archive, unicodify(e))
         if isinstance(e, subprocess.CalledProcessError):
-            error_message += "\nOutput was:\n%s" % e.output
+            error_message += "\nOutput was:\n%s" % unicodify(e.output)
         raise Exception(error_message)
 
 
@@ -61,6 +61,10 @@ def commit_changeset(repo_path, full_path_to_changeset, username, message):
         raise Exception(error_message)
 
 
+def get_hgrc_path(repo_path):
+    return os.path.join(repo_path, '.hg', 'hgrc')
+
+
 def create_hgrc_file(app, repository):
     # Since we support both http and https, we set `push_ssl` to False to
     # override the default (which is True) in the Mercurial API.
@@ -69,7 +73,7 @@ def create_hgrc_file(app, repository):
     # empty directories. This is not currently used because it is not supported
     # in the Mercurial API.
     repo_path = repository.repo_path(app)
-    hgrc_path = os.path.join(repo_path, '.hg', 'hgrc')
+    hgrc_path = get_hgrc_path(repo_path)
     with open(hgrc_path, 'w') as fp:
         fp.write('[paths]\n')
         fp.write('default = .\n')
@@ -133,7 +137,7 @@ def get_reversed_changelog_changesets(repo):
 
 def get_revision_label(app, repository, changeset_revision, include_date=True, include_hash=True):
     """
-    Return a string consisting of the human read-able changeset rev and the changeset revision string
+    Return a string consisting of the human readable changeset rev and the changeset revision string
     which includes the revision date if the receive include_date is True.
     """
     repo = get_repo_for_repository(app, repository=repository)
@@ -188,7 +192,7 @@ def get_revision_label_from_ctx(ctx, include_date=True, include_hash=True):
         if include_hash:
             return '%s:%s' % (str(ctx.rev()), str(ctx))
         else:
-            return '%s' % str(ctx.rev())
+            return str(ctx.rev())
 
 
 def get_rev_label_from_changeset_revision(repo, changeset_revision, include_date=True, include_hash=True):

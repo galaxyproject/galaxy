@@ -57,12 +57,12 @@ class DynamicToolsController(BaseAPIController):
         :param uuid: the uuid to associate with the tool being created
         """
         dynamic_tool = self.app.dynamic_tools_manager.create_tool(
-            payload
+            trans, payload, allow_load=util.asbool(kwd.get("allow_load", True))
         )
         return dynamic_tool.to_dict()
 
-    @expose_api
     @web.require_admin
+    @expose_api
     def delete(self, trans, id, **kwd):
         """
         DELETE /api/dynamic_tools/{encoded_dynamic_tool_id|tool_uuid}

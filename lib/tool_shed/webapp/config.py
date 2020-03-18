@@ -10,6 +10,7 @@ from datetime import timedelta
 from six.moves import configparser
 
 from galaxy.config import BaseAppConfiguration
+from galaxy.config.schema import AppSchema
 from galaxy.util import string_as_bool
 from galaxy.version import VERSION, VERSION_MAJOR
 from galaxy.web.formatting import expand_pretty_datetime_format
@@ -18,6 +19,9 @@ log = logging.getLogger(__name__)
 
 ts_webapp_path = os.path.abspath(os.path.dirname(__file__))
 templates_path = os.path.join(ts_webapp_path, "templates")
+
+TOOLSHED_APP_NAME = 'tool_shed'
+TOOLSHED_CONFIG_SCHEMA_PATH = 'lib/tool_shed/webapp/config_schema.yml'
 
 
 def resolve_path(path, root):
@@ -33,6 +37,18 @@ class ConfigurationError(Exception):
 
 class ToolShedAppConfiguration(BaseAppConfiguration):
     default_config_file_name = 'tool_shed.yml'
+
+    def _load_schema(self):
+        return AppSchema(TOOLSHED_CONFIG_SCHEMA_PATH, TOOLSHED_APP_NAME)
+
+    def _update_raw_config_from_kwargs(self, kwargs):
+        pass  # Intentionally does nothing. To enable, remove + call base __init__().
+
+    def _create_attributes_from_raw_config(self):
+        pass  # Intentionally does nothing. To enable, remove + call base __init__().
+
+    def _resolve_paths(self, paths_to_resolve):
+        pass  # Intentionally does nothing. To enable, remove + call base __init__().
 
     def __init__(self, **kwargs):
         self.config_dict = kwargs
@@ -96,6 +112,8 @@ class ToolShedAppConfiguration(BaseAppConfiguration):
         self.terms_url = kwargs.get('terms_url', None)
         self.blacklist_location = kwargs.get('blacklist_file', None)
         self.blacklist_content = None
+        self.whitelist_location = kwargs.get('whitelist_file', None)
+        self.whitelist_content = None
         self.remote_user_maildomain = kwargs.get("remote_user_maildomain", None)
         self.remote_user_header = kwargs.get("remote_user_header", 'HTTP_REMOTE_USER')
         self.remote_user_logout_href = kwargs.get("remote_user_logout_href", None)
@@ -181,7 +199,7 @@ class ToolShedAppConfiguration(BaseAppConfiguration):
         defaults = dict(
             auth_config_file=[self._in_config_dir('config/auth_conf.xml')],
             datatypes_config_file=[self._in_config_dir('datatypes_conf.xml'), self._in_sample_dir('datatypes_conf.xml.sample')],
-            shed_tool_data_table_config=[self._in_mutable_config_dir('shed_tool_data_table_conf.xml')],
+            shed_tool_data_table_config=[self._in_managed_config_dir('shed_tool_data_table_conf.xml')],
         )
 
         self._parse_config_file_options(defaults, dict(), kwargs)

@@ -71,7 +71,7 @@ steps:
       position: "right"
 
     - title: "Tool search bar"
-      element: '.tool-search-query'
+      element: '.search-query'
       intro: "You can search for tools by keywords."
       position: "right"
       textinsert: 'filter'

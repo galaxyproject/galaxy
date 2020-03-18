@@ -14,14 +14,14 @@ these guidelines.
       should properly set the status code according to the result - in particular
       2XX responses should be used for successful requests, 4XX for various
       kinds of client errors, and 5XX for the errors on the server side.
-    - If there is an error processing some part of request (one item in a list
+    - If there is an error processing some part of the request (one item in a list
       for instance), the status code should be set to reflect the error and the
       partial result may or may not be returned depending on the controller -
       this behavior should be documented.
     - API methods should throw a finite number of exceptions 
       (defined in :mod:`galaxy.exceptions`) and these should subclass 
       `MessageException` and not paste/wsgi HTTP exceptions. When possible, 
-      the framework itself should be responsible catching these exceptions, 
+      the framework itself should be responsible for catching these exceptions, 
       setting the status code, and building an error response.
     - Error responses should not consist of plain text strings - they should be
       dictionaries describing the error and containing the following::
@@ -53,7 +53,7 @@ consider them when modifying the API.
       changes and so a second opinion on API changes should be sought.
     - New API functionality should include functional tests. These functional
       tests should be implemented in Python and placed in
-      `test/functional/api`.
+      `lib/galaxy_test/api`.
     - Changes to reflect modifications to the API should be pushed upstream to
       the BioBlend project if possible.
 

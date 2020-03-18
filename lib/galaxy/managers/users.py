@@ -68,9 +68,9 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             return None, message
         if not email or not username or not password or not confirm:
             return None, "Please provide email, username and password."
-        message = "\n".join([validate_email(trans, email),
+        message = "\n".join((validate_email(trans, email),
                              validate_password(trans, password, confirm),
-                             validate_publicname(trans, username)]).rstrip()
+                             validate_publicname(trans, username))).rstrip()
         if message:
             return None, message
         email = util.restore_text(email)
@@ -106,12 +106,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             # TODO:?? flush needed for permissions below? If not, make optional
         except exc.IntegrityError as db_err:
             raise exceptions.Conflict(str(db_err))
-        # can throw an sqlalx.IntegrityError if username not unique
-        self.app.security_agent.create_private_user_role(user)
-        # We set default user permissions, before we log in and set the default history permissions
-        if hasattr(self.app.config, "new_user_dataset_access_role_default_private"):
-            permissions = self.app.config.new_user_dataset_access_role_default_private
-            self.app.security_agent.user_set_default_permissions(user, default_access_private=permissions)
+        self.app.security_agent.create_user_role(user, self.app)
         return user
 
     def delete(self, user, flush=True):
@@ -494,7 +489,9 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
                 return "Failed to produce password reset token. User not found."
 
     def get_reset_token(self, trans, email):
-        reset_user = trans.sa_session.query(self.app.model.User).filter(func.lower(self.app.model.User.table.c.email) == email.lower()).first()
+        reset_user = trans.sa_session.query(self.app.model.User).filter(self.app.model.User.table.c.email == email).first()
+        if not reset_user and email != email.lower():
+            reset_user = trans.sa_session.query(self.app.model.User).filter(func.lower(self.app.model.User.table.c.email) == email.lower()).first()
         if reset_user:
             prt = self.app.model.PasswordResetToken(reset_user)
             trans.sa_session.add(prt)
@@ -521,6 +518,11 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             except Exception:
                 log.exception('Subscribing to the mailing list has failed.')
                 return "Subscribing to the mailing list has failed."
+
+    def activate(self, user):
+        user.active = True
+        self.session().add(user)
+        self.session().flush()
 
 
 class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):

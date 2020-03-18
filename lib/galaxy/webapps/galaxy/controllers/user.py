@@ -93,8 +93,8 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         if autoreg["auto_reg"]:
             email = autoreg["email"]
             username = autoreg["username"]
-            message = " ".join([validate_email(trans, email, allow_empty=True),
-                                validate_publicname(trans, username)]).rstrip()
+            message = " ".join((validate_email(trans, email, allow_empty=True),
+                                validate_publicname(trans, username))).rstrip()
             if not message:
                 user = self.user_manager.create(email=email, username=username, password="")
                 if trans.app.config.user_activation_on:
@@ -135,9 +135,13 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         if not login or not password:
             return self.message_exception(trans, "Please specify a username and password.")
         user = trans.sa_session.query(trans.app.model.User).filter(or_(
-            func.lower(trans.app.model.User.table.c.email) == login.lower(),
+            trans.app.model.User.table.c.email == login,
             trans.app.model.User.table.c.username == login
         )).first()
+        if not user and login.lower() != login:
+            user = trans.sa_session.query(trans.app.model.User).filter(
+                func.lower(trans.app.model.User.table.c.email) == login.lower()
+            ).first()
         log.debug("trans.app.config.auth_config_file: %s" % trans.app.config.auth_config_file)
         if user is None:
             message, user = self.__autoregistration(trans, login, password)
@@ -195,6 +199,8 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         Function resends the verification email in case user wants to log in with an inactive account or he clicks the resend link.
         """
         if email is None:  # User is coming from outside registration form, load email from trans
+            if not trans.user:
+                trans.show_error_message("No session found, cannot send activation email.")
             email = trans.user.email
         if username is None:  # User is coming from outside registration form, load email from trans
             username = trans.user.username
@@ -273,9 +279,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
                 return trans.show_ok_message("Your account is already active. Nothing has changed. <br><a href='%s'>Go to login page.</a>") % web.url_for(controller='root', action='index')
             if user.activation_token == activation_token:
                 user.activation_token = None
-                user.active = True
-                trans.sa_session.add(user)
-                trans.sa_session.flush()
+                self.user_manager.activate(user)
                 return trans.show_ok_message("Your account has been successfully activated! <br><a href='%s'>Go to login page.</a>") % web.url_for(controller='root', action='index')
             else:
                 #  Tokens don't match. Activation is denied.

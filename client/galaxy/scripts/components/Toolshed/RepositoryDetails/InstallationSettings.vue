@@ -102,9 +102,9 @@ export default {
         },
         load: function() {
             const galaxy = getGalaxyInstance();
-            const sections = galaxy.config.toolbox_in_panel;
+            const sections = galaxy.config.toolbox;
             if (sections) {
-                this.toolSections = sections.filter(x => x.model_class == "ToolSection");
+                this.toolSections = sections.filter(x => x.elems);
             }
             this.toolConfigs = galaxy.config.tool_dynamic_configs || [];
             if (this.toolConfigs.length > 0) {
