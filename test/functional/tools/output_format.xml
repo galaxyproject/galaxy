@@ -32,6 +32,7 @@ echo 'test' > 5
         <test>
             <param name="input_data_1" value="1.fastqsanger" ftype="fastqsanger" />
             <param name="input_data_2" value="1.fastqsolexa" ftype="fastqsolexa" />
+            <param name="test_section|input_data_1" value="1.txt" ftype="txt" />
             <param name="input_text" value="foo" />
             <output name="direct_output" ftype="txt">
                 <assert_contents>

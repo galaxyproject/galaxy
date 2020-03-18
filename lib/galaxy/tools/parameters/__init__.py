@@ -25,7 +25,7 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
     passing the parameter object, value, a constructed unique name,
     and a display label.
 
-    If the callback returns a value, it will be replace the old value.
+    If the callback returns a value, it will replace the old value.
 
     >>> from collections import OrderedDict
     >>> from galaxy.util import XML
@@ -35,7 +35,7 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
     >>> a = TextToolParameter(None, XML('<param name="a"/>'))
     >>> b = Repeat()
     >>> c = TextToolParameter(None, XML('<param name="c"/>'))
-    >>> d = Repeat()
+    >>> d = Section()
     >>> e = TextToolParameter(None, XML('<param name="e"/>'))
     >>> f = Conditional()
     >>> g = BooleanToolParameter(None, XML('<param name="g"/>'))
@@ -55,64 +55,64 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
     ...     if error:
     ...         print(error)
     >>> inputs = OrderedDict([('a', a),('b', b)])
-    >>> nested = OrderedDict([('a', 1), ('b', [OrderedDict([('c', 3), ('d', [OrderedDict([ ('e', 5), ('f', OrderedDict([ ('g', True), ('h', 7)]))])])])])])
+    >>> nested = OrderedDict([('a', 1), ('b', [OrderedDict([('c', 3), ('d', OrderedDict([ ('e', 5), ('f', OrderedDict([ ('g', True), ('h', 7)]))]))])])])
     >>> visit_input_values(inputs, nested, visitor)
     name=a, prefix=, prefixed_name=a, prefixed_label=a, value=1
     name=c, prefix=b_0|, prefixed_name=b_0|c, prefixed_label=b 1 > c, value=3
-    name=e, prefix=b_0|d_0|, prefixed_name=b_0|d_0|e, prefixed_label=b 1 > d 1 > e, value=5
-    name=g, prefix=b_0|d_0|, prefixed_name=b_0|d_0|f|g, prefixed_label=b 1 > d 1 > g, value=True
-    name=h, prefix=b_0|d_0|, prefixed_name=b_0|d_0|f|h, prefixed_label=b 1 > d 1 > h, value=7
-    >>> params_from_strings(inputs, params_to_strings(inputs, nested, None), None)['b'][0]['d'][0]['f']['g'] is True
+    name=e, prefix=b_0|d|, prefixed_name=b_0|d|e, prefixed_label=b 1 > e, value=5
+    name=g, prefix=b_0|d|, prefixed_name=b_0|d|f|g, prefixed_label=b 1 > g, value=True
+    name=h, prefix=b_0|d|, prefixed_name=b_0|d|f|h, prefixed_label=b 1 > h, value=7
+    >>> params_from_strings(inputs, params_to_strings(inputs, nested, None), None)['b'][0]['d']['f']['g'] is True
     True
 
     >>> # Conditional test parameter value does not match any case, warning is shown and child values are not visited
     >>> f.test_param = j
-    >>> nested['b'][0]['d'][0]['f']['j'] = 'j'
+    >>> nested['b'][0]['d']['f']['j'] = 'j'
     >>> visit_input_values(inputs, nested, visitor)
     name=a, prefix=, prefixed_name=a, prefixed_label=a, value=1
     name=c, prefix=b_0|, prefixed_name=b_0|c, prefixed_label=b 1 > c, value=3
-    name=e, prefix=b_0|d_0|, prefixed_name=b_0|d_0|e, prefixed_label=b 1 > d 1 > e, value=5
-    name=j, prefix=b_0|d_0|, prefixed_name=b_0|d_0|f|j, prefixed_label=b 1 > d 1 > j, value=j
+    name=e, prefix=b_0|d|, prefixed_name=b_0|d|e, prefixed_label=b 1 > e, value=5
+    name=j, prefix=b_0|d|, prefixed_name=b_0|d|f|j, prefixed_label=b 1 > j, value=j
     The selected case is unavailable/invalid.
 
     >>> # Test parameter missing in state, value error
-    >>> del nested['b'][0]['d'][0]['f']['j']
+    >>> del nested['b'][0]['d']['f']['j']
     >>> visit_input_values(inputs, nested, visitor)
     name=a, prefix=, prefixed_name=a, prefixed_label=a, value=1
     name=c, prefix=b_0|, prefixed_name=b_0|c, prefixed_label=b 1 > c, value=3
-    name=e, prefix=b_0|d_0|, prefixed_name=b_0|d_0|e, prefixed_label=b 1 > d 1 > e, value=5
-    name=j, prefix=b_0|d_0|, prefixed_name=b_0|d_0|f|j, prefixed_label=b 1 > d 1 > j, value=None
-    No value found for 'b 1 > d 1 > j'.
+    name=e, prefix=b_0|d|, prefixed_name=b_0|d|e, prefixed_label=b 1 > e, value=5
+    name=j, prefix=b_0|d|, prefixed_name=b_0|d|f|j, prefixed_label=b 1 > j, value=None
+    No value found for 'b 1 > j'.
 
     >>> # Conditional parameter missing in state, value error
-    >>> del nested['b'][0]['d'][0]['f']
+    >>> del nested['b'][0]['d']['f']
     >>> visit_input_values(inputs, nested, visitor)
     name=a, prefix=, prefixed_name=a, prefixed_label=a, value=1
     name=c, prefix=b_0|, prefixed_name=b_0|c, prefixed_label=b 1 > c, value=3
-    name=e, prefix=b_0|d_0|, prefixed_name=b_0|d_0|e, prefixed_label=b 1 > d 1 > e, value=5
-    name=j, prefix=b_0|d_0|, prefixed_name=b_0|d_0|f|j, prefixed_label=b 1 > d 1 > j, value=None
-    No value found for 'b 1 > d 1 > j'.
+    name=e, prefix=b_0|d|, prefixed_name=b_0|d|e, prefixed_label=b 1 > e, value=5
+    name=j, prefix=b_0|d|, prefixed_name=b_0|d|f|j, prefixed_label=b 1 > j, value=None
+    No value found for 'b 1 > j'.
 
     >>> # Conditional input name has changed e.g. due to tool changes, key error
     >>> f.name = 'f_1'
     >>> visit_input_values(inputs, nested, visitor)
     name=a, prefix=, prefixed_name=a, prefixed_label=a, value=1
     name=c, prefix=b_0|, prefixed_name=b_0|c, prefixed_label=b 1 > c, value=3
-    name=e, prefix=b_0|d_0|, prefixed_name=b_0|d_0|e, prefixed_label=b 1 > d 1 > e, value=5
-    name=j, prefix=b_0|d_0|, prefixed_name=b_0|d_0|f_1|j, prefixed_label=b 1 > d 1 > j, value=None
-    No value found for 'b 1 > d 1 > j'.
+    name=e, prefix=b_0|d|, prefixed_name=b_0|d|e, prefixed_label=b 1 > e, value=5
+    name=j, prefix=b_0|d|, prefixed_name=b_0|d|f_1|j, prefixed_label=b 1 > j, value=None
+    No value found for 'b 1 > j'.
 
     >>> # Other parameters are missing in state
-    >>> nested = OrderedDict([('b', [OrderedDict([( 'd', [OrderedDict([('f', OrderedDict([('g', True), ('h', 7)]))])])])])])
+    >>> nested = OrderedDict([('b', [OrderedDict([( 'd', OrderedDict([('f', OrderedDict([('g', True), ('h', 7)]))]))])])])
     >>> visit_input_values(inputs, nested, visitor)
     name=a, prefix=, prefixed_name=a, prefixed_label=a, value=None
     No value found for 'a'.
     name=c, prefix=b_0|, prefixed_name=b_0|c, prefixed_label=b 1 > c, value=None
     No value found for 'b 1 > c'.
-    name=e, prefix=b_0|d_0|, prefixed_name=b_0|d_0|e, prefixed_label=b 1 > d 1 > e, value=None
-    No value found for 'b 1 > d 1 > e'.
-    name=j, prefix=b_0|d_0|, prefixed_name=b_0|d_0|f_1|j, prefixed_label=b 1 > d 1 > j, value=None
-    No value found for 'b 1 > d 1 > j'.
+    name=e, prefix=b_0|d|, prefixed_name=b_0|d|e, prefixed_label=b 1 > e, value=None
+    No value found for 'b 1 > e'.
+    name=j, prefix=b_0|d|, prefixed_name=b_0|d|f_1|j, prefixed_label=b 1 > j, value=None
+    No value found for 'b 1 > j'.
     """
     def callback_helper(input, input_values, name_prefix, label_prefix, parent_prefix, context=None, error=None):
         value = input_values.get(input.name)
@@ -165,7 +165,7 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
         elif isinstance(input, Section):
             values = input_values[input.name] = input_values.get(input.name, {})
             new_name_prefix = name_prefix + input.name + '|'
-            visit_input_values(input.inputs, values, callback, new_name_prefix, label_prefix, parent_prefix=name_prefix, **payload)
+            visit_input_values(input.inputs, values, callback, new_name_prefix, label_prefix, parent_prefix=new_name_prefix, **payload)
         else:
             callback_helper(input, input_values, name_prefix, label_prefix, parent_prefix=parent_prefix, context=context)
 
