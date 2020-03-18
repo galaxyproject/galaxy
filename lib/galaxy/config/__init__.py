@@ -752,6 +752,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             object_store_config_file=[self._in_config_dir('object_store_conf.xml')],
             oidc_backends_config_file=[self._in_config_dir('oidc_backends_config.xml')],
             oidc_config_file=[self._in_config_dir('oidc_config.xml')],
+            saml_config_dir=[self._in_config_dir('saml')],
             shed_data_manager_config_file=[self._in_managed_config_dir('shed_data_manager_conf.xml')],
             shed_tool_config_file=[self._in_managed_config_dir('shed_tool_conf.xml')],
             shed_tool_data_table_config=[self._in_managed_config_dir('shed_tool_data_table_conf.xml')],

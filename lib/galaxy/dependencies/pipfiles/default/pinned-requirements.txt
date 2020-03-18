@@ -147,6 +147,7 @@ python-neutronclient==6.9.0
 python-novaclient==11.0.0
 python-openid==2.2.5 ; python_version < '3.0'
 python-swiftclient==3.6.0
+python3-saml==1.9.0
 pytz==2019.3
 pyuwsgi==2.0.18.post0
 pyyaml==5.3
