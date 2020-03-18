@@ -62,17 +62,17 @@ export default {
                         this.deprecated = predData.is_deprecated;
 
                         if (response.data !== null && predData.children.length > 0) {
-                            const filteredData = {},
-                                compatibleTools = {},
-                                filteredChildren = [],
-                                outputDatatypes = predData.o_extensions,
-                                children = predData.children;
+                            const filteredData = {};
+                            const compatibleTools = {};
+                            const filteredChildren = [];
+                            const outputDatatypes = predData.o_extensions;
+                            const children = predData.children;
                             for (const nameObj of children.entries()) {
                                 const inputDatatypes = nameObj[1].i_extensions;
                                 for (const out_t of outputDatatypes.entries()) {
                                     for (const in_t of inputDatatypes.entries()) {
-                                        const child = extToType[out_t[1]],
-                                            parent = extToType[in_t[1]];
+                                        const child = extToType[out_t[1]];
+                                        const parent = extToType[in_t[1]];
                                         if (
                                             (typeToType[child] && parent in typeToType[child]) === true ||
                                             out_t[1] === "input" ||
@@ -119,8 +119,8 @@ export default {
                 .attr("class", "tree-size")
                 .append("g")
                 .attr("transform", "translate(" + 250 + "," + 20 + ")");
-            let i = 0,
-                root = null;
+            let i = 0;
+            let root = null;
             const update = source => {
                 // Compute the new tree layout.
                 const nodes = tree.nodes(root).reverse();
