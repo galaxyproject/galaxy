@@ -1652,34 +1652,36 @@ body.reports {
 }
 
 /* Used for tree in tool recommendations */
-.node {
-    cursor: pointer;
-    circle {
+.tool-recommendation-view {
+    .node {
+        cursor: pointer;
+        circle {
+            fill: none;
+            stroke: lighten($brand-primary, 20%);
+            stroke-width: 0.3rem;
+        }
+        text {
+            font: 0.75rem sans-serif;
+        }
+    }
+
+    .node-enter {
+        fill-opacity: 1e-6;
+    }
+
+    .node-update {
+        fill-opacity: 1;
+    }
+
+    .tree-size {
+        width: 96%;
+        height: 50%;
+        position: absolute;
+    }
+
+    .link {
         fill: none;
         stroke: lighten($brand-primary, 20%);
         stroke-width: 0.3rem;
     }
-    text {
-        font: 0.75rem sans-serif;
-    }
-}
-
-.node-enter {
-    fill-opacity: 1e-6;
-}
-
-.node-update {
-    fill-opacity: 1;
-}
-
-.tree-size {
-    width: 96%;
-    height: 50%;
-    position: absolute;
-}
-
-.link {
-    fill: none;
-    stroke: lighten($brand-primary, 20%);
-    stroke-width: 0.3rem;
 }

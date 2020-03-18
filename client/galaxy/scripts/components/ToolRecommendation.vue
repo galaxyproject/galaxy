@@ -1,5 +1,5 @@
 <template>
-    <div id="tool-recommendation-view">
+    <div id="tool-recommendation" class="tool-recommendation-view">
         <div v-if="deprecated == false" class="infomessagelarge">
             <h4>Tool recommendation</h4>
             You have used {{ getToolId }} tool. For further analysis, you could try using the following/recommended
@@ -114,7 +114,7 @@ export default {
                 return [d.y, d.x];
             });
             const svg = d3
-                .select("#tool-recommendation-view")
+                .select("#tool-recommendation")
                 .append("svg")
                 .attr("class", "tree-size")
                 .append("g")
