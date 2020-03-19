@@ -440,7 +440,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
 
         log.debug("Pulled data object '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
         
-        with data_obj.open('rb') as data_obj_fp, open(self._get_cache_path(rel_path), "wb") as cache_fp:
+        with data_obj.open('r') as data_obj_fp, open(self._get_cache_path(rel_path), "wb") as cache_fp:
             content = data_obj_fp.read()
             cache_fp.write(content)
         return True
@@ -470,7 +470,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                 log.debug("Wanted to push file '%s' to iRODS collection '%s' but its size is 0; skipping.", source_file, rel_path)
                 return True
             if from_string:
-                data_obj = self.session.data_objects.create(data_object_path, recurse=True, **options)
+                data_obj = self.session.data_objects.create(data_object_path, self.resource, **options)
                 with data_obj.open('w') as data_obj_fp:
                     data_obj_fp.write(from_string)
                 log.debug("Pushed data from string '%s' to collection '%s'", from_string, data_object_path)
@@ -486,7 +486,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                     file_content = content_file.read()
                 
                 # Write to file in subcollection created above
-                data_obj = self.session.data_objects.create(data_object_path, recurse=True, **options)
+                data_obj = self.session.data_objects.create(data_object_path, self.resource, **options)
                 with data_obj.open('w') as data_obj_fp:
                     data_obj_fp.write(file_content)
 
@@ -548,7 +548,6 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
 
     def create(self, obj, **kwargs):
         if not self.exists(obj, **kwargs):
-
             # Pull out locally used fields
             extra_dir = kwargs.get('extra_dir', None)
             extra_dir_at_root = kwargs.get('extra_dir_at_root', False)
