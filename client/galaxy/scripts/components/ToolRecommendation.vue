@@ -8,9 +8,7 @@
             tool than a tool with a lower score. Please click on one of the following/recommended tools to open its
             definition.
         </div>
-        <div v-else class="warningmessagelarge">
-            You have used {{ getToolId }} tool. {{ deprecatedMessage }}
-        </div>
+        <div v-else class="warningmessagelarge">You have used {{ getToolId }} tool. {{ deprecatedMessage }}</div>
     </div>
 </template>
 
