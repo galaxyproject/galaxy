@@ -1,6 +1,6 @@
 <template>
     <div id="tool-recommendation" class="tool-recommendation-view">
-        <div v-if="deprecated == false" class="infomessagelarge">
+        <div v-if="!deprecated" class="infomessagelarge">
             <h4>Tool recommendation</h4>
             You have used {{ getToolId }} tool. For further analysis, you could try using the following/recommended
             tools. The recommended tools are shown in the decreasing order of their scores predicted using machine
@@ -8,7 +8,7 @@
             tool than a tool with a lower score. Please click on one of the following/recommended tools to open its
             definition.
         </div>
-        <div v-if="deprecated == true" class="warningmessagelarge">
+        <div v-else-if="deprecated" class="warningmessagelarge">
             You have used {{ getToolId }} tool. {{ deprecatedMessage }}
         </div>
     </div>
@@ -105,7 +105,7 @@ export default {
                     });
                 });
         },
-        renderD3Tree: predictedTools => {
+        renderD3Tree(predictedTools) {
             const duration = 750;
             const x = 620;
             const y = 260;
