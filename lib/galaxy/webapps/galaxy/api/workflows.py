@@ -26,6 +26,7 @@ from galaxy.managers import (
 from galaxy.managers.jobs import fetch_job_states, invocation_job_source_iter
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
+from galaxy.tools import recommendations
 from galaxy.tools.parameters import populate_state
 from galaxy.tools.parameters.basic import workflow_building_modes
 from galaxy.util.sanitize_html import sanitize_html
@@ -57,6 +58,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         self.history_manager = histories.HistoryManager(app)
         self.workflow_manager = workflows.WorkflowsManager(app)
         self.workflow_contents_manager = workflows.WorkflowContentsManager(app)
+        self.tool_recommendations = recommendations.ToolRecommendations()
 
     def __get_full_shed_url(self, url):
         for name, shed_url in self.app.tool_shed_registry.tool_sheds.items():
@@ -629,6 +631,37 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             'outputs'           : module.get_all_outputs(),
             'config_form'       : module.get_config_form(),
             'post_job_actions'  : module.get_post_job_actions(inputs)
+        }
+
+    @expose_api
+    def get_tool_predictions(self, trans, payload, **kwd):
+        """
+        POST /api/workflows/get_tool_predictions
+        Fetch predicted tools for a workflow
+        :type   payload: dict
+        :param  payload: a dictionary containing two parameters:
+                         'tool_sequence' - comma separated sequence of tool ids
+                         'remote_model_url' - (optional) path to the deep learning model
+        """
+        remote_model_url = payload.get('remote_model_url', None)
+        if remote_model_url is None:
+            remote_model_url = trans.app.config.tool_recommendation_model_path
+        if 'tool_sequence' not in payload or remote_model_url is None:
+            return
+        is_model_set = True
+        recommended_tools = dict()
+        tool_sequence = ""
+        # collect tool recommendation preferences if set by admin
+        self.tool_recommendations.collect_admin_preferences(trans.app.config.admin_tool_recommendations_path)
+        # recreate the neural network model to be used for prediction
+        is_model_set = self.tool_recommendations.set_model(trans, remote_model_url)
+        if is_model_set is True:
+            # get the recommended tools for a tool sequence
+            tool_sequence = payload.get('tool_sequence', "")
+            recommended_tools = self.tool_recommendations.compute_tool_prediction(trans, tool_sequence)
+        return {
+            "current_tool": tool_sequence,
+            "predicted_data": recommended_tools
         }
 
     #

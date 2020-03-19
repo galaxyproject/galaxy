@@ -194,6 +194,12 @@ class ConditionalDependencies(object):
     def check_influxdb(self):
         return 'influxdb' in self.error_report_modules
 
+    def check_keras(self):
+        return asbool(self.config["enable_tool_recommendations"])
+
+    def check_tensorflow(self):
+        return asbool(self.config["enable_tool_recommendations"])
+
 
 def optional(config_file=None):
     if not config_file:

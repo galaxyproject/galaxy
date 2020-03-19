@@ -331,6 +331,29 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase):
             self._assert_user_has_workflow_with_name(name)
         return upload_response
 
+    def test_get_tool_predictions(self):
+        request = {"tool_sequence": "Cut1", "remote_model_url": "https://github.com/galaxyproject/galaxy-test-data/raw/master/tool_recommendation_model.hdf5"}
+        actual_recommendations = ['Filter1', 'cat1', 'addValue', 'comp1', 'Grep1']
+        route = "workflows/get_tool_predictions"
+        response = self._post(route, data=request)
+        recommendation_response = response.json()
+        is_empty = bool(recommendation_response["current_tool"])
+        if is_empty is False:
+            self._assert_status_code_is(response, 400)
+        else:
+            # check Ok response from the API
+            self._assert_status_code_is(response, 200)
+            recommendation_response = response.json()
+            # check the input tool sequence
+            assert recommendation_response["current_tool"] == request["tool_sequence"]
+            # check non-empty predictions list
+            predicted_tools = recommendation_response["predicted_data"]["children"]
+            assert len(predicted_tools) > 0
+            # check for the correct predictions
+            for tool in predicted_tools:
+                assert tool["tool_id"] in actual_recommendations
+                break
+
     def test_update(self):
         original_workflow = self.workflow_populator.load_workflow(name="test_import")
         uuids = {}
