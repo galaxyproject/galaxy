@@ -16,10 +16,10 @@
             <div class="toolMenuContainer">
                 <div class="toolMenu">
                     <tool-section
-                        v-for="category in categories"
-                        :category="category"
+                        v-for="tool in searchTools"
+                        :category="tool"
                         :query-filter="query"
-                        :key="category.id"
+                        :key="tool.id"
                         @onClick="onOpen"
                     />
                 </div>
@@ -44,7 +44,7 @@ import ToolSection from "./Common/ToolSection";
 import ToolSearch from "./Common/ToolSearch";
 import UploadButton from "./Buttons/UploadButton";
 import FavoritesButton from "./Buttons/FavoritesButton";
-import { filterToolSections } from "./utilities";
+import { filterToolSections, filterTools } from "./utilities";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
 import _l from "utils/localization";
@@ -81,6 +81,9 @@ export default {
     computed: {
         categories() {
             return filterToolSections(this.toolbox, this.results);
+        },
+        searchTools() {
+            return filterTools(this.toolbox, this.results);
         },
         isUser() {
             const Galaxy = getGalaxyInstance();
