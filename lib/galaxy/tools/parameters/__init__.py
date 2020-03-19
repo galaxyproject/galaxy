@@ -60,8 +60,8 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
     name=a, prefix=, prefixed_name=a, prefixed_label=a, value=1
     name=c, prefix=b_0|, prefixed_name=b_0|c, prefixed_label=b 1 > c, value=3
     name=e, prefix=b_0|d|, prefixed_name=b_0|d|e, prefixed_label=b 1 > e, value=5
-    name=g, prefix=b_0|d|, prefixed_name=b_0|d|f|g, prefixed_label=b 1 > g, value=True
-    name=h, prefix=b_0|d|, prefixed_name=b_0|d|f|h, prefixed_label=b 1 > h, value=7
+    name=g, prefix=b_0|d|f|, prefixed_name=b_0|d|f|g, prefixed_label=b 1 > g, value=True
+    name=h, prefix=b_0|d|f|, prefixed_name=b_0|d|f|h, prefixed_label=b 1 > h, value=7
     >>> params_from_strings(inputs, params_to_strings(inputs, nested, None), None)['b'][0]['d']['f']['g'] is True
     True
 
@@ -72,7 +72,7 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
     name=a, prefix=, prefixed_name=a, prefixed_label=a, value=1
     name=c, prefix=b_0|, prefixed_name=b_0|c, prefixed_label=b 1 > c, value=3
     name=e, prefix=b_0|d|, prefixed_name=b_0|d|e, prefixed_label=b 1 > e, value=5
-    name=j, prefix=b_0|d|, prefixed_name=b_0|d|f|j, prefixed_label=b 1 > j, value=j
+    name=j, prefix=b_0|d|f|, prefixed_name=b_0|d|f|j, prefixed_label=b 1 > j, value=j
     The selected case is unavailable/invalid.
 
     >>> # Test parameter missing in state, value error
@@ -81,7 +81,7 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
     name=a, prefix=, prefixed_name=a, prefixed_label=a, value=1
     name=c, prefix=b_0|, prefixed_name=b_0|c, prefixed_label=b 1 > c, value=3
     name=e, prefix=b_0|d|, prefixed_name=b_0|d|e, prefixed_label=b 1 > e, value=5
-    name=j, prefix=b_0|d|, prefixed_name=b_0|d|f|j, prefixed_label=b 1 > j, value=None
+    name=j, prefix=b_0|d|f|, prefixed_name=b_0|d|f|j, prefixed_label=b 1 > j, value=None
     No value found for 'b 1 > j'.
 
     >>> # Conditional parameter missing in state, value error
@@ -90,7 +90,7 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
     name=a, prefix=, prefixed_name=a, prefixed_label=a, value=1
     name=c, prefix=b_0|, prefixed_name=b_0|c, prefixed_label=b 1 > c, value=3
     name=e, prefix=b_0|d|, prefixed_name=b_0|d|e, prefixed_label=b 1 > e, value=5
-    name=j, prefix=b_0|d|, prefixed_name=b_0|d|f|j, prefixed_label=b 1 > j, value=None
+    name=j, prefix=b_0|d|f|, prefixed_name=b_0|d|f|j, prefixed_label=b 1 > j, value=None
     No value found for 'b 1 > j'.
 
     >>> # Conditional input name has changed e.g. due to tool changes, key error
@@ -99,7 +99,7 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
     name=a, prefix=, prefixed_name=a, prefixed_label=a, value=1
     name=c, prefix=b_0|, prefixed_name=b_0|c, prefixed_label=b 1 > c, value=3
     name=e, prefix=b_0|d|, prefixed_name=b_0|d|e, prefixed_label=b 1 > e, value=5
-    name=j, prefix=b_0|d|, prefixed_name=b_0|d|f_1|j, prefixed_label=b 1 > j, value=None
+    name=j, prefix=b_0|d|f_1|, prefixed_name=b_0|d|f_1|j, prefixed_label=b 1 > j, value=None
     No value found for 'b 1 > j'.
 
     >>> # Other parameters are missing in state
@@ -111,7 +111,7 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
     No value found for 'b 1 > c'.
     name=e, prefix=b_0|d|, prefixed_name=b_0|d|e, prefixed_label=b 1 > e, value=None
     No value found for 'b 1 > e'.
-    name=j, prefix=b_0|d|, prefixed_name=b_0|d|f_1|j, prefixed_label=b 1 > j, value=None
+    name=j, prefix=b_0|d|f_1|, prefixed_name=b_0|d|f_1|j, prefixed_label=b 1 > j, value=None
     No value found for 'b 1 > j'.
     """
     def callback_helper(input, input_values, name_prefix, label_prefix, parent_prefix, context=None, error=None):
@@ -158,10 +158,10 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
             values = input_values[input.name] = input_values.get(input.name, {})
             new_name_prefix = name_prefix + input.name + '|'
             case_error = None if get_current_case(input, values) >= 0 else 'The selected case is unavailable/invalid.'
-            callback_helper(input.test_param, values, new_name_prefix, label_prefix, parent_prefix=name_prefix, context=context, error=case_error)
+            callback_helper(input.test_param, values, new_name_prefix, label_prefix, parent_prefix=new_name_prefix, context=context, error=case_error)
             values['__current_case__'] = get_current_case(input, values)
             if values['__current_case__'] >= 0:
-                visit_input_values(input.cases[values['__current_case__']].inputs, values, callback, new_name_prefix, label_prefix, parent_prefix=name_prefix, **payload)
+                visit_input_values(input.cases[values['__current_case__']].inputs, values, callback, new_name_prefix, label_prefix, parent_prefix=new_name_prefix, **payload)
         elif isinstance(input, Section):
             values = input_values[input.name] = input_values.get(input.name, {})
             new_name_prefix = name_prefix + input.name + '|'
