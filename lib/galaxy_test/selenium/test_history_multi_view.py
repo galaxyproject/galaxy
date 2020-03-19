@@ -127,6 +127,7 @@ class HistoryMultiViewTestCase(SeleniumTestCase):
         self.assertEqual(original_history_id, self.current_history_id())
 
     def assert_history(self, history_id, histories_number=1, should_exist=True):
+        self.components.multi_history_view.histories.wait_for_present()
         histories = self.components.multi_history_view.histories.all()
         assert len(histories) == histories_number
         # search for history with history_id
