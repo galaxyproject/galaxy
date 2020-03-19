@@ -17,7 +17,7 @@
     </conditional>
   </inputs>
   <outputs>
-    <collection name="list_output" structured_like="input1" type="paired" label="Duplicate List" inherit_format="true">
+    <collection name="list_output" structured_like="cond|input1" type="paired" label="Duplicate List" inherit_format="true">
       <!-- inherit_format can be used in conjunction with structured_like
            to perserve format. -->
     </collection>
