@@ -68,7 +68,7 @@ describe("ToolsView/ToolsView.vue", () => {
             .findAll('[type="button"]')
             .filter(button => button.text() === "Citations")
             .at(0);
-        const citation = wrapper.find("#" + infoButton.attributes("aria-controls"));
+        const citation = wrapper.find("#" + infoButton.attributes("aria-controls").replace(/ /g, "_"));
 
         assert(citation.isVisible() === false, "citation is visible before being triggered!");
         assert(infoButton.attributes("aria-expanded") === "false", "citation is expanded before being triggered!");

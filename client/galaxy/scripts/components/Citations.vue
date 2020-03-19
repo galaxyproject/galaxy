@@ -34,7 +34,7 @@
         <div v-else-if="citations.length">
             <b-btn v-b-toggle="id" variant="primary">Citations</b-btn>
             <b-collapse
-                :id="id"
+                :id="id.replace(/ /g, '_')"
                 class="mt-2"
                 @show="$emit('show')"
                 @shown="$emit('shown')"
