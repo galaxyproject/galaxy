@@ -3136,6 +3136,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             return rval
 
         rval = super(HistoryDatasetAssociation, self).serialize(id_encoder, serialization_options)
+        rval['state'] = self.state
         rval["hid"] = self.hid
         rval["annotation"] = unicodify(getattr(self, 'annotation', ''))
         rval["tags"] = self.make_tag_string_list()
