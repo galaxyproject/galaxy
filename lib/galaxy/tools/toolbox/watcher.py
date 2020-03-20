@@ -134,7 +134,7 @@ class ToolConfWatcher(object):
                     # and reading the file from the filesystem. We do not want the watcher
                     # thread to die in these cases.
                     if path in self.drop_now:
-                        log.warning("'%s' could not be read, removing from watched files")
+                        log.warning("'%s' could not be read, removing from watched files", path)
                         try:
                             del hashes[path]
                             del paths[path]
