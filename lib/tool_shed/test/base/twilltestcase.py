@@ -70,20 +70,12 @@ class ShedTwillTestCase(FunctionalTestCase):
     """Class of FunctionalTestCase geared toward HTML interactions using the Twill library."""
 
     def check_for_strings(self, strings_displayed=[], strings_not_displayed=[]):
-        try:
-            if strings_displayed:
-                for check_str in strings_displayed:
-                    self.check_page_for_string(check_str)
-        except AssertionError:
-            log.error("%s not found in page", check_str)
-            raise
-        try:
-            if strings_not_displayed:
-                for check_str in strings_not_displayed:
-                    self.check_string_not_in_page(check_str)
-        except AssertionError:
-            log.error("%s found in page", check_str)
-            raise
+        if strings_displayed:
+            for check_str in strings_displayed:
+                self.check_page_for_string(check_str)
+        if strings_not_displayed:
+            for check_str in strings_not_displayed:
+                self.check_string_not_in_page(check_str)
 
     def check_page(self, strings_displayed, strings_displayed_count, strings_not_displayed):
         """Checks a page for strings displayed, not displayed and number of occurrences of a string"""
@@ -163,10 +155,10 @@ class ShedTwillTestCase(FunctionalTestCase):
         # test@bx.psu.edu is configured as an admin user
         previously_created, username_taken, invalid_username = \
             self.create(email=email, password=password, username=username, redirect=redirect)
-        # The acount has previously been created, so just login.
-        # HACK: don't use panels because late_javascripts() messes up the twill browser and it
-        # can't find form fields (and hence user can't be logged in).
         if previously_created:
+            # The acount has previously been created, so just login.
+            # HACK: don't use panels because late_javascripts() messes up the twill browser and it
+            # can't find form fields (and hence user can't be logged in).
             params = {
                 'use_panels': False
             }
@@ -551,9 +543,6 @@ class ShedTwillTestCase(FunctionalTestCase):
             if filename in filenames:
                 files_to_delete.append(os.path.join(basepath, filename))
         self.browse_repository(repository)
-        # Twill sets hidden form fields to read-only by default. We need to write to this field.
-        # form = tc.browser.get_form('select_files_to_delete')
-        # form.find_control("selected_files_to_delete").readonly = False
         tc.fv("2", "selected_files_to_delete", ','.join(files_to_delete))
         tc.submit('select_files_to_delete_button')
         self.check_for_strings(strings_displayed, strings_not_displayed)
