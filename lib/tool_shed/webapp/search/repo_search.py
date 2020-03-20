@@ -5,7 +5,7 @@ import sys
 
 import whoosh.index
 from whoosh import scoring
-from whoosh.fields import KEYWORD, Schema, STORED, TEXT
+from whoosh.fields import NUMERIC, KEYWORD, Schema, STORED, TEXT
 from whoosh.qparser import MultifieldParser
 from whoosh.query import And, Every, Term
 
@@ -18,7 +18,7 @@ if sys.version_info > (3,):
 log = logging.getLogger(__name__)
 
 schema = Schema(
-    id=STORED,
+    id=NUMERIC(stored=True),
     name=TEXT(field_boost=1.7, stored=True),
     description=TEXT(field_boost=1.5, stored=True),
     long_description=TEXT(stored=True),
