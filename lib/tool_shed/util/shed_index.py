@@ -88,7 +88,7 @@ def build_index(whoosh_index_dir, file_path, hgweb_config_dir, dburi, **kwargs):
     return repos_indexed, tools_indexed
 
 
-def get_repos(sa_session, file_path, hgweb_config_dir, update_time=None, **kwargs):
+def get_repos(sa_session, file_path, hgweb_config_dir, **kwargs):
     """
     Load repos from DB and included tools from .xml configs.
     """
@@ -127,7 +127,7 @@ def get_repos(sa_session, file_path, hgweb_config_dir, update_time=None, **kwarg
         full_last_updated = repo.update_time.strftime("%Y-%m-%d %I:%M %p")
 
         # Load all changesets of the repo for lineage.
-        repo_path = hgwcm.get_entry(os.path.join("repos", repo.user.username, repo.name))
+        repo_path = os.path.join(hgweb_config_dir, hgwcm.get_entry(os.path.join("repos", repo.user.username, repo.name)))
         hg_repo = hg.repository(ui.ui(), repo_path.encode('utf-8'))
         lineage = []
         for changeset in hg_repo.changelog:
