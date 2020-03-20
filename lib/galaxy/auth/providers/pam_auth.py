@@ -6,8 +6,10 @@ Author Peter van Heusden (pvh@sanbi.ac.za)
 import logging
 import shlex
 
-from galaxy.tool_util.deps import commands
-from galaxy.util import string_as_bool
+from galaxy.util import (
+    commands,
+    string_as_bool
+)
 from ..providers import AuthProvider
 
 log = logging.getLogger(__name__)

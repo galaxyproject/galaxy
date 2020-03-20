@@ -6,8 +6,10 @@ from subprocess import (
     check_call
 )
 
-from galaxy.tool_util.deps import commands
-from galaxy.util import unicodify
+from galaxy.util import (
+    commands,
+    unicodify
+)
 from ..external import parse_external_id
 
 DEFAULT_QUERY_CLASSAD = dict(

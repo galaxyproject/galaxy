@@ -9,7 +9,7 @@ import time
 
 from galaxy import model
 from galaxy.jobs.runners.drmaa import DRMAAJobRunner
-from galaxy.tool_util.deps import commands
+from galaxy.util import commands
 from galaxy.util.logging import get_logger
 
 log = get_logger(__name__)

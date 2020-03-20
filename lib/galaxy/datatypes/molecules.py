@@ -18,8 +18,10 @@ from galaxy.datatypes.sniff import (
 from galaxy.datatypes.tabular import Tabular
 from galaxy.datatypes.util.generic_util import count_special_lines
 from galaxy.datatypes.xml import GenericXml
-from galaxy.tool_util.deps import commands
-from galaxy.util import unicodify
+from galaxy.util import (
+    commands,
+    unicodify
+)
 
 log = logging.getLogger(__name__)
 

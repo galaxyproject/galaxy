@@ -1,4 +1,4 @@
-from galaxy.tool_util.deps import commands
+from galaxy.util import commands
 
 
 def count_special_lines(word, filename, invert=False):

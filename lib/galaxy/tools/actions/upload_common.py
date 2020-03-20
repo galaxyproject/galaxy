@@ -19,8 +19,10 @@ from galaxy.exceptions import (
     RequestParameterInvalidException,
 )
 from galaxy.model import tags
-from galaxy.tool_util.deps import commands
-from galaxy.util import unicodify
+from galaxy.util import (
+    commands,
+    unicodify
+)
 
 log = logging.getLogger(__name__)
 

@@ -53,15 +53,13 @@ from galaxy.jobs.runners import BaseJobRunner, JobState
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model import store
 from galaxy.objectstore import ObjectStorePopulator
-from galaxy.tool_util.deps import (
-    commands,
-    requirements
-)
+from galaxy.tool_util.deps import requirements
 from galaxy.tool_util.output_checker import (
     check_output,
     DETECTED_JOB_STATE,
 )
 from galaxy.util import (
+    commands,
     RWXRWXRWX,
     safe_makedirs,
     unicodify,

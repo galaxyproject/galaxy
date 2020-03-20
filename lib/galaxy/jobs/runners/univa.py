@@ -30,8 +30,8 @@ import signal
 import time
 
 from galaxy.jobs.runners.drmaa import DRMAAJobRunner
-from galaxy.tool_util.deps import commands
 from galaxy.util import (
+    commands,
     size_to_bytes
 )
 

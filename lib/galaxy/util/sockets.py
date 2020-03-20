@@ -1,7 +1,7 @@
 import random
 import socket
 
-from galaxy.tool_util.deps import commands
+from galaxy.util import commands
 
 
 def get_ip():
