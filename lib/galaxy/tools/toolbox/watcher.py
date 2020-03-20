@@ -139,7 +139,7 @@ class ToolConfWatcher(object):
                         if path in hashes:
                             del hashes[path]
                     else:
-                        log.debug("'%s could not be read")
+                        log.debug("'%s could not be read", path)
                         drop_on_next_loop.add(path)
                     if self.cache:
                         self.cache.cleanup()
