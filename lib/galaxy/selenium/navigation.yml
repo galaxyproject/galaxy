@@ -70,6 +70,7 @@ masthead:
 
 preferences:
   selectors:
+    sign_out: "#edit-preferences-custom-builds"
     change_password: "#edit-preferences-password"
     manage_information: '#edit-preferences-information'
     current_email: "#user-preferences-current-email"
