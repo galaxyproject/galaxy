@@ -1291,8 +1291,8 @@ and this can be used instead.
         <xs:documentation xml:lang="en"><![CDATA[
 
 If specified, the target output's checksum should match the value specified
-here. This value should have the form ``hash_type:hash_value``
-(e.g. ``sha1:8156d7ca0f46ed7abac98f82e36cfaddb2aca041``). For large static files
+here. This value should have the form ``hash_type$hash_value``
+(e.g. ``sha1$8156d7ca0f46ed7abac98f82e36cfaddb2aca041``). For large static files
 it may be inconvenient to upload the entiry file and this can be used instead.
 
 ]]></xs:documentation>
