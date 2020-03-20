@@ -6,7 +6,6 @@ from whoosh import index
 from whoosh.writing import AsyncWriter
 
 import tool_shed.webapp.model.mapping as ts_mapping
-
 from galaxy.tool_util.loader_directory import load_tool_elements_from_path
 from galaxy.util import (
     directory_hash_id,

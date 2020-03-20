@@ -1,13 +1,14 @@
 import os
-import requests
 import shutil
 import tarfile
 import tempfile
 from collections import namedtuple
 
 import pytest
-from tool_shed.util.shed_index import build_index
+import requests
 from whoosh import index
+
+from tool_shed.util.shed_index import build_index
 
 URL = 'https://github.com/mvdbeek/toolshed-test-data/blob/master/toolshed_community_files.tgz?raw=true'
 
