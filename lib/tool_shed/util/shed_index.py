@@ -26,6 +26,7 @@ def get_or_create_index(whoosh_index_dir):
     tool_index_dir = os.path.join(whoosh_index_dir, 'tools')
     if not os.path.exists(whoosh_index_dir):
         os.makedirs(whoosh_index_dir)
+    if not os.path.exists(tool_index_dir):
         os.makedirs(tool_index_dir)
     return _get_or_create_index(whoosh_index_dir, repo_schema), _get_or_create_index(tool_index_dir, tool_schema)
 
@@ -45,6 +46,8 @@ def build_index(whoosh_index_dir, file_path, hgweb_config_dir, dburi, **kwargs):
     """
     Build two search indexes simultaneously
     One is for repositories and the other for tools.
+
+    Returns a tuple with number of repos and tools that were indexed.
     """
     model = ts_mapping.init(file_path, dburi, engine_options={}, create_tables=False)
     sa_session = model.context.current
@@ -83,6 +86,7 @@ def build_index(whoosh_index_dir, file_path, hgweb_config_dir, dburi, **kwargs):
 
     log.info("Indexed repos: %s, tools: %s", repos_indexed, tools_indexed)
     log.info("Toolbox index finished %s", execution_timer)
+    return repos_indexed, tools_indexed
 
 
 def get_repos(sa_session, file_path, hgweb_config_dir, update_time=None, **kwargs):
