@@ -11,7 +11,6 @@ import pwd
 import shlex
 import shutil
 import string
-import subprocess
 import sys
 import time
 import traceback
@@ -54,7 +53,10 @@ from galaxy.jobs.runners import BaseJobRunner, JobState
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model import store
 from galaxy.objectstore import ObjectStorePopulator
-from galaxy.tool_util.deps import requirements
+from galaxy.tool_util.deps import (
+    commands,
+    requirements
+)
 from galaxy.tool_util.output_checker import (
     check_output,
     DETECTED_JOB_STATE,
@@ -2206,14 +2208,10 @@ class JobWrapper(HasResourceParameters):
             cmd = shlex.split(external_chown_script)
             cmd.extend([self.working_directory, username, str(gid)])
             log.debug('(%s) Changing ownership of working directory with: %s' % (job.id, ' '.join(cmd)))
-            p = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            stdout, stderr = p.communicate()
-            stdout, stderr = unicodify(stdout).strip(), unicodify(stderr).strip()
-            if p.returncode != 0:
-                log.error('external script failed.')
-                log.error('stdout was: %s' % stdout)
-                log.error('stderr was: %s' % stderr)
-            assert p.returncode == 0
+            try:
+                commands.execute(cmd)
+            except commands.CommandLineException as e:
+                log.error('external script failed: %s' % e)
 
     def change_ownership_for_run(self):
         job = self.get_job()
