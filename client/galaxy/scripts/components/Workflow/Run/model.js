@@ -2,7 +2,7 @@ import $ from "jquery";
 import _ from "underscore";
 
 import FormData from "mvc/form/form-data";
-import WorkflowIcons from "mvc/workflow/workflow-icons";
+import WorkflowIcons from "components/Workflow/icons";
 import Utils from "utils/utils";
 
 export class WorkflowRunModel {
