@@ -15,13 +15,12 @@ from __future__ import print_function
 import argparse
 import logging
 import os
-import shutil
 import sys
-import tempfile
-from distutils.dir_util import copy_tree
 
+import profilehooks
 from mercurial import hg, ui
-from whoosh.filedb.filestore import FileStorage
+from whoosh import index
+from whoosh.writing import AsyncWriter
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
 
@@ -74,6 +73,22 @@ def parse_arguments():
     return args
 
 
+def get_or_create_index(whoosh_index_dir):
+    tool_index_dir = os.path.join(whoosh_index_dir, 'tools')
+    if not os.path.exists(whoosh_index_dir):
+        os.makedirs(whoosh_index_dir)
+        os.makedirs(tool_index_dir)
+    return _get_or_create_index(whoosh_index_dir, repo_schema), _get_or_create_index(tool_index_dir, tool_schema)
+
+
+def _get_or_create_index(index_dir, schema):
+    try:
+        return index.open_dir(index_dir, schema=schema)
+    except index.EmptyIndexError:
+        return index.create_in(index_dir, schema=schema)
+
+
+@profilehooks.profile
 def build_index(whoosh_index_dir, file_path, hgweb_config_dir, dburi, **kwargs):
     """
     Build two search indexes simultaneously
@@ -81,57 +96,35 @@ def build_index(whoosh_index_dir, file_path, hgweb_config_dir, dburi, **kwargs):
     """
     model = ts_mapping.init(file_path, dburi, engine_options={}, create_tables=False)
     sa_session = model.context.current
+    repo_index, tool_index = get_or_create_index(whoosh_index_dir)
 
-    #  Rare race condition exists here and below
-    tool_index_dir = os.path.join(whoosh_index_dir, 'tools')
-    if not os.path.exists(whoosh_index_dir):
-        os.makedirs(whoosh_index_dir)
-        os.makedirs(tool_index_dir)
-        work_repo_dir = whoosh_index_dir
-        work_tool_dir = tool_index_dir
-    else:
-        # Index exists, prevent in-place index regeneration
-        work_repo_dir = tempfile.mkdtemp(prefix="tmp-whoosh-repo")
-        work_tool_dir = tempfile.mkdtemp(prefix="tmp-whoosh-tool")
-
-    repo_index_storage = FileStorage(work_repo_dir)
-    tool_index_storage = FileStorage(work_tool_dir)
-    repo_index = repo_index_storage.create_index(repo_schema)
-    tool_index = tool_index_storage.create_index(tool_schema)
-    repo_index_writer = repo_index.writer()
-    tool_index_writer = tool_index.writer()
+    repo_index_writer = AsyncWriter(repo_index)
+    tool_index_writer = AsyncWriter(tool_index)
     repos_indexed = 0
     tools_indexed = 0
 
     execution_timer = ExecutionTimer()
-    for repo in get_repos(sa_session, file_path, hgweb_config_dir, **kwargs):
+    with repo_index.searcher() as searcher:
+        for repo in get_repos(sa_session, file_path, hgweb_config_dir, **kwargs):
+            tools_list = repo.pop('tools_list')
+            repo_id = repo['id']
+            indexed_document = searcher.document(id=repo_id)
+            if indexed_document:
+                if indexed_document['full_last_updated'] == repo.get('full_last_updated'):
+                    # We're done, since we sorted repos by update time
+                    break
+                else:
+                    # Got an update, delete the previous document
+                    repo_index_writer.delete_by_term('id', repo_id)
 
-        repo_index_writer.add_document(id=repo.get('id'),
-                             name=unicodify(repo.get('name')),
-                             description=unicodify(repo.get('description')),
-                             long_description=unicodify(repo.get('long_description')),
-                             homepage_url=unicodify(repo.get('homepage_url')),
-                             remote_repository_url=unicodify(repo.get('remote_repository_url')),
-                             repo_owner_username=unicodify(repo.get('repo_owner_username')),
-                             categories=unicodify(repo.get('categories')),
-                             times_downloaded=repo.get('times_downloaded'),
-                             approved=repo.get('approved'),
-                             last_updated=repo.get('last_updated'),
-                             full_last_updated=repo.get('full_last_updated'),
-                             repo_lineage=unicodify(repo.get('repo_lineage')))
-        #  Tools get their own index
-        for tool in repo.get('tools_list'):
-            tool_index_writer.add_document(id=unicodify(tool.get('id')),
-                                           name=unicodify(tool.get('name')),
-                                           version=unicodify(tool.get('version')),
-                                           description=unicodify(tool.get('description')),
-                                           help=unicodify(tool.get('help')),
-                                           repo_owner_username=unicodify(repo.get('repo_owner_username')),
-                                           repo_name=unicodify(repo.get('name')),
-                                           repo_id=repo.get('id'))
-            tools_indexed += 1
+            repo_index_writer.add_document(**repo)
 
-        repos_indexed += 1
+            #  Tools get their own index
+            for tool in tools_list:
+                tool_index_writer.add_document(**tool)
+                tools_indexed += 1
+
+            repos_indexed += 1
 
     tool_index_writer.commit()
     repo_index_writer.commit()
@@ -139,25 +132,18 @@ def build_index(whoosh_index_dir, file_path, hgweb_config_dir, dburi, **kwargs):
     log.info("Indexed repos: %s, tools: %s", repos_indexed, tools_indexed)
     log.info("Toolbox index finished %s", execution_timer)
 
-    # Copy the built indexes if we were working in a tmp folder.
-    if work_repo_dir is not whoosh_index_dir:
-        shutil.rmtree(whoosh_index_dir)
-        os.makedirs(whoosh_index_dir)
-        os.makedirs(tool_index_dir)
-        copy_tree(work_repo_dir, whoosh_index_dir)
-        copy_tree(work_tool_dir, tool_index_dir)
-        shutil.rmtree(work_repo_dir)
 
-
-def get_repos(sa_session, file_path, hgweb_config_dir, **kwargs):
+def get_repos(sa_session, file_path, hgweb_config_dir, update_time=None, **kwargs):
     """
     Load repos from DB and included tools from .xml configs.
     """
     hgwcm = HgWebConfigManager()
     hgwcm.hgweb_config_dir = hgweb_config_dir
-    results = []
     # Do not index deleted, deprecated, or "tool_dependency_definition" type repositories.
-    for repo in sa_session.query(ts_model.Repository).filter_by(deleted=False).filter_by(deprecated=False).filter(ts_model.Repository.type != 'tool_dependency_definition'):
+    q = sa_session.query(ts_model.Repository).filter_by(deleted=False).filter_by(deprecated=False).order_by(ts_model.Repository.update_time.desc())
+    q = q.filter(ts_model.Repository.type != 'tool_dependency_definition')
+
+    for repo in q:
         category_names = []
         for rca in sa_session.query(ts_model.RepositoryCategoryAssociation).filter(ts_model.RepositoryCategoryAssociation.repository_id == repo.id):
             for category in sa_session.query(ts_model.Category).filter(ts_model.Category.id == rca.category.id):
@@ -170,9 +156,7 @@ def get_repos(sa_session, file_path, hgweb_config_dir, **kwargs):
         homepage_url = repo.homepage_url
         remote_repository_url = repo.remote_repository_url
 
-        times_downloaded = repo.times_downloaded
-        if not isinstance(times_downloaded, (int, long)):
-            times_downloaded = 0
+        times_downloaded = repo.times_downloaded or 0
 
         repo_owner_username = ''
         if repo.user_id is not None:
@@ -209,21 +193,20 @@ def get_repos(sa_session, file_path, hgweb_config_dir, **kwargs):
                     tools_in_dir = load_one_dir(os.path.join(root, dirname))
                     tools_list.extend(tools_in_dir)
 
-        results.append(dict(id=repo_id,
-                            name=name,
-                            description=description,
-                            long_description=long_description,
-                            homepage_url=homepage_url,
-                            remote_repository_url=remote_repository_url,
-                            repo_owner_username=repo_owner_username,
-                            times_downloaded=times_downloaded,
-                            approved=approved,
-                            last_updated=last_updated,
-                            full_last_updated=full_last_updated,
-                            tools_list=tools_list,
-                            repo_lineage=repo_lineage,
-                            categories=categories))
-    return results
+        yield (dict(id=repo_id,
+                    name=name,
+                    description=description,
+                    long_description=long_description,
+                    homepage_url=homepage_url,
+                    remote_repository_url=remote_repository_url,
+                    repo_owner_username=repo_owner_username,
+                    times_downloaded=times_downloaded,
+                    approved=approved,
+                    last_updated=last_updated,
+                    full_last_updated=full_last_updated,
+                    tools_list=tools_list,
+                    repo_lineage=repo_lineage,
+                    categories=categories))
 
 
 def load_one_dir(path):
