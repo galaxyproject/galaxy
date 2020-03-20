@@ -207,6 +207,18 @@ class NavigatesGalaxy(HasDriver):
     def history_panel_name(self):
         return self.history_panel_name_element().text
 
+    def history_contents(self, history_id=None, view='summary', datasets_only=True):
+        if history_id is None:
+            history_id = self.current_history_id()
+        histories = self.api_get('histories?keys=id')
+        if history_id not in [h['id'] for h in histories]:
+            return {}
+        if datasets_only:
+            endpoint = 'histories/%s/contents?view=%s' % (history_id, view)
+        else:
+            endpoint = 'histories/%s?view=%s' % (history_id, view)
+        return self.api_get(endpoint)
+
     def current_history(self):
         full_url = self.build_url("history/current_history_json", for_selenium=False)
         response = requests.get(full_url, cookies=self.selenium_to_requests_cookies())
@@ -215,13 +227,8 @@ class NavigatesGalaxy(HasDriver):
     def current_history_id(self):
         return self.current_history()["id"]
 
-    def current_history_contents(self):
-        current_history_id = self.current_history_id()
-        history_contents = self.api_get("histories/%s/contents" % current_history_id)
-        return history_contents
-
     def latest_history_item(self):
-        history_contents = self.current_history_contents()
+        history_contents = self.history_contents()
         assert len(history_contents) > 0
         return history_contents[-1]
 
