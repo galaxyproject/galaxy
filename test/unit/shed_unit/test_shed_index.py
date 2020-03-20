@@ -3,6 +3,7 @@ import shutil
 import tarfile
 import tempfile
 from collections import namedtuple
+from io import BytesIO
 
 import pytest
 import requests
@@ -25,9 +26,8 @@ def whoosh_index_dir():
 @pytest.fixture(scope='module')
 def community_file_dir():
     extracted_archive_dir = tempfile.mkdtemp()
-    with tempfile.NamedTemporaryFile(suffix='_test_shed_index_archive.tgz', mode='wb') as outfile:
-        outfile.write(requests.get(URL).content)
-        tarfile.open(outfile.name, "r:gz").extractall(extracted_archive_dir)
+    b = BytesIO(requests.get(URL).content)
+    tarfile.open(fileobj=b, mode="r:gz").extractall(extracted_archive_dir)
     try:
         yield extracted_archive_dir
     finally:
