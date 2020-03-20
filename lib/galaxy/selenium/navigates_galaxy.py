@@ -389,6 +389,9 @@ class NavigatesGalaxy(HasDriver):
         domain = domain or 'test.test'
         return self._get_random_name(prefix=username, suffix="@" + domain)
 
+    def _get_random_password(self, len=6):
+        return ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(len))
+
     def submit_login(self, email, password=None, assert_valid=True, retries=0):
         if password is None:
             password = self.default_password
