@@ -3,12 +3,10 @@ Condor helper utilities.
 """
 from subprocess import (
     CalledProcessError,
-    check_call,
-    PIPE,
-    Popen,
-    STDOUT
+    check_call
 )
 
+from galaxy.tool_util.deps import commands
 from galaxy.util import unicodify
 from ..external import parse_external_id
 
@@ -76,15 +74,14 @@ def condor_submit(submit_file):
     """
     external_id = None
     try:
-        submit = Popen(('condor_submit', submit_file), stdout=PIPE, stderr=STDOUT)
-        message, _ = submit.communicate()
-        message = unicodify(message)
-        if submit.returncode == 0:
+        message = commands.execute(('condor_submit', submit_file))
+    except commands.CommandLineException as e:
+        message = str(e)
+    else:
+        try:
             external_id = parse_external_id(message, type='condor')
-        else:
+        except Exception:
             message = PROBLEM_PARSING_EXTERNAL_ID
-    except Exception as e:
-        message = unicodify(e)
     return external_id, message
 
 

@@ -27,13 +27,12 @@ known bugs/problems:
 import logging
 import re
 import signal
-import subprocess
 import time
 
 from galaxy.jobs.runners.drmaa import DRMAAJobRunner
+from galaxy.tool_util.deps import commands
 from galaxy.util import (
-    size_to_bytes,
-    unicodify
+    size_to_bytes
 )
 
 log = logging.getLogger(__name__)
@@ -157,11 +156,10 @@ class UnivaJobRunner(DRMAAJobRunner):
         # even if this could be disambiguated by the stderr message the `qstat -u "*"`
         # way seems more generic
         cmd = ['qstat', '-u', '"*"']
-        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = p.communicate()
-        stdout, stderr = unicodify(stdout).strip(), unicodify(stderr).strip()
-        if p.returncode != 0 or stderr != "":
-            log.exception('`%s` returned %d, stderr: %s' % (' '.join(cmd), p.returncode, stderr))
+        try:
+            stdout = commands.execute(cmd)
+        except commands.CommandLineException as e:
+            log.error(str(e))
             raise self.drmaa.InternalException()
         state = self.drmaa.JobState.UNDETERMINED
         for line in stdout.split('\n'):
@@ -201,17 +199,15 @@ class UnivaJobRunner(DRMAAJobRunner):
         # available immediately a simple retry mechanism is implemented ..
         # max wait is approx 1min)
         while True:
-            p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            stdout, stderr = p.communicate()
-            stdout, stderr = unicodify(stdout).strip(), unicodify(stderr).strip()
-            if p.returncode != 0:
-                if slp <= 32 and "job id {jobid} not found".format(jobid=job_id) in stderr:
-                    # log.debug('`%s` returned %s, stderr: %s => retry after %ds' % (' '.join(cmd), p.returncode, stderr, slp))
+            try:
+                stdout = commands.execute(cmd)
+            except commands.CommandLineException as e:
+                if slp <= 32 and "job id {jobid} not found".format(jobid=job_id) in e.stderr:
                     time.sleep(slp)
                     slp *= 2
                     continue
                 else:
-                    log.exception('`%s` returned %s, stderr: %s' % (' '.join(cmd), p.returncode, stderr))
+                    log.exception(str(e))
                     return self.drmaa.JobState.UNDETERMINED
             else:
                 break

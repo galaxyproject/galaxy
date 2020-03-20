@@ -363,7 +363,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         except drmaa.InvalidJobException:
             log.exception("(%s/%s) User killed running job, but it was already dead" % (job.id, ext_id))
         except commands.CommandLineException as e:
-            log.exception("(%s/%s) User killed running job, but command execution failed: %s" % (job.id, ext_id, e))
+            log.error("(%s/%s) User killed running job, but command execution failed: %s" % (job.id, ext_id, e))
         except Exception:
             log.exception("(%s/%s) User killed running job, but error encountered removing from DRM queue" % (job.id, ext_id))
 
