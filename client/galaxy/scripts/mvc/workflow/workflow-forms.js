@@ -94,12 +94,12 @@ export class ToolForm {
         var options = form.model.attributes;
         Utils.deepeach(options.inputs, (input) => {
             if (input.type) {
-                input.connectable = true;
                 if (["data", "data_collection"].indexOf(input.type) != -1) {
                     input.type = "hidden";
                     input.info = `Data input '${input.name}' (${Utils.textify(input.extensions)})`;
                     input.value = { __class__: "RuntimeValue" };
                 } else if (!input.fixed) {
+                    input.connectable = true;
                     input.collapsible_value = {
                         __class__: "RuntimeValue",
                     };
