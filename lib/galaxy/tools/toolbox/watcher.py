@@ -101,6 +101,8 @@ class ToolConfWatcher(object):
         hashes = {}
         while self._active and not self.exit.isSet():
             do_reload = False
+            drop_on_next_loop = set()
+            drop_now = set()
             with self._lock:
                 paths = list(self.paths.keys())
             for path in paths:
@@ -131,11 +133,14 @@ class ToolConfWatcher(object):
                     # in rare cases `path` may be deleted between `os.path.exists` calls
                     # and reading the file from the filesystem. We do not want the watcher
                     # thread to die in these cases.
-                    try:
-                        del hashes[path]
+                    if path in drop_now:
+                        log.warning("'%s' could not be read, removing from watched files", path)
                         del paths[path]
-                    except KeyError:
-                        pass
+                        if path in hashes:
+                            del hashes[path]
+                    else:
+                        log.debug("'%s could not be read", path)
+                        drop_on_next_loop.add(path)
                     if self.cache:
                         self.cache.cleanup()
                     do_reload = True
@@ -145,6 +150,8 @@ class ToolConfWatcher(object):
                     do_reload = True
             if do_reload:
                 self.reload_callback()
+            drop_now = drop_on_next_loop
+            drop_on_next_loop = set()
             self.exit.wait(1)
 
     def monitor(self, path):

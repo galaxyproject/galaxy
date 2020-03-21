@@ -82,6 +82,7 @@ class ModelImportStore(object):
             self.sessionless = True
         self.user = user
         self.import_options = import_options or ImportOptions()
+        self.dataset_state_serialized = True
 
     @abc.abstractmethod
     def defines_new_history(self):
@@ -183,6 +184,9 @@ class ModelImportStore(object):
         object_key = self.object_key
 
         for dataset_attrs in datasets_attrs:
+
+            if 'state' not in dataset_attrs:
+                self.dataset_state_serialized = False
 
             def handle_dataset_object_edit(dataset_instance):
                 if "dataset" in dataset_attrs:
@@ -321,7 +325,7 @@ class ModelImportStore(object):
                         dataset_instance.dataset.deleted = True
                         dataset_instance.dataset.purged = True
                     else:
-                        dataset_instance.state = dataset_instance.states.OK
+                        dataset_instance.state = dataset_attrs.get('state', dataset_instance.states.OK)
                         self.object_store.update_from_file(dataset_instance.dataset, file_name=temp_dataset_file_name, create=True)
 
                         # Import additional files if present. Histories exported previously might not have this attribute set.
@@ -827,6 +831,9 @@ class DirectoryImportModelStore1901(BaseDirectoryImportModelStore):
         for output_key in job_attrs['output_datasets']:
             output_hda = _find_hda(output_key)
             if output_hda:
+                if not self.dataset_state_serialized:
+                    # dataset state has not been serialized, get state from job
+                    output_hda.state = imported_job.state
                 imported_job.add_output_dataset(output_hda.name, output_hda)
 
         if 'input_mapping' in job_attrs:
@@ -889,6 +896,9 @@ class DirectoryImportModelStoreLatest(BaseDirectoryImportModelStore):
                 for output_key in output_keys:
                     output_hda = _find_hda(output_key)
                     if output_hda:
+                        if not self.dataset_state_serialized:
+                            # dataset state has not been serialized, get state from job
+                            output_hda.state = imported_job.state
                         imported_job.add_output_dataset(output_name, output_hda)
 
         if 'output_dataset_collection_mapping' in job_attrs:
