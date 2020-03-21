@@ -11,10 +11,11 @@ export class DefaultForm {
     constructor(options) {
         var self = this;
         var node = options.node;
-        _addLabelAnnotation(this, options);
+        this.workflow = options.workflow;
+        _addLabelAnnotation(this, node);
         this.form = new Form(
-            Utils.merge(options, {
-                onchange: function () {
+            Object.assign(options, {
+                onchange: function() {
                     Utils.request({
                         type: "POST",
                         url: `${getAppRoot()}api/workflows/build_module`,
@@ -37,10 +38,13 @@ export class DefaultForm {
 /** Tool form wrapper for the workflow editor. */
 export class ToolForm {
     constructor(options) {
+        var self = this;
         var node = options.node;
-        this._customize(options);
+        this.workflow = options.workflow;
+        this.datatypes = options.datatypes;
+        this._customize(node);
         this.form = new ToolFormBase(
-            Utils.merge(options, {
+            Object.assign(node.config_form, {
                 text_enable: "Set in Advance",
                 text_disable: "Set at Runtime",
                 narrow: true,
@@ -61,6 +65,8 @@ export class ToolForm {
                         url: `${getAppRoot()}api/workflows/build_module`,
                         data: current_state,
                         success: function(data) {
+                            self._customize(data);
+                            form.model.set(data.config_form);
                             form.update(data.config_form);
                             form.errors(data.config_form);
                             // This hasn't modified the workflow, just returned
@@ -80,9 +86,9 @@ export class ToolForm {
             })
         );
     }
-    _customize(options) {
-        options.inputs = options.inputs || [];
-        Utils.deepeach(options.inputs, input => {
+    _customize(node) {
+        const inputs = node.config_form.inputs;
+        Utils.deepeach(inputs, input => {
             if (input.type) {
                 if (["data", "data_collection"].indexOf(input.type) != -1) {
                     input.type = "hidden";
@@ -98,22 +104,22 @@ export class ToolForm {
                 }
             }
         });
-        Utils.deepeach(options.inputs, (input) => {
+        Utils.deepeach(inputs, (input) => {
             if (input.type === "conditional") {
                 input.connectable = false;
                 input.test_param.collapsible_value = undefined;
             }
         });
-        _addSections(options);
-        _addLabelAnnotation(this, options);
+        _addSections(this, node);
+        _addLabelAnnotation(this, node);
     }
 }
 
 /** Augments the module form definition by adding label and annotation fields */
-function _addLabelAnnotation(self, options) {
-    var workflow = options.workflow;
-    var node = options.node;
-    options.inputs.unshift({
+function _addLabelAnnotation(self, node) {
+    var workflow = self.workflow;
+    const inputs = node.config_form.inputs;
+    inputs.unshift({
         type: "text",
         name: "__annotation",
         label: "Annotation",
@@ -122,7 +128,7 @@ function _addLabelAnnotation(self, options) {
         area: true,
         help: "Add an annotation or notes to this step. Annotations are available when a workflow is viewed.",
     });
-    options.inputs.unshift({
+    inputs.unshift({
         type: "text",
         name: "__label",
         label: "Label",
@@ -150,8 +156,8 @@ function _addLabelAnnotation(self, options) {
 }
 
 /** Visit input nodes and enrich by name/value pairs from server data */
-function _visit(head, head_list, output_id, options) {
-    var post_job_actions = options.node.post_job_actions;
+function _visit(head, head_list, output_id, node) {
+    var post_job_actions = node.post_job_actions;
     head_list = head_list || [];
     head_list.push(head);
     for (var i in head.inputs) {
@@ -181,7 +187,7 @@ function _visit(head, head_list, output_id, options) {
             }
         }
         if (input.inputs) {
-            _visit(input, head_list.slice(0), output_id, options);
+            _visit(input, head_list.slice(0), output_id, node);
         }
     }
 }
@@ -204,13 +210,11 @@ function _makeRenameHelp(name_labels) {
 }
 
 /** Builds sub section with step actions/annotation */
-function _makeSection(output_id, label, options) {
+function _makeSection(self, output_id, label, node) {
     var extensions = [];
     var name_label_map = [];
-    var datatypes = options.datatypes;
-    var node = options.node;
-    var workflow = options.workflow;
-
+    var datatypes = self.datatypes;
+    var workflow = self.workflow;
     for (const key in datatypes) {
         extensions.push({ 0: datatypes[key], 1: datatypes[key] });
     }
@@ -339,14 +343,13 @@ function _makeSection(output_id, label, options) {
             },
         ],
     };
-    _visit(input_config, [], output_id, options);
+    _visit(input_config, [], output_id, node);
     return input_config;
 }
 
 /** Builds all sub sections */
-function _addSections(options) {
-    var inputs = options.inputs;
-    var node = options.node;
+function _addSections(self, node) {
+    var inputs = node.config_form.inputs;
     var post_job_actions = node.post_job_actions;
     var output_id = node.output_terminals && Object.keys(node.output_terminals)[0];
 
@@ -373,7 +376,7 @@ function _addSections(options) {
         });
         for (const output_id in node.output_terminals) {
             const label = node.output_terminals[output_id].label || output_id;
-            inputs.push(_makeSection(output_id, label, options));
+            inputs.push(_makeSection(self, output_id, label, node));
         }
     }
 }

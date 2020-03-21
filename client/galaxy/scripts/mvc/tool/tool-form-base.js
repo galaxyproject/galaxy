@@ -23,6 +23,9 @@ export default FormBase.extend({
         this.deferred = new Deferred();
         FormBase.prototype.initialize.call(this, options);
 
+        // optional model update
+        this._update();
+
         // listen to history panel
         if (this.model.get("listen_to_history") && Galaxy.currHistoryPanel) {
             this.listenTo(Galaxy.currHistoryPanel.collection, "change", () => {
