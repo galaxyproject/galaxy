@@ -180,11 +180,11 @@ def load_one_dir(path):
             if root.tag == 'tool':
                 tool = {}
                 if root.find('help') is not None:
-                    tool.update(dict(help=root.find('help').text))
+                    tool.update(dict(help=unicodify(root.find('help').text)))
                 if root.find('description') is not None:
-                    tool.update(dict(description=root.find('description').text))
-                tool.update(dict(id=root.attrib.get('id'),
-                                 name=root.attrib.get('name'),
-                                 version=root.attrib.get('version')))
+                    tool.update(dict(description=unicodify(root.find('description').text)))
+                tool.update(dict(id=unicodify(root.attrib.get('id')),
+                                 name=unicodify(root.attrib.get('name')),
+                                 version=unicodify(root.attrib.get('version'))))
                 tools_in_dir.append(tool)
     return tools_in_dir
