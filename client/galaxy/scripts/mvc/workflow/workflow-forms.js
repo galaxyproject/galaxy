@@ -11,6 +11,7 @@ export class DefaultForm {
     constructor(options) {
         var self = this;
         var node = options.node;
+        _addLabelAnnotation(this, options);
         this.form = new Form(
             Utils.merge(options, {
                 onchange: function () {
@@ -30,16 +31,14 @@ export class DefaultForm {
                 },
             })
         );
-        _addLabelAnnotation(this.form);
-        this.form.render();
     }
 }
 
 /** Tool form wrapper for the workflow editor. */
 export class ToolForm {
     constructor(options) {
-        var self = this;
         var node = options.node;
+        this._customize(options);
         this.form = new ToolFormBase(
             Utils.merge(options, {
                 text_enable: "Set in Advance",
@@ -47,14 +46,7 @@ export class ToolForm {
                 narrow: true,
                 initial_errors: true,
                 cls: "ui-portlet-section",
-                initialmodel: function (process, form) {
-                    self._customize(form);
-                    process.resolve();
-                },
-                buildmodel: function (process, form) {
-                    form.model.get("postchange")(process, form);
-                },
-                postchange: function (process, form) {
+                postchange: function(process, form) {
                     const Galaxy = getGalaxyInstance();
                     var options = form.model.attributes;
                     var current_state = {
@@ -68,9 +60,7 @@ export class ToolForm {
                         type: "POST",
                         url: `${getAppRoot()}api/workflows/build_module`,
                         data: current_state,
-                        success: function (data) {
-                            form.model.set(data.config_form);
-                            self._customize(form);
+                        success: function(data) {
                             form.update(data.config_form);
                             form.errors(data.config_form);
                             // This hasn't modified the workflow, just returned
@@ -90,9 +80,9 @@ export class ToolForm {
             })
         );
     }
-    _customize(form) {
-        var options = form.model.attributes;
-        Utils.deepeach(options.inputs, (input) => {
+    _customize(options) {
+        options.inputs = options.inputs || [];
+        Utils.deepeach(options.inputs, input => {
             if (input.type) {
                 if (["data", "data_collection"].indexOf(input.type) != -1) {
                     input.type = "hidden";
@@ -114,14 +104,13 @@ export class ToolForm {
                 input.test_param.collapsible_value = undefined;
             }
         });
-        _addSections(form);
-        _addLabelAnnotation(form);
+        _addSections(options);
+        _addLabelAnnotation(this, options);
     }
 }
 
 /** Augments the module form definition by adding label and annotation fields */
-function _addLabelAnnotation(form) {
-    var options = form.model.attributes;
+function _addLabelAnnotation(self, options) {
     var workflow = options.workflow;
     var node = options.node;
     options.inputs.unshift({
@@ -149,14 +138,14 @@ function _addLabelAnnotation(form) {
                     break;
                 }
             }
-            var input_id = form.data.match("__label");
-            var input_element = form.element_list[input_id];
+            var input_id = self.form.data.match("__label");
+            var input_element = self.form.element_list[input_id];
             input_element.model.set(
                 "error_text",
                 duplicate && "Duplicate label. Please fix this before saving the workflow."
             );
-            form.trigger("change");
-        },
+            self.form.trigger("change");
+        }
     });
 }
 
@@ -355,8 +344,7 @@ function _makeSection(output_id, label, options) {
 }
 
 /** Builds all sub sections */
-function _addSections(form) {
-    var options = form.model.attributes;
+function _addSections(options) {
     var inputs = options.inputs;
     var node = options.node;
     var post_job_actions = node.post_job_actions;
