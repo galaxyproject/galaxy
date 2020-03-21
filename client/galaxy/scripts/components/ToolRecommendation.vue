@@ -115,14 +115,11 @@ export default {
             let x = 0;
             let y = 0;
             let translateX = 0;
-            let clientH = 0;
-            let clientW = 0;
 
             const gElem = svg[0][0];
             const svgElem = gElem.parentNode;
-
-            clientH = svgElem.clientHeight;
-            clientW = svgElem.clientWidth;
+            const clientH = svgElem.clientHeight;
+            const clientW = svgElem.clientWidth;
             y = parseInt(clientH * 0.9);
             x = parseInt(clientW * 0.6);
             translateX = parseInt(clientW * 0.15);
@@ -132,7 +129,7 @@ export default {
             gElem.setAttribute("transform", "translate(" + translateX + ", 5)");
 
             const tree = d3.layout.tree().size([y, x]);
-            
+
             const diagonal = d3.svg.diagonal().projection(d => {
                 return [d.y, d.x];
             });
