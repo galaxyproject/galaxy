@@ -16,16 +16,17 @@ export class DefaultForm {
         this.form = new Form({
             ...options,
             onchange() {
-                axios.post(`${getAppRoot()}api/workflows/build_module`, {
-                    id: node.id,
-                    type: node.type,
-                    content_id: node.content_id,
-                    inputs: self.form.data.create()
-                })
-                .then(response => {
-                    const data = response.data;
-                    node.update_field_data(data);
-                });
+                axios
+                    .post(`${getAppRoot()}api/workflows/build_module`, {
+                        id: node.id,
+                        type: node.type,
+                        content_id: node.content_id,
+                        inputs: self.form.data.create()
+                    })
+                    .then(response => {
+                        const data = response.data;
+                        node.update_field_data(data);
+                    });
             }
         });
     }
@@ -345,7 +346,6 @@ function _addSections(self, node) {
     var inputs = node.config_form.inputs;
     var post_job_actions = node.post_job_actions;
     var output_id = node.output_terminals && Object.keys(node.output_terminals)[0];
-
     if (output_id) {
         inputs.push({
             name: `pja__${output_id}__EmailAction`,
