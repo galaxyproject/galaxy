@@ -23,9 +23,6 @@ export default FormBase.extend({
         this.deferred = new Deferred();
         FormBase.prototype.initialize.call(this, options);
 
-        // optional model update
-        this._update(this.model.get("initialmodel"));
-
         // listen to history panel
         if (this.model.get("listen_to_history") && Galaxy.currHistoryPanel) {
             this.listenTo(Galaxy.currHistoryPanel.collection, "change", () => {
@@ -39,9 +36,9 @@ export default FormBase.extend({
     },
 
     /** Allows tool form variation to update tool model */
-    _update: function (callback) {
+    _update: function() {
         var self = this;
-        callback = callback || this.model.get("buildmodel");
+        var callback = this.model.get("buildmodel");
         if (callback) {
             this.deferred.reset();
             this.deferred.execute((process) => {
