@@ -15,9 +15,7 @@ export function append_notebook(url) {
 
 export function clear_main_area() {
     $("#spinner").remove();
-    $("#main")
-        .children()
-        .remove();
+    $("#main").children().remove();
 }
 
 export function display_spinner() {
@@ -44,7 +42,7 @@ export function make_spin_state(
         sleep_max: typeof sleep_max !== "undefined" ? sleep_max : 8000,
         sleep_step: typeof sleep_step !== "undefined" ? sleep_step : 100,
         log_attempts: typeof log_attempts !== "undefined" ? log_attempts : true,
-        count: 0
+        count: 0,
     };
 }
 
@@ -58,7 +56,7 @@ export function spin_error(console_msg, user_msg, clear) {
             closeButton: true,
             timeOut: 0,
             extendedTimeOut: 0,
-            tapToDismiss: false
+            tapToDismiss: false,
         });
     }
 }
@@ -70,9 +68,9 @@ function spin_again(spin_state) {
     }
     if (spin_state.log_attempts) {
         console.log(
-            `${spin_state.type} request ${spin_state.count} request timeout ${
-                spin_state.ajax_timeout
-            }ms sleeping ${spin_state.sleep / 1000}s`
+            `${spin_state.type} request ${spin_state.count} request timeout ${spin_state.ajax_timeout}ms sleeping ${
+                spin_state.sleep / 1000
+            }s`
         );
     }
     window.setTimeout(spin_state.spinner, spin_state.sleep);
@@ -88,17 +86,17 @@ export function spin(url, bool_response, success_callback, timeout_callback, err
         var ajax_params = {
             url: url,
             xhrFields: {
-                withCredentials: true
+                withCredentials: true,
             },
             type: "GET",
             timeout: spin_state.ajax_timeout,
-            success: function(data, status, jqxhr) {
+            success: function (data, status, jqxhr) {
                 if (!success_callback(data, status, jqxhr)) {
                     spin_state.count++;
                     spin_again(spin_state);
                 }
             },
-            error: function(jqxhr, status, error) {
+            error: function (jqxhr, status, error) {
                 if (status == "timeout") {
                     if (spin_state.ajax_timeout < spin_state.ajax_timeout_max) {
                         spin_state.ajax_timeout += spin_state.ajax_timeout_step;
@@ -109,7 +107,7 @@ export function spin(url, bool_response, success_callback, timeout_callback, err
                     spin_state.count++;
                     if (!error_callback(jqxhr, status, error)) spin_again(spin_state);
                 }
-            }
+            },
         };
         if (bool_response) ajax_params.dataType = "json";
         $.ajax(ajax_params);
@@ -134,11 +132,11 @@ function spin_until(url, bool_response, messages, success_callback, spin_state) 
                 closeButton: true,
                 timeOut: 0,
                 extendedTimeOut: 0,
-                tapToDismiss: false
+                tapToDismiss: false,
             });
         }
     };
-    var wrapped_success = data => {
+    var wrapped_success = (data) => {
         if (!bool_response || (bool_response && data == true)) {
             console.log(messages.success);
             clear_main_area();
@@ -159,7 +157,7 @@ function spin_until(url, bool_response, messages, success_callback, spin_state) 
                 closeButton: true,
                 timeOut: 0,
                 extendedTimeOut: 0,
-                tapToDismiss: false
+                tapToDismiss: false,
             });
         }
         return false; // keep spinning
@@ -181,7 +179,7 @@ export function test_ie_availability(url, success_callback) {
         wait_warn:
             "It is taking an usually long time to connect to the interactive environment. Attempts will continue but you may want to report this condition to a Galaxy administrator if it does not succeed soon.",
         error:
-            "An error was encountered while attempting to connect to the interactive environment, contact your administrator."
+            "An error was encountered while attempting to connect to the interactive environment, contact your administrator.",
     };
     var spin_state = make_spin_state("IE availability");
     spin_until(url, false, messages, success_callback, spin_state);
@@ -204,7 +202,7 @@ export function load_when_ready(url, success_callback) {
         wait_warn:
             "It is taking an usually long time to start a container. Attempts will continue but you may want to report this condition to a Galaxy administrator if it does not succeed soon.",
         error:
-            "Galaxy encountered an error while attempting to determine the readiness of this interactive environment's container, contact a Galaxy administrator."
+            "Galaxy encountered an error while attempting to determine the readiness of this interactive environment's container, contact a Galaxy administrator.",
     };
     var spin_state = make_spin_state("IE container readiness");
     spin_until(url, true, messages, success_callback, spin_state);
@@ -217,18 +215,18 @@ export function load_when_ready(url, success_callback) {
  */
 export function keepAlive(notebookAccessURL) {
     var request_count = 0;
-    var interval = window.setInterval(function() {
+    var interval = window.setInterval(function () {
         $.ajax({
             url: notebookAccessURL,
             xhrFields: {
-                withCredentials: true
+                withCredentials: true,
             },
             type: "GET",
             timeout: 500,
-            success: function() {
+            success: function () {
                 console.log("Connected to IE, returning");
             },
-            error: function(jqxhr, status, error) {
+            error: function (jqxhr, status, error) {
                 request_count++;
                 console.log("Request " + request_count);
                 if (request_count > 30) {
@@ -237,10 +235,10 @@ export function keepAlive(notebookAccessURL) {
                     Toast.error("Could not connect to IE, contact your administrator", "Error", {
                         closeButton: true,
                         timeOut: 20000,
-                        tapToDismiss: false
+                        tapToDismiss: false,
                     });
                 }
-            }
+            },
         });
     }, 10000);
 }
@@ -254,5 +252,5 @@ export default {
     spin,
     test_ie_availability,
     load_when_ready,
-    keepAlive
+    keepAlive,
 };

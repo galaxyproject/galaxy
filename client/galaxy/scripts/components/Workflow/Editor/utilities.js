@@ -12,7 +12,7 @@ export function copyIntoWorkflow(workflow, id = null, stepCount = null) {
     const _copy_into_workflow_ajax = () => {
         // Load workflow definition
         show_message("Importing workflow", "progress");
-        loadWorkflow(workflow, id, null).then(data => {
+        loadWorkflow(workflow, id, null).then((data) => {
             workflow.from_simple(data, false);
             // Determine if any parameters were 'upgraded' and provide message
             var upgrade_message = "";
@@ -40,7 +40,7 @@ export function copyIntoWorkflow(workflow, id = null, stepCount = null) {
         // don't ruin the workflow by adding 50 steps unprompted.
         show_modal(_l("Warning"), `This will copy ${stepCount} new steps into your workflow.`, {
             Cancel: hide_modal,
-            Copy: _copy_into_workflow_ajax
+            Copy: _copy_into_workflow_ajax,
         });
     }
 }
@@ -51,9 +51,7 @@ export function showWarnings(data) {
         body.addClass("warningmark");
         var errlist = $("<ul/>");
         $.each(data.errors, (i, v) => {
-            $("<li/>")
-                .text(v)
-                .appendTo(errlist);
+            $("<li/>").text(v).appendTo(errlist);
         });
         body.append(errlist);
     } else {
@@ -61,7 +59,7 @@ export function showWarnings(data) {
     }
     if (data.errors) {
         show_modal("Saving workflow", body, {
-            Ok: hide_modal
+            Ok: hide_modal,
         });
     } else {
         hide_modal();
@@ -110,7 +108,7 @@ export function showUpgradeMessage(workflow, data) {
         if (step.errors) {
             details += `<li>${step.errors}</li>`;
         }
-        _.each(data.upgrade_messages[step_id], m => {
+        _.each(data.upgrade_messages[step_id], (m) => {
             details += `<li>${m}</li>`;
         });
         if (details) {
@@ -136,7 +134,7 @@ export function getWorkflowParameters(nodes) {
     let matches = [];
     Object.entries(nodes).forEach(([k, node]) => {
         if (node.config_form && node.config_form.inputs) {
-            Utils.deepeach(node.config_form.inputs, d => {
+            Utils.deepeach(node.config_form.inputs, (d) => {
                 if (typeof d.value == "string") {
                     var form_matches = d.value.match(parameter_re);
                     if (form_matches) {
@@ -179,7 +177,7 @@ export function saveAs(workflow) {
             '<br><label style="display:inline-block; width: 100%;">Annotation: </label><input type="text" id="wf_annotation" style="width: 80%;" /></form>'
     );
     show_modal("Save As a New Workflow", body, {
-        OK: function() {
+        OK: function () {
             var rename_name =
                 $("#workflow_rename").val().length > 0 ? $("#workflow_rename").val() : `SavedAs_${workflow.name}`;
             var rename_annotation = $("#wf_annotation").val().length > 0 ? $("#wf_annotation").val() : "";
@@ -190,12 +188,12 @@ export function saveAs(workflow) {
                     workflow_name: rename_name,
                     workflow_annotation: rename_annotation,
                     from_tool_form: true,
-                    workflow_data: function() {
+                    workflow_data: function () {
                         return JSON.stringify(workflow.to_simple());
-                    }
-                }
+                    },
+                },
             })
-                .done(id => {
+                .done((id) => {
                     window.onbeforeunload = undefined;
                     window.location = `${getAppRoot()}workflow/editor?id=${id}`;
                     hide_modal();
@@ -205,6 +203,6 @@ export function saveAs(workflow) {
                     alert("Saving this workflow failed. Please contact this site's administrator.");
                 });
         },
-        Cancel: hide_modal
+        Cancel: hide_modal,
     });
 }

@@ -10,28 +10,28 @@ import BASE_MVC from "mvc/base-mvc";
  */
 var ControlledFetchCollection = Backbone.Collection.extend({
     /** call setOrder on initialization to build the comparator based on options */
-    initialize: function(models, options) {
+    initialize: function (models, options) {
         Backbone.Collection.prototype.initialize.call(this, models, options);
         this.setOrder(options.order || this.order, { silent: true });
     },
 
     /** set up to track order changes and re-sort when changed */
-    _setUpListeners: function() {
+    _setUpListeners: function () {
         return this.on({
-            "changed-order": this.sort
+            "changed-order": this.sort,
         });
     },
 
     /** override to provide order and offsets based on instance vars, set limit if passed,
      *  and set allFetched/fire 'all-fetched' when xhr returns
      */
-    fetch: function(options) {
+    fetch: function (options) {
         options = this._buildFetchOptions(options);
         return Backbone.Collection.prototype.fetch.call(this, options);
     },
 
     /** build ajax data/parameters from options */
-    _buildFetchOptions: function(options) {
+    _buildFetchOptions: function (options) {
         // note: we normally want options passed in to override the defaults built here
         // so most of these fns will generate defaults
         options = _.clone(options) || {};
@@ -57,7 +57,7 @@ var ControlledFetchCollection = Backbone.Collection.extend({
     },
 
     /** Build the dictionary to send to fetch's XHR as data */
-    _buildFetchData: function(options) {
+    _buildFetchData: function (options) {
         var defaults = {};
         if (this.order) {
             defaults.order = this.order;
@@ -76,21 +76,21 @@ var ControlledFetchCollection = Backbone.Collection.extend({
         /** what series of attributes to return (model dependent) */
         "view",
         /** individual keys to return for the models (see api/histories.index) */
-        "keys"
+        "keys",
     ],
 
     /** add any needed filters here based on collection state */
-    _buildFetchFilters: function(options) {
+    _buildFetchFilters: function (options) {
         // override
         return _.clone(options.filters || {});
     },
 
     /** Convert dictionary filters to qqv style arrays */
-    _fetchFiltersToAjaxData: function(filters) {
+    _fetchFiltersToAjaxData: function (filters) {
         // return as a map so ajax.data can extend from it
         var filterMap = {
             q: [],
-            qv: []
+            qv: [],
         };
         _.each(filters, (v, k) => {
             // don't send if filter value is empty
@@ -115,7 +115,7 @@ var ControlledFetchCollection = Backbone.Collection.extend({
     },
 
     /** override to reset allFetched flag to false */
-    reset: function(models, options) {
+    reset: function (models, options) {
         this.allFetched = false;
         return Backbone.Collection.prototype.reset.call(this, models, options);
     },
@@ -126,23 +126,23 @@ var ControlledFetchCollection = Backbone.Collection.extend({
     /** @type {Object} map of collection available sorting orders containing comparator fns */
     comparators: {
         update_time: BASE_MVC.buildComparator("update_time", {
-            ascending: false
+            ascending: false,
         }),
         "update_time-asc": BASE_MVC.buildComparator("update_time", {
-            ascending: true
+            ascending: true,
         }),
         create_time: BASE_MVC.buildComparator("create_time", {
-            ascending: false
+            ascending: false,
         }),
         "create_time-asc": BASE_MVC.buildComparator("create_time", {
-            ascending: true
-        })
+            ascending: true,
+        }),
     },
 
     /** set the order and comparator for this collection then sort with the new order
      *  @event 'changed-order' passed the new order and the collection
      */
-    setOrder: function(order, options) {
+    setOrder: function (order, options) {
         options = options || {};
         var collection = this;
         var comparator = collection.comparators[order];
@@ -161,7 +161,7 @@ var ControlledFetchCollection = Backbone.Collection.extend({
             collection.trigger("changed-order", options);
         }
         return collection;
-    }
+    },
 });
 
 //=============================================================================
@@ -172,41 +172,41 @@ var PaginatedCollection = ControlledFetchCollection.extend({
     /** @type {Number} limit used for each page's fetch */
     limitPerPage: 500,
 
-    initialize: function(models, options) {
+    initialize: function (models, options) {
         ControlledFetchCollection.prototype.initialize.call(this, models, options);
         this.currentPage = options.currentPage || 0;
     },
 
-    getTotalItemCount: function() {
+    getTotalItemCount: function () {
         return this.length;
     },
 
-    shouldPaginate: function() {
+    shouldPaginate: function () {
         return this.getTotalItemCount() >= this.limitPerPage;
     },
 
-    getLastPage: function() {
+    getLastPage: function () {
         return Math.floor(this.getTotalItemCount() / this.limitPerPage);
     },
 
-    getPageCount: function() {
+    getPageCount: function () {
         return this.getLastPage() + 1;
     },
 
-    getPageLimitOffset: function(pageNum) {
+    getPageLimitOffset: function (pageNum) {
         pageNum = this.constrainPageNum(pageNum);
         return {
             limit: this.limitPerPage,
-            offset: pageNum * this.limitPerPage
+            offset: pageNum * this.limitPerPage,
         };
     },
 
-    constrainPageNum: function(pageNum) {
+    constrainPageNum: function (pageNum) {
         return Math.max(0, Math.min(pageNum, this.getLastPage()));
     },
 
     /** fetch the next page of data */
-    fetchPage: function(pageNum, options) {
+    fetchPage: function (pageNum, options) {
         var self = this;
         pageNum = self.constrainPageNum(pageNum);
         self.currentPage = pageNum;
@@ -218,17 +218,17 @@ var PaginatedCollection = ControlledFetchCollection.extend({
         });
     },
 
-    fetchCurrentPage: function(options) {
+    fetchCurrentPage: function (options) {
         return this.fetchPage(this.currentPage, options);
     },
 
-    fetchPrevPage: function(options) {
+    fetchPrevPage: function (options) {
         return this.fetchPage(this.currentPage - 1, options);
     },
 
-    fetchNextPage: function(options) {
+    fetchNextPage: function (options) {
         return this.fetchPage(this.currentPage + 1, options);
-    }
+    },
 });
 
 //=============================================================================
@@ -241,7 +241,7 @@ var InfinitelyScrollingCollection = ControlledFetchCollection.extend({
     /** @type {Number} limit used for each subsequent fetch */
     limitPerFetch: 100,
 
-    initialize: function(models, options) {
+    initialize: function (models, options) {
         ControlledFetchCollection.prototype.initialize.call(this, models, options);
         /** @type {Integer} number of contents to return from the first fetch */
         this.limitOnFirstFetch = options.limitOnFirstFetch || this.limitOnFirstFetch;
@@ -254,7 +254,7 @@ var InfinitelyScrollingCollection = ControlledFetchCollection.extend({
     },
 
     /** build ajax data/parameters from options */
-    _buildFetchOptions: function(options) {
+    _buildFetchOptions: function (options) {
         // options (options for backbone.fetch and jquery.ajax generally)
         // backbone option; false here to make fetching an addititive process
         options.remove = options.remove || false;
@@ -262,20 +262,20 @@ var InfinitelyScrollingCollection = ControlledFetchCollection.extend({
     },
 
     /** fetch the first 'page' of data */
-    fetchFirst: function(options) {
+    fetchFirst: function (options) {
         options = options ? _.clone(options) : {};
         this.allFetched = false;
         this.lastFetched = 0;
         return this.fetchMore(
             _.defaults(options, {
                 reset: true,
-                limit: this.limitOnFirstFetch
+                limit: this.limitOnFirstFetch,
             })
         );
     },
 
     /** fetch the next page of data */
-    fetchMore: function(options) {
+    fetchMore: function (options) {
         options = _.clone(options || {});
         var collection = this;
 
@@ -313,7 +313,7 @@ var InfinitelyScrollingCollection = ControlledFetchCollection.extend({
     },
 
     /** fetch all the collection */
-    fetchAll: function(options) {
+    fetchAll: function (options) {
         // whitelist options to prevent allowing limit/offset/filters
         // (use vanilla fetch instead)
         options = options || {};
@@ -324,12 +324,12 @@ var InfinitelyScrollingCollection = ControlledFetchCollection.extend({
             self.allFetched = true;
             self.trigger("all-fetched", self);
         });
-    }
+    },
 });
 
 //==============================================================================
 export default {
     ControlledFetchCollection: ControlledFetchCollection,
     PaginatedCollection: PaginatedCollection,
-    InfinitelyScrollingCollection: InfinitelyScrollingCollection
+    InfinitelyScrollingCollection: InfinitelyScrollingCollection,
 };

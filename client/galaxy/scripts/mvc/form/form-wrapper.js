@@ -6,7 +6,7 @@ import Form from "mvc/form/form-view";
 import Ui from "mvc/ui/ui-misc";
 
 var View = Backbone.View.extend({
-    initialize: function(options) {
+    initialize: function (options) {
         this.model = new Backbone.Model(options);
         this.url = this.model.get("url");
         this.redirect = this.model.get("redirect");
@@ -17,13 +17,13 @@ var View = Backbone.View.extend({
         this.render();
     },
 
-    render: function() {
+    render: function () {
         var self = this;
         $.ajax({
             url: getAppRoot() + this.url,
-            type: "GET"
+            type: "GET",
         })
-            .done(response => {
+            .done((response) => {
                 var options = $.extend({}, self.model.attributes, response);
                 var form = new Form({
                     title: options.title,
@@ -40,34 +40,34 @@ var View = Backbone.View.extend({
                             title: options.submit_title || "Save",
                             icon: options.submit_icon || "fa-save",
                             cls: "btn btn-primary",
-                            onclick: function() {
+                            onclick: function () {
                                 self._submit(form);
-                            }
-                        })
-                    }
+                            },
+                        }),
+                    },
                 });
                 self.$el.empty().append(form.$el);
             })
-            .fail(response => {
+            .fail((response) => {
                 self.$el.empty().append(
                     new Ui.Message({
                         message: `Failed to load resource ${self.url}.`,
                         status: "danger",
-                        persistent: true
+                        persistent: true,
                     }).$el
                 );
             });
     },
 
-    _submit: function(form) {
+    _submit: function (form) {
         var self = this;
         $.ajax({
             url: getAppRoot() + self.url,
             data: JSON.stringify(form.data.create()),
             type: "PUT",
-            contentType: "application/json"
+            contentType: "application/json",
         })
-            .done(response => {
+            .done((response) => {
                 var params = {};
                 if (response.id) {
                     params.id = response.id;
@@ -75,7 +75,7 @@ var View = Backbone.View.extend({
                     params = {
                         message: response.message,
                         status: "success",
-                        persistent: false
+                        persistent: false,
                     };
                 }
                 if (self.redirect) {
@@ -87,27 +87,27 @@ var View = Backbone.View.extend({
                     self._showMessage(form, response.message);
                 }
             })
-            .fail(response => {
+            .fail((response) => {
                 self._showMessage(form, {
                     message: response.responseJSON.err_msg,
                     status: "danger",
-                    persistent: false
+                    persistent: false,
                 });
             });
     },
 
-    _showMessage: function(form, options) {
+    _showMessage: function (form, options) {
         var $panel = form.$el
             .parents()
-            .filter(function() {
+            .filter(function () {
                 return ["auto", "scroll"].indexOf($(this).css("overflow")) != -1;
             })
             .first();
         $panel.animate({ scrollTop: 0 }, 500);
         form.message.update(options);
-    }
+    },
 });
 
 export default {
-    View: View
+    View: View,
 };

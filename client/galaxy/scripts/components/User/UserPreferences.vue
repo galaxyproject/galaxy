@@ -58,12 +58,12 @@ export default {
     props: {
         userId: {
             type: String,
-            required: true
+            required: true,
         },
         enableQuotas: {
             type: Boolean,
-            required: true
-        }
+            required: true,
+        },
     },
     data() {
         return {
@@ -72,7 +72,7 @@ export default {
             quotaUsageString: "",
             baseUrl: `${getAppRoot()}user`,
             messageVariant: null,
-            message: null
+            message: null,
         };
     },
     created() {
@@ -82,7 +82,7 @@ export default {
             this.message = message;
             this.messageVariant = status;
         }
-        axios.get(`${getAppRoot()}api/users/${this.userId}`).then(response => {
+        axios.get(`${getAppRoot()}api/users/${this.userId}`).then((response) => {
             this.email = response.data.email;
             this.diskUsage = response.data.nice_total_disk_usage;
             this.quotaUsageString = this.enableQuotas
@@ -114,15 +114,15 @@ export default {
             }
 
             return activeLinks;
-        }
+        },
     },
     methods: {
         toggleNotifications() {
-            Notification.requestPermission().then(function(permission) {
+            Notification.requestPermission().then(function (permission) {
                 //If the user accepts, let's create a notification
                 if (permission === "granted") {
                     new Notification("Notifications enabled", {
-                        icon: "static/favicon.ico"
+                        icon: "static/favicon.ico",
                     });
                 } else {
                     alert("Notifications disabled, please re-enable through browser settings.");
@@ -148,15 +148,15 @@ export default {
                     )
                 )
             ) {
-                axios.post(`${getAppRoot()}history/make_private?all_histories=true`).then(response => {
+                axios.post(`${getAppRoot()}history/make_private?all_histories=true`).then((response) => {
                     Galaxy.modal.show({
                         title: _l("Datasets are now private"),
                         body: `All of your histories and datsets have been made private.  If you'd like to make all *future* histories private please use the <a href="${Galaxy.root}user/permissions">User Permissions</a> interface.`,
                         buttons: {
                             Close: () => {
                                 Galaxy.modal.hide();
-                            }
-                        }
+                            },
+                        },
                     });
                 });
             }
@@ -167,18 +167,18 @@ export default {
                 title: _l("Sign out"),
                 body: "Do you want to continue and sign out of all active sessions?",
                 buttons: {
-                    Cancel: function() {
+                    Cancel: function () {
                         Galaxy.modal.hide();
                     },
-                    "Sign out": function() {
+                    "Sign out": function () {
                         window.location.href = `${getAppRoot()}user/logout?session_csrf_token=${
                             Galaxy.session_csrf_token
                         }`;
-                    }
-                }
+                    },
+                },
             });
-        }
-    }
+        },
+    },
 };
 </script>
 

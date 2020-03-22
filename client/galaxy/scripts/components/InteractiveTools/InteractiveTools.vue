@@ -79,7 +79,7 @@ Vue.use(BootstrapVue);
 
 export default {
     components: {
-        UtcDate
+        UtcDate,
     },
     data() {
         return {
@@ -87,34 +87,34 @@ export default {
             fields: [
                 {
                     label: "",
-                    key: "checkbox"
+                    key: "checkbox",
                 },
                 {
                     label: "Name",
                     key: "name",
-                    sortable: true
+                    sortable: true,
                 },
                 {
                     label: "Job Info",
                     key: "job_info",
-                    sortable: true
+                    sortable: true,
                 },
                 {
                     label: "Created",
                     key: "created_time",
-                    sortable: true
+                    sortable: true,
                 },
                 {
                     label: "Last Updated",
                     key: "last_updated",
-                    sortable: true
-                }
+                    sortable: true,
+                },
             ],
             filter: "",
             message: null,
             messageVariant: null,
             nInteractiveTools: 0,
-            activeInteractiveTools: []
+            activeInteractiveTools: [],
         };
     },
     computed: {
@@ -122,7 +122,7 @@ export default {
             return this.nInteractiveTools === 0 && this.filter && !this.isActiveToolsListEmpty;
         },
         isCheckboxMarked() {
-            return this.activeInteractiveTools.some(tool => tool.marked);
+            return this.activeInteractiveTools.some((tool) => tool.marked);
         },
         isActiveToolsListEmpty() {
             return this.activeInteractiveTools.length === 0;
@@ -132,7 +132,7 @@ export default {
         },
         currentHistory() {
             return getGalaxyInstance().currHistoryPanel;
-        }
+        },
     },
     created() {
         this.root = getAppRoot();
@@ -144,29 +144,29 @@ export default {
             this.filter = "";
             this.services
                 .getActiveInteractiveTools()
-                .then(activeInteractiveTools => {
+                .then((activeInteractiveTools) => {
                     this.activeInteractiveTools = activeInteractiveTools;
                 })
-                .catch(error => {
+                .catch((error) => {
                     this.error = error;
                 });
         },
-        filtered: function(items) {
+        filtered: function (items) {
             this.nInteractiveTools = items.length;
         },
         stopInteractiveToolSession() {
-            const idsToStop = this.activeInteractiveTools.filter(tool => tool.marked).map(tool => tool.id);
-            this.services.stopInteractiveTool(idsToStop).then(response => {
+            const idsToStop = this.activeInteractiveTools.filter((tool) => tool.marked).map((tool) => tool.id);
+            this.services.stopInteractiveTool(idsToStop).then((response) => {
                 if (response.status === "ok") this.messageVariant = "success";
                 else this.messageVariant = "danger";
                 this.message = response.message;
-                this.activeInteractiveTools = this.activeInteractiveTools.filter(tool => !tool.marked);
+                this.activeInteractiveTools = this.activeInteractiveTools.filter((tool) => !tool.marked);
                 this.currentHistory.loadCurrentHistory();
             });
         },
         createId(tagLabel, id) {
             return tagLabel + "-" + id;
-        }
-    }
+        },
+    },
 };
 </script>

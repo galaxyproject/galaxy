@@ -7,7 +7,7 @@ import { getGalaxyInstance } from "app";
 
 /** Masthead **/
 const View = Backbone.View.extend({
-    initialize: function(options) {
+    initialize: function (options) {
         const Galaxy = getGalaxyInstance();
 
         const self = this;
@@ -22,14 +22,14 @@ const View = Backbone.View.extend({
         // build tabs
         this.collection = new Menu.Collection();
         this.collection
-            .on("add", model => {
+            .on("add", (model) => {
                 self.$navbarTabs.append(new Menu.Tab({ model: model }).render().$el);
             })
             .on("reset", () => {
                 self.$navbarTabs.empty();
             })
-            .on("dispatch", callback => {
-                self.collection.each(m => {
+            .on("dispatch", (callback) => {
+                self.collection.each((m) => {
                     callback(m);
                 });
             })
@@ -40,27 +40,23 @@ const View = Backbone.View.extend({
 
         // scratchbook
         Galaxy.frame = this.frame = new Scratchbook({
-            collection: this.collection
+            collection: this.collection,
         });
 
         // set up the quota meter (And fetch the current user data from trans)
         // add quota meter to masthead
         Galaxy.quotaMeter = this.quotaMeter = new QuotaMeter.UserQuotaMeter({
             model: Galaxy.user,
-            el: this.$quoteMeter
+            el: this.$quoteMeter,
         });
 
         // loop through beforeunload functions if the user attempts to unload the page
         $(window)
-            .on("click", e => {
+            .on("click", (e) => {
                 const $download_link = $(e.target).closest("a[download]");
                 if ($download_link.length == 1) {
                     if ($("iframe[id=download]").length === 0) {
-                        $("body").append(
-                            $("<iframe/>")
-                                .attr("id", "download")
-                                .hide()
-                        );
+                        $("body").append($("<iframe/>").attr("id", "download").hide());
                     }
                     $("iframe[id=download]").attr("src", $download_link.attr("href"));
                     e.preventDefault();
@@ -68,7 +64,7 @@ const View = Backbone.View.extend({
             })
             .on("beforeunload", () => {
                 let text = "";
-                self.collection.each(model => {
+                self.collection.each((model) => {
                     const q = model.get("onbeforeunload") && model.get("onbeforeunload")();
                     if (q) {
                         text += `${q} `;
@@ -80,7 +76,7 @@ const View = Backbone.View.extend({
             });
     },
 
-    render: function() {
+    render: function () {
         let brand = this.options.display_galaxy_brand ? "Galaxy " : "";
         if (this.options.brand) {
             brand += this.options.brand;
@@ -92,14 +88,14 @@ const View = Backbone.View.extend({
         return this;
     },
 
-    highlight: function(id) {
-        this.collection.forEach(function(model) {
+    highlight: function (id) {
+        this.collection.forEach(function (model) {
             model.set("active", model.id == id);
         });
     },
 
     /** body template */
-    _template: function() {
+    _template: function () {
         return `
             <nav id="masthead" class="navbar navbar-expand justify-content-center navbar-dark" role="navigation" aria-label="Main">
                 <a class="navbar-brand" aria-label="homepage">
@@ -109,9 +105,9 @@ const View = Backbone.View.extend({
                 <ul class="navbar-nav"/>
                 <div class="quota-meter-container"/>
             </nav>`;
-    }
+    },
 });
 
 export default {
-    View: View
+    View: View,
 };

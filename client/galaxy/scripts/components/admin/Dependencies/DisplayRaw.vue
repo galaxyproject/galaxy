@@ -7,13 +7,13 @@ export default {
     props: {
         object: {
             type: Object,
-            required: true
-        }
+            required: true,
+        },
     },
     computed: {
-        asJson: function() {
+        asJson: function () {
             return JSON.stringify(this.object);
-        }
-    }
+        },
+    },
 };
 </script>

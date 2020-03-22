@@ -15,16 +15,16 @@ import "./assets/base.css";
 
 export function setupTestGalaxy(galaxyOptions_ = null) {
     galaxyOptions_ = galaxyOptions_ || galaxyOptions;
-    setGalaxyInstance(GalaxyApp => {
+    setGalaxyInstance((GalaxyApp) => {
         let galaxy = new GalaxyApp(galaxyOptions_);
         galaxy.currHistoryPanel = {
-            model: new Backbone.Model()
+            model: new Backbone.Model(),
         };
         galaxy.emit = {
-            debug: function() {},
-            error: function(v) {
+            debug: function () {},
+            error: function (v) {
                 window.console.error(v);
-            }
+            },
         };
         return galaxy;
     });
@@ -39,7 +39,7 @@ export default {
             window.fakeserver.respondWith("GET", getAppRoot() + route, [
                 200,
                 { "Content-Type": "application/json" },
-                serverdata[route].data
+                serverdata[route].data,
             ]);
         }
     },
@@ -49,5 +49,5 @@ export default {
             window.fakeserver.restore();
             delete window.fakeserver;
         }
-    }
+    },
 };

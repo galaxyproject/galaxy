@@ -21,13 +21,13 @@ export default {
     props: {
         toolId: {
             type: String,
-            required: true
-        }
+            required: true,
+        },
     },
     data() {
         return {
             deprecated: null,
-            deprecatedMessage: ""
+            deprecatedMessage: "",
         };
     },
     created() {
@@ -41,7 +41,7 @@ export default {
                 toolId = toolIdSlash[toolIdSlash.length - 2];
             }
             return toolId;
-        }
+        },
     },
     methods: {
         loadRecommendations() {
@@ -49,10 +49,10 @@ export default {
             const url = `${getAppRoot()}api/workflows/get_tool_predictions`;
             axios
                 .post(url, {
-                    tool_sequence: toolId
+                    tool_sequence: toolId,
                 })
-                .then(response => {
-                    axios.get(`${getAppRoot()}api/datatypes/mapping`).then(responseMapping => {
+                .then((response) => {
+                    axios.get(`${getAppRoot()}api/datatypes/mapping`).then((responseMapping) => {
                         const predData = response.data.predicted_data;
                         const datatypesMapping = responseMapping.data;
                         const extToType = datatypesMapping.ext_to_class_name;
@@ -105,11 +105,7 @@ export default {
         },
         renderD3Tree(predictedTools) {
             const duration = 750;
-            const svg = d3
-                .select("#tool-recommendation")
-                .append("svg")
-                .attr("class", "tree-size")
-                .append("g");
+            const svg = d3.select("#tool-recommendation").append("svg").attr("class", "tree-size").append("g");
             let i = 0;
             let root = null;
             let x = 0;
@@ -130,19 +126,19 @@ export default {
 
             const tree = d3.layout.tree().size([y, x]);
 
-            const diagonal = d3.svg.diagonal().projection(d => {
+            const diagonal = d3.svg.diagonal().projection((d) => {
                 return [d.y, d.x];
             });
-            const update = source => {
+            const update = (source) => {
                 // Compute the new tree layout.
                 const nodes = tree.nodes(root).reverse();
                 const links = tree.links(nodes);
                 // Normalize for fixed-depth.
-                nodes.forEach(d => {
+                nodes.forEach((d) => {
                     d.y = d.depth * 180;
                 });
                 // Update the nodes…
-                const node = svg.selectAll("g.node").data(nodes, d => {
+                const node = svg.selectAll("g.node").data(nodes, (d) => {
                     return d.id || (d.id = ++i);
                 });
                 // Enter any new nodes at the parent's previous position.
@@ -150,32 +146,32 @@ export default {
                     .enter()
                     .append("g")
                     .attr("class", "node")
-                    .attr("transform", d => {
+                    .attr("transform", (d) => {
                         return "translate(" + source.y0 + "," + source.x0 + ")";
                     })
                     .on("click", click);
                 nodeEnter.append("circle").attr("r", 1e-6);
                 nodeEnter
                     .append("text")
-                    .attr("x", d => {
+                    .attr("x", (d) => {
                         return d.children || d._children ? -10 : 10;
                     })
                     .attr("dy", ".35em")
-                    .attr("text-anchor", d => {
+                    .attr("text-anchor", (d) => {
                         return d.children || d._children ? "end" : "start";
                     })
-                    .text(d => {
+                    .text((d) => {
                         return d.name;
                     })
                     .attr("class", "node-enter");
-                nodeEnter.append("title").text(d => {
+                nodeEnter.append("title").text((d) => {
                     return d.children || d._children ? "Click to collapse" : "Click to open tool definition";
                 });
                 // Transition nodes to their new position.
                 const nodeUpdate = node
                     .transition()
                     .duration(duration)
-                    .attr("transform", d => {
+                    .attr("transform", (d) => {
                         return "translate(" + d.y + "," + d.x + ")";
                     });
                 nodeUpdate.select("circle").attr("r", 4.5);
@@ -185,45 +181,43 @@ export default {
                     .exit()
                     .transition()
                     .duration(duration)
-                    .attr("transform", d => {
+                    .attr("transform", (d) => {
                         return "translate(" + source.y + "," + source.x + ")";
                     })
                     .remove();
                 nodeExit.select("circle").attr("r", 1e-6);
                 nodeExit.select("text").attr("class", "node-enter");
                 // Update the links
-                const link = svg.selectAll("path.link").data(links, d => {
+                const link = svg.selectAll("path.link").data(links, (d) => {
                     return d.target.id;
                 });
                 // Enter any new links at the parent's previous position.
                 link.enter()
                     .insert("path", "g")
                     .attr("class", "link")
-                    .attr("d", d => {
+                    .attr("d", (d) => {
                         const o = { x: source.x0, y: source.y0 };
                         return diagonal({ source: o, target: o });
                     });
                 // Transition links to their new position.
-                link.transition()
-                    .duration(duration)
-                    .attr("d", diagonal);
+                link.transition().duration(duration).attr("d", diagonal);
                 // Transition exiting nodes to the parent's new position.
                 link.exit()
                     .transition()
                     .duration(duration)
-                    .attr("d", d => {
+                    .attr("d", (d) => {
                         const o = { x: source.x, y: source.y };
                         return diagonal({ source: o, target: o });
                     })
                     .remove();
                 // Stash the old positions for transition.
-                nodes.forEach(d => {
+                nodes.forEach((d) => {
                     d.x0 = d.x;
                     d.y0 = d.y;
                 });
             };
             // Toggle children on click.
-            const click = d => {
+            const click = (d) => {
                 if (d.children) {
                     d._children = d.children;
                     d.children = null;
@@ -237,7 +231,7 @@ export default {
                     document.location.href = `${getAppRoot()}tool_runner?tool_id=${tId}`;
                 }
             };
-            const collapse = d => {
+            const collapse = (d) => {
                 if (d.children) {
                     d._children = d.children;
                     d._children.forEach(collapse);
@@ -249,7 +243,7 @@ export default {
             root.y0 = 0;
             root.children.forEach(collapse);
             update(root);
-        }
-    }
+        },
+    },
 };
 </script>

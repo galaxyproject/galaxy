@@ -2,7 +2,7 @@ import jQuery from "jquery";
 ("use_strict");
 
 var $ = jQuery;
-var _l = window._l || (s => s);
+var _l = window._l || ((s) => s);
 
 //TODO: consolidate with tool menu functionality, use there
 
@@ -25,24 +25,19 @@ function searchInput(parentNode, options) {
         name: "search",
         placeholder: "search",
         classes: "",
-        onclear: function() {},
+        onclear: function () {},
         onfirstsearch: null,
-        onsearch: function(inputVal) {},
+        onsearch: function (inputVal) {},
         minSearchLen: 0,
         escWillClear: true,
-        oninit: function() {}
+        oninit: function () {},
     };
 
     // .................................................................... input rendering and events
     // visually clear the search, trigger an event, and call the callback
     function clearSearchInput(event) {
-        var $input = $(this)
-            .parent()
-            .children("input");
-        $input
-            .val("")
-            .trigger("searchInput.clear")
-            .blur();
+        var $input = $(this).parent().children("input");
+        $input.val("").trigger("searchInput.clear").blur();
         options.onclear();
     }
 
@@ -72,7 +67,7 @@ function searchInput(parentNode, options) {
             'class="search-query ',
             options.classes,
             '" ',
-            "/>"
+            "/>",
         ].join("");
     }
 
@@ -81,11 +76,11 @@ function searchInput(parentNode, options) {
         return (
             $(inputTemplate())
                 // select all text on a focus
-                .focus(function(event) {
+                .focus(function (event) {
                     $(this).select();
                 })
                 // attach behaviors to esc, return if desired, search on some min len string
-                .keyup(function(event) {
+                .keyup(function (event) {
                     event.preventDefault();
                     event.stopPropagation();
 
@@ -116,7 +111,7 @@ function searchInput(parentNode, options) {
             )
         )
             .tooltip({ placement: "bottom" })
-            .click(function(event) {
+            .click(function (event) {
                 clearSearchInput.call(this, event);
             });
     }
@@ -158,8 +153,8 @@ function searchInput(parentNode, options) {
 // as jq plugin
 jQuery.fn.extend({
     searchInput: function $searchInput(options) {
-        return this.each(function() {
+        return this.each(function () {
             return searchInput(this, options);
         });
-    }
+    },
 });

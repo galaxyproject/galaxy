@@ -7,9 +7,9 @@ describe("ToolSection", () => {
         const wrapper = mount(ToolSection, {
             propsData: {
                 category: {
-                    name: "name"
-                }
-            }
+                    name: "name",
+                },
+            },
         });
         const nameElement = wrapper.findAll(".name");
         expect(nameElement.at(0).text()).to.equal("name");
@@ -24,14 +24,14 @@ describe("ToolSection", () => {
                     title: "tool_section",
                     elems: [
                         {
-                            name: "name"
+                            name: "name",
                         },
                         {
-                            text: "text"
-                        }
-                    ]
-                }
-            }
+                            text: "text",
+                        },
+                    ],
+                },
+            },
         });
         expect(wrapper.vm.opened).to.equal(false);
         const $sectionName = wrapper.find(".name");
@@ -54,15 +54,15 @@ describe("ToolSection", () => {
                     title: "tool_section",
                     elems: [
                         {
-                            name: "name"
+                            name: "name",
                         },
                         {
-                            text: "text"
-                        }
-                    ]
+                            text: "text",
+                        },
+                    ],
                 },
-                queryFilter: "test"
-            }
+                queryFilter: "test",
+            },
         });
         expect(wrapper.vm.opened).to.equal(true);
         const $sectionName = wrapper.find(".name");

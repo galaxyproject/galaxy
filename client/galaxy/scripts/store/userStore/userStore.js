@@ -2,7 +2,7 @@ import { getCurrentUser } from "./queries";
 import User from "./User";
 
 const state = {
-    currentUser: null
+    currentUser: null,
 };
 
 const getters = {
@@ -20,13 +20,13 @@ const getters = {
             }
         }
         return new User(userProps);
-    }
+    },
 };
 
 const mutations = {
     setCurrentUser(state, user) {
         state.currentUser = user;
-    }
+    },
 };
 
 const actions = {
@@ -36,7 +36,7 @@ const actions = {
     },
     async $init({ dispatch }) {
         await dispatch("loadUser");
-    }
+    },
 };
 
 export const userStore = {
@@ -44,5 +44,5 @@ export const userStore = {
     state,
     getters,
     mutations,
-    actions
+    actions,
 };

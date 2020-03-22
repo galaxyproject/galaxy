@@ -22,24 +22,24 @@ import { mapGetters } from "vuex";
 export default {
     props: {
         jobId: {
-            type: String
+            type: String,
         },
         datasetId: {
-            type: String
+            type: String,
         },
         datasetType: {
             type: String,
-            default: "hda"
+            default: "hda",
         },
         includeTitle: {
             type: Boolean,
-            default: true
-        }
+            default: true,
+        },
     },
     data() {
         return {};
     },
-    created: function() {
+    created: function () {
         if (this.jobId) {
             this.fetchJobMetricsForJobId(this.jobId);
         } else {
@@ -48,17 +48,17 @@ export default {
     },
     computed: {
         ...mapGetters(["getJobMetricsByDatasetId", "getJobMetricsByJobId"]),
-        jobMetrics: function() {
+        jobMetrics: function () {
             if (this.jobId) {
                 return this.getJobMetricsByJobId(this.jobId);
             } else {
                 return this.getJobMetricsByDatasetId(this.datasetId, this.datasetType);
             }
         },
-        metricsByPlugins: function() {
+        metricsByPlugins: function () {
             const metricsByPlugins = {};
             const metrics = this.jobMetrics;
-            metrics.forEach(metric => {
+            metrics.forEach((metric) => {
                 if (!(metric.plugin in metricsByPlugins)) {
                     metricsByPlugins[metric.plugin] = {};
                 }
@@ -67,12 +67,12 @@ export default {
             });
             return metricsByPlugins;
         },
-        orderedPlugins: function() {
+        orderedPlugins: function () {
             return Object.keys(this.metricsByPlugins).sort();
-        }
+        },
     },
     methods: {
-        ...mapCacheActions(["fetchJobMetricsForDatasetId", "fetchJobMetricsForJobId"])
-    }
+        ...mapCacheActions(["fetchJobMetricsForDatasetId", "fetchJobMetricsForJobId"]),
+    },
 };
 </script>

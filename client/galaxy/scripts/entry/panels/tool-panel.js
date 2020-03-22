@@ -10,7 +10,7 @@ import SidePanel from "../../components/Panels/SidePanel";
 import { mountVueComponent } from "../../utils/mountVueComponent";
 
 const ToolPanel = Backbone.View.extend({
-    initialize: function() {
+    initialize: function () {
         const Galaxy = getGalaxyInstance();
         const appRoot = getAppRoot();
 
@@ -21,12 +21,12 @@ const ToolPanel = Backbone.View.extend({
             chunkUploadSize: Galaxy.config.chunk_upload_size,
             ftpUploadSite: Galaxy.config.ftp_upload_site,
             defaultGenome: Galaxy.config.default_genome,
-            defaultExtension: Galaxy.config.default_extension
+            defaultExtension: Galaxy.config.default_extension,
         };
         const vm = document.createElement("div");
         $("body").append(vm);
         const upload = new modalInstance({
-            propsData: propsData
+            propsData: propsData,
         }).$mount(vm);
 
         // attach upload entrypoint to Galaxy object
@@ -34,39 +34,39 @@ const ToolPanel = Backbone.View.extend({
 
         // components for panel definition
         this.model = new Backbone.Model({
-            title: _l("Tools")
+            title: _l("Tools"),
         });
     },
 
     isVueWrapper: true,
 
-    mountVueComponent: function(el) {
+    mountVueComponent: function (el) {
         const Galaxy = getGalaxyInstance();
         return mountVueComponent(SidePanel)(
             {
                 side: "left",
                 currentPanel: ToolBox,
-                currentPanelProperties: Galaxy.config
+                currentPanelProperties: Galaxy.config,
             },
             el
         );
     },
 
-    getVueComponent: function() {
+    getVueComponent: function () {
         const Galaxy = getGalaxyInstance();
         const SidePanelClass = Vue.extend(SidePanel);
         return new SidePanelClass({
             propsData: {
                 side: "left",
                 currentPanel: ToolBox,
-                currentPanelProperties: Galaxy.config
-            }
+                currentPanelProperties: Galaxy.config,
+            },
         });
     },
 
-    toString: function() {
+    toString: function () {
         return "toolPanel";
-    }
+    },
 });
 
 export default ToolPanel;

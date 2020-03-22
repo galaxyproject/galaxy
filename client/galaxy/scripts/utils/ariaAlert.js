@@ -6,7 +6,7 @@ function ariaAlert(message) {
     alert.textContent = message;
     alert.setAttribute("role", "alert");
     document.body.appendChild(alert);
-    setTimeout(function() {
+    setTimeout(function () {
         document.body.removeChild(alert);
     }, 2000);
 }

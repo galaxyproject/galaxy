@@ -52,32 +52,32 @@ export default {
     props: {
         multiple: {
             type: Boolean,
-            default: false
+            default: false,
         },
         format: {
             type: String,
-            default: "download"
+            default: "download",
         },
         library: {
             type: Boolean,
-            default: true
+            default: true,
         },
         root: {
             type: String,
-            required: true
+            required: true,
         },
         host: {
             type: String,
-            required: true
+            required: true,
         },
         history: {
             type: String,
-            required: true
+            required: true,
         },
         modalStatic: {
             type: Boolean,
-            default: false
-        }
+            default: false,
+        },
     },
     data() {
         return {
@@ -87,10 +87,10 @@ export default {
             modalShow: true,
             optionsShow: false,
             undoShow: false,
-            hasValue: false
+            hasValue: false,
         };
     },
-    created: function() {
+    created: function () {
         this.services = new Services({ root: this.root, host: this.host });
         this.urlTracker = new UrlTracker(this.getHistoryUrl());
         this.model = new Model({ multiple: this.multiple, format: this.format });
@@ -98,7 +98,7 @@ export default {
     },
     methods: {
         /** Returns the default url i.e. the url of the current history **/
-        getHistoryUrl: function() {
+        getHistoryUrl: function () {
             return `${this.root}api/histories/${this.history}/contents?deleted=false`;
         },
         /** Add highlighting for record variations, i.e. datasets vs. libraries/collections **/
@@ -112,7 +112,7 @@ export default {
             }
         },
         /** Collects selected datasets in value array **/
-        clicked: function(record) {
+        clicked: function (record) {
             if (record.isLeaf) {
                 this.model.add(record);
                 this.hasValue = this.model.count() > 0;
@@ -126,34 +126,34 @@ export default {
             }
         },
         /** Called when selection is complete, values are formatted and parsed to external callback **/
-        finalize: function() {
+        finalize: function () {
             const results = this.model.finalize();
             this.modalShow = false;
             this.callback(results);
         },
         /** Performs server request to retrieve data records **/
-        load: function(url) {
+        load: function (url) {
             url = this.urlTracker.getUrl(url);
             this.filter = null;
             this.optionsShow = false;
             this.undoShow = !this.urlTracker.atRoot();
             this.services
                 .get(url)
-                .then(items => {
+                .then((items) => {
                     if (this.library && this.urlTracker.atRoot()) {
                         items.unshift({
                             label: "Data Libraries",
-                            url: `${this.root}api/libraries`
+                            url: `${this.root}api/libraries`,
                         });
                     }
                     this.items = items;
                     this.formatRows();
                     this.optionsShow = true;
                 })
-                .catch(errorMessage => {
+                .catch((errorMessage) => {
                     this.errorMessage = errorMessage;
                 });
-        }
-    }
+        },
+    },
 };
 </script>

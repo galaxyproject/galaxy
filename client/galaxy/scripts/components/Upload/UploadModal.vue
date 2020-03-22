@@ -52,70 +52,70 @@ export default {
         Collection,
         Composite,
         Default,
-        RulesInput
+        RulesInput,
     },
     props: {
         modalStatic: {
             type: Boolean,
-            default: true
+            default: true,
         },
         chunkUploadSize: {
             type: Number,
-            required: true
+            required: true,
         },
         uploadPath: {
             type: String,
-            required: true
+            required: true,
         },
         modalShow: {
             type: Boolean,
-            default: false
+            default: false,
         },
         ftpUploadSite: {
             type: String,
-            default: "n/a"
+            default: "n/a",
         },
         defaultGenome: {
             type: String,
-            default: UploadUtils.DEFAULT_GENOME
+            default: UploadUtils.DEFAULT_GENOME,
         },
         defaultExtension: {
             type: String,
-            default: UploadUtils.DEFAULT_EXTENSION
+            default: UploadUtils.DEFAULT_EXTENSION,
         },
         datatypesDisableAuto: {
             type: Boolean,
-            default: false
+            default: false,
         },
         auto: {
             type: Object,
-            default: function() {
+            default: function () {
                 return UploadUtils.AUTO_EXTENSION;
-            }
-        }
+            },
+        },
     },
-    data: function() {
+    data: function () {
         return {
             title: _l("Download from web or upload from disk"),
             historyAvailable: false,
             currentUser: null,
             listGenomes: [],
-            listExtensions: []
+            listExtensions: [],
         };
     },
-    created: function() {
+    created: function () {
         this.model = new Backbone.Model({
             label: "Load Data",
             percentage: 0,
             status: "",
-            onunload: function() {},
-            onclick: function() {}
+            onunload: function () {},
+            onclick: function () {},
         });
         $(window).on("beforeunload", () => this.model.get("onunload")());
 
         // load extensions
         UploadUtils.getUploadDatatypes(
-            listExtensions => {
+            (listExtensions) => {
                 this.listExtensions = listExtensions;
             },
             this.datatypesDisableSuto,
@@ -123,7 +123,7 @@ export default {
         );
 
         // load genomes
-        UploadUtils.getUploadGenomes(listGenomes => {
+        UploadUtils.getUploadGenomes((listGenomes) => {
             this.listGenomes = listGenomes;
         }, this.defaultGenome);
 
@@ -148,11 +148,11 @@ export default {
             this.historyAvailable = true;
             this.currentUser = Galaxy.user.id;
         },
-        currentFtp: function() {
+        currentFtp: function () {
             return this.currentUser && this.ftpUploadSite;
         },
         /** Refresh user and current history */
-        currentHistory: function() {
+        currentHistory: function () {
             const Galaxy = getGalaxyInstance();
             return this.currentUser && Galaxy.currHistoryPanel.model.get("id");
         },
@@ -160,16 +160,16 @@ export default {
          * Package API data from array of models
          * @param{Array} items - Upload items/rows filtered from a collection
          */
-        toData: function(items, history_id) {
+        toData: function (items, history_id) {
             // create dictionary for data submission
             var data = {
                 payload: {
                     tool_id: "upload1",
                     history_id: history_id || this.currentHistory(),
-                    inputs: {}
+                    inputs: {},
                 },
                 files: [],
-                error_message: null
+                error_message: null,
             };
             // add upload tools input data
             if (items && items.length > 0) {
@@ -178,7 +178,7 @@ export default {
                     dbkey: items[0].get("genome", "?"),
                     // sometimes extension set to "" in automated testing after first upload of
                     // a session. https://github.com/galaxyproject/galaxy/issues/5169
-                    file_type: items[0].get("extension") || "auto"
+                    file_type: items[0].get("extension") || "auto",
                 };
                 for (var index in items) {
                     var it = items[index];
@@ -203,7 +203,7 @@ export default {
                             case "local":
                                 data.files.push({
                                     name: `${prefix}file_data`,
-                                    file: it.get("file_data")
+                                    file: it.get("file_data"),
                                 });
                         }
                     } else if (it.get("optional")) {
@@ -218,8 +218,8 @@ export default {
                 data.payload.inputs = JSON.stringify(inputs);
             }
             return data;
-        }
-    }
+        },
+    },
 };
 </script>
 

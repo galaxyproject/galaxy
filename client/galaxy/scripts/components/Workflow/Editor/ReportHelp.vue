@@ -69,8 +69,8 @@ export default {
     data() {
         return {
             datasetCommandsHtml,
-            markdownGeneralHelpHtml
+            markdownGeneralHelpHtml,
         };
-    }
+    },
 };
 </script>

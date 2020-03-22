@@ -12,7 +12,7 @@ export class AzureConfig extends BaseModel {
     }
 }
 
-AzureConfig.setValidator(function(model) {
+AzureConfig.setValidator(function (model) {
     const errors = {};
 
     if (model.tenant_id.length < 36) {
@@ -42,20 +42,20 @@ AzureConfig.fields = {
         mask: "********-****-****-****-************",
         placeholder: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
         maxlength: 36,
-        description: "Your Tenant ID (or Directory ID) on Azure."
+        description: "Your Tenant ID (or Directory ID) on Azure.",
     },
     client_id: {
         label: "Client ID",
         mask: "********-****-****-****-************",
         placeholder: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
         maxlength: 36,
-        description: "The Client ID (or Application ID) you defined for Galaxy on your Azure directory."
+        description: "The Client ID (or Application ID) you defined for Galaxy on your Azure directory.",
     },
     client_secret: {
         label: "Client Secret",
         mask: "",
         placeholder: "Client Secret",
         description:
-            "A secret string you obtained from Azure portal that Galaxy can use to prove its identity when requesting tokens to access your resources."
-    }
+            "A secret string you obtained from Azure portal that Galaxy can use to prove its identity when requesting tokens to access your resources.",
+    },
 };

@@ -8,12 +8,12 @@ export default {
     props: {
         message: {
             type: String,
-            required: true
+            required: true,
         },
         status: {
             type: String,
-            default: "done"
-        }
-    }
+            default: "done",
+        },
+    },
 };
 </script>

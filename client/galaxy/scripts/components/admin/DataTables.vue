@@ -29,14 +29,14 @@ export default {
             dataManagerColumns: [],
             dataManagerItems: [],
             message: "",
-            status: ""
+            status: "",
         };
     },
 
     components: {
         message: Message,
         "data-tables-grid": DataTablesGrid,
-        "data-manager-grid": DataManagerGrid
+        "data-manager-grid": DataManagerGrid,
     },
 
     computed: {
@@ -46,18 +46,18 @@ export default {
             if (this.currentView === "data-tables-grid") {
                 props = {
                     isLoaded: this.isLoaded,
-                    rows: this.dataTables
+                    rows: this.dataTables,
                 };
             } else {
                 props = {
                     dataManagerTableName: this.dataManagerTableName,
                     dataManagerColumns: this.dataManagerColumns,
-                    dataManagerItems: this.dataManagerItems
+                    dataManagerItems: this.dataManagerItems,
                 };
             }
 
             return props;
-        }
+        },
     },
 
     methods: {
@@ -65,10 +65,10 @@ export default {
             axios
                 .get(`${getAppRoot()}data_manager/tool_data_table_items`, {
                     params: {
-                        table_name: dataManagerTableName
-                    }
+                        table_name: dataManagerTableName,
+                    },
                 })
-                .then(response => {
+                .then((response) => {
                     this.message = response.data.message;
                     this.status = response.data.status;
 
@@ -79,7 +79,7 @@ export default {
                         this.currentView = "data-manager-grid";
                     }
                 })
-                .catch(error => {
+                .catch((error) => {
                     console.error(error);
                 });
         },
@@ -88,10 +88,10 @@ export default {
             axios
                 .get(`${getAppRoot()}data_manager/reload_tool_data_table`, {
                     params: {
-                        table_name: dataManagerTableName
-                    }
+                        table_name: dataManagerTableName,
+                    },
                 })
-                .then(response => {
+                .then((response) => {
                     this.message = response.data.message;
                     this.status = response.data.status;
 
@@ -99,24 +99,24 @@ export default {
                         this.dataManagerItems = response.data.data.items;
                     }
                 })
-                .catch(error => {
+                .catch((error) => {
                     console.error(error);
                 });
-        }
+        },
     },
 
     created() {
         axios
             .get(`${getAppRoot()}admin/data_tables_list`)
-            .then(response => {
+            .then((response) => {
                 this.isLoaded = true;
                 this.dataTables = response.data.data;
                 this.message = response.data.message;
                 this.status = response.data.status;
             })
-            .catch(error => {
+            .catch((error) => {
                 console.error(error);
             });
-    }
+    },
 };
 </script>

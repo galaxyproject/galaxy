@@ -32,21 +32,21 @@ import { getGalaxyInstance } from "app";
 
 export default {
     components: {
-        WorkflowInvocationState
+        WorkflowInvocationState,
     },
     props: {
         workflowName: {
             type: String,
-            required: true
+            required: true,
         },
         invocations: {
             type: Array,
-            required: true
-        }
+            required: true,
+        },
     },
     data() {
         return {
-            refreshHistoryTimeout: null
+            refreshHistoryTimeout: null,
         };
     },
     computed: {
@@ -74,7 +74,7 @@ export default {
                     Galaxy.currHistoryPanel.model.id != this.invocations[0].history_id) ||
                 false
             );
-        }
+        },
     },
     methods: {
         _refreshHistory() {
@@ -92,15 +92,15 @@ export default {
                     }
                 });
             }
-        }
+        },
     },
     mounted() {
         new Webhooks.WebhookView({
             type: "workflow",
             toolId: null,
-            toolVersion: null
+            toolVersion: null,
         });
         this._refreshHistory();
-    }
+    },
 };
 </script>

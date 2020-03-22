@@ -202,5 +202,5 @@ define({
     "Edit dataset annotation": "Editar anotación del conjunto de datos",
     // ---------------------------------------------------------------------------- misc. MVC
     Tags: "Tags",
-    "Edit annotation": "Editar anotación"
+    "Edit annotation": "Editar anotación",
 });

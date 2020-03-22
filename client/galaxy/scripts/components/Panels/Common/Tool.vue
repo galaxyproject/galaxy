@@ -38,20 +38,20 @@ export default {
     props: {
         tool: {
             type: Object,
-            required: true
+            required: true,
         },
         operationTitle: {
-            type: String
+            type: String,
         },
         operationIcon: {
-            type: String
+            type: String,
         },
         hideName: {
-            type: Boolean
+            type: Boolean,
         },
         toolKey: {
-            type: String
-        }
+            type: String,
+        },
     },
     computed: {
         targetClass() {
@@ -60,7 +60,7 @@ export default {
             } else {
                 return null;
             }
-        }
+        },
     },
     methods: {
         onClick(evt) {
@@ -70,7 +70,7 @@ export default {
         onOperation(evt) {
             ariaAlert(`${this.tool.name} operation selected from panel`);
             this.$emit("onOperation", this.tool, evt);
-        }
-    }
+        },
+    },
 };
 </script>

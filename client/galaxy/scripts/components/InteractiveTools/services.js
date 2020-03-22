@@ -21,7 +21,7 @@ export class Services {
         const url = `${this.root}interactivetool/list`;
         const formData = new FormData();
         formData.append("operation", "stop");
-        ids.forEach(id => formData.append("id", id));
+        ids.forEach((id) => formData.append("id", id));
         const response = await axios.post(url, formData);
         return response.data;
     }

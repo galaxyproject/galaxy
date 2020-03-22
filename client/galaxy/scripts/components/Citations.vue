@@ -64,29 +64,29 @@ export default {
     props: {
         source: {
             type: String,
-            required: true
+            required: true,
         },
         id: {
             type: String,
-            required: true
+            required: true,
         },
         viewRender: {
             type: Boolean,
             requried: false,
-            default: true
+            default: true,
         },
         simple: {
             type: Boolean,
             required: false,
-            default: false
-        }
+            default: false,
+        },
     },
     data() {
         return {
             citations: [],
             content: "",
             errors: [],
-            showCollapse: false
+            showCollapse: false,
         };
     },
     computed: {
@@ -95,7 +95,7 @@ export default {
                 (a, b) => a.concat(`<p class="formatted-reference">${this.formattedReference(b)}</p>`),
                 ""
             );
-        }
+        },
     },
     updated() {
         this.$nextTick(() => {
@@ -105,19 +105,19 @@ export default {
     created() {
         axios
             .get(`${getAppRoot()}api/${this.source}/${this.id}/citations`)
-            .then(response => {
+            .then((response) => {
                 this.content = "";
-                response.data.forEach(rawCitation => {
+                response.data.forEach((rawCitation) => {
                     try {
                         const citation = {
                             fields: {},
-                            entryType: undefined
+                            entryType: undefined,
                         };
                         let parsed = bibtexParse.toJSON(rawCitation.content);
                         if (parsed) {
                             parsed = _.first(parsed);
                             citation.entryType = parsed.entryType || undefined;
-                            Object.keys(parsed.entryTags).forEach(key => {
+                            Object.keys(parsed.entryTags).forEach((key) => {
                                 citation.fields[key.toLowerCase()] = parsed.entryTags[key];
                             });
                         }
@@ -128,7 +128,7 @@ export default {
                     }
                 });
             })
-            .catch(e => {
+            .catch((e) => {
                 console.error(e);
             });
     },
@@ -148,17 +148,21 @@ export default {
                     (fields.volume ? fields.volume : "") +
                     (fields.number ? ` (${fields.number})` : "") +
                     (pages ? `, ${pages}` : "");
-                ref = `${authorsAndYear +
+                ref = `${
+                    authorsAndYear +
                     this.asSentence(title) +
                     (fields.journal ? `In <em>${fields.journal}, ` : "") +
                     this.asSentence(volume) +
-                    this.asSentence(fields.address)}</em>`;
+                    this.asSentence(fields.address)
+                }</em>`;
             } else if (entryType === "inproceedings" || entryType === "proceedings") {
-                ref = `${authorsAndYear +
+                ref = `${
+                    authorsAndYear +
                     this.asSentence(title) +
                     (fields.booktitle ? `In <em>${fields.booktitle}, ` : "") +
                     (pages || "") +
-                    (address ? `, ${address}` : "")}.</em>`;
+                    (address ? `, ${address}` : "")
+                }.</em>`;
             } else if (entryType === "mastersthesis" || entryType === "phdthesis") {
                 ref =
                     authorsAndYear +
@@ -220,8 +224,8 @@ export default {
         },
         toggleViewRender() {
             this.viewRender = !this.viewRender;
-        }
-    }
+        },
+    },
 };
 </script>
 <style>

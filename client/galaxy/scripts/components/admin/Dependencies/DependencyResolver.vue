@@ -31,17 +31,17 @@ export default {
     components: { DisplayRaw },
     props: {
         dependencyResolver: {
-            type: Object
+            type: Object,
         },
         compact: {
             type: Boolean,
-            default: false
-        }
+            default: false,
+        },
     },
     computed: {
-        resolverType: function() {
+        resolverType: function () {
             return this.dependencyResolver && this.dependencyResolver.resolver_type;
-        }
-    }
+        },
+    },
 };
 </script>

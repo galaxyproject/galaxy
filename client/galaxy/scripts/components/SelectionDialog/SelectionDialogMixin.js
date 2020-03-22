@@ -6,12 +6,12 @@ export default {
     components: {
         "selection-dialog": SelectionDialog,
         "data-dialog-table": DataDialogTable,
-        "data-dialog-search": DataDialogSearch
+        "data-dialog-search": DataDialogSearch,
     },
     props: {
         callback: {
             type: Function,
-            required: true
-        }
-    }
+            required: true,
+        },
+    },
 };

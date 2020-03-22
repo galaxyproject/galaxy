@@ -51,40 +51,40 @@ Vue.use(BootstrapVue);
 export default {
     name: "Attributes",
     components: {
-        Tags
+        Tags,
     },
     props: {
         id: {
             type: String,
-            required: true
+            required: true,
         },
         name: {
             type: String,
-            required: true
+            required: true,
         },
         tags: {
             type: Array,
-            required: true
+            required: true,
         },
         annotation: {
-            type: String
+            type: String,
         },
         version: {
-            type: Number
+            type: Number,
         },
         versions: {
-            type: Array
+            type: Array,
         },
         parameters: {
-            type: Array
-        }
+            type: Array,
+        },
     },
     data() {
         return {
             message: null,
             messageVariant: null,
             tagsCurrent: this.tags,
-            versionCurrent: this.version
+            versionCurrent: this.version,
         };
     },
     created() {
@@ -104,11 +104,11 @@ export default {
                 }
                 versions.push({
                     version: i,
-                    label: label
+                    label: label,
                 });
             }
             return versions;
-        }
+        },
     },
     methods: {
         onTags(tags) {
@@ -130,10 +130,10 @@ export default {
             this.messageVariant = "danger";
         },
         onAttributes(data) {
-            this.services.updateWorkflow(this.id, data).catch(error => {
+            this.services.updateWorkflow(this.id, data).catch((error) => {
                 this.onError(error);
             });
-        }
-    }
+        },
+    },
 };
 </script>

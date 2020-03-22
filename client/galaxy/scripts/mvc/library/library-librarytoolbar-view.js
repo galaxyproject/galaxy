@@ -11,7 +11,7 @@ var LibraryToolbarView = Backbone.View.extend({
     el: "#center",
 
     defaults: {
-        search_term: ""
+        search_term: "",
     },
 
     events: {
@@ -20,15 +20,15 @@ var LibraryToolbarView = Backbone.View.extend({
         "click #exclude_restricted_chk": "excludeRestrictedChecked",
         "keydown .page_size": "changePageSize",
         "blur .page_size": "changePageSize",
-        "keyup .library-search-input": "searchLibraries"
+        "keyup .library-search-input": "searchLibraries",
     },
 
-    initialize: function(options) {
+    initialize: function (options) {
         this.options = _.defaults(this.options || {}, options, this.defaults);
         this.render();
     },
 
-    render: function() {
+    render: function () {
         const Galaxy = getGalaxyInstance();
         var toolbar_template = this.templateToolBar();
         var is_admin = false;
@@ -41,7 +41,7 @@ var LibraryToolbarView = Backbone.View.extend({
             toolbar_template({
                 admin_user: is_admin,
                 anon_user: is_anonym,
-                library_page_size: Galaxy.libraries.preferences.get("library_page_size")
+                library_page_size: Galaxy.libraries.preferences.get("library_page_size"),
             })
         );
         if (is_admin) {
@@ -55,7 +55,7 @@ var LibraryToolbarView = Backbone.View.extend({
     /**
      * Renders the element that shows pages into its div within the toolbar.
      */
-    renderPaginator: function(options) {
+    renderPaginator: function (options) {
         const Galaxy = getGalaxyInstance();
         this.options = _.extend(this.options, options);
         var paginator_template = this.templatePaginator();
@@ -66,7 +66,7 @@ var LibraryToolbarView = Backbone.View.extend({
                 page_count: parseInt(this.options.page_count),
                 total_libraries_count: this.options.total_libraries_count,
                 libraries_shown: this.options.libraries_shown,
-                library_page_size: Galaxy.libraries.preferences.get("library_page_size")
+                library_page_size: Galaxy.libraries.preferences.get("library_page_size"),
             })
         );
         this.$el.find(".library-paginator > .paginator-text").html(
@@ -75,7 +75,7 @@ var LibraryToolbarView = Backbone.View.extend({
                 page_count: parseInt(this.options.page_count),
                 total_libraries_count: this.options.total_libraries_count,
                 libraries_shown: this.options.libraries_shown,
-                library_page_size: Galaxy.libraries.preferences.get("library_page_size")
+                library_page_size: Galaxy.libraries.preferences.get("library_page_size"),
             })
         );
     },
@@ -83,7 +83,7 @@ var LibraryToolbarView = Backbone.View.extend({
     /**
      * Crreate the new library inline
      */
-    createLibraryInline: function() {
+    createLibraryInline: function () {
         const Galaxy = getGalaxyInstance();
         Galaxy.libraries.libraryListView.createLibraryInline();
     },
@@ -91,12 +91,12 @@ var LibraryToolbarView = Backbone.View.extend({
     /**
      * Change the number of libs shown on page.
      */
-    changePageSize: function(e) {
+    changePageSize: function (e) {
         if (e.type === "focusout" || (e.type === "keydown" && e.keyCode === 13)) {
             e.preventDefault();
             const Galaxy = getGalaxyInstance();
             Galaxy.libraries.preferences.set({
-                library_page_size: parseInt(e.target.value)
+                library_page_size: parseInt(e.target.value),
             });
             Galaxy.libraries.libraryListView.render({ show_page: 1 });
         }
@@ -105,7 +105,7 @@ var LibraryToolbarView = Backbone.View.extend({
     /**
      * Include or exclude deleted libraries in the view.
      */
-    includeDeletedChecked: function(event) {
+    includeDeletedChecked: function (event) {
         const Galaxy = getGalaxyInstance();
         if (event.target.checked) {
             Galaxy.libraries.preferences.set({ with_deleted: true });
@@ -119,7 +119,7 @@ var LibraryToolbarView = Backbone.View.extend({
     /**
      * Include or exclude restricted libraries in the view.
      */
-    excludeRestrictedChecked: function(event) {
+    excludeRestrictedChecked: function (event) {
         const Galaxy = getGalaxyInstance();
         if (event.target.checked) {
             Galaxy.libraries.preferences.set({ without_restricted: true });
@@ -133,14 +133,14 @@ var LibraryToolbarView = Backbone.View.extend({
      * Take the contents of the search field and send it to the list view
      * to query the collection of libraries.
      */
-    searchLibraries: function(event) {
+    searchLibraries: function (event) {
         const Galaxy = getGalaxyInstance();
         var search_term = $(".library-search-input").val();
         this.options.search_term = search_term;
         Galaxy.libraries.libraryListView.searchLibraries(search_term);
     },
 
-    templateToolBar: function() {
+    templateToolBar: function () {
         return _.template(
             `<div class="library_style_container">
                 <div class="d-flex align-items-center mb-2 library-toolbar">
@@ -178,7 +178,7 @@ var LibraryToolbarView = Backbone.View.extend({
         );
     },
 
-    templatePaginator: function() {
+    templatePaginator: function () {
         return _.template(
             `
                         <% if ( ( show_page - 1 ) > 0 ) { %>
@@ -248,11 +248,11 @@ var LibraryToolbarView = Backbone.View.extend({
                 `
         );
     },
-    templatePaginatorText: function() {
+    templatePaginatorText: function () {
         return _.template(`per page, <%- total_libraries_count %> total`);
-    }
+    },
 });
 
 export default {
-    LibraryToolbarView: LibraryToolbarView
+    LibraryToolbarView: LibraryToolbarView,
 };

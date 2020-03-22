@@ -13,30 +13,30 @@ const GroupListView = Backbone.View.extend({
      * Async render afterwards.
      * @param  {object} options an object with options
      */
-    initialize: function(options) {
+    initialize: function (options) {
         this.options = _.defaults(this.options || {}, this.defaults, options);
         const that = this;
         window.globalTS.groups.collection = new mod_group_model.Groups();
         window.globalTS.groups.collection.fetch({
-            success: function(model) {
+            success: function (model) {
                 that.render();
             },
-            error: function(model, response) {
+            error: function (model, response) {
                 if (typeof response.responseJSON !== "undefined") {
                     Toast.error(response.responseJSON.err_msg);
                 } else {
                     Toast.error("An error occurred.");
                 }
-            }
+            },
         });
     },
 
-    fetch: function() {},
+    fetch: function () {},
 
     /**
      * Render the groups table from the object's own collection.
      */
-    render: function(options) {
+    render: function (options) {
         this.options = _.extend(this.options, options);
         $(".tooltip").hide();
         const template = this.templateGroupsList();
@@ -50,7 +50,7 @@ const GroupListView = Backbone.View.extend({
      * Render all given models as rows in the groups list
      * @param  {array} groups_to_render array of group models to render
      */
-    renderRows: function(groups_to_render) {
+    renderRows: function (groups_to_render) {
         for (let i = 0; i < groups_to_render.length; i++) {
             const group = groups_to_render[i];
             this.renderOne({ group: group });
@@ -61,7 +61,7 @@ const GroupListView = Backbone.View.extend({
      * Create a view for the given model and add it to the groups view.
      * @param {Group} model of the view that will be rendered
      */
-    renderOne: function(options) {
+    renderOne: function (options) {
         const rowView = new mod_group_row.GroupListRowView(options);
         this.$el.find("#group_list_body").append(rowView.el);
     },
@@ -97,7 +97,7 @@ const GroupListView = Backbone.View.extend({
     // === TEMPLATES ====
     // MMMMMMMMMMMMMMMMMM
 
-    templateGroupsList: function() {
+    templateGroupsList: function () {
         const tmpl_array = [];
 
         tmpl_array.push('<div id="groups">');
@@ -121,9 +121,9 @@ const GroupListView = Backbone.View.extend({
         tmpl_array.push("</div>");
 
         return _.template(tmpl_array.join(""));
-    }
+    },
 });
 
 export default {
-    GroupListView: GroupListView
+    GroupListView: GroupListView,
 };
