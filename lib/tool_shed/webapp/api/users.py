@@ -106,11 +106,7 @@ class UsersController(BaseAPIController):
         """
         user = None
         # user is requesting data about themselves
-        if id == "current" and trans.user:
-            user = trans.user
-        else:
-            user = suc.get_user(trans.app, id)
-
+        user = trans.user if id == 'current' else suc.get_user(trans.app, id)
         if user is None:
             user_dict = dict(message='Unable to locate user record for id %s.' % (str(id)),
                              status='error')
