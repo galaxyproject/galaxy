@@ -21,13 +21,13 @@ export class DefaultForm {
                         id: node.id,
                         type: node.type,
                         content_id: node.content_id,
-                        inputs: self.form.data.create()
+                        inputs: self.form.data.create(),
                     })
-                    .then(response => {
+                    .then((response) => {
                         const data = response.data;
                         node.update_field_data(data);
                     });
-            }
+            },
         });
     }
 }
@@ -54,12 +54,12 @@ export class ToolForm {
                     tool_id: options.id,
                     tool_version: options.version,
                     type: "tool",
-                    inputs: Object.assign({}, form.data.create())
+                    inputs: Object.assign({}, form.data.create()),
                 };
                 Galaxy.emit.debug("tool-form-workflow::postchange()", "Sending current state.", current_state);
                 axios
                     .post(`${getAppRoot()}api/workflows/build_module`, current_state)
-                    .then(response => {
+                    .then((response) => {
                         const data = response.data;
                         self._customize(data);
                         self.form.model.set(data.config_form);
@@ -73,16 +73,16 @@ export class ToolForm {
                         Galaxy.emit.debug("tool-form-workflow::postchange()", "Received new model.", data);
                         process.resolve();
                     })
-                    .catch(response => {
+                    .catch((response) => {
                         Galaxy.emit.debug("tool-form-workflow::postchange()", "Refresh request failed.", response);
                         process.reject();
                     });
-            }
+            },
         });
     }
     _customize(node) {
         const inputs = node.config_form.inputs;
-        Utils.deepeach(inputs, input => {
+        Utils.deepeach(inputs, (input) => {
             if (input.type) {
                 if (["data", "data_collection"].indexOf(input.type) != -1) {
                     input.type = "hidden";
@@ -145,7 +145,7 @@ function _addLabelAnnotation(self, node) {
                 duplicate && "Duplicate label. Please fix this before saving the workflow."
             );
             self.form.trigger("change");
-        }
+        },
     });
 }
 

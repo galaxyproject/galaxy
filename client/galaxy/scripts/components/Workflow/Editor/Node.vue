@@ -59,7 +59,7 @@ export default {
         node: {
             type: Object,
             default: null,
-        }
+        },
     },
     computed: {
         iconClass() {

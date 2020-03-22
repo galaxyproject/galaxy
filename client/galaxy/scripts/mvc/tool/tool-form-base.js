@@ -39,7 +39,7 @@ export default FormBase.extend({
     },
 
     /** Allows tool form variation to update tool model */
-    _update: function() {
+    _update: function () {
         var self = this;
         var callback = this.model.get("buildmodel");
         if (callback) {
