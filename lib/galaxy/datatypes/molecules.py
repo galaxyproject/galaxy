@@ -2,7 +2,6 @@
 import logging
 import os
 import re
-import subprocess
 
 from galaxy.datatypes import (
     data,
@@ -19,6 +18,7 @@ from galaxy.datatypes.sniff import (
 from galaxy.datatypes.tabular import Tabular
 from galaxy.datatypes.util.generic_util import count_special_lines
 from galaxy.datatypes.xml import GenericXml
+from galaxy.tool_util.deps import commands
 from galaxy.util import unicodify
 
 log = logging.getLogger(__name__)
@@ -26,17 +26,18 @@ log = logging.getLogger(__name__)
 
 def count_lines(filename, non_empty=False):
     """
-        counting the number of lines from the 'filename' file
+    counting the number of lines from the 'filename' file
     """
+    if non_empty:
+        cmd = ['grep', '-cve', r'^\s*$', filename]
+    else:
+        cmd = ['wc', '-l', filename]
     try:
-        if non_empty:
-            out = subprocess.Popen(['grep', '-cve', r'^\s*$', filename], stdout=subprocess.PIPE)
-        else:
-            out = subprocess.Popen(['wc', '-l', filename], stdout=subprocess.PIPE)
-        return int(out.communicate()[0].split()[0])
-    except Exception:
-        pass
-    return 0
+        out = commands.execute(cmd)
+    except commands.CommandLineException as e:
+        log.error(str(e))
+        return 0
+    return int(out.split()[0])
 
 
 class GenericMolFile(data.Text):
