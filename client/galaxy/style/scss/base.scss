@@ -1658,10 +1658,10 @@ body.reports {
         circle {
             fill: lighten($brand-primary, 20%);
             stroke: lighten($brand-primary, 20%);
-            stroke-width: 0.3rem;
+            stroke-width: 0.1rem;
         }
         text {
-            font: 0.75rem sans-serif;
+            font: 0.4rem sans-serif;
         }
     }
 
@@ -1674,14 +1674,13 @@ body.reports {
     }
 
     .tree-size {
-        width: 96%;
+        width: 100%;
         height: 50%;
-        position: absolute;
     }
 
     .link {
         fill: none;
         stroke: lighten($brand-primary, 20%);
-        stroke-width: 0.3rem;
+        stroke-width: 0.2rem;
     }
 }

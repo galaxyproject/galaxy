@@ -105,20 +105,34 @@ export default {
         },
         renderD3Tree(predictedTools) {
             const duration = 750;
-            const x = 620;
-            const y = 260;
-            const tree = d3.layout.tree().size([y, x]);
-            const diagonal = d3.svg.diagonal().projection(d => {
-                return [d.y, d.x];
-            });
             const svg = d3
                 .select("#tool-recommendation")
                 .append("svg")
                 .attr("class", "tree-size")
-                .append("g")
-                .attr("transform", "translate(" + 250 + "," + 20 + ")");
+                .append("g");
             let i = 0;
             let root = null;
+            let x = 0;
+            let y = 0;
+            let translateX = 0;
+
+            const gElem = svg[0][0];
+            const svgElem = gElem.parentNode;
+            const clientH = svgElem.clientHeight;
+            const clientW = svgElem.clientWidth;
+            y = parseInt(clientH * 0.9);
+            x = parseInt(clientW * 0.6);
+            translateX = parseInt(clientW * 0.15);
+
+            svgElem.setAttribute("viewBox", "0 0 " + x + " " + clientH);
+            svgElem.setAttribute("preserveAspectRatio", "xMinYMin");
+            gElem.setAttribute("transform", "translate(" + translateX + ", 5)");
+
+            const tree = d3.layout.tree().size([y, x]);
+
+            const diagonal = d3.svg.diagonal().projection(d => {
+                return [d.y, d.x];
+            });
             const update = source => {
                 // Compute the new tree layout.
                 const nodes = tree.nodes(root).reverse();
