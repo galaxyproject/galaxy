@@ -11,24 +11,24 @@ jQuery.fn.extend({
             return this;
         }
 
-        $(this).each(function() {
+        $(this).each(function () {
             var $this = $(this);
             var targetSelector = $this.data("target");
 
             if (targetSelector) {
                 $this
-                    .mouseover(ev => {
+                    .mouseover((ev) => {
                         $(targetSelector, scope).css({
-                            background: color
+                            background: color,
                         });
                     })
-                    .mouseout(ev => {
+                    .mouseout((ev) => {
                         $(targetSelector).css({
-                            background: ""
+                            background: "",
                         });
                     });
             }
         });
         return this;
-    }
+    },
 });

@@ -26,7 +26,7 @@ var HistoryContentMixin = {
         /** indicating when/what order the content was generated in the context of the history */
         hid: null,
         /** whether the user wants the content shown (visible) */
-        visible: true
+        visible: true,
     },
 
     // ........................................................................ mixed content element
@@ -37,7 +37,7 @@ var HistoryContentMixin = {
 
     // ........................................................................ common queries
     /** the more common alias of visible */
-    hidden: function() {
+    hidden: function () {
         return !this.get("visible");
     },
 
@@ -47,7 +47,7 @@ var HistoryContentMixin = {
      *  @param {Boolean} includeDeleted are we showing deleted hdas?
      *  @param {Boolean} includeHidden are we showing hidden hdas?
      */
-    isVisible: function(includeDeleted, includeHidden) {
+    isVisible: function (includeDeleted, includeHidden) {
         var isVisible = true;
         if (!includeDeleted && (this.get("deleted") || this.get("purged"))) {
             isVisible = false;
@@ -64,7 +64,7 @@ var HistoryContentMixin = {
     urlRoot: `${getAppRoot()}api/histories/`,
 
     /** full url spec. for this content */
-    url: function() {
+    url: function () {
         var historyContentType = this.get("history_content_type");
         var historyId = this.get("history_id");
         var historyContentId = this.get("id");
@@ -78,14 +78,14 @@ var HistoryContentMixin = {
     },
 
     /** save this content as not visible */
-    hide: function(options) {
+    hide: function (options) {
         if (!this.get("visible")) {
             return jQuery.when();
         }
         return this.save({ visible: false }, options);
     },
     /** save this content as visible */
-    unhide: function(options) {
+    unhide: function (options) {
         if (this.get("visible")) {
             return jQuery.when();
         }
@@ -93,12 +93,12 @@ var HistoryContentMixin = {
     },
 
     // ........................................................................ misc
-    toString: function() {
+    toString: function () {
         return [this.get("type_id"), this.get("hid"), this.get("name")].join(":");
-    }
+    },
 };
 
 //==============================================================================
 export default {
-    HistoryContentMixin: HistoryContentMixin
+    HistoryContentMixin: HistoryContentMixin,
 };

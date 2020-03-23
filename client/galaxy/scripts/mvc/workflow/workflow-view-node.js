@@ -70,7 +70,7 @@ export class NodeView {
         if (!terminalView) {
             terminalView = new terminalViewClass(this.app, {
                 node: this.node,
-                input: input
+                input: input,
             });
         } else {
             var terminal = terminalView.terminal;
@@ -83,7 +83,7 @@ export class NodeView {
             terminalElement: terminalElement,
             input: input,
             nodeView: this,
-            skipResize: skipResize
+            skipResize: skipResize,
         });
         var ib = inputView.$el;
         body.append(ib.prepend(terminalView.el));
@@ -99,7 +99,7 @@ export class NodeView {
         }
         return new terminalViewClass(this.app, {
             node: this.node,
-            output: output
+            output: output,
         });
     }
 
@@ -108,7 +108,7 @@ export class NodeView {
         return new outputViewClass(this.app, {
             output: output,
             terminalElement: terminalView.el,
-            nodeView: this
+            nodeView: this,
         });
     }
 
@@ -120,7 +120,7 @@ export class NodeView {
     }
 
     redrawWorkflowOutputs() {
-        _.each(this.outputViews, outputView => {
+        _.each(this.outputViews, (outputView) => {
             outputView.redrawWorkflowOutput();
         });
     }

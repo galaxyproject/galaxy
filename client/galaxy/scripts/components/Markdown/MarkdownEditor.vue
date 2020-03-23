@@ -1,5 +1,5 @@
 <template>
-    <div style="display: flex; flex: 1; flex-direction: column">
+    <div style="display: flex; flex: 1; flex-direction: column;">
         <ul class="galaxymark-toolbar" ref="menu" v-if="toolbar">
             <li>
                 <a
@@ -87,28 +87,28 @@ export default {
     props: {
         initialMarkdown: {
             required: true,
-            type: String
+            type: String,
         },
         toolbar: {
             type: Boolean,
-            default: false
+            default: false,
         },
         showMarkdownHelp: {
             // only used if toolbar is True - waiting on a general toolbar refactor
             type: Function,
-            required: false
+            required: false,
         },
         onupdate: {
-            type: Function
-        }
+            type: Function,
+        },
     },
-    data: function() {
+    data: function () {
         return {
-            input: this.initialMarkdown
+            input: this.initialMarkdown,
         };
     },
     methods: {
-        update: _.debounce(function(e) {
+        update: _.debounce(function (e) {
             if (this.onupdate) {
                 this.onupdate(this.input);
             }
@@ -126,14 +126,14 @@ export default {
         },
         _selectDataset(galaxyCall) {
             dialog(
-                response => {
+                (response) => {
                     const datasetId = response.id;
                     this.insertGalaxyMarkdownBlock(`${galaxyCall}(history_dataset_id=${datasetId})`);
                 },
                 {
                     multiple: false,
                     format: null,
-                    library: false // TODO: support?
+                    library: false, // TODO: support?
                 }
             );
         },
@@ -144,18 +144,18 @@ export default {
             this._selectDataset("history_dataset_as_image");
         },
         selectDatasetCollection() {
-            datasetCollectionDialog(response => {
+            datasetCollectionDialog((response) => {
                 this.insertGalaxyMarkdownBlock(
                     `history_dataset_collection_display(history_dataset_collection_id=${response.id})`
                 );
             }, {});
         },
         selectWorkflow() {
-            workflowDialog(response => {
+            workflowDialog((response) => {
                 this.insertGalaxyMarkdownBlock(`workflow_display(workflow_id=${response.id})`);
             }, {});
-        }
-    }
+        },
+    },
 };
 </script>
 

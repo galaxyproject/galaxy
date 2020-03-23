@@ -104,9 +104,7 @@ class BaseInputTerminalView {
                 .on("mouseleave", () => {
                     t.remove();
                 });
-            $(this.el)
-                .parent()
-                .append(t);
+            $(this.el).parent().append(t);
         }
     }
 }
@@ -119,7 +117,7 @@ export class InputTerminalView extends BaseInputTerminalView {
         return new Terminals.InputTerminal({
             app: this.app,
             element: this.el,
-            input: input
+            input: input,
         });
     }
 }
@@ -132,7 +130,7 @@ export class InputParameterTerminalView extends BaseInputTerminalView {
         return new Terminals.InputParameterTerminal({
             app: this.app,
             element: this.el,
-            input: input
+            input: input,
         });
     }
 }
@@ -145,7 +143,7 @@ export class InputCollectionTerminalView extends BaseInputTerminalView {
         return new Terminals.InputCollectionTerminal({
             app: this.app,
             element: this.el,
-            input: input
+            input: input,
         });
     }
 }
@@ -180,7 +178,7 @@ export class BaseOutputTerminalView {
         this.$el.on("drag", (d, e) => self.onDrag(d, e));
         this.$el.on("dragstart", (d, e) => self.onDragStart(d, e));
         this.$el.on("dragend", (d, e) => self.onDragEnd(d, e));
-        this.$el.on("keydown", e => self.screenReaderSelectOutputNode(e));
+        this.$el.on("keydown", (e) => self.screenReaderSelectOutputNode(e));
         this.terminal.on("change", this.render.bind(this));
     }
     render() {
@@ -191,7 +189,7 @@ export class BaseOutputTerminalView {
         }
     }
     screenReaderSelectOutputNode(e) {
-        const inputChoiceKeyDown = e => {
+        const inputChoiceKeyDown = (e) => {
             e.stopPropagation();
             const currentItem = e.currentTarget;
             const previousItem = currentItem.previousSibling;
@@ -232,7 +230,7 @@ export class BaseOutputTerminalView {
                             .addClass("delete-terminal")
                             .attr("tabindex", "0")
                             .attr("aria-label", "delete terminal")
-                            .on("keydown click", e => {
+                            .on("keydown click", (e) => {
                                 if (e.keyCode === 32 || e.type === "click") {
                                     //Space or Click
                                     $.each(inputTerminal.connectors, (_, x) => {
@@ -244,16 +242,14 @@ export class BaseOutputTerminalView {
                                     t.remove();
                                 }
                             });
-                        $(currentItem.input)
-                            .parent()
-                            .append(t);
+                        $(currentItem.input).parent().append(t);
                     }
                     break;
             }
         };
         const buildInputChoicesMenu = () => {
             const inputChoicesMenu = document.createElement("ul");
-            $(inputChoicesMenu).focusout(e => {
+            $(inputChoicesMenu).focusout((e) => {
                 /* focus is still inside child element of menu so don't hide */
                 if (inputChoicesMenu.contains(e.relatedTarget)) {
                     return;
@@ -297,9 +293,7 @@ export class BaseOutputTerminalView {
     onDrag(e, d = {}) {
         var onmove = () => {
             var canvasZoom = this.app.canvas_manager.canvasZoom;
-            var po = $(d.proxy)
-                .offsetParent()
-                .offset();
+            var po = $(d.proxy).offsetParent().offset();
 
             var x = d.offsetX - po.left;
             var y = d.offsetY - po.top;
@@ -308,22 +302,18 @@ export class BaseOutputTerminalView {
             this.app.canvas_manager.update_viewport_overlay();
         };
         onmove();
-        $("#canvas-container")
-            .get(0)
-            .scroll_panel.test(e, onmove);
+        $("#canvas-container").get(0).scroll_panel.test(e, onmove);
     }
     onDragStart(e, d = {}) {
         $(d.available).addClass("input-terminal-active");
         // Drag proxy div
-        var h = $("<div class='drag-terminal'/>")
-            .appendTo("#canvas-container")
-            .get(0);
+        var h = $("<div class='drag-terminal'/>").appendTo("#canvas-container").get(0);
         h.dropTooltip = "";
         // Terminal and connection to display noodle while dragging
         $(h).tooltip({
-            title: function() {
+            title: function () {
                 return h.dropTooltip || "";
-            }
+            },
         });
         h.terminal = new Terminals.OutputTerminal({ element: h });
         const c = new Connector(this.app.canvas_manager);
@@ -339,9 +329,7 @@ export class BaseOutputTerminalView {
         $(d.proxy).tooltip("dispose");
         $(d.proxy).remove();
         $(d.available).removeClass("input-terminal-active");
-        $("#canvas-container")
-            .get(0)
-            .scroll_panel.stop();
+        $("#canvas-container").get(0).scroll_panel.stop();
     }
 }
 
@@ -355,7 +343,7 @@ export class OutputTerminalView extends BaseOutputTerminalView {
             element: this.el,
             datatypes: type,
             force_datatype: output.force_datatype,
-            optional: output.optional
+            optional: output.optional,
         });
     }
 }
@@ -373,7 +361,7 @@ export class OutputCollectionTerminalView extends BaseOutputTerminalView {
             collection_type_source: collection_type_source,
             datatypes: output.extensions,
             force_datatype: output.force_datatype,
-            optional: output.optional
+            optional: output.optional,
         });
     }
 }
@@ -386,7 +374,7 @@ export class OutputParameterTerminalView extends BaseOutputTerminalView {
         return new Terminals.OutputParameterTerminal({
             element: this.el,
             type: output.type,
-            optional: output.optional
+            optional: output.optional,
         });
     }
 }
@@ -397,5 +385,5 @@ export default {
     InputCollectionTerminalView: InputCollectionTerminalView,
     OutputTerminalView: OutputTerminalView,
     OutputParameterTerminalView: OutputParameterTerminalView,
-    OutputCollectionTerminalView: OutputCollectionTerminalView
+    OutputCollectionTerminalView: OutputCollectionTerminalView,
 };

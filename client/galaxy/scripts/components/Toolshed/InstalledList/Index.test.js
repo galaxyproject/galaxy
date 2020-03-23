@@ -14,16 +14,16 @@ describe("InstalledList", () => {
                             name: "name_0",
                             description: "description_0",
                             tool_shed_status: {
-                                latest_installable_revision: false
-                            }
+                                latest_installable_revision: false,
+                            },
                         },
                         {
                             name: "name_1",
                             description: "description_1",
                             tool_shed_status: {
-                                latest_installable_revision: true
-                            }
-                        }
+                                latest_installable_revision: true,
+                            },
+                        },
                     ];
                 }
             }
@@ -33,11 +33,11 @@ describe("InstalledList", () => {
     it("test installed list", async () => {
         const wrapper = mount(Index, {
             propsData: {
-                filter: ""
+                filter: "",
             },
             stubs: {
-                RepositoryDetails: true
-            }
+                RepositoryDetails: true,
+            },
         });
         expect(wrapper.find(".loading-message").text()).to.equal("Loading installed repositories...");
         await Vue.nextTick();

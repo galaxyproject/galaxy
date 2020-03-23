@@ -27,12 +27,12 @@ class Workflow extends EventEmitter {
         if (overview_size !== undefined) {
             $(".workflow-overview").css({
                 width: overview_size,
-                height: overview_size
+                height: overview_size,
             });
         }
 
         // Stores the size of the overview into local storage when it's resized
-        $(".workflow-overview").bind("dragend", function(e, d) {
+        $(".workflow-overview").bind("dragend", function (e, d) {
             var op = $(this).offsetParent();
             var opo = op.offset();
             var new_size = Math.max(op.width() - (d.offsetX - opo.left), op.height() - (d.offsetY - opo.top));
@@ -141,7 +141,7 @@ class Workflow extends EventEmitter {
             id: content_id,
             type: type,
             title: title_text,
-            node: node
+            node: node,
         });
 
         // Set initial scroll position
@@ -155,13 +155,13 @@ class Workflow extends EventEmitter {
         var height = $f.height();
         $f.css({
             left: -o.left + p.width() / 2 - width / 2,
-            top: -o.top + p.height() / 2 - height / 2
+            top: -o.top + p.height() / 2 - height / 2,
         });
         $f.css("width", width);
         $f.bind("dragstart", () => {
             self.activate_node(node);
         })
-            .bind("dragend", function() {
+            .bind("dragend", function () {
                 self.node_changed(node);
                 self.fit_canvas_to_nodes();
                 self.canvas_manager.draw_overview();
@@ -169,11 +169,9 @@ class Workflow extends EventEmitter {
             .bind("dragclickonly", () => {
                 self.activate_node(node);
             })
-            .bind("drag", function(e, d) {
+            .bind("drag", function (e, d) {
                 // Move
-                var po = $(this)
-                    .offsetParent()
-                    .offset();
+                var po = $(this).offsetParent().offset();
                 // Find relative offset and scale by zoom
                 var x = (d.offsetX - po.left) / self.canvas_manager.canvasZoom;
                 var y = (d.offsetY - po.top) / self.canvas_manager.canvasZoom;
@@ -181,7 +179,7 @@ class Workflow extends EventEmitter {
                 // Redraw
                 $(this)
                     .find(".terminal")
-                    .each(function() {
+                    .each(function () {
                         this.terminal.redraw();
                     });
             });
@@ -244,7 +242,7 @@ class Workflow extends EventEmitter {
                             var pja = {
                                 action_type: "HideDatasetAction",
                                 output_name: ot.name,
-                                action_arguments: {}
+                                action_arguments: {},
                             };
                             node.post_job_actions[`HideDatasetAction${ot.name}`] = null;
                             node.post_job_actions[`HideDatasetAction${ot.name}`] = pja;
@@ -271,7 +269,7 @@ class Workflow extends EventEmitter {
                     if (c.handle1) {
                         var con_dict = {
                             id: c.handle1.node.id,
-                            output_name: c.handle1.name
+                            output_name: c.handle1.name,
                         };
                         var input_subworkflow_step_id = t.attributes.input.input_subworkflow_step_id;
                         if (input_subworkflow_step_id !== undefined) {
@@ -288,7 +286,7 @@ class Workflow extends EventEmitter {
                     var pja = {
                         action_type: act.action_type,
                         output_name: act.output_name,
-                        action_arguments: act.action_arguments
+                        action_arguments: act.action_arguments,
                     };
                     post_job_actions[act.action_type + act.output_name] = null;
                     post_job_actions[act.action_type + act.output_name] = pja;
@@ -311,7 +309,7 @@ class Workflow extends EventEmitter {
                 post_job_actions: node.post_job_actions,
                 uuid: node.uuid,
                 label: node.label,
-                workflow_outputs: node.workflow_outputs
+                workflow_outputs: node.workflow_outputs,
             };
             nodes[node.id] = node_data;
         });
@@ -346,7 +344,7 @@ class Workflow extends EventEmitter {
             if (step.position) {
                 node.element.css({
                     top: step.position.top,
-                    left: step.position.left
+                    left: step.position.left,
                 });
             }
             node.id = parseInt(step.id) + offset;
@@ -579,10 +577,10 @@ class Workflow extends EventEmitter {
             left: left / canvasZoom,
             top: top / canvasZoom,
             width: width,
-            height: height
+            height: height,
         });
         // Move elements back if needed
-        this.canvas_container.children().each(function() {
+        this.canvas_container.children().each(function () {
             var p = $(this).position();
             $(this).css("left", (p.left + xmin_delta) / canvasZoom);
             $(this).css("top", (p.top + ymin_delta) / canvasZoom);

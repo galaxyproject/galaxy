@@ -11,7 +11,7 @@ import Viewer from "mvc/visualization/chart/views/viewer";
 import Menu from "mvc/visualization/chart/views/menu";
 
 export default Backbone.View.extend({
-    initialize: function(options) {
+    initialize: function (options) {
         const Galaxy = getGalaxyInstance();
         this.modal = Galaxy && Galaxy.modal ? Galaxy.modal : new Modal.View();
         this.setElement(
@@ -37,16 +37,16 @@ export default Backbone.View.extend({
         this.$right.append(this.message.$el).append(this.editor.$el);
         this.$buttons.append(this.menu.$el);
         $.ajax({
-            url: `${getAppRoot()}api/datasets/${options.dataset_id}`
+            url: `${getAppRoot()}api/datasets/${options.dataset_id}`,
         })
-            .done(dataset => {
+            .done((dataset) => {
                 this.dataset = dataset;
                 this.chart.load();
                 this.chart.trigger("redraw");
             })
-            .fail(response => {
+            .fail((response) => {
                 const message = response.responseJSON && response.responseJSON.err_msg;
                 this.errormessage = message || "Import failed for unkown reason.";
             });
-    }
+    },
 });

@@ -47,5 +47,5 @@ export default {
     change_favicon: change_favicon,
     hidden_permit: hidden_permit,
     is_hidden: is_hidden,
-    hidden_count: hidden_count
+    hidden_count: hidden_count,
 };

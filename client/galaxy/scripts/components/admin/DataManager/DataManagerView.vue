@@ -19,7 +19,7 @@ export default {
     computed: {
         toolShedLink() {
             return `${getAppRoot()}admin_toolshed/browse_tool_sheds`;
-        }
-    }
+        },
+    },
 };
 </script>

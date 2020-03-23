@@ -41,23 +41,23 @@ Vue.use(BootstrapVue);
 
 export default {
     components: {
-        LoadingSpan
+        LoadingSpan,
     },
     props: {
         id: {
-            type: String
+            type: String,
         },
         title: {
             type: String,
-            default: "title"
+            default: "title",
         },
         type: {
             type: String,
-            default: "tool"
+            default: "tool",
         },
         node: {
-            type: Object
-        }
+            type: Object,
+        },
     },
     computed: {
         iconClass() {
@@ -69,7 +69,7 @@ export default {
         },
         canClone() {
             return this.type != "subworkflow";
-        }
+        },
     },
     methods: {
         onDestroy() {
@@ -77,7 +77,7 @@ export default {
         },
         onClone() {
             this.node.clone();
-        }
-    }
+        },
+    },
 };
 </script>

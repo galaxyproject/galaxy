@@ -37,7 +37,7 @@ function _toImage($el, x_offset, y_offset, newContext) {
         parseInt($el.css("borderTopWidth"), 10) +
         parseInt($el.css("paddingTop"), 10);
     if (tagname == "div" || tagname == "span") {
-        $el.children().each(function() {
+        $el.children().each(function () {
             _toImage($(this), left, top);
         });
     } else if (tagname == "canvas") {
@@ -61,7 +61,7 @@ function _canvas2png(options) {
             newContext.translate(0, 0);
             newContext.textAlign = "left";
             newContext.textBaseline = "top";
-            $canvas.children().each(function() {
+            $canvas.children().each(function () {
                 _toImage($(this), 0, 0, newContext);
             });
             const imgData = newCanvas.toDataURL("image/png");
@@ -89,7 +89,7 @@ function _svg2png(options) {
     canvas.width = xml.width * scale;
     canvas.height = xml.height * scale;
     source.src = "data:image/svg+xml;base64," + window.btoa(xml.string);
-    source.onload = function() {
+    source.onload = function () {
         context.drawImage(source, 0, 0, canvas.width, canvas.height);
         const imageData = canvas.toDataURL("image/png");
         _downloadPNGData(imageData, options.title);
@@ -113,7 +113,7 @@ function createPDF(options) {
         height: xml.height,
         width: xml.width,
         scale: 2,
-        svg: xml.string
+        svg: xml.string,
     };
     var $el = $("body");
     var form = $el.find("#viewer-form");
@@ -122,7 +122,7 @@ function createPDF(options) {
             id: "viewer-form",
             method: "post",
             action: "http://export.highcharts.com/",
-            display: "none"
+            display: "none",
         });
         $el.append(form);
     }
@@ -131,7 +131,7 @@ function createPDF(options) {
         var input = $("<input/>", {
             type: "hidden",
             name: name,
-            value: data[name]
+            value: data[name],
         });
         form.append(input);
     }
@@ -159,10 +159,10 @@ function toXML(options) {
         version: "1.1",
         xmlns: "http://www.w3.org/2000/svg",
         width: width * nsvgs,
-        height: height
+        height: height,
     });
     var offsetX = 0;
-    $svg.each(function() {
+    $svg.each(function () {
         var $svg = $(this).clone();
         _inline($svg);
         var $g = $('<g transform="translate(' + offsetX + ', 0)">').attr("xmlns", "http://www.w3.org/2000/svg");
@@ -173,7 +173,7 @@ function toXML(options) {
     return {
         string: serializer.serializeToString($composite[0]),
         height: height,
-        width: width
+        width: width,
     };
 }
 
@@ -185,7 +185,7 @@ function _inline($target) {
         if (rules) {
             for (var idx = 0, len = rules.length; idx < len; idx++) {
                 try {
-                    $target.find(rules[idx].selectorText).each(function(i, elem) {
+                    $target.find(rules[idx].selectorText).each(function (i, elem) {
                         elem.style.cssText += rules[idx].style.cssText;
                     });
                 } catch (err) {
@@ -199,5 +199,5 @@ function _inline($target) {
 export default {
     createPNG: createPNG,
     createSVG: createSVG,
-    createPDF: createPDF
+    createPDF: createPDF,
 };

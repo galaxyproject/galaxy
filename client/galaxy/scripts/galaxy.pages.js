@@ -9,7 +9,7 @@ export default function pagesEditorOnload() {
     const pageId = $("#page-editor-content").attr("page_id");
     axios
         .get(`${getAppRoot()}api/pages/${pageId}`)
-        .then(response => {
+        .then((response) => {
             const data = response.data;
             const pageEditorInstance = Vue.extend(PageEditor);
             new pageEditorInstance({
@@ -18,12 +18,12 @@ export default function pagesEditorOnload() {
                     pageId: pageId,
                     content: data.content,
                     contentFormat: data.content_format,
-                    title: data.title
+                    title: data.title,
                 },
-                el: "#page-editor-content"
+                el: "#page-editor-content",
             });
         })
-        .catch(e => {
+        .catch((e) => {
             const response = e.response;
             if (typeof response.responseJSON !== "undefined") {
                 Toast.error(response.responseJSON.err_msg);

@@ -15,7 +15,7 @@ export class Node {
     }
     getWorkflowOutput(outputName) {
         return _.findWhere(this.workflow_outputs, {
-            output_name: outputName
+            output_name: outputName,
         });
     }
     isWorkflowOutput(outputName) {
@@ -69,7 +69,7 @@ export class Node {
             this.post_job_actions["ChangeDatatypeAction" + outputName] = {
                 action_arguments: { newtype: datatype },
                 action_type: "ChangeDatatypeAction",
-                output_name: outputName
+                output_name: outputName,
             };
         } else {
             delete this.post_job_actions["ChangeDatatypeAction" + outputName];
@@ -140,7 +140,7 @@ export class Node {
     }
     hasMappedOverInputTerminals() {
         var found = false;
-        _.each(this.input_terminals, t => {
+        _.each(this.input_terminals, (t) => {
             var mapOver = t.mapOver;
             if (mapOver.isCollection) {
                 found = true;
@@ -161,7 +161,7 @@ export class Node {
             name: this.name,
             label: this.label,
             annotation: this.annotation,
-            post_job_actions: this.post_job_actions
+            post_job_actions: this.post_job_actions,
         };
         var node = this.app.create_node(this.type, this.name, this.content_id);
         Utils.request({
@@ -170,14 +170,14 @@ export class Node {
             data: {
                 type: this.type,
                 tool_id: this.content_id,
-                tool_state: this.tool_state
+                tool_state: this.tool_state,
             },
-            success: data => {
+            success: (data) => {
                 var newData = Object.assign({}, data, copiedData);
                 node.init_field_data(newData);
                 node.update_field_data(newData);
                 this.app.activate_node(node);
-            }
+            },
         });
     }
     destroy() {
@@ -197,7 +197,7 @@ export class Node {
         // Keep inactive nodes stacked from most to least recently active
         // by moving element to the end of parent's node list
         var element = this.element.get(0);
-        (p => {
+        ((p) => {
             p.removeChild(element);
             p.appendChild(element);
         })(element.parentNode);
@@ -229,7 +229,7 @@ export class Node {
         var node = this;
         var nodeView = new NodeView(this.app, {
             $el: this.element,
-            node: node
+            node: node,
         });
         node.nodeView = nodeView;
         $.each(data.inputs, (i, input) => {
@@ -258,7 +258,7 @@ export class Node {
             var cur_name = output_view.output.name;
             var data_names = data.outputs;
             var cur_name_in_data_outputs = false;
-            _.each(data_names, data_name => {
+            _.each(data_names, (data_name) => {
                 if (data_name.name == cur_name) {
                     cur_name_in_data_outputs = true;
                 }
@@ -268,8 +268,8 @@ export class Node {
             }
         });
         // Remove the unused outputs
-        _.each(unused_outputs, unused_output => {
-            _.each(nodeView.outputViews[unused_output].terminalElement.terminal.connectors, x => {
+        _.each(unused_outputs, (unused_output) => {
+            _.each(nodeView.outputViews[unused_output].terminalElement.terminal.connectors, (x) => {
                 if (x) {
                     x.destroy(); // Removes the noodle connectors
                 }
@@ -314,11 +314,11 @@ export class Node {
         var old_body = nodeView.$el.find("div.inputs");
         var new_body = nodeView.newInputsDiv();
         var newTerminalViews = {};
-        _.each(data.inputs, input => {
+        _.each(data.inputs, (input) => {
             newTerminalViews[input.name] = node.nodeView.addDataInput(input, new_body);
         });
         // Cleanup any leftover terminals
-        _.each(_.difference(_.values(nodeView.terminalViews), _.values(newTerminalViews)), unusedView => {
+        _.each(_.difference(_.values(nodeView.terminalViews), _.values(newTerminalViews)), (unusedView) => {
             unusedView.terminal.destroy();
         });
         nodeView.terminalViews = newTerminalViews;

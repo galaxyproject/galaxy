@@ -3,7 +3,7 @@ import { mount, createLocalVue } from "@vue/test-utils";
 
 const mockOptions = {
     callback: () => {},
-    modalStatic: true
+    modalStatic: true,
 };
 
 describe("SelectionDialog.vue", () => {
@@ -19,14 +19,14 @@ describe("SelectionDialog.vue", () => {
         wrapper = mount(SelectionDialog, {
             slots: {
                 options: "<tree-options />",
-                search: "<cool-search />"
+                search: "<cool-search />",
             },
             stubs: {
                 "tree-options": "<div id='tree-options'/>",
-                "cool-search": "<div id='cool-search'/>"
+                "cool-search": "<div id='cool-search'/>",
             },
             propsData: mockOptions,
-            localVue
+            localVue,
         });
     });
 

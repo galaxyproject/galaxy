@@ -38,24 +38,22 @@ function async_save_text(
             var t;
 
             if (use_textarea) {
-                t = $("<textarea></textarea>")
-                    .attr({ rows: num_rows, cols: num_cols })
-                    .text($.trim(old_text));
+                t = $("<textarea></textarea>").attr({ rows: num_rows, cols: num_cols }).text($.trim(old_text));
             } else {
                 t = $("<input type='text'></input>").attr({
                     value: $.trim(old_text),
-                    size: num_cols
+                    size: num_cols,
                 });
             }
             t.attr("id", "renaming-active");
-            t.blur(function() {
+            t.blur(function () {
                 $(this).remove();
                 text_elt.show();
                 if (on_finish) {
                     on_finish(t);
                 }
             });
-            t.keyup(function(e) {
+            t.keyup(function (e) {
                 if (e.keyCode === 27) {
                     // Escape key
                     $(this).trigger("blur");
@@ -67,11 +65,11 @@ function async_save_text(
                     $.ajax({
                         url: save_url,
                         data: ajax_data,
-                        error: function() {
+                        error: function () {
                             alert(`Text editing for elt ${text_elt_id} failed`);
                             // TODO: call finish or no? For now, let's not because error occurred.
                         },
-                        success: function(processed_text) {
+                        success: function (processed_text) {
                             // Set new text and call finish method.
                             if (processed_text !== "") {
                                 text_elt.text(processed_text);
@@ -81,7 +79,7 @@ function async_save_text(
                             if (on_finish) {
                                 on_finish(t);
                             }
-                        }
+                        },
                     });
                 }
             });

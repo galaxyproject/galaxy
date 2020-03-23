@@ -14,28 +14,28 @@ export default {
     props: {
         title: {
             type: String,
-            default: ""
+            default: "",
         },
         icon: {
             type: String,
-            deafult: ""
+            deafult: "",
         },
         percentage: {
             type: Number,
-            default: -1
+            default: -1,
         },
         waiting: {
             type: Boolean,
-            default: false
+            default: false,
         },
         waitText: {
             type: String,
-            default: "Sending..."
+            default: "Sending...",
         },
         variant: {
             type: String,
-            default: "info"
-        }
+            default: "info",
+        },
     },
     computed: {
         progressWidth() {
@@ -61,7 +61,7 @@ export default {
             } else {
                 return this.title;
             }
-        }
-    }
+        },
+    },
 };
 </script>

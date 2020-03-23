@@ -20,7 +20,7 @@ import { filter } from "rxjs/operators";
 const queue = new BehaviorSubject([]);
 
 // don't emit unless there are things to initialize
-export const initializations$ = queue.pipe(filter(list => list.length > 0));
+export const initializations$ = queue.pipe(filter((list) => list.length > 0));
 
 export const addInitialization = (...fns) => {
     const nextInits = [...queue.getValue(), ...fns];

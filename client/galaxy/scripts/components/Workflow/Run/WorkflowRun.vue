@@ -55,10 +55,10 @@ export default {
     components: {
         LoadingSpan,
         WaitButton,
-        WorkflowRunSuccess
+        WorkflowRunSuccess,
     },
     props: {
-        workflowId: { type: String }
+        workflowId: { type: String },
     },
     data() {
         return {
@@ -71,14 +71,14 @@ export default {
             runButtonEnabled: true,
             runButtonWaitText: "",
             runButtonPercentage: -1,
-            invocations: null
+            invocations: null,
         };
     },
     created() {
         const url = `${getAppRoot()}api/workflows/${this.workflowId}/download?style=run`;
         axios
             .get(url)
-            .then(response => {
+            .then((response) => {
                 const runData = response.data;
                 this.hasUpgradeMessages = runData.has_upgrade_messages;
                 this.hasStepVersionChanges = runData.step_version_changes && runData.step_version_changes.length > 0;
@@ -89,12 +89,12 @@ export default {
                     const formProps = {
                         el,
                         setRunButtonStatus: this.setRunButtonStatus,
-                        handleInvocations: this.handleInvocations
+                        handleInvocations: this.handleInvocations,
                     };
                     this.runForm = new ToolFormComposite.View(Object.assign({}, runData, formProps));
                 });
             })
-            .catch(response => {
+            .catch((response) => {
                 this.error = errorMessageAsString(response);
             });
     },
@@ -109,7 +109,7 @@ export default {
         },
         handleInvocations(invocations) {
             this.invocations = invocations;
-        }
-    }
+        },
+    },
 };
 </script>

@@ -46,7 +46,7 @@ export class Services {
         try {
             const response = await axios.get(url);
             const workflows = response.data;
-            workflows.forEach(workflow => {
+            workflows.forEach((workflow) => {
                 this._addAttributes(workflow);
             });
             return workflows;

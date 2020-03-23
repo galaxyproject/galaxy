@@ -7,15 +7,15 @@ export default {
         mask: {
             type: String,
             required: false,
-            default: ""
-        }
+            default: "",
+        },
     },
     computed: {
         masker() {
             return createMask({
-                mask: this.mask
+                mask: this.mask,
             });
-        }
+        },
     },
     methods: {
         getFormatted(value) {
@@ -24,6 +24,6 @@ export default {
                 return this.masker.resolve(result);
             }
             return result;
-        }
-    }
+        },
+    },
 };

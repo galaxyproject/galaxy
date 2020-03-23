@@ -1,16 +1,16 @@
 export function filterToolSections(layout, results) {
     if (results) {
-        const filteredLayout = layout.map(category => {
+        const filteredLayout = layout.map((category) => {
             return {
                 ...category,
                 elems:
                     category.elems &&
-                    category.elems.filter(el => {
+                    category.elems.filter((el) => {
                         return !el.text && results.includes(el.id);
-                    })
+                    }),
             };
         });
-        return filteredLayout.filter(category => {
+        return filteredLayout.filter((category) => {
             const isSection = category.elems && category.elems.length > 0;
             const isMatchedTool = !category.text && results.includes(category.id);
             return isSection || isMatchedTool;

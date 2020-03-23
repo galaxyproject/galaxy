@@ -6,7 +6,7 @@ describe("InstallationSettings", () => {
     beforeEach(() => {
         rewire.__Rewire__("getGalaxyInstance", () => {
             return {
-                config: {}
+                config: {},
             };
         });
     });
@@ -19,12 +19,12 @@ describe("InstallationSettings", () => {
                     long_description: "long_description",
                     description: "description",
                     owner: "owner",
-                    name: "name"
+                    name: "name",
                 },
                 changesetRevision: "changesetRevision",
                 requiresPanel: true,
-                toolshedUrl: "toolshedUrl"
-            }
+                toolshedUrl: "toolshedUrl",
+            },
         });
         expect(wrapper.find(".title").text()).to.equal("Installing 'name'");
         expect(wrapper.find(".description").text()).to.equal("long_description");

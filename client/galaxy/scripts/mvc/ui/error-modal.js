@@ -42,18 +42,15 @@ function _errorModal(message, title, details) {
         body: message,
         closing_events: true,
         buttons: {
-            Ok: function() {
+            Ok: function () {
                 Galaxy.modal.hide();
-            }
-        }
+            },
+        },
     });
     Galaxy.modal.$el.addClass("error-modal");
 
     if (details) {
-        Galaxy.modal
-            .$(".error-details")
-            .add(Galaxy.modal.$('button:contains("Details")'))
-            .remove();
+        Galaxy.modal.$(".error-details").add(Galaxy.modal.$('button:contains("Details")')).remove();
         $("<div/>")
             .addClass("error-details")
             .hide()
@@ -127,7 +124,7 @@ function _ajaxDetails(model, xhr, options) {
         data: _.result(Galaxy.lastAjax, "data"),
         // backbone stuff (auto-redacting email for user)
         model: _.result(model, "toJSON", `${model}`),
-        user: _.omit(_.result(Galaxy.user, "toJSON"), "email")
+        user: _.omit(_.result(Galaxy.user, "toJSON"), "email"),
     };
 }
 
@@ -136,5 +133,5 @@ export default {
     errorModal: errorModal,
     offlineErrorModal: offlineErrorModal,
     badGatewayErrorModal: badGatewayErrorModal,
-    ajaxErrorModal: ajaxErrorModal
+    ajaxErrorModal: ajaxErrorModal,
 };

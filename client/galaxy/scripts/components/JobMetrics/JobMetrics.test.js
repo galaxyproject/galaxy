@@ -25,12 +25,12 @@ describe("JobMetrics/JobMetrics.vue", () => {
 
     it("should not render a div if no plugins found in store", async () => {
         const propsData = {
-            jobId: JOB_ID
+            jobId: JOB_ID,
         };
         const wrapper = mount(JobMetrics, {
             store: testStore,
             propsData,
-            localVue
+            localVue,
         });
         await wrapper.vm.$nextTick();
         expect(wrapper.isEmpty()).to.equals(true);
@@ -38,18 +38,18 @@ describe("JobMetrics/JobMetrics.vue", () => {
 
     it("should group plugins by type", async () => {
         const propsData = {
-            jobId: JOB_ID
+            jobId: JOB_ID,
         };
         const metricsResponse = [
             { plugin: "core", title: "runtime", value: 145 },
             { plugin: "core", title: "memory", value: 146 },
-            { plugin: "extended", title: "awesomeness", value: 42 }
+            { plugin: "extended", title: "awesomeness", value: 42 },
         ];
         axiosMock.onGet(`/api/jobs/${JOB_ID}/metrics`).reply(200, metricsResponse);
         const wrapper = mount(JobMetrics, {
             store: testStore,
             propsData,
-            localVue
+            localVue,
         });
         // Wait for axios and rendering.
         await flushPromises();
@@ -60,19 +60,9 @@ describe("JobMetrics/JobMetrics.vue", () => {
         // Three metrics, begin metrics for two plugins
         const metricsTables = wrapper.findAll(".metrics_plugin");
         expect(metricsTables.length).to.equals(2);
-        expect(
-            metricsTables
-                .at(0)
-                .find(".metrics_plugin_title")
-                .text()
-        ).to.equals("core");
+        expect(metricsTables.at(0).find(".metrics_plugin_title").text()).to.equals("core");
         expect(metricsTables.at(0).findAll("tr").length).to.equals(2);
-        expect(
-            metricsTables
-                .at(1)
-                .find(".metrics_plugin_title")
-                .text()
-        ).to.equals("extended");
+        expect(metricsTables.at(1).find(".metrics_plugin_title").text()).to.equals("extended");
         expect(metricsTables.at(1).findAll("tr").length).to.equals(1);
     });
 });

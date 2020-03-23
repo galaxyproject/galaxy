@@ -15,48 +15,48 @@ var FolderView = Backbone.View.extend({
     options: {},
 
     events: {
-        "click .toolbtn_save_permissions": "savePermissions"
+        "click .toolbtn_save_permissions": "savePermissions",
     },
 
-    initialize: function(options) {
+    initialize: function (options) {
         this.options = _.extend(this.options, options);
         if (this.options.id) {
             this.fetchFolder();
         }
     },
 
-    fetchFolder: function(options) {
+    fetchFolder: function (options) {
         const Galaxy = getGalaxyInstance();
         this.options = _.extend(this.options, options);
         this.model = new mod_library_model.FolderAsModel({
-            id: this.options.id
+            id: this.options.id,
         });
         var that = this;
         this.model.fetch({
-            success: function() {
+            success: function () {
                 if (that.options.show_permissions) {
                     that.showPermissions();
                 }
             },
-            error: function(model, response) {
+            error: function (model, response) {
                 if (typeof response.responseJSON !== "undefined") {
                     Toast.error(`${response.responseJSON.err_msg} Click this to go back.`, "", {
-                        onclick: function() {
+                        onclick: function () {
                             Galaxy.libraries.library_router.back();
-                        }
+                        },
                     });
                 } else {
                     Toast.error("An error occurred. Click this to go back.", "", {
-                        onclick: function() {
+                        onclick: function () {
                             Galaxy.libraries.library_router.back();
-                        }
+                        },
                     });
                 }
-            }
+            },
         });
     },
 
-    showPermissions: function(options) {
+    showPermissions: function (options) {
         const Galaxy = getGalaxyInstance();
         this.options = _.extend(this.options, options);
         $(".tooltip").remove();
@@ -70,9 +70,9 @@ var FolderView = Backbone.View.extend({
 
         var self = this;
         $.get(`${getAppRoot()}api/folders/${self.id}/permissions?scope=current`)
-            .done(fetched_permissions => {
+            .done((fetched_permissions) => {
                 self.prepareSelectBoxes({
-                    fetched_permissions: fetched_permissions
+                    fetched_permissions: fetched_permissions,
                 });
             })
             .fail(() => {
@@ -84,7 +84,7 @@ var FolderView = Backbone.View.extend({
         $("#center").css("overflow", "auto");
     },
 
-    _serializeRoles: function(role_list) {
+    _serializeRoles: function (role_list) {
         var selected_roles = [];
         for (var i = 0; i < role_list.length; i++) {
             selected_roles.push(`${role_list[i][1]}:${role_list[i][0]}`);
@@ -92,7 +92,7 @@ var FolderView = Backbone.View.extend({
         return selected_roles;
     },
 
-    prepareSelectBoxes: function(options) {
+    prepareSelectBoxes: function (options) {
         this.options = _.extend(this.options, options);
         var fetched_permissions = this.options.fetched_permissions;
         var self = this;
@@ -112,7 +112,7 @@ var FolderView = Backbone.View.extend({
         );
     },
 
-    _createSelectOptions: function(self, id, init_data) {
+    _createSelectOptions: function (self, id, init_data) {
         var select_options = {
             minimumInputLength: 0,
             css: id,
@@ -123,19 +123,19 @@ var FolderView = Backbone.View.extend({
                 url: `${getAppRoot()}api/folders/${self.id}/permissions?scope=available`,
                 dataType: "json",
                 quietMillis: 100,
-                data: function(term, page) {
+                data: function (term, page) {
                     // page is the one-based page number tracked by Select2
                     return {
                         q: term, //search term
                         page_limit: 10, // page size
-                        page: page // page number
+                        page: page, // page number
                     };
                 },
-                results: function(data, page) {
+                results: function (data, page) {
                     var more = page * 10 < data.total; // whether or not there are more results available
                     // notice we return the value of more so Select2 knows if more results can be loaded
                     return { results: data.roles, more: more };
-                }
+                },
             },
             formatResult: function roleFormatResult(role) {
                 return `${role.name} type: ${role.type}`;
@@ -144,22 +144,22 @@ var FolderView = Backbone.View.extend({
             formatSelection: function roleFormatSelection(role) {
                 return role.name;
             },
-            initSelection: function(element, callback) {
+            initSelection: function (element, callback) {
                 // the input tag has a value attribute preloaded that points to a preselected role's id
                 // this function resolves that id attribute to an object that select2 can render
                 // using its formatResult renderer - that way the role name is shown preselected
                 var data = [];
-                $(element.val().split(",")).each(function() {
+                $(element.val().split(",")).each(function () {
                     var item = this.split(":");
                     data.push({
                         id: item[0],
-                        name: item[1]
+                        name: item[1],
                     });
                 });
                 callback(data);
             },
             initialData: init_data.join(","),
-            dropdownCssClass: "bigdrop" // apply css that makes the dropdown taller
+            dropdownCssClass: "bigdrop", // apply css that makes the dropdown taller
         };
 
         return select_options;
@@ -168,7 +168,7 @@ var FolderView = Backbone.View.extend({
     /**
      * Extract the role ids from Select2 elements's 'data'
      */
-    _extractIds: function(roles_list) {
+    _extractIds: function (roles_list) {
         var ids_list = [];
         for (var i = roles_list.length - 1; i >= 0; i--) {
             ids_list.push(roles_list[i].id);
@@ -179,7 +179,7 @@ var FolderView = Backbone.View.extend({
     /**
      * Save the permissions for roles entered in the select boxes.
      */
-    savePermissions: function(event) {
+    savePermissions: function (event) {
         var self = this;
         var add_ids = this._extractIds(this.addSelectObject.$el.select2("data"));
         var manage_ids = this._extractIds(this.manageSelectObject.$el.select2("data"));
@@ -187,11 +187,11 @@ var FolderView = Backbone.View.extend({
         $.post(`${getAppRoot()}api/folders/${self.id}/permissions?action=set_permissions`, {
             "add_ids[]": add_ids,
             "manage_ids[]": manage_ids,
-            "modify_ids[]": modify_ids
+            "modify_ids[]": modify_ids,
         })
-            .done(fetched_permissions => {
+            .done((fetched_permissions) => {
                 self.showPermissions({
-                    fetched_permissions: fetched_permissions
+                    fetched_permissions: fetched_permissions,
                 });
                 Toast.success("Permissions saved.");
             })
@@ -200,7 +200,7 @@ var FolderView = Backbone.View.extend({
             });
     },
 
-    templateFolderPermissions: function() {
+    templateFolderPermissions: function () {
         return _.template(
             `<div class="library_style_container">
                 <div>
@@ -255,9 +255,9 @@ var FolderView = Backbone.View.extend({
                 </div>
             </div>`
         );
-    }
+    },
 });
 
 export default {
-    FolderView: FolderView
+    FolderView: FolderView,
 };

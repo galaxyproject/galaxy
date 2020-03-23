@@ -52,14 +52,14 @@ export function multiHistory(options) {
         order: options.order,
         limitOnFirstFetch: options.limit,
         limitPerFetch: options.limit,
-        currentHistoryId: options.current_history_id
+        currentHistoryId: options.current_history_id,
     });
     const multipanel = new MultiPanel.MultiPanelColumns({
         el: $("#center").get(0),
-        histories: histories
+        histories: histories,
     });
 
-    histories.fetchFirst({ silent: true }).done(function() {
+    histories.fetchFirst({ silent: true }).done(function () {
         multipanel.createColumns();
         multipanel.render(0);
     });
@@ -85,7 +85,7 @@ export function chart(options) {
 export const chartUtilities = {
     Datasets: Datasets,
     Jobs: Jobs,
-    Series: Series
+    Series: Series,
 };
 
 export { initMasthead } from "components/Masthead/initMasthead";

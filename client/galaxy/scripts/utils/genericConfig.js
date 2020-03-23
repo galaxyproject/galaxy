@@ -12,6 +12,6 @@ export function buildConfig(defaultConfigs = {}) {
             } else {
                 console.warn("Requested missing config prop", propName);
             }
-        }
+        },
     });
 }

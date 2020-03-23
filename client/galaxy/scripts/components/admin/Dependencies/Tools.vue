@@ -17,17 +17,17 @@ export default {
     props: {
         toolIds: {
             type: Array,
-            required: true
+            required: true,
         },
         compact: {
             type: Boolean,
-            default: true
-        }
+            default: true,
+        },
     },
     computed: {
-        title: function() {
+        title: function () {
             return this.compact ? this.toolIds.join(", ") : "";
-        }
-    }
+        },
+    },
 };
 </script>

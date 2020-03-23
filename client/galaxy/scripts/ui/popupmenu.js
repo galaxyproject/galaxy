@@ -22,7 +22,7 @@ export function make_popupmenu(button_element, initial_options) {
         return;
     }
 
-    button_element.bind("click.show_popup", e => {
+    button_element.bind("click.show_popup", (e) => {
         // Close existing visible menus
         $(".popmenu-wrapper").remove();
 
@@ -39,11 +39,7 @@ export function make_popupmenu(button_element, initial_options) {
                     // Action can be either an anonymous function and a mapped dict.
                     const action = v.action || v;
                     const url = v.url || "javascript:void(0);";
-                    const $a = $("<a>")
-                        .addClass("dropdown-item")
-                        .attr("href", url)
-                        .html(k)
-                        .click(action);
+                    const $a = $("<a>").addClass("dropdown-item").attr("href", url).html(k).click(action);
                     if (v.class) {
                         $a.addClass(v.class);
                     }
@@ -66,14 +62,14 @@ export function make_popupmenu(button_element, initial_options) {
 
             wrapper.css({
                 top: e.pageY,
-                left: x
+                left: x,
             });
         }, 10);
 
         setTimeout(() => {
             // Bind click event to current window and all frames to remove any visible menus
             // Bind to document object instead of window object for IE compat
-            var close_popup = el => {
+            var close_popup = (el) => {
                 $(el).bind("click.close_popup", () => {
                     $(".popmenu-wrapper").remove();
                     el.unbind("click.close_popup");
@@ -103,12 +99,12 @@ export function make_popupmenu(button_element, initial_options) {
  *  NOTE: make_popup_menus, and make_popupmenu are horrible names
  */
 export function make_popup_menus() {
-    $("div[popupmenu]").each(function() {
+    $("div[popupmenu]").each(function () {
         var options = {};
         var menu = $(this);
 
         // find each anchor in the menu, convert them into an options map: { a.text : click_function }
-        menu.find("a").each(function() {
+        menu.find("a").each(function () {
             var link = $(this);
             var link_dom = link.get(0);
             var confirmtext = link_dom.getAttribute("confirm");
@@ -121,7 +117,7 @@ export function make_popup_menus() {
             } else {
                 options[link.text()] = {
                     url: href,
-                    action: function(event) {
+                    action: function (event) {
                         // if theres confirm text, send the dialog
                         if (!confirmtext || confirm(confirmtext)) {
                             // link.click() doesn't use target for some reason,
@@ -136,7 +132,7 @@ export function make_popup_menus() {
                         } else {
                             event.preventDefault();
                         }
-                    }
+                    },
                 };
             }
         });
@@ -145,7 +141,7 @@ export function make_popup_menus() {
 
         // For menus with clickable link text, make clicking on the link go through instead
         // of activating the popup menu
-        box.find("a").bind("click", e => {
+        box.find("a").bind("click", (e) => {
             e.stopPropagation(); // Stop bubbling so clicking on the link goes through
             return true;
         });

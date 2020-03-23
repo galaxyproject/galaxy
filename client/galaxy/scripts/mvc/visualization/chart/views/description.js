@@ -5,7 +5,7 @@ import { getAppRoot } from "onload/loadConfig";
 import Utils from "utils/utils";
 
 export default Backbone.View.extend({
-    initialize: function(app) {
+    initialize: function (app) {
         this.plugin = app.chart.plugin;
         this.setElement(this._template());
         this.$title = this.$(".charts-description-title");
@@ -13,7 +13,7 @@ export default Backbone.View.extend({
         this.$text = this.$(".charts-description-text");
         this.render();
     },
-    render: function() {
+    render: function () {
         if (this.plugin.logo) {
             this.$image.attr("src", getAppRoot() + this.plugin.logo);
             this.$title.html(this.plugin.html || "Unavailable");
@@ -23,7 +23,7 @@ export default Backbone.View.extend({
             this.$el.hide();
         }
     },
-    _template: function() {
+    _template: function () {
         return `<div class="charts-description">
                     <table>
                     <tr>
@@ -37,5 +37,5 @@ export default Backbone.View.extend({
                     </table>
                     <div class="charts-description-text"/>
                 </div>`;
-    }
+    },
 });

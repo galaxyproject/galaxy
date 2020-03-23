@@ -30,7 +30,7 @@ export class BaseModel {
     get state() {
         // build state JSON ignoring transient fields
         const tFields = this.transientFields;
-        return JSON.stringify(this, function(key) {
+        return JSON.stringify(this, function (key) {
             if (!tFields.has(key)) {
                 return this[key];
             }
@@ -63,7 +63,7 @@ export class BaseModel {
         }
 
         const fields = transients.get(klass);
-        fieldNames.forEach(fieldName => fields.add(fieldName));
+        fieldNames.forEach((fieldName) => fields.add(fieldName));
         transients.set(klass, fields);
     }
 
