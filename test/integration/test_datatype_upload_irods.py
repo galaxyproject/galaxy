@@ -3,7 +3,6 @@ import tempfile
 
 import pytest
 
-from galaxy.datatypes.registry import Registry
 from galaxy_test.driver import integration_util
 
 from .test_datatype_upload import TEST_CASES, upload_datatype_helper
