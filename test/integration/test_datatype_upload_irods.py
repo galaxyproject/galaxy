@@ -1,23 +1,22 @@
-import os
 
 import pytest
 
 from galaxy_test.driver import integration_util
 
-from .test_datatype_upload import TEST_CASES, upload_datatype_helper
+from .test_datatype_upload import (
+    temp_file,
+    TEST_CASES,
+    upload_datatype_helper,
+    UploadTestDatatypeDataTestCase
+)
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
-GALAXY_ROOT = os.path.abspath('%s/../../' % SCRIPT_DIRECTORY)
-DATATYPES_CONFIG = os.path.join(GALAXY_ROOT, 'lib/galaxy/config/sample/datatypes_conf.xml.sample')
-PARENT_SNIFFER_MAP = {'fastqsolexa': 'fastq'}
 OBJECT_STORE_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "irods_object_store_conf.xml")
 # Run test for only the first 10 test files
 IRODS_TEST_CASES = dict(list(TEST_CASES.items())[0:10])
 
 
-class UploadTestDatatypeDataTestCase(BaseUploadContentConfigurationInstance):
-    framework_tool_and_types = False
-    datatypes_conf_override = DATATYPES_CONFIG
+class UploadTestDatatypeDataTestCase(UploadTestDatatypeDataTestCase):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -25,16 +24,6 @@ class UploadTestDatatypeDataTestCase(BaseUploadContentConfigurationInstance):
 
 
 instance = integration_util.integration_module_instance(UploadTestDatatypeDataTestCase)
-
-
-@pytest.fixture
-def temp_file():
-    with tempfile.NamedTemporaryFile(delete=True, mode='wb') as fh:
-        yield fh
-
-
-registry = Registry()
-registry.load_datatypes(root_dir=GALAXY_ROOT, config=DATATYPES_CONFIG)
 
 
 @pytest.mark.parametrize('test_data', IRODS_TEST_CASES.values(), ids=list(IRODS_TEST_CASES.keys()))
