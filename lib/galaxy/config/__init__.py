@@ -1013,7 +1013,7 @@ class ConfiguresGalaxyMixin(object):
         # The value of migrated_tools_config is the file reserved for containing only those tools that have been
         # eliminated from the distribution and moved to the tool shed. If migration checking is disabled, only add it if
         # it exists (since this may be an existing deployment where migrations were previously run).
-        if ((self.config.check_migrate_tools or os.path.exists(self.config.migrated_tools_config))
+        if ((self.config.migrated_tools_config and os.path.exists(self.config.migrated_tools_config))
                 and self.config.migrated_tools_config not in self.config.tool_configs):
             self.config.tool_configs.append(self.config.migrated_tools_config)
         self.toolbox = tools.ToolBox(self.config.tool_configs, self.config.tool_path, self)
@@ -1115,7 +1115,7 @@ class ConfiguresGalaxyMixin(object):
         else:
             self.tool_shed_registry = galaxy.tool_shed.tool_shed_registry.Registry()
 
-    def _configure_models(self, check_migrate_databases=False, check_migrate_tools=False, config_file=None):
+    def _configure_models(self, check_migrate_databases=False, config_file=None):
         """
         Preconditions: object_store must be set on self.
         """
@@ -1141,11 +1141,6 @@ class ConfiguresGalaxyMixin(object):
             create_or_verify_database(db_url, config_file, self.config.database_engine_options, app=self, map_install_models=combined_install_database)
             if not combined_install_database:
                 tsi_create_or_verify_database(install_db_url, install_database_options, app=self)
-
-        if check_migrate_tools:
-            # Alert the Galaxy admin to tools that have been moved from the distribution to the tool shed.
-            from galaxy.tool_shed.galaxy_install.migrate.check import verify_tools
-            verify_tools(self, install_db_url, config_file, install_database_options)
 
         self.model = init_models_from_config(
             self.config,

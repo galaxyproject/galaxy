@@ -66,7 +66,6 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         log.debug("python path is: %s", ", ".join(sys.path))
         self.name = 'galaxy'
         self.startup_timer = ExecutionTimer()
-        self.new_installation = False
         # Read config file and check for errors
         self.config = config.Configuration(**kwargs)
         self.config.check()
@@ -88,8 +87,7 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         config_file = kwargs.get('global_conf', {}).get('__file__', None)
         if config_file:
             log.debug('Using "galaxy.ini" config file: %s', config_file)
-        check_migrate_tools = self.config.check_migrate_tools
-        self._configure_models(check_migrate_databases=self.config.check_migrate_databases, check_migrate_tools=check_migrate_tools, config_file=config_file)
+        self._configure_models(check_migrate_databases=self.config.check_migrate_databases, config_file=config_file)
 
         self.installed_repository_manager = InstalledRepositoryManager(self)
         self._configure_datatypes_registry(self.installed_repository_manager)
