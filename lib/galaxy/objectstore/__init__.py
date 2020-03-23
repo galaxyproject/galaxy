@@ -38,9 +38,9 @@ NO_SESSION_ERROR_MESSAGE = "Attempted to 'create' object store entity in configu
 log = logging.getLogger(__name__)
 
 
-class ObjectStore(object):
+class IObjectStore(object):
 
-    """ObjectStore abstract interface.
+    """ObjectStore interface.
 
     FIELD DESCRIPTIONS (these apply to all the methods in this class):
 
@@ -82,46 +82,9 @@ class ObjectStore(object):
         000/obj.id)
     """
 
-    def __init__(self, config, config_dict=None, **kwargs):
-        """
-        :type config: object
-        :param config: An object, most likely populated from
-            `galaxy/config.ini`, having the following attributes:
-
-            * object_store_check_old_style (only used by the
-              :class:`DiskObjectStore` subclass)
-            * jobs_directory -- Each job is given a unique empty directory
-              as its current working directory. This option defines in what
-              parent directory those directories will be created.
-            * new_file_path -- Used to set the 'temp' extra_dir.
-        """
-        if config_dict is None:
-            config_dict = {}
-        self.running = True
-        self.config = config
-        self.check_old_style = config.object_store_check_old_style
-        extra_dirs = {}
-        extra_dirs['job_work'] = config.jobs_directory
-        extra_dirs['temp'] = config.new_file_path
-        extra_dirs.update(dict(
-            (e['type'], e['path']) for e in config_dict.get('extra_dirs', [])))
-        self.extra_dirs = extra_dirs
-
-    def shutdown(self):
-        """Close any connections for this ObjectStore."""
-        self.running = False
-
     def exists(self, obj, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None):
         """Return True if the object identified by `obj` exists, False otherwise."""
         raise NotImplementedError()
-
-    def file_ready(self, obj, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False):
-        """
-        Check if a file corresponding to a dataset is ready to be used.
-
-        Return True if so, False otherwise
-        """
-        return True
 
     def create(self, obj, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False):
         """
@@ -219,6 +182,46 @@ class ObjectStore(object):
         """
         raise NotImplementedError()
 
+
+class BaseObjectStore(IObjectStore):
+
+    def __init__(self, config, config_dict=None, **kwargs):
+        """
+        :type config: object
+        :param config: An object, most likely populated from
+            `galaxy/config.ini`, having the following attributes:
+
+            * object_store_check_old_style (only used by the
+              :class:`DiskObjectStore` subclass)
+            * jobs_directory -- Each job is given a unique empty directory
+              as its current working directory. This option defines in what
+              parent directory those directories will be created.
+            * new_file_path -- Used to set the 'temp' extra_dir.
+        """
+        if config_dict is None:
+            config_dict = {}
+        self.running = True
+        self.config = config
+        self.check_old_style = config.object_store_check_old_style
+        extra_dirs = {}
+        extra_dirs['job_work'] = config.jobs_directory
+        extra_dirs['temp'] = config.new_file_path
+        extra_dirs.update(dict(
+            (e['type'], e['path']) for e in config_dict.get('extra_dirs', [])))
+        self.extra_dirs = extra_dirs
+
+    def shutdown(self):
+        """Close any connections for this ObjectStore."""
+        self.running = False
+
+    def file_ready(self, obj, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False):
+        """
+        Check if a file corresponding to a dataset is ready to be used.
+
+        Return True if so, False otherwise
+        """
+        return True
+
     @classmethod
     def parse_xml(clazz, config_xml):
         """Parse an XML description of a configuration for this object store.
@@ -252,7 +255,7 @@ class ObjectStore(object):
             return obj.id
 
 
-class ConcreteObjectStore(ObjectStore):
+class ConcreteObjectStore(BaseObjectStore):
     """Subclass of ObjectStore for stores that don't delegate (non-nested).
 
     Currently only adds store_by functionality. Which doesn't make
@@ -548,7 +551,7 @@ class DiskObjectStore(ConcreteObjectStore):
         return (float(st.f_blocks - st.f_bavail) / st.f_blocks) * 100
 
 
-class NestedObjectStore(ObjectStore):
+class NestedObjectStore(BaseObjectStore):
 
     """
     Base for ObjectStores that use other ObjectStores.
