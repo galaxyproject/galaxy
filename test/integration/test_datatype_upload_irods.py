@@ -13,33 +13,15 @@ from galaxy.util.checkers import (
 from galaxy.util.hash_util import md5_hash_file
 from galaxy_test.driver import integration_util
 from .test_upload_configuration_options import BaseUploadContentConfigurationInstance
+from .test_datatype_upload import TEST_CASES
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
-TEST_FILE_DIR = '%s/../../lib/galaxy/datatypes/test' % SCRIPT_DIRECTORY
-TestData = collections.namedtuple('UploadDatatypesData', 'path datatype uploadable')
 GALAXY_ROOT = os.path.abspath('%s/../../' % SCRIPT_DIRECTORY)
 DATATYPES_CONFIG = os.path.join(GALAXY_ROOT, 'lib/galaxy/config/sample/datatypes_conf.xml.sample')
 PARENT_SNIFFER_MAP = {'fastqsolexa': 'fastq'}
 OBJECT_STORE_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "irods_object_store_conf.xml")
-
-
-def find_datatype(registry, filename):
-    # match longest extension first
-    sorted_extensions = sorted(registry.datatypes_by_extension.keys(), key=len, reverse=True)
-    for extension in sorted_extensions:
-        if filename.endswith(extension) or filename.startswith(extension):
-            return registry.datatypes_by_extension[extension]
-    raise Exception("Couldn't guess datatype for file '%s'" % filename)
-
-
-def collect_test_data(registry):
-    test_files = [f for f in os.listdir(TEST_FILE_DIR) if "." in f]
-    files = [os.path.join(TEST_FILE_DIR, f) for f in test_files]
-    datatypes = [find_datatype(registry, f) for f in test_files]
-    uploadable = [datatype.file_ext in registry.upload_file_formats for datatype in datatypes]
-    test_data_description = [TestData(*items) for items in zip(files, datatypes, uploadable)]
-    return {os.path.basename(data.path): data for data in test_data_description}
-
+# Run test for only the first 10 test files
+IRODS_TEST_CASES = dict(list(TEST_CASES.items())[0:10])
 
 class UploadTestDatatypeDataTestCase(BaseUploadContentConfigurationInstance):
     framework_tool_and_types = False
@@ -49,22 +31,17 @@ class UploadTestDatatypeDataTestCase(BaseUploadContentConfigurationInstance):
     def handle_galaxy_config_kwds(cls, config):
         config["object_store_config_file"] = OBJECT_STORE_CONFIG_FILE
 
-
 instance = integration_util.integration_module_instance(UploadTestDatatypeDataTestCase)
-
 
 @pytest.fixture
 def temp_file():
     with tempfile.NamedTemporaryFile(delete=True, mode='wb') as fh:
         yield fh
 
-
 registry = Registry()
 registry.load_datatypes(root_dir=GALAXY_ROOT, config=DATATYPES_CONFIG)
-TEST_CASES = collect_test_data(registry)
 
-
-@pytest.mark.parametrize('test_data', TEST_CASES.values(), ids=list(TEST_CASES.keys()))
+@pytest.mark.parametrize('test_data', IRODS_TEST_CASES.values(), ids=list(IRODS_TEST_CASES.keys()))
 def test_upload_datatype_auto(instance, test_data, temp_file):
     is_compressed = False
     for is_method in (is_bz2, is_gzip, is_zip):
