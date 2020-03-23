@@ -19,6 +19,11 @@ from speech_to_text_schema import SpeechToText, SpeechToTextMedia, SpeechToTextR
 def main():
     (input_file, json_file) = sys.argv[1:3]
 
+    # Read a list of categories to ignore when outputting entity list
+    ignore_cats_list = list()
+    if len(sys.argv) >= 3:
+        ignore_cats_list = read_ignore_list(sys.argv[3])
+
     # Load English tokenizer, tagger, parser, NER and word vectors
     nlp = spacy.load("en_core_web_lg")
 
@@ -46,6 +51,9 @@ def main():
 
     # Find named entities, phrases and concepts - Add them to the result
     for entity in doc.ents:
+        # Ignore certain categories
+        if clean_text(entity.label_) in ignore_cats_list:
+            continue
         # Start and end time offsets
         start = None
         end = None
@@ -71,6 +79,21 @@ def main():
     
     # Write the json file
     write_json_file(result, json_file)
+
+# Standardize ignore list text
+def clean_text(text):
+    return text.lower().strip()
+
+# Read a list of categories to ignore
+def read_ignore_list(ignore_list_filename):
+    print("Reading list")
+    ignore_cats_list = list()
+    f = open(ignore_list_filename, "r")
+    # For each value in the comma separated list.  Standardize text
+    for val in f.read().split(","):
+        ignore_cats_list.append(clean_text(val))
+    print(ignore_cats_list)
+    return ignore_cats_list
 
 # Serialize obj and write it to output file
 def write_json_file(obj, output_file):

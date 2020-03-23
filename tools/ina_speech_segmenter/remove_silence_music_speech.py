@@ -104,7 +104,7 @@ def create_audio_part(input_file, start, end, segment, file_duration):
 	duration = (end_offset - start_offset)
 	duration_str = time.strftime('%H:%M:%S', time.gmtime(duration))
 
-	print("Removeing segment starting at " + start_str + " for " + duration_str)
+	print("Removing segment starting at " + start_str + " for " + duration_str)
 
 	# Execute ffmpeg command to split of the segment
 	ffmpeg_out = subprocess.Popen(['ffmpeg', '-i', input_file, '-ss', start_str, '-t', duration_str, '-acodec', 'copy', tmp_filename], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
