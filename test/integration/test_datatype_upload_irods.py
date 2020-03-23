@@ -1,16 +1,9 @@
-import collections
 import os
 import tempfile
 
 import pytest
 
 from galaxy.datatypes.registry import Registry
-from galaxy.util.checkers import (
-    is_bz2,
-    is_gzip,
-    is_zip
-)
-from galaxy.util.hash_util import md5_hash_file
 from galaxy_test.driver import integration_util
 from .test_upload_configuration_options import BaseUploadContentConfigurationInstance
 from .test_datatype_upload import TEST_CASES
