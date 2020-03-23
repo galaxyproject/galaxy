@@ -29,7 +29,6 @@ from galaxy.util import (
     umask_fix_perms,
 )
 from galaxy.util.path import safe_relpath
-from galaxy.util.sleeper import Sleeper
 from ..objectstore import (
     DiskObjectStore,
     local_extra_dirs,
@@ -207,15 +206,6 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         self.home =  "/" + self.zone + "/home/" + self.username
 
         self.session = self._configure_connection(host=self.host, port=self.port, user=self.username, password=self.password, zone=self.zone)
-        # Clean cache only if value is set in galaxy config file
-        if self.cache_size != -1:
-            # Convert GBs to bytes for comparison
-            self.cache_size = self.cache_size * bytesize.SUFFIX_TO_BYTES['GI']
-            # Helper for interruptable sleep
-            self.sleeper = Sleeper()
-            self.cache_monitor_thread = threading.Thread(target=self.__cache_monitor)
-            self.cache_monitor_thread.start()
-            log.info("Cache cleaner manager started")
 
     def _configure_connection(self, host='localhost', port='1247', user='rods', password='rods', zone='tempZone'):
         with iRODSSession(host=host, port=port, user=user, password=password, zone=zone) as session:
@@ -235,70 +225,6 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         as_dict = super(IRODSObjectStore, self).to_dict()
         as_dict.update(self._config_to_dict())
         return as_dict
-
-    def __cache_monitor(self):
-        time.sleep(5)  # Wait for things to load before starting the monitor
-        while self.running:
-            total_size = 0
-            # Is this going to be too expensive of an operation to be done frequently?
-            file_list = []
-            for dirpath, _, filenames in os.walk(self.staging_path):
-                for filename in filenames:
-                    filepath = os.path.join(dirpath, filename)
-                    file_size = os.path.getsize(filepath)
-                    total_size += file_size
-                    # Get the time given file was last accessed
-                    last_access_time = time.localtime(os.stat(filepath)[7])
-                    # Compose a tuple of the access time and the file path
-                    file_tuple = last_access_time, filepath, file_size
-                    file_list.append(file_tuple)
-            # Sort the file list (based on access time)
-            file_list.sort()
-            # Initiate cleaning once within 10% of the defined cache size?
-            cache_limit = self.cache_size * 0.9
-            if total_size > cache_limit:
-                log.info("Initiating cache cleaning: current cache size: %s; clean until smaller than: %s",
-                         convert_bytes(total_size), convert_bytes(cache_limit))
-                # How much to delete? If simply deleting up to the cache-10% limit,
-                # is likely to be deleting frequently and may run the risk of hitting
-                # the limit - maybe delete additional #%?
-                # For now, delete enough to leave at least 10% of the total cache free
-                delete_this_much = total_size - cache_limit
-                self.__clean_cache(file_list, delete_this_much)
-            self.sleeper.sleep(30)  # Test cache size every 30 seconds?
-
-    def __clean_cache(self, file_list, delete_this_much):
-        """ Keep deleting files from the file_list until the size of the deleted
-        files is greater than the value in delete_this_much parameter.
-
-        :type file_list: list
-        :param file_list: List of candidate files that can be deleted. This method
-            will start deleting files from the beginning of the list so the list
-            should be sorted accordingly. The list must contains 3-element tuples,
-            positioned as follows: position 0 holds file last accessed timestamp
-            (as time.struct_time), position 1 holds file path, and position 2 has
-            file size (e.g., (<access time>, /mnt/data/dataset_1.dat), 472394)
-
-        :type delete_this_much: int
-        :param delete_this_much: Total size of files, in bytes, that should be deleted.
-        """
-        # Keep deleting datasets from file_list until deleted_amount does not
-        # exceed delete_this_much; start deleting from the front of the file list,
-        # which assumes the oldest files come first on the list.
-        deleted_amount = 0
-        for entry in file_list:
-            if deleted_amount < delete_this_much:
-                deleted_amount += entry[2]
-                os.remove(entry[1])
-                # Debugging code for printing deleted files' stats
-                # folder, file_name = os.path.split(f[1])
-                # file_date = time.strftime("%m/%d/%y %H:%M:%S", f[0])
-                # log.debug("%s. %-25s %s, size %s (deleted %s/%s)" \
-                #     % (i, file_name, convert_bytes(f[2]), file_date, \
-                #     convert_bytes(deleted_amount), convert_bytes(delete_this_much)))
-            else:
-                log.debug("Cache cleaning done. Total space freed: %s", convert_bytes(deleted_amount))
-                return
 
     def _fix_permissions(self, rel_path):
         """ Set permissions on rel_path"""
@@ -445,7 +371,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             cache_fp.write(content)
         return True
 
-    def _push_to_os(self, rel_path, source_file=None, from_string=None):
+    def _push_to_irods(self, rel_path, source_file=None, from_string=None):
         """
         Push the file pointed to by ``rel_path`` to the iRODS. Extract folder name 
         from rel_path as iRODS collection name, and extract file name from rel_path
@@ -539,7 +465,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
 
         # TODO: Sync should probably not be done here. Add this to an async upload stack?
         if in_cache and not in_irods:
-            self._push_to_os(rel_path, source_file=self._get_cache_path(rel_path))
+            self._push_to_irods(rel_path, source_file=self._get_cache_path(rel_path))
             return True
         elif in_irods:
             return True
@@ -572,7 +498,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             if not dir_only:
                 rel_path = os.path.join(rel_path, alt_name if alt_name else "dataset_%s.dat" % obj.id)
                 open(os.path.join(self.staging_path, rel_path), 'w').close()
-                self._push_to_os(rel_path, from_string='')
+                self._push_to_irods(rel_path, from_string='')
 
     def empty(self, obj, **kwargs):
         if self.exists(obj, **kwargs):
@@ -725,7 +651,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             else:
                 source_file = self._get_cache_path(rel_path)
             # Update the file on iRODS 
-            self._push_to_os(rel_path, source_file)
+            self._push_to_irods(rel_path, source_file)
         else:
             raise ObjectNotFound('objectstore.update_from_file, object does not exist: %s, kwargs: %s'
                                  % (str(obj), str(kwargs)))
