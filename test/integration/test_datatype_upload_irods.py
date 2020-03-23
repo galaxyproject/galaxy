@@ -5,8 +5,6 @@ import pytest
 from galaxy_test.driver import integration_util
 
 from .test_datatype_upload import TEST_CASES, upload_datatype_helper
-from .test_upload_configuration_options import \
-    BaseUploadContentConfigurationInstance
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 GALAXY_ROOT = os.path.abspath('%s/../../' % SCRIPT_DIRECTORY)
