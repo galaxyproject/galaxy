@@ -61,6 +61,9 @@ TEST_CASES = collect_test_data(registry)
 
 @pytest.mark.parametrize('test_data', TEST_CASES.values(), ids=list(TEST_CASES.keys()))
 def test_upload_datatype_auto(instance, test_data, temp_file):
+    upload_datatype_helper(instance, test_data, temp_file)
+
+def upload_datatype_helper(instance, test_data, temp_file):
     is_compressed = False
     for is_method in (is_bz2, is_gzip, is_zip):
         is_compressed = is_method(test_data.path)
