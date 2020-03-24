@@ -463,7 +463,6 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             else:
                 return False
 
-        # TODO: Sync should probably not be done here. Add this to an async upload stack?
         if in_cache and not in_irods:
             return True
         elif in_irods:
