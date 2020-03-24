@@ -148,15 +148,15 @@ class IRODSObjectStore(DiskObjectStore):
             assert status == 0, '__mkcolls(): Failed to create collection: %s' % collname
 
     @local_extra_dirs
-    def exists(self, obj, **kwargs):
+    def _exists(self, obj, **kwargs):
         doi = irods.dataObjInp_t()
         doi.objPath = self.__get_rods_path(obj, **kwargs)
         log.debug('exists(): checking: %s', doi.objPath)
         return irods.rcObjStat(self.rods_conn, doi) is not None
 
     @local_extra_dirs
-    def create(self, obj, **kwargs):
-        if not self.exists(obj, **kwargs):
+    def _create(self, obj, **kwargs):
+        if not self._exists(obj, **kwargs):
             rods_path = self.__get_rods_path(obj, **kwargs)
             log.debug('create(): %s', rods_path)
             dir_only = kwargs.get('dir_only', False)
@@ -177,7 +177,7 @@ class IRODSObjectStore(DiskObjectStore):
                 assert status >= 0, 'create(): rcDataObjCreate() failed: %s: %s: %s' % (rods_path, status, irods.strerror(status))
 
     @local_extra_dirs
-    def empty(self, obj, **kwargs):
+    def _empty(self, obj, **kwargs):
         assert 'dir_only' not in kwargs, 'empty(): `dir_only` parameter is invalid here'
         h = self.__get_rods_handle(obj, **kwargs)
         try:
@@ -186,7 +186,7 @@ class IRODSObjectStore(DiskObjectStore):
             # h is None
             raise ObjectNotFound()
 
-    def size(self, obj, **kwargs):
+    def _size(self, obj, **kwargs):
         assert 'dir_only' not in kwargs, 'size(): `dir_only` parameter is invalid here'
         h = self.__get_rods_handle(obj, **kwargs)
         try:
@@ -196,7 +196,7 @@ class IRODSObjectStore(DiskObjectStore):
             return 0
 
     @local_extra_dirs
-    def delete(self, obj, entire_dir=False, **kwargs):
+    def _delete(self, obj, entire_dir=False, **kwargs):
         assert 'dir_only' not in kwargs, 'delete(): `dir_only` parameter is invalid here'
         rods_path = self.__get_rods_path(obj, **kwargs)
         # __get_rods_path prepends self.root_collection_path but we are going
@@ -223,7 +223,7 @@ class IRODSObjectStore(DiskObjectStore):
         return False
 
     @local_extra_dirs
-    def get_data(self, obj, start=0, count=-1, **kwargs):
+    def _get_data(self, obj, start=0, count=-1, **kwargs):
         log.debug('get_data(): %s')
         h = self.__get_rods_handle(obj, **kwargs)
         try:
@@ -238,11 +238,11 @@ class IRODSObjectStore(DiskObjectStore):
         # reads data into a var, closes, and returns the var
 
     @local_extra_dirs
-    def get_filename(self, obj, **kwargs):
+    def _get_filename(self, obj, **kwargs):
         log.debug("get_filename(): called on %s %s. For better performance, avoid this method and use get_data() instead.", obj.__class__.__name__, obj.id)
         cached_path = self.__get_cache_path(obj, **kwargs)
 
-        if not self.exists(obj, **kwargs):
+        if not self._exists(obj, **kwargs):
             raise ObjectNotFound()
 
         # TODO: implement or define whether dir_only is valid
@@ -286,11 +286,11 @@ class IRODSObjectStore(DiskObjectStore):
         return os.path.abspath(cached_path)
 
     @local_extra_dirs
-    def update_from_file(self, obj, file_name=None, create=False, **kwargs):
+    def _update_from_file(self, obj, file_name=None, create=False, **kwargs):
         assert 'dir_only' not in kwargs, 'update_from_file(): `dir_only` parameter is invalid here'
 
         # do not create if not requested
-        if create and not self.exists(obj, **kwargs):
+        if create and not self._exists(obj, **kwargs):
             raise ObjectNotFound()
 
         if file_name is None:
@@ -311,10 +311,10 @@ class IRODSObjectStore(DiskObjectStore):
         status = irods.rcDataObjPut(self.rods_conn, doi, file_name)
         assert status == 0, 'update_from_file(): iput %s failed (%s): %s' % (doi.objPath, status, irods.strerror(status))
 
-    def get_object_url(self, obj, **kwargs):
+    def _get_object_url(self, obj, **kwargs):
         return None
 
-    def get_store_usage_percent(self):
+    def _get_store_usage_percent(self):
         return 0.0
 
 
