@@ -4,19 +4,19 @@ import pyre from "pyre-to-regexp";
 
 const NEW_COLUMN = "new";
 
-const multiColumnsToString = function(targetColumns, colHeaders) {
+const multiColumnsToString = function (targetColumns, colHeaders) {
     if (targetColumns.length == 0) {
         return `no columns`;
     } else if (targetColumns.length == 1) {
         return `column ${colHeaders[targetColumns[0]]}`;
     } else {
-        const targetHeaders = targetColumns.map(el => colHeaders[el]);
+        const targetHeaders = targetColumns.map((el) => colHeaders[el]);
         // https://stackoverflow.com/questions/16251822/array-to-comma-separated-string-and-for-last-tag-use-the-and-instead-of-comma
         return `columns ${[targetHeaders.slice(0, -1).join(", "), targetHeaders.slice(-1)[0]].join(" and ")}`;
     }
 };
 
-const removeColumns = function(columns, targetColumns) {
+const removeColumns = function (columns, targetColumns) {
     const newColumns = [];
     for (const index in columns) {
         if (targetColumns.indexOf(index) === -1) {
@@ -26,7 +26,7 @@ const removeColumns = function(columns, targetColumns) {
     return newColumns;
 };
 
-const applyRegex = function(regex, target, data, replacement, groupCount) {
+const applyRegex = function (regex, target, data, replacement, groupCount) {
     let regExp;
     try {
         regExp = pyre(String(regex));
@@ -93,7 +93,7 @@ const RULES = {
             columns.push(NEW_COLUMN);
             rval.columns = columns;
             return rval;
-        }
+        },
     },
     add_column_rownum: {
         title: _l("Row Number"),
@@ -121,7 +121,7 @@ const RULES = {
             data = data.map(newRow);
             columns.push(NEW_COLUMN);
             return { data, columns };
-        }
+        },
     },
     add_column_value: {
         title: _l("Fixed Value"),
@@ -148,7 +148,7 @@ const RULES = {
             data = data.map(newRow);
             columns.push(NEW_COLUMN);
             return { data, columns };
-        }
+        },
     },
     add_column_metadata: {
         title: _l("Add Column from Metadata"),
@@ -195,7 +195,7 @@ const RULES = {
             data = data.map(newRow);
             columns.push(NEW_COLUMN);
             return { data, columns };
-        }
+        },
     },
     add_column_group_tag_value: {
         title: _l("Add Column from Group Tag Value"),
@@ -236,7 +236,7 @@ const RULES = {
             data = data.map(newRow);
             columns.push(NEW_COLUMN);
             return { data, columns };
-        }
+        },
     },
     add_column_regex: {
         title: _l("Using a Regular Expression"),
@@ -279,7 +279,7 @@ const RULES = {
             columns.push(NEW_COLUMN);
             rval.columns = columns;
             return rval;
-        }
+        },
     },
     add_column_concatenate: {
         title: _l("Concatenate Columns"),
@@ -312,7 +312,7 @@ const RULES = {
             data = data.map(newRow);
             columns.push(NEW_COLUMN);
             return { data, columns };
-        }
+        },
     },
     add_column_substr: {
         title: _l("Keep or Trim Prefix or Suffix"),
@@ -357,8 +357,8 @@ const RULES = {
             function newRow(row) {
                 const newRow = row.slice();
                 const originalValue = row[target];
-                let start = 0,
-                    end = originalValue.length;
+                let start = 0;
+                let end = originalValue.length;
                 if (type == "keep_prefix") {
                     end = length;
                 } else if (type == "drop_prefix") {
@@ -380,7 +380,7 @@ const RULES = {
             data = data.map(newRow);
             columns.push(NEW_COLUMN);
             return { data };
-        }
+        },
     },
     remove_columns: {
         title: _l("Remove Column(s)"),
@@ -412,7 +412,7 @@ const RULES = {
             data = data.map(newRow);
             columns = removeColumns(columns, targets);
             return { data, columns };
-        }
+        },
     },
     add_filter_regex: {
         title: _l("Using a Regular Expression"),
@@ -447,14 +447,14 @@ const RULES = {
             }
             const target = rule.target_column;
             const invert = rule.invert;
-            const filterFunction = function(el, index) {
+            const filterFunction = function (el, index) {
                 const row = data[parseInt(index, 10)];
                 return regExp.exec(row[target]) ? !invert : invert;
             };
             sources = sources.filter(filterFunction);
             data = data.filter(filterFunction);
             return { data, sources };
-        }
+        },
     },
     add_filter_count: {
         title: _l("First or Last N Rows"),
@@ -492,7 +492,7 @@ const RULES = {
             const invert = rule.invert;
             const which = rule.which;
             const dataLength = data.length;
-            const filterFunction = function(el, index) {
+            const filterFunction = function (el, index) {
                 let matches;
                 if (which == "first") {
                     matches = index >= count;
@@ -504,7 +504,7 @@ const RULES = {
             sources = sources.filter(filterFunction);
             data = data.filter(filterFunction);
             return { data, sources };
-        }
+        },
     },
     add_filter_empty: {
         title: _l("On Emptiness"),
@@ -527,14 +527,14 @@ const RULES = {
         apply: (rule, data, sources, columns) => {
             const target = rule.target_column;
             const invert = rule.invert;
-            const filterFunction = function(el, index) {
+            const filterFunction = function (el, index) {
                 const row = data[parseInt(index, 10)];
                 return row[target].length ? !invert : invert;
             };
             sources = sources.filter(filterFunction);
             data = data.filter(filterFunction);
             return { data, sources };
-        }
+        },
     },
     add_filter_matches: {
         title: _l("Matching a Supplied Value"),
@@ -561,14 +561,14 @@ const RULES = {
             const target = rule.target_column;
             const invert = rule.invert;
             const value = rule.value;
-            const filterFunction = function(el, index) {
+            const filterFunction = function (el, index) {
                 const row = data[parseInt(index, 10)];
                 return row[target] == value ? !invert : invert;
             };
             sources = sources.filter(filterFunction);
             data = data.filter(filterFunction);
             return { data, sources };
-        }
+        },
     },
     add_filter_compare: {
         title: _l("By Comparing to a Numeric Value"),
@@ -597,7 +597,7 @@ const RULES = {
             const target = rule.target_column;
             const compare_type = rule.compare_type;
             const value = rule.value;
-            const filterFunction = function(el, index) {
+            const filterFunction = function (el, index) {
                 const row = data[parseInt(index, 10)];
                 const targetValue = parseFloat(row[target]);
                 let matches;
@@ -615,7 +615,7 @@ const RULES = {
             sources = sources.filter(filterFunction);
             data = data.filter(filterFunction);
             return { data, sources };
-        }
+        },
     },
     sort: {
         title: _l("Sort"),
@@ -662,13 +662,13 @@ const RULES = {
             const newData = [];
             const newSources = [];
 
-            sortable.map(zipped => {
+            sortable.map((zipped) => {
                 newData.push(zipped[0]);
                 newSources.push(zipped[1]);
             });
 
             return { data: newData, sources: newSources };
-        }
+        },
     },
     swap_columns: {
         title: _l("Swap Column(s)"),
@@ -702,7 +702,7 @@ const RULES = {
             columns[target0] = columns[target1];
             columns[target1] = tempColumn;
             return { data, columns };
-        }
+        },
     },
     split_columns: {
         title: _l("Split Column(s)"),
@@ -726,9 +726,9 @@ const RULES = {
             const targets0 = rule.target_columns_0;
             const targets1 = rule.target_columns_1;
 
-            const splitRow = function(row) {
-                const newRow0 = [],
-                    newRow1 = [];
+            const splitRow = function (row) {
+                const newRow0 = [];
+                const newRow1 = [];
                 for (let index in row) {
                     index = parseInt(index, 10);
                     if (targets0.indexOf(index) > -1) {
@@ -743,11 +743,11 @@ const RULES = {
                 return [newRow0, newRow1];
             };
             data = flatMap(splitRow, data);
-            sources = flatMap(src => [src, src], sources);
+            sources = flatMap((src) => [src, src], sources);
             columns = removeColumns(columns, targets0);
             return { data, sources, columns };
-        }
-    }
+        },
+    },
 };
 
 const MAPPING_TARGETS = {
@@ -758,7 +758,7 @@ const MAPPING_TARGETS = {
         help: _l(
             "This should be a short description of the replicate, sample name, condition, etc... that describes each level of the list structure."
         ),
-        importType: "collections"
+        importType: "collections",
     },
     paired_identifier: {
         label: _l("Paired-end Indicator"),
@@ -766,7 +766,7 @@ const MAPPING_TARGETS = {
         help: _l(
             "This should be set to '1', 'R1', 'forward', 'f', or 'F' to indicate forward reads, and '2', 'r', 'reverse', 'R2', 'R', or 'R2' to indicate reverse reads."
         ),
-        importType: "collections"
+        importType: "collections",
     },
     collection_name: {
         label: _l("Collection Name"),
@@ -774,13 +774,13 @@ const MAPPING_TARGETS = {
             "If this is set, all rows with the same collection name will be joined into a collection and it is possible to create multiple collections at once."
         ),
         modes: ["raw", "ftp", "datasets", "library_datasets"],
-        importType: "collections"
+        importType: "collections",
     },
     name_tag: {
         label: _l("Name Tag"),
         help: _l("Add a name tag or hash tag based on the specified column value for imported datasets."),
         importType: "datasets",
-        modes: ["raw", "ftp"]
+        modes: ["raw", "ftp"],
     },
     tags: {
         multiple: true,
@@ -788,7 +788,7 @@ const MAPPING_TARGETS = {
         help: _l(
             "Add a general purpose tag based on the specified column value, use : to separate key-value pairs if desired. These tags are not propagated to derived datasets the way name and group tags are."
         ),
-        modes: ["raw", "ftp", "datasets", "library_datasets"]
+        modes: ["raw", "ftp", "datasets", "library_datasets"],
     },
     group_tags: {
         multiple: true,
@@ -796,32 +796,32 @@ const MAPPING_TARGETS = {
         help: _l(
             "Add a group tag based on the specified column value, use : to separate key-value pairs. These tags are propagated to derived datasets and may be useful for factorial experiments."
         ),
-        modes: ["raw", "ftp", "datasets", "library_datasets"]
+        modes: ["raw", "ftp", "datasets", "library_datasets"],
     },
     name: {
         label: _l("Name"),
-        importType: "datasets"
+        importType: "datasets",
     },
     dbkey: {
         label: _l("Genome"),
-        modes: ["raw", "ftp"]
+        modes: ["raw", "ftp"],
     },
     file_type: {
         label: _l("Type"),
         modes: ["raw", "ftp"],
-        help: _l("This should be the Galaxy file type corresponding to this file.")
+        help: _l("This should be the Galaxy file type corresponding to this file."),
     },
     url: {
         label: _l("URL"),
         modes: ["raw"],
-        help: _l("This should be a URL the file can be downloaded from.")
+        help: _l("This should be a URL the file can be downloaded from."),
     },
     info: {
         label: _l("Info"),
         help: _l(
             "Unstructured text associated with the dataset that shows up in the history panel, this is optional and can be whatever you would like."
         ),
-        modes: ["raw", "ftp"]
+        modes: ["raw", "ftp"],
     },
     ftp_path: {
         label: _l("FTP Path"),
@@ -829,14 +829,14 @@ const MAPPING_TARGETS = {
         help: _l(
             "This should be the path to the target file to include relative to your FTP directory on the Galaxy server"
         ),
-        requiresFtp: true
-    }
+        requiresFtp: true,
+    },
 };
 
-const columnDisplay = function(columns, colHeaders) {
+const columnDisplay = function (columns, colHeaders) {
     let columnNames;
     if (typeof columns == "object") {
-        columnNames = columns.map(idx => colHeaders[idx]);
+        columnNames = columns.map((idx) => colHeaders[idx]);
     } else {
         columnNames = [colHeaders[columns]];
     }
@@ -849,7 +849,7 @@ const columnDisplay = function(columns, colHeaders) {
     }
 };
 
-const colHeadersFor = function(data, columns) {
+const colHeadersFor = function (data, columns) {
     if (data.length == 0) {
         if (columns) {
             return columns.map((el, i) => String.fromCharCode(65 + i));
@@ -861,7 +861,7 @@ const colHeadersFor = function(data, columns) {
     }
 };
 
-const applyRules = function(data, sources, columns, rules, headersPerRule = []) {
+const applyRules = function (data, sources, columns, rules, headersPerRule = []) {
     const colHeadersPerRule = Array.from(headersPerRule);
     let hasRuleError = false;
     for (var ruleIndex in rules) {
@@ -896,5 +896,5 @@ export default {
     columnDisplay: columnDisplay,
     colHeadersFor: colHeadersFor,
     RULES: RULES,
-    MAPPING_TARGETS: MAPPING_TARGETS
+    MAPPING_TARGETS: MAPPING_TARGETS,
 };

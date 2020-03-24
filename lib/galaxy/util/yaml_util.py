@@ -10,13 +10,6 @@ from yaml.constructor import ConstructorError
 
 log = logging.getLogger(__name__)
 
-OPTION_DEFAULTS = {
-    "type": "str",
-    "unknown_option": False,
-    "default": None,
-    "desc": None,
-}
-
 
 class OrderedLoader(yaml.SafeLoader):
     # This class was pulled out of ordered_load() for the sake of

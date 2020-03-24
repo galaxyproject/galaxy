@@ -5,7 +5,7 @@ import _ from "underscore";
 // grid view templates
 export default {
     // template
-    grid: function(options) {
+    grid: function (options) {
         let tmpl;
         if (options.embedded) {
             tmpl = this.grid_header(options) + this.grid_table(options);
@@ -38,7 +38,7 @@ export default {
     },
 
     // template
-    grid_table: function() {
+    grid_table: function () {
         return `
             <form method="post" onsubmit="return false;">
                 <table id="grid-table" class="grid">
@@ -50,7 +50,7 @@ export default {
     },
 
     // template
-    grid_header: function(options) {
+    grid_header: function (options) {
         var tmpl = '<div class="grid-header">';
         if (!options.embedded) {
             let id_str = "";
@@ -88,7 +88,7 @@ export default {
     },
 
     // template
-    header: function(options) {
+    header: function (options) {
         // start
         var tmpl = "<tr>";
 
@@ -124,7 +124,7 @@ export default {
     },
 
     // template
-    body: function(options) {
+    body: function (options) {
         // initialize
         var tmpl = "";
         var items_length = options.items.length;
@@ -204,7 +204,7 @@ export default {
     },
 
     // template
-    footer: function(options) {
+    footer: function (options) {
         // create template string
         var tmpl = "";
 
@@ -334,7 +334,7 @@ export default {
     },
 
     // template
-    message: function(options) {
+    message: function (options) {
         var status = options.status;
         if (["success", "ok"].indexOf(status) != -1) {
             status = "done";
@@ -345,7 +345,7 @@ export default {
     },
 
     // template
-    grid_filters: function(options) {
+    grid_filters: function (options) {
         // get filters
         var default_filter_dict = options.default_filter_dict;
         var filters = options.filters;
@@ -419,7 +419,7 @@ export default {
     },
 
     // template
-    grid_column_filter: function(options, column) {
+    grid_column_filter: function (options, column) {
         // collect parameters
         var filters = options.filters;
         var column_label = column.label;
@@ -544,8 +544,8 @@ export default {
     },
 
     // template for filter items
-    filter_element: function(filter_key, filter_value) {
+    filter_element: function (filter_key, filter_value) {
         filter_value = Utils.sanitize(filter_value);
         return `<span class="text-filter-val">${filter_value}<a href="javascript:void(0);" filter_key="${filter_key}" filter_val="${filter_value}"><i class="fa fa-times" style="padding-left: 5px; padding-bottom: 6px;"/></a></span>`;
-    }
+    },
 };

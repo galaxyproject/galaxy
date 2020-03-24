@@ -34,7 +34,7 @@ def main():
         # not included in the index.
         offset += feature.raw_size
 
-    index.write(open(out_fname, "w"))
+    index.write(open(out_fname, "wb"))
 
 
 if __name__ == "__main__":

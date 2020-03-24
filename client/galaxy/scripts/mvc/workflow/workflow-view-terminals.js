@@ -1,104 +1,47 @@
 import $ from "jquery";
-import _ from "underscore";
-import Backbone from "backbone";
 import Terminals from "mvc/workflow/workflow-terminals";
 import Connector from "mvc/workflow/workflow-connector";
 import ariaAlert from "utils/ariaAlert";
 
-// TODO; tie into Galaxy state?
-window.workflow_globals = window.workflow_globals || {};
+var NODEINDEX = 0;
 
-var TerminalMappingView = Backbone.View.extend({
-    tagName: "div",
-    className: "fa-icon-button fa fa-folder-o",
-    initialize: function(options) {
-        var mapText = "Run tool in parallel over collection";
-        this.$el.tooltip({ delay: 500, title: mapText });
-        this.model.bind("change", _.bind(this.render, this));
-    },
-    render: function() {
-        if (this.model.mapOver.isCollection) {
-            this.$el.show();
-        } else {
-            this.$el.hide();
-        }
-    }
-});
-
-var InputTerminalMappingView = TerminalMappingView.extend({
-    events: {
-        click: "onClick",
-        mouseenter: "onMouseEnter",
-        mouseleave: "onMouseLeave"
-    },
-    onMouseEnter: function(e) {
-        var model = this.model;
-        if (!model.terminal.connected() && model.mapOver.isCollection) {
-            this.$el.css("color", "red");
-        }
-    },
-    onMouseLeave: function(e) {
-        this.$el.css("color", "black");
-    },
-    onClick: function(e) {
-        var model = this.model;
-        if (!model.terminal.connected() && model.mapOver.isCollection) {
-            // TODO: Consider prompting...
-            model.terminal.resetMapping();
-        }
-    }
-});
-
-var TerminalView = Backbone.View.extend({
-    setupMappingView: function(terminal) {
-        var terminalMapping = new this.terminalMappingClass({
-            terminal: terminal
-        });
-        var terminalMappingView = new this.terminalMappingViewClass({
-            model: terminalMapping
-        });
-        terminalMappingView.render();
-        terminal.terminalMappingView = terminalMappingView;
-        this.terminalMappingView = terminalMappingView;
-    },
-    terminalElements: function() {
-        if (this.terminalMappingView) {
-            return [this.terminalMappingView.el, this.el];
-        } else {
-            return [this.el];
-        }
-    }
-});
-
-var BaseInputTerminalView = TerminalView.extend({
-    className: "terminal input-terminal",
-    initialize: function(options) {
+class BaseInputTerminalView {
+    constructor(app, options = {}) {
+        this.app = app;
+        this.el = document.createElement("div");
+        this.el.className = "terminal input-terminal";
         const node = options.node;
         const input = options.input;
         const name = input.name;
-        const id = `node-${node.cid}-input-${name}`;
-        const terminal = this.terminalForInput(input);
-        this.setupMappingView(terminal);
-        this.el.terminal = terminal;
+        const nodeIndex = NODEINDEX++;
+        this.id = `node-${nodeIndex}-input-${name}`;
+        this.terminal = this.terminalForInput(input);
+        this.terminal.node = node;
+        this.terminal.name = name;
+        this.terminal.label = input.label;
+        node.input_terminals[name] = this.terminal;
+        this.el.terminal = this.terminal;
+        this.$el = $(this.el);
         this.$el.attr("input-name", name);
-        this.$el.attr("id", id);
+        this.$el.attr("id", this.id);
         this.$el.append($("<icon/>"));
-        this.id = id;
-
-        terminal.node = node;
-        terminal.name = name;
-        terminal.label = input.label;
-        node.input_terminals[name] = terminal;
-    },
-    events: {
-        dropinit: "onDropInit",
-        dropstart: "onDropStart",
-        dropend: "onDropEnd",
-        drop: "onDrop",
-        hover: "onHover"
-    },
-    onDropInit: function(e, d) {
-        var terminal = this.el.terminal;
+        const self = this;
+        this.$el.on("dropinit", (e, d) => self.onDropInit(e, d));
+        this.$el.on("dropstart", (e, d) => self.onDropStart(e, d));
+        this.$el.on("dropend", (e, d) => self.onDropEnd(e, d));
+        this.$el.on("drop", (e, d) => self.onDrop(e, d));
+        this.$el.on("hover", () => self.onHover());
+        this.terminal.on("change", this.render.bind(this));
+    }
+    render() {
+        if (this.terminal.mapOver && this.terminal.mapOver.isCollection) {
+            this.$el.addClass("multiple");
+        } else {
+            this.$el.removeClass("multiple");
+        }
+    }
+    onDropInit(e, d = {}) {
+        var terminal = this.terminal;
         // Accept a dragable if it is an output terminal and has a
         // compatible type
         var connectionAcceptable = $(d.drag).hasClass("output-terminal") && terminal.canAccept(d.drag.terminal);
@@ -113,14 +56,14 @@ var BaseInputTerminalView = TerminalView.extend({
         }
 
         return true;
-    },
-    onDropStart: function(e, d) {
+    }
+    onDropStart(e, d = {}) {
         if (d.proxy.terminal) {
             if (this.$el.hasClass("can-accept")) {
-                d.proxy.terminal.connectors[0].inner_color = "#BBFFBB";
+                d.proxy.terminal.connectors[0].dropStart(true);
                 d.proxy.dropTooltip = "";
             } else {
-                d.proxy.terminal.connectors[0].inner_color = "#fe7f02";
+                d.proxy.terminal.connectors[0].dropStart(false);
                 if (this.reason) {
                     d.proxy.dropTooltip = this.reason;
                     $(d.proxy).tooltip("show");
@@ -129,23 +72,23 @@ var BaseInputTerminalView = TerminalView.extend({
                 }
             }
         }
-    },
-    onDropEnd: function(e, d) {
+    }
+    onDropEnd(e, d = {}) {
         d.proxy.dropTooltip = "";
         if (d.proxy.terminal) {
-            d.proxy.terminal.connectors[0].inner_color = "#FFFFFF";
+            d.proxy.terminal.connectors[0].dropEnd();
         }
-    },
-    onDrop: function(e, d) {
+    }
+    onDrop(e, d = {}) {
         d.proxy.dropTooltip = "";
         if (this.$el.hasClass("can-accept")) {
-            const terminal = this.el.terminal;
-            new Connector(d.drag.terminal, terminal).redraw();
+            const terminal = this.terminal;
+            const c = new Connector(this.app.canvas_manager, d.drag.terminal, terminal);
+            c.redraw();
         }
-    },
-    onHover: function() {
-        const element = this.el;
-        const terminal = element.terminal;
+    }
+    onHover() {
+        const terminal = this.terminal;
         // If connected, create a popup to allow disconnection
         if (terminal.connectors.length > 0) {
             const t = $("<div/>")
@@ -161,98 +104,108 @@ var BaseInputTerminalView = TerminalView.extend({
                 .on("mouseleave", () => {
                     t.remove();
                 });
-            $(element)
-                .parent()
-                .append(t);
+            $(this.el).parent().append(t);
         }
     }
-});
+}
 
-var InputTerminalView = BaseInputTerminalView.extend({
-    terminalMappingClass: Terminals.TerminalMapping,
-    terminalMappingViewClass: InputTerminalMappingView,
-    terminalForInput: function(input) {
+export class InputTerminalView extends BaseInputTerminalView {
+    constructor(app, options = {}) {
+        super(app, options);
+    }
+    terminalForInput(input) {
         return new Terminals.InputTerminal({
+            app: this.app,
             element: this.el,
-            input: input
+            input: input,
         });
     }
-});
+}
 
-var InputParameterTerminalView = BaseInputTerminalView.extend({
-    terminalMappingClass: Terminals.TerminalMapping,
-    terminalMappingViewClass: InputTerminalMappingView,
-    terminalForInput: function(input) {
+export class InputParameterTerminalView extends BaseInputTerminalView {
+    constructor(app, options = {}) {
+        super(app, options);
+    }
+    terminalForInput(input) {
         return new Terminals.InputParameterTerminal({
+            app: this.app,
             element: this.el,
-            input: input
+            input: input,
         });
     }
-});
+}
 
-var InputCollectionTerminalView = BaseInputTerminalView.extend({
-    terminalMappingClass: Terminals.TerminalMapping,
-    terminalMappingViewClass: InputTerminalMappingView,
-    terminalForInput: function(input) {
+export class InputCollectionTerminalView extends BaseInputTerminalView {
+    constructor(app, options = {}) {
+        super(app, options);
+    }
+    terminalForInput(input = {}) {
         return new Terminals.InputCollectionTerminal({
+            app: this.app,
             element: this.el,
-            input: input
+            input: input,
         });
     }
-});
+}
 
-var BaseOutputTerminalView = TerminalView.extend({
-    className: "terminal output-terminal",
-    initialize: function(options) {
+export class BaseOutputTerminalView {
+    constructor(app, options) {
+        this.app = app;
+        this.el = document.createElement("div");
+        this.el.className = "terminal output-terminal";
         const node = options.node;
         const output = options.output;
         const name = output.name;
-        const id = `node-${node.cid}-output-${name}`;
-        const terminal = this.terminalForOutput(output);
-        this.setupMappingView(terminal);
-        this.el.terminal = terminal;
+        const nodeIndex = NODEINDEX++;
+        this.id = `node-${nodeIndex}-output-${name}`;
+        this.terminal = this.terminalForOutput(output);
+        this.terminal.node = node;
+        this.terminal.name = name;
+        this.terminal.label = output.label;
+        node.output_terminals[name] = this.terminal;
+        this.el.terminal = this.terminal;
+        this.$el = $(this.el);
+        this.$el.attr("output-name", name);
+        this.$el.attr("id", this.id);
+        this.$el.append($("<icon/>"));
         this.$el.attr(
             "aria-label",
             `connect output ${name} from ${node.name} to input. Press space to see a list of available inputs`
         );
-        this.$el.attr("output-name", name);
-        this.$el.attr("id", id);
         this.$el.attr("tabindex", "0");
         this.$el.attr("aria-grabbed", "false");
-        this.$el.append($("<icon/>"));
-        terminal.node = node;
-        terminal.name = name;
-        terminal.label = output.label;
-        node.output_terminals[name] = terminal;
-    },
-    events: {
-        drag: "onDrag",
-        dragstart: "onDragStart",
-        dragend: "onDragEnd",
-        keydown: "screenReaderSelectOutputNode"
-    },
-
-    screenReaderSelectOutputNode: function(e) {
-        const inputChoiceKeyDown = e => {
+        const self = this;
+        this.$el.on("drag", (d, e) => self.onDrag(d, e));
+        this.$el.on("dragstart", (d, e) => self.onDragStart(d, e));
+        this.$el.on("dragend", (d, e) => self.onDragEnd(d, e));
+        this.$el.on("keydown", (e) => self.screenReaderSelectOutputNode(e));
+        this.terminal.on("change", this.render.bind(this));
+    }
+    render() {
+        if (this.terminal.mapOver && this.terminal.mapOver.isCollection) {
+            this.$el.addClass("multiple");
+        } else {
+            this.$el.removeClass("multiple");
+        }
+    }
+    screenReaderSelectOutputNode(e) {
+        const inputChoiceKeyDown = (e) => {
             e.stopPropagation();
             const currentItem = e.currentTarget;
             const previousItem = currentItem.previousSibling;
             const nextItem = currentItem.nextSibling;
             const inputTerminal = currentItem.input.context.terminal;
-
             const switchActiveItem = (currentActive, newActive) => {
                 newActive.classList.add("active");
                 newActive.focus();
                 currentActive.classList.remove("active");
             };
-
             const removeMenu = () => {
                 $(currentItem.parentNode).remove();
                 this.$el.removeAttr("aria-owns");
                 this.$el.attr("aria-grabbed", "false");
                 this.$el.focus();
             };
-
             switch (e.keyCode) {
                 case 40: // Down arrow
                     if (nextItem) {
@@ -270,15 +223,14 @@ var BaseOutputTerminalView = TerminalView.extend({
                     break;
                 case 32: // Space
                     removeMenu();
-                    new Connector(this.el.terminal, inputTerminal).redraw();
+                    new Connector(this.app.canvas_manager, this.terminal, inputTerminal).redraw();
                     ariaAlert("Node connected");
-
                     if (inputTerminal.connectors.length > 0) {
                         const t = $("<div/>")
                             .addClass("delete-terminal")
                             .attr("tabindex", "0")
                             .attr("aria-label", "delete terminal")
-                            .on("keydown click", e => {
+                            .on("keydown click", (e) => {
                                 if (e.keyCode === 32 || e.type === "click") {
                                     //Space or Click
                                     $.each(inputTerminal.connectors, (_, x) => {
@@ -290,16 +242,14 @@ var BaseOutputTerminalView = TerminalView.extend({
                                     t.remove();
                                 }
                             });
-                        $(currentItem.input)
-                            .parent()
-                            .append(t);
+                        $(currentItem.input).parent().append(t);
                     }
                     break;
             }
         };
         const buildInputChoicesMenu = () => {
             const inputChoicesMenu = document.createElement("ul");
-            $(inputChoicesMenu).focusout(e => {
+            $(inputChoicesMenu).focusout((e) => {
                 /* focus is still inside child element of menu so don't hide */
                 if (inputChoicesMenu.contains(e.relatedTarget)) {
                     return;
@@ -311,11 +261,10 @@ var BaseOutputTerminalView = TerminalView.extend({
             inputChoicesMenu.setAttribute("role", "menu");
             this.$el.attr("aria-grabbed", "true");
             this.$el.attr("aria-owns", "input-choices-menu");
-
             $(".input-terminal").each((i, el) => {
                 const input = $(el);
                 const inputTerminal = input.context.terminal;
-                const connectionAcceptable = inputTerminal.canAccept(this.el.terminal);
+                const connectionAcceptable = inputTerminal.canAccept(this.terminal);
                 if (connectionAcceptable.canAccept) {
                     const inputChoiceItem = document.createElement("li");
                     inputChoiceItem.textContent = `${inputTerminal.name} in ${inputTerminal.node.name} node`;
@@ -335,92 +284,75 @@ var BaseOutputTerminalView = TerminalView.extend({
                 ariaAlert("There are no available inputs for this selected output");
             }
         };
-
         if (e.keyCode === 32) {
             //Space
             ariaAlert("Node selected");
             buildInputChoicesMenu();
         }
-    },
-    onDrag: function(e, d) {
+    }
+    onDrag(e, d = {}) {
         var onmove = () => {
-            // FIXME: global
-            var canvasZoom = window.workflow_globals.canvas_manager.canvasZoom;
-            var po = $(d.proxy)
-                .offsetParent()
-                .offset();
+            var canvasZoom = this.app.canvas_manager.canvasZoom;
+            var po = $(d.proxy).offsetParent().offset();
 
             var x = d.offsetX - po.left;
             var y = d.offsetY - po.top;
             $(d.proxy).css({ left: x / canvasZoom, top: y / canvasZoom });
             d.proxy.terminal.redraw();
-            // FIXME: global
-            window.workflow_globals.canvas_manager.update_viewport_overlay();
+            this.app.canvas_manager.update_viewport_overlay();
         };
         onmove();
-        $("#canvas-container")
-            .get(0)
-            .scroll_panel.test(e, onmove);
-    },
-    onDragStart: function(e, d) {
+        $("#canvas-container").get(0).scroll_panel.test(e, onmove);
+    }
+    onDragStart(e, d = {}) {
         $(d.available).addClass("input-terminal-active");
-        // Save PJAs in the case of change datatype actions.
-        window.workflow_globals.workflow.check_changes_in_active_form();
         // Drag proxy div
-        var h = $("<div class='drag-terminal'/>")
-            .appendTo("#canvas-container")
-            .get(0);
-
+        var h = $("<div class='drag-terminal'/>").appendTo("#canvas-container").get(0);
         h.dropTooltip = "";
-
         // Terminal and connection to display noodle while dragging
         $(h).tooltip({
-            title: function() {
+            title: function () {
                 return h.dropTooltip || "";
-            }
+            },
         });
         h.terminal = new Terminals.OutputTerminal({ element: h });
-        var c = new Connector();
+        const c = new Connector(this.app.canvas_manager);
         c.dragging = true;
-        c.connect(this.el.terminal, h.terminal);
+        c.connect(this.terminal, h.terminal);
         return h;
-    },
-    onDragEnd: function(e, d) {
+    }
+    onDragEnd(e, d = {}) {
         var connector = d.proxy.terminal.connectors[0];
-        // check_changes_in_active_form may change the state and cause a
-        // the connection to have already been destroyed. There must be better
-        // ways to handle this but the following check fixes some serious GUI
-        // bugs for now.
         if (connector) {
             connector.destroy();
         }
         $(d.proxy).tooltip("dispose");
         $(d.proxy).remove();
         $(d.available).removeClass("input-terminal-active");
-        $("#canvas-container")
-            .get(0)
-            .scroll_panel.stop();
+        $("#canvas-container").get(0).scroll_panel.stop();
     }
-});
+}
 
-var OutputTerminalView = BaseOutputTerminalView.extend({
-    terminalMappingClass: Terminals.TerminalMapping,
-    terminalMappingViewClass: TerminalMappingView,
-    terminalForOutput: function(output) {
+export class OutputTerminalView extends BaseOutputTerminalView {
+    constructor(app, options = {}) {
+        super(app, options);
+    }
+    terminalForOutput(output) {
         var type = output.extensions;
         return new Terminals.OutputTerminal({
             element: this.el,
             datatypes: type,
             force_datatype: output.force_datatype,
-            optional: output.optional
+            optional: output.optional,
         });
     }
-});
+}
 
-var OutputCollectionTerminalView = BaseOutputTerminalView.extend({
-    terminalMappingClass: Terminals.TerminalMapping,
-    terminalMappingViewClass: TerminalMappingView,
-    terminalForOutput: function(output) {
+export class OutputCollectionTerminalView extends BaseOutputTerminalView {
+    constructor(app, options = {}) {
+        super(app, options);
+    }
+    terminalForOutput(output) {
         var collection_type = output.collection_type;
         var collection_type_source = output.collection_type_source;
         return new Terminals.OutputCollectionTerminal({
@@ -429,28 +361,29 @@ var OutputCollectionTerminalView = BaseOutputTerminalView.extend({
             collection_type_source: collection_type_source,
             datatypes: output.extensions,
             force_datatype: output.force_datatype,
-            optional: output.optional
+            optional: output.optional,
         });
     }
-});
+}
 
-var OutputParameterTerminalView = BaseOutputTerminalView.extend({
-    terminalMappingClass: Terminals.TerminalMapping,
-    terminalMappingViewClass: TerminalMappingView,
-    terminalForOutput: function(output) {
+export class OutputParameterTerminalView extends BaseOutputTerminalView {
+    constructor(app, options = {}) {
+        super(app, options);
+    }
+    terminalForOutput(output) {
         return new Terminals.OutputParameterTerminal({
             element: this.el,
             type: output.type,
-            optional: output.optional
+            optional: output.optional,
         });
     }
-});
+}
 
 export default {
     InputTerminalView: InputTerminalView,
     InputParameterTerminalView: InputParameterTerminalView,
+    InputCollectionTerminalView: InputCollectionTerminalView,
     OutputTerminalView: OutputTerminalView,
     OutputParameterTerminalView: OutputParameterTerminalView,
-    InputCollectionTerminalView: InputCollectionTerminalView,
-    OutputCollectionTerminalView: OutputCollectionTerminalView
+    OutputCollectionTerminalView: OutputCollectionTerminalView,
 };

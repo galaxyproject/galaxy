@@ -21,6 +21,8 @@ jobs:
         ports:
           - 5432:5432
     steps:
+    - name: Prune unused docker image, volumes and containers
+      run: docker system prune -a -f
     - name: Setup Minikube
       if: matrix.subset == 'kubernetes'
       id: minikube
@@ -32,9 +34,8 @@ jobs:
       if: matrix.subset == 'kubernetes'
       run: |
         kubectl get pods
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
       with:
-        fetch-depth: 1
         path: 'galaxy root'
     - uses: actions/setup-python@v1
       with:
@@ -44,6 +45,7 @@ jobs:
       id: pip-cache
       with:
         path: ~/.cache/pip
-        key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('requirements.txt') }}
+        key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
     - name: Run tests
       run: './run_tests.sh -integration test/integration -- -k "${{ matrix.subset }}"'
+      working-directory: 'galaxy root'

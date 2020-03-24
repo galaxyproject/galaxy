@@ -10,7 +10,7 @@ export class AwsConfig extends BaseModel {
     }
 }
 
-AwsConfig.setValidator(function(model) {
+AwsConfig.setValidator(function (model) {
     const errors = {};
     if (!model.role_arn.length) {
         errors.role_arn = "Missing role_arn";
@@ -22,6 +22,6 @@ AwsConfig.fields = {
     role_arn: {
         label: "Role ARN",
         description: "The Amazon resource name (ARN) of the role to be assumed by Galaxy.",
-        placeholder: "arn:aws:iam::XXXXXXXXXXXX:role/XXXXXXXXXXX"
-    }
+        placeholder: "arn:aws:iam::XXXXXXXXXXXX:role/XXXXXXXXXXX",
+    },
 };

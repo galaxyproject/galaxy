@@ -10,7 +10,7 @@ import { createTag } from "./model";
 
 describe("Tags/Tags.vue", () => {
     const localVue = createLocalVue();
-    localVue.filter("localize", value => _l(value));
+    localVue.filter("localize", (value) => _l(value));
     localVue.use(Vuex);
 
     let id = "testId",
@@ -37,15 +37,15 @@ describe("Tags/Tags.vue", () => {
 
         tagService = new TagService({ id, itemClass, context });
 
-        tagService.save = async function(tag) {
+        tagService.save = async function (tag) {
             return createTag(tag);
         };
 
-        tagService.delete = async function(tag) {
+        tagService.delete = async function (tag) {
             return createTag(tag);
         };
 
-        tagService.autocomplete = async function(txt) {
+        tagService.autocomplete = async function (txt) {
             return [txt].map(createTag);
         };
 
@@ -57,8 +57,8 @@ describe("Tags/Tags.vue", () => {
             propsData: {
                 tags: startingTags,
                 storeKey,
-                tagService
-            }
+                tagService,
+            },
         });
 
         emitted = wrapper.emitted();
@@ -121,11 +121,11 @@ describe("Tags/Tags.vue", () => {
             }
         });
 
-        it("should generate autocomplete items when you set the search text", done => {
+        it("should generate autocomplete items when you set the search text", (done) => {
             let sampleTxt = "floobar";
-            subscription = tagService.autocompleteOptions.subscribe(results => {
+            subscription = tagService.autocompleteOptions.subscribe((results) => {
                 expect(results.length).equal(1);
-                results.forEach(r => {
+                results.forEach((r) => {
                     expect(r.text).equal(sampleTxt);
                 });
                 done();
@@ -133,11 +133,11 @@ describe("Tags/Tags.vue", () => {
             tagService.autocompleteSearchText = sampleTxt;
         });
 
-        it("should debounce autocomplete requests", done => {
+        it("should debounce autocomplete requests", (done) => {
             let sampleTxt = "floobar";
-            subscription = tagService.autocompleteOptions.subscribe(results => {
+            subscription = tagService.autocompleteOptions.subscribe((results) => {
                 expect(results.length).equal(1);
-                results.forEach(r => {
+                results.forEach((r) => {
                     expect(r.text).equal(sampleTxt);
                 });
                 done();

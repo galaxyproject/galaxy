@@ -16,13 +16,13 @@ var HistoryDatasetAssociation = _super.extend(
             /** default attributes for a model */
             defaults: _.extend({}, _super.prototype.defaults, hcontentMixin.defaults, {
                 history_content_type: "dataset",
-                model_class: "HistoryDatasetAssociation"
-            })
+                model_class: "HistoryDatasetAssociation",
+            }),
         }
     )
 );
 
 //==============================================================================
 export default {
-    HistoryDatasetAssociation: HistoryDatasetAssociation
+    HistoryDatasetAssociation: HistoryDatasetAssociation,
 };

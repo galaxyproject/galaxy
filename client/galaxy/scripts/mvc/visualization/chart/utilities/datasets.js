@@ -4,7 +4,7 @@ import { getAppRoot } from "onload/loadConfig";
 import Utils from "utils/utils";
 
 /** Assists in assigning the viewport panels */
-var requestPanels = function(options) {
+var requestPanels = function (options) {
     var process = options.process;
     var chart = options.chart;
     var render = options.render;
@@ -15,7 +15,7 @@ var requestPanels = function(options) {
         chart: chart,
         dataset_id: dataset_id,
         dataset_groups: dataset_groups,
-        success: function(result) {
+        success: function (result) {
             try {
                 if (targets.length == result.length) {
                     var valid = true;
@@ -42,19 +42,19 @@ var requestPanels = function(options) {
                 chart.state("failed", err);
                 process.reject();
             }
-        }
+        },
     });
 };
 
 /** Fills request dictionary with data from cache/response */
 var _cache = {};
-var request = function(options) {
+var request = function (options) {
     var groups = options.dataset_groups;
     var dataset_id = options.dataset_id;
     // identify columns needed to fulfill request
     var column_list = [];
-    groups.each(function(group) {
-        _.each(group.get("__data_columns"), function(column_def, column_name) {
+    groups.each(function (group) {
+        _.each(group.get("__data_columns"), function (column_def, column_name) {
             var column = group.get(column_name);
             var block_id = _block_id(dataset_id, column);
             if (
@@ -78,9 +78,9 @@ var request = function(options) {
         data: {
             data_type: "raw_data",
             provider: "dataset-column",
-            indeces: column_list.toString()
+            indeces: column_list.toString(),
         },
-        success: function(response) {
+        success: function (response) {
             var column_length = column_list.length;
             var results = new Array(column_length);
             for (let i = 0; i < results.length; i++) {
@@ -102,18 +102,18 @@ var request = function(options) {
                 _cache[block_id] = results[i];
             }
             _fillFromCache(options);
-        }
+        },
     });
 };
 
 /** Fill data from cache */
-var _fillFromCache = function(options) {
+var _fillFromCache = function (options) {
     var groups = options.dataset_groups;
     var dataset_id = options.dataset_id;
     console.debug("tabular-datasets::_fillFromCache() - Filling request from cache.");
     var limit = 0;
-    groups.each(function(group) {
-        _.each(group.get("__data_columns"), function(column_def, column_name) {
+    groups.each(function (group) {
+        _.each(group.get("__data_columns"), function (column_def, column_name) {
             var column = group.get(column_name);
             var block_id = _block_id(dataset_id, column);
             var column_data = _cache[block_id];
@@ -129,16 +129,16 @@ var _fillFromCache = function(options) {
         }
     }
     var results = [];
-    groups.each(function(group, group_index) {
+    groups.each(function (group, group_index) {
         var dict = Utils.merge({ key: group_index + ":" + group.get("key"), values: [] }, group.attributes);
         for (let j = 0; j < limit; j++) {
             dict.values[j] = { x: parseInt(j) };
         }
         results.push(dict);
     });
-    groups.each(function(group, group_index) {
+    groups.each(function (group, group_index) {
         var values = results[group_index].values;
-        _.each(group.get("__data_columns"), function(column_def, column_name) {
+        _.each(group.get("__data_columns"), function (column_def, column_name) {
             var column = group.get(column_name);
             switch (column) {
                 case "auto":
@@ -169,7 +169,7 @@ var _fillFromCache = function(options) {
 };
 
 /** Get block id */
-var _block_id = function(dataset_id, column) {
+var _block_id = function (dataset_id, column) {
     return dataset_id + "_" + "_" + column;
 };
 

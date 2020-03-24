@@ -648,19 +648,6 @@ class FTPFileToolParameter(ToolParameter):
         return d
 
 
-class GenomespaceFileToolParameter(ToolParameter):
-    """
-    Parameter that takes one of two values.
-    """
-
-    def __init__(self, tool, input_source):
-        super(GenomespaceFileToolParameter, self).__init__(tool, input_source)
-        self.value = input_source.get('value')
-
-    def get_initial_value(self, trans, other_values):
-        return self.value
-
-
 class HiddenToolParameter(ToolParameter):
     """
     Parameter that takes one of two values.
@@ -949,7 +936,7 @@ class SelectToolParameter(ToolParameter):
         # FIXME: Currently only translating values back to labels if they
         #        are not dynamic
         if self.is_dynamic:
-            rval = map(str, value)
+            rval = [str(_) for _ in value]
         else:
             options = list(self.static_options)
             rval = []
@@ -1926,7 +1913,7 @@ class DataToolParameter(BaseDataToolParameter):
             ref = getattr(ref, attribute)
         if call_attribute:
             ref = ref()
-        return ref
+        return str(ref)
 
     def to_dict(self, trans, other_values={}):
         # create dictionary and fill default parameters
@@ -1960,7 +1947,7 @@ class DataToolParameter(BaseDataToolParameter):
         def append(list, hda, name, src, keep=False, subcollection_type=None):
             value = {
                 'id'   : trans.security.encode_id(hda.id),
-                'hid'  : hda.hid,
+                'hid'  : hda.hid if hda.hid is not None else -1,
                 'name' : name,
                 'tags' : [t.user_tname if not t.value else "%s:%s" % (t.user_tname, t.value) for t in hda.tags],
                 'src'  : src,
@@ -2351,7 +2338,6 @@ parameter_types = dict(
     baseurl=BaseURLToolParameter,
     file=FileToolParameter,
     ftpfile=FTPFileToolParameter,
-    genomespacefile=GenomespaceFileToolParameter,
     data=DataToolParameter,
     data_collection=DataCollectionToolParameter,
     library_data=LibraryDatasetToolParameter,

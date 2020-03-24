@@ -1,5 +1,4 @@
 import $ from "jquery";
-import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
@@ -8,13 +7,13 @@ import Form from "mvc/form/form-view";
 import ToolFormBase from "mvc/tool/tool-form-base";
 
 /** Default form wrapper for non-tool modules in the workflow editor. */
-var Default = Backbone.View.extend({
-    initialize: function(options) {
+export class DefaultForm {
+    constructor(options) {
         var self = this;
         var node = options.node;
         this.form = new Form(
             Utils.merge(options, {
-                onchange: function() {
+                onchange: function () {
                     Utils.request({
                         type: "POST",
                         url: `${getAppRoot()}api/workflows/build_module`,
@@ -22,23 +21,23 @@ var Default = Backbone.View.extend({
                             id: node.id,
                             type: node.type,
                             content_id: node.content_id,
-                            inputs: self.form.data.create()
+                            inputs: self.form.data.create(),
                         },
-                        success: function(data) {
+                        success: function (data) {
                             node.update_field_data(data);
-                        }
+                        },
                     });
-                }
+                },
             })
         );
         _addLabelAnnotation(this.form);
         this.form.render();
     }
-});
+}
 
 /** Tool form wrapper for the workflow editor. */
-var Tool = Backbone.View.extend({
-    initialize: function(options) {
+export class ToolForm {
+    constructor(options) {
         var self = this;
         var node = options.node;
         this.form = new ToolFormBase(
@@ -48,28 +47,28 @@ var Tool = Backbone.View.extend({
                 narrow: true,
                 initial_errors: true,
                 cls: "ui-portlet-section",
-                initialmodel: function(process, form) {
+                initialmodel: function (process, form) {
                     self._customize(form);
                     process.resolve();
                 },
-                buildmodel: function(process, form) {
+                buildmodel: function (process, form) {
                     form.model.get("postchange")(process, form);
                 },
-                postchange: function(process, form) {
+                postchange: function (process, form) {
                     const Galaxy = getGalaxyInstance();
                     var options = form.model.attributes;
                     var current_state = {
                         tool_id: options.id,
                         tool_version: options.version,
                         type: "tool",
-                        inputs: $.extend(true, {}, form.data.create())
+                        inputs: $.extend(true, {}, form.data.create()),
                     };
                     Galaxy.emit.debug("tool-form-workflow::postchange()", "Sending current state.", current_state);
                     Utils.request({
                         type: "POST",
                         url: `${getAppRoot()}api/workflows/build_module`,
                         data: current_state,
-                        success: function(data) {
+                        success: function (data) {
                             form.model.set(data.config_form);
                             self._customize(form);
                             form.update(data.config_form);
@@ -82,19 +81,18 @@ var Tool = Backbone.View.extend({
                             Galaxy.emit.debug("tool-form-workflow::postchange()", "Received new model.", data);
                             process.resolve();
                         },
-                        error: function(response) {
+                        error: function (response) {
                             Galaxy.emit.debug("tool-form-workflow::postchange()", "Refresh request failed.", response);
                             process.reject();
-                        }
+                        },
                     });
-                }
+                },
             })
         );
-    },
-
-    _customize: function(form) {
+    }
+    _customize(form) {
         var options = form.model.attributes;
-        Utils.deepeach(options.inputs, input => {
+        Utils.deepeach(options.inputs, (input) => {
             if (input.type) {
                 input.connectable = true;
                 if (["data", "data_collection"].indexOf(input.type) != -1) {
@@ -103,14 +101,14 @@ var Tool = Backbone.View.extend({
                     input.value = { __class__: "RuntimeValue" };
                 } else if (!input.fixed) {
                     input.collapsible_value = {
-                        __class__: "RuntimeValue"
+                        __class__: "RuntimeValue",
                     };
                     input.is_workflow =
                         (input.options && input.options.length === 0) || ["integer", "float"].indexOf(input.type) != -1;
                 }
             }
         });
-        Utils.deepeach(options.inputs, input => {
+        Utils.deepeach(options.inputs, (input) => {
             if (input.type === "conditional") {
                 input.connectable = false;
                 input.test_param.collapsible_value = undefined;
@@ -119,7 +117,7 @@ var Tool = Backbone.View.extend({
         _addSections(form);
         _addLabelAnnotation(form);
     }
-});
+}
 
 /** Augments the module form definition by adding label and annotation fields */
 function _addLabelAnnotation(form) {
@@ -133,7 +131,7 @@ function _addLabelAnnotation(form) {
         fixed: true,
         value: node.annotation,
         area: true,
-        help: "Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
+        help: "Add an annotation or notes to this step. Annotations are available when a workflow is viewed.",
     });
     options.inputs.unshift({
         type: "text",
@@ -142,7 +140,7 @@ function _addLabelAnnotation(form) {
         value: node.label,
         help: _l("Add a step label."),
         fixed: true,
-        onchange: function(new_label) {
+        onchange: function (new_label) {
             var duplicate = false;
             for (var i in workflow.nodes) {
                 var n = workflow.nodes[i];
@@ -158,7 +156,7 @@ function _addLabelAnnotation(form) {
                 duplicate && "Duplicate label. Please fix this before saving the workflow."
             );
             form.trigger("change");
-        }
+        },
     });
 }
 
@@ -205,7 +203,7 @@ function _makeRenameHelp(name_labels) {
         <ul>
             ${name_labels
                 .map(
-                    name_label => `<li><strong>${name_label.name.replace(/\|/g, ".")}</strong>
+                    (name_label) => `<li><strong>${name_label.name.replace(/\|/g, ".")}</strong>
                                                          ${name_label.label ? `(${name_label.label})` : ""}
                                              </li>`
                 )
@@ -234,15 +232,15 @@ function _makeSection(output_id, label, options) {
     extensions.sort((a, b) => (a.label > b.label ? 1 : a.label < b.label ? -1 : 0));
     extensions.unshift({
         0: "Sequences",
-        1: "Sequences"
+        1: "Sequences",
     });
     extensions.unshift({
         0: "Roadmaps",
-        1: "Roadmaps"
+        1: "Roadmaps",
     });
     extensions.unshift({
         0: "Leave unchanged",
-        1: "__empty__"
+        1: "__empty__",
     });
     var output;
     var input_config = {
@@ -255,9 +253,9 @@ function _makeSection(output_id, label, options) {
                 type: "text",
                 value: ((output = node.getWorkflowOutput(output_id)) && output.label) || "",
                 help: "This will provide a short name to describe the output - this must be unique across workflows.",
-                onchange: function(new_value) {
+                onchange: function (new_value) {
                     workflow.attemptUpdateOutputLabel(node, output_id, new_value);
-                }
+                },
             },
             {
                 action: "RenameDatasetAction",
@@ -266,7 +264,7 @@ function _makeSection(output_id, label, options) {
                 type: "text",
                 value: "",
                 ignore: "",
-                help: rename_help
+                help: rename_help,
             },
             {
                 action: "ChangeDatatypeAction",
@@ -277,12 +275,12 @@ function _makeSection(output_id, label, options) {
                 value: "__empty__",
                 options: extensions,
                 help: "This action will change the datatype of the output to the indicated datatype.",
-                onchange: function(new_value) {
+                onchange: function (new_value) {
                     if (new_value === "__empty__") {
                         new_value = null;
                     }
                     workflow.updateDatatype(node, output_id, new_value);
-                }
+                },
             },
             {
                 action: "TagDatasetAction",
@@ -291,7 +289,7 @@ function _makeSection(output_id, label, options) {
                 type: "text",
                 value: "",
                 ignore: "",
-                help: "This action will set tags for the dataset."
+                help: "This action will set tags for the dataset.",
             },
             {
                 action: "RemoveTagDatasetAction",
@@ -300,7 +298,7 @@ function _makeSection(output_id, label, options) {
                 type: "text",
                 value: "",
                 ignore: "",
-                help: "This action will remove tags for the dataset."
+                help: "This action will remove tags for the dataset.",
             },
             {
                 title: _l("Assign columns"),
@@ -313,7 +311,7 @@ function _makeSection(output_id, label, options) {
                         label: "Chrom column",
                         type: "integer",
                         value: "",
-                        ignore: ""
+                        ignore: "",
                     },
                     {
                         action: "ColumnSetAction",
@@ -321,7 +319,7 @@ function _makeSection(output_id, label, options) {
                         label: "Start column",
                         type: "integer",
                         value: "",
-                        ignore: ""
+                        ignore: "",
                     },
                     {
                         action: "ColumnSetAction",
@@ -329,7 +327,7 @@ function _makeSection(output_id, label, options) {
                         label: "End column",
                         type: "integer",
                         value: "",
-                        ignore: ""
+                        ignore: "",
                     },
                     {
                         action: "ColumnSetAction",
@@ -337,7 +335,7 @@ function _makeSection(output_id, label, options) {
                         label: "Strand column",
                         type: "integer",
                         value: "",
-                        ignore: ""
+                        ignore: "",
                     },
                     {
                         action: "ColumnSetAction",
@@ -345,12 +343,12 @@ function _makeSection(output_id, label, options) {
                         label: "Name column",
                         type: "integer",
                         value: "",
-                        ignore: ""
-                    }
+                        ignore: "",
+                    },
                 ],
-                help: "This action will set column assignments in the output dataset. Blank fields are ignored."
-            }
-        ]
+                help: "This action will set column assignments in the output dataset. Blank fields are ignored.",
+            },
+        ],
     };
     _visit(input_config, [], output_id, options);
     return input_config;
@@ -373,8 +371,8 @@ function _addSections(form) {
             ignore: "false",
             help: _l("An email notification will be sent when the job has completed."),
             payload: {
-                host: window.location.host
-            }
+                host: window.location.host,
+            },
         });
         inputs.push({
             name: `pja__${output_id}__DeleteIntermediatesAction`,
@@ -383,7 +381,7 @@ function _addSections(form) {
             value: String(Boolean(post_job_actions[`DeleteIntermediatesAction${output_id}`])),
             ignore: "false",
             help:
-                "Upon completion of this step, delete non-starred outputs from completed workflow steps if they are no longer required as inputs."
+                "Upon completion of this step, delete non-starred outputs from completed workflow steps if they are no longer required as inputs.",
         });
         for (const output_id in node.output_terminals) {
             const label = node.output_terminals[output_id].label || output_id;
@@ -391,8 +389,3 @@ function _addSections(form) {
         }
     }
 }
-
-export default {
-    Default: Default,
-    Tool: Tool
-};

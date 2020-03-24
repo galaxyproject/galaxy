@@ -15,17 +15,17 @@ export default {
     props: {
         style: {
             type: String,
-            default: "light"
+            default: "light",
         },
         size: {
             type: Number,
-            default: 100
+            default: 100,
         },
         center: {
             type: Boolean,
-            default: false
-        }
-    }
+            default: false,
+        },
+    },
 };
 </script>
 

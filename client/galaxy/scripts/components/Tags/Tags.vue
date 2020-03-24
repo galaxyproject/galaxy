@@ -23,7 +23,7 @@ Vue.use(VueRx);
 
 export default {
     components: {
-        StatelessTags
+        StatelessTags,
     },
 
     props: {
@@ -37,7 +37,7 @@ export default {
         storeKey: { type: String, required: true },
 
         // allows user to edit tag list
-        disabled: { type: Boolean, required: false, default: false }
+        disabled: { type: Boolean, required: false, default: false },
     },
 
     computed: {
@@ -47,16 +47,16 @@ export default {
             },
             set(tags) {
                 this.updateTags({ key: this.storeKey, tags });
-            }
-        }
+            },
+        },
     },
 
     subscriptions() {
         return {
             autocompleteItems: this.tagService.autocompleteOptions.pipe(
                 // without the ones we've already selected
-                map(resultTags => diffTags(resultTags, this.tags))
-            )
+                map((resultTags) => diffTags(resultTags, this.tags))
+            ),
         };
     },
 
@@ -69,14 +69,14 @@ export default {
             this.tagService
                 .save(tag)
                 .then(() => addTag(tag))
-                .catch(err => console.warn("Unable to save tag", err));
+                .catch((err) => console.warn("Unable to save tag", err));
         },
 
         beforeDeletingTag({ tag, deleteTag }) {
             this.tagService
                 .delete(tag)
                 .then(() => deleteTag(tag))
-                .catch(err => console.warn("Unable to delete tag", err));
+                .catch((err) => console.warn("Unable to delete tag", err));
         },
 
         // Set search value on tag service input proprety and eventually search
@@ -87,11 +87,11 @@ export default {
             this.tagService.autocompleteSearchText = searchTxt;
         },
 
-        ...mapActions(["updateTags", "initializeTags"])
+        ...mapActions(["updateTags", "initializeTags"]),
     },
 
     mounted() {
         this.initializeTags({ key: this.storeKey, tags: this.tags });
-    }
+    },
 };
 </script>

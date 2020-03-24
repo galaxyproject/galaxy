@@ -24,9 +24,9 @@ describe("Details", () => {
                 repo: {
                     tool_shed_url: "tool_shed_url",
                     name: "name",
-                    owner: "owner"
-                }
-            }
+                    owner: "owner",
+                },
+            },
         });
         expect(wrapper.findAll("loading-span-stub").length).to.equal(1);
         expect(wrapper.find("loading-span-stub").attributes("message")).to.equal(

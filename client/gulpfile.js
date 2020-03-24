@@ -21,7 +21,7 @@ const paths = {
     //    "../config/plugins/{visualizations,interactive_environments}/*/*/package.json"
     //],
     plugin_build_dirs: [
-        "../config/plugins/visualizations/{annotate_image,openlayers}/package.json",
+        "../config/plugins/visualizations/{annotate_image,hyphyvision,openlayers}/package.json",
     ],
     lib_locs: {
         // This is a stepping stone towards having all this staged
@@ -77,9 +77,10 @@ function buildPlugins(callback){
         glob(build_dir, {}, (er, files) => {
             files.map( file => {
                 const f = path.join(process.cwd(), file).slice(0, -12);
+                console.log("Installing Dependencies for", f);
+                spawn('yarn', ['install', '--production=false', '--network-timeout=300000', '--check-files'], { cwd: f, stdio: 'inherit', shell: true });
                 console.log("Building ", f);
-                spawn('yarn', [], { cwd: f, stdio: 'inherit' });
-                spawn('yarn', ['build'], { cwd: f, stdio: 'inherit' });
+                spawn('yarn', ['build'], { cwd: f, stdio: 'inherit', shell: true });
             });
         });
     });

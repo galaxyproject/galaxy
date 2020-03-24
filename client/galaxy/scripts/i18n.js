@@ -33,7 +33,7 @@
  * locale pieces into each other, then finally sets the context.defined value
  * for the nls/fr-fr/colors bundle to be that mixed in locale.
  */
-(function() {
+(function () {
     "use strict";
 
     //regexp for reconstructing the master bundle name from parts of the regexp match
@@ -87,7 +87,7 @@
         }
     }
 
-    define(["module"], function(module) {
+    define(["module"], function (module) {
         var masterConfig = module.config ? module.config() : {};
 
         return {
@@ -95,24 +95,24 @@
             /**
              * Called when a dependency needs to be loaded.
              */
-            load: function(name, req, onLoad, config) {
+            load: function (name, req, onLoad, config) {
                 config = config || {};
 
                 if (config.locale) {
                     masterConfig.locale = config.locale;
                 }
 
-                var masterName,
-                    match = nlsRegExp.exec(name),
-                    prefix = match[1],
-                    locale = match[4],
-                    suffix = match[5],
-                    parts = locale.split("-"),
-                    toLoad = [],
-                    value = {},
-                    i,
-                    part,
-                    current = "";
+                var masterName;
+                var match = nlsRegExp.exec(name);
+                var prefix = match[1];
+                var locale = match[4];
+                var suffix = match[5];
+                var parts = locale.split("-");
+                var toLoad = [];
+                var value = {};
+                var i;
+                var part;
+                var current = "";
 
                 //If match[5] is blank, it means this is the top bundle definition,
                 //so it does not have to be handled. Locale-specific requests
@@ -151,15 +151,15 @@
                         addIfExists(req, current, toLoad, prefix, suffix);
                     }
 
-                    req(toLoad, function() {
+                    req(toLoad, function () {
                         onLoad();
                     });
                 } else {
                     //First, fetch the master bundle, it knows what locales are available.
-                    req([masterName], function(master) {
+                    req([masterName], function (master) {
                         //Figure out the best fit
-                        var needed = [],
-                            part;
+                        var needed = [];
+                        var part;
 
                         //Always allow for root, then do the rest of the locale parts.
                         addPart("root", master, needed, toLoad, prefix, suffix);
@@ -170,8 +170,10 @@
                         }
 
                         //Load all the parts missing.
-                        req(toLoad, function() {
-                            var i, partBundle, part;
+                        req(toLoad, function () {
+                            var i;
+                            var partBundle;
+                            var part;
                             for (i = needed.length - 1; i > -1 && needed[i]; i--) {
                                 part = needed[i];
                                 partBundle = master[part];
@@ -186,7 +188,7 @@
                         });
                     });
                 }
-            }
+            },
         };
     });
 })();

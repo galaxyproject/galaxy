@@ -53,27 +53,27 @@ Vue.use(BootstrapVue);
 export default {
     props: {
         jobId: {
-            type: String
+            type: String,
         },
         datasetId: {
-            type: String
+            type: String,
         },
         datasetType: {
             type: String,
-            default: "hda"
+            default: "hda",
         },
         includeTitle: {
             type: Boolean,
-            default: true
-        }
+            default: true,
+        },
     },
     data() {
         return {
             parameters: [],
-            hasParameterErrors: false
+            hasParameterErrors: false,
         };
     },
-    created: function() {
+    created: function () {
         let url;
         if (this.jobId) {
             url = `${getAppRoot()}api/jobs/${this.jobId}/parameters_display`;
@@ -83,31 +83,31 @@ export default {
         this.ajaxCall(url);
     },
     computed: {
-        anyNotes: function() {
+        anyNotes: function () {
             let hasNotes = false;
-            this.parameters.forEach(parameter => {
+            this.parameters.forEach((parameter) => {
                 hasNotes = hasNotes || parameter.notes;
             });
             return hasNotes;
-        }
+        },
     },
     methods: {
-        appRoot: function() {
+        appRoot: function () {
             return getAppRoot();
         },
-        ajaxCall: function(url) {
+        ajaxCall: function (url) {
             axios
                 .get(url)
-                .then(response => response.data)
-                .then(data => {
+                .then((response) => response.data)
+                .then((data) => {
                     this.hasParameterErrors = data.has_parameter_errors;
                     this.parameters = data.parameters;
                 })
-                .catch(e => {
+                .catch((e) => {
                     console.error(e);
                 });
-        }
-    }
+        },
+    },
 };
 </script>
 <style scoped>

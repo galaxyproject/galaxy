@@ -52,14 +52,14 @@ export function multiHistory(options) {
         order: options.order,
         limitOnFirstFetch: options.limit,
         limitPerFetch: options.limit,
-        currentHistoryId: options.current_history_id
+        currentHistoryId: options.current_history_id,
     });
     const multipanel = new MultiPanel.MultiPanelColumns({
         el: $("#center").get(0),
-        histories: histories
+        histories: histories,
     });
 
-    histories.fetchFirst({ silent: true }).done(function() {
+    histories.fetchFirst({ silent: true }).done(function () {
         multipanel.createColumns();
         multipanel.render(0);
     });
@@ -85,7 +85,7 @@ export function chart(options) {
 export const chartUtilities = {
     Datasets: Datasets,
     Jobs: Jobs,
-    Series: Series
+    Series: Series,
 };
 
 export { initMasthead } from "components/Masthead/initMasthead";
@@ -93,8 +93,7 @@ export { panelManagement } from "onload/globalInits/panelManagement";
 export { mountMakoTags } from "components/Tags";
 export { mountJobMetrics } from "components/JobMetrics";
 export { mountJobParameters } from "components/JobParameters";
-export { mountWorkflowEditor, mountWorkflowPanel } from "components/Workflow/Editor/mount";
-export { mountToolBoxWorkflow } from "components/Panels/mount";
+export { mountWorkflowEditor } from "components/Workflow/Editor/mount";
 export { mountPageDisplay } from "components/PageDisplay";
 
 // Used in common.mako

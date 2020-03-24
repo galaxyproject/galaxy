@@ -65,7 +65,7 @@ export class Credential extends BaseModel {
         return {
             authn_id: null,
             provider: "aws",
-            expanded: false
+            expanded: false,
         };
     }
 
@@ -85,7 +85,7 @@ Credential.setTransient("expanded", "loading");
  * where the keys are field names and the values are
  * error messages.
  */
-Credential.setValidator(function(model) {
+Credential.setValidator(function (model) {
     const errors = {};
 
     if (!model.provider) {

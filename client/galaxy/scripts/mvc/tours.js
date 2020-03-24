@@ -57,18 +57,18 @@ const TOURPAGE_TEMPLATE = `
 
 var tour_opts = {
     storage: window.sessionStorage,
-    onEnd: function() {
+    onEnd: function () {
         window.sessionStorage.removeItem("activeGalaxyTour");
     },
     delay: 150, // Attempts to make it look natural
-    orphan: true
+    orphan: true,
 };
 
-var hooked_tour_from_data = data => {
-    _.each(data.steps, step => {
+var hooked_tour_from_data = (data) => {
+    _.each(data.steps, (step) => {
         if (step.preclick) {
             step.onShow = () => {
-                _.each(step.preclick, preclick => {
+                _.each(step.preclick, (preclick) => {
                     // TODO: click delay between clicks
                     $(preclick).click();
                 });
@@ -76,7 +76,7 @@ var hooked_tour_from_data = data => {
         }
         if (step.postclick) {
             step.onHide = () => {
-                _.each(step.postclick, postclick => {
+                _.each(step.postclick, (postclick) => {
                     // TODO: click delay between clicks
                     $(postclick).click();
                 });
@@ -87,9 +87,7 @@ var hooked_tour_from_data = data => {
             // elements which have additional logic, like the
             // upload input box
             step.onShown = () => {
-                $(step.element)
-                    .val(step.textinsert)
-                    .trigger("change");
+                $(step.element).val(step.textinsert).trigger("change");
             };
         }
         if (step.path) {
@@ -107,36 +105,36 @@ var hooked_tour_from_data = data => {
 };
 
 var TourItem = Backbone.Model.extend({
-    urlRoot: `${gxy_root}api/tours`
+    urlRoot: `${gxy_root}api/tours`,
 });
 
 var Tours = Backbone.Collection.extend({
     url: `${gxy_root}api/tours`,
-    model: TourItem
+    model: TourItem,
 });
 
 export var ToursView = Backbone.View.extend({
     title: _l("Tours"),
-    initialize: function() {
+    initialize: function () {
         var self = this;
         this.setElement("<div/>");
         this.model = new Tours();
         this.model.fetch({
-            success: function() {
+            success: function () {
                 self.render();
             },
-            error: function() {
+            error: function () {
                 // Do something.
                 console.error("Failed to fetch tours.");
-            }
+            },
         });
     },
 
-    render: function() {
+    render: function () {
         var tpl = _.template(TOURPAGE_TEMPLATE);
 
         var tourtags = {};
-        _.each(this.model.models, tour => {
+        _.each(this.model.models, (tour) => {
             tour.attributes.tags_lc = [];
             if (tour.attributes.tags === null) {
                 if (tourtags.Untagged === undefined) {
@@ -144,7 +142,7 @@ export var ToursView = Backbone.View.extend({
                 }
                 tourtags.Untagged.tours.push(tour);
             } else {
-                _.each(tour.attributes.tags, otag => {
+                _.each(tour.attributes.tags, (otag) => {
                     var tag = otag.charAt(0).toUpperCase() + otag.slice(1);
                     if (tourtags[tag] === undefined) {
                         tourtags[tag] = { name: tag, tours: [] };
@@ -156,7 +154,7 @@ export var ToursView = Backbone.View.extend({
         });
         //var tourtagorder = Object.keys(tourtags).sort();
         var tourtagorder = [];
-        Object.keys(tourtags).forEach(function(tag, index) {
+        Object.keys(tourtags).forEach(function (tag, index) {
             tourtagorder.push({ name: tag, key: tag.toLowerCase() });
         });
 
@@ -165,14 +163,14 @@ export var ToursView = Backbone.View.extend({
                 tpl({
                     tours: this.model.models,
                     tourtags: tourtags,
-                    tourtagorder: tourtagorder
+                    tourtagorder: tourtagorder,
                 })
             )
-            .on("click", ".tourItem", function(e) {
+            .on("click", ".tourItem", function (e) {
                 e.preventDefault();
                 giveTourById($(this).data("tour.id"));
             })
-            .on("click", ".tag-selector-button", e => {
+            .on("click", ".tag-selector-button", (e) => {
                 var elem = $(e.target);
                 var active_tags = [];
 
@@ -181,20 +179,20 @@ export var ToursView = Backbone.View.extend({
                 elem.toggleClass("btn-secondary");
 
                 // Get all non-disabled tags
-                $(`.tag-selector-button.btn-primary`).each(function() {
+                $(`.tag-selector-button.btn-primary`).each(function () {
                     active_tags.push($(this).attr("tag-selector-button"));
                 });
 
                 // Loop over all list items, subsequently determine these are
                 // only the tours (tags should be unique). Then use the non-disabled tags to
                 // determien whether or not to display this specific tour.
-                $(`li.list-group-item`).each(function() {
+                $(`li.list-group-item`).each(function () {
                     if ($(this).attr("tags")) {
                         var tour_tags = [];
                         var tour_tags_html = $(this).attr("tags");
 
                         tour_tags = tour_tags_html.split(",");
-                        var fil_tour_tags = tour_tags.filter(function(tag) {
+                        var fil_tour_tags = tour_tags.filter(function (tag) {
                             return active_tags.indexOf(tag.toLowerCase()) > -1;
                         });
 
@@ -202,7 +200,7 @@ export var ToursView = Backbone.View.extend({
                     }
                 });
             });
-    }
+    },
 });
 
 export function giveTourWithData(data) {
@@ -219,7 +217,7 @@ export function giveTourWithData(data) {
 
 export function giveTourById(tour_id) {
     var url = `${gxy_root}api/tours/${tour_id}`;
-    $.getJSON(url, data => {
+    $.getJSON(url, (data) => {
         giveTourWithData(data);
     });
 }
@@ -237,7 +235,7 @@ export function activeGalaxyTourRunner() {
                 var tour = new Tour(
                     _.extend(
                         {
-                            steps: et.steps
+                            steps: et.steps,
                         },
                         tour_opts
                     )
@@ -253,5 +251,5 @@ export default {
     ToursView: ToursView,
     giveTourWithData: giveTourWithData,
     giveTourById: giveTourById,
-    activeGalaxyTourRunner: activeGalaxyTourRunner
+    activeGalaxyTourRunner: activeGalaxyTourRunner,
 };

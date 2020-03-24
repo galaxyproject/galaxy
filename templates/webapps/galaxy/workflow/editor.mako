@@ -15,12 +15,9 @@
     ${parent.javascript_app()}
     <script type="text/javascript">
         var editorConfig = ${ h.dumps( editor_config ) };
-        editorConfig.workflow_globals = workflow_globals;
         config.addInitialization(function(galaxy, config) {
             console.log("workflow/editor.mako, editorConfig", editorConfig);
             window.bundleEntries.mountWorkflowEditor(editorConfig);
-            window.bundleEntries.mountToolBoxWorkflow(editorConfig);
-            window.bundleEntries.mountWorkflowPanel(editorConfig);
         });
     </script>
 </%def>
@@ -34,7 +31,7 @@
 </%def>
 
 <%def name="overlay(visible=False)">
-    ${parent.overlay( "Loading workflow editor...",
+    ${parent.overlay( "Loading workflow...",
                       "<div class='progress progress-striped progress-info active'><div class='progress-bar' style='width: 100%;'></div></div>", self.overlay_visible )}
 </%def>
 

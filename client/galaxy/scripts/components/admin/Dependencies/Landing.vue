@@ -22,15 +22,15 @@ Vue.use(BootstrapVue);
 
 export default {
     components: { ContainerIndex, ResolutionIndex, UnusedIndex },
-    data: function() {
+    data: function () {
         return {
-            mode: "dependencies"
+            mode: "dependencies",
         };
     },
     methods: {
         setMode(mode) {
             this.mode = mode;
-        }
-    }
+        },
+    },
 };
 </script>

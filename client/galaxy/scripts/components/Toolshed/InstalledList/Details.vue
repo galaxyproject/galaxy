@@ -23,13 +23,13 @@ export default {
     props: ["repo"],
     components: {
         LoadingSpan,
-        RepositoryDetails
+        RepositoryDetails,
     },
     data() {
         return {
             loading: true,
             toolshedRepository: null,
-            error: null
+            error: null,
         };
     },
     created() {
@@ -42,14 +42,14 @@ export default {
             this.loading = true;
             this.services
                 .getRepositoryByName(this.repo.tool_shed_url, this.repo.name, this.repo.owner)
-                .then(toolshedRepository => {
+                .then((toolshedRepository) => {
                     this.toolshedRepository = toolshedRepository;
                     this.loading = false;
                 })
-                .catch(error => {
+                .catch((error) => {
                     this.error = error;
                 });
-        }
-    }
+        },
+    },
 };
 </script>

@@ -8,26 +8,22 @@ import { make_popupmenu } from "ui/popupmenu";
 var TrackHeaderView = Backbone.View.extend({
     className: "track-header",
 
-    initialize: function() {
+    initialize: function () {
         // Watch and update name changes.
         this.model.config.get("name").on("change:value", this.update_name, this);
         this.render();
     },
 
-    render: function() {
+    render: function () {
         this.$el.append($("<div/>").addClass(this.model.drag_handle_class));
-        this.$el.append(
-            $("<div/>")
-                .addClass("track-name")
-                .text(this.model.config.get_value("name"))
-        );
+        this.$el.append($("<div/>").addClass("track-name").text(this.model.config.get_value("name")));
 
         // Icons container.
         this.action_icons = {};
         this.render_action_icons();
 
         // Suppress double clicks in header so that they do not impact viz under header.
-        this.$el.dblclick(e => {
+        this.$el.dblclick((e) => {
             e.stopPropagation();
         });
 
@@ -35,17 +31,14 @@ var TrackHeaderView = Backbone.View.extend({
         this.$el.append($("<div style='clear: both'/>"));
     },
 
-    update_name: function() {
+    update_name: function () {
         this.$el.find(".track-name").text(this.model.config.get_value("name"));
     },
 
-    render_action_icons: function() {
+    render_action_icons: function () {
         var self = this;
-        this.icons_div = $("<div/>")
-            .addClass("track-icons")
-            .hide()
-            .appendTo(this.$el);
-        _.each(this.model.action_icons_def, icon_dict => {
+        this.icons_div = $("<div/>").addClass("track-icons").hide().appendTo(this.$el);
+        _.each(this.model.action_icons_def, (icon_dict) => {
             self.add_action_icon(
                 icon_dict.name,
                 icon_dict.title,
@@ -63,7 +56,7 @@ var TrackHeaderView = Backbone.View.extend({
     /**
      * Add an action icon to this object. Appends icon unless prepend flag is specified.
      */
-    add_action_icon: function(name, title, css_class, on_click_fn, prepend, hide) {
+    add_action_icon: function (name, title, css_class, on_click_fn, prepend, hide) {
         var self = this;
         this.action_icons[name] = $("<a/>")
             .attr("title", title)
@@ -82,7 +75,7 @@ var TrackHeaderView = Backbone.View.extend({
     /**
      * Set track's modes and update mode icon popup.
      */
-    set_display_modes: function(new_modes, init_mode) {
+    set_display_modes: function (new_modes, init_mode) {
         if (!new_modes) {
             return;
         }
@@ -100,7 +93,7 @@ var TrackHeaderView = Backbone.View.extend({
         var mode_mapping = {};
         for (var i = 0, len = track.display_modes.length; i < len; i++) {
             var mode = track.display_modes[i];
-            mode_mapping[mode] = (mode => () => {
+            mode_mapping[mode] = ((mode) => () => {
                 track.change_mode(mode);
                 // HACK: the popup menu messes with the track's hover event, so manually show/hide
                 // icons div for now.
@@ -110,9 +103,9 @@ var TrackHeaderView = Backbone.View.extend({
         }
 
         make_popupmenu(this.action_icons.mode_icon, mode_mapping);
-    }
+    },
 });
 
 export default {
-    TrackHeaderView: TrackHeaderView
+    TrackHeaderView: TrackHeaderView,
 };

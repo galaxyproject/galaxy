@@ -11,11 +11,11 @@ export class Services {
         return new Promise((resolve, reject) => {
             axios
                 .get(url)
-                .then(response => {
+                .then((response) => {
                     const items = this.getItems(response.data);
                     resolve(items);
                 })
-                .catch(e => {
+                .catch((e) => {
                     let errorMessage = "Request failed.";
                     if (e.response) {
                         errorMessage = e.response.data.err_msg || `${e.response.statusText} (${e.response.status})`;
@@ -32,7 +32,7 @@ export class Services {
         while (stack.length > 0) {
             const root = stack.pop();
             if (Array.isArray(root)) {
-                root.forEach(element => {
+                root.forEach((element) => {
                     stack.push(element);
                 });
             } else if (root.elements) {

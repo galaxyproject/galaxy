@@ -399,7 +399,7 @@ class TestCollectionDef(object):
             "model_class": "TestCollectionDef",
             "attributes": self.attrib,
             "collection_type": self.collection_type,
-            "elements": map(element_to_dict, self.elements or []),
+            "elements": list(map(element_to_dict, self.elements or [])),
             "name": self.name,
         }
 

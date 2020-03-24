@@ -59,10 +59,10 @@ import CredentialForm from "./CredentialForm";
 
 export default {
     components: {
-        CredentialForm
+        CredentialForm,
     },
     props: {
-        credential: { type: Credential, required: true }
+        credential: { type: Credential, required: true },
     },
     computed: {
         statusClasses() {
@@ -83,13 +83,13 @@ export default {
         },
         expanded() {
             return this.credential.expanded;
-        }
+        },
     },
     methods: {
         expand(forceState) {
             const expanded = forceState !== undefined ? forceState : !this.expanded;
             this.$emit("expand", { expanded });
-        }
-    }
+        },
+    },
 };
 </script>

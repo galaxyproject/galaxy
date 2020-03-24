@@ -2,9 +2,9 @@
 
 const doNothing = () => null;
 
-export const mock = source =>
+export const mock = (source) =>
     Object.keys(source)
-        .filter(prop => typeof source[prop] == "function")
+        .filter((prop) => typeof source[prop] == "function")
         .reduce((result, prop) => {
             result[prop] = doNothing;
             return result;

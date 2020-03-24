@@ -11,7 +11,7 @@ import FormData from "mvc/form/form-data";
 import { getGalaxyInstance } from "app";
 
 export default Backbone.View.extend({
-    initialize: function(options) {
+    initialize: function (options) {
         this.model = new Backbone.Model({
             initial_errors: false,
             cls: "ui-portlet",
@@ -19,14 +19,14 @@ export default Backbone.View.extend({
             always_refresh: true,
             status: "warning",
             hide_operations: false,
-            onchange: function() {}
+            onchange: function () {},
         }).set(options);
         this.setElement("<div/>");
         this.render();
     },
 
     /** Update available options */
-    update: function(new_model) {
+    update: function (new_model) {
         var self = this;
         this.data.matchModel(new_model, (node, input_id) => {
             var field = self.field_list[input_id];
@@ -40,7 +40,7 @@ export default Backbone.View.extend({
     },
 
     /** Set form into wait mode */
-    wait: function(active) {
+    wait: function (active) {
         for (var i in this.input_list) {
             var field = this.field_list[i];
             var input = this.input_list[i];
@@ -51,7 +51,7 @@ export default Backbone.View.extend({
     },
 
     /** Highlight and scroll to input element (currently only used for error notifications) */
-    highlight: function(input_id, message, silent) {
+    highlight: function (input_id, message, silent) {
         var input_element = this.element_list[input_id];
         if (input_element) {
             input_element.error(message || "Please verify this parameter.");
@@ -60,13 +60,13 @@ export default Backbone.View.extend({
             if (!silent) {
                 var $panel = this.$el
                     .parents()
-                    .filter(function() {
+                    .filter(function () {
                         return ["auto", "scroll"].indexOf($(this).css("overflow")) != -1;
                     })
                     .first();
                 $panel.animate(
                     {
-                        scrollTop: $panel.scrollTop() + input_element.$el.offset().top - $panel.position().top - 120
+                        scrollTop: $panel.scrollTop() + input_element.$el.offset().top - $panel.position().top - 120,
                     },
                     500
                 );
@@ -75,7 +75,7 @@ export default Backbone.View.extend({
     },
 
     /** Highlights errors */
-    errors: function(options) {
+    errors: function (options) {
         this.trigger("reset");
         if (options && options.errors) {
             var error_messages = this.data.matchResponse(options.errors);
@@ -88,7 +88,7 @@ export default Backbone.View.extend({
     },
 
     /** Render tool form */
-    render: function() {
+    render: function () {
         var self = this;
         this.off("change");
         this.off("reset");
@@ -107,7 +107,7 @@ export default Backbone.View.extend({
         }
         // add listener which triggers on checksum change, and reset the form input wrappers
         var current_check = this.data.checksum();
-        this.on("change", input_id => {
+        this.on("change", (input_id) => {
             var input = self.input_list[input_id];
             if (!input || input.refresh_on_change || self.model.get("always_refresh")) {
                 var new_check = self.data.checksum();
@@ -118,7 +118,7 @@ export default Backbone.View.extend({
             }
         });
         this.on("reset", () => {
-            _.each(self.element_list, input_element => {
+            _.each(self.element_list, (input_element) => {
                 input_element.reset();
             });
         });
@@ -126,12 +126,12 @@ export default Backbone.View.extend({
     },
 
     /** Renders/appends dom elements of the form */
-    _renderForm: function() {
+    _renderForm: function () {
         $(".tooltip").remove();
         var options = this.model.attributes;
         this.message = new Ui.UnescapedMessage();
         this.section = new FormSection.View(this, {
-            inputs: options.inputs
+            inputs: options.inputs,
         });
         this.portlet = new Portlet.View({
             icon: options.icon,
@@ -142,7 +142,7 @@ export default Backbone.View.extend({
             buttons: options.buttons,
             collapsible: options.collapsible,
             collapsed: options.collapsed,
-            onchange_title: options.onchange_title
+            onchange_title: options.onchange_title,
         });
         this.portlet.append(this.message.$el);
         this.portlet.append(this.section.$el);
@@ -154,10 +154,10 @@ export default Backbone.View.extend({
             this.message.update({
                 persistent: true,
                 status: options.status,
-                message: options.message
+                message: options.message,
             });
         }
         const Galaxy = getGalaxyInstance();
         Galaxy.emit.debug("form-view::initialize()", "Completed");
-    }
+    },
 });

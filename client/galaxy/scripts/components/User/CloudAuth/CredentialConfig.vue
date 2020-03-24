@@ -27,10 +27,10 @@ import MaskedInput from "components/MaskedInput";
 
 export default {
     components: {
-        MaskedInput
+        MaskedInput,
     },
     props: {
-        value: { type: Object, required: true }
+        value: { type: Object, required: true },
     },
     computed: {
         config() {
@@ -38,7 +38,7 @@ export default {
         },
         fieldDefs() {
             return this.value.constructor.fields;
-        }
-    }
+        },
+    },
 };
 </script>

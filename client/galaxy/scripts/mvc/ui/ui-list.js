@@ -3,7 +3,7 @@ import Backbone from "backbone";
 import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
 var View = Backbone.View.extend({
-    initialize: function(options) {
+    initialize: function (options) {
         this.options = options;
         this.name = options.name || "element";
         this.multiple = options.multiple || false;
@@ -22,7 +22,7 @@ var View = Backbone.View.extend({
         this.$button.on("click", () => {
             this.add({
                 id: this.select.value(),
-                name: this.select.text()
+                name: this.select.text(),
             });
         });
 
@@ -35,7 +35,7 @@ var View = Backbone.View.extend({
     },
 
     /** Return/Set currently selected list elements */
-    value: function(val) {
+    value: function (val) {
         // set new value
         if (val !== undefined) {
             this.selections.empty();
@@ -53,7 +53,7 @@ var View = Backbone.View.extend({
                     if (v_id != null) {
                         this.add({
                             id: v_id,
-                            name: v_name
+                            name: v_name,
                         });
                     }
                 }
@@ -62,12 +62,10 @@ var View = Backbone.View.extend({
         }
         // get current value
         var lst = [];
-        this.$(".ui-list-id").each(function() {
+        this.$(".ui-list-id").each(function () {
             lst.push({
                 id: $(this).prop("id"),
-                name: $(this)
-                    .find(".ui-list-name")
-                    .html()
+                name: $(this).find(".ui-list-name").html(),
             });
         });
         if (lst.length == 0) {
@@ -77,14 +75,14 @@ var View = Backbone.View.extend({
     },
 
     /** Add row */
-    add: function(options) {
+    add: function (options) {
         var self = this;
         if (this.$(`[id="${options.id}"]`).length === 0) {
             if (!Utils.isEmpty(options.id)) {
                 var $el = $(
                     this._templateRow({
                         id: options.id,
-                        name: options.name
+                        name: options.name,
                     })
                 );
                 $el.find("button").on("click", () => {
@@ -96,23 +94,23 @@ var View = Backbone.View.extend({
             } else {
                 this.message.update({
                     message: `Please select a valid ${this.name}.`,
-                    status: "danger"
+                    status: "danger",
                 });
             }
         } else {
             this.message.update({
-                message: `This ${this.name} is already in the list.`
+                message: `This ${this.name} is already in the list.`,
             });
         }
     },
 
     /** Update available options */
-    update: function(input_def) {
+    update: function (input_def) {
         this.select.update(input_def);
     },
 
     /** Refresh view */
-    _refresh: function() {
+    _refresh: function () {
         if (this.$(".ui-list-id").length > 0) {
             !this.multiple && this.$button.attr("disabled", true);
         } else {
@@ -122,7 +120,7 @@ var View = Backbone.View.extend({
     },
 
     /** Main Template */
-    _template: function(options) {
+    _template: function (options) {
         return `<div class="ui-list container">
                     <div class="row">
                         <div class="col-1 pl-0 mb-2">
@@ -136,14 +134,14 @@ var View = Backbone.View.extend({
     },
 
     /** Row Template */
-    _templateRow: function(options) {
+    _templateRow: function (options) {
         return `<div id="${options.id}" class="ui-list-id row mt-2">
                     <button class="ui-list-delete fa fa-trash mr-3"/>
                     <div class="ui-list-name">${options.name}</span>
                 </div>`;
-    }
+    },
 });
 
 export default {
-    View: View
+    View: View,
 };

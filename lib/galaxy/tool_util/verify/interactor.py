@@ -146,6 +146,56 @@ class GalaxyInteractorApi(object):
         assert response.status_code == 200, "Non 200 response from tool test API. [%s]" % response.content
         return response.json()
 
+    def verify_output_collection(self, output_collection_def, output_collection_id, history, tool_id):
+        name = output_collection_def.name
+        data_collection = self._get("dataset_collections/%s" % output_collection_id, data={"instance_type": "history"}).json()
+
+        def get_element(elements, id):
+            for element in elements:
+                if element["element_identifier"] == id:
+                    return element
+            return False
+
+        expected_collection_type = output_collection_def.collection_type
+        if expected_collection_type:
+            collection_type = data_collection["collection_type"]
+            if expected_collection_type != collection_type:
+                template = "Expected output collection [%s] to be of type [%s], was of type [%s]."
+                message = template % (name, expected_collection_type, collection_type)
+                raise AssertionError(message)
+
+        expected_element_count = output_collection_def.count
+        if expected_element_count:
+            actual_element_count = len(data_collection["elements"])
+            if expected_element_count != actual_element_count:
+                template = "Expected output collection [%s] to have %s elements, but it had %s."
+                message = template % (name, expected_element_count, actual_element_count)
+                raise AssertionError(message)
+
+        def verify_elements(element_objects, element_tests):
+            for element_identifier, (element_outfile, element_attrib) in element_tests.items():
+                element = get_element(element_objects, element_identifier)
+                if not element:
+                    template = "Failed to find identifier [%s] for testing, tool generated collection elements [%s]"
+                    message = template % (element_identifier, element_objects)
+                    raise AssertionError(message)
+
+                element_type = element["element_type"]
+                if element_type != "dataset_collection":
+                    hda = element["object"]
+                    self.verify_output_dataset(
+                        history,
+                        hda_id=hda["id"],
+                        outfile=element_outfile,
+                        attributes=element_attrib,
+                        tool_id=tool_id
+                    )
+                if element_type == "dataset_collection":
+                    elements = element["object"]["elements"]
+                    verify_elements(elements, element_attrib.get("elements", {}))
+
+        verify_elements(data_collection["elements"], output_collection_def.element_tests)
+
     def verify_output(self, history_id, jobs, output_data, output_testdef, tool_id, maxseconds):
         outfile = output_testdef.outfile
         attributes = output_testdef.attributes
@@ -951,54 +1001,8 @@ def _verify_outputs(testdef, history, jobs, tool_id, data_list, data_collection_
 
             # Data collection returned from submission, elements may have been populated after
             # the job completed so re-hit the API for more information.
-            data_collection_returned = data_collection_list[name]
-            data_collection = galaxy_interactor._get("dataset_collections/%s" % data_collection_returned["id"], data={"instance_type": "history"}).json()
-
-            def get_element(elements, id):
-                for element in elements:
-                    if element["element_identifier"] == id:
-                        return element
-                return False
-
-            expected_collection_type = output_collection_def.collection_type
-            if expected_collection_type:
-                collection_type = data_collection["collection_type"]
-                if expected_collection_type != collection_type:
-                    template = "Expected output collection [%s] to be of type [%s], was of type [%s]."
-                    message = template % (name, expected_collection_type, collection_type)
-                    raise AssertionError(message)
-
-            expected_element_count = output_collection_def.count
-            if expected_element_count:
-                actual_element_count = len(data_collection["elements"])
-                if expected_element_count != actual_element_count:
-                    template = "Expected output collection [%s] to have %s elements, but it had %s."
-                    message = template % (name, expected_element_count, actual_element_count)
-                    raise AssertionError(message)
-
-            def verify_elements(element_objects, element_tests):
-                for element_identifier, (element_outfile, element_attrib) in element_tests.items():
-                    element = get_element(element_objects, element_identifier)
-                    if not element:
-                        template = "Failed to find identifier [%s] for testing, tool generated collection elements [%s]"
-                        message = template % (element_identifier, element_objects)
-                        raise AssertionError(message)
-
-                    element_type = element["element_type"]
-                    if element_type != "dataset_collection":
-                        hda = element["object"]
-                        galaxy_interactor.verify_output_dataset(
-                            history,
-                            hda_id=hda["id"],
-                            outfile=element_outfile,
-                            attributes=element_attrib,
-                            tool_id=tool_id
-                        )
-                    if element_type == "dataset_collection":
-                        elements = element["object"]["elements"]
-                        verify_elements(elements, element_attrib.get("elements", {}))
-
-            verify_elements(data_collection["elements"], output_collection_def.element_tests)
+            data_collection_id = data_collection_list[name]["id"]
+            galaxy_interactor.verify_output_collection(output_collection_def, data_collection_id, history, tool_id)
         except Exception as e:
             register_exception(e)
 
@@ -1088,7 +1092,7 @@ class ToolTestDescription(object):
         return {
             "inputs": inputs_dict,
             "outputs": self.outputs,
-            "output_collections": map(lambda o: o.to_dict(), self.output_collections),
+            "output_collections": [_.to_dict() for _ in self.output_collections],
             "num_outputs": self.num_outputs,
             "command_line": self.command_line,
             "command_version": self.command_version,

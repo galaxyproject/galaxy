@@ -19,11 +19,11 @@ var UserQuotaMeter = Backbone.View.extend(baseMVC.LoggableMixin).extend(
         /** Defaults for optional settings passed to initialize */
         options: {
             warnAtPercent: 85,
-            errorAtPercent: 100
+            errorAtPercent: 100,
         },
 
         /** Set up, accept options, and bind events */
-        initialize: function(options) {
+        initialize: function (options) {
             this.log(`${this}.initialize:`, options);
             _.extend(this.options, options);
 
@@ -32,7 +32,7 @@ var UserQuotaMeter = Backbone.View.extend(baseMVC.LoggableMixin).extend(
         },
 
         /** Re-load user model data from the api */
-        update: function(options) {
+        update: function (options) {
             this.log(`${this} updating user data...`, options);
             this.model.loadFromApi(this.model.get("id"), options);
             return this;
@@ -41,7 +41,7 @@ var UserQuotaMeter = Backbone.View.extend(baseMVC.LoggableMixin).extend(
         /** Is the user over their quota (if there is one)?
          * @returns {Boolean} true if over quota, false if no quota or under quota
          */
-        isOverQuota: function() {
+        isOverQuota: function () {
             return (
                 this.model.get("quota_percent") !== null &&
                 this.model.get("quota_percent") >= this.options.errorAtPercent
@@ -56,7 +56,7 @@ var UserQuotaMeter = Backbone.View.extend(baseMVC.LoggableMixin).extend(
          *  @fires quota:under:ok when user is below this.warnAtPercent
          *  @returns {jQuery} the rendered meter
          */
-        _render_quota: function() {
+        _render_quota: function () {
             var modelJson = this.model.toJSON();
 
             var //prevPercent = this.model.previous( 'quota_percent' ),
@@ -96,7 +96,7 @@ var UserQuotaMeter = Backbone.View.extend(baseMVC.LoggableMixin).extend(
          *      showing the human readable sum storage their data is using.
          *  @returns {jQuery} the rendered text
          */
-        _render_usage: function() {
+        _render_usage: function () {
             //var usage = $( UserQuotaMeter.templates.usage( this.model.toJSON() ) );
             var usage = $(this._templateUsage(this.model.toJSON()));
             this.log(`${this}.rendering usage:`, usage);
@@ -107,7 +107,7 @@ var UserQuotaMeter = Backbone.View.extend(baseMVC.LoggableMixin).extend(
          *      depending on whether the user model has quota info (quota_percent === null -> no quota)
          *  @returns {Object} this UserQuotaMeter
          */
-        render: function() {
+        render: function () {
             //this.log( this + '.rendering' );
             var meterHtml = null;
 
@@ -128,7 +128,7 @@ var UserQuotaMeter = Backbone.View.extend(baseMVC.LoggableMixin).extend(
             return this;
         },
 
-        _templateQuotaMeter: function(data) {
+        _templateQuotaMeter: function (data) {
             return [
                 '<div id="quota-meter" class="quota-meter progress">',
                 '<div class="progress-bar" style="width: ',
@@ -143,27 +143,27 @@ var UserQuotaMeter = Backbone.View.extend(baseMVC.LoggableMixin).extend(
                 "%",
                 "</a>",
                 "</div>",
-                "</div>"
+                "</div>",
             ].join("");
         },
 
-        _templateUsage: function(data) {
+        _templateUsage: function (data) {
             return [
                 '<div id="quota-meter" class="quota-meter" style="background-color: transparent">',
                 '<div class="quota-meter-text" data-placement="left" data-original-title="This value is recalculated when you log out." style="top: 6px; color: white">',
                 data.nice_total_disk_usage ? _l("Using ") + data.nice_total_disk_usage : "",
                 "</div>",
-                "</div>"
+                "</div>",
             ].join("");
         },
 
-        toString: function() {
+        toString: function () {
             return `UserQuotaMeter(${this.model})`;
-        }
+        },
     }
 );
 
 //==============================================================================
 export default {
-    UserQuotaMeter: UserQuotaMeter
+    UserQuotaMeter: UserQuotaMeter,
 };

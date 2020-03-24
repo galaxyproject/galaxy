@@ -1,9 +1,10 @@
 import pytest
 
 from galaxy.config import GalaxyAppConfiguration
+from galaxy.config.schema import AppSchema
 
 
-MOCK_PROPERTIES = {
+MOCK_SCHEMA = {
     'property1': {'default': 'a', 'type': 'str'},  # str
     'property2': {'default': 1, 'type': 'int'},  # int
     'property3': {'default': 1.0, 'type': 'float'},  # float
@@ -13,17 +14,14 @@ MOCK_PROPERTIES = {
 }
 
 
+def get_schema(app_mapping):
+    return {'mapping': {'galaxy': {'mapping': app_mapping}}}
+
+
 @pytest.fixture
 def mock_init(monkeypatch):
-
-    def mock_load_schema(self):
-        self.appschema = MOCK_PROPERTIES
-
-    def mock_process_config(self, kwargs):
-        pass
-
-    monkeypatch.setattr(GalaxyAppConfiguration, '_load_schema', mock_load_schema)
-    monkeypatch.setattr(GalaxyAppConfiguration, '_process_config', mock_process_config)
+    monkeypatch.setattr(AppSchema, '_read_schema', lambda a, b: get_schema(MOCK_SCHEMA))
+    monkeypatch.setattr(GalaxyAppConfiguration, '_process_config', lambda a, b: None)
 
 
 def test_load_config_from_schema(mock_init):

@@ -23,10 +23,7 @@ uwsgi:
   # routing requests.
   offload-threads: 2
 
-  # Mapping to serve style content.
-  static-map: /static/style=static/style/blue
-
-  # Mapping to serve the remainder of the static content.
+  # Mapping to serve static content.
   static-map: /static=static
 
   # Mapping to serve the favicon.
@@ -313,7 +310,7 @@ tool_shed:
   #static_scripts_dir: static/scripts/
 
   # Serving static files (needed if running standalone)
-  #static_style_dir: static/style/blue
+  #static_style_dir: static/style
 
   # Enables GDPR Compliance mode. This makes several changes to the way
   # Galaxy logs and exposes data externally such as removing
@@ -346,6 +343,14 @@ tool_shed:
   # address domain matches any domain in the blacklist, they are refused
   # the registration.
   #blacklist_file: config/disposable_email_blacklist.conf
+
+  # E-mail domains whitelist is used to specify allowed email address
+  # domains. If the list is non-empty and a user attempts registration
+  # using an email address belonging to a domain that is not on the
+  # list, registration will be enied. This is a more restrictive option
+  # than <blacklist_file>, and therefore, in case <whitelist_file> is
+  # defined, <blacklist_file> will be ignored.
+  #whitelist_file: disposable_email_whitelist.conf
 
   # Append "/{brand}" to the "Galaxy" text in the masthead.
   #brand: null

@@ -76,7 +76,6 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         assert label == "input1", label
         # should work but Galaxy is broken.
         # assert editor.annotation_input.wait_for_value() == "my cool annotation"
-
         data_input_node.destroy.wait_for_and_click()
         data_input_node.wait_for_absent()
         self.screenshot("workflow_editor_data_input_deleted")
@@ -102,7 +101,6 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         assert label == "input1", label
         # should work but Galaxy is broken.
         # assert editor.annotation_input.wait_for_value() == "my cool annotation"
-
         data_input_node.destroy.wait_for_and_click()
         data_input_node.wait_for_absent()
         self.screenshot("workflow_editor_data_collection_input_deleted")
@@ -129,7 +127,6 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         assert label == "input1", label
         # should work but Galaxy is broken.
         # assert editor.annotation_input.wait_for_value() == "my cool annotation"
-
         data_input_node.destroy.wait_for_and_click()
         data_input_node.wait_for_absent()
         self.screenshot("workflow_editor_parameter_input_deleted")
@@ -411,7 +408,7 @@ steps:
         name = self.workflow_upload_yaml_with_random_name(yaml_content)
         self.workflow_index_open()
         self.workflow_index_open_with_name(name)
-        self.workflow_editor_click_option("Auto Re-layout")
+        self.workflow_editor_click_option("Auto Layout")
 
     def workflow_editor_source_sink_terminal_ids(self, source, sink):
         editor = self.components.workflow_editor

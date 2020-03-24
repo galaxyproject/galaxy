@@ -29,15 +29,15 @@ describe("RepositoryDetails", () => {
                     id: "id",
                     name: "name",
                     owner: "owner",
-                    description: "description"
+                    description: "description",
                 },
-                toolshedUrl: "toolshedUrl"
+                toolshedUrl: "toolshedUrl",
             },
             stubs: {
                 RepositoryDetails: true,
                 InstallationSettings: true,
-                RepositoryTools: true
-            }
+                RepositoryTools: true,
+            },
         });
         expect(wrapper.find(".loading-message").text()).to.equal("Loading repository details...");
         await Vue.nextTick();

@@ -128,6 +128,16 @@ def galactic_job_json(
         upload_response = upload_func(target)
         return response_to_hda(target, upload_response)
 
+    def upload_file_with_composite_data(file_path, composite_data, **kwargs):
+        if file_path is not None:
+            file_path = abs_path_or_uri(file_path, test_data_directory)
+        composite_data_resolved = []
+        for cd in composite_data:
+            composite_data_resolved.append(abs_path_or_uri(cd, test_data_directory))
+        target = FileUploadTarget(file_path, composite_data=composite_data_resolved, **kwargs)
+        upload_response = upload_func(target)
+        return response_to_hda(target, upload_response)
+
     def upload_object(the_object):
         target = ObjectUploadTarget(the_object)
         upload_response = upload_func(target)
@@ -166,6 +176,21 @@ def galactic_job_json(
 
     def replacement_file(value):
         file_path = value.get("location", None) or value.get("path", None)
+        # format to match output definitions in tool, where did filetype come from?
+        filetype = value.get("filetype", None) or value.get("format", None)
+        composite_data_raw = value.get("composite_data", None)
+        if composite_data_raw:
+            composite_data = []
+            for entry in composite_data_raw:
+                path = None
+                if isinstance(entry, dict):
+                    path = entry.get("location", None) or entry.get("path", None)
+                else:
+                    path = entry
+                composite_data.append(path)
+            rval_c = upload_file_with_composite_data(None, composite_data, filetype=filetype)
+            return rval_c
+
         if file_path is None:
             contents = value.get("contents", None)
             if contents is not None:
@@ -173,7 +198,6 @@ def galactic_job_json(
 
             return value
 
-        filetype = value.get('filetype', None)
         secondary_files = value.get("secondaryFiles", [])
         secondary_files_tar_path = None
         if secondary_files:
@@ -303,6 +327,7 @@ class FileUploadTarget(object):
     def __init__(self, path, secondary_files=None, **kwargs):
         self.path = path
         self.secondary_files = secondary_files
+        self.composite_data = kwargs.get("composite_data", [])
         self.properties = kwargs
 
     def __str__(self):
@@ -484,11 +509,13 @@ def output_to_cwl_json(
             return properties
 
     elif output_metadata["history_content_type"] == "dataset_collection":
-        if output_metadata["collection_type"] == "list":
+        rval = None
+        collection_type = output_metadata["collection_type"].split(":", 1)[0]
+        if collection_type in ["list", "paired"]:
             rval = []
             for element in output_metadata["elements"]:
                 rval.append(element_to_cwl_json(element))
-        elif output_metadata["collection_type"] == "record":
+        elif collection_type == "record":
             rval = {}
             for element in output_metadata["elements"]:
                 rval[element["element_identifier"]] = element_to_cwl_json(element)

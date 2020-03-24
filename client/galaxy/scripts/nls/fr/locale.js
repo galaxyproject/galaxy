@@ -339,9 +339,6 @@ define({
     "Delete this repeat block": false,
     placeholder: false,
     Repeat: false,
-    // ---------------------------------------------------------------------------- ui-select-genomespace
-    "Browse GenomeSpace": false,
-    Browse: false,
     // ---------------------------------------------------------------------------- ui-frames
     Error: false,
     Close: false,
@@ -457,6 +454,6 @@ define({
     // ---------------------------------------------------------------------------- upload-button
     "Download from URL or upload files from disk": false,
     // ---------------------------------------------------------------------------- workflow_editor_tests
-    "tool tooltip": false
+    "tool tooltip": false,
     // ----------------------------------------------------------------------------
 });

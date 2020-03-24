@@ -1,6 +1,6 @@
 <template>
     <upload-wrapper ref="wrapper" :top-info="topInfo">
-        <span style="width: 25%; display: inline; height: 100%" class="float-left">
+        <span style="width: 25%; display: inline; height: 100%;" class="float-left">
             <div class="upload-rule-option">
                 <div class="upload-rule-option-title">{{ l("Upload data as") }}</div>
                 <div class="rule-data-type">
@@ -36,10 +36,10 @@
                 </div>
             </div>
         </span>
-        <span style="display: inline; float: right; width: 75%; height: 300px">
+        <span style="display: inline; float: right; width: 75%; height: 300px;">
             <textarea
                 class="upload-rule-source-content form-control"
-                style="height: 100%"
+                style="height: 100%;"
                 v-model="sourceContent"
                 :disabled="selectionType != 'paste'"
             ></textarea>
@@ -100,7 +100,7 @@ export default {
             selectionType: "paste",
             btnBuildTitle: _l("Build"),
             btnResetTitle: _l("Reset"),
-            btnCloseTitle: _l("Close")
+            btnCloseTitle: _l("Close"),
         };
     },
     created() {
@@ -108,7 +108,7 @@ export default {
         this.initAppProperties();
     },
     watch: {
-        selectionType: function(selectionType) {
+        selectionType: function (selectionType) {
             if (selectionType == "dataset" && !this.datasetsSet) {
                 const Galaxy = getGalaxyInstance();
                 const history = Galaxy && Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model;
@@ -122,13 +122,13 @@ export default {
                 }
                 this.datasetsSet = true;
             } else if (selectionType == "ftp") {
-                UploadUtils.getRemoteFiles(ftp_files => {
-                    this.sourceContent = ftp_files.map(file => file["path"]).join("\n");
+                UploadUtils.getRemoteFiles((ftp_files) => {
+                    this.sourceContent = ftp_files.map((file) => file["path"]).join("\n");
                     this.ftpFiles = ftp_files;
                 });
             }
         },
-        selectedDatasetId: function(selectedDatasetId) {
+        selectedDatasetId: function (selectedDatasetId) {
             if (!selectedDatasetId) {
                 this.sourceContent = "";
                 return;
@@ -140,23 +140,23 @@ export default {
                         Galaxy.currHistoryPanel.model.id
                     }/contents/${selectedDatasetId}/display`
                 )
-                .then(response => {
+                .then((response) => {
                     this.sourceContent = response.data;
                 })
-                .catch(error => console.log(error));
-        }
+                .catch((error) => console.log(error));
+        },
     },
     methods: {
-        _eventReset: function() {
+        _eventReset: function () {
             this.selectedDatasetId = null;
             this.sourceContent = "";
         },
 
-        _eventBuild: function() {
+        _eventBuild: function () {
             this._buildSelection(this.sourceContent);
         },
 
-        _buildSelection: function(content) {
+        _buildSelection: function (content) {
             const selectionType = this.selectionType;
             const selection = {};
             const Galaxy = getGalaxyInstance();
@@ -171,7 +171,7 @@ export default {
             selection.dataType = this.dataType;
             Galaxy.currHistoryPanel.buildCollection("rules", selection, true);
             this.app.hide();
-        }
-    }
+        },
+    },
 };
 </script>

@@ -52,7 +52,6 @@ class ConfigSerializer(base.ModelSerializer):
             'search_url'                        : _use_config,
             'mailing_lists'                     : _defaults_to(self.app.config.mailing_lists_url),
             'screencasts_url'                   : _use_config,
-            'genomespace_ui_url'                : _use_config,
             'citation_url'                      : _use_config,
             'support_url'                       : _use_config,
             'helpsite_url'                      : _use_config,
@@ -63,6 +62,11 @@ class ConfigSerializer(base.ModelSerializer):
             'communication_server_port'         : _use_config,
             'communication_server_host'         : _use_config,
             'persistent_communication_rooms'    : _use_config,
+            'enable_tool_recommendations'       : _use_config,
+            'tool_recommendation_model_path'    : _use_config,
+            'admin_tool_recommendations_path'   : _use_config,
+            'overwrite_model_recommendations'   : _use_config,
+            'topk_recommendations'              : _use_config,
             'allow_user_impersonation'          : _use_config,
             'allow_user_creation'               : _defaults_to(False),  # schema default is True
             'use_remote_user'                   : _defaults_to(None),  # schema default is False; or config.single_user

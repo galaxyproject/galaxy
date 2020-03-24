@@ -5,7 +5,7 @@
                 class="progress-bar progress-bar-notransition"
                 :class="`progress-bar-${status}`"
                 :style="{
-                    width: `${percentage}%`
+                    width: `${percentage}%`,
                 }"
             ></div>
             <a
@@ -37,12 +37,12 @@ export default {
     name: "UploadButton",
     components: { FontAwesomeIcon },
     directives: {
-        "v-b-tooltip": VBTooltip
+        "v-b-tooltip": VBTooltip,
     },
     data() {
         return {
             status: "",
-            percentage: 0
+            percentage: 0,
         };
     },
     methods: {
@@ -50,7 +50,7 @@ export default {
             const Galaxy = getGalaxyInstance();
             e.preventDefault();
             Galaxy.upload.show();
-        }
+        },
     },
     created() {
         const Galaxy = getGalaxyInstance();
@@ -59,7 +59,7 @@ export default {
             this.status = Galaxy.upload.model.attributes.status;
             this.percentage = Galaxy.upload.model.attributes.percentage;
         });
-    }
+    },
 };
 </script>
 

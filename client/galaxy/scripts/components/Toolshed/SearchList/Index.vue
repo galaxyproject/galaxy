@@ -38,7 +38,7 @@ export default {
     components: {
         Categories,
         Repositories,
-        ServerSelection
+        ServerSelection,
     },
     data() {
         return {
@@ -51,8 +51,8 @@ export default {
             tabCurrent: "true",
             tabOptions: [
                 { text: "Search All", value: true },
-                { text: "Installed Only", value: false }
-            ]
+                { text: "Installed Only", value: false },
+            ],
         };
     },
     created() {
@@ -61,7 +61,7 @@ export default {
     computed: {
         queryEmpty() {
             return !this.query || this.query.length < this.queryLength;
-        }
+        },
     },
     methods: {
         configureToolsheds() {
@@ -88,7 +88,7 @@ export default {
         },
         setLoading(loading) {
             this.loading = loading;
-        }
-    }
+        },
+    },
 };
 </script>

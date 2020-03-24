@@ -56,45 +56,45 @@ import ariaAlert from "utils/ariaAlert";
 export default {
     name: "ToolSection",
     components: {
-        Tool
+        Tool,
     },
     props: {
         category: {
             type: Object,
-            required: true
+            required: true,
         },
         queryFilter: {
-            type: String
+            type: String,
         },
         disableFilter: {
-            type: Boolean
+            type: Boolean,
         },
         hideName: {
-            type: Boolean
+            type: Boolean,
         },
         operationTitle: {
-            type: String
+            type: String,
         },
         operationIcon: {
-            type: String
+            type: String,
         },
         toolKey: {
-            type: String
+            type: String,
         },
         sectionName: {
             type: String,
-            default: "default"
-        }
+            default: "default",
+        },
     },
     data() {
         return {
-            opened: this.checkFilter()
+            opened: this.checkFilter(),
         };
     },
     watch: {
         queryFilter() {
             this.opened = this.checkFilter();
-        }
+        },
     },
     computed: {
         name() {
@@ -105,7 +105,7 @@ export default {
         },
         hasElements() {
             return this.category.elems && this.category.elems.length > 0;
-        }
+        },
     },
     methods: {
         checkFilter() {
@@ -121,8 +121,8 @@ export default {
             this.opened = !this.opened;
             const currentState = this.opened ? "opened" : "closed";
             ariaAlert(`${this.name} tools menu ${currentState}`);
-        }
-    }
+        },
+    },
 };
 </script>
 

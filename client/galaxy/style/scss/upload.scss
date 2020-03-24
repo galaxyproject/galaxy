@@ -67,11 +67,11 @@
 
 .upload-view-default {
     .upload-box.highlight {
-        border-color: $table-border-color;
+        border-color: $border-color;
         border-width: 2px;
         padding: 7px !important;
         .upload-helper {
-            color: $table-border-color;
+            color: $border-color;
         }
     }
     .upload-icon {
@@ -94,13 +94,13 @@
         font-size: $font-size-base;
         -moz-border-radius: $border-radius-large;
         border-radius: $border-radius-large;
-        border: 1px dashed $btn-default-border;
+        border: 1px dashed $border-color;
         overflow-x: hidden;
         -ms-overflow-style: none;
         .upload-helper {
             @extend h3;
             padding: 120px;
-            color: $btn-default-border;
+            color: $border-color;
             i {
                 @extend .mr-2;
                 font-size: inherit;

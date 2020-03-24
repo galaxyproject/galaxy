@@ -1,7 +1,8 @@
 <tool id="inputs_as_json" name="inputs_as_json" version="1.0.0">
-    <command detect_errors="exit_code">
+    <command detect_errors="exit_code"><![CDATA[
+        cat inputs.json &&
         python $check_inputs inputs.json $test_case
-    </command>
+    ]]></command>
     <configfiles>
         <inputs name="inputs" filename="inputs.json" />
         <!-- Can specify with fixed path in working directory instead:
@@ -15,9 +16,8 @@ input_json_path = sys.argv[1]
 test_case = sys.argv[2]
 as_dict = json.load(open(input_json_path, "r"))
 
-
 def assert_equals(x, y):
-    assert x == y, "%s != %s" % (x, y)
+    assert x == y, "%s[%s] != %s[%s] " % (x, type(x), y, type(y))
 
 if test_case == "1":
     assert_equals(as_dict["test_case"], 1)
@@ -27,6 +27,8 @@ if test_case == "1":
     assert_equals(as_dict["inttest"], 12456)
     assert_equals(as_dict["floattest"], 6.789)
     assert_equals(as_dict["radio_select"], "a_radio")
+    assert_equals(as_dict["optional_select"], None)
+    assert_equals(as_dict["optional_multiple_select"], [])
     assert_equals(as_dict["repeat"][0]["r"], "000000")
     assert_equals(as_dict["repeat"][1]["r"], "FFFFFF")
     assert_equals(as_dict["cond"]["more_text"], "fdefault")
@@ -40,6 +42,8 @@ elif test_case == "2":
     assert_equals(as_dict["inttest"], None)
     assert_equals(as_dict["floattest"], 1.0)
     assert_equals(as_dict["radio_select"], "a_radio")
+    assert_equals(as_dict["optional_select"], "a")
+    assert_equals(as_dict["optional_multiple_select"], ['a', 'b'])
     assert_equals(as_dict["repeat"][0]["r"], "000000")
     assert_equals(as_dict["cond"]["cond_test"], "second")
     assert_equals(as_dict["cond"]["more_text"], "sdefault")
@@ -63,6 +67,16 @@ with open("output", "w") as f:
             <option value="c_radio">C Radio</option>
         </param>
         <param name="data_input" type="data" optional="true" />
+        <param name="optional_select" type="select" optional="true">
+            <option value="a">A</option>
+            <option value="b">B</option>
+            <option value="c">C</option>
+        </param>
+        <param name="optional_multiple_select" type="select" optional="true" multiple="true">
+            <option value="a">A</option>
+            <option value="b">B</option>
+            <option value="c">C</option>
+        </param>
         <repeat name="repeat" title="Repeat" min="1">
             <param name="r" type="color" />
         </repeat>
@@ -114,6 +128,8 @@ with open("output", "w") as f:
             <param name="booltest" value="false" />
             <param name="booltest2" value="boolfalse" />
             <param name="data_input" value="simple_line.txt" />
+            <param name="optional_select" value="a"/>
+            <param name="optional_multiple_select" value="a,b"/>
             <!-- Testing null integers -->
             <!-- <param name="inttest" value="12456" /> -->
             <param name="r" value="000000" />

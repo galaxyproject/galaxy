@@ -6,14 +6,14 @@
 
 export const gridSearchStore = {
     state: {
-        searchTags: new Set()
+        searchTags: new Set(),
     },
     mutations: {
         // TODO: we could write an equivalence comparator here for searchTag
         // Sets and not register a change if the new set is equivalent
         setSearchTags(state, tags) {
             state.searchTags = new Set(tags);
-        }
+        },
     },
     actions: {
         toggleSearchTag({ state, commit }, { text }) {
@@ -28,6 +28,6 @@ export const gridSearchStore = {
         },
         clearSearchTags({ state, commit }) {
             commit("setSearchTags", new Set());
-        }
-    }
+        },
+    },
 };

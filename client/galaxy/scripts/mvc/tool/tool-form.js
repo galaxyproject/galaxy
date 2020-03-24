@@ -13,9 +13,10 @@ import ToolFormBase from "mvc/tool/tool-form-base";
 import Webhooks from "mvc/webhooks";
 import Vue from "vue";
 import ToolEntryPoints from "components/ToolEntryPoints/ToolEntryPoints";
+import ToolRecommendation from "components/ToolRecommendation";
 
 const View = Backbone.View.extend({
-    initialize: function(options) {
+    initialize: function (options) {
         const Galaxy = getGalaxyInstance();
         this.modal = Galaxy.modal || new Modal.View();
         this.form = new ToolFormBase(
@@ -43,7 +44,7 @@ const View = Backbone.View.extend({
                         Utils.get({
                             url: build_url,
                             data: build_data,
-                            success: data => {
+                            success: (data) => {
                                 if (!data.display) {
                                     window.location = getAppRoot();
                                     return;
@@ -57,14 +58,14 @@ const View = Backbone.View.extend({
                                 const error_message = (response && response.err_msg) || "Uncaught error.";
                                 if (status == 401) {
                                     window.location = `${getAppRoot()}user/login?${$.param({
-                                        redirect: `${getAppRoot()}?tool_id=${options.id}`
+                                        redirect: `${getAppRoot()}?tool_id=${options.id}`,
                                     })}`;
                                 } else if (form.$el.is(":empty")) {
                                     form.$el.prepend(
                                         new Ui.Message({
                                             message: error_message,
                                             status: "danger",
-                                            persistent: true
+                                            persistent: true,
                                         }).$el
                                     );
                                 } else {
@@ -75,8 +76,8 @@ const View = Backbone.View.extend({
                                             buttons: {
                                                 Close: () => {
                                                     Galaxy.modal.hide();
-                                                }
-                                            }
+                                                },
+                                            },
                                         });
                                 }
                                 Galaxy.emit.debug(
@@ -85,14 +86,14 @@ const View = Backbone.View.extend({
                                     response
                                 );
                                 process.reject();
-                            }
+                            },
                         });
                     },
                     postchange: (process, form) => {
                         const current_state = {
                             tool_id: form.model.get("id"),
                             tool_version: form.model.get("version"),
-                            inputs: $.extend(true, {}, form.data.create())
+                            inputs: $.extend(true, {}, form.data.create()),
                         };
                         form.wait(true);
                         Galaxy.emit.debug("tool-form::postchange()", "Sending current state.", current_state);
@@ -100,18 +101,18 @@ const View = Backbone.View.extend({
                             type: "POST",
                             url: `${getAppRoot()}api/tools/${form.model.get("id")}/build`,
                             data: current_state,
-                            success: data => {
+                            success: (data) => {
                                 form.update(data);
                                 form.wait(false);
                                 Galaxy.emit.debug("tool-form::postchange()", "Received new model.", data);
                                 process.resolve();
                             },
-                            error: response => {
+                            error: (response) => {
                                 Galaxy.emit.debug("tool-form::postchange()", "Refresh request failed.", response);
                                 process.reject();
-                            }
+                            },
                         });
-                    }
+                    },
                 },
                 options
             )
@@ -121,7 +122,7 @@ const View = Backbone.View.extend({
         this.$el.append(this.form.$el);
     },
 
-    _customize: function(form) {
+    _customize: function (form) {
         const Galaxy = getGalaxyInstance();
         const options = form.model.attributes;
         var inputs = options.inputs;
@@ -135,7 +136,7 @@ const View = Backbone.View.extend({
                 type: "boolean",
                 value: "false",
                 ignore: "false",
-                help: _l("Send an email notification when the job completes.")
+                help: _l("Send an email notification when the job completes."),
             });
         }
 
@@ -153,13 +154,14 @@ const View = Backbone.View.extend({
                     execute_button.unwait();
                     form.portlet.enable();
                 });
-            }
+            },
         });
         options.buttons = { execute: execute_button };
 
         // remap feature
         if (options.job_id && options.job_remap) {
-            let label, help;
+            let label;
+            let help;
             if (options.job_remap === "job_produced_collection_elements") {
                 label = "Replace elements in collection ?";
                 help =
@@ -178,9 +180,9 @@ const View = Backbone.View.extend({
                 value: "__ignore__",
                 options: [
                     ["Yes", options.job_id],
-                    ["No", "__ignore__"]
+                    ["No", "__ignore__"],
                 ],
-                help: help
+                help: help,
             });
         }
 
@@ -204,8 +206,8 @@ const View = Backbone.View.extend({
                 value: "__ignore__",
                 options: [
                     ["No", false],
-                    ["Yes", true]
-                ]
+                    ["Yes", true],
+                ],
             });
         }
     },
@@ -214,14 +216,14 @@ const View = Backbone.View.extend({
      * @param{dict}     options   - Specifies tool id and version
      * @param{function} callback  - Called when request has completed
      */
-    submit: function(options, callback) {
+    submit: function (options, callback) {
         const Galaxy = getGalaxyInstance();
         const history_id = Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;
         const job_def = {
             history_id: history_id,
             tool_id: options.id,
             tool_version: options.version,
-            inputs: this.form.data.create()
+            inputs: this.form.data.create(),
         };
         this.form.trigger("reset");
         if (!this.validate(job_def)) {
@@ -233,15 +235,12 @@ const View = Backbone.View.extend({
             const $f = $("<form/>").attr({
                 action: options.action,
                 method: options.method,
-                enctype: options.enctype
+                enctype: options.enctype,
             });
             _.each(job_def.inputs, (value, key) => {
                 $f.append($("<input/>").attr({ name: key, value: value }));
             });
-            $f.hide()
-                .appendTo("body")
-                .submit()
-                .remove();
+            $f.hide().appendTo("body").submit().remove();
             callback && callback();
             return;
         }
@@ -250,7 +249,7 @@ const View = Backbone.View.extend({
             type: "POST",
             url: `${getAppRoot()}api/tools`,
             data: job_def,
-            success: response => {
+            success: (response) => {
                 callback && callback();
                 this.$el.children().hide();
                 if (response.produces_entry_points) {
@@ -260,20 +259,33 @@ const View = Backbone.View.extend({
                         this.$el.append(vm);
                         const instance = new toolEntryPointsInstance({
                             propsData: {
-                                jobId: job.id
-                            }
+                                jobId: job.id,
+                            },
                         });
                         instance.$mount(vm);
                     }
                 }
                 this.$el.append(this._templateSuccess(response, job_def));
+                const enable_tool_recommendations = Galaxy.config.enable_tool_recommendations;
+                if (enable_tool_recommendations === true || enable_tool_recommendations === "true") {
+                    // show tool recommendations
+                    const ToolRecommendationInstance = Vue.extend(ToolRecommendation);
+                    const vm = document.createElement("div");
+                    this.$el.append(vm);
+                    const instance = new ToolRecommendationInstance({
+                        propsData: {
+                            toolId: job_def.tool_id,
+                        },
+                    });
+                    instance.$mount(vm);
+                }
                 this.$el.parent().scrollTop(0);
                 // Show Webhook if job is running
                 if (response.jobs && response.jobs.length > 0) {
                     this.$el.append($("<div/>", { id: "webhook-view" }));
                     new Webhooks.WebhookView({
                         type: "tool",
-                        toolId: job_def.tool_id
+                        toolId: job_def.tool_id,
                     });
                 }
                 if (Galaxy.currHistoryPanel) {
@@ -281,7 +293,7 @@ const View = Backbone.View.extend({
                     Galaxy.currHistoryPanel.refreshContents();
                 }
             },
-            error: response => {
+            error: (response) => {
                 callback && callback();
                 Galaxy.emit.debug("tool-form::submit", "Submission failed.", response);
                 let input_found = false;
@@ -300,18 +312,18 @@ const View = Backbone.View.extend({
                         buttons: {
                             Close: () => {
                                 this.modal.hide();
-                            }
-                        }
+                            },
+                        },
                     });
                 }
-            }
+            },
         });
     },
 
     /** Validate job dictionary.
      * @param{dict}     job_def   - Job execution dictionary
      */
-    validate: function(job_def) {
+    validate: function (job_def) {
         const Galaxy = getGalaxyInstance();
         const job_inputs = job_def.inputs;
         let batch_n = -1;
@@ -364,7 +376,7 @@ const View = Backbone.View.extend({
         return true;
     },
 
-    _getInputs: function(job_def) {
+    _getInputs: function (job_def) {
         const inputs = [];
         const index = {};
         for (const i in job_def.inputs) {
@@ -381,7 +393,7 @@ const View = Backbone.View.extend({
         return inputs;
     },
 
-    _templateRow: function(list, title) {
+    _templateRow: function (list, title) {
         let blurb = "";
         if (list.length > 0) {
             blurb += `<p>${title}:</p>`;
@@ -398,7 +410,7 @@ const View = Backbone.View.extend({
         return blurb;
     },
 
-    _templateSuccess: function(response, job_def) {
+    _templateSuccess: function (response, job_def) {
         const njobs = response && response.jobs ? response.jobs.length : 0;
         if (njobs > 0) {
             const inputs = this._getInputs(job_def);
@@ -423,19 +435,20 @@ const View = Backbone.View.extend({
         }
     },
 
-    _templateError: function(response, err_msg) {
+    _templateError: function (response, err_msg) {
         return $("<div/>")
             .addClass("errormessagelarge")
             .append(
                 $("<p/>").text(
-                    `The server could not complete the request. Please contact the Galaxy Team if this error persists. ${err_msg ||
-                        ""}`
+                    `The server could not complete the request. Please contact the Galaxy Team if this error persists. ${
+                        err_msg || ""
+                    }`
                 )
             )
             .append($("<pre/>").text(JSON.stringify(response, null, 4)));
-    }
+    },
 });
 
 export default {
-    View: View
+    View: View,
 };

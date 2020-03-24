@@ -45,7 +45,7 @@ class AdminActions(object):
             # If this is a default quota, create the DefaultQuotaAssociation
             if params.default != 'no':
                 self.app.quota_agent.set_default_quota(params.default, quota)
-                message = "Default quota '%s' has been created."
+                message = "Default quota '%s' has been created." % quota.name
             else:
                 # Create the UserQuotaAssociations
                 in_users = [self.sa_session.query(self.app.model.User).get(decode_id(x) if decode_id else x) for x in util.listify(params.in_users)]
@@ -100,7 +100,7 @@ class AdminActions(object):
         else:
             try:
                 new_amount = util.size_to_bytes(params.amount)
-            except AssertionError:
+            except (AssertionError, ValueError):
                 new_amount = False
         if not params.amount:
             raise ActionInputError('Enter a valid amount.')

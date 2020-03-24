@@ -1,4 +1,3 @@
-
 #!/bin/sh
 
 cd "$(dirname "$0")"
@@ -313,7 +312,7 @@ then
     echo "Docker version:"
     docker --version
     echo "Launching docker container for testing with extra args ${DOCKER_RUN_EXTRA_ARGS}..."
-    name=$(python -c 'import re; import uuid; print re.sub("-","",str(uuid.uuid4()))')
+    name=$(python -c 'import re; import uuid; print re.sub("-", "", str(uuid.uuid4()))')
     # Create a cache dir for pip, so it has the right owner
     DOCKER_PIP_CACHE_DIR="$HOME"/.cache/docker_galaxy_pip
     mkdir -p "$DOCKER_PIP_CACHE_DIR"

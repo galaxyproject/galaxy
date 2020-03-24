@@ -1223,11 +1223,11 @@ class BBIDataProvider(GenomeDataProvider):
 
             # Start with N samples.
             num_points = num_samples
-            step_size = (end - start) / num_points
+            step_size = (end - start) // num_points
             # Add additional points to sample in the remainder not covered by
             # the initial N samples.
             remainder_start = start + step_size * num_points
-            additional_points = (end - remainder_start) / step_size
+            additional_points = (end - remainder_start) // step_size
             num_points += additional_points
 
         result = summarize_region(bbi, chrom, start, end, num_points)
@@ -1243,7 +1243,7 @@ class BBIDataProvider(GenomeDataProvider):
 class BigBedDataProvider(BBIDataProvider):
     def _get_dataset(self):
         # Nothing converts to bigBed so we don't consider converted dataset
-        f = open(self.original_dataset.file_name)
+        f = open(self.original_dataset.file_name, 'rb')
         return f, BigBedFile(file=f)
 
 
@@ -1255,9 +1255,9 @@ class BigWigDataProvider(BBIDataProvider):
 
     def _get_dataset(self):
         if self.converted_dataset is not None:
-            f = open(self.converted_dataset.file_name)
+            f = open(self.converted_dataset.file_name, 'rb')
         else:
-            f = open(self.original_dataset.file_name)
+            f = open(self.original_dataset.file_name, 'rb')
         return f, BigWigFile(file=f)
 
 

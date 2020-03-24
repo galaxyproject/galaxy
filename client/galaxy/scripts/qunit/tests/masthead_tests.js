@@ -6,7 +6,7 @@ import { getAppRoot } from "onload";
 import { getGalaxyInstance } from "app";
 
 QUnit.module("Masthead test", {
-    beforeEach: function() {
+    beforeEach: function () {
         testApp.create();
         this.masthead = new Masthead.View({
             brand: "brand",
@@ -28,18 +28,18 @@ QUnit.module("Masthead test", {
             datatypes_disable_auto: true,
             allow_user_creation: true,
             enable_cloud_launch: true,
-            user_requests: true
+            user_requests: true,
         });
         this.container = this.masthead.render().$el;
         $("body").append(this.container);
     },
-    afterEach: function() {
+    afterEach: function () {
         testApp.destroy();
         this.container.remove();
-    }
+    },
 });
 
-QUnit.test("tabs", function(assert) {
+QUnit.test("tabs", function (assert) {
     var tab = this.masthead.collection.findWhere({ id: "analysis" });
     var $tab = $("#analysis");
     var $toggle = $tab.find(".nav-link");
@@ -104,7 +104,7 @@ QUnit.test("tabs", function(assert) {
     assert.ok($item.length === 0, "All menu items removed");
     tab.set("menu", [
         { title: "_menu_title_0", url: "_menu_url_0", target: "_menu_target_0" },
-        { title: "_menu_title_1", url: "_menu_url_1", target: "_menu_target_1" }
+        { title: "_menu_title_1", url: "_menu_url_1", target: "_menu_target_1" },
     ]);
     $item = $menu.find("a");
     assert.ok($item.length == 2, "Two menu items added");

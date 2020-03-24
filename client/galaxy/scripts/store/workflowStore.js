@@ -1,5 +1,5 @@
 export const state = {
-    workflowsByInstanceId: {}
+    workflowsByInstanceId: {},
 };
 
 import Vue from "vue";
@@ -7,9 +7,9 @@ import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 
 const getters = {
-    getWorkflowByInstanceId: state => workflowId => {
+    getWorkflowByInstanceId: (state) => (workflowId) => {
         return state.workflowsByInstanceId[workflowId];
-    }
+    },
 };
 
 const actions = {
@@ -17,18 +17,18 @@ const actions = {
         const params = { instance: "true" };
         const { data } = await axios.get(`${getAppRoot()}api/workflows/${workflowId}`, { params });
         commit("saveWorkflowForInstanceId", { workflowId, workflowData: data });
-    }
+    },
 };
 
 const mutations = {
     saveWorkflowForInstanceId: (state, { workflowId, workflowData }) => {
         Vue.set(state.workflowsByInstanceId, workflowId, workflowData);
-    }
+    },
 };
 
 export const workflowStore = {
     state,
     getters,
     actions,
-    mutations
+    mutations,
 };

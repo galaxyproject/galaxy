@@ -102,6 +102,19 @@ def require_admin(func):
     return decorator
 
 
+def do_not_cache(func):
+    """
+    Sets cache-prevention headers for the request.
+    """
+    @wraps(func)
+    def set_nocache_headers(self, trans, *args, **kwargs):
+        trans.response.headers['Cache-Control'] = ['no-cache', 'no-store', 'must-revalidate']
+        trans.response.headers['Pragma'] = 'no-cache'
+        trans.response.headers['Expires'] = '0'
+        return func(self, trans, *args, **kwargs)
+    return set_nocache_headers
+
+
 # ----------------------------------------------------------------------------- (original) api decorators
 def legacy_expose_api(func, to_json=True, user_required=True):
     """

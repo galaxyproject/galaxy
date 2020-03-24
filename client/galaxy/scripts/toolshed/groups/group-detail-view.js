@@ -10,7 +10,7 @@ const GroupDetailView = Backbone.View.extend({
     options: {},
     app: null,
 
-    initialize: function(options) {
+    initialize: function (options) {
         this.options = _.extend(this.options, options);
         this.app = window.globalTS.groups;
 
@@ -22,34 +22,34 @@ const GroupDetailView = Backbone.View.extend({
         }
     },
 
-    fetchGroup: function(options) {
+    fetchGroup: function (options) {
         const that = this;
         this.options = _.extend(this.options, options);
         this.model = new mod_group_model.Group({ id: this.options.group_id });
         this.model.fetch({
-            success: function(model) {
+            success: function (model) {
                 console.log("received data: ");
                 console.log(model);
                 that.render();
             },
-            error: function(model, response) {
+            error: function (model, response) {
                 if (typeof response.responseJSON !== "undefined") {
                     Toast.error(response.responseJSON.err_msg);
                 } else {
                     Toast.error("An error occurred.");
                 }
-            }
+            },
         });
     },
 
-    render: function() {
+    render: function () {
         const template = this.templateRow();
         this.$el.html(template({ group: this.model }));
         $('#center [data-toggle="tooltip"]').tooltip({ trigger: "hover" });
         $("#center").css("overflow", "auto");
     },
 
-    templateRow: function() {
+    templateRow: function () {
         return _.template(
             [
                 "<div>",
@@ -131,11 +131,11 @@ const GroupDetailView = Backbone.View.extend({
                 "<% }); %>",
                 "</tbody>",
                 "</table>",
-                "</div>"
+                "</div>",
             ].join("")
         );
-    }
+    },
 });
 export default {
-    GroupDetailView: GroupDetailView
+    GroupDetailView: GroupDetailView,
 };

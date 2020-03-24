@@ -1,4 +1,7 @@
-<tool id="CONVERTER_bz2_to_uncompressed" name="Convert compressed file to uncompressed." version="1.0.0" hidden="true" profile="17.09">
+<tool id="CONVERTER_bz2_to_uncompressed" name="Convert compressed file to uncompressed." version="1.0.1" hidden="true" profile="17.09">
+  <requirements>
+    <requirement type="package" version="1.0.8">bzip2</requirement>
+  </requirements>
   <command><![CDATA[
     cp '$ext_config' 'galaxy.json' && bzip2 -dcf '$input1' > '$output1'
   ]]></command>

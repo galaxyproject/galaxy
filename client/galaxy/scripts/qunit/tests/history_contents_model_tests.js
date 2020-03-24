@@ -5,36 +5,36 @@ import testApp from "qunit/test-app";
 import HDA_MODEL from "mvc/history/hda-model";
 
 QUnit.module("History Contents Model QUnit.Tests", {
-    beforeEach: function() {
+    beforeEach: function () {
         testApp.create();
     },
-    afterEach: function() {
+    afterEach: function () {
         testApp.destroy();
-    }
+    },
 });
 
-QUnit.test("HDA Constructions with Default Attributes", function(assert) {
+QUnit.test("HDA Constructions with Default Attributes", function (assert) {
     var hda = new HDA_MODEL.HistoryDatasetAssociation({});
     assert.equal(hda.get("name"), "(unnamed dataset)");
     assert.equal(hda.get("state"), "new");
 });
 
-QUnit.test("HDA Construction with Supplied Attributes", function(assert) {
+QUnit.test("HDA Construction with Supplied Attributes", function (assert) {
     var hda = new HDA_MODEL.HistoryDatasetAssociation({
         history_content_type: "dataset",
         name: "my dataset",
-        state: "ok"
+        state: "ok",
     });
     assert.equal(hda.get("name"), "my dataset");
     assert.equal(hda.get("state"), "ok");
 });
 
-QUnit.test("HDA Deletion", function(assert) {
+QUnit.test("HDA Deletion", function (assert) {
     var hda = new HDA_MODEL.HistoryDatasetAssociation({
         history_content_type: "dataset",
         id: "hda1",
         history_id: "h1",
-        deleted: false
+        deleted: false,
     });
     assert.equal(hda.get("deleted"), false);
 

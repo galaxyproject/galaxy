@@ -10,10 +10,10 @@ describe("RepositoryTools", () => {
                     {
                         guid: "guid",
                         id: "id",
-                        version: "version"
-                    }
-                ]
-            }
+                        version: "version",
+                    },
+                ],
+            },
         });
         const $el = wrapper.findAll("td");
         const $first = $el.at(0);
@@ -29,20 +29,20 @@ describe("RepositoryTools", () => {
                     {
                         guid: "guid_1",
                         id: "id_1",
-                        version: "version_1"
+                        version: "version_1",
                     },
                     {
                         guid: "guid_2",
                         id: "id_2",
-                        version: "version_2"
+                        version: "version_2",
                     },
                     {
                         guid: "guid_3",
                         id: "id_3",
-                        version: "version_3"
-                    }
-                ]
-            }
+                        version: "version_3",
+                    },
+                ],
+            },
         });
         const $el = wrapper.findAll("tr");
         expect($el.length).to.equal(3);

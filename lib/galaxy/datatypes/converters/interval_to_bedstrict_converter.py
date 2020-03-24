@@ -10,8 +10,7 @@ assert sys.version_info[:2] >= (2, 6)
 
 
 def stop_err(msg):
-    sys.stderr.write(msg)
-    sys.exit()
+    sys.exit(msg)
 
 
 def force_bed_field_count(fields, region_count, force_num_columns):

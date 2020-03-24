@@ -5,7 +5,7 @@ import $ from "jquery";
 import _ from "underscore";
 import Backbone from "backbone";
 export default Backbone.View.extend({
-    initialize: function(app, options) {
+    initialize: function (app, options) {
         this.app = app;
         this.app_options = app.model ? app.model.attributes : {};
         this.field = (options && options.field) || new Backbone.View();
@@ -18,7 +18,7 @@ export default Backbone.View.extend({
                 text_connected_disable: this.app_options.text_connected_disable || "Remove connection from module",
                 cls_enable: this.app_options.cls_enable || "fa fa-caret-square-o-down",
                 cls_disable: this.app_options.cls_disable || "fa fa-caret-square-o-up",
-                always_refresh: this.app_options.always_refresh
+                always_refresh: this.app_options.always_refresh,
             }).set(options);
 
         // set element and link components
@@ -74,7 +74,7 @@ export default Backbone.View.extend({
 
         // add error listener
         if (this.field.model) {
-            this.listenTo(this.field.model, "error", message => {
+            this.listenTo(this.field.model, "error", (message) => {
                 if (message) {
                     this.error(message);
                 } else {
@@ -85,21 +85,21 @@ export default Backbone.View.extend({
     },
 
     /** Set backdrop for input element */
-    backdrop: function() {
+    backdrop: function () {
         this.model.set("backdrop", true);
     },
 
     /** Set error text */
-    error: function(text) {
+    error: function (text) {
         this.model.set("error_text", text);
     },
 
     /** Reset this view */
-    reset: function() {
+    reset: function () {
         !this.model.get("fixed") && this.model.set("error_text", null);
     },
 
-    render: function() {
+    render: function () {
         // render help
         $(".tooltip").hide();
         var help_text = this.model.get("help", "");
@@ -131,7 +131,7 @@ export default Backbone.View.extend({
         this.field.model &&
             this.field.model.set({
                 color: this.model.get("color"),
-                style: this.model.get("style")
+                style: this.model.get("style"),
             });
         // render collapsible options
         const connected = this.field.connected;
@@ -177,9 +177,10 @@ export default Backbone.View.extend({
             this.$title_text.show().text(this.model.get("label"));
             this.$collapsible.hide();
         }
+        this.$field.attr("data-label", this.model.get("label"));
     },
 
-    _template: function() {
+    _template: function () {
         return $("<div/>")
             .addClass("ui-form-element")
             .append(
@@ -207,5 +208,5 @@ export default Backbone.View.extend({
                     .append($("<div/>").addClass("ui-form-backdrop"))
             )
             .append($("<div/>").addClass("ui-form-preview"));
-    }
+    },
 });
