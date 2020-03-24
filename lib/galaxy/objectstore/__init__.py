@@ -183,7 +183,18 @@ class IObjectStore(object):
         raise NotImplementedError()
 
 
+class NonOverridable(type):
+    def __new__(mcs, name, bases, dct):
+        # The following is a list of methods implemented in BaseObjectStore type, which shall not be overridden.
+        for method in ["exists", "create", "empty", "size", "delete", "get_data", "get_filename",
+                       "update_from_file", "get_object_url", "get_store_usage_percent", "get_store_by"]:
+            if bases and method in dct:
+                raise SyntaxError("Overriding {0} is not allowed".format(method))
+        return type.__new__(mcs, name, bases, dct)
+
+
 class BaseObjectStore(IObjectStore):
+    __metaclass__ = NonOverridable
 
     def __init__(self, config, config_dict=None, **kwargs):
         """
