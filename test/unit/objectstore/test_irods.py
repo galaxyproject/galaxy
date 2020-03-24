@@ -39,12 +39,12 @@ def test_parse_valid_config_xml():
 def test_parse_config_xml_no_extra_dir():
     tree = ET.parse(CONFIG_FILE_NO_EXTRA_DIR)
     root = tree.getroot()
-    with pytest.raises(Exception, match='No extra_dir element in XML tree'):
+    with pytest.raises(Exception, match='No extra_dir element in config XML tree'):
         parse_config_xml(root)
 
 
 def test_parse_config_xml_no_auth():
     tree = ET.parse(CONFIG_FILE_NO_AUTH)
     root = tree.getroot()
-    with pytest.raises(Exception, match='No auth element in XML tree'):
+    with pytest.raises(Exception, match='No auth element in config XML tree'):
         parse_config_xml(root)
