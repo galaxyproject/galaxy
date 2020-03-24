@@ -292,9 +292,10 @@ class KubernetesJobRunner(AsynchronousJobRunner):
            Setting these variables changes the described behaviour in the job file shell script
            used to execute the tool inside the container.
         """
+        container = self._find_container(ajs.job_wrapper)
         k8s_container = {
             "name": self.__get_k8s_container_name(ajs.job_wrapper),
-            "image": self._find_container(ajs.job_wrapper).container_id,
+            "image": container.container_id,
             # this form of command overrides the entrypoint and allows multi command
             # command line execution, separated by ;, which is what Galaxy does
             # to assemble the command.
@@ -303,7 +304,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             "workingDir": ajs.job_wrapper.working_directory,
             "volumeMounts": self.runner_params['k8s_volume_mounts']
         }
-
+        guest_ports = container.tool_info.guest_ports
+        if guest_ports:
+            k8s_container["ports"] = [{"containerPort": p} for p in guest_ports]
         resources = self.__get_resources(ajs.job_wrapper)
         if resources:
             envs = []
@@ -486,6 +489,14 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 if not job_state.running:
                     job_state.running = True
                     job_state.job_wrapper.change_state(model.Job.states.RUNNING)
+                    guest_ports = job_state.job_wrapper.guest_ports
+                    if len(guest_ports) > 0:
+                        pod = self._get_pod_for_job(job_state)
+                        pod_ip = pod.obj['status']['podIP']
+                        ports_dict = {}
+                        for guest_port in guest_ports:
+                            ports_dict[str(guest_port)] = dict(host=pod_ip, port=guest_port, protocol="http")
+                        self.app.interactivetool_manager.configure_entry_points(job_state.job_wrapper.get_job(), ports_dict)
                 return job_state
             elif job_persisted_state == model.Job.states.DELETED:
                 # Job has been deleted via stop_job and job has not been deleted,
@@ -545,18 +556,25 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         conditions = job.obj['status'].get('conditions') or []
         return any(True for c in conditions if c['type'] == 'Failed' and c['reason'] == 'DeadlineExceeded')
 
+    def _get_pod_for_job(self, job_state):
+        pods = Pod.objects(self._pykube_api).filter(selector="app=%s" % job_state.job_id,
+                                                    namespace=self.runner_params['k8s_namespace'])
+        if not pods.response['items']:
+            return None
+
+        pod = Pod(self._pykube_api, pods.response['items'][0])
+        return pod
+
     def __job_failed_due_to_low_memory(self, job_state):
         """
         checks the state of the pod to see if it was killed
         for being out of memory (pod status OOMKilled). If that is the case
         marks the job for resubmission (resubmit logic is part of destinations).
         """
-
         pods = find_pod_object_by_name(self._pykube_api, job_state.job_id, self.runner_params['k8s_namespace'])
         if not pods.response['items']:
             return False
 
-        pod = Pod(self._pykube_api, pods.response['items'][0])
         if pod.obj['status']['phase'] == "Failed" and \
                 pod.obj['status']['containerStatuses'][0]['state']['terminated']['reason'] == "OOMKilled":
             return True
