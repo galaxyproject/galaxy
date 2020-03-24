@@ -6,8 +6,7 @@ import pytest
 
 from galaxy_test.driver import integration_util
 
-from .test_datatype_upload import (TEST_CASES, UploadTestDatatypeDataTestCase,
-                                   upload_datatype_helper)
+from .test_datatype_upload import (TEST_CASES, upload_datatype_helper, UploadTestDatatypeDataTestCase)
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 OBJECT_STORE_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "irods_object_store_conf.xml")
