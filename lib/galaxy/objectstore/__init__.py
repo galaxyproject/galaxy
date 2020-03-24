@@ -278,8 +278,8 @@ class BaseObjectStore(IObjectStore):
             # job working directories.
             return obj.id
 
-    def _invoke(self, delegate, obj, **kwargs):
-        return self.__getattribute__("_" + delegate)(obj, **kwargs)
+    def _invoke(self, delegate, obj=None, **kwargs):
+        return self.__getattribute__("_" + delegate)(obj=obj, **kwargs)
 
     def exists(self, obj, **kwargs):
         return self._invoke('exists', obj, **kwargs)
@@ -308,8 +308,8 @@ class BaseObjectStore(IObjectStore):
     def get_object_url(self, obj, **kwargs):
         return self._invoke('get_object_url', obj, **kwargs)
 
-    def get_store_usage_percent(self, **kwargs):
-        return self._invoke('get_store_usage_percent', **kwargs)
+    def get_store_usage_percent(self):
+        return self._invoke('get_store_usage_percent')
 
     def get_store_by(self, obj, **kwargs):
         return self._invoke('get_store_by', obj, **kwargs)
@@ -605,7 +605,7 @@ class DiskObjectStore(ConcreteObjectStore):
         """
         return None
 
-    def _get_store_usage_percent(self):
+    def _get_store_usage_percent(self, **kwargs):
         """Override `ObjectStore`'s stub by return percent storage used."""
         st = os.statvfs(self.file_path)
         return (float(st.f_blocks - st.f_bavail) / st.f_blocks) * 100
