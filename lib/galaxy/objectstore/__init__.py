@@ -5,6 +5,7 @@ all providers ensure that data can be accessed on the filesystem for running
 tools
 """
 
+import abc
 import logging
 import os
 import random
@@ -39,6 +40,7 @@ log = logging.getLogger(__name__)
 
 
 class IObjectStore(object):
+    __metaclass__ = abc.ABCMeta
 
     """ObjectStore interface.
 
@@ -82,10 +84,12 @@ class IObjectStore(object):
         000/obj.id)
     """
 
+    @abc.abstractmethod
     def exists(self, obj, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None):
         """Return True if the object identified by `obj` exists, False otherwise."""
         raise NotImplementedError()
 
+    @abc.abstractmethod
     def create(self, obj, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False):
         """
         Mark the object (`obj`) as existing in the store, but with no content.
@@ -95,6 +99,7 @@ class IObjectStore(object):
         """
         raise NotImplementedError()
 
+    @abc.abstractmethod
     def empty(self, obj, base_dir=None, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False):
         """
         Test if the object identified by `obj` has content.
@@ -103,6 +108,7 @@ class IObjectStore(object):
         """
         raise NotImplementedError()
 
+    @abc.abstractmethod
     def size(self, obj, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False):
         """
         Return size of the object identified by `obj`.
@@ -111,6 +117,7 @@ class IObjectStore(object):
         """
         raise NotImplementedError()
 
+    @abc.abstractmethod
     def delete(self, obj, entire_dir=False, base_dir=None, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False):
         """
         Delete the object identified by `obj`.
@@ -123,6 +130,7 @@ class IObjectStore(object):
         """
         raise NotImplementedError()
 
+    @abc.abstractmethod
     def get_data(self, obj, start=0, count=-1, base_dir=None, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False):
         """
         Fetch `count` bytes of data offset by `start` bytes using `obj.id`.
@@ -137,6 +145,7 @@ class IObjectStore(object):
         """
         raise NotImplementedError()
 
+    @abc.abstractmethod
     def get_filename(self, obj, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False):
         """
         Get the expected filename with absolute path for object with id `obj.id`.
@@ -145,6 +154,7 @@ class IObjectStore(object):
         """
         raise NotImplementedError()
 
+    @abc.abstractmethod
     def update_from_file(self, obj, base_dir=None, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False, file_name=None, create=False):
         """
         Inform the store that the file associated with `obj.id` has been updated.
@@ -163,6 +173,7 @@ class IObjectStore(object):
         """
         raise NotImplementedError()
 
+    @abc.abstractmethod
     def get_object_url(self, obj, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False):
         """
         Return the URL for direct acces if supported, otherwise return None.
@@ -171,10 +182,12 @@ class IObjectStore(object):
         """
         raise NotImplementedError()
 
+    @abc.abstractmethod
     def get_store_usage_percent(self):
         """Return the percentage indicating how full the store is."""
         raise NotImplementedError()
 
+    @abc.abstractmethod
     def get_store_by(self, obj):
         """Return how object is stored (by 'uuid', 'id', or None if not yet saved).
 
