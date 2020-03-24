@@ -1,11 +1,17 @@
 """
 Object Store plugin for the Integrated Rule-Oriented Data Store (iRODS)
 """
-from datetime import datetime
 import logging
 import os
-from pathlib import Path
 import shutil
+from datetime import datetime
+from pathlib import Path
+
+from galaxy.exceptions import ObjectInvalid, ObjectNotFound
+from galaxy.util import directory_hash_id, umask_fix_perms
+from galaxy.util.path import safe_relpath
+
+from ..objectstore import DiskObjectStore
 
 try:
     import irods
@@ -17,18 +23,6 @@ try:
 except ImportError:
     irods = None
 
-from galaxy.exceptions import (
-    ObjectInvalid,
-    ObjectNotFound
-)
-from galaxy.util import (
-    directory_hash_id,
-    umask_fix_perms,
-)
-from galaxy.util.path import safe_relpath
-from ..objectstore import (
-    DiskObjectStore,
-)
 
 IRODS_IMPORT_MESSAGE = ('The Python irods package is required to use this feature, please install it')
 
