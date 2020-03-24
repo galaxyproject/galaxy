@@ -63,6 +63,7 @@ TEST_CASES = collect_test_data(registry)
 def test_upload_datatype_auto(instance, test_data, temp_file):
     upload_datatype_helper(instance, test_data, temp_file)
 
+
 def upload_datatype_helper(instance, test_data, temp_file):
     is_compressed = False
     for is_method in (is_bz2, is_gzip, is_zip):

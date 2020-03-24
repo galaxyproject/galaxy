@@ -742,4 +742,3 @@ class SwiftObjectStore(S3ObjectStore):
                                     port=self.port,
                                     calling_format=boto.s3.connection.OrdinaryCallingFormat(),
                                     path=self.conn_path)
-
