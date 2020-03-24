@@ -5,7 +5,11 @@ import logging
 import os
 import shutil
 from datetime import datetime
-from pathlib import Path
+try:
+    from pathlib import Path
+except ImportError:
+    # Use backport on python 2
+    from pathlib2 import Path
 
 try:
     import irods
