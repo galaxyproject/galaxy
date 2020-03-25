@@ -29,5 +29,5 @@ jobs:
         mv db_gx_rev_0141.sqlite database/universe.sqlite
       working-directory: 'galaxy root'
     - name: run tests
-      run: tox -e mulled
+      run: tox -e py37-first_startup
       working-directory: 'galaxy root'
