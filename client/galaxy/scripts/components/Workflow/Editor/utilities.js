@@ -7,6 +7,7 @@ import WorkflowIcons from "components/Workflow/icons";
 import { DefaultForm, ToolForm } from "mvc/workflow/workflow-forms";
 import { loadWorkflow } from "./services";
 import { hide_modal, show_message, show_modal } from "layout/modal";
+import Modal from "mvc/ui/ui-modal";
 
 export function copyIntoWorkflow(workflow, id = null, stepCount = null) {
     const _copy_into_workflow_ajax = () => {
@@ -262,15 +263,16 @@ function get_workflow_path(wf_steps, current_node_id, current_node_name) {
 }
 
 export function getToolRecommendations(propsData) {
-        let workflow_simple = propsData.node.app.to_simple(), //window.workflow_globals.workflow.to_simple(),
+        let workflow_simple = propsData.node.app.to_simple(),
         node = propsData.node,
         toolId = getToolId(node.content_id);
         console.log(workflow_simple);
         console.log(node);
         let tool_sequence = get_workflow_path(workflow_simple, node.id, toolId);
         console.log(tool_sequence);
+        
         // remove ui-modal if present
-        /*let $modal = $(".modal-tool-recommendation");
+        let $modal = $(".modal-tool-recommendation");
         if ($modal.length > 0) {
             $modal.remove();
         }
@@ -305,7 +307,7 @@ export function getToolRecommendations(propsData) {
                         let inputDatatypes = name_obj["i_extensions"];
                         for (const out_t of outputDatatypes.entries()) {
                             for(const in_t of inputDatatypes.entries()) {
-                                if ((window.workflow_globals.app.isSubType(out_t[1], in_t[1]) === true) ||
+                                if ((propsData.node.app.isSubType(out_t[1], in_t[1]) === true) ||
                                      out_t[1] === "input" ||
                                      out_t[1] === "_sniff_" ||
                                      out_t[1] === "input_collection") {
@@ -340,5 +342,5 @@ export function getToolRecommendations(propsData) {
                     modal.hide();
                 });
             }
-        });*/
+        });
     }
