@@ -47,7 +47,7 @@ import BootstrapVue from "bootstrap-vue";
 import WorkflowIcons from "components/Workflow/icons";
 import LoadingSpan from "components/LoadingSpan";
 import { getGalaxyInstance } from "app";
-import { getToolRecommendations } from "./utilities";
+import { getToolRecommendations } from "./workflowRecommendations";
 
 Vue.use(BootstrapVue);
 
@@ -99,8 +99,6 @@ export default {
             this.node.clone();
         },
         onGetRecommendations() {
-            console.log("Clicked recommendations");
-            console.log(this);
             getToolRecommendations(this);
         }
     },
