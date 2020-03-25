@@ -1492,6 +1492,7 @@ class GeminiSQLite(SQlite):
         except Exception:
             return "Gemini SQLite Database, version %s" % (dataset.metadata.gemini_version or 'unknown')
 
+
 class ChiraSQLite(SQlite):
     """Class describing a ChiRAViz Sqlite database """
     file_ext = "chira.sqlite"
@@ -1511,7 +1512,6 @@ class ChiraSQLite(SQlite):
             except Exception as e:
                 log.warning('%s, sniff Exception: %s', self, e)
         return False
-
 
 
 class CuffDiffSQlite(SQlite):
