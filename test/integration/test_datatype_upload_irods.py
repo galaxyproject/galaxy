@@ -1,6 +1,7 @@
 
 import os
 import tempfile
+import subprocess
 
 import pytest
 
@@ -13,7 +14,35 @@ OBJECT_STORE_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "irods_object_store_co
 IRODS_TEST_CASES = dict(list(TEST_CASES.items())[0:10])
 
 
+def start_irods(container_name):
+    minio_start_args = [
+        'docker',
+        'run',
+        '-p',
+        '1247:1247',
+        '-d',
+        '--name',
+        container_name,
+        'kxk302/irods-server:0.1']
+    subprocess.check_call(minio_start_args)
+
+
+def stop_irods(container_name):
+    subprocess.check_call(['docker', 'rm', '-f', container_name])
+
+
 class UploadTestDatatypeDataTestCase(UploadTestDatatypeDataTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.container_name = "%s_container" % cls.__name__
+        start_irods(cls.container_name)
+        super(UploadTestDatatypeDataTestCase, cls).setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        stop_irods(cls.container_name)
+        super(UploadTestDatatypeDataTestCase, cls).tearDownClass()
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
