@@ -10,6 +10,16 @@
             >
                 <i class="fa fa-times" />
             </b-button>
+            <b-button 
+                v-if="isEnabled"
+                class="node-recommendations py-0 float-right"
+                variant="primary"
+                size="sm"
+                aria-label="tool recommendations"
+                @click="onGetRecommendations"
+            >
+                <i class="fa fa-arrow-right" />
+            </b-button>
             <b-button
                 v-if="canClone"
                 class="node-clone py-0 float-right"
@@ -36,6 +46,7 @@ import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import WorkflowIcons from "components/Workflow/icons";
 import LoadingSpan from "components/LoadingSpan";
+import { getGalaxyInstance } from "app";
 
 Vue.use(BootstrapVue);
 
@@ -70,6 +81,14 @@ export default {
         canClone() {
             return this.type != "subworkflow";
         },
+        isEnabled () {
+            const Galaxy = getGalaxyInstance();
+            const isRecommendationEnabled = Galaxy.config.enable_tool_recommendations;
+            if (isRecommendationEnabled === true || isRecommendationEnabled === "true") {
+                return true;
+            }
+            return false;
+        }
     },
     methods: {
         onDestroy() {
@@ -78,6 +97,9 @@ export default {
         onClone() {
             this.node.clone();
         },
+        onGetRecommendations() {
+            console.log("Clicked recommendations");
+        }
     },
 };
 </script>
