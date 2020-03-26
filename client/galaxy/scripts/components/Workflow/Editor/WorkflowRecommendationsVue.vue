@@ -9,10 +9,10 @@
                 </div>
                 <div class="modal-body" style="height: 280px; overflow: auto;">
                     <div v-if="compatibleTools.length > 0 && !isDeprecated" >
-                        <span v-for="tool in compatibleTools">
+                        <div v-for="tool in compatibleTools">
                             <i class="fa mr-1 fa-wrench"></i>
                             <a href="#" title="Open tool" :id="tool.id" v-on:click="openTool(tool.id)"> {{ tool.name }} </a>
-                        </span>
+                        </div>
                         <br>
                     </div>
                     <div v-else-if="isDeprecated">
@@ -65,9 +65,6 @@ export default {
     },
     methods: {
         async loadRecommendations() {
-            console.log("loaded");
-            console.log(this.workflowManager);
-            console.log(this.toolSequence);
             const response = await axios.post(`${getAppRoot()}api/workflows/get_tool_predictions`, {tool_sequence: this.toolSequence});
             const predictedData = response.data.predicted_data;
             const outputDatatypes = predictedData.o_extensions;
@@ -75,13 +72,11 @@ export default {
             const app = this.workflowManager.node.app;
             this.isDeprecated = predictedData.is_deprecated;
             this.deprecatedMessage = predictedData.message;
-            console.log(predictedData);
             if (predictedDataChildren.length > 0) {
                 let cTools = [];
-                // filter results based on datatype compatibility
                 for (const [index, name_obj] of predictedDataChildren.entries()) {
                     let t = {};
-                    let inputDatatypes = name_obj.i_extensions;
+                    const inputDatatypes = name_obj.i_extensions;
                     for (const out_t of outputDatatypes.entries()) {
                         for(const in_t of inputDatatypes.entries()) {
                             if ((app.isSubType(out_t[1], in_t[1]) === true) ||
@@ -91,7 +86,7 @@ export default {
                                 t.id = name_obj.tool_id
                                 t.name = name_obj.name;
                                 cTools.push(t);
-                                    break
+                                break;
                             }
                         }
                     }
@@ -109,6 +104,15 @@ export default {
         },
         openTool (tId) {
             console.log(tId);
+            const app = this.workflowManager.node.app;
+            const toolData = {type: "tool", tool_id: tId, _: "true"};
+            const response = await axios.post(`${getAppRoot()}api/workflows/build_module`, toolData);
+            const tData = response.data;
+            console.log(tData);
+            let newTool = app.create_node(toolData.type, tData.name, tId);
+            newTool.init_field_data(tData);
+            newTool.update_field_data(newData);
+            app.activate_node(newTool);
             this.closeModal();
         }
     },
