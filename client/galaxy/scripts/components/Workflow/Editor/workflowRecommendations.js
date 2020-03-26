@@ -1,4 +1,3 @@
-import _ from "underscore";
 import $ from "jquery";
 import Vue from "vue";
 import WorkflowToolRecommendations from "components/Workflow/Editor/WorkflowRecommendationsVue";
@@ -11,33 +10,33 @@ function getToolId(toolId) {
     return toolId;
 }
 
-function getWorkflowPath(wf_steps, current_node_id, current_node_name) {
+function getWorkflowPath(wfSteps, currentNodeId) {
         let steps = {};
-        let step_names = {};
-        for (let stp_idx in wf_steps.steps) {
-            let step = wf_steps.steps[stp_idx];
-            let input_connections = step.input_connections;
-            step_names[step.id] = getToolId(step.content_id);
-            for (let ic_idx in input_connections) {
-                let ic = input_connections[ic_idx];
+        let stepNames = {};
+        for (const stpIdx in wfSteps.steps) {
+            const step = wfSteps.steps[stpIdx];
+            const inputConnections = step.inputConnections;
+            stepNames[step.id] = getToolId(step.content_id);
+            for (const icIdx in inputConnections) {
+                const ic = inputConnections[icIdx];
                 if(ic !== null && ic !== undefined) {
-                    let prev_conn = [];
-                    for (let conn of ic) {
-                        prev_conn.push(conn.id.toString());
+                    let prevConn = [];
+                    for (const conn of ic) {
+                        prevConn.push(conn.id.toString());
                     }
-                    steps[step.id.toString()] = prev_conn;
+                    steps[step.id.toString()] = prevConn;
                 }
             }
         }
         // recursive call to determine path
-        function readPaths(node_id, ph) {
-            for (let st in steps) {
-                if (parseInt(st) === parseInt(node_id)) {
-                    let parent_id = parseInt(steps[st][0]);
-                    if (parent_id !== undefined && parent_id !== null) {
-                        ph.push(parent_id);
-                        if (steps[parent_id] !== undefined && steps[parent_id] !== null) {
-                            readPaths(parent_id, ph);
+        function readPaths(nodeId, ph) {
+            for (const st in steps) {
+                if (parseInt(st) === parseInt(nodeId)) {
+                    const parentId = parseInt(steps[st][0]);
+                    if (parentId !== undefined && parentId !== null) {
+                        ph.push(parentId);
+                        if (steps[parentId] !== undefined && steps[parentId] !== null) {
+                            readPaths(parentId, ph);
                         }
                     }
                 }
@@ -45,25 +44,23 @@ function getWorkflowPath(wf_steps, current_node_id, current_node_name) {
             return ph;
         }
         let ph = [];
-        let step_names_list = [];
-        ph.push(current_node_id);
-        ph = readPaths(current_node_id, ph);
-        for (let s_idx of ph) {
-            let s_name = step_names[s_idx.toString()];
-            if (s_name !== undefined && s_name !== null) {
-                step_names_list.push(s_name);
+        let stepNamesList = [];
+        ph.push(currentNodeId);
+        ph = readPaths(currentNodeId, ph);
+        for (const sIdx of ph) {
+            const sName = stepNames[sIdx.toString()];
+            if (sName !== undefined && sName !== null) {
+                stepNamesList.push(sName);
             }
         }
-        return step_names_list.join(",");
+        return stepNamesList.join(",");
 }
 
 export function getToolRecommendations(props) {
         const workflowSimple = props.node.app.to_simple();
         const node = props.node;
         const toolId = getToolId(node.content_id);
-        const toolSequence = getWorkflowPath(workflowSimple, node.id, toolId);
-        
-        // show tool recommendations
+        const toolSequence = getWorkflowPath(workflowSimple, node.id);
         const ToolRecommendationInstance = Vue.extend(WorkflowToolRecommendations);
         const vm = document.createElement("div");
         $("body").append(vm);
