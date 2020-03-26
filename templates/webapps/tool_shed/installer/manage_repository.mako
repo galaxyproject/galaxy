@@ -1,8 +1,8 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/webapps/tool_shed/repository/common.mako" import="*" />
-<%namespace file="/admin/tool_shed_repository/common.mako" import="*" />
-<%namespace file="/admin/tool_shed_repository/repository_actions_menu.mako" import="*" />
+<%namespace file="/webapps/tool_shed/installer/common.mako" import="*" />
+<%namespace file="/webapps/tool_shed/installer/repository_actions_menu.mako" import="*" />
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}

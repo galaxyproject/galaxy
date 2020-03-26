@@ -1,5 +1,5 @@
 <%inherit file="/base.mako"/>
-<%namespace file="/admin/tool_shed_repository/repository_actions_menu.mako" import="*" />
+<%namespace file="/webapps/tool_shed/installer/repository_actions_menu.mako" import="*" />
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/webapps/tool_shed/common/common.mako" import="*" />
 

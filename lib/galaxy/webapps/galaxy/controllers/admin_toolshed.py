@@ -181,7 +181,7 @@ class AdminToolshed(AdminGalaxy):
                     if tool:
                         tool_lineage = tool.lineage.get_version_ids(reverse=True)
                     break
-        return trans.fill_template("/admin/tool_shed_repository/view_tool_metadata.mako",
+        return trans.fill_template("/webapps/tool_shed/installer/view_tool_metadata.mako",
                                    repository=repository,
                                    repository_metadata=repository_metadata,
                                    tool=tool,
@@ -395,7 +395,7 @@ class AdminToolshed(AdminGalaxy):
             install_resolver_dependencies_check_box = CheckboxField('install_resolver_dependencies', value=True)
         else:
             install_resolver_dependencies_check_box = None
-        return trans.fill_template('/admin/tool_shed_repository/install_tool_dependencies_with_update.mako',
+        return trans.fill_template('/webapps/tool_shed/installer/install_tool_dependencies_with_update.mako',
                                    repository=repository,
                                    updating_repository_id=updating_repository_id,
                                    updating_to_ctx_rev=updating_to_ctx_rev,
@@ -498,7 +498,7 @@ class AdminToolshed(AdminGalaxy):
         view = views.DependencyResolversView(self.app)
         tool_requirements_d = suc.get_requirements_from_repository(repository)
         requirements_status = view.get_requirements_status(tool_requirements_d, repository.installed_tool_dependencies)
-        return trans.fill_template('/admin/tool_shed_repository/manage_repository.mako',
+        return trans.fill_template('/webapps/tool_shed/installer/manage_repository.mako',
                                    repository=repository,
                                    description=description,
                                    repo_files_dir=repo_files_dir,
@@ -522,7 +522,7 @@ class AdminToolshed(AdminGalaxy):
         for tsr_id in tsr_ids:
             clause_list.append(trans.install_model.ToolShedRepository.table.c.id == tsr_id)
         query = trans.install_model.context.current.query(trans.install_model.ToolShedRepository).filter(or_(*clause_list))
-        return trans.fill_template('admin/tool_shed_repository/monitor_repository_installation.mako',
+        return trans.fill_template('/webapps/tool_shed/installer/monitor_repository_installation.mako',
                                    tool_shed_repositories=tool_shed_repositories,
                                    query=query,
                                    message=escape(kwd.get('message', '')),
@@ -667,7 +667,7 @@ class AdminToolshed(AdminGalaxy):
                                          tool_shed_url=tool_shed_url)
                 encoded_kwd, query, tool_shed_repositories, encoded_repository_ids = \
                     install_repository_manager.initiate_repository_installation(installation_dict)
-                return trans.fill_template('admin/tool_shed_repository/monitor_repository_installation.mako',
+                return trans.fill_template('/webapps/tool_shed/installer/monitor_repository_installation.mako',
                                            encoded_kwd=encoded_kwd,
                                            query=query,
                                            tool_shed_repositories=tool_shed_repositories,
@@ -784,7 +784,7 @@ class AdminToolshed(AdminGalaxy):
             install_resolver_dependencies_check_box = None
         encoded_repo_info_dicts = encoding_util.encoding_sep.join(encoded_repo_info_dicts)
         tool_shed_url = kwd['tool_shed_url']
-        return trans.fill_template('/admin/tool_shed_repository/select_tool_panel_section.mako',
+        return trans.fill_template('/webapps/tool_shed/installer/select_tool_panel_section.mako',
                                    encoded_repo_info_dicts=encoded_repo_info_dicts,
                                    updating=updating,
                                    updating_repository_id=updating_repository_id,
@@ -974,7 +974,7 @@ class AdminToolshed(AdminGalaxy):
                 if repository.status != status:
                     rval.append(dict(id=id,
                                      status=repository.status,
-                                     html_status=unicodify(trans.fill_template("admin/tool_shed_repository/repository_installation_status.mako",
+                                     html_status=unicodify(trans.fill_template("/webapps/tool_shed/installer/repository_installation_status.mako",
                                                                                repository=repository),
                                                            'utf-8')))
         return rval
@@ -1127,7 +1127,7 @@ class AdminToolshed(AdminGalaxy):
             install_resolver_dependencies_check_box = CheckboxField('install_resolver_dependencies', value=True)
         else:
             install_resolver_dependencies_check_box = None
-        return trans.fill_template('/admin/tool_shed_repository/reselect_tool_panel_section.mako',
+        return trans.fill_template('/webapps/tool_shed/installer/reselect_tool_panel_section.mako',
                                    repository=tool_shed_repository,
                                    no_changes_check_box=no_changes_check_box,
                                    original_section_name=original_section_name,
@@ -1186,7 +1186,7 @@ class AdminToolshed(AdminGalaxy):
                                                             tool_dependency_ids=td_ids,
                                                             status=status,
                                                             message=message))
-        return trans.fill_template('/admin/tool_shed_repository/uninstall_tool_dependencies.mako',
+        return trans.fill_template('/webapps/tool_shed/installer/uninstall_tool_dependencies.mako',
                                    repository=tool_shed_repository,
                                    tool_dependency_ids=tool_dependency_ids,
                                    tool_dependencies=tool_dependencies,
