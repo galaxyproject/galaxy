@@ -3,10 +3,12 @@ import $ from "jquery";
 export class DataInputView {
     constructor(options = {}) {
         this.input = options.input;
-        this.nodeView = options.nodeView;
         this.terminalElement = options.terminalElement;
+        this.nodeView = options.nodeView;
+        const input = options.input;
+        const label = input.label || input.name;
         this.$el = $(`<div class="form-row dataRow input-data-row"/>`);
-        this.$el.attr("name", this.input.name).html(this.input.label || this.input.name);
+        this.$el.attr("name", this.input.name).html(label);
         if (!options.skipResize) {
             this.$el.css({
                 position: "absolute",
