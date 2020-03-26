@@ -799,12 +799,12 @@
     <sniffer type="galaxy.datatypes.tabular:Vcf"/>
     <sniffer type="galaxy.datatypes.binary:TwoBit"/>
     <sniffer type="galaxy.datatypes.binary:GeminiSQLite"/>
-    <sniffer type="galaxy.datatypes.binary:ChiraSQLite"/>
     <sniffer type="galaxy.datatypes.binary:MzSQlite"/>
     <sniffer type="galaxy.datatypes.binary:IdpDB"/>
     <sniffer type="galaxy.datatypes.binary:ElibSQlite"/>
     <sniffer type="galaxy.datatypes.binary:DlibSQlite"/>
     <sniffer type="galaxy.datatypes.binary:BlibSQlite"/>
+    <sniffer type="galaxy.datatypes.binary:ChiraSQLite"/>
     <sniffer type="galaxy.datatypes.binary:CuffDiffSQlite"/>
     <sniffer type="galaxy.datatypes.binary:GAFASQLite"/>
     <sniffer type="galaxy.datatypes.binary:SQlite"/>
