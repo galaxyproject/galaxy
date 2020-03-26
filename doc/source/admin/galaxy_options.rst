@@ -1344,6 +1344,27 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``interactivetools_proxy_host``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Proxy host - assumed to just be hosted on the same hostname and
+    port as Galaxy by default.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~
+``interactivetools_map``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Map for interactivetool proxy.
+:Default: ``interactivetools_map.sqlite``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``visualizations_visible``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
