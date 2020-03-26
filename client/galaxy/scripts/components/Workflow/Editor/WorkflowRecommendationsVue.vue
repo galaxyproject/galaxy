@@ -11,7 +11,7 @@
                     <div v-if="compatibleTools.length > 0 && !isDeprecated" >
                         <div v-for="tool in compatibleTools">
                             <i class="fa mr-1 fa-wrench"></i>
-                            <a href="#" title="Open tool" :id="tool.id" v-on:click="openTool(tool.id)"> {{ tool.name }} </a>
+                            <a href="#" title="Open tool" :id="tool.id" v-on:click="createTool(tool.id)"> {{ tool.name }} </a>
                         </div>
                         <br>
                     </div>
@@ -37,6 +37,7 @@
 
 import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
+import { getModule } from "./services";
 import _l from "utils/localization";
 
 export default {
@@ -91,8 +92,6 @@ export default {
                         }
                     }
                 }
-                console.log(cTools);
-                console.log(this);
                 this.compatibleTools = cTools;
             }
             else {
@@ -102,19 +101,19 @@ export default {
         closeModal () {
             this.$el.remove();
         },
-        openTool (tId) {
-            console.log(tId);
-            const app = this.workflowManager.node.app;
-            const toolData = {type: "tool", tool_id: tId, _: "true"};
-            const response = await axios.post(`${getAppRoot()}api/workflows/build_module`, toolData);
-            const tData = response.data;
-            console.log(tData);
-            let newTool = app.create_node(toolData.type, tData.name, tId);
-            newTool.init_field_data(tData);
-            newTool.update_field_data(newData);
-            app.activate_node(newTool);
-            this.closeModal();
-        }
+        createTool (tId) {
+            const app = this.workflowManager.node.app;         
+            const requestData = {
+                type: "tool",
+                tool_id: tId,
+                _: "true",
+            };
+            getModule(requestData).then((response) => {
+                const node = app.create_node("tool", response.name, tId);
+                app.set_node(node, response);
+                this.closeModal();
+            });
+        },
     },
 };
 </script>
