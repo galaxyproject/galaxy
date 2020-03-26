@@ -105,6 +105,7 @@ export default {
         },
         renderD3Tree(predictedTools) {
             const duration = 750;
+            const maxTextLength = 20;
             const svg = d3
                 .select("#tool-recommendation")
                 .append("svg")
@@ -160,10 +161,14 @@ export default {
                         return d.children || d._children ? "end" : "start";
                     })
                     .text(d => {
+                        let tName = d.name;
+                        if(tName.length > maxTextLength) {
+                            return tName.slice(0, maxTextLength) + "...";
+                        }
                         return d.name;
                     });
                 nodeEnter.append("title").text(d => {
-                    return d.children || d._children ? "Click to collapse" : "Click to open tool definition";
+                    return d.children || d._children ? "Click to collapse" : "Open tool - " + d.name;
                 });
                 // Transition nodes to their new position.
                 const nodeUpdate = node
