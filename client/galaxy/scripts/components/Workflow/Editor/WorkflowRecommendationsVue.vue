@@ -7,7 +7,7 @@
                     <h4>{{ modalHeaderTitle }}</h4>
                 </div>
                 <div class="modal-body wf-tools-body">
-                    <div>
+                    <div v-if="showLoading">
                         {{ loadingMessage }}
                     </div>
                     <div v-if="compatibleTools.length > 0 && !isDeprecated">
@@ -17,12 +17,11 @@
                                 {{ tool.name }}
                             </a>
                         </div>
-                        <br />
                     </div>
                     <div v-else-if="isDeprecated">
                         {{ deprecatedMessage }}
                     </div>
-                    <div v-else>
+                    <div v-if="compatibleTools.length === 0 && !showLoading">
                         {{ noRecommendationsMessage }}
                     </div>
                 </div>
@@ -59,9 +58,10 @@ export default {
             ),
             compatibleTools: [],
             isDeprecated: false,
-            noRecommendationsMessage: "",
+            noRecommendationsMessage: _l("No tool recommendations"),
             deprecatedMessage: "",
-            loadingMessage: "Loading recommendations ..."
+            loadingMessage: _l("Loading recommendations ..."),
+            showLoading: true
         };
     },
     created() {
@@ -100,11 +100,9 @@ export default {
                         }
                     }
                 }
-                this.loadingMessage = "";
                 this.compatibleTools = cTools;
-            } else {
-                this.noRecommendationsMessage = "No tool recommendations";
             }
+            this.showLoading = false;
         },
         closeModal() {
             this.$el.remove();
