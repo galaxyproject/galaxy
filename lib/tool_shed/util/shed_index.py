@@ -34,7 +34,7 @@ def _get_or_create_index(index_dir, schema):
     if index.exists_in(index_dir):
         idx = index.open_dir(index_dir)
         try:
-            assert idx.schema == repo_schema
+            assert idx.schema == schema
             return idx
         except AssertionError:
             log.warning("Index at '%s' uses outdated schema, creating new index", index_dir)
