@@ -10,7 +10,7 @@ jobs:
     strategy:
       matrix:
         python-version: [3.7]
-        subset: ['upload_datatype']
+        subset: ['upload_datatype_irods']
     services:
       postgres:
         image: postgres:11
