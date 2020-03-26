@@ -19,7 +19,7 @@ jobs:
       uses: actions/cache@v1
       id: pip-cache
       with:
-        path: ~/.cache/pip
+        path: ~/Library/Caches/pip
         key: pip-cache-osx-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
     - name: Install tox
       run: pip install tox
