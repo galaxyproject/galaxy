@@ -54,6 +54,7 @@ __all__ = (
     'PulsarRESTJobRunner',
     'PulsarMQJobRunner',
     'PulsarEmbeddedJobRunner',
+    'PulsarEmbeddedMQJobRunner',
 )
 
 MINIMUM_PULSAR_VERSIONS = {
@@ -187,6 +188,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
 
     runner_name = "PulsarJobRunner"
     default_build_pulsar_app = False
+    use_mq = False
 
     def __init__(self, app, nworkers, **kwds):
         """Start the job runner."""
@@ -202,8 +204,15 @@ class PulsarJobRunner(AsynchronousJobRunner):
         self._monitor()
 
     def _monitor(self):
-        # Extension point allow MQ variant to setup callback instead
-        self._init_monitor_thread()
+        if self.use_mq:
+            # This is a message queue driven runner, don't monitor
+            # just setup required callback.
+            self._init_noop_monitor()
+
+            self.client_manager.ensure_has_status_update_callback(self.__async_update)
+            self.client_manager.ensure_has_ack_consumers()
+        else:
+            self._init_monitor_thread()
 
     def __init_client_manager(self):
         pulsar_conf = self.runner_params.get('pulsar_app_config', None)
@@ -813,36 +822,6 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 metadata_kwds['datatypes_config'] = datatypes_config
         return metadata_kwds
 
-
-class PulsarLegacyJobRunner(PulsarJobRunner):
-    """Flavor of Pulsar job runner mimicking behavior of old LWR runner."""
-
-    destination_defaults = dict(
-        rewrite_parameters="false",
-        dependency_resolution="local",
-    )
-
-
-class PulsarMQJobRunner(PulsarJobRunner):
-    """Flavor of Pulsar job runner with sensible defaults for message queue communication."""
-
-    destination_defaults = dict(
-        default_file_action="remote_transfer",
-        rewrite_parameters="true",
-        dependency_resolution="remote",
-        jobs_directory=PARAMETER_SPECIFICATION_REQUIRED,
-        url=PARAMETER_SPECIFICATION_IGNORED,
-        private_token=PARAMETER_SPECIFICATION_IGNORED
-    )
-
-    def _monitor(self):
-        # This is a message queue driven runner, don't monitor
-        # just setup required callback.
-        self._init_noop_monitor()
-
-        self.client_manager.ensure_has_status_update_callback(self.__async_update)
-        self.client_manager.ensure_has_ack_consumers()
-
     def __async_update(self, full_status):
         galaxy_job_id = None
         try:
@@ -860,6 +839,29 @@ class PulsarMQJobRunner(PulsarJobRunner):
             log.exception("Failed to update Pulsar job status for job_id %s", galaxy_job_id)
             raise
             # Nothing else to do? - Attempt to fail the job?
+
+
+class PulsarLegacyJobRunner(PulsarJobRunner):
+    """Flavor of Pulsar job runner mimicking behavior of old LWR runner."""
+
+    destination_defaults = dict(
+        rewrite_parameters="false",
+        dependency_resolution="local",
+    )
+
+
+class PulsarMQJobRunner(PulsarJobRunner):
+    """Flavor of Pulsar job runner with sensible defaults for message queue communication."""
+    use_mq = True
+
+    destination_defaults = dict(
+        default_file_action="remote_transfer",
+        rewrite_parameters="true",
+        dependency_resolution="remote",
+        jobs_directory=PARAMETER_SPECIFICATION_REQUIRED,
+        url=PARAMETER_SPECIFICATION_IGNORED,
+        private_token=PARAMETER_SPECIFICATION_IGNORED
+    )
 
 
 KUBERNETES_DESTINATION_DEFAULTS = {
@@ -901,7 +903,7 @@ class PulsarRESTJobRunner(PulsarJobRunner):
 
 
 class PulsarEmbeddedJobRunner(PulsarJobRunner):
-    """Flavor of Puslar job runnner that runs Pulsar's server code directly within Galaxy.
+    """Flavor of Puslar job runner that runs Pulsar's server code directly within Galaxy.
 
     This is an appropriate job runner for when the desire is to use Pulsar staging
     but their is not need to run a remote service.
@@ -912,6 +914,10 @@ class PulsarEmbeddedJobRunner(PulsarJobRunner):
         rewrite_parameters="true",
         dependency_resolution="remote",
     )
+    default_build_pulsar_app = True
+
+
+class PulsarEmbeddedMQJobRunner(PulsarMQJobRunner):
     default_build_pulsar_app = True
 
 
