@@ -46,7 +46,6 @@ jobs:
       with:
         path: ~/.cache/pip
         key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
-    - uses: actions/checkout@v2
     - name: Setup tmate session
       uses: mxschmitt/action-tmate@v2
     - name: Run tests
