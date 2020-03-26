@@ -20,7 +20,7 @@ jobs:
       id: pip-cache
       with:
         path: ~/.cache/pip
-        key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
+        key: pip-cache-osx-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
     - name: Install tox
       run: pip install tox
     - name: fetch migrations
