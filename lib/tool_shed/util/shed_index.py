@@ -147,20 +147,20 @@ def get_repos(sa_session, file_path, hgweb_config_dir, **kwargs):
                     tools_in_dir = load_one_dir(os.path.join(root, dirname))
                     tools_list.extend(tools_in_dir)
 
-        yield (dict(id=repo_id,
-                    name=name,
-                    description=description,
-                    long_description=long_description,
-                    homepage_url=homepage_url,
-                    remote_repository_url=remote_repository_url,
-                    repo_owner_username=repo_owner_username,
-                    times_downloaded=times_downloaded,
-                    approved=approved,
-                    last_updated=last_updated,
-                    full_last_updated=full_last_updated,
+        yield (dict(id=unicodify(repo_id),
+                    name=unicodify(name),
+                    description=unicodify(description),
+                    long_description=unicodify(long_description),
+                    homepage_url=unicodify(homepage_url),
+                    remote_repository_url=unicodify(remote_repository_url),
+                    repo_owner_username=unicodify(repo_owner_username),
+                    times_downloaded=unicodify(times_downloaded),
+                    approved=unicodify(approved),
+                    last_updated=unicodify(last_updated),
+                    full_last_updated=unicodify(full_last_updated),
                     tools_list=tools_list,
-                    repo_lineage=repo_lineage,
-                    categories=categories))
+                    repo_lineage=unicodify(repo_lineage),
+                    categories=unicodify(categories)))
 
 
 def debug_handler(path, exc_info):
