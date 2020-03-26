@@ -19,7 +19,7 @@ def start_irods(container_name):
         'docker',
         'run',
         '-p',
-        '1247:1247',
+        '2020:1247',
         '-d',
         '--name',
         container_name,
