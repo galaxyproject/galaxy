@@ -1656,8 +1656,8 @@ body.reports {
     .node {
         cursor: pointer;
         circle {
-            fill: lighten($brand-primary, 20%);
-            stroke: lighten($brand-primary, 20%);
+            fill: $brand-primary;
+            stroke: $brand-primary;
         }
     }
 
@@ -1668,8 +1668,8 @@ body.reports {
 
     .link {
         fill: none;
-        stroke: lighten($brand-primary, 20%);
-        stroke-width: 0.2rem;
+        stroke: $brand-primary;
+        stroke-width: 4;
     }
 }
 
