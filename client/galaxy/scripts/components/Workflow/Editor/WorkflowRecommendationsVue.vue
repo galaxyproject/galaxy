@@ -1,13 +1,16 @@
 <template>
-    <div class="modal ui-modal tool-recommendation-view" style="display: block;">
+    <div class="modal ui-modal wf-recommendation-view">
         <div class="modal-backdrop fade in">
         </div>
-        <div class="modal-dialog" style="width: 260px;">
+        <div class="modal-dialog wf-tools-dialog">
             <div class="modal-content">
-                <div class="modal-header" :title="modalHeaderToolTip">
-                    <h4 class="title" tabindex="0"> {{ modalHeaderTitle }}</h4>
+                <div class="modal-header wf-tools-background" :title="modalHeaderToolTip">
+                    <h4> {{ modalHeaderTitle }}</h4>
                 </div>
-                <div class="modal-body" style="height: 280px; overflow: auto;">
+                <div class="modal-body wf-tools-body">
+                    <div>
+                        {{ loadingMessage }}
+                    </div>
                     <div v-if="compatibleTools.length > 0 && !isDeprecated" >
                         <div v-for="tool in compatibleTools">
                             <i class="fa mr-1 fa-wrench"></i>
@@ -25,7 +28,7 @@
                 </div>
                 <div class="modal-footer">
                     <div class="buttons">
-                        <button v-on:click="closeModal" title="Close">Close</button>
+                        <button v-on:click="closeModal" title="Cancel" class="wf-tools-background">Cancel</button>
                     </div>
                 </div>
             </div>
@@ -57,6 +60,7 @@ export default {
             isDeprecated: false,
             noRecommendationsMessage: "",
             deprecatedMessage: "",
+            loadingMessage: "Loading recommendations ..."
         };
     },
     created() {
@@ -92,6 +96,7 @@ export default {
                         }
                     }
                 }
+                this.loadingMessage = "";
                 this.compatibleTools = cTools;
             }
             else {

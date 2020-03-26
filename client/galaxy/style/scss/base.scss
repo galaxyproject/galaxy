@@ -1684,3 +1684,18 @@ body.reports {
         stroke-width: 0.2rem;
     }
 }
+
+.wf-recommendation-view {
+    display: block;
+    .wf-tools-dialog {
+        width: 20%;
+    }
+    .wf-tools-body {
+        overflow: auto;
+        height: 50%;
+    }
+    .wf-tools-background {
+        background: $brand-primary;
+        color: $white;
+    }
+}
