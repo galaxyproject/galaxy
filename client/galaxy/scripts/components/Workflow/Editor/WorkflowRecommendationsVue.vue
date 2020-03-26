@@ -3,7 +3,7 @@
         <div class="modal-backdrop fade in">
         </div>
         <div class="modal-dialog wf-tools-dialog">
-            <div class="modal-content">
+            <div class="modal-content wf-tool-content">
                 <div class="modal-header wf-tools-background" :title="modalHeaderToolTip">
                     <h4> {{ modalHeaderTitle }}</h4>
                 </div>

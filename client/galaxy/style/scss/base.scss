@@ -1658,19 +1658,7 @@ body.reports {
         circle {
             fill: lighten($brand-primary, 20%);
             stroke: lighten($brand-primary, 20%);
-            stroke-width: 0.1rem;
         }
-        text {
-            font: 0.4rem sans-serif;
-        }
-    }
-
-    .node-enter {
-        fill-opacity: 1e-6;
-    }
-
-    .node-update {
-        fill-opacity: 1;
     }
 
     .tree-size {
@@ -1697,5 +1685,8 @@ body.reports {
     .wf-tools-background {
         background: $brand-primary;
         color: $white;
+    }
+    .wf-tool-content {
+        border: solid 1px $brand-primary;
     }
 }
