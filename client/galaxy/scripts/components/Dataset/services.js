@@ -36,7 +36,7 @@ export class Services {
             const response = await axios.post(url, {
                 type: "dataset",
                 source: "hda",
-                content: dataset_id
+                content: dataset_id,
             });
             return response.data;
         } catch (e) {
@@ -60,7 +60,7 @@ export class Services {
             const response = await axios.put(url, {
                 item_id: item_id,
                 item_class: item_class,
-                item_tags: item_tags
+                item_tags: item_tags,
             });
             return response.data;
         } catch (e) {

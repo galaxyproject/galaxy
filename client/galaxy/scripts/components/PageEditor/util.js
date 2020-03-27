@@ -11,5 +11,5 @@ export const save = (pageId, content) => {
     axios
         .post(`${getAppRoot()}api/pages/${pageId}/revisions`, { content: content })
         .finally(hide_modal)
-        .catch(error_message => Toast.error("Failed to save page: " + errorMessageAsString(error_message)));
+        .catch((error_message) => Toast.error("Failed to save page: " + errorMessageAsString(error_message)));
 };

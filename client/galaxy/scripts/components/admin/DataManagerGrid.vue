@@ -2,7 +2,7 @@
     <table class="tabletip">
         <thead>
             <tr>
-                <th :colspan="dataManagerColumns.length" style="font-size:120%">
+                <th :colspan="dataManagerColumns.length" style="font-size: 120%;">
                     Data Manager: {{ dataManagerTableName }}
                     <a
                         class="icon-btn"
@@ -32,21 +32,21 @@ export default {
     props: {
         dataManagerTableName: {
             type: String,
-            required: true
+            required: true,
         },
         dataManagerColumns: {
             type: Array,
-            required: true
+            required: true,
         },
         dataManagerItems: {
             type: Array,
-            required: true
-        }
+            required: true,
+        },
     },
     methods: {
         handleReloadButtonClick(event) {
             this.$emit("reloaddatamanager", this.dataManagerTableName);
-        }
-    }
+        },
+    },
 };
 </script>

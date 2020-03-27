@@ -12,7 +12,7 @@ export class DataInputView {
                 position: "absolute",
                 left: -1000,
                 top: -1000,
-                display: "none"
+                display: "none",
             });
             $("body").append(this.el);
             this.nodeView.updateMaxWidth(this.$el.outerWidth());
@@ -20,7 +20,7 @@ export class DataInputView {
                 position: "",
                 left: "",
                 top: "",
-                display: ""
+                display: "",
             });
             this.$el.remove();
         }
@@ -47,7 +47,7 @@ export class DataOutputView {
             const calloutView = new OutputCalloutView(app, {
                 label: label,
                 output: output,
-                node: node
+                node: node,
             });
             this.calloutView = calloutView;
             this.$el.prepend(calloutView.$el);
@@ -56,7 +56,7 @@ export class DataOutputView {
             position: "absolute",
             left: -1000,
             top: -1000,
-            display: "none"
+            display: "none",
         });
         $("body").append(this.el);
         this.nodeView.updateMaxWidth(this.$el.outerWidth() + 17);
@@ -65,7 +65,7 @@ export class DataOutputView {
                 position: "",
                 left: "",
                 top: "",
-                display: ""
+                display: "",
             })
             .detach();
     }
@@ -91,7 +91,7 @@ export class ParameterOutputView {
             const calloutView = new OutputCalloutView(app, {
                 label: label,
                 output: output,
-                node: node
+                node: node,
             });
             this.calloutView = calloutView;
             this.$el.append(calloutView.$el);
@@ -100,7 +100,7 @@ export class ParameterOutputView {
             position: "absolute",
             left: -1000,
             top: -1000,
-            display: "none"
+            display: "none",
         });
         $("body").append(this.el);
         this.nodeView.updateMaxWidth(this.$el.outerWidth() + 17);
@@ -109,7 +109,7 @@ export class ParameterOutputView {
                 position: "",
                 left: "",
                 top: "",
-                display: ""
+                display: "",
             })
             .detach();
     }
@@ -146,7 +146,7 @@ export class OutputCalloutView {
             )
             .tooltip({
                 delay: 500,
-                title: "Unchecked output datasets will be hidden."
+                title: "Unchecked output datasets will be hidden.",
             });
         this.render();
     }

@@ -23,16 +23,16 @@ var PairedDatasetCollectionElementView = Backbone.View.extend(BASE_MVC.LoggableM
     tagName: "li",
     className: "collection-element",
 
-    initialize: function(attributes) {
+    initialize: function (attributes) {
         this.element = attributes.element || {};
         this.identifier = attributes.identifier;
     },
 
-    render: function() {
+    render: function () {
         this.$el.attr("data-element-id", this.element.id).html(
             this.template({
                 identifier: this.identifier,
-                element: this.element
+                element: this.element,
             })
         );
         return this;
@@ -44,15 +44,15 @@ var PairedDatasetCollectionElementView = Backbone.View.extend(BASE_MVC.LoggableM
     ),
 
     /** remove the DOM and any listeners */
-    destroy: function() {
+    destroy: function () {
         this.off();
         this.$el.remove();
     },
 
     /** string rep */
-    toString: function() {
+    toString: function () {
         return "DatasetCollectionElementView()";
-    }
+    },
 });
 
 // ============================================================================
@@ -68,13 +68,13 @@ var PairCollectionCreator = _super.extend({
     className: "pair-collection-creator collection-creator flex-row-container",
 
     /** override to no-op */
-    _mangleDuplicateNames: function() {},
+    _mangleDuplicateNames: function () {},
 
     // TODO: this whole pattern sucks. There needs to be two classes of problem area:
     //      bad inital choices and
     //      when the user has painted his/her self into a corner during creation/use-of-the-creator
     /** render the entire interface */
-    render: function(speed, callback) {
+    render: function (speed, callback) {
         if (this.workingElements.length === 2) {
             return _super.prototype.render.call(this, speed, callback);
         }
@@ -83,7 +83,7 @@ var PairCollectionCreator = _super.extend({
 
     // ------------------------------------------------------------------------ rendering elements
     /** render forward/reverse */
-    _renderList: function(speed, callback) {
+    _renderList: function (speed, callback) {
         //this.debug( '-- _renderList' );
         //precondition: there are two valid elements in workingElements
         var creator = this;
@@ -92,7 +92,7 @@ var PairCollectionCreator = _super.extend({
         var $list = creator.$list();
 
         // lose the original views, create the new, append all at once, then call their renders
-        _.each(this.elementViews, view => {
+        _.each(this.elementViews, (view) => {
             view.destroy();
             creator.removeElementView(view);
         });
@@ -103,24 +103,24 @@ var PairCollectionCreator = _super.extend({
     },
 
     /** create the forward element view */
-    _createForwardElementView: function() {
+    _createForwardElementView: function () {
         return this._createElementView(this.workingElements[0], {
-            identifier: "forward"
+            identifier: "forward",
         });
     },
 
     /** create the forward element view */
-    _createReverseElementView: function() {
+    _createReverseElementView: function () {
         return this._createElementView(this.workingElements[1], {
-            identifier: "reverse"
+            identifier: "reverse",
         });
     },
 
     /** create an element view, cache in elementViews, and return */
-    _createElementView: function(element, options) {
+    _createElementView: function (element, options) {
         var elementView = new this.elementViewClass(
             _.extend(options, {
-                element: element
+                element: element,
             })
         );
         this.elementViews.push(elementView);
@@ -128,13 +128,13 @@ var PairCollectionCreator = _super.extend({
     },
 
     /** swap the forward, reverse elements and re-render */
-    swap: function() {
+    swap: function () {
         this.workingElements = [this.workingElements[1], this.workingElements[0]];
         this._renderList();
     },
 
     events: _.extend(_.clone(_super.prototype.events), {
-        "click .swap": "swap"
+        "click .swap": "swap",
     }),
 
     // ------------------------------------------------------------------------ templates
@@ -154,7 +154,7 @@ var PairCollectionCreator = _super.extend({
                 "</a>",
                 "</div>",
                 '<div class="collection-elements scroll-container flex-row">',
-                "</div>"
+                "</div>",
             ].join("")
         ),
 
@@ -167,7 +167,7 @@ var PairCollectionCreator = _super.extend({
                         "Pair collections are permanent collections containing two datasets: one forward and one reverse. ",
                         "Often these are forward and reverse reads. The pair collections can be passed to tools and ",
                         "workflows in order to have analyses done on both datasets. This interface allows ",
-                        "you to create a pair, name it, and swap which is forward and which reverse."
+                        "you to create a pair, name it, and swap which is forward and which reverse.",
                     ].join("")
                 ),
                 "</p>",
@@ -176,7 +176,7 @@ var PairCollectionCreator = _super.extend({
                 _l(
                     [
                         'Click the <i data-target=".swap">"Swap"</i> link to make your forward dataset the reverse ',
-                        "and the reverse dataset forward."
+                        "and the reverse dataset forward.",
                     ].join("")
                 ),
                 "</li>",
@@ -188,10 +188,10 @@ var PairCollectionCreator = _super.extend({
                 _l(
                     [
                         'Once your collection is complete, enter a <i data-target=".collection-name">name</i> and ',
-                        'click <i data-target=".create-collection">"Create list"</i>.'
+                        'click <i data-target=".create-collection">"Create list"</i>.',
                     ].join("")
                 ),
-                "</p>"
+                "</p>",
             ].join("")
         ),
 
@@ -237,16 +237,16 @@ var PairCollectionCreator = _super.extend({
                 // _l( 'Create a different kind of collection' ),
                 "</div>",
                 "</div>",
-                "</div>"
+                "</div>",
             ].join("")
-        )
+        ),
     }),
 
     // ------------------------------------------------------------------------ misc
     /** string rep */
-    toString: function() {
+    toString: function () {
         return "PairCollectionCreator";
-    }
+    },
 });
 
 //==============================================================================
@@ -267,13 +267,13 @@ function createPairCollection(contents, defaultHideSourceItems) {
 
     var promise = pairCollectionCreatorModal(elements, {
         defaultHideSourceItems: defaultHideSourceItems,
-        creationFn: function(elements, name, hideSourceItems) {
+        creationFn: function (elements, name, hideSourceItems) {
             elements = [
                 { name: "forward", src: "hda", id: elements[0].id },
-                { name: "reverse", src: "hda", id: elements[1].id }
+                { name: "reverse", src: "hda", id: elements[1].id },
             ];
             return contents.createHDCA(elements, "paired", name, hideSourceItems, copyElements);
-        }
+        },
     });
 
     return promise;
@@ -283,5 +283,5 @@ function createPairCollection(contents, defaultHideSourceItems) {
 export default {
     PairCollectionCreator: PairCollectionCreator,
     pairCollectionCreatorModal: pairCollectionCreatorModal,
-    createPairCollection: createPairCollection
+    createPairCollection: createPairCollection,
 };

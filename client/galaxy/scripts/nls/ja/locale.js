@@ -277,5 +277,5 @@ define({
     //false,
     //"Edit annotation" :
     //false,
-    "Your workflows": "あなたのワークフロー"
+    "Your workflows": "あなたのワークフロー",
 });

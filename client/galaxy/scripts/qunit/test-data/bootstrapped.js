@@ -11,7 +11,7 @@ export default {
         terms_url: null,
         library_import_dir: null,
         logo_url: null,
-        enable_unique_workflow_defaults: false
+        enable_unique_workflow_defaults: false,
     },
     user: {
         username: "test",
@@ -21,6 +21,6 @@ export default {
         email: "test@test.test",
         tags_used: ["test"],
         model_class: "User",
-        id: "f2db41e1fa331b3e"
-    }
+        id: "f2db41e1fa331b3e",
+    },
 };

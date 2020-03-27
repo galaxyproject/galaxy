@@ -8,7 +8,7 @@ import Utils from "utils/utils";
 import { keyedColorScheme } from "utils/color";
 import Buttons from "mvc/ui/ui-buttons";
 var View = Backbone.View.extend({
-    initialize: function(options) {
+    initialize: function (options) {
         this.data = [];
         this.data2 = [];
         this.model =
@@ -25,10 +25,10 @@ var View = Backbone.View.extend({
                 optional: false,
                 disabled: false,
                 readonly: false,
-                onchange: function() {},
+                onchange: function () {},
                 value: null,
                 individual: false,
-                pagesize: 20
+                pagesize: 20,
             }).set(options);
         this.on("change", () => {
             if (this.model.get("onchange")) {
@@ -44,7 +44,7 @@ var View = Backbone.View.extend({
         this.render();
     },
 
-    render: function() {
+    render: function () {
         if (this.model.get("searchable")) {
             this._renderSearchable();
         } else {
@@ -67,7 +67,7 @@ var View = Backbone.View.extend({
     },
 
     /** Renders the classic selection field */
-    _renderClassic: function() {
+    _renderClassic: function () {
         this.$el
             .addClass(this.model.get("multiple") ? "ui-select-multiple" : "ui-select")
             .append((this.$select = $("<select/>")))
@@ -81,19 +81,17 @@ var View = Backbone.View.extend({
                 .addClass("icon-resize")
                 .show()
                 .off("mousedown")
-                .on("mousedown", event => {
+                .on("mousedown", (event) => {
                     var currentY = event.pageY;
                     var currentHeight = this.$select.height();
                     this.minHeight = this.minHeight || currentHeight;
                     $("#dd-helper")
                         .show()
-                        .on("mousemove", event => {
+                        .on("mousemove", (event) => {
                             this.$select.height(Math.max(currentHeight + (event.pageY - currentY), this.minHeight));
                         })
                         .on("mouseup mouseleave", () => {
-                            $("#dd-helper")
-                                .hide()
-                                .off();
+                            $("#dd-helper").hide().off();
                         });
                 });
         } else {
@@ -104,7 +102,7 @@ var View = Backbone.View.extend({
     },
 
     /** Renders the default select2 field */
-    _renderSearchable: function() {
+    _renderSearchable: function () {
         this.$el.append((this.$select = $("<div/>"))).append((this.$dropdown = $("<div/>")));
         this.$dropdown.hide();
         if (!this.model.get("multiple")) {
@@ -120,45 +118,39 @@ var View = Backbone.View.extend({
                 onclick: () => {
                     var new_value = [];
                     if (this.all_button.value() !== 0) {
-                        _.each(this.model.get("data"), option => {
+                        _.each(this.model.get("data"), (option) => {
                             new_value.push(option.value);
                         });
                     }
                     this.value(new_value);
                     this.trigger("change");
-                }
+                },
             });
             this.$el.prepend(this.all_button.$el);
         }
     },
 
     /** Matches a search term with a given text */
-    _match: function(term, text) {
-        return (
-            !term ||
-            term === "" ||
-            String(text)
-                .toUpperCase()
-                .indexOf(term.toUpperCase()) >= 0
-        );
+    _match: function (term, text) {
+        return !term || term === "" || String(text).toUpperCase().indexOf(term.toUpperCase()) >= 0;
     },
 
     /** Updates the selection options */
-    _changeData: function() {
+    _changeData: function () {
         this.data = [];
         if (!this.model.get("multiple") && this.model.get("optional")) {
             this.data.push({
                 value: "__null__",
-                label: this.model.get("empty_text")
+                label: this.model.get("empty_text"),
             });
         }
-        _.each(this.model.get("data"), option => {
+        _.each(this.model.get("data"), (option) => {
             this.data.push(option);
         });
         if (this.length() === 0) {
             this.data.push({
                 value: "__null__",
-                label: this.model.get("error_text")
+                label: this.model.get("error_text"),
             });
         }
         if (this.model.get("searchable")) {
@@ -169,7 +161,7 @@ var View = Backbone.View.extend({
                     order: index,
                     id: option.value,
                     text: option.label,
-                    tags: option.tags
+                    tags: option.tags,
                 };
                 this.data2.push(d);
                 this.data2index[d.id] = d;
@@ -182,12 +174,12 @@ var View = Backbone.View.extend({
                 data: this.data2,
                 closeOnSelect: !this.model.get("multiple"),
                 multiple: this.model.get("multiple"),
-                query: q => {
+                query: (q) => {
                     this.matched_tags = {};
                     var pagesize = this.model.get("pagesize");
-                    var results = _.filter(this.data2, e => {
+                    var results = _.filter(this.data2, (e) => {
                         var found = false;
-                        _.each(e.tags, tag => {
+                        _.each(e.tags, (tag) => {
                             if (this._match(q.term, tag)) {
                                 found = this.matched_tags[tag] = true;
                             }
@@ -196,17 +188,18 @@ var View = Backbone.View.extend({
                     });
                     q.callback({
                         results: results.slice((q.page - 1) * pagesize, q.page * pagesize),
-                        more: results.length >= q.page * pagesize
+                        more: results.length >= q.page * pagesize,
                     });
                 },
-                formatResult: result => {
+                formatResult: (result) => {
                     let extraTagWarning = "";
-                    const filteredTags = _.filter(result.tags, t =>
+                    const filteredTags = _.filter(result.tags, (t) =>
                         Object.prototype.hasOwnProperty.call(this.matched_tags, t)
                     );
                     if (filteredTags.length > 5) {
-                        extraTagWarning = `&nbsp;<div class="label label-warning">${filteredTags.length -
-                            5} more tags</div>`;
+                        extraTagWarning = `&nbsp;<div class="label label-warning">${
+                            filteredTags.length - 5
+                        } more tags</div>`;
                     }
                     return `
                     ${_.escape(result.text)}
@@ -224,17 +217,13 @@ var View = Backbone.View.extend({
                         }, "")}
                         ${extraTagWarning}
                    </div>`;
-                }
+                },
             });
             this.$(".select2-container .select2-search input").off("blur");
         } else {
             this.$select.find("option").remove();
-            _.each(this.data, option => {
-                this.$select.append(
-                    $("<option/>")
-                        .attr("value", option.value)
-                        .html(_.escape(option.label))
-                );
+            _.each(this.data, (option) => {
+                this.$select.append($("<option/>").attr("value", option.value).html(_.escape(option.label)));
             });
         }
         this.model.set("disabled", this.model.get("readonly") || this.length() === 0);
@@ -242,7 +231,7 @@ var View = Backbone.View.extend({
     },
 
     /** Handles field enabling/disabling, usually used when no options are available */
-    _changeDisabled: function() {
+    _changeDisabled: function () {
         if (this.model.get("searchable")) {
             this.$select.select2(this.model.get("disabled") ? "disable" : "enable");
         } else {
@@ -251,7 +240,7 @@ var View = Backbone.View.extend({
     },
 
     /** Searchable fields may display a spinner e.g. while waiting for a server response */
-    _changeWait: function() {
+    _changeWait: function () {
         this.$dropdown
             .removeClass()
             .addClass("icon-dropdown fa")
@@ -259,13 +248,13 @@ var View = Backbone.View.extend({
     },
 
     /** Handles field visibility */
-    _changeVisible: function() {
+    _changeVisible: function () {
         this.$el[this.model.get("visible") ? "show" : "hide"]();
         this.$select[this.model.get("visible") ? "show" : "hide"]();
     },
 
     /** Synchronizes the model value with the actually selected field value */
-    _changeValue: function() {
+    _changeValue: function () {
         this._setValue(this.model.get("value"));
         if (this.model.get("multiple")) {
             if (this.all_button) {
@@ -278,7 +267,7 @@ var View = Backbone.View.extend({
     },
 
     /** Return/Set current selection */
-    value: function(new_value) {
+    value: function (new_value) {
         if (new_value !== undefined) {
             this.model.set("value", new_value);
         }
@@ -286,60 +275,60 @@ var View = Backbone.View.extend({
     },
 
     /** Return the first select option */
-    first: function() {
+    first: function () {
         return this.data.length > 0 ? this.data[0].value : null;
     },
 
     /** Check if a value is an existing option */
-    exists: function(value) {
+    exists: function (value) {
         return _.findWhere(this.data, { value: value });
     },
 
     /** Return the label/text of the current selection */
-    text: function() {
+    text: function () {
         var v = this._getValue();
         var d = this.exists($.isArray(v) ? v[0] : v);
         return d ? d.label : "";
     },
 
     /** Show the select field */
-    show: function() {
+    show: function () {
         this.model.set("visible", true);
     },
 
     /** Hide the select field */
-    hide: function() {
+    hide: function () {
         this.model.set("visible", false);
     },
 
     /** Show a spinner indicating that the select options are currently loaded */
-    wait: function() {
+    wait: function () {
         this.model.set("wait", true);
     },
 
     /** Hide spinner indicating that the request has been completed */
-    unwait: function() {
+    unwait: function () {
         this.model.set("wait", false);
     },
 
     /** Returns true if the field is disabled */
-    disabled: function() {
+    disabled: function () {
         return this.model.get("disabled");
     },
 
     /** Enable the select field */
-    enable: function() {
+    enable: function () {
         this.model.set("disabled", false);
     },
 
     /** Disable the select field */
-    disable: function() {
+    disable: function () {
         this.model.set("disabled", true);
     },
 
     /** Update all available options at once */
-    add: function(options, sorter) {
-        _.each(this.model.get("data"), v => {
+    add: function (options, sorter) {
+        _.each(this.model.get("data"), (v) => {
             if (v.keep && !_.findWhere(options, { value: v.value })) {
                 options.push(v);
             }
@@ -351,22 +340,22 @@ var View = Backbone.View.extend({
     },
 
     /** Update available options */
-    update: function(input_def) {
+    update: function (input_def) {
         this.model.set("data", input_def.data);
     },
 
     /** Set the custom onchange callback function */
-    setOnChange: function(callback) {
+    setOnChange: function (callback) {
         this.model.set("onchange", callback);
     },
 
     /** Number of available options */
-    length: function() {
+    length: function () {
         return $.isArray(this.model.get("data")) ? this.model.get("data").length : 0;
     },
 
     /** Set value to dom */
-    _setValue: function(new_value) {
+    _setValue: function (new_value) {
         if (new_value === null || new_value === undefined) {
             new_value = "__null__";
         }
@@ -382,7 +371,7 @@ var View = Backbone.View.extend({
         if (this.model.get("searchable")) {
             if ($.isArray(new_value)) {
                 var val = [];
-                _.each(new_value, v => {
+                _.each(new_value, (v) => {
                     var d = this.data2index[v];
                     if (d) {
                         val.push(d);
@@ -399,7 +388,7 @@ var View = Backbone.View.extend({
     },
 
     /** Get value from dom */
-    _getValue: function() {
+    _getValue: function () {
         var val = null;
         if (this.model.get("searchable")) {
             var selected = this.$select.select2("data");
@@ -407,7 +396,7 @@ var View = Backbone.View.extend({
                 if ($.isArray(selected)) {
                     val = [];
                     selected.sort((a, b) => a.order - b.order);
-                    _.each(selected, v => {
+                    _.each(selected, (v) => {
                         val.push(v.id);
                     });
                 } else {
@@ -418,9 +407,9 @@ var View = Backbone.View.extend({
             val = this.$select.val();
         }
         return Utils.isEmpty(val) ? null : val;
-    }
+    },
 });
 
 export default {
-    View: View
+    View: View,
 };

@@ -95,9 +95,8 @@ jobs:
     <<: *set_workdir
     steps:
       - *restore_repo_cache
-      # Temporary virtualenv pin added due to https://github.com/pypa/virtualenv/issues/1670
-      #- *install_tox
-      - run: sudo pip install tox virtualenv==20.0.4
+      # Ensure minimum virtualenv version due to https://github.com/pypa/virtualenv/issues/1670
+      - run: sudo pip install tox 'virtualenv>=20.0.8'
       - run: tox -e py27-unit
   py35_docstring:
     docker:

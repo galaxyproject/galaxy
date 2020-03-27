@@ -42,7 +42,7 @@ Vue.use(BootstrapVue);
 
 export default {
     props: {
-        item: Object
+        item: Object,
     },
     computed: {
         getName() {
@@ -53,7 +53,7 @@ export default {
         },
         isPaused() {
             return this.item.state === "paused";
-        }
+        },
     },
     methods: {
         copyDataset(item) {
@@ -61,8 +61,8 @@ export default {
         },
         showDataset(item) {
             this.$emit("showDataset", this.item);
-        }
-    }
+        },
+    },
 };
 </script>
 

@@ -12,12 +12,12 @@ import historyCopyDialog from "mvc/history/copy-dialog";
 import LoadingIndicator from "ui/loading-indicator";
 
 var HistoryGridView = GridView.extend({
-    initialize: function(grid_config) {
+    initialize: function (grid_config) {
         this.ajaxQueue = new AjaxQueue.AjaxQueue();
         GridView.prototype.initialize.call(this, grid_config);
     },
 
-    init_grid_elements: function() {
+    init_grid_elements: function () {
         const ajaxQueue = this.ajaxQueue;
         ajaxQueue.stop();
         GridView.prototype.init_grid_elements.call(this);
@@ -29,7 +29,7 @@ var HistoryGridView = GridView.extend({
                     const options = {};
                     options.url = url;
                     options.type = "GET";
-                    options.success = req => {
+                    options.success = (req) => {
                         const contentsStates = req.contents_states;
                         let stateHtml = "";
                         for (const state of ["ok", "running", "queued", "new", "error"]) {
@@ -54,10 +54,10 @@ var HistoryGridView = GridView.extend({
                 };
             })
         );
-        fetchDetails.forEach(fn => ajaxQueue.add(fn));
+        fetchDetails.forEach((fn) => ajaxQueue.add(fn));
         ajaxQueue.start();
     },
-    _showCopyDialog: function(id) {
+    _showCopyDialog: function (id) {
         var history = new History({ id: id });
         history
             .fetch()
@@ -75,19 +75,19 @@ var HistoryGridView = GridView.extend({
             });
     },
     /** Add an operation to the items menu */
-    add_operation: function(popup, operation, item) {
+    add_operation: function (popup, operation, item) {
         if (operation.label == "Copy") {
-            operation.onclick = id => {
+            operation.onclick = (id) => {
                 this._showCopyDialog(id);
             };
         }
         GridView.prototype.add_operation.call(this, popup, operation, item);
-    }
+    },
 });
 
 var View = Backbone.View.extend({
     title: _l("Histories"),
-    initialize: function(options) {
+    initialize: function (options) {
         const Galaxy = getGalaxyInstance();
         LoadingIndicator.markViewAsLoading(this);
 
@@ -99,19 +99,19 @@ var View = Backbone.View.extend({
         this.model = new Backbone.Model();
         Utils.get({
             url: `${getAppRoot()}history/${options.action_id}?${$.param(Galaxy.params)}`,
-            success: response => {
+            success: (response) => {
                 this.model.set(response);
                 this.render();
-            }
+            },
         });
     },
 
-    render: function() {
+    render: function () {
         var grid = new HistoryGridView(this.model.attributes);
         this.$el.empty().append(grid.$el);
-    }
+    },
 });
 
 export default {
-    View: View
+    View: View,
 };

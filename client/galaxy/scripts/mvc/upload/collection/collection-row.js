@@ -4,7 +4,7 @@ import _ from "underscore";
 import Utils from "utils/utils";
 import UploadBoxRow from "mvc/upload/uploadbox-row";
 export default UploadBoxRow.extend({
-    initialize: function(app, options) {
+    initialize: function (app, options) {
         var self = this;
         this.app = app;
         this.model = options.model;
@@ -28,10 +28,10 @@ export default UploadBoxRow.extend({
         });
 
         // handle text editing event
-        this.$text_content.on("change input", e => {
+        this.$text_content.on("change input", (e) => {
             self.model.set({
                 url_paste: $(e.target).val(),
-                file_size: $(e.target).val().length
+                file_size: $(e.target).val().length,
             });
         });
 
@@ -45,19 +45,16 @@ export default UploadBoxRow.extend({
         });
     },
 
-    render: function() {
+    render: function () {
         var options = this.model.attributes;
         this.$title.html(_.escape(options.file_name));
         this.$size.html(Utils.bytesToString(options.file_size));
-        this.$mode
-            .removeClass()
-            .addClass("upload-mode")
-            .addClass("text-primary");
+        this.$mode.removeClass().addClass("upload-mode").addClass("text-primary");
         if (options.file_mode == "new") {
             this.$text
                 .css({
                     width: `${this.$el.width() - 16}px`,
-                    top: `${this.$el.height() - 8}px`
+                    top: `${this.$el.height() - 8}px`,
                 })
                 .show();
             this.$el.height(this.$el.height() - 8 + this.$text.height() + 16);
@@ -70,12 +67,9 @@ export default UploadBoxRow.extend({
     },
 
     /** Refresh status */
-    _refreshStatus: function() {
+    _refreshStatus: function () {
         var status = this.model.get("status");
-        this.$symbol
-            .removeClass()
-            .addClass("upload-symbol")
-            .addClass(this.status_classes[status]);
+        this.$symbol.removeClass().addClass("upload-symbol").addClass(this.status_classes[status]);
         this.model.set("enabled", status == "init");
         var enabled = this.model.get("enabled");
         this.$text_content.attr("disabled", !enabled);
@@ -83,7 +77,7 @@ export default UploadBoxRow.extend({
     },
 
     /** View template */
-    _template: function(options) {
+    _template: function (options) {
         return `<tr id="upload-row-${options.id}" class="upload-row"><td><div class="upload-text-column"><div class="upload-mode"/><div class="upload-title-extended"/><div class="upload-text"><div class="upload-text-info">Download data from the web by entering URLs (one per line) or directly paste content.</div><textarea class="upload-text-content form-control"/></div></div></td><td><div class="upload-size"/></td><td><div class="upload-info"><div class="upload-info-text"/><div class="upload-info-progress progress"><div class="upload-progress-bar progress-bar progress-bar-success"/><div class="upload-percentage">0%</div></div></div></td><td><div class="upload-symbol ${this.status_classes.init}"/></td></tr>`;
-    }
+    },
 });

@@ -10,17 +10,17 @@ export default {
         classes: {
             type: String,
             required: false,
-            default: null
+            default: null,
         },
         message: {
             type: String,
-            required: true
-        }
+            required: true,
+        },
     },
     computed: {
         spinnerClasses() {
             return ["loading-icon", "fa", "fa-spinner", "fa-spin"].concat(this.classes ? this.classes.split(" ") : []);
-        }
-    }
+        },
+    },
 };
 </script>

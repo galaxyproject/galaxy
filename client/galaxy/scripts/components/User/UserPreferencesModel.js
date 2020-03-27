@@ -12,7 +12,7 @@ export const getUserPreferencesModel = () => {
             url: `api/users/${Galaxy.user.id}/information/inputs`,
             icon: "fa-user",
             redirect: "user",
-            shouldRender: !config.use_remote_user
+            shouldRender: !config.use_remote_user,
         },
         password: {
             title: _l("Change Password"),
@@ -22,7 +22,7 @@ export const getUserPreferencesModel = () => {
             url: `api/users/${Galaxy.user.id}/password/inputs`,
             submit_title: "Save Password",
             redirect: "user",
-            shouldRender: !config.use_remote_user
+            shouldRender: !config.use_remote_user,
         },
         communication: {
             title: _l("Change Communication Settings"),
@@ -31,7 +31,7 @@ export const getUserPreferencesModel = () => {
             url: `api/users/${Galaxy.user.id}/communication/inputs`,
             icon: "fa-comments-o",
             redirect: "user",
-            shouldRender: !!config.enable_communication_server
+            shouldRender: !!config.enable_communication_server,
         },
         permissions: {
             title: _l("Set Dataset Permissions for new Histories"),
@@ -41,13 +41,13 @@ export const getUserPreferencesModel = () => {
             url: `api/users/${Galaxy.user.id}/permissions/inputs`,
             icon: "fa-users",
             submit_title: "Save Permissions",
-            redirect: "user"
+            redirect: "user",
         },
         make_data_private: {
             title: _l("Make all Data Private"),
             id: "edit-preferences-make-data-private",
             description: _l("Click here to make all data private."),
-            icon: "fa-lock"
+            icon: "fa-lock",
         },
         api_key: {
             title: _l("Manage API Key"),
@@ -56,7 +56,7 @@ export const getUserPreferencesModel = () => {
             url: `api/users/${Galaxy.user.id}/api_key/inputs`,
             icon: "fa-key",
             submit_title: "Create a new Key",
-            submit_icon: "fa-check"
+            submit_icon: "fa-check",
         },
         cloud_auth: {
             id: "edit-preferences-cloud-auth",
@@ -64,7 +64,7 @@ export const getUserPreferencesModel = () => {
             description: _l("Add or modify the configuration that grants Galaxy to access your cloud-based resources."),
             icon: "fa-cloud",
             submit_title: "Create a new Key",
-            submit_icon: "fa-check"
+            submit_icon: "fa-check",
         },
         toolbox_filters: {
             title: _l("Manage Toolbox Filters"),
@@ -74,19 +74,19 @@ export const getUserPreferencesModel = () => {
             icon: "fa-filter",
             submit_title: "Save Filters",
             redirect: "user",
-            shouldRender: !!config.has_user_tool_filters
+            shouldRender: !!config.has_user_tool_filters,
         },
         custom_builds: {
             title: _l("Manage Custom Builds"),
             description: _l("Add or remove custom builds using history datasets."),
-            icon: "fa-cubes"
+            icon: "fa-cubes",
         },
         logout: {
             title: _l("Sign Out"),
             id: "edit-preferences-custom-builds",
             description: _l("Click here to sign out of all sessions."),
             icon: "fa-sign-out",
-            shouldRender: !!Galaxy.session_csrf_token
-        }
+            shouldRender: !!Galaxy.session_csrf_token,
+        },
     };
 };

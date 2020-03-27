@@ -35,13 +35,13 @@ export default {
         },
         urlSharing() {
             return `${getAppRoot()}histories/sharing?id=${this.history.id}`;
-        }
+        },
     },
     methods: {
         onSwitch() {
             const Galaxy = getGalaxyInstance();
             Galaxy.currHistoryPanel.switchToHistory(this.history.id);
-        }
-    }
+        },
+    },
 };
 </script>

@@ -5,7 +5,7 @@ var tools = {
     "Show tail1": {},
     random_lines1: {},
     __SET_METADATA__: {},
-    cat1: {}
+    cat1: {},
 };
 
 // ============================================================================
@@ -18,8 +18,8 @@ var jobs1 = [
         outputs: {
             output0: {
                 src: "hda",
-                id: "8c959c9304a2bc4b"
-            }
+                id: "8c959c9304a2bc4b",
+            },
         },
         exit_code: 0,
         state: "ok",
@@ -29,7 +29,7 @@ var jobs1 = [
         },
         model_class: "Job",
         id: "8a81cf6f989c4467",
-        tool: null
+        tool: null,
     },
     {
         tool_id: "Show beginning1",
@@ -37,14 +37,14 @@ var jobs1 = [
         inputs: {
             input: {
                 src: "hda",
-                id: "8c959c9304a2bc4b"
-            }
+                id: "8c959c9304a2bc4b",
+            },
         },
         outputs: {
             out_file1: {
                 src: "hda",
-                id: "132016f833b57406"
-            }
+                id: "132016f833b57406",
+            },
         },
         exit_code: 0,
         state: "ok",
@@ -54,7 +54,7 @@ var jobs1 = [
         },
         model_class: "Job",
         id: "6505e875ddb66fd2",
-        tool: null
+        tool: null,
     },
     {
         tool_id: "Show tail1",
@@ -62,14 +62,14 @@ var jobs1 = [
         inputs: {
             input: {
                 src: "hda",
-                id: "132016f833b57406"
-            }
+                id: "132016f833b57406",
+            },
         },
         outputs: {
             out_file1: {
                 src: "hda",
-                id: "846fb0a2a64137c0"
-            }
+                id: "846fb0a2a64137c0",
+            },
         },
         exit_code: 0,
         state: "ok",
@@ -79,8 +79,8 @@ var jobs1 = [
         },
         model_class: "Job",
         id: "77f74776fd03cbc5",
-        tool: null
-    }
+        tool: null,
+    },
 ];
 
 var historyContents1 = [
@@ -97,7 +97,7 @@ var historyContents1 = [
         state: "ok",
         type: "file",
         url: "/api/histories/911dde3ddb677bcd/contents/datasets/8c959c9304a2bc4b",
-        visible: true
+        visible: true,
     },
     {
         deleted: false,
@@ -112,7 +112,7 @@ var historyContents1 = [
         state: "ok",
         type: "file",
         url: "/api/histories/911dde3ddb677bcd/contents/datasets/132016f833b57406",
-        visible: true
+        visible: true,
     },
     {
         deleted: false,
@@ -127,8 +127,8 @@ var historyContents1 = [
         state: "ok",
         type: "file",
         url: "/api/histories/911dde3ddb677bcd/contents/datasets/846fb0a2a64137c0",
-        visible: true
-    }
+        visible: true,
+    },
 ];
 
 // ============================================================================
@@ -141,8 +141,8 @@ var jobs2 = [
         outputs: {
             output0: {
                 src: "hda",
-                id: "eca0af6fb47bf90c"
-            }
+                id: "eca0af6fb47bf90c",
+            },
         },
         exit_code: 0,
         state: "ok",
@@ -152,7 +152,7 @@ var jobs2 = [
         },
         model_class: "Job",
         id: "bf60fd5f5f7f44bf",
-        tool: null
+        tool: null,
     },
     {
         tool_id: "random_lines1",
@@ -160,14 +160,14 @@ var jobs2 = [
         inputs: {
             input: {
                 src: "hda",
-                id: "eca0af6fb47bf90c"
-            }
+                id: "eca0af6fb47bf90c",
+            },
         },
         outputs: {
             out_file1: {
                 src: "hda",
-                id: "6fc9fbb81c497f69"
-            }
+                id: "6fc9fbb81c497f69",
+            },
         },
         exit_code: 0,
         state: "ok",
@@ -177,7 +177,7 @@ var jobs2 = [
         },
         model_class: "Job",
         id: "90240358ebde1489",
-        tool: null
+        tool: null,
     },
     {
         tool_id: "__SET_METADATA__",
@@ -185,8 +185,8 @@ var jobs2 = [
         inputs: {
             input1: {
                 src: "hda",
-                id: "eca0af6fb47bf90c"
-            }
+                id: "eca0af6fb47bf90c",
+            },
         },
         outputs: {},
         exit_code: 0,
@@ -197,8 +197,8 @@ var jobs2 = [
         },
         model_class: "Job",
         id: "86cf1d3beeec9f1c",
-        tool: null
-    }
+        tool: null,
+    },
 ];
 
 var historyContents2 = [
@@ -215,7 +215,7 @@ var historyContents2 = [
         state: "ok",
         type: "file",
         url: "/api/histories/ff5476bcf6c921fa/contents/datasets/eca0af6fb47bf90c",
-        visible: true
+        visible: true,
     },
     {
         deleted: false,
@@ -230,8 +230,8 @@ var historyContents2 = [
         state: "ok",
         type: "file",
         url: "/api/histories/ff5476bcf6c921fa/contents/datasets/6fc9fbb81c497f69",
-        visible: true
-    }
+        visible: true,
+    },
 ];
 
 var jobs3 = [
@@ -242,8 +242,8 @@ var jobs3 = [
         outputs: {
             output0: {
                 src: "hda",
-                id: "6fb17d0cc6e8fae5"
-            }
+                id: "6fb17d0cc6e8fae5",
+            },
         },
         exit_code: 0,
         state: "ok",
@@ -253,7 +253,7 @@ var jobs3 = [
         },
         model_class: "Job",
         id: "8c959c9304a2bc4b",
-        tool: null
+        tool: null,
     },
     {
         tool_id: "upload1",
@@ -262,8 +262,8 @@ var jobs3 = [
         outputs: {
             output0: {
                 src: "hda",
-                id: "5114a2a207b7caff"
-            }
+                id: "5114a2a207b7caff",
+            },
         },
         exit_code: 0,
         state: "ok",
@@ -273,7 +273,7 @@ var jobs3 = [
         },
         model_class: "Job",
         id: "132016f833b57406",
-        tool: null
+        tool: null,
     },
     {
         tool_id: "Show beginning1",
@@ -281,14 +281,14 @@ var jobs3 = [
         inputs: {
             input: {
                 src: "hda",
-                id: "6fb17d0cc6e8fae5"
-            }
+                id: "6fb17d0cc6e8fae5",
+            },
         },
         outputs: {
             out_file1: {
                 src: "hda",
-                id: "06ec17aefa2d49dd"
-            }
+                id: "06ec17aefa2d49dd",
+            },
         },
         exit_code: 0,
         state: "ok",
@@ -298,7 +298,7 @@ var jobs3 = [
         },
         model_class: "Job",
         id: "846fb0a2a64137c0",
-        tool: null
+        tool: null,
     },
     {
         tool_id: "Show beginning1",
@@ -306,14 +306,14 @@ var jobs3 = [
         inputs: {
             input: {
                 src: "hda",
-                id: "5114a2a207b7caff"
-            }
+                id: "5114a2a207b7caff",
+            },
         },
         outputs: {
             out_file1: {
                 src: "hda",
-                id: "b8a0d6158b9961df"
-            }
+                id: "b8a0d6158b9961df",
+            },
         },
         exit_code: 0,
         state: "ok",
@@ -323,7 +323,7 @@ var jobs3 = [
         },
         model_class: "Job",
         id: "eca0af6fb47bf90c",
-        tool: null
+        tool: null,
     },
     {
         tool_id: "Show tail1",
@@ -331,14 +331,14 @@ var jobs3 = [
         inputs: {
             input: {
                 src: "hda",
-                id: "b8a0d6158b9961df"
-            }
+                id: "b8a0d6158b9961df",
+            },
         },
         outputs: {
             out_file1: {
                 src: "hda",
-                id: "24d84bcf64116fe7"
-            }
+                id: "24d84bcf64116fe7",
+            },
         },
         exit_code: 0,
         state: "ok",
@@ -348,8 +348,8 @@ var jobs3 = [
         },
         model_class: "Job",
         id: "6fc9fbb81c497f69",
-        tool: null
-    }
+        tool: null,
+    },
 ];
 
 var historyContents3 = [
@@ -366,7 +366,7 @@ var historyContents3 = [
         state: "ok",
         type: "file",
         url: "/api/histories/5564089c81cf7fe8/contents/datasets/6fb17d0cc6e8fae5",
-        visible: true
+        visible: true,
     },
     {
         deleted: false,
@@ -381,7 +381,7 @@ var historyContents3 = [
         state: "ok",
         type: "file",
         url: "/api/histories/5564089c81cf7fe8/contents/datasets/5114a2a207b7caff",
-        visible: true
+        visible: true,
     },
     {
         deleted: false,
@@ -396,7 +396,7 @@ var historyContents3 = [
         state: "ok",
         type: "file",
         url: "/api/histories/5564089c81cf7fe8/contents/datasets/06ec17aefa2d49dd",
-        visible: true
+        visible: true,
     },
     {
         deleted: false,
@@ -411,7 +411,7 @@ var historyContents3 = [
         state: "ok",
         type: "file",
         url: "/api/histories/5564089c81cf7fe8/contents/datasets/b8a0d6158b9961df",
-        visible: true
+        visible: true,
     },
     {
         deleted: false,
@@ -426,8 +426,8 @@ var historyContents3 = [
         state: "ok",
         type: "file",
         url: "/api/histories/5564089c81cf7fe8/contents/datasets/24d84bcf64116fe7",
-        visible: true
-    }
+        visible: true,
+    },
 ];
 
 var jobs4 = [
@@ -438,20 +438,20 @@ var jobs4 = [
             input1: {
                 src: "hda",
                 id: "422eef6b1b545329",
-                name: "input1"
+                name: "input1",
             },
             "queries_0|input2": {
                 src: "hda",
                 id: "c86c1b73aa7102dd",
-                name: "queries_0|input2"
-            }
+                name: "queries_0|input2",
+            },
         },
         outputs: {
             out_file1: {
                 src: "hda",
                 id: "52d6bdfafedbb5e5",
-                name: "out_file1"
-            }
+                name: "out_file1",
+            },
         },
         exit_code: 0,
         state: "ok",
@@ -460,8 +460,8 @@ var jobs4 = [
             // ...
         },
         model_class: "Job",
-        id: "92b83968e0b52980"
-    }
+        id: "92b83968e0b52980",
+    },
 ];
 
 var historyContents4 = [
@@ -479,7 +479,7 @@ var historyContents4 = [
         state: "ok",
         type: "file",
         url: "/api/histories/c24141d7e4e77705/contents/datasets/422eef6b1b545329",
-        visible: true
+        visible: true,
     },
     {
         dataset_id: 56,
@@ -495,7 +495,7 @@ var historyContents4 = [
         state: "ok",
         type: "file",
         url: "/api/histories/c24141d7e4e77705/contents/datasets/c86c1b73aa7102dd",
-        visible: true
+        visible: true,
     },
     {
         dataset_id: 131,
@@ -511,8 +511,8 @@ var historyContents4 = [
         state: "ok",
         type: "file",
         url: "/api/histories/c24141d7e4e77705/contents/datasets/52d6bdfafedbb5e5",
-        visible: true
-    }
+        visible: true,
+    },
 ];
 
 // ============================================================================
@@ -525,5 +525,5 @@ export default {
     jobs3: jobs3,
     historyContents3: historyContents3,
     jobs4: jobs4,
-    historyContents4: historyContents4
+    historyContents4: historyContents4,
 };

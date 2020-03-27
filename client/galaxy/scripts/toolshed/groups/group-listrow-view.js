@@ -5,18 +5,18 @@ import Backbone from "backbone";
 const GroupListRowView = Backbone.View.extend({
     events: {},
 
-    initialize: function(options) {
+    initialize: function (options) {
         this.render(options.group);
     },
 
-    render: function(group) {
+    render: function (group) {
         const tmpl = this.templateRow();
         this.setElement(tmpl({ group: group }));
         this.$el.show();
         return this;
     },
 
-    templateRow: function() {
+    templateRow: function () {
         return _.template(
             [
                 '<tr class="" data-id="<%- group.get("id") %>">',
@@ -24,12 +24,12 @@ const GroupListRowView = Backbone.View.extend({
                 // '<td>description</td>',
                 '<td><%= group.get("total_members") %></td>',
                 '<td><%= group.get("total_repos") %></td>',
-                "</tr>"
+                "</tr>",
             ].join("")
         );
-    }
+    },
 });
 
 export default {
-    GroupListRowView: GroupListRowView
+    GroupListRowView: GroupListRowView,
 };

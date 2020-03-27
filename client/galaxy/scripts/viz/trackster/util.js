@@ -16,7 +16,7 @@ function commatize(number) {
 /**
  * Helper to determine if object is jQuery deferred.
  */
-var is_deferred = d => "promise" in d;
+var is_deferred = (d) => "promise" in d;
 
 /**
  * Implementation of a server-state based deferred. Server is repeatedly polled, and when
@@ -26,15 +26,15 @@ var ServerStateDeferred = Backbone.Model.extend({
     defaults: {
         ajax_settings: {},
         interval: 1000,
-        success_fn: function(result) {
+        success_fn: function (result) {
             return true;
-        }
+        },
     },
 
     /**
      * Returns a deferred that resolves when success function returns true.
      */
-    go: function() {
+    go: function () {
         var deferred = $.Deferred();
         var self = this;
         var ajax_settings = self.get("ajax_settings");
@@ -42,7 +42,7 @@ var ServerStateDeferred = Backbone.Model.extend({
         var interval = self.get("interval");
 
         var _go = () => {
-            $.ajax(ajax_settings).success(result => {
+            $.ajax(ajax_settings).success((result) => {
                 if (success_fn(result)) {
                     // Result is good, so resolve.
                     deferred.resolve(result);
@@ -55,7 +55,7 @@ var ServerStateDeferred = Backbone.Model.extend({
 
         _go();
         return deferred;
-    }
+    },
 });
 
 /**
@@ -63,7 +63,7 @@ var ServerStateDeferred = Backbone.Model.extend({
  * or set of colors.
  * @param colors a color or list of colors in the format '#RRGGBB'
  */
-var get_random_color = colors => {
+var get_random_color = (colors) => {
     // Default for colors is white.
     if (!colors) {
         colors = "#ffffff";
@@ -141,5 +141,5 @@ export default {
     commatize: commatize,
     is_deferred: is_deferred,
     ServerStateDeferred: ServerStateDeferred,
-    get_random_color: get_random_color
+    get_random_color: get_random_color,
 };

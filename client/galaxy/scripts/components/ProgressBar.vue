@@ -25,12 +25,12 @@ export default {
         newProgress: { type: Number, default: 0.0 },
         newMessage: { type: String, default: null },
         errorProgress: { type: Number, default: 0.0 },
-        errorMessage: { type: String, default: null }
+        errorMessage: { type: String, default: null },
     },
     methods: {
-        styleFromProgress: function(progress) {
+        styleFromProgress: function (progress) {
             return { width: `${progress * 100}%` };
-        }
-    }
+        },
+    },
 };
 </script>

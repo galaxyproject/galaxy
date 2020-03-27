@@ -1,6 +1,6 @@
 <template>
     <div v-infinite-scroll="loadMore" infinite-scroll-disabled="busy">
-        <h2 class="mb-3" style="text-align: center">
+        <h2 class="mb-3" style="text-align: center;">
             <span id="tools-view">Consolidated view of {{ tools.length }} available tools.</span>
         </h2>
         <div v-if="!loading">
@@ -74,14 +74,14 @@ import { setTimeout } from "timers";
 export default {
     components: {
         Citations,
-        isotope
+        isotope,
     },
     directives: { infiniteScroll },
     props: {
         transitionDuration: {
             type: Number,
-            default: 200
-        }
+            default: 200,
+        },
     },
     data() {
         return {
@@ -90,7 +90,7 @@ export default {
             filterOption: null,
             filterText: "",
             busy: false,
-            loading: true
+            loading: true,
         };
     },
     computed: {
@@ -98,24 +98,24 @@ export default {
             return {
                 transitionDuration: this.transitionDuration,
                 masonry: {
-                    fitWidth: true
+                    fitWidth: true,
                 },
                 getFilterData: {
-                    filterByText: el => {
+                    filterByText: (el) => {
                         const re = new RegExp(this.filterText, "i");
                         return el.name.match(re) || el.description.match(re) || el.help.match(re);
-                    }
-                }
+                    },
+                },
             };
-        }
+        },
     },
     created() {
         axios
             .get(`${getAppRoot()}api/tools?tool_help=True`)
-            .then(response => {
+            .then((response) => {
                 this.initialize(response.data);
             })
-            .catch(error => {
+            .catch((error) => {
                 console.error(error);
             });
     },
@@ -151,8 +151,8 @@ export default {
                                   description: tool.description,
                                   url: getAppRoot() + String(tool.link).substring(1),
                                   version: tool.version,
-                                  help: tool.help
-                              }
+                                  help: tool.help,
+                              },
                           ]
                         : _acc;
                 }
@@ -163,9 +163,9 @@ export default {
             }
             return tools
                 .reduce(extractSections, [])
-                .map(a => [Math.random(), a])
+                .map((a) => [Math.random(), a])
                 .sort((a, b) => a[0] - b[0])
-                .map(a => a[1]);
+                .map((a) => a[1]);
         },
         loadMore() {
             if (this.buffer.length < this.tools.length) {
@@ -203,7 +203,7 @@ export default {
             this.tools = this.toolsExtracted(tools);
             this.buffer = this.tools.slice(0, 20);
             this.loading = false;
-        }
-    }
+        },
+    },
 };
 </script>

@@ -16,7 +16,7 @@ var HDAListItemEdit = _super.extend(
         /** In this override, only get details if in the ready state, get rerunnable if in other states.
          *  Note: fetch with no 'change' event triggering to prevent automatic rendering.
          */
-        _fetchModelDetails: function() {
+        _fetchModelDetails: function () {
             var view = this;
             if (view.model.inReadyState() && !view.model.hasDetails()) {
                 return view.model.fetch({ silent: true });
@@ -28,8 +28,8 @@ var HDAListItemEdit = _super.extend(
                     silent: true,
                     data: {
                         // only fetch rerunnable and creating_job to keep overhead down
-                        keys: ["rerunnable", "creating_job"].join(",")
-                    }
+                        keys: ["rerunnable", "creating_job"].join(","),
+                    },
                 });
             }
             return $.when();
@@ -37,17 +37,17 @@ var HDAListItemEdit = _super.extend(
 
         /** event map */
         events: _.extend(_.clone(_super.prototype.events), {
-            "click .unhide-link": function(ev) {
+            "click .unhide-link": function (ev) {
                 this.model.unhide();
                 return false;
-            }
+            },
         }),
 
         /** string rep */
-        toString: function() {
+        toString: function () {
             var modelString = this.model ? `${this.model}` : "(no model)";
             return `HDAListItemEdit(${modelString})`;
-        }
+        },
     }
 );
 
@@ -65,20 +65,20 @@ HDAListItemEdit.prototype.templates = (() => {
                 _l("Unhide it"),
                 "</a>",
                 "</div>",
-                "<% } %>"
+                "<% } %>",
             ],
             "dataset"
-        )
+        ),
     });
 
     return _.extend({}, _super.prototype.templates, {
         //NOTE: *steal* the HDAListItemView titleBar
         titleBar: HDA_LI.HDAListItemView.prototype.templates.titleBar,
-        warnings: warnings
+        warnings: warnings,
     });
 })();
 
 //==============================================================================
 export default {
-    HDAListItemEdit: HDAListItemEdit
+    HDAListItemEdit: HDAListItemEdit,
 };

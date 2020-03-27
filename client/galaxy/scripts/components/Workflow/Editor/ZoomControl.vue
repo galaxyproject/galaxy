@@ -44,18 +44,18 @@ export default {
     props: {
         zoomLevel: {
             type: Number,
-            required: true
-        }
+            required: true,
+        },
     },
     data() {
         return {
-            zoomDefault: this.zoomLevel
+            zoomDefault: this.zoomLevel,
         };
     },
     computed: {
         zoomPercentage() {
             return Math.floor(zoomLevels[this.zoomLevel] * 100);
-        }
+        },
     },
     methods: {
         onZoomIn() {
@@ -66,8 +66,8 @@ export default {
         },
         onZoomReset() {
             this.$emit("onZoom", this.zoomDefault);
-        }
-    }
+        },
+    },
 };
 </script>
 

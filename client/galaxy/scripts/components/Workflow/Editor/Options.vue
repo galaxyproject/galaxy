@@ -74,8 +74,8 @@ export default {
     props: {
         canvas: {
             type: Boolean,
-            required: true
-        }
-    }
+            required: true,
+        },
+    },
 };
 </script>

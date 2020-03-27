@@ -23,12 +23,12 @@ export default {
     props: {
         isLoaded: {
             type: Boolean,
-            required: true
+            required: true,
         },
         rows: {
             type: Array,
-            required: true
-        }
+            required: true,
+        },
     },
 
     data() {
@@ -37,19 +37,19 @@ export default {
                 { text: "Name", dataIndex: "name" },
                 { text: "Filename", dataIndex: "filename" },
                 { text: "Tool data path", dataIndex: "tool_data_path" },
-                { text: "Errors", dataIndex: "errors" }
-            ]
+                { text: "Errors", dataIndex: "errors" },
+            ],
         };
     },
 
     components: {
-        "base-grid": BaseGrid
+        "base-grid": BaseGrid,
     },
 
     methods: {
         handleTableNameClick(event) {
             this.$emit("changeview", event.target.text);
-        }
-    }
+        },
+    },
 };
 </script>

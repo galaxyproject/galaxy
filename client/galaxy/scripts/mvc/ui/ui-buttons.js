@@ -5,7 +5,7 @@ import Backbone from "backbone";
 
 /** This renders the default button which is used e.g. at the bottom of the upload modal. */
 var Button = Backbone.View.extend({
-    initialize: function(options) {
+    initialize: function (options) {
         this.model =
             (options && options.model) ||
             new Backbone.Model({
@@ -18,7 +18,7 @@ var Button = Backbone.View.extend({
                 wait_cls: "btn btn-info",
                 disabled: false,
                 percentage: -1,
-                visible: true
+                visible: true,
             }).set(options);
         this.setElement(
             $("<button/>")
@@ -31,7 +31,7 @@ var Button = Backbone.View.extend({
         this.render();
     },
 
-    render: function() {
+    render: function () {
         var options = this.model.attributes;
         this.$el
             .removeClass()
@@ -67,44 +67,44 @@ var Button = Backbone.View.extend({
     },
 
     /** Show button */
-    show: function() {
+    show: function () {
         this.model.set("visible", true);
     },
 
     /** Hide button */
-    hide: function() {
+    hide: function () {
         this.model.set("visible", false);
     },
 
     /** Disable button */
-    disable: function() {
+    disable: function () {
         this.model.set("disabled", true);
     },
 
     /** Enable button */
-    enable: function() {
+    enable: function () {
         this.model.set("disabled", false);
     },
 
     /** Show spinner to indicate that the button is not ready to be clicked */
-    wait: function() {
+    wait: function () {
         this.model.set("wait", true);
     },
 
     /** Hide spinner to indicate that the button is ready to be clicked */
-    unwait: function() {
+    unwait: function () {
         this.model.set("wait", false);
     },
 
     /** Change icon */
-    setIcon: function(icon) {
+    setIcon: function (icon) {
         this.model.set("icon", icon);
-    }
+    },
 });
 
 /** This button allows the right-click/open-in-new-tab feature, its used e.g. for panel buttons. */
 var ButtonLink = Button.extend({
-    initialize: function(options) {
+    initialize: function (options) {
         this.model =
             (options && options.model) ||
             new Backbone.Model({
@@ -112,14 +112,14 @@ var ButtonLink = Button.extend({
                 visible: true,
                 title: "",
                 icon: "",
-                cls: ""
+                cls: "",
             }).set(options);
         this.setElement($("<a/>").append((this.$icon = $("<span/>"))));
         this.listenTo(this.model, "change", this.render, this);
         this.render();
     },
 
-    render: function() {
+    render: function () {
         var options = this.model.attributes;
         this.$el
             .removeClass()
@@ -129,7 +129,7 @@ var ButtonLink = Button.extend({
                 href: options.href || "javascript:void(0)",
                 title: options.title,
                 target: options.target || "_top",
-                disabled: options.disabled
+                disabled: options.disabled,
             })
             .css("display", options.visible ? "inline-block" : "none")
             .tooltip({ placement: "bottom" })
@@ -138,12 +138,12 @@ var ButtonLink = Button.extend({
                 options.onclick && !options.disabled && options.onclick();
             });
         this.$icon.removeClass().addClass(options.icon);
-    }
+    },
 });
 
 /** The check button is used in the tool form and allows to distinguish between multiple states e.g. all, partially and nothing selected. */
 var ButtonCheck = Backbone.View.extend({
-    initialize: function(options) {
+    initialize: function (options) {
         this.model =
             (options && options.model) ||
             new Backbone.Model({
@@ -152,7 +152,7 @@ var ButtonCheck = Backbone.View.extend({
                 icons: ["fa-square-o", "fa-minus-square-o", "fa-check-square-o"],
                 value: 0,
                 visible: true,
-                onchange: function() {}
+                onchange: function () {},
             }).set(options);
         this.setElement(
             $("<div/>")
@@ -164,7 +164,7 @@ var ButtonCheck = Backbone.View.extend({
         this.render();
     },
 
-    render: function(options) {
+    render: function (options) {
         options = this.model.attributes;
         this.$el
             .addClass("ui-button-check")
@@ -175,10 +175,7 @@ var ButtonCheck = Backbone.View.extend({
                 options.onclick && options.onclick();
             });
         this.$title.html(options.title);
-        this.$icon
-            .removeClass()
-            .addClass("icon fa mr-1")
-            .addClass(options.icons[options.value]);
+        this.$icon.removeClass().addClass("icon fa mr-1").addClass(options.icons[options.value]);
     },
 
     /* Sets a new value and/or returns the value.
@@ -187,7 +184,7 @@ var ButtonCheck = Backbone.View.extend({
      * @param{Integer}   new_val - Number of selected options.
      * @param{Integer}   total   - Total number of available options.
      */
-    value: function(new_val, total) {
+    value: function (new_val, total) {
         if (new_val !== undefined) {
             if (total && new_val !== 0) {
                 new_val = (new_val !== total && 1) || 2;
@@ -196,13 +193,13 @@ var ButtonCheck = Backbone.View.extend({
             this.model.get("onchange")(this.model.get("value"));
         }
         return this.model.get("value");
-    }
+    },
 });
 
 /** This class creates a button with dropdown menu. */
 var ButtonMenu = Backbone.View.extend({
     $menu: null,
-    initialize: function(options) {
+    initialize: function (options) {
         this.model =
             (options && options.model) ||
             new Backbone.Model({
@@ -217,7 +214,7 @@ var ButtonMenu = Backbone.View.extend({
                 href: "",
                 onunload: null,
                 visible: true,
-                tag: ""
+                tag: "",
             }).set(options);
         this.collection = new Backbone.Collection();
         this.setElement(
@@ -232,34 +229,27 @@ var ButtonMenu = Backbone.View.extend({
         this.render();
     },
 
-    render: function() {
+    render: function () {
         var options = this.model.attributes;
         this.$el
             .removeClass()
             .addClass("dropdown")
             .attr("id", options.id)
             .css({
-                display: options.visible && this.collection.where({ visible: true }).length > 0 ? "block" : "none"
+                display: options.visible && this.collection.where({ visible: true }).length > 0 ? "block" : "none",
             });
         this.$root
             .addClass(options.cls)
             .attr("data-toggle", "dropdown")
             .tooltip({ title: options.tooltip || "", placement: "bottom" })
             .off("click")
-            .on("click", e => {
+            .on("click", (e) => {
                 $(".tooltip").hide();
                 e.preventDefault();
                 options.onclick && options.onclick();
             });
-        this.$icon
-            .removeClass()
-            .addClass("icon fa")
-            .addClass(options.icon);
-        options.title &&
-            this.$title
-                .removeClass()
-                .addClass("title ml-1")
-                .html(options.title);
+        this.$icon.removeClass().addClass("icon fa").addClass(options.icon);
+        options.title && this.$title.removeClass().addClass("title ml-1").html(options.title);
         this.$menu && this.$menu.remove();
         if (this.collection.length > 0) {
             this.$menu = $("<div/>")
@@ -268,14 +258,14 @@ var ButtonMenu = Backbone.View.extend({
                 .attr("role", "menu");
             this.$el.append(this.$menu);
         }
-        this.collection.each(submodel => {
+        this.collection.each((submodel) => {
             var suboptions = submodel.attributes;
             if (suboptions.visible) {
                 var $link = $("<a/>")
                     .addClass("dropdown-item")
                     .attr({
                         href: suboptions.href,
-                        target: suboptions.target
+                        target: suboptions.target,
                     })
                     .append(
                         $("<i/>")
@@ -284,7 +274,7 @@ var ButtonMenu = Backbone.View.extend({
                             .css("display", suboptions.icon ? "inline-block" : "none")
                     )
                     .append(suboptions.title)
-                    .on("click", e => {
+                    .on("click", (e) => {
                         if (suboptions.onclick) {
                             e.preventDefault();
                             suboptions.onclick();
@@ -297,7 +287,7 @@ var ButtonMenu = Backbone.View.extend({
     },
 
     /** Add a new menu item */
-    addMenu: function(options) {
+    addMenu: function (options) {
         this.collection.add(
             Utils.merge(options, {
                 title: "",
@@ -307,15 +297,15 @@ var ButtonMenu = Backbone.View.extend({
                 divider: false,
                 visible: true,
                 icon: null,
-                cls: "button-menu btn-group"
+                cls: "button-menu btn-group",
             })
         );
-    }
+    },
 });
 
 export default {
     Button: Button,
     ButtonLink: ButtonLink,
     ButtonCheck: ButtonCheck,
-    ButtonMenu: ButtonMenu
+    ButtonMenu: ButtonMenu,
 };

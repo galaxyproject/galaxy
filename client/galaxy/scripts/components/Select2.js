@@ -5,7 +5,7 @@ import $ from "jquery";
 export default {
     props: ["options", "value", "placeholder", "containerClass", "enabled"],
     template: `<select><slot></slot></select>`,
-    mounted: function() {
+    mounted: function () {
         const vm = this;
         // TODO: refactor property list to objects that allow defaults and types
         let enabled = this.enabled;
@@ -17,7 +17,7 @@ export default {
             placeholder: this.placeholder,
             allowClear: !!this.placeholder,
             enable: enabled,
-            dropdownAutoWidth: true
+            dropdownAutoWidth: true,
         };
         if (this.containerClass) {
             select2Options.containerCssClass = this.containerClass;
@@ -28,28 +28,24 @@ export default {
             .val(this.value)
             .trigger("change")
             // emit event on change.
-            .on("change", function(event) {
+            .on("change", function (event) {
                 vm.$emit("input", event.val);
             });
     },
     watch: {
-        value: function(value) {
+        value: function (value) {
             // update value
             $(this.$el).val(value);
         },
-        options: function(options) {
+        options: function (options) {
             // update options
-            $(this.$el)
-                .empty()
-                .select2({ data: options });
+            $(this.$el).empty().select2({ data: options });
         },
-        enabled: function(value) {
+        enabled: function (value) {
             $(this.$el).select2("enable", value);
-        }
+        },
     },
-    destroyed: function() {
-        $(this.$el)
-            .off()
-            .select2("destroy");
-    }
+    destroyed: function () {
+        $(this.$el).off().select2("destroy");
+    },
 };

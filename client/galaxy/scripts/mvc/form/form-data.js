@@ -5,15 +5,15 @@ import { getGalaxyInstance } from "app";
 
 /* This class maps the form dom to an api compatible javascript dictionary. */
 export var Manager = Backbone.Model.extend({
-    initialize: function(app) {
+    initialize: function (app) {
         this.app = app;
     },
 
     /** Creates a checksum. */
-    checksum: function() {
+    checksum: function () {
         var sum = "";
         var self = this;
-        this.app.section.$el.find(".section-row").each(function() {
+        this.app.section.$el.find(".section-row").each(function () {
             var id = $(this).attr("id");
             var field = self.app.field_list[id];
             if (field) {
@@ -24,7 +24,7 @@ export var Manager = Backbone.Model.extend({
     },
 
     /** Convert dom into a dictionary of flat id/value pairs used e.g. on job submission. */
-    create: function() {
+    create: function () {
         var self = this;
 
         // get raw dictionary from dom
@@ -113,19 +113,19 @@ export var Manager = Backbone.Model.extend({
     /** Matches flat ids to corresponding input element
      * @param{string} flat_id - Flat input id to be looked up.
      */
-    match: function(flat_id) {
+    match: function (flat_id) {
         return this.flat_dict && this.flat_dict[flat_id];
     },
 
     /** Match conditional values to selected cases
      */
-    matchCase: function(input, value) {
+    matchCase: function (input, value) {
         return matchCase(input, value);
     },
 
     /** Matches a new tool model to the current input elements e.g. used to update dynamic options
      */
-    matchModel: function(model, callback) {
+    matchModel: function (model, callback) {
         var self = this;
         visitInputs(model.inputs, (input, name) => {
             if (self.flat_dict[name]) {
@@ -136,7 +136,7 @@ export var Manager = Backbone.Model.extend({
 
     /** Matches identifier from api response to input elements e.g. used to display validation errors
      */
-    matchResponse: function(response) {
+    matchResponse: function (response) {
         var result = {};
         var self = this;
         function search(id, head) {
@@ -165,10 +165,10 @@ export var Manager = Backbone.Model.extend({
 
     /** Map dom tree to dictionary tree with input elements.
      */
-    _iterate: function(parent, dict) {
+    _iterate: function (parent, dict) {
         var self = this;
         var children = $(parent).children();
-        children.each(function() {
+        children.each(function () {
             var child = this;
             var id = $(child).attr("id");
             if ($(child).hasClass("section-row")) {
@@ -179,7 +179,7 @@ export var Manager = Backbone.Model.extend({
                 self._iterate(child, dict);
             }
         });
-    }
+    },
 });
 
 /** Match conditional values to selected cases
@@ -208,7 +208,7 @@ export var matchCase = (input, value) => {
  */
 export var visitInputs = (inputs, callback, prefix, context) => {
     context = $.extend({}, context);
-    _.each(inputs, input => {
+    _.each(inputs, (input) => {
         if (input && input.type && input.name) {
             context[input.name] = input;
         }
@@ -248,5 +248,5 @@ export var visitInputs = (inputs, callback, prefix, context) => {
 
 export default {
     Manager: Manager,
-    visitInputs: visitInputs
+    visitInputs: visitInputs,
 };

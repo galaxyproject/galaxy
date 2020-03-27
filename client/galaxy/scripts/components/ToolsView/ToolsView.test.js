@@ -12,7 +12,7 @@ import axios from "axios";
 
 describe("ToolsView/ToolsView.vue", () => {
     const localVue = createLocalVue();
-    localVue.filter("localize", value => _l(value));
+    localVue.filter("localize", (value) => _l(value));
     let wrapper, emitted, axiosMock;
 
     beforeEach(async () => {
@@ -38,7 +38,7 @@ describe("ToolsView/ToolsView.vue", () => {
     });
 
     it("should render only specific number of tools, equal to current buffer", async () => {
-        let buttons = wrapper.findAll('[type="button"]').filter(button => button.text() === "Info");
+        let buttons = wrapper.findAll('[type="button"]').filter((button) => button.text() === "Info");
         // one 'info' button per tool
         assert(wrapper.vm.buffer.length === buttons.length, "Number of 'info' buttons do not equal the buffer size!");
     });
@@ -47,7 +47,7 @@ describe("ToolsView/ToolsView.vue", () => {
         // findAll() returns WrapperArray, thus regular array.find() won't work
         let infoButton = wrapper
             .findAll('[type="button"]')
-            .filter(button => button.text() === "Info")
+            .filter((button) => button.text() === "Info")
             .at(0);
         const modalId = "modal--" + infoButton.attributes().index;
         const modal = wrapper.find("#" + modalId);
@@ -66,9 +66,9 @@ describe("ToolsView/ToolsView.vue", () => {
 
         let infoButton = wrapper
             .findAll('[type="button"]')
-            .filter(button => button.text() === "Citations")
+            .filter((button) => button.text() === "Citations")
             .at(0);
-        const citation = wrapper.find("#" + infoButton.attributes("aria-controls"));
+        const citation = wrapper.find("#" + infoButton.attributes("aria-controls").replace(/ /g, "_"));
 
         assert(citation.isVisible() === false, "citation is visible before being triggered!");
         assert(infoButton.attributes("aria-expanded") === "false", "citation is expanded before being triggered!");

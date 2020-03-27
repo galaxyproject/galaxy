@@ -21,13 +21,13 @@ import ReportHelp from "./ReportHelp";
 export default {
     name: "EditorPanel",
     components: {
-        ReportHelp
+        ReportHelp,
     },
     props: {
         canvas: {
             type: Boolean,
-            required: true
-        }
-    }
+            required: true,
+        },
+    },
 };
 </script>

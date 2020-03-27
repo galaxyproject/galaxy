@@ -14,14 +14,14 @@ var HDCAListItemView = _super.extend(
     /** @lends HDCAListItemView.prototype */ {
         className: `${_super.prototype.className} history-content`,
 
-        render: function() {
+        render: function () {
             const result = _super.prototype.render.apply(this, arguments);
             this._mountNametags("initialize");
             return result;
         },
 
         /** event listeners */
-        _setUpListeners: function() {
+        _setUpListeners: function () {
             _super.prototype._setUpListeners.call(this);
             var renderListen = (model, options) => {
                 // We want this to swap immediately without extra animations.
@@ -32,7 +32,7 @@ var HDCAListItemView = _super.extend(
                 this.listenTo(this.model.jobStatesSummary, "change", renderListen);
             }
             this.listenTo(this.model, {
-                "change:tags change:visible change:state": renderListen
+                "change:tags change:visible change:state": renderListen,
             });
         },
 
@@ -46,12 +46,12 @@ var HDCAListItemView = _super.extend(
         },
 
         /** Override to provide the proper collections panels as the foldout */
-        _getFoldoutPanelClass: function() {
+        _getFoldoutPanelClass: function () {
             return DC_VIEW.CollectionView;
         },
 
         /** In this override, add the state as a class for use with state-based CSS */
-        _swapNewRender: function($newRender) {
+        _swapNewRender: function ($newRender) {
             _super.prototype._swapNewRender.call(this, $newRender);
             //TODO: model currently has no state
             var state;
@@ -83,24 +83,24 @@ var HDCAListItemView = _super.extend(
 
         // ......................................................................... misc
         /** String representation */
-        toString: function() {
+        toString: function () {
             var modelString = this.model ? `${this.model}` : "(no model)";
             return `HDCAListItemView(${modelString})`;
-        }
+        },
     }
 );
 
 /** underscore templates */
 HDCAListItemView.prototype.templates = (() => {
     var warnings = _.extend({}, _super.prototype.templates.warnings, {
-        hidden: collection => {
+        hidden: (collection) => {
             collection.visible
                 ? ""
                 : `<div class="hidden-msg warningmessagesmall">${_l("This collection has been hidden")}</div>`;
-        }
+        },
     });
 
-    var titleBarTemplate = collection => `
+    var titleBarTemplate = (collection) => `
         <div class="title-bar clear" tabindex="0">
             <span class="state-icon"></span>
             <div class="title">
@@ -115,11 +115,11 @@ HDCAListItemView.prototype.templates = (() => {
 
     return _.extend({}, _super.prototype.templates, {
         warnings: warnings,
-        titleBar: titleBarTemplate
+        titleBar: titleBarTemplate,
     });
 })();
 
 //==============================================================================
 export default {
-    HDCAListItemView: HDCAListItemView
+    HDCAListItemView: HDCAListItemView,
 };

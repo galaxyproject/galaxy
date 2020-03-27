@@ -19,47 +19,47 @@ function TagModel(props = {}) {
     // style enumerable for vue-tags-input
     Object.defineProperty(this, "style", {
         enumerable: true,
-        get: function() {
+        get: function () {
             if (this.text.startsWith("name:")) {
                 const { primary, contrasting, darker } = keyedColorScheme(this.text);
 
                 const styles = {
                     "background-color": primary,
                     color: contrasting,
-                    "border-color": darker
+                    "border-color": darker,
                 };
 
                 return Object.keys(styles)
-                    .map(prop => `${prop}: ${styles[prop]}`)
+                    .map((prop) => `${prop}: ${styles[prop]}`)
                     .join(";");
             }
             return "";
-        }
+        },
     });
 
     // Changes name:foo to #foo
     Object.defineProperty(this, "label", {
         enumerable: true,
-        get: function() {
+        get: function () {
             return this.text.startsWith("name:") ? this.text.replace("name:", "#") : this.text;
-        }
+        },
     });
 
     // valid flag
     Object.defineProperty(this, "valid", {
         enumerable: false,
-        get: function() {
+        get: function () {
             if (!this.text.length) return false;
             return this.text != "name:";
-        }
+        },
     });
 }
 
-TagModel.prototype.equals = function(otherTag) {
+TagModel.prototype.equals = function (otherTag) {
     return this.text == otherTag.text;
 };
 
-TagModel.prototype.toString = function() {
+TagModel.prototype.toString = function () {
     return this.text;
 };
 
@@ -83,5 +83,5 @@ export function createTag(data) {
 export const diffTags = (newTags, existingTags) => {
     const newModels = newTags.map(createTag);
     const existingModels = existingTags.map(createTag);
-    return newModels.filter(tag => !existingModels.some(st => st.equals(tag)));
+    return newModels.filter((tag) => !existingModels.some((st) => st.equals(tag)));
 };

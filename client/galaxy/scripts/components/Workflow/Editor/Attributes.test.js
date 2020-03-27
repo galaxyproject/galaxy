@@ -21,8 +21,8 @@ describe("Attributes", () => {
                 name: "workflow_name",
                 tags: ["workflow_tag_0", "workflow_tag_1"],
                 parameters: ["workflow_parameter_0", "workflow_parameter_1"],
-                versions: ["workflow_version_0"]
-            }
+                versions: ["workflow_version_0"],
+            },
         });
         const name = wrapper.find("#workflow-name");
         expect(name.element.value).to.equal("workflow_name");

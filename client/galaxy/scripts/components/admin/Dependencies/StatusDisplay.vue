@@ -5,7 +5,7 @@
                 <span class="fa fa-check text-success"></span>{{ status.dependency_type }}
                 <span v-if="mergedMultiple">(merged)</span>
             </b>
-            <span v-if="!compact">{{ description }} <display-raw :object="status"/></span>
+            <span v-if="!compact">{{ description }} <display-raw :object="status" /></span>
         </span>
         <b v-else> <span class="fa fa-times text-danger"></span><i>unresolved</i> </b>
     </span>
@@ -16,7 +16,7 @@ const DESCRIPTIONS = {
     galaxy_package: "A manually configured Galaxy package directory will be used for resolution. ",
     tool_shed_packages: "Legacy Tool Shed package installations will be used for resolution. ",
     docker: "Resolution of dependencies is assumed to be handled by specified Docker container. ",
-    singularity: "Resolution of dependencies is assumed to be handled by specified Singularity container. "
+    singularity: "Resolution of dependencies is assumed to be handled by specified Singularity container. ",
 };
 
 function describeRequirement(status) {
@@ -41,27 +41,27 @@ export default {
     props: {
         status: {
             type: Object,
-            required: true
+            required: true,
         },
         allStatuses: {
             type: Array,
-            default: null
+            default: null,
         },
         compact: {
             type: Boolean,
-            default: true
-        }
+            default: true,
+        },
     },
     computed: {
-        merged: function() {
+        merged: function () {
             return (
                 this.status.model_class == "MergedCondaDependency" || this.status.model_class == "ContainerDependency"
             );
         },
-        mergedMultiple: function() {
+        mergedMultiple: function () {
             return this.merged && this.allStatuses != null && this.allStatuses.length > 1;
         },
-        description: function() {
+        description: function () {
             const dependencyType = this.status.dependency_type;
             let resolutionDescription =
                 DESCRIPTIONS[dependencyType] ||
@@ -78,9 +78,9 @@ export default {
             }
             return resolutionDescription;
         },
-        title: function() {
+        title: function () {
             return this.compact ? this.description : "";
-        }
-    }
+        },
+    },
 };
 </script>
