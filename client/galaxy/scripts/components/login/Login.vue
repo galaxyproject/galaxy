@@ -71,12 +71,12 @@ export default {
     props: {
         show_welcome_with_login: {
             type: Boolean,
-            required: false,
+            required: false
         },
         welcome_url: {
             type: String,
-            required: false,
-        },
+            required: false
+        }
     },
     data() {
         const galaxy = getGalaxyInstance();
@@ -98,25 +98,25 @@ export default {
             session_csrf_token: galaxy.session_csrf_token,
             enable_oidc: galaxy.config.enable_oidc,
             oidc_idps: galaxy.config.oidc,
-            oidc_idps_icons: oidc_idps_icons,
+            oidc_idps_icons: oidc_idps_icons
         };
     },
     computed: {
         messageShow() {
             return this.messageText != null;
-        },
+        }
     },
     methods: {
-        toggleLogin: function () {
+        toggleLogin: function() {
             if (this.$root.toggleLogin) {
                 this.$root.toggleLogin();
             }
         },
-        submitGalaxyLogin: function (method) {
+        submitGalaxyLogin: function(method) {
             const rootUrl = getAppRoot();
             axios
                 .post(`${rootUrl}user/login`, this.$data)
-                .then((response) => {
+                .then(response => {
                     if (response.data.message && response.data.status) {
                         alert(response.data.message);
                     }
@@ -128,43 +128,43 @@ export default {
                         window.location = `${rootUrl}`;
                     }
                 })
-                .catch((error) => {
+                .catch(error => {
                     this.messageVariant = "danger";
                     const message = error.response.data && error.response.data.err_msg;
                     this.messageText = message || "Login failed for an unknown reason.";
                 });
         },
-        submitOIDCLogin: function (idp) {
+        submitOIDCLogin: function(idp) {
             const rootUrl = getAppRoot();
             axios
                 .post(`${rootUrl}authnz/${idp}/login`)
-                .then((response) => {
+                .then(response => {
                     if (response.data.redirect_uri) {
                         window.location = response.data.redirect_uri;
                     }
                     // Else do something intelligent or maybe throw an error -- what else does this endpoint possibly return?
                 })
-                .catch((error) => {
+                .catch(error => {
                     this.messageVariant = "danger";
                     const message = error.response.data && error.response.data.err_msg;
                     this.messageText = message || "Login failed for an unknown reason.";
                 });
         },
-        reset: function (ev) {
+        reset: function(ev) {
             const rootUrl = getAppRoot();
             ev.preventDefault();
             axios
                 .post(`${rootUrl}user/reset_password`, { email: this.login })
-                .then((response) => {
+                .then(response => {
                     this.messageVariant = "info";
                     this.messageText = response.data.message;
                 })
-                .catch((error) => {
+                .catch(error => {
                     this.messageVariant = "danger";
                     const message = error.response.data && error.response.data.err_msg;
                     this.messageText = message || "Password reset failed for an unknown reason.";
                 });
-        },
-    },
+        }
+    }
 };
 </script>
