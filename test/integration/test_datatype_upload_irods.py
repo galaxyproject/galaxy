@@ -15,7 +15,7 @@ IRODS_TEST_CASES = dict(list(TEST_CASES.items())[0:10])
 
 
 def start_irods(container_name):
-    minio_start_args = [
+    irods_start_args = [
         'docker',
         'run',
         '-p',
@@ -24,7 +24,7 @@ def start_irods(container_name):
         '--name',
         container_name,
         'kxk302/irods-server:0.1']
-    subprocess.check_call(minio_start_args)
+    subprocess.check_call(irods_start_args)
 
 
 def stop_irods(container_name):
