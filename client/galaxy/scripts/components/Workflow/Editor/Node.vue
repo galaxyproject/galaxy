@@ -47,7 +47,7 @@ import BootstrapVue from "bootstrap-vue";
 import WorkflowIcons from "components/Workflow/icons";
 import LoadingSpan from "components/LoadingSpan";
 import { getGalaxyInstance } from "app";
-import { getToolRecommendations } from "./workflowRecommendations";
+import WorkflowRecommendations from "components/Workflow/Editor/WorkflowRecommendations";
 
 Vue.use(BootstrapVue);
 
@@ -99,7 +99,12 @@ export default {
             this.node.clone();
         },
         onGetRecommendations() {
-            getToolRecommendations(this);
+            const component = Vue.extend(WorkflowRecommendations);
+            const instance = new component({ propsData: { workflowManager: this } });
+            const body = document.getElementsByTagName("body")[0];
+            const vm = document.createElement("div");
+            body.append(vm);
+            instance.$mount(vm);
         }
     }
 };

@@ -167,7 +167,7 @@ export default {
                         return d.name;
                     });
                 nodeEnter.append("title").text(d => {
-                    return d.children || d._children ? "Click to collapse" : "Open tool - " + d.name;
+                    return d.children || d._children ? d.name : "Open tool - " + d.name;
                 });
                 // Transition nodes to their new position.
                 const nodeUpdate = node
