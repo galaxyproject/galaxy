@@ -23,7 +23,7 @@ def start_irods(container_name):
         '-d',
         '--name',
         container_name,
-        'kxk302/irods-server:0.3']
+        'kxk302/irods-server:0.1']
     subprocess.check_call(irods_start_args)
 
 
