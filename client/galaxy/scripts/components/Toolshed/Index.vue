@@ -33,7 +33,7 @@ import InstalledList from "./InstalledList/Index.vue";
 export default {
     components: {
         SearchList,
-        InstalledList
+        InstalledList,
     },
     data() {
         return {
@@ -49,19 +49,19 @@ export default {
             tabValue: true,
             tabOptions: [
                 { text: "Search All", value: true },
-                { text: "Installed Only", value: false }
-            ]
+                { text: "Installed Only", value: false },
+            ],
         };
     },
     watch: {
         tabValue() {
             this.setQuery("");
-        }
+        },
     },
     computed: {
         queryEmpty() {
             return !this.query || this.query.length < this.queryLength;
-        }
+        },
     },
     methods: {
         clearTimer() {
@@ -88,7 +88,7 @@ export default {
         },
         onScroll({ target: { scrollTop, clientHeight, scrollHeight } }) {
             this.scrolled = scrollTop + clientHeight >= scrollHeight;
-        }
-    }
+        },
+    },
 };
 </script>

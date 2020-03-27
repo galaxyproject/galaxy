@@ -20,16 +20,16 @@ export function mountWithApp(component, options = {}, propsData_ = {}) {
                     {
                         name: "%s.pheno",
                         optional: false,
-                        description: "Phenodata tab text file"
+                        description: "Phenodata tab text file",
                     },
                     {
                         name: "%s.affybatch",
                         optional: false,
-                        description: "AffyBatch R object saved to file"
-                    }
-                ]
-            }
-        ]
+                        description: "AffyBatch R object saved to file",
+                    },
+                ],
+            },
+        ],
     });
     const propsData = _.defaults(propsData_, { app });
     const localVue = createLocalVue();
@@ -38,8 +38,8 @@ export function mountWithApp(component, options = {}, propsData_ = {}) {
         localVue,
         attachToDocument: true,
         stubs: {
-            select2: true
-        }
+            select2: true,
+        },
     });
     return { wrapper, localVue };
 }

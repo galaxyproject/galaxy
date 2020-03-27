@@ -38,7 +38,7 @@ function _filterDatasetJSON(datasetJSON, where, datasetsOnly) {
         return true;
     }
 
-    return datasetJSON.filter(json => {
+    return datasetJSON.filter((json) => {
         console.debug(json);
         return (
             !json.deleted &&
@@ -94,7 +94,7 @@ var DatasetChoiceModal = (datasetJSON, options) => {
         // select more than one dataset?
         multiselect: false,
         // any dataset ids that will display as already selected
-        selected: []
+        selected: [],
     });
     // default title should depend on multiselect
     options.title = options.title || (options.multiselect ? _l("Choose datasets:") : _l("Choose a dataset:"));
@@ -113,7 +113,7 @@ var DatasetChoiceModal = (datasetJSON, options) => {
 
     // resolve the returned promise with the json of the selected datasets
     function resolveWithSelected() {
-        promise.resolve(list.getSelectedModels().map(model => model.toJSON()));
+        promise.resolve(list.getSelectedModels().map((model) => model.toJSON()));
     }
     // if multiselect - add a button for the user to complete the changes
     if (options.multiselect) {
@@ -126,10 +126,10 @@ var DatasetChoiceModal = (datasetJSON, options) => {
         height: "auto",
         buttons: buttons,
         closing_events: true,
-        closing_callback: function() {
+        closing_callback: function () {
             promise.resolve(null);
         },
-        body: ['<div class="list-panel"></div>'].join("")
+        body: ['<div class="list-panel"></div>'].join(""),
     });
     modal.$(".modal-header").remove();
     modal.$(".modal-footer").css("margin-top", "0px");
@@ -143,13 +143,13 @@ var DatasetChoiceModal = (datasetJSON, options) => {
                 [
                     //TODO: as option
                     "Click the checkboxes on the right to select datasets. ",
-                    "Click the datasets names to see their details. "
+                    "Click the datasets names to see their details. ",
                 ].join("")
             ),
         el: modal.$body.find(".list-panel"),
         selecting: true,
         selected: options.selected,
-        collection: new DATASET.DatasetAssociationCollection(datasetJSON)
+        collection: new DATASET.DatasetAssociationCollection(datasetJSON),
     });
 
     // when the list is rendered, show the modal (also add a specifying class for css)
@@ -163,7 +163,7 @@ var DatasetChoiceModal = (datasetJSON, options) => {
             list.$(".list-actions").hide();
         });
         // if single select, immediately resolve on a single selection
-        list.on("view:selected", view => {
+        list.on("view:selected", (view) => {
             promise.resolve([view.model.toJSON()]);
         });
     }
@@ -209,7 +209,7 @@ var DatasetChoice = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
     className: "dataset-choice",
 
     /** set up defaults, options, and listeners */
-    initialize: function(attributes) {
+    initialize: function (attributes) {
         this.debug(`${this}(DatasetChoice).initialize:`, attributes);
 
         this.label = attributes.label !== undefined ? _l(attributes.label) : "";
@@ -223,14 +223,14 @@ var DatasetChoice = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
     },
 
     /** add any (bbone) listeners */
-    _setUpListeners: function() {
+    _setUpListeners: function () {
         //this.on( 'all', function(){
         //    this.log( this + '', arguments );
         //});
     },
 
     /** render the view */
-    render: function() {
+    render: function () {
         var json = this.toJSON();
         this.$el.html(this._template(json));
         this.$(".selected").replaceWith(this._renderSelected(json));
@@ -238,14 +238,14 @@ var DatasetChoice = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
     },
 
     /** return plain html for the overall control */
-    _template: function(json) {
+    _template: function (json) {
         return _.template(
             ["<label>", '<span class="prompt"><%- label %></span>', '<div class="selected"></div>', "</label>"].join("")
         )(json);
     },
 
     /** return jQ DOM for the selected dataset (only one) */
-    _renderSelected: function(json) {
+    _renderSelected: function (json) {
         if (json.selected.length) {
             //TODO: break out?
             return $(
@@ -260,7 +260,7 @@ var DatasetChoice = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
                         "<%- selected.file_ext %></i>",
                         "<i><%- selected.misc_info %></i>",
                         "</span>",
-                        "</div>"
+                        "</div>",
                     ].join(""),
                     { variable: "selected" }
                 )(json.selected[0])
@@ -271,25 +271,25 @@ var DatasetChoice = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
 
     //TODO:?? why not just pass in view?
     /** return a plain JSON object with both the view and dataset attributes */
-    toJSON: function() {
+    toJSON: function () {
         var chooser = this;
         return {
             label: chooser.label,
             datasets: chooser.datasetJSON,
             selected: _.compact(
-                _.map(chooser.selected, id =>
+                _.map(chooser.selected, (id) =>
                     _.findWhere(chooser.datasetJSON, {
-                        id: id
+                        id: id,
                     })
                 )
-            )
+            ),
         };
     },
 
     /** event map: when to open the modal */
     events: {
         // the whole thing functions as a button
-        click: "chooseWithModal"
+        click: "chooseWithModal",
     },
 
     //TODO:?? modal to prop of this?
@@ -299,11 +299,11 @@ var DatasetChoice = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
      *  @fires 'cancelled' when the user clicks away/closes the modal (no selection made) - passed this
      *  @fires 'error' if the modal has no selectable datasets based on this.where - passed this and other args
      */
-    chooseWithModal: function() {
+    chooseWithModal: function () {
         var chooser = this;
 
         return this._createModal()
-            .done(json => {
+            .done((json) => {
                 if (json) {
                     chooser.selected = _.pluck(json, "id");
                     chooser.trigger("selected", chooser, json);
@@ -312,32 +312,32 @@ var DatasetChoice = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
                     chooser.trigger("cancelled", chooser);
                 }
             })
-            .fail(function() {
+            .fail(function () {
                 chooser.trigger("error", chooser, arguments);
             });
     },
 
     /** create and return the modal to use for choosing */
-    _createModal: function() {
+    _createModal: function () {
         return new DatasetChoiceModal(this.datasetJSON, this._getModalOptions());
     },
 
     /** return a plain JSON containing the options to pass to the modal */
-    _getModalOptions: function() {
+    _getModalOptions: function () {
         return {
             title: this.label,
             multiselect: false,
             selected: this.selected,
             where: this.where,
-            datasetsOnly: this.datasetsOnly
+            datasetsOnly: this.datasetsOnly,
         };
     },
 
     // ------------------------------------------------------------------------ misc
     /** string rep */
-    toString: function() {
+    toString: function () {
         return `DatasetChoice(${this.selected})`;
-    }
+    },
 });
 
 // ============================================================================
@@ -362,18 +362,18 @@ var MultiDatasetChoice = DatasetChoice.extend({
         file_ext: _l("Format"),
         genome_build: _l("Genome"),
         tags: _l("Tags"),
-        annotation: _l("Annotation")
+        annotation: _l("Annotation"),
     },
 
     /** in this override, add the showHeaders and cells options */
-    initialize: function(attributes) {
+    initialize: function (attributes) {
         this.showHeaders = attributes.showHeaders !== undefined ? attributes.showHeaders : true;
         this.cells = attributes.cells || this.cells;
         DatasetChoice.prototype.initialize.call(this, attributes);
     },
 
     /** in this override, display the selected datasets as a table with optional headers */
-    _renderSelected: function(json) {
+    _renderSelected: function (json) {
         if (json.selected.length) {
             return $(
                 _.template(
@@ -395,7 +395,7 @@ var MultiDatasetChoice = DatasetChoice.extend({
                         "</tr>",
                         "<% }); %>",
                         "</tbody>",
-                        "</table>"
+                        "</table>",
                     ].join(""),
                     { variable: "json" }
                 )(json)
@@ -405,30 +405,30 @@ var MultiDatasetChoice = DatasetChoice.extend({
     },
 
     /** in this override, send the showHeaders and cells options as well */
-    toJSON: function() {
+    toJSON: function () {
         return _.extend(DatasetChoice.prototype.toJSON.call(this), {
             showHeaders: this.showHeaders,
-            cells: this.cells
+            cells: this.cells,
         });
     },
 
     /** in this override, set multiselect to true */
-    _getModalOptions: function() {
+    _getModalOptions: function () {
         return _.extend(DatasetChoice.prototype._getModalOptions.call(this), {
-            multiselect: true
+            multiselect: true,
         });
     },
 
     // ------------------------------------------------------------------------ misc
     /** string rep */
-    toString: function() {
+    toString: function () {
         return `DatasetChoice(${this.selected})`;
-    }
+    },
 });
 
 // ============================================================================
 export default {
     DatasetChoiceModal: DatasetChoiceModal,
     DatasetChoice: DatasetChoice,
-    MultiDatasetChoice: MultiDatasetChoice
+    MultiDatasetChoice: MultiDatasetChoice,
 };

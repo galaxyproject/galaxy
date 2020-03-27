@@ -15,14 +15,14 @@ describe("Repositories", () => {
                             name: "name_0",
                             owner: "owner_0",
                             last_updated: "last_updated_0",
-                            times_downloaded: "times_downloaded_0"
+                            times_downloaded: "times_downloaded_0",
                         },
                         {
                             name: "name_1",
                             owner: "owner_1",
                             last_updated: "last_updated_1",
-                            times_downloaded: "times_downloaded_1"
-                        }
+                            times_downloaded: "times_downloaded_1",
+                        },
                     ];
                 }
             }
@@ -34,8 +34,8 @@ describe("Repositories", () => {
             propsData: {
                 query: true,
                 scrolled: false,
-                toolshedUrl: "toolshedUrl"
-            }
+                toolshedUrl: "toolshedUrl",
+            },
         });
         // Test initial state prior to the data fetch tick -- should be loading.
         expect(wrapper.find(".loading-message").text()).to.equal("Loading repositories...");

@@ -1,7 +1,7 @@
 export const state = {
     jobMetricsByHdaId: {},
     jobMetricsByLddaId: {},
-    jobMetricsByJobId: {}
+    jobMetricsByJobId: {},
 };
 
 import Vue from "vue";
@@ -9,13 +9,13 @@ import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 
 const getters = {
-    getJobMetricsByDatasetId: state => (datasetId, datasetType = "hda") => {
+    getJobMetricsByDatasetId: (state) => (datasetId, datasetType = "hda") => {
         const jobMetricsObject = datasetType == "hda" ? state.jobMetricsByHdaId : state.jobMetricsByLddaId;
         return jobMetricsObject[datasetId] || [];
     },
-    getJobMetricsByJobId: state => jobId => {
+    getJobMetricsByJobId: (state) => (jobId) => {
         return state.jobMetricsByJobId[jobId] || [];
-    }
+    },
 };
 
 const actions = {
@@ -26,7 +26,7 @@ const actions = {
     fetchJobMetricsForJobId: async ({ commit }, jobId) => {
         const { data } = await axios.get(`${getAppRoot()}api/jobs/${jobId}/metrics`);
         commit("saveJobMetricsForJobId", { jobId, jobMetrics: data });
-    }
+    },
 };
 
 const mutations = {
@@ -36,12 +36,12 @@ const mutations = {
     },
     saveJobMetricsForJobId: (state, { jobId, jobMetrics }) => {
         Vue.set(state.jobMetricsByJobId, jobId, jobMetrics);
-    }
+    },
 };
 
 export const jobMetricsStore = {
     state,
     getters,
     actions,
-    mutations
+    mutations,
 };

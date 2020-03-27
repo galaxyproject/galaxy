@@ -16,7 +16,7 @@ var ExpandableView = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
     //PRECONDITION: model must have method hasDetails
     //PRECONDITION: subclasses must have templates.el and templates.details
 
-    initialize: function(attributes) {
+    initialize: function (attributes) {
         /** are the details of this view expanded/shown or not? */
         this.expanded = attributes.expanded || false;
         this.log("\t expanded:", this.expanded);
@@ -30,7 +30,7 @@ var ExpandableView = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
     /** Render this content, set up ui.
      *  @param {Number or String} speed   the speed of the render
      */
-    render: function(speed) {
+    render: function (speed) {
         var $newRender = this._buildNewRender();
         this._setUpBehaviors($newRender);
         this._queueNewRender($newRender, speed);
@@ -40,7 +40,7 @@ var ExpandableView = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
     /** Build a temp div containing the new children for the view's $el.
      *      If the view is already expanded, build the details as well.
      */
-    _buildNewRender: function() {
+    _buildNewRender: function () {
         // create a new render using a skeleton template, render title buttons, render body, and set up events, etc.
         var $newRender = $(this.templates.el(this.model.toJSON(), this));
         if (this.expanded) {
@@ -53,7 +53,7 @@ var ExpandableView = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
      *  @param {Number or String} speed   jq speed to use for rendering effects
      *  @fires rendered when rendered
      */
-    _queueNewRender: function($newRender, speed) {
+    _queueNewRender: function ($newRender, speed) {
         speed = speed === undefined ? this.fxSpeed : speed;
         var view = this;
 
@@ -62,26 +62,26 @@ var ExpandableView = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
             view.trigger("rendered", view);
         } else {
             $(view).queue("fx", [
-                next => {
+                (next) => {
                     view.$el.fadeOut(speed, next);
                 },
-                next => {
+                (next) => {
                     view._swapNewRender($newRender);
                     next();
                 },
-                next => {
+                (next) => {
                     view.$el.fadeIn(speed, next);
                 },
-                next => {
+                (next) => {
                     view.trigger("rendered", view);
                     next();
-                }
+                },
             ]);
         }
     },
 
     /** empty out the current el, move the $newRender's children in */
-    _swapNewRender: function($newRender) {
+    _swapNewRender: function ($newRender) {
         return this.$el
             .empty()
             .attr("class", _.isFunction(this.className) ? this.className() : this.className)
@@ -91,7 +91,7 @@ var ExpandableView = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
     /** set up js behaviors, event handlers for elements within the given container
      *  @param {jQuery} $container jq object that contains the elements to process (defaults to this.$el)
      */
-    _setUpBehaviors: function($where) {
+    _setUpBehaviors: function ($where) {
         $where = $where || this.$el;
         // set up canned behavior on children (bootstrap, popupmenus, editable_text, etc.)
         //make_popup_menus( $where );
@@ -100,13 +100,13 @@ var ExpandableView = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
 
     // ......................................................................... details
     /** shortcut to details DOM (as jQ) */
-    $details: function($where) {
+    $details: function ($where) {
         $where = $where || this.$el;
         return $where.find("> .details");
     },
 
     /** build the DOM for the details and set up behaviors on it */
-    _renderDetails: function() {
+    _renderDetails: function () {
         var $newDetails = $(this.templates.details(this.model.toJSON(), this));
         this._setUpBehaviors($newDetails);
         return $newDetails;
@@ -116,7 +116,7 @@ var ExpandableView = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
     /** Show or hide the details
      *  @param {Boolean} expand if true, expand; if false, collapse
      */
-    toggleExpanded: function(expand) {
+    toggleExpanded: function (expand) {
         expand = expand === undefined ? !this.expanded : expand;
         if (expand) {
             this.expand();
@@ -130,7 +130,7 @@ var ExpandableView = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
      *      note: if the model does not have detailed data, fetch that data before showing the body
      *  @fires expanded when a body has been expanded
      */
-    expand: function() {
+    expand: function () {
         var view = this;
         return view._fetchModelDetails().always(() => {
             view._expand();
@@ -140,7 +140,7 @@ var ExpandableView = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
     /** Check for model details and, if none, fetch them.
      *  @returns {jQuery.promise} the model.fetch.xhr if details are being fetched, an empty promise if not
      */
-    _fetchModelDetails: function() {
+    _fetchModelDetails: function () {
         if (!this.model.hasDetails()) {
             return this.model.fetch();
         }
@@ -148,7 +148,7 @@ var ExpandableView = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
     },
 
     /** Inner fn called when expand (public) has fetched the details */
-    _expand: function() {
+    _expand: function () {
         var view = this;
         var $newDetails = view._renderDetails();
         view.$details().replaceWith($newDetails);
@@ -162,14 +162,14 @@ var ExpandableView = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
     /** Hide the body/details of an HDA.
      *  @fires collapsed when a body has been collapsed
      */
-    collapse: function() {
+    collapse: function () {
         this.debug(`${this}(ExpandableView).collapse`);
         var view = this;
         view.expanded = false;
         this.$details().slideUp(view.fxSpeed, () => {
             view.trigger("collapsed", view);
         });
-    }
+    },
 });
 
 //==============================================================================
@@ -190,7 +190,7 @@ export var ListItemView = ExpandableView.extend(
         className: "list-item",
 
         /** Set up the base class and all mixins */
-        initialize: function(attributes) {
+        initialize: function (attributes) {
             ExpandableView.prototype.initialize.call(this, attributes);
             BASE_MVC.SelectableViewMixin.initialize.call(this, attributes);
             BASE_MVC.DraggableViewMixin.initialize.call(this, attributes);
@@ -198,11 +198,11 @@ export var ListItemView = ExpandableView.extend(
         },
 
         /** event listeners */
-        _setUpListeners: function() {
+        _setUpListeners: function () {
             // hide the primary actions in the title bar when selectable and narrow
             this.on(
                 "selectable",
-                function(isSelectable) {
+                function (isSelectable) {
                     if (isSelectable) {
                         this.$(".primary-actions").hide();
                     } else {
@@ -216,7 +216,7 @@ export var ListItemView = ExpandableView.extend(
 
         // ........................................................................ rendering
         /** In this override, call methods to build warnings, titlebar and primary actions */
-        _buildNewRender: function() {
+        _buildNewRender: function () {
             var $newRender = ExpandableView.prototype._buildNewRender.call(this);
             $newRender.children(".warnings").replaceWith(this._renderWarnings());
             $newRender.children(".title-bar").replaceWith(this._renderTitleBar());
@@ -226,7 +226,7 @@ export var ListItemView = ExpandableView.extend(
         },
 
         /** In this override, render the selector controls and set up dragging before the swap */
-        _swapNewRender: function($newRender) {
+        _swapNewRender: function ($newRender) {
             ExpandableView.prototype._swapNewRender.call(this, $newRender);
             if (this.selectable) {
                 this.showSelector(0);
@@ -238,30 +238,30 @@ export var ListItemView = ExpandableView.extend(
         },
 
         /** Render any warnings the item may need to show (e.g. "I'm deleted") */
-        _renderWarnings: function() {
+        _renderWarnings: function () {
             var view = this;
             var $warnings = $('<div class="warnings"></div>');
             var json = view.model.toJSON();
             //TODO:! unordered (map)
-            _.each(view.templates.warnings, templateFn => {
+            _.each(view.templates.warnings, (templateFn) => {
                 $warnings.append($(templateFn(json, view)));
             });
             return $warnings;
         },
 
         /** Render the title bar (the main/exposed SUMMARY dom element) */
-        _renderTitleBar: function() {
+        _renderTitleBar: function () {
             return $(this.templates.titleBar(this.model.toJSON(), this));
         },
 
         /** Return an array of jQ objects containing common/easily-accessible item controls */
-        _renderPrimaryActions: function() {
+        _renderPrimaryActions: function () {
             // override this
             return [];
         },
 
         /** Render the title bar (the main/exposed SUMMARY dom element) */
-        _renderSubtitle: function() {
+        _renderSubtitle: function () {
             return $(this.templates.subtitle(this.model.toJSON(), this));
         },
 
@@ -271,11 +271,11 @@ export var ListItemView = ExpandableView.extend(
             // expand the body when the title is clicked or when in focus and space or enter is pressed
             "click .title-bar": "_clickTitleBar",
             "keydown .title-bar": "_keyDownTitleBar",
-            "click .selector": "toggleSelect"
+            "click .selector": "toggleSelect",
         },
 
         /** expand when the title bar is clicked */
-        _clickTitleBar: function(event) {
+        _clickTitleBar: function (event) {
             event.stopPropagation();
             if (event.altKey) {
                 this.toggleSelect(event);
@@ -288,7 +288,7 @@ export var ListItemView = ExpandableView.extend(
         },
 
         /** expand when the title bar is in focus and enter or space is pressed */
-        _keyDownTitleBar: function(event) {
+        _keyDownTitleBar: function (event) {
             // bail (with propagation) if keydown and not space or enter
             var KEYCODE_SPACE = 32;
 
@@ -307,10 +307,10 @@ export var ListItemView = ExpandableView.extend(
 
         // ......................................................................... misc
         /** String representation */
-        toString: function() {
+        toString: function () {
             var modelString = this.model ? `${this.model}` : "(no model)";
             return `ListItemView(${modelString})`;
-        }
+        },
     })
 );
 
@@ -332,7 +332,7 @@ ListItemView.prototype.templates = (() => {
 
         // expandable area for more details
         '<div class="details"></div>',
-        "</div>"
+        "</div>",
     ]);
 
     var warnings = {};
@@ -347,19 +347,19 @@ ListItemView.prototype.templates = (() => {
             '<span class="name"><%- element.name %></span>',
             "</div>",
             '<div class="subtitle"></div>',
-            "</div>"
+            "</div>",
         ],
         "element"
     );
 
     var subtitleTemplate = BASE_MVC.wrapTemplate([
         // override this
-        '<div class="subtitle"></div>'
+        '<div class="subtitle"></div>',
     ]);
 
     var detailsTemplate = BASE_MVC.wrapTemplate([
         // override this
-        '<div class="details"></div>'
+        '<div class="details"></div>',
     ]);
 
     return {
@@ -367,7 +367,7 @@ ListItemView.prototype.templates = (() => {
         warnings: warnings,
         titleBar: titleBarTemplate,
         subtitle: subtitleTemplate,
-        details: detailsTemplate
+        details: detailsTemplate,
     };
 })();
 
@@ -395,7 +395,7 @@ export var FoldoutListItemView = ListItemView.extend({
      *      add attributes foldoutStyle and foldoutPanelClass for config poly
      *      disrespect attributes.expanded if drilldown
      */
-    initialize: function(attributes) {
+    initialize: function (attributes) {
         if (this.foldoutStyle === "drilldown") {
             this.expanded = false;
         }
@@ -407,7 +407,7 @@ export var FoldoutListItemView = ListItemView.extend({
     },
 
     /** in this override, attach the foldout panel when rendering details */
-    _renderDetails: function() {
+    _renderDetails: function () {
         if (this.foldoutStyle === "drilldown") {
             return $();
         }
@@ -416,35 +416,35 @@ export var FoldoutListItemView = ListItemView.extend({
     },
 
     /** In this override, handle collection expansion. */
-    _createFoldoutPanel: function() {
+    _createFoldoutPanel: function () {
         var model = this.model;
         var FoldoutClass = this._getFoldoutPanelClass(model);
         var options = this._getFoldoutPanelOptions(model);
 
         return new FoldoutClass(
             _.extend(options, {
-                model: model
+                model: model,
             })
         );
     },
 
     /** Stub to return proper foldout panel class */
-    _getFoldoutPanelClass: function() {
+    _getFoldoutPanelClass: function () {
         // override
         return this.foldoutPanelClass;
     },
 
     /** Stub to return proper foldout panel options */
-    _getFoldoutPanelOptions: function() {
+    _getFoldoutPanelOptions: function () {
         return {
             // propagate foldout style down
             foldoutStyle: this.foldoutStyle,
-            fxSpeed: this.fxSpeed
+            fxSpeed: this.fxSpeed,
         };
     },
 
     /** Render the foldout panel inside the view, hiding controls */
-    _attachFoldout: function(foldout, $whereTo) {
+    _attachFoldout: function (foldout, $whereTo) {
         $whereTo = $whereTo || this.$("> .details");
         this.foldout = foldout.render(0);
         foldout.$("> .controls").hide();
@@ -452,7 +452,7 @@ export var FoldoutListItemView = ListItemView.extend({
     },
 
     /** In this override, branch on foldoutStyle to show expanded */
-    expand: function() {
+    expand: function () {
         var view = this;
         return view._fetchModelDetails().always(() => {
             if (view.foldoutStyle === "foldout") {
@@ -467,14 +467,14 @@ export var FoldoutListItemView = ListItemView.extend({
      *      containing views can listen to this and handle other things
      *      (like hiding themselves) by listening for expanded/collapsed:drilldown
      */
-    _expandByDrilldown: function() {
+    _expandByDrilldown: function () {
         var view = this;
         // attachment and rendering done by listener
         view.listenTo(view.foldout, "close", () => {
             view.trigger("collapsed:drilldown", view, view.foldout);
         });
         view.trigger("expanded:drilldown", view, view.foldout);
-    }
+    },
 });
 
 // ............................................................................ TEMPLATES
@@ -484,13 +484,13 @@ FoldoutListItemView.prototype.templates = (() => {
         [
             '<div class="details">',
             // override with more info (that goes above the panel)
-            "</div>"
+            "</div>",
         ],
         "collection"
     );
 
     return _.extend({}, ListItemView.prototype.templates, {
-        details: detailsTemplate
+        details: detailsTemplate,
     });
 })();
 
@@ -498,5 +498,5 @@ FoldoutListItemView.prototype.templates = (() => {
 export default {
     ExpandableView: ExpandableView,
     ListItemView: ListItemView,
-    FoldoutListItemView: FoldoutListItemView
+    FoldoutListItemView: FoldoutListItemView,
 };

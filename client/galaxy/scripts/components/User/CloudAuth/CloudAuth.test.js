@@ -14,13 +14,13 @@ import listCredentials from "./testdata/listCredentials.json";
 
 const localVue = createLocalVue();
 localVue.use(BootstrapVue);
-localVue.filter("localize", value => _l(value));
+localVue.filter("localize", (value) => _l(value));
 
 describe("CloudAuth component", () => {
     let stub, wrapper;
 
     const mockSvc = {
-        listCredentials: async () => null
+        listCredentials: async () => null,
     };
 
     rewire.__Rewire__("svc", mockSvc);
@@ -82,7 +82,7 @@ describe("CloudAuth component", () => {
             results = wrapper.vm.filteredItems;
             assert(results.length == 3, `Wrong number of items: ${results.length}`);
 
-            const blank = results.find(i => i.id == null);
+            const blank = results.find((i) => i.id == null);
             assert(blank, "missing blank key");
             assert(blank.id == null);
         });

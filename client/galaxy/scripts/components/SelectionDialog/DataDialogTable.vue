@@ -43,20 +43,20 @@ export default {
     props: {
         items: {
             type: Array,
-            required: true
+            required: true,
         },
         filter: {
             type: String,
-            default: null
+            default: null,
         },
         multiple: {
             type: Boolean,
-            default: false
+            default: false,
         },
         leafIcon: {
             type: String,
-            default: "fa fa-file-o"
-        }
+            default: "fa fa-file-o",
+        },
     },
     data() {
         return {
@@ -64,19 +64,19 @@ export default {
             fields: [
                 {
                     key: "label",
-                    sortable: true
+                    sortable: true,
                 },
                 {
                     key: "details",
-                    sortable: true
+                    sortable: true,
                 },
                 {
                     key: "time",
-                    sortable: true
-                }
+                    sortable: true,
+                },
             ],
             nItems: 0,
-            perPage: 100
+            perPage: 100,
         };
     },
     watch: {
@@ -84,19 +84,19 @@ export default {
             immediate: true,
             handler(items) {
                 this.filtered(items);
-            }
-        }
+            },
+        },
     },
     methods: {
         /** Resets pagination when a filter/search word is entered **/
-        filtered: function(items) {
+        filtered: function (items) {
             this.nItems = items.length;
             this.currentPage = 1;
         },
         /** Collects selected datasets in value array **/
-        clicked: function(record) {
+        clicked: function (record) {
             this.$emit("clicked", record);
-        }
-    }
+        },
+    },
 };
 </script>

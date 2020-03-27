@@ -1650,3 +1650,37 @@ body.reports {
     bottom: 0;
     background: url(../../images/largespinner.gif) no-repeat center center fixed;
 }
+
+/* Used for tree in tool recommendations */
+.tool-recommendation-view {
+    .node {
+        cursor: pointer;
+        circle {
+            fill: lighten($brand-primary, 20%);
+            stroke: lighten($brand-primary, 20%);
+            stroke-width: 0.1rem;
+        }
+        text {
+            font: 0.4rem sans-serif;
+        }
+    }
+
+    .node-enter {
+        fill-opacity: 1e-6;
+    }
+
+    .node-update {
+        fill-opacity: 1;
+    }
+
+    .tree-size {
+        width: 100%;
+        height: 50%;
+    }
+
+    .link {
+        fill: none;
+        stroke: lighten($brand-primary, 20%);
+        stroke-width: 0.2rem;
+    }
+}

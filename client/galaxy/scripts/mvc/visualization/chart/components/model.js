@@ -10,10 +10,10 @@ export default Backbone.Model.extend({
         state_info: "",
         modified: true,
         dataset_id: "",
-        dataset_id_job: null
+        dataset_id_job: null,
     },
 
-    initialize: function(options, viz_options) {
+    initialize: function (options, viz_options) {
         this.groups = new Backbone.Collection();
         this.settings = new Backbone.Model();
         this.visualization_id = viz_options.visualization_id;
@@ -24,37 +24,37 @@ export default Backbone.Model.extend({
         console.debug(viz_options);
     },
 
-    reset: function() {
+    reset: function () {
         this.clear().set({
             title: "New Chart",
-            dataset_id: this.dataset_id
+            dataset_id: this.dataset_id,
         });
         this.settings.clear();
         this.groups.reset();
         this.groups.add({ id: Utils.uid() });
     },
 
-    state: function(value, info) {
+    state: function (value, info) {
         this.set({ state: value, state_info: info });
         this.trigger("set:state");
         console.debug("model::state() - " + info + " (" + value + ")");
     },
 
     /** Create chart dictionary */
-    serialize: function() {
+    serialize: function () {
         var d = {
             attributes: this.attributes,
             settings: this.settings.attributes,
-            groups: []
+            groups: [],
         };
-        this.groups.each(function(group) {
+        this.groups.each(function (group) {
             d.groups.push(group.attributes);
         });
         return d;
     },
 
     /** Pack and save nested chart model */
-    save: function(options) {
+    save: function (options) {
         var self = this;
         options = options || {};
         this.chart_dict = this.serialize();
@@ -64,11 +64,11 @@ export default Backbone.Model.extend({
             title: this.get("title") || "",
             config: {
                 dataset_id: this.dataset_id,
-                chart_dict: this.chart_dict
-            }
+                chart_dict: this.chart_dict,
+            },
         });
         viz.save()
-            .then(function(response) {
+            .then(function (response) {
                 if (response && response.id) {
                     self.visualization_id = response.id;
                     if (options.success) {
@@ -82,7 +82,7 @@ export default Backbone.Model.extend({
                     console.debug("model::save() - Unrecognized response. Saving may have failed.");
                 }
             })
-            .fail(function(response) {
+            .fail(function (response) {
                 if (options.error) {
                     options.error();
                 }
@@ -92,7 +92,7 @@ export default Backbone.Model.extend({
     },
 
     /** Load nested models/collections from packed dictionary */
-    load: function(chart_parsed) {
+    load: function (chart_parsed) {
         var d = chart_parsed || this.chart_dict;
         if (d) {
             console.debug("model::load() - Attempting to load with configuration:");
@@ -115,5 +115,5 @@ export default Backbone.Model.extend({
             console.debug("model::load() - Visualization attributes unavailable.");
             return false;
         }
-    }
+    },
 });

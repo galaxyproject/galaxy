@@ -21,10 +21,10 @@ export function createStore() {
     return new Vuex.Store({
         plugins: [
             createCache(),
-            store => {
+            (store) => {
                 store.dispatch("user/$init", { store });
                 store.dispatch("config/$init", { store });
-            }
+            },
         ],
         modules: {
             gridSearch: gridSearchStore,
@@ -34,8 +34,8 @@ export function createStore() {
             invocations: invocationStore,
             user: userStore,
             config: configStore,
-            workflows: workflowStore
-        }
+            workflows: workflowStore,
+        },
     });
 }
 

@@ -41,7 +41,7 @@ export default {
             clsFirstColumn: "p-0 w-50 text-left",
             clsSecondColumn: "p-0 w-50 text-center",
             expanded: false,
-            preview: 2
+            preview: 2,
         };
     },
     computed: {
@@ -56,12 +56,12 @@ export default {
                 return this.tools.slice(0, this.preview);
             }
             return this.tools;
-        }
+        },
     },
     methods: {
         onExpand() {
             this.expanded = !this.expanded;
-        }
-    }
+        },
+    },
 };
 </script>

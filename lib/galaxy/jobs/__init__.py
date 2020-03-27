@@ -1958,7 +1958,7 @@ class JobWrapper(HasResourceParameters):
         self.output_paths = [t[2] for t in results]
         self.output_hdas_and_paths = dict([(t[0], t[1:]) for t in results])
         if special:
-            false_path = dataset_path_rewriter.rewrite_dataset_path(special.dataset, 'output')
+            false_path = dataset_path_rewriter.rewrite_dataset_path(special, 'output')
             dsp = DatasetPath(special.dataset.id, special.dataset.file_name, false_path)
             self.output_paths.append(dsp)
         return self.output_paths

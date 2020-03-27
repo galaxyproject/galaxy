@@ -137,7 +137,7 @@ export default {
             btnStartTitle: _l("Start"),
             btnStopTitle: _l("Pause"),
             btnResetTitle: _l("Reset"),
-            btnCloseTitle: _l("Close")
+            btnCloseTitle: _l("Close"),
         };
     },
     created() {
@@ -153,7 +153,7 @@ export default {
             announce: (index, file) => {
                 this._eventAnnounce(index, file);
             },
-            initialize: index => {
+            initialize: (index) => {
                 return this.app.toData([this.collection.get(index)], this.history_id);
             },
             progress: (index, percentage) => {
@@ -176,56 +176,56 @@ export default {
             },
             ondragleave: () => {
                 this.highlightBox = false;
-            }
+            },
         });
-        this.collection.on("remove", model => {
+        this.collection.on("remove", (model) => {
             this._eventRemove(model);
         });
         this._updateStateForCounters();
     },
     computed: {
         extensions() {
-            const result = _.filter(this.listExtensions, ext => !ext.composite_files);
+            const result = _.filter(this.listExtensions, (ext) => !ext.composite_files);
             return result;
         },
         appModel() {
             return this.app.model;
-        }
+        },
     },
     watch: {
-        extension: function(value) {
+        extension: function (value) {
             this.updateExtension(value);
         },
-        genome: function(value) {
+        genome: function (value) {
             this.updateGenome(value);
-        }
+        },
     },
     methods: {
-        _newUploadModelProps: function(index, file) {
+        _newUploadModelProps: function (index, file) {
             return {
                 id: index,
                 file_name: file.name,
                 file_size: file.size,
                 file_mode: file.mode || "local",
                 file_path: file.path,
-                file_data: file
+                file_data: file,
             };
         },
 
         /** Success */
-        _eventSuccess: function(index, message) {
+        _eventSuccess: function (index, message) {
             var it = this.collection.get(index);
             it.set({ percentage: 100, status: "success" });
             this._updateStateForSuccess(it);
         },
 
         /** Start upload process */
-        _eventStart: function() {
+        _eventStart: function () {
             if (this.counterAnnounce !== 0 && this.counterRunning === 0) {
                 // prepare upload process
                 this.uploadSize = 0;
                 this.uploadCompleted = 0;
-                this.collection.each(model => {
+                this.collection.each((model) => {
                     if (model.get("status") == "init") {
                         model.set("status", "queued");
                         this.uploadSize += model.get("file_size");
@@ -242,14 +242,14 @@ export default {
                 const Galaxy = getGalaxyInstance();
                 this.uploadbox.start({
                     id: Galaxy.user.id,
-                    chunk_upload_size: this.app.chunkUploadSize
+                    chunk_upload_size: this.app.chunkUploadSize,
                 });
                 this._updateStateForCounters();
             }
         },
 
         /** Remove all */
-        _eventReset: function() {
+        _eventReset: function () {
             if (this.counterRunning === 0) {
                 this.collection.reset();
                 this.counterAnnounce = 0;
@@ -262,7 +262,7 @@ export default {
                 this.appModel.set("percentage", 0);
                 this._updateStateForCounters();
             }
-        }
-    }
+        },
+    },
 };
 </script>

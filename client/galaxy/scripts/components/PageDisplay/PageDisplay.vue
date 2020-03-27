@@ -9,41 +9,41 @@ import Markdown from "components/Markdown/Markdown.vue";
 
 export default {
     components: {
-        Markdown
+        Markdown,
     },
     props: {
         pageId: {
             type: String,
-            required: true
-        }
+            required: true,
+        },
     },
     computed: {
-        dataUrl: function() {
+        dataUrl: function () {
             return getAppRoot() + `api/pages/${this.pageId}`;
         },
-        exportUrl: function() {
+        exportUrl: function () {
             return this.dataUrl + ".pdf";
-        }
+        },
     },
     data() {
         return {
-            markdownConfig: {}
+            markdownConfig: {},
         };
     },
-    created: function() {
+    created: function () {
         this.ajaxCall();
     },
     methods: {
-        ajaxCall: function() {
+        ajaxCall: function () {
             axios
                 .get(this.dataUrl)
-                .then(response => {
+                .then((response) => {
                     this.markdownConfig = { ...response.data, markdown: response.data.content };
                 })
-                .catch(e => {
+                .catch((e) => {
                     console.error(e);
                 });
-        }
-    }
+        },
+    },
 };
 </script>

@@ -8,8 +8,8 @@ describe("Node", () => {
             propsData: {
                 id: "node-id",
                 title: "node-title",
-                type: "tool"
-            }
+                type: "tool",
+            },
         });
         const icon = wrapper.findAll("i");
         expect(icon.at(2).classes()).to.contain("fa-wrench");

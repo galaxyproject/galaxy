@@ -84,8 +84,8 @@ describe("Credential model", () => {
                 authn_id: "asdfasdf",
                 provider: "aws",
                 config: {
-                    role_arn: "floobar"
-                }
+                    role_arn: "floobar",
+                },
             };
             let instance = new Credential(props);
             assert(instance.valid);
@@ -96,8 +96,8 @@ describe("Credential model", () => {
                 authn_id: "asdfasdf",
                 provider: "aws",
                 config: {
-                    role_arn: ""
-                }
+                    role_arn: "",
+                },
             };
             let instance = new Credential(props);
             assert(!instance.valid);

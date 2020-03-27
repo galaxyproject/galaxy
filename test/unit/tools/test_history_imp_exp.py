@@ -115,10 +115,12 @@ def test_export_dataset():
     app, sa_session, h = _setup_history_for_export("Datasets History")
 
     d1, d2 = _create_datasets(sa_session, h, 2)
+    d1.state = d2.state = 'ok'
 
     j = model.Job()
     j.user = h.user
     j.tool_id = "cat1"
+    j.state = 'ok'
 
     j.add_input_dataset("input1", d1)
     j.add_output_dataset("out_file1", d2)

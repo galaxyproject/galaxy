@@ -22,7 +22,7 @@
                     <p>Anyone can view and import this {{ model_class_lc }} by visiting the following URL:</p>
                     <blockquote>
                         <a id="item-url" :href="item_url" target="_top">{{ item_url }}</a>
-                        <span id="item-url-text" style="display: none">
+                        <span id="item-url-text" style="display: none;">
                             {{ item_url_parts[0] }}<span id="item-identifier">{{ item_url_parts[1] }}</span>
                         </span>
                         <a href="javascript:void(0)" id="edit-identifier"
@@ -150,16 +150,16 @@ export default {
     props: {
         id: {
             type: String,
-            required: true
+            required: true,
         },
         plural_name: {
             type: String,
-            required: true
+            required: true,
         },
         model_class: {
             type: String,
-            required: true
-        }
+            required: true,
+        },
     },
     computed: {
         model_class_lc() {
@@ -196,7 +196,7 @@ export default {
         },
         show_danger() {
             return this.err_msg !== null;
-        }
+        },
     },
     data() {
         const Galaxy = getGalaxyInstance();
@@ -211,68 +211,68 @@ export default {
                 username_and_slug: "username_and_slug",
                 importable: false,
                 published: false,
-                users_shared_with: []
+                users_shared_with: [],
             },
             share_fields: ["email", { key: "id", label: "" }],
-            make_members_public: false
+            make_members_public: false,
         };
     },
-    created: function() {
+    created: function () {
         this.getModel();
     },
-    updated: function() {
+    updated: function () {
         this.createSlugHandler();
     },
     methods: {
-        getModel: function() {
+        getModel: function () {
             this.ready = false;
             axios
                 .get(`${getAppRoot()}api/${this.plural_name_lc}/${this.id}/sharing`)
-                .then(response => {
+                .then((response) => {
                     this.item = response.data;
                     this.ready = true;
                 })
-                .catch(error => (this.err_msg = error.response.data.err_msg));
+                .catch((error) => (this.err_msg = error.response.data.err_msg));
         },
-        setUsername: function() {
+        setUsername: function () {
             const Galaxy = getGalaxyInstance();
             axios
                 .put(`${getAppRoot()}api/users/${Galaxy.user.id}/information/inputs`, {
-                    username: this.new_username || ""
+                    username: this.new_username || "",
                 })
-                .then(response => {
+                .then((response) => {
                     this.err_msg = null;
                     this.has_username = true;
                     this.getModel();
                 })
-                .catch(error => (this.err_msg = error.response.data.err_msg));
+                .catch((error) => (this.err_msg = error.response.data.err_msg));
         },
-        setSharing: function(action, user_id) {
+        setSharing: function (action, user_id) {
             const data = {
                 action: action,
-                user_id: user_id
+                user_id: user_id,
             };
             if (this.has_possible_members) {
                 data.make_members_public = this.make_members_public;
             }
             axios
                 .post(`${getAppRoot()}api/${this.plural_name_lc}/${this.id}/sharing`, data)
-                .then(response => {
+                .then((response) => {
                     Object.assign(this.item, response.data);
                     if (response.data.skipped) {
                         this.err_msg = "Some of the items within this object were not published due to an error.";
                     }
                 })
-                .catch(error => (this.err_msg = error.response.data.err_msg));
+                .catch((error) => (this.err_msg = error.response.data.err_msg));
         },
-        createSlugHandler: function() {
-            const on_start = function(text_elt) {
+        createSlugHandler: function () {
+            const on_start = function (text_elt) {
                 // Replace URL with URL text.
                 $("#item-url").hide();
                 $("#item-url-text").show();
 
                 // Allow only lowercase alphanumeric and '-' characters in slug.
-                text_elt.keyup(function() {
+                text_elt.keyup(function () {
                     text_elt.val(
                         $(this)
                             .val()
@@ -282,7 +282,7 @@ export default {
                     );
                 });
             };
-            const on_finish = function(text_elt) {
+            const on_finish = function (text_elt) {
                 // Replace URL text with URL.
                 $("#item-url-text").hide();
                 $("#item-url").show();
@@ -304,7 +304,7 @@ export default {
                 on_start,
                 on_finish
             );
-        }
-    }
+        },
+    },
 };
 </script>

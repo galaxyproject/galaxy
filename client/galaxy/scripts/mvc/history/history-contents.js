@@ -35,14 +35,14 @@ export var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
     order: "hid",
 
     /** complete api url */
-    url: function() {
+    url: function () {
         return `${this.urlRoot}/${this.historyId}/contents`;
     },
 
     /** Set up */
-    initialize: function(models, options) {
+    initialize: function (models, options) {
         this.on({
-            "sync add": this.trackJobStates
+            "sync add": this.trackJobStates,
         });
 
         options = options || {};
@@ -62,8 +62,8 @@ export var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
         this.model.prototype.idAttribute = "type_id";
     },
 
-    trackJobStates: function() {
-        this.each(historyContent => {
+    trackJobStates: function () {
+        this.each((historyContent) => {
             if (this.jobStateSummariesCollection) {
                 this.jobStateSummariesCollection.trackModel(historyContent);
             }
@@ -72,26 +72,26 @@ export var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
 
     // ........................................................................ composite collection
     /** since history content is a mix, override model fn into a factory, creating based on history_content_type */
-    model: function(attrs, options) {
+    model: function (attrs, options) {
         if (attrs.history_content_type === "dataset") {
             return new HDA_MODEL.HistoryDatasetAssociation(attrs, options);
         } else if (attrs.history_content_type === "dataset_collection") {
             return new HDCA_MODEL.HistoryDatasetCollection(attrs, options);
         } else {
             return {
-                validationError: `Unknown history_content_type: ${attrs.history_content_type}`
+                validationError: `Unknown history_content_type: ${attrs.history_content_type}`,
             };
         }
     },
 
-    stopPolling: function() {
+    stopPolling: function () {
         if (this.jobStateSummariesCollection) {
             this.jobStateSummariesCollection.active = false;
             this.jobStateSummariesCollection.clearUpdateTimeout();
         }
     },
 
-    setHistoryId: function(newId) {
+    setHistoryId: function (newId) {
         this.stopPolling();
         this.historyId = newId;
         if (newId) {
@@ -106,20 +106,20 @@ export var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
     },
 
     /** Set up client side storage. Currently PersistanStorage keyed under 'history:<id>' */
-    _setUpWebStorage: function(initialSettings) {
+    _setUpWebStorage: function (initialSettings) {
         // TODO: use initialSettings
         this.storage = new HISTORY_PREFS.HistoryPrefs({
-            id: HISTORY_PREFS.HistoryPrefs.historyStorageKey(this.historyId)
+            id: HISTORY_PREFS.HistoryPrefs.historyStorageKey(this.historyId),
         });
         this.trigger("new-storage", this.storage, this);
 
         this.on({
-            "include-deleted": function(newVal) {
+            "include-deleted": function (newVal) {
                 this.storage.includeDeleted(newVal);
             },
-            "include-hidden": function(newVal) {
+            "include-hidden": function (newVal) {
                 this.storage.includeHidden(newVal);
-            }
+            },
         });
 
         this.includeDeleted = this.storage.includeDeleted() || false;
@@ -132,21 +132,21 @@ export var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
     comparators: _.extend(_.clone(_super.prototype.comparators), {
         name: BASE_MVC.buildComparator("name", { ascending: true }),
         "name-dsc": BASE_MVC.buildComparator("name", {
-            ascending: false
+            ascending: false,
         }),
         hid: BASE_MVC.buildComparator("hid", { ascending: false }),
-        "hid-asc": BASE_MVC.buildComparator("hid", { ascending: true })
+        "hid-asc": BASE_MVC.buildComparator("hid", { ascending: true }),
     }),
 
     /** Get every model in this collection not in a 'ready' state (running). */
-    running: function() {
-        return this.filter(c => !c.inReadyState());
+    running: function () {
+        return this.filter((c) => !c.inReadyState());
     },
 
     /** return contents that are not ready and not deleted/hidden */
-    runningAndActive: function() {
+    runningAndActive: function () {
         return this.filter(
-            c =>
+            (c) =>
                 !c.inReadyState() &&
                 c.get("visible") &&
                 // TODO: deletedOrPurged?
@@ -158,31 +158,31 @@ export var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
      *  @param {Int} hid the hid to search for
      *  @returns {HistoryDatasetAssociation} the model with the given hid or undefined if not found
      */
-    getByHid: function(hid) {
+    getByHid: function (hid) {
         // note: there *can* be more than one content with a given hid, this finds the first based on order
         return this.findWhere({ hid: hid });
     },
 
     /** return true if all contents have details */
-    haveDetails: function() {
-        return this.all(c => c.hasDetails());
+    haveDetails: function () {
+        return this.all((c) => c.hasDetails());
     },
 
     // ........................................................................ hidden / deleted
     /** return a new contents collection of only hidden items */
-    hidden: function() {
-        return this.filter(c => c.hidden());
+    hidden: function () {
+        return this.filter((c) => c.hidden());
     },
 
     /** return a new contents collection of only hidden items */
-    deleted: function() {
-        return this.filter(c => c.get("deleted"));
+    deleted: function () {
+        return this.filter((c) => c.get("deleted"));
     },
 
     /** return a new contents collection of only hidden items */
-    visibleAndUndeleted: function() {
+    visibleAndUndeleted: function () {
         return this.filter(
-            c =>
+            (c) =>
                 c.get("visible") &&
                 // TODO: deletedOrPurged?
                 !c.get("deleted")
@@ -190,7 +190,7 @@ export var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
     },
 
     /** create a setter in order to publish the change */
-    setIncludeDeleted: function(setting, options) {
+    setIncludeDeleted: function (setting, options) {
         if (_.isBoolean(setting) && setting !== this.includeDeleted) {
             this.includeDeleted = setting;
             if (_.result(options, "silent")) {
@@ -201,7 +201,7 @@ export var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
     },
 
     /** create a setter in order to publish the change */
-    setIncludeHidden: function(setting, options) {
+    setIncludeHidden: function (setting, options) {
         if (_.isBoolean(setting) && setting !== this.includeHidden) {
             this.includeHidden = setting;
             options = options || {};
@@ -215,7 +215,7 @@ export var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
     // ........................................................................ ajax
     // ............ controlled fetch collection
     /** override to get expanded ids from sessionStorage and pass to API as details */
-    fetch: function(options) {
+    fetch: function (options) {
         options = options || {};
         if (this.historyId && !options.details) {
             var prefs = HISTORY_PREFS.HistoryPrefs.get(this.historyId).toJSON();
@@ -228,9 +228,9 @@ export var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
 
     // ............. ControlledFetch stuff
     /** override to include the API versioning flag */
-    _buildFetchData: function(options) {
+    _buildFetchData: function (options) {
         return _.extend(_super.prototype._buildFetchData.call(this, options), {
-            v: "dev"
+            v: "dev",
         });
     },
 
@@ -240,11 +240,11 @@ export var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
         /** version */
         "v",
         /** dataset ids to get full details of */
-        "details"
+        "details",
     ]),
 
     /** override to add deleted/hidden filters */
-    _buildFetchFilters: function(options) {
+    _buildFetchFilters: function (options) {
         var superFilters = _super.prototype._buildFetchFilters.call(this, options) || {};
         var filters = {};
         if (!this.includeDeleted) {
@@ -258,13 +258,13 @@ export var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
     },
 
     // ............ paginated collection
-    getTotalItemCount: function() {
+    getTotalItemCount: function () {
         return this.history.contentsShown();
     },
 
     // ............ history contents specific ajax
     /** override to filter requested contents to those updated after the Date 'since' */
-    fetchUpdated: function(since, options) {
+    fetchUpdated: function (since, options) {
         if (since) {
             options = options || { filters: {} };
             options.remove = false;
@@ -273,19 +273,19 @@ export var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
                 // workflows will produce hidden datasets (non-output datasets) that still
                 // need to be updated in the collection or they'll update forever
                 // we can remove the default visible filter by using an 'empty' value
-                visible: ""
+                visible: "",
             };
         }
         return this.fetch(options);
     },
 
     /** fetch all the deleted==true contents of this collection */
-    fetchDeleted: function(options) {
+    fetchDeleted: function (options) {
         options = options || {};
         options.filters = _.extend(options.filters, {
             // all deleted, purged or not
             deleted: true,
-            purged: undefined
+            purged: undefined,
         });
         options.remove = false;
 
@@ -296,10 +296,10 @@ export var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
     },
 
     /** fetch all the visible==false contents of this collection */
-    fetchHidden: function(options) {
+    fetchHidden: function (options) {
         options = options || {};
         options.filters = _.extend(options.filters, {
-            visible: false
+            visible: false,
         });
         options.remove = false;
 
@@ -310,7 +310,7 @@ export var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
     },
 
     /** fetch detailed model data for all contents in this collection */
-    fetchAllDetails: function(options) {
+    fetchAllDetails: function (options) {
         options = options || {};
         var detailsFlag = { details: "all" };
         options.data = _.extend(options.data || {}, detailsFlag);
@@ -320,11 +320,11 @@ export var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
     // ............. quasi-batch ops
     // TODO: to batch
     /** helper that fetches using filterParams then calls save on each fetched using updateWhat as the save params */
-    _filterAndUpdate: function(filterParams, updateWhat) {
+    _filterAndUpdate: function (filterParams, updateWhat) {
         var idAttribute = this.model.prototype.idAttribute;
         var updateArgs = [updateWhat];
 
-        return this.fetch({ filters: filterParams, remove: false }).then(fetched => {
+        return this.fetch({ filters: filterParams, remove: false }).then((fetched) => {
             // convert filtered json array to model array
             fetched = fetched.reduce((modelArray, currJson, i) => {
                 var model = this.get(currJson[idAttribute]);
@@ -335,7 +335,7 @@ export var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
     },
 
     /** using a queue, perform ajaxFn on each of the models in this collection */
-    ajaxQueue: function(ajaxFn, args, collection) {
+    ajaxQueue: function (ajaxFn, args, collection) {
         collection = collection || this.models;
         return new AJAX_QUEUE.AjaxQueue(
             collection
@@ -348,7 +348,7 @@ export var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
         ).deferred;
     },
 
-    _recursivelyFetch: function(options, detailKeys, deferred, limit, offset) {
+    _recursivelyFetch: function (options, detailKeys, deferred, limit, offset) {
         offset = offset || 0;
         var _options = _.extend(_.clone(options), {
             view: "summary",
@@ -356,14 +356,14 @@ export var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
             limit: limit,
             offset: offset,
             reset: offset === 0,
-            remove: false
+            remove: false,
         });
 
         _.defer(() => {
             this.fetch
                 .call(this, _options)
                 .fail(deferred.reject)
-                .done(response => {
+                .done((response) => {
                     deferred.notify(response, limit, offset);
                     if (response.length !== limit) {
                         this.allFetched = true;
@@ -376,7 +376,7 @@ export var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
     },
 
     /** fetch contents' details in batches of limitPerCall - note: only get searchable details here */
-    progressivelyFetchDetails: function(options) {
+    progressivelyFetchDetails: function (options) {
         // TODO: only fetch tags and annotations if specifically requested
         options = options || {};
         const deferred = jQuery.Deferred();
@@ -390,7 +390,7 @@ export var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
     },
 
     /** does some bit of JSON represent something that can be copied into this contents collection */
-    isCopyable: function(contentsJSON) {
+    isCopyable: function (contentsJSON) {
         var copyableModelClasses = ["HistoryDatasetAssociation", "HistoryDatasetCollectionAssociation"];
         return (
             _.isObject(contentsJSON) && contentsJSON.id && _.contains(copyableModelClasses, contentsJSON.model_class)
@@ -398,7 +398,7 @@ export var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
     },
 
     /** copy an existing, accessible hda into this collection */
-    copy: function(json) {
+    copy: function (json) {
         // TODO: somehow showhorn all this into 'save'
         var id;
 
@@ -414,7 +414,7 @@ export var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
                 {
                     HistoryDatasetAssociation: "hda",
                     LibraryDatasetDatasetAssociation: "ldda",
-                    HistoryDatasetCollectionAssociation: "hdca"
+                    HistoryDatasetCollectionAssociation: "hdca",
                 }[json.model_class] || "hda";
             type = contentType === "hdca" ? "dataset_collection" : "dataset";
         }
@@ -428,17 +428,17 @@ export var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
                     content: id,
                     source: contentType,
                     type: type,
-                    copy_elements: true
-                })
+                    copy_elements: true,
+                }),
             })
-            .done(response => {
+            .done((response) => {
                 collection.add([response], { parse: true });
             })
             .fail((error, status, message) => {
                 collection.trigger("error", collection, xhr, {}, "Error copying contents", {
                     type: type,
                     id: id,
-                    source: contentType
+                    source: contentType,
                 });
             });
 
@@ -446,7 +446,7 @@ export var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
     },
 
     /** create a new HDCA in this collection */
-    createHDCA: function(elementIdentifiers, collectionType, name, hideSourceItems, copyElements, options) {
+    createHDCA: function (elementIdentifiers, collectionType, name, hideSourceItems, copyElements, options) {
         // normally collection.create returns the new model, but we need the promise from the ajax, so we fake create
         //precondition: elementIdentifiers is an array of plain js objects
         //  in the proper form to create the collectionType
@@ -463,7 +463,7 @@ export var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
             copy_elements: copyElements,
             // should probably be able to just send in a bunch of json here and restruct per class
             // note: element_identifiers is now (incorrectly) an attribute
-            element_identifiers: elementIdentifiers
+            element_identifiers: elementIdentifiers,
             // do not create the model on the client until the ajax returns
         });
         return hdca.save(options);
@@ -471,7 +471,7 @@ export var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
 
     // ........................................................................ searching
     /** return true if all contents have the searchable attributes */
-    haveSearchDetails: function() {
+    haveSearchDetails: function () {
         return (
             this.allFetched &&
             this.all((
@@ -485,20 +485,20 @@ export var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
     },
 
     /** return a new collection of contents whose attributes contain the substring matchesWhat */
-    matches: function(matchesWhat) {
-        return this.filter(content => content.matches(matchesWhat));
+    matches: function (matchesWhat) {
+        return this.filter((content) => content.matches(matchesWhat));
     },
 
     // ........................................................................ misc
     /** In this override, copy the historyId to the clone */
-    clone: function() {
+    clone: function () {
         var clone = Backbone.Collection.prototype.clone.call(this);
         clone.historyId = this.historyId;
         return clone;
     },
 
     /** String representation. */
-    toString: function() {
+    toString: function () {
         return ["HistoryContents(", [this.historyId, this.length].join(), ")"].join("");
-    }
+    },
 });

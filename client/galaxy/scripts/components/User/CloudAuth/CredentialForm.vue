@@ -61,14 +61,14 @@ import CredentialConfig from "./CredentialConfig";
 
 export default {
     components: {
-        CredentialConfig
+        CredentialConfig,
     },
     props: {
-        value: { type: Credential, required: true }
+        value: { type: Credential, required: true },
     },
     data() {
         return {
-            identityProviders: []
+            identityProviders: [],
         };
     },
     computed: {
@@ -93,16 +93,16 @@ export default {
         },
         saveButtonTitle() {
             return this.loading ? "Saving Key..." : "Save Key";
-        }
+        },
     },
     created() {
-        getIdentityProviders().then(result => {
+        getIdentityProviders().then((result) => {
             if (!this.credential.authn_id && result.length == 1) {
                 this.credential.authn_id = result[0].authn_id;
                 this.credential.updateState();
             }
             this.identityProviders = result;
         });
-    }
+    },
 };
 </script>

@@ -24,8 +24,8 @@ export default {
                                   name: tool.name,
                                   description: tool.help || tool.description,
                                   softwareVersion: tool.version,
-                                  url: getAppRoot() + String(tool.link).substring(1)
-                              }
+                                  url: getAppRoot() + String(tool.link).substring(1),
+                              },
                           ]
                         : _acc;
                 }
@@ -37,14 +37,14 @@ export default {
             }
             return {
                 "@context": "http://schema.org",
-                "@graph": tools.reduce(extractSections, [])
+                "@graph": tools.reduce(extractSections, []),
             };
-        }
+        },
     },
     created() {
         axios
             .get(`${getAppRoot()}api/tools?tool_help=True`)
-            .then(response => {
+            .then((response) => {
                 this.schemaTagObj = this.createToolsJson(response.data);
                 const el = document.createElement("script");
                 el.id = "schema-json";
@@ -52,9 +52,9 @@ export default {
                 el.text = JSON.stringify(this.schemaTagObj);
                 document.head.appendChild(el);
             })
-            .catch(error => {
+            .catch((error) => {
                 console.error(error);
             });
-    }
+    },
 };
 </script>

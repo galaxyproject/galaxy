@@ -11,28 +11,28 @@ import DelayedInput from "components/Common/DelayedInput";
 export default {
     name: "ToolSearch",
     components: {
-        DelayedInput
+        DelayedInput,
     },
     props: {
         query: {
-            type: String
+            type: String,
         },
         placeholder: {
-            type: String
-        }
+            type: String,
+        },
     },
     data() {
         return {
             favorites: ["#favs", "#favorites", "#favourites"],
             minQueryLength: 3,
-            loading: false
+            loading: false,
         };
     },
     computed: {
         favoritesResults() {
             const Galaxy = getGalaxyInstance();
             return Galaxy.user.getFavorites().tools;
-        }
+        },
     },
     methods: {
         checkQuery(q) {
@@ -44,13 +44,13 @@ export default {
                     this.loading = true;
                     axios
                         .get(`${getAppRoot()}api/tools`, {
-                            params: { q }
+                            params: { q },
                         })
-                        .then(response => {
+                        .then((response) => {
                             this.loading = false;
                             this.$emit("onResults", response.data);
                         })
-                        .catch(err => {
+                        .catch((err) => {
                             this.loading = false;
                             this.$emit("onError", err);
                         });
@@ -58,7 +58,7 @@ export default {
             } else {
                 this.$emit("onResults", null);
             }
-        }
-    }
+        },
+    },
 };
 </script>

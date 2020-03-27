@@ -39,7 +39,7 @@ try {
 }
 
 /** initalize options and sub-components */
-GalaxyApp.prototype._init = function(options, bootstrapped) {
+GalaxyApp.prototype._init = function (options, bootstrapped) {
     _.extend(this, Backbone.Events);
     if (localDebugging) {
         this.logger = console;
@@ -98,7 +98,7 @@ GalaxyApp.prototype.defaultOptions = {
     patchExisting: true,
     /** root url of this app */
     root: "/",
-    session_csrf_token: null
+    session_csrf_token: null,
 };
 
 /** filter to options present in defaultOptions (and default to them) */
@@ -162,8 +162,8 @@ GalaxyApp.prototype._initLogger = function _initLogger(loggerOptions) {
 
     this.logger = new metricsLogger.MetricsLogger(loggerOptions);
     this.emit = {};
-    ["log", "debug", "info", "warn", "error", "metric"].map(i => {
-        this.emit[i] = data => {
+    ["log", "debug", "info", "warn", "error", "metric"].map((i) => {
+        this.emit[i] = (data) => {
             this.logger.emit(i, arguments[0], Array.prototype.slice.call(arguments, 1));
         };
     });
@@ -240,7 +240,7 @@ GalaxyApp.prototype._setUpListeners = function _setUpListeners() {
 
         this.lastAjax = {
             url: location.href.slice(0, -1) + options.url,
-            data: data
+            data: data,
         };
         //TODO:?? we might somehow manage to *retry* ajax using either this hook or Backbone.sync
     });
@@ -301,5 +301,5 @@ GalaxyApp.prototype.toString = function toString() {
 
 // ============================================================================
 export default {
-    GalaxyApp: GalaxyApp
+    GalaxyApp: GalaxyApp,
 };

@@ -1,5 +1,5 @@
 // eslint-disable-next-line no-undef
-define(["i18n!nls/locale"], function(localeStrings) {
+define(["i18n!nls/locale"], function (localeStrings) {
     // =============================================================================
     /** Simple string replacement localization. Language data from galaxy/scripts/nls */
 
@@ -24,7 +24,7 @@ define(["i18n!nls/locale"], function(localeStrings) {
      * @param {String} strToLocalize the string to localize
      * @returns either the localized string if found or strToLocalize if not found
      */
-    var localize = function(strToLocalize) {
+    var localize = function (strToLocalize) {
         // console.debug( 'amdi18n.localize:', strToLocalize, '->', localeStrings[ strToLocalize ] || strToLocalize );
 
         // //TODO: conditional compile on DEBUG flag

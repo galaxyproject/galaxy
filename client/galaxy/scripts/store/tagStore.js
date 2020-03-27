@@ -1,16 +1,16 @@
 export const state = {
     userTagList: [], // List of recent user tags
-    modelTagCache: new Map() // Maps model id to list of tags
+    modelTagCache: new Map(), // Maps model id to list of tags
 };
 
 export const getters = {
-    getTagsById: state => key => {
+    getTagsById: (state) => (key) => {
         if (state.modelTagCache.has(key)) {
             const tagSet = state.modelTagCache.get(key); //.sort();
             return Array.from(tagSet);
         }
         return [];
-    }
+    },
 };
 
 export const actions = {
@@ -21,7 +21,7 @@ export const actions = {
         if (!state.modelTagCache.has(key)) {
             dispatch("updateTags", { key, tags });
         }
-    }
+    },
 };
 
 export const mutations = {
@@ -32,12 +32,12 @@ export const mutations = {
     reset(state) {
         state.userTagList = [];
         state.modelTagCache = new Map();
-    }
+    },
 };
 
 export const tagStore = {
     state,
     getters,
     actions,
-    mutations
+    mutations,
 };

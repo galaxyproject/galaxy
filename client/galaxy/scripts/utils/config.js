@@ -8,7 +8,7 @@ import { getGalaxyInstance } from "app";
  * A configuration setting. Currently key is used as id.
  */
 var ConfigSetting = Backbone.Model.extend({
-    initialize: function(options) {
+    initialize: function (options) {
         // Use key as id for now.
         var key = this.get("key");
         this.set("id", key);
@@ -20,88 +20,88 @@ var ConfigSetting = Backbone.Model.extend({
                     key: "name",
                     label: "Name",
                     type: "text",
-                    default_value: ""
+                    default_value: "",
                 },
                 {
                     key: "color",
                     label: "Color",
                     type: "color",
-                    default_value: null
+                    default_value: null,
                 },
                 {
                     key: "min_value",
                     label: "Min Value",
                     type: "float",
-                    default_value: null
+                    default_value: null,
                 },
                 {
                     key: "max_value",
                     label: "Max Value",
                     type: "float",
-                    default_value: null
+                    default_value: null,
                 },
                 {
                     key: "mode",
                     type: "string",
                     default_value: this.mode,
-                    hidden: true
+                    hidden: true,
                 },
                 {
                     key: "height",
                     type: "int",
                     default_value: 32,
-                    hidden: true
+                    hidden: true,
                 },
                 {
                     key: "pos_color",
                     label: "Positive Color",
                     type: "color",
-                    default_value: "#FF8C00"
+                    default_value: "#FF8C00",
                 },
                 {
                     key: "neg_color",
                     label: "Negative Color",
                     type: "color",
-                    default_value: "#4169E1"
+                    default_value: "#4169E1",
                 },
                 {
                     key: "block_color",
                     label: "Block color",
                     type: "color",
-                    default_value: null
+                    default_value: null,
                 },
                 {
                     key: "label_color",
                     label: "Label color",
                     type: "color",
-                    default_value: "black"
+                    default_value: "black",
                 },
                 {
                     key: "show_insertions",
                     label: "Show insertions",
                     type: "bool",
-                    default_value: false
+                    default_value: false,
                 },
                 {
                     key: "show_counts",
                     label: "Show summary counts",
                     type: "bool",
-                    default_value: true
+                    default_value: true,
                 },
                 {
                     key: "reverse_strand_color",
                     label: "Antisense strand color",
                     type: "color",
-                    default_value: null
+                    default_value: null,
                 },
                 {
                     key: "show_differences",
                     label: "Show differences only",
                     type: "bool",
-                    default_value: true
-                }
+                    default_value: true,
+                },
             ],
-            s => s.key === key
+            (s) => s.key === key
         );
         if (defaults) {
             this.set(_.extend({}, defaults, options));
@@ -123,7 +123,7 @@ var ConfigSetting = Backbone.Model.extend({
      * Cast and set value. This should be instead of
      *  setting.set('value', new_value)
      */
-    set_value: function(value, options) {
+    set_value: function (value, options) {
         var type = this.get("type");
 
         if (type === "float") {
@@ -134,7 +134,7 @@ var ConfigSetting = Backbone.Model.extend({
         // TODO: handle casting from string to bool?
 
         this.set({ value: value }, options);
-    }
+    },
 });
 
 /**
@@ -148,9 +148,9 @@ var ConfigSettingCollection = Backbone.Collection.extend(
          * Save settings as a dictionary of key-value pairs.
          * This function is needed for backwards compatibility.
          */
-        to_key_value_dict: function() {
+        to_key_value_dict: function () {
             var rval = {};
-            this.each(setting => {
+            this.each((setting) => {
                 rval[setting.get("key")] = setting.get("value");
             });
 
@@ -160,7 +160,7 @@ var ConfigSettingCollection = Backbone.Collection.extend(
         /**
          * Returns value for a given key. Returns undefined if there is no setting with the specified key.
          */
-        get_value: function(key) {
+        get_value: function (key) {
             var s = this.get(key);
             if (s) {
                 return s.get("value");
@@ -172,7 +172,7 @@ var ConfigSettingCollection = Backbone.Collection.extend(
         /**
          * Set value for a setting.
          */
-        set_value: function(key, value, options) {
+        set_value: function (key, value, options) {
             var s = this.get(key);
             if (s) {
                 return s.set_value(value, options);
@@ -184,28 +184,28 @@ var ConfigSettingCollection = Backbone.Collection.extend(
         /**
          * Set default value for a setting.
          */
-        set_default_value: function(key, default_value) {
+        set_default_value: function (key, default_value) {
             var s = this.get(key);
             if (s) {
                 return s.set("default_value", default_value);
             }
 
             return undefined;
-        }
+        },
     },
     {
         /**
          * Utility function that creates a ConfigSettingsCollection from a set of models
          * and a saved_values dictionary.
          */
-        from_models_and_saved_values: function(models, saved_values) {
+        from_models_and_saved_values: function (models, saved_values) {
             // If there are saved values, copy models and update with saved values.
             if (saved_values) {
-                models = _.map(models, m => _.extend({}, m, { value: saved_values[m.key] }));
+                models = _.map(models, (m) => _.extend({}, m, { value: saved_values[m.key] }));
             }
 
             return new ConfigSettingCollection(models);
-        }
+        },
     }
 );
 
@@ -218,7 +218,7 @@ var ConfigSettingCollectionView = Backbone.View.extend({
     /**
      * Renders form for editing configuration settings.
      */
-    render: function() {
+    render: function () {
         var container = this.$el;
 
         this.collection.each((param, index) => {
@@ -240,30 +240,22 @@ var ConfigSettingCollectionView = Backbone.View.extend({
             );
             // Draw parameter as checkbox
             if (type === "bool") {
-                row.append(
-                    $('<input type="checkbox" />')
-                        .attr("id", id)
-                        .attr("name", id)
-                        .attr("checked", value)
-                );
+                row.append($('<input type="checkbox" />').attr("id", id).attr("name", id).attr("checked", value));
             } else if (type === "text") {
                 // Draw parameter as textbox
                 row.append(
                     $('<input type="text"/>')
                         .attr("id", id)
                         .val(value)
-                        .click(function() {
+                        .click(function () {
                             $(this).select();
                         })
                 );
             } else if (type === "select") {
                 // Draw parameter as select area
                 var select = $("<select />").attr("id", id);
-                _.each(param.get("options"), option => {
-                    $("<option/>")
-                        .text(option.label)
-                        .attr("value", option.value)
-                        .appendTo(select);
+                _.each(param.get("options"), (option) => {
+                    $("<option/>").text(option.label).attr("value", option.value).appendTo(select);
                 });
                 select.val(value);
                 row.append(select);
@@ -277,25 +269,23 @@ var ConfigSettingCollectionView = Backbone.View.extend({
                     .val(value)
                     .css("float", "left")
                     .appendTo(container_div)
-                    .click(function(e) {
+                    .click(function (e) {
                         // Hide other pickers.
                         $(".tooltip").removeClass("in");
 
                         // Show input's color picker.
-                        var tip = $(this)
-                            .siblings(".tooltip")
-                            .addClass("in");
+                        var tip = $(this).siblings(".tooltip").addClass("in");
                         tip.css({
                             // left: $(this).position().left + ( $(input).width() / 2 ) - 60,
                             // top: $(this).position().top + $(this.height)
                             left: $(this).position().left + $(this).width() + 5,
-                            top: $(this).position().top - $(tip).height() / 2 + $(this).height() / 2
+                            top: $(this).position().top - $(tip).height() / 2 + $(this).height() / 2,
                         }).show();
 
                         // Click management:
 
                         // Keep showing tip if clicking in tip.
-                        tip.click(e => {
+                        tip.click((e) => {
                             e.stopPropagation();
                         });
 
@@ -316,9 +306,7 @@ var ConfigSettingCollectionView = Backbone.View.extend({
                     .tooltip();
 
                 // Color picker in tool tip style.
-                var tip = $("<div class='tooltip right' style='position: absolute;' />")
-                    .appendTo(container_div)
-                    .hide();
+                var tip = $("<div class='tooltip right' style='position: absolute;' />").appendTo(container_div).hide();
 
                 // Inner div for padding purposes
                 var tip_inner = $("<div class='tooltip-inner' style='text-align: inherit'></div>").appendTo(tip);
@@ -329,25 +317,20 @@ var ConfigSettingCollectionView = Backbone.View.extend({
                     width: 100,
                     height: 100,
                     callback: input,
-                    color: value
+                    color: value,
                 });
 
                 // Clear floating.
                 container_div.append($("<div/>").css("clear", "both"));
 
                 // Use function to fix farb_obj value.
-                (fixed_farb_obj => {
+                ((fixed_farb_obj) => {
                     new_color_icon.click(() => {
                         fixed_farb_obj.setColor(util_mod.get_random_color());
                     });
                 })(farb_obj);
             } else {
-                row.append(
-                    $("<input />")
-                        .attr("id", id)
-                        .attr("name", id)
-                        .val(value)
-                );
+                row.append($("<input />").attr("id", id).attr("name", id).val(value));
             }
             // Help text
             if (param.help) {
@@ -361,7 +344,7 @@ var ConfigSettingCollectionView = Backbone.View.extend({
     /**
      * Render view in modal.
      */
-    render_in_modal: function(title) {
+    render_in_modal: function (title) {
         // Set up handlers for cancel, ok button and for handling esc key.
         var self = this;
         const Galaxy = getGalaxyInstance();
@@ -377,7 +360,7 @@ var ConfigSettingCollectionView = Backbone.View.extend({
             self.update_from_form();
         };
 
-        var check_enter_esc = e => {
+        var check_enter_esc = (e) => {
             if ((e.keyCode || e.which) === 27) {
                 // Escape key
                 cancel_fn();
@@ -399,15 +382,15 @@ var ConfigSettingCollectionView = Backbone.View.extend({
             body: this.$el,
             buttons: {
                 Cancel: cancel_fn,
-                OK: ok_fn
-            }
+                OK: ok_fn,
+            },
         });
     },
 
     /**
      * Update settings with new values entered via form.
      */
-    update_from_form: function() {
+    update_from_form: function () {
         var self = this;
         this.collection.each((setting, index) => {
             if (!setting.get("hidden")) {
@@ -420,11 +403,11 @@ var ConfigSettingCollectionView = Backbone.View.extend({
                 setting.set_value(value);
             }
         });
-    }
+    },
 });
 
 export default {
     ConfigSetting: ConfigSetting,
     ConfigSettingCollection: ConfigSettingCollection,
-    ConfigSettingCollectionView: ConfigSettingCollectionView
+    ConfigSettingCollectionView: ConfigSettingCollectionView,
 };

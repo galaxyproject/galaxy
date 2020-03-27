@@ -30,16 +30,16 @@ export default {
             confirm: null,
             current: null,
             messageText: Galaxy.params.message,
-            messageVariant: Galaxy.params.status
+            messageVariant: Galaxy.params.status,
         };
     },
     computed: {
         messageShow() {
             return this.messageText != null;
-        }
+        },
     },
     methods: {
-        submit: function(ev) {
+        submit: function (ev) {
             const urlRoot = getAppRoot();
             ev.preventDefault();
             axios
@@ -48,17 +48,17 @@ export default {
                     id: this.user,
                     current: this.current,
                     password: this.password,
-                    confirm: this.confirm
+                    confirm: this.confirm,
                 })
-                .then(response => {
+                .then((response) => {
                     window.location = `${urlRoot}`;
                 })
-                .catch(error => {
+                .catch((error) => {
                     this.messageVariant = "danger";
                     const message = error.response.data && error.response.data.err_msg;
                     this.messageText = message || "Password change failed for an unknown reason.";
                 });
-        }
-    }
+        },
+    },
 };
 </script>

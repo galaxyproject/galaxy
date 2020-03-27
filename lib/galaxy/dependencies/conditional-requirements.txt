@@ -28,3 +28,7 @@ watchdog
 python-gitlab
 pygithub
 influxdb
+
+# Deep learning packages for tool recommendation
+keras==2.2.4
+tensorflow==1.12.2

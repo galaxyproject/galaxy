@@ -82,8 +82,8 @@ class Connector {
             "handle2-id",
             handle2 && handle2.element.getAttribute ? handle2.element.getAttribute("id") : ""
         );
-        const relativeLeft = e => ($(e).offset().left - canvas_container.offset().left) / canvasZoom;
-        const relativeTop = e => ($(e).offset().top - canvas_container.offset().top) / canvasZoom;
+        const relativeLeft = (e) => ($(e).offset().left - canvas_container.offset().left) / canvasZoom;
+        const relativeTop = (e) => ($(e).offset().top - canvas_container.offset().top) / canvasZoom;
         if (!handle1 || !handle2) {
             return;
         }
@@ -170,14 +170,14 @@ class Connector {
             { x: start_x, y: start_y + offset_start },
             { x: start_x + cp_shift, y: start_y + offset_start },
             { x: end_x - cp_shift, y: end_y + offset_end },
-            { x: end_x, y: end_y + offset_end }
+            { x: end_x, y: end_y + offset_end },
         ];
         const lineFunction = d3.svg
             .line()
-            .x(function(d) {
+            .x(function (d) {
                 return d.x;
             })
-            .y(function(d) {
+            .y(function (d) {
                 return d.y;
             })
             .interpolate("basis");

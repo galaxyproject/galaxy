@@ -20,7 +20,7 @@ export const mountMakoTags = (options = {}, el) => {
         storeKey: `${itemClass}-${id}`,
         tagService: new TagService({ id, itemClass, context }),
         tags,
-        disabled
+        disabled,
     };
 
     const fn = mountVueComponent(Tags);
@@ -35,7 +35,7 @@ export const mountMakoTags = (options = {}, el) => {
  * @param {object} options Passed options from mount fn
  */
 const makoClickHandler = (options, vm) =>
-    function(tag) {
+    function (tag) {
         if (!tag) {
             return;
         }
@@ -74,7 +74,7 @@ export const mountModelTags = (options = {}, el) => {
         storeKey: `${itemClass}-${id}`,
         tagService: new BackboneTagService({ id, itemClass, context, model }),
         tags,
-        disabled
+        disabled,
     };
 
     const fn = mountVueComponent(Tags);

@@ -9,7 +9,7 @@ import axios from "axios";
 
 describe("ToolsView/ToolsView.vue", () => {
     const localVue = createLocalVue();
-    localVue.filter("localize", value => _l(value));
+    localVue.filter("localize", (value) => _l(value));
     let wrapper, emitted, axiosMock;
 
     beforeEach(async () => {
@@ -18,10 +18,10 @@ describe("ToolsView/ToolsView.vue", () => {
             computed: {
                 currentHistory() {
                     return {
-                        loadCurrentHistory() {}
+                        loadCurrentHistory() {},
                     };
-                }
-            }
+                },
+            },
         });
         emitted = wrapper.emitted();
         axiosMock.onGet("/api/entry_points?running=true").reply(200, testInteractiveToolsResponse);
@@ -46,7 +46,7 @@ describe("ToolsView/ToolsView.vue", () => {
         }
 
         const toolId = testInteractiveToolsResponse[0].id;
-        const tool = wrapper.vm.activeInteractiveTools.find(tool => tool.id === toolId);
+        const tool = wrapper.vm.activeInteractiveTools.find((tool) => tool.id === toolId);
 
         assert(checkIfExists("#link-", toolId) === true, "tool is not rendered!");
         // ensure that the tool is not marked
@@ -65,7 +65,7 @@ describe("ToolsView/ToolsView.vue", () => {
         await Vue.nextTick();
         await Vue.nextTick();
 
-        const toolExists = wrapper.vm.activeInteractiveTools.includes(tool => tool.id === toolId);
+        const toolExists = wrapper.vm.activeInteractiveTools.includes((tool) => tool.id === toolId);
         // ensure that the tool was deleted from the list
         assert(toolExists === false, "tool was not deleted from the list!");
         assert(checkIfExists("#link-", toolId) === false, "tool is rendered after deletion!");

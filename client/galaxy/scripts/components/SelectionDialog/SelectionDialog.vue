@@ -34,29 +34,29 @@ export default {
     props: {
         multiple: {
             type: Boolean,
-            default: false
+            default: false,
         },
         modalStatic: {
             type: Boolean,
-            default: false
+            default: false,
         },
         errorMessage: {
             type: String,
-            default: null
+            default: null,
         },
         optionsShow: {
             type: Boolean,
-            default: false
+            default: false,
         },
         modalShow: {
             type: Boolean,
-            default: true
+            default: true,
         },
         hideModal: {
             type: Function,
-            required: true
-        }
-    }
+            required: true,
+        },
+    },
 };
 </script>
 

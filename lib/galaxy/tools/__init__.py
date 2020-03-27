@@ -241,7 +241,7 @@ class ToolBox(BaseGalaxyToolBox):
     how to construct them, action types, dependency management, etc....
     """
 
-    def __init__(self, config_filenames, tool_root_dir, app):
+    def __init__(self, config_filenames, tool_root_dir, app, save_integrated_tool_panel=True):
         self._reload_count = 0
         self.tool_location_fetcher = ToolLocationFetcher()
         # This is here to deal with the old default value, which doesn't make
@@ -253,6 +253,7 @@ class ToolBox(BaseGalaxyToolBox):
             config_filenames=config_filenames,
             tool_root_dir=tool_root_dir,
             app=app,
+            save_integrated_tool_panel=save_integrated_tool_panel,
         )
 
     def can_load_config_file(self, config_filename):

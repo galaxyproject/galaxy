@@ -14,7 +14,7 @@ var datasets1 = [
     { name: "SET1-06_1.fastq" },
     { name: "SET1-06_2.fastq" },
     { name: "SET1-07_1.fastq" },
-    { name: "SET1-07_2.fastq" }
+    { name: "SET1-07_2.fastq" },
 ];
 
 var datasets1CreateRequestJSON = {
@@ -31,14 +31,14 @@ var datasets1CreateRequestJSON = {
                 {
                     name: "forward",
                     id: "2",
-                    src: "hda"
+                    src: "hda",
                 },
                 {
                     name: "reverse",
                     id: "3",
-                    src: "hda"
-                }
-            ]
+                    src: "hda",
+                },
+            ],
         },
         {
             collection_type: "paired",
@@ -48,14 +48,14 @@ var datasets1CreateRequestJSON = {
                 {
                     name: "forward",
                     id: "4",
-                    src: "hda"
+                    src: "hda",
                 },
                 {
                     name: "reverse",
                     id: "5",
-                    src: "hda"
-                }
-            ]
+                    src: "hda",
+                },
+            ],
         },
         {
             collection_type: "paired",
@@ -65,14 +65,14 @@ var datasets1CreateRequestJSON = {
                 {
                     name: "forward",
                     id: "6",
-                    src: "hda"
+                    src: "hda",
                 },
                 {
                     name: "reverse",
                     id: "7",
-                    src: "hda"
-                }
-            ]
+                    src: "hda",
+                },
+            ],
         },
         {
             collection_type: "paired",
@@ -82,14 +82,14 @@ var datasets1CreateRequestJSON = {
                 {
                     name: "forward",
                     id: "8",
-                    src: "hda"
+                    src: "hda",
                 },
                 {
                     name: "reverse",
                     id: "9",
-                    src: "hda"
-                }
-            ]
+                    src: "hda",
+                },
+            ],
         },
         {
             collection_type: "paired",
@@ -99,14 +99,14 @@ var datasets1CreateRequestJSON = {
                 {
                     name: "forward",
                     id: "10",
-                    src: "hda"
+                    src: "hda",
                 },
                 {
                     name: "reverse",
                     id: "11",
-                    src: "hda"
-                }
-            ]
+                    src: "hda",
+                },
+            ],
         },
         {
             collection_type: "paired",
@@ -116,14 +116,14 @@ var datasets1CreateRequestJSON = {
                 {
                     name: "forward",
                     id: "12",
-                    src: "hda"
+                    src: "hda",
                 },
                 {
                     name: "reverse",
                     id: "13",
-                    src: "hda"
-                }
-            ]
+                    src: "hda",
+                },
+            ],
         },
         {
             collection_type: "paired",
@@ -133,20 +133,20 @@ var datasets1CreateRequestJSON = {
                 {
                     name: "forward",
                     id: "14",
-                    src: "hda"
+                    src: "hda",
                 },
                 {
                     name: "reverse",
                     id: "15",
-                    src: "hda"
-                }
-            ]
-        }
-    ]
+                    src: "hda",
+                },
+            ],
+        },
+    ],
 };
 
 // ============================================================================
 export default {
     _1: datasets1,
-    _1requestJSON: datasets1CreateRequestJSON
+    _1requestJSON: datasets1CreateRequestJSON,
 };

@@ -33,7 +33,7 @@
  * locale pieces into each other, then finally sets the context.defined value
  * for the nls/fr-fr/colors bundle to be that mixed in locale.
  */
-(function() {
+(function () {
     "use strict";
 
     //regexp for reconstructing the master bundle name from parts of the regexp match
@@ -87,7 +87,7 @@
         }
     }
 
-    define(["module"], function(module) {
+    define(["module"], function (module) {
         var masterConfig = module.config ? module.config() : {};
 
         return {
@@ -95,7 +95,7 @@
             /**
              * Called when a dependency needs to be loaded.
              */
-            load: function(name, req, onLoad, config) {
+            load: function (name, req, onLoad, config) {
                 config = config || {};
 
                 if (config.locale) {
@@ -151,12 +151,12 @@
                         addIfExists(req, current, toLoad, prefix, suffix);
                     }
 
-                    req(toLoad, function() {
+                    req(toLoad, function () {
                         onLoad();
                     });
                 } else {
                     //First, fetch the master bundle, it knows what locales are available.
-                    req([masterName], function(master) {
+                    req([masterName], function (master) {
                         //Figure out the best fit
                         var needed = [];
                         var part;
@@ -170,7 +170,7 @@
                         }
 
                         //Load all the parts missing.
-                        req(toLoad, function() {
+                        req(toLoad, function () {
                             var i;
                             var partBundle;
                             var part;
@@ -188,7 +188,7 @@
                         });
                     });
                 }
-            }
+            },
         };
     });
 })();

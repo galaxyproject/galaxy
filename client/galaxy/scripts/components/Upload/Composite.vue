@@ -75,7 +75,7 @@ export default {
             btnResetTitle: _l("Reset"),
             btnStartTitle: _l("Start"),
             btnCloseTitle: _l("Close"),
-            readyStart: false
+            readyStart: false,
         };
     },
     created() {
@@ -84,15 +84,15 @@ export default {
     },
     computed: {
         extensions() {
-            const result = _.filter(this.listExtensions, ext => ext.composite_files);
+            const result = _.filter(this.listExtensions, (ext) => ext.composite_files);
             result.unshift({ id: "_select_", text: "Select" });
             return result;
-        }
+        },
     },
     mounted() {
         this.initExtensionInfo();
         // listener for collection triggers on change in composite datatype and extension selection
-        this.collection.on("add", model => {
+        this.collection.on("add", (model) => {
             this._eventAnnounce(model);
         });
         this.collection.on("change add", () => {
@@ -101,7 +101,7 @@ export default {
         this.renderNonReactiveComponents();
     },
     methods: {
-        renderNonReactiveComponents: function() {
+        renderNonReactiveComponents: function () {
             var model = this.collection.first();
             if (model && model.get("status") == "running") {
                 this.running = true;
@@ -125,40 +125,38 @@ export default {
         //
 
         /** Builds the basic ui with placeholder rows for each composite data type file */
-        _eventAnnounce: function(model) {
+        _eventAnnounce: function (model) {
             var upload_row = new UploadRow(this, { model: model });
-            this.$uploadTable()
-                .find("tbody:first")
-                .append(upload_row.$el);
+            this.$uploadTable().find("tbody:first").append(upload_row.$el);
             this.showHelper = this.collection.length == 0;
             upload_row.render();
         },
 
         /** Start upload process */
-        _eventStart: function() {
-            this.collection.each(model => {
+        _eventStart: function () {
+            this.collection.each((model) => {
                 model.set({
                     genome: this.genome,
-                    extension: this.extension
+                    extension: this.extension,
                 });
             });
             $.uploadpost({
                 url: this.app.uploadPath,
                 data: this.app.toData(this.collection.filter()),
-                success: message => {
+                success: (message) => {
                     this._eventSuccess(message);
                 },
-                error: message => {
+                error: (message) => {
                     this._eventError(message);
                 },
-                progress: percentage => {
+                progress: (percentage) => {
                     this._eventProgress(percentage);
-                }
+                },
             });
         },
 
         /** Remove all */
-        _eventReset: function() {
+        _eventReset: function () {
             if (this.collection.where({ status: "running" }).length == 0) {
                 this.collection.reset();
                 this.extension = this.app.defaultExtension;
@@ -168,42 +166,42 @@ export default {
         },
 
         /** Refresh progress state */
-        _eventProgress: function(percentage) {
-            this.collection.each(it => {
+        _eventProgress: function (percentage) {
+            this.collection.each((it) => {
                 it.set("percentage", percentage);
             });
         },
 
         /** Refresh success state */
-        _eventSuccess: function(message) {
+        _eventSuccess: function (message) {
             const Galaxy = getGalaxyInstance();
-            this.collection.each(it => {
+            this.collection.each((it) => {
                 it.set("status", "success");
             });
             Galaxy.currHistoryPanel.refreshContents();
         },
 
         /** Refresh error state */
-        _eventError: function(message) {
-            this.collection.each(it => {
+        _eventError: function (message) {
+            this.collection.each((it) => {
                 it.set({ status: "error", info: message });
             });
-        }
+        },
     },
     watch: {
-        extension: function(value) {
+        extension: function (value) {
             this.collection.reset();
             const details = this.extensionDetails(value);
             if (details && details.composite_files) {
-                _.each(details.composite_files, item => {
+                _.each(details.composite_files, (item) => {
                     this.collection.add({
                         id: this.collection.size(),
                         file_desc: item.description || item.name,
-                        optional: item.optional
+                        optional: item.optional,
                     });
                 });
             }
-        }
-    }
+        },
+    },
 };
 </script>

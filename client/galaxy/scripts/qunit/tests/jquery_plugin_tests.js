@@ -3,15 +3,15 @@ import $ from "jquery";
 import testApp from "qunit/test-app";
 
 QUnit.module("Galaxy jquery plugin test", {
-    beforeEach: function() {
+    beforeEach: function () {
         testApp.create();
     },
-    afterEach: function() {
+    afterEach: function () {
         testApp.destroy();
-    }
+    },
 });
 
-QUnit.test("Check jquery for tooltip and select2", function(assert) {
+QUnit.test("Check jquery for tooltip and select2", function (assert) {
     assert.ok($.fn.tooltip);
     assert.ok($.fn.select2);
 });

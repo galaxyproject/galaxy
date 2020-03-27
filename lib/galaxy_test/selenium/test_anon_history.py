@@ -48,7 +48,7 @@ class AnonymousHistoriesTestCase(SeleniumTestCase):
         # anonymous user. Make sure this new history is empty.
         self.home()
         self.history_panel_wait_for_history_loaded()
-        history_contents = self.current_history_contents()
+        history_contents = self.history_contents()
         assert len(history_contents) == 0
 
     def _upload_file_anonymous_then_register_user(self):

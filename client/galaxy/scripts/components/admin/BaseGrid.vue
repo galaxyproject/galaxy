@@ -28,18 +28,18 @@
 export default {
     props: {
         isLoaded: {
-            type: Boolean
+            type: Boolean,
         },
         title: {
-            type: String
+            type: String,
         },
         columns: {
-            type: Array
+            type: Array,
         },
         rows: {
-            type: Array
-        }
-    }
+            type: Array,
+        },
+    },
 };
 </script>
 <style>
