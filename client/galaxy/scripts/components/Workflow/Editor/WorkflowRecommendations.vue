@@ -3,8 +3,7 @@
         <LoadingSpan v-if="showLoading" message="Loading recommendations" />
         <div v-if="compatibleTools.length > 0 && !isDeprecated">
             <div v-for="tool in compatibleTools" :key="tool.id">
-                <i class="fa mr-1 fa-wrench"></i>
-                <a href="#" title="Open tool" :id="tool.id" @click="createTool(tool.id)">
+                <a href="#" title="Open tool" :id="tool.id" @click="$emit('onCreate', tool.id)">
                     {{ tool.name }}
                 </a>
             </div>
@@ -19,7 +18,7 @@
 </template>
 
 <script>
-import { getModule, getToolPredictions } from "./services";
+import { getToolPredictions } from "./services";
 import LoadingSpan from "components/LoadingSpan";
 import _l from "utils/localization";
 
@@ -35,10 +34,6 @@ export default {
     },
     data() {
         return {
-            modalHeaderTitle: _l("Tool Recommendations"),
-            modalHeaderToolTip: _l(
-                "The recommended tools are shown in the decreasing order of their scores predicted using machine learning analysis on workflows. A tool with a higher score (closer to 100%) may fit better as the following tool than a tool with a lower score. Please click on one of the following/recommended tools to have it on the workflow editor."
-            ),
             compatibleTools: [],
             isDeprecated: false,
             noRecommendationsMessage: _l("No tool recommendations"),
@@ -138,22 +133,6 @@ export default {
                     this.compatibleTools = cTools;
                 }
                 this.showLoading = false;
-            });
-        },
-        closeModal() {
-            this.$el.remove();
-        },
-        createTool(tId) {
-            const app = this.node.app;
-            const requestData = {
-                type: "tool",
-                tool_id: tId,
-                _: "true",
-            };
-            getModule(requestData).then((response) => {
-                const node = app.create_node("tool", response.name, tId);
-                app.set_node(node, response);
-                this.closeModal();
             });
         },
     },

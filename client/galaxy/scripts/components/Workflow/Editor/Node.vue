@@ -17,12 +17,11 @@
                 variant="primary"
                 size="sm"
                 aria-label="tool recommendations"
-                @click="onGetRecommendations"
             >
                 <i class="fa fa-arrow-right" />
             </b-button>
             <b-popover :target="popoverId" triggers="hover" placement="bottom">
-                <WorkflowRecommendations :node="node" />
+                <WorkflowRecommendations :node="node" @onCreate="onCreate" />
             </b-popover>
             <b-button
                 v-if="canClone"
@@ -49,6 +48,7 @@
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import WorkflowIcons from "components/Workflow/icons";
+import { getModule } from "./services";
 import LoadingSpan from "components/LoadingSpan";
 import { getGalaxyInstance } from "app";
 import WorkflowRecommendations from "components/Workflow/Editor/WorkflowRecommendations";
@@ -59,6 +59,11 @@ export default {
     components: {
         LoadingSpan,
         WorkflowRecommendations,
+    },
+    data() {
+        return {
+            popoverShow: false,
+        };
     },
     props: {
         id: {
@@ -107,6 +112,17 @@ export default {
         },
         onClone() {
             this.node.clone();
+        },
+        onCreate(toolId) {
+            const requestData = {
+                tool_id: toolId,
+                type: "tool",
+                _: "true",
+            };
+            getModule(requestData).then((response) => {
+                var node = this.node.app.create_node("tool", response.name, toolId);
+                this.node.app.set_node(node, response);
+            });
         },
     },
 };
