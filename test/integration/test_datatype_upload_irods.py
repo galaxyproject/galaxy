@@ -25,6 +25,8 @@ def start_irods(container_name):
         container_name,
         'kxk302/irods-server:0.2']
     subprocess.check_call(irods_start_args)
+    hostIP = subprocess.check_output(['hostname', '-I'])
+    print('hostIP:', hostIP)
 
 
 def stop_irods(container_name):
