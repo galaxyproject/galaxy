@@ -1142,6 +1142,58 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         for dataset_assoc in self.output_datasets:
             return dataset_assoc.dataset.tool_version
 
+    def update_output_dataset_states(self):
+        sql = '''
+            UPDATE dataset
+            SET
+                state = :state,
+                update_time = :update_time
+            WHERE id IN (
+                SELECT hda.dataset_id FROM history_dataset_association hda
+                INNER JOIN job_to_output_dataset jtod
+                ON jtod.dataset_id = hda.id AND jtod.job_id = :job_id
+            );
+
+            UPDATE dataset
+            SET
+                state = :state,
+                update_time = :update_time
+            WHERE id IN (
+                SELECT ldda.dataset_id FROM library_dataset_dataset_association ldda
+                INNER JOIN job_to_output_library_dataset jtold
+                ON jtold.ldda_id = ldda.id AND jtold.job_id = :job_id
+            );
+
+            UPDATE history_dataset_association
+            SET
+                info = :info,
+                update_time = :update_time
+            WHERE id IN (
+                SELECT jtod.dataset_id
+                FROM job_to_output_dataset jtod
+                WHERE jtod.job_id = :job_id
+            );
+
+            UPDATE library_dataset_dataset_association
+            SET
+                info = :info,
+                update_time = :update_time
+            WHERE id IN (
+                SELECT jtold.ldda_id
+                FROM job_to_output_library_dataset jtold
+                WHERE jtold.job_id = :job_id
+            );
+        '''
+        sa_session = object_session(self)
+        params = {
+            'job_id': self.id,
+            'state': self.state,
+            'info': self.info,
+            'update_time': galaxy.model.orm.now.now()
+        }
+        sa_session.execute(sql, params)
+        sa_session.flush()
+
 
 class Task(JobLike, RepresentById):
     """
