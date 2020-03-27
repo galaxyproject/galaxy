@@ -7,7 +7,6 @@ import WorkflowIcons from "components/Workflow/icons";
 import { DefaultForm, ToolForm } from "mvc/workflow/workflow-forms";
 import { loadWorkflow } from "./services";
 import { hide_modal, show_message, show_modal } from "layout/modal";
-import Modal from "mvc/ui/ui-modal";
 
 export function copyIntoWorkflow(workflow, id = null, stepCount = null) {
     const _copy_into_workflow_ajax = () => {

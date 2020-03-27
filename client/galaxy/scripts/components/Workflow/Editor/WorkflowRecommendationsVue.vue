@@ -11,7 +11,7 @@
                         {{ loadingMessage }}
                     </div>
                     <div v-if="compatibleTools.length > 0 && !isDeprecated">
-                        <div v-for="tool in compatibleTools">
+                        <div v-for="tool in compatibleTools" :key="tool.id">
                             <i class="fa mr-1 fa-wrench"></i>
                             <a href="#" title="Open tool" :id="tool.id" v-on:click="createTool(tool.id)">
                                 {{ tool.name }}
@@ -69,40 +69,41 @@ export default {
     },
     computed: {},
     methods: {
-        async loadRecommendations() {
-            const response = await axios.post(`${getAppRoot()}api/workflows/get_tool_predictions`, {
-                tool_sequence: this.toolSequence
-            });
-            const predictedData = response.data.predicted_data;
-            const outputDatatypes = predictedData.o_extensions;
-            const predictedDataChildren = predictedData.children;
-            const app = this.workflowManager.node.app;
-            this.isDeprecated = predictedData.is_deprecated;
-            this.deprecatedMessage = predictedData.message;
-            if (predictedDataChildren.length > 0) {
-                let cTools = [];
-                for (const [index, name_obj] of predictedDataChildren.entries()) {
-                    let t = {};
-                    const inputDatatypes = name_obj.i_extensions;
-                    for (const out_t of outputDatatypes.entries()) {
-                        for (const in_t of inputDatatypes.entries()) {
-                            if (
-                                app.isSubType(out_t[1], in_t[1]) === true ||
-                                out_t[1] === "input" ||
-                                out_t[1] === "_sniff_" ||
-                                out_t[1] === "input_collection"
-                            ) {
-                                t.id = name_obj.tool_id;
-                                t.name = name_obj.name;
-                                cTools.push(t);
-                                break;
+        loadRecommendations() {
+            axios
+                .post(`${getAppRoot()}api/workflows/get_tool_predictions`, { tool_sequence: this.toolSequence })
+                .then(response => {
+                    const predictedData = response.data.predicted_data;
+                    const outputDatatypes = predictedData.o_extensions;
+                    const predictedDataChildren = predictedData.children;
+                    const app = this.workflowManager.node.app;
+                    this.isDeprecated = predictedData.is_deprecated;
+                    this.deprecatedMessage = predictedData.message;
+                    if (predictedDataChildren.length > 0) {
+                        const cTools = [];
+                        for (const nameObj of predictedDataChildren.entries()) {
+                            const t = {};
+                            const inputDatatypes = nameObj[1].i_extensions;
+                            for (const outT of outputDatatypes.entries()) {
+                                for (const inTool of inputDatatypes.entries()) {
+                                    if (
+                                        app.isSubType(outT[1], inTool[1]) === true ||
+                                        outT[1] === "input" ||
+                                        outT[1] === "_sniff_" ||
+                                        outT[1] === "input_collection"
+                                    ) {
+                                        t.id = nameObj[1].tool_id;
+                                        t.name = nameObj[1].name;
+                                        cTools.push(t);
+                                        break;
+                                    }
+                                }
                             }
                         }
+                        this.compatibleTools = cTools;
                     }
-                }
-                this.compatibleTools = cTools;
-            }
-            this.showLoading = false;
+                    this.showLoading = false;
+                });
         },
         closeModal() {
             this.$el.remove();

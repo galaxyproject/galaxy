@@ -4,15 +4,15 @@ import WorkflowToolRecommendations from "components/Workflow/Editor/WorkflowReco
 
 function getToolId(toolId) {
     if (toolId !== undefined && toolId !== null && toolId.indexOf("/") > -1) {
-        let toolIdSlash = toolId.split("/");
+        const toolIdSlash = toolId.split("/");
         toolId = toolIdSlash[toolIdSlash.length - 2];
     }
     return toolId;
 }
 
 function getWorkflowPath(wfSteps, currentNodeId) {
-    let steps = {};
-    let stepNames = {};
+    const steps = {};
+    const stepNames = {};
     for (const stpIdx in wfSteps.steps) {
         const step = wfSteps.steps[stpIdx];
         const inputConnections = step.inputConnections;
@@ -20,7 +20,7 @@ function getWorkflowPath(wfSteps, currentNodeId) {
         for (const icIdx in inputConnections) {
             const ic = inputConnections[icIdx];
             if (ic !== null && ic !== undefined) {
-                let prevConn = [];
+                const prevConn = [];
                 for (const conn of ic) {
                     prevConn.push(conn.id.toString());
                 }
@@ -44,7 +44,7 @@ function getWorkflowPath(wfSteps, currentNodeId) {
         return ph;
     }
     let ph = [];
-    let stepNamesList = [];
+    const stepNamesList = [];
     ph.push(currentNodeId);
     ph = readPaths(currentNodeId, ph);
     for (const sIdx of ph) {
@@ -59,7 +59,6 @@ function getWorkflowPath(wfSteps, currentNodeId) {
 export function getToolRecommendations(props) {
     const workflowSimple = props.node.app.to_simple();
     const node = props.node;
-    const toolId = getToolId(node.content_id);
     const toolSequence = getWorkflowPath(workflowSimple, node.id);
     const ToolRecommendationInstance = Vue.extend(WorkflowToolRecommendations);
     const vm = document.createElement("div");

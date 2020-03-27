@@ -1,6 +1,6 @@
 <template>
     <div id="tool-recommendation" class="tool-recommendation-view">
-        <div v-if="!deprecated" class="infomessagelarge">
+        <div v-if="!deprecated && showMessage" class="infomessagelarge">
             <h4>Tool recommendation</h4>
             You have used {{ getToolId }} tool. For further analysis, you could try using the following/recommended
             tools. The recommended tools are shown in the decreasing order of their scores predicted using machine
@@ -8,7 +8,9 @@
             tool than a tool with a lower score. Please click on one of the following/recommended tools to open its
             definition.
         </div>
-        <div v-else class="warningmessagelarge">You have used {{ getToolId }} tool. {{ deprecatedMessage }}</div>
+        <div v-else-if="deprecated" class="warningmessagelarge">
+            You have used {{ getToolId }} tool. {{ deprecatedMessage }}
+        </div>
     </div>
 </template>
 
@@ -26,8 +28,9 @@ export default {
     },
     data() {
         return {
-            deprecated: null,
-            deprecatedMessage: ""
+            deprecated: false,
+            deprecatedMessage: "",
+            showMessage: false
         };
     },
     created() {
@@ -58,7 +61,7 @@ export default {
                         const extToType = datatypesMapping.ext_to_class_name;
                         const typeToType = datatypesMapping.class_to_classes;
                         this.deprecated = predData.is_deprecated;
-
+                        this.deprecatedMessage = predData.message;
                         if (response.data !== null && predData.children.length > 0) {
                             const filteredData = {};
                             const compatibleTools = {};
@@ -67,15 +70,15 @@ export default {
                             const children = predData.children;
                             for (const nameObj of children.entries()) {
                                 const inputDatatypes = nameObj[1].i_extensions;
-                                for (const out_t of outputDatatypes.entries()) {
-                                    for (const in_t of inputDatatypes.entries()) {
-                                        const child = extToType[out_t[1]];
-                                        const parent = extToType[in_t[1]];
+                                for (const outT of outputDatatypes.entries()) {
+                                    for (const inTool of inputDatatypes.entries()) {
+                                        const child = extToType[outT[1]];
+                                        const parent = extToType[inTool[1]];
                                         if (
                                             (typeToType[child] && parent in typeToType[child]) === true ||
-                                            out_t[1] === "input" ||
-                                            out_t[1] === "_sniff_" ||
-                                            out_t[1] === "input_collection"
+                                            outT[1] === "input" ||
+                                            outT[1] === "_sniff_" ||
+                                            outT[1] === "input_collection"
                                         ) {
                                             compatibleTools[nameObj[1].tool_id] = nameObj[1].name;
                                             break;
@@ -95,9 +98,8 @@ export default {
                             filteredData.name = predData.name;
                             filteredData.children = filteredChildren;
                             if (filteredChildren.length > 0 && this.deprecated === false) {
+                                this.showMessage = true;
                                 this.renderD3Tree(filteredData);
-                            } else if (this.deprecated === true) {
-                                this.deprecatedMessage = predData.message;
                             }
                         }
                     });
@@ -162,7 +164,7 @@ export default {
                     })
                     .text(d => {
                         let tName = d.name;
-                        if(tName.length > maxTextLength) {
+                        if (tName.length > maxTextLength) {
                             return tName.slice(0, maxTextLength) + "...";
                         }
                         return d.name;
