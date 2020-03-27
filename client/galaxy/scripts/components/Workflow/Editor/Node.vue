@@ -10,7 +10,7 @@
             >
                 <i class="fa fa-times" />
             </b-button>
-            <b-button 
+            <b-button
                 v-if="isEnabled"
                 class="node-recommendations py-0 float-right"
                 variant="primary"
@@ -53,23 +53,23 @@ Vue.use(BootstrapVue);
 
 export default {
     components: {
-        LoadingSpan,
+        LoadingSpan
     },
     props: {
         id: {
-            type: String,
+            type: String
         },
         title: {
             type: String,
-            default: "title",
+            default: "title"
         },
         type: {
             type: String,
-            default: "tool",
+            default: "tool"
         },
         node: {
-            type: Object,
-        },
+            type: Object
+        }
     },
     computed: {
         iconClass() {
@@ -82,7 +82,7 @@ export default {
         canClone() {
             return this.type != "subworkflow";
         },
-        isEnabled () {
+        isEnabled() {
             const Galaxy = getGalaxyInstance();
             const isRecommendationEnabled = Galaxy.config.enable_tool_recommendations;
             if (isRecommendationEnabled === true || isRecommendationEnabled === "true") {
@@ -101,6 +101,6 @@ export default {
         onGetRecommendations() {
             getToolRecommendations(this);
         }
-    },
+    }
 };
 </script>
