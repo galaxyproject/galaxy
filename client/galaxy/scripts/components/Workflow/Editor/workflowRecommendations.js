@@ -15,7 +15,7 @@ function getWorkflowPath(wfSteps, currentNodeId) {
     const stepNames = {};
     for (const stpIdx in wfSteps.steps) {
         const step = wfSteps.steps[stpIdx];
-        const inputConnections = step.inputConnections;
+        const inputConnections = step.input_connections;
         stepNames[step.id] = getToolId(step.content_id);
         for (const icIdx in inputConnections) {
             const ic = inputConnections[icIdx];
@@ -44,16 +44,16 @@ function getWorkflowPath(wfSteps, currentNodeId) {
         return ph;
     }
     let ph = [];
-    const stepNamesList = [];
+    const stepNameList = [];
     ph.push(currentNodeId);
     ph = readPaths(currentNodeId, ph);
     for (const sIdx of ph) {
         const sName = stepNames[sIdx.toString()];
         if (sName !== undefined && sName !== null) {
-            stepNamesList.push(sName);
+            stepNameList.push(sName);
         }
     }
-    return stepNamesList.join(",");
+    return stepNameList.join(",");
 }
 
 export function getToolRecommendations(props) {

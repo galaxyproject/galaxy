@@ -163,7 +163,7 @@ export default {
                         return d.children || d._children ? "end" : "start";
                     })
                     .text(d => {
-                        let tName = d.name;
+                        const tName = d.name;
                         if (tName.length > maxTextLength) {
                             return tName.slice(0, maxTextLength) + "...";
                         }
@@ -181,8 +181,7 @@ export default {
                     });
                 nodeUpdate.select("circle").attr("r", 3.5);
                 // Transition exiting nodes to the parent's new position.
-                const nodeExit = node
-                    .exit()
+                node.exit()
                     .transition()
                     .duration(duration)
                     .attr("transform", d => {
