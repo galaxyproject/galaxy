@@ -3547,7 +3547,7 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, RepresentById):
         self.library_dataset = library_dataset
         self.user = user
 
-    def to_history_dataset_association(self, target_history, parent_id=None, add_to_history=False):
+    def to_history_dataset_association(self, target_history, parent_id=None, add_to_history=False, visible=None):
         sa_session = object_session(self)
         hda = HistoryDatasetAssociation(name=self.name,
                                         info=self.info,
@@ -3557,7 +3557,7 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, RepresentById):
                                         extension=self.extension,
                                         dbkey=self.dbkey,
                                         dataset=self.dataset,
-                                        visible=self.visible,
+                                        visible=visible if visible is not None else self.visible,
                                         deleted=self.deleted,
                                         parent_id=parent_id,
                                         copied_from_library_dataset_dataset_association=self,

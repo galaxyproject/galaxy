@@ -434,7 +434,7 @@ class DatasetCollectionManager(object):
             self.tag_handler.apply_item_tags(user=trans.user, item=element, tags_str=tag_str)
         elif src_type == 'ldda':
             element = self.ldda_manager.get(trans, encoded_id, check_accessible=True)
-            element = element.to_history_dataset_association(trans.history, add_to_history=True)
+            element = element.to_history_dataset_association(trans.history, add_to_history=True, visible=not hide_source_items)
             self.tag_handler.apply_item_tags(user=trans.user, item=element, tags_str=tag_str)
         elif src_type == 'hdca':
             # TODO: Option to copy? Force copy? Copy or allow if not owned?
