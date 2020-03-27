@@ -3,7 +3,7 @@
     <auth username="rods" password="rods" />
     <resource name="demoResc" />
     <zone name="tempZone" />
-    <connection host="172.18.0.1" port="2020"/>
+    <connection host="172.17.0.1" port="2020"/>
     <cache path="database/object_store_cache" size="1000" />
     <extra_dir type="job_work" path="database/job_working_directory_irods"/>
     <extra_dir type="temp" path="database/tmp_irods"/>
