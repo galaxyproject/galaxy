@@ -1,49 +1,37 @@
 <template>
-    <div class="modal ui-modal wf-recommendation-view">
-        <div class="modal-backdrop fade in"></div>
-        <div class="modal-dialog wf-tools-dialog">
-            <div class="modal-content wf-tool-content">
-                <div class="modal-header wf-tools-background" :title="modalHeaderToolTip">
-                    <h4>{{ modalHeaderTitle }}</h4>
-                </div>
-                <div class="modal-body wf-tools-body">
-                    <div v-if="showLoading">
-                        {{ loadingMessage }}
-                    </div>
-                    <div v-if="compatibleTools.length > 0 && !isDeprecated">
-                        <div v-for="tool in compatibleTools" :key="tool.id">
-                            <i class="fa mr-1 fa-wrench"></i>
-                            <a href="#" title="Open tool" :id="tool.id" v-on:click="createTool(tool.id)">
-                                {{ tool.name }}
-                            </a>
-                        </div>
-                    </div>
-                    <div v-else-if="isDeprecated">
-                        {{ deprecatedMessage }}
-                    </div>
-                    <div v-if="compatibleTools.length === 0 && !showLoading">
-                        {{ noRecommendationsMessage }}
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <div class="buttons">
-                        <button v-on:click="closeModal" title="Cancel" class="wf-tools-background">Cancel</button>
-                    </div>
-                </div>
+    <div class="workflow-recommendations">
+        <LoadingSpan v-if="showLoading" message="Loading recommendations" />
+        <div v-if="compatibleTools.length > 0 && !isDeprecated">
+            <div v-for="tool in compatibleTools" :key="tool.id">
+                <i class="fa mr-1 fa-wrench"></i>
+                <a href="#" title="Open tool" :id="tool.id" @click="createTool(tool.id)">
+                    {{ tool.name }}
+                </a>
             </div>
+        </div>
+        <div v-else-if="isDeprecated">
+            {{ deprecatedMessage }}
+        </div>
+        <div v-if="compatibleTools.length === 0 && !showLoading">
+            {{ noRecommendationsMessage }}
         </div>
     </div>
 </template>
 
 <script>
 import { getModule, getToolPredictions } from "./services";
+import LoadingSpan from "components/LoadingSpan";
 import _l from "utils/localization";
 
 export default {
+    components: {
+        LoadingSpan,
+    },
     props: {
-        workflowManager: {
-            type: Object
-        }
+        node: {
+            type: Object,
+            required: true,
+        },
     },
     data() {
         return {
@@ -55,8 +43,7 @@ export default {
             isDeprecated: false,
             noRecommendationsMessage: _l("No tool recommendations"),
             deprecatedMessage: "",
-            loadingMessage: _l("Loading recommendations ..."),
-            showLoading: true
+            showLoading: true,
         };
     },
     created() {
@@ -116,15 +103,15 @@ export default {
             return stepNameList.join(",");
         },
         loadRecommendations() {
-            const workflowSimple = this.workflowManager.node.app.to_simple();
-            const node = this.workflowManager.node;
+            const workflowSimple = this.node.app.to_simple();
+            const node = this.node;
             const toolSequence = this.getWorkflowPath(workflowSimple, node.id);
             const requestData = { tool_sequence: toolSequence };
-            getToolPredictions(requestData).then(responsePred => {
+            getToolPredictions(requestData).then((responsePred) => {
                 const predictedData = responsePred.predicted_data;
                 const outputDatatypes = predictedData.o_extensions;
                 const predictedDataChildren = predictedData.children;
-                const app = this.workflowManager.node.app;
+                const app = this.node.app;
                 this.isDeprecated = predictedData.is_deprecated;
                 this.deprecatedMessage = predictedData.message;
                 if (predictedDataChildren.length > 0) {
@@ -157,18 +144,18 @@ export default {
             this.$el.remove();
         },
         createTool(tId) {
-            const app = this.workflowManager.node.app;
+            const app = this.node.app;
             const requestData = {
                 type: "tool",
                 tool_id: tId,
-                _: "true"
+                _: "true",
             };
-            getModule(requestData).then(response => {
+            getModule(requestData).then((response) => {
                 const node = app.create_node("tool", response.name, tId);
                 app.set_node(node, response);
                 this.closeModal();
             });
-        }
-    }
+        },
+    },
 };
 </script>

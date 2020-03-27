@@ -11,6 +11,7 @@
                 <i class="fa fa-times" />
             </b-button>
             <b-button
+                :id="popoverId"
                 v-if="isEnabled"
                 class="node-recommendations py-0 float-right"
                 variant="primary"
@@ -20,6 +21,9 @@
             >
                 <i class="fa fa-arrow-right" />
             </b-button>
+            <b-popover :target="popoverId" triggers="hover" placement="bottom">
+                <WorkflowRecommendations :node="node" />
+            </b-popover>
             <b-button
                 v-if="canClone"
                 class="node-clone py-0 float-right"
@@ -53,23 +57,26 @@ Vue.use(BootstrapVue);
 
 export default {
     components: {
-        LoadingSpan
+        LoadingSpan,
+        WorkflowRecommendations,
     },
     props: {
         id: {
-            type: String
+            type: String,
+            default: null,
         },
         title: {
             type: String,
-            default: "title"
+            default: "title",
         },
         type: {
             type: String,
-            default: "tool"
+            default: "tool",
         },
         node: {
-            type: Object
-        }
+            type: Object,
+            default: null,
+        },
     },
     computed: {
         iconClass() {
@@ -78,6 +85,9 @@ export default {
                 return `icon fa fa-fw ${iconType}`;
             }
             return null;
+        },
+        popoverId() {
+            return `popover-${this.id}`;
         },
         canClone() {
             return this.type != "subworkflow";
@@ -89,7 +99,7 @@ export default {
                 return true;
             }
             return false;
-        }
+        },
     },
     methods: {
         onDestroy() {
@@ -98,14 +108,6 @@ export default {
         onClone() {
             this.node.clone();
         },
-        onGetRecommendations() {
-            const component = Vue.extend(WorkflowRecommendations);
-            const instance = new component({ propsData: { workflowManager: this } });
-            const body = document.getElementsByTagName("body")[0];
-            const vm = document.createElement("div");
-            body.append(vm);
-            instance.$mount(vm);
-        }
-    }
+    },
 };
 </script>
