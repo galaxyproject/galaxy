@@ -5,29 +5,24 @@ jobs:
   test:
     name: Startup test
     runs-on: macos-latest
-    strategy:
-      matrix:
-        python-version: [3.7]
     steps:
     - uses: actions/checkout@v2
       with:
         path: 'galaxy root'
-    - uses: actions/setup-python@v1
-      with:
-        python-version: ${{ matrix.python-version }}
     - name: Cache pip dir
       uses: actions/cache@v1
       id: pip-cache
       with:
         path: ~/Library/Caches/pip
-        key: pip-cache-osx-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
+        # scripts/common_startup.sh creates a conda env for Galaxy containing Python 3.6
+        key: pip-cache-3.6-${{ hashFiles('galaxy root/requirements.txt') }}
     - name: Install tox
       run: pip install tox
-    - name: fetch migrations
-      run: |
-        wget -q https://github.com/jmchilton/galaxy-downloads/raw/master/db_gx_rev_0141.sqlite
-        mv db_gx_rev_0141.sqlite database/universe.sqlite
-      working-directory: 'galaxy root'
+    - name: Install and activate miniconda  # use this job to test using Python from a conda environment
+      uses: goanpeca/setup-miniconda@v1
+      with:
+        activate-environment: ''
     - name: run tests
-      run: tox -e py37-first_startup
+      run: tox -e first_startup
+      shell: bash -l {0}  # need this to have CONDA_EXE set
       working-directory: 'galaxy root'
