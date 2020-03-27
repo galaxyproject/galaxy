@@ -3,7 +3,6 @@ from __future__ import print_function
 
 import binascii
 import gzip
-import io
 import logging
 import os
 import shutil
@@ -23,10 +22,7 @@ from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP, TWOBIT_
 
 from galaxy import util
 from galaxy.datatypes import metadata
-from galaxy.datatypes.data import (
-    DatatypeValidation,
-    get_file_peek,
-)
+from galaxy.datatypes.data import get_file_peek
 from galaxy.datatypes.metadata import DictParameter, ListParameter, MetadataElement, MetadataParameter
 from galaxy.util import nice_size, sqlite
 from galaxy.util.checkers import is_bz2, is_gzip
@@ -288,10 +284,6 @@ class BamNative(CompressedArchive):
         Binary.init_meta(self, dataset, copy_from=copy_from)
 
     def sniff(self, filename):
-        return BamNative.is_bam(filename)
-
-    @classmethod
-    def is_bam(cls, filename):
         # BAM is compressed in the BGZF format, and must not be uncompressed in Galaxy.
         # The first 4 bytes of any bam file is 'BAM\1', and the file is binary.
         try:
@@ -431,13 +423,6 @@ class BamNative(CompressedArchive):
                                        column_names=column_names,
                                        column_types=column_types)
 
-    def validate(self, dataset, **kwd):
-        if not BamNative.is_bam(dataset.file_name):
-            return DatatypeValidation.invalid("This dataset does not appear to a BAM file.")
-        elif self.dataset_content_needs_grooming(dataset.file_name):
-            return DatatypeValidation.invalid("This BAM file does not appear to have the correct sorting for declared datatype.")
-        return DatatypeValidation.validated()
-
 
 @dataproviders.decorators.has_dataproviders
 class Bam(BamNative):
@@ -448,7 +433,22 @@ class Bam(BamNative):
     track_type = "ReadTrack"
     data_sources = {"data": "bai", "index": "bigwig"}
 
-    MetadataElement(name="bam_index", desc="BAM Index File", param=metadata.FileParameter, file_ext="bai", readonly=True, no_value=None, visible=False, optional=True)
+    MetadataElement(name="bam_index", desc="BAM Index File", param=metadata.FileParameter, file_ext="bam.bai", readonly=True, no_value=None, visible=False, optional=True)
+    MetadataElement(name="bam_csi_index", desc="BAM CSI Index File", param=metadata.FileParameter, file_ext="bam.csi", readonly=True, no_value=None, visible=False, optional=True)
+
+    def get_index_flag(self, file_name):
+        """
+        Return pysam flag for bai index (default) or csi index (contig size > (2**29 - 1) )
+        """
+        index_flag = '-b'  # bai index
+        try:
+            with pysam.AlignmentFile(file_name) as alignment_file:
+                if max(alignment_file.header.lengths) > (2 ** 29) - 1:
+                    index_flag = '-c'  # csi index
+        except Exception:
+            # File may not have a header, that's OK
+            pass
+        return index_flag
 
     def dataset_content_needs_grooming(self, file_name):
         """
@@ -456,12 +456,17 @@ class Bam(BamNative):
         """
         # The best way to ensure that BAM files are coordinate-sorted and indexable
         # is to actually index them.
+        index_flag = self.get_index_flag(file_name)
         index_name = tempfile.NamedTemporaryFile(prefix="bam_index").name
         try:
             # If pysam fails to index a file it will write to stderr,
             # and this causes the set_meta script to fail. So instead
             # we start another process and discard stderr.
-            cmd = ['python', '-c', "import pysam; pysam.index('%s', '%s')" % (file_name, index_name)]
+            if index_flag == '-b':
+                # IOError: No such file or directory: '-b' if index_flag is set to -b (pysam 0.15.4)
+                cmd = ['python', '-c', "import pysam; pysam.index('%s', '%s')" % (file_name, index_name)]
+            else:
+                cmd = ['python', '-c', "import pysam; pysam.index('%s', '%s', '%s')" % (index_flag, file_name, index_name)]
             with open(os.devnull, 'w') as devnull:
                 subprocess.check_call(cmd, stderr=devnull, shell=False)
             needs_sorting = False
@@ -476,10 +481,20 @@ class Bam(BamNative):
     def set_meta(self, dataset, overwrite=True, **kwd):
         # These metadata values are not accessible by users, always overwrite
         super(Bam, self).set_meta(dataset=dataset, overwrite=overwrite, **kwd)
-        index_file = dataset.metadata.bam_index
+        index_flag = self.get_index_flag(dataset.file_name)
+        if index_flag == '-b':
+            spec_key = 'bam_index'
+            index_file = dataset.metadata.bam_index
+        else:
+            spec_key = 'bam_csi_index'
+            index_file = dataset.metadata.bam_csi_index
         if not index_file:
-            index_file = dataset.metadata.spec['bam_index'].param.new_file(dataset=dataset)
-        pysam.index(dataset.file_name, index_file.file_name)
+            index_file = dataset.metadata.spec[spec_key].param.new_file(dataset=dataset)
+        if index_flag == '-b':
+            # IOError: No such file or directory: '-b' if index_flag is set to -b (pysam 0.15.4)
+            pysam.index(dataset.file_name, index_file.file_name)
+        else:
+            pysam.index(index_flag, dataset.file_name, index_file.file_name)
         dataset.metadata.bam_index = index_file
 
     def sniff(self, file_name):
@@ -825,16 +840,11 @@ class Loom(H5):
 
     def sniff(self, filename):
         if super(Loom, self).sniff(filename):
-            with h5py.File(filename, 'r') as loom_file:
-                # Check the optional but distinctive LOOM_SPEC_VERSION attribute
-                if bool(loom_file.attrs.get('LOOM_SPEC_VERSION')):
-                    return True
-                # Check some mandatory H5 datasets and groups
-                for el in ('matrix', 'row_attrs', 'col_attrs'):
-                    if loom_file.get(el) is None:
-                        return False
-                else:
-                    return True
+            try:
+                with h5py.File(filename) as loom_file:
+                    return bool(loom_file.attrs.get('LOOM_SPEC_VERSION', False))
+            except Exception:
+                return False
         return False
 
     def set_peek(self, dataset, is_multi_byte=False):
@@ -854,16 +864,16 @@ class Loom(H5):
     def set_meta(self, dataset, overwrite=True, **kwd):
         super(Loom, self).set_meta(dataset, overwrite=overwrite, **kwd)
         try:
-            with h5py.File(dataset.file_name, 'r') as loom_file:
-                dataset.metadata.title = util.unicodify(loom_file.attrs.get('title'))
-                dataset.metadata.description = util.unicodify(loom_file.attrs.get('description'))
-                dataset.metadata.url = util.unicodify(loom_file.attrs.get('url'))
-                dataset.metadata.doi = util.unicodify(loom_file.attrs.get('doi'))
-                dataset.metadata.loom_spec_version = util.unicodify(loom_file.attrs.get('LOOM_SPEC_VERSION'))
-                dataset.creation_date = util.unicodify(loom_file.attrs.get('creation_date'))
+            with h5py.File(dataset.file_name) as loom_file:
+                dataset.metadata.title = loom_file.attrs.get('title', None)
+                dataset.metadata.description = loom_file.attrs.get('description', None)
+                dataset.metadata.url = loom_file.attrs.get('url', None)
+                dataset.metadata.doi = loom_file.attrs.get('doi', None)
+                dataset.metadata.loom_spec_version = loom_file.attrs.get('LOOM_SPEC_VERSION', None)
+                dataset.creation_date = loom_file.attrs.get('creation_date', None)
                 dataset.metadata.shape = tuple(loom_file['matrix'].shape)
 
-                tmp = list(loom_file.get('layers', {}).keys())
+                tmp = list(loom_file['layers'].keys())
                 dataset.metadata.layers_count = len(tmp)
                 dataset.metadata.layers_names = tmp
 
@@ -875,15 +885,11 @@ class Loom(H5):
                 dataset.metadata.col_attrs_count = len(tmp)
                 dataset.metadata.col_attrs_names = tmp
 
-                # According to the Loom file format specification, col_graphs
-                # and row_graphs are mandatory groups, but files created by
-                # Bioconductor LoomExperiment do not always have them:
-                # https://github.com/Bioconductor/LoomExperiment/issues/7
-                tmp = list(loom_file.get('col_graphs', {}).keys())
+                tmp = list(loom_file['col_graphs'].keys())
                 dataset.metadata.col_graphs_count = len(tmp)
                 dataset.metadata.col_graphs_names = tmp
 
-                tmp = list(loom_file.get('row_graphs', {}).keys())
+                tmp = list(loom_file['row_graphs'].keys())
                 dataset.metadata.row_graphs_count = len(tmp)
                 dataset.metadata.row_graphs_names = tmp
         except Exception as e:
@@ -904,7 +910,7 @@ class Anndata(H5):
     def sniff(self, filename):
         if super(Anndata, self).sniff(filename):
             try:
-                with h5py.File(filename, 'r') as f:
+                with h5py.File(filename) as f:
                     return all(attr in f for attr in ['X', 'obs', 'var'])
             except Exception:
                 return False
@@ -958,7 +964,7 @@ class Trr(GmxBinary):
     """
 
     file_ext = "trr"
-    magic_number = 1993  # magic number reference: https://github.com/gromacs/gromacs/blob/cec211b2c835ba6e8ea849fb1bf67d7fc19693a4/src/gromacs/fileio/trrio.cpp
+    magic_number = 1993  # magic number reference: https://github.com/gromacs/gromacs/blob/1c6639f0636d2ffc3d665686756d77227c8ae6d1/src/gromacs/fileio/trrio.cpp
 
 
 class Cpt(GmxBinary):
@@ -995,23 +1001,6 @@ class Xtc(GmxBinary):
     magic_number = 1995  # reference: https://github.com/gromacs/gromacs/blob/cec211b2c835ba6e8ea849fb1bf67d7fc19693a4/src/gromacs/fileio/xtcio.cpp
 
 
-class Edr(GmxBinary):
-    """
-    Class describing an edr file from the GROMACS suite
-
-    >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname('md.edr')
-    >>> Edr().sniff(fname)
-    True
-    >>> fname = get_test_fname('md.trr')
-    >>> Edr().sniff(fname)
-    False
-    """
-
-    file_ext = "edr"
-    magic_number = -55555  # reference: https://github.com/gromacs/gromacs/blob/cec211b2c835ba6e8ea849fb1bf67d7fc19693a4/src/gromacs/fileio/enxio.cpp
-
-
 class Biom2(H5):
     """
     Class describing a biom2 file (http://biom-format.org/documentation/biom_format.html)
@@ -1043,40 +1032,45 @@ class Biom2(H5):
         False
         """
         if super(Biom2, self).sniff(filename):
-            with h5py.File(filename, 'r') as f:
-                required_fields = {'id', 'format-url', 'type', 'generated-by', 'creation-date', 'nnz', 'shape'}
-                return required_fields.issubset(f.attrs.keys())
+            try:
+                f = h5py.File(filename)
+                attributes = list(dict(f.attrs.items()))
+                required_fields = ['id', 'format-url', 'type', 'generated-by', 'creation-date', 'nnz', 'shape']
+                return set(required_fields).issubset(attributes)
+            except Exception:
+                return False
         return False
 
     def set_meta(self, dataset, overwrite=True, **kwd):
         super(Biom2, self).set_meta(dataset, overwrite=overwrite, **kwd)
         try:
-            with h5py.File(dataset.file_name, 'r') as f:
-                attributes = f.attrs
+            f = h5py.File(dataset.file_name)
+            attributes = dict(f.attrs.items())
 
-                dataset.metadata.id = util.unicodify(attributes['id'])
-                dataset.metadata.format_url = util.unicodify(attributes['format-url'])
-                if 'format-version' in attributes:  # biom 2.1
-                    dataset.metadata.format_version = '.'.join(str(_) for _ in attributes['format-version'])
-                elif 'format' in attributes:  # biom 2.0
-                    dataset.metadata.format = util.unicodify(attributes['format'])
-                dataset.metadata.type = util.unicodify(attributes['type'])
-                dataset.metadata.shape = tuple((int(_) for _ in attributes['shape']))
-                dataset.metadata.generated_by = util.unicodify(attributes['generated-by'])
-                dataset.metadata.creation_date = util.unicodify(attributes['creation-date'])
-                dataset.metadata.nnz = int(attributes['nnz'])
+            dataset.metadata.id = attributes['id']
+            dataset.metadata.format_url = attributes['format-url']
+            if 'format-version' in attributes:  # biom 2.1
+                dataset.metadata.format_version = '.'.join(map(str, list(attributes['format-version'])))
+            elif 'format' in attributes:  # biom 2.0
+                dataset.metadata.format = attributes['format']
+            dataset.metadata.type = attributes['type']
+            dataset.metadata.shape = tuple(attributes['shape'])
+            dataset.metadata.generated_by = attributes['generated-by']
+            dataset.metadata.creation_date = attributes['creation-date']
+            dataset.metadata.nnz = int(attributes['nnz'])
+
         except Exception as e:
-            log.warning('%s, set_meta Exception: %s', self, util.unicodify(e))
+            log.warning('%s, set_meta Exception: %s', self, e)
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
             lines = ['Biom2 (HDF5) file']
             try:
-                with h5py.File(dataset.file_name) as f:
-                    for k, v in f.attrs.items():
-                        lines.append('%s:  %s' % (k, util.unicodify(v)))
+                f = h5py.File(dataset.file_name)
+                for k, v in dict(f.attrs).items():
+                    lines.append('%s:  %s' % (k, v))
             except Exception as e:
-                log.warning('%s, set_peek Exception: %s', self, util.unicodify(e))
+                log.warning('%s, set_peek Exception: %s', self, e)
             dataset.peek = '\n'.join(lines)
             dataset.blurb = nice_size(dataset.get_size())
         else:
@@ -1120,8 +1114,8 @@ class Cool(H5):
         if super(Cool, self).sniff(filename):
             keys = ['chroms', 'bins', 'pixels', 'indexes']
             with h5py.File(filename, 'r') as handle:
-                fmt = util.unicodify(handle.attrs.get('format'))
-                url = util.unicodify(handle.attrs.get('format-url'))
+                fmt = handle.attrs.get('format', None)
+                url = handle.attrs.get('format-url', None)
                 if fmt == MAGIC or url == URL:
                     if not all(name in handle.keys() for name in keys):
                         return False
@@ -1141,66 +1135,6 @@ class Cool(H5):
             return dataset.peek
         except Exception:
             return "Cool (HDF5) file (%s)." % (nice_size(dataset.get_size()))
-
-
-class MCool(H5):
-    """
-    Class describing the multi-resolution cool format (https://github.com/mirnylab/cooler)
-    """
-
-    file_ext = "mcool"
-
-    def sniff(self, filename):
-        """
-        >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname('matrix.mcool')
-        >>> MCool().sniff(fname)
-        True
-        >>> fname = get_test_fname('matrix.cool')
-        >>> MCool().sniff(fname)
-        False
-        >>> fname = get_test_fname('test.mz5')
-        >>> MCool().sniff(fname)
-        False
-        >>> fname = get_test_fname('wiggle.wig')
-        >>> MCool().sniff(fname)
-        False
-        >>> fname = get_test_fname('biom2_sparse_otu_table_hdf5.biom2')
-        >>> MCool().sniff(fname)
-        False
-        """
-
-        MAGIC = "HDF5::Cooler"
-        URL = "https://github.com/mirnylab/cooler"
-
-        if super(MCool, self).sniff(filename):
-            keys0 = ['resolutions']
-            with h5py.File(filename, 'r') as handle:
-                if not all(name in handle.keys() for name in keys0):
-                    return False
-                res0 = list(handle['resolutions'].keys())[0]
-                keys = ['chroms', 'bins', 'pixels', 'indexes']
-                fmt = util.unicodify(handle['resolutions'][res0].attrs.get('format'))
-                url = util.unicodify(handle['resolutions'][res0].attrs.get('format-url'))
-                if fmt == MAGIC or url == URL:
-                    if not all(name in handle['resolutions'][res0].keys() for name in keys):
-                        return False
-                    return True
-        return False
-
-    def set_peek(self, dataset, is_multi_byte=False):
-        if not dataset.dataset.purged:
-            dataset.peek = "Multi-resolution Cool (HDF5) file for storing genomic interaction data."
-            dataset.blurb = nice_size(dataset.get_size())
-        else:
-            dataset.peek = 'file does not exist'
-            dataset.blurb = 'file purged from disk'
-
-    def display_peek(self, dataset):
-        try:
-            return dataset.peek
-        except Exception:
-            return "MCool (HDF5) file (%s)." % (nice_size(dataset.get_size()))
 
 
 class Scf(Binary):
@@ -1396,22 +1330,6 @@ class SQlite(Binary):
         except Exception:
             return False
 
-    def sniff_table_names(self, filename, table_names):
-        # All table names should be in the schema
-        try:
-            conn = sqlite.connect(filename)
-            c = conn.cursor()
-            tables_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
-            result = c.execute(tables_query).fetchall()
-            result = [_[0] for _ in result]
-            for table_name in table_names:
-                if table_name not in result:
-                    return False
-            return True
-        except Exception as e:
-            log.warning('%s, sniff Exception: %s', self, e)
-        return False
-
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
             dataset.peek = "SQLite Database"
@@ -1473,9 +1391,20 @@ class GeminiSQLite(SQlite):
 
     def sniff(self, filename):
         if super(GeminiSQLite, self).sniff(filename):
-            table_names = ["gene_detailed", "gene_summary", "resources", "sample_genotype_counts",
-                           "sample_genotypes", "samples", "variant_impacts", "variants", "version"]
-            return self.sniff_table_names(filename, table_names)
+            gemini_table_names = ["gene_detailed", "gene_summary", "resources", "sample_genotype_counts", "sample_genotypes", "samples",
+                                  "variant_impacts", "variants", "version"]
+            try:
+                conn = sqlite.connect(filename)
+                c = conn.cursor()
+                tables_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+                result = c.execute(tables_query).fetchall()
+                result = [_[0] for _ in result]
+                for table_name in gemini_table_names:
+                    if table_name not in result:
+                        return False
+                return True
+            except Exception as e:
+                log.warning('%s, sniff Exception: %s', self, e)
         return False
 
     def set_peek(self, dataset, is_multi_byte=False):
@@ -1537,8 +1466,20 @@ class CuffDiffSQlite(SQlite):
     def sniff(self, filename):
         if super(CuffDiffSQlite, self).sniff(filename):
             # These tables should be in any CuffDiff SQLite output.
-            table_names = ['CDS', 'genes', 'isoforms', 'replicates', 'runInfo', 'samples', 'TSS']
-            return self.sniff_table_names(filename, table_names)
+            cuffdiff_table_names = ['CDS', 'genes', 'isoforms', 'replicates',
+                                    'runInfo', 'samples', 'TSS']
+            try:
+                conn = sqlite.connect(filename)
+                c = conn.cursor()
+                tables_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+                result = c.execute(tables_query).fetchall()
+                result = [_[0] for _ in result]
+                for table_name in cuffdiff_table_names:
+                    if table_name not in result:
+                        return False
+                return True
+            except Exception as e:
+                log.warning('%s, sniff Exception: %s', self, e)
         return False
 
     def set_peek(self, dataset, is_multi_byte=False):
@@ -1565,9 +1506,19 @@ class MzSQlite(SQlite):
 
     def sniff(self, filename):
         if super(MzSQlite, self).sniff(filename):
-            table_names = ["DBSequence", "Modification", "Peaks", "Peptide", "PeptideEvidence",
-                           "Score", "SearchDatabase", "Source", "SpectraData", "Spectrum", "SpectrumIdentification"]
-            return self.sniff_table_names(filename, table_names)
+            mz_table_names = ["DBSequence", "Modification", "Peaks", "Peptide", "PeptideEvidence", "Score", "SearchDatabase", "Source", "SpectraData", "Spectrum", "SpectrumIdentification"]
+            try:
+                conn = sqlite.connect(filename)
+                c = conn.cursor()
+                tables_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+                result = c.execute(tables_query).fetchall()
+                result = [_[0] for _ in result]
+                for table_name in mz_table_names:
+                    if table_name not in result:
+                        return False
+                return True
+            except Exception as e:
+                log.warning('%s, sniff Exception: %s', self, e)
         return False
 
 
@@ -1590,90 +1541,19 @@ class BlibSQlite(SQlite):
 
     def sniff(self, filename):
         if super(BlibSQlite, self).sniff(filename):
-            table_names = ['IonMobilityTypes', 'LibInfo', 'Modifications', 'RefSpectra',
-                           'RefSpectraPeakAnnotations', 'RefSpectraPeaks', 'ScoreTypes', 'SpectrumSourceFiles']
-            return self.sniff_table_names(filename, table_names)
-        return False
-
-
-class DlibSQlite(SQlite):
-    """
-    Class describing a Proteomics Spectral Library Sqlite database
-    DLIBs only have the "entries", "metadata", and "peptidetoprotein" tables populated.
-    ELIBs have the rest of the tables populated too, such as "peptidequants" or "peptidescores".
-
-    >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname('test.dlib')
-    >>> DlibSQlite().sniff(fname)
-    True
-    >>> fname = get_test_fname('interval.interval')
-    >>> DlibSQlite().sniff(fname)
-    False
-    """
-    MetadataElement(name="dlib_version", default='1.8', param=MetadataParameter, desc="Dlib Version",
-                    readonly=True, visible=True, no_value='1.8')
-    file_ext = "dlib"
-
-    def set_meta(self, dataset, overwrite=True, **kwd):
-        super(DlibSQlite, self).set_meta(dataset, overwrite=overwrite, **kwd)
-        try:
-            conn = sqlite.connect(dataset.file_name)
-            c = conn.cursor()
-            tables_query = "SELECT Value FROM metadata WHERE Key = 'version'"
-            version = c.execute(tables_query).fetchall()[0]
-            dataset.metadata.dlib_version = '%s' % (version)
-        except Exception as e:
-            log.warning('%s, set_meta Exception: %s', self, e)
-
-    def sniff(self, filename):
-        if super(DlibSQlite, self).sniff(filename):
-            table_names = ['entries', 'metadata', 'peptidetoprotein']
-            return self.sniff_table_names(filename, table_names)
-        return False
-
-
-class ElibSQlite(SQlite):
-    """
-    Class describing a Proteomics Chromatagram Library Sqlite database
-    DLIBs only have the "entries", "metadata", and "peptidetoprotein" tables populated.
-    ELIBs have the rest of the tables populated too, such as "peptidequants" or "peptidescores".
-
-    >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname('test.elib')
-    >>> ElibSQlite().sniff(fname)
-    True
-    >>> fname = get_test_fname('test.dlib')
-    >>> ElibSQlite().sniff(fname)
-    False
-    """
-    MetadataElement(name="version", default='0.1.14', param=MetadataParameter, desc="Elib Version",
-                    readonly=True, visible=True, no_value='0.1.14')
-    file_ext = "elib"
-
-    def set_meta(self, dataset, overwrite=True, **kwd):
-        super(ElibSQlite, self).set_meta(dataset, overwrite=overwrite, **kwd)
-        try:
-            conn = sqlite.connect(dataset.file_name)
-            c = conn.cursor()
-            tables_query = "SELECT Value FROM metadata WHERE Key = 'version'"
-            version = c.execute(tables_query).fetchall()[0]
-            dataset.metadata.dlib_version = '%s' % (version)
-        except Exception as e:
-            log.warning('%s, set_meta Exception: %s', self, e)
-
-    def sniff(self, filename):
-        if super(ElibSQlite, self).sniff(filename):
-            table_names = ['entries', 'fragmentquants', 'metadata', 'peptidelocalizations', 'peptidequants',
-                           'peptidescores', 'peptidetoprotein', 'proteinscores', 'retentiontimes']
-            if self.sniff_table_names(filename, table_names):
-                try:
-                    conn = sqlite.connect(filename)
-                    c = conn.cursor()
-                    row_query = "SELECT count(*) FROM peptidescores"
-                    count = c.execute(row_query).fetchone()[0]
-                    return int(count) > 0
-                except Exception as e:
-                    log.warning('%s, sniff Exception: %s', self, e)
+            blib_table_names = ['IonMobilityTypes', 'LibInfo', 'Modifications', 'RefSpectra', 'RefSpectraPeakAnnotations', 'RefSpectraPeaks', 'ScoreTypes', 'SpectrumSourceFiles']
+            try:
+                conn = sqlite.connect(filename)
+                c = conn.cursor()
+                tables_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+                result = c.execute(tables_query).fetchall()
+                result = [_[0] for _ in result]
+                for table_name in blib_table_names:
+                    if table_name not in result:
+                        return False
+                return True
+            except Exception as e:
+                log.warning('%s, sniff Exception: %s', self, e)
         return False
 
 
@@ -1696,9 +1576,19 @@ class IdpDB(SQlite):
 
     def sniff(self, filename):
         if super(IdpDB, self).sniff(filename):
-            table_names = ["About", "Analysis", "AnalysisParameter", "PeptideSpectrumMatch",
-                           "Spectrum", "SpectrumSource"]
-            return self.sniff_table_names(filename, table_names)
+            mz_table_names = ["About", "Analysis", "AnalysisParameter", "PeptideSpectrumMatch", "Spectrum", "SpectrumSource"]
+            try:
+                conn = sqlite.connect(filename)
+                c = conn.cursor()
+                tables_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+                result = c.execute(tables_query).fetchall()
+                result = [_[0] for _ in result]
+                for table_name in mz_table_names:
+                    if table_name not in result:
+                        return False
+                return True
+            except Exception as e:
+                log.warning('%s, sniff Exception: %s', self, e)
         return False
 
     def set_peek(self, dataset, is_multi_byte=False):
@@ -1738,9 +1628,14 @@ class GAFASQLite(SQlite):
             log.warning("%s, set_meta Exception: %s", self, e)
 
     def sniff(self, filename):
-        if super(IdpDB, self).sniff(filename):
-            table_names = frozenset({'gene', 'gene_family', 'gene_family_member', 'meta', 'transcript'})
-            return self.sniff_table_names(filename, table_names)
+        if super(GAFASQLite, self).sniff(filename):
+            gafa_table_names = frozenset(['gene', 'gene_family', 'gene_family_member', 'meta', 'transcript'])
+            conn = sqlite.connect(filename)
+            c = conn.cursor()
+            tables_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+            results = c.execute(tables_query).fetchall()
+            found_table_names = frozenset(_[0] for _ in results)
+            return gafa_table_names <= found_table_names
         return False
 
 
@@ -2028,14 +1923,17 @@ class PostgresqlArchive(CompressedArchive):
             if dataset and tarfile.is_tarfile(dataset.file_name):
                 with tarfile.open(dataset.file_name, 'r') as temptar:
                     pg_version_file = temptar.extractfile('postgresql/db/PG_VERSION')
-                    dataset.metadata.version = util.unicodify(pg_version_file.read()).strip()
+                    dataset.metadata.version = pg_version_file.read().strip()
         except Exception as e:
-            log.warning('%s, set_meta Exception: %s', self, util.unicodify(e))
+            log.warning('%s, set_meta Exception: %s', self, e)
 
     def sniff(self, filename):
         if filename and tarfile.is_tarfile(filename):
-            with tarfile.open(filename, 'r') as temptar:
-                return 'postgresql/db/PG_VERSION' in temptar.getnames()
+            try:
+                with tarfile.open(filename, 'r') as temptar:
+                    return 'postgresql/db/PG_VERSION' in temptar.getnames()
+            except Exception as e:
+                log.warning('%s, sniff Exception: %s', self, e)
         return False
 
     def set_peek(self, dataset, is_multi_byte=False):
@@ -2168,7 +2066,7 @@ class SearchGuiArchive(CompressedArchive):
                 with zipfile.ZipFile(dataset.file_name) as tempzip:
                     if 'searchgui.properties' in tempzip.namelist():
                         with tempzip.open('searchgui.properties') as fh:
-                            for line in io.TextIOWrapper(fh):
+                            for line in fh:
                                 if line.startswith('searchgui.version'):
                                     version = line.split('=')[1].strip()
                                     dataset.metadata.searchgui_version = version
