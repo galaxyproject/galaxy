@@ -5,7 +5,8 @@
                 class="node-destroy py-0 float-right"
                 variant="primary"
                 size="sm"
-                aria-label="clone node"
+                aria-label="destroy node"
+                v-b-tooltip.hover title="Remove"
                 @click="onDestroy"
             >
                 <i class="fa fa-times" />
@@ -29,6 +30,7 @@
                 variant="primary"
                 size="sm"
                 aria-label="clone node"
+                v-b-tooltip.hover title="Duplicate"
                 @click="onClone"
             >
                 <i class="fa fa-files-o" />
