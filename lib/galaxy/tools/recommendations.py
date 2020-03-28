@@ -144,7 +144,7 @@ class ToolRecommendations():
                 if t_id == child and score > 0.0 and child in last_compatible_tools and child not in self.deprecated_tools:
                     full_tool_id = self.all_tools[t_id][0]
                     pred_input_extensions, _ = self.get_tool_extensions(trans, full_tool_id)
-                    c_dict["name"] = self.all_tools[t_id][1] + " (" + str(score) + "%)"
+                    c_dict["name"] = self.all_tools[t_id][1]
                     c_dict["tool_id"] = full_tool_id
                     c_dict["i_extensions"] = list(set(pred_input_extensions))
                     prediction_data["children"].append(c_dict)
