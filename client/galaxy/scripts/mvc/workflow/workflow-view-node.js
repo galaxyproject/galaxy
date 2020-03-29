@@ -74,8 +74,9 @@ export class NodeView {
             input: input,
             nodeView: this,
         });
-        var ib = inputView.$el;
-        body.append(ib.prepend(terminalView.el));
+        var $inputView = $(`<div class="form-row dataRow input-data-row"/>`);
+        $inputView.html(inputView.label);
+        body.append($inputView.prepend(terminalView.el));
         return terminalView;
     }
 
@@ -99,6 +100,15 @@ export class NodeView {
             terminalElement: terminalView.el,
             nodeView: this,
         });
+        return outputView;
+    }
+
+    addDataOutput(output) {
+        const terminalView = this.terminalViewForOutput(output);
+        const outputView = this.outputViewforOutput(output, terminalView);
+        this.outputViews[output.name] = outputView;
+        const $outputView = $(`<div class="form-row dataRow"/>`);
+        $outputView.html(outputView.label);
         outputView.calloutView = null;
         if (["tool", "subworkflow"].indexOf(this.node.type) >= 0) {
             const calloutView = new OutputCalloutView(this.app, {
@@ -107,16 +117,9 @@ export class NodeView {
                 node: this.node,
             });
             outputView.calloutView = calloutView;
-            outputView.$el.prepend(calloutView.$el);
+            $outputView.prepend(calloutView.$el);
         }
-        return outputView;
-    }
-
-    addDataOutput(output) {
-        const terminalView = this.terminalViewForOutput(output);
-        const outputView = this.outputViewforOutput(output, terminalView);
-        this.outputViews[output.name] = outputView;
-        this.node_body.append(outputView.$el.append(terminalView.el));
+        this.node_body.append($outputView.append(terminalView.el));
     }
 
     redrawWorkflowOutputs() {

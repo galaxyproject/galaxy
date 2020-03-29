@@ -5,36 +5,30 @@ export class DataInputView {
         this.input = options.input;
         this.terminalElement = options.terminalElement;
         const input = options.input;
-        const label = input.label || input.name;
-        this.$el = $(`<div class="form-row dataRow input-data-row"/>`);
-        this.$el.attr("name", this.input.name).html(label);
+        this.label = input.label || input.name;
     }
 }
 
 export class DataOutputView {
     constructor(options = {}) {
-        this.$el = $(`<div class="form-row dataRow"/>`);
         this.output = options.output;
         this.terminalElement = options.terminalElement;
         const output = this.output;
-        let label = output.label || output.name;
         const isInput = output.extensions.indexOf("input") >= 0;
         const datatype = output.force_datatype || output.extensions.join(", ");
+        this.label = output.label || output.name;
         if (!isInput) {
-            label = `${label} (${datatype})`;
+            this.label = `${this.label} (${datatype})`;
         }
-        this.$el.html(label);
     }
 }
 
 export class ParameterOutputView {
     constructor(options = {}) {
-        this.$el = $(`<div class="form-row dataRow"/>`);
         this.output = options.output;
         this.terminalElement = options.terminalElement;
         const output = this.output;
-        const label = output.label || output.name;
-        this.$el.html(label);
+        this.label = output.label || output.name;
     }
 }
 
