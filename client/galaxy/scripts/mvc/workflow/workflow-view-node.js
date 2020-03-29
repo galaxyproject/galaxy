@@ -1,7 +1,6 @@
 import $ from "jquery";
 import _ from "libs/underscore";
 import TerminalViews from "mvc/workflow/workflow-view-terminals";
-import { DataInputView, DataOutputView, ParameterOutputView } from "mvc/workflow/workflow-view-data";
 import { mountWorkflowNodeOutput } from "components/Workflow/Editor/mount";
 
 export class NodeView {
@@ -70,10 +69,11 @@ export class NodeView {
         }
         this.terminalViews[input.name] = terminalView;
         var terminalElement = terminalView.el;
-        var inputView = new DataInputView({
+        var inputView = {
             terminalElement: terminalElement,
             input: input,
-        });
+            label: input.label || input.name
+        }
         var $inputView = $(`<div class="form-row dataRow input-data-row"/>`);
         $inputView.html(inputView.label);
         body.append($inputView.prepend(terminalView.el));
@@ -94,11 +94,17 @@ export class NodeView {
     }
 
     outputViewforOutput(output, terminalView) {
-        const outputViewClass = output.parameter ? ParameterOutputView : DataOutputView;
-        const outputView = new outputViewClass({
+        let label = output.label || output.name;
+        const showExtensions = output.extensions && output.extensions.indexOf("input") == 0;
+        if (showExtensions) {
+            const datatype = output.force_datatype || output.extensions.join(", ");
+            label = `${this.label} (${datatype})`;
+        }
+        const outputView = {
             output: output,
             terminalElement: terminalView.el,
-        });
+            label: label,
+        }
         return outputView;
     }
 
