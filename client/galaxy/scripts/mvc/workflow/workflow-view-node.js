@@ -122,6 +122,9 @@ export class NodeView {
     redrawWorkflowOutputs() {
         _.each(this.outputViews, (outputView) => {
             outputView.redrawWorkflowOutput();
+            if (outputView.calloutView) {
+                outputView.calloutView.render();
+            }
         });
     }
 
