@@ -4,7 +4,6 @@ export class DataInputView {
     constructor(options = {}) {
         this.input = options.input;
         this.terminalElement = options.terminalElement;
-        this.nodeView = options.nodeView;
         const input = options.input;
         const label = input.label || input.name;
         this.$el = $(`<div class="form-row dataRow input-data-row"/>`);
@@ -17,7 +16,6 @@ export class DataInputView {
                 display: "none",
             });
             $("body").append(this.el);
-            this.nodeView.updateMaxWidth(this.$el.outerWidth());
             this.$el.css({
                 position: "",
                 left: "",
@@ -34,7 +32,6 @@ export class DataOutputView {
         this.$el = $(`<div class="form-row dataRow"/>`);
         this.output = options.output;
         this.terminalElement = options.terminalElement;
-        this.nodeView = options.nodeView;
         const output = this.output;
         let label = output.label || output.name;
         const isInput = output.extensions.indexOf("input") >= 0;
@@ -50,7 +47,6 @@ export class DataOutputView {
             display: "none",
         });
         $("body").append(this.el);
-        this.nodeView.updateMaxWidth(this.$el.outerWidth() + 17);
         this.$el
             .css({
                 position: "",
@@ -67,7 +63,6 @@ export class ParameterOutputView {
         this.$el = $(`<div class="form-row dataRow"/>`);
         this.output = options.output;
         this.terminalElement = options.terminalElement;
-        this.nodeView = options.nodeView;
         const output = this.output;
         const label = output.label || output.name;
         this.$el.html(label);
@@ -78,7 +73,6 @@ export class ParameterOutputView {
             display: "none",
         });
         $("body").append(this.el);
-        this.nodeView.updateMaxWidth(this.$el.outerWidth() + 17);
         this.$el
             .css({
                 position: "",

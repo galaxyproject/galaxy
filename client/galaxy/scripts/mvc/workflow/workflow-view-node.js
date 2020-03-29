@@ -8,7 +8,6 @@ export class NodeView {
         this.app = app;
         this.$el = options.$el;
         this.node = options.node;
-        this.output_width = Math.max(150, this.$el.width());
         this.node_body = this.$el.find(".node-body");
         this.node_body.find("div").remove();
         this.newInputsDiv().appendTo(this.node_body);
@@ -19,7 +18,6 @@ export class NodeView {
     render() {
         this.renderLabel();
         this.renderErrors();
-        this.$el.css("width", Math.min(250, Math.max(this.$el.width(), this.output_width)));
     }
 
     renderLabel() {
@@ -38,10 +36,6 @@ export class NodeView {
 
     newInputsDiv() {
         return $("<div/>").addClass("inputs");
-    }
-
-    updateMaxWidth(newWidth) {
-        this.output_width = Math.max(this.output_width, newWidth);
     }
 
     addRule() {
