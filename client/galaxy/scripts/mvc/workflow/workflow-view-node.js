@@ -1,5 +1,4 @@
 import $ from "jquery";
-import _ from "libs/underscore";
 import TerminalViews from "mvc/workflow/workflow-view-terminals";
 import { mountWorkflowNodeOutput } from "components/Workflow/Editor/mount";
 
@@ -119,15 +118,6 @@ export class NodeView {
             });
         }
         this.node_body.append($outputView.append(terminalView.el));
-    }
-
-    redrawWorkflowOutputs() {
-        _.each(this.outputViews, (outputView) => {
-            /*outputView.redrawWorkflowOutput();
-            if (outputView.calloutView) {
-                outputView.calloutView.render();
-            }*/
-        });
     }
 
     updateDataOutput(output) {
