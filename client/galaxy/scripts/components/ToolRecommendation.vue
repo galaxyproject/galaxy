@@ -1,5 +1,5 @@
 <template>
-    <div id="tool-recommendation" class="tool-recommendation-view">
+    <div>
         <div v-if="!deprecated && showMessage" class="infomessagelarge">
             <h4>Tool recommendation</h4>
             You have used {{ getToolId }} tool. For further analysis, you could try using the following/recommended
@@ -10,6 +10,8 @@
         </div>
         <div v-else-if="deprecated" class="warningmessagelarge">
             You have used {{ getToolId }} tool. {{ deprecatedMessage }}
+        </div>
+        <div id="tool-recommendation" class="tool-recommendation-view">
         </div>
     </div>
 </template>
@@ -103,24 +105,21 @@ export default {
             });
         },
         renderD3Tree(predictedTools) {
+            let i = 0;
+            let root = null;
             const duration = 750;
             const maxTextLength = 20;
             const svg = d3.select("#tool-recommendation").append("svg").attr("class", "tree-size").append("g");
-            let i = 0;
-            let root = null;
-            let translateX = 0;
-
             const gElem = svg[0][0];
             const svgElem = gElem.parentNode;
             const clientH = svgElem.clientHeight;
             const clientW = svgElem.clientWidth;
-            translateX = parseInt(clientW * 0.33);
+            const translateX = parseInt(clientW * 0.15);
 
-            svgElem.setAttribute("viewBox", -translateX + " 0 " + clientW + " " + clientH);
+            svgElem.setAttribute("viewBox", -translateX +  " 0 " + (0.5 * clientW) + " " + clientH);
             svgElem.setAttribute("preserveAspectRatio", "xMidYMid meet");
 
             const tree = d3.layout.tree().size([clientH, clientW]);
-
             const diagonal = d3.svg.diagonal().projection((d) => {
                 return [d.y, d.x];
             });
@@ -130,7 +129,7 @@ export default {
                 const links = tree.links(nodes);
                 // Normalize for fixed-depth.
                 nodes.forEach((d) => {
-                    d.y = d.depth * (clientW / 5);
+                    d.y = d.depth * (clientW / 10);
                 });
                 // Update the nodes
                 const node = svg.selectAll("g.node").data(nodes, (d) => {
@@ -172,7 +171,7 @@ export default {
                     .attr("transform", (d) => {
                         return "translate(" + d.y + "," + d.x + ")";
                     });
-                nodeUpdate.select("circle").attr("r", 3.5);
+                nodeUpdate.select("circle").attr("r", 2.5);
                 // Transition exiting nodes to the parent's new position.
                 node.exit()
                     .transition()
@@ -233,7 +232,7 @@ export default {
                 }
             };
             root = predictedTools;
-            root.x0 = clientH / 2;
+            root.x0 = parseInt(clientH / 2);
             root.y0 = 0;
             root.children.forEach(collapse);
             update(root);

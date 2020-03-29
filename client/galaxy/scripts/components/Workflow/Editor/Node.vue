@@ -51,7 +51,7 @@ import WorkflowIcons from "components/Workflow/icons";
 import { getModule } from "./services";
 import LoadingSpan from "components/LoadingSpan";
 import { getGalaxyInstance } from "app";
-import WorkflowRecommendations from "components/Workflow/Editor/WorkflowRecommendations";
+import WorkflowRecommendations from "components/Workflow/Editor/Recommendations";
 
 Vue.use(BootstrapVue);
 
@@ -100,7 +100,7 @@ export default {
         isEnabled() {
             const Galaxy = getGalaxyInstance();
             const isRecommendationEnabled = Galaxy.config.enable_tool_recommendations;
-            if (isRecommendationEnabled === true || isRecommendationEnabled === "true") {
+            if (isRecommendationEnabled === true) {
                 return true;
             }
             return false;

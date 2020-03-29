@@ -1659,17 +1659,19 @@ body.reports {
             fill: $brand-primary;
             stroke: $brand-primary;
         }
+        text {
+            font-size: 0.4rem;
+        }
     }
 
     .tree-size {
         width: 100%;
-        height: 50%;
     }
 
     .link {
         fill: none;
         stroke: $brand-primary;
-        stroke-width: 4;
+        stroke-width: 1;
     }
 }
 
