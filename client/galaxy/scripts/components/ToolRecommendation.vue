@@ -11,8 +11,7 @@
         <div v-else-if="deprecated" class="warningmessagelarge">
             You have used {{ getToolId }} tool. {{ deprecatedMessage }}
         </div>
-        <div id="tool-recommendation" class="tool-recommendation-view">
-        </div>
+        <div id="tool-recommendation" class="tool-recommendation-view"></div>
     </div>
 </template>
 
@@ -116,7 +115,7 @@ export default {
             const clientW = svgElem.clientWidth;
             const translateX = parseInt(clientW * 0.15);
 
-            svgElem.setAttribute("viewBox", -translateX +  " 0 " + (0.5 * clientW) + " " + clientH);
+            svgElem.setAttribute("viewBox", -translateX + " 0 " + 0.5 * clientW + " " + clientH);
             svgElem.setAttribute("preserveAspectRatio", "xMidYMid meet");
 
             const tree = d3.layout.tree().size([clientH, clientW]);
