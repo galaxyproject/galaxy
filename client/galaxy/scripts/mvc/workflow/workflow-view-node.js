@@ -93,24 +93,19 @@ export class NodeView {
         });
     }
 
-    outputViewforOutput(output, terminalView) {
+    addDataOutput(output) {
+        const terminalView = this.terminalViewForOutput(output);
         let label = output.label || output.name;
-        const showExtensions = output.extensions && output.extensions.indexOf("input") == 0;
+        const showExtensions = output.extensions && output.extensions.length > 0 && output.extensions.indexOf("input") == -1;
         if (showExtensions) {
             const datatype = output.force_datatype || output.extensions.join(", ");
-            label = `${this.label} (${datatype})`;
+            label = `${label} (${datatype})`;
         }
         const outputView = {
             output: output,
             terminalElement: terminalView.el,
             label: label,
         }
-        return outputView;
-    }
-
-    addDataOutput(output) {
-        const terminalView = this.terminalViewForOutput(output);
-        const outputView = this.outputViewforOutput(output, terminalView);
         this.outputViews[output.name] = outputView;
         const $outputView = $(`<div class="form-row dataRow"/>`);
         $outputView.html(outputView.label);
