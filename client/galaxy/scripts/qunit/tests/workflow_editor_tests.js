@@ -600,22 +600,6 @@ QUnit.test("tool error styling", function (assert) {
     assert.ok(this.view.$el.hasClass("node-error"));
 });
 
-QUnit.test("rendering correct width", function (assert) {
-    // Default width is 150
-    this.view.render();
-    assert.equal(this.view.$el.width(), 150);
-
-    // If any data rows are greater, it will update
-    this.view.updateMaxWidth(200);
-    this.view.render();
-    assert.equal(this.view.$el.width(), 200);
-
-    // However 250 is the maximum width of node
-    this.view.updateMaxWidth(300);
-    this.view.render();
-    assert.equal(this.view.$el.width(), 250);
-});
-
 QUnit.test("replacing terminal on data input update preserves connections", function (assert) {
     var connector = this.connectAttachedTerminal("txt", "txt");
     var newElement = $("<div class='inputs'></div>");

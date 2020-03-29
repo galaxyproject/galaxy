@@ -71,8 +71,8 @@ export class NodeView {
         var inputView = {
             terminalElement: terminalElement,
             input: input,
-            label: input.label || input.name
-        }
+            label: input.label || input.name,
+        };
         var $inputView = $(`<div class="form-row dataRow input-data-row"/>`);
         $inputView.html(inputView.label);
         body.append($inputView.prepend(terminalView.el));
@@ -95,7 +95,8 @@ export class NodeView {
     addDataOutput(output) {
         const terminalView = this.terminalViewForOutput(output);
         let label = output.label || output.name;
-        const showExtensions = output.extensions && output.extensions.length > 0 && output.extensions.indexOf("input") == -1;
+        const showExtensions =
+            output.extensions && output.extensions.length > 0 && output.extensions.indexOf("input") == -1;
         if (showExtensions) {
             const datatype = output.force_datatype || output.extensions.join(", ");
             label = `${label} (${datatype})`;
@@ -104,7 +105,7 @@ export class NodeView {
             output: output,
             terminalElement: terminalView.el,
             label: label,
-        }
+        };
         this.outputViews[output.name] = outputView;
         const $outputView = $(`<div class="form-row dataRow"/>`);
         $outputView.html(outputView.label);
