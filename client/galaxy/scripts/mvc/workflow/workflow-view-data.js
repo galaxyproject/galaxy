@@ -37,23 +37,12 @@ export class DataOutputView {
         this.nodeView = options.nodeView;
         const output = this.output;
         let label = output.label || output.name;
-        const node = this.nodeView.node;
         const isInput = output.extensions.indexOf("input") >= 0;
         const datatype = output.force_datatype || output.extensions.join(", ");
         if (!isInput) {
             label = `${label} (${datatype})`;
         }
         this.$el.html(label);
-        this.calloutView = null;
-        if (["tool", "subworkflow"].indexOf(node.type) >= 0) {
-            const calloutView = new OutputCalloutView(app, {
-                label: label,
-                output: output,
-                node: node,
-            });
-            this.calloutView = calloutView;
-            this.$el.prepend(calloutView.$el);
-        }
         this.$el.css({
             position: "absolute",
             left: -1000,
@@ -81,18 +70,7 @@ export class ParameterOutputView {
         this.nodeView = options.nodeView;
         const output = this.output;
         const label = output.label || output.name;
-        const node = this.nodeView.node;
         this.$el.html(label);
-        this.calloutView = null;
-        if (["tool", "subworkflow"].indexOf(node.type) >= 0) {
-            const calloutView = new OutputCalloutView(app, {
-                label: label,
-                output: output,
-                node: node,
-            });
-            this.calloutView = calloutView;
-            this.$el.append(calloutView.$el);
-        }
         this.$el.css({
             position: "absolute",
             left: -1000,
