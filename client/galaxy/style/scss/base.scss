@@ -1675,20 +1675,10 @@ body.reports {
     }
 }
 
-.wf-recommendation-view {
+.workflow-recommendations {
     display: block;
-    .wf-tools-dialog {
-        width: 20%;
-    }
-    .wf-tools-body {
-        overflow: auto;
-        height: 50%;
-    }
-    .wf-tools-background {
-        background: $brand-primary;
-        color: $white;
-    }
-    .wf-tool-content {
-        border: solid 1px $brand-primary;
+    .header-background {
+        border-bottom: solid 1px $brand-primary;
+        margin-bottom: 0.5rem;
     }
 }
