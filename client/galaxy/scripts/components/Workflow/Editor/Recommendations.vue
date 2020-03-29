@@ -1,9 +1,13 @@
 <template>
     <div class="workflow-recommendations">
+        <div class="header-background">
+            <h4> {{ popoverHeaderText }} </h4>
+        </div>
         <LoadingSpan v-if="showLoading" message="Loading recommendations" />
         <div v-if="compatibleTools.length > 0 && !isDeprecated">
             <div v-for="tool in compatibleTools" :key="tool.id">
-                <a href="#" title="Open tool" :id="tool.id" @click="$emit('onCreate', tool.id)">
+                <i class="fa mr-1 fa-wrench"></i>
+                <a href="#" title="Open tool" :id="tool.id" @click="$emit('onCreate', tool.id, $event)">
                     {{ tool.name }}
                 </a>
             </div>
@@ -36,6 +40,7 @@ export default {
         return {
             compatibleTools: [],
             isDeprecated: false,
+            popoverHeaderText: _l("Tool recommendations"),
             noRecommendationsMessage: _l("No tool recommendations"),
             deprecatedMessage: "",
             showLoading: true,

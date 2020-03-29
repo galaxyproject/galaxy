@@ -113,7 +113,9 @@ export default {
         onClone() {
             this.node.clone();
         },
-        onCreate(toolId) {
+        onCreate(toolId, event) {
+            console.log(toolId);
+            console.log(event);
             const requestData = {
                 tool_id: toolId,
                 type: "tool",
@@ -122,6 +124,7 @@ export default {
             getModule(requestData).then((response) => {
                 var node = this.node.app.create_node("tool", response.name, toolId);
                 this.node.app.set_node(node, response);
+                event.srcElement.getRootNode().remove();
             });
         },
     },
