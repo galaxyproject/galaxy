@@ -1,7 +1,7 @@
 import $ from "jquery";
 import _ from "libs/underscore";
 import TerminalViews from "mvc/workflow/workflow-view-terminals";
-import { DataInputView, DataOutputView, ParameterOutputView, OutputCalloutView } from "mvc/workflow/workflow-view-data";
+import { DataInputView, DataOutputView, ParameterOutputView } from "mvc/workflow/workflow-view-data";
 import { mountWorkflowNodeOutput } from "components/Workflow/Editor/mount";
 
 export class NodeView {
