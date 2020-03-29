@@ -8,22 +8,6 @@ export class DataInputView {
         const label = input.label || input.name;
         this.$el = $(`<div class="form-row dataRow input-data-row"/>`);
         this.$el.attr("name", this.input.name).html(label);
-        if (!options.skipResize) {
-            this.$el.css({
-                position: "absolute",
-                left: -1000,
-                top: -1000,
-                display: "none",
-            });
-            $("body").append(this.el);
-            this.$el.css({
-                position: "",
-                left: "",
-                top: "",
-                display: "",
-            });
-            this.$el.remove();
-        }
     }
 }
 
@@ -40,21 +24,6 @@ export class DataOutputView {
             label = `${label} (${datatype})`;
         }
         this.$el.html(label);
-        this.$el.css({
-            position: "absolute",
-            left: -1000,
-            top: -1000,
-            display: "none",
-        });
-        $("body").append(this.el);
-        this.$el
-            .css({
-                position: "",
-                left: "",
-                top: "",
-                display: "",
-            })
-            .detach();
     }
 }
 
@@ -66,21 +35,6 @@ export class ParameterOutputView {
         const output = this.output;
         const label = output.label || output.name;
         this.$el.html(label);
-        this.$el.css({
-            position: "absolute",
-            left: -1000,
-            top: -1000,
-            display: "none",
-        });
-        $("body").append(this.el);
-        this.$el
-            .css({
-                position: "",
-                left: "",
-                top: "",
-                display: "",
-            })
-            .detach();
     }
 }
 

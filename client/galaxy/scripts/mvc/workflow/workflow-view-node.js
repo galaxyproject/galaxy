@@ -43,12 +43,8 @@ export class NodeView {
     }
 
     addDataInput(input, body) {
-        var skipResize = true;
         if (!body) {
             body = this.$el.find(".inputs");
-            // initial addition to node - resize input to help calculate node
-            // width.
-            skipResize = false;
         }
         var terminalView = this.terminalViews[input.name];
         var terminalViewClass = TerminalViews.InputTerminalView;
@@ -77,7 +73,6 @@ export class NodeView {
             terminalElement: terminalElement,
             input: input,
             nodeView: this,
-            skipResize: skipResize,
         });
         var ib = inputView.$el;
         body.append(ib.prepend(terminalView.el));
