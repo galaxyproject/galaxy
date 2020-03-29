@@ -71,11 +71,6 @@ export class DataOutputView {
             })
             .detach();
     }
-    redrawWorkflowOutput() {
-        if (this.calloutView) {
-            this.calloutView.render();
-        }
-    }
 }
 
 export class ParameterOutputView {
@@ -114,11 +109,6 @@ export class ParameterOutputView {
                 display: "",
             })
             .detach();
-    }
-    redrawWorkflowOutput() {
-        if (this.calloutView) {
-            this.calloutView.render();
-        }
     }
 }
 

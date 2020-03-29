@@ -56,7 +56,9 @@ export class Node {
         if (changed) {
             this.app.updateOutputLabel(oldLabel, label);
             this.markChanged();
-            this.nodeView.redrawWorkflowOutputs();
+            if (this.nodeView.calloutView) {
+                this.nodeView.calloutView.render();
+            }
         }
         return changed;
     }
