@@ -2,6 +2,7 @@ import $ from "jquery";
 import _ from "libs/underscore";
 import TerminalViews from "mvc/workflow/workflow-view-terminals";
 import { DataInputView, DataOutputView, ParameterOutputView, OutputCalloutView } from "mvc/workflow/workflow-view-data";
+import { mountWorkflowNodeOutput } from "components/Workflow/Editor/mount";
 
 export class NodeView {
     constructor(app, options) {
@@ -107,25 +108,24 @@ export class NodeView {
         this.outputViews[output.name] = outputView;
         const $outputView = $(`<div class="form-row dataRow"/>`);
         $outputView.html(outputView.label);
-        outputView.calloutView = null;
         if (["tool", "subworkflow"].indexOf(this.node.type) >= 0) {
-            const calloutView = new OutputCalloutView(this.app, {
-                label: this.node.label,
-                output: output,
+            const container = document.createElement("div");
+            $outputView.prepend(container);
+            mountWorkflowNodeOutput(container, {
+                outputName: output.name,
                 node: this.node,
+                manager: this.app
             });
-            outputView.calloutView = calloutView;
-            $outputView.prepend(calloutView.$el);
         }
         this.node_body.append($outputView.append(terminalView.el));
     }
 
     redrawWorkflowOutputs() {
         _.each(this.outputViews, (outputView) => {
-            outputView.redrawWorkflowOutput();
+            /*outputView.redrawWorkflowOutput();
             if (outputView.calloutView) {
                 outputView.calloutView.render();
-            }
+            }*/
         });
     }
 
