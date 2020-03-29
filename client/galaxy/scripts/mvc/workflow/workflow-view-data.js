@@ -12,7 +12,7 @@ export class DataInputView {
 }
 
 export class DataOutputView {
-    constructor(app, options = {}) {
+    constructor(options = {}) {
         this.$el = $(`<div class="form-row dataRow"/>`);
         this.output = options.output;
         this.terminalElement = options.terminalElement;
@@ -28,7 +28,7 @@ export class DataOutputView {
 }
 
 export class ParameterOutputView {
-    constructor(app, options = {}) {
+    constructor(options = {}) {
         this.$el = $(`<div class="form-row dataRow"/>`);
         this.output = options.output;
         this.terminalElement = options.terminalElement;
