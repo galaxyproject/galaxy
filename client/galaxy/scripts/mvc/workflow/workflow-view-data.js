@@ -14,9 +14,9 @@ export class DataOutputView {
         this.output = options.output;
         this.terminalElement = options.terminalElement;
         const output = this.output;
+        this.label = output.label || output.name;
         const isInput = output.extensions.indexOf("input") >= 0;
         const datatype = output.force_datatype || output.extensions.join(", ");
-        this.label = output.label || output.name;
         if (!isInput) {
             this.label = `${this.label} (${datatype})`;
         }
