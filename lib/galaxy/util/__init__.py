@@ -32,6 +32,7 @@ from os.path import relpath
 from xml.etree import ElementInclude, ElementTree
 from xml.etree.ElementTree import ParseError
 
+import requests
 try:
     import grp
 except ImportError:
@@ -47,11 +48,7 @@ from six.moves import (
     xrange,
     zip
 )
-from six.moves.urllib import (
-    parse as urlparse,
-    request as urlrequest
-)
-from six.moves.urllib.request import urlopen
+from six.moves.urllib import parse as urlparse
 
 try:
     import docutils.core as docutils_core
@@ -1675,32 +1672,24 @@ def build_url(base_url, port=80, scheme='http', pathspec=None, params=None, dose
     return url
 
 
-def url_get(base_url, password_mgr=None, pathspec=None, params=None):
+def url_get(base_url, auth=None, pathspec=None, params=None):
     """Make contact with the uri provided and return any contents."""
-    # Uses system proxy settings if they exist.
-    proxy = urlrequest.ProxyHandler()
-    if password_mgr is not None:
-        auth = urlrequest.HTTPDigestAuthHandler(password_mgr)
-        urlopener = urlrequest.build_opener(proxy, auth)
-    else:
-        urlopener = urlrequest.build_opener(proxy)
-    urlrequest.install_opener(urlopener)
     full_url = build_url(base_url, pathspec=pathspec, params=params)
-    response = urlopener.open(full_url)
-    content = response.read()
-    response.close()
-    return unicodify(content)
+    response = requests.get(full_url, auth=auth)
+    if response.status_code == 429:
+        retry_after = response.headers.get('Retry-After')
+        if retry_after:
+            time.sleep(retry_after)
+            response = requests.get(full_url, auth=auth)
+    return response.text
 
 
 def download_to_file(url, dest_file_path, timeout=30, chunk_size=2 ** 20):
     """Download a URL to a file in chunks."""
-    src = urlopen(url, timeout=timeout)
-    with open(dest_file_path, 'wb') as f:
-        while True:
-            chunk = src.read(chunk_size)
-            if not chunk:
-                break
-            f.write(chunk)
+    with requests.get(url, timeout=timeout, stream=True) as r, open(dest_file_path, 'wb') as f:
+        for chunk in r.iter_content(chunk_size):
+            if chunk:
+                f.write(chunk)
 
 
 def get_executable():
