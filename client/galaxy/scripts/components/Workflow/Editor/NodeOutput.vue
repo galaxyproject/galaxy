@@ -5,7 +5,6 @@
 </template>
 
 <script>
-
 export default {
     props: {
         node: {
@@ -19,7 +18,7 @@ export default {
         manager: {
             type: Object,
             required: true,
-        }
+        },
     },
     computed: {
         activeClass() {
@@ -37,7 +36,7 @@ export default {
                 this.node.addWorkflowOutput(this.outputName);
             }
             this.manager.has_changes = true;
-        }
-    }
+        },
+    },
 };
 </script>

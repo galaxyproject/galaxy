@@ -6,7 +6,8 @@
                 variant="primary"
                 size="sm"
                 aria-label="destroy node"
-                v-b-tooltip.hover title="Remove"
+                v-b-tooltip.hover
+                title="Remove"
                 @click="onDestroy"
             >
                 <i class="fa fa-times" />
@@ -30,7 +31,8 @@
                 variant="primary"
                 size="sm"
                 aria-label="clone node"
-                v-b-tooltip.hover title="Duplicate"
+                v-b-tooltip.hover
+                title="Duplicate"
                 @click="onClone"
             >
                 <i class="fa fa-files-o" />

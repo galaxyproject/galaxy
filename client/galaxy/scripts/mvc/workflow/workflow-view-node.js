@@ -72,7 +72,7 @@ export class NodeView {
         var terminalElement = terminalView.el;
         var inputView = new DataInputView({
             terminalElement: terminalElement,
-            input: input
+            input: input,
         });
         var $inputView = $(`<div class="form-row dataRow input-data-row"/>`);
         $inputView.html(inputView.label);
@@ -97,7 +97,7 @@ export class NodeView {
         const outputViewClass = output.parameter ? ParameterOutputView : DataOutputView;
         const outputView = new outputViewClass({
             output: output,
-            terminalElement: terminalView.el
+            terminalElement: terminalView.el,
         });
         return outputView;
     }
@@ -114,7 +114,7 @@ export class NodeView {
             mountWorkflowNodeOutput(container, {
                 outputName: output.name,
                 node: this.node,
-                manager: this.app
+                manager: this.app,
             });
         }
         this.node_body.append($outputView.append(terminalView.el));
