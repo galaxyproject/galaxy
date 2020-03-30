@@ -89,6 +89,11 @@ change_user_address:
       type: xpath
       selector: '//span[contains(text(), "Insert Address")]'
 
+sign_out:
+  selectors:
+    cancel_button: '.modal-footer .buttons #button-0'
+    sign_out_button: '.modal-footer .buttons #button-0'
+
 history_panel:
   menu:
     labels:
