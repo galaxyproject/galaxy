@@ -95,7 +95,7 @@ class ToolShedAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.cloud_controller_instance = False
         self.server_name = ''
         # Where the tool shed hgweb.config file is stored - the default is the Galaxy installation directory.
-        self.hgweb_config_dir = self._in_root_dir(self.hgweb_config_dir)
+        self.hgweb_config_dir = self._in_root_dir(self.hgweb_config_dir) or self.root
         # Proxy features
         self.nginx_x_accel_redirect_base = kwargs.get('nginx_x_accel_redirect_base', False)
         self.drmaa_external_runjob_script = kwargs.get('drmaa_external_runjob_script', None)
