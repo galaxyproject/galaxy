@@ -38,11 +38,12 @@ try:
 except ImportError:
     # For Pulsar on Windows (which does not use the function that uses grp)
     grp = None
-
 from boltons.iterutils import (
     default_enter,
     remap,
 )
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 from six import binary_type, iteritems, PY2, string_types, text_type
 from six.moves import (
     xrange,
@@ -1675,12 +1676,11 @@ def build_url(base_url, port=80, scheme='http', pathspec=None, params=None, dose
 def url_get(base_url, auth=None, pathspec=None, params=None):
     """Make contact with the uri provided and return any contents."""
     full_url = build_url(base_url, pathspec=pathspec, params=params)
-    response = requests.get(full_url, auth=auth)
-    if response.status_code == 429:
-        retry_after = response.headers.get('Retry-After')
-        if retry_after:
-            time.sleep(retry_after)
-            response = requests.get(full_url, auth=auth)
+    s = requests.Session()
+    retries = Retry(total=5, backoff_factor=1, status_forcelist=[429])
+    s.mount(base_url, HTTPAdapter(max_retries=retries))
+    response = s.get(full_url, auth=auth)
+    response.raise_for_status()
     return response.text
 
 
