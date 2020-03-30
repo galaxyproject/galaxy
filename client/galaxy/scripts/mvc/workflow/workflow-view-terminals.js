@@ -31,7 +31,6 @@ class BaseInputTerminalView {
         this.$el.on("dropstart", (e, d) => this.onDropStart(e, d));
         this.$el.on("dropend", (e, d) => this.onDropEnd(e, d));
         this.$el.on("drop", (e, d) => this.onDrop(e, d));
-        this.$el.on("hover", () => this.onHover());
         this.terminal.on("change", this.render.bind(this));
     }
     render() {
@@ -55,7 +54,6 @@ class BaseInputTerminalView {
             this.$el.removeClass("can-accept");
             this.reason = connectionAcceptable.reason;
         }
-
         return true;
     }
     onDropStart(e, d = {}) {
@@ -86,26 +84,6 @@ class BaseInputTerminalView {
             const terminal = this.terminal;
             const c = new Connector(this.app.canvas_manager, d.drag.terminal, terminal);
             c.redraw();
-        }
-    }
-    onHover() {
-        const terminal = this.terminal;
-        // If connected, create a popup to allow disconnection
-        if (terminal.connectors.length > 0) {
-            const t = $("<div/>")
-                .addClass("delete-terminal")
-                .click(() => {
-                    $.each(terminal.connectors, (_, x) => {
-                        if (x) {
-                            x.destroy();
-                        }
-                    });
-                    t.remove();
-                })
-                .on("mouseleave", () => {
-                    t.remove();
-                });
-            $(this.el).parent().append(t);
         }
     }
 }
