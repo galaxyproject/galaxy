@@ -139,7 +139,7 @@ class ToolShedAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
 
     def check(self):
         # Check that required directories exist.
-        paths_to_check = [self.root, self.file_path, self.hgweb_config_dir, self.tool_data_path, self.template_path]
+        paths_to_check = [self.file_path, self.hgweb_config_dir, self.tool_data_path, self.template_path]
         for path in paths_to_check:
             if path not in [None, False] and not os.path.isdir(path):
                 try:
