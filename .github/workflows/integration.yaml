@@ -49,3 +49,5 @@ jobs:
     - name: Run tests
       run: './run_tests.sh -integration test/integration -- -k "${{ matrix.subset }}"'
       working-directory: 'galaxy root'
+    - name: Setup tmate session
+      uses: mxschmitt/action-tmate@v2
