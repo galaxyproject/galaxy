@@ -1,0 +1,41 @@
+#editor {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+}
+
+#export-btn {
+    position: relative;
+    z-index: 3;
+    left: 90%;
+}
+
+.transparent_btn {
+    display: inline-block;
+    padding: 10px 14px;
+    color: #FFF;
+    border: 1px solid #FFF;
+    text-decoration: none;
+    font-size: 14px;
+    line-height: 120%;
+    background-color: rgba(255, 255, 255, 0);
+    -webkit-border-radius: 4px;
+    -moz-border-radius: 4px;
+    border-radius: 4px;
+    -webkit-transition: 300ms ease;
+    -moz-transition:  300ms ease;
+    transition: 300ms ease;
+    cursor: pointer;
+}
+
+.transparent_btn.blue {
+    color: #aeddf5;
+    border-color: #aeddf5;
+}
+
+.transparent_btn.blue:hover {
+    color: #0062ff;
+    background-color: rgba(174, 221, 245, 0.3);
+}

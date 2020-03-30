@@ -246,16 +246,19 @@ class BaseAppConfiguration(object):
             resolve(key)
 
     def _in_managed_config_dir(self, path):
-        return os.path.join(self.managed_config_dir, path)
+        return self._in_dir(self.managed_config_dir, path)
 
     def _in_config_dir(self, path):
-        return os.path.join(self.config_dir, path)
+        return self._in_dir(self.config_dir, path)
 
     def _in_sample_dir(self, path):
-        return os.path.join(self.sample_config_dir, path)
+        return self._in_dir(self.sample_config_dir, path)
 
     def _in_data_dir(self, path):
-        return os.path.join(self.data_dir, path)
+        return self._in_dir(self.data_dir, path)
+
+    def _in_dir(self, _dir, path):
+        return os.path.join(_dir, path) if path else None
 
     def _parse_config_file_options(self, defaults, listify_defaults, config_kwargs):
         for var, values in defaults.items():
