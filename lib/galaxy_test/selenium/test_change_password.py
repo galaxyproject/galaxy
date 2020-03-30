@@ -36,7 +36,8 @@ class ChangePasswordTestCase(SeleniumTestCase):
     def test_currect_password_incorrect(self):
         self.register_and_change_password()
         password = self._get_random_password()
-        self.fill_input_fields("4444444", password, password)
+        assert self.default_password != password
+        self.fill_input_fields(password, password, password)
         self.assert_error_message(contains='Invalid current password.')
 
     @selenium_test
