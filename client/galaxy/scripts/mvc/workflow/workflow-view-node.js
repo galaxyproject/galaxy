@@ -1,6 +1,6 @@
 import $ from "jquery";
 import TerminalViews from "mvc/workflow/workflow-view-terminals";
-import { mountWorkflowNodeOutput } from "components/Workflow/Editor/mount";
+import { mountWorkflowNodeInput, mountWorkflowNodeOutput } from "components/Workflow/Editor/mount";
 
 export class NodeView {
     constructor(app, options) {
@@ -56,27 +56,28 @@ export class NodeView {
             terminalView.terminal.destroy();
             terminalView = null;
         }
-        if (!terminalView) {
-            terminalView = new terminalViewClass(this.app, {
-                node: this.node,
-                input: input,
-            });
-        } else {
+        if (terminalView) {
             var terminal = terminalView.terminal;
             terminal.update(input);
             terminal.destroyInvalidConnections();
+            return;
         }
-        this.terminalViews[input.name] = terminalView;
-        var terminalElement = terminalView.el;
-        var inputView = {
-            terminalElement: terminalElement,
+        /*const container = document.createElement("div");
+        body.prepend(container);
+        mountWorkflowNodeInput(container, {
             input: input,
-            label: input.label || input.name,
-        };
+            manager: this.app,
+        });*/
+        const terminalViewEl = document.createElement("div");
         var $inputView = $(`<div class="form-row dataRow input-data-row"/>`);
-        $inputView.html(inputView.label);
-        body.append($inputView.prepend(terminalView.el));
-        return terminalView;
+        $inputView.html("test");
+        body.append($inputView.prepend(terminalViewEl));
+        terminalView = new terminalViewClass(this.app, {
+            node: this.node,
+            input: input,
+            el: terminalViewEl
+        });
+        this.terminalViews[input.name] = terminalView;
     }
 
     terminalViewForOutput(output) {

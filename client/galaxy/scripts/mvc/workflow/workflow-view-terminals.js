@@ -8,7 +8,7 @@ var NODEINDEX = 0;
 class BaseInputTerminalView {
     constructor(app, options = {}) {
         this.app = app;
-        this.el = document.createElement("div");
+        this.el = options.el;
         this.el.className = "terminal input-terminal";
         const node = options.node;
         const input = options.input;
