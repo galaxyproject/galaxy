@@ -319,6 +319,39 @@ class LibrariesApiTestCase(ApiTestCase, TestsDatasets):
         self._assert_has_keys(create_response.json(), "file_ext")
         assert create_response.json()["file_ext"] == "txt"
 
+    def test_ldda_collection_import_to_history(self):
+        self._import_to_history(visible=True)
+
+    def test_ldda_collection_import_to_history_hide_source(self):
+        self._import_to_history(visible=False)
+
+    def _import_to_history(self, visible=True):
+        ld = self._create_dataset_in_folder_in_library("ForHistoryImport").json()
+        history_id = self.dataset_populator.new_history()
+        url = "histories/%s/contents" % history_id
+        collection_name = 'new_collection_name'
+        element_identifer = 'new_element_identifier'
+        payload = {
+            "collection_type": "list",
+            "history_content_type": "dataset_collection",
+            "model_class": "HistoryDatasetCollectionAssociation",
+            "history_id": history_id,
+            "name": collection_name,
+            "hide_source_items": not visible,
+            "element_identifiers": json.dumps([{
+                "id": ld['id'],
+                "name": element_identifer,
+                "src": "ldda"}]),
+            "type": "dataset_collection",
+            "elements": []
+        }
+        new_collection = self._post(url, payload).json()
+        assert new_collection['name'] == collection_name
+        assert new_collection['element_count'] == 1
+        element = new_collection['elements'][0]
+        assert element['element_identifier'] == element_identifer
+        assert element['object']['visible'] == visible
+
     def test_create_datasets_in_library_from_collection(self):
         library = self.library_populator.new_private_library("ForCreateDatasetsFromCollection")
         folder_response = self._create_folder(library)
