@@ -250,7 +250,7 @@ class BaseAppConfiguration(object):
             resolve(key)
 
     def _in_root_dir(self, path):
-        return os.path.join(self.root, path)
+        return self._in_dir(self.root, path)
 
     def _in_managed_config_dir(self, path):
         return self._in_dir(self.managed_config_dir, path)
