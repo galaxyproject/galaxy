@@ -196,10 +196,18 @@ class ToolRecommendations():
             for idx, tool_name in enumerate(tool_sequence):
                 if tool_name.find("/") > -1:
                     tool_name = tool_name.split("/")[-2]
-                sample[idx] = int(self.model_data_dictionary[tool_name])
+                try:
+                    sample[idx] = int(self.model_data_dictionary[tool_name])
+                except Exception:
+                    log.exception("Failed to find tool %s in model" % (tool_name))
+                    return prediction_data
             sample = np.reshape(sample, (1, max_seq_len))
             # predict next tools for a test path
-            prediction = self.loaded_model.predict(sample, verbose=0)
+            try:
+                prediction = self.loaded_model.predict_on_batch(sample)
+            except Exception as e:
+                log.exception(e)
+                return prediction_data
             prediction = np.reshape(prediction, (prediction.shape[1],))
             # boost the predicted scores using tools' usage
             weight_values = list(self.tool_weights_sorted.values())
