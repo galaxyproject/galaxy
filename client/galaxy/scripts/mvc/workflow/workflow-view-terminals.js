@@ -1,7 +1,7 @@
 import $ from "jquery";
 import Terminals from "mvc/workflow/workflow-terminals";
 import Connector from "mvc/workflow/workflow-connector";
-import ariaAlert from "utils/ariaAlert";
+import { screenReaderSelectOutputNode } from "mvc/workflow/workflow-aria";
 
 var NODEINDEX = 0;
 
@@ -27,12 +27,11 @@ class BaseInputTerminalView {
         this.el.appendChild(icon);
         this.$el = $(this.el);
         this.$el.append($("<icon/>"));
-        const self = this;
-        this.$el.on("dropinit", (e, d) => self.onDropInit(e, d));
-        this.$el.on("dropstart", (e, d) => self.onDropStart(e, d));
-        this.$el.on("dropend", (e, d) => self.onDropEnd(e, d));
-        this.$el.on("drop", (e, d) => self.onDrop(e, d));
-        this.$el.on("hover", () => self.onHover());
+        this.$el.on("dropinit", (e, d) => this.onDropInit(e, d));
+        this.$el.on("dropstart", (e, d) => this.onDropStart(e, d));
+        this.$el.on("dropend", (e, d) => this.onDropEnd(e, d));
+        this.$el.on("drop", (e, d) => this.onDrop(e, d));
+        this.$el.on("hover", () => this.onHover());
         this.terminal.on("change", this.render.bind(this));
     }
     render() {
@@ -176,11 +175,10 @@ export class BaseOutputTerminalView {
         );
         this.$el.attr("tabindex", "0");
         this.$el.attr("aria-grabbed", "false");
-        const self = this;
-        this.$el.on("drag", (d, e) => self.onDrag(d, e));
-        this.$el.on("dragstart", (d, e) => self.onDragStart(d, e));
-        this.$el.on("dragend", (d, e) => self.onDragEnd(d, e));
-        this.$el.on("keydown", (e) => self.screenReaderSelectOutputNode(e));
+        this.$el.on("drag", (e, d) => this.onDrag(e, d));
+        this.$el.on("dragstart", (e, d) => this.onDragStart(e, d));
+        this.$el.on("dragend", (e, d) => this.onDragEnd(e, d));
+        this.$el.on("keydown", (e) => screenReaderSelectOutputNode(e, this));
         this.terminal.on("change", this.render.bind(this));
     }
     render() {
@@ -188,108 +186,6 @@ export class BaseOutputTerminalView {
             this.$el.addClass("multiple");
         } else {
             this.$el.removeClass("multiple");
-        }
-    }
-    screenReaderSelectOutputNode(e) {
-        const inputChoiceKeyDown = (e) => {
-            e.stopPropagation();
-            const currentItem = e.currentTarget;
-            const previousItem = currentItem.previousSibling;
-            const nextItem = currentItem.nextSibling;
-            const inputTerminal = currentItem.input.context.terminal;
-            const switchActiveItem = (currentActive, newActive) => {
-                newActive.classList.add("active");
-                newActive.focus();
-                currentActive.classList.remove("active");
-            };
-            const removeMenu = () => {
-                $(currentItem.parentNode).remove();
-                this.$el.removeAttr("aria-owns");
-                this.$el.attr("aria-grabbed", "false");
-                this.$el.focus();
-            };
-            switch (e.keyCode) {
-                case 40: // Down arrow
-                    if (nextItem) {
-                        switchActiveItem(currentItem, nextItem);
-                    } else {
-                        switchActiveItem(currentItem, currentItem.parentNode.firstChild);
-                    }
-                    break;
-                case 38: // Up arrow
-                    if (previousItem) {
-                        switchActiveItem(currentItem, previousItem);
-                    } else {
-                        switchActiveItem(currentItem, currentItem.parentNode.lastChild);
-                    }
-                    break;
-                case 32: // Space
-                    removeMenu();
-                    new Connector(this.app.canvas_manager, this.terminal, inputTerminal).redraw();
-                    ariaAlert("Node connected");
-                    if (inputTerminal.connectors.length > 0) {
-                        const t = $("<div/>")
-                            .addClass("delete-terminal")
-                            .attr("tabindex", "0")
-                            .attr("aria-label", "delete terminal")
-                            .on("keydown click", (e) => {
-                                if (e.keyCode === 32 || e.type === "click") {
-                                    //Space or Click
-                                    $.each(inputTerminal.connectors, (_, x) => {
-                                        if (x) {
-                                            x.destroy();
-                                            ariaAlert("Connection destroyed");
-                                        }
-                                    });
-                                    t.remove();
-                                }
-                            });
-                        $(currentItem.input).parent().append(t);
-                    }
-                    break;
-            }
-        };
-        const buildInputChoicesMenu = () => {
-            const inputChoicesMenu = document.createElement("ul");
-            $(inputChoicesMenu).focusout((e) => {
-                /* focus is still inside child element of menu so don't hide */
-                if (inputChoicesMenu.contains(e.relatedTarget)) {
-                    return;
-                }
-                $(inputChoicesMenu).hide();
-            });
-            inputChoicesMenu.id = "input-choices-menu";
-            inputChoicesMenu.className = "list-group";
-            inputChoicesMenu.setAttribute("role", "menu");
-            this.$el.attr("aria-grabbed", "true");
-            this.$el.attr("aria-owns", "input-choices-menu");
-            $(".input-terminal").each((i, el) => {
-                const input = $(el);
-                const inputTerminal = input.context.terminal;
-                const connectionAcceptable = inputTerminal.canAccept(this.terminal);
-                if (connectionAcceptable.canAccept) {
-                    const inputChoiceItem = document.createElement("li");
-                    inputChoiceItem.textContent = `${inputTerminal.name} in ${inputTerminal.node.name} node`;
-                    inputChoiceItem.tabIndex = -1;
-                    inputChoiceItem.input = input;
-                    inputChoiceItem.onkeydown = inputChoiceKeyDown;
-                    inputChoiceItem.className = "list-group-item";
-                    inputChoiceItem.setAttribute("role", "menuitem");
-                    inputChoicesMenu.appendChild(inputChoiceItem);
-                }
-            });
-            if (inputChoicesMenu.firstChild) {
-                this.$el.append(inputChoicesMenu);
-                inputChoicesMenu.firstChild.classList.add("active");
-                inputChoicesMenu.firstChild.focus();
-            } else {
-                ariaAlert("There are no available inputs for this selected output");
-            }
-        };
-        if (e.keyCode === 32) {
-            //Space
-            ariaAlert("Node selected");
-            buildInputChoicesMenu();
         }
     }
     onDrag(e, d = {}) {
