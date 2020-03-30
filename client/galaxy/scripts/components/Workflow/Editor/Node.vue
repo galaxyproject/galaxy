@@ -20,7 +20,7 @@
             >
                 <i class="fa fa-arrow-right" />
             </b-button>
-            <b-popover :target="popoverId" triggers="hover" placement="bottom">
+            <b-popover :target="popoverId" triggers="hover" placement="bottom" :show.sync="popoverShow">
                 <WorkflowRecommendations :node="node" @onCreate="onCreate" />
             </b-popover>
             <b-button
@@ -92,7 +92,7 @@ export default {
             return null;
         },
         popoverId() {
-            return `popover-${this.id}`;
+            return `popover-${this.id}-${this._uid}`;
         },
         canClone() {
             return this.type != "subworkflow";
@@ -114,8 +114,6 @@ export default {
             this.node.clone();
         },
         onCreate(toolId, event) {
-            console.log(toolId);
-            console.log(event);
             const requestData = {
                 tool_id: toolId,
                 type: "tool",
@@ -124,7 +122,7 @@ export default {
             getModule(requestData).then((response) => {
                 var node = this.node.app.create_node("tool", response.name, toolId);
                 this.node.app.set_node(node, response);
-                event.srcElement.getRootNode().remove();
+                this.popoverShow = false;
             });
         },
     },
