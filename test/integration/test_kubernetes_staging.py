@@ -12,6 +12,7 @@ rabbitmq installed via Homebrew, and if a fixed port is set for the test.
 
 """
 import os
+import random
 import string
 import tempfile
 
@@ -39,6 +40,7 @@ execution:
   environments:
     pulsar_k8s_environment:
       k8s_config_path: ${k8s_config_path}
+      k8s_galaxy_instance_id: ${instance_id}
       runner: pulsar_k8s
       docker_enabled: true
       docker_default_container_id: busybox:ubuntu-14.04
@@ -69,6 +71,7 @@ execution:
   environments:
     pulsar_k8s_environment:
       k8s_config_path: ${k8s_config_path}
+      k8s_galaxy_instance_id: ${instance_id}
       runner: pulsar_k8s
       pulsar_app_config:
         message_queue_url: '${container_amqp_url}'
@@ -86,8 +89,10 @@ tools:
 def job_config(template_str, jobs_directory):
     job_conf_template = string.Template(template_str)
     container_amqp_url = to_infrastructure_uri(AMQP_URL)
+    instance_id = ''.join(random.choice(string.ascii_lowercase) for i in range(8))
     job_conf_str = job_conf_template.substitute(jobs_directory=jobs_directory,
                                                 tool_directory=TOOL_DIR,
+                                                instance_id=instance_id,
                                                 k8s_config_path=integration_util.k8s_config_path(),
                                                 amqp_url=AMQP_URL,
                                                 container_amqp_url=container_amqp_url,
