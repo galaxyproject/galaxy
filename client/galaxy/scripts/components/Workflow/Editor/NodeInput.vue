@@ -1,9 +1,8 @@
 <template>
-    <div class="form-row dataRow input-data-row">
+    <div class="form-row dataRow input-data-row" @mouseover="mouseOver" @mouseleave="mouseLeave">
+        <div ref="terminal" class="terminal input-terminal" />
+        <div v-if="showRemove" class="delete-terminal" @click="onRemove" />
         {{ label }}
-        <div ref="terminal" class="terminal input-terminal" @mouseover="mouseOver" @mouseleave="mouseLeave">
-            <div v-if="showRemove" class="delete-terminal" @click="onRemove" />
-        </div>
     </div>
 </template>
 
@@ -14,19 +13,15 @@ export default {
             type: Object,
             required: true,
         },
-        manager: {
-            type: Object,
-            required: true,
-        },
         getTerminal: {
             type: Function,
-            required: true
-        }
+            required: true,
+        },
     },
     data() {
         return {
-            showRemove: false
-        }
+            showRemove: false,
+        };
     },
     computed: {
         label() {
@@ -45,12 +40,15 @@ export default {
                 });
             }
         },
-        mouseOver() {
-            this.showRemove = true;
+        mouseOver(e) {
+            const terminal = this.getTerminal();
+            if (terminal.connectors.length > 0) {
+                this.showRemove = true;
+            }
         },
         mouseLeave() {
             this.showRemove = false;
-        }
-    }
+        },
+    },
 };
 </script>

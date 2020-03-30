@@ -5,7 +5,7 @@ import { screenReaderSelectOutputNode } from "mvc/workflow/workflow-aria";
 
 var NODEINDEX = 0;
 
-class BaseInputTerminalView {
+class InputTerminalView {
     constructor(app, options = {}) {
         this.app = app;
         this.el = options.el;
@@ -85,45 +85,6 @@ class BaseInputTerminalView {
             const c = new Connector(this.app.canvas_manager, d.drag.terminal, terminal);
             c.redraw();
         }
-    }
-}
-
-export class InputTerminalView extends BaseInputTerminalView {
-    constructor(app, options = {}) {
-        super(app, options);
-    }
-    terminalForInput(input) {
-        return new Terminals.InputTerminal({
-            app: this.app,
-            element: this.el,
-            input: input,
-        });
-    }
-}
-
-export class InputParameterTerminalView extends BaseInputTerminalView {
-    constructor(app, options = {}) {
-        super(app, options);
-    }
-    terminalForInput(input) {
-        return new Terminals.InputParameterTerminal({
-            app: this.app,
-            element: this.el,
-            input: input,
-        });
-    }
-}
-
-export class InputCollectionTerminalView extends BaseInputTerminalView {
-    constructor(app, options = {}) {
-        super(app, options);
-    }
-    terminalForInput(input = {}) {
-        return new Terminals.InputCollectionTerminal({
-            app: this.app,
-            element: this.el,
-            input: input,
-        });
     }
 }
 
@@ -257,9 +218,6 @@ export class OutputParameterTerminalView extends BaseOutputTerminalView {
 
 export default {
     InputTerminalView: InputTerminalView,
-    BaseInputTerminalView: BaseInputTerminalView,
-    InputParameterTerminalView: InputParameterTerminalView,
-    InputCollectionTerminalView: InputCollectionTerminalView,
     OutputTerminalView: OutputTerminalView,
     OutputParameterTerminalView: OutputParameterTerminalView,
     OutputCollectionTerminalView: OutputCollectionTerminalView,
