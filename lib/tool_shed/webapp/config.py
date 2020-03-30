@@ -4,7 +4,6 @@ Universe configuration builder.
 import logging
 import logging.config
 import os
-import re
 from datetime import timedelta
 
 from six.moves import configparser
@@ -125,19 +124,6 @@ class ToolShedAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     @property
     def shed_tool_data_path(self):
         return self.tool_data_path
-
-    @property
-    def sentry_dsn_public(self):
-        """
-        Sentry URL with private key removed for use in client side scripts,
-        sentry server will need to be configured to accept events
-        """
-        # TODO refactor this to a common place between toolshed/galaxy config, along
-        # with other duplicated methods.
-        if self.sentry_dsn:
-            return re.sub(r"^([^:/?#]+:)?//(\w+):(\w+)", r"\1//\2", self.sentry_dsn)
-        else:
-            return None
 
     def parse_config_file_options(self, kwargs):
         defaults = dict(
