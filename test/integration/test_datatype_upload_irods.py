@@ -1,5 +1,6 @@
 
 import os
+import sleep
 import subprocess
 import tempfile
 
@@ -60,4 +61,6 @@ def temp_file():
 
 @pytest.mark.parametrize('test_data', IRODS_TEST_CASES.values(), ids=list(IRODS_TEST_CASES.keys()))
 def test_upload_datatype_irods(instance, test_data, temp_file):
+    # Sleep so integration test's iRODS instance is up and running
+    sleep(10)
     upload_datatype_helper(instance, test_data, temp_file)
