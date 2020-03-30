@@ -62,16 +62,13 @@ export class NodeView {
             terminal.destroyInvalidConnections();
             return;
         }
-        /*const container = document.createElement("div");
+        const container = document.createElement("div");
         body.prepend(container);
-        mountWorkflowNodeInput(container, {
+        const nodeInput = mountWorkflowNodeInput(container, {
             input: input,
             manager: this.app,
-        });*/
-        const terminalViewEl = document.createElement("div");
-        var $inputView = $(`<div class="form-row dataRow input-data-row"/>`);
-        $inputView.html("test");
-        body.append($inputView.prepend(terminalViewEl));
+        });
+        const terminalViewEl = nodeInput.$refs.terminal;
         terminalView = new terminalViewClass(this.app, {
             node: this.node,
             input: input,
