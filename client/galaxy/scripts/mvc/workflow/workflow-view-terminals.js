@@ -21,9 +21,11 @@ class BaseInputTerminalView {
         this.terminal.label = input.label;
         node.input_terminals[name] = this.terminal;
         this.el.terminal = this.terminal;
+        this.el.setAttribute("input-name", name);
+        this.el.setAttribute("id", this.id);
+        const icon = document.createElement("icon");
+        this.el.appendChild(icon);
         this.$el = $(this.el);
-        this.$el.attr("input-name", name);
-        this.$el.attr("id", this.id);
         this.$el.append($("<icon/>"));
         const self = this;
         this.$el.on("dropinit", (e, d) => self.onDropInit(e, d));
