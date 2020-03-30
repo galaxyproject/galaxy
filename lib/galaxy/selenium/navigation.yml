@@ -92,7 +92,7 @@ change_user_address:
 sign_out:
   selectors:
     cancel_button: '.modal-footer .buttons #button-0'
-    sign_out_button: '.modal-footer .buttons #button-0'
+    sign_out_button: '.modal-footer .buttons #button-1'
 
 history_panel:
   menu:
