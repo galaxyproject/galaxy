@@ -20,12 +20,15 @@ def start_irods(container_name):
         'docker',
         'run',
         '-p',
-        '2020:1247',
+        '1247:1247',
         '-d',
         '--name',
         container_name,
         'kxk302/irods-server:0.1']
     subprocess.check_call(irods_start_args)
+
+    # Sleep so integration test's iRODS instance is up and running
+    time.sleep(20)
 
 
 def stop_irods(container_name):
@@ -61,6 +64,4 @@ def temp_file():
 
 @pytest.mark.parametrize('test_data', IRODS_TEST_CASES.values(), ids=list(IRODS_TEST_CASES.keys()))
 def test_upload_datatype_irods(instance, test_data, temp_file):
-    # Sleep so integration test's iRODS instance is up and running
-    time.sleep(10)
     upload_datatype_helper(instance, test_data, temp_file)
