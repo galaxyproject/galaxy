@@ -8,7 +8,11 @@ from datetime import timedelta
 
 from six.moves import configparser
 
-from galaxy.config import BaseAppConfiguration, CommonConfigurationMixin
+from galaxy.config import (
+    BaseAppConfiguration,
+    CommonConfigurationMixin,
+    get_database_engine_options,
+)
 from galaxy.config.schema import AppSchema
 from galaxy.util import string_as_bool
 from galaxy.version import VERSION, VERSION_MAJOR
@@ -161,31 +165,3 @@ class ToolShedAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
 
 
 Configuration = ToolShedAppConfiguration
-
-
-def get_database_engine_options(kwargs):
-    """
-    Allow options for the SQLAlchemy database engine to be passed by using
-    the prefix "database_engine_option".
-    """
-    conversions = {
-        'convert_unicode': string_as_bool,
-        'pool_timeout': int,
-        'echo': string_as_bool,
-        'echo_pool': string_as_bool,
-        'pool_recycle': int,
-        'pool_size': int,
-        'max_overflow': int,
-        'pool_threadlocal': string_as_bool,
-        'server_side_cursors': string_as_bool
-    }
-    prefix = "database_engine_option_"
-    prefix_len = len(prefix)
-    rval = {}
-    for key, value in kwargs.items():
-        if key.startswith(prefix):
-            key = key[prefix_len:]
-            if key in conversions:
-                value = conversions[key](value)
-            rval[key] = value
-    return rval
