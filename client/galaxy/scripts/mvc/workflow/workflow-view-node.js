@@ -1,5 +1,6 @@
 import $ from "jquery";
 import TerminalViews from "mvc/workflow/workflow-view-terminals";
+import Terminals from "mvc/workflow/workflow-terminals";
 import { mountWorkflowNodeInput, mountWorkflowNodeOutput } from "components/Workflow/Editor/mount";
 
 export class NodeView {
@@ -10,7 +11,7 @@ export class NodeView {
         this.node_body = this.$el.find(".node-body");
         this.node_body.find("div").remove();
         this.newInputsDiv().appendTo(this.node_body);
-        this.terminalViews = {};
+        this.terminals = {};
         this.outputViews = {};
     }
 
@@ -45,36 +46,42 @@ export class NodeView {
         if (!body) {
             body = this.$el.find(".inputs");
         }
-        var terminalView = this.terminalViews[input.name];
-        var terminalViewClass = TerminalViews.InputTerminalView;
+        var terminalClass = Terminals.InputTerminal;
         if (input.input_type == "dataset_collection") {
-            terminalViewClass = TerminalViews.InputCollectionTerminalView;
+            terminalClass = Terminals.InputParameterTerminal;
         } else if (input.input_type == "parameter") {
-            terminalViewClass = TerminalViews.InputParameterTerminalView;
+            terminalClass = Terminals.InputCollectionTerminal;
         }
-        if (terminalView && !(terminalView instanceof terminalViewClass)) {
-            terminalView.terminal.destroy();
-            terminalView = null;
+        let terminal = this.terminals[input.name];
+        if (terminal && !(terminal instanceof terminalClass)) {
+            terminal.destroy();
         }
-        if (terminalView) {
-            var terminal = terminalView.terminal;
+        if (terminal) {
             terminal.update(input);
             terminal.destroyInvalidConnections();
             return;
         }
+        terminal = new terminalClass({
+            app: this.app,
+            element: null,
+            input: input,
+        });
         const container = document.createElement("div");
         body.prepend(container);
         const nodeInput = mountWorkflowNodeInput(container, {
             input: input,
+            terminal: terminal,
             manager: this.app,
         });
         const terminalViewEl = nodeInput.$refs.terminal;
-        terminalView = new terminalViewClass(this.app, {
+        terminal.element = terminalViewEl;
+        new TerminalViews.BaseInputTerminalView(this.app, {
             node: this.node,
             input: input,
-            el: terminalViewEl
+            el: terminalViewEl,
+            terminal: terminal
         });
-        this.terminalViews[input.name] = terminalView;
+        this.terminals[input.name] = terminal;
     }
 
     terminalViewForOutput(output) {

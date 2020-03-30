@@ -318,15 +318,15 @@ export class Node {
         // Update input rows
         var old_body = nodeView.$el.find("div.inputs");
         var new_body = nodeView.newInputsDiv();
-        var newTerminalViews = {};
+        var newTerminals = {};
         _.each(data.inputs, (input) => {
-            newTerminalViews[input.name] = node.nodeView.addDataInput(input, new_body);
+            newTerminals[input.name] = node.nodeView.addDataInput(input, new_body);
         });
         // Cleanup any leftover terminals
-        _.each(_.difference(_.values(nodeView.terminalViews), _.values(newTerminalViews)), (unusedView) => {
+        _.each(_.difference(_.values(nodeView.terminals), _.values(newTerminals)), (unusedView) => {
             unusedView.terminal.destroy();
         });
-        nodeView.terminalViews = newTerminalViews;
+        nodeView.terminals = newTerminals;
         node.nodeView.render();
         // In general workflow editor assumes tool outputs don't change in # or
         // type (not really valid right?) but adding special logic here for

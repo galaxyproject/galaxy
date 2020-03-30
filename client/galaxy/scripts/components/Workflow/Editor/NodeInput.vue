@@ -30,7 +30,6 @@ export default {
     },
     methods: {
         onRemove() {
-            console.log(this.input);
             /*const terminal = this.input.terminal;
             // If connected, create a popup to allow disconnection
             if (terminal.connectors.length > 0) {

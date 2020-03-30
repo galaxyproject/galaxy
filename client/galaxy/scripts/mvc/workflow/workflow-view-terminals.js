@@ -9,13 +9,13 @@ class BaseInputTerminalView {
     constructor(app, options = {}) {
         this.app = app;
         this.el = options.el;
+        this.terminal = options.terminal;
         this.el.className = "terminal input-terminal";
         const node = options.node;
         const input = options.input;
         const name = input.name;
         const nodeIndex = NODEINDEX++;
         this.id = `node-${nodeIndex}-input-${name}`;
-        this.terminal = this.terminalForInput(input);
         this.terminal.node = node;
         this.terminal.name = name;
         this.terminal.label = input.label;
@@ -257,6 +257,7 @@ export class OutputParameterTerminalView extends BaseOutputTerminalView {
 
 export default {
     InputTerminalView: InputTerminalView,
+    BaseInputTerminalView: BaseInputTerminalView,
     InputParameterTerminalView: InputParameterTerminalView,
     InputCollectionTerminalView: InputCollectionTerminalView,
     OutputTerminalView: OutputTerminalView,
