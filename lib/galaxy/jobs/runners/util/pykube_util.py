@@ -1,5 +1,7 @@
 """Interface layer for pykube library shared between Galaxy and Pulsar."""
+import logging
 import os
+import re
 import uuid
 
 try:
@@ -16,6 +18,8 @@ except ImportError as exc:
     K8S_IMPORT_MESSAGE = ('The Python pykube package is required to use '
                           'this feature, please install it or correct the '
                           'following error:\nImportError %s' % str(exc))
+
+log = logging.getLogger(__name__)
 
 DEFAULT_JOB_API_VERSION = "batch/v1"
 DEFAULT_NAMESPACE = "default"
@@ -77,9 +81,31 @@ def job_object_dict(params, job_name, spec):
     return k8s_job_obj
 
 
+def galaxy_instance_id(params):
+    """Parse and validate the id of the Galaxy instance from supplied dict.
+
+    This will be added to Jobs and Pods names, so it needs to be DNS friendly,
+    this means: `The Internet standards (Requests for Comments) for protocols mandate that component hostname labels
+    may contain only the ASCII letters 'a' through 'z' (in a case-insensitive manner), the digits '0' through '9',
+    and the minus sign ('-').`
+
+    It looks for the value set on params['k8s_galaxy_instance_id'], which might or not be set. The
+    idea behind this is to allow the Galaxy instance to trust (or not) existing k8s Jobs and Pods that match the
+    setup of a Job that is being recovered or restarted after a downtime/reboot.
+    """
+    if "k8s_galaxy_instance_id" in params:
+        if re.match(r"(?!-)[a-z\d-]{1,20}(?<!-)$", params['k8s_galaxy_instance_id']):
+            return params['k8s_galaxy_instance_id']
+        else:
+            log.error("Galaxy instance '" + params['k8s_galaxy_instance_id'] + "' is either too long "
+                        + '(>20 characters) or it includes non DNS acceptable characters, ignoring it.')
+    return None
+
+
 __all__ = (
     "DEFAULT_JOB_API_VERSION",
     "ensure_pykube",
+    "galaxy_instance_id",
     "Job",
     "job_object_dict",
     "Pod",
