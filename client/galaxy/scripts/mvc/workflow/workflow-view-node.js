@@ -68,10 +68,13 @@ export class NodeView {
         });
         const container = document.createElement("div");
         body.prepend(container);
+        console.log(terminal);
         const nodeInput = mountWorkflowNodeInput(container, {
             input: input,
-            terminal: terminal,
             manager: this.app,
+            getTerminal: () => {
+                return terminal;
+            }
         });
         const terminalViewEl = nodeInput.$refs.terminal;
         terminal.element = terminalViewEl;

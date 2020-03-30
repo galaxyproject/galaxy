@@ -324,7 +324,7 @@ export class Node {
         });
         // Cleanup any leftover terminals
         _.each(_.difference(_.values(nodeView.terminals), _.values(newTerminals)), (unusedView) => {
-            unusedView.terminal.destroy();
+            unusedView.destroy();
         });
         nodeView.terminals = newTerminals;
         node.nodeView.render();
