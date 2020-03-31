@@ -329,7 +329,7 @@ export class Node {
         _.each(_.difference(_.values(this.input_terminals), _.values(newTerminals)), (unusedTerminals) => {
             unusedTerminals.destroy();
         });
-        this.input_terminals = this.nodeView.terminals = newTerminals;
+        this.input_terminals = newTerminals;
         this.nodeView.render();
 
         // In general workflow editor assumes tool outputs don't change in # or

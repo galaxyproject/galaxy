@@ -10,7 +10,6 @@ export class NodeView {
         this.node_body = this.$el.find(".node-body");
         this.node_body.find("div").remove();
         this.newInputsDiv().appendTo(this.node_body);
-        this.terminals = {};
         this.outputViews = {};
     }
 
@@ -45,7 +44,7 @@ export class NodeView {
         if (!body) {
             body = this.$el.find(".inputs");
         }
-        let terminal = this.terminals[input.name];
+        let terminal = this.node.input_terminals[input.name];
         if (terminal) {
             terminal.update(input);
             terminal.destroyInvalidConnections();
@@ -64,7 +63,6 @@ export class NodeView {
         });
         terminal = nodeInput.terminal;
         this.node.input_terminals[input.name] = terminal;
-        this.terminals[input.name] = terminal;
         return terminal;
     }
 
