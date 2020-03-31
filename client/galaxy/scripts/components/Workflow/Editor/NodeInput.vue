@@ -8,11 +8,16 @@
 
 <script>
 import Terminals from "mvc/workflow/workflow-terminals";
+import TerminalViews from "mvc/workflow/workflow-view-terminals";
 export default {
     props: {
         input: {
             type: Object,
             required: true,
+        },
+        getNode: {
+            type: Function,
+            required: true
         },
         getManager: {
             type: Function,
@@ -44,6 +49,12 @@ export default {
             app: this.getManager(),
             element: this.$refs.terminal,
             input: input,
+        });
+        new TerminalViews.InputTerminalView(this.getManager(), {
+            node: this.getNode(),
+            input: input,
+            el: this.$refs.terminal,
+            terminal: this.terminal,
         });
     },
     methods: {

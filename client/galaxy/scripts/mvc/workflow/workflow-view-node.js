@@ -55,20 +55,14 @@ export class NodeView {
         body.append(container);
         const nodeInput = mountWorkflowNodeInput(container, {
             input: input,
+            getNode: () => {
+                return this.node;
+            },
             getManager: () => {
                 return this.app;
             }
         });
         terminal = nodeInput.terminal;
-        const terminalViewEl = nodeInput.$refs.terminal;
-        terminal.element = terminalViewEl;
-        new TerminalViews.InputTerminalView(this.app, {
-            node: this.node,
-            input: input,
-            el: terminalViewEl,
-            terminal: terminal,
-        });
-        console.log(terminalViewEl);
         this.node.input_terminals[input.name] = terminal;
         this.terminals[input.name] = terminal;
         return terminal;
