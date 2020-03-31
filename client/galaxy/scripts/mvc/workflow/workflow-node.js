@@ -315,6 +315,7 @@ export class Node {
         this.annotation = data.annotation;
         this.label = data.label;
         node.nodeView.renderErrors();
+
         // Update input rows
         var old_body = nodeView.$el.find("div.inputs");
         var new_body = nodeView.newInputsDiv();
@@ -328,6 +329,7 @@ export class Node {
         });
         nodeView.terminals = newTerminals;
         node.nodeView.render();
+
         // In general workflow editor assumes tool outputs don't change in # or
         // type (not really valid right?) but adding special logic here for
         // data collection input parameters that can have their collection
@@ -337,10 +339,10 @@ export class Node {
             nodeView.updateDataOutput(data_outputs[0]);
         }
         old_body.replaceWith(new_body);
-        if ("workflow_outputs" in data) {
-            // Won't be present in response for data inputs
-            this.workflow_outputs = data.workflow_outputs ? data.workflow_outputs : [];
-        }
+
+        // Won't be present in response for data inputs
+        this.workflow_outputs = data.workflow_outputs || [];
+
         // If active, reactivate with new config_form
         this.markChanged();
         this.redraw();

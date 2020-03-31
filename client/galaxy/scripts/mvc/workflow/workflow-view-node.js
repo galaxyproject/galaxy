@@ -68,7 +68,6 @@ export class NodeView {
         });
         const container = document.createElement("div");
         body.append(container);
-        console.log(terminal);
         const nodeInput = mountWorkflowNodeInput(container, {
             input: input,
             getTerminal: () => {
