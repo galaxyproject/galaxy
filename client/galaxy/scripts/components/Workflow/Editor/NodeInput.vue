@@ -7,16 +7,17 @@
 </template>
 
 <script>
+import Terminals from "mvc/workflow/workflow-terminals";
 export default {
     props: {
         input: {
             type: Object,
             required: true,
         },
-        getTerminal: {
+        getManager: {
             type: Function,
-            required: true,
-        },
+            required: true
+        }
     },
     data() {
         return {
@@ -28,12 +29,28 @@ export default {
             return this.input.label || this.input.name;
         },
     },
+    mounted() {
+        var terminalClass = Terminals.InputTerminal;
+        const input = this.input;
+        if (input.input_type == "dataset_collection") {
+            terminalClass = Terminals.InputCollectionTerminal;
+        } else if (input.input_type == "parameter") {
+            terminalClass = Terminals.InputParameterTerminal;
+        }
+        if (this.terminal && !(this.terminal instanceof terminalClass)) {
+            this.terminal.destroy();
+        }
+        this.terminal = new terminalClass({
+            app: this.getManager(),
+            element: this.$refs.terminal,
+            input: input,
+        });
+    },
     methods: {
         onRemove() {
             this.$emit("onRemove");
-            const terminal = this.getTerminal();
-            if (terminal.connectors.length > 0) {
-                terminal.connectors.forEach((x) => {
+            if (this.terminal.connectors.length > 0) {
+                this.terminal.connectors.forEach((x) => {
                     if (x) {
                         x.destroy();
                     }
@@ -41,8 +58,7 @@ export default {
             }
         },
         mouseOver(e) {
-            const terminal = this.getTerminal();
-            if (terminal.connectors.length > 0) {
+            if (this.terminal.connectors.length > 0) {
                 this.showRemove = true;
             }
         },

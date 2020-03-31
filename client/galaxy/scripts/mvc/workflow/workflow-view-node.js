@@ -1,6 +1,5 @@
 import $ from "jquery";
 import TerminalViews from "mvc/workflow/workflow-view-terminals";
-import Terminals from "mvc/workflow/workflow-terminals";
 import { mountWorkflowNodeInput, mountWorkflowNodeOutput } from "components/Workflow/Editor/mount";
 
 export class NodeView {
@@ -46,34 +45,21 @@ export class NodeView {
         if (!body) {
             body = this.$el.find(".inputs");
         }
-        var terminalClass = Terminals.InputTerminal;
-        if (input.input_type == "dataset_collection") {
-            terminalClass = Terminals.InputParameterTerminal;
-        } else if (input.input_type == "parameter") {
-            terminalClass = Terminals.InputCollectionTerminal;
-        }
         let terminal = this.terminals[input.name];
-        if (terminal && !(terminal instanceof terminalClass)) {
-            terminal.destroy();
-        }
         if (terminal) {
             terminal.update(input);
             terminal.destroyInvalidConnections();
             return;
         }
-        terminal = new terminalClass({
-            app: this.app,
-            element: null,
-            input: input,
-        });
         const container = document.createElement("div");
         body.append(container);
         const nodeInput = mountWorkflowNodeInput(container, {
             input: input,
-            getTerminal: () => {
-                return terminal;
-            },
+            getManager: () => {
+                return this.app;
+            }
         });
+        terminal = nodeInput.terminal;
         const terminalViewEl = nodeInput.$refs.terminal;
         terminal.element = terminalViewEl;
         new TerminalViews.InputTerminalView(this.app, {
@@ -82,6 +68,7 @@ export class NodeView {
             el: terminalViewEl,
             terminal: terminal,
         });
+        console.log(terminalViewEl);
         this.node.input_terminals[input.name] = terminal;
         this.terminals[input.name] = terminal;
         return terminal;
