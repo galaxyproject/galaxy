@@ -82,6 +82,7 @@ export class NodeView {
             el: terminalViewEl,
             terminal: terminal,
         });
+        this.node.input_terminals[input.name] = terminal;
         this.terminals[input.name] = terminal;
         return terminal;
     }

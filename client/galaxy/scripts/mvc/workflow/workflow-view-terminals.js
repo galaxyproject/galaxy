@@ -19,7 +19,6 @@ class InputTerminalView {
         this.terminal.node = node;
         this.terminal.name = name;
         this.terminal.label = input.label;
-        node.input_terminals[name] = this.terminal;
         this.el.terminal = this.terminal;
         this.el.setAttribute("input-name", name);
         this.el.setAttribute("id", this.id);

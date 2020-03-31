@@ -317,17 +317,22 @@ export class Node {
         node.nodeView.renderErrors();
 
         // Update input rows
-        var old_body = nodeView.$el.find("div.inputs");
-        var new_body = nodeView.newInputsDiv();
         var newTerminals = {};
         _.each(data.inputs, (input) => {
-            newTerminals[input.name] = node.nodeView.addDataInput(input, new_body);
+            const terminal = this.input_terminals[input.name];
+            if (!terminal) {
+                newTerminals[input.name] = this.nodeView.addDataInput(input);
+            } else {
+                newTerminals[input.name] = terminal;
+                terminal.update(input);
+                terminal.destroyInvalidConnections();
+            }
         });
         // Cleanup any leftover terminals
-        _.each(_.difference(_.values(nodeView.terminals), _.values(newTerminals)), (unusedView) => {
-            unusedView.destroy();
+        _.each(_.difference(_.values(this.input_terminals), _.values(newTerminals)), (unusedTerminals) => {
+            unusedTerminals.destroy();
         });
-        nodeView.terminals = newTerminals;
+        this.input_terminals = nodeView.terminals = newTerminals;
         node.nodeView.render();
 
         // In general workflow editor assumes tool outputs don't change in # or
@@ -338,7 +343,6 @@ export class Node {
         if (data_outputs.length == 1 && "collection_type" in data_outputs[0]) {
             nodeView.updateDataOutput(data_outputs[0]);
         }
-        old_body.replaceWith(new_body);
 
         // Won't be present in response for data inputs
         this.workflow_outputs = data.workflow_outputs || [];
