@@ -23,6 +23,14 @@ class ToolRecommendations():
         self.admin_tool_recommendations_path = None
         self.deprecated_tools = dict()
         self.admin_recommendations = dict()
+        self.model_data_dictionary = dict()
+        self.reverse_dictionary = dict()
+        self.all_tools = dict()
+        self.tool_weights_sorted = dict()
+        self.session = None
+        self.graph = None
+        self.loaded_model = None
+        self.compatible_tools = None
 
     def set_model(self, trans, remote_model_url):
         """
@@ -33,11 +41,11 @@ class ToolRecommendations():
             # keras is not downloaded because of conditional requirement and Galaxy does not build
             try:
                 from keras.models import model_from_json
+                import tensorflow as tf
             except Exception:
                 trans.response.status = 400
                 return False
             self.tool_recommendation_model_path = self.download_model(remote_model_url)
-            self.all_tools = dict()
             model_weights = list()
             counter_layer_weights = 0
             # collect ids and names of all the installed tools
@@ -49,27 +57,32 @@ class ToolRecommendations():
             # read the hdf5 attributes
             trained_model = h5py.File(self.tool_recommendation_model_path, 'r')
             model_config = json.loads(trained_model['model_config'][()])
-            self.loaded_model = model_from_json(model_config)
+            # set tensorflow's graph and session to maintain
+            # consistency between model load and predict methods
+            self.graph = tf.Graph()
+            with self.graph.as_default():
+                self.session = tf.Session(graph=self.graph)
+                with self.session.as_default():
+                    self.loaded_model = model_from_json(model_config)
+                    # iterate through all the attributes of the model to find weights of neural network layers
+                    for item in trained_model.keys():
+                        if "weight_" in item:
+                            d_key = "weight_" + str(counter_layer_weights)
+                            weights = trained_model[d_key][()]
+                            model_weights.append(weights)
+                            counter_layer_weights += 1
+                    # set the model weights
+                    self.loaded_model.set_weights(model_weights)
             # set the dictionary of tools
             self.model_data_dictionary = json.loads(trained_model['data_dictionary'][()])
             self.reverse_dictionary = dict((v, k) for k, v in self.model_data_dictionary.items())
             # set the list of compatible tools
             self.compatible_tools = json.loads(trained_model['compatible_tools'][()])
-            self.tool_weights = json.loads(trained_model['class_weights'][()])
-            self.tool_weights_sorted = dict()
+            tool_weights = json.loads(trained_model['class_weights'][()])
             # sort the tools' usage dictionary
-            tool_pos_sorted = [int(key) for key in self.tool_weights.keys()]
+            tool_pos_sorted = [int(key) for key in tool_weights.keys()]
             for k in tool_pos_sorted:
-                self.tool_weights_sorted[k] = self.tool_weights[str(k)]
-            # iterate through all the attributes of the model to find weights of neural network layers
-            for item in trained_model.keys():
-                if "weight_" in item:
-                    d_key = "weight_" + str(counter_layer_weights)
-                    weights = trained_model[d_key][()]
-                    model_weights.append(weights)
-                    counter_layer_weights += 1
-            # set the model weights
-            self.loaded_model.set_weights(model_weights)
+                self.tool_weights_sorted[k] = tool_weights[str(k)]
         return True
 
     def collect_admin_preferences(self, admin_path):
@@ -204,7 +217,9 @@ class ToolRecommendations():
             sample = np.reshape(sample, (1, max_seq_len))
             # predict next tools for a test path
             try:
-                prediction = self.loaded_model.predict_on_batch(sample)
+                with self.graph.as_default():
+                    with self.session.as_default():
+                        prediction = self.loaded_model.predict(sample)
             except Exception as e:
                 log.exception(e)
                 return prediction_data
