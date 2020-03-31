@@ -68,7 +68,7 @@ export default {
     props: {
         id: {
             type: String,
-            default: null,
+            default: "",
         },
         title: {
             type: String,

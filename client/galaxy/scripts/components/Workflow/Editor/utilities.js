@@ -144,9 +144,9 @@ export function getWorkflowParameters(nodes) {
             });
         }
         if (node.post_job_actions) {
-            Object.entries(node.post_job_actions).forEach(([k, pja]) => {
+            Object.values(node.post_job_actions).forEach((pja) => {
                 if (pja.action_arguments) {
-                    Object.entries(pja.action_arguments).forEach(([k, action_argument]) => {
+                    Object.values(pja.action_arguments).forEach((action_argument) => {
                         if (typeof action_argument === "string") {
                             const arg_matches = action_argument.match(parameter_re);
                             if (arg_matches) {
@@ -198,7 +198,8 @@ export function saveAs(workflow) {
                     window.location = `${getAppRoot()}workflow/editor?id=${id}`;
                     hide_modal();
                 })
-                .fail(() => {
+                .fail((err) => {
+                    console.debug(err);
                     hide_modal();
                     alert("Saving this workflow failed. Please contact this site's administrator.");
                 });
