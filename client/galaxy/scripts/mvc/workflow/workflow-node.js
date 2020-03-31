@@ -225,40 +225,32 @@ export class Node {
         this.label = data.label;
         this.uuid = data.uuid;
         this.workflow_outputs = data.workflow_outputs ? data.workflow_outputs : [];
-        var node = this;
-        var nodeView = new NodeView(this.app, {
+        this.nodeView = new NodeView(this.app, {
             $el: this.element,
-            node: node,
+            node: this,
         });
-        node.nodeView = nodeView;
         $.each(data.inputs, (i, input) => {
-            nodeView.addDataInput(input);
+            this.nodeView.addDataInput(input);
         });
 
         if (data.inputs.length > 0 && data.outputs.length > 0) {
-            nodeView.addRule();
+            this.nodeView.addRule();
         }
         $.each(data.outputs, (i, output) => {
-            nodeView.addDataOutput(output);
+            this.nodeView.addDataOutput(output);
         });
-        nodeView.render();
+        this.nodeView.render();
         this.app.node_changed(this);
     }
     update_field_data(data) {
         var node = this;
-        var nodeView = node.nodeView;
-        if ("post_job_actions" in data) {
-            // Won't be present in response for data inputs
-            var pja_in = data.post_job_actions;
-            this.post_job_actions = pja_in ? pja_in : {};
-        }
         // remove unused output views and remove pre-existing output views from data.outputs,
         // so that these are not added twice.
         var unused_outputs = [];
         // nodeView.outputViews contains pre-existing outputs,
         // while data.data_output contains what should be displayed.
         // Now we gather the unused outputs
-        $.each(nodeView.outputViews, (i, output_view) => {
+        $.each(this.nodeView.outputViews, (i, output_view) => {
             var cur_name = output_view.output.name;
             var data_names = data.outputs;
             var cur_name_in_data_outputs = false;
@@ -273,13 +265,13 @@ export class Node {
         });
         // Remove the unused outputs
         _.each(unused_outputs, (unused_output) => {
-            _.each(nodeView.outputViews[unused_output].terminalElement.terminal.connectors, (x) => {
+            _.each(this.nodeView.outputViews[unused_output].terminalElement.terminal.connectors, (x) => {
                 if (x) {
                     x.destroy(); // Removes the noodle connectors
                 }
             });
-            nodeView.outputViews[unused_output].$el.remove(); // removes the rendered output
-            delete nodeView.outputViews[unused_output]; // removes the reference to the output
+            this.nodeView.outputViews[unused_output].$el.remove(); // removes the rendered output
+            delete this.nodeView.outputViews[unused_output]; // removes the reference to the output
             delete node.output_terminals[unused_output]; // removes the output terminal
         });
         $.each(node.workflow_outputs, (i, wf_output) => {
@@ -288,8 +280,8 @@ export class Node {
             }
         });
         $.each(data.outputs, (i, output) => {
-            if (!nodeView.outputViews[output.name]) {
-                nodeView.addDataOutput(output); // add data output if it does not yet exist
+            if (!this.nodeView.outputViews[output.name]) {
+                this.nodeView.addDataOutput(output); // add data output if it does not yet exist
             } else {
                 // the output already exists, but the output formats may have changed.
                 // Therefore we update the datatypes and destroy invalid connections.
@@ -314,7 +306,12 @@ export class Node {
         this.errors = data.errors;
         this.annotation = data.annotation;
         this.label = data.label;
-        node.nodeView.renderErrors();
+        if ("post_job_actions" in data) {
+            // Won't be present in response for data inputs
+            var pja_in = data.post_job_actions;
+            this.post_job_actions = pja_in ? pja_in : {};
+        }
+        this.nodeView.renderErrors();
 
         // Update input rows
         var newTerminals = {};
@@ -332,8 +329,8 @@ export class Node {
         _.each(_.difference(_.values(this.input_terminals), _.values(newTerminals)), (unusedTerminals) => {
             unusedTerminals.destroy();
         });
-        this.input_terminals = nodeView.terminals = newTerminals;
-        node.nodeView.render();
+        this.input_terminals = this.nodeView.terminals = newTerminals;
+        this.nodeView.render();
 
         // In general workflow editor assumes tool outputs don't change in # or
         // type (not really valid right?) but adding special logic here for
@@ -341,7 +338,7 @@ export class Node {
         // change.
         var data_outputs = data.outputs;
         if (data_outputs.length == 1 && "collection_type" in data_outputs[0]) {
-            nodeView.updateDataOutput(data_outputs[0]);
+            this.nodeView.updateDataOutput(data_outputs[0]);
         }
 
         // Won't be present in response for data inputs
