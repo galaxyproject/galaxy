@@ -38,7 +38,7 @@ class ToolVersionManager(object):
         is called only from the Tool Shed.
         """
         repository = repository_util.get_repository_by_id(self.app, repository_id)
-        repo = hg_util.repository.hg_repo
+        repo = repository.hg_repo
         # Initialize the tool lineage
         version_lineage = [guid]
         # Get all ancestor guids of the received guid.
