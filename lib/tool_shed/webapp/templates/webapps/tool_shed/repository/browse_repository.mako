@@ -38,7 +38,7 @@ ${render_tool_shed_repository_actions( repository, metadata=metadata, changeset_
 
 %if can_browse_contents:
     <div class="toolForm">
-        <div class="toolFormTitle">Repository '${repository.name | h}' revision ${repository.tip( trans.app ) | h} (repository tip)</div>
+        <div class="toolFormTitle">Repository '${repository.name | h}' revision ${repository.tip() | h} (repository tip)</div>
         %if can_download:
             <div class="form-row">
                 <label>Clone this repository:</label>

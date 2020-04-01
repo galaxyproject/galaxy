@@ -29,7 +29,7 @@ class ToolValidator(GalaxyToolValidator):
             # The file no longer exists on disk, so it must have been deleted at some previous
             # point in the change log.
             return False
-        if changeset_revision == repository.tip(self.app):
+        if changeset_revision == repository.tip():
             return True
         file_name = basic_util.strip_path(file_path)
         latest_version_of_file = \

@@ -912,7 +912,7 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
             tip_only = isinstance(repository_type_class, TipOnly)
             if not tip_only and self.new_metadata_required_for_utilities():
                 # Create a new repository_metadata table row.
-                repository_metadata = self.create_or_update_repository_metadata(self.repository.tip(self.app),
+                repository_metadata = self.create_or_update_repository_metadata(self.repository.tip(),
                                                                                 self.metadata_dict)
                 # If this is the first record stored for this repository, see if we need to send any email alerts.
                 if len(self.repository.downloadable_revisions) == 1:
@@ -961,7 +961,7 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
                     self.sa_session.flush()
                 else:
                     # There are no metadata records associated with the repository.
-                    repository_metadata = self.create_or_update_repository_metadata(self.repository.tip(self.app),
+                    repository_metadata = self.create_or_update_repository_metadata(self.repository.tip(),
                                                                                     self.metadata_dict)
             if 'tools' in self.metadata_dict and repository_metadata and status != 'error':
                 # Set tool versions on the new downloadable change set.  The order of the list of changesets is
@@ -974,7 +974,7 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
                 self.add_tool_versions(encoded_id, repository_metadata, changeset_revisions)
         elif len(repo) == 1 and not self.invalid_file_tups:
             message = "Revision <b>%s</b> includes no Galaxy utilities for which metadata can " % \
-                str(self.repository.tip(self.app))
+                str(self.repository.tip())
             message += "be defined so this revision cannot be automatically installed into a local Galaxy instance."
             status = "error"
         if self.invalid_file_tups:

@@ -76,7 +76,7 @@ def get_dependencies_for_metadata_revision(app, metadata):
 
 
 def get_latest_changeset_revision(app, repository):
-    repository_tip = repository.tip(app)
+    repository_tip = repository.tip()
     repository_metadata = get_repository_metadata_by_changeset_revision(app,
                                                                         app.security.encode_id(repository.id),
                                                                         repository_tip)
@@ -89,7 +89,7 @@ def get_latest_changeset_revision(app, repository):
 
 
 def get_latest_downloadable_changeset_revision(app, repository):
-    repository_tip = repository.tip(app)
+    repository_tip = repository.tip()
     repository_metadata = get_repository_metadata_by_changeset_revision(app, app.security.encode_id(repository.id), repository_tip)
     if repository_metadata and repository_metadata.downloadable:
         return repository_tip

@@ -74,7 +74,7 @@ class MetadataGenerator(object):
         else:
             # We're in the Tool Shed.
             if changeset_revision is None and self.repository is not None:
-                self.changeset_revision = self.repository.tip(self.app)
+                self.changeset_revision = self.repository.tip()
             else:
                 self.changeset_revision = changeset_revision
             if repository_clone_url is None and self.repository is not None:
@@ -1077,7 +1077,7 @@ class MetadataGenerator(object):
             if relative_install_dir is None and self.repository is not None:
                 relative_install_dir = repository.repo_path(self.app)
             if changeset_revision is None and self.repository is not None:
-                self.set_changeset_revision(self.repository.tip(self.app))
+                self.set_changeset_revision(self.repository.tip())
             else:
                 self.set_changeset_revision(changeset_revision)
             self.shed_config_dict = {}

@@ -250,7 +250,7 @@ def get_repository_from_refresh_on_change(app, **kwd):
         if k.startswith(changeset_revision_str):
             repository_id = app.security.encode_id(int(k.lstrip(changeset_revision_str)))
             repository = repository_util.get_repository_in_tool_shed(app, repository_id)
-            if repository.tip(app) != v:
+            if repository.tip() != v:
                 return v, repository
     # This should never be reached - raise an exception?
     return v, None

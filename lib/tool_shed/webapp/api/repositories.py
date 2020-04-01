@@ -721,7 +721,7 @@ class RepositoriesController(BaseAPIController):
             tool_shed_status_dict = {}
             # Handle repository deprecation.
             tool_shed_status_dict['repository_deprecated'] = str(repository.deprecated)
-            tip_revision = repository.tip(trans.app)
+            tip_revision = repository.tip()
             # Handle latest installable revision.
             if changeset_revision == tip_revision:
                 tool_shed_status_dict['latest_installable_revision'] = 'True'
@@ -976,7 +976,7 @@ class RepositoriesController(BaseAPIController):
         repo_dir = repository.repo_path(self.app)
 
         upload_point = commit_util.get_upload_point(repository, **kwd)
-        tip = repository.tip(self.app)
+        tip = repository.tip()
 
         file_data = payload.get('file')
         # Code stolen from gx's upload_common.py
@@ -1026,7 +1026,7 @@ class RepositoriesController(BaseAPIController):
             # Update the repository files for browsing.
             hg_util.update_repository(repo_dir)
             # Get the new repository tip.
-            if tip == repository.tip(self.app):
+            if tip == repository.tip():
                 trans.response.status = 400
                 message = 'No changes to repository.'
                 ok = False

@@ -55,7 +55,7 @@ class ToolVersionManager(object):
         current_parent_guid = guid
         for changeset in hg_util.reversed_lower_upper_bounded_changelog(repo,
                                                                         repository_metadata.changeset_revision,
-                                                                        repository.tip(self.app)):
+                                                                        repository.tip()):
             ctx = repo[changeset]
             rm = metadata_util.get_repository_metadata_by_changeset_revision(self.app, repository_id, str(ctx))
             if rm:

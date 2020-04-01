@@ -309,7 +309,7 @@ class Repository(Dictifiable):
                 else:
                     fh.write(line)
 
-    def tip(self, app):
+    def tip(self):
         repo = self.hg_repo
         return str(repo[repo.changelog.tip()])
 
