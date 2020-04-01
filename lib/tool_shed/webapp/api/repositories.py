@@ -721,8 +721,9 @@ class RepositoriesController(BaseAPIController):
             tool_shed_status_dict = {}
             # Handle repository deprecation.
             tool_shed_status_dict['repository_deprecated'] = str(repository.deprecated)
+            tip_revision = repository.tip(trans.app)
             # Handle latest installable revision.
-            if changeset_revision == repository.tip(trans.app):
+            if changeset_revision == tip_revision:
                 tool_shed_status_dict['latest_installable_revision'] = 'True'
             else:
                 next_installable_revision = metadata_util.get_next_downloadable_changeset_revision(trans.app, repository, changeset_revision)
@@ -737,7 +738,7 @@ class RepositoriesController(BaseAPIController):
                     else:
                         tool_shed_status_dict['latest_installable_revision'] = 'True'
             # Handle revision updates.
-            if changeset_revision == repository.tip(trans.app):
+            if changeset_revision == tip_revision:
                 tool_shed_status_dict['revision_update'] = 'False'
             else:
                 if repository_metadata is None:
