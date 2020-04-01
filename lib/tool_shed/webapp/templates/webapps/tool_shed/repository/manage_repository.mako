@@ -16,7 +16,7 @@
         has_metadata = False
 
     is_admin = trans.user_is_admin
-    is_new = repository.is_new( trans.app )
+    is_new = repository.is_new()
 
     if repository.deprecated:
         is_deprecated = True

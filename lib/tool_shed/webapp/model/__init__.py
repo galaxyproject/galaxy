@@ -222,7 +222,7 @@ class Repository(Dictifiable):
     def can_change_type(self, app):
         # Allow changing the type only if the repository has no contents, has never been installed, or has
         # never been changed from the default type.
-        if self.is_new(app):
+        if self.is_new():
             return True
         if self.times_downloaded == 0:
             return True
@@ -274,7 +274,7 @@ class Repository(Dictifiable):
     def installable_revisions(self, app, sort_revisions=True):
         return metadata_util.get_metadata_revisions(app, self, sort_revisions=sort_revisions)
 
-    def is_new(self, app):
+    def is_new(self):
         tip_rev = self.hg_repo.changelog.tiprev()
         return tip_rev < 0
 

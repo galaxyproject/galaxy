@@ -24,7 +24,7 @@
 </%def>
 
 <%
-    is_new = repository.is_new( trans.app )
+    is_new = repository.is_new()
     can_push = trans.app.security_agent.can_push( trans.app, trans.user, repository )
     can_download = not is_new and ( not is_malicious or can_push )
     can_browse_contents = not is_new

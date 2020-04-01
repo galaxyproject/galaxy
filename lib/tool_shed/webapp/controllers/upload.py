@@ -52,7 +52,7 @@ class UploadController(BaseUIController):
         # Part of the upload process is sending email notification to those that have registered to
         # receive them.  One scenario occurs when the first change set is produced for the repository.
         # See the suc.handle_email_alerts() method for the definition of the scenarios.
-        new_repo_alert = repository.is_new(trans.app)
+        new_repo_alert = repository.is_new()
         uploaded_directory = None
         if kwd.get('upload_button', False):
             if file_data == '' and url == '':
