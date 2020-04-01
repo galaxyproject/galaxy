@@ -47,7 +47,7 @@ def main():
 
 		# Each word is stored as an "alternative".  Get the one with the maximum confidence
 		for a in alternatives:
-			if float(a["confidence"]) > max_confidence:
+			if float(a["confidence"]) >= max_confidence:
 				max_confidence = float(a["confidence"])
 				text = a["content"]
 
