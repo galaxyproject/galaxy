@@ -283,7 +283,7 @@ class Repository(Dictifiable):
         # Keep app argumen for compaibility with tool_shed_install Repository model
         return hgweb_config_manager.get_entry(os.path.join("repos", self.user.username, self.name))
 
-    def revision(self, app):
+    def revision(self):
         repo = self.hg_repo
         tip_ctx = repo[repo.changelog.tip()]
         return "%s:%s" % (str(tip_ctx.rev()), str(tip_ctx))

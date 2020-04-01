@@ -140,7 +140,7 @@ class RepositoryGrid(grids.Grid):
 
         def get_value(self, trans, grid, repository):
             """Display the repository tip revision label."""
-            return escape_html(repository.revision(trans.app))
+            return escape_html(repository.revision())
 
     class DescriptionColumn(grids.TextColumn):
 
