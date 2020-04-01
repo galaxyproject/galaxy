@@ -12,7 +12,7 @@ class Metadata(object):
         repo = repository.hg_repo
         return repo.changelog
 
-    def is_valid_for_type(self, app, repository, revisions_to_check=None):
+    def is_valid_for_type(self, repository, revisions_to_check=None):
         raise Exception("Unimplemented Method")
 
 

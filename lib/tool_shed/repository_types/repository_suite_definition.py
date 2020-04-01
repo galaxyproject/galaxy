@@ -14,7 +14,7 @@ class RepositorySuiteDefinition(TipOnly):
         self.label = 'Repository suite definition'
         self.valid_file_names = ['repository_dependencies.xml']
 
-    def is_valid_for_type(self, app, repository, revisions_to_check=None):
+    def is_valid_for_type(self, repository, revisions_to_check=None):
         """
         Inspect the received repository's contents to determine if they abide by the rules defined for
         the contents of this type.  If the received revisions_to_check is a list of changeset revisions,
