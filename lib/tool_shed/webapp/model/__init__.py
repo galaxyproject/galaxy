@@ -202,7 +202,7 @@ class Repository(Dictifiable):
 
     @property
     def hg_repo(self):
-        if WEAK_HG_REPO_CACHE.get(self) is None:
+        if not WEAK_HG_REPO_CACHE.get(self):
             WEAK_HG_REPO_CACHE[self] = hg.repository(ui.ui(), self.repo_path())
         return WEAK_HG_REPO_CACHE[self]
 
