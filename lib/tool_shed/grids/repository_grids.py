@@ -85,7 +85,7 @@ class RepositoryGrid(grids.Grid):
 
         def get_value(self, trans, grid, repository):
             """Display the current repository heads."""
-            repo = hg_util.get_repo_for_repository(trans.app, repository=repository)
+            repo = repository.hg_repo
             heads = hg_util.get_repository_heads(repo)
             multiple_heads = len(heads) > 1
             if multiple_heads:

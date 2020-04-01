@@ -190,6 +190,13 @@ class Repository(Dictifiable):
         self.times_downloaded = times_downloaded
         self.deprecated = deprecated
         self.create_time = create_time
+        self._hg_repo = None
+
+    @property
+    def hg_repo(self):
+        if self._hg_repo is None:
+            self._hg_repo = hg_util.get_repo_for_repository(self)
+        return self._hg_repo
 
     @property
     def admin_role(self):
@@ -202,8 +209,7 @@ class Repository(Dictifiable):
                         (str(self.name), str(self.user.username)))
 
     def allow_push(self, app):
-        repo = hg_util.get_repo_for_repository(app, repository=self)
-        return repo.ui.config('web', 'allow_push')
+        return self.hg_repo.ui.config('web', 'allow_push')
 
     def can_change_type(self, app):
         # Allow changing the type only if the repository has no contents, has never been installed, or has
@@ -261,15 +267,14 @@ class Repository(Dictifiable):
         return metadata_util.get_metadata_revisions(app, self, sort_revisions=sort_revisions)
 
     def is_new(self, app):
-        repo = hg_util.get_repo_for_repository(app, repository=self)
-        tip_rev = repo.changelog.tiprev()
+        tip_rev = self.hg_repo.changelog.tiprev()
         return tip_rev < 0
 
     def repo_path(self, app):
         return app.hgweb_config_manager.get_entry(os.path.join("repos", self.user.username, self.name))
 
     def revision(self, app):
-        repo = hg_util.get_repo_for_repository(app, repository=self)
+        repo = self.hg_repo
         tip_ctx = repo[repo.changelog.tip()]
         return "%s:%s" % (str(tip_ctx.rev()), str(tip_ctx))
 
@@ -296,7 +301,7 @@ class Repository(Dictifiable):
                     fh.write(line)
 
     def tip(self, app):
-        repo = hg_util.get_repo_for_repository(app, repository=self)
+        repo = self.hg_repo
         return str(repo[repo.changelog.tip()])
 
     def to_dict(self, view='collection', value_mapper=None):

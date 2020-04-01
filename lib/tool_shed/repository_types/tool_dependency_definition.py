@@ -2,10 +2,7 @@ import logging
 
 import tool_shed.repository_types.util as rt_util
 from tool_shed.repository_types.metadata import TipOnly
-from tool_shed.util import (
-    basic_util,
-    hg_util
-)
+from tool_shed.util import basic_util
 
 log = logging.getLogger(__name__)
 
@@ -23,7 +20,7 @@ class ToolDependencyDefinition(TipOnly):
         If the received revisions_to_check is a list of changeset revisions, then inspection will be restricted to the revisions
         in the list.
         """
-        repo = hg_util.get_repo_for_repository(app, repository=repository)
+        repo = repository.hg_repo
         if revisions_to_check:
             changeset_revisions = revisions_to_check
         else:

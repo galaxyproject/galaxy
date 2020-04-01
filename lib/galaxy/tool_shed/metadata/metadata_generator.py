@@ -17,10 +17,7 @@ from galaxy.tool_shed.util import (
     tool_util,
 )
 from galaxy.tool_shed.util.basic_util import remove_dir, strip_path
-from galaxy.tool_shed.util.hg_util import (
-    get_config_from_disk,
-    get_repo_for_repository,
-)
+from galaxy.tool_shed.util.hg_util import get_config_from_disk
 from galaxy.tool_shed.util.metadata_util import get_updated_changeset_revisions_from_tool_shed
 from galaxy.tool_shed.util.repository_util import get_repository_for_dependency_relationship
 from galaxy.tool_util.loader_directory import looks_like_a_tool
@@ -989,7 +986,7 @@ class MetadataGenerator(object):
                     log.debug(error_message)
                     is_valid = False
                     return repository_dependency_tup, is_valid, error_message
-                repo = get_repo_for_repository(self.app, repository=repository)
+                repo = repository.hg_repo
 
                 # The received changeset_revision may be None since defining it in the dependency definition is optional.
                 # If this is the case, the default will be to set its value to the repository dependency tip revision.
