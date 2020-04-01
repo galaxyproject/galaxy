@@ -6,6 +6,11 @@ from datetime import (
     timedelta
 )
 
+from mercurial import (
+    hg,
+    ui
+)
+
 import tool_shed.repository_types.util as rt_util
 from galaxy import util
 from galaxy.model.orm.now import now
@@ -18,6 +23,7 @@ from tool_shed.util import (
     hg_util,
     metadata_util
 )
+from tool_shed.util.hgweb_config import hgweb_config_manager
 
 log = logging.getLogger(__name__)
 
@@ -197,8 +203,8 @@ class Repository(Dictifiable):
     @property
     def hg_repo(self):
         if WEAK_HG_REPO_CACHE.get(self) is None:
-            WEAK_HG_REPO_CACH[self] = hg_util.get_repo_for_repository(self)
-        return WEAK_HG_REPO_CACH[self]
+            WEAK_HG_REPO_CACHE[self] = hg.repository(ui.ui(), self.repo_path())
+        return WEAK_HG_REPO_CACHE[self]
 
     @property
     def admin_role(self):
@@ -272,8 +278,9 @@ class Repository(Dictifiable):
         tip_rev = self.hg_repo.changelog.tiprev()
         return tip_rev < 0
 
-    def repo_path(self, app):
-        return app.hgweb_config_manager.get_entry(os.path.join("repos", self.user.username, self.name))
+    def repo_path(self, app=None):
+        # Keep app argumen for compaibility with tool_shed_install Repository model
+        return hgweb_config_manager.get_entry(os.path.join("repos", self.user.username, self.name))
 
     def revision(self, app):
         repo = self.hg_repo
@@ -291,7 +298,7 @@ class Repository(Dictifiable):
         allow_push = '%s\n' % ','.join(allow_push)
         # Why doesn't the following work?
         # repo.ui.setconfig('web', 'allow_push', allow_push)
-        repo_dir = self.repo_path(app)
+        repo_dir = self.repo_path()
         hgrc_file = hg_util.get_hgrc_path(repo_dir)
         with open(hgrc_file, 'rb') as fh:
             lines = fh.readlines()
