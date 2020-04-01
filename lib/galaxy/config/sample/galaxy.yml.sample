@@ -761,6 +761,13 @@ galaxy:
   # Enable InteractiveTools.
   #interactivetools_enable: false
 
+  # Proxy host - assumed to just be hosted on the same hostname and port
+  # as Galaxy by default.
+  #interactivetools_proxy_host: null
+
+  # Map for interactivetool proxy.
+  #interactivetools_map: interactivetools_map.sqlite
+
   # Show visualization tab and list in masthead.
   #visualizations_visible: true
 
