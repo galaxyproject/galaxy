@@ -45,11 +45,11 @@ export class NodeView {
             body = this.$el.find(".inputs");
         }
         let terminal = this.node.input_terminals[input.name];
-        if (terminal) {
+        /*if (terminal) {
             terminal.update(input);
             terminal.destroyInvalidConnections();
             return;
-        }
+        }*/
         const container = document.createElement("div");
         body.append(container);
         const nodeInput = mountWorkflowNodeInput(container, {
@@ -61,8 +61,7 @@ export class NodeView {
                 return this.app;
             }
         });
-        terminal = nodeInput.terminal;
-        this.node.input_terminals[input.name] = terminal;
+        this.node.input_terminals[input.name] = nodeInput.terminal;
         return terminal;
     }
 

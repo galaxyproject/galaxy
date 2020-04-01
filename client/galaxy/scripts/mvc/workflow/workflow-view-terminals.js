@@ -15,6 +15,8 @@ class InputTerminalView {
         const input = options.input;
         const name = input.name;
         const nodeIndex = NODEINDEX++;
+        console.log("Input");
+        console.log(NODEINDEX);
         this.id = `node-${nodeIndex}-input-${name}`;
         this.terminal.node = node;
         this.terminal.name = name;
@@ -96,6 +98,8 @@ export class BaseOutputTerminalView {
         const output = options.output;
         const name = output.name;
         const nodeIndex = NODEINDEX++;
+        console.log("Output");
+        console.log(NODEINDEX);
         this.id = `node-${nodeIndex}-output-${name}`;
         this.terminal = this.terminalForOutput(output);
         this.terminal.node = node;

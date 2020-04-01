@@ -1,13 +1,16 @@
 import _ from "underscore";
 import $ from "jquery";
+import Vue from "vue";
 import { getAppRoot } from "onload/loadConfig";
 import Utils from "utils/utils";
 import { NodeView } from "./workflow-view-node";
+import { mountWorkflowNodeInput } from "components/Workflow/Editor/mount";
 
 export class Node {
     constructor(app, attr = {}) {
         this.app = app;
         this.element = $(attr.element);
+        this.nodeVue = attr.nodeVue;
         this.input_terminals = {};
         this.output_terminals = {};
         this.errors = null;
@@ -229,9 +232,23 @@ export class Node {
             $el: this.element,
             node: this,
         });
-        $.each(data.inputs, (i, input) => {
-            this.nodeView.addDataInput(input);
-        });
+
+        this.nodeVue.inputs = Object.assign({}, data.inputs);
+        if (Object.keys(this.nodeVue.inputs).length > 0) {
+            Vue.nextTick(() => {
+                console.log(data.inputs);
+                this.input_terminals = this.nodeVue.inputTerminals;
+                if (data.inputs.length > 0 && data.outputs.length > 0) {
+                    this.nodeView.addRule();
+                }
+                $.each(data.outputs, (i, output) => {
+                    this.nodeView.addDataOutput(output);
+                });
+                this.nodeView.render();
+                this.app.node_changed(this);
+            });
+            return;
+        }
         if (data.inputs.length > 0 && data.outputs.length > 0) {
             this.nodeView.addRule();
         }

@@ -22,7 +22,7 @@ export default {
         getManager: {
             type: Function,
             required: true
-        }
+        },
     },
     data() {
         return {
@@ -34,7 +34,7 @@ export default {
             return this.input.label || this.input.name;
         },
     },
-    mounted() {
+    created() {
         var terminalClass = Terminals.InputTerminal;
         const input = this.input;
         if (input.input_type == "dataset_collection") {
@@ -50,12 +50,16 @@ export default {
             element: this.$refs.terminal,
             input: input,
         });
+        this.$emit("onAdd", this.input, this.terminal);
+    },
+    mounted() {
         new TerminalViews.InputTerminalView(this.getManager(), {
             node: this.getNode(),
-            input: input,
+            input: this.input,
             el: this.$refs.terminal,
             terminal: this.terminal,
         });
+        this.terminal.element =  this.$refs.terminal;
     },
     methods: {
         onRemove() {

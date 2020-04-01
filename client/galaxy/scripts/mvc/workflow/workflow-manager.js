@@ -1,10 +1,10 @@
 import $ from "jquery";
 import Connector from "mvc/workflow/workflow-connector";
 import { Toast } from "ui/toast";
-import { Node } from "mvc/workflow/workflow-node";
 import { mountWorkflowNode } from "components/Workflow/Editor/mount";
 import WorkflowCanvas from "mvc/workflow/workflow-canvas";
 import EventEmitter from "events";
+import Vue from "vue";
 
 class Workflow extends EventEmitter {
     constructor(options, canvas_container) {
@@ -147,7 +147,6 @@ class Workflow extends EventEmitter {
             }
         });
         const node = nodeVue.node;
-        console.log(nodeVue.node);
         node.type = type;
         node.content_id = content_id;
 
@@ -375,32 +374,34 @@ class Workflow extends EventEmitter {
             }
         });
         wf.id_counter = max_id + 1;
-        // Second pass, connections
-        Object.entries(data.steps).forEach(([id, step]) => {
-            const node = wf.nodes[parseInt(id) + offset];
-            Object.entries(step.input_connections).forEach(([k, v]) => {
-                if (v) {
-                    if (!Array.isArray(v)) {
-                        v = [v];
+        Vue.nextTick(() => {
+            // Second pass, connections
+            Object.entries(data.steps).forEach(([id, step]) => {
+                const node = wf.nodes[parseInt(id) + offset];
+                Object.entries(step.input_connections).forEach(([k, v]) => {
+                    if (v) {
+                        if (!Array.isArray(v)) {
+                            v = [v];
+                        }
+                        v.forEach((x) => {
+                            const other_node = wf.nodes[parseInt(x.id) + offset];
+                            const c = new Connector(this.canvas_manager);
+                            c.connect(other_node.output_terminals[x.output_name], node.input_terminals[k]);
+                            c.redraw();
+                        });
                     }
-                    v.forEach((x) => {
-                        const other_node = wf.nodes[parseInt(x.id) + offset];
-                        const c = new Connector(this.canvas_manager);
-                        c.connect(other_node.output_terminals[x.output_name], node.input_terminals[k]);
-                        c.redraw();
+                });
+                if (using_workflow_outputs) {
+                    // Ensure that every output terminal has a WorkflowOutput or HideDatasetAction.
+                    Object.values(node.output_terminals).forEach((ot) => {
+                        if (node.post_job_actions[`HideDatasetAction${ot.name}`] === undefined) {
+                            node.addWorkflowOutput(ot.name);
+                            node.markWorkflowOutput(ot.name);
+                            wf.has_changes = true;
+                        }
                     });
                 }
             });
-            if (using_workflow_outputs) {
-                // Ensure that every output terminal has a WorkflowOutput or HideDatasetAction.
-                Object.values(node.output_terminals).forEach((ot) => {
-                    if (node.post_job_actions[`HideDatasetAction${ot.name}`] === undefined) {
-                        node.addWorkflowOutput(ot.name);
-                        node.markWorkflowOutput(ot.name);
-                        wf.has_changes = true;
-                    }
-                });
-            }
         });
     }
     reload_active_node() {

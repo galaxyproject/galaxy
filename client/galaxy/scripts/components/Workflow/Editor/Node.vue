@@ -41,6 +41,13 @@
             <span class="node-title">{{ title }}</span>
         </div>
         <div class="node-body">
+            <node-input v-for="input in inputs"
+                :key="input.name"
+                :input="input"
+                :get-node="getNode"
+                :get-manager="getManager"
+                @onAdd="onAdd"
+            />
             <div>
                 <loading-span message="Loading details" />
             </div>
@@ -57,6 +64,7 @@ import LoadingSpan from "components/LoadingSpan";
 import { getGalaxyInstance } from "app";
 import WorkflowRecommendations from "components/Workflow/Editor/Recommendations";
 import { Node } from "mvc/workflow/workflow-node";
+import NodeInput from "./NodeInput";
 
 Vue.use(BootstrapVue);
 
@@ -64,12 +72,7 @@ export default {
     components: {
         LoadingSpan,
         WorkflowRecommendations,
-    },
-    data() {
-        return {
-            popoverShow: false,
-            node: null
-        };
+        NodeInput,
     },
     props: {
         id: {
@@ -97,9 +100,16 @@ export default {
             default: null,
         }
     },
+    data() {
+        return {
+            popoverShow: false,
+            node: null,
+            inputTerminals: {},
+            inputs: [],
+        };
+    },
     mounted() {
-        this.node = new Node(this.getManager(), { element: this.f }),
-        console.log(this.node);
+        this.node = new Node(this.getManager(), { nodeVue: this, element: this.f });
     },
     computed: {
         iconClass() {
@@ -120,6 +130,15 @@ export default {
         },
     },
     methods: {
+        onAdd(input, terminal) {
+            /*const oldterminal = this.node.input_terminals[input.name];
+            if (oldterminal) {
+                oldterminal.update(input.name);
+                oldterminal.destroyInvalidConnections();
+                return;
+            }*/
+            this.inputTerminals[input.name] = terminal;
+        },
         onDestroy() {
             this.node.destroy();
         },
@@ -137,6 +156,9 @@ export default {
                 this.node.app.set_node(node, response);
                 this.popoverShow = false;
             });
+        },
+        getNode() {
+            return this.node;
         },
     },
 };
