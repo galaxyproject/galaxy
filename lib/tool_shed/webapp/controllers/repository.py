@@ -1751,7 +1751,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                                                                                            selected_value=changeset_revision,
                                                                                            add_id_to_name=False,
                                                                                            downloadable=False)
-        revision_label = hg_util.get_revision_label(trans.app, repository, repository.tip(trans.app), include_date=False)
+        revision_label = hg_util.get_revision_label(trans.app, repository, repository.tip(), include_date=False)
         repository_metadata = None
         metadata = None
         is_malicious = False
