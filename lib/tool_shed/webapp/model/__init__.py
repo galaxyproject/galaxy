@@ -1,5 +1,6 @@
 import logging
 import os
+import weakref
 from datetime import (
     datetime,
     timedelta
@@ -19,6 +20,8 @@ from tool_shed.util import (
 )
 
 log = logging.getLogger(__name__)
+
+WEAK_HG_REPO_CACHE = weakref.WeakKeyDictionary()
 
 
 class APIKeys(object):
@@ -190,13 +193,12 @@ class Repository(Dictifiable):
         self.times_downloaded = times_downloaded
         self.deprecated = deprecated
         self.create_time = create_time
-        self._hg_repo = None
 
     @property
     def hg_repo(self):
-        if self._hg_repo is None:
-            self._hg_repo = hg_util.get_repo_for_repository(self)
-        return self._hg_repo
+        if WEAK_HG_REPO_CACHE.get(self) is None:
+            WEAK_HG_REPO_CACH[self] = hg_util.get_repo_for_repository(self)
+        return WEAK_HG_REPO_CACH[self]
 
     @property
     def admin_role(self):
