@@ -220,7 +220,7 @@ class Repository(Dictifiable):
     def allow_push(self):
         return self.hg_repo.ui.config('web', 'allow_push')
 
-    def can_change_type(self, app):
+    def can_change_type(self):
         # Allow changing the type only if the repository has no contents, has never been installed, or has
         # never been changed from the default type.
         if self.is_new():
@@ -234,7 +234,7 @@ class Repository(Dictifiable):
     def can_change_type_to(self, app, new_type_label):
         if self.type == new_type_label:
             return False
-        if self.can_change_type(app):
+        if self.can_change_type():
             new_type = app.repository_types_registry.get_class_by_label(new_type_label)
             if new_type.is_valid_for_type(app, self):
                 return True
