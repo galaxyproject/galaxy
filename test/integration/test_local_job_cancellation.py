@@ -27,6 +27,11 @@ class CancelsJob(object):
         job_dict = running_response["jobs"][0]
         return job_dict["id"]
 
+    def _wait_for_job_running(self, job_id):
+        self.galaxy_interactor.wait_for(lambda: self._get("jobs/%s" % job_id).json()['state'] != 'running',
+                                        what="Wait for job to start running",
+                                        maxseconds=60)
+
 
 class LocalJobCancellationTestCase(CancelsJob, integration_util.IntegrationTestCase):
 
@@ -39,9 +44,7 @@ class LocalJobCancellationTestCase(CancelsJob, integration_util.IntegrationTestC
     def test_cancel_job_with_admin_message(self):
         with self.dataset_populator.test_history() as history_id:
             job_id = self._setup_cat_data_and_sleep(history_id)
-            self.galaxy_interactor.wait_for(lambda: self._get("jobs/%s" % job_id).json()['state'] != 'running',
-                                            what="Wait for job to start running",
-                                            maxseconds=60)
+            self._wait_for_job_running(job_id)
             app = self._app
             sa_session = app.model.context.current
             Job = app.model.Job
