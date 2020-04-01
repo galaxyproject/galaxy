@@ -15,14 +15,19 @@ import os
 import string
 import tempfile
 
+from galaxy.jobs.runners.util.pykube_util import (
+    Job,
+    pykube_client_from_dict,
+)
 from galaxy_test.base.populators import skip_without_tool
 from galaxy_test.driver import integration_util
 from .test_containerized_jobs import EXTENDED_TIMEOUT, MulledJobTestCases
 from .test_job_environments import BaseJobEnvironmentIntegrationTestCase
+from .test_local_job_cancellation import CancelsJob
 
 TOOL_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'tools'))
-AMQP_URL = os.environ.get("GALAXY_TEST_AMQP_URL", "amqp://guest:guest@localhost:5672//")
 GALAXY_TEST_KUBERNETES_INFRASTRUCTURE_HOST = os.environ.get("GALAXY_TEST_KUBERNETES_INFRASTRUCTURE_HOST", "host.docker.internal")
+AMQP_URL = integration_util.AMQP_URL
 
 
 CONTAINERIZED_TEMPLATE = """
@@ -32,7 +37,6 @@ runners:
     workers: 1
   pulsar_k8s:
     load: galaxy.jobs.runners.pulsar:PulsarKubernetesJobRunner
-    galaxy_url: ${infrastructure_url}
     amqp_url: ${amqp_url}
 
 execution:
@@ -63,7 +67,6 @@ runners:
     workers: 1
   pulsar_k8s:
     load: galaxy.jobs.runners.pulsar:PulsarKubernetesJobRunner
-    galaxy_url: ${infrastructure_url}
     amqp_url: ${amqp_url}
 
 execution:
@@ -87,16 +90,12 @@ tools:
 
 def job_config(template_str, jobs_directory):
     job_conf_template = string.Template(template_str)
-    port = os.environ.get('GALAXY_TEST_PORT')
-    assert port
-    infrastructure_url = "http://%s:%s" % (GALAXY_TEST_KUBERNETES_INFRASTRUCTURE_HOST, port)
     container_amqp_url = to_infrastructure_uri(AMQP_URL)
     job_conf_str = job_conf_template.substitute(jobs_directory=jobs_directory,
                                                 tool_directory=TOOL_DIR,
                                                 k8s_config_path=integration_util.k8s_config_path(),
                                                 amqp_url=AMQP_URL,
                                                 container_amqp_url=container_amqp_url,
-                                                infrastructure_url=infrastructure_url,
                                                 )
     with tempfile.NamedTemporaryFile(suffix="_kubernetes_integration_job_conf.yml", mode="w", delete=False) as job_conf:
         job_conf.write(job_conf_str)
@@ -104,18 +103,20 @@ def job_config(template_str, jobs_directory):
 
 
 @integration_util.skip_unless_kubernetes()
-@integration_util.skip_unless_fixed_port()
+@integration_util.skip_unless_amqp()
 class BaseKubernetesStagingTest(BaseJobEnvironmentIntegrationTestCase, MulledJobTestCases):
+    # Test leverages $UWSGI_PORT in job code, need to set this up.
+    require_uwsgi = True
 
     def setUp(self):
-        super(KubernetesStagingContainerIntegrationTestCase, self).setUp()
+        super(BaseKubernetesStagingTest, self).setUp()
         self.history_id = self.dataset_populator.new_history()
 
     @classmethod
     def setUpClass(cls):
         # realpath for docker deployed in a VM on Mac, also done in driver_util.
         cls.jobs_directory = os.path.realpath(tempfile.mkdtemp())
-        super(KubernetesStagingContainerIntegrationTestCase, cls).setUpClass()
+        super(BaseKubernetesStagingTest, cls).setUpClass()
 
 
 class KubernetesStagingContainerIntegrationTestCase(BaseKubernetesStagingTest):
@@ -128,6 +129,7 @@ class KubernetesStagingContainerIntegrationTestCase(BaseKubernetesStagingTest):
         config["default_job_shell"] = '/bin/sh'
         # Disable local tool dependency resolution.
         config["tool_dependency_dir"] = "none"
+        set_infrastucture_url(config)
 
     @skip_without_tool("job_environment_default")
     def test_job_environment(self):
@@ -149,12 +151,18 @@ class KubernetesDependencyResolutionIntegrationTestCase(BaseKubernetesStagingTes
         # Disable tool dependency resolution.
         config["tool_dependency_dir"] = "none"
         config["enable_beta_mulled_containers"] = "true"
+        set_infrastucture_url(config)
 
     def test_mulled_simple(self):
         self.dataset_populator.run_tool("mulled_example_simple", {}, self.history_id)
         self.dataset_populator.wait_for_history(self.history_id, assert_ok=True)
         output = self.dataset_populator.get_history_dataset_content(self.history_id, timeout=EXTENDED_TIMEOUT)
         assert "0.7.15-r1140" in output
+
+
+def set_infrastucture_url(config):
+    infrastructure_url = "http://%s:$UWSGI_PORT" % GALAXY_TEST_KUBERNETES_INFRASTRUCTURE_HOST
+    config["galaxy_infrastructure_url"] = infrastructure_url
 
 
 def to_infrastructure_uri(uri):
