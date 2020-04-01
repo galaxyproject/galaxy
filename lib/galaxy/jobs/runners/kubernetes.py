@@ -19,6 +19,7 @@ from galaxy.jobs.runners import (
 from galaxy.jobs.runners.util.pykube_util import (
     DEFAULT_JOB_API_VERSION,
     ensure_pykube,
+    find_job_object_by_name,
     galaxy_instance_id,
     Job,
     job_object_dict,
@@ -26,6 +27,7 @@ from galaxy.jobs.runners.util.pykube_util import (
     produce_unique_k8s_job_name,
     pull_policy,
     pykube_client_from_dict,
+    stop_job,
 )
 from galaxy.util.bytesize import ByteSize
 
@@ -493,19 +495,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
     def __cleanup_k8s_job(self, job):
         k8s_cleanup_job = self.runner_params['k8s_cleanup_job']
-        job_failed = (job.obj['status']['failed'] > 0
-                      if 'failed' in job.obj['status'] else False)
-        # Scale down the job just in case even if cleanup is never
-        job.scale(replicas=0)
-        if (k8s_cleanup_job == "always" or
-                (k8s_cleanup_job == "onsuccess" and not job_failed)):
-            delete_options = {
-                "apiVersion": "v1",
-                "kind": "DeleteOptions",
-                "propagationPolicy": "Background"
-            }
-            r = job.api.delete(json=delete_options, **job.api_kwargs())
-            job.api.raise_for_status(r)
+        stop_job(job, k8s_cleanup_job)
 
     def __job_failed_due_to_walltime_limit(self, job):
         conditions = job.obj['status'].get('conditions') or []
@@ -534,11 +524,10 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         """Attempts to delete a dispatched job to the k8s cluster"""
         job = job_wrapper.get_job()
         try:
-            jobs = Job.objects(self._pykube_api).filter(
-                selector="app=" + self.__produce_unique_k8s_job_name(job.get_id_tag()),
-                namespace=self.runner_params['k8s_namespace'])
-            if len(jobs.response['items']) > 0:
-                job_to_delete = Job(self._pykube_api, jobs.response['items'][0])
+            name = self.__produce_unique_k8s_job_name(job.get_id_tag())
+            namespace = self.runner_params['k8s_namespace']
+            job_to_delete = find_job_object_by_name(self._pykube_api, name, namespace)
+            if job_to_delete:
                 self.__cleanup_k8s_job(job_to_delete)
             # TODO assert whether job parallelism == 0
             # assert not job_to_delete.exists(), "Could not delete job,"+job.job_runner_external_id+" it still exists"

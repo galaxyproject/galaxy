@@ -18,6 +18,7 @@ import tempfile
 
 from galaxy_test.base.populators import skip_without_tool
 from galaxy_test.driver import integration_util
+from .test_local_job_cancellation import CancelsJob
 from .test_containerized_jobs import EXTENDED_TIMEOUT, MulledJobTestCases
 from .test_job_environments import BaseJobEnvironmentIntegrationTestCase
 
@@ -118,22 +119,58 @@ class BaseKubernetesStagingTest(BaseJobEnvironmentIntegrationTestCase, MulledJob
         super(BaseKubernetesStagingTest, cls).setUpClass()
 
 
-class KubernetesStagingContainerIntegrationTestCase(BaseKubernetesStagingTest):
+class KubernetesStagingContainerIntegrationTestCase(CancelsJob, BaseKubernetesStagingTest):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         config["jobs_directory"] = cls.jobs_directory
         config["file_path"] = cls.jobs_directory
-        config["job_config_file"] = job_config(CONTAINERIZED_TEMPLATE, cls.jobs_directory)
+        cls.job_config_file = job_config(CONTAINERIZED_TEMPLATE, cls.jobs_directory)
+        config["job_config_file"] = cls.job_config_file
         config["default_job_shell"] = '/bin/sh'
         # Disable local tool dependency resolution.
         config["tool_dependency_dir"] = "none"
         set_infrastucture_url(config)
 
+    @property
+    def instance_id(self):
+        import yaml
+        config = yaml.load(open(self.job_config_file, "r"))
+        return config["execution"]["environments"]["pulsar_k8s_environment"]["k8s_galaxy_instance_id"]
+
+    @skip_without_tool("cat_data_and_sleep")
+    def test_job_cancel(self):
+        with self.dataset_populator.test_history() as history_id:
+            job_id = self._setup_cat_data_and_sleep(history_id)
+            self._wait_for_job_running(job_id)
+
+            assert self._active_kubernetes_jobs == 1
+
+            delete_response = self.dataset_populator.cancel_job(job_id)
+            assert delete_response.json() is True
+
+            import time
+            time.sleep(5)
+
+            assert self._active_kubernetes_jobs == 0
+
     @skip_without_tool("job_environment_default")
     def test_job_environment(self):
         job_env = self._run_and_get_environment_properties()
         assert job_env.some_env == '42'
+
+    @property
+    def _active_kubernetes_jobs(self):
+        pykube_api = pykube_client_from_dict({})
+        # TODO: namespace.
+        jobs = Job.objects(pykube_api).filter()
+        active = 0
+        for job in jobs:
+            if self.instance_id not in job.obj["metadata"]["name"]:
+                continue
+            status = job.obj["status"]
+            active += status.get("active", 0)
+        return active
 
 
 @integration_util.skip_unless_kubernetes()

@@ -23,6 +23,9 @@ log = logging.getLogger(__name__)
 
 DEFAULT_JOB_API_VERSION = "batch/v1"
 DEFAULT_NAMESPACE = "default"
+INSTANCE_ID_INVALID_MESSAGE = ("Galaxy instance [%s] is either too long "
+                               "(>20 characters) or it includes non DNS "
+                               "acceptable characters, ignoring it.")
 
 
 def ensure_pykube():
@@ -65,6 +68,34 @@ def pull_policy(params):
     return None
 
 
+def find_job_object_by_name(pykube_api, job_name, namespace=None):
+    filter_kwd = dict(selector="app=%s" % job_name)
+    if namespace is not None:
+        filter_kwd["namespace"] = namespace
+
+    jobs = Job.objects(pykube_api).filter(**filter_kwd)
+    job = None
+    if len(jobs.response['items']) > 0:
+        job = Job(pykube_api, jobs.response['items'][0])
+    return job
+
+
+def stop_job(job, cleanup="always"):
+    job_failed = (job.obj['status']['failed'] > 0
+                  if 'failed' in job.obj['status'] else False)
+    # Scale down the job just in case even if cleanup is never
+    job.scale(replicas=0)
+    if (cleanup == "always" or
+            (cleanup == "onsuccess" and not job_failed)):
+        delete_options = {
+            "apiVersion": "v1",
+            "kind": "DeleteOptions",
+            "propagationPolicy": "Background"
+        }
+        r = job.api.delete(json=delete_options, **job.api_kwargs())
+        job.api.raise_for_status(r)
+
+
 def job_object_dict(params, job_name, spec):
     k8s_job_obj = {
         "apiVersion": params.get('k8s_job_api_version', DEFAULT_JOB_API_VERSION),
@@ -94,17 +125,18 @@ def galaxy_instance_id(params):
     setup of a Job that is being recovered or restarted after a downtime/reboot.
     """
     if "k8s_galaxy_instance_id" in params:
-        if re.match(r"(?!-)[a-z\d-]{1,20}(?<!-)$", params['k8s_galaxy_instance_id']):
-            return params['k8s_galaxy_instance_id']
+        raw_value = params['k8s_galaxy_instance_id']
+        if re.match(r"(?!-)[a-z\d-]{1,20}(?<!-)$", raw_value):
+            return raw_value
         else:
-            log.error("Galaxy instance '" + params['k8s_galaxy_instance_id'] + "' is either too long "
-                        + '(>20 characters) or it includes non DNS acceptable characters, ignoring it.')
+            log.error(INSTANCE_ID_INVALID_MESSAGE % raw_value)
     return None
 
 
 __all__ = (
     "DEFAULT_JOB_API_VERSION",
     "ensure_pykube",
+    "find_job_object_by_name",
     "galaxy_instance_id",
     "Job",
     "job_object_dict",
@@ -112,4 +144,5 @@ __all__ = (
     "produce_unique_k8s_job_name",
     "pull_policy",
     "pykube_client_from_dict",
+    "stop_job",
 )
