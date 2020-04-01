@@ -13,10 +13,10 @@ from galaxy.util import (
     pretty_print_time_interval,
     unicodify
 )
+from tool_shed.util.hgweb_config import hgweb_config_manager
 from tool_shed.webapp import model
 from tool_shed.webapp.search.repo_search import schema as repo_schema
 from tool_shed.webapp.search.tool_search import schema as tool_schema
-from tool_shed.util.hgweb_config import hgweb_config_manager
 
 log = logging.getLogger(__name__)
 

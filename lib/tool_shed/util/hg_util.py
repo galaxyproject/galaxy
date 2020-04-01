@@ -263,7 +263,6 @@ __all__ = (
     'get_file_context_from_ctx',
     'get_named_tmpfile_from_ctx',
     'get_readable_ctx_date',
-    'get_repo_for_repository',
     'get_repository_heads',
     'get_reversed_changelog_changesets',
     'get_revision_label',
