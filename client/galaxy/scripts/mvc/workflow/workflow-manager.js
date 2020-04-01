@@ -47,7 +47,8 @@ class Workflow extends EventEmitter {
             }
         };
     }
-    set_node(node, data) {
+    set_node(nodeVue, data) {
+        const node = nodeVue.node;
         node.init_field_data(data);
         node.update_field_data(data);
         Object.values(node.output_terminals).forEach((ot) => {
@@ -105,12 +106,13 @@ class Workflow extends EventEmitter {
         return true;
     }
     create_node(type, title_text, content_id) {
-        var node = this.prebuildNode(type, title_text, content_id);
+        const nodeVue = this.build_node(type, title_text, content_id);
+        const node = nodeVue.node;
         this.add_node(node);
         this.fit_canvas_to_nodes();
         this.canvas_manager.draw_overview();
         this.activate_node(node);
-        return node;
+        return nodeVue;
     }
     add_node(node) {
         node.id = this.id_counter;
@@ -121,7 +123,7 @@ class Workflow extends EventEmitter {
         this.has_changes = true;
         node.workflow = this;
     }
-    prebuildNode(type, title_text, content_id) {
+    build_node(type, title_text, content_id) {
         var self = this;
 
         // Create node wrapper
@@ -130,21 +132,24 @@ class Workflow extends EventEmitter {
         document.getElementById("canvas-container").appendChild(container);
         var $f = $(container);
 
-        // Create backbone model and view
-        var node = new Node(this, { element: $f });
-        node.type = type;
-        node.content_id = content_id;
-
         // Mount node component as child dom to node wrapper
         const child = document.createElement("div");
         container.appendChild(child);
-        mountWorkflowNode(child, {
+        const nodeVue = mountWorkflowNode(child, {
             id: content_id,
             type: type,
             title: title_text,
             node: node,
-            nodeId: this.popover_counter.toString(),
+            nodeId: this.popover_counter,
+            f: container,
+            getManager: () => {
+                return this;
+            }
         });
+        const node = nodeVue.node;
+        console.log(nodeVue.node);
+        node.type = type;
+        node.content_id = content_id;
 
         this.popover_counter++;
         // Set initial scroll position
@@ -186,7 +191,7 @@ class Workflow extends EventEmitter {
                         this.terminal.redraw();
                     });
             });
-        return node;
+        return nodeVue;
     }
     remove_node(node) {
         if (this.active_node == node) {
@@ -334,7 +339,7 @@ class Workflow extends EventEmitter {
         wf.workflow_version = data.version;
         wf.report = data.report || {};
         Object.entries(data.steps).forEach(([id, step]) => {
-            var node = wf.prebuildNode(step.type, step.name, step.content_id);
+            const { node } = wf.build_node(step.type, step.name, step.content_id);
             // If workflow being copied into another, wipe UUID and let
             // Galaxy assign new ones.
             if (!initialImport) {

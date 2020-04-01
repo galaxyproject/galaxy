@@ -7,7 +7,7 @@ import { NodeView } from "./workflow-view-node";
 export class Node {
     constructor(app, attr = {}) {
         this.app = app;
-        this.element = attr.element;
+        this.element = $(attr.element);
         this.input_terminals = {};
         this.output_terminals = {};
         this.errors = null;
@@ -232,7 +232,6 @@ export class Node {
         $.each(data.inputs, (i, input) => {
             this.nodeView.addDataInput(input);
         });
-
         if (data.inputs.length > 0 && data.outputs.length > 0) {
             this.nodeView.addRule();
         }

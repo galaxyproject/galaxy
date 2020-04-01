@@ -56,6 +56,7 @@ import { getModule } from "./services";
 import LoadingSpan from "components/LoadingSpan";
 import { getGalaxyInstance } from "app";
 import WorkflowRecommendations from "components/Workflow/Editor/Recommendations";
+import { Node } from "mvc/workflow/workflow-node";
 
 Vue.use(BootstrapVue);
 
@@ -67,6 +68,7 @@ export default {
     data() {
         return {
             popoverShow: false,
+            node: null
         };
     },
     props: {
@@ -82,14 +84,22 @@ export default {
             type: String,
             default: "tool",
         },
-        node: {
-            type: Object,
+        f: {
+            type: HTMLDivElement,
             default: null,
         },
         nodeId: {
             type: String,
             default: "",
         },
+        getManager: {
+            type: Function,
+            default: null,
+        }
+    },
+    mounted() {
+        this.node = new Node(this.getManager(), { element: this.f }),
+        console.log(this.node);
     },
     computed: {
         iconClass() {
