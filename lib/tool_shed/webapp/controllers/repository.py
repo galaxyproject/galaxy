@@ -1710,7 +1710,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                         user = trans.sa_session.query(trans.model.User).get(trans.security.decode_id(user_id))
                         usernames.append(user.username)
                     usernames = ','.join(usernames)
-                repository.set_allow_push(trans.app, usernames, remove_auth=remove_auth)
+                repository.set_allow_push(usernames, remove_auth=remove_auth)
             message = "The repository information has been updated."
         elif kwd.get('receive_email_alerts_button', False):
             flush_needed = False
@@ -1732,7 +1732,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             status = 'error'
         allow_push_select_field = SelectField(name='allow_push',
                                               multiple=True)
-        current_allow_push = repository.allow_push(trans.app)
+        current_allow_push = repository.allow_push
         if current_allow_push:
             current_allow_push_list = current_allow_push.split(',')
         else:

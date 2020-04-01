@@ -438,7 +438,7 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
                 if repository.type in [rt_util.REPOSITORY_SUITE_DEFINITION, rt_util.TOOL_DEPENDENCY_DEFINITION]:
                     clause_list.append(self.app.model.Repository.table.c.id == repository.id)
                 else:
-                    allow_push = repository.allow_push(self.app)
+                    allow_push = repository.allow_push
                     if allow_push:
                         # Include all repositories that are writable by the current user.
                         allow_push_usernames = allow_push.split(',')

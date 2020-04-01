@@ -216,7 +216,8 @@ class Repository(Dictifiable):
         raise Exception('Repository %s owned by %s is not associated with a required administrative role.' %
                         (str(self.name), str(self.user.username)))
 
-    def allow_push(self, app):
+    @property
+    def allow_push(self):
         return self.hg_repo.ui.config('web', 'allow_push')
 
     def can_change_type(self, app):
@@ -287,8 +288,8 @@ class Repository(Dictifiable):
         tip_ctx = repo[repo.changelog.tip()]
         return "%s:%s" % (str(tip_ctx.rev()), str(tip_ctx))
 
-    def set_allow_push(self, app, usernames, remove_auth=''):
-        allow_push = util.listify(self.allow_push(app))
+    def set_allow_push(self, usernames, remove_auth=''):
+        allow_push = util.listify(self.allow_push)
         if remove_auth:
             allow_push.remove(remove_auth)
         else:
