@@ -107,7 +107,6 @@ def get_file_context_from_ctx(ctx, filename):
     return None
 
 
-
 def pull_repository(repo_path, repository_clone_url, ctx_rev):
     """Pull changes from a remote repository to a local one."""
     try:

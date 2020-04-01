@@ -5,6 +5,11 @@ import tempfile
 from datetime import datetime
 from time import gmtime
 
+from mercurial import (
+    hg,
+    ui
+)
+
 from galaxy.tool_shed.util import basic_util
 from galaxy.tool_shed.util.hg_util import (
     clone_repository,
@@ -121,11 +126,6 @@ def get_readable_ctx_date(ctx):
 
 
 def get_repo_for_repository(app, repository=None, repo_path=None):
-    # Import from mercurial here to let Galaxy start under Python 3
-    from mercurial import (
-        hg,
-        ui
-    )
     if repository is not None:
         return hg.repository(ui.ui(), repository.repo_path(app))
     if repo_path is not None:
