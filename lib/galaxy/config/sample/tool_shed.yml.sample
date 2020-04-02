@@ -246,10 +246,12 @@ tool_shed:
   #allow_user_deletion: false
 
   # For use by email messages sent from the Tool Shed.
-  #smtp_server: smtp.your_tool_shed_server
+  # (smtp.your_tool_shed_server)
+  #smtp_server: null
 
   # For use by email messages sent from the Tool Shed.
-  #email_from: your_tool_shed_email@server
+  # (your_tool_shed_email@server)
+  #email_from: null
 
   # If your SMTP server requires a username and password, you can
   # provide them here (password in cleartext here, but if your server
@@ -377,7 +379,7 @@ tool_shed:
   # logged are grid views, tool searches, and use of "recently" used
   # tools menu.  The log_events and log_actions functionality will
   # eventually be merged.
-  #log_actions: true
+  #log_actions: false
 
   # Password expiration period (in days). Users are required to change
   # their password every x days. Users will be redirected to the change
