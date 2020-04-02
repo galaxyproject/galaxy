@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div :node-label="node.label">
         <div class="node-header unselectable clearfix">
             <b-button
                 class="node-destroy py-0 float-right"
@@ -40,7 +40,11 @@
             <i :class="iconClass" />
             <span class="node-title">{{ title }}</span>
         </div>
-        <div class="node-body">
+        <b-alert v-if="!!error" variant="danger" show class="node-error">
+            {{ error }}
+        </b-alert>
+        <div v-else class="node-body">
+            <loading-span v-if="showLoading" message="Loading details" />
             <node-input v-for="input in inputs"
                 :key="input.name"
                 :input="input"
@@ -56,7 +60,6 @@
                 :get-manager="getManager"
                 @onAdd="onAddOutput"
             />
-            <loading-span v-if="showLoading" message="Loading details" />
         </div>
     </div>
 </template>
@@ -116,10 +119,12 @@ export default {
             inputs: [],
             outputTerminals: {},
             outputs: [],
+            error: null
         }
     },
     mounted() {
         this.node = new Node(this.getManager(), { nodeVue: this, element: this.f });
+        this.error = this.node.errors;
     },
     computed: {
         hasInputs() {

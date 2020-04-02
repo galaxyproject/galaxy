@@ -3,7 +3,6 @@ import $ from "jquery";
 import Vue from "vue";
 import { getAppRoot } from "onload/loadConfig";
 import Utils from "utils/utils";
-import { NodeView } from "./workflow-view-node";
 
 export class Node {
     constructor(app, attr = {}) {
@@ -331,7 +330,10 @@ export class Node {
         // change.
         var data_outputs = data.outputs;
         if (data_outputs.length == 1 && "collection_type" in data_outputs[0]) {
-            this.nodeView.updateDataOutput(data_outputs[0]);
+            // TODO
+            //this.nodeView.updateDataOutput(data_outputs[0]);
+            //var outputTerminal = this.nodeView.node.output_terminals[output.name];
+            //outputTerminal.update(output);
         }
 
         // Won't be present in response for data inputs

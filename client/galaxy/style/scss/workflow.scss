@@ -29,6 +29,11 @@
                 background: $brand-primary;
                 color: $white;
             }
+            .node-error {
+                @extend .m-0;
+                @extend .rounded-0;
+                @extend .rounded-bottom;
+            }
             .node-body {
                 @extend .card-body;
                 @extend .p-0;
@@ -39,13 +44,6 @@
                     border-bottom: dotted $brand-primary 1px;
                     margin: 0 5px;
                 }
-            }
-        }
-        .workflow-node.node-error {
-            border-color: $brand-danger;
-            .node-header {
-                background: $brand-danger;
-                border-color: $brand-danger;
             }
         }
         .workflow-canvas {
