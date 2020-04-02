@@ -17,7 +17,7 @@ from video_ocr import VideoOcrSchema, VideoOcrMediaSchema, VideoOcrResolutionSch
 def main():
 	apiUrl = "https://api.videoindexer.ai"
 
-	(input_file, accountId, apiKey, location, output_from_azure, output_amp_ocr_schema) = sys.argv[1:7]
+	(input_file, accountId, apiKey, location, output_from_azure_simple, output_from_azure, output_amp_ocr_schema) = sys.argv[1:8]
 
 	try:
 		import http.client as http_client
@@ -52,6 +52,7 @@ def main():
 
 	# Get the video index json (simple)
 	simple_json = get_video_index_json(apiUrl, location, accountId, videoId, auth_token, apiKey)
+	write_json_file(simple_json, output_from_azure_simple)
 
 	# Get the advanced OCR via a URL 
 	artifacts_url = get_artifacts_url(apiUrl, location, accountId, videoId, auth_token)
