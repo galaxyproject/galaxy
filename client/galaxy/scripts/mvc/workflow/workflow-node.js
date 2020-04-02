@@ -233,26 +233,15 @@ export class Node {
         });
         this.nodeVue.inputs = Object.assign({}, data.inputs);
         this.nodeVue.outputs = Object.assign({}, data.outputs);
-        if (Object.keys(this.nodeVue.inputs).length > 0) {
-            Vue.nextTick(() => {
-                console.log(this.nodeVue.outputs);
-                this.input_terminals = this.nodeVue.inputTerminals;
-                $.each(data.outputs, (i, output) => {
-                    this.nodeView.addDataOutput(output);
-                });
-                this.nodeView.render();
-                this.app.node_changed(this);
+        Vue.nextTick(() => {
+            console.log(this.nodeVue.outputs);
+            this.input_terminals = this.nodeVue.inputTerminals;
+            $.each(data.outputs, (i, output) => {
+                this.nodeView.addDataOutput(output);
             });
-            return;
-        }
-        if (data.inputs.length > 0 && data.outputs.length > 0) {
-            this.nodeView.addRule();
-        }
-        $.each(data.outputs, (i, output) => {
-            this.nodeView.addDataOutput(output);
+            this.nodeView.render();
+            this.app.node_changed(this);
         });
-        this.nodeView.render();
-        this.app.node_changed(this);
     }
     update_field_data(data) {
         var node = this;

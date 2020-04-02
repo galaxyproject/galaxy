@@ -93,7 +93,6 @@ export class NodeView {
         };
         this.outputViews[output.name] = outputView;
         const $outputView = $(`<div class="form-row dataRow"/>`);
-        $outputView.html(outputView.label);
         const container = document.createElement("div");
         $outputView.prepend(container);
         mountWorkflowNodeOutput(container, {
