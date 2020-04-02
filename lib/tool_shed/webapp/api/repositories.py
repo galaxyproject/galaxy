@@ -715,14 +715,14 @@ class RepositoriesController(BaseAPIController):
         changeset_revision = kwd.get('changeset_revision', None)
         hexlify_this = util.asbool(kwd.get('hexlify', True))
         repository = repository_util.get_repository_by_name_and_owner(trans.app, name, owner, eagerload_columns=['downloadable_revisions'])
-        if repository:
+        if repository and repository.downloadable_revisions:
             repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(trans.app,
                                                                                               trans.security.encode_id(repository.id),
                                                                                               changeset_revision)
             tool_shed_status_dict = {}
             # Handle repository deprecation.
             tool_shed_status_dict['repository_deprecated'] = str(repository.deprecated)
-            tip_revision = repository.tip()
+            tip_revision = repository.downloadable_revisions[0]
             # Handle latest installable revision.
             if changeset_revision == tip_revision:
                 tool_shed_status_dict['latest_installable_revision'] = 'True'
