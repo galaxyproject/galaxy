@@ -279,7 +279,7 @@ class Repository(Dictifiable):
         return tip_rev < 0
 
     def repo_path(self, app=None):
-        # Keep app argument for compaibility with tool_shed_install Repository model
+        # Keep app argument for compatibility with tool_shed_install Repository model
         return hgweb_config_manager.get_entry(os.path.join("repos", self.user.username, self.name))
 
     def revision(self):
