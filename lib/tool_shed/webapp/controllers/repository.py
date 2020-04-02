@@ -1732,7 +1732,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             status = 'error'
         allow_push_select_field = SelectField(name='allow_push',
                                               multiple=True)
-        current_allow_push = repository.allow_push
+        current_allow_push = repository.allow_push()
         if current_allow_push:
             current_allow_push_list = current_allow_push.split(',')
         else:

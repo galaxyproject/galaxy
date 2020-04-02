@@ -418,7 +418,7 @@ class MyWritableRepositoriesGrid(RepositoryGrid):
         for repository in trans.sa_session.query(model.Repository) \
                                           .filter(and_(model.Repository.table.c.deprecated == false(),
                                                        model.Repository.table.c.deleted == false())):
-            allow_push = repository.allow_push
+            allow_push = repository.allow_push()
             if allow_push:
                 allow_push_usernames = allow_push.split(',')
                 if username in allow_push_usernames:
@@ -710,7 +710,7 @@ class MyWritableRepositoriesMissingToolTestComponentsGrid(RepositoriesMissingToo
         for repository in trans.sa_session.query(model.Repository) \
                                           .filter(and_(model.Repository.table.c.deprecated == false(),
                                                        model.Repository.table.c.deleted == false())):
-            allow_push = repository.allow_push
+            allow_push = repository.allow_push()
             if allow_push:
                 allow_push_usernames = allow_push.split(',')
                 if username in allow_push_usernames:
@@ -849,7 +849,7 @@ class MyWritableRepositoriesWithInvalidToolsGrid(RepositoriesWithInvalidToolsGri
         for repository in trans.sa_session.query(model.Repository) \
                                           .filter(and_(model.Repository.table.c.deprecated == false(),
                                                        model.Repository.table.c.deleted == false())):
-            allow_push = repository.allow_push
+            allow_push = repository.allow_push()
             if allow_push:
                 allow_push_usernames = allow_push.split(',')
                 if username in allow_push_usernames:
