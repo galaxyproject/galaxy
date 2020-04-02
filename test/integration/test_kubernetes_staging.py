@@ -16,18 +16,15 @@ import random
 import string
 import tempfile
 
-from galaxy_test.base.populators import skip_without_tool
-from galaxy_test.driver import integration_util
-from .test_local_job_cancellation import CancelsJob
-from .test_containerized_jobs import EXTENDED_TIMEOUT, MulledJobTestCases
-from .test_job_environments import BaseJobEnvironmentIntegrationTestCase
-
 from galaxy.jobs.runners.util.pykube_util import (
-    ensure_pykube,
     Job,
-    Pod,
     pykube_client_from_dict,
 )
+from galaxy_test.base.populators import skip_without_tool
+from galaxy_test.driver import integration_util
+from .test_containerized_jobs import EXTENDED_TIMEOUT, MulledJobTestCases
+from .test_job_environments import BaseJobEnvironmentIntegrationTestCase
+from .test_local_job_cancellation import CancelsJob
 
 TOOL_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'tools'))
 GALAXY_TEST_KUBERNETES_INFRASTRUCTURE_HOST = os.environ.get("GALAXY_TEST_KUBERNETES_INFRASTRUCTURE_HOST", "host.docker.internal")
