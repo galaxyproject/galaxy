@@ -203,8 +203,8 @@ class Repository(Dictifiable):
     @property
     def hg_repo(self):
         if not WEAK_HG_REPO_CACHE.get(self):
-            WEAK_HG_REPO_CACHE[self] = hg.repository(ui.ui(), self.repo_path())
-        return WEAK_HG_REPO_CACHE[self]
+            WEAK_HG_REPO_CACHE[self] = hg.cachedlocalrepo(hg.repository(ui.ui(), self.repo_path().encode('utf-8')))
+        return WEAK_HG_REPO_CACHE[self].fetch()[0]
 
     @property
     def admin_role(self):

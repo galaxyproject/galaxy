@@ -930,7 +930,7 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
                 if repository_metadata:
                     downloadable = metadata_util.is_downloadable(self.metadata_dict)
                     # Update the last saved repository_metadata table row.
-                    repository_metadata.changeset_revision = self.repository.tip(self.app)
+                    repository_metadata.changeset_revision = self.repository.tip()
                     repository_metadata.metadata = self.metadata_dict
                     repository_metadata.downloadable = downloadable
                     if 'datatypes' in self.metadata_dict:
