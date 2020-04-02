@@ -94,15 +94,13 @@ export class NodeView {
         this.outputViews[output.name] = outputView;
         const $outputView = $(`<div class="form-row dataRow"/>`);
         $outputView.html(outputView.label);
-        if (["tool", "subworkflow"].indexOf(this.node.type) >= 0) {
-            const container = document.createElement("div");
-            $outputView.prepend(container);
-            mountWorkflowNodeOutput(container, {
-                output: output,
-                getNode: () => { return this.node },
-                getManager: () => { return this.app },
-            });
-        }
+        const container = document.createElement("div");
+        $outputView.prepend(container);
+        mountWorkflowNodeOutput(container, {
+            output: output,
+            getNode: () => { return this.node },
+            getManager: () => { return this.app },
+        });
         this.node_body.append($outputView.append(terminalView.el));
     }
 

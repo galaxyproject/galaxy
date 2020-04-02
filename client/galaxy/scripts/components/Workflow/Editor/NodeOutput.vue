@@ -1,7 +1,7 @@
 <template>
     <div class="form-row dataRow output-data-row">
         <div ref="terminal" class="terminal output-terminal" />
-        <div :class="['callout-terminal', outputName]" @click="onToggle">
+        <div v-if="showCallout" :class="['callout-terminal', outputName]" @click="onToggle">
             <i :class="['mark-terminal', activeClass]" />
         </div>
         {{ label }}
@@ -35,6 +35,10 @@ export default {
         label() {
             return this.output.label || this.output.name;
         },
+        showCallout() {
+            const node = this.getNode();
+            return ["tool", "subworkflow"].indexOf(node.type) >= 0;
+        }
     },
     methods: {
         onToggle() {
