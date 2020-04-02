@@ -67,7 +67,7 @@ export default {
             query: null,
             results: null,
             workflow: null,
-            show: true
+            show: true,
         };
     },
     props: {
@@ -138,7 +138,7 @@ export default {
         },
         onToggle() {
             this.show = !this.show;
-        }
-    }
+        },
+    },
 };
 </script>
