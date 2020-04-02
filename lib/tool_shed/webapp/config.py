@@ -14,6 +14,7 @@ from galaxy.config import (
     get_database_engine_options,
 )
 from galaxy.config.schema import AppSchema
+from galaxy.exceptions import ConfigurationError
 from galaxy.util import string_as_bool
 from galaxy.version import VERSION, VERSION_MAJOR
 from galaxy.web.formatting import expand_pretty_datetime_format
@@ -25,10 +26,6 @@ templates_path = os.path.join(ts_webapp_path, "templates")
 
 TOOLSHED_APP_NAME = 'tool_shed'
 TOOLSHED_CONFIG_SCHEMA_PATH = 'lib/tool_shed/webapp/config_schema.yml'
-
-
-class ConfigurationError(Exception):
-    pass
 
 
 class ToolShedAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
