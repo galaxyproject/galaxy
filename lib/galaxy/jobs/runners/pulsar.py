@@ -868,7 +868,7 @@ KUBERNETES_DESTINATION_DEFAULTS = {
     "default_file_action": "remote_transfer",
     "rewrite_parameters": "true",
     "jobs_directory": "/pulsar_staging",
-    "pulsar_container_image": "galaxy/pulsar-pod-staging:0.13.0",
+    "pulsar_container_image": "galaxy/pulsar-pod-staging:0.14.0",
     "remote_container_handling": True,
     "k8s_enabled": True,
     "url": PARAMETER_SPECIFICATION_IGNORED,
