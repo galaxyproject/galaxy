@@ -1,6 +1,5 @@
 import $ from "jquery";
-import TerminalViews from "mvc/workflow/workflow-view-terminals";
-import { mountWorkflowNodeInput, mountWorkflowNodeOutput } from "components/Workflow/Editor/mount";
+import { mountWorkflowNodeInput } from "components/Workflow/Editor/mount";
 
 export class NodeView {
     constructor(app, options) {
@@ -64,43 +63,8 @@ export class NodeView {
         return terminal;
     }
 
-    terminalViewForOutput(output) {
-        let terminalViewClass = TerminalViews.OutputTerminalView;
-        if (output.collection) {
-            terminalViewClass = TerminalViews.OutputCollectionTerminalView;
-        } else if (output.parameter) {
-            terminalViewClass = TerminalViews.OutputParameterTerminalView;
-        }
-        return new terminalViewClass(this.app, {
-            node: this.node,
-            output: output,
-        });
-    }
-
     addDataOutput(output) {
-        const terminalView = this.terminalViewForOutput(output);
-        let label = output.label || output.name;
-        const showExtensions =
-            output.extensions && output.extensions.length > 0 && output.extensions.indexOf("input") == -1;
-        if (showExtensions) {
-            const datatype = output.force_datatype || output.extensions.join(", ");
-            label = `${label} (${datatype})`;
-        }
-        const outputView = {
-            output: output,
-            terminalElement: terminalView.el,
-            label: label,
-        };
-        this.outputViews[output.name] = outputView;
-        const $outputView = $(`<div class="form-row dataRow"/>`);
-        const container = document.createElement("div");
-        $outputView.prepend(container);
-        mountWorkflowNodeOutput(container, {
-            output: output,
-            getNode: () => { return this.node },
-            getManager: () => { return this.app },
-        });
-        this.node_body.append($outputView.append(terminalView.el));
+        return;
     }
 
     updateDataOutput(output) {

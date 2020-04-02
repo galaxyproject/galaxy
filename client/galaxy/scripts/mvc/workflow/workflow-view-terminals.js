@@ -87,21 +87,20 @@ class InputTerminalView {
     }
 }
 
-export class BaseOutputTerminalView {
+export class OutputTerminalView {
     constructor(app, options) {
         this.app = app;
-        this.el = document.createElement("div");
+        this.el = options.el;
+        this.terminal = options.terminal;
         this.el.className = "terminal output-terminal";
         const node = options.node;
         const output = options.output;
         const name = output.name;
         const nodeIndex = NODEINDEX++;
         this.id = `node-${nodeIndex}-output-${name}`;
-        this.terminal = this.terminalForOutput(output);
         this.terminal.node = node;
         this.terminal.name = name;
         this.terminal.label = output.label;
-        node.output_terminals[name] = this.terminal;
         this.el.terminal = this.terminal;
         this.$el = $(this.el);
         this.$el.attr("output-name", name);
@@ -169,56 +168,7 @@ export class BaseOutputTerminalView {
     }
 }
 
-export class OutputTerminalView extends BaseOutputTerminalView {
-    constructor(app, options = {}) {
-        super(app, options);
-    }
-    terminalForOutput(output) {
-        var type = output.extensions;
-        return new Terminals.OutputTerminal({
-            element: this.el,
-            datatypes: type,
-            force_datatype: output.force_datatype,
-            optional: output.optional,
-        });
-    }
-}
-
-export class OutputCollectionTerminalView extends BaseOutputTerminalView {
-    constructor(app, options = {}) {
-        super(app, options);
-    }
-    terminalForOutput(output) {
-        var collection_type = output.collection_type;
-        var collection_type_source = output.collection_type_source;
-        return new Terminals.OutputCollectionTerminal({
-            element: this.el,
-            collection_type: collection_type,
-            collection_type_source: collection_type_source,
-            datatypes: output.extensions,
-            force_datatype: output.force_datatype,
-            optional: output.optional,
-        });
-    }
-}
-
-export class OutputParameterTerminalView extends BaseOutputTerminalView {
-    constructor(app, options = {}) {
-        super(app, options);
-    }
-    terminalForOutput(output) {
-        return new Terminals.OutputParameterTerminal({
-            element: this.el,
-            type: output.type,
-            optional: output.optional,
-        });
-    }
-}
-
 export default {
     InputTerminalView: InputTerminalView,
-    BaseOutputTerminalView: BaseOutputTerminalView,
-    OutputTerminalView: OutputTerminalView,
-    OutputParameterTerminalView: OutputParameterTerminalView,
-    OutputCollectionTerminalView: OutputCollectionTerminalView,
+    OutputTerminalView: OutputTerminalView
 };

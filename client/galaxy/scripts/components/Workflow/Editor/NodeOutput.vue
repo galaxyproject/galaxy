@@ -71,7 +71,7 @@ export default {
             });
         }
         this.$emit("onAdd", this.output, this.terminal);
-        new TerminalViews.BaseOutputTerminalView(this.getManager(), {
+        new TerminalViews.OutputTerminalView(this.getManager(), {
             node: this.getNode(),
             output: output,
             el: this.$refs.terminal,

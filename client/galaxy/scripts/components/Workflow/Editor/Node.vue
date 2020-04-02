@@ -46,9 +46,16 @@
                 :input="input"
                 :get-node="getNode"
                 :get-manager="getManager"
-                @onAdd="onAdd"
+                @onAdd="onAddInput"
             />
             <div v-if="showRule" class="rule" />
+            <node-output v-for="output in outputs"
+                :key="output.name"
+                :output="output"
+                :get-node="getNode"
+                :get-manager="getManager"
+                @onAdd="onAddOutput"
+            />
             <loading-span v-if="showLoading" message="Loading details" />
         </div>
     </div>
@@ -64,6 +71,7 @@ import { getGalaxyInstance } from "app";
 import WorkflowRecommendations from "components/Workflow/Editor/Recommendations";
 import { Node } from "mvc/workflow/workflow-node";
 import NodeInput from "./NodeInput";
+import NodeOutput from "./NodeOutput";
 
 Vue.use(BootstrapVue);
 
@@ -72,6 +80,7 @@ export default {
         LoadingSpan,
         WorkflowRecommendations,
         NodeInput,
+        NodeOutput,
     },
     props: {
         id: {
@@ -105,8 +114,8 @@ export default {
             node: null,
             inputTerminals: {},
             inputs: [],
-            outputsTerminals: {},
-            outputs: {},
+            outputTerminals: {},
+            outputs: [],
         }
     },
     mounted() {
@@ -143,7 +152,7 @@ export default {
         },
     },
     methods: {
-        onAdd(input, terminal) {
+        onAddInput(input, terminal) {
             /*const oldterminal = this.node.input_terminals[input.name];
             if (oldterminal) {
                 oldterminal.update(input.name);
@@ -151,6 +160,15 @@ export default {
                 return;
             }*/
             this.inputTerminals[input.name] = terminal;
+        },
+        onAddOutput(output, terminal) {
+            /*const oldterminal = this.node.input_terminals[input.name];
+            if (oldterminal) {
+                oldterminal.update(input.name);
+                oldterminal.destroyInvalidConnections();
+                return;
+            }*/
+            this.outputTerminals[output.name] = terminal;
         },
         onDestroy() {
             this.node.destroy();
