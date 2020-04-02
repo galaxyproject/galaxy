@@ -34,7 +34,7 @@ export default {
             return this.input.label || this.input.name;
         },
     },
-    created() {
+    mounted() {
         var terminalClass = Terminals.InputTerminal;
         const input = this.input;
         if (input.input_type == "dataset_collection") {
@@ -51,15 +51,12 @@ export default {
             input: input,
         });
         this.$emit("onAdd", this.input, this.terminal);
-    },
-    mounted() {
         new TerminalViews.InputTerminalView(this.getManager(), {
             node: this.getNode(),
             input: this.input,
             el: this.$refs.terminal,
             terminal: this.terminal,
         });
-        this.terminal.element =  this.$refs.terminal;
     },
     methods: {
         onRemove() {

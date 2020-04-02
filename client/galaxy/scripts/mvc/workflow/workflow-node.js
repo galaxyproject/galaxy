@@ -234,8 +234,8 @@ export class Node {
         this.nodeVue.inputs = Object.assign({}, data.inputs);
         this.nodeVue.outputs = Object.assign({}, data.outputs);
         Vue.nextTick(() => {
-            console.log(this.nodeVue.outputs);
             this.input_terminals = this.nodeVue.inputTerminals;
+            //this.output_terminals = this.nodeVue.outputTerminals;
             $.each(data.outputs, (i, output) => {
                 this.nodeView.addDataOutput(output);
             });

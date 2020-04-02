@@ -1,19 +1,22 @@
 <template>
     <div class="form-row dataRow output-data-row">
-        <div ref="terminal" class="terminal output-terminal" />
-        <div v-if="showCallout" :class="['callout-terminal', outputName]" @click="onToggle">
+        <div v-if="showCallout" :class="['callout-terminal', output.name]" @click="onToggle">
             <i :class="['mark-terminal', activeClass]" />
         </div>
         {{ label }}
+        <div ref="terminal" class="terminal output-terminal" />
     </div>
 </template>
 
 <script>
+import Terminals from "mvc/workflow/workflow-terminals";
+import TerminalViews from "mvc/workflow/workflow-view-terminals";
+
 export default {
     props: {
         output: {
             type: Object,
-            default: null,
+            required: true,
         },
         getNode: {
             type: Function,
@@ -39,6 +42,41 @@ export default {
             const node = this.getNode();
             return ["tool", "subworkflow"].indexOf(node.type) >= 0;
         }
+    },
+    mounted() {
+        const output = this.output;
+        if (output.collection) {
+            const collection_type = output.collection_type;
+            const collection_type_source = output.collection_type_source;
+            this.terminal = new Terminals.OutputCollectionTerminal({
+                element: this.$refs.terminal,
+                collection_type: collection_type,
+                collection_type_source: collection_type_source,
+                datatypes: output.extensions,
+                force_datatype: output.force_datatype,
+                optional: output.optional,
+            });
+        } else if (output.parameter) {
+            this.terminal = new Terminals.OutputParameterTerminal({
+                element: this.$refs.terminal,
+                type: output.type,
+                optional: output.optional,
+            });
+        } else {
+            this.terminal = new Terminals.OutputTerminal({
+                element: this.$refs.terminal,
+                datatypes: output.extensions,
+                force_datatype: output.force_datatype,
+                optional: output.optional,
+            });
+        }
+        this.$emit("onAdd", this.output, this.terminal);
+        new TerminalViews.BaseOutputTerminalView(this.getManager(), {
+            node: this.getNode(),
+            output: output,
+            el: this.$refs.terminal,
+            terminal: this.terminal,
+        });
     },
     methods: {
         onToggle() {

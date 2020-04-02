@@ -217,6 +217,7 @@ export class OutputParameterTerminalView extends BaseOutputTerminalView {
 
 export default {
     InputTerminalView: InputTerminalView,
+    BaseOutputTerminalView: BaseOutputTerminalView,
     OutputTerminalView: OutputTerminalView,
     OutputParameterTerminalView: OutputParameterTerminalView,
     OutputCollectionTerminalView: OutputCollectionTerminalView,
