@@ -92,7 +92,7 @@ def main():
                             start = word.start
                         end = word.end
                         break
-            result.addEntity(entity["Type"], text, int(entity["BeginOffset"]), int(entity["EndOffset"]), "relevance", float(entity["Score"]), start, end)
+            result.addEntity(entity["Type"], text, int(entity["BeginOffset"]), int(entity["EndOffset"]), "relevance", float(entity["Score"]), start, None)  #AMP-636 removed end=None
 
 
 
