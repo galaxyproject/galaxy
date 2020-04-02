@@ -462,9 +462,12 @@ def get_repository_ids_requiring_prior_import_or_install(app, tsr_ids, repositor
     return prior_tsr_ids
 
 
-def get_repository_in_tool_shed(app, id):
+def get_repository_in_tool_shed(app, id, eagerload_columns=None):
     """Get a repository on the tool shed side from the database via id."""
-    return get_repository_query(app).get(app.security.decode_id(id))
+    q = get_repository_query(app)
+    if eagerload_columns:
+        q = q.options(joinedload(*eagerload_columns))
+    return q.get(app.security.decode_id(id))
 
 
 def get_repository_owner(cleaned_repository_url):
