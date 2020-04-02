@@ -11,6 +11,11 @@
         </div>
         <div class="unified-panel-controls">
             <tool-search :query="query" placeholder="search tools" @onQuery="onQuery" @onResults="onResults" />
+
+            <div class="float-none" v-if="results">
+                <button class="btn btn-secondary btn-sm" v-if="!show" @click="onToggle">Show Categories</button>
+                <button class="btn btn-secondary btn-sm" v-if="show" @click="onToggle">Hide Categories</button>
+            </div>
         </div>
         <div class="unified-panel-body">
             <div class="toolMenuContainer">
@@ -62,6 +67,7 @@ export default {
             query: null,
             results: null,
             workflow: null,
+            show: true
         };
     },
     props: {
@@ -80,7 +86,11 @@ export default {
     },
     computed: {
         categories() {
-            return filterToolsinCats(this.toolbox, this.results);
+            if (this.show) {
+                return filterToolsinCats(this.toolbox, this.results);
+            } else {
+                return filterTools(this.toolbox, this.results);
+            }
         },
         isUser() {
             const Galaxy = getGalaxyInstance();
@@ -126,6 +136,9 @@ export default {
                 });
             }
         },
-    },
+        onToggle() {
+            this.show = !this.show;
+        }
+    }
 };
 </script>
