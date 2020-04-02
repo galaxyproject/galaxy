@@ -212,7 +212,6 @@ export class Node {
         }
     }
     init_field_data(data) {
-        //console.debug("init_field_data: ", data);
         if (data.type) {
             this.type = data.type;
         }
@@ -227,20 +226,16 @@ export class Node {
         this.label = data.label;
         this.uuid = data.uuid;
         this.workflow_outputs = data.workflow_outputs ? data.workflow_outputs : [];
-        this.nodeView = new NodeView(this.app, {
-            $el: this.element,
-            node: this,
-        });
         this.nodeVue.inputs = Object.assign({}, data.inputs);
         this.nodeVue.outputs = Object.assign({}, data.outputs);
         Vue.nextTick(() => {
             this.input_terminals = this.nodeVue.inputTerminals;
             this.output_terminals = this.nodeVue.outputTerminals;
-            this.nodeView.render();
             this.app.node_changed(this);
         });
     }
     update_field_data(data) {
+        // todo - needs to be rewritten
         var node = this;
         // remove unused output views and remove pre-existing output views from data.outputs,
         // so that these are not added twice.

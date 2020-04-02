@@ -1,13 +1,9 @@
-import $ from "jquery";
-import { mountWorkflowNodeInput } from "components/Workflow/Editor/mount";
-
 export class NodeView {
     constructor(app, options) {
         this.app = app;
         this.$el = options.$el;
         this.node = options.node;
         this.node_body = this.$el.find(".node-body");
-        this.newInputsDiv().appendTo(this.node_body);
         this.outputViews = {};
     }
 
@@ -30,37 +26,8 @@ export class NodeView {
         }
     }
 
-    newInputsDiv() {
-        return $("<div/>").addClass("inputs");
-    }
-
-    addRule() {
-        this.node_body.append($("<div/>").addClass("rule"));
-    }
-
     addDataInput(input, body) {
-        if (!body) {
-            body = this.$el.find(".inputs");
-        }
-        let terminal = this.node.input_terminals[input.name];
-        /*if (terminal) {
-            terminal.update(input);
-            terminal.destroyInvalidConnections();
-            return;
-        }*/
-        const container = document.createElement("div");
-        body.append(container);
-        const nodeInput = mountWorkflowNodeInput(container, {
-            input: input,
-            getNode: () => {
-                return this.node;
-            },
-            getManager: () => {
-                return this.app;
-            }
-        });
-        this.node.input_terminals[input.name] = nodeInput.terminal;
-        return terminal;
+        return;
     }
 
     addDataOutput(output) {
