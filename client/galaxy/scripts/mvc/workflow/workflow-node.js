@@ -4,7 +4,6 @@ import Vue from "vue";
 import { getAppRoot } from "onload/loadConfig";
 import Utils from "utils/utils";
 import { NodeView } from "./workflow-view-node";
-import { mountWorkflowNodeInput } from "components/Workflow/Editor/mount";
 
 export class Node {
     constructor(app, attr = {}) {

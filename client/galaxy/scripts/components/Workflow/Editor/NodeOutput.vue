@@ -1,41 +1,52 @@
 <template>
-    <div :class="['callout-terminal', outputName]" @click="onToggle">
-        <i :class="['mark-terminal', activeClass]" />
+    <div class="form-row dataRow output-data-row">
+        <div ref="terminal" class="terminal output-terminal" />
+        <div :class="['callout-terminal', outputName]" @click="onToggle">
+            <i :class="['mark-terminal', activeClass]" />
+        </div>
+        {{ label }}
     </div>
 </template>
 
 <script>
 export default {
     props: {
-        node: {
+        output: {
             type: Object,
             default: null,
         },
-        outputName: {
-            type: String,
+        getNode: {
+            type: Function,
             required: true,
         },
-        manager: {
-            type: Object,
+        getManager: {
+            type: Function,
             required: true,
         },
     },
     computed: {
         activeClass() {
-            if (this.node.isWorkflowOutput(this.outputName)) {
+            const node = this.getNode();
+            if (node.isWorkflowOutput(this.output.name)) {
                 return "mark-terminal-active";
             }
             return "";
         },
+        label() {
+            return this.output.label || this.output.name;
+        },
     },
     methods: {
         onToggle() {
-            if (this.node.isWorkflowOutput(this.outputName)) {
-                this.node.removeWorkflowOutput(this.outputName);
+            const node = this.getNode();
+            const manager = this.getManager();
+            const outputName = this.output.name;
+            if (node.isWorkflowOutput(outputName)) {
+                node.removeWorkflowOutput(outputName);
             } else {
-                this.node.addWorkflowOutput(this.outputName);
+                node.addWorkflowOutput(outputName);
             }
-            this.manager.has_changes = true;
+            manager.has_changes = true;
         },
     },
 };

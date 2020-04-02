@@ -98,9 +98,9 @@ export class NodeView {
             const container = document.createElement("div");
             $outputView.prepend(container);
             mountWorkflowNodeOutput(container, {
-                outputName: output.name,
-                node: this.node,
-                manager: this.app,
+                output: output,
+                getNode: () => { return this.node },
+                getManager: () => { return this.app },
             });
         }
         this.node_body.append($outputView.append(terminalView.el));
