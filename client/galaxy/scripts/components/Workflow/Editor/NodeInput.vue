@@ -17,11 +17,11 @@ export default {
         },
         getNode: {
             type: Function,
-            required: true
+            required: true,
         },
         getManager: {
             type: Function,
-            required: true
+            required: true,
         },
     },
     data() {

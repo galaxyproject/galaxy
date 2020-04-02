@@ -170,5 +170,5 @@ export class OutputTerminalView {
 
 export default {
     InputTerminalView: InputTerminalView,
-    OutputTerminalView: OutputTerminalView
+    OutputTerminalView: OutputTerminalView,
 };

@@ -45,7 +45,8 @@
         </b-alert>
         <div v-else class="node-body">
             <loading-span v-if="showLoading" message="Loading details" />
-            <node-input v-for="input in inputs"
+            <node-input
+                v-for="input in inputs"
                 :key="input.name"
                 :input="input"
                 :get-node="getNode"
@@ -53,7 +54,8 @@
                 @onAdd="onAddInput"
             />
             <div v-if="showRule" class="rule" />
-            <node-output v-for="output in outputs"
+            <node-output
+                v-for="output in outputs"
                 :key="output.name"
                 :output="output"
                 :get-node="getNode"
@@ -109,7 +111,7 @@ export default {
         getManager: {
             type: Function,
             default: null,
-        }
+        },
     },
     data() {
         return {
@@ -119,7 +121,7 @@ export default {
             inputs: [],
             outputTerminals: {},
             outputs: [],
-            error: null
+            error: null,
         }
     },
     mounted() {

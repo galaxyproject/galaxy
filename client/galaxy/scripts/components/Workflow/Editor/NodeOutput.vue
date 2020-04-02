@@ -41,7 +41,7 @@ export default {
         showCallout() {
             const node = this.getNode();
             return ["tool", "subworkflow"].indexOf(node.type) >= 0;
-        }
+        },
     },
     mounted() {
         const output = this.output;

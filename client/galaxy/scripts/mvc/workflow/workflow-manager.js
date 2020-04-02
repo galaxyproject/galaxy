@@ -144,7 +144,7 @@ class Workflow extends EventEmitter {
             f: container,
             getManager: () => {
                 return this;
-            }
+            },
         });
         const node = nodeVue.node;
         node.type = type;
