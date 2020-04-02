@@ -1,0 +1,21 @@
+<tool id="VTTgenerator" name="JSON to VTT generator" version="1.0.0">
+  <description>Runs JSON transcripts</description>
+    <requirements>
+    </requirements>
+  <command detect_errors="exit_code"> $__tool_directory__/jsonToVtt.py $input_seg $input_stt $vtt_output_file</command>
+  <inputs>
+	<param name="input_seg" type="data" format="json" optional = "true" label="Speaker Diarization JSON" help="A JSON transcript input with speaker diarizationto info be added to VTT"/>
+  <param name="input_stt" type="data" format="json" label="STT JSON" help="A JSON transcript input with STT info to be added to VTT"/>
+  </inputs>
+  <outputs>
+    <data format="data" name="vtt_output_file" />
+  </outputs>
+  <tests>
+  </tests>
+  <help>
+.. class:: infomark
+
+Generates a VTT file from the input JSON transcript
+
+  </help>
+</tool>
