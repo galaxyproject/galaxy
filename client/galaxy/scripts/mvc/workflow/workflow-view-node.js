@@ -8,7 +8,6 @@ export class NodeView {
         this.$el = options.$el;
         this.node = options.node;
         this.node_body = this.$el.find(".node-body");
-        this.node_body.find("div").remove();
         this.newInputsDiv().appendTo(this.node_body);
         this.outputViews = {};
     }

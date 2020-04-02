@@ -48,9 +48,8 @@
                 :get-manager="getManager"
                 @onAdd="onAdd"
             />
-            <div>
-                <loading-span message="Loading details" />
-            </div>
+            <div v-if="showRule" class="rule" />
+            <loading-span v-if="showLoading" message="Loading details" />
         </div>
     </div>
 </template>
@@ -106,12 +105,26 @@ export default {
             node: null,
             inputTerminals: {},
             inputs: [],
-        };
+            outputsTerminals: {},
+            outputs: {},
+        }
     },
     mounted() {
         this.node = new Node(this.getManager(), { nodeVue: this, element: this.f });
     },
     computed: {
+        hasInputs() {
+            return Object.keys(this.inputs).length > 0;
+        },
+        hasOutputs() {
+            return Object.keys(this.outputs).length > 0;
+        },
+        showRule() {
+            return this.hasInputs && this.hasOutputs;
+        },
+        showLoading() {
+            return !this.hasInputs && !this.hasOutputs;
+        },
         iconClass() {
             const iconType = WorkflowIcons[this.type];
             if (iconType) {
