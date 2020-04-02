@@ -713,7 +713,7 @@ class RepositoriesController(BaseAPIController):
         owner = kwd.get('owner', None)
         changeset_revision = kwd.get('changeset_revision', None)
         hexlify_this = util.asbool(kwd.get('hexlify', True))
-        repository = repository_util.get_repository_by_name_and_owner(trans.app, name, owner)
+        repository = repository_util.get_repository_by_name_and_owner(trans.app, name, owner, eagerload_column=['downloadable_revisions'])
         if repository:
             repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(trans.app,
                                                                                               trans.security.encode_id(repository.id),

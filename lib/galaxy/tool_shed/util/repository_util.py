@@ -5,7 +5,12 @@ import shutil
 
 from markupsafe import escape
 from six.moves.urllib.error import HTTPError
-from sqlalchemy import and_, false, or_
+from sqlalchemy import (
+    and_,
+    false,
+    or_,
+)
+from sqlalchemy.orm import joinedload
 
 from galaxy import util
 from galaxy import web
@@ -307,7 +312,7 @@ def get_repository_by_id(app, id):
         return sa_session.query(app.model.Repository).get(app.security.decode_id(id))
 
 
-def get_repository_by_name_and_owner(app, name, owner):
+def get_repository_by_name_and_owner(app, name, owner, eagerload_columns=None):
     """Get a repository from the database via name and owner"""
     repository_query = get_repository_query(app)
     if is_tool_shed_client(app):
@@ -316,13 +321,16 @@ def get_repository_by_name_and_owner(app, name, owner):
                          app.install_model.ToolShedRepository.table.c.owner == owner)) \
             .first()
     # We're in the tool shed.
-    user = common_util.get_user_by_username(app, owner)
-    if user:
-        return repository_query \
-            .filter(and_(app.model.Repository.table.c.name == name,
-                         app.model.Repository.table.c.user_id == user.id)) \
-            .first()
-    return None
+    q = repository_query.filter(
+        and_(
+            app.model.Repository.table.c.name == name,
+            app.model.User.table.c.username == owner,
+            app.model.Repository.table.c.user_id == app.model.User.table.c.id
+        )
+    )
+    if eagerload_columns:
+        q = q.options(joinedload(*eagerload_columns))
+    return q.first()
 
 
 def get_repository_by_name(app, name):
