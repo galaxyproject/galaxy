@@ -102,7 +102,8 @@ def main():
                         break
             
             if clean_text(entity_type) not in ignore_cats_list:
-                result.addEntity(entity_type, text, int(entity["BeginOffset"]), int(entity["EndOffset"]), "relevance", float(entity["Score"]), start, end)
+                result.addEntity(entity_type, text, None, None, "relevance", float(entity["Score"]), start, None)  #AMP-636 removed startOffset=endOffset=end=None
+
 
 
 
