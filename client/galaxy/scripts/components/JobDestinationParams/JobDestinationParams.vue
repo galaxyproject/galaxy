@@ -2,10 +2,10 @@
     <div>
         <table class="tabletip info_data_table">
             <tbody>
-            <tr v-for="(value, title) in destinationParams">
-                <td>{{ title }}</td>
-                <td>{{ value }}</td>
-            </tr>
+                <tr v-for="(value, title) in jobDestinationParams">
+                    <td>{{ title }}</td>
+                    <td>{{ value }}</td>
+                </tr>
             </tbody>
         </table>
     </div>
@@ -16,51 +16,36 @@
     import {mapGetters} from "vuex";
 
     export default {
-        props: {
-            jobId: {
-                type: String,
-            },
-            datasetId: {
-                type: String,
-            },
-            datasetType: {
-                type: String,
-                default: "hda",
-            },
-            includeTitle: {
-                type: Boolean,
-                default: true,
-            },
+    props: {
+        jobId: {
+            type: String,
         },
-        data() {
-            return {};
+        datasetId: {
+            type: String,
         },
-        created: function () {
-            this.fetchJobDestinationParams(this.jobId);
+        datasetType: {
+            type: String,
+            default: "hda",
         },
-        computed: {
-            ...mapGetters(["getJobDestinationParams"]),
-            jobDestinationParams: function () {
-                return this.getJobDestinationParams(this.jobId);
-            },
-            destinationParams: function () {
-                const params = this.jobDestinationParams;
-                const special_parameters = {
-                    'runner_name': 'Runner',
-                    'runner_external_id': 'Runner Job ID',
-                    'handler': 'Handler'
-                };
-
-                Object.keys(params).forEach((title) => {
-                    if (title in special_parameters) {
-                        params[title] = special_parameters[title]
-                    }
-                });
-                return params;
-            }
+        includeTitle: {
+            type: Boolean,
+            default: true,
         },
-        methods: {
-            ...mapCacheActions(["fetchJobDestinationParams"]),
-        },
-    };
+    },
+    data() {
+        return {};
+    },
+    created: function () {
+        this.fetchJobDestinationParams(this.jobId);
+    },
+    computed: {
+        ...mapGetters(["getJobDestinationParams"]),
+        jobDestinationParams: function () {
+            return this.getJobDestinationParams(this.jobId);
+        }
+    },
+    methods: {
+        ...mapCacheActions(["fetchJobDestinationParams"]),
+    },
+};
 </script>

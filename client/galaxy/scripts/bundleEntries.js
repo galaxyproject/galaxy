@@ -97,6 +97,5 @@ export { mountWorkflowEditor } from "components/Workflow/Editor/mount";
 export { mountPageDisplay } from "components/PageDisplay";
 export { mountDestinationParams } from "components/JobDestinationParams";
 
-
 // Used in common.mako
 export { default as store } from "storemodern";

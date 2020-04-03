@@ -497,6 +497,7 @@ def summarize_job_metrics(trans, job):
     metrics = [m for m in job.metrics if m.plugin != 'env' or trans.user_is_admin]
     return list(map(metric_to_dict, metrics))
 
+
 def summarize_destination_params(trans, job):
     """Produce a dict-ified version of job destination parameters ready for tabular rendering.
 
@@ -505,12 +506,11 @@ def summarize_destination_params(trans, job):
     """
     if not trans.user_is_admin:
         return []
-
     else:
-        destination_params = job.destination_params
-        destination_params['runner_name'] = job.job_runner_name
-        destination_params['runner_external_id'] = job.job_runner_external_id
-        destination_params['handler'] = job.handler
+        destination_params = {'Runner': job.job_runner_name,
+                              'Runner Job ID': job.job_runner_external_id,
+                              'Handler': job.handler}
+        destination_params.update(job.destination_params)
         return destination_params
 
 

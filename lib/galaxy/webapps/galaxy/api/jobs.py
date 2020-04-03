@@ -15,8 +15,8 @@ from galaxy import util
 from galaxy.managers.jobs import (
     JobManager,
     JobSearch,
-    summarize_job_metrics,
     summarize_destination_params,
+    summarize_job_metrics,
     summarize_job_parameters,
 )
 from galaxy.web import (
