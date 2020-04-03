@@ -22,6 +22,13 @@ from speech_to_text_schema import SpeechToText, SpeechToTextMedia, SpeechToTextR
 def main():
     (input_file, json_file, bucketName, dataAccessRoleArn) = sys.argv[1:5]
 
+    # Read a list of categories to ignore when outputting entity list
+    ignore_cats_list = list()
+
+    if len(sys.argv) > 5:
+        print("ignore cats:" + sys.argv[5])
+        ignore_cats_list = split_ignore_list(sys.argv[5])
+
     # Variable declaration
     outputS3Uri = 's3://' + bucketName + '/'
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
@@ -71,6 +78,7 @@ def main():
 
     if 'Entities' in comprehend_data.keys():
         for entity in comprehend_data["Entities"]:
+            entity_type = entity["Type"]
             # Start and end time offsets
             start = None
             end = None
@@ -92,7 +100,10 @@ def main():
                             start = word.start
                         end = word.end
                         break
-            result.addEntity(entity["Type"], text, None, None, "relevance", float(entity["Score"]), start, None)  #AMP-636 removed startOffset=endOffset=end=None
+            
+            if clean_text(entity_type) not in ignore_cats_list:
+                result.addEntity(entity_type, text, None, None, "relevance", float(entity["Score"]), start, None)  #AMP-636 removed startOffset=endOffset=end=None
+
 
 
 
@@ -169,6 +180,28 @@ def run_comprehend_job(jobName, inputS3Uri, outputS3Uri, dataAccessRoleArn):
             time.sleep(20)
     
     return output_uri
+
+# Read a list of categories to ignore
+def read_ignore_list(ignore_list_filename):
+    print("Reading list")
+    ignore_cats_list = list()
+    f = open(ignore_list_filename, "r")
+    # For each value in the comma separated list.  Standardize text
+    for val in f.read().split(","):
+        ignore_cats_list.append(clean_text(val))
+    print(ignore_cats_list)
+    return ignore_cats_list
+
+def split_ignore_list(ignore_list_string):
+    print("Reading list")
+    to_return = list()
+    ignore_cats_list = ignore_list_string.split(',')
+    for cat in ignore_cats_list:
+        to_return.append(clean_text(cat))
+    return to_return
+
+def clean_text(text):
+    return text.lower().strip()
 
 def read_comprehend_response(reponse_filename):
     with open(reponse_filename) as json_file:
