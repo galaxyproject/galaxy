@@ -178,14 +178,13 @@ class ShedTwillTestCase(FunctionalTestCase):
         # An HTMLForm contains a sequence of Controls.  Supported control classes are:
         # TextControl, FileControl, ListControl, RadioControl, CheckboxControl, SelectControl,
         # SubmitControl, ImageControl
-        if form is not None:
-            f = form
-        else:
-            for i, f in enumerate(self.showforms()):
+        if form is None:
+            for i, form in enumerate(self.showforms()):
                 if i == form_no:
                     break
-        controls = {c.name: c for c in f.inputs}
-        form_name = f.get('name')
+        assert form, "No form to submit found"
+        controls = {c.name: c for c in form.inputs}
+        form_name = form.get('name')
         for control_name, control_value in kwd.items():
             if control_name not in controls:
                 continue  # these cannot be handled safely - cause the test to barf out
