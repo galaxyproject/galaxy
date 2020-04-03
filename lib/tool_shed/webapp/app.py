@@ -15,6 +15,7 @@ from galaxy.security import idencoding
 from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.web_stack import application_stack_instance
 from tool_shed.grids.repository_grid_filter_manager import RepositoryGridFilterManager
+from tool_shed.util.hgweb_config import hgweb_config_manager
 from . import config
 
 log = logging.getLogger(__name__)
@@ -73,7 +74,7 @@ class UniverseApplication(object):
         # Initialize the baseline Tool Shed statistics component.
         self.shed_counter = self.model.shed_counter
         # Let the Tool Shed's HgwebConfigManager know where the hgweb.config file is located.
-        self.hgweb_config_manager = self.model.hgweb_config_manager
+        self.hgweb_config_manager = hgweb_config_manager
         self.hgweb_config_manager.hgweb_config_dir = self.config.hgweb_config_dir
         # Initialize the repository registry.
         self.repository_registry = tool_shed.repository_registry.Registry(self)

@@ -107,18 +107,6 @@ def get_file_context_from_ctx(ctx, filename):
     return None
 
 
-def get_repo_for_repository(app, repository=None, repo_path=None):
-    # Import from mercurial here to let Galaxy start under Python 3
-    from mercurial import (
-        hg,
-        ui
-    )
-    if repository is not None:
-        return hg.repository(ui.ui(), repository.repo_path(app))
-    if repo_path is not None:
-        return hg.repository(ui.ui(), repo_path)
-
-
 def pull_repository(repo_path, repository_clone_url, ctx_rev):
     """Pull changes from a remote repository to a local one."""
     try:
@@ -199,7 +187,6 @@ __all__ = (
     'get_config_from_disk',
     'get_ctx_file_path_from_manifest',
     'get_file_context_from_ctx',
-    'get_repo_for_repository',
     'pull_repository',
     'reversed_lower_upper_bounded_changelog',
     'reversed_upper_bounded_changelog',

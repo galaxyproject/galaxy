@@ -13,10 +13,10 @@ from galaxy.util import (
     pretty_print_time_interval,
     unicodify
 )
+from tool_shed.util.hgweb_config import hgweb_config_manager
 from tool_shed.webapp import model
 from tool_shed.webapp.search.repo_search import schema as repo_schema
 from tool_shed.webapp.search.tool_search import schema as tool_schema
-from tool_shed.webapp.util.hgweb_config import HgWebConfigManager
 
 log = logging.getLogger(__name__)
 
@@ -92,7 +92,7 @@ def get_repos(sa_session, file_path, hgweb_config_dir, **kwargs):
     """
     Load repos from DB and included tools from .xml configs.
     """
-    hgwcm = HgWebConfigManager()
+    hgwcm = hgweb_config_manager
     hgwcm.hgweb_config_dir = hgweb_config_dir
     # Do not index deleted, deprecated, or "tool_dependency_definition" type repositories.
     q = sa_session.query(model.Repository).filter_by(deleted=False).filter_by(deprecated=False).order_by(model.Repository.update_time.desc())

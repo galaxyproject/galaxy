@@ -29,7 +29,7 @@ class ToolValidator(GalaxyToolValidator):
             # The file no longer exists on disk, so it must have been deleted at some previous
             # point in the change log.
             return False
-        if changeset_revision == repository.tip(self.app):
+        if changeset_revision == repository.tip():
             return True
         file_name = basic_util.strip_path(file_path)
         latest_version_of_file = \
@@ -183,7 +183,7 @@ class ToolValidator(GalaxyToolValidator):
         """
         repository = repository_util.get_repository_in_tool_shed(self.app, repository_id)
         repo_files_dir = repository.repo_path(self.app)
-        repo = hg_util.get_repo_for_repository(self.app, repo_path=repo_files_dir)
+        repo = repository.hg_repo
         tool_config_filepath = repository_util.get_absolute_path_to_file_in_repository(repo_files_dir, tool_config_filename)
         work_dir = tempfile.mkdtemp(prefix="tmp-toolshed-ltfcr")
         can_use_disk_file = self.can_use_tool_config_disk_file(repository,

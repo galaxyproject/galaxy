@@ -26,12 +26,15 @@ from twill.other_packages._mechanize_dist import ClientForm
 
 import galaxy.model.tool_shed_install as galaxy_model
 import galaxy.util
-import tool_shed.webapp.util.hgweb_config
 from galaxy.security import idencoding
 from galaxy.util import smart_str, unicodify
 from galaxy_test.base.api_util import get_master_api_key
 from galaxy_test.driver.testcase import FunctionalTestCase
-from tool_shed.util import hg_util, xml_util
+from tool_shed.util import (
+    hg_util,
+    hgweb_config,
+    xml_util,
+)
 from . import common, test_db_util
 
 # Set a 10 minute timeout for repository installation.
@@ -54,7 +57,7 @@ class ShedTwillTestCase(FunctionalTestCase):
         self.security = idencoding.IdEncodingHelper(id_secret='changethisinproductiontoo')
         self.history_id = None
         self.hgweb_config_dir = os.environ.get('TEST_HG_WEB_CONFIG_DIR')
-        self.hgweb_config_manager = tool_shed.webapp.util.hgweb_config.HgWebConfigManager()
+        self.hgweb_config_manager = hgweb_config.hgweb_config_manager
         self.hgweb_config_manager.hgweb_config_dir = self.hgweb_config_dir
         self.tool_shed_test_tmp_dir = os.environ.get('TOOL_SHED_TEST_TMP_DIR', None)
         self.host = os.environ.get('TOOL_SHED_TEST_HOST')
