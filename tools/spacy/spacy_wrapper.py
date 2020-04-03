@@ -75,7 +75,7 @@ def main():
                         start = word.start
                     end = word.end
                     break
-        result.addEntity(entity.label_, text, entity.start_char, entity.end_char, None, None, start, None)   #AMP-636 removed end=None
+        result.addEntity(entity.label_, text, None, None, None, None, start, None)   #AMP-636 removed startOffset=endOffset=end=None
     
     # Write the json file
     write_json_file(result, json_file)
