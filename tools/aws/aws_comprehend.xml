@@ -3,11 +3,15 @@
     <requirements>
         <requirement type="package" version="1.14">aws-cli</requirement>
     </requirements>
-  <command detect_errors="exit_code">$__tool_directory__/aws_comprehend.py $input $output_file $bucketName $dataAccessRoleArn</command>
+  <command detect_errors="exit_code">$__tool_directory__/aws_comprehend.py $input $output_file $bucketName $dataAccessRoleArn $ignore_categories_csv</command>
   <inputs>
     <param name="input" type="data" format="txt" label="From transcript" help="An transcript file"/>
     <param name="bucketName" type="text" format="txt" label="S3 Bucket Name" help="An existing bucket name in AWS S3"/>
     <param name="dataAccessRoleArn" type="text" format="txt" label="IAM Data Access Role" help="An AWS IAM role providing access from AWS comprehend to S3"/>
+    <param name="ignore_categories_csv" type="text" format="txt" label="Categories to ignore" help="Comma separated list of categories to ignore">
+     <sanitizer sanitize="false">
+    </sanitizer>
+    </param>
   </inputs>
   <outputs>
     <data format="json" name="output_file" />
