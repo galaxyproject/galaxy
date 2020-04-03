@@ -68,7 +68,7 @@ def build_readme_files_dict(app, repository, changeset_revision, metadata, tool_
                         readme_files_dict[readme_file_name] = text_of_reasonable_length
                 else:
                     # We must be in the tool shed and have an old changeset_revision, so we need to retrieve the file contents from the repository manifest.
-                    repo = hg_util.get_repo_for_repository(app, repository=repository)
+                    repo = repository.hg_repo
                     ctx = hg_util.get_changectx_for_changeset(repo, changeset_revision)
                     if ctx:
                         fctx = hg_util.get_file_context_from_ctx(ctx, readme_file_name)

@@ -38,7 +38,7 @@ class ToolVersionManager(object):
         is called only from the Tool Shed.
         """
         repository = repository_util.get_repository_by_id(self.app, repository_id)
-        repo = hg_util.get_repo_for_repository(self.app, repository=repository)
+        repo = repository.hg_repo
         # Initialize the tool lineage
         version_lineage = [guid]
         # Get all ancestor guids of the received guid.
@@ -55,7 +55,7 @@ class ToolVersionManager(object):
         current_parent_guid = guid
         for changeset in hg_util.reversed_lower_upper_bounded_changelog(repo,
                                                                         repository_metadata.changeset_revision,
-                                                                        repository.tip(self.app)):
+                                                                        repository.tip()):
             ctx = repo[changeset]
             rm = metadata_util.get_repository_metadata_by_changeset_revision(self.app, repository_id, str(ctx))
             if rm:

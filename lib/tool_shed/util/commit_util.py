@@ -157,11 +157,11 @@ def handle_bz2(repository, uploaded_file_name):
 def handle_directory_changes(app, host, username, repository, full_path, filenames_in_archive, remove_repo_files_not_in_tar,
                              new_repo_alert, commit_message, undesirable_dirs_removed, undesirable_files_removed):
     repo_path = repository.repo_path(app)
-    repo = hg_util.get_repo_for_repository(app, repo_path=repo_path)
     content_alert_str = ''
     files_to_remove = []
     filenames_in_archive = [os.path.join(full_path, name) for name in filenames_in_archive]
-    if remove_repo_files_not_in_tar and not repository.is_new(app):
+    repo = repository.hg_repo
+    if remove_repo_files_not_in_tar and not repository.is_new():
         # We have a repository that is not new (it contains files), so discover those files that are in the
         # repository, but not in the uploaded archive.
         for root, dirs, files in os.walk(full_path):
