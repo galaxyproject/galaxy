@@ -15,6 +15,7 @@ SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 IRODS_TEST_CASES = dict(list(TEST_CASES.items())[0:10])
 OBJECT_STORE_HOST = os.environ.get('GALAXY_INTEGRATION_IRODS_OBJECT_STORE_HOST', 'localhost')
 OBJECT_STORE_PORT = int(os.environ.get('GALAXY_INTEGRATION_IRODS_OBJECT_STORE_PORT', 1247))
+OBJECT_STORE_TIMEOUT = int(os.environ.get('GALAXY_INTEGRATION_IRODS_OBJECT_STORE_TIMEOUT', 30))
 OBJECT_STORE_USERNAME = os.environ.get('GALAXY_INTEGRATION_IRODS_OBJECT_STORE_USERNAME', 'rods')
 OBJECT_STORE_PASSWORD = os.environ.get('GALAXY_INTEGRATION_IRODS_OBJECT_STORE_PASSWORD', 'rods')
 OBJECT_STORE_RESOURCE = os.environ.get('GALAXY_INTEGRATION_IRODS_OBJECT_STORE_RESOURCE', 'demoResc')
@@ -24,7 +25,7 @@ OBJECT_STORE_CONFIG = string.Template("""
     <auth username="${username}" password="${password}"/>
     <resource name="${resource}"/>
     <zone name="${zone}"/>
-    <connection host="${host}" port="${port}"/>
+    <connection host="${host}" port="${port}" timeout="${timeout}"/>
     <cache path="${temp_directory}/object_store_cache" size="1000"/>
     <extra_dir type="job_work" path="${temp_directory}/job_working_directory_irods"/>
     <extra_dir type="temp" path="${temp_directory}/tmp_irods"/>
@@ -81,6 +82,7 @@ class UploadTestDatatypeDataTestCase(UploadTestDatatypeDataTestCase):
                         "temp_directory": temp_directory,
                         "host": OBJECT_STORE_HOST,
                         "port": OBJECT_STORE_PORT,
+                        "timeout": OBJECT_STORE_TIMEOUT,
                         "username": OBJECT_STORE_USERNAME,
                         "password": OBJECT_STORE_PASSWORD,
                         "resource": OBJECT_STORE_RESOURCE,

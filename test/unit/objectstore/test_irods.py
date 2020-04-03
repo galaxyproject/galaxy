@@ -28,6 +28,7 @@ def test_parse_valid_config_xml():
     assert config['zone']['name'] == 'tempZone'
     assert config['connection']['host'] == 'localhost'
     assert config['connection']['port'] == 1247
+    assert config['connection']['timeout'] == 30
     assert config['cache']['path'] == 'database/object_store_cache'
     assert config['cache']['size'] == 1000
     assert config['extra_dirs'][0]['type'] == 'job_work'

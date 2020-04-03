@@ -64,6 +64,7 @@ def parse_config_xml(config_xml):
             _config_xml_error('connection')
         host = c_xml[0].get('host', None)
         port = int(c_xml[0].get('port', 0))
+        timeout = int(c_xml[0].get('timeout', 30))
 
         c_xml = config_xml.findall('cache')
         if not c_xml:
@@ -91,6 +92,7 @@ def parse_config_xml(config_xml):
             'connection': {
                 'host': host,
                 'port': port,
+                'timeout': timeout
             },
             'cache': {
                 'size': cache_size,
@@ -121,6 +123,7 @@ class CloudConfigMixin(object):
             'connection': {
                 'host': self.host,
                 'port': self.port,
+                'timeout': self.timeout,
             },
             'cache': {
                 'size': self.cache_size,
@@ -174,6 +177,9 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         self.port = connection_dict.get('port')
         if self.port is None:
             _config_dict_error('connection->port')
+        self.timeout = connection_dict.get('timeout')
+        if self.timeout is None:
+            _config_dict_error('connection->timeout')
 
         cache_dict = config_dict['cache']
         if cache_dict is None:
@@ -205,6 +211,8 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
 
     def _configure_connection(self, host='localhost', port='1247', user='rods', password='rods', zone='tempZone'):
         with iRODSSession(host=host, port=port, user=user, password=password, zone=zone) as session:
+            # Set connection timeout
+            session.connection_timeout = self.timeout
             # Throws NetworkException if connection fails
             try:
                 session.pool.get_connection()
