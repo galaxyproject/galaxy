@@ -21,8 +21,9 @@ def main():
 
     # Read a list of categories to ignore when outputting entity list
     ignore_cats_list = list()
-    if len(sys.argv) >= 3:
-        ignore_cats_list = read_ignore_list(sys.argv[3])
+    if len(sys.argv) > 3:
+        print("Categories to ignore:" + sys.argv[3])
+        ignore_cats_list = split_ignore_list(sys.argv[3])
 
     # Load English tokenizer, tagger, parser, NER and word vectors
     nlp = spacy.load("en_core_web_lg")
@@ -83,6 +84,14 @@ def main():
 # Standardize ignore list text
 def clean_text(text):
     return text.lower().strip()
+
+# Split a comma separated string, standardize input, and return list
+def split_ignore_list(ignore_list_string):
+    to_return = list()
+    ignore_cats_list = ignore_list_string.split(',')
+    for cat in ignore_cats_list:
+        to_return.append(clean_text(cat))
+    return to_return
 
 # Read a list of categories to ignore
 def read_ignore_list(ignore_list_filename):

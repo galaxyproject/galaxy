@@ -192,8 +192,8 @@ def read_ignore_list(ignore_list_filename):
     print(ignore_cats_list)
     return ignore_cats_list
 
+# Split a comma separated string, standardize input, and return list
 def split_ignore_list(ignore_list_string):
-    print("Reading list")
     to_return = list()
     ignore_cats_list = ignore_list_string.split(',')
     for cat in ignore_cats_list:
