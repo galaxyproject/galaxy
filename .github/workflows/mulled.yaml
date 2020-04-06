@@ -11,7 +11,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
       with:
-        path: 'galaxy'
+        path: 'galaxy root'
     - uses: actions/setup-python@v1
       with:
         python-version: ${{ matrix.python-version }}
@@ -20,9 +20,9 @@ jobs:
       id: pip-cache
       with:
         path: ~/.cache/pip
-        key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy/requirements.txt') }}
+        key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
     - name: Install tox
       run: pip install tox
     - name: run tests
       run: tox -e mulled
-      working-directory: 'galaxy'
+      working-directory: 'galaxy root'
