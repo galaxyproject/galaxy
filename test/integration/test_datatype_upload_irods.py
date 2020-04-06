@@ -8,7 +8,12 @@ import time
 import pytest
 
 from galaxy_test.driver import integration_util
-from .test_datatype_upload import (TEST_CASES, upload_datatype_helper, UploadTestDatatypeDataTestCase)
+from .test_datatype_upload import (
+    temp_file
+    TEST_CASES,
+    upload_datatype_helper, 
+    UploadTestDatatypeDataTestCase
+)
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 # Run test for only the first 10 test files
@@ -94,12 +99,6 @@ class UploadTestDatatypeDataTestCase(UploadTestDatatypeDataTestCase):
 
 
 instance = integration_util.integration_module_instance(UploadTestDatatypeDataTestCase)
-
-
-@pytest.fixture
-def temp_file():
-    with tempfile.NamedTemporaryFile(delete=True, mode='wb') as fh:
-        yield fh
 
 
 @pytest.mark.parametrize('test_data', IRODS_TEST_CASES.values(), ids=list(IRODS_TEST_CASES.keys()))
