@@ -96,12 +96,6 @@ class UploadTestDatatypeDataTestCase(UploadTestDatatypeDataTestCase):
 instance = integration_util.integration_module_instance(UploadTestDatatypeDataTestCase)
 
 
-@pytest.fixture
-def temp_file():
-    with tempfile.NamedTemporaryFile(delete=True, mode='wb') as fh:
-        yield fh
-
-
 @pytest.mark.parametrize('test_data', IRODS_TEST_CASES.values(), ids=list(IRODS_TEST_CASES.keys()))
 def test_upload_datatype_irods(instance, test_data, temp_file):
     upload_datatype_helper(instance, test_data, temp_file)
