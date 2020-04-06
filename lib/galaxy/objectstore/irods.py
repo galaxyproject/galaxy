@@ -313,28 +313,6 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         """ Check if the given dataset is in the local cache and return True if so. """
         cache_path = self._get_cache_path(rel_path)
         return os.path.exists(cache_path)
-        # TODO: Part of checking if a file is in cache should be to ensure the
-        # size of the cached file matches that on S3. Once the upload tool explicitly
-        # creates, this check sould be implemented- in the mean time, it's not
-        # looking likely to be implementable reliably.
-        # if os.path.exists(cache_path):
-        #     # print("***1 %s exists" % cache_path)
-        #     if self._key_exists(rel_path):
-        #         # print("***2 %s exists in S3" % rel_path)
-        #         # Make sure the size in cache is available in its entirety
-        #         # print("File '%s' cache size: %s, S3 size: %s" % (cache_path, os.path.getsize(cache_path), self._get_size_in_s3(rel_path)))
-        #         if os.path.getsize(cache_path) == self._get_size_in_s3(rel_path):
-        #             # print("***2.1 %s exists in S3 and the size is the same as in cache (in_cache=True)" % rel_path)
-        #             exists = True
-        #         else:
-        #             # print("***2.2 %s exists but differs in size from cache (in_cache=False)" % cache_path)
-        #             exists = False
-        #     else:
-        #         # Although not perfect decision making, this most likely means
-        #         # that the file is currently being uploaded
-        #         # print("***3 %s found in cache but not in S3 (in_cache=True)" % cache_path)
-        #         exists = True
-        # else:
 
     def _pull_into_cache(self, rel_path):
         # Ensure the cache directory structure exists (e.g., dataset_#_files/)

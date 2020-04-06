@@ -2,16 +2,14 @@
 import os
 import string
 import subprocess
-import tempfile
 import time
 
 import pytest
 
 from galaxy_test.driver import integration_util
 from .test_datatype_upload import (
-    temp_file
     TEST_CASES,
-    upload_datatype_helper, 
+    upload_datatype_helper,
     UploadTestDatatypeDataTestCase
 )
 
