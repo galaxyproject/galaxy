@@ -36,7 +36,7 @@ jobs:
         kubectl get pods
     - uses: actions/checkout@v2
       with:
-        path: 'galaxy'
+        path: 'galaxy root'
     - uses: actions/setup-python@v1
       with:
         python-version: ${{ matrix.python-version }}
@@ -45,7 +45,7 @@ jobs:
       id: pip-cache
       with:
         path: ~/.cache/pip
-        key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy/requirements.txt') }}
+        key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
     - name: Run tests
       run: './run_tests.sh -integration test/integration -- -k "${{ matrix.subset }}"'
-      working-directory: 'galaxy'
+      working-directory: 'galaxy-root'
