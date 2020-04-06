@@ -8,7 +8,12 @@ import time
 import pytest
 
 from galaxy_test.driver import integration_util
-from .test_datatype_upload import (TEST_CASES, upload_datatype_helper, UploadTestDatatypeDataTestCase)
+from .test_datatype_upload import (
+    temp_file
+    TEST_CASES,
+    upload_datatype_helper, 
+    UploadTestDatatypeDataTestCase
+)
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 # Run test for only the first 10 test files
