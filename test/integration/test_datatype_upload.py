@@ -1,6 +1,5 @@
 import collections
 import os
-import tempfile
 
 import pytest
 
@@ -46,12 +45,6 @@ class UploadTestDatatypeDataTestCase(BaseUploadContentConfigurationInstance):
 
 
 instance = integration_util.integration_module_instance(UploadTestDatatypeDataTestCase)
-
-
-@pytest.fixture
-def temp_file():
-    with tempfile.NamedTemporaryFile(delete=True, mode='wb') as fh:
-        yield fh
 
 
 registry = Registry()

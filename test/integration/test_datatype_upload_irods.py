@@ -2,7 +2,6 @@
 import os
 import string
 import subprocess
-import tempfile
 import time
 
 import pytest
@@ -98,12 +97,6 @@ class UploadTestDatatypeDataTestCase(UploadTestDatatypeDataTestCase):
 
 
 instance = integration_util.integration_module_instance(UploadTestDatatypeDataTestCase)
-
-
-@pytest.fixture
-def temp_file():
-    with tempfile.NamedTemporaryFile(delete=True, mode='wb') as fh:
-        yield fh
 
 
 @pytest.mark.parametrize('test_data', IRODS_TEST_CASES.values(), ids=list(IRODS_TEST_CASES.keys()))
