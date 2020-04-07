@@ -1,14 +1,14 @@
 import _ from "underscore";
 import $ from "jquery";
-import Vue from "vue";
 import { getAppRoot } from "onload/loadConfig";
 import Utils from "utils/utils";
+import Emitter from "events";
 
-export class Node {
+export class Node extends Emitter {
     constructor(app, attr = {}) {
+        super();
         this.app = app;
         this.element = $(attr.element);
-        this.nodeVue = attr.nodeVue;
         this.input_terminals = {};
         this.output_terminals = {};
         this.errors = null;
@@ -225,123 +225,10 @@ export class Node {
         this.label = data.label;
         this.uuid = data.uuid;
         this.workflow_outputs = data.workflow_outputs ? data.workflow_outputs : [];
-        this.nodeVue.inputs = Object.assign({}, data.inputs);
-        this.nodeVue.outputs = Object.assign({}, data.outputs);
-        Vue.nextTick(() => {
-            this.input_terminals = this.nodeVue.inputTerminals;
-            this.output_terminals = this.nodeVue.outputTerminals;
-            this.app.node_changed(this);
-        });
+        this.emit("init", { inputs: data.inputs, outputs: data.outputs });
     }
     update_field_data(data) {
-        // todo - needs to be rewritten
-        var node = this;
-        // remove unused output views and remove pre-existing output views from data.outputs,
-        // so that these are not added twice.
-        var unused_outputs = [];
-        // nodeView.outputViews contains pre-existing outputs,
-        // while data.data_output contains what should be displayed.
-        // Now we gather the unused outputs
-        $.each(this.nodeView.outputViews, (i, output_view) => {
-            var cur_name = output_view.output.name;
-            var data_names = data.outputs;
-            var cur_name_in_data_outputs = false;
-            _.each(data_names, (data_name) => {
-                if (data_name.name == cur_name) {
-                    cur_name_in_data_outputs = true;
-                }
-            });
-            if (cur_name_in_data_outputs === false) {
-                unused_outputs.push(cur_name);
-            }
-        });
-        // Remove the unused outputs
-        _.each(unused_outputs, (unused_output) => {
-            _.each(this.nodeView.outputViews[unused_output].terminalElement.terminal.connectors, (x) => {
-                if (x) {
-                    x.destroy(); // Removes the noodle connectors
-                }
-            });
-            this.nodeView.outputViews[unused_output].$el.remove(); // removes the rendered output
-            delete this.nodeView.outputViews[unused_output]; // removes the reference to the output
-            delete node.output_terminals[unused_output]; // removes the output terminal
-        });
-        $.each(node.workflow_outputs, (i, wf_output) => {
-            if (wf_output && !node.output_terminals[wf_output.output_name]) {
-                node.workflow_outputs.splice(i, 1); // removes output from list of workflow outputs
-            }
-        });
-        $.each(data.outputs, (i, output) => {
-            if (!this.nodeView.outputViews[output.name]) {
-                this.nodeView.addDataOutput(output); // add data output if it does not yet exist
-            } else {
-                // the output already exists, but the output formats may have changed.
-                // Therefore we update the datatypes and destroy invalid connections.
-                node.output_terminals[output.name].datatypes = output.extensions;
-                const changeOutputDatatype = node.post_job_actions["ChangeOutputDatatype" + output.name];
-                if (changeOutputDatatype) {
-                    node.output_terminals[output.name].force_datatype =
-                        changeOutputDatatype.action_arguments["newtype"];
-                } else {
-                    node.output_terminals[output.name].force_datatype = null;
-                }
-                if (node.type == "parameter_input") {
-                    node.output_terminals[output.name].attributes.type = output.type;
-                }
-                node.output_terminals[output.name].optional = output.optional;
-                node.output_terminals[output.name].destroyInvalidConnections();
-            }
-        });
-        this.tool_state = data.tool_state;
-        this.config_form = data.config_form;
-        this.set_tool_version();
-        this.errors = data.errors;
-        this.annotation = data.annotation;
-        this.label = data.label;
-        if ("post_job_actions" in data) {
-            // Won't be present in response for data inputs
-            var pja_in = data.post_job_actions;
-            this.post_job_actions = pja_in ? pja_in : {};
-        }
-        this.nodeView.renderErrors();
-
-        // Update input rows
-        var newTerminals = {};
-        _.each(data.inputs, (input) => {
-            const terminal = this.input_terminals[input.name];
-            if (!terminal) {
-                newTerminals[input.name] = this.nodeView.addDataInput(input);
-            } else {
-                newTerminals[input.name] = terminal;
-                terminal.update(input);
-                terminal.destroyInvalidConnections();
-            }
-        });
-        // Cleanup any leftover terminals
-        _.each(_.difference(_.values(this.input_terminals), _.values(newTerminals)), (unusedTerminals) => {
-            unusedTerminals.destroy();
-        });
-        this.input_terminals = newTerminals;
-        this.nodeView.render();
-
-        // In general workflow editor assumes tool outputs don't change in # or
-        // type (not really valid right?) but adding special logic here for
-        // data collection input parameters that can have their collection
-        // change.
-        var data_outputs = data.outputs;
-        if (data_outputs.length == 1 && "collection_type" in data_outputs[0]) {
-            // TODO
-            //this.nodeView.updateDataOutput(data_outputs[0]);
-            //var outputTerminal = this.nodeView.node.output_terminals[output.name];
-            //outputTerminal.update(output);
-        }
-
-        // Won't be present in response for data inputs
-        this.workflow_outputs = data.workflow_outputs || [];
-
-        // If active, reactivate with new config_form
-        this.markChanged();
-        this.redraw();
+        this.emit("update", data);
     }
     markChanged() {
         this.app.node_changed(this);
