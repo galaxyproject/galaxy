@@ -1,6 +1,7 @@
 """
 Object Store plugin for the Integrated Rule-Oriented Data Store (iRODS)
 """
+from functool import partial
 import logging
 import os
 import shutil
@@ -27,7 +28,8 @@ from galaxy.util.path import safe_relpath
 from ..objectstore import DiskObjectStore
 
 IRODS_IMPORT_MESSAGE = ('The Python irods package is required to use this feature, please install it')
-
+# 1 MB
+CHUNK_SIZE = 2**20
 log = logging.getLogger(__name__)
 
 
@@ -349,8 +351,8 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         log.debug("Pulled data object '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
 
         with data_obj.open('r') as data_obj_fp, open(self._get_cache_path(rel_path), "wb") as cache_fp:
-            content = data_obj_fp.read()
-            cache_fp.write(content)
+            for chunk in iter(partial(data_obj_fp.read, CHUNK_SIZE), b''):
+                cache_fp.write(chunk)
         return True
 
     def _push_to_irods(self, rel_path, source_file=None, from_string=None):
@@ -388,15 +390,12 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
 
                 # Create sub-collection first
                 self.session.collections.create(collection_path, recurse=True)
-
-                file_content = None
-                with open(source_file, 'rb') as content_file:
-                    file_content = content_file.read()
+                data_obj = self.session.data_objects.create(data_object_path, self.resource, **options)
 
                 # Write to file in subcollection created above
-                data_obj = self.session.data_objects.create(data_object_path, self.resource, **options)
-                with data_obj.open('w') as data_obj_fp:
-                    data_obj_fp.write(file_content)
+                with open(source_file, 'rb') as content_file, data_obj.open('w') as data_obj_fp:
+                    for chunk in iter(partial(content_file.read, CHUNK_SIZE), b''):
+                        data_obj_fp.write(chunk)
 
                 end_time = datetime.now()
                 log.debug("Pushed cache file '%s' to collection '%s' (%s bytes transfered in %s sec)",
