@@ -1,11 +1,11 @@
 """
 Object Store plugin for the Integrated Rule-Oriented Data Store (iRODS)
 """
-from functool import partial
 import logging
 import os
 import shutil
 from datetime import datetime
+from functools import partial
 try:
     from pathlib import Path
 except ImportError:
