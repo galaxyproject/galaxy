@@ -1,6 +1,6 @@
 <template>
     <div>
-        <table class="tabletip info_data_table">
+        <table id="destination_parameters" class="tabletip info_data_table">
             <tbody>
                 <tr v-for="(value, title) in jobDestinationParams">
                     <td>{{ title }}</td>
@@ -12,10 +12,10 @@
 </template>
 
 <script>
-    import {mapCacheActions} from "vuex-cache";
-    import {mapGetters} from "vuex";
+import { mapCacheActions } from "vuex-cache";
+import { mapGetters } from "vuex";
 
-    export default {
+export default {
     props: {
         jobId: {
             type: String,
@@ -42,7 +42,7 @@
         ...mapGetters(["getJobDestinationParams"]),
         jobDestinationParams: function () {
             return this.getJobDestinationParams(this.jobId);
-        }
+        },
     },
     methods: {
         ...mapCacheActions(["fetchJobDestinationParams"]),
