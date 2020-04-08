@@ -32,7 +32,7 @@ export function createStore() {
             histories: historyStore,
             tags: tagStore,
             jobMetrics: jobMetricsStore,
-            DestinationParameters: jobDestinationParametersStore,
+            destinationParameters: jobDestinationParametersStore,
             invocations: invocationStore,
             user: userStore,
             config: configStore,

@@ -2,7 +2,7 @@
     <div>
         <table id="destination_parameters" class="tabletip info_data_table">
             <tbody>
-                <tr v-for="(value, title) in jobDestinationParams">
+                <tr v-for="(value, title) in jobDestinationParams" :key="title">
                     <td>{{ title }}</td>
                     <td>{{ value }}</td>
                 </tr>
