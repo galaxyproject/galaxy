@@ -51,9 +51,6 @@ def main():
 
     # Find named entities, phrases and concepts - Add them to the result
     for entity in doc.ents:
-        # Ignore certain categories
-        if clean_text(entity.label_) in ignore_cats_list:
-            continue
         # Start and end time offsets
         start = None
         end = None
@@ -75,7 +72,9 @@ def main():
                         start = word.start
                     end = word.end
                     break
-        result.addEntity(entity.label_, text, None, None, None, None, start, None)   #AMP-636 removed startOffset=endOffset=end=None
+        # Ignore certain categories
+        if clean_text(entity.label_) not in ignore_cats_list:
+            result.addEntity(entity.label_, text, None, None, None, None, start, None)   #AMP-636 removed startOffset=endOffset=end=None
     
     # Write the json file
     write_json_file(result, json_file)
