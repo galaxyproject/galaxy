@@ -764,3 +764,50 @@ class Paf(Text):
                     return False
             found_valid_lines = True
         return found_valid_lines
+
+
+@build_sniff_from_prefix
+class Gfa1(Text):
+    """
+    Graphical Fragment Assembly (GFA) 1.0
+
+    http://gfa-spec.github.io/GFA-spec/GFA1.html
+    """
+    file_ext = "gfa1"
+
+    def sniff_prefix(self, file_prefix):
+        """
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('big.gfa1')
+        >>> Gfa1().sniff(fname)
+        True
+        """
+        found_valid_lines = False
+        for line in iter_headers(file_prefix, "\t"):
+            if line[0].startswith('#'):
+                continue
+            if line[0] == 'H':
+                return len(line) == 2 and line[1] == 'VN:Z:1.0'
+            elif line[0] == 'S':
+                if len(line) < 3:
+                    return False
+            elif line[0] == 'L':
+                if len(line) < 6:
+                    return False
+                for i in (2, 4):
+                    if line[i] not in ('+', '-'):
+                        return False
+            elif line[0] == 'C':
+                if len(line) < 7:
+                    return False
+                for i in (2, 4):
+                    if line[i] not in ('+', '-'):
+                        return False
+                int(line[5])
+            elif line[0] == 'P':
+                if len(line) < 4:
+                    return False
+            else:
+                return False
+            found_valid_lines = True
+        return found_valid_lines
