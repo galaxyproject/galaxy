@@ -20,6 +20,6 @@ export default {
         title() {
             return RULES[this.ruleType].title;
         },
-    },
+    }
 }
 </script>
