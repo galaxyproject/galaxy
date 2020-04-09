@@ -175,6 +175,9 @@ class ConditionalDependencies(object):
     def check_kamaki(self):
         return 'pithos' in self.object_stores
 
+    def check_python_irodsclient(self):
+        return 'irods' in self.object_stores
+
     def check_watchdog(self):
         install_set = {'auto', 'True', 'true', 'polling'}
         return (self.config['watch_tools'] in install_set or
