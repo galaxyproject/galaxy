@@ -582,40 +582,16 @@ import RuleDisplay from "components/RuleBuilder/RuleDisplay";
 import IdentifierDisplay from "components/RuleBuilder/IdentifierDisplay";
 import RuleTargetComponent from "components/RuleBuilder/RuleTargetComponent";
 import RuleComponent from "components/RuleBuilder/RuleComponent";
+import RuleModalHeader from "components/RuleBuilder/RuleModalHeader";
+import RuleModalMiddle from "components/RuleBuilder/RuleModalMiddle";
+import RuleModalFooter from "components/RuleBuilder/RuleModalFooter";
+import StateDiv from "components/RuleBuilder/StateDiv";
 
 
 Vue.use(BootstrapVue);
 
 const RULES = RuleDefs.RULES;
 const MAPPING_TARGETS = RuleDefs.MAPPING_TARGETS;
-     
-
-const StateDiv = {
-    template: `
-        <div class="rule-collection-creator collection-creator flex-row-container">
-            <slot></slot>
-        </div>`,
-};
-
-const RuleModalHeader = {
-    template: `<div class="header flex-row no-flex"><slot></slot></div>`,
-};
-
-const RuleModalMiddle = {
-    template: `<div class="middle flex-row flex-row-container"><slot></slot></div>`,
-};
-
-const RuleModalFooter = {
-    template: `
-        <div class="rule-footer footer flex-row no-flex">
-            <slot name="inputs"></slot>
-            <div class="actions clear vertically-spaced">
-                <div class="main-options float-right">
-                    <slot></slot>
-                </div>
-            </div>
-        </div>`,
-};
 
 export default {
     data: function () {
