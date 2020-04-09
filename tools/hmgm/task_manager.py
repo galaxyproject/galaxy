@@ -13,13 +13,23 @@ class TaskManager:
      def __init__(self, config):
          self.config = config    
          self.amppd_server = config["amppd"]["server"] 
+
+         # for Transcript
          self.transcript_api = config["amppd"]["transcript_api"] 
          self.transcript_input = config["amppd"]["transcript_input"] 
          self.transcript_media = config["amppd"]["transcript_media"] 
          
-         # TODO set up properties for other HMGM tools
+         # for NER
+         self.ner_api = config["amppd"]["ner_api"] 
+         self.ner_input = config["amppd"]["ner_input"] 
          
-     
+         # for Segmentation
+         self.segmentation_api = config["amppd"]["segmentation_api"] 
+         self.segmentation_input = config["amppd"]["segmentation_input"] 
+         
+         # TODO set up properties for other HMGM tools
+
+
      # Return description of an HMGM task based on the given task_type, context, input file etc.
      def get_task_description(self, task_type, context, editor_input):
          description = "Submitted By: " + context["submittedBy"] + "\n"
@@ -41,11 +51,13 @@ class TaskManager:
              params = {self.transcript_input: editor_input, self.transcript_media: media}
              url = api_url + "?" + urllib.parse.urlencode(params)
          elif task_type == self.NER:
-             # TODO url for NER
-             url = self.amppd_server;
+             api_url = self.amppd_server + self.ner_api 
+             params = {self.ner_input: editor_input}
+             url = api_url + "?" + urllib.parse.urlencode(params)
          elif task_type == self.SEGMENTATION:
-             # TODO url for SEGMENTATION
-             url = self.amppd_server
+             api_url = self.amppd_server + self.segmentation_api 
+             params = {self.segmentation_input: editor_input}
+             url = api_url + "?" + urllib.parse.urlencode(params)
          elif task_type == self.OCR:
              # TODO url for OCR
              url = self.amppd_server
