@@ -1068,6 +1068,23 @@ class GalaxyTestDriver(TestDriver):
         )
 
 
+class GalaxyConfigTestDriver(GalaxyTestDriver):
+    """
+    Minimal TestDriver intended for testing Galaxy's initial configuration state on startup.
+    Includes minimum setup necesary to build galaxy and load its initial configuration.
+    Does not launch a server.
+    """
+    def _register_and_run_servers(self, config_object=None, handle_config=None):
+        tmpdir0 = tempfile.mkdtemp(dir=self.galaxy_test_tmp_dir)
+        galaxy_db_path = database_files_path(tmpdir0)
+        tmpdir = os.path.realpath(galaxy_db_path)
+        if not os.path.exists(tmpdir):
+            os.makedirs(tmpdir)
+        config = database_conf(tmpdir, prefer_template_database=False)
+        self.app = build_galaxy_app(config)
+
+
+
 def drive_test(test_driver_class):
     """Instantiate driver class, run, and exit appropriately."""
     test_driver = test_driver_class()
