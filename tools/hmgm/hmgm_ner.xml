@@ -5,8 +5,8 @@
     <param name="input_ner" type="data" format="json" label="Input NER JSON file" help="JSON file for the NER file to be corrected "/>
     <param name="context_json" type="text" label="Human MGM Task Context" help="JSON string containing context information needed for creating Human MGM task">
     	 <sanitizer sanitize="false">
-    </sanitizer>
-</param>
+    	</sanitizer>
+	</param>
   </inputs>
   <outputs>
     <data  name="output_ner" format="json" />
