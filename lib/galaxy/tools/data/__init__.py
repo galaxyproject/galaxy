@@ -263,7 +263,7 @@ class ToolDataTable(object):
         # increment this variable any time a new entry is added, or when the table is totally reloaded
         # This value has no external meaning, and does not represent an abstract version of the underlying data
         self._loaded_content_version = 1
-        self._load_info = ([config_element, tool_data_path], {'from_shed_config': from_shed_config, 'tool_data_path_files': self.tool_data_path_files})
+        self._load_info = ([config_element, tool_data_path], {'from_shed_config': from_shed_config, 'tool_data_path_files': self.tool_data_path_files, 'other_config_dict': other_config_dict})
         self._merged_load_info = []
 
     def _update_version(self, version=None):
@@ -852,28 +852,29 @@ class RefgenieToolDataTable(TabularToolDataTable):
         for genome in rgc.list_genomes_by_asset(self.rg_asset):
             genome_attributes = rgc.get_genome_attributes(genome)
             description = genome_attributes.get('description', None)
-            asset_list = rgc.assets_dict(genome, include_tags=True)[genome]
+            asset_list = rgc.list(genome, include_tags=True)[genome]
             for tagged_asset in asset_list:
                 asset, tag = tagged_asset.rsplit(':', 1)
                 if asset != self.rg_asset:
                     continue
-                digest = rgc.get_asset_digest(genome, asset, tag=tag)
-                uuid = 'refgenie:%s:%s:%s:%s' % (genome, tag, self.rg_asset, digest)
-                display_name = description or '%s:%s' % (genome, tagged_asset)
+                digest = rgc.id(genome, asset, tag=tag)
+                uuid = 'refgenie:%s/%s:%s@%s' % (genome, self.rg_asset, tag, digest)
+                display_name = description or '%s/%s' % (genome, tagged_asset)
+
                 def _seek_key(key):
                     return rgc.get_asset(genome, asset, tag_name=tag, seek_key=key)
                 template_dict = {
-                                '__REFGENIE_UUID__': uuid,
-                                '__REFGENIE_GENOME__': genome,
-                                '__REFGENIE_TAG__': tag,
-                                '__REFGENIE_DISPLAY_NAME__': display_name,
-                                '__REFGENIE_ASSET__': rgc.get_asset(genome, asset, tag_name=tag),
-                                '__REFGENIE_ASSET_NAME__': rgc.get_asset(genome, asset, tag_name=tag),
-                                '__REFGENIE_DIGEST__': digest,
-                                '__REFGENIE_GENOME_ATTRIBUTES__': genome_attributes,
-                                '__REFGENIE__': rgc,
-                                '__REFGENIE_SEEK_KEY__': _seek_key,
-                                }
+                    '__REFGENIE_UUID__': uuid,
+                    '__REFGENIE_GENOME__': genome,
+                    '__REFGENIE_TAG__': tag,
+                    '__REFGENIE_DISPLAY_NAME__': display_name,
+                    '__REFGENIE_ASSET__': rgc.seek(genome, asset, tag_name=tag),
+                    '__REFGENIE_ASSET_NAME__': asset,
+                    '__REFGENIE_DIGEST__': digest,
+                    '__REFGENIE_GENOME_ATTRIBUTES__': genome_attributes,
+                    '__REFGENIE__': rgc,
+                    '__REFGENIE_SEEK_KEY__': _seek_key,
+                }
                 fields = [''] * (self.largest_index + 1)
                 for name, index in self.columns.items():
                     rg_value = self.key_map[name]
