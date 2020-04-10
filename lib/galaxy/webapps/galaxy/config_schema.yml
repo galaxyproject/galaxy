@@ -591,10 +591,9 @@ mapping:
 
       refgenie_config_file:
         type: str
-        default: ''
         required: false
         desc: |
-          File containing refgenie configuration. Can be used by refgenie backed data tables.
+          File containing refgenie configuration, e.g. /path/to/genome_config.yaml. Can be used by refgenie backed tool data tables.
 
       build_sites_config_file:
         type: str

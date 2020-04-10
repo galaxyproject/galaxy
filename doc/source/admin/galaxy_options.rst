@@ -788,9 +788,10 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    File containing refgenie configuration. Can be used by refgenie
-    backed data tables.
-:Default: ````
+    File containing refgenie configuration, e.g.
+    /path/to/genome_config.yaml. Can be used by refgenie backed tool
+    data tables.
+:Default: ``None``
 :Type: str
 
 
