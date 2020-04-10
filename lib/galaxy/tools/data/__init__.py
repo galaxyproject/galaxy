@@ -863,7 +863,7 @@ class RefgenieToolDataTable(TabularToolDataTable):
                 display_name = description or '%s/%s' % (genome, tagged_asset)
 
                 def _seek_key(key):
-                    return rgc.get_asset(genome, asset, tag_name=tag, seek_key=key)
+                    return rgc.seek(genome, asset, tag_name=tag, seek_key=key)
                 template_dict = {
                     '__REFGENIE_UUID__': uuid,
                     '__REFGENIE_GENOME__': genome,
