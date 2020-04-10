@@ -438,7 +438,7 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
                 if repository.type in [rt_util.REPOSITORY_SUITE_DEFINITION, rt_util.TOOL_DEPENDENCY_DEFINITION]:
                     clause_list.append(self.app.model.Repository.table.c.id == repository.id)
                 else:
-                    allow_push = repository.allow_push(self.app)
+                    allow_push = repository.allow_push()
                     if allow_push:
                         # Include all repositories that are writable by the current user.
                         allow_push_usernames = allow_push.split(',')
@@ -735,7 +735,7 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
     def reset_all_metadata_on_repository_in_tool_shed(self):
         """Reset all metadata on a single repository in a tool shed."""
         log.debug("Resetting all metadata on repository: %s" % self.repository.name)
-        repo = hg_util.get_repo_for_repository(self.app, repository=self.repository)
+        repo = self.repository.hg_repo
         # The list of changeset_revisions refers to repository_metadata records that have been created
         # or updated.  When the following loop completes, we'll delete all repository_metadata records
         # for this repository that do not have a changeset_revision value in this list.
@@ -904,8 +904,7 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
         message = ''
         status = 'done'
         encoded_id = self.app.security.encode_id(self.repository.id)
-        repo_dir = self.repository.repo_path(self.app)
-        repo = hg_util.get_repo_for_repository(self.app, repo_path=repo_dir)
+        repo = self.repository.hg_repo
         self.generate_metadata_for_changeset_revision()
         if self.metadata_dict:
             repository_metadata = None
@@ -913,7 +912,7 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
             tip_only = isinstance(repository_type_class, TipOnly)
             if not tip_only and self.new_metadata_required_for_utilities():
                 # Create a new repository_metadata table row.
-                repository_metadata = self.create_or_update_repository_metadata(self.repository.tip(self.app),
+                repository_metadata = self.create_or_update_repository_metadata(self.repository.tip(),
                                                                                 self.metadata_dict)
                 # If this is the first record stored for this repository, see if we need to send any email alerts.
                 if len(self.repository.downloadable_revisions) == 1:
@@ -931,7 +930,7 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
                 if repository_metadata:
                     downloadable = metadata_util.is_downloadable(self.metadata_dict)
                     # Update the last saved repository_metadata table row.
-                    repository_metadata.changeset_revision = self.repository.tip(self.app)
+                    repository_metadata.changeset_revision = self.repository.tip()
                     repository_metadata.metadata = self.metadata_dict
                     repository_metadata.downloadable = downloadable
                     if 'datatypes' in self.metadata_dict:
@@ -962,7 +961,7 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
                     self.sa_session.flush()
                 else:
                     # There are no metadata records associated with the repository.
-                    repository_metadata = self.create_or_update_repository_metadata(self.repository.tip(self.app),
+                    repository_metadata = self.create_or_update_repository_metadata(self.repository.tip(),
                                                                                     self.metadata_dict)
             if 'tools' in self.metadata_dict and repository_metadata and status != 'error':
                 # Set tool versions on the new downloadable change set.  The order of the list of changesets is
@@ -975,7 +974,7 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
                 self.add_tool_versions(encoded_id, repository_metadata, changeset_revisions)
         elif len(repo) == 1 and not self.invalid_file_tups:
             message = "Revision <b>%s</b> includes no Galaxy utilities for which metadata can " % \
-                str(self.repository.tip(self.app))
+                str(self.repository.tip())
             message += "be defined so this revision cannot be automatically installed into a local Galaxy instance."
             status = "error"
         if self.invalid_file_tups:

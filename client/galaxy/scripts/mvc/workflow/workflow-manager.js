@@ -49,7 +49,7 @@ class Workflow extends EventEmitter {
     set_node(node, data) {
         node.init_field_data(data);
         node.update_field_data(data);
-        $.each(node.output_terminals, (ot_id, ot) => {
+        Object.values(node.output_terminals).forEach((ot) => {
             node.addWorkflowOutput(ot.name);
             node.markWorkflowOutput(ot.name);
         });
@@ -195,20 +195,20 @@ class Workflow extends EventEmitter {
     }
     remove_all() {
         var wf = this;
-        $.each(this.nodes, (k, v) => {
-            v.destroy();
-            wf.remove_node(v);
+        Object.values(this.nodes).forEach((node) => {
+            node.destroy();
+            wf.remove_node(node);
         });
     }
     rectify_workflow_outputs() {
         // Find out if we're using workflow_outputs or not.
         var using_workflow_outputs = false;
         var has_existing_pjas = false;
-        $.each(this.nodes, (k, node) => {
+        Object.values(this.nodes).forEach((node) => {
             if (node.type === "tool" && node.workflow_outputs && node.workflow_outputs.length > 0) {
                 using_workflow_outputs = true;
             }
-            $.each(node.post_job_actions, (pja_id, pja) => {
+            Object.values(node.post_job_actions).forEach((pja) => {
                 if (pja.action_type === "HideDatasetAction") {
                     has_existing_pjas = true;
                 }
@@ -216,26 +216,26 @@ class Workflow extends EventEmitter {
         });
         if (using_workflow_outputs !== false || has_existing_pjas !== false) {
             // Using workflow outputs, or has existing pjas.  Remove all PJAs and recreate based on outputs.
-            $.each(this.nodes, (k, node) => {
+            Object.values(this.nodes).forEach((node) => {
                 var node_changed = false;
                 if (node.post_job_actions === null) {
                     node.post_job_actions = {};
                     node_changed = true;
                 }
                 var pjas_to_rem = [];
-                $.each(node.post_job_actions, (pja_id, pja) => {
+                Object.entries(node.post_job_actions).forEach(([pja_id, pja]) => {
                     if (pja.action_type == "HideDatasetAction") {
                         pjas_to_rem.push(pja_id);
                     }
                 });
                 if (pjas_to_rem.length > 0) {
-                    $.each(pjas_to_rem, (i, pja_name) => {
+                    pjas_to_rem.forEach((pja_name) => {
                         node_changed = true;
                         delete node.post_job_actions[pja_name];
                     });
                 }
                 if (using_workflow_outputs) {
-                    $.each(node.output_terminals, (ot_id, ot) => {
+                    Object.values(node.output_terminals).forEach((ot) => {
                         var create_pja = !node.isWorkflowOutput(ot.name);
                         if (create_pja === true) {
                             node_changed = true;
@@ -258,14 +258,14 @@ class Workflow extends EventEmitter {
     }
     to_simple() {
         var nodes = {};
-        $.each(this.nodes, (i, node) => {
+        Object.values(this.nodes).forEach((node) => {
             var input_connections = {};
-            $.each(node.input_terminals, (k, t) => {
+            Object.values(node.input_terminals).forEach((t) => {
                 input_connections[t.name] = null;
                 // There should only be 0 or 1 connectors, so this is
                 // really a sneaky if statement
                 var cons = [];
-                $.each(t.connectors, (i, c) => {
+                t.connectors.forEach((c, i) => {
                     if (c.handle1) {
                         var con_dict = {
                             id: c.handle1.node.id,
@@ -282,8 +282,8 @@ class Workflow extends EventEmitter {
             });
             var post_job_actions = {};
             if (node.post_job_actions) {
-                $.each(node.post_job_actions, (i, act) => {
-                    var pja = {
+                Object.values(node.post_job_actions).forEach((act) => {
+                    const pja = {
                         action_type: act.action_type,
                         output_name: act.output_name,
                         action_arguments: act.action_arguments,
@@ -316,8 +316,7 @@ class Workflow extends EventEmitter {
         const report = this.report;
         return { steps: nodes, report: report };
     }
-    from_simple(data, initialImport_) {
-        var initialImport = initialImport_ === undefined ? true : initialImport_;
+    from_simple(data, initialImport = true) {
         var wf = this;
         var offset = 0;
         if (initialImport) {
@@ -330,13 +329,13 @@ class Workflow extends EventEmitter {
         var using_workflow_outputs = false;
         wf.workflow_version = data.version;
         wf.report = data.report || {};
-        $.each(data.steps, (id, step) => {
+        Object.entries(data.steps).forEach(([id, step]) => {
             var node = wf.prebuildNode(step.type, step.name, step.content_id);
             // If workflow being copied into another, wipe UUID and let
             // Galaxy assign new ones.
             if (!initialImport) {
                 step.uuid = null;
-                $.each(step.workflow_outputs, (name, workflow_output) => {
+                step.workflow_outputs.forEach((workflow_output) => {
                     workflow_output.uuid = null;
                 });
             }
@@ -358,7 +357,7 @@ class Workflow extends EventEmitter {
                 if (node.workflow_outputs.length > 0) {
                     using_workflow_outputs = true;
                 } else {
-                    $.each(node.post_job_actions || [], (pja_id, pja) => {
+                    Object.values(node.post_job_actions).forEach((pja) => {
                         if (pja.action_type === "HideDatasetAction") {
                             using_workflow_outputs = true;
                         }
@@ -368,14 +367,14 @@ class Workflow extends EventEmitter {
         });
         wf.id_counter = max_id + 1;
         // Second pass, connections
-        $.each(data.steps, (id, step) => {
+        Object.entries(data.steps).forEach(([id, step]) => {
             const node = wf.nodes[parseInt(id) + offset];
-            $.each(step.input_connections, (k, v) => {
+            Object.entries(step.input_connections).forEach(([k, v]) => {
                 if (v) {
-                    if (!$.isArray(v)) {
+                    if (!Array.isArray(v)) {
                         v = [v];
                     }
-                    $.each(v, (l, x) => {
+                    v.forEach((x) => {
                         const other_node = wf.nodes[parseInt(x.id) + offset];
                         const c = new Connector(this.canvas_manager);
                         c.connect(other_node.output_terminals[x.output_name], node.input_terminals[k]);
@@ -385,7 +384,7 @@ class Workflow extends EventEmitter {
             });
             if (using_workflow_outputs) {
                 // Ensure that every output terminal has a WorkflowOutput or HideDatasetAction.
-                $.each(node.output_terminals, (ot_id, ot) => {
+                Object.values(node.output_terminals).forEach((ot) => {
                     if (node.post_job_actions[`HideDatasetAction${ot.name}`] === undefined) {
                         node.addWorkflowOutput(ot.name);
                         node.markWorkflowOutput(ot.name);
@@ -451,7 +450,7 @@ class Workflow extends EventEmitter {
         var n_pred = {};
         var successors = {};
         // First pass to initialize arrays even for nodes with no connections
-        $.each(this.nodes, (id, node) => {
+        Object.keys(this.nodes).forEach((id) => {
             if (n_pred[id] === undefined) {
                 n_pred[id] = 0;
             }
@@ -460,9 +459,9 @@ class Workflow extends EventEmitter {
             }
         });
         // Second pass to count predecessors and successors
-        $.each(this.nodes, (id, node) => {
-            $.each(node.input_terminals, (j, t) => {
-                $.each(t.connectors, (k, c) => {
+        Object.values(this.nodes).forEach((node) => {
+            Object.values(node.input_terminals).forEach((t) => {
+                t.connectors.forEach((c) => {
                     // A connection exists from `other` to `node`
                     var other = c.handle1.node;
                     // node gains a predecessor
@@ -505,14 +504,14 @@ class Workflow extends EventEmitter {
         var h_pad = 80;
         var v_pad = 30;
         var left = h_pad;
-        $.each(node_ids_by_level, (i, ids) => {
+        node_ids_by_level.forEach((ids) => {
             // We keep nodes in the same order in a level to give the user
             // some control over ordering
             ids.sort((a, b) => $(all_nodes[a].element).position().top - $(all_nodes[b].element).position().top);
             // Position each node
             var max_width = 0;
             var top = v_pad;
-            $.each(ids, (j, id) => {
+            ids.forEach((id) => {
                 var node = all_nodes[id];
                 var element = $(node.element);
                 $(element).css({ top: top, left: left });
@@ -522,7 +521,7 @@ class Workflow extends EventEmitter {
             left += max_width + h_pad;
         });
         // Need to redraw all connectors
-        $.each(all_nodes, (_, node) => {
+        Object.values(all_nodes).forEach((node) => {
             node.redraw();
         });
     }
@@ -532,7 +531,7 @@ class Workflow extends EventEmitter {
         var ymin = Infinity;
         var ymax = -Infinity;
         var p;
-        $.each(this.nodes, (id, node) => {
+        Object.values(this.nodes).forEach((node) => {
             var e = $(node.element);
             p = e.position();
             xmin = Math.min(xmin, p.left);

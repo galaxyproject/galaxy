@@ -95,7 +95,7 @@ class AdminController(BaseUIController, Admin):
             if k.startswith(changeset_revision_str):
                 repository_id = trans.security.encode_id(int(k.lstrip(changeset_revision_str)))
                 repository = repository_util.get_repository_in_tool_shed(trans.app, repository_id)
-                if repository.tip(trans.app) != v:
+                if repository.tip() != v:
                     return trans.response.send_redirect(web.url_for(controller='repository',
                                                                     action='browse_repositories',
                                                                     operation='view_or_manage_repository',

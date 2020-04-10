@@ -6,11 +6,11 @@
             </div>
         </div>
         <div class="unified-panel-body workflow-right">
-            <div v-if="canvas" class="m-1">
+            <div class="m-1" v-show="canvas">
                 <slot name="attributes" />
                 <div id="right-content" class="right-content" />
             </div>
-            <ReportHelp v-else />
+            <ReportHelp v-show="!canvas" />
         </div>
     </div>
 </template>

@@ -1026,6 +1026,19 @@ mapping:
         desc: |
           Enable InteractiveTools.
 
+      interactivetools_proxy_host:
+        type: str
+        desc: |
+          Proxy host - assumed to just be hosted on the same hostname and port as
+          Galaxy by default.
+
+      interactivetools_map:
+        type: str
+        default: interactivetools_map.sqlite
+        path_resolves_to: data_dir
+        desc: |
+          Map for interactivetool proxy.
+
       visualizations_visible:
         type: bool
         default: true

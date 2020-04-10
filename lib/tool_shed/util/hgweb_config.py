@@ -104,3 +104,6 @@ class HgWebConfigManager(object):
         config_file = open(self.hgweb_config, 'wb')
         self.in_memory_config.write(config_file)
         config_file.close
+
+
+hgweb_config_manager = HgWebConfigManager()

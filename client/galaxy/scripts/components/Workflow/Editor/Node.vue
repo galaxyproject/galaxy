@@ -46,6 +46,7 @@ export default {
     props: {
         id: {
             type: String,
+            default: "",
         },
         title: {
             type: String,
@@ -57,6 +58,7 @@ export default {
         },
         node: {
             type: Object,
+            default: null,
         },
     },
     computed: {
