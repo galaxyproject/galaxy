@@ -39,7 +39,7 @@ NO_SESSION_ERROR_MESSAGE = "Attempted to 'create' object store entity in configu
 log = logging.getLogger(__name__)
 
 
-class IObjectStore(object):
+class ObjectStore(object):
     __metaclass__ = abc.ABCMeta
 
     """ObjectStore interface.
@@ -196,7 +196,7 @@ class IObjectStore(object):
         raise NotImplementedError()
 
 
-class BaseObjectStore(IObjectStore):
+class BaseObjectStore(ObjectStore):
 
     def __init__(self, config, config_dict=None, **kwargs):
         """
