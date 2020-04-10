@@ -519,15 +519,14 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
         if not self.allow_duplicate_entries:
             self._deduplicate_data()
 
-    def parse_file_fields(self, reader, errors=None, here="__HERE__"):
+    def parse_file_fields(self, filename, errors=None, here="__HERE__"):
         """
         Parse separated lines from file and return a list of tuples.
 
         TODO: Allow named access to fields using the column names.
         """
         separator_char = "<TAB>" if self.separator == "\t" else self.separator
-        if isinstance(reader, str):
-            reader = open(reader)
+        reader = open(filename)
         rval = []
         for i, line in enumerate(reader):
             if line.lstrip().startswith(self.comment_char):
@@ -889,13 +888,7 @@ class RefgenieToolDataTable(TabularToolDataTable):
         log.debug("Loaded %i entries from refgenie '%s' asset '%s' for '%s'", len(rval), filename, self.rg_asset, self.name)
         return rval
 
-    def _add_entry(self, entry, allow_duplicates=True, persist=False, persist_on_error=False, entry_source=None, **kwd):
-        raise NotImplementedError("Not supported")
-
     def _remove_entry(self, values):
-        raise NotImplementedError("Not supported")
-
-    def filter_file_fields(self, loc_file, values):
         raise NotImplementedError("Not supported")
 
 
