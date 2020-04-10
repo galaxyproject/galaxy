@@ -591,7 +591,7 @@ mapping:
 
       refgenie_config_file:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           File containing refgenie configuration. Can be used by refgenie backed data tables.

@@ -790,7 +790,7 @@
 :Description:
     File containing refgenie configuration. Can be used by refgenie
     backed data tables.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 

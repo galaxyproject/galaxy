@@ -368,8 +368,9 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                     tmp_file.flush()
                 else:
                     # Pull the filename from a global config
-                    filename = file_element.get('from_config', None)
-                    filename = self.other_config_dict.get(filename, None)
+                    filename = file_element.get('from_config', None) or None
+                    if filename:
+                        filename = self.other_config_dict.get(filename, None)
             filename = file_path = expand_here_template(filename, here=self.here)
             found = False
             if file_path is None:

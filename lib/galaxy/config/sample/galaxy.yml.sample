@@ -490,7 +490,7 @@ galaxy:
 
   # File containing refgenie configuration. Can be used by refgenie
   # backed data tables.
-  #refgenie_config_file: null
+  #refgenie_config_file: ''
 
   # File that defines the builds (dbkeys) available at sites used by
   # display applications and the URL to those sites.
