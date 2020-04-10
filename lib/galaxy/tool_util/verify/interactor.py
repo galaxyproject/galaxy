@@ -106,6 +106,15 @@ class GalaxyInteractorApi(object):
         if kwds.get('user_api_key_is_admin_key', False):
             self.master_api_key = self.api_key
         self.keep_outputs_dir = kwds["keep_outputs_dir"]
+        self.verify = True
+        if kwds.get('trust', True):
+            # disable the following warning:
+            # Unverified HTTPS request is being made.
+            # Adding certificate verification is strongly advised.
+            # See: https://urllib3.readthedocs.io/en/latest/advanced-usage.html#ssl-warnings
+            import urllib3
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+            self.verify = False
         self._target_galaxy_version = None
 
         self.uploads = {}
@@ -671,21 +680,21 @@ class GalaxyInteractorApi(object):
         params, data = self.__inject_api_key(data=data, key=key, admin=admin, anon=anon)
         # no params for POST
         data.update(params)
-        return requests.post("%s/%s" % (self.api_url, path), data=data, files=files)
+        return requests.post("%s/%s" % (self.api_url, path), data=data, files=files, verify=self.verify)
 
     def _delete(self, path, data=None, key=None, admin=False, anon=False):
         params, data = self.__inject_api_key(data=data, key=key, admin=admin, anon=anon)
         # no data for DELETE
         params.update(data)
-        return requests.delete("%s/%s" % (self.api_url, path), params=params)
+        return requests.delete("%s/%s" % (self.api_url, path), params=params, verify=self.verify)
 
     def _patch(self, path, data=None, key=None, admin=False, anon=False):
         params, data = self.__inject_api_key(data=data, key=key, admin=admin, anon=anon)
-        return requests.patch("%s/%s" % (self.api_url, path), params=params, data=data)
+        return requests.patch("%s/%s" % (self.api_url, path), params=params, data=data, verify=self.verify)
 
     def _put(self, path, data=None, key=None, admin=False, anon=False):
         params, data = self.__inject_api_key(data=data, key=key, admin=admin, anon=anon)
-        return requests.put("%s/%s" % (self.api_url, path), params=params, data=data)
+        return requests.put("%s/%s" % (self.api_url, path), params=params, data=data, verify=self.verify)
 
     def _get(self, path, data=None, key=None, admin=False, anon=False):
         params, data = self.__inject_api_key(data=data, key=key, admin=admin, anon=anon)
@@ -694,7 +703,7 @@ class GalaxyInteractorApi(object):
         if path.startswith("/api"):
             path = path[len("/api"):]
         url = "%s/%s" % (self.api_url, path)
-        return requests.get(url, params=params)
+        return requests.get(url, params=params, verify=self.verify)
 
 
 class RunToolException(Exception):
