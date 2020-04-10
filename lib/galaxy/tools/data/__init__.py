@@ -526,24 +526,23 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
         TODO: Allow named access to fields using the column names.
         """
         separator_char = "<TAB>" if self.separator == "\t" else self.separator
-        reader = open(filename)
         rval = []
-        for i, line in enumerate(reader):
-            if line.lstrip().startswith(self.comment_char):
-                continue
-            line = line.rstrip("\n\r")
-            if line:
-                line = expand_here_template(line, here=here)
-                fields = line.split(self.separator)
-                if self.largest_index < len(fields):
-                    rval.append(fields)
-                else:
-                    line_error = "Line %i in tool data table '%s' is invalid (HINT: '%s' characters must be used to separate fields):\n%s" % ((i + 1), self.name, separator_char, line)
-                    if errors is not None:
-                        errors.append(line_error)
-                    log.warning(line_error)
-        if hasattr(reader, "name"):
-            log.debug("Loaded %i lines from '%s' for '%s'", len(rval), reader.name, self.name)
+        with open(filename) as fh:
+            for i, line in enumerate(fh):
+                if line.lstrip().startswith(self.comment_char):
+                    continue
+                line = line.rstrip("\n\r")
+                if line:
+                    line = expand_here_template(line, here=here)
+                    fields = line.split(self.separator)
+                    if self.largest_index < len(fields):
+                        rval.append(fields)
+                    else:
+                        line_error = "Line %i in tool data table '%s' is invalid (HINT: '%s' characters must be used to separate fields):\n%s" % ((i + 1), self.name, separator_char, line)
+                        if errors is not None:
+                            errors.append(line_error)
+                        log.warning(line_error)
+        log.debug("Loaded %i lines from '%s' for '%s'", len(rval), filename, self.name)
         return rval
 
     def get_column_name_list(self):
