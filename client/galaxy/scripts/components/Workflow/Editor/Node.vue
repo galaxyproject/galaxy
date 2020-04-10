@@ -121,6 +121,7 @@ export default {
             outputs: [],
             inputTerminals: {},
             outputTerminals: {},
+            workflowOutputs: [],
             error: null,
             label: null,
             config_form: {},
@@ -141,46 +142,37 @@ export default {
             });
         });
         this.node.on("update", (data) => {
-            // set attributes
-            return;
             this.setData(data);
 
-            // Identify unused outputs which existed previously
-            var unusedOutputs = [];
-            this.outputs.forEach(({ name }) => {
-                let unused = true;
-                for (const existing in data.outputs) {
-                    if (existing.name == name) {
-                        unused = false;
-                        break;
-                    }
-                }
-                if (unused) {
-                    unusedOutputs.push(name);
-                }
+            // Create a list of all current output names
+            const outputNames = {};
+            data.outputs.forEach(({ name }) => {
+                outputNames[name] = true;
             });
 
-            // Remove the unused outputs
-            unusedOutputs.forEach((unusedOutput) => {
-                // Remove the noodle connectors
-                this.outputTerminals[unusedOutput].connectors.forEach((x) => {
-                    if (x) {
-                        x.destroy();
-                    }
-                });
-                // Remove the rendered output terminal
-                this.outputTerminals[unusedOutput].remove();
-                // Remove the reference to the output and output terminal
-                delete this.outputTerminals[unusedOutput];
-                delete this.node.output_terminals[unusedOutput];
-            });
+            // Identify unused outputs which existed previously
+            for (let i = this.outputs.length - 1; i >= 0; i--) {
+                const name = this.outputs[i].name;
+                if (!outputNames[name]) {
+                    // Remove the noodle connectors
+                    this.outputTerminals[name].connectors.forEach((x) => {
+                        if (x) {
+                            x.destroy();
+                        }
+                    });
+                    // Remove the rendered output terminal
+                    this.outputTerminals[name].$el.remove();
+                    // Remove the reference to the output and output terminal
+                    delete this.outputTerminals[name];
+                    delete this.node.output_terminals[name];
+                    this.outputs.splice(i, 1);
+                }
+            }
 
             // Add or update remaining outputs
             data.outputs.forEach((output) => {
-                //this.outputs.push(output);
                 const terminal = this.outputTerminals[output.name];
                 if (!terminal) {
-                    // add data output if it does not yet exist
                     this.outputs.push(output);
                 } else {
                     // the output already exists, but the output formats may have changed.
@@ -194,30 +186,23 @@ export default {
                     terminal.destroyInvalidConnections();
                 }
             });
-            this.node.output_terminals = this.outputTerminals;
+
+            // Create a list of all current input names
+            const inputNames = {};
+            data.inputs.forEach(({ name }) => {
+                inputNames[name] = true;
+            });
 
             // Identify unused inputs which existed previously
-            var unusedInputs = [];
-            this.inputs.forEach(({ name }) => {
-                let unused = true;
-                for (const existing in data.inputs) {
-                    if (existing.name == name) {
-                        unused = false;
-                        break;
-                    }
+            for (let i = this.inputs.length - 1; i >= 0; i--) {
+                const name = this.inputs[i].name;
+                if (!inputNames[name]) {
+                    this.inputTerminals[name].destroy();
+                    delete this.inputTerminals[name];
+                    delete this.node.input_terminals[name];
+                    this.inputs.splice(i, 1);
                 }
-                if (unused) {
-                    unusedInputs.push(name);
-                }
-            });
-
-            // Remove the unused inputs
-            unusedInputs.forEach((unusedInput) => {
-                this.inputTerminals[unusedInput].destroy();
-                // Remove the reference to the output and output terminal
-                delete this.inputTerminals[unusedInput];
-                delete this.node.input_terminals[unusedInput];
-            });
+            }
 
             // Add and update input rows
             data.inputs.forEach((input) => {
@@ -229,22 +214,23 @@ export default {
                     terminal.destroyInvalidConnections();
                 }
             });
-            this.node.input_terminals = this.outputTerminals;
 
-            /*$.each(node.workflow_outputs, (i, wf_output) => {
-                if (wf_output && !node.output_terminals[wf_output.output_name]) {
-                    node.workflow_outputs.splice(i, 1); // removes output from list of workflow outputs
+            // removes output from list of workflow outputs
+            this.workflowOutputs.forEach((wf_output, i) => {
+                if (!this.outputTerminals[wf_output.output_name]) {
+                    this.workflowOutputs.splice(i, 1);
                 }
             });
-            if ("post_job_actions" in data) {
-                // Won't be present in response for data inputs
-                var pja_in = data.post_job_actions;
-                this.post_job_actions = pja_in ? pja_in : {};
-            }
-            this.nodeView.renderErrors();
-            this.nodeView.render();
 
-            // In general workflow editor assumes tool outputs don't change in # or
+            Vue.nextTick(() => {
+                this.node.workflow_outputs = this.workflowOutputs;
+                this.node.input_terminals = this.inputTerminals;
+                this.node.output_terminals = this.outputTerminals;
+                manager.node_changed(this.node);
+                this.redraw();
+            });
+
+            /* In general workflow editor assumes tool outputs don't change in # or
             // type (not really valid right?) but adding special logic here for
             // data collection input parameters that can have their collection
             // change.
@@ -254,16 +240,8 @@ export default {
                 //this.nodeView.updateDataOutput(data_outputs[0]);
                 //var outputTerminal = this.nodeView.node.output_terminals[output.name];
                 //outputTerminal.update(output);
-            }
-
-            // Won't be present in response for data inputs
-            this.workflow_outputs = data.workflow_outputs || [];
-
-            // If active, reactivate with new config_form
-            this.markChanged();
-            this.redraw();*/
+            }*/
         });
-        this.error = this.node.errors;
     },
     computed: {
         hasInputs() {
@@ -312,6 +290,7 @@ export default {
                 oldterminal.destroyInvalidConnections();
                 return;
             }*/
+            console.log(output.name);
             this.outputTerminals[output.name] = terminal;
         },
         onDestroy() {
@@ -332,6 +311,14 @@ export default {
                 this.popoverShow = false;
             });
         },
+        redraw() {
+            Object.values(this.inputTerminals).forEach((t) => {
+                t.redraw();
+            });
+            Object.values(this.outputTerminals).forEach((t) => {
+                t.redraw();
+            });
+        },
         getNode() {
             return this.node;
         },
@@ -343,10 +330,10 @@ export default {
             this.errors = data.errors;
             this.annotation = data.annotation;
             this.tooltip = data.tooltip ? data.tooltip : "";
-            this.post_job_actions = data.post_job_actions ? data.post_job_actions : {};
+            this.postJobActions = data.post_job_actions || {};
             this.label = data.label;
             this.uuid = data.uuid;
-            this.workflow_outputs = data.workflow_outputs ? data.workflow_outputs : [];
+            this.workflowOutputs = data.workflow_outputs || [];
             if (this.type === "tool" && this.config_form) {
                 this.node.tool_version = this.config_form.version;
                 this.node.content_id = this.config_form.id;
