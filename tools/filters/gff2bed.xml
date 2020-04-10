@@ -24,6 +24,10 @@
       <param name="input" value="5.gff3" ftype="gff"/>
       <output name="out_file1" file="gff2bed_out3.bed"/>
     </test>
+    <test>
+      <param name="input" value="gencode.v29.annotation.gff3" ftype="gff"/>
+      <output name="out_file1" file="gencode.v29.annotation.bed"/>
+    </test>
   </tests>
   <help>
 
