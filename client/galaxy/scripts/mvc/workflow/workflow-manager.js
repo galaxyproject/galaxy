@@ -50,12 +50,14 @@ class Workflow extends EventEmitter {
     set_node(nodeVue, data) {
         const node = nodeVue.node;
         node.init_field_data(data);
-        node.update_field_data(data);
-        Object.values(node.output_terminals).forEach((ot) => {
-            node.addWorkflowOutput(ot.name);
-            node.markWorkflowOutput(ot.name);
+        Vue.nextTick(() => {
+            node.update_field_data(data);
+            Object.values(node.output_terminals).forEach((ot) => {
+                node.addWorkflowOutput(ot.name);
+                node.markWorkflowOutput(ot.name);
+            });
+            this.activate_node(node);
         });
-        this.activate_node(node);
     }
     isSubType(child, parent) {
         child = this.ext_to_type[child];
@@ -348,30 +350,32 @@ class Workflow extends EventEmitter {
                 });
             }
             node.init_field_data(step);
-            if (step.position) {
-                node.element.css({
-                    top: step.position.top,
-                    left: step.position.left,
-                });
-            }
-            node.id = parseInt(step.id) + offset;
-            node.element.attr("id", `wf-node-step-${node.id}`);
-            node.element.attr("node-label", step.label);
-            wf.nodes[node.id] = node;
-            max_id = Math.max(max_id, parseInt(id) + offset);
-            // For older workflows, it's possible to have HideDataset PJAs, but not WorkflowOutputs.
-            // Check for either, and then add outputs in the next pass.
-            if (!using_workflow_outputs) {
-                if (node.workflow_outputs.length > 0) {
-                    using_workflow_outputs = true;
-                } else {
-                    Object.values(node.post_job_actions).forEach((pja) => {
-                        if (pja.action_type === "HideDatasetAction") {
-                            using_workflow_outputs = true;
-                        }
+            Vue.nextTick(() => {
+                if (step.position) {
+                    node.element.css({
+                        top: step.position.top,
+                        left: step.position.left,
                     });
                 }
-            }
+                node.id = parseInt(step.id) + offset;
+                node.element.attr("id", `wf-node-step-${node.id}`);
+                node.element.attr("node-label", step.label);
+                wf.nodes[node.id] = node;
+                max_id = Math.max(max_id, parseInt(id) + offset);
+                // For older workflows, it's possible to have HideDataset PJAs, but not WorkflowOutputs.
+                // Check for either, and then add outputs in the next pass.
+                if (!using_workflow_outputs) {
+                    if (node.workflow_outputs.length > 0) {
+                        using_workflow_outputs = true;
+                    } else {
+                        Object.values(node.post_job_actions).forEach((pja) => {
+                            if (pja.action_type === "HideDatasetAction") {
+                                using_workflow_outputs = true;
+                            }
+                        });
+                    }
+                }
+            });
         });
         wf.id_counter = max_id + 1;
         Vue.nextTick(() => {

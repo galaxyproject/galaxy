@@ -3,6 +3,7 @@ import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
 import Utils from "utils/utils";
 import Emitter from "events";
+import Vue from "vue";
 
 export class Node extends Emitter {
     constructor(app, attr = {}) {
@@ -175,8 +176,10 @@ export class Node extends Emitter {
             success: (data) => {
                 var newData = Object.assign({}, data, copiedData);
                 node.init_field_data(newData);
-                node.update_field_data(newData);
-                this.app.activate_node(node);
+                Vue.nextTick(() => {
+                    node.update_field_data(newData);
+                    this.app.activate_node(node);
+                });
             },
         });
     }
@@ -204,28 +207,23 @@ export class Node extends Emitter {
         // Remove active class
         $(element).removeClass("node-active");
     }
-    set_tool_version() {
-        if (this.type === "tool" && this.config_form) {
-            this.tool_version = this.config_form.version;
-            this.content_id = this.config_form.id;
-        }
-    }
     init_field_data(data) {
-        if (data.type) {
-            this.type = data.type;
-        }
+        this.type = data.type;
         this.name = data.name;
         this.config_form = data.config_form;
-        this.set_tool_version();
         this.tool_state = data.tool_state;
         this.errors = data.errors;
-        this.tooltip = data.tooltip ? data.tooltip : "";
         this.annotation = data.annotation;
+        this.tooltip = data.tooltip ? data.tooltip : "";
         this.post_job_actions = data.post_job_actions ? data.post_job_actions : {};
         this.label = data.label;
         this.uuid = data.uuid;
         this.workflow_outputs = data.workflow_outputs ? data.workflow_outputs : [];
-        this.emit("init", { inputs: data.inputs, outputs: data.outputs });
+        if (this.type === "tool" && this.config_form) {
+            this.tool_version = this.config_form.version;
+            this.content_id = this.config_form.id;
+        }
+        this.emit("init", data);
     }
     update_field_data(data) {
         this.emit("update", data);

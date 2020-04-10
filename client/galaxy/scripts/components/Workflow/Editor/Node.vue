@@ -124,7 +124,7 @@ export default {
             error: null,
             label: null,
             config_form: {},
-            content_id: null
+            content_id: null,
         };
     },
     mounted() {
@@ -141,8 +141,12 @@ export default {
             });
         });
         this.node.on("update", (data) => {
+            // set attributes
+            return;
+            this.setData(data);
+
             // Identify unused outputs which existed previously
-            var unused_outputs = [];
+            var unusedOutputs = [];
             this.outputs.forEach(({ name }) => {
                 let unused = true;
                 for (const existing in data.outputs) {
@@ -152,45 +156,80 @@ export default {
                     }
                 }
                 if (unused) {
-                    unused_outputs.push(name);
+                    unusedOutputs.push(name);
                 }
             });
 
             // Remove the unused outputs
-            unused_outputs.forEach((unused_output) => {
+            unusedOutputs.forEach((unusedOutput) => {
                 // Remove the noodle connectors
-                this.outputTerminals[unused_output].connectors.forEach((x) => {
+                this.outputTerminals[unusedOutput].connectors.forEach((x) => {
                     if (x) {
                         x.destroy();
                     }
                 });
                 // Remove the rendered output terminal
-                this.outputTerminals[unused_output].remove();
+                this.outputTerminals[unusedOutput].remove();
                 // Remove the reference to the output and output terminal
-                delete this.outputTerminals[unused_output];
-                delete this.node.output_terminals[unused_output];
+                delete this.outputTerminals[unusedOutput];
+                delete this.node.output_terminals[unusedOutput];
             });
 
             // Add or update remaining outputs
             data.outputs.forEach((output) => {
                 //this.outputs.push(output);
-                if (!this.outputTerminals[output.name]) {
+                const terminal = this.outputTerminals[output.name];
+                if (!terminal) {
                     // add data output if it does not yet exist
                     this.outputs.push(output);
                 } else {
                     // the output already exists, but the output formats may have changed.
                     // Therefore we update the datatypes and destroy invalid connections.
-                    this.outputTerminals[output.name].datatypes = output.extensions;
-                    this.outputTerminals[output.name].force_datatype = output.force_datatype;
+                    terminal.datatypes = output.extensions;
+                    terminal.force_datatype = output.force_datatype;
                     if (this.type == "parameter_input") {
-                        this.outputTerminals[output.name].attributes.type = output.type;
+                        terminal.attributes.type = output.type;
                     }
-                    this.outputTerminals[output.name].optional = output.optional;
-                    this.outputTerminals[output.name].destroyInvalidConnections();
-                    this.node.output_terminals = this.outputTerminals;
+                    terminal.optional = output.optional;
+                    terminal.destroyInvalidConnections();
                 }
             });
-            this.setData(data);
+            this.node.output_terminals = this.outputTerminals;
+
+            // Identify unused inputs which existed previously
+            var unusedInputs = [];
+            this.inputs.forEach(({ name }) => {
+                let unused = true;
+                for (const existing in data.inputs) {
+                    if (existing.name == name) {
+                        unused = false;
+                        break;
+                    }
+                }
+                if (unused) {
+                    unusedInputs.push(name);
+                }
+            });
+
+            // Remove the unused inputs
+            unusedInputs.forEach((unusedInput) => {
+                this.inputTerminals[unusedInput].destroy();
+                // Remove the reference to the output and output terminal
+                delete this.inputTerminals[unusedInput];
+                delete this.node.input_terminals[unusedInput];
+            });
+
+            // Add and update input rows
+            data.inputs.forEach((input) => {
+                const terminal = this.inputTerminals[input.name];
+                if (!terminal) {
+                    this.inputs.push(input);
+                } else {
+                    terminal.update(input);
+                    terminal.destroyInvalidConnections();
+                }
+            });
+            this.node.input_terminals = this.outputTerminals;
 
             /*$.each(node.workflow_outputs, (i, wf_output) => {
                 if (wf_output && !node.output_terminals[wf_output.output_name]) {
@@ -203,24 +242,6 @@ export default {
                 this.post_job_actions = pja_in ? pja_in : {};
             }
             this.nodeView.renderErrors();
-
-            // Update input rows
-            var newTerminals = {};
-            _.each(data.inputs, (input) => {
-                const terminal = this.input_terminals[input.name];
-                if (!terminal) {
-                    newTerminals[input.name] = this.nodeView.addDataInput(input);
-                } else {
-                    newTerminals[input.name] = terminal;
-                    terminal.update(input);
-                    terminal.destroyInvalidConnections();
-                }
-            });
-            // Cleanup any leftover terminals
-            _.each(_.difference(_.values(this.input_terminals), _.values(newTerminals)), (unusedTerminals) => {
-                unusedTerminals.destroy();
-            });
-            this.input_terminals = newTerminals;
             this.nodeView.render();
 
             // In general workflow editor assumes tool outputs don't change in # or
@@ -330,7 +351,7 @@ export default {
                 this.node.tool_version = this.config_form.version;
                 this.node.content_id = this.config_form.id;
             }
-        }
+        },
     },
 };
 </script>
