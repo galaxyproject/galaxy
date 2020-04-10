@@ -98,12 +98,7 @@ export default {
             return this.type != "subworkflow";
         },
         isEnabled() {
-            const Galaxy = getGalaxyInstance();
-            const isRecommendationEnabled = Galaxy.config.enable_tool_recommendations;
-            if (isRecommendationEnabled === true) {
-                return true;
-            }
-            return false;
+            return getGalaxyInstance().config.enable_tool_recommendations;
         },
     },
     methods: {
