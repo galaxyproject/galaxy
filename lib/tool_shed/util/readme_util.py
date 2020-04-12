@@ -1,3 +1,4 @@
+import io
 import json
 import logging
 import os
@@ -6,12 +7,18 @@ from mako.template import Template
 
 import tool_shed.util.shed_util_common as suc
 from galaxy import web
-from galaxy.util import rst_to_html, unicodify, url_get
-from tool_shed.util import basic_util
-from tool_shed.util import common_util
-from tool_shed.util import hg_util
-from tool_shed.util import metadata_util
-from tool_shed.util import repository_util
+from galaxy.util import (
+    rst_to_html,
+    unicodify,
+    url_get,
+)
+from tool_shed.util import (
+    basic_util,
+    common_util,
+    hg_util,
+    metadata_util,
+    repository_util,
+)
 
 log = logging.getLogger(__name__)
 
@@ -39,8 +46,8 @@ def build_readme_files_dict(app, repository, changeset_revision, metadata, tool_
                         full_path_to_readme_file = os.path.abspath(relative_path_to_readme_file)
                     text = None
                     try:
-                        with open(full_path_to_readme_file, 'rb') as f:
-                            text = unicodify(f.read())
+                        with io.open(full_path_to_readme_file, 'r', encoding='utf-8') as f:
+                            text = f.read()
                     except Exception:
                         log.exception("Error reading README file '%s' from disk", relative_path_to_readme_file)
                         text = None
