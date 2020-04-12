@@ -61,7 +61,7 @@ def get_mercurial_default_options_dict(command):
         possible = possible[0]
     if len(possible) != 1:
         raise Exception('unable to find mercurial command "%s"' % command)
-    return dict((r[1].replace('-', '_'), r[2]) for r in next(iter(possible.values()))[1][1])
+    return dict((r[1].replace(b'-', b'_'), r[2]) for r in next(iter(possible.values()))[1][1])
 
 
 class RepositoryController(BaseUIController, ratings_util.ItemRatings):
@@ -2480,9 +2480,10 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         else:
             ctx_child = None
         diffs = []
-        options_dict = get_mercurial_default_options_dict('diff')
+        options_dict = get_mercurial_default_options_dict(b"diff")
         # Not quite sure if the following settings make any difference, but with a combination of them and the size check on each
         # diff, we don't run out of memory when viewing the changelog of the cisortho2 repository on the test tool shed.
+        options_dict = {util.unicodify(k): util.unicodify(v) for k, v in options_dict.items()}
         options_dict['maxfile'] = basic_util.MAXDIFFSIZE
         options_dict['maxtotal'] = basic_util.MAXDIFFSIZE
         diffopts = mdiff.diffopts(**options_dict)
@@ -2492,6 +2493,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             diffs.append(basic_util.to_html_string(diff))
         modified, added, removed, deleted, unknown, ignored, clean = repo.status(node1=ctx_parent.node(), node2=ctx.node())
         anchors = modified + added + removed + deleted + unknown + ignored + clean
+        anchors = util.unicodify(anchors)
         metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision(trans.app,
                                                                                              id,
                                                                                              ctx_str,
