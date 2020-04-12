@@ -20,6 +20,8 @@ from xml.etree import ElementTree
 
 import packaging.version
 import webob.exc
+from beaker.cache import CacheManager
+from beaker.util import parse_cache_config_options
 from mako.template import Template
 from six import itervalues, string_types
 from six.moves.urllib.parse import unquote_plus
@@ -113,6 +115,8 @@ from .execute import (
     execute as execute_job,
     MappingParameters,
 )
+
+import profilehooks
 
 log = logging.getLogger(__name__)
 
@@ -244,6 +248,12 @@ class ToolBox(BaseGalaxyToolBox):
     def __init__(self, config_filenames, tool_root_dir, app, save_integrated_tool_panel=True):
         self._reload_count = 0
         self.tool_location_fetcher = ToolLocationFetcher()
+        cache_opts = {
+            'cache.type': getattr(app.config, 'tool_cache_type', 'dbm'),
+            'cache.data_dir': getattr(app.config, 'tool_cache_data_dir', 'database/tool_cache/data'),
+            'cache.lock_dir': getattr(app.config, 'tool_cache_lock_dir', 'database/tool_cache/lock'),
+        }
+        self.expanded_tool_source_cache = CacheManager(**parse_cache_config_options(cache_opts)).get_cache('tool_source')
         # This is here to deal with the old default value, which doesn't make
         # sense in an "installed Galaxy" world.
         # FIXME: ./
@@ -282,17 +292,22 @@ class ToolBox(BaseGalaxyToolBox):
         # Deprecated method, TODO - eliminate calls to this in test/.
         return self._tools_by_id
 
+    @profilehooks.profile
     def create_tool(self, config_file, **kwds):
-        try:
-            tool_source = get_tool_source(
-                config_file,
-                enable_beta_formats=getattr(self.app.config, "enable_beta_tool_formats", False),
-                tool_location_fetcher=self.tool_location_fetcher,
-            )
-        except Exception as e:
-            # capture and log parsing errors
-            global_tool_errors.add_error(config_file, "Tool XML parsing", e)
-            raise e
+
+        def get_expanded_tool_source():
+            try:
+                return get_tool_source(
+                    config_file,
+                    enable_beta_formats=getattr(self.app.config, "enable_beta_tool_formats", False),
+                    tool_location_fetcher=self.tool_location_fetcher,
+                )
+            except Exception as e:
+                # capture and log parsing errors
+                global_tool_errors.add_error(config_file, "Tool XML parsing", e)
+                raise e
+
+        tool_source = self.expanded_tool_source_cache.get(key=config_file, createfunc=get_expanded_tool_source)
         return self._create_tool_from_source(tool_source, config_file=config_file, **kwds)
 
     def _create_tool_from_source(self, tool_source, **kwds):
