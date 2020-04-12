@@ -636,7 +636,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         # InteractiveTools propagator mapping file
         self.interactivetools_map = self.resolve_path(kwargs.get("interactivetools_map", os.path.join(self.data_dir, "interactivetools_map.sqlite")))
         self.interactivetool_prefix = kwargs.get("interactivetools_prefix", "interactivetool")
-        self.interactivetool_proxy_host = kwargs.get("interactivetool_proxy_host", None)
+        self.interactivetool_proxy_host = kwargs.get("interactivetools_proxy_host", None)
 
         self.containers_conf = parse_containers_config(self.containers_config_file)
 
