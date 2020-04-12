@@ -4,7 +4,7 @@ set -e
 if [ ! -z "$USE_SELENIUM" ];
 then
     # Start Selenium.
-    sudo -H -E -u seluser /opt/bin/entry_point.sh &
+    sudo -E -H -u seluser /opt/bin/entry_point.sh &
 fi
 
 echo "Deleting galaxy user - it may not exist and this is fine."
@@ -49,7 +49,7 @@ cd /galaxy
 : ${GALAXY_VIRTUAL_ENV:=.venv}
 
 echo "Running common startup for updated dependencies (if any)"
-sudo -E -u "#${GALAXY_TEST_UID}" ./scripts/common_startup.sh --dev-wheels || { echo "common_startup.sh failed"; exit 1; }
+sudo -E -H -u "#${GALAXY_TEST_UID}" ./scripts/common_startup.sh --dev-wheels || { echo "common_startup.sh failed"; exit 1; }
 
 # Ensure Selenium is running before starting tests.
 if [ ! -z "$USE_SELENIUM" ];
@@ -70,7 +70,7 @@ fi
 
 if [ -z "$GALAXY_NO_TESTS" ];
 then
-    sudo -E -u "#${GALAXY_TEST_UID}" sh run_tests.sh --skip-common-startup $@
+    sudo -E -H -u "#${GALAXY_TEST_UID}" sh run_tests.sh --skip-common-startup $@
 else
     GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION="$GALAXY_TEST_DBURI"
     TOOL_SHED_CONFIG_OVERRIDE_DATABASE_CONNECTION="$TOOL_SHED_TEST_DBURI"
