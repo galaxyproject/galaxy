@@ -5,6 +5,7 @@ import tempfile
 
 from galaxy.tool_shed.tools.tool_validator import ToolValidator as GalaxyToolValidator
 from galaxy.tools import Tool
+from galaxy.util import unicodify
 from tool_shed.util import (
     basic_util,
     hg_util,
@@ -79,7 +80,7 @@ class ToolValidator(GalaxyToolValidator):
         for changeset in hg_util.reversed_upper_bounded_changelog(repo, changeset_revision):
             manifest_ctx = repo[changeset]
             for ctx_file in manifest_ctx.files():
-                ctx_file_name = basic_util.strip_path(ctx_file)
+                ctx_file_name = basic_util.strip_path(unicodify(ctx_file))
                 if ctx_file_name == stripped_filename:
                     try:
                         fctx = manifest_ctx[ctx_file]
@@ -111,7 +112,7 @@ class ToolValidator(GalaxyToolValidator):
         for changeset in hg_util.reversed_upper_bounded_changelog(repo, changeset_revision):
             changeset_ctx = repo[changeset]
             for ctx_file in changeset_ctx.files():
-                ctx_file_name = basic_util.strip_path(ctx_file)
+                ctx_file_name = basic_util.strip_path(unicodify(ctx_file))
                 # If we decide in the future that files deleted later in the changelog should
                 # not be used, we can use the following if statement. if ctx_file_name.endswith( '.sample' )
                 # and ctx_file_name not in sample_files and ctx_file_name not in deleted_sample_files:

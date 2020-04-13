@@ -274,7 +274,7 @@ export class Node {
                     x.destroy(); // Removes the noodle connectors
                 }
             });
-            nodeView.outputViews[unused_output].remove(); // removes the rendered output
+            nodeView.outputViews[unused_output].$el.remove(); // removes the rendered output
             delete nodeView.outputViews[unused_output]; // removes the reference to the output
             delete node.output_terminals[unused_output]; // removes the output terminal
         });

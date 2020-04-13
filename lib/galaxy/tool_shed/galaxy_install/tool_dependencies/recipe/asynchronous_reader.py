@@ -1,6 +1,8 @@
 import logging
 import threading
 
+from galaxy.util import unicodify
+
 log = logging.getLogger(__name__)
 
 
@@ -20,8 +22,8 @@ class AsynchronousReader(threading.Thread):
         """Read lines and put them on the queue."""
         thread_lock = threading.Lock()
         thread_lock.acquire()
-        for line in iter(self._fd.readline, ''):
-            stripped_line = line.rstrip()
+        for line in iter(self._fd.readline, b''):
+            stripped_line = unicodify(line).rstrip()
             self.lines.append(stripped_line)
             self._queue.put(stripped_line)
         thread_lock.release()
