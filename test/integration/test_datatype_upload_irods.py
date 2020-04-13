@@ -78,6 +78,7 @@ class UploadTestDatatypeDataTestCase(UploadTestDatatypeDataTestCase):
         # config["metadata_strategy"] = "extended"
         config["outpus_to_working_dir"] = True
         config["retry_metadata_internally"] = False
+        config["object_store_store_by"] = "uuid"
         with open(config_path, "w") as f:
             f.write(
                 OBJECT_STORE_CONFIG.safe_substitute(
