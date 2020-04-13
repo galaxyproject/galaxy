@@ -321,6 +321,7 @@ class ToolBox(BaseGalaxyToolBox):
             },
             expiration_time=-1,
             wrap=[JSONBackend],
+            replace_existing_backend=True,
         )
         # This is here to deal with the old default value, which doesn't make
         # sense in an "installed Galaxy" world.
@@ -1510,6 +1511,7 @@ class Tool(Dictifiable):
             visit_input_values(self.inputs, values, callback)
 
     def expand_incoming(self, trans, incoming, request_context):
+        self.assert_finalized()
         rerun_remap_job_id = None
         if 'rerun_remap_job_id' in incoming:
             try:
@@ -1702,6 +1704,7 @@ class Tool(Dictifiable):
         `self.tool_action`. In general this will create a `Job` that
         when run will build the tool's outputs, e.g. `DefaultToolAction`.
         """
+        self.assert_finalized()
         try:
             return self.tool_action.execute(self, trans, incoming=incoming, set_output_hid=set_output_hid, history=history, **kwargs)
         except exceptions.ToolExecutionError as exc:
