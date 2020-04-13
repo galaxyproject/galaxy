@@ -22,6 +22,15 @@ import packaging.version
 import webob.exc
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
+from dogpile.cache import make_region
+from dogpile.cache.api import (
+    CachedValue,
+    NO_VALUE,
+)
+from dogpile.cache.backends.file import AbstractFileLock
+from dogpile.cache.proxy import ProxyBackend
+from dogpile.util import ReadWriteMutex
+from lxml import etree
 from mako.template import Template
 from six import itervalues, string_types
 from six.moves.urllib.parse import unquote_plus
@@ -116,19 +125,8 @@ from .execute import (
     MappingParameters,
 )
 
-from dogpile.cache import make_region
-from dogpile.cache.api import (
-    NO_VALUE,
-    CachedValue,
-)
-from dogpile.cache.proxy import ProxyBackend
-from dogpile.util import ReadWriteMutex
-from dogpile.cache.backends.file import AbstractFileLock
 
-from lxml import etree
-
-
-class XmlBackend(ProxyBackend):
+class JSONBackend(ProxyBackend):
 
     def set(self, key, value):
         with self.proxied._dbm_file(True) as dbm:
@@ -188,7 +186,7 @@ region = make_region().configure(
         "lock_factory": MutexLock,
     },
     expiration_time=-1,
-    wrap=[XmlBackend],
+    wrap=[JSONBackend],
 )
 
 

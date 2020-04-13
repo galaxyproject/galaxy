@@ -25,8 +25,8 @@ from galaxy.managers.workflows import WorkflowsManager
 from galaxy.model.database_heartbeat import DatabaseHeartbeat
 from galaxy.model.tags import GalaxyTagHandler
 from galaxy.queue_worker import (
-    send_local_control_task,
     GalaxyQueueWorker,
+    send_local_control_task,
 )
 from galaxy.tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
 from galaxy.tool_shed.galaxy_install.update_repository_manager import UpdateRepositoryManager
