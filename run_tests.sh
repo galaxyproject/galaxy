@@ -269,7 +269,7 @@ exists() {
     type "$1" >/dev/null 2>/dev/null
 }
 
-DOCKER_DEFAULT_IMAGE='galaxy/testing-base:19.05.0'
+DOCKER_DEFAULT_IMAGE='galaxy/testing-base:20.05.00'
 
 test_script="./scripts/functional_tests.py"
 report_file="run_functional_tests.html"
@@ -312,7 +312,7 @@ then
     echo "Docker version:"
     docker --version
     echo "Launching docker container for testing with extra args ${DOCKER_RUN_EXTRA_ARGS}..."
-    name=$(python -c 'import re; import uuid; print re.sub("-", "", str(uuid.uuid4()))')
+    name=$(python -c 'import re; import uuid; print(re.sub("-", "", str(uuid.uuid4())))')
     # Create a cache dir for pip, so it has the right owner
     DOCKER_PIP_CACHE_DIR="$HOME"/.cache/docker_galaxy_pip
     mkdir -p "$DOCKER_PIP_CACHE_DIR"

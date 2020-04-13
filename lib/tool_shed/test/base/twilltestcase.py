@@ -8,9 +8,6 @@ import tempfile
 import time
 from json import loads
 
-# Be sure to use Galaxy's vanilla pyparsing instead of the older version
-# imported by twill.
-import pyparsing  # noqa: F401
 import requests
 import twill.commands as tc
 from mercurial import commands, hg, ui
