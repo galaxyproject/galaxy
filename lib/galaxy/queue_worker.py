@@ -247,8 +247,11 @@ def reload_tool_data_tables(app, **kwargs):
 
 
 def rebuild_toolbox_search_index(app, **kwargs):
-    if app.toolbox_search.index_count < app.toolbox._reload_count:
-        app.reindex_tool_search()
+    if app.is_webapp:
+        if app.toolbox_search.index_count < app.toolbox._reload_count:
+            app.reindex_tool_search()
+    else:
+        log.debug("App is not a webapp, not building a search index")
 
 
 def reload_job_rules(app, **kwargs):

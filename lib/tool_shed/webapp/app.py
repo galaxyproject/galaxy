@@ -27,6 +27,8 @@ class UniverseApplication(object):
     def __init__(self, **kwd):
         log.debug("python path is: %s", ", ".join(sys.path))
         self.name = "tool_shed"
+        # will be overwritten when building WSGI app
+        self.is_webapp = False
         # Read the tool_shed.ini configuration file and check for errors.
         self.config = config.Configuration(**kwd)
         self.config.check()

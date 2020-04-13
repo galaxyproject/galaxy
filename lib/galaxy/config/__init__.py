@@ -1032,7 +1032,6 @@ class ConfiguresGalaxyMixin(object):
         self._set_enabled_container_types()
         index_help = getattr(self.config, "index_tool_help", True)
         self.toolbox_search = galaxy.tools.search.ToolBoxSearch(self.toolbox, index_help)
-        self.reindex_tool_search()
 
     def reindex_tool_search(self):
         # Call this when tools are added or removed.
