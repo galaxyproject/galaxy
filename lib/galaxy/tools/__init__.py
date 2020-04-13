@@ -179,15 +179,7 @@ class MutexLock(AbstractFileLock):
         return self.mutex.release_write_lock()
 
 
-region = make_region().configure(
-    'dogpile.cache.dbm',
-    arguments={
-        "filename": "database/tool_cache/cache.dbm",
-        "lock_factory": MutexLock,
-    },
-    expiration_time=-1,
-    wrap=[JSONBackend],
-)
+region = make_region()
 
 
 log = logging.getLogger(__name__)
@@ -320,12 +312,16 @@ class ToolBox(BaseGalaxyToolBox):
     def __init__(self, config_filenames, tool_root_dir, app, save_integrated_tool_panel=True):
         self._reload_count = 0
         self.tool_location_fetcher = ToolLocationFetcher()
-        cache_opts = {
-            'cache.type': getattr(app.config, 'tool_cache_type', 'dbm'),
-            'cache.data_dir': getattr(app.config, 'tool_cache_data_dir', 'database/tool_cache/data'),
-            'cache.lock_dir': getattr(app.config, 'tool_cache_lock_dir', 'database/tool_cache/lock'),
-        }
-        self.expanded_tool_source_cache = CacheManager(**parse_cache_config_options(cache_opts)).get_cache('tool_source')
+        os.makedirs(app.config.tool_cache_data_dir, exist_ok=True)
+        region.configure(
+            'dogpile.cache.dbm',
+            arguments={
+                "filename": os.path.join(app.config.tool_cache_data_dir, "cache.dbm"),
+                "lock_factory": MutexLock,
+            },
+            expiration_time=-1,
+            wrap=[JSONBackend],
+        )
         # This is here to deal with the old default value, which doesn't make
         # sense in an "installed Galaxy" world.
         # FIXME: ./

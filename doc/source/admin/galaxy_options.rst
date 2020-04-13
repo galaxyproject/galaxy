@@ -1003,6 +1003,17 @@
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~
+``tool_cache_data_dir``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Tool related caching. Full expanded tools and metadata wll be
+    stroed at this path.
+:Default: ``tool_cache``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~
 ``citation_cache_type``
 ~~~~~~~~~~~~~~~~~~~~~~~
 

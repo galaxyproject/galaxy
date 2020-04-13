@@ -588,6 +588,10 @@ galaxy:
   # generated commands run in sh.
   #default_job_shell: /bin/bash
 
+  # Tool related caching. Full expanded tools and metadata wll be stroed
+  # at this path.
+  #tool_cache_data_dir: tool_cache
+
   # Citation related caching.  Tool citations information maybe fetched
   # from external sources such as https://doi.org/ by Galaxy - the
   # following parameters can be used to control the caching used to

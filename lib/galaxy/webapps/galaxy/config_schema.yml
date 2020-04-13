@@ -749,6 +749,14 @@ mapping:
           should be disabled. Containerized jobs always use /bin/sh - so more maximum
           portability tool authors should assume generated commands run in sh.
 
+      tool_cache_data_dir:
+        type: str
+        default: tool_cache
+        path_resolves_to: data_dir
+        required: false
+        desc: |
+          Tool related caching. Full expanded tools and metadata wll be stored at this path.
+
       citation_cache_type:
         type: str
         default: file
