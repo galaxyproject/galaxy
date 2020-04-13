@@ -14,5 +14,7 @@
     <tools>
         <tool id="hmgm_sample" destination="hmgm-container"/>
         <tool id="hmgm_transcript" destination="hmgm-container"/>
+        <tool id="hmgm_ner" destination="hmgm-container"/>
+        <tool id="hmgm_segmentation" destination="hmgm-container"/>
     </tools>
 </job_conf>

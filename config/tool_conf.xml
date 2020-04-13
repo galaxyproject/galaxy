@@ -49,6 +49,8 @@
   <section id="hmgm" name="Human MGM">
     <tool file="hmgm/hmgm_sample.xml"/>
     <tool file="hmgm/hmgm_transcript.xml"/>
+    <tool file="hmgm/hmgm_ner.xml"/>
+    <tool file="hmgm/hmgm_segmentation.xml"/>
   </section>
   
   <section id="collection_operations" name="Collection Operations">
