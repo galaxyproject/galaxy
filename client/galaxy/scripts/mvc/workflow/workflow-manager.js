@@ -18,6 +18,7 @@ class Workflow extends EventEmitter {
         this.has_changes = false;
         this.workflowOutputLabels = {};
         this.workflow_version = 0;
+        this.popover_counter = 0;
 
         // Canvas overview management
         this.canvas_manager = new WorkflowCanvas(this, $("#canvas-viewport"), $("#overview-container"));
@@ -142,8 +143,10 @@ class Workflow extends EventEmitter {
             type: type,
             title: title_text,
             node: node,
+            nodeId: this.popover_counter,
         });
 
+        this.popover_counter++;
         // Set initial scroll position
         $f.css("left", $(window).scrollLeft() + 20);
         $f.css("top", $(window).scrollTop() + 20);

@@ -11,6 +11,19 @@
                 <i class="fa fa-times" />
             </b-button>
             <b-button
+                :id="popoverId"
+                v-if="isEnabled"
+                class="node-recommendations py-0 float-right"
+                variant="primary"
+                size="sm"
+                aria-label="tool recommendations"
+            >
+                <i class="fa fa-arrow-right" />
+            </b-button>
+            <b-popover :target="popoverId" triggers="hover" placement="bottom" :show.sync="popoverShow">
+                <WorkflowRecommendations :node="node" @onCreate="onCreate" />
+            </b-popover>
+            <b-button
                 v-if="canClone"
                 class="node-clone py-0 float-right"
                 variant="primary"
@@ -35,13 +48,22 @@
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import WorkflowIcons from "components/Workflow/icons";
+import { getModule } from "./services";
 import LoadingSpan from "components/LoadingSpan";
+import { getGalaxyInstance } from "app";
+import WorkflowRecommendations from "components/Workflow/Editor/Recommendations";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
         LoadingSpan,
+        WorkflowRecommendations,
+    },
+    data() {
+        return {
+            popoverShow: false,
+        };
     },
     props: {
         id: {
@@ -60,6 +82,10 @@ export default {
             type: Object,
             default: null,
         },
+        nodeId: {
+            type: String,
+            default: "",
+        },
     },
     computed: {
         iconClass() {
@@ -69,8 +95,14 @@ export default {
             }
             return null;
         },
+        popoverId() {
+            return `popover-${this.nodeId}`;
+        },
         canClone() {
             return this.type != "subworkflow";
+        },
+        isEnabled() {
+            return getGalaxyInstance().config.enable_tool_recommendations;
         },
     },
     methods: {
@@ -79,6 +111,18 @@ export default {
         },
         onClone() {
             this.node.clone();
+        },
+        onCreate(toolId, event) {
+            const requestData = {
+                tool_id: toolId,
+                type: "tool",
+                _: "true",
+            };
+            getModule(requestData).then((response) => {
+                var node = this.node.app.create_node("tool", response.name, toolId);
+                this.node.app.set_node(node, response);
+                this.popoverShow = false;
+            });
         },
     },
 };
