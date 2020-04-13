@@ -155,12 +155,12 @@ class XmlBackend(ProxyBackend):
             return NO_VALUE
         # you probably want to specify a custom decoder via `object_hook`
         v = json.loads(v)
-        payload = get_tool_source(xml_tree=ElementTree.ElementTree(etree.fromstring(v['payload'].encode('utf-8'))))
+        payload = get_tool_source(xml_tree=etree.ElementTree(etree.fromstring(v['payload'].encode('utf-8'))))
         return CachedValue(metadata=v['metadata'], payload=payload)
 
     def value_encode(self, v):
         # you probably want to specify a custom encoder via `default`
-        payload = ElementTree.tostring(v.payload.root, encoding='utf8', method='xml').decode('utf-8')
+        payload = etree.tounicode(v.payload.root, encoding='utf8', method='xml')
         return payload
 
 class MutexLock(AbstractFileLock):
