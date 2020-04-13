@@ -116,7 +116,6 @@ from .execute import (
     MappingParameters,
 )
 
-import profilehooks
 from dogpile.cache import make_region
 from dogpile.cache.api import (
     NO_VALUE,
@@ -126,7 +125,6 @@ from dogpile.cache.proxy import ProxyBackend
 from dogpile.util import ReadWriteMutex
 from dogpile.cache.backends.file import AbstractFileLock
 
-from xml.etree import ElementTree
 from lxml import etree
 
 
@@ -163,14 +161,16 @@ class XmlBackend(ProxyBackend):
         payload = etree.tounicode(v.payload.root, encoding='utf8', method='xml')
         return payload
 
+
 class MutexLock(AbstractFileLock):
     def __init__(self, filename):
         self.mutex = ReadWriteMutex()
 
     def acquire_read_lock(self, wait):
+        # No need for read lock. It is supposed to prevent the "dogpile" effect
+        # where multiple functions each create the cached resource, but I don't
+        # think we care.
         return True
-        ret = self.mutex.acquire_read_lock(wait)
-        return wait or ret
 
     def acquire_write_lock(self, wait):
         ret = self.mutex.acquire_write_lock(wait)
@@ -178,7 +178,6 @@ class MutexLock(AbstractFileLock):
 
     def release_read_lock(self):
         return True
-        return self.mutex.release_read_lock()
 
     def release_write_lock(self):
         return self.mutex.release_write_lock()
@@ -193,7 +192,6 @@ region = make_region().configure(
     expiration_time=-1,
     wrap=[XmlBackend],
 )
-
 
 
 log = logging.getLogger(__name__)
