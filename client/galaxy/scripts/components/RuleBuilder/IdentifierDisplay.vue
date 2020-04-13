@@ -8,7 +8,7 @@
 
 <script>
 import RuleDefs from "mvc/rules/rule-definitions";
-MAPPING_TARGETS = RuleDefs.MAPPING_TARGETS;
+const MAPPING_TARGETS = RuleDefs.MAPPING_TARGETS;
 
 export default{
     props: {
