@@ -158,7 +158,8 @@ than the author of the pull request. A member of the *committers* group merging
 a pull request is considered an implicit +1.
 
 Pull requests modifying frozen and tagged release branches should be restricted
-to bug fixes.
+to bug fixes. As an exception, pull requests which only add new datatypes can
+target a frozen branch or the latest tagged release branch.
 
 Pull requests marked *[WIP]* (i.e. work in progress) in the title by the
 author(s), or tagged WIP via GitHub tags, may *not* be merged without
