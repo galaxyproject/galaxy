@@ -117,6 +117,84 @@ from .execute import (
 )
 
 import profilehooks
+from dogpile.cache import make_region
+from dogpile.cache.api import (
+    NO_VALUE,
+    CachedValue,
+)
+from dogpile.cache.proxy import ProxyBackend
+from dogpile.util import ReadWriteMutex
+from dogpile.cache.backends.file import AbstractFileLock
+
+from xml.etree import ElementTree
+from lxml import etree
+
+
+class XmlBackend(ProxyBackend):
+
+    def set(self, key, value):
+        with self.proxied._dbm_file(True) as dbm:
+            dbm[key] = json.dumps({'metadata': value.metadata, 'payload': self.value_encode(value)})
+
+    def get(self, key):
+        with self.proxied._dbm_file(False) as dbm:
+            if hasattr(dbm, "get"):
+                value = dbm.get(key, NO_VALUE)
+            else:
+                # gdbm objects lack a .get method
+                try:
+                    value = dbm[key]
+                except KeyError:
+                    value = NO_VALUE
+            if value is not NO_VALUE:
+                value = self.value_decode(value)
+            return value
+
+    def value_decode(self, v):
+        if not v or v is NO_VALUE:
+            return NO_VALUE
+        # you probably want to specify a custom decoder via `object_hook`
+        v = json.loads(v)
+        payload = get_tool_source(xml_tree=ElementTree.ElementTree(etree.fromstring(v['payload'].encode('utf-8'))))
+        return CachedValue(metadata=v['metadata'], payload=payload)
+
+    def value_encode(self, v):
+        # you probably want to specify a custom encoder via `default`
+        payload = ElementTree.tostring(v.payload.root, encoding='utf8', method='xml').decode('utf-8')
+        return payload
+
+class MutexLock(AbstractFileLock):
+    def __init__(self, filename):
+        self.mutex = ReadWriteMutex()
+
+    def acquire_read_lock(self, wait):
+        return True
+        ret = self.mutex.acquire_read_lock(wait)
+        return wait or ret
+
+    def acquire_write_lock(self, wait):
+        ret = self.mutex.acquire_write_lock(wait)
+        return wait or ret
+
+    def release_read_lock(self):
+        return True
+        return self.mutex.release_read_lock()
+
+    def release_write_lock(self):
+        return self.mutex.release_write_lock()
+
+
+region = make_region().configure(
+    'dogpile.cache.dbm',
+    arguments={
+        "filename": "database/tool_cache/cache.dbm",
+        "lock_factory": MutexLock,
+    },
+    expiration_time=-1,
+    wrap=[XmlBackend],
+)
+
+
 
 log = logging.getLogger(__name__)
 
@@ -292,23 +370,23 @@ class ToolBox(BaseGalaxyToolBox):
         # Deprecated method, TODO - eliminate calls to this in test/.
         return self._tools_by_id
 
-    @profilehooks.profile
     def create_tool(self, config_file, **kwds):
 
-        def get_expanded_tool_source():
-            try:
-                return get_tool_source(
-                    config_file,
-                    enable_beta_formats=getattr(self.app.config, "enable_beta_tool_formats", False),
-                    tool_location_fetcher=self.tool_location_fetcher,
-                )
-            except Exception as e:
-                # capture and log parsing errors
-                global_tool_errors.add_error(config_file, "Tool XML parsing", e)
-                raise e
-
-        tool_source = self.expanded_tool_source_cache.get(key=config_file, createfunc=get_expanded_tool_source)
+        tool_source = self.get_expanded_tool_source(config_file)
         return self._create_tool_from_source(tool_source, config_file=config_file, **kwds)
+
+    @region.cache_on_arguments()
+    def get_expanded_tool_source(self, config_file):
+        try:
+            return get_tool_source(
+                config_file,
+                enable_beta_formats=getattr(self.app.config, "enable_beta_tool_formats", False),
+                tool_location_fetcher=self.tool_location_fetcher,
+            )
+        except Exception as e:
+            # capture and log parsing errors
+            global_tool_errors.add_error(config_file, "Tool XML parsing", e)
+            raise e
 
     def _create_tool_from_source(self, tool_source, **kwds):
         return create_tool_from_source(self.app, tool_source, **kwds)

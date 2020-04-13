@@ -47,6 +47,8 @@ from .tags import tool_tag_manager
 
 log = logging.getLogger(__name__)
 
+import profilehooks
+
 SHED_TOOL_CONF_XML = """<?xml version="1.0"?>
 <toolbox tool_path="{shed_tools_dir}">
 </toolbox>
