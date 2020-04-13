@@ -143,7 +143,7 @@ class Workflow extends EventEmitter {
             type: type,
             title: title_text,
             node: node,
-            nodeId: this.popover_counter
+            nodeId: this.popover_counter,
         });
 
         this.popover_counter++;
