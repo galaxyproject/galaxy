@@ -82,6 +82,10 @@ export default {
             type: Object,
             default: null,
         },
+        nodeId: {
+            type: String,
+            default: "",
+        },
     },
     computed: {
         iconClass() {
@@ -92,7 +96,7 @@ export default {
             return null;
         },
         popoverId() {
-            return `popover-${this.id}-${this._uid}`;
+            return `popover-${this.nodeId}`;
         },
         canClone() {
             return this.type != "subworkflow";
