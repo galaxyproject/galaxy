@@ -585,6 +585,9 @@ class Tool(Dictifiable):
         self.populate_resource_parameters(tool_source)
         self.tool_errors = None
         # Parse XML element containing configuration
+        self.tool_source = tool_source
+        self._is_workflow_compatible = None
+        self.finalized = False
         try:
             self.parse(tool_source, guid=guid, dynamic=dynamic)
         except Exception as e:
@@ -594,6 +597,12 @@ class Tool(Dictifiable):
         # loading tools into the toolshed for validation.
         if self.app.name == 'galaxy':
             self.job_search = JobSearch(app=self.app)
+
+    def assert_finalized(self):
+        if self.finalized is False:
+            self.parse_inputs(self.tool_source)
+            self.parse_outputs(self.tool_source)
+            self.finalized = True
 
     @property
     def history_manager(self):
@@ -896,14 +905,8 @@ class Tool(Dictifiable):
         self.provided_metadata_file = tool_source.parse_provided_metadata_file()
         self.provided_metadata_style = tool_source.parse_provided_metadata_style()
 
-        # Parse tool inputs (if there are any required)
-        self.parse_inputs(tool_source)
-
         # Parse tool help
         self.parse_help(tool_source)
-
-        # Description of outputs produced by an invocation of the tool
-        self.parse_outputs(tool_source)
 
         # Parse result handling for tool exit codes and stdout/stderr messages:
         self.parse_stdio(tool_source)
@@ -937,8 +940,6 @@ class Tool(Dictifiable):
         self.citations = self._parse_citations(tool_source)
         self.xrefs = tool_source.parse_xrefs()
 
-        # Determine if this tool can be used in workflows
-        self.is_workflow_compatible = self.check_workflow_compatible(tool_source)
         self.__parse_trackster_conf(tool_source)
         # Record macro paths so we can reload a tool if any of its macro has changes
         self._macro_paths = tool_source.macro_paths()
@@ -1445,6 +1446,15 @@ class Tool(Dictifiable):
         else:
             return self.outputs.get(name, None)
 
+    @property
+    def is_workflow_compatible(self):
+        is_workflow_compatible = self._is_workflow_compatible
+        if is_workflow_compatible is None:
+            is_workflow_compatible = self.check_workflow_compatible(self.tool_source)
+            if self.finalized:
+                self._is_workflow_compatible = is_workflow_compatible
+        return is_workflow_compatible
+
     def check_workflow_compatible(self, tool_source):
         """
         Determine if a tool can be used in workflows. External tools and the
@@ -1452,7 +1462,7 @@ class Tool(Dictifiable):
         """
         # Multiple page tools are not supported -- we're eliminating most
         # of these anyway
-        if self.has_multiple_pages:
+        if self.finalized and self.has_multiple_pages:
             return False
         # This is probably the best bet for detecting external web tools
         # right now
@@ -2079,6 +2089,7 @@ class Tool(Dictifiable):
         """
         history_id = kwd.get('history_id', None)
         history = None
+        self.assert_finalized()
         if workflow_building_mode is workflow_building_modes.USE_HISTORY or workflow_building_mode is workflow_building_modes.DISABLED:
             # We don't need a history when exporting a workflow for the workflow editor or when downloading a workflow
             try:
