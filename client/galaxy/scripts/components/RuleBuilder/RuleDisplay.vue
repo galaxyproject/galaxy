@@ -16,6 +16,9 @@
 </template>
 
 <script>
+import RuleDefs from "mvc/rules/rule-definitions";
+const RULES = RuleDefs.RULES;
+
 export default {
     props: {
         rule: {
