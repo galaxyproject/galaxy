@@ -30,6 +30,7 @@ from .test_local_job_cancellation import CancelsJob
 TOOL_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'tools'))
 GALAXY_TEST_KUBERNETES_INFRASTRUCTURE_HOST = os.environ.get("GALAXY_TEST_KUBERNETES_INFRASTRUCTURE_HOST", "host.docker.internal")
 AMQP_URL = integration_util.AMQP_URL
+GALAXY_TEST_KUBERNETES_NAMESPACE = os.environ.get("GALAXY_TEST_K8S_NAMESPACE", "default")
 
 
 CONTAINERIZED_TEMPLATE = """
@@ -47,6 +48,7 @@ execution:
     pulsar_k8s_environment:
       k8s_config_path: ${k8s_config_path}
       k8s_galaxy_instance_id: ${instance_id}
+      k8s_namespace: ${k8s_namespace}
       runner: pulsar_k8s
       docker_enabled: true
       docker_default_container_id: busybox:ubuntu-14.04
@@ -78,6 +80,7 @@ execution:
     pulsar_k8s_environment:
       k8s_config_path: ${k8s_config_path}
       k8s_galaxy_instance_id: ${instance_id}
+      k8s_namespace: ${k8s_namespace}
       runner: pulsar_k8s
       pulsar_app_config:
         message_queue_url: '${container_amqp_url}'
@@ -100,6 +103,7 @@ def job_config(template_str, jobs_directory):
                                                 tool_directory=TOOL_DIR,
                                                 instance_id=instance_id,
                                                 k8s_config_path=integration_util.k8s_config_path(),
+                                                k8s_namespace=GALAXY_TEST_KUBERNETES_NAMESPACE,
                                                 amqp_url=AMQP_URL,
                                                 container_amqp_url=container_amqp_url,
                                                 )
