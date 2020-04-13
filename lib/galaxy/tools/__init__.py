@@ -132,7 +132,7 @@ class XmlBackend(ProxyBackend):
 
     def set(self, key, value):
         with self.proxied._dbm_file(True) as dbm:
-            dbm[key] = json.dumps({'metadata': value.metadata, 'payload': self.value_encode(value)})
+            dbm[key] = json.dumps({'metadata': value.metadata, 'payload': self.value_encode(value), 'macro_paths': value.payload.macro_paths()})
 
     def get(self, key):
         with self.proxied._dbm_file(False) as dbm:
@@ -151,14 +151,12 @@ class XmlBackend(ProxyBackend):
     def value_decode(self, v):
         if not v or v is NO_VALUE:
             return NO_VALUE
-        # you probably want to specify a custom decoder via `object_hook`
         v = json.loads(v)
-        payload = get_tool_source(xml_tree=etree.ElementTree(etree.fromstring(v['payload'].encode('utf-8'))))
+        payload = get_tool_source(xml_tree=etree.ElementTree(etree.fromstring(v['payload'].encode('utf-8'))), macro_paths=v['macro_paths'])
         return CachedValue(metadata=v['metadata'], payload=payload)
 
     def value_encode(self, v):
-        # you probably want to specify a custom encoder via `default`
-        payload = etree.tounicode(v.payload.root, encoding='utf8', method='xml')
+        payload = ElementTree.tostring(v.payload.root, encoding="utf-8", method='xml').decode('utf-8')
         return payload
 
 
