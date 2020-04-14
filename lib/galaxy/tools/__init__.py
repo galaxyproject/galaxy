@@ -180,7 +180,7 @@ class MutexLock(AbstractFileLock):
 def my_key_generator(namespace, fn, **kw):
 
     def generate_key(*arg):
-        return "_".join(str(s) for s in arg)
+        return "_".join(str(s) for s in arg if isinstance(s, str))
 
     return generate_key
 
