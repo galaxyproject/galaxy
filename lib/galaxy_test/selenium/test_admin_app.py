@@ -9,6 +9,23 @@ class AdminAppTestCase(SeleniumTestCase):
     requires_admin = True
 
     @selenium_test
+    def test_admin_jobs_display(self):
+        admin_component = self.components.admin
+        self.admin_login()
+        self.admin_open()
+        self.screenshot("admin_landing")
+        admin_component.index.jobs.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.screenshot("admin_jobs_landing")
+        admin_component.manage_jobs.job_lock.wait_for_visible()
+        admin_component.manage_jobs.job_lock.click()
+        self.screenshot("admin_jobs_locked")
+        # self.assertEqual(admin_component.jobs.selectors.job_lock.value(), 'true')
+        # admin_component.job_lock.click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        # self.assertEqual(admin_component.jobs.job_lock.value(), 'false')
+
+    @selenium_test
     def test_admin_server_display(self):
         admin_component = self.components.admin
         self.admin_login()

@@ -353,6 +353,17 @@ tour:
 
 admin:
 
+  manage_dependencies:
+    selectors:
+      dependencies: 'a[contains(text(), "Dependencies")]'
+      containers: 'a[contains(text(), "Containers")]'
+      unused: 'a[contains(text(), "Unused")]'
+
+  manage_jobs:
+    selectors:
+      job_lock: '#prevent-job-dispatching'
+      cutoff: '#cutoff'
+
   index:
     selectors:
       datatypes: '#admin-link-datatypes'
@@ -368,6 +379,7 @@ admin:
 
   selectors:
     # TODO: place betters IDS or something on this in these grids in the DOM
+    jobs_title: '#jobs-title'
     datatypes_grid: '#data-types-grid'
     data_tables_grid: '#data-tables-grid'
     display_applications_grid: '#display-applications-grid'
