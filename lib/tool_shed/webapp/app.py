@@ -8,7 +8,6 @@ import galaxy.tools.data
 import tool_shed.repository_registry
 import tool_shed.repository_types.registry
 import tool_shed.webapp.model
-from galaxy import tools
 from galaxy.config import configure_logging
 from galaxy.model.tags import CommunityTagHandler
 from galaxy.security import idencoding

@@ -184,6 +184,7 @@ def my_key_generator(namespace, fn, **kw):
 
     return generate_key
 
+
 region = make_region(function_key_generator=my_key_generator)
 
 log = logging.getLogger(__name__)
