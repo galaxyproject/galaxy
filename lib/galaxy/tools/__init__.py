@@ -147,7 +147,8 @@ class JSONBackend(ProxyBackend):
     def value_decode(self, v):
         if not v or v is NO_VALUE:
             return NO_VALUE
-        v = json.loads(v)
+        # v is returned as bytestring, so we need to `unicodify` on python < 3.6 before we can use json.loads
+        v = json.loads(unicodify(v))
         payload = get_tool_source(xml_tree=etree.ElementTree(etree.fromstring(v['payload'].encode('utf-8'))), macro_paths=v['macro_paths'])
         return CachedValue(metadata=v['metadata'], payload=payload)
 
@@ -317,7 +318,8 @@ class ToolBox(BaseGalaxyToolBox):
     def __init__(self, config_filenames, tool_root_dir, app, save_integrated_tool_panel=True):
         self._reload_count = 0
         self.tool_location_fetcher = ToolLocationFetcher()
-        os.makedirs(app.config.tool_cache_data_dir, exist_ok=True)
+        if not os.path.exists(app.config.tool_cache_data_dir):
+            os.makedirs(app.config.tool_cache_data_dir)
         region.configure(
             'dogpile.cache.dbm',
             arguments={
