@@ -8,6 +8,7 @@ from sqlalchemy.orm import (
     joinedload,
 )
 
+from galaxy.tools import region
 from galaxy.util import unicodify
 from galaxy.util.hash_util import md5_hash_file
 
@@ -42,6 +43,7 @@ class ToolCache(object):
             with self._lock:
                 paths_to_cleanup = {path: tool.all_ids for path, tool in self._tools_by_path.items() if self._should_cleanup(path)}
                 for config_filename, tool_ids in paths_to_cleanup.items():
+                    region.delete(config_filename)
                     del self._hash_by_tool_paths[config_filename]
                     if os.path.exists(config_filename):
                         # This tool has probably been broken while editing on disk

@@ -170,6 +170,7 @@ class MockAppConfig(Bunch):
 
         # set by MockDir
         self.root = root
+        self.tool_cache_data_dir = os.path.join(root, 'tool_cache')
 
         self.config_file = None
 
