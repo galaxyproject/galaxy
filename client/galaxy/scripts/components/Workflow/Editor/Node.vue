@@ -129,19 +129,122 @@ export default {
         };
     },
     mounted() {
-        const manager = this.getManager();
-        this.node = new Node(manager, { element: this.f });
+        this.manager = this.getManager();
+        this.node = new Node(this.manager, { element: this.f });
         this.node.on("init", (data) => {
+            this.initData(data);
+        });
+        this.node.on("update", (data) => {
+            this.updateData(data);
+        });
+    },
+    computed: {
+        hasInputs() {
+            return Object.keys(this.inputs).length > 0;
+        },
+        hasOutputs() {
+            return Object.keys(this.outputs).length > 0;
+        },
+        showRule() {
+            return this.hasInputs && this.hasOutputs;
+        },
+        showLoading() {
+            return !this.hasInputs && !this.hasOutputs;
+        },
+        iconClass() {
+            const iconType = WorkflowIcons[this.type];
+            if (iconType) {
+                return `icon fa fa-fw ${iconType}`;
+            }
+            return null;
+        },
+        popoverId() {
+            return `popover-${this.nodeId}`;
+        },
+        canClone() {
+            return this.type != "subworkflow";
+        },
+        isEnabled() {
+            return getGalaxyInstance().config.enable_tool_recommendations;
+        },
+    },
+    methods: {
+        onAddInput(input, terminal) {
+            /*const oldterminal = this.node.input_terminals[input.name];
+            if (oldterminal) {
+                oldterminal.update(input.name);
+                oldterminal.destroyInvalidConnections();
+                return;
+            }*/
+            this.inputTerminals[input.name] = terminal;
+        },
+        onAddOutput(output, terminal) {
+            /*const oldterminal = this.node.input_terminals[input.name];
+            if (oldterminal) {
+                oldterminal.update(input.name);
+                oldterminal.destroyInvalidConnections();
+                return;
+            }*/
+            console.log(output.name);
+            this.outputTerminals[output.name] = terminal;
+        },
+        onDestroy() {
+            this.node.destroy();
+        },
+        onClone() {
+            this.node.clone();
+        },
+        onCreate(toolId, event) {
+            const requestData = {
+                tool_id: toolId,
+                type: "tool",
+                _: "true",
+            };
+            getModule(requestData).then((response) => {
+                var node = this.node.app.create_node("tool", response.name, toolId);
+                this.node.app.set_node(node, response);
+                this.popoverShow = false;
+            });
+        },
+        redraw() {
+            Object.values(this.inputTerminals).forEach((t) => {
+                t.redraw();
+            });
+            Object.values(this.outputTerminals).forEach((t) => {
+                t.redraw();
+            });
+        },
+        getNode() {
+            return this.node;
+        },
+        setData(data) {
+            this.type = data.type;
+            this.name = data.name;
+            this.config_form = data.config_form;
+            this.tool_state = data.tool_state;
+            this.errors = data.errors;
+            this.annotation = data.annotation;
+            this.tooltip = data.tooltip ? data.tooltip : "";
+            this.postJobActions = data.post_job_actions || {};
+            this.label = data.label;
+            this.uuid = data.uuid;
+            this.workflowOutputs = data.workflow_outputs || [];
+            if (this.type === "tool" && this.config_form) {
+                this.node.tool_version = this.config_form.version;
+                this.node.content_id = this.config_form.id;
+            }
+        },
+        initData(data) {
             this.setData(data);
             this.inputs = data.inputs.slice();
             this.outputs = data.outputs.slice();
             Vue.nextTick(() => {
                 this.node.input_terminals = this.inputTerminals;
                 this.node.output_terminals = this.outputTerminals;
-                manager.node_changed(this.node);
+                this.manager.node_changed(this.node);
             });
-        });
-        this.node.on("update", (data) => {
+        },
+        updateData(data) {
             this.setData(data);
 
             // Create a list of all current output names
@@ -241,104 +344,7 @@ export default {
                 //var outputTerminal = this.nodeView.node.output_terminals[output.name];
                 //outputTerminal.update(output);
             }*/
-        });
-    },
-    computed: {
-        hasInputs() {
-            return Object.keys(this.inputs).length > 0;
-        },
-        hasOutputs() {
-            return Object.keys(this.outputs).length > 0;
-        },
-        showRule() {
-            return this.hasInputs && this.hasOutputs;
-        },
-        showLoading() {
-            return !this.hasInputs && !this.hasOutputs;
-        },
-        iconClass() {
-            const iconType = WorkflowIcons[this.type];
-            if (iconType) {
-                return `icon fa fa-fw ${iconType}`;
-            }
-            return null;
-        },
-        popoverId() {
-            return `popover-${this.nodeId}`;
-        },
-        canClone() {
-            return this.type != "subworkflow";
-        },
-        isEnabled() {
-            return getGalaxyInstance().config.enable_tool_recommendations;
-        },
-    },
-    methods: {
-        onAddInput(input, terminal) {
-            /*const oldterminal = this.node.input_terminals[input.name];
-            if (oldterminal) {
-                oldterminal.update(input.name);
-                oldterminal.destroyInvalidConnections();
-                return;
-            }*/
-            this.inputTerminals[input.name] = terminal;
-        },
-        onAddOutput(output, terminal) {
-            /*const oldterminal = this.node.input_terminals[input.name];
-            if (oldterminal) {
-                oldterminal.update(input.name);
-                oldterminal.destroyInvalidConnections();
-                return;
-            }*/
-            console.log(output.name);
-            this.outputTerminals[output.name] = terminal;
-        },
-        onDestroy() {
-            this.node.destroy();
-        },
-        onClone() {
-            this.node.clone();
-        },
-        onCreate(toolId, event) {
-            const requestData = {
-                tool_id: toolId,
-                type: "tool",
-                _: "true",
-            };
-            getModule(requestData).then((response) => {
-                var node = this.node.app.create_node("tool", response.name, toolId);
-                this.node.app.set_node(node, response);
-                this.popoverShow = false;
-            });
-        },
-        redraw() {
-            Object.values(this.inputTerminals).forEach((t) => {
-                t.redraw();
-            });
-            Object.values(this.outputTerminals).forEach((t) => {
-                t.redraw();
-            });
-        },
-        getNode() {
-            return this.node;
-        },
-        setData(data) {
-            this.type = data.type;
-            this.name = data.name;
-            this.config_form = data.config_form;
-            this.tool_state = data.tool_state;
-            this.errors = data.errors;
-            this.annotation = data.annotation;
-            this.tooltip = data.tooltip ? data.tooltip : "";
-            this.postJobActions = data.post_job_actions || {};
-            this.label = data.label;
-            this.uuid = data.uuid;
-            this.workflowOutputs = data.workflow_outputs || [];
-            if (this.type === "tool" && this.config_form) {
-                this.node.tool_version = this.config_form.version;
-                this.node.content_id = this.config_form.id;
-            }
-        },
+        }
     },
 };
 </script>
