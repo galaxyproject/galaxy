@@ -45,6 +45,7 @@ class UsesApiTestCaseMixin(object):
     def _setup_interactor(self):
         self.user_api_key = get_user_api_key()
         self.master_api_key = get_master_api_key()
+        self.verify = True
         self.galaxy_interactor = ApiTestInteractor(self)
 
     def _setup_user(self, email, password=None, is_admin=True):
