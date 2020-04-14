@@ -1,10 +1,5 @@
-import os
-from collections import namedtuple
-from datetime import timedelta
-
 import pytest
 
-from galaxy.util import listify
 from galaxy_test.driver.driver_util import GalaxyConfigTestDriver as Driver
 
 
@@ -23,8 +18,8 @@ def create_driver():
 def get_config_data():
     create_driver()
     config = DRIVER.app.config
-    return [1]
-    
+    return [config.schema.app_schema['admin_users']]
+
 
 @pytest.mark.parametrize('data', get_config_data())
 def test_one(data, driver):
