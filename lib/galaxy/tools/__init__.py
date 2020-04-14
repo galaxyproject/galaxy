@@ -536,7 +536,6 @@ class Tool(Dictifiable):
         self.repository_id = repository_id
         self._allow_code_files = allow_code_files
         # setup initial attribute values
-        self.inputs = OrderedDict()
         self.stdio_exit_codes = list()
         self.stdio_regexes = list()
         self.inputs_by_page = list()
@@ -1129,6 +1128,7 @@ class Tool(Dictifiable):
         This implementation supports multiple pages and grouping constructs.
         """
         # Load parameters (optional)
+        self.inputs = OrderedDict()
         pages = tool_source.parse_input_pages()
         enctypes = set()
         if pages.inputs_defined:
