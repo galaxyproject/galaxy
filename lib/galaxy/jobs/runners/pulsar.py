@@ -189,6 +189,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
     runner_name = "PulsarJobRunner"
     default_build_pulsar_app = False
     use_mq = False
+    poll = True
 
     def __init__(self, app, nworkers, **kwds):
         """Start the job runner."""
@@ -207,12 +208,13 @@ class PulsarJobRunner(AsynchronousJobRunner):
         if self.use_mq:
             # This is a message queue driven runner, don't monitor
             # just setup required callback.
-            self._init_noop_monitor()
-
             self.client_manager.ensure_has_status_update_callback(self.__async_update)
             self.client_manager.ensure_has_ack_consumers()
-        else:
+
+        if self.poll:
             self._init_monitor_thread()
+        else:
+            self._init_noop_monitor()
 
     def __init_client_manager(self):
         pulsar_conf = self.runner_params.get('pulsar_app_config', None)
@@ -262,6 +264,23 @@ class PulsarJobRunner(AsynchronousJobRunner):
         return JobDestination(runner="pulsar", params=url_to_destination_params(url))
 
     def check_watched_item(self, job_state):
+        if self.use_mq:
+            # Might still need to check pod IPs.
+            job_wrapper = job_state.job_wrapper
+            guest_ports = job_wrapper.guest_ports
+            if len(guest_ports) > 0:
+                client = self.get_client_from_state(job_state)
+                job_ip = client.job_ip()
+                if job_ip:
+                    ports_dict = {}
+                    for guest_port in guest_ports:
+                        ports_dict[str(guest_port)] = dict(host=job_ip, port=guest_port, protocol="http")
+                    self.app.interactivetool_manager.configure_entry_points(job_wrapper.get_job(), ports_dict)
+            return job_state
+        else:
+            return self.check_watched_item_state(job_state)
+
+    def check_watched_item_state(self, job_state):
         try:
             client = self.get_client_from_state(job_state)
             status = client.get_status()
@@ -366,6 +385,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 remote_pulsar_app_config=remote_pulsar_app_config,
                 job_directory_files=job_directory_files,
                 container=None if not remote_container else remote_container.container_id,
+                guest_ports=job_wrapper.guest_ports,
             )
             job_id = pulsar_submit_job(client, client_job_description, remote_job_config)
             log.info("Pulsar job submitted with job_id %s" % job_id)
@@ -853,6 +873,7 @@ class PulsarLegacyJobRunner(PulsarJobRunner):
 class PulsarMQJobRunner(PulsarJobRunner):
     """Flavor of Pulsar job runner with sensible defaults for message queue communication."""
     use_mq = True
+    poll = False
 
     destination_defaults = dict(
         default_file_action="remote_transfer",
@@ -878,6 +899,7 @@ KUBERNETES_DESTINATION_DEFAULTS = {
 
 class PulsarKubernetesJobRunner(PulsarMQJobRunner):
     destination_defaults = KUBERNETES_DESTINATION_DEFAULTS
+    poll = True  # Poll so we can check API for pod IP for ITs.
 
     def _populate_parameter_defaults(self, job_destination):
         super(PulsarKubernetesJobRunner, self)._populate_parameter_defaults(job_destination)

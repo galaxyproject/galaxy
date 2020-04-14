@@ -69,15 +69,23 @@ def pull_policy(params):
 
 
 def find_job_object_by_name(pykube_api, job_name, namespace=None):
-    filter_kwd = dict(selector="app=%s" % job_name)
+    return _find_object_by_name(Job, pykube_api, job_name, namespace=namespace)
+
+
+def find_pod_object_by_name(pykube_api, pod_name, namespace=None):
+    return _find_object_by_name(Pod, pykube_api, pod_name, namespace=namespace)
+
+
+def _find_object_by_name(clazz, pykube_api, object_name, namespace=None):
+    filter_kwd = dict(selector="app=%s" % object_name)
     if namespace is not None:
         filter_kwd["namespace"] = namespace
 
-    jobs = Job.objects(pykube_api).filter(**filter_kwd)
-    job = None
-    if len(jobs.response['items']) > 0:
-        job = Job(pykube_api, jobs.response['items'][0])
-    return job
+    objs = clazz.objects(pykube_api).filter(**filter_kwd)
+    obj = None
+    if len(objs.response['items']) > 0:
+        obj = clazz(pykube_api, objs.response['items'][0])
+    return obj
 
 
 def stop_job(job, cleanup="always"):
@@ -139,6 +147,7 @@ __all__ = (
     "DEFAULT_JOB_API_VERSION",
     "ensure_pykube",
     "find_job_object_by_name",
+    "find_pod_object_by_name",
     "galaxy_instance_id",
     "Job",
     "job_object_dict",
