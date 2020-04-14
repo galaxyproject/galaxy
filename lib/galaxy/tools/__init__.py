@@ -589,6 +589,29 @@ class Tool(Dictifiable):
         if self.app.name == 'galaxy':
             self.job_search = JobSearch(app=self.app)
 
+    def __getattr__(self, name):
+        lazy_attributes = {
+            'action',
+            'check_values',
+            'display_by_page',
+            'enctype',
+            'has_multiple_pages',
+            'inputs',
+            'inputs_by_page',
+            'last_page',
+            'method',
+            'npages',
+            'nginx_upload',
+            'target',
+            'template_macro_params',
+            'outputs',
+            'output_collections'
+        }
+        if name in lazy_attributes:
+            self.assert_finalized()
+            return getattr(self, name)
+        raise AttributeError(name)
+
     def assert_finalized(self):
         if self.finalized is False:
             self.parse_inputs(self.tool_source)
@@ -1015,6 +1038,7 @@ class Tool(Dictifiable):
 
     @property
     def tests(self):
+        self.assert_finalized()
         if not self.__tests_populated:
             tests_source = self.__tests_source
             if tests_source:
@@ -1511,7 +1535,6 @@ class Tool(Dictifiable):
             visit_input_values(self.inputs, values, callback)
 
     def expand_incoming(self, trans, incoming, request_context):
-        self.assert_finalized()
         rerun_remap_job_id = None
         if 'rerun_remap_job_id' in incoming:
             try:
@@ -1704,7 +1727,6 @@ class Tool(Dictifiable):
         `self.tool_action`. In general this will create a `Job` that
         when run will build the tool's outputs, e.g. `DefaultToolAction`.
         """
-        self.assert_finalized()
         try:
             return self.tool_action.execute(self, trans, incoming=incoming, set_output_hid=set_output_hid, history=history, **kwargs)
         except exceptions.ToolExecutionError as exc:
@@ -2082,7 +2104,6 @@ class Tool(Dictifiable):
         """
         history_id = kwd.get('history_id', None)
         history = None
-        self.assert_finalized()
         if workflow_building_mode is workflow_building_modes.USE_HISTORY or workflow_building_mode is workflow_building_modes.DISABLED:
             # We don't need a history when exporting a workflow for the workflow editor or when downloading a workflow
             try:

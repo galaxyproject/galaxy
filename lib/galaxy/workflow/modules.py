@@ -1237,7 +1237,6 @@ class ToolModule(WorkflowModule):
             if tool_version and exact_tools and str(self.tool.version) != str(tool_version):
                 log.info("Exact tool specified during workflow module creation for [%s] but couldn't find correct version [%s]." % (tool_id, tool_version))
                 self.tool = None
-            self.tool.assert_finalized()
         self.post_job_actions = {}
         self.runtime_post_job_actions = {}
         self.workflow_outputs = []

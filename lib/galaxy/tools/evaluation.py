@@ -57,7 +57,6 @@ class ToolEvaluator(object):
     def __init__(self, app, tool, job, local_working_directory):
         self.app = app
         self.job = job
-        tool.assert_finalized()
         self.tool = tool
         self.local_working_directory = local_working_directory
 
