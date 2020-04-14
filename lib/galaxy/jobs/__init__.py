@@ -1123,6 +1123,14 @@ class JobWrapper(HasResourceParameters):
                             job.id)
 
     @property
+    def guest_ports(self):
+        if hasattr(self, "interactivetools"):
+            guest_ports = [ep.get('port') for ep in self.interactivetools]
+            return guest_ports
+        else:
+            return []
+
+    @property
     def working_directory(self):
         if self.__working_directory is None:
             job = self.get_job()
