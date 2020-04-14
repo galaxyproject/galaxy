@@ -20,8 +20,6 @@ from xml.etree import ElementTree
 
 import packaging.version
 import webob.exc
-from beaker.cache import CacheManager
-from beaker.util import parse_cache_config_options
 from dogpile.cache import make_region
 from dogpile.cache.api import (
     CachedValue,
@@ -179,8 +177,14 @@ class MutexLock(AbstractFileLock):
         return self.mutex.release_write_lock()
 
 
-region = make_region()
+def my_key_generator(namespace, fn, **kw):
 
+    def generate_key(*arg):
+        return "_".join(str(s) for s in arg)
+
+    return generate_key
+
+region = make_region(function_key_generator=my_key_generator)
 
 log = logging.getLogger(__name__)
 
