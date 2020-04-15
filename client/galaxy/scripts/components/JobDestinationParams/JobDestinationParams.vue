@@ -23,14 +23,6 @@ export default {
         datasetId: {
             type: String,
         },
-        datasetType: {
-            type: String,
-            default: "hda",
-        },
-        includeTitle: {
-            type: Boolean,
-            default: true,
-        },
     },
     data() {
         return {};
