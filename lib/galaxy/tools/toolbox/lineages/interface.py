@@ -1,6 +1,7 @@
 import threading
 
 import packaging.version
+from sortedcontainers import SortedSet
 
 from galaxy.util.tool_version import remove_version_from_guid
 
@@ -39,11 +40,7 @@ class ToolLineage(object):
 
     def __init__(self, tool_id, **kwds):
         self.tool_id = tool_id
-        self._tool_versions = set()
-
-    @property
-    def tool_versions(self):
-        return sorted(self._tool_versions, key=packaging.version.parse)
+        self.tool_versions = SortedSet(key=packaging.version.parse)
 
     @property
     def tool_ids(self):
@@ -64,7 +61,7 @@ class ToolLineage(object):
 
     def register_version(self, tool_version):
         assert tool_version is not None
-        self._tool_versions.add(str(tool_version))
+        self.tool_versions.add(str(tool_version))
 
     def get_versions(self):
         """
