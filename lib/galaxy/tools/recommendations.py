@@ -31,12 +31,13 @@ class ToolRecommendations():
         self.graph = None
         self.loaded_model = None
         self.compatible_tools = None
+        self.max_seq_len = 25
 
     def set_model(self, trans, remote_model_url):
         """
         Create model and associated dictionaries for recommendations
         """
-        if not self.tool_recommendation_model_path:
+        if not self.graph:
             # import moves from the top of file: in case the tool recommendation feature is disabled,
             # keras is not downloaded because of conditional requirement and Galaxy does not build
             try:
@@ -45,23 +46,19 @@ class ToolRecommendations():
             except Exception:
                 trans.response.status = 400
                 return False
-            self.tool_recommendation_model_path = self.download_model(remote_model_url)
+            # set graph and session only once
+            if self.graph is None:
+                self.graph = tf.Graph()
+                self.session = tf.Session(graph=self.graph)
             model_weights = list()
             counter_layer_weights = 0
-            # collect ids and names of all the installed tools
-            for tool_id, tool in trans.app.toolbox.tools():
-                t_id_renamed = tool_id
-                if t_id_renamed.find("/") > -1:
-                    t_id_renamed = t_id_renamed.split("/")[-2]
-                self.all_tools[t_id_renamed] = (tool_id, tool.name)
+            self.tool_recommendation_model_path = self.download_model(remote_model_url)
             # read the hdf5 attributes
             trained_model = h5py.File(self.tool_recommendation_model_path, 'r')
             model_config = json.loads(trained_model['model_config'][()])
             # set tensorflow's graph and session to maintain
             # consistency between model load and predict methods
-            self.graph = tf.Graph()
             with self.graph.as_default():
-                self.session = tf.Session(graph=self.graph)
                 with self.session.as_default():
                     self.loaded_model = model_from_json(model_config)
                     # iterate through all the attributes of the model to find weights of neural network layers
@@ -72,7 +69,7 @@ class ToolRecommendations():
                             model_weights.append(weights)
                             counter_layer_weights += 1
                     # set the model weights
-                    self.loaded_model.set_weights(model_weights)
+                    self.loaded_model.set_weights(model_weights)      
             # set the dictionary of tools
             self.model_data_dictionary = json.loads(trained_model['data_dictionary'][()])
             self.reverse_dictionary = dict((v, k) for k, v in self.model_data_dictionary.items())
@@ -83,6 +80,12 @@ class ToolRecommendations():
             tool_pos_sorted = [int(key) for key in tool_weights.keys()]
             for k in tool_pos_sorted:
                 self.tool_weights_sorted[k] = tool_weights[str(k)]
+            # collect ids and names of all the installed tools
+            for tool_id, tool in trans.app.toolbox.tools():
+                t_id_renamed = tool_id
+                if t_id_renamed.find("/") > -1:
+                    t_id_renamed = t_id_renamed.split("/")[-2]
+                self.all_tools[t_id_renamed] = (tool_id, tool.name)
         return True
 
     def collect_admin_preferences(self, admin_path):
@@ -192,7 +195,6 @@ class ToolRecommendations():
         Return a payload with the tool sequences and recommended tools
         Return an empty payload with just the tool sequence if anything goes wrong within the try block
         """
-        max_seq_len = 25
         topk = trans.app.config.topk_recommendations
         prediction_data = dict()
         tool_sequence = tool_sequence.split(",")[::-1]
@@ -201,7 +203,7 @@ class ToolRecommendations():
         last_tool_name = tool_sequence[-1]
         # do prediction only if the last is present in the collections of tools
         if last_tool_name in self.model_data_dictionary:
-            sample = np.zeros(max_seq_len)
+            sample = np.zeros(self.max_seq_len)
             # get the list of datatype extensions of the last tool of the tool sequence
             _, last_output_extensions = self.get_tool_extensions(trans, self.all_tools[last_tool_name][0])
             prediction_data["o_extensions"] = list(set(last_output_extensions))
@@ -214,12 +216,13 @@ class ToolRecommendations():
                 except Exception:
                     log.exception("Failed to find tool %s in model" % (tool_name))
                     return prediction_data
-            sample = np.reshape(sample, (1, max_seq_len))
+            sample = np.reshape(sample, (1, self.max_seq_len))
             # predict next tools for a test path
             try:
+                # use the same graph and session to predict
                 with self.graph.as_default():
                     with self.session.as_default():
-                        prediction = self.loaded_model.predict(sample)
+                        prediction = self.loaded_model.predict_on_batch(sample)
             except Exception as e:
                 log.exception(e)
                 return prediction_data
