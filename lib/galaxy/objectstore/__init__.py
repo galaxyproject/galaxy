@@ -727,25 +727,6 @@ class DistributedObjectStore(NestedObjectStore):
 
         return config_dict
 
-    @classmethod
-    def from_xml(clazz, config, config_xml, fsmon=False):
-        legacy = False
-        if config_xml is None:
-            distributed_config = config.distributed_object_store_config_file
-            assert distributed_config is not None, \
-                "distributed object store ('object_store = distributed') " \
-                "requires a config file, please set one in " \
-                "'distributed_object_store_config_file')"
-
-            log.debug('Loading backends for distributed object store from %s', distributed_config)
-            config_xml = ElementTree.parse(distributed_config).getroot()
-            legacy = True
-        else:
-            log.debug('Loading backends for distributed object store from %s', config_xml.get('id'))
-
-        config_dict = clazz.parse_xml(config_xml, legacy=legacy)
-        return clazz(config, config_dict, fsmon=fsmon)
-
     def to_dict(self):
         as_dict = super(DistributedObjectStore, self).to_dict()
         as_dict["global_max_percent_full"] = self.global_max_percent_full
