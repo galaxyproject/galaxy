@@ -17,7 +17,7 @@ class AdminAppTestCase(SeleniumTestCase):
         self.screenshot("admin_landing")
         admin_component.index.dependencies.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
-        dependencies_link = self.driver.find_element_by_link_text('Dependencies')
+        self.driver.find_element_by_link_text('Dependencies')
         containers_link = self.driver.find_element_by_link_text('Containers')
         unused_link = self.driver.find_element_by_link_text('Unused')
         # Ensure that #manage-resolver-type is visible.
