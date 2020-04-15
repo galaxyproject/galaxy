@@ -1376,6 +1376,16 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~
+``aws_estimate``
+~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable AWS estimate.
+:Default: ``false``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``interactivetools_proxy_host``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

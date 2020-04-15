@@ -113,7 +113,7 @@ ${ job.command_line | h }</pre>
 %endif
 
 %if job and (trans.user_is_admin or trans.app.config.expose_potentially_sensitive_job_metrics):
-<div class="job-metrics" dataset_id="${encoded_hda_id}" dataset_type="hda">
+<div class="job-metrics" dataset_id="${encoded_hda_id}" aws_estimate="${trans.app.config.aws_estimate}" dataset_type="hda">
 </div>
 %endif
 

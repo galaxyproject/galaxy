@@ -1026,6 +1026,13 @@ mapping:
         desc: |
           Enable InteractiveTools.
 
+      aws_estimate:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enable AWS estimate.
+
       interactivetools_proxy_host:
         type: str
         desc: |

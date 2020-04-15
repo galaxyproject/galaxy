@@ -12,12 +12,22 @@
                 </tbody>
             </table>
         </div>
+
+        <div v-if="isAwsEstimate && awsEstimate">
+            <h3>AWS estimate</h3>
+            <b>{{ awsEstimate.price }} USD</b><br />
+            This job requested {{ awsEstimate.vcpus }} cores and {{ awsEstimate.memory }} Gb. Given this, the smallest
+            EC2 machine we could find is {{ awsEstimate.instance.name }} ({{ awsEstimate.instance.mem }} GB /
+            {{ awsEstimate.instance.vcpus }} vCPUs / {{ awsEstimate.instance.cpu }}). That instance is priced at
+            {{ awsEstimate.instance.price }} USD/hour.
+        </div>
     </div>
 </template>
 
 <script>
 import { mapCacheActions } from "vuex-cache";
 import { mapGetters } from "vuex";
+import ec2 from "./ec2.json";
 
 export default {
     props: {
@@ -25,6 +35,9 @@ export default {
             type: String,
         },
         datasetId: {
+            type: String,
+        },
+        aws_estimate: {
             type: String,
         },
         datasetType: {
@@ -48,6 +61,39 @@ export default {
     },
     computed: {
         ...mapGetters(["getJobMetricsByDatasetId", "getJobMetricsByJobId"]),
+        isAwsEstimate: function () {
+            return this.aws_estimate && this.aws_estimate.toUpperCase() === "true".toUpperCase();
+        },
+        awsEstimate: function () {
+            if (!this.isAwsEstimate) return;
+
+            const aws = {};
+            this.jobMetrics.forEach((metric) => {
+                switch (metric.name) {
+                    case "galaxy_memory_mb":
+                        aws.memory = parseInt(metric.raw_value);
+                        break;
+                    case "galaxy_slots":
+                        aws.vcpus = parseInt(metric.raw_value);
+                        break;
+                    case "runtime_seconds":
+                        aws.seconds = parseInt(metric.raw_value);
+                        break;
+                    default:
+                }
+            });
+
+            if (aws.memory) aws.memory /= 1024;
+            // if memory was not specified, assign the smallest amount (we judge based on CPU-count only)
+            else aws.memory = 0.5;
+
+            // ec2 is already pre-sorted
+            aws.instance = ec2.find((ec) => {
+                return ec.mem >= aws.memory && ec.vcpus >= aws.vcpus;
+            });
+            aws.price = ((aws.seconds * aws.instance.price) / 3600).toFixed(2);
+            return aws;
+        },
         jobMetrics: function () {
             if (this.jobId) {
                 return this.getJobMetricsByJobId(this.jobId);
