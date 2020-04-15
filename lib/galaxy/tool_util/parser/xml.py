@@ -50,6 +50,9 @@ class XmlToolSource(ToolSource):
         self._macro_paths = macro_paths or []
         self.legacy_defaults = self.parse_profile() == "16.01"
 
+    def to_string(self):
+        return xml_to_string(self.root)
+
     def parse_version(self):
         return self.root.get("version", None)
 

@@ -20,15 +20,6 @@ from xml.etree import ElementTree
 
 import packaging.version
 import webob.exc
-from dogpile.cache import make_region
-from dogpile.cache.api import (
-    CachedValue,
-    NO_VALUE,
-)
-from dogpile.cache.backends.file import AbstractFileLock
-from dogpile.cache.proxy import ProxyBackend
-from dogpile.util import ReadWriteMutex
-from lxml import etree
 from mako.template import Template
 from six import itervalues, string_types
 from six.moves.urllib.parse import unquote_plus
@@ -66,6 +57,11 @@ from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.model_operations import ModelOperationToolAction
+from galaxy.tools.cache import (
+    JSONBackend,
+    MutexLock,
+    region,
+)
 from galaxy.tools.parameters import (
     check_param,
     params_from_strings,
@@ -123,70 +119,6 @@ from .execute import (
     MappingParameters,
 )
 
-
-class JSONBackend(ProxyBackend):
-
-    def set(self, key, value):
-        with self.proxied._dbm_file(True) as dbm:
-            dbm[key] = json.dumps({'metadata': value.metadata, 'payload': self.value_encode(value), 'macro_paths': value.payload.macro_paths()})
-
-    def get(self, key):
-        with self.proxied._dbm_file(False) as dbm:
-            if hasattr(dbm, "get"):
-                value = dbm.get(key, NO_VALUE)
-            else:
-                # gdbm objects lack a .get method
-                try:
-                    value = dbm[key]
-                except KeyError:
-                    value = NO_VALUE
-            if value is not NO_VALUE:
-                value = self.value_decode(value)
-            return value
-
-    def value_decode(self, v):
-        if not v or v is NO_VALUE:
-            return NO_VALUE
-        # v is returned as bytestring, so we need to `unicodify` on python < 3.6 before we can use json.loads
-        v = json.loads(unicodify(v))
-        payload = get_tool_source(xml_tree=etree.ElementTree(etree.fromstring(v['payload'].encode('utf-8'))), macro_paths=v['macro_paths'])
-        return CachedValue(metadata=v['metadata'], payload=payload)
-
-    def value_encode(self, v):
-        payload = ElementTree.tostring(v.payload.root, encoding="utf-8", method='xml').decode('utf-8')
-        return payload
-
-
-class MutexLock(AbstractFileLock):
-    def __init__(self, filename):
-        self.mutex = ReadWriteMutex()
-
-    def acquire_read_lock(self, wait):
-        # No need for read lock. It is supposed to prevent the "dogpile" effect
-        # where multiple functions each create the cached resource, but I don't
-        # think we care.
-        return True
-
-    def acquire_write_lock(self, wait):
-        ret = self.mutex.acquire_write_lock(wait)
-        return wait or ret
-
-    def release_read_lock(self):
-        return True
-
-    def release_write_lock(self):
-        return self.mutex.release_write_lock()
-
-
-def my_key_generator(namespace, fn, **kw):
-
-    def generate_key(*arg):
-        return "_".join(str(s) for s in arg if isinstance(s, str))
-
-    return generate_key
-
-
-region = make_region(function_key_generator=my_key_generator)
 
 log = logging.getLogger(__name__)
 
