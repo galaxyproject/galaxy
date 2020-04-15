@@ -708,33 +708,22 @@ class DistributedObjectStore(NestedObjectStore):
             'backends': backends,
         }
 
-        for elem in [e for e in backends_root if e.tag == 'backend']:
-            id = elem.get('id')
-            weight = int(elem.get('weight', 1))
-            maxpctfull = float(elem.get('maxpctfull', 0))
-            elem_type = elem.get('type', 'disk')
-            store_by = elem.get('store_by', None)
-            if elem_type:
-                path = None
-                extra_dirs = []
-                for sub in elem:
-                    if sub.tag == 'files_dir':
-                        path = sub.get('path')
-                    elif sub.tag == 'extra_dir':
-                        type = sub.get('type')
-                        extra_dirs.append({"type": type, "path": sub.get('path')})
+        for b in config_xml.find('backends'):
+            store_id = b.get("id")
+            store_weight = int(b.get("weight", 1))
+            store_maxpctfull = float(b.get('maxpctfull', 0))
+            store_type = b.get("type", "disk")
+            store_by = b.get('store_by', None)
 
-                backend_dict = {
-                    'id': id,
-                    'weight': weight,
-                    'max_percent_full': maxpctfull,
-                    'files_dir': path,
-                    'extra_dirs': extra_dirs,
-                    'type': elem_type,
-                }
-                if store_by is not None:
-                    backend_dict['store_by'] = store_by
-                backends.append(backend_dict)
+            objectstore_class, _ = type_to_object_store_class(store_type)
+            backend_config_dict = objectstore_class.parse_xml(b)
+            backend_config_dict["id"] = store_id
+            backend_config_dict["weight"] = store_weight
+            backend_config_dict["max_percent_full"] = store_maxpctfull
+            backend_config_dict["type"] = store_type
+            if store_by is not None:
+                backend_config_dict["store_by"] = store_by
+            backends.append(backend_config_dict)
 
         return config_dict
 
