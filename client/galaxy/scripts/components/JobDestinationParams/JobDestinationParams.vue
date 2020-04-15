@@ -20,9 +20,6 @@ export default {
         jobId: {
             type: String,
         },
-        datasetId: {
-            type: String,
-        },
     },
     created: function () {
         this.fetchJobDestinationParams(this.jobId);
