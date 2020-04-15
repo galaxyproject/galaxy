@@ -1,4 +1,4 @@
-FROM ubuntu:16.04
+FROM ubuntu:18.04
 LABEL maintainer="John Chilton <jmchilton@gmail.com>"
 
 ARG CHROME_VERSION="google-chrome-beta"
@@ -11,8 +11,6 @@ ENV DEBIAN_FRONTEND=noninteractive \
     POSTGRES_MAJOR=9.5 \
     GALAXY_ROOT=/galaxy \
     GALAXY_VIRTUAL_ENV=/galaxy_venv \
-    GALAXY_VIRTUAL_ENV_2=/galaxy_venv \
-    GALAXY_VIRTUAL_ENV_3=/galaxy_venv3 \
     LC_ALL=C.UTF-8
 
 # Pre-install a bunch of packages to speed up ansible steps.
@@ -20,13 +18,10 @@ RUN apt-get update -y && apt-get install -y software-properties-common apt-trans
     apt-add-repository -y ppa:ansible/ansible && \
     curl -s https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
     echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list && \
-    curl -s http://neuro.debian.net/lists/xenial.us-ca.full > /etc/apt/sources.list.d/neurodebian.sources.list && \
-    apt-key adv --recv-keys --keyserver hkp://pool.sks-keyservers.net:80 0xA5D32F012649A5A9 && \
     apt-get update -y && \
     apt-get install -y --no-install-recommends postgresql postgresql-client ansible wget \
             python3-dev \
             git-core \
-            python-prettytable python-virtualenv python-pip \
             rsync swig sysstat unzip \
             openssl \
             bzip2 \
@@ -37,9 +32,6 @@ RUN apt-get update -y && apt-get install -y software-properties-common apt-trans
             locales \
             xvfb \
             ${CHROME_VERSION:-google-chrome-stable} \
-            ffmpeg \
-            bcftools \
-            singularity-container \
             libnss3 libgconf-2-4 && \
     apt-get autoremove -y && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
@@ -69,23 +61,10 @@ RUN mkdir /etc/galaxy && cd /tmp/ansible && mkdir roles && \
     apt-get autoremove -y && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 RUN cd $GALAXY_ROOT && \
-    virtualenv -p /usr/bin/python3 $GALAXY_VIRTUAL_ENV_3 && \
-    for VENV in $GALAXY_VIRTUAL_ENV_2 $GALAXY_VIRTUAL_ENV_3; do \
-        GALAXY_VIRTUAL_ENV=$VENV ./scripts/common_startup.sh --dev-wheels && \
-        $VENV/bin/pip install psycopg2-binary; done && \
+    virtualenv -p /usr/bin/python3 $GALAXY_VIRTUAL_ENV && \
+        ./scripts/common_startup.sh --dev-wheels && \
+        $GALAXY_VIRTUAL_ENV/bin/pip install psycopg2-binary && \
     rm -rf ~/.cache/pip
-
-RUN cd $GALAXY_ROOT && \
-    echo "Prepopulating postgres database" && \
-    su -c '/usr/lib/postgresql/${POSTGRES_MAJOR}/bin/pg_ctl -o "-F" start -D /opt/galaxy/db' postgres && \
-    sleep 3 && \
-    GALAXY_CONFIG_DATABASE_CONNECTION="postgresql://root@localhost:5930/galaxy" bash create_db.sh && \
-    echo "Prepopulating sqlite database" && \
-    GALAXY_CONFIG_DATABASE_CONNECTION="sqlite:////opt/galaxy/galaxy.sqlite" bash create_db.sh && \
-    echo "Prepopulating toolshed postgres database" && \
-    TOOL_SHED_CONFIG_DATABASE_CONNECTION="postgresql://root@localhost:5930/toolshed" bash create_db.sh tool_shed && \
-    echo "Prepopulating toolshed sqlite database" && \
-    TOOL_SHED_CONFIG_DATABASE_CONNECTION="sqlite:////opt/galaxy/toolshed.sqlite" bash create_db.sh tool_shed
 
 #========================================
 # Add Selenium user with passwordless sudo

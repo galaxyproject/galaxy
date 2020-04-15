@@ -752,7 +752,7 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
             log.debug("Cloning repository changeset revision: %s", str(ctx.rev()))
             cloned_ok, error_message = hg_util.clone_repository(self.repository_clone_url, work_dir, str(ctx.rev()))
             if cloned_ok:
-                log.debug("Generating metadata for changset revision: %s", str(ctx.rev()))
+                log.debug("Generating metadata for changeset revision: %s", str(ctx.rev()))
                 self.set_changeset_revision(str(ctx))
                 self.set_repository_files_dir(work_dir)
                 self.generate_metadata_for_changeset_revision()

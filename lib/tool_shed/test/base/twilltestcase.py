@@ -7,22 +7,16 @@ import string
 import tempfile
 import time
 from json import loads
-from xml.etree import ElementTree
 
-# Be sure to use Galaxy's vanilla pyparsing instead of the older version
-# imported by twill.
-import pyparsing  # noqa: F401
 import requests
-import twill
 import twill.commands as tc
 from mercurial import commands, hg, ui
-from six import string_types, StringIO
 from six.moves.urllib.parse import (
     quote_plus,
     urlencode,
     urlparse
 )
-from twill.other_packages._mechanize_dist import ClientForm
+from twill.utils import ResultWrapper
 
 import galaxy.model.tool_shed_install as galaxy_model
 import galaxy.util
@@ -40,14 +34,10 @@ from . import common, test_db_util
 # Set a 10 minute timeout for repository installation.
 repository_installation_timeout = 600
 
-# Force twill to log to a buffer -- FIXME: Should this go to stdout and be captured by nose?
-buffer = StringIO()
-twill.set_output(buffer)
-tc.config('use_tidy', 0)
-
 # Dial ClientCookie logging down (very noisy)
 logging.getLogger("ClientCookie.cookies").setLevel(logging.WARNING)
 log = logging.getLogger(__name__)
+tc.options['equiv_refresh_interval'] = 0
 
 
 class ShedTwillTestCase(FunctionalTestCase):
@@ -127,111 +117,33 @@ class ShedTwillTestCase(FunctionalTestCase):
         invalid_username = False
         try:
             self.check_page_for_string("Created new user account")
-        except Exception:
+        except AssertionError:
             try:
                 # May have created the account in a previous test run...
                 self.check_page_for_string("User with email '%s' already exists." % email)
                 previously_created = True
-            except Exception:
+            except AssertionError:
                 try:
                     self.check_page_for_string('Public name is taken; please choose another')
                     username_taken = True
-                except Exception:
+                except AssertionError:
+                    # Note that we're only checking if the usr name is >< 4 chars here...
                     try:
-                        # Note that we're only checking if the usr name is >< 4 chars here...
                         self.check_page_for_string('Public name must be at least 4 characters in length')
                         invalid_username = True
-                    except Exception:
+                    except AssertionError:
                         pass
         return previously_created, username_taken, invalid_username
-
-    def get_all_history_ids_from_api(self):
-        return [history['id'] for history in self.json_from_url('/api/histories')]
-
-    def get_form_controls(self, form):
-        formcontrols = []
-        for i, control in enumerate(form.controls):
-            formcontrols.append("control %d: %s" % (i, str(control)))
-        return formcontrols
-
-    def get_hids_in_history(self, history_id):
-        """Returns the list of hid values for items in a history"""
-        hids = []
-        api_url = '/api/histories/%s/contents' % history_id
-        hids = [history_item['hid'] for history_item in self.json_from_url(api_url)]
-        return hids
-
-    def get_history_as_data_list(self, show_deleted=False):
-        """Returns the data elements of a history"""
-        tree = self.history_as_xml_tree(show_deleted=show_deleted)
-        data_list = [elem for elem in tree.findall("data")]
-        return data_list
-
-    def get_history_from_api(self, encoded_history_id=None, show_deleted=None, show_details=False):
-        if encoded_history_id is None:
-            history = self.get_latest_history()
-            encoded_history_id = history['id']
-        params = dict()
-        if show_deleted is not None:
-            params['deleted'] = show_deleted
-        api_url = '/api/histories/%s/contents' % encoded_history_id
-        json_data = self.json_from_url(api_url, params=params)
-        if show_deleted is not None:
-            hdas = []
-            for hda in json_data:
-                if show_deleted:
-                    hdas.append(hda)
-                else:
-                    if not hda['deleted']:
-                        hdas.append(hda)
-            json_data = hdas
-        if show_details:
-            params['details'] = ','.join(hda['id'] for hda in json_data)
-            api_url = '/api/histories/%s/contents' % encoded_history_id
-            json_data = self.json_from_url(api_url, params=params)
-        return json_data
-
-    def get_latest_history(self):
-        return self.json_from_url('/api/histories')[0]
-
-    def get_running_datasets(self):
-        self.visit_url('/api/histories')
-        history_id = loads(self.last_page())[0]['id']
-        self.visit_url('/api/histories/%s' % history_id)
-        jsondata = loads(self.last_page())
-        return jsondata['state'] in ['queued', 'running']
-
-    def history_as_xml_tree(self, show_deleted=False):
-        """Returns a parsed xml object of a history"""
-        params = {
-            'as_xml': True,
-            'show_deleted': show_deleted
-        }
-        self.visit_url('/history', params=params)
-        xml = self.last_page()
-        tree = ElementTree.fromstring(xml)
-        return tree
-
-    def is_history_empty(self):
-        """
-        Uses history page JSON to determine whether this history is empty
-        (i.e. has no undeleted datasets).
-        """
-        return len(self.get_history_from_api()) == 0
-
-    def json_from_url(self, url, params={}):
-        self.visit_url(url, params)
-        return loads(self.last_page())
 
     def last_page(self):
         """
         Return the last visited page (usually HTML, but can binary data as
         well).
         """
-        return tc.browser.get_html()
+        return tc.browser.html
 
     def last_url(self):
-        return tc.browser.get_url()
+        return tc.browser.url
 
     def login(self, email='test@bx.psu.edu', password='testuser', username='admin-user', redirect='', logout_first=True):
         # Clear cookies.
@@ -251,137 +163,35 @@ class ShedTwillTestCase(FunctionalTestCase):
             self.submit_form('login', 'login_button', login=email, redirect=redirect, password=password)
 
     def logout(self):
-        self.visit_url("%s/user/logout" % self.url)
+        self.visit_url("/user/logout")
         self.check_page_for_string("You have been logged out")
-        tc.browser.cj.clear()
 
     def showforms(self):
         """Shows form, helpful for debugging new tests"""
-        return tc.showforms()
+        return tc.browser.forms
 
-    def submit_form(self, form_no=0, button="runtool_btn", **kwd):
+    def submit_form(self, form_no=0, button="runtool_btn", form=None, **kwd):
         """Populates and submits a form from the keyword arguments."""
         # An HTMLForm contains a sequence of Controls.  Supported control classes are:
         # TextControl, FileControl, ListControl, RadioControl, CheckboxControl, SelectControl,
         # SubmitControl, ImageControl
-        for i, f in enumerate(self.showforms()):
-            if i == form_no:
-                break
-        # To help with debugging a tool, print out the form controls when the test fails
-        print("form '%s' contains the following controls ( note the values )" % f.name)
-        controls = {}
-        formcontrols = self.get_form_controls(f)
-        hc_prefix = '<HiddenControl('
-        for i, control in enumerate(f.controls):
-            if hc_prefix not in str(control):
-                try:
-                    # check if a repeat element needs to be added
-                    if control.name is not None:
-                        if control.name not in kwd and control.name.endswith('_add'):
-                            # control name doesn't exist, could be repeat
-                            repeat_startswith = control.name[0:-4]
-                            if repeat_startswith and not [c_name for c_name in controls.keys() if c_name.startswith(repeat_startswith)] and [c_name for c_name in kwd.keys() if c_name.startswith(repeat_startswith)]:
-                                tc.browser.clicked(f, control)
-                                tc.submit(control.name)
-                                return self.submit_form(form_no=form_no, button=button, **kwd)
-                    # Check for refresh_on_change attribute, submit a change if required
-                    if hasattr(control, 'attrs') and 'refresh_on_change' in control.attrs.keys():
-                        changed = False
-                        # For DataToolParameter, control.value is the HDA id, but kwd contains the filename.
-                        # This loop gets the filename/label for the selected values.
-                        item_labels = [item.attrs['label'] for item in control.get_items() if item.selected]
-                        for value in kwd[control.name]:
-                            if value not in control.value and True not in [value in item_label for item_label in item_labels]:
-                                changed = True
-                                break
-                        if changed:
-                            # Clear Control and set to proper value
-                            control.clear()
-                            # kwd[control.name] should be a singlelist
-                            for elem in kwd[control.name]:
-                                tc.fv(f.name, control.name, str(elem))
-                            # Create a new submit control, allows form to refresh, instead of going to next page
-                            control = ClientForm.SubmitControl('SubmitControl', '___refresh_grouping___', {'name': 'refresh_grouping'})
-                            control.add_to_form(f)
-                            control.fixup()
-                            # Submit for refresh
-                            tc.submit('___refresh_grouping___')
-                            return self.submit_form(form_no=form_no, button=button, **kwd)
-                except Exception:
-                    log.exception("In submit_form, continuing, but caught exception.")
-                    for formcontrol in formcontrols:
-                        log.debug(formcontrol)
-                    continue
-                controls[control.name] = control
-        # No refresh_on_change attribute found in current form, so process as usual
+        if form is None:
+            for i, form in enumerate(self.showforms()):
+                if i == form_no:
+                    break
+        assert form, "No form to submit found"
+        controls = {c.name: c for c in form.inputs}
+        form_name = form.get('name')
         for control_name, control_value in kwd.items():
             if control_name not in controls:
                 continue  # these cannot be handled safely - cause the test to barf out
             if not isinstance(control_value, list):
-                control_value = [control_value]
+                control_value = [str(control_value)]
             control = controls[control_name]
-            control.clear()
-            if control.is_of_kind("text"):
-                tc.fv(f.name, control.name, ",".join(control_value))
-            elif control.is_of_kind("list"):
-                try:
-                    if control.is_of_kind("multilist"):
-                        if control.type == "checkbox":
-                            def is_checked(value):
-                                # Copied from form_builder.CheckboxField
-                                if value is True:
-                                    return True
-                                if isinstance(value, list):
-                                    value = value[0]
-                                return isinstance(value, string_types) and value.lower() in ("yes", "true", "on")
-                            try:
-                                checkbox = control.get()
-                                checkbox.selected = is_checked(control_value)
-                            except Exception as e1:
-                                print("Attempting to set checkbox selected value threw exception: ", e1)
-                                # if there's more than one checkbox, probably should use the behaviour for
-                                # ClientForm.ListControl ( see twill code ), but this works for now...
-                                for elem in control_value:
-                                    control.get(name=elem).selected = True
-                        else:
-                            for elem in control_value:
-                                try:
-                                    # Doubt this case would ever work, but want
-                                    # to preserve backward compat.
-                                    control.get(name=elem).selected = True
-                                except Exception:
-                                    # ... anyway this is really what we want to
-                                    # do, probably even want to try the len(
-                                    # elem ) > 30 check below.
-                                    control.get(label=elem).selected = True
-                    else:  # control.is_of_kind( "singlelist" )
-                        for elem in control_value:
-                            try:
-                                tc.fv(f.name, control.name, str(elem))
-                            except Exception:
-                                try:
-                                    # Galaxy truncates long file names in the dataset_collector in galaxy/tools/parameters/basic.py
-                                    if len(elem) > 30:
-                                        elem_name = '%s..%s' % (elem[:17], elem[-11:])
-                                        tc.fv(f.name, control.name, str(elem_name))
-                                        pass
-                                    else:
-                                        raise
-                                except Exception:
-                                    raise
-                            except Exception:
-                                for formcontrol in formcontrols:
-                                    log.debug(formcontrol)
-                                log.exception("Attempting to set control '%s' to value '%s' (also tried '%s') threw exception.", control.name, elem, elem_name)
-                                pass
-                except Exception as exc:
-                    for formcontrol in formcontrols:
-                        log.debug(formcontrol)
-                    errmsg = "Attempting to set field '%s' to value '%s' in form '%s' threw exception: %s\n" % (control_name, str(control_value), f.name, str(exc))
-                    errmsg += "control: %s\n" % str(control)
-                    errmsg += "If the above control is a DataToolparameter whose data type class does not include a sniff() method,\n"
-                    errmsg += "make sure to include a proper 'ftype' attribute to the tag for the control within the <test> tag set.\n"
-                    raise AssertionError(errmsg)
+            control_type = getattr(control, "type", None)
+            if control_type in ("text", "textfield", "submit", "password", "TextareaElement", "checkbox", "radio", None):
+                for cv in control_value:
+                    tc.fv(form_name, control.name, cv)
             else:
                 # Add conditions for other control types here when necessary.
                 pass
@@ -402,14 +212,10 @@ class ShedTwillTestCase(FunctionalTestCase):
         if params:
             url += '?%s' % urlencode(params, doseq=doseq)
         new_url = tc.go(url)
-        return_code = tc.browser.get_code()
+        return_code = tc.browser.code
         assert return_code in allowed_codes, 'Invalid HTTP return code %s, allowed codes: %s' % \
             (return_code, ', '.join(str(code) for code in allowed_codes))
         return new_url
-
-    def wait(self, **kwds):
-        """Waits for the tools to finish"""
-        return self.wait_for(lambda: self.get_running_datasets(), **kwds)
 
     def write_temp_file(self, content, suffix='.html'):
         with tempfile.NamedTemporaryFile(suffix=suffix, prefix='twilltestcase-', delete=False) as fh:
@@ -733,9 +539,6 @@ class ShedTwillTestCase(FunctionalTestCase):
             if filename in filenames:
                 files_to_delete.append(os.path.join(basepath, filename))
         self.browse_repository(repository)
-        # Twill sets hidden form fields to read-only by default. We need to write to this field.
-        form = tc.browser.get_form('select_files_to_delete')
-        form.find_control("selected_files_to_delete").readonly = False
         tc.fv("2", "selected_files_to_delete", ','.join(files_to_delete))
         tc.submit('select_files_to_delete_button')
         self.check_for_strings(strings_displayed, strings_not_displayed)
@@ -944,7 +747,6 @@ class ShedTwillTestCase(FunctionalTestCase):
 
     def galaxy_logout(self):
         self.visit_galaxy_url("/user/logout", params=dict(session_csrf_token=self.galaxy_token()))
-        tc.browser.cj.clear()
 
     def generate_complex_dependency_xml(self, filename, filepath, repository_tuples, package, version):
         file_path = os.path.join(filepath, filename)
@@ -1024,7 +826,7 @@ class ShedTwillTestCase(FunctionalTestCase):
             return os.path.abspath(os.path.join(self.file_dir, filename))
 
     def get_hg_repo(self, path):
-        return hg.repository(ui.ui(), path)
+        return hg.repository(ui.ui(), path.encode('utf-8'))
 
     def get_last_reviewed_revision_by_user(self, user, repository):
         changelog_tuples = self.get_repository_changelog_tuples(repository)
@@ -1256,21 +1058,34 @@ class ShedTwillTestCase(FunctionalTestCase):
         }
         self.visit_url('/repository/install_repositories_by_revision', params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed)
-        # This section is tricky, due to the way twill handles form submission. The tool dependency checkbox needs to
-        # be hacked in through tc.browser, putting the form field in kwd doesn't work.
-        form = tc.browser.get_form('select_tool_panel_section')
+        form = tc.browser.form('select_tool_panel_section')
         if form is None:
-            form = tc.browser.get_form('select_shed_tool_panel_config')
+            form = tc.browser.form('select_shed_tool_panel_config')
         assert form is not None, 'Could not find form select_shed_tool_panel_config or select_tool_panel_section.'
-        kwd = self.set_form_value(form, kwd, 'install_tool_dependencies', install_tool_dependencies)
-        kwd = self.set_form_value(form, kwd, 'install_repository_dependencies', install_repository_dependencies)
-        kwd = self.set_form_value(form, kwd, 'install_resolver_dependencies', install_resolver_dependencies)
-        kwd = self.set_form_value(form, kwd, 'shed_tool_conf', self.shed_tool_conf)
+        kwds = {
+            'install_tool_dependencies': install_tool_dependencies,
+            'install_repository_dependencies': install_repository_dependencies,
+            'install_resolver_dependencies': install_resolver_dependencies,
+            'shed_tool_conf': self.shed_tool_conf,
+        }
         if new_tool_panel_section_label is not None:
-            kwd = self.set_form_value(form, kwd, 'new_tool_panel_section_label', new_tool_panel_section_label)
-        submit_button_control = form.find_control(type='submit')
-        assert submit_button_control is not None, 'No submit button found for form %s.' % form.attrs.get('id')
-        self.submit_form(form.attrs.get('id'), str(submit_button_control.name), **kwd)
+            kwds['new_tool_panel_section_label'] = new_tool_panel_section_label
+        submit_button = [inp.name for inp in form.inputs if getattr(inp, 'type', None) == 'submit']
+        if len(submit_button) == 0:
+            # TODO: refactor, use regular TS install API
+            submit_kwargs = {inp.name: inp.value for inp in tc.browser.forms[0].inputs if getattr(inp, 'type', None) == 'submit'}
+            payload = {_: form.inputs[_].value for _ in form.fields.keys()}
+            payload.update(kwds)
+            payload.update(submit_kwargs)
+            r = tc.browser._session.post(
+                self.galaxy_url + form.action,
+                data=payload,
+            )
+            tc.browser.result = ResultWrapper(r)
+        else:
+            assert len(submit_button) == 1, 'Expected to find a single submit button, found %s (%s)' % (len(submit_button), ','.join(submit_button))
+            submit_button = submit_button[0]
+            self.submit_form(form=form, button=submit_button, **kwds)
         self.check_for_strings(post_submit_strings_displayed, strings_not_displayed)
         repository_ids = self.initiate_installation_process(new_tool_panel_section_label=new_tool_panel_section_label)
         log.debug('Waiting for the installation of repository IDs: %s' % str(repository_ids))
@@ -1505,8 +1320,8 @@ class ShedTwillTestCase(FunctionalTestCase):
         Set the form field field_name to field_value if it exists, and return the provided dict containing that value. If
         the field does not exist in the provided form, return a dict without that index.
         '''
-        form_id = form.attrs.get('id')
-        controls = [control for control in form.controls if str(control.name) == field_name]
+        form_id = form.attrib.get('id')
+        controls = [control for control in form.inputs if str(control.name) == field_name]
         if len(controls) > 0:
             log.debug('Setting field %s of form %s to %s.' % (field_name, form_id, str(field_value)))
             tc.formvalue(form_id, field_name, str(field_value))
@@ -1535,9 +1350,9 @@ class ShedTwillTestCase(FunctionalTestCase):
         if changeset_revision is None:
             changeset_revision = self.get_repository_tip(repository)
         self.display_manage_repository_page(repository, changeset_revision=changeset_revision)
-        form = tc.browser.get_form('skip_tool_tests')
+        form = tc.browser.form('skip_tool_tests')
         assert form is not None, 'Could not find form skip_tool_tests.'
-        for control in form.controls:
+        for control in form.inputs:
             control_name = str(control.name)
             if control_name == 'skip_tool_tests' and control.type == 'checkbox':
                 checkbox = control.get()

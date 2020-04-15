@@ -67,3 +67,21 @@ export async function saveWorkflow(workflow, id) {
     }
     return {};
 }
+
+export async function getDatatypeMapping() {
+    try {
+        const mappingRequest = await axios.get(`${getAppRoot()}api/datatypes/mapping`);
+        return mappingRequest.data;
+    } catch (e) {
+        rethrowSimple(e);
+    }
+}
+
+export async function getToolPredictions(requestData) {
+    try {
+        const response = await axios.post(`${getAppRoot()}api/workflows/get_tool_predictions`, requestData);
+        return response.data;
+    } catch (e) {
+        rethrowSimple(e);
+    }
+}
