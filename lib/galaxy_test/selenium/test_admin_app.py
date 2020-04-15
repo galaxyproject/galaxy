@@ -9,21 +9,53 @@ class AdminAppTestCase(SeleniumTestCase):
     requires_admin = True
 
     @selenium_test
+    def test_admin_dependencies_display(self):
+        admin_component = self.components.admin
+        self.admin_login()
+        self.admin_open()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.screenshot("admin_landing")
+        admin_component.index.dependencies.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        dependencies_link = self.driver.find_element_by_link_text('Dependencies')
+        containers_link = self.driver.find_element_by_link_text('Containers')
+        unused_link = self.driver.find_element_by_link_text('Unused')
+        # Ensure that #manage-resolver-type is visible.
+        admin_component.manage_dependencies.resolver_type.wait_for_visible()
+        self.screenshot("admin_dependencies_landing")
+        self.action_chains().move_to_element(containers_link).click().perform()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        # Ensure that #manage-container-type is visible.
+        admin_component.manage_dependencies.container_type.wait_for_visible()
+        self.screenshot("admin_dependencies_containers")
+        self.action_chains().move_to_element(unused_link).click().perform()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        # Ensure that the unused paths table is visible.
+        admin_component.manage_dependencies.unused_paths.wait_for_visible()
+        self.screenshot("admin_dependencies_unused")
+
+    @selenium_test
     def test_admin_jobs_display(self):
         admin_component = self.components.admin
         self.admin_login()
         self.admin_open()
+        self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("admin_landing")
         admin_component.index.jobs.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("admin_jobs_landing")
         lock = self.driver.find_element_by_id("prevent-job-dispatching")
         self.action_chains().move_to_element_with_offset(lock, -20, 5).click().perform()
-        self.screenshot("admin_jobs_locked")
-        # self.assertEqual(admin_component.jobs.selectors.job_lock.value(), 'true')
-        # admin_component.job_lock.click()
         self.sleep_for(self.wait_types.UX_RENDER)
-        # self.assertEqual(admin_component.jobs.job_lock.value(), 'false')
+        self.screenshot("admin_jobs_locked")
+        # Since both get_property and get_attribute always return true, use the
+        # label for the job lock toggle to verify that job locking actually happens
+        label = self.driver.find_element_by_xpath("//label[@for='prevent-job-dispatching']/strong")
+        self.assertEqual(label.text, 'locked')
+        self.action_chains().move_to_element_with_offset(lock, -20, 5).click().perform()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.screenshot("admin_jobs_unlocked")
+        self.assertEqual(label.text, 'unlocked')
 
     @selenium_test
     def test_admin_server_display(self):
