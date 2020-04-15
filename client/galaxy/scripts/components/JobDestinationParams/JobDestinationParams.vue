@@ -24,9 +24,6 @@ export default {
             type: String,
         },
     },
-    data() {
-        return {};
-    },
     created: function () {
         this.fetchJobDestinationParams(this.jobId);
     },
