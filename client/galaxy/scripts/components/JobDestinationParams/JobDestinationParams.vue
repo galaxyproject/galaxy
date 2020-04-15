@@ -13,7 +13,6 @@
 
 <script>
 import { mapCacheActions } from "vuex-cache";
-import { mapGetters } from "vuex";
 
 export default {
     props: {
