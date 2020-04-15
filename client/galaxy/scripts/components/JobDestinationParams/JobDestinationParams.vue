@@ -19,6 +19,7 @@ export default {
     props: {
         jobId: {
             type: String,
+            required: true,
         },
     },
     created: function () {
