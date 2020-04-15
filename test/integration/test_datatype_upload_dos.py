@@ -143,7 +143,7 @@ class UploadTestDosIrodsAndDiskTestCase(UploadTestDatatypeDataTestCase):
 
     @classmethod
     def tearDownClass(cls):
-        # stop_irods(cls.container_name)
+        stop_irods(cls.container_name)
         super(UploadTestDosIrodsAndDiskTestCase, cls).tearDownClass()
 
 
