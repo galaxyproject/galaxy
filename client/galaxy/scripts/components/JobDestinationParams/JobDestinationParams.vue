@@ -28,9 +28,8 @@ export default {
         this.fetchJobDestinationParams(this.jobId);
     },
     computed: {
-        ...mapGetters(["getJobDestinationParams"]),
         jobDestinationParams: function () {
-            return this.getJobDestinationParams(this.jobId);
+            return this.$store.getters.jobDestinationParams(this.jobId);
         },
     },
     methods: {

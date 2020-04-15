@@ -7,7 +7,7 @@ import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 
 const getters = {
-    getJobDestinationParams: (state) => (jobId) => {
+    jobDestinationParams: (state) => (jobId) => {
         return state.jobDestinationParametersByJobId[jobId] || [];
     },
 };
