@@ -284,7 +284,8 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
         job = self.__get_job(trans, **kwd)
         return summarize_job_metrics(trans, job)
 
-    @expose_api_anonymous
+    @require_admin
+    @expose_api
     def destination_params(self, trans, **kwd):
         """
         * GET /api/jobs/{job_id}/destination_params

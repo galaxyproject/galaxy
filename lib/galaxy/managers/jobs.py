@@ -504,14 +504,12 @@ def summarize_destination_params(trans, job):
     Precondition: the caller has verified the job is accessible to the user
     represented by the trans parameter.
     """
-    if not trans.user_is_admin:
-        return []
-    else:
-        destination_params = {'Runner': job.job_runner_name,
-                              'Runner Job ID': job.job_runner_external_id,
-                              'Handler': job.handler}
-        destination_params.update(job.destination_params)
-        return destination_params
+
+    destination_params = {'Runner': job.job_runner_name,
+                          'Runner Job ID': job.job_runner_external_id,
+                          'Handler': job.handler}
+    destination_params.update(job.destination_params)
+    return destination_params
 
 
 def summarize_job_parameters(trans, job):
