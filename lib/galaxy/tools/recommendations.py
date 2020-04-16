@@ -78,8 +78,7 @@ class ToolRecommendations():
                         # iterate through all the attributes of the model to find weights of neural network layers
                         for item in trained_model.keys():
                             if "weight_" in item:
-                                key = "weight_{}".format(str(counter_layer_weights))
-                                weight = trained_model[key][()]
+                                weight = trained_model["weight_" + str(counter_layer_weights)][()]
                                 model_weights.append(weight)
                                 counter_layer_weights += 1
                         self.loaded_model = model_from_json(model_config)
