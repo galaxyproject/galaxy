@@ -304,7 +304,7 @@ class ToolBox(BaseGalaxyToolBox):
         tool_source = self.get_expanded_tool_source(config_file)
         tool = self._create_tool_from_source(tool_source, config_file=config_file, **kwds)
         if not self.app.config.delay_tool_initialization:
-            tool.assert_finalized()
+            tool.assert_finalized(raise_if_invalid=True)
         return tool
 
     @region.cache_on_arguments()
@@ -552,11 +552,20 @@ class Tool(Dictifiable):
             return getattr(self, name)
         raise AttributeError(name)
 
-    def assert_finalized(self):
+    def assert_finalized(self, raise_if_invalid=False):
         if self.finalized is False:
-            self.parse_inputs(self.tool_source)
-            self.parse_outputs(self.tool_source)
-            self.finalized = True
+            try:
+                self.parse_inputs(self.tool_source)
+                self.parse_outputs(self.tool_source)
+                self.finalized = True
+            except Exception:
+                toolbox = getattr(self.app, 'toolbox', None)
+                if toolbox:
+                    toolbox.remove_tool_by_id(self.id)
+                if raise_if_invalid:
+                    raise
+                else:
+                    log.warning("An error occured while parsing the tool wrapper xml, the tool is not functional", exc_info=True)
 
     @property
     def history_manager(self):
