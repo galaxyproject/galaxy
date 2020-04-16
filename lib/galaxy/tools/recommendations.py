@@ -74,16 +74,20 @@ class ToolRecommendations():
             # consistency between model load and predict methods
             with self.graph.as_default():
                 with self.session.as_default():
-                    self.loaded_model = model_from_json(model_config)
-                    # iterate through all the attributes of the model to find weights of neural network layers
-                    for item in trained_model.keys():
-                        if "weight_" in item:
-                            d_key = "weight_" + str(counter_layer_weights)
-                            weights = trained_model[d_key][()]
-                            model_weights.append(weights)
-                            counter_layer_weights += 1
-                    # set the model weights
-                    self.loaded_model.set_weights(model_weights)
+                    try:
+                        # iterate through all the attributes of the model to find weights of neural network layers
+                        for item in trained_model.keys():
+                            if "weight_" in item:
+                                key = "weight_{}".format(str(counter_layer_weights))
+                                weight = trained_model[key][()]
+                                model_weights.append(weight)
+                                counter_layer_weights += 1
+                        self.loaded_model = model_from_json(model_config)
+                        self.loaded_model.set_weights(model_weights)
+                    except Exception as e:
+                        log.exception(e)
+                        trans.response.status = 400
+                        return False
             # set the dictionary of tools
             self.model_data_dictionary = json.loads(trained_model['data_dictionary'][()])
             self.reverse_dictionary = dict((v, k) for k, v in self.model_data_dictionary.items())
