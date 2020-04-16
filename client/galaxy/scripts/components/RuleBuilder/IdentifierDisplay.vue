@@ -7,6 +7,7 @@
 </template>
 
 <script>
+import _l from "utils/localization";
 import RuleDefs from "mvc/rules/rule-definitions";
 const MAPPING_TARGETS = RuleDefs.MAPPING_TARGETS;
 

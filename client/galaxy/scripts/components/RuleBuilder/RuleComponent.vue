@@ -9,6 +9,8 @@
 </template>
 
 <script>
+import _l from "utils/localization";
+
 export default {
     data: function () {
         return {

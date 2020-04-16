@@ -16,6 +16,7 @@
 </template>
 
 <script>
+import _l from "utils/localization";
 import RuleDefs from "mvc/rules/rule-definitions";
 const RULES = RuleDefs.RULES;
 
