@@ -126,7 +126,6 @@ class ApiTestInteractor(BaseInteractor):
     def __init__(self, test_case):
         admin = getattr(test_case, "require_admin_user", False)
         test_user = TEST_USER if not admin else ADMIN_TEST_USER
-        self.verify = True
         super(ApiTestInteractor, self).__init__(test_case, test_user=test_user)
 
     # This variant the lower level get and post methods are meant to be used
