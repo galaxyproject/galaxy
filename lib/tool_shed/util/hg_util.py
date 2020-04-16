@@ -92,7 +92,7 @@ def get_named_tmpfile_from_ctx(ctx, filename, dir):
     """
     filename = basic_util.strip_path(filename)
     for ctx_file in ctx.files():
-        ctx_file_name = basic_util.strip_path(ctx_file)
+        ctx_file_name = basic_util.strip_path(unicodify(ctx_file))
         if filename == ctx_file_name:
             try:
                 # If the file was moved, its destination file contents will be returned here.

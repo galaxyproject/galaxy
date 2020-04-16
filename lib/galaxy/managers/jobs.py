@@ -498,6 +498,20 @@ def summarize_job_metrics(trans, job):
     return list(map(metric_to_dict, metrics))
 
 
+def summarize_destination_params(trans, job):
+    """Produce a dict-ified version of job destination parameters ready for tabular rendering.
+
+    Precondition: the caller has verified the job is accessible to the user
+    represented by the trans parameter.
+    """
+
+    destination_params = {'Runner': job.job_runner_name,
+                          'Runner Job ID': job.job_runner_external_id,
+                          'Handler': job.handler}
+    destination_params.update(job.destination_params)
+    return destination_params
+
+
 def summarize_job_parameters(trans, job):
     """Produce a dict-ified version of job parameters ready for tabular rendering.
 

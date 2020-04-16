@@ -77,7 +77,7 @@ def get_ctx_file_path_from_manifest(filename, repo, changeset_revision):
     for changeset in reversed_upper_bounded_changelog(repo, changeset_revision):
         manifest_ctx = repo[changeset]
         for ctx_file in manifest_ctx.files():
-            ctx_file_name = basic_util.strip_path(ctx_file)
+            ctx_file_name = basic_util.strip_path(unicodify(ctx_file))
             if ctx_file_name == stripped_filename:
                 return manifest_ctx, ctx_file
     return None, None
@@ -93,7 +93,7 @@ def get_file_context_from_ctx(ctx, filename):
     deleted = False
     filename = basic_util.strip_path(filename)
     for ctx_file in ctx.files():
-        ctx_file_name = basic_util.strip_path(ctx_file)
+        ctx_file_name = basic_util.strip_path(unicodify(ctx_file))
         if filename == ctx_file_name:
             try:
                 # If the file was moved, its destination will be returned here.

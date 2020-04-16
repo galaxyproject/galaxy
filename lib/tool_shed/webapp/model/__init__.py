@@ -217,7 +217,12 @@ class Repository(Dictifiable):
                         (str(self.name), str(self.user.username)))
 
     def allow_push(self):
-        return self.hg_repo.ui.config('web', 'allow_push')
+        hgrc_file = hg_util.get_hgrc_path(self.repo_path())
+        with open(hgrc_file, 'r') as fh:
+            for line in fh.read().splitlines():
+                if line.startswith('allow_push = '):
+                    return line[len('allow_push = '):]
+        return ''
 
     def can_change_type(self):
         # Allow changing the type only if the repository has no contents, has never been installed, or has
@@ -300,9 +305,9 @@ class Repository(Dictifiable):
         # repo.ui.setconfig('web', 'allow_push', allow_push)
         repo_dir = self.repo_path()
         hgrc_file = hg_util.get_hgrc_path(repo_dir)
-        with open(hgrc_file, 'rb') as fh:
+        with open(hgrc_file, 'r') as fh:
             lines = fh.readlines()
-        with open(hgrc_file, 'wb') as fh:
+        with open(hgrc_file, 'w') as fh:
             for line in lines:
                 if line.startswith('allow_push'):
                     fh.write('allow_push = %s' % allow_push)

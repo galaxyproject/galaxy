@@ -9,6 +9,7 @@ import createCache from "vuex-cache";
 import { gridSearchStore } from "./gridSearchStore";
 import { tagStore } from "./tagStore";
 import { jobMetricsStore } from "./jobMetricsStore";
+import { jobDestinationParametersStore } from "./jobDestinationParametersStore";
 import { invocationStore } from "./invocationStore";
 import { historyStore } from "./historyStore";
 import { userStore } from "./userStore";
@@ -31,6 +32,7 @@ export function createStore() {
             histories: historyStore,
             tags: tagStore,
             jobMetrics: jobMetricsStore,
+            destinationParameters: jobDestinationParametersStore,
             invocations: invocationStore,
             user: userStore,
             config: configStore,

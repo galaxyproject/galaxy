@@ -25,7 +25,7 @@ Sphinx = "*"
 sphinx_markdown_tables = "*"
 sphinx_rtd_theme = "*"
 testfixtures = "*"
-twill = {version = "==0.9.1", markers = "python_version < '3'"}
+twill = "*"
 watchdog = "*"
 python-irodsclient = "*"
 

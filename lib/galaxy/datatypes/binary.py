@@ -249,6 +249,16 @@ class CompressedZipArchive(CompressedArchive):
         except Exception:
             return "Compressed zip file (%s)" % (nice_size(dataset.get_size()))
 
+    def sniff(self, filename):
+        with zipfile.ZipFile(filename) as zf:
+            zf_files = zf.infolist()
+            count = 0
+            for f in zf_files:
+                if f.file_size > 0 and not f.filename.startswith('__MACOSX/') and not f.filename.endswith('.DS_Store'):
+                    count += 1
+                if count > 1:
+                    return True
+
 
 class GenericAsn1Binary(Binary):
     """Class for generic ASN.1 binary format"""

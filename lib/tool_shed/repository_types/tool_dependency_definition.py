@@ -1,6 +1,7 @@
 import logging
 
 import tool_shed.repository_types.util as rt_util
+from galaxy.util import unicodify
 from tool_shed.repository_types.metadata import TipOnly
 from tool_shed.util import basic_util
 
@@ -30,7 +31,7 @@ class ToolDependencyDefinition(TipOnly):
             # Inspect all files in the changeset (in sorted order) to make sure there is only one and it is named tool_dependencies.xml.
             files_changed_in_changeset = ctx.files()
             for file_path in files_changed_in_changeset:
-                file_name = basic_util.strip_path(file_path)
+                file_name = basic_util.strip_path(unicodify(file_path))
                 if file_name not in self.valid_file_names:
                     return False
         return True
