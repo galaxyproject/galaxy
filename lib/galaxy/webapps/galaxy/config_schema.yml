@@ -757,6 +757,15 @@ mapping:
         desc: |
           Tool related caching. Full expanded tools and metadata wll be stored at this path.
 
+      delay_tool_initialization:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Set this to true to delay parsing of tool inputs and outputs until they are needed.
+          This results in faster startup times but uses more memory when using forked Galaxy
+          processes.
+
       citation_cache_type:
         type: str
         default: file

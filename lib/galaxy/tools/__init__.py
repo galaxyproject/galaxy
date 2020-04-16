@@ -301,9 +301,11 @@ class ToolBox(BaseGalaxyToolBox):
         return self._tools_by_id
 
     def create_tool(self, config_file, **kwds):
-
         tool_source = self.get_expanded_tool_source(config_file)
-        return self._create_tool_from_source(tool_source, config_file=config_file, **kwds)
+        tool = self._create_tool_from_source(tool_source, config_file=config_file, **kwds)
+        if not self.app.config.delay_tool_initialization:
+            tool.assert_finalized()
+        return tool
 
     @region.cache_on_arguments()
     def get_expanded_tool_source(self, config_file):

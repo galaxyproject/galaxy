@@ -592,6 +592,11 @@ galaxy:
   # at this path.
   #tool_cache_data_dir: tool_cache
 
+  # Set this to true to delay parsing of tool inputs and outputs until
+  # they are needed. This results in faster startup times but uses more
+  # memory when using forked Galaxy processes.
+  #delay_tool_initialization: false
+
   # Citation related caching.  Tool citations information maybe fetched
   # from external sources such as https://doi.org/ by Galaxy - the
   # following parameters can be used to control the caching used to
