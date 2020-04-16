@@ -356,15 +356,23 @@ admin:
   index:
     selectors:
       datatypes: '#admin-link-datatypes'
+      dependencies: '#admin-link-manage-dependencies'
       data_tables: '#admin-link-data-tables'
       display_applications: '#admin-link-display-applications'
+      errors: '#admin-link-error-stack'
+      forms: '#admin-link-forms'
       jobs: '#admin-link-jobs'
       local_data: '#admin-link-local-data'
+      metadata: '#admin-link-metadata'
+      migrations: '#admin-link-migrations'
+      tool_versions: '#admin-link-tool-versions'
+      toolshed: '#admin-link-toolshed'
       users: '#admin-link-users'
       quotas: '#admin-link-quotas'
       groups: '#admin-link-groups'
       roles: '#admin-link-roles'
       impersonate: '#admin-link-impersonate'
+      whitelist: '#admin-link-whitelist'
 
   selectors:
     # TODO: place betters IDS or something on this in these grids in the DOM
