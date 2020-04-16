@@ -102,21 +102,19 @@ class GalaxyInteractorApi(object):
     def __init__(self, **kwds):
         self.api_url = "%s/api" % kwds["galaxy_url"].rstrip("/")
         self.master_api_key = kwds["master_api_key"]
-        self.api_key = self.__get_user_key(kwds.get("api_key"), kwds.get("master_api_key"), test_user=kwds.get("test_user"))
-        if kwds.get('user_api_key_is_admin_key', False):
-            self.master_api_key = self.api_key
-        self.keep_outputs_dir = kwds["keep_outputs_dir"]
-        self.verify = True
-        if kwds.get('trust', True):
+        self.verify = not kwds.get('noverify', False)
+        if not self.verify:
             # disable the following warning:
             # Unverified HTTPS request is being made.
             # Adding certificate verification is strongly advised.
             # See: https://urllib3.readthedocs.io/en/latest/advanced-usage.html#ssl-warnings
             import urllib3
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-            self.verify = False
+        self.api_key = self.__get_user_key(kwds.get("api_key"), kwds.get("master_api_key"), test_user=kwds.get("test_user"))
+        if kwds.get('user_api_key_is_admin_key', False):
+            self.master_api_key = self.api_key
+        self.keep_outputs_dir = kwds["keep_outputs_dir"]
         self._target_galaxy_version = None
-
         self.uploads = {}
 
     @property
