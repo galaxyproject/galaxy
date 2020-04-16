@@ -33,7 +33,21 @@ class ToolRecommendations():
         self.compatible_tools = None
         self.max_seq_len = 25
 
-    def set_model(self, trans, remote_model_url):
+    def get_predictions(self, trans, tool_sequence, remote_model_url):
+        """
+        Compute tool predictions
+        """
+        recommended_tools = dict()
+        self.__collect_admin_preferences(trans.app.config.admin_tool_recommendations_path)
+        is_set = self.__set_model(trans, remote_model_url)
+        if is_set is True:
+            # get the recommended tools for a tool sequence
+            recommended_tools = self.__compute_tool_prediction(trans, tool_sequence)
+        else:
+            tool_sequence = ""
+        return tool_sequence, recommended_tools
+
+    def __set_model(self, trans, remote_model_url):
         """
         Create model and associated dictionaries for recommendations
         """
@@ -52,7 +66,7 @@ class ToolRecommendations():
                 self.session = tf.Session(graph=self.graph)
             model_weights = list()
             counter_layer_weights = 0
-            self.tool_recommendation_model_path = self.download_model(remote_model_url)
+            self.tool_recommendation_model_path = self.__download_model(remote_model_url)
             # read the hdf5 attributes
             trained_model = h5py.File(self.tool_recommendation_model_path, 'r')
             model_config = json.loads(trained_model['model_config'][()])
@@ -69,7 +83,7 @@ class ToolRecommendations():
                             model_weights.append(weights)
                             counter_layer_weights += 1
                     # set the model weights
-                    self.loaded_model.set_weights(model_weights)      
+                    self.loaded_model.set_weights(model_weights)
             # set the dictionary of tools
             self.model_data_dictionary = json.loads(trained_model['data_dictionary'][()])
             self.reverse_dictionary = dict((v, k) for k, v in self.model_data_dictionary.items())
@@ -88,7 +102,7 @@ class ToolRecommendations():
                 self.all_tools[t_id_renamed] = (tool_id, tool.name)
         return True
 
-    def collect_admin_preferences(self, admin_path):
+    def __collect_admin_preferences(self, admin_path):
         """
         Collect preferences for recommendations of tools
         set by admins as dictionaries of deprecated tools and
@@ -108,7 +122,7 @@ class ToolRecommendations():
                                 if tool_id not in self.admin_recommendations:
                                     self.admin_recommendations[tool_id] = tool_info
 
-    def download_model(self, model_url, download_local='database/'):
+    def __download_model(self, model_url, download_local='database/'):
         """
         Download the model from remote server
         """
@@ -120,7 +134,7 @@ class ToolRecommendations():
             model_file.write(model_binary.content)
             return local_dir
 
-    def get_tool_extensions(self, trans, tool_id):
+    def __get_tool_extensions(self, trans, tool_id):
         """
         Get the input and output extensions of a tool
         """
@@ -142,7 +156,7 @@ class ToolRecommendations():
             output_extensions.extend(o_ext['extensions'])
         return input_extensions, output_extensions
 
-    def filter_tool_predictions(self, trans, prediction_data, tool_ids, tool_scores, last_tool_name):
+    def __filter_tool_predictions(self, trans, prediction_data, tool_ids, tool_scores, last_tool_name):
         """
         Filter tool predictions based on datatype compatibility and tool connections.
         Add admin preferences to recommendations.
@@ -159,7 +173,7 @@ class ToolRecommendations():
                 # select the name and tool id if it is installed in Galaxy
                 if t_id == child and score > 0.0 and child in last_compatible_tools and child not in self.deprecated_tools:
                     full_tool_id = self.all_tools[t_id][0]
-                    pred_input_extensions, _ = self.get_tool_extensions(trans, full_tool_id)
+                    pred_input_extensions, _ = self.__get_tool_extensions(trans, full_tool_id)
                     c_dict["name"] = self.all_tools[t_id][1]
                     c_dict["tool_id"] = full_tool_id
                     c_dict["i_extensions"] = list(set(pred_input_extensions))
@@ -189,7 +203,7 @@ class ToolRecommendations():
                 break
         return prediction_data
 
-    def compute_tool_prediction(self, trans, tool_sequence):
+    def __compute_tool_prediction(self, trans, tool_sequence):
         """
         Compute the predicted tools for a tool sequences
         Return a payload with the tool sequences and recommended tools
@@ -205,7 +219,7 @@ class ToolRecommendations():
         if last_tool_name in self.model_data_dictionary:
             sample = np.zeros(self.max_seq_len)
             # get the list of datatype extensions of the last tool of the tool sequence
-            _, last_output_extensions = self.get_tool_extensions(trans, self.all_tools[last_tool_name][0])
+            _, last_output_extensions = self.__get_tool_extensions(trans, self.all_tools[last_tool_name][0])
             prediction_data["o_extensions"] = list(set(last_output_extensions))
             # get tool names without slashes and create a sequence vector
             for idx, tool_name in enumerate(tool_sequence):
@@ -241,5 +255,5 @@ class ToolRecommendations():
             # read tool names using reverse dictionary
             pred_tool_ids = [self.reverse_dictionary[int(tool_pos)] for tool_pos in topk_prediction_pos]
             predicted_scores = [int(prediction[pos] * 100) for pos in topk_prediction_pos]
-            prediction_data = self.filter_tool_predictions(trans, prediction_data, pred_tool_ids[::-1], predicted_scores[::-1], last_tool_name)
+            prediction_data = self.__filter_tool_predictions(trans, prediction_data, pred_tool_ids[::-1], predicted_scores[::-1], last_tool_name)
         return prediction_data
