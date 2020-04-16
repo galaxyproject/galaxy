@@ -83,6 +83,7 @@ cloudbridge = "*"
 social_auth_core = {version = "==3.1.0+gx0", extras = ['openidconnect']}
 cloudauthz = "==0.6.0"
 gxformat2 = "*"
+refgenconf = "==0.7.0"
 
 [requires]
 python_version = "2.7"
