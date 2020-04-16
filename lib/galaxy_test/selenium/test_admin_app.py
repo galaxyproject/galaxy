@@ -18,16 +18,11 @@ class AdminAppTestCase(SeleniumTestCase):
         admin_component.index.dependencies.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.driver.find_element_by_link_text('Dependencies')
-        containers_link = self.driver.find_element_by_link_text('Containers')
+        self.driver.find_element_by_link_text('Containers')
         unused_link = self.driver.find_element_by_link_text('Unused')
         # Ensure that #manage-resolver-type is visible.
         admin_component.manage_dependencies.resolver_type.wait_for_visible()
         self.screenshot("admin_dependencies_landing")
-        self.action_chains().move_to_element(containers_link).click().perform()
-        self.sleep_for(self.wait_types.UX_RENDER)
-        # Ensure that #manage-container-type is visible.
-        admin_component.manage_dependencies.container_type.wait_for_visible()
-        self.screenshot("admin_dependencies_containers")
         self.action_chains().move_to_element(unused_link).click().perform()
         self.sleep_for(self.wait_types.UX_RENDER)
         # Ensure that the unused paths table is visible.
