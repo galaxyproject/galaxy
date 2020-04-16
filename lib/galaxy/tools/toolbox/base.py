@@ -11,7 +11,6 @@ from errno import ENOENT
 from xml.etree.ElementTree import ParseError
 
 from markupsafe import escape
-from six import iteritems
 from six.moves.urllib.parse import urlparse
 
 from galaxy.exceptions import (
@@ -597,7 +596,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         return []
 
     def tools(self):
-        return iteritems(self._tools_by_id)
+        return self._tools_by_id.copy().items()
 
     def dynamic_confs(self, include_migrated_tool_conf=False):
         confs = []
