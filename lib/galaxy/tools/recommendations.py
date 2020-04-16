@@ -236,7 +236,7 @@ class ToolRecommendations():
                 # use the same graph and session to predict
                 with self.graph.as_default():
                     with self.session.as_default():
-                        prediction = self.loaded_model.predict_on_batch(sample)
+                        prediction = self.loaded_model.predict(sample)
             except Exception as e:
                 log.exception(e)
                 return prediction_data
