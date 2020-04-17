@@ -15,19 +15,20 @@ class AdminAppTestCase(SeleniumTestCase):
         self.admin_login()
         self.admin_open()
         self.sleep_for(self.wait_types.UX_RENDER)
-        self.screenshot("admin_landing")
+        self.screenshot('admin_landing')
         admin_component.index.toolshed.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
-        self.screenshot("admin_toolshed_landing")
-        repo_search_input = self.driver.find_element_by_id("toolshed-repo-search")
+        self.screenshot('admin_toolshed_landing')
+        repo_search_input = self.driver.find_element_by_id('toolshed-repo-search')
         repo_search_input.clear()
         repo_search_input.send_keys('all_fasta')
         # If this hasn't succeeded after 30 seconds, the @flakey context should
         # allow the test to still pass, since there should definitely be results
         # after 30 seconds.
         self.sleep_for(self.wait_types.SHED_SEARCH)
-        self.screenshot("admin_toolshed_search")
+        self.screenshot('admin_toolshed_search')
         admin_component.toolshed.search_results.wait_for_visible()
+        # It's very unlikely that this data manager will ever stop existing.
         repository_row = self.driver.find_element_by_link_text('data_manager_fetch_genome_dbkeys_all_fasta')
         repository_row.click()
         self.sleep_for(self.wait_types.UX_RENDER)
