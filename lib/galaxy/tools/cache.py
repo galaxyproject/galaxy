@@ -42,15 +42,19 @@ class JSONBackend(ProxyBackend):
                 except KeyError:
                     value = NO_VALUE
             if value is not NO_VALUE:
-                value = self.value_decode(value)
+                value = self.value_decode(key, value)
             return value
 
-    def value_decode(self, v):
+    def value_decode(self, k, v):
         if not v or v is NO_VALUE:
             return NO_VALUE
         # v is returned as bytestring, so we need to `unicodify` on python < 3.6 before we can use json.loads
         v = json.loads(unicodify(v))
-        payload = get_tool_source(xml_tree=etree.ElementTree(etree.fromstring(v['payload'].encode('utf-8'))), macro_paths=v['macro_paths'])
+        payload = get_tool_source(
+            config_file=k,
+            xml_tree=etree.ElementTree(etree.fromstring(v['payload'].encode('utf-8'))),
+            macro_paths=v['macro_paths']
+        )
         return CachedValue(metadata=v['metadata'], payload=payload)
 
     def value_encode(self, v):
@@ -78,15 +82,21 @@ class MutexLock(AbstractFileLock):
         return self.mutex.release_write_lock()
 
 
-def my_key_generator(namespace, fn, **kw):
-
-    def generate_key(*arg):
-        return "_".join(str(s) for s in arg if isinstance(s, str))
-
-    return generate_key
-
-
-region = make_region(function_key_generator=my_key_generator)
+def create_cache_region(tool_cache_data_dir):
+    if not os.path.exists(tool_cache_data_dir):
+        os.makedirs(tool_cache_data_dir)
+    region = make_region()
+    region.configure(
+        'dogpile.cache.dbm',
+        arguments={
+            "filename": os.path.join(tool_cache_data_dir, "cache.dbm"),
+            "lock_factory": MutexLock,
+        },
+        expiration_time=-1,
+        wrap=[JSONBackend],
+        replace_existing_backend=True,
+    )
+    return region
 
 
 class ToolCache(object):
@@ -121,15 +131,16 @@ class ToolCache(object):
         removed_tool_ids = []
         try:
             with self._lock:
-                paths_to_cleanup = {path: tool.all_ids for path, tool in self._tools_by_path.items() if self._should_cleanup(path)}
-                for config_filename, tool_ids in paths_to_cleanup.items():
-                    region.delete(config_filename)
+                paths_to_cleanup = {(path, tool) for path, tool in self._tools_by_path.items() if self._should_cleanup(path)}
+                for config_filename, tool in paths_to_cleanup:
+                    tool.remove_from_cache()
                     del self._hash_by_tool_paths[config_filename]
                     if os.path.exists(config_filename):
                         # This tool has probably been broken while editing on disk
                         # We record it here, so that we can recover it
                         self._removed_tools_by_path[config_filename] = self._tools_by_path[config_filename]
                     del self._tools_by_path[config_filename]
+                    tool_ids = tool.all_ids
                     for tool_id in tool_ids:
                         if tool_id in self._tool_paths_by_id:
                             del self._tool_paths_by_id[tool_id]

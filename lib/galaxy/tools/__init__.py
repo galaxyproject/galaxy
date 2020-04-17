@@ -57,11 +57,7 @@ from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.model_operations import ModelOperationToolAction
-from galaxy.tools.cache import (
-    JSONBackend,
-    MutexLock,
-    region,
-)
+from galaxy.tools.cache import create_cache_region
 from galaxy.tools.parameters import (
     check_param,
     params_from_strings,
@@ -250,18 +246,9 @@ class ToolBox(BaseGalaxyToolBox):
     def __init__(self, config_filenames, tool_root_dir, app, save_integrated_tool_panel=True):
         self._reload_count = 0
         self.tool_location_fetcher = ToolLocationFetcher()
+        self.cache_regions = {}
         if not os.path.exists(app.config.tool_cache_data_dir):
             os.makedirs(app.config.tool_cache_data_dir)
-        region.configure(
-            'dogpile.cache.dbm',
-            arguments={
-                "filename": os.path.join(app.config.tool_cache_data_dir, "cache.dbm"),
-                "lock_factory": MutexLock,
-            },
-            expiration_time=-1,
-            wrap=[JSONBackend],
-            replace_existing_backend=True,
-        )
         # This is here to deal with the old default value, which doesn't make
         # sense in an "installed Galaxy" world.
         # FIXME: ./
@@ -300,14 +287,19 @@ class ToolBox(BaseGalaxyToolBox):
         # Deprecated method, TODO - eliminate calls to this in test/.
         return self._tools_by_id
 
-    def create_tool(self, config_file, **kwds):
-        tool_source = self.get_expanded_tool_source(config_file)
+    def get_cache_region(self, tool_cache_data_dir):
+        if tool_cache_data_dir not in self.cache_regions:
+            self.cache_regions[tool_cache_data_dir] = create_cache_region(tool_cache_data_dir)
+        return self.cache_regions[tool_cache_data_dir]
+
+    def create_tool(self, config_file, tool_cache_data_dir=None, **kwds):
+        cache = self.get_cache_region(tool_cache_data_dir or self.app.config.tool_cache_data_dir)
+        tool_source = cache.get_or_create(config_file, creator=self.get_expanded_tool_source, expiration_time=-1, creator_args=((config_file,), {}))
         tool = self._create_tool_from_source(tool_source, config_file=config_file, **kwds)
         if not self.app.config.delay_tool_initialization:
             tool.assert_finalized(raise_if_invalid=True)
         return tool
 
-    @region.cache_on_arguments()
     def get_expanded_tool_source(self, config_file):
         try:
             return get_tool_source(
@@ -566,6 +558,12 @@ class Tool(Dictifiable):
                     raise
                 else:
                     log.warning("An error occured while parsing the tool wrapper xml, the tool is not functional", exc_info=True)
+
+    def remove_from_cache(self):
+        source_path = self.tool_source._source_path
+        if source_path:
+            for region in self.app.toolbox.cache_regions.values():
+                region.delete(source_path)
 
     @property
     def history_manager(self):
