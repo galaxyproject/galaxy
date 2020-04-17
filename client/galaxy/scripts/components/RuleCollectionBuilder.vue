@@ -446,7 +446,7 @@
                         :data="hotData.data"
                         :col-headers="colHeadersDisplay"
                         :read-only="true"
-                        stretch-h="all"
+                        :stretch-h="all"
                     >
                     </hot-table>
                 </div>
@@ -1977,19 +1977,19 @@ export default {
 <style>
 .table-column {
     width: 100%;
-    /* overflow: scroll; */
+    overflow: hidden;
 }
 .select2-container {
     min-width: 60px;
 }
 .vertical #hot-table {
     width: 100%;
-    overflow: scroll;
+    overflow: hidden;
     height: 400px;
 }
 .horizontal #hot-table {
     width: 100%;
-    overflow: scroll;
+    overflow: hidden;
     height: 250px;
 }
 .rule-builder-body {
