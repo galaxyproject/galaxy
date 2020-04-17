@@ -56,7 +56,7 @@ def stop_irods(container_name):
     subprocess.check_call(['docker', 'rm', '-f', container_name])
 
 
-class UploadTestDatatypeDataTestCaseIrods(UploadTestDatatypeDataTestCase):
+class IrodsUploadTestDatatypeDataTestCase(UploadTestDatatypeDataTestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -97,7 +97,7 @@ class UploadTestDatatypeDataTestCaseIrods(UploadTestDatatypeDataTestCase):
         config["object_store_config_file"] = config_path
 
 
-instance = integration_util.integration_module_instance(UploadTestDatatypeDataTestCaseIrods)
+instance = integration_util.integration_module_instance(IrodsUploadTestDatatypeDataTestCase)
 
 
 @pytest.mark.parametrize('test_data', IRODS_TEST_CASES.values(), ids=list(IRODS_TEST_CASES.keys()))

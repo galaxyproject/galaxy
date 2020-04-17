@@ -1,8 +1,6 @@
 
 import os
 import string
-import subprocess
-import time
 
 import pytest
 
@@ -11,6 +9,9 @@ from .test_datatype_upload import (
     TEST_CASES,
     upload_datatype_helper,
     UploadTestDatatypeDataTestCase
+)
+from .test_datatype_upload_irods import (
+    IrodsUploadTestDatatypeDataTestCase
 )
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
@@ -61,26 +62,6 @@ IRODS__OBJECT_STORE_CONFIG = string.Template("""
 """)
 
 
-def start_irods(container_name):
-    irods_start_args = [
-        'docker',
-        'run',
-        '-p',
-        '1247:1247',
-        '-d',
-        '--name',
-        container_name,
-        'kxk302/irods-server:0.1']
-    subprocess.check_call(irods_start_args)
-
-    # Sleep so integration test's iRODS instance is up and running
-    time.sleep(20)
-
-
-def stop_irods(container_name):
-    subprocess.check_call(['docker', 'rm', '-f', container_name])
-
-
 class UploadTestDosDiskAndDiskTestCase(UploadTestDatatypeDataTestCase):
 
     @classmethod
@@ -105,7 +86,7 @@ class UploadTestDosDiskAndDiskTestCase(UploadTestDatatypeDataTestCase):
         config["object_store_config_file"] = config_path
 
 
-class UploadTestDosIrodsAndDiskTestCase(UploadTestDatatypeDataTestCase):
+class UploadTestDosIrodsAndDiskTestCase(IrodsUploadTestDatatypeDataTestCase):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -134,17 +115,6 @@ class UploadTestDosIrodsAndDiskTestCase(UploadTestDatatypeDataTestCase):
                 )
             )
         config["object_store_config_file"] = config_path
-
-    @classmethod
-    def setUpClass(cls):
-        cls.container_name = "%s_container" % cls.__name__
-        start_irods(cls.container_name)
-        super(UploadTestDosIrodsAndDiskTestCase, cls).setUpClass()
-
-    @classmethod
-    def tearDownClass(cls):
-        stop_irods(cls.container_name)
-        super(UploadTestDosIrodsAndDiskTestCase, cls).tearDownClass()
 
 
 instance1 = integration_util.integration_module_instance(UploadTestDosDiskAndDiskTestCase)
