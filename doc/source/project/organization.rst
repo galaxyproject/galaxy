@@ -85,11 +85,11 @@ one exception: a *committer* may not vote
 against their own removal from the group (for obvious reasons).
 
 Given the responsibilities and power invested in this group, it is important
-that individuals not actively working on Galaxy any more are removed from
+that individuals not actively working on Galaxy anymore are removed from
 the group. If individuals in this group intend to change jobs or reallocate
 volunteer activities and will no longer be active in the Galaxy community,
 they should withdraw from membership of this group. Periodically, active
-members may review this group and request inactive members are removed - this
+members may review this group and request that inactive members are removed - this
 should not be interpreted as a condemnation of these inactive members but
 merely as a reflection of the desire to keep this group focused enough to remain
 effective.
