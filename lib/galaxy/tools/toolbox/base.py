@@ -211,7 +211,6 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 load_panel_dict=load_panel_dict,
                 guid=item.get('guid'),
                 index=index,
-                internal=True
             )
 
         if parsing_shed_tool_conf:
@@ -239,25 +238,20 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         self._tools_by_uuid[dynamic_tool.uuid] = tool
         return tool
 
-    def load_item(self, item, tool_path, panel_dict=None, integrated_panel_dict=None, load_panel_dict=True, guid=None, index=None, internal=False):
+    def load_item(self, item, tool_path, panel_dict=None, integrated_panel_dict=None, load_panel_dict=True, guid=None, index=None):
         with self.app._toolbox_lock:
             item = ensure_tool_conf_item(item)
             item_type = item.type
-            if item_type not in ['tool', 'section'] and not internal:
-                # External calls from tool shed code cannot load labels or tool
-                # directories.
-                return
-
             if panel_dict is None:
                 panel_dict = self._tool_panel
             if integrated_panel_dict is None:
                 integrated_panel_dict = self._integrated_tool_panel
             if item_type == 'tool':
-                self._load_tool_tag_set(item, panel_dict=panel_dict, integrated_panel_dict=integrated_panel_dict, tool_path=tool_path, load_panel_dict=load_panel_dict, guid=guid, index=index, internal=internal)
+                self._load_tool_tag_set(item, panel_dict=panel_dict, integrated_panel_dict=integrated_panel_dict, tool_path=tool_path, load_panel_dict=load_panel_dict, guid=guid, index=index)
             elif item_type == 'workflow':
                 self._load_workflow_tag_set(item, panel_dict=panel_dict, integrated_panel_dict=integrated_panel_dict, load_panel_dict=load_panel_dict, index=index)
             elif item_type == 'section':
-                self._load_section_tag_set(item, tool_path=tool_path, load_panel_dict=load_panel_dict, index=index, internal=internal)
+                self._load_section_tag_set(item, tool_path=tool_path, load_panel_dict=load_panel_dict, index=index)
             elif item_type == 'label':
                 self._load_label_tag_set(item, panel_dict=panel_dict, integrated_panel_dict=integrated_panel_dict, load_panel_dict=load_panel_dict, index=index)
             elif item_type == 'tool_dir':
@@ -632,7 +626,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
     def _path_template_kwds(self):
         return {}
 
-    def _load_tool_tag_set(self, item, panel_dict, integrated_panel_dict, tool_path, load_panel_dict, guid=None, index=None, internal=False):
+    def _load_tool_tag_set(self, item, panel_dict, integrated_panel_dict, tool_path, load_panel_dict, guid=None, index=None):
         try:
             path_template = item.get("file")
             template_kwds = self._path_template_kwds()
@@ -766,7 +760,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             panel_dict[key] = label
         integrated_panel_dict.update_or_append(index, key, label)
 
-    def _load_section_tag_set(self, item, tool_path, load_panel_dict, index=None, internal=False):
+    def _load_section_tag_set(self, item, tool_path, load_panel_dict, index=None):
         key = item.get("id")
         if key in self._tool_panel:
             section = self._tool_panel[key]
@@ -789,7 +783,6 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 load_panel_dict=load_panel_dict,
                 guid=sub_item.get('guid'),
                 index=sub_index,
-                internal=internal,
             )
 
         # Ensure each tool's section is stored
