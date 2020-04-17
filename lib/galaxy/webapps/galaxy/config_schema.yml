@@ -755,7 +755,9 @@ mapping:
         path_resolves_to: data_dir
         required: false
         desc: |
-          Tool related caching. Full expanded tools and metadata wll be stored at this path.
+          Tool related caching. Fully expanded tools and metadata will be stored at this path.
+          Per tool_conf cache locations can be configured in (shed_)tool_conf.xml files using
+          the tool_cache_data_dir attribute.
 
       delay_tool_initialization:
         type: bool
