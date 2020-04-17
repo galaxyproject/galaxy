@@ -130,7 +130,6 @@ export default {
     },
     mounted() {
         this.manager = this.getManager();
-        this.node = this;
         this.element = $(this.f);
         this.input_terminals = {};
         this.output_terminals = {};
@@ -193,8 +192,8 @@ export default {
                 _: "true",
             };
             getModule(requestData).then((response) => {
-                var node = this.node.app.create_node("tool", response.name, toolId);
-                this.node.app.set_node(node, response);
+                var node = this.manager.create_node("tool", response.name, toolId);
+                this.manager.set_node(node, response);
                 this.popoverShow = false;
             });
         },
@@ -222,8 +221,8 @@ export default {
             this.uuid = data.uuid;
             this.workflowOutputs = data.workflow_outputs || [];
             if (this.type === "tool" && this.config_form) {
-                this.node.tool_version = this.config_form.version;
-                this.node.content_id = this.config_form.id;
+                this.tool_version = this.config_form.version;
+                this.content_id = this.config_form.id;
             }
         },
         update_field_data(data) {
@@ -299,10 +298,10 @@ export default {
             });
 
             Vue.nextTick(() => {
-                this.node.workflow_outputs = this.workflowOutputs;
-                this.node.input_terminals = this.inputTerminals;
-                this.node.output_terminals = this.outputTerminals;
-                this.manager.node_changed(this.node);
+                this.workflow_outputs = this.workflowOutputs;
+                this.input_terminals = this.inputTerminals;
+                this.output_terminals = this.outputTerminals;
+                this.manager.node_changed(this);
                 this.redraw();
             });
         },
@@ -510,14 +509,14 @@ export default {
             this.inputs = data.inputs.slice();
             this.outputs = data.outputs.slice();
             Vue.nextTick(() => {
-                this.node.input_terminals = this.inputTerminals;
-                this.node.output_terminals = this.outputTerminals;
-                this.manager.node_changed(this.node);
+                this.input_terminals = this.inputTerminals;
+                this.output_terminals = this.outputTerminals;
+                this.manager.node_changed(this);
             });
         },
         markChanged() {
             this.manager.node_changed(this);
-        }
-    }
+        },
+    },
 };
 </script>

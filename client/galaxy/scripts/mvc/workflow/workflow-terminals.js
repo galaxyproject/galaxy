@@ -612,7 +612,7 @@ class OutputCollectionTerminal extends Terminal {
         this.isCollection = true;
     }
     update(output) {
-        this.optional = output.optional;
+        super.update(output);
         var newCollectionType;
         if (output.collection_type) {
             newCollectionType = new CollectionTypeDescription(output.collection_type);
@@ -623,7 +623,6 @@ class OutputCollectionTerminal extends Terminal {
             }
             newCollectionType = ANY_COLLECTION_TYPE_DESCRIPTION;
         }
-
         const oldCollectionType = this.collectionType;
         this.collectionType = newCollectionType;
         // we need to iterate over a copy, as we slice this.connectors in the process of destroying connections
@@ -636,17 +635,15 @@ class OutputCollectionTerminal extends Terminal {
     }
 }
 
-var OutputParameterTerminal = OutputTerminal;
-
 export default {
     InputTerminal: InputTerminal,
     InputParameterTerminal: InputParameterTerminal,
     OutputTerminal: OutputTerminal,
-    OutputParameterTerminal: OutputParameterTerminal,
+    OutputParameterTerminal: OutputTerminal,
     InputCollectionTerminal: InputCollectionTerminal,
     OutputCollectionTerminal: OutputCollectionTerminal,
 
-    // test export
+    // export required for unit tests
     CollectionTypeDescription: CollectionTypeDescription,
     NULL_COLLECTION_TYPE_DESCRIPTION: NULL_COLLECTION_TYPE_DESCRIPTION,
     ANY_COLLECTION_TYPE_DESCRIPTION: ANY_COLLECTION_TYPE_DESCRIPTION,

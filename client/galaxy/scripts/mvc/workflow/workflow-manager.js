@@ -337,7 +337,7 @@ class Workflow extends EventEmitter {
         wf.workflow_version = data.version;
         wf.report = data.report || {};
         Object.entries(data.steps).forEach(([id, step]) => {
-            const { node } = wf.build_node(step.type, step.name, step.content_id);
+            const node = wf.build_node(step.type, step.name, step.content_id);
             // If workflow being copied into another, wipe UUID and let
             // Galaxy assign new ones.
             if (!initialImport) {
