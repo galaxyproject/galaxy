@@ -511,7 +511,7 @@ export default {
             $.each(this.output_terminals, (k, t) => {
                 t.destroy();
             });*/
-            this.app.remove_node(this);
+            this.manager.remove_node(this);
             //$(this.element).remove();
         },
         make_active() {

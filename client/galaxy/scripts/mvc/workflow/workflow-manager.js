@@ -47,8 +47,7 @@ class Workflow extends EventEmitter {
             }
         };
     }
-    set_node(nodeVue, data) {
-        const node = nodeVue.node;
+    set_node(node, data) {
         node.init_field_data(data);
         Vue.nextTick(() => {
             node.update_field_data(data);
@@ -108,13 +107,12 @@ class Workflow extends EventEmitter {
         return true;
     }
     create_node(type, title_text, content_id) {
-        const nodeVue = this.build_node(type, title_text, content_id);
-        const node = nodeVue.node;
+        const node = this.build_node(type, title_text, content_id);
         this.add_node(node);
         this.fit_canvas_to_nodes();
         this.canvas_manager.draw_overview();
         this.activate_node(node);
-        return nodeVue;
+        return node;
     }
     add_node(node) {
         node.id = this.id_counter;
@@ -137,7 +135,7 @@ class Workflow extends EventEmitter {
         // Mount node component as child dom to node wrapper
         const child = document.createElement("div");
         container.appendChild(child);
-        const nodeVue = mountWorkflowNode(child, {
+        const node = mountWorkflowNode(child, {
             id: content_id,
             type: type,
             title: title_text,
@@ -148,7 +146,6 @@ class Workflow extends EventEmitter {
                 return this;
             },
         });
-        const node = nodeVue.node;
         node.type = type;
         node.content_id = content_id;
 
@@ -192,7 +189,7 @@ class Workflow extends EventEmitter {
                         this.terminal.redraw();
                     });
             });
-        return nodeVue;
+        return node;
     }
     remove_node(node) {
         if (this.active_node == node) {
