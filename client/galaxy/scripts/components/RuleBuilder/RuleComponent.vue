@@ -2,8 +2,8 @@
     <div v-if="ruleType == displayRuleType" class="rule-editor" :class="typeToClass">
         <slot></slot>
         <div class="buttons rule-edit-buttons d-flex justify-content-end">
-           <button type="button" class="btn rule-editor-cancel mr-1" @click="cancel">{{ cancelLabel }}</button>
-           <button type="button" class="btn btn-primary rule-editor-ok" @click="okay">{{ applyLabel }}</button>
+            <button type="button" class="btn rule-editor-cancel mr-1" @click="cancel">{{ cancelLabel }}</button>
+            <button type="button" class="btn btn-primary rule-editor-ok" @click="okay">{{ applyLabel }}</button>
         </div>
     </div>
 </template>
@@ -44,5 +44,5 @@ export default {
             return "rule-edit-" + this.ruleType.replace(/_/g, "-");
         },
     },
-}
+};
 </script>

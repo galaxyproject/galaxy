@@ -587,7 +587,6 @@ import RuleModalMiddle from "components/RuleBuilder/RuleModalMiddle";
 import RuleModalFooter from "components/RuleBuilder/RuleModalFooter";
 import StateDiv from "components/RuleBuilder/StateDiv";
 
-
 Vue.use(BootstrapVue);
 
 const RULES = RuleDefs.RULES;

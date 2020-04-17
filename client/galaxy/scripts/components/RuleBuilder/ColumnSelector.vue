@@ -2,9 +2,11 @@
     <div class="rule-column-selector" v-if="!multiple || !ordered">
         <label class="d-flex justify-content-end align-items-center">
             <span class="mr-auto" v-b-tooltip.hover :title="help">{{ label }}</span>
-            <div class="mr-1" v-b-tooltip.hover :title="title"><select2 :value="target" @input="handleInput" :multiple="multiple">
-                <option v-for="(col, index) in colHeaders" :value="index" :key="col">{{ col }}</option>
-            </select2></div>
+            <div class="mr-1" v-b-tooltip.hover :title="title">
+                <select2 :value="target" @input="handleInput" :multiple="multiple">
+                    <option v-for="(col, index) in colHeaders" :value="index" :key="col">{{ col }}</option>
+                </select2>
+            </div>
             <slot></slot>
         </label>
     </div>
@@ -12,14 +14,15 @@
         <span>{{ label }}</span>
         <slot></slot>
         <ol>
-            <li v-for="(targetEl, index) in target"
-                :index="index"
-                :key="targetEl"
-                class="rule-column-selector-target">
+            <li v-for="(targetEl, index) in target" :index="index" :key="targetEl" class="rule-column-selector-target">
                 {{ colHeaders[targetEl] }}
                 <span class="fa fa-times rule-column-selector-target-remove" @click="handleRemove(index)"></span>
                 <span class="fa fa-arrow-up rule-column-selector-up" v-if="index !== 0" @click="moveUp(index)"></span>
-                <span class="fa fa-arrow-down rule-column-selector-down" v-if="index < target.length - 1" @click="moveUp(index + 1)"></span>
+                <span
+                    class="fa fa-arrow-down rule-column-selector-down"
+                    v-if="index < target.length - 1"
+                    @click="moveUp(index + 1)"
+                ></span>
             </li>
             <li v-if="this.target.length < this.colHeaders.length">
                 <span class="rule-column-selector-target-add" v-if="!orderedEdit">
@@ -130,6 +133,6 @@ export default {
             Vue.set(this.target, value - 1, this.target[value]);
             Vue.set(this.target, value, swapVal);
         },
-    }
-}
-</script> 
+    },
+};
+</script>

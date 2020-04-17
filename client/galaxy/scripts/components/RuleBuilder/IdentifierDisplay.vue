@@ -11,7 +11,7 @@ import _l from "utils/localization";
 import RuleDefs from "mvc/rules/rule-definitions";
 const MAPPING_TARGETS = RuleDefs.MAPPING_TARGETS;
 
-export default{
+export default {
     props: {
         type: {
             type: String,
@@ -49,6 +49,6 @@ export default{
         columnsLabel() {
             return RuleDefs.columnDisplay(this.columns, this.colHeaders);
         },
-    }
-}
+    },
+};
 </script>

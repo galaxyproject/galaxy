@@ -1,4 +1,3 @@
-
 <template>
     <li class="rule">
         <span class="rule-display">
@@ -50,6 +49,6 @@ export default {
         remove() {
             this.$emit("remove");
         },
-    }
-}
+    },
+};
 </script>

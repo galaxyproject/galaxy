@@ -1,5 +1,11 @@
 <template>
-    <a class="rule-link dropdown-item" href="javascript:void(0)" :class="linkClassName" @click="builder.addNewRule(ruleType)">{{ title }}</a>
+    <a
+        class="rule-link dropdown-item"
+        href="javascript:void(0)"
+        :class="linkClassName"
+        @click="builder.addNewRule(ruleType)"
+        >{{ title }}</a
+    >
 </template>
 
 <script>
@@ -23,6 +29,6 @@ export default {
         title() {
             return RULES[this.ruleType].title;
         },
-    }
-}
+    },
+};
 </script>
