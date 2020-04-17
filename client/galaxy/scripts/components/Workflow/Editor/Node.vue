@@ -8,7 +8,7 @@
                 aria-label="destroy node"
                 v-b-tooltip.hover
                 title="Remove"
-                @click="onDestroy"
+                @click="destroy"
             >
                 <i class="fa fa-times" />
             </b-button>
@@ -33,7 +33,7 @@
                 aria-label="clone node"
                 v-b-tooltip.hover
                 title="Duplicate"
-                @click="onClone"
+                @click="clone"
             >
                 <i class="fa fa-files-o" />
             </b-button>
@@ -169,29 +169,22 @@ export default {
     },
     methods: {
         onAddInput(input, terminal) {
-            /*const oldterminal = this.node.input_terminals[input.name];
-            if (oldterminal) {
-                oldterminal.update(input.name);
-                oldterminal.destroyInvalidConnections();
-                return;
-            }*/
-            this.inputTerminals[input.name] = terminal;
+            const existingTerminal = this.inputTerminals[input.name];
+            if (existingTerminal) {
+                existingTerminal.update(input);
+                existingTerminal.destroyInvalidConnections();
+            } else {
+                this.inputTerminals[input.name] = terminal;
+            }
         },
         onAddOutput(output, terminal) {
-            /*const oldterminal = this.node.input_terminals[input.name];
-            if (oldterminal) {
-                oldterminal.update(input.name);
-                oldterminal.destroyInvalidConnections();
-                return;
-            }*/
-            console.log(output.name);
-            this.outputTerminals[output.name] = terminal;
-        },
-        onDestroy() {
-            this.node.destroy();
-        },
-        onClone() {
-            this.node.clone();
+            const existingTerminal = this.outputTerminals[output.name];
+            if (existingTerminal) {
+                existingTerminal.update(output);
+                existingTerminal.destroyInvalidConnections();
+            } else {
+                this.outputTerminals[output.name] = terminal;
+            }
         },
         onCreate(toolId, event) {
             const requestData = {
@@ -233,17 +226,7 @@ export default {
                 this.node.content_id = this.config_form.id;
             }
         },
-        initData(data) {
-            this.setData(data);
-            this.inputs = data.inputs.slice();
-            this.outputs = data.outputs.slice();
-            Vue.nextTick(() => {
-                this.node.input_terminals = this.inputTerminals;
-                this.node.output_terminals = this.outputTerminals;
-                this.manager.node_changed(this.node);
-            });
-        },
-        updateData(data) {
+        update_field_data(data) {
             this.setData(data);
 
             // Create a list of all current output names
@@ -301,7 +284,6 @@ export default {
                 if (!inputNames[name]) {
                     this.inputTerminals[name].destroy();
                     delete this.inputTerminals[name];
-                    delete this.node.input_terminals[name];
                     this.inputs.splice(i, 1);
                 }
             }
@@ -332,7 +314,7 @@ export default {
                 this.redraw();
             });
 
-            /* In general workflow editor assumes tool outputs don't change in # or
+            // In general workflow editor assumes tool outputs don't change in # or
             // type (not really valid right?) but adding special logic here for
             // data collection input parameters that can have their collection
             // change.
@@ -342,7 +324,7 @@ export default {
                 //this.nodeView.updateDataOutput(data_outputs[0]);
                 //var outputTerminal = this.nodeView.node.output_terminals[output.name];
                 //outputTerminal.update(output);
-            }*/
+            }
         },
         getWorkflowOutput(outputName) {
             /*return _.findWhere(this.workflowOutputs, {
@@ -430,11 +412,11 @@ export default {
             return false;
         },
         connectedMappedInputTerminals() {
-            return this._connectedMappedTerminals(this.input_terminals);
+            return this._connectedMappedTerminals(this.inputTerminals);
         },
         hasConnectedMappedInputTerminals() {
             // return this.connectedMappedInputTerminals().length > 0; <- optimized this
-            var inputTerminals = this.input_terminals;
+            var inputTerminals = this.inputTerminals;
             for (var inputName in inputTerminals) {
                 var inputTerminal = inputTerminals[inputName];
                 if (inputTerminal.connectors.length > 0 && inputTerminal.isMappedOver()) {
@@ -456,7 +438,7 @@ export default {
             return mapped_outputs;
         },
         mappedInputTerminals() {
-            return this._mappedTerminals(this.input_terminals);
+            return this._mappedTerminals(this.inputTerminals);
         },
         _mappedTerminals(terminals) {
             var mappedTerminals = [];
@@ -470,12 +452,12 @@ export default {
         },
         hasMappedOverInputTerminals() {
             var found = false;
-            /*_.each(this.input_terminals, (t) => {
+            Object.values(this.inputTerminals).forEach((t) => {
                 var mapOver = t.mapOver;
                 if (mapOver.isCollection) {
                     found = true;
                 }
-            });*/
+            });
             return found;
         },
         clone() {
@@ -505,17 +487,17 @@ export default {
             });*/
         },
         destroy() {
-            /*$.each(this.input_terminals, (k, t) => {
+            Object.values(this.inputTerminals).forEach((t) => {
                 t.destroy();
             });
-            $.each(this.output_terminals, (k, t) => {
+            Object.values(this.outputTerminals).forEach((t) => {
                 t.destroy();
-            });*/
+            });
             this.manager.remove_node(this);
-            //$(this.element).remove();
+            $(this.element).remove();
         },
         make_active() {
-            //$(this.element).addClass("node-active");
+            $(this.element).addClass("node-active");
         },
         make_inactive() {
             // Keep inactive nodes stacked from most to least recently active
@@ -526,7 +508,7 @@ export default {
                 p.appendChild(element);
             })(element.parentNode);
             // Remove active class
-            //$(element).removeClass("node-active");
+            $(element).removeClass("node-active");
         },
         init_field_data(data) {
             this.type = data.type;
@@ -544,10 +526,14 @@ export default {
                 this.tool_version = this.config_form.version;
                 this.content_id = this.config_form.id;
             }
-            this.initData(data);
-        },
-        update_field_data(data) {
-            this.updateData(data);
+            this.setData(data);
+            this.inputs = data.inputs.slice();
+            this.outputs = data.outputs.slice();
+            Vue.nextTick(() => {
+                this.node.input_terminals = this.inputTerminals;
+                this.node.output_terminals = this.outputTerminals;
+                this.manager.node_changed(this.node);
+            });
         },
         markChanged() {
             this.manager.node_changed(this);
