@@ -1,3 +1,4 @@
+from galaxy_test.base.populators import flakey
 from .framework import (
     selenium_test,
     SeleniumTestCase,
@@ -9,7 +10,7 @@ class AdminAppTestCase(SeleniumTestCase):
     requires_admin = True
 
     @selenium_test
-    @flakey # This test relies on an external server that may or may not be available to the testing environment.
+    @flakey  # This test relies on an external server that may or may not be available to the testing environment.
     def test_admin_toolshed(self):
         admin_component = self.components.admin
         self.admin_login()
