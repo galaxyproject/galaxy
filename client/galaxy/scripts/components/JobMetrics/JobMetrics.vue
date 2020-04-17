@@ -13,13 +13,18 @@
             </table>
         </div>
 
-        <div v-if="isAwsEstimate && awsEstimate">
+        <div id="aws-estimate" v-if="isAwsEstimate && awsEstimate">
             <h3>AWS estimate</h3>
             <b>{{ awsEstimate.price }} USD</b><br />
             This job requested {{ awsEstimate.vcpus }} cores and {{ awsEstimate.memory }} Gb. Given this, the smallest
-            EC2 machine we could find is {{ awsEstimate.instance.name }} ({{ awsEstimate.instance.mem }} GB /
-            {{ awsEstimate.instance.vcpus }} vCPUs / {{ awsEstimate.instance.cpu }}). That instance is priced at
-            {{ awsEstimate.instance.price }} USD/hour.
+            EC2 machine we could find is <span id="aws_name">{{ awsEstimate.instance.name }}</span> (<span
+                id="aws_mem"
+                >{{ awsEstimate.instance.mem }}</span
+            >
+            GB / <span id="aws_vcpus">{{ awsEstimate.instance.vcpus }}</span> vCPUs /
+            <span id="aws_cpu">{{ awsEstimate.instance.cpu }}</span
+            >). That instance is priced at {{ awsEstimate.instance.price }} USD/hour.<br />
+            Please note, that those numbers are only estimates, all jobs are always free of charge for all users.
         </div>
     </div>
 </template>
@@ -91,6 +96,7 @@ export default {
             aws.instance = ec2.find((ec) => {
                 return ec.mem >= aws.memory && ec.vcpus >= aws.vcpus;
             });
+            if (aws.instance === undefined) return;
             aws.price = ((aws.seconds * aws.instance.price) / 3600).toFixed(2);
             return aws;
         },
