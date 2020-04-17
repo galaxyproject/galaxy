@@ -19,10 +19,12 @@ class AdminAppTestCase(SeleniumTestCase):
         admin_component.index.toolshed.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("admin_toolshed_landing")
-        # admin_component.toolshed.selectors.repo_search.wait_for_visible()
         repo_search_input = self.driver.find_element_by_id("toolshed-repo-search")
         repo_search_input.clear()
         repo_search_input.send_keys('all_fasta')
+        # If this hasn't succeeded after 30 seconds, the @flakey context should
+        # allow the test to still pass, since there should definitely be results
+        # after 30 seconds.
         self.sleep_for(self.wait_types.SHED_SEARCH)
         self.screenshot("admin_toolshed_search")
         admin_component.toolshed.search_results.wait_for_visible()
@@ -38,6 +40,8 @@ class AdminAppTestCase(SeleniumTestCase):
         ok_button.click()
         self.sleep_for(self.wait_types.REPO_INSTALL)
         self.screenshot('admin_toolshed_repo_installed')
+        # Unfortunately reusing the element isn't feasible, since the div
+        # containing the button gets replaced with a new div and button.
         uninstall_button = self.driver.find_element_by_xpath("(//button[contains(., 'Uninstall')])[1]")
         uninstall_button.click()
         self.sleep_for(self.wait_types.UX_TRANSITION)
