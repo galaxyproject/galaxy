@@ -67,6 +67,7 @@
 </template>
 
 <script>
+import $ from "jquery";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import WorkflowIcons from "components/Workflow/icons";
@@ -74,7 +75,6 @@ import { getModule } from "./services";
 import LoadingSpan from "components/LoadingSpan";
 import { getGalaxyInstance } from "app";
 import WorkflowRecommendations from "components/Workflow/Editor/Recommendations";
-import { Node } from "mvc/workflow/workflow-node";
 import NodeInput from "./NodeInput";
 import NodeOutput from "./NodeOutput";
 
@@ -130,13 +130,12 @@ export default {
     },
     mounted() {
         this.manager = this.getManager();
-        this.node = new Node(this.manager, { element: this.f });
-        this.node.on("init", (data) => {
-            this.initData(data);
-        });
-        this.node.on("update", (data) => {
-            this.updateData(data);
-        });
+        this.node = this;
+        this.element = $(this.f);
+        this.input_terminals = {};
+        this.output_terminals = {};
+        this.errors = null;
+        this.workflow_outputs = [];
     },
     computed: {
         hasInputs() {
@@ -545,10 +544,10 @@ export default {
                 this.tool_version = this.config_form.version;
                 this.content_id = this.config_form.id;
             }
-            this.emit("init", data);
+            this.initData(data);
         },
         update_field_data(data) {
-            this.emit("update", data);
+            this.updateData(data);
         },
         markChanged() {
             this.manager.node_changed(this);
