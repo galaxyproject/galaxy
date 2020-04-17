@@ -194,13 +194,12 @@ class OutputTerminal extends Terminal {
         this.optional = attr.optional;
         this.force_datatype = attr.force_datatype;
     }
-    /*
-    update: function(output) {
-        // This isn't needed for datatypes or optional because WorkflowNode.update_field_data just updates the
-        // properties directly, but an upshot of that is that connected non-optional inputs that become optional
-        // don't disconnect from non-optional inputs.
-    },
-    */
+    update(output) {
+        this.datatypes = output.datatypes || output.extensions;
+        this.optional = output.optional;
+        this.force_datatype = output.force_datatype;
+        this.attributes.type = output.type;
+    }
     resetMappingIfNeeded() {
         // If inputs were only mapped over to preserve
         // an output just disconnected reset these...
@@ -637,7 +636,7 @@ class OutputCollectionTerminal extends Terminal {
     }
 }
 
-var OutputParameterTerminal = Terminal;
+var OutputParameterTerminal = OutputTerminal;
 
 export default {
     InputTerminal: InputTerminal,

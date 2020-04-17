@@ -249,7 +249,6 @@ export default {
                     this.outputTerminals[name].$el.remove();
                     // Remove the reference to the output and output terminal
                     delete this.outputTerminals[name];
-                    delete this.node.output_terminals[name];
                     this.outputs.splice(i, 1);
                 }
             }
@@ -260,14 +259,7 @@ export default {
                 if (!terminal) {
                     this.outputs.push(output);
                 } else {
-                    // the output already exists, but the output formats may have changed.
-                    // Therefore we update the datatypes and destroy invalid connections.
-                    terminal.datatypes = output.extensions;
-                    terminal.force_datatype = output.force_datatype;
-                    if (this.type == "parameter_input") {
-                        terminal.attributes.type = output.type;
-                    }
-                    terminal.optional = output.optional;
+                    terminal.update(output);
                     terminal.destroyInvalidConnections();
                 }
             });
@@ -313,18 +305,6 @@ export default {
                 this.manager.node_changed(this.node);
                 this.redraw();
             });
-
-            // In general workflow editor assumes tool outputs don't change in # or
-            // type (not really valid right?) but adding special logic here for
-            // data collection input parameters that can have their collection
-            // change.
-            var data_outputs = data.outputs;
-            if (data_outputs.length == 1 && "collection_type" in data_outputs[0]) {
-                // TODO
-                //this.nodeView.updateDataOutput(data_outputs[0]);
-                //var outputTerminal = this.nodeView.node.output_terminals[output.name];
-                //outputTerminal.update(output);
-            }
         },
         getWorkflowOutput(outputName) {
             /*return _.findWhere(this.workflowOutputs, {
@@ -373,7 +353,7 @@ export default {
             return changed;
         },
         changeOutputDatatype(outputName, datatype) {
-            const output_terminal = this.output_terminals[outputName];
+            const output_terminal = this.outputTerminals[outputName];
             const output = this.nodeView.outputViews[outputName].output;
             output_terminal.force_datatype = datatype;
             output.force_datatype = datatype;
