@@ -3,7 +3,7 @@
         <label class="d-flex justify-content-end align-items-center">
             <span class="mr-auto" v-b-tooltip.hover :title="help">{{ label }}</span>
             <div class="mr-1" v-b-tooltip.hover :title="title"><select2 :value="target" @input="handleInput" :multiple="multiple">
-                <option v-for="(col, index) in colHeaders" :value="index">{{ col }}</option>
+                <option v-for="(col, index) in colHeaders" :value="index" :key="col">{{ col }}</option>
             </select2></div>
             <slot></slot>
         </label>
@@ -13,8 +13,8 @@
         <slot></slot>
         <ol>
             <li v-for="(targetEl, index) in target"
-                v-bind:index="index"
-                v-bind:key="targetEl"
+                :index="index"
+                :key="targetEl"
                 class="rule-column-selector-target">
                 {{ colHeaders[targetEl] }}
                 <span class="fa fa-times rule-column-selector-target-remove" @click="handleRemove(index)"></span>
@@ -28,7 +28,7 @@
                 <span class="rule-column-selector-target-select" v-else>
                     <select2 @input="handleAdd" placeholder="Select a column">
                         <option /><!-- empty option selection for placeholder -->
-                        <option v-for="(col, index) in remainingHeaders" :value="index">{{ col }}</option>
+                        <option v-for="(col, index) in remainingHeaders" :value="index" :key="col">{{ col }}</option>
                     </select2>
                 </span>
             </li>
