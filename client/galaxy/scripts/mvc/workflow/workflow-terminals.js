@@ -160,7 +160,7 @@ class Terminal extends EventEmitter {
         }
         if (!this.mapOver.equal(val)) {
             this.mapOver = val;
-            _.each(this.node.output_terminals, (outputTerminal) => {
+            _.each(this.node.outputTerminals, (outputTerminal) => {
                 outputTerminal.setMapOver(output_val);
             });
         }
@@ -175,7 +175,7 @@ class Terminal extends EventEmitter {
     }
     resetCollectionTypeSource() {
         const node = this.node;
-        _.each(node.output_terminals, function (output_terminal) {
+        _.each(node.outputTerminals, function (output_terminal) {
             const type_source = output_terminal.attributes.collection_type_source;
             if (type_source && output_terminal.attributes.collection_type) {
                 output_terminal.attributes.collection_type = null;
@@ -261,7 +261,7 @@ class BaseInputTerminal extends Terminal {
     resetMapping() {
         super.resetMapping();
         if (!this.node.hasMappedOverInputTerminals()) {
-            _.each(this.node.output_terminals, (terminal) => {
+            _.each(this.node.outputTerminals, (terminal) => {
                 // This shouldn't be called if there are mapped over
                 // outputs.
                 terminal.resetMapping();
@@ -324,7 +324,7 @@ class BaseInputTerminal extends Terminal {
             });
         } else {
             // All outputs should have same mapOver status - least specific.
-            constraints.push(_.first(_.values(this.node.output_terminals)).mapOver);
+            constraints.push(_.first(_.values(this.node.outputTerminals)).mapOver);
         }
         return constraints;
     }
@@ -492,7 +492,7 @@ class InputCollectionTerminal extends BaseInputTerminal {
             return;
         } else {
             const node = this.node;
-            _.each(node.output_terminals, function (output_terminal) {
+            _.each(node.outputTerminals, function (output_terminal) {
                 if (output_terminal.attributes.collection_type_source && !connector.dragging) {
                     if (other.isMappedOver()) {
                         if (other.isCollection) {

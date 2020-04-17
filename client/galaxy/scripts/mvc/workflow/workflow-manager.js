@@ -51,7 +51,7 @@ class Workflow extends EventEmitter {
         node.init_field_data(data);
         Vue.nextTick(() => {
             node.update_field_data(data);
-            Object.values(node.output_terminals).forEach((ot) => {
+            Object.values(node.outputTerminals).forEach((ot) => {
                 node.addWorkflowOutput(ot.name);
                 node.markWorkflowOutput(ot.name);
             });
@@ -241,7 +241,7 @@ class Workflow extends EventEmitter {
                     });
                 }
                 if (using_workflow_outputs) {
-                    Object.values(node.output_terminals).forEach((ot) => {
+                    Object.values(node.outputTerminals).forEach((ot) => {
                         var create_pja = !node.isWorkflowOutput(ot.name);
                         if (create_pja === true) {
                             node_changed = true;
@@ -266,7 +266,7 @@ class Workflow extends EventEmitter {
         var nodes = {};
         Object.values(this.nodes).forEach((node) => {
             var input_connections = {};
-            Object.values(node.input_terminals).forEach((t) => {
+            Object.values(node.inputTerminals).forEach((t) => {
                 input_connections[t.name] = null;
                 // There should only be 0 or 1 connectors, so this is
                 // really a sneaky if statement
@@ -387,14 +387,14 @@ class Workflow extends EventEmitter {
                         v.forEach((x) => {
                             const other_node = wf.nodes[parseInt(x.id) + offset];
                             const c = new Connector(this.canvas_manager);
-                            c.connect(other_node.output_terminals[x.output_name], node.input_terminals[k]);
+                            c.connect(other_node.outputTerminals[x.output_name], node.inputTerminals[k]);
                             c.redraw();
                         });
                     }
                 });
                 if (using_workflow_outputs) {
                     // Ensure that every output terminal has a WorkflowOutput or HideDatasetAction.
-                    Object.values(node.output_terminals).forEach((ot) => {
+                    Object.values(node.outputTerminals).forEach((ot) => {
                         if (node.post_job_actions[`HideDatasetAction${ot.name}`] === undefined) {
                             node.addWorkflowOutput(ot.name);
                             node.markWorkflowOutput(ot.name);
@@ -471,7 +471,7 @@ class Workflow extends EventEmitter {
         });
         // Second pass to count predecessors and successors
         Object.values(this.nodes).forEach((node) => {
-            Object.values(node.input_terminals).forEach((t) => {
+            Object.values(node.inputTerminals).forEach((t) => {
                 t.connectors.forEach((c) => {
                     // A connection exists from `other` to `node`
                     var other = c.handle1.node;

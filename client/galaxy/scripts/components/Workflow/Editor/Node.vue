@@ -131,8 +131,6 @@ export default {
     mounted() {
         this.manager = this.getManager();
         this.element = $(this.f);
-        this.input_terminals = {};
-        this.output_terminals = {};
         this.errors = null;
         this.workflow_outputs = [];
     },
@@ -299,8 +297,6 @@ export default {
 
             Vue.nextTick(() => {
                 this.workflow_outputs = this.workflowOutputs;
-                this.input_terminals = this.inputTerminals;
-                this.output_terminals = this.outputTerminals;
                 this.manager.node_changed(this);
                 this.redraw();
             });
@@ -369,7 +365,7 @@ export default {
             output_terminal.destroyInvalidConnections();
         },
         connectedOutputTerminals() {
-            return this._connectedTerminals(this.output_terminals);
+            return this._connectedTerminals(this.outputTerminals);
         },
         _connectedTerminals(terminals) {
             var connectedTerminals = [];
@@ -382,7 +378,7 @@ export default {
         },
         hasConnectedOutputTerminals() {
             // return this.connectedOutputTerminals().length > 0; <- optimized this
-            var outputTerminals = this.output_terminals;
+            var outputTerminals = this.outputTerminals;
             for (var outputName in outputTerminals) {
                 if (outputTerminals[outputName].connectors.length > 0) {
                     return true;
@@ -509,8 +505,6 @@ export default {
             this.inputs = data.inputs.slice();
             this.outputs = data.outputs.slice();
             Vue.nextTick(() => {
-                this.input_terminals = this.inputTerminals;
-                this.output_terminals = this.outputTerminals;
                 this.manager.node_changed(this);
             });
         },

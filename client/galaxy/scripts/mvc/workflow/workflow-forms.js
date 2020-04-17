@@ -212,8 +212,8 @@ function _makeSection(self, output_id, label, node) {
     for (const key in datatypes) {
         extensions.push({ 0: datatypes[key], 1: datatypes[key] });
     }
-    for (const key in node.input_terminals) {
-        name_label_map.push({ name: node.input_terminals[key].name, label: node.input_terminals[key].label });
+    for (const key in node.inputTerminals) {
+        name_label_map.push({ name: node.inputTerminals[key].name, label: node.inputTerminals[key].label });
     }
     var rename_help = _makeRenameHelp(name_label_map);
     extensions.sort((a, b) => (a.label > b.label ? 1 : a.label < b.label ? -1 : 0));
@@ -345,7 +345,7 @@ function _makeSection(self, output_id, label, node) {
 function _addSections(self, node) {
     var inputs = node.config_form.inputs;
     var post_job_actions = node.post_job_actions;
-    var output_id = node.output_terminals && Object.keys(node.output_terminals)[0];
+    var output_id = node.outputTerminals && Object.keys(node.outputTerminals)[0];
     if (output_id) {
         inputs.push({
             name: `pja__${output_id}__EmailAction`,
@@ -367,8 +367,8 @@ function _addSections(self, node) {
             help:
                 "Upon completion of this step, delete non-starred outputs from completed workflow steps if they are no longer required as inputs.",
         });
-        for (const output_id in node.output_terminals) {
-            const label = node.output_terminals[output_id].label || output_id;
+        for (const output_id in node.outputTerminals) {
+            const label = node.outputTerminals[output_id].label || output_id;
             inputs.push(_makeSection(self, output_id, label, node));
         }
     }
