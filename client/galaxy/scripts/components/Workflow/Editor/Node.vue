@@ -40,8 +40,8 @@
             <i :class="iconClass" />
             <span class="node-title">{{ title }}</span>
         </div>
-        <b-alert v-if="!!error" variant="danger" show class="node-error">
-            {{ error }}
+        <b-alert v-if="!!errors" variant="danger" show class="node-error">
+            {{ errors }}
         </b-alert>
         <div v-else class="node-body">
             <loading-span v-if="showLoading" message="Loading details" />
@@ -122,7 +122,7 @@ export default {
             inputTerminals: {},
             outputTerminals: {},
             workflowOutputs: [],
-            error: null,
+            errors: null,
             label: null,
             config_form: {},
             content_id: null,
@@ -131,7 +131,6 @@ export default {
     mounted() {
         this.manager = this.getManager();
         this.element = $(this.f);
-        this.errors = null;
         this.workflow_outputs = [];
     },
     computed: {
