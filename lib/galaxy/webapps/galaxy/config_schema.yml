@@ -759,6 +759,14 @@ mapping:
           Per tool_conf cache locations can be configured in (shed_)tool_conf.xml files using
           the tool_cache_data_dir attribute.
 
+      tool_search_index_dir:
+        type: str
+        default: tool_search_index
+        path_resolves_to: data_dir
+        required: false
+        desc:
+          Directory in which the toolbox search index is stored.
+
       delay_tool_initialization:
         type: bool
         default: false
