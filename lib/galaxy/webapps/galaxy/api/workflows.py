@@ -643,22 +643,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                          'tool_sequence' - comma separated sequence of tool ids
                          'remote_model_url' - (optional) path to the deep learning model
         """
-        remote_model_url = payload.get('remote_model_url', None)
-        if remote_model_url is None:
-            remote_model_url = trans.app.config.tool_recommendation_model_path
+        remote_model_url = payload.get('remote_model_url', trans.app.config.tool_recommendation_model_path)
+        tool_sequence = payload.get('tool_sequence', "")
         if 'tool_sequence' not in payload or remote_model_url is None:
             return
-        is_model_set = True
-        recommended_tools = dict()
-        tool_sequence = ""
-        # collect tool recommendation preferences if set by admin
-        self.tool_recommendations.collect_admin_preferences(trans.app.config.admin_tool_recommendations_path)
-        # recreate the neural network model to be used for prediction
-        is_model_set = self.tool_recommendations.set_model(trans, remote_model_url)
-        if is_model_set is True:
-            # get the recommended tools for a tool sequence
-            tool_sequence = payload.get('tool_sequence', "")
-            recommended_tools = self.tool_recommendations.compute_tool_prediction(trans, tool_sequence)
+        tool_sequence, recommended_tools = self.tool_recommendations.get_predictions(trans, tool_sequence, remote_model_url)
         return {
             "current_tool": tool_sequence,
             "predicted_data": recommended_tools
