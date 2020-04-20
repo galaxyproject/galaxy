@@ -24,12 +24,12 @@ Community support is available at `Galaxy Help <https://help.galaxyproject.org/>
 Galaxy Quickstart
 =================
 
-Galaxy requires Python 2.7 To check your python version, run:
+Galaxy requires Python 3.6 or 3.5 To check your python version, run:
 
 .. code:: console
 
     $ python -V
-    Python 2.7.3
+    Python 3.6.10
 
 Start Galaxy:
 
@@ -42,14 +42,13 @@ browser at:
 
 http://localhost:8080
 
-Configuration & Tools
+For more installation details please see https://getgalaxy.org/.
+
+Tools
 =====================
 
-You may wish to make changes from the default configuration. This can be
-done in the ``config/galaxy.ini`` file.
-
 Tools can be either installed from the Tool Shed or added manually.
- For details please see the `tutorial <https://galaxyproject.org/admin/tools/add-tool-from-toolshed-tutorial/>`__.
+For details please see the `tutorial <https://galaxyproject.org/admin/tools/add-tool-from-toolshed-tutorial/>`__.
 Note that not all dependencies for the tools provided in the
 ``tool_conf.xml.sample`` are included. To install them please visit
 "Manage dependencies" in the admin interface.
