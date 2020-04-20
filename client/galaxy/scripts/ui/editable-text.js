@@ -9,7 +9,7 @@ var $ = jQuery;
  * is provided for editing; (b) when enter key pressed, element's text is set and on_finish
  * is called.
  */
-$.fn.make_text_editable = function(config_dict) {
+$.fn.make_text_editable = function (config_dict) {
     // Get config options.
     var num_cols = "num_cols" in config_dict ? config_dict.num_cols : 30;
 
@@ -22,7 +22,7 @@ $.fn.make_text_editable = function(config_dict) {
 
     // Add element behavior.
     var container = $(this);
-    container.addClass("editable-text").click(function(e) {
+    container.addClass("editable-text").click(function (e) {
         // If there's already an input element, editing is active, so do nothing.
         if ($(this).children(":input").length > 0) {
             return;
@@ -31,7 +31,7 @@ $.fn.make_text_editable = function(config_dict) {
         container.removeClass("editable-text");
 
         // Handler for setting element text.
-        var set_text = new_text => {
+        var set_text = (new_text) => {
             container.find(":input").remove();
 
             if (new_text !== "") {
@@ -57,7 +57,7 @@ $.fn.make_text_editable = function(config_dict) {
             input_elt = $("<textarea/>")
                 .attr({ rows: num_rows, cols: num_cols })
                 .text($.trim(cur_text))
-                .keyup(e => {
+                .keyup((e) => {
                     if (e.keyCode === 27) {
                         // Escape key.
                         set_text(cur_text);
@@ -77,7 +77,7 @@ $.fn.make_text_editable = function(config_dict) {
                 .blur(() => {
                     set_text(cur_text);
                 })
-                .keyup(function(e) {
+                .keyup(function (e) {
                     if (e.keyCode === 27) {
                         // Escape key.
                         $(this).trigger("blur");

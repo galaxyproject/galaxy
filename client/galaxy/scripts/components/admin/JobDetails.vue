@@ -16,18 +16,18 @@ import { JobParameters } from "components/JobParameters";
 export default {
     components: {
         JobMetrics,
-        JobParameters
+        JobParameters,
     },
     props: {
         commandLine: {
             type: String,
-            required: true
+            required: true,
         },
         jobId: {
             type: String,
-            required: true
-        }
-    }
+            required: true,
+        },
+    },
 };
 </script>
 

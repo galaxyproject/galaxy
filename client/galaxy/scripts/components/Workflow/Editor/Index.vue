@@ -4,8 +4,8 @@
             <template v-slot:panel>
                 <ToolBoxWorkflow
                     :toolbox="toolbox"
-                    :module-sections="module_sections"
-                    :data-managers="data_managers"
+                    :module-sections="moduleSections"
+                    :data-managers="dataManagers"
                     :workflows="workflows"
                     @onInsertTool="onInsertTool"
                     @onInsertModule="onInsertModule"
@@ -83,7 +83,7 @@ import {
     getWorkflowParameters,
     showAttributes,
     showForm,
-    saveAs
+    saveAs,
 } from "./utilities";
 import WorkflowManager from "mvc/workflow/workflow-manager";
 import WorkflowOptions from "./Options";
@@ -105,47 +105,56 @@ export default {
         ToolBoxWorkflow,
         WorkflowOptions,
         WorkflowAttributes,
-        ZoomControl
+        ZoomControl,
     },
     props: {
         id: {
-            type: String
+            type: String,
+            required: true,
         },
         version: {
-            type: Number
+            type: Number,
+            required: true,
         },
         name: {
-            type: String
+            type: String,
+            required: true,
         },
         tags: {
-            type: Array
+            type: Array,
+            required: true,
         },
         annotation: {
-            type: String
+            type: String,
+            required: true,
         },
-        module_sections: {
-            type: Array
+        moduleSections: {
+            type: Array,
+            required: true,
         },
-        data_managers: {
-            type: Array
+        dataManagers: {
+            type: Array,
+            required: true,
         },
         workflows: {
-            type: Array
+            type: Array,
+            required: true,
         },
         toolbox: {
-            type: Array
-        }
+            type: Array,
+            required: true,
+        },
     },
     data() {
         return {
             isCanvas: true,
             versions: [],
             parameters: [],
-            zoomLevel: 7
+            zoomLevel: 7,
         };
     },
     created() {
-        getDatatypes().then(response => {
+        getDatatypes().then((response) => {
             const datatypes = response.datatypes;
             const datatypes_mapping = response.datatypes_mapping;
             this.manager = new WorkflowManager({ datatypes_mapping }, this.$refs.canvas);
@@ -153,7 +162,7 @@ export default {
                 .on("onRemoveNode", () => {
                     showAttributes();
                 })
-                .on("onActiveNode", node => {
+                .on("onActiveNode", (node) => {
                     showForm(this.manager, node, datatypes);
                 })
                 .on("onNodeChange", () => {
@@ -172,9 +181,9 @@ export default {
             const requestData = {
                 type: "tool",
                 tool_id: tool_id,
-                _: "true"
+                _: "true",
             };
-            getModule(requestData).then(response => {
+            getModule(requestData).then((response) => {
                 this.manager.set_node(node, response);
             });
         },
@@ -186,9 +195,9 @@ export default {
             var node = this.manager.create_node(module_id, module_name);
             const requestData = {
                 type: module_id,
-                _: "true"
+                _: "true",
             };
-            getModule(requestData).then(response => {
+            getModule(requestData).then((response) => {
                 this.manager.set_node(node, response);
             });
         },
@@ -201,9 +210,9 @@ export default {
             const requestData = {
                 type: "subworkflow",
                 content_id: workflow_id,
-                _: "true"
+                _: "true",
             };
-            getModule(requestData).then(response => {
+            getModule(requestData).then((response) => {
                 this.manager.set_node(node, response);
             });
         },
@@ -248,14 +257,14 @@ export default {
         onSave() {
             show_message("Saving workflow...", "progress");
             saveWorkflow(this.manager, this.id)
-                .then(data => {
+                .then((data) => {
                     showWarnings(data);
-                    getVersions(this.id).then(versions => {
+                    getVersions(this.id).then((versions) => {
                         this.versions = versions;
                         hide_modal();
                     });
                 })
-                .catch(response => {
+                .catch((response) => {
                     show_modal("Saving workflow failed...", response, { Ok: hide_modal });
                 });
         },
@@ -277,19 +286,19 @@ export default {
         loadCurrent(id, version) {
             show_message("Loading workflow...", "progress");
             loadWorkflow(this.manager, id, version)
-                .then(data => {
+                .then((data) => {
                     const report = data.report || {};
                     const markdown = report.markdown || reportDefault;
                     this.$refs["report-editor"].input = markdown;
                     showUpgradeMessage(this.manager, data);
-                    getVersions(this.id).then(versions => {
+                    getVersions(this.id).then((versions) => {
                         this.versions = versions;
                     });
                 })
-                .catch(response => {
+                .catch((response) => {
                     show_modal("Loading workflow failed...", response, { Ok: hide_modal });
                 });
-        }
-    }
+        },
+    },
 };
 </script>

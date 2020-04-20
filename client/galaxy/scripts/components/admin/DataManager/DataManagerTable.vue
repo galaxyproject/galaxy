@@ -48,13 +48,13 @@ import Alert from "components/Alert.vue";
 
 export default {
     components: {
-        Alert
+        Alert,
     },
     props: {
         name: {
             type: String,
-            required: true
-        }
+            required: true,
+        },
     },
     data() {
         return {
@@ -62,7 +62,7 @@ export default {
             viewOnly: false,
             message: "",
             status: "",
-            loading: true
+            loading: true,
         };
     },
     computed: {
@@ -76,13 +76,13 @@ export default {
             return [
                 {
                     text: "Tool Data Tables",
-                    to: "/"
+                    to: "/",
                 },
                 {
-                    text: this.dataTableName
-                }
+                    text: this.dataTableName,
+                },
             ];
-        }
+        },
     },
     methods: {
         fields(columns) {
@@ -93,31 +93,31 @@ export default {
         reload() {
             axios
                 .get(`${getAppRoot()}data_manager/reload_tool_data_tables?table_name=${this.dataTableName}`)
-                .then(response => {
+                .then((response) => {
                     if (response.data.dataTable) {
                         this.dataTable = response.data.dataTable;
                     }
                     this.message = response.data.message;
                     this.status = response.data.status;
                 })
-                .catch(error => {
+                .catch((error) => {
                     console.error(error);
                 });
-        }
+        },
     },
     created() {
         axios
             .get(`${getAppRoot()}data_manager/tool_data_table_info?table_name=${this.name}`)
-            .then(response => {
+            .then((response) => {
                 this.dataTable = response.data.dataTable;
                 this.viewOnly = response.data.viewOnly;
                 this.message = response.data.message;
                 this.status = response.data.status;
                 this.loading = false;
             })
-            .catch(error => {
+            .catch((error) => {
                 console.error(error);
             });
-    }
+    },
 };
 </script>

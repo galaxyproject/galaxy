@@ -37,7 +37,7 @@ export function standardInit(label = "Galaxy", appFactory = defaultAppFactory) {
     globalInits();
 
     // waits for configs to stop changing then instantiates Galaxy
-    const galaxy$ = config$.pipe(map(cfg => appFactory(cfg, label)));
+    const galaxy$ = config$.pipe(map((cfg) => appFactory(cfg, label)));
 
     // once config, app and initialization observables have a value then run all
     // the initialization functions, this will keep running new initialization
@@ -46,7 +46,7 @@ export function standardInit(label = "Galaxy", appFactory = defaultAppFactory) {
     // the new batch of freshly registered init functions
     combineLatest(config$, galaxy$, initializations$).subscribe(([config, galaxy, inits]) => {
         console.groupCollapsed(`runInitializations`, label, serverPath());
-        inits.forEach(fn => fn(galaxy, config));
+        inits.forEach((fn) => fn(galaxy, config));
         clearInitQueue();
         console.groupEnd();
     });

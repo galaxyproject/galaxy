@@ -6,8 +6,8 @@ describe("ZoomControl", () => {
     it("test zoom control", async () => {
         const wrapper = mount(ZoomControl, {
             propsData: {
-                zoomLevel: 10
-            }
+                zoomLevel: 10,
+            },
         });
         const buttons = wrapper.findAll("button");
         expect(buttons.length).to.equal(3);

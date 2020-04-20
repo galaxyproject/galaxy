@@ -7,7 +7,6 @@ const zIndex = 1000;
 const cpFactor = 10;
 const canvasExtra = 100;
 const handleMarginX = 8;
-const handleMarginY = 5;
 const ribbonMargin = 4;
 const ribbonInnerSingle = 4;
 const ribbonOuterSingle = 6;
@@ -83,17 +82,17 @@ class Connector {
             "handle2-id",
             handle2 && handle2.element.getAttribute ? handle2.element.getAttribute("id") : ""
         );
-        const relativeLeft = e => ($(e).offset().left - canvas_container.offset().left) / canvasZoom;
-        const relativeTop = e => ($(e).offset().top - canvas_container.offset().top) / canvasZoom;
+        const relativeLeft = (e) => ($(e).offset().left - canvas_container.offset().left) / canvasZoom;
+        const relativeTop = (e) => ($(e).offset().top - canvas_container.offset().top) / canvasZoom;
         if (!handle1 || !handle2) {
             return;
         }
 
         // Find the position of each handle
         let start_x = relativeLeft(handle1.element) + handleMarginX;
-        let start_y = relativeTop(handle1.element) + handleMarginY;
+        let start_y = relativeTop(handle1.element) + 0.5 * $(handle1.element).height();
         let end_x = relativeLeft(handle2.element) + handleMarginX;
-        let end_y = relativeTop(handle2.element) + handleMarginY;
+        let end_y = relativeTop(handle2.element) + 0.5 * $(handle2.element).height();
 
         // Calculate canvas area
         const canvas_min_x = Math.min(start_x, end_x);
@@ -171,14 +170,14 @@ class Connector {
             { x: start_x, y: start_y + offset_start },
             { x: start_x + cp_shift, y: start_y + offset_start },
             { x: end_x - cp_shift, y: end_y + offset_end },
-            { x: end_x, y: end_y + offset_end }
+            { x: end_x, y: end_y + offset_end },
         ];
         const lineFunction = d3.svg
             .line()
-            .x(function(d) {
+            .x(function (d) {
                 return d.x;
             })
-            .y(function(d) {
+            .y(function (d) {
                 return d.y;
             })
             .interpolate("basis");

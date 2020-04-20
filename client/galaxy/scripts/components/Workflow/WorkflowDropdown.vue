@@ -81,43 +81,43 @@ export default {
                 return "fa fa-share-alt";
             }
             return "fa fa-caret-down";
-        }
+        },
     },
     created() {
         this.root = getAppRoot();
         this.services = new Services({ root: this.root });
     },
     methods: {
-        onCopy: function() {
+        onCopy: function () {
             this.services
                 .copyWorkflow(this.workflow)
-                .then(newWorkflow => {
+                .then((newWorkflow) => {
                     this.$emit("onAdd", newWorkflow);
                     this.$emit(
                         "onSuccess",
                         `Successfully copied workflow '${this.workflow.name}' to '${newWorkflow.name}'.`
                     );
                 })
-                .catch(error => {
+                .catch((error) => {
                     this.$emit("onError", error);
                 });
         },
-        onDelete: function() {
+        onDelete: function () {
             const id = this.workflow.id;
             const name = this.workflow.name;
             if (window.confirm(`Are you sure you want to delete workflow '${name}'?`)) {
                 this.services
                     .deleteWorkflow(id)
-                    .then(message => {
+                    .then((message) => {
                         this.$emit("onRemove", id);
                         this.$emit("onSuccess", message);
                     })
-                    .catch(error => {
+                    .catch((error) => {
                         this.$emit("onError", error);
                     });
             }
         },
-        onRename: function() {
+        onRename: function () {
             const id = this.workflow.id;
             const name = this.workflow.name;
             const newName = window.prompt(`Enter a new name for workflow '${name}'`, name);
@@ -129,11 +129,11 @@ export default {
                         this.$emit("onUpdate", id, data);
                         this.$emit("onSuccess", `Successfully changed name of workflow '${name}' to '${newName}'.`);
                     })
-                    .catch(error => {
+                    .catch((error) => {
                         this.$emit("onError", error);
                     });
             }
-        }
-    }
+        },
+    },
 };
 </script>

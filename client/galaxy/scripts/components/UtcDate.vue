@@ -14,20 +14,20 @@ export default {
     props: {
         date: {
             type: String,
-            required: true
+            required: true,
         },
         mode: {
             type: String,
-            default: "date" // or elapsed
-        }
+            default: "date", // or elapsed
+        },
     },
     computed: {
-        elapsedTime: function() {
+        elapsedTime: function () {
             return moment(moment.utc(this.date)).from(moment().utc());
         },
-        fullDate: function() {
+        fullDate: function () {
             return moment.utc(this.date).format();
-        }
-    }
+        },
+    },
 };
 </script>

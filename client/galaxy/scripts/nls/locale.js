@@ -454,10 +454,10 @@ define({
         // ---------------------------------------------------------------------------- upload-button
         "Download from URL or upload files from disk": false,
         // ---------------------------------------------------------------------------- workflow_editor_tests
-        "tool tooltip": false
+        "tool tooltip": false,
         // ----------------------------------------------------------------------------
     },
     ja: true,
     fr: true,
-    zh: true
+    zh: true,
 });

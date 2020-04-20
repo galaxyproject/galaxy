@@ -47,7 +47,7 @@
                                 <b-button
                                     :to="{
                                         name: 'DataManagerJobs',
-                                        params: { id: encodeURIComponent(dataManager['id']) }
+                                        params: { id: encodeURIComponent(dataManager['id']) },
                                     }"
                                     :id="kebabCase(dataManager['name']) + '-jobs'"
                                 >
@@ -85,7 +85,7 @@ import Alert from "components/Alert.vue";
 
 export default {
     components: {
-        Alert
+        Alert,
     },
     data() {
         return {
@@ -95,26 +95,26 @@ export default {
             viewOnly: false,
             message: "",
             status: "",
-            loading: true
+            loading: true,
         };
     },
     computed: {
         dataManagersFiltered() {
-            return this.dataManagers.filter(d => d["name"].match(new RegExp(this.filter, "i")));
+            return this.dataManagers.filter((d) => d["name"].match(new RegExp(this.filter, "i")));
         },
         dataTablesFiltered() {
-            return this.dataTables.filter(d => d["name"].match(new RegExp(this.filter, "i")));
-        }
+            return this.dataTables.filter((d) => d["name"].match(new RegExp(this.filter, "i")));
+        },
     },
     methods: {
         kebabCase(s) {
             return s.toLowerCase().replace(/ /g, "-");
-        }
+        },
     },
     created() {
         axios
             .get(`${getAppRoot()}data_manager/data_managers_list`)
-            .then(response => {
+            .then((response) => {
                 this.dataManagers = response.data.dataManagers;
                 this.dataTables = response.data.dataTables;
                 this.viewOnly = response.data.viewOnly;
@@ -122,9 +122,9 @@ export default {
                 this.status = response.data.status;
                 this.loading = false;
             })
-            .catch(error => {
+            .catch((error) => {
                 console.error(error);
             });
-    }
+    },
 };
 </script>

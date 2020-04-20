@@ -1491,8 +1491,8 @@ class JobContainerAssociation(RepresentById):
 
 
 class InteractiveToolEntryPoint(Dictifiable, RepresentById):
-    dict_collection_visible_keys = ['id', 'name', 'active']
-    dict_element_visible_keys = ['id', 'name', 'active']
+    dict_collection_visible_keys = ['id', 'name', 'active', 'created_time', 'modified_time']
+    dict_element_visible_keys = ['id', 'name', 'active', 'created_time', 'modified_time']
 
     def __init__(self, job=None, name=None, token=None, tool_port=None, host=None, port=None, protocol=None,
                  entry_url=None, info=None, configured=False, deleted=False):
@@ -3155,6 +3155,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             return rval
 
         rval = super(HistoryDatasetAssociation, self).serialize(id_encoder, serialization_options)
+        rval['state'] = self.state
         rval["hid"] = self.hid
         rval["annotation"] = unicodify(getattr(self, 'annotation', ''))
         rval["tags"] = self.make_tag_string_list()
@@ -3546,7 +3547,7 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, RepresentById):
         self.library_dataset = library_dataset
         self.user = user
 
-    def to_history_dataset_association(self, target_history, parent_id=None, add_to_history=False):
+    def to_history_dataset_association(self, target_history, parent_id=None, add_to_history=False, visible=None):
         sa_session = object_session(self)
         hda = HistoryDatasetAssociation(name=self.name,
                                         info=self.info,
@@ -3556,7 +3557,7 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, RepresentById):
                                         extension=self.extension,
                                         dbkey=self.dbkey,
                                         dataset=self.dataset,
-                                        visible=self.visible,
+                                        visible=visible if visible is not None else self.visible,
                                         deleted=self.deleted,
                                         parent_id=parent_id,
                                         copied_from_library_dataset_dataset_association=self,

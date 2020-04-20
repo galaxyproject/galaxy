@@ -64,16 +64,16 @@ export class NodeView {
             terminalViewClass = TerminalViews.InputParameterTerminalView;
         }
         if (terminalView && !(terminalView instanceof terminalViewClass)) {
-            terminalView.el.terminal.destroy();
+            terminalView.terminal.destroy();
             terminalView = null;
         }
         if (!terminalView) {
             terminalView = new terminalViewClass(this.app, {
                 node: this.node,
-                input: input
+                input: input,
             });
         } else {
-            var terminal = terminalView.el.terminal;
+            var terminal = terminalView.terminal;
             terminal.update(input);
             terminal.destroyInvalidConnections();
         }
@@ -83,10 +83,10 @@ export class NodeView {
             terminalElement: terminalElement,
             input: input,
             nodeView: this,
-            skipResize: skipResize
+            skipResize: skipResize,
         });
         var ib = inputView.$el;
-        body.append(ib.prepend(terminalView.terminalElements()));
+        body.append(ib.prepend(terminalView.el));
         return terminalView;
     }
 
@@ -99,7 +99,7 @@ export class NodeView {
         }
         return new terminalViewClass(this.app, {
             node: this.node,
-            output: output
+            output: output,
         });
     }
 
@@ -108,7 +108,7 @@ export class NodeView {
         return new outputViewClass(this.app, {
             output: output,
             terminalElement: terminalView.el,
-            nodeView: this
+            nodeView: this,
         });
     }
 
@@ -116,11 +116,11 @@ export class NodeView {
         const terminalView = this.terminalViewForOutput(output);
         const outputView = this.outputViewforOutput(output, terminalView);
         this.outputViews[output.name] = outputView;
-        this.node_body.append(outputView.$el.append(terminalView.terminalElements()));
+        this.node_body.append(outputView.$el.append(terminalView.el));
     }
 
     redrawWorkflowOutputs() {
-        _.each(this.outputViews, outputView => {
+        _.each(this.outputViews, (outputView) => {
             outputView.redrawWorkflowOutput();
         });
     }

@@ -28,7 +28,9 @@ export function contrastingColor(r, g, b) {
  * @return  {Array}           The RGB representation
  */
 export function hslToRgb(h, s, l) {
-    var r, g, b;
+    var r;
+    var g;
+    var b;
 
     if (s == 0) {
         r = g = b = l; // achromatic

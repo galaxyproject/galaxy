@@ -102,7 +102,7 @@ export default {
         FontAwesomeIcon,
         UtcDate,
         Tags,
-        WorkflowDropdown
+        WorkflowDropdown,
     },
     data() {
         return {
@@ -110,31 +110,31 @@ export default {
             fields: [
                 {
                     key: "name",
-                    sortable: true
+                    sortable: true,
                 },
                 {
                     key: "tags",
-                    sortable: true
+                    sortable: true,
                 },
                 {
                     label: "Created",
                     key: "create_time",
-                    sortable: true
+                    sortable: true,
                 },
                 {
-                    key: "bookmark"
+                    key: "bookmark",
                 },
                 {
                     key: "execute",
-                    label: ""
-                }
+                    label: "",
+                },
             ],
             filter: "",
             loading: true,
             message: null,
             messageVariant: null,
             nWorkflows: 0,
-            workflows: []
+            workflows: [],
         };
     },
     computed: {
@@ -146,7 +146,7 @@ export default {
         },
         showMessage() {
             return !!this.message;
-        }
+        },
     },
     created() {
         this.root = getAppRoot();
@@ -159,28 +159,28 @@ export default {
             this.filter = "";
             this.services
                 .getWorkflows()
-                .then(workflows => {
+                .then((workflows) => {
                     this.workflows = workflows;
                     this.nWorkflows = workflows.length;
                     this.loading = false;
                 })
-                .catch(error => {
+                .catch((error) => {
                     this.error = error;
                 });
         },
-        filtered: function(items) {
+        filtered: function (items) {
             this.nWorkflows = items.length;
         },
-        createWorkflow: function(workflow) {
+        createWorkflow: function (workflow) {
             window.location = `${this.root}workflows/create`;
         },
-        importWorkflow: function(workflow) {
+        importWorkflow: function (workflow) {
             window.location = `${this.root}workflows/import`;
         },
-        executeWorkflow: function(workflow) {
+        executeWorkflow: function (workflow) {
             window.location = `${this.root}workflows/run?id=${workflow.id}`;
         },
-        bookmarkWorkflow: function(workflow) {
+        bookmarkWorkflow: function (workflow) {
             // This reloads the whole page, so that the workflow appears in the tool panel.
             // Ideally we would notify only the tool panel of a change
             const id = workflow.id;
@@ -188,50 +188,50 @@ export default {
             const tags = workflow.tags;
             const data = {
                 show_in_tool_panel: !show_in_tool_panel,
-                tags: tags
+                tags: tags,
             };
             this.services
                 .updateWorkflow(id, data)
                 .then(() => {
                     window.location = `${getAppRoot()}workflows/list`;
                 })
-                .catch(error => {
+                .catch((error) => {
                     this.onError(error);
                 });
         },
-        onTags: function(tags, index) {
+        onTags: function (tags, index) {
             const workflow = this.workflows[index];
             workflow.tags = tags;
             this.services
                 .updateWorkflow(workflow.id, {
                     show_in_tool_panel: workflow.show_in_tool_panel,
-                    tags: workflow.tags
+                    tags: workflow.tags,
                 })
-                .catch(error => {
+                .catch((error) => {
                     this.onError(error);
                 });
         },
-        onAdd: function(workflow) {
+        onAdd: function (workflow) {
             this.workflows.unshift(workflow);
             this.nWorkflows = this.workflows.length;
         },
-        onRemove: function(id) {
-            this.workflows = this.workflows.filter(item => item.id !== id);
+        onRemove: function (id) {
+            this.workflows = this.workflows.filter((item) => item.id !== id);
             this.nWorkflows = this.workflows.length;
         },
-        onUpdate: function(id, data) {
-            const workflow = this.workflows.find(item => item.id === id);
+        onUpdate: function (id, data) {
+            const workflow = this.workflows.find((item) => item.id === id);
             Object.assign(workflow, data);
             this.workflows = [...this.workflows];
         },
-        onSuccess: function(message) {
+        onSuccess: function (message) {
             this.message = message;
             this.messageVariant = "success";
         },
-        onError: function(message) {
+        onError: function (message) {
             this.message = message;
             this.messageVariant = "danger";
-        }
-    }
+        },
+    },
 };
 </script>

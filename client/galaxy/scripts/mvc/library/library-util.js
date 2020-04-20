@@ -33,5 +33,5 @@ var generateComparator = (sort_key, sort_order) => (itemA, itemB) => {
     return 0; // equal
 };
 export default {
-    generateComparator: generateComparator
+    generateComparator: generateComparator,
 };

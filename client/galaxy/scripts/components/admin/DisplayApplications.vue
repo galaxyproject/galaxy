@@ -15,7 +15,7 @@ import { getDisplayApplications, reloadDisplayApplications } from "./AdminServic
 
 export default {
     components: {
-        BaseList
+        BaseList,
     },
     data() {
         return {
@@ -24,11 +24,11 @@ export default {
                 { key: "name", sortable: true },
                 { key: "id", sortable: true },
                 { key: "version" },
-                { key: "links" }
+                { key: "links" },
             ],
             getter: getDisplayApplications,
-            setter: reloadDisplayApplications
+            setter: reloadDisplayApplications,
         };
-    }
+    },
 };
 </script>

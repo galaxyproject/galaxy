@@ -8,27 +8,27 @@ import { mapActions } from "vuex";
 
 export default {
     components: {
-        Nametag
+        Nametag,
     },
     props: {
         storeKey: { type: String, required: true },
-        tags: { type: Array, required: false, default: () => [] }
+        tags: { type: Array, required: false, default: () => [] },
     },
     computed: {
         // only display tags that start with name:
         nameTags() {
-            return this.$store.getters.getTagsById(this.storeKey).filter(tag => tag.startsWith("name:"));
+            return this.$store.getters.getTagsById(this.storeKey).filter((tag) => tag.startsWith("name:"));
         },
         title() {
             return `${this.nameTags.length} nametags`;
-        }
+        },
     },
     methods: {
-        ...mapActions(["updateTags", "initializeTags"])
+        ...mapActions(["updateTags", "initializeTags"]),
     },
     mounted() {
         this.initializeTags({ key: this.storeKey, tags: this.tags });
-    }
+    },
 };
 </script>
 

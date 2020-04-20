@@ -9,24 +9,24 @@ import Portlet from "mvc/ui/ui-portlet";
 import Ui from "mvc/ui/ui-misc";
 
 export var View = Backbone.View.extend({
-    initialize: function(options) {
+    initialize: function (options) {
         this.list = {};
         this.options = Utils.merge(options, {
             title: _l("Repeat"),
             empty_text: "Not available.",
             max: null,
-            min: null
+            min: null,
         });
         this.button_new = new Ui.Button({
             icon: "fa-plus",
             title: `Insert ${this.options.title}`,
             tooltip: `Add new ${this.options.title} block`,
             cls: "btn btn-secondary float-none form-repeat-add",
-            onclick: function() {
+            onclick: function () {
                 if (options.onnew) {
                     options.onnew();
                 }
-            }
+            },
         });
         this.setElement(
             $("<div/>")
@@ -36,12 +36,12 @@ export var View = Backbone.View.extend({
     },
 
     /** Number of repeat blocks */
-    size: function() {
+    size: function () {
         return _.size(this.list);
     },
 
     /** Add new repeat block */
-    add: function(options) {
+    add: function (options) {
         const Galaxy = getGalaxyInstance();
         if (!options.id || this.list[options.id]) {
             Galaxy.emit.debug("form-repeat::add()", "Duplicate or invalid repeat block id.");
@@ -51,17 +51,17 @@ export var View = Backbone.View.extend({
             icon: "fa-trash-o",
             tooltip: _l("Delete this repeat block"),
             cls: "ui-button-icon-plain form-repeat-delete",
-            onclick: function() {
+            onclick: function () {
                 if (options.ondel) {
                     options.ondel();
                 }
-            }
+            },
         });
         var portlet = new Portlet.View({
             id: options.id,
             title: _l("placeholder"),
             cls: options.cls || "ui-portlet-section",
-            operations: { button_delete: button_delete }
+            operations: { button_delete: button_delete },
         });
         portlet.append(options.$el);
         portlet.$el.addClass("section-row").hide();
@@ -74,7 +74,7 @@ export var View = Backbone.View.extend({
     },
 
     /** Delete repeat block */
-    del: function(id) {
+    del: function (id) {
         const Galaxy = getGalaxyInstance();
         if (!this.list[id]) {
             Galaxy.emit.debug("form-repeat::del()", "Invalid repeat block id.");
@@ -87,38 +87,34 @@ export var View = Backbone.View.extend({
     },
 
     /** Remove all */
-    delAll: function() {
+    delAll: function () {
         for (var id in this.list) {
             this.del(id);
         }
     },
 
     /** Hides add/del options */
-    hideOptions: function() {
+    hideOptions: function () {
         this.button_new.$el.hide();
-        _.each(this.list, portlet => {
+        _.each(this.list, (portlet) => {
             portlet.hideOperation("button_delete");
         });
         if (_.isEmpty(this.list)) {
-            this.$el.append(
-                $("<div/>")
-                    .addClass("form-text text-muted")
-                    .html(this.options.empty_text)
-            );
+            this.$el.append($("<div/>").addClass("form-text text-muted").html(this.options.empty_text));
         }
     },
 
     /** Refresh view */
-    _refresh: function() {
+    _refresh: function () {
         var index = 0;
         for (var id in this.list) {
             var portlet = this.list[id];
             portlet.title(`${++index}: ${this.options.title}`);
             portlet[this.size() > this.options.min ? "showOperation" : "hideOperation"]("button_delete");
         }
-    }
+    },
 });
 
 export default {
-    View: View
+    View: View,
 };

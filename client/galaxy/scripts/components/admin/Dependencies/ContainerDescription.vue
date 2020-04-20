@@ -20,27 +20,27 @@ export default {
     components: { DisplayRaw },
     props: {
         containerDescription: {
-            type: Object
+            type: Object,
         },
         compact: {
             type: Boolean,
-            default: true
-        }
+            default: true,
+        },
     },
     computed: {
-        title: function() {
+        title: function () {
             return this.compact ? this.description : "";
         },
-        description: function() {
+        description: function () {
             return `This is a ${this.containerDescription.type} container. ${this.shellDescription}`;
         },
-        shellDescription: function() {
+        shellDescription: function () {
             return `This container uses shell [${this.containerDescription.shell}].`;
         },
-        identifier: function() {
+        identifier: function () {
             return this.containerDescription && this.containerDescription.identifier;
         },
-        externalUrl: function() {
+        externalUrl: function () {
             const identifier = this.identifier;
             if (identifier) {
                 if (identifier.startsWith("quay.io")) {
@@ -48,7 +48,7 @@ export default {
                 }
             }
             return null;
-        }
-    }
+        },
+    },
 };
 </script>

@@ -13,19 +13,19 @@ export default Backbone.View.extend({
         queued: "upload-icon fa fa-spinner fa-spin",
         running: "upload-icon fa fa-spinner fa-spin",
         success: "upload-icon-button fa fa-check",
-        error: "upload-icon-button fa fa-exclamation-triangle"
+        error: "upload-icon-button fa fa-exclamation-triangle",
     },
 
-    _setupSettings: function() {
+    _setupSettings: function () {
         // append popup to settings icon
         this.settings = new Popover({
             title: _l("Upload configuration"),
             container: this.$(".upload-settings"),
-            placement: "bottom"
+            placement: "bottom",
         });
     },
 
-    _renderStatusType: function(status) {
+    _renderStatusType: function (status) {
         if (status == "success") {
             this.$el.addClass("table-success");
             this.$percentage.html("100%");
@@ -38,7 +38,7 @@ export default Backbone.View.extend({
         }
     },
 
-    _setupUploadBoxListeners: function() {
+    _setupUploadBoxListeners: function () {
         this.listenTo(this.model, "change:percentage", () => {
             this._refreshPercentage();
         });
@@ -53,7 +53,7 @@ export default Backbone.View.extend({
         });
     },
 
-    _refreshInfo: function() {
+    _refreshInfo: function () {
         var info = this.model.get("info");
         if (info) {
             this.$info_text.html(`<strong>Warning: </strong>${info}`).show();
@@ -62,23 +62,23 @@ export default Backbone.View.extend({
         }
     },
 
-    _refreshPercentage: function() {
+    _refreshPercentage: function () {
         var percentage = parseInt(this.model.get("percentage"));
         this.$progress_bar.css({ width: `${percentage}%` });
         this.$percentage.html(percentage != 100 ? `${percentage}%` : "Adding to history...");
     },
 
-    _refreshFileSize: function() {
+    _refreshFileSize: function () {
         this.$size.html(Utils.bytesToString(this.model.get("file_size")));
     },
 
-    _removeRow: function() {
+    _removeRow: function () {
         if (["init", "success", "error"].indexOf(this.model.get("status")) !== -1) {
             this.app.collection.remove(this.model);
         }
     },
 
-    _showSettings: function() {
+    _showSettings: function () {
         this.settings.show(new UploadSettings(this).$el);
-    }
+    },
 });

@@ -158,7 +158,7 @@ export default {
             btnBuildTitle: _l("Build"),
             btnStopTitle: _l("Pause"),
             btnResetTitle: _l("Reset"),
-            btnCloseTitle: _l("Close")
+            btnCloseTitle: _l("Close"),
         };
     },
     created() {
@@ -174,7 +174,7 @@ export default {
             announce: (index, file) => {
                 this._eventAnnounce(index, file);
             },
-            initialize: index => {
+            initialize: (index) => {
                 return this.app.toData([this.collection.get(index)], this.history_id);
             },
             progress: (index, percentage) => {
@@ -197,32 +197,32 @@ export default {
             },
             ondragleave: () => {
                 this.highlightBox = false;
-            }
+            },
         });
-        this.collection.on("remove", model => {
+        this.collection.on("remove", (model) => {
             this._eventRemove(model);
         });
         this._updateStateForCounters();
     },
     computed: {
         extensions() {
-            const result = _.filter(this.listExtensions, ext => !ext.composite_files);
+            const result = _.filter(this.listExtensions, (ext) => !ext.composite_files);
             return result;
         },
         appModel() {
             return this.app.model;
-        }
+        },
     },
     watch: {
-        extension: function(value) {
+        extension: function (value) {
             this.updateExtension(value);
         },
-        genome: function(value) {
+        genome: function (value) {
             this.updateGenome(value);
-        }
+        },
     },
     methods: {
-        _newUploadModelProps: function(index, file) {
+        _newUploadModelProps: function (index, file) {
             return {
                 id: index,
                 file_name: file.name,
@@ -231,12 +231,12 @@ export default {
                 file_path: file.path,
                 file_data: file,
                 extension: this.extension,
-                genome: this.genome
+                genome: this.genome,
             };
         },
 
         /** Success */
-        _eventSuccess: function(index, message) {
+        _eventSuccess: function (index, message) {
             var hids = _.pluck(message["outputs"], "hid");
             var it = this.collection.get(index);
             it.set({ percentage: 100, status: "success", hids: hids });
@@ -245,13 +245,13 @@ export default {
             Galaxy.currHistoryPanel.refreshContents();
         },
 
-        _eventBuild: function() {
+        _eventBuild: function () {
             const Galaxy = getGalaxyInstance();
             var allHids = [];
-            _.forEach(this.collection.models, upload => {
+            _.forEach(this.collection.models, (upload) => {
                 allHids.push.apply(allHids, upload.get("hids"));
             });
-            var models = _.map(allHids, hid => Galaxy.currHistoryPanel.collection.getByHid(hid));
+            var models = _.map(allHids, (hid) => Galaxy.currHistoryPanel.collection.getByHid(hid));
             var selection = new Galaxy.currHistoryPanel.collection.constructor(models);
             // I'm building the selection wrong because I need to set this historyId directly.
             selection.historyId = Galaxy.currHistoryPanel.collection.historyId;
@@ -263,13 +263,13 @@ export default {
         },
 
         /** Start upload process */
-        _eventStart: function() {
+        _eventStart: function () {
             if (this.counterAnnounce == 0 || this.counterRunning > 0) {
                 return;
             }
             this.uploadSize = 0;
             this.uploadCompleted = 0;
-            this.collection.each(model => {
+            this.collection.each((model) => {
                 if (model.get("status") == "init") {
                     model.set("status", "queued");
                     this.uploadSize += model.get("file_size");
@@ -285,7 +285,7 @@ export default {
         },
 
         /** Remove all */
-        _eventReset: function() {
+        _eventReset: function () {
             if (this.counterRunning == 0) {
                 this.collection.reset();
                 this.counterAnnounce = 0;
@@ -298,7 +298,7 @@ export default {
                 this.appModel.set("percentage", 0);
                 this._updateStateForCounters();
             }
-        }
-    }
+        },
+    },
 };
 </script>

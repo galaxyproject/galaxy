@@ -33,7 +33,7 @@ export { addInitialization } from "./initQueue";
 // Process incoming config.set valls
 const input = new Subject();
 const mergedConfigs = input.pipe(
-    filter(fragment => fragment instanceof Object),
+    filter((fragment) => fragment instanceof Object),
     scan((config, fragment) => {
         return Object.assign({}, config, fragment);
     }, defaultConfigs)
@@ -51,7 +51,7 @@ export const config$ = currentConfig$.asObservable().pipe(filter(Boolean), debou
  * @param  {...objects} fragments Config objects to be merged into the global config
  */
 export function set(...fragments) {
-    fragments.forEach(fragment => input.next(fragment));
+    fragments.forEach((fragment) => input.next(fragment));
 }
 
 /**

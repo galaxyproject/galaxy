@@ -107,7 +107,7 @@ Vue.use(BootstrapVue);
 
 export default {
     components: {
-        CloudAuthItem
+        CloudAuthItem,
     },
     data() {
         return {
@@ -117,12 +117,12 @@ export default {
             showFilter: false,
             loading: false,
             doomedItem: null,
-            errorMessage: null
+            errorMessage: null,
         };
     },
     computed: {
         filteredItems() {
-            return this.items.filter(o => o.match(this.filter));
+            return this.items.filter((o) => o.match(this.filter));
         },
         filterDescription() {
             return `${this.filteredItems.length} matches out of ${this.items.length} items`;
@@ -136,19 +136,19 @@ export default {
             },
             // This setter is here because vue-bootstrap modal
             // tries to set this property for unfathomable reasons
-            set() {}
-        }
+            set() {},
+        },
     },
     watch: {
         showDeleted(deleted) {
             this.loadCredentials({ deleted });
-        }
+        },
     },
     methods: {
         loadCredentials(params = {}) {
             this.loading = true;
             svc.listCredentials(params)
-                .then(items => (this.items = items))
+                .then((items) => (this.items = items))
                 .catch(this.setError("Unable to load cloud keys."))
                 .finally(() => (this.loading = false));
         },
@@ -162,7 +162,7 @@ export default {
             }
             item.loading = true;
             svc.saveCredential(item)
-                .then(result => {
+                .then((result) => {
                     item.id = result.id;
                     item.updateState();
                 })
@@ -190,25 +190,25 @@ export default {
         expand(credential, { expanded }) {
             credential.expanded = expanded;
             if (expanded) {
-                this.items.filter(i => i !== credential).forEach(i => (i.expanded = false));
+                this.items.filter((i) => i !== credential).forEach((i) => (i.expanded = false));
             }
         },
         addItem(item) {
             this.items = [...this.items, item];
         },
         removeItem(item) {
-            this.items = this.items.filter(o => o !== item);
+            this.items = this.items.filter((o) => o !== item);
         },
         setError(msg) {
-            return err => {
+            return (err) => {
                 this.errorMessage = msg;
                 console.warn(err);
             };
-        }
+        },
     },
     created() {
         this.loadCredentials();
-    }
+    },
 };
 </script>
 

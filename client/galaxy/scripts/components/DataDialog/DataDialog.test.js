@@ -11,7 +11,7 @@ const mockOptions = {
     host: "host",
     root: "root",
     history: "history",
-    modalStatic: true
+    modalStatic: true,
 };
 
 describe("model.js", () => {
@@ -92,7 +92,7 @@ describe("services.js/Services", () => {
             hid: 1,
             id: 1,
             history_id: 0,
-            name: "name_1"
+            name: "name_1",
         };
         const services = new Services(mockOptions);
         const items = services.getItems(rawData);
@@ -111,19 +111,19 @@ describe("DataDialog.vue", () => {
             id: 1,
             hid: 1,
             name: "dataset_1",
-            history_content_type: "dataset"
+            history_content_type: "dataset",
         },
         {
             id: 2,
             name: "dataset_2",
-            type: "file"
+            type: "file",
         },
         {
             id: 3,
             hid: 3,
             name: "collection_1",
-            history_content_type: "dataset_collection"
-        }
+            history_content_type: "dataset_collection",
+        },
     ];
 
     const mockServices = class {
@@ -144,7 +144,7 @@ describe("DataDialog.vue", () => {
         wrapper = mount(DataDialog, {
             propsData: mockOptions,
             attachToDocument: true,
-            localVue
+            localVue,
         });
     });
 

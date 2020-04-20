@@ -202,5 +202,5 @@ define({
     "Edit dataset annotation": "Datensatz-Annotation bearbeiten",
     // ---------------------------------------------------------------------------- misc. MVC
     Tags: "Variablen",
-    "Edit annotation": "Anmerkung bearbeiten"
+    "Edit annotation": "Anmerkung bearbeiten",
 });

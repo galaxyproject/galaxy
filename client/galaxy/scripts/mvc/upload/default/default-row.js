@@ -7,7 +7,7 @@ import UploadExtension from "mvc/upload/upload-extension";
 import UploadBoxRow from "mvc/upload/uploadbox-row";
 import Select from "mvc/ui/ui-select";
 export default UploadBoxRow.extend({
-    initialize: function(app, options) {
+    initialize: function (app, options) {
         var self = this;
         this.app = app;
         this.list_extensions = app.listExtensions;
@@ -37,9 +37,9 @@ export default UploadBoxRow.extend({
             data: self.app.listGenomes,
             container: this.$(".upload-genome"),
             value: default_genome,
-            onchange: function(genome) {
+            onchange: function (genome) {
                 self.model.set("genome", genome);
-            }
+            },
         });
 
         // create select extension
@@ -48,15 +48,15 @@ export default UploadBoxRow.extend({
             data: self.app.extensions,
             container: this.$(".upload-extension"),
             value: default_extension,
-            onchange: function(extension) {
+            onchange: function (extension) {
                 self.model.set("extension", extension);
-            }
+            },
         });
 
         // initialize genome and extension values
         this.model.set({
             genome: default_genome,
-            extension: default_extension
+            extension: default_extension,
         });
 
         // handle click event
@@ -66,7 +66,7 @@ export default UploadBoxRow.extend({
 
         // handle extension info popover
         this.$(".upload-extension-info")
-            .on("click", e => {
+            .on("click", (e) => {
                 const upload_ext = this.upload_extension;
                 if (upload_ext) {
                     if (upload_ext.extension_popup.visible) {
@@ -79,29 +79,29 @@ export default UploadBoxRow.extend({
                     this._makeUploadExtensionsPopover(e);
                 }
             })
-            .on("mousedown", e => {
+            .on("mousedown", (e) => {
                 e.preventDefault();
             });
 
         // handle settings popover
         this.$settings
-            .on("click", e => {
+            .on("click", (e) => {
                 self._showSettings();
             })
-            .on("mousedown", e => {
+            .on("mousedown", (e) => {
                 e.preventDefault();
             });
 
         // handle text editing event
-        this.$text_content.on("change input", e => {
+        this.$text_content.on("change input", (e) => {
             self.model.set({
                 url_paste: $(e.target).val(),
-                file_size: $(e.target).val().length
+                file_size: $(e.target).val().length,
             });
         });
 
         // handle text editing event
-        this.$title.on("change input", e => {
+        this.$title.on("change input", (e) => {
             self.model.set({ file_name: $(e.target).val() });
         });
 
@@ -115,7 +115,7 @@ export default UploadBoxRow.extend({
         });
     },
 
-    render: function() {
+    render: function () {
         this._refreshType();
         this._refreshPercentage();
         this._refreshStatus();
@@ -126,26 +126,23 @@ export default UploadBoxRow.extend({
     },
 
     /** Remove view */
-    remove: function() {
+    remove: function () {
         this.select_genome.remove();
         this.select_extension.remove();
         Backbone.View.prototype.remove.apply(this);
     },
 
     /** Render type */
-    _refreshType: function() {
+    _refreshType: function () {
         var options = this.model.attributes;
         this.$title.val(_.escape(options.file_name));
         this.$size.html(Utils.bytesToString(options.file_size));
-        this.$mode
-            .removeClass()
-            .addClass("upload-mode")
-            .addClass("text-primary");
+        this.$mode.removeClass().addClass("upload-mode").addClass("text-primary");
         if (options.file_mode == "new") {
             this.$text
                 .css({
                     width: `${this.$el.width() - 16}px`,
-                    top: `${this.$el.height() - 8}px`
+                    top: `${this.$el.height() - 8}px`,
                 })
                 .show();
             this.$el.height(this.$el.height() - 8 + this.$text.height() + 16);
@@ -158,22 +155,19 @@ export default UploadBoxRow.extend({
     },
 
     /** Update extension */
-    _refreshExtension: function() {
+    _refreshExtension: function () {
         this.select_extension.value(this.model.get("extension"));
     },
 
     /** Update genome */
-    _refreshGenome: function() {
+    _refreshGenome: function () {
         this.select_genome.value(this.model.get("genome"));
     },
 
     /** Refresh status */
-    _refreshStatus: function() {
+    _refreshStatus: function () {
         var status = this.model.get("status");
-        this.$symbol
-            .removeClass()
-            .addClass("upload-symbol")
-            .addClass(this.status_classes[status]);
+        this.$symbol.removeClass().addClass("upload-symbol").addClass(this.status_classes[status]);
         this.model.set("enabled", status == "init");
         var enabled = this.model.get("enabled");
         this.$text_content.attr("disabled", !enabled);
@@ -191,17 +185,17 @@ export default UploadBoxRow.extend({
     },
 
     /** Make extension popover */
-    _makeUploadExtensionsPopover: function(e) {
+    _makeUploadExtensionsPopover: function (e) {
         this.upload_extension = new UploadExtension({
             $el: $(e.target),
             title: this.select_extension.text(),
             extension: this.select_extension.value(),
-            list: this.list_extensions
+            list: this.list_extensions,
         });
     },
 
     /** View template */
-    _template: function(options) {
+    _template: function (options) {
         return `<tr id="upload-row-${options.id}" class="upload-row">
                     <td>
                         <div class="upload-text-column">
@@ -241,5 +235,5 @@ export default UploadBoxRow.extend({
                         <div class="upload-symbol ${this.status_classes.init}"/>
                     </td>
                 </tr>`;
-    }
+    },
 });

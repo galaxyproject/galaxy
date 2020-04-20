@@ -10,7 +10,7 @@ import Repeat from "mvc/form/form-repeat";
 import InputElement from "mvc/form/form-input";
 import Parameters from "mvc/form/form-parameters";
 var View = Backbone.View.extend({
-    initialize: function(app, options) {
+    initialize: function (app, options) {
         this.app = app;
         this.inputs = options.inputs;
         this.parameters = new Parameters();
@@ -19,16 +19,16 @@ var View = Backbone.View.extend({
     },
 
     /** Render section view */
-    render: function() {
+    render: function () {
         var self = this;
         this.$el.empty();
-        _.each(this.inputs, input => {
+        _.each(this.inputs, (input) => {
             self.add(input);
         });
     },
 
     /** Add a new input element */
-    add: function(input) {
+    add: function (input) {
         var input_def = $.extend({}, input);
         input_def.id = Utils.uid();
         this.app.input_list[input_def.id] = input_def;
@@ -48,7 +48,7 @@ var View = Backbone.View.extend({
     },
 
     /** Add a conditional block */
-    _addConditional: function(input_def) {
+    _addConditional: function (input_def) {
         var self = this;
         input_def.test_param.id = input_def.id;
         input_def.test_param.textable = false;
@@ -59,11 +59,11 @@ var View = Backbone.View.extend({
             // add conditional sub sections
             for (var i in input_def.cases) {
                 var sub_section = new View(this.app, {
-                    inputs: input_def.cases[i].inputs
+                    inputs: input_def.cases[i].inputs,
                 });
                 this._append(sub_section.$el.addClass("ui-portlet-section pl-2"), `${input_def.id}-section-${i}`);
             }
-            field.model.set("onchange", value => {
+            field.model.set("onchange", (value) => {
                 var selectedCase = self.app.data.matchCase(input_def, value);
                 for (var i in input_def.cases) {
                     var case_def = input_def.cases[i];
@@ -89,7 +89,7 @@ var View = Backbone.View.extend({
     },
 
     /** Add a repeat block */
-    _addRepeat: function(input_def) {
+    _addRepeat: function (input_def) {
         var self = this;
         var block_index = 0;
 
@@ -98,10 +98,10 @@ var View = Backbone.View.extend({
             title: input_def.title || "Repeat",
             min: input_def.min,
             max: input_def.max,
-            onnew: function() {
+            onnew: function () {
                 create(input_def.inputs);
                 self.app.trigger("change");
-            }
+            },
         });
 
         // helper function to create new repeat blocks
@@ -111,10 +111,10 @@ var View = Backbone.View.extend({
             repeat.add({
                 id: sub_section_id,
                 $el: sub_section.$el,
-                ondel: function() {
+                ondel: function () {
                     repeat.del(sub_section_id);
                     self.app.trigger("change");
-                }
+                },
             });
         }
 
@@ -133,34 +133,30 @@ var View = Backbone.View.extend({
         var input_element = new InputElement(this.app, {
             label: input_def.title || input_def.name,
             help: input_def.help,
-            field: repeat
+            field: repeat,
         });
         this._append(input_element.$el, input_def.id);
     },
 
     /** Add a customized section */
-    _addSection: function(input_def) {
+    _addSection: function (input_def) {
         var portlet = new Portlet.View({
             title: input_def.title || input_def.name,
             cls: "ui-portlet-section",
             collapsible: true,
             collapsible_button: true,
-            collapsed: !input_def.expanded
+            collapsed: !input_def.expanded,
         });
         portlet.append(new View(this.app, { inputs: input_def.inputs }).$el);
-        portlet.append(
-            $("<div/>")
-                .addClass("form-text text-muted")
-                .html(input_def.help)
-        );
-        this.app.on("expand", input_id => {
+        portlet.append($("<div/>").addClass("form-text text-muted").html(input_def.help));
+        this.app.on("expand", (input_id) => {
             portlet.$(`#${input_id}`).length > 0 && portlet.expand();
         });
         this._append(portlet.$el, input_def.id);
     },
 
     /** Add a single input field element */
-    _addRow: function(input_def) {
+    _addRow: function (input_def) {
         var self = this;
         var id = input_def.id;
         input_def.onchange =
@@ -186,7 +182,7 @@ var View = Backbone.View.extend({
             backdrop: input_def.backdrop,
             hidden: input_def.hidden,
             fixed: input_def.fixed,
-            field: field
+            field: field,
         });
         this.app.element_list[id] = input_element;
         this._append(input_element.$el, input_def.id);
@@ -194,11 +190,11 @@ var View = Backbone.View.extend({
     },
 
     /** Append a new element to the form i.e. input element, repeat block, conditionals etc. */
-    _append: function($el, id) {
+    _append: function ($el, id) {
         this.$el.append($el.addClass("section-row").attr("id", id));
-    }
+    },
 });
 
 export default {
-    View: View
+    View: View,
 };

@@ -4,12 +4,12 @@ import toolsTestBuild from "./json/tools.test.build";
 
 export default {
     "api/datatypes/mapping": {
-        data: JSON.stringify(dataTypesMapping)
+        data: JSON.stringify(dataTypesMapping),
     },
     "api/datatypes": {
-        data: JSON.stringify(dataTypes)
+        data: JSON.stringify(dataTypes),
     },
     "api/tools/test/build": {
-        data: JSON.stringify(toolsTestBuild)
-    }
+        data: JSON.stringify(toolsTestBuild),
+    },
 };

@@ -14,17 +14,17 @@ import { getRecentInvocations } from "./UserServices";
 
 export default {
     components: {
-        Invocations
+        Invocations,
     },
     data() {
         return {
             invocationItems: [],
-            loading: true
+            loading: true,
         };
     },
     created() {
         getRecentInvocations()
-            .then(response => {
+            .then((response) => {
                 this.invocationItems = response.data;
                 this.loading = false;
             })
@@ -33,7 +33,7 @@ export default {
     methods: {
         handleError(error) {
             console.error(error);
-        }
-    }
+        },
+    },
 };
 </script>

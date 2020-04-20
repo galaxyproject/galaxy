@@ -4,7 +4,7 @@ import testApp from "qunit/test-app";
 import GalaxyModal from "mvc/ui/ui-modal";
 
 QUnit.module("Modal dialog test", {
-    beforeEach: function() {
+    beforeEach: function () {
         $.fx.off = true;
         testApp.create();
         var self = this;
@@ -12,26 +12,26 @@ QUnit.module("Modal dialog test", {
             title: "Test title",
             body: "Test body",
             buttons: {
-                Ok: function() {},
-                Cancel: function() {
+                Ok: function () {},
+                Cancel: function () {
                     self.app.hide();
-                }
-            }
+                },
+            },
         });
     },
-    afterEach: function() {
+    afterEach: function () {
         $.fx.off = false;
         testApp.destroy();
         this.app.$el.remove();
-    }
+    },
 });
 
-QUnit.test("test dialog attributes", function(assert) {
+QUnit.test("test dialog attributes", function (assert) {
     assert.ok(this.app.$header.find(".title").html() == "Test title", "Modal header has correct title.");
     assert.ok(this.app.$body.html() == "Test body", "Modal header has correct body.");
 });
 
-QUnit.test("test dialog visibility", function(assert) {
+QUnit.test("test dialog visibility", function (assert) {
     this.app.hide();
     assert.ok(this.app.$el.css("display") == "none", "Modal hidden manually");
     this.app.show();
@@ -50,7 +50,7 @@ QUnit.test("test dialog visibility", function(assert) {
     assert.ok(!this.app.$backdrop.hasClass("in"), "Backdrop tagged as hidden.");
 });
 
-QUnit.test("test dialog closing events", function(assert) {
+QUnit.test("test dialog closing events", function (assert) {
     this.app.show();
     this.app.$backdrop.trigger("click");
     assert.ok(this.app.$el.css("display") == "block", "Modal shown after backdrop click");
@@ -61,7 +61,7 @@ QUnit.test("test dialog closing events", function(assert) {
     assert.ok(this.app.$el.css("display") == "none", "Modal hidden after backdrop click");
 });
 
-QUnit.test("test dialog rendering", function(assert) {
+QUnit.test("test dialog rendering", function (assert) {
     var before = this.app.$el.html();
     this.app.render();
     assert.ok(before == this.app.$el.html(), "Re-rendering successful");
@@ -70,7 +70,7 @@ QUnit.test("test dialog rendering", function(assert) {
     assert.ok(this.app.$header.find(".title").html() == "New Title", "Modal header has correct new title.");
 });
 
-QUnit.test("test button states", function(assert) {
+QUnit.test("test button states", function (assert) {
     assert.ok(this.app.getButton("Ok").html() === "Ok", "Ok has correct label");
     assert.ok(!this.app.getButton("Ok").prop("disabled"), "Ok is active");
     assert.ok(!this.app.getButton("Cancel").prop("disabled"), "Cancel is active");

@@ -62,58 +62,61 @@ export default {
     name: "ToolBox",
     components: {
         ToolSection,
-        ToolSearch
+        ToolSearch,
     },
     data() {
         return {
             query: null,
-            results: null
+            results: null,
         };
     },
     props: {
         toolbox: {
             type: Array,
-            required: true
+            required: true,
         },
         workflows: {
-            type: Array
+            type: Array,
+            required: true,
         },
         dataManagers: {
-            type: Array
+            type: Array,
+            required: true,
         },
         moduleSections: {
-            type: Array
-        }
+            type: Array,
+            required: true,
+        },
     },
     computed: {
         workflowSection() {
             return {
                 name: _l("Workflows"),
-                elems: this.workflows
+                elems: this.workflows,
             };
         },
         dataManagerSection() {
             return {
                 name: _l("Data Managers"),
-                elems: this.dataManagers
+                elems: this.dataManagers,
             };
         },
         categories() {
             return filterToolSections(this.toolsLayout, this.results);
         },
         toolsLayout() {
-            return this.toolbox.map(section => {
+            return this.toolbox.map((section) => {
                 return {
                     ...section,
                     elems:
                         section.elems &&
-                        section.elems.map(el => {
+                        section.elems.map((el) => {
                             el.disabled = !el.is_workflow_compatible;
                             return el;
-                        })
+                        }),
                 };
             });
-        }
+        },
     },
     methods: {
         onQuery(query) {
@@ -136,7 +139,7 @@ export default {
         },
         onInsertWorkflowSteps(workflow) {
             this.$emit("onInsertWorkflowSteps", workflow.id, workflow.step_count);
-        }
-    }
+        },
+    },
 };
 </script>

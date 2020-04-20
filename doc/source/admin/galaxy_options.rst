@@ -1376,6 +1376,27 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``interactivetools_proxy_host``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Proxy host - assumed to just be hosted on the same hostname and
+    port as Galaxy by default.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~
+``interactivetools_map``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Map for interactivetool proxy.
+:Default: ``interactivetools_map.sqlite``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``visualizations_visible``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -4040,6 +4061,69 @@
     fields will be used)
 :Default: ``-1``
 :Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_tool_recommendations``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Allow the display of tool recommendations in workflow editor and
+    after tool execution. If it is enabled and set to true, please
+    enable 'tool_recommendation_model_path' as well
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``tool_recommendation_model_path``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set remote path of the trained model (HDF5 file) for tool
+    recommendation.
+:Default: ``https://github.com/galaxyproject/galaxy-test-data/raw/master/tool_recommendation_model.hdf5``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~
+``topk_recommendations``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set the number of predictions/recommendations to be made by the
+    model
+:Default: ``20``
+:Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``admin_tool_recommendations_path``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set path to the additional tool preferences from Galaxy admins. It
+    has two blocks. One for listing deprecated tools which will be
+    removed from the recommendations and another is for adding
+    additional tools to be recommended along side those from the deep
+    learning model.
+:Default: ``tool_recommendations_overwrite.yml``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``overwrite_model_recommendations``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Overwrite or append to the tool recommendations by the deep
+    learning model. When set to true, all the recommendations by the
+    deep learning model are overwritten by the recommendations set by
+    an admin in a config file 'tool_recommendations_overwrite.yml'.
+    When set to false, the recommended tools by admins and predicted
+    by the deep learning model are shown.
+:Default: ``false``
+:Type: bool
 
 
 

@@ -36,29 +36,29 @@ export default {
     props: {
         pageId: {
             required: true,
-            type: String
+            type: String,
         },
         publicUrl: {
             required: true,
-            type: String
+            type: String,
         },
         content: {
-            type: String
+            type: String,
         },
         contentFormat: {
             type: String,
-            default: "html"
+            default: "html",
         },
         title: {
-            type: String
-        }
+            type: String,
+        },
     },
     computed: {},
     methods: {
-        saveContent: function() {
+        saveContent: function () {
             this.$refs.contentEditor.saveContent();
         },
-        viewContent: function() {
+        viewContent: function () {
             // TODO: Future iteration, contentEditor should have an entry point that can decide
             // if it has changed content.
             const r = window.confirm(
@@ -67,11 +67,11 @@ export default {
             if (r === true) {
                 window.location = `${getAppRoot()}${this.publicUrl}`;
             }
-        }
+        },
     },
     components: {
         PageEditorHtml,
-        PageEditorMarkdown
-    }
+        PageEditorMarkdown,
+    },
 };
 </script>

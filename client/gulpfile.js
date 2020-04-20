@@ -21,7 +21,7 @@ const paths = {
     //    "../config/plugins/{visualizations,interactive_environments}/*/*/package.json"
     //],
     plugin_build_dirs: [
-        "../config/plugins/visualizations/{annotate_image,hyphyvision,openlayers}/package.json",
+        "../config/plugins/visualizations/{annotate_image,hyphyvision,openlayers,editor}/package.json",
     ],
     lib_locs: {
         // This is a stepping stone towards having all this staged

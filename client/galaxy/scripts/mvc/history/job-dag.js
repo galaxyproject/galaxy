@@ -8,7 +8,7 @@ var _super = GRAPH.Graph;
  *      Reads in job json, filters and process that json, and builds a graph
  *      using the connections between job inputs and outputs.
  */
-var JobDAG = function(options) {
+var JobDAG = function (options) {
     options = options || {};
     var self = this;
     //this.logger = console;
@@ -45,7 +45,7 @@ JobDAG.prototype.init = function _init(options) {
 
     var self = this;
     self.options = _.defaults(options, {
-        excludeSetMetadata: false
+        excludeSetMetadata: false,
     });
     self.filters = self._initFilters();
 
@@ -137,7 +137,7 @@ JobDAG.prototype.preprocessJobs = function _preprocessJobs(jobs) {
     var self = this;
     self._outputIdToJobMap = {};
 
-    self._jobsData = self.sort(jobs).map(job => self.preprocessJob(_.clone(job)));
+    self._jobsData = self.sort(jobs).map((job) => self.preprocessJob(_.clone(job)));
     //console.debug( JSON.stringify( self._jobsData, null, '    ' ) );
     //console.debug( JSON.stringify( self._outputIdToJobMap, null, '    ' ) );
     return self;
@@ -256,12 +256,12 @@ JobDAG.prototype.createGraph = function _createGraph(jobsData) {
     self.debug("connections:");
     //console.debug( jobsData );
 
-    _.each(jobsData, jobData => {
+    _.each(jobsData, (jobData) => {
         var id = jobData.job.id;
         self.debug("\t", id, jobData);
         self.createVertex(id, jobData);
     });
-    _.each(jobsData, jobData => {
+    _.each(jobsData, (jobData) => {
         var targetId = jobData.job.id;
         _.each(jobData.inputs, (input, inputId) => {
             //console.debug( '\t\t target input:', inputId, input );
@@ -275,7 +275,7 @@ JobDAG.prototype.createGraph = function _createGraph(jobsData) {
             //console.debug( '\t\t creating edge, source:', sourceId, self.vertices[ sourceId ] );
             //console.debug( '\t\t creating edge, target:', targetId, self.vertices[ targetId ] );
             self.createEdge(sourceId, targetId, self.directed, {
-                dataset: inputId
+                dataset: inputId,
             });
         });
     });
@@ -296,9 +296,9 @@ JobDAG.prototype.createJobLessVertex = function _createJobLessVertex(contentId) 
 };
 
 /** Override to re-sort (ugh) jobs in each component by update time */
-JobDAG.prototype.weakComponentGraphArray = function() {
+JobDAG.prototype.weakComponentGraphArray = function () {
     var dag = this;
-    return this.weakComponents().map(component => {
+    return this.weakComponents().map((component) => {
         //TODO: this seems to belong above (in sort) - why isn't it preserved?
         // note: using create_time (as opposed to update_time)
         //  since update_time for jobless/copied datasets is changes more often
@@ -319,9 +319,9 @@ JobDAG.prototype.weakComponentGraphArray = function() {
     });
 };
 
-JobDAG.prototype._jobsDataMap = function() {
+JobDAG.prototype._jobsDataMap = function () {
     var jobsDataMap = {};
-    this._jobsData.forEach(jobData => {
+    this._jobsData.forEach((jobData) => {
         jobsDataMap[jobData.job.id] = jobData;
     });
     return jobsDataMap;

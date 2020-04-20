@@ -19,10 +19,10 @@ async function getCurrentGalaxyHistory() {
         // Otherwise manually fetch the current history json and use that id.
         return axios
             .get(`${getAppRoot()}history/current_history_json`)
-            .then(response => {
+            .then((response) => {
                 return response.data.id;
             })
-            .catch(err => {
+            .catch((err) => {
                 console.error("Error fetching current user history:", err);
                 return null;
             });
@@ -36,12 +36,12 @@ async function getCurrentGalaxyHistory() {
 export function dialog(callback, options = {}) {
     const galaxy = getGalaxyInstance();
     const host = `${window.location.protocol}//${window.location.hostname}:${window.location.port}`;
-    getCurrentGalaxyHistory().then(history_id => {
+    getCurrentGalaxyHistory().then((history_id) => {
         Object.assign(options, {
             callback: callback,
             history: history_id,
             root: galaxy.root,
-            host: host
+            host: host,
         });
         _mountSelectionDialog(DataDialog, options);
     });
@@ -53,7 +53,7 @@ export function dialog(callback, options = {}) {
  */
 export function workflowDialog(callback, options = {}) {
     Object.assign(options, {
-        callback: callback
+        callback: callback,
     });
     _mountSelectionDialog(WorkflowDialog, options);
 }
@@ -63,10 +63,10 @@ export function workflowDialog(callback, options = {}) {
  * @param {function} callback - Result function called with selection
  */
 export function datasetCollectionDialog(callback, options = {}) {
-    getCurrentGalaxyHistory().then(history_id => {
+    getCurrentGalaxyHistory().then((history_id) => {
         Object.assign(options, {
             callback: callback,
-            history: history_id
+            history: history_id,
         });
         _mountSelectionDialog(DatasetCollectionDialog, options);
     });
@@ -77,7 +77,7 @@ function _mountSelectionDialog(clazz, options) {
     const vm = document.createElement("div");
     $("body").append(vm);
     new instance({
-        propsData: options
+        propsData: options,
     }).$mount(vm);
 }
 
@@ -94,10 +94,10 @@ export function create(options) {
         }
         return options.history_id;
     }
-    getHistory().then(history_id => {
+    getHistory().then((history_id) => {
         $.uploadpost({
             url: `${getAppRoot()}api/tools`,
-            success: response => {
+            success: (response) => {
                 if (history_panel) {
                     history_panel.refreshContents();
                 }
@@ -117,10 +117,10 @@ export function create(options) {
                         "files_0|to_posix_lines": options.to_posix_lines ? "Yes" : null,
                         "files_0|dbkey": options.genome || "?",
                         "files_0|file_type": options.extension || "auto",
-                        "files_0|url_paste": options.url_paste
-                    })
-                }
-            }
+                        "files_0|url_paste": options.url_paste,
+                    }),
+                },
+            },
         });
     });
 }

@@ -42,13 +42,13 @@ export default {
     computed: {
         showDropdown() {
             return this.toolshedUrls.length > 1;
-        }
+        },
     },
     methods: {
         onToolshed(url) {
             this.$emit("onToolshed", url);
-        }
-    }
+        },
+    },
 };
 </script>
 <style scoped>

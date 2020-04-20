@@ -18,12 +18,12 @@ var HistoryDatasetCollection = DC.extend(hcontentMixin).extend(
     /** @lends HistoryDatasetCollection.prototype */ {
         defaults: _.extend(_.clone(DC.prototype.defaults), {
             history_content_type: "dataset_collection",
-            model_class: "HistoryDatasetCollectionAssociation"
+            model_class: "HistoryDatasetCollectionAssociation",
         }),
 
         //==============================================================================
         /** Override to post to contents route w/o id. */
-        save: function(attributes, options) {
+        save: function (attributes, options) {
             if (this.isNew()) {
                 options = options || {};
                 options.url = `${this.urlRoot + this.get("history_id")}/contents`;
@@ -34,13 +34,13 @@ var HistoryDatasetCollection = DC.extend(hcontentMixin).extend(
         },
 
         /** String representation. */
-        toString: function() {
+        toString: function () {
             return `History${DC.prototype.toString.call(this)}`;
-        }
+        },
     }
 );
 
 //==============================================================================
 export default {
-    HistoryDatasetCollection: HistoryDatasetCollection
+    HistoryDatasetCollection: HistoryDatasetCollection,
 };

@@ -3,15 +3,15 @@ import testApp from "qunit/test-app";
 import Utils from "utils/utils";
 
 QUnit.module("Utils test", {
-    beforeEach: function() {
+    beforeEach: function () {
         testApp.create();
     },
-    afterEach: function() {
+    afterEach: function () {
         testApp.destroy();
-    }
+    },
 });
 
-QUnit.test("isEmpty", function(assert) {
+QUnit.test("isEmpty", function (assert) {
     assert.ok(Utils.isEmpty([]), "Empty array");
     assert.ok(Utils.isEmpty(["data", undefined]), "Array contains `undefined`");
     assert.ok(Utils.isEmpty(["data", null]), "Array contains `null`");

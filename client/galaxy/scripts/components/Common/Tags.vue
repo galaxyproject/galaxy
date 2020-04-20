@@ -5,20 +5,20 @@
 import StatelessTags from "components/Tags/StatelessTags";
 export default {
     components: {
-        StatelessTags
+        StatelessTags,
     },
     props: {
         index: {
-            type: Number
+            type: Number,
         },
         tags: {
-            type: Array
-        }
+            type: Array,
+        },
     },
     methods: {
         onInput(tags) {
             this.$emit("input", tags, this.index);
-        }
-    }
+        },
+    },
 };
 </script>

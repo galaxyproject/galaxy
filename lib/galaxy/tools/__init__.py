@@ -241,7 +241,7 @@ class ToolBox(BaseGalaxyToolBox):
     how to construct them, action types, dependency management, etc....
     """
 
-    def __init__(self, config_filenames, tool_root_dir, app):
+    def __init__(self, config_filenames, tool_root_dir, app, save_integrated_tool_panel=True):
         self._reload_count = 0
         self.tool_location_fetcher = ToolLocationFetcher()
         # This is here to deal with the old default value, which doesn't make
@@ -253,6 +253,7 @@ class ToolBox(BaseGalaxyToolBox):
             config_filenames=config_filenames,
             tool_root_dir=tool_root_dir,
             app=app,
+            save_integrated_tool_panel=save_integrated_tool_panel,
         )
 
     def can_load_config_file(self, config_filename):
@@ -1919,7 +1920,7 @@ class Tool(Dictifiable):
             os.remove(temp_file)
         return tarball_archive
 
-    def to_dict(self, trans, link_details=False, io_details=False):
+    def to_dict(self, trans, link_details=False, io_details=False, tool_help=False):
         """ Returns dict of tool. """
 
         # Basic information
@@ -1969,6 +1970,13 @@ class Tool(Dictifiable):
         # FIXME: the Tool class should declare directly, instead of ad hoc inspection
         regular_form = tool_class == Tool or isinstance(self, (DatabaseOperationTool, InteractiveTool))
         tool_dict["form_style"] = "regular" if regular_form else "special"
+        if tool_help:
+            # create tool help
+            help_txt = ''
+            if self.help:
+                help_txt = self.help.render(static_path=self.app.url_for('/static'), host_url=self.app.url_for('/', qualified=True))
+                help_txt = unicodify(help_txt)
+            tool_dict['help'] = help_txt
 
         return tool_dict
 
