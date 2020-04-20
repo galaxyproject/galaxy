@@ -16,30 +16,34 @@ DO_NOT_TEST = [
     'heartbeat_log',
     'ftp_upload_dir_template',
     'workflow_resource_params_mapper',
-    'user_tool_filters',
-    'user_tool_label_filters',
     'amqp_internal_connection',
 ]
+
+
+def listify_strip(value):
+    return listify(value, do_strip=True)
 
 
 class ExpectedValues:
 
     RESOLVERS = {
         'disable_library_comptypes': [''],  # TODO: we can do better
-        'mulled_channels': listify,
+        'mulled_channels': listify_strip,
         'object_store_store_by': 'uuid',
         'password_expiration_period': timedelta,
-        'persistent_communication_rooms': listify,
+        'persistent_communication_rooms': listify_strip,
         'statsd_host': '',  # TODO: do we need '' as the default?
-        'tool_config_file': listify,
-        'tool_data_table_config_path': listify,
-        'tool_filters': listify,
-        'tool_label_filters': listify,
-        'tool_section_filters': listify,
-        'toolbox_filter_base_modules': listify,
+        'tool_config_file': listify_strip,
+        'tool_data_table_config_path': listify_strip,
+        'tool_filters': listify_strip,
+        'tool_label_filters': listify_strip,
+        'tool_section_filters': listify_strip,
+        'toolbox_filter_base_modules': listify_strip,
         'use_remote_user': None,  # TODO: should be False (config logic incorrect)
-        'user_library_import_symlink_whitelist': listify,
-        'user_tool_section_filters': listify,
+        'user_library_import_symlink_whitelist': listify_strip,
+        'user_tool_section_filters': listify_strip,
+        'user_tool_filters': listify_strip,
+        'user_tool_label_filters': listify_strip,
     }
     # RESOLVERS provides expected values for config options.
     # - key: config option
