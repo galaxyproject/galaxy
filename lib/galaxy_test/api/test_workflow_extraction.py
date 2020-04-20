@@ -228,7 +228,7 @@ steps:
   - tool_id: cat_collection
     state:
       input1:
-        $link: noop#out_file1
+        $link: noop/out_file1
 test_data:
   text_input1:
     type: "list:paired"
@@ -274,11 +274,11 @@ steps:
     tool_id: collection_split_on_column
     state:
       input1:
-        $link: cat_inputs#out_file1
+        $link: cat_inputs/out_file1
   - tool_id: cat_list
     state:
       input1:
-        $link: split_up#split_output
+        $link: split_up/split_output
 test_data:
   text_input1: "samp1\t10.0\nsamp2\t20.0\n"
   text_input2: "samp1\t30.0\nsamp2\t40.0\n"
@@ -316,16 +316,16 @@ steps:
     tool_id: collection_creates_pair
     state:
       input1:
-        $link: cat_inputs#out_file1
+        $link: cat_inputs/out_file1
   - label: cat_pairs
     tool_id: cat_collection
     state:
       input1:
-        $link: pair_off#paired_output
+        $link: pair_off/paired_output
   - tool_id: cat_list
     state:
       input1:
-        $link: cat_pairs#out_file1
+        $link: cat_pairs/out_file1
 test_data:
   text_input1:
     type: list

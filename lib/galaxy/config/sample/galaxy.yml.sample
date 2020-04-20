@@ -113,6 +113,13 @@ galaxy:
   #config_dir: null
 
   # The directory that will be prepended to relative paths in options
+  # specifying config files controlled by Galaxy (such as
+  # shed_tool_config_file, etc.). Must be writable by the user running
+  # Galaxy.  Defaults to `<config_dir>/` if running Galaxy from source
+  # or `<data_dir>/config` otherwise.
+  #managed_config_dir: null
+
+  # The directory that will be prepended to relative paths in options
   # specifying Galaxy data/cache directories and files (such as the
   # default SQLite database, file_path, etc.). Defaults to `database/`
   # if running Galaxy from source or `<config_dir>/data` otherwise.
@@ -233,7 +240,7 @@ galaxy:
   # installation, whereas Galaxy will fail to start if any files in
   # tool_config_file cannot be read.
   # The value of this option will be resolved with respect to
-  # <mutable_config_dir>.
+  # <managed_config_dir>.
   #shed_tool_config_file: shed_tool_conf.xml
 
   # Enable / disable checking if any tools defined in the above non-shed
@@ -249,7 +256,7 @@ galaxy:
   # tool shed upon a new release, they will be added to this tool config
   # file.
   # The value of this option will be resolved with respect to
-  # <config_dir>.
+  # <managed_config_dir>.
   #migrated_tools_config: migrated_tools_conf.xml
 
   # File that contains the XML section and tool tags from all tool panel
@@ -257,6 +264,8 @@ galaxy:
   # panel layout.  This file can be changed by the Galaxy administrator
   # to alter the layout of the tool panel.  If not present, Galaxy will
   # create it.
+  # The value of this option will be resolved with respect to
+  # <managed_config_dir>.
   #integrated_tool_panel_config: integrated_tool_panel.xml
 
   # Default path to the directory containing the tools defined in
@@ -442,12 +451,6 @@ galaxy:
   # between 1 and 24.
   #hours_between_check: 12
 
-  # Enable use of an in-memory registry with bi-directional
-  # relationships between repositories (i.e., in addition to lists of
-  # dependencies for a repository, keep an in-memory registry of
-  # dependent items for each repository.
-  #manage_dependency_relationships: false
-
   # XML config file that contains data table entries for the
   # ToolDataTableManager.  This file is manually # maintained by the
   # Galaxy administrator (.sample used if default does not exist).
@@ -461,7 +464,7 @@ galaxy:
   # is parsed and applied to the ToolDataTableManager at server start
   # up.
   # The value of this option will be resolved with respect to
-  # <mutable_config_dir>.
+  # <managed_config_dir>.
   #shed_tool_data_table_config: shed_tool_data_table_conf.xml
 
   # Directory where data used by tools is located.  See the samples in
@@ -487,7 +490,9 @@ galaxy:
 
   # File that defines the builds (dbkeys) available at sites used by
   # display applications and the URL to those sites.
-  #build_sites_config_file: config/build_sites.yml.sample
+  # The value of this option will be resolved with respect to
+  # <config_dir>.
+  #build_sites_config_file: build_sites.yml
 
   # File containing old-style genome builds.
   # The value of this option will be resolved with respect to
@@ -682,6 +687,14 @@ galaxy:
   # Example value 'config/disposable_email_blacklist.conf'
   #blacklist_file: null
 
+  # E-mail domains whitelist is used to specify allowed email address
+  # domains. If the list is non-empty and a user attempts registration
+  # using an email address belonging to a domain that is not on the
+  # list, registration will be enied. This is a more restrictive option
+  # than <blacklist_file>, and therefore, in case <whitelist_file> is
+  # defined, <blacklist_file> will be ignored.
+  #whitelist_file: disposable_email_whitelist.conf
+
   # Registration warning message is used to discourage people from
   # registering multiple accounts.  Applies mostly for the main Galaxy
   # instance. If no message specified the warning box will not be shown.
@@ -747,6 +760,13 @@ galaxy:
 
   # Enable InteractiveTools.
   #interactivetools_enable: false
+
+  # Proxy host - assumed to just be hosted on the same hostname and port
+  # as Galaxy by default.
+  #interactivetools_proxy_host: null
+
+  # Map for interactivetool proxy.
+  #interactivetools_map: interactivetools_map.sqlite
 
   # Show visualization tab and list in masthead.
   #visualizations_visible: true
@@ -835,10 +855,6 @@ galaxy:
 
   # The URL linked by the "Videos" link in the "Help" menu.
   #screencasts_url: https://vimeo.com/galaxyproject
-
-  # Points to the GenomeSpace UI service which will be used by the
-  # GenomeSpace importer and exporter tools
-  #genomespace_ui_url: https://gsui.genomespace.org/jsui/
 
   # The URL linked by the "Terms and Conditions" link in the "Help"
   # menu, as well as on the user registration and login forms and in the
@@ -1078,7 +1094,9 @@ galaxy:
   # this file are trusted and will not have their HTML sanitized on
   # display.  This can be manually edited or manipulated through the
   # Admin control panel -- see "Manage Display Whitelist"
-  #sanitize_whitelist_file: config/sanitize_whitelist.txt
+  # The value of this option will be resolved with respect to
+  # <mutable_config_dir>.
+  #sanitize_whitelist_file: sanitize_whitelist.txt
 
   # By default Galaxy will serve non-HTML tool output that may
   # potentially contain browser executable JavaScript content as plain
@@ -1604,6 +1622,12 @@ galaxy:
   # see dataset paths.
   #expose_dataset_path: false
 
+  # XML config file that contains the job metric collection
+  # configuration.
+  # The value of this option will be resolved with respect to
+  # <config_dir>.
+  #job_metrics_config_file: job_metrics_conf.xml
+
   # This option allows users to see the job metrics (except for
   # environment variables).
   #expose_potentially_sensitive_job_metrics: false
@@ -1621,7 +1645,7 @@ galaxy:
   # File where Tool Shed based Data Managers are configured. This file
   # will be created automatically upon data manager installation.
   # The value of this option will be resolved with respect to
-  # <mutable_config_dir>.
+  # <managed_config_dir>.
   #shed_data_manager_config_file: shed_data_manager_conf.xml
 
   # Directory to store Data Manager based tool-data. Defaults to the
@@ -1808,7 +1832,7 @@ galaxy:
   #markdown_export_css_pages: markdown_export_pages.css
 
   # CSS file to apply to invocation report exports to PDF. Generally
-  # prefer  markdown_export_css, but this is here for deployments that
+  # prefer markdown_export_css, but this is here for deployments that
   # would like to tailor different kinds of exports.
   #markdown_export_css_invocation_reports: markdown_export_invocation_reports.css
 
@@ -1959,4 +1983,32 @@ galaxy:
   # always use the regular select fields, use any other positive number
   # as threshold (above threshold: regular select fields will be used)
   #select_type_workflow_threshold: -1
+
+  # Allow the display of tool recommendations in workflow editor and
+  # after tool execution. If it is enabled and set to true, please
+  # enable 'tool_recommendation_model_path' as well
+  #enable_tool_recommendations: false
+
+  # Set remote path of the trained model (HDF5 file) for tool
+  # recommendation.
+  #tool_recommendation_model_path: https://github.com/galaxyproject/galaxy-test-data/raw/master/tool_recommendation_model.hdf5
+
+  # Set the number of predictions/recommendations to be made by the
+  # model
+  #topk_recommendations: 20
+
+  # Set path to the additional tool preferences from Galaxy admins. It
+  # has two blocks. One for listing deprecated tools which will be
+  # removed from the recommendations and another is for adding
+  # additional tools to be recommended along side those from the deep
+  # learning model.
+  #admin_tool_recommendations_path: tool_recommendations_overwrite.yml
+
+  # Overwrite or append to the tool recommendations by the deep learning
+  # model. When set to true, all the recommendations by the deep
+  # learning model are overwritten by the recommendations set by an
+  # admin in a config file 'tool_recommendations_overwrite.yml'. When
+  # set to false, the recommended tools by admins and predicted by the
+  # deep learning model are shown.
+  #overwrite_model_recommendations: false
 

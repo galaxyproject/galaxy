@@ -55,28 +55,28 @@ export default {
         UploadButton,
         FavoritesButton,
         ToolSection,
-        ToolSearch
+        ToolSearch,
     },
     data() {
         return {
             query: null,
             results: null,
-            workflow: null
+            workflow: null,
         };
     },
     props: {
         toolbox: {
             type: Array,
-            required: true
+            required: true,
         },
         stored_workflow_menu_entries: {
             type: Array,
-            required: true
+            required: true,
         },
         workflowTitle: {
             type: String,
-            default: _l("Workflows")
-        }
+            default: _l("Workflows"),
+        },
     },
     computed: {
         categories() {
@@ -91,17 +91,17 @@ export default {
                 {
                     title: _l("All workflows"),
                     href: `${getAppRoot()}workflows/list`,
-                    id: "list"
+                    id: "list",
                 },
-                ...this.stored_workflow_menu_entries.map(menuEntry => {
+                ...this.stored_workflow_menu_entries.map((menuEntry) => {
                     return {
                         id: menuEntry.id,
                         title: menuEntry.name,
-                        href: `${getAppRoot()}workflows/run?id=${menuEntry.id}`
+                        href: `${getAppRoot()}workflows/run?id=${menuEntry.id}`,
                     };
-                })
+                }),
             ];
-        }
+        },
     },
     methods: {
         onQuery(query) {
@@ -122,10 +122,10 @@ export default {
                 evt.preventDefault();
                 Galaxy.router.push("/", {
                     tool_id: tool.id,
-                    version: tool.version
+                    version: tool.version,
                 });
             }
-        }
-    }
+        },
+    },
 };
 </script>

@@ -15,7 +15,7 @@ import { getInstalledRepositories, resetRepositoryMetadata } from "./AdminServic
 
 export default {
     components: {
-        BaseList
+        BaseList,
     },
     data() {
         return {
@@ -23,11 +23,11 @@ export default {
                 { key: "execute", label: "Reset" },
                 { key: "name", label: "Metadata", sortable: true },
                 { key: "owner", sortable: true },
-                { key: "ctx_rev", label: "Revision" }
+                { key: "ctx_rev", label: "Revision" },
             ],
             getter: getInstalledRepositories,
-            setter: resetRepositoryMetadata
+            setter: resetRepositoryMetadata,
         };
-    }
+    },
 };
 </script>

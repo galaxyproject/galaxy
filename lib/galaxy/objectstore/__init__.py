@@ -82,7 +82,7 @@ class ObjectStore(object):
         000/obj.id)
     """
 
-    def __init__(self, config, config_dict={}, **kwargs):
+    def __init__(self, config, config_dict=None, **kwargs):
         """
         :type config: object
         :param config: An object, most likely populated from
@@ -95,6 +95,8 @@ class ObjectStore(object):
               parent directory those directories will be created.
             * new_file_path -- Used to set the 'temp' extra_dir.
         """
+        if config_dict is None:
+            config_dict = {}
         self.running = True
         self.config = config
         self.check_old_style = config.object_store_check_old_style
@@ -911,7 +913,7 @@ def type_to_object_store_class(store, fsmon=False):
         objectstore_class = HierarchicalObjectStore
         objectstore_constructor_kwds["fsmon"] = fsmon
     elif store == 'irods':
-        from .rods import IRODSObjectStore
+        from .irods import IRODSObjectStore
         objectstore_class = IRODSObjectStore
     elif store == 'azure_blob':
         from .azure_blob import AzureBlobObjectStore

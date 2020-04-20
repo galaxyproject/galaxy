@@ -4,21 +4,21 @@ import axios from "axios";
 
 const state = {
     historyDetailsById: {},
-    historyById: {}
+    historyById: {},
 };
 
 const getters = {
-    getHistoryById: state => historyId => {
+    getHistoryById: (state) => (historyId) => {
         return state.historyById[historyId];
     },
-    getHistoryNameById: state => historyId => {
+    getHistoryNameById: (state) => (historyId) => {
         const details = state.historyDetailsById[historyId];
         if (details && details.name) {
             return details.name;
         } else {
             return "Unavailable";
         }
-    }
+    },
 };
 
 const actions = {
@@ -30,25 +30,25 @@ const actions = {
         const params = {};
         const { data } = await axios.get(`${getAppRoot()}api/histories/${historyId}`, { params });
         commit("saveHistoryForId", { historyId, historyData: data });
-    }
+    },
 };
 
 const mutations = {
     saveHistories: (state, { histories }) => {
         const historyDetailsById = {};
-        histories.forEach(x => {
+        histories.forEach((x) => {
             historyDetailsById[x.id] = x;
         });
         state.historyDetailsById = historyDetailsById;
     },
     saveHistoryForId: (state, { historyId, historyData }) => {
         Vue.set(state.historyById, historyId, historyData);
-    }
+    },
 };
 
 export const historyStore = {
     state,
     getters,
     actions,
-    mutations
+    mutations,
 };

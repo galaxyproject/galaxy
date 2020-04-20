@@ -4,7 +4,7 @@
         <div class="upload-top">
             <div class="upload-top-info" v-html="topInfo"></div>
         </div>
-        <div class="upload-box" ref="uploadBox" :style="boxStyle" :class="{ highlight: hightlightBox }">
+        <div class="upload-box" ref="uploadBox" :style="boxStyle" :class="{ highlight: highlightBox }">
             <slot />
         </div>
         <div class="upload-footer" v-if="hasFooter">
@@ -22,16 +22,16 @@ export default {
     props: {
         topInfo: {
             type: String,
-            default: "&nbsp;"
+            default: "&nbsp;",
         },
         wrapperClass: {
             type: String,
-            default: "upload-view-default"
+            default: "upload-view-default",
         },
-        hightlightBox: {
+        highlightBox: {
             type: Boolean,
-            default: false
-        }
+            default: false,
+        },
     },
     computed: {
         hasFooter() {
@@ -39,11 +39,11 @@ export default {
             const name = "footer";
             return !!this.$slots[name] || !!this.$scopedSlots[name];
         },
-        boxStyle: function() {
+        boxStyle: function () {
             return {
-                height: this.hasFooter ? "300px" : "335px"
+                height: this.hasFooter ? "300px" : "335px",
             };
-        }
-    }
+        },
+    },
 };
 </script>

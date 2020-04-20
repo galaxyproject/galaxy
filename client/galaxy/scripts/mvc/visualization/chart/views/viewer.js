@@ -7,7 +7,7 @@ import Backbone from "backbone";
 import Utils from "utils/utils";
 
 export default Backbone.View.extend({
-    initialize: function(app, options) {
+    initialize: function (app, options) {
         var self = this;
         this.app = app;
         this.chart = this.app.chart;
@@ -27,9 +27,9 @@ export default Backbone.View.extend({
         this.$text = this.$(".text");
         this._fullscreen(this.$el, 20);
         this._createContainer("div");
-        this.chart.on("redraw", function(confirmed) {
+        this.chart.on("redraw", function (confirmed) {
             if (!self.chart.get("modified") || !self.chart.plugin.specs.confirm || confirmed) {
-                self.app.deferred.execute(function(process) {
+                self.app.deferred.execute(function (process) {
                     console.debug("viewer:redraw() - Redrawing...");
                     self._draw(process, self.chart);
                 });
@@ -37,7 +37,7 @@ export default Backbone.View.extend({
                 self.chart.state("info", "Please confirm the settings before rendering the results.");
             }
         });
-        this.chart.on("set:state", function() {
+        this.chart.on("set:state", function () {
             var $container = self.$(".charts-viewer-container");
             var $info = self.$info;
             var $icon = self.$icon;
@@ -67,15 +67,15 @@ export default Backbone.View.extend({
     },
 
     /** Force resize to fullscreen */
-    _fullscreen: function($el, margin) {
+    _fullscreen: function ($el, margin) {
         $el.css("height", $(window).height() - margin);
-        $(window).resize(function() {
+        $(window).resize(function () {
             $el.css("height", $(window).height() - margin);
         });
     },
 
     /** A chart may contain multiple sub charts/containers which are created here */
-    _createContainer: function(tag, n) {
+    _createContainer: function (tag, n) {
         tag = tag || "div";
         n = n || 1;
         this.$(".charts-viewer-container").remove();
@@ -92,11 +92,11 @@ export default Backbone.View.extend({
     },
 
     /** Draws a new chart by loading and executing the corresponding chart wrapper */
-    _draw: function(process, chart) {
+    _draw: function (process, chart) {
         var n_panels = chart.settings.get("__use_panels") == "true" ? chart.groups.length : 1;
         this._createContainer(chart.plugin.specs.tag, n_panels);
         chart.set("date", Utils.time());
         chart.state("wait", "Please wait...");
         this.app.chart_load({ process: process, chart: chart, dataset: this.app.dataset, targets: this.targets });
-    }
+    },
 });

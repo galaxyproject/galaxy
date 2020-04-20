@@ -33,12 +33,12 @@ var DatasetCollectionElementView = Backbone.View.extend(BASE_MVC.LoggableMixin).
     tagName: "li",
     className: "collection-element",
 
-    initialize: function(attributes) {
+    initialize: function (attributes) {
         this.element = attributes.element || {};
         this.selected = attributes.selected || false;
     },
 
-    render: function() {
+    render: function () {
         this.dragStartHandler = _.bind(this._dragstart, this);
         this.dragEndHandler = _.bind(this._dragend, this);
         var handle = this.$el
@@ -66,33 +66,33 @@ var DatasetCollectionElementView = Backbone.View.extend(BASE_MVC.LoggableMixin).
             _l("Remove this dataset from the list"),
             '">',
             _l("Discard"),
-            "</button>"
+            "</button>",
         ].join("")
     ),
 
     /** select this element and pub */
-    select: function(toggle) {
+    select: function (toggle) {
         this.$el.toggleClass("selected", toggle);
         this.trigger("select", {
             source: this,
-            selected: this.$el.hasClass("selected")
+            selected: this.$el.hasClass("selected"),
         });
     },
 
     /** animate the removal of this element and pub */
-    discard: function() {
+    discard: function () {
         var view = this;
         var parentWidth = this.$el.parent().width();
         this.$el.animate({ "margin-right": parentWidth }, "fast", () => {
             view.trigger("discard", {
-                source: view
+                source: view,
             });
             view.destroy();
         });
     },
 
     /** remove the DOM and any listeners */
-    destroy: function() {
+    destroy: function () {
         this.off();
         this.$el.remove();
     },
@@ -103,17 +103,17 @@ var DatasetCollectionElementView = Backbone.View.extend(BASE_MVC.LoggableMixin).
         "click .discard": "_clickDiscard",
 
         dragover: "_sendToParent",
-        drop: "_sendToParent"
+        drop: "_sendToParent",
     },
 
     /** select when the li is clicked */
-    _click: function(ev) {
+    _click: function (ev) {
         ev.stopPropagation();
         this.select(ev);
     },
 
     /** rename a pair when the name is clicked */
-    _clickName: function(ev) {
+    _clickName: function (ev) {
         ev.stopPropagation();
         ev.preventDefault();
 
@@ -127,13 +127,13 @@ var DatasetCollectionElementView = Backbone.View.extend(BASE_MVC.LoggableMixin).
     },
 
     /** discard when the discard button is clicked */
-    _clickDiscard: function(ev) {
+    _clickDiscard: function (ev) {
         ev.stopPropagation();
         this.discard();
     },
 
     /** dragging pairs for re-ordering */
-    _dragstart: function(ev) {
+    _dragstart: function (ev) {
         if (ev.originalEvent) {
             ev = ev.originalEvent;
         }
@@ -145,20 +145,20 @@ var DatasetCollectionElementView = Backbone.View.extend(BASE_MVC.LoggableMixin).
     },
 
     /** dragging for re-ordering */
-    _dragend: function(ev) {
+    _dragend: function (ev) {
         this.$el.removeClass("dragging");
         this.$el.parent().trigger("collection-element.dragend", [this]);
     },
 
     /** manually bubble up an event to the parent/container */
-    _sendToParent: function(ev) {
+    _sendToParent: function (ev) {
         this.$el.parent().trigger(ev);
     },
 
     /** string rep */
-    toString: function() {
+    toString: function () {
         return "DatasetCollectionElementView()";
-    }
+    },
 });
 
 // ============================================================================
@@ -181,25 +181,25 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
         defaultAttributes: {
             //TODO: remove - use new collectionClass().save()
             /** takes elements and creates the proper collection - returns a promise */
-            creationFn: function() {
+            creationFn: function () {
                 throw new TypeError("no creation fn for creator");
             },
             /** fn to call when the collection is created (scoped to this) */
-            oncreate: function() {},
+            oncreate: function () {},
             /** fn to call when the cancel button is clicked (scoped to this) - if falsy, no btn is displayed */
-            oncancel: function() {},
+            oncancel: function () {},
             /** distance from list edge to begin autoscrolling list */
             autoscrollDist: 24,
             /** Color passed to hoverhighlight */
-            highlightClr: "rgba( 64, 255, 255, 1.0 )"
+            highlightClr: "rgba( 64, 255, 255, 1.0 )",
         },
 
         footerSettings: {
-            ".hide-originals": "hideOriginals"
+            ".hide-originals": "hideOriginals",
         },
 
         /** set up initial options, instance vars, behaviors */
-        initialize: function(attributes) {
+        initialize: function (attributes) {
             this.metric("ListCollectionCreator.initialize", attributes);
             var creator = this;
             _.each(this.defaultAttributes, (value, key) => {
@@ -217,7 +217,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
         },
 
         /** set up instance vars */
-        _instanceSetUp: function() {
+        _instanceSetUp: function () {
             /** Ids of elements that have been selected by the user - to preserve over renders */
             this.selectedIds = {};
             /** DOM elements currently being dragged */
@@ -228,7 +228,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
 
         // ------------------------------------------------------------------------ process raw list
         /** set up main data */
-        _elementsSetUp: function() {
+        _elementsSetUp: function () {
             //this.debug( '-- _dataSetUp' );
             /** a list of invalid elements and the reasons they aren't valid */
             this.invalidElements = [];
@@ -247,8 +247,8 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
         },
 
         /** add ids to dataset objs in initial list if none */
-        _ensureElementIds: function() {
-            this.workingElements.forEach(element => {
+        _ensureElementIds: function () {
+            this.workingElements.forEach((element) => {
                 if (!Object.prototype.hasOwnProperty.call(element, "id")) {
                     element.id = _.uniqueId();
                 }
@@ -257,16 +257,16 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
         },
 
         /** separate working list into valid and invalid elements for this collection */
-        _validateElements: function() {
+        _validateElements: function () {
             var creator = this;
             creator.invalidElements = [];
 
-            this.workingElements = this.workingElements.filter(element => {
+            this.workingElements = this.workingElements.filter((element) => {
                 var problem = creator._isElementInvalid(element);
                 if (problem) {
                     creator.invalidElements.push({
                         element: element,
-                        text: problem
+                        text: problem,
                     });
                 }
                 return !problem;
@@ -275,7 +275,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
         },
 
         /** describe what is wrong with a particular element if anything */
-        _isElementInvalid: function(element) {
+        _isElementInvalid: function (element) {
             if (element.history_content_type === "dataset_collection") {
                 return _l("is a collection, this is not allowed");
             }
@@ -290,11 +290,11 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
         },
 
         /** mangle duplicate names using a mac-like '(counter)' addition to any duplicates */
-        _mangleDuplicateNames: function() {
+        _mangleDuplicateNames: function () {
             var SAFETY = 900;
             var counter = 1;
             var existingNames = {};
-            this.workingElements.forEach(element => {
+            this.workingElements.forEach((element) => {
                 var currName = element.name;
                 while (Object.prototype.hasOwnProperty.call(existingNames, currName)) {
                     currName = `${element.name} (${counter})`;
@@ -309,7 +309,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
         },
 
         /** sort a list of elements */
-        _sortElements: function(list) {
+        _sortElements: function (list) {
             // // currently only natural sort by name
             // this.workingElements.sort( function( a, b ){ return naturalSort( a.name, b.name ); });
             // return this.workingElements;
@@ -318,7 +318,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
         // ------------------------------------------------------------------------ rendering
         // templates : ListCollectionCreator.templates,
         /** render the entire interface */
-        render: function(speed, callback) {
+        render: function (speed, callback) {
             //this.debug( '-- _render' );
             if (this.workingElements.length < this.minElements) {
                 return this._renderInvalid(speed, callback);
@@ -335,12 +335,12 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
         },
 
         /** render a simplified interface aimed at telling the user why they can't move forward */
-        _renderInvalid: function(speed, callback) {
+        _renderInvalid: function (speed, callback) {
             //this.debug( '-- _render' );
             this.$el.empty().html(
                 this.templates.invalidInitial({
                     problems: this.invalidElements,
-                    elements: this.workingElements
+                    elements: this.workingElements,
                 })
             );
             if (typeof this.oncancel === "function") {
@@ -351,7 +351,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
         },
 
         /** render the header section */
-        _renderHeader: function(speed, callback) {
+        _renderHeader: function (speed, callback) {
             var $header = this.$(".header")
                 .empty()
                 .html(this.templates.header())
@@ -365,30 +365,28 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
         },
 
         /** render the middle including the elements */
-        _renderMiddle: function(speed, callback) {
-            var $middle = this.$(".middle")
-                .empty()
-                .html(this.templates.middle());
+        _renderMiddle: function (speed, callback) {
+            var $middle = this.$(".middle").empty().html(this.templates.middle());
             this._renderList(speed);
             return $middle;
         },
 
         /** add any jQuery/bootstrap/custom plugins to elements rendered */
-        _addPluginComponents: function() {
+        _addPluginComponents: function () {
             this.$(".help-content i").hoverhighlight(".collection-creator", this.highlightClr);
         },
 
         /** build and show an alert describing any elements that could not be included due to problems */
-        _invalidElementsAlert: function() {
+        _invalidElementsAlert: function () {
             this._showAlert(
                 this.templates.invalidElements({
-                    problems: this.invalidElements
+                    problems: this.invalidElements,
                 }),
                 "alert-warning"
             );
         },
 
-        _disableNameAndCreate: function(disable) {
+        _disableNameAndCreate: function (disable) {
             disable = !_.isUndefined(disable) ? disable : true;
             if (disable) {
                 this.$(".collection-name").prop("disabled", true);
@@ -401,12 +399,12 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
 
         // ------------------------------------------------------------------------ rendering elements
         /** conv. to the main list display DOM */
-        $list: function() {
+        $list: function () {
             return this.$(".collection-elements");
         },
 
         /** show or hide the clear selected control based on the num of selected elements */
-        _renderClearSelected: function() {
+        _renderClearSelected: function () {
             if (_.size(this.selectedIds)) {
                 this.$(".collection-elements-controls > .clear-selected").show();
             } else {
@@ -415,14 +413,14 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
         },
 
         /** render the elements in order (or a warning if no elements found) */
-        _renderList: function(speed, callback) {
+        _renderList: function (speed, callback) {
             //this.debug( '-- _renderList' );
             var creator = this;
 
             var $tmp = jQuery("<div/>");
             var $list = creator.$list();
 
-            _.each(this.elementViews, view => {
+            _.each(this.elementViews, (view) => {
                 view.destroy();
                 creator.removeElementView(view);
             });
@@ -432,7 +430,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
             //     return;
             // }
 
-            creator.workingElements.forEach(element => {
+            creator.workingElements.forEach((element) => {
                 var elementView = creator._createElementView(element);
                 $tmp.append(elementView.$el);
             });
@@ -449,12 +447,12 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
         },
 
         /** create an element view, cache in elementViews, set up listeners, and return */
-        _createElementView: function(element) {
+        _createElementView: function (element) {
             var elementView = new this.elementViewClass({
                 //TODO: use non-generic class or not all
                 // model : COLLECTION.DatasetDCE( element )
                 element: element,
-                selected: _.has(this.selectedIds, element.id)
+                selected: _.has(this.selectedIds, element.id),
             });
             this.elementViews.push(elementView);
             this._listenToElementView(elementView);
@@ -462,10 +460,10 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
         },
 
         /** listen to any element events */
-        _listenToElementView: function(view) {
+        _listenToElementView: function (view) {
             var creator = this;
             creator.listenTo(view, {
-                select: function(data) {
+                select: function (data) {
                     var element = data.source.element;
                     if (data.selected) {
                         creator.selectedIds[element.id] = true;
@@ -474,14 +472,14 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
                     }
                     creator.trigger("elements:select", data);
                 },
-                discard: function(data) {
+                discard: function (data) {
                     creator.trigger("elements:discard", data);
-                }
+                },
             });
         },
 
         /** add a new element view based on the json in element */
-        addElementView: function(element) {
+        addElementView: function (element) {
             //TODO: workingElements is sorted, add element in appropo index
             // add element, sort elements, find element index
             // var view = this._createElementView( element );
@@ -489,7 +487,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
         },
 
         /** stop listening to view and remove from caches */
-        removeElementView: function(view) {
+        removeElementView: function (view) {
             delete this.selectedIds[view.element.id];
             this._renderClearSelected();
 
@@ -498,7 +496,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
         },
 
         /** render a message in the list that no elements remain to create a collection */
-        _renderNoElementsLeft: function() {
+        _renderNoElementsLeft: function () {
             this._disableNameAndCreate(true);
             this.$(".collection-elements").append(this.templates.noElementsLeft());
         },
@@ -511,7 +509,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
 
         // ------------------------------------------------------------------------ API
         /** convert element into JSON compatible with the collections API */
-        _elementToJSON: function(element) {
+        _elementToJSON: function (element) {
             // return element.toJSON();
             return element;
         },
@@ -519,7 +517,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
         /** create the collection via the API
          *  @returns {jQuery.xhr Object} the jquery ajax request
          */
-        createList: function(name) {
+        createList: function (name) {
             if (!this.workingElements.length) {
                 var message = `${_l("No valid elements for final list")}. `;
                 message += `<a class="cancel-create" href="javascript:void(0);" role="button">${_l("Cancel")}</a> `;
@@ -531,7 +529,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
 
             var creator = this;
 
-            var elements = this.workingElements.map(element => creator._elementToJSON(element));
+            var elements = this.workingElements.map((element) => creator._elementToJSON(element));
 
             creator.blocking = true;
             return creator
@@ -543,10 +541,10 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
                     creator.trigger("error", {
                         xhr: xhr,
                         status: status,
-                        message: _l("An error occurred while creating this collection")
+                        message: _l("An error occurred while creating this collection"),
                     });
                 })
-                .done(function(response, message, xhr) {
+                .done(function (response, message, xhr) {
                     creator.trigger("collection:created", response, message, xhr);
                     creator.metric("collection:created", response);
                     if (typeof creator.oncreate === "function") {
@@ -557,18 +555,18 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
 
         // ------------------------------------------------------------------------ events
         /** set up event handlers on self */
-        _setUpBehaviors: function() {
+        _setUpBehaviors: function () {
             this.on("error", this._errorHandler);
 
-            this.once("rendered", function() {
+            this.once("rendered", function () {
                 this.trigger("rendered:initial", this);
             });
 
-            this.on("elements:select", function(data) {
+            this.on("elements:select", function (data) {
                 this._renderClearSelected();
             });
 
-            this.on("elements:discard", function(data) {
+            this.on("elements:discard", function (data) {
                 var element = data.source.element;
                 this.removeElementView(data.source);
 
@@ -585,7 +583,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
         },
 
         /** handle errors with feedback and details to the user (if available) */
-        _errorHandler: function(data) {
+        _errorHandler: function (data) {
             this.error(data);
 
             var creator = this;
@@ -634,19 +632,19 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
             "keydown .collection-name": "_nameCheckForEnter",
             "change .hide-originals": "_changeHideOriginals",
             "click .cancel-create": "_cancelCreate",
-            "click .create-collection": "_clickCreate" //,
+            "click .create-collection": "_clickCreate", //,
         },
 
         // ........................................................................ elements
         /** reset all data to the initial state */
-        reset: function() {
+        reset: function () {
             this._instanceSetUp();
             this._elementsSetUp();
             this.render();
         },
 
         /** deselect all elements */
-        clearSelectedElements: function(ev) {
+        clearSelectedElements: function (ev) {
             this.$(".collection-elements .collection-element").removeClass("selected");
             this.$(".collection-elements-controls > .clear-selected").hide();
         },
@@ -660,7 +658,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
         // },
 
         /** track the mouse drag over the list adding a placeholder to show where the drop would occur */
-        _dragoverElements: function(ev) {
+        _dragoverElements: function (ev) {
             //this.debug( '_dragoverElements:', ev );
             ev.preventDefault();
 
@@ -679,7 +677,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
         },
 
         /** If the mouse is near enough to the list's top or bottom, scroll the list */
-        _checkForAutoscroll: function($element, y) {
+        _checkForAutoscroll: function ($element, y) {
             var AUTOSCROLL_SPEED = 2;
             var offset = $element.offset();
             var scrollTop = $element.scrollTop();
@@ -695,7 +693,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
         /** get the nearest element based on the mouse's Y coordinate.
          *  If the y is at the end of the list, return an empty jQuery object.
          */
-        _getNearestElement: function(y) {
+        _getNearestElement: function (y) {
             var WIGGLE = 4;
 
             var lis = this.$(".collection-elements li.collection-element").toArray();
@@ -712,7 +710,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
         },
 
         /** drop (dragged/selected elements) onto the list, re-ordering the internal list */
-        _dropElements: function(ev) {
+        _dropElements: function (ev) {
             if (ev.originalEvent) {
                 ev = ev.originalEvent;
             }
@@ -734,15 +732,15 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
         },
 
         /** resync the creator's list of elements based on the DOM order */
-        _syncOrderToDom: function() {
+        _syncOrderToDom: function () {
             var creator = this;
             var newElements = [];
             //TODO: doesn't seem wise to use the dom to store these - can't we sync another way?
-            this.$(".collection-elements .collection-element").each(function() {
+            this.$(".collection-elements .collection-element").each(function () {
                 var id = $(this).attr("data-element-id");
 
                 var element = _.findWhere(creator.workingElements, {
-                    id: id
+                    id: id,
                 });
 
                 if (element) {
@@ -756,14 +754,14 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
         },
 
         /** drag communication with element sub-views: dragstart */
-        _elementDragstart: function(ev, element) {
+        _elementDragstart: function (ev, element) {
             // auto select the element causing the event and move all selected
             element.select(true);
             this.$dragging = this.$(".collection-elements .collection-element.selected");
         },
 
         /** drag communication with element sub-views: dragend - remove the placeholder */
-        _elementDragend: function(ev, element) {
+        _elementDragend: function (ev, element) {
             $(".element-drop-placeholder").remove();
             this.$dragging = null;
         },
@@ -793,7 +791,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
                     _l("Close and show more help"),
                     '" aria-hidden="true">&times;</button>',
                     '<span class="alert-message"></span>',
-                    "</div>"
+                    "</div>",
                 ].join("")
             ),
 
@@ -815,7 +813,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
                     "</a>",
                     "</div>",
                     '<div class="collection-elements scroll-container flex-row">',
-                    "</div>"
+                    "</div>",
                 ].join("")
             ),
 
@@ -867,7 +865,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
                     _l("Create list"),
                     "</button>",
                     "</div>",
-                    "</div>"
+                    "</div>",
                 ].join("")
             ),
 
@@ -879,7 +877,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
                         [
                             "Collections of datasets are permanent, ordered lists of datasets that can be passed to tools and ",
                             "workflows in order to have analyses done on each member of the entire group. This interface allows ",
-                            "you to create a collection and re-order the final collection."
+                            "you to create a collection and re-order the final collection.",
                         ].join("")
                     ),
                     "</p>",
@@ -888,7 +886,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
                     _l(
                         [
                             "Rename elements in the list by clicking on ",
-                            '<i data-target=".collection-element .name">the existing name</i>.'
+                            '<i data-target=".collection-element .name">the existing name</i>.',
                         ].join("")
                     ),
                     "</li>",
@@ -896,7 +894,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
                     _l(
                         [
                             "Discard elements from the final created list by clicking on the ",
-                            '<i data-target=".collection-element .discard">"Discard"</i> button.'
+                            '<i data-target=".collection-element .discard">"Discard"</i> button.',
                         ].join("")
                     ),
                     "</li>",
@@ -906,7 +904,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
                             "Reorder the list by clicking and dragging elements. Select multiple elements by clicking on ",
                             '<i data-target=".collection-element">them</i> and you can then move those selected by dragging the ',
                             "entire group. Deselect them by clicking them again or by clicking the ",
-                            'the <i data-target=".clear-selected">"Clear selected"</i> link.'
+                            'the <i data-target=".clear-selected">"Clear selected"</i> link.',
                         ].join("")
                     ),
                     "</li>",
@@ -914,7 +912,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
                     _l(
                         [
                             'Click the <i data-target=".reset">"Start over"</i> link to begin again as if you had just opened ',
-                            "the interface."
+                            "the interface.",
                         ].join("")
                     ),
                     "</li>",
@@ -930,10 +928,10 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
                     _l(
                         [
                             'Once your collection is complete, enter a <i data-target=".collection-name">name</i> and ',
-                            'click <i data-target=".create-collection">"Create list"</i>.'
+                            'click <i data-target=".create-collection">"Create list"</i>.',
                         ].join("")
                     ),
-                    "</p>"
+                    "</p>",
                 ].join("")
             ),
 
@@ -943,7 +941,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
                     _l("The following selections could not be included due to problems:"),
                     "<ul><% _.each( problems, function( problem ){ %>",
                     "<li><b><%- problem.element.name %></b>: <%- problem.text %></li>",
-                    "<% }); %></ul>"
+                    "<% }); %></ul>",
                 ].join("")
             ),
 
@@ -956,7 +954,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
                     '<a class="reset" href="javascript:void(0)" role="button">',
                     _l("start over"),
                     "</a>?",
-                    "</li>"
+                    "</li>",
                 ].join("")
             ),
 
@@ -997,16 +995,16 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
                     // _l( 'Create a different kind of collection' ),
                     "</div>",
                     "</div>",
-                    "</div>"
+                    "</div>",
                 ].join("")
-            )
+            ),
         }),
 
         // ------------------------------------------------------------------------ misc
         /** string rep */
-        toString: function() {
+        toString: function () {
             return "ListCollectionCreator";
-        }
+        },
     });
 
 const collectionCreatorModalSetup = function _collectionCreatorModalSetup(options) {
@@ -1015,24 +1013,24 @@ const collectionCreatorModalSetup = function _collectionCreatorModalSetup(option
     const modal = Galaxy.modal || new UI_MODAL.View();
 
     const creatorOptions = _.defaults(options || {}, {
-        oncancel: function() {
+        oncancel: function () {
             modal.hide();
             deferred.reject("cancelled");
         },
-        oncreate: function(creator, response) {
+        oncreate: function (creator, response) {
             modal.hide();
             deferred.resolve(response);
-        }
+        },
     });
 
-    const showEl = function(el) {
+    const showEl = function (el) {
         modal.show({
             title: options.title || _l("Create a collection"),
             body: el,
             width: "85%",
             height: "100%",
             xlarge: true,
-            closing_events: true
+            closing_events: true,
         });
     };
 
@@ -1045,7 +1043,7 @@ const collectionCreatorModalSetup = function _collectionCreatorModalSetup(option
  */
 var collectionCreatorModal = function _collectionCreatorModal(elements, options, CreatorClass) {
     options = _.defaults(options || {}, {
-        elements: elements
+        elements: elements,
     });
     const { deferred, creatorOptions, showEl } = collectionCreatorModalSetup(options);
     var creator = new CreatorClass(creatorOptions);
@@ -1073,11 +1071,11 @@ var ruleBasedCollectionCreatorModal = function _ruleBasedCollectionCreatorModal(
         title = _l("Build Rules for Uploading Collections");
     }
     options = _.defaults(options || {}, {
-        title: title
+        title: title,
     });
     const { deferred, creatorOptions, showEl } = collectionCreatorModalSetup(options); // eslint-disable-line no-unused-vars
     return import(/* webpackChunkName: "ruleCollectionBuilder" */ "components/RuleCollectionBuilder.vue").then(
-        module => {
+        (module) => {
             var ruleCollectionBuilderInstance = Vue.extend(module.default);
             var vm = document.createElement("div");
             showEl(vm);
@@ -1092,8 +1090,8 @@ var ruleBasedCollectionCreatorModal = function _ruleBasedCollectionCreatorModal(
                     oncreate: options.oncreate,
                     defaultHideSourceItems: options.defaultHideSourceItems,
                     saveRulesFn: options.saveRulesFn,
-                    initialRules: options.initialRules
-                }
+                    initialRules: options.initialRules,
+                },
             }).$mount(vm);
             return deferred;
         }
@@ -1116,22 +1114,24 @@ function createListCollection(contents, defaultHideSourceItems) {
     const copyElements = !defaultHideSourceItems;
     const promise = listCollectionCreatorModal(elements, {
         defaultHideSourceItems: defaultHideSourceItems,
-        creationFn: function(elements, name, hideSourceItems) {
-            elements = elements.map(element => ({
+        creationFn: function (elements, name, hideSourceItems) {
+            elements = elements.map((element) => ({
                 id: element.id,
                 name: element.name,
                 //TODO: this allows for list:list even if the filter above does not - reconcile
-                src: element.history_content_type === "dataset" ? "hda" : "hdca"
+                src: element.history_content_type === "dataset" ? "hda" : "hdca",
             }));
             return contents.createHDCA(elements, "list", name, hideSourceItems, copyElements);
-        }
+        },
     });
 
     return promise;
 }
 
 function createCollectionViaRules(selection, defaultHideSourceItems) {
-    let elements, elementsType, importType;
+    let elements;
+    let elementsType;
+    let importType;
     const selectionType = selection.selectionType;
     const copyElements = !defaultHideSourceItems;
     if (!selectionType) {
@@ -1148,7 +1148,7 @@ function createCollectionViaRules(selection, defaultHideSourceItems) {
         // Have pasted data, data from a history dataset, or FTP list.
         const lines = selection.content
             .split(/[\n\r]/)
-            .filter(line => line.length > 0 && hasNonWhitespaceChars.exec(line));
+            .filter((line) => line.length > 0 && hasNonWhitespaceChars.exec(line));
 
         // Really poor tabular parser - we should get a library for this or expose options? I'm not
         // sure.
@@ -1160,16 +1160,16 @@ function createCollectionViaRules(selection, defaultHideSourceItems) {
             }
         }
         const regex = hasTabs ? /\t/ : /\s+/;
-        elements = lines.map(line => line.split(regex));
+        elements = lines.map((line) => line.split(regex));
         elementsType = selection.selectionType;
         importType = selection.dataType || "collections";
     }
     const promise = ruleBasedCollectionCreatorModal(elements, elementsType, importType, {
         ftpUploadSite: selection.ftpUploadSite,
         defaultHideSourceItems: defaultHideSourceItems,
-        creationFn: function(elements, collectionType, name, hideSourceItems) {
+        creationFn: function (elements, collectionType, name, hideSourceItems) {
             return selection.createHDCA(elements, collectionType, name, hideSourceItems, copyElements);
-        }
+        },
     });
     return promise;
 }
@@ -1182,5 +1182,5 @@ export default {
     listCollectionCreatorModal: listCollectionCreatorModal,
     createListCollection: createListCollection,
     createCollectionViaRules: createCollectionViaRules,
-    ruleBasedCollectionCreatorModal: ruleBasedCollectionCreatorModal
+    ruleBasedCollectionCreatorModal: ruleBasedCollectionCreatorModal,
 };

@@ -9,34 +9,30 @@ export default Backbone.View.extend({
         parameters: [
             {
                 id: "space_to_tab",
-                title: "Convert spaces to tabs"
+                title: "Convert spaces to tabs",
             },
             {
                 id: "to_posix_lines",
-                title: "Use POSIX standard"
-            }
-        ]
+                title: "Use POSIX standard",
+            },
+        ],
     },
 
-    initialize: function(options) {
+    initialize: function (options) {
         this.model = options.model;
         this.setElement($("<div/>").addClass("upload-settings"));
         this.$el.append($("<div/>").addClass("upload-settings-cover"));
-        this.$el.append(
-            $("<table/>")
-                .addClass("upload-settings-table grid")
-                .append("<tbody/>")
-        );
+        this.$el.append($("<table/>").addClass("upload-settings-table grid").append("<tbody/>"));
         this.$cover = this.$(".upload-settings-cover");
         this.$table = this.$(".upload-settings-table > tbody");
         this.listenTo(this.model, "change", this.render, this);
         this.model.trigger("change");
     },
 
-    render: function() {
+    render: function () {
         var self = this;
         this.$table.empty();
-        _.each(this.options.parameters, parameter => {
+        _.each(this.options.parameters, (parameter) => {
             var $checkbox = $("<div/>")
                 .addClass(`upload-${parameter.id} fa`)
                 .addClass((self.model.get(parameter.id) && self.options.class_check) || self.options.class_uncheck);
@@ -49,5 +45,5 @@ export default Backbone.View.extend({
             self.$table.append($row);
         });
         this.$cover[(this.model.get("enabled") && "hide") || "show"]();
-    }
+    },
 });

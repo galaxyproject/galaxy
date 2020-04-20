@@ -13,7 +13,7 @@ gunicorn = "*"
 lxml = "!=4.2.2"
 mock = "*"
 NoseHTML = "*"
-pygithub3 = {version = "*", markers = "python_version < '3'"}
+pygithub = "*"
 pytest = "*"
 pytest-cov = "*"
 pytest-html = "*"
@@ -25,8 +25,9 @@ Sphinx = "*"
 sphinx_markdown_tables = "*"
 sphinx_rtd_theme = "*"
 testfixtures = "*"
-twill = {version = "==0.9.1", markers = "python_version < '3'"}
+twill = "*"
 watchdog = "*"
+python-irodsclient = "*"
 
 [packages]
 numpy = "*"
@@ -78,7 +79,7 @@ svgwrite = "*"
 pyparsing = "*"
 "Fabric3" = "*"
 paramiko = "*"
-python-genomespaceclient = "<2.0"
+cloudbridge = "*"
 social_auth_core = {version = "==3.1.0+gx0", extras = ['openidconnect']}
 cloudauthz = "==0.6.0"
 gxformat2 = "*"

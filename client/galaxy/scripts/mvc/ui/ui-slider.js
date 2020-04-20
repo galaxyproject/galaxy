@@ -1,9 +1,10 @@
 import Backbone from "backbone";
+import IMask from "imask";
 
 import Utils from "utils/utils";
 
 const View = Backbone.View.extend({
-    initialize: function(options) {
+    initialize: function (options) {
         this.model =
             (options && options.model) ||
             new Backbone.Model({
@@ -14,7 +15,7 @@ const View = Backbone.View.extend({
                 precise: false,
                 split: 10000,
                 value: null,
-                onchange: function() {}
+                onchange: function () {},
             }).set(options);
 
         // create new element
@@ -23,20 +24,23 @@ const View = Backbone.View.extend({
         this.$text = this.$(".ui-form-slider-text");
         this.$slider = this.$(".ui-form-slider-element");
 
-        // add text field event
-        this.$text
-            .on("change", e => {
-                this.value(e.currentTarget.value);
-            })
-            .on("input", e => {
-                const input = e.currentTarget;
-                if (this._isParameter(input.value)) {
-                    return;
-                } else if (!this.model.get("precise")) {
-                    input.value = input.value.split(".")[0];
+        IMask(this.$text[0], {
+            mask: (value) => {
+                if (this._isParameter(value)) {
+                    return true;
                 }
-                input.value = input.value.replace(/[^0-9eE.-]/g, "");
-            });
+                if (!this.model.get("precise")) {
+                    if (value != value.split(".")[0]) {
+                        return false;
+                    }
+                }
+                return value == value.replace(/[^0-9eE.-]/g, "");
+            },
+        });
+
+        this.$text[0].addEventListener("change", (e) => {
+            this.value(e.currentTarget.value);
+        });
 
         // build slider, cannot be rebuild in render
         const opts = this.model.attributes;
@@ -60,7 +64,7 @@ const View = Backbone.View.extend({
         this.render();
     },
 
-    render: function() {
+    render: function () {
         const value = this.model.get("value");
         if (this.has_slider) {
             this.$slider.slider("value", value);
@@ -76,7 +80,7 @@ const View = Backbone.View.extend({
     },
 
     /** Set and return the current value */
-    value: function(new_val) {
+    value: function (new_val) {
         if (new_val !== undefined) {
             const options = this.model.attributes;
             const original_val = new_val;
@@ -106,21 +110,21 @@ const View = Backbone.View.extend({
     },
 
     /** Return true if the field contains a workflow parameter i.e. $('name') */
-    _isParameter: function(value) {
+    _isParameter: function (value) {
         return this.model.get("is_workflow") && String(value).substring(0, 1) === "$";
     },
 
     /** Slider template */
-    _template: function() {
+    _template: function () {
         return `<div class="ui-form-slider container-fluid">
                     <div class="row">
                         <input class="ui-input ui-form-slider-text" type="text"/>
                         <div class="ui-form-slider-element col mt-1"/>
                     </div>
                 </div>`;
-    }
+    },
 });
 
 export default {
-    View: View
+    View: View,
 };

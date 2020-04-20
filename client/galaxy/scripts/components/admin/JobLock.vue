@@ -15,13 +15,13 @@ export default {
     data() {
         return {
             jobLock: false,
-            jobLockDisplay: false
+            jobLockDisplay: false,
         };
     },
     watch: {
         jobLock(newVal) {
             this.handleJobLock(axios.put(`${getAppRoot()}api/job_lock`, { active: this.jobLock }));
-        }
+        },
     },
     methods: {
         initJobLock() {
@@ -29,17 +29,17 @@ export default {
         },
         handleJobLock(axiosPromise) {
             axiosPromise
-                .then(response => {
+                .then((response) => {
                     this.jobLock = response.data.active;
                     this.jobLockDisplay = response.data.active;
                 })
-                .catch(error => {
+                .catch((error) => {
                     console.error(error);
                 });
-        }
+        },
     },
     created() {
         this.initJobLock();
-    }
+    },
 };
 </script>

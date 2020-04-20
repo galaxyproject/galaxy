@@ -1,5 +1,15 @@
 import $ from "jquery";
 
+// Colors used to render nodes in the workflow overview
+const NODE_COLOR = "#25537b";
+const NODE_ERROR_COLOR = "#e31a1e";
+
+// Zoom levels to use for zooming the workflow canvas
+export const zoomLevels = [0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.33, 1.5, 2, 2.5, 3, 4];
+
+// Default zoome level
+export const defaultZoomLevel = 7;
+
 // FIXME: merge scroll panel into CanvasManager, clean up hardcoded stuff.
 class ScrollPanel {
     constructor(panel) {
@@ -73,12 +83,6 @@ class ScrollPanel {
     }
 }
 
-// Zoom levels to use for zooming the workflow canvas
-const zoomLevels = [0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.33, 1.5, 2, 2.5, 3, 4];
-
-// Default zoome level (1)
-const defaultZoomLevel = 7;
-
 class CanvasManager {
     constructor(app, canvas_viewport, overview) {
         this.app = app;
@@ -90,7 +94,6 @@ class CanvasManager {
         // Initialize zooming
         this.zoomLevel = defaultZoomLevel;
         this.canvasZoom = zoomLevels[defaultZoomLevel];
-        this.initZoomControls();
         // Make overview box draggable
         this.init_drag();
         // Initialize Copy & Paste events
@@ -106,40 +109,8 @@ class CanvasManager {
         this.cv.css("width", `${100 / this.canvasZoom}%`);
         this.cv.css("height", `${100 / this.canvasZoom}%`);
         // Update canvas size
-        this.app.workflow.fit_canvas_to_nodes();
-    }
-    initZoomControls() {
-        var zoomControl = $('<div class="btn-group-horizontal workflow-canvas-content"/>').css({
-            position: "absolute",
-            left: "1rem",
-            bottom: "1rem",
-            cursor: "pointer"
-        });
-        const zoomButton = $(
-            `<a class="btn btn-light" title="Reset Zoom Level">${zoomLevels[defaultZoomLevel] * 100}%</a>`
-        ).css({
-            width: "4rem"
-        });
-
-        zoomControl.append(
-            $('<a class="btn btn-secondary fa fa-minus"/>').click(() => {
-                this.setZoom(this.zoomLevel - 1);
-                zoomButton.text(Math.floor(zoomLevels[this.zoomLevel] * 100) + "%");
-            })
-        );
-        zoomControl.append(
-            zoomButton.click(() => {
-                this.setZoom(defaultZoomLevel);
-                zoomButton.text(Math.floor(zoomLevels[this.zoomLevel] * 100) + "%");
-            })
-        );
-        zoomControl.append(
-            $('<a class="btn btn-secondary fa fa-plus"/>').click(() => {
-                this.setZoom(this.zoomLevel + 1);
-                zoomButton.text(Math.floor(zoomLevels[this.zoomLevel] * 100) + "%");
-            })
-        );
-        this.cv.closest("#workflow-canvas-body").append(zoomControl);
+        this.app.fit_canvas_to_nodes();
+        return this.zoomLevel;
     }
 
     init_drag() {
@@ -151,25 +122,25 @@ class CanvasManager {
             y = Math.max(y, -self.cc.height() + self.cv.height() / 2);
             self.cc.css({
                 left: x,
-                top: y
+                top: y,
             });
             self.cv.css({
                 "background-position-x": x,
-                "background-position-y": y
+                "background-position-y": y,
             });
             self.update_viewport_overlay();
         };
         // Dragging within canvas background
-        this.cc.each(function() {
+        this.cc.each(function () {
             this.scroll_panel = new ScrollPanel(this);
         });
         var x_adjust;
         var y_adjust;
         this.cv
-            .bind("click", function() {
+            .bind("click", function () {
                 document.activeElement.blur();
             })
-            .bind("dragstart", function() {
+            .bind("dragstart", function () {
                 var o = $(this).offset();
                 var p = self.cc.position();
                 y_adjust = p.top - o.top;
@@ -179,10 +150,10 @@ class CanvasManager {
                 move((d.offsetX + x_adjust) / this.canvasZoom, (d.offsetY + y_adjust) / this.canvasZoom);
             })
             .bind("dragend", () => {
-                self.app.workflow.fit_canvas_to_nodes();
+                self.app.fit_canvas_to_nodes();
                 self.draw_overview();
             });
-        this.overview.click(e => {
+        this.overview.click((e) => {
             if (self.overview.hasClass("blockaclick")) {
                 self.overview.removeClass("blockaclick");
             } else {
@@ -193,7 +164,7 @@ class CanvasManager {
                 var new_x_offset = e.pageX - self.oc.offset().left - self.ov.width() / 2;
                 var new_y_offset = e.pageY - self.oc.offset().top - self.ov.height() / 2;
                 move(-((new_x_offset / o_w) * in_w), -((new_y_offset / o_h) * in_h));
-                self.app.workflow.fit_canvas_to_nodes();
+                self.app.fit_canvas_to_nodes();
                 self.draw_overview();
             }
         });
@@ -210,17 +181,17 @@ class CanvasManager {
             })
             .bind("dragend", () => {
                 self.overview.addClass("blockaclick");
-                self.app.workflow.fit_canvas_to_nodes();
+                self.app.fit_canvas_to_nodes();
                 self.draw_overview();
             });
         // Dragging for overview border (resize)
-        $(".workflow-overview").bind("drag", function(e, d) {
+        $(".workflow-overview").bind("drag", function (e, d) {
             var op = $(this).offsetParent();
             var opo = op.offset();
             var new_size = Math.max(op.width() - (d.offsetX - opo.left), op.height() - (d.offsetY - opo.top));
             $(this).css({
                 width: new_size,
-                height: new_size
+                height: new_size,
             });
             self.draw_overview();
         });
@@ -229,15 +200,15 @@ class CanvasManager {
         $(".workflow-overview div").bind("drag", () => {});
     }
     init_copy_paste() {
-        document.addEventListener("copy", e => {
+        document.addEventListener("copy", (e) => {
             // If it appears that the user is trying to copy/paste text, we
             // pass that through.
             if (window.getSelection().toString() === "") {
-                if (this.app.workflow.active_node && this.app.workflow.active_node.type !== "subworkflow") {
+                if (this.app.active_node && this.app.active_node.type !== "subworkflow") {
                     e.clipboardData.setData(
                         "application/json",
                         JSON.stringify({
-                            nodeId: this.app.workflow.active_node.id
+                            nodeId: this.app.active_node.id,
                         })
                     );
                 }
@@ -245,7 +216,7 @@ class CanvasManager {
             }
         });
 
-        document.addEventListener("paste", e => {
+        document.addEventListener("paste", (e) => {
             // If it appears that the user is trying to paste into a text box,
             // pass that through and skip the workflow copy/paste logic.
             if (
@@ -259,8 +230,8 @@ class CanvasManager {
                 } catch (error) {
                     console.debug(error);
                 }
-                if (nodeId && Object.prototype.hasOwnProperty.call(this.app.workflow.nodes, nodeId)) {
-                    this.app.workflow.nodes[nodeId].clone();
+                if (nodeId && Object.prototype.hasOwnProperty.call(this.app.nodes, nodeId)) {
+                    this.app.nodes[nodeId].clone();
                 }
                 e.preventDefault();
             }
@@ -281,15 +252,12 @@ class CanvasManager {
             top: -((cc_pos.top / in_h) * o_h),
             // Subtract 2 to account for borders (maybe just change box sizing style instead?)
             width: (cv.width() / in_w) * o_w - 2,
-            height: (cv.height() / in_h) * o_h - 2
+            height: (cv.height() / in_h) * o_h - 2,
         });
     }
     draw_overview() {
         var canvas_el = $("#overview-canvas");
-        var size = canvas_el
-            .parent()
-            .parent()
-            .width();
+        var size = canvas_el.parent().parent().width();
 
         var c = canvas_el.get(0).getContext("2d");
         var in_w = $("#canvas-container").width();
@@ -324,13 +292,13 @@ class CanvasManager {
             left: shift_w,
             top: shift_h,
             width: o_w,
-            height: o_h
+            height: o_h,
         });
         canvas_el.attr("width", o_w);
         canvas_el.attr("height", o_h);
         // Draw overview
-        $.each(this.app.workflow.nodes, (id, node) => {
-            c.fillStyle = "gray";
+        $.each(this.app.nodes, (id, node) => {
+            c.fillStyle = NODE_COLOR;
             var node_element = $(node.element);
             var position = node_element.position();
             var x = (position.left / in_w) * o_w;
@@ -338,7 +306,7 @@ class CanvasManager {
             var w = (node_element.width() / in_w) * o_w;
             var h = (node_element.height() / in_h) * o_h;
             if (node.errors) {
-                c.fillStyle = "#e31a1e";
+                c.fillStyle = NODE_ERROR_COLOR;
             }
             c.fillRect(x, y, w, h);
         });

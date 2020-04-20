@@ -917,6 +917,22 @@ class ToolsTestCase(ApiTestCase):
         output_element_hda_0 = output_element_0["object"]
         assert output_element_hda_0["metadata_column_types"] is not None
 
+    @skip_without_tool("collection_creates_dynamic_nested")
+    @uses_test_history(require_new=False)
+    def test_dynamic_list_output_datasets_in_failed_state(self, history_id):
+        inputs = {
+            'fail_bool': True
+        }
+        create = self._run("collection_creates_dynamic_nested", history_id, inputs, assert_ok=False, wait_for_job=True)
+        self._assert_status_code_is(create, 200)
+        collection = self._get("dataset_collections/%s" % create.json()["output_collections"][0]["id"], data={"instance_type": "history"}).json()
+        assert collection['element_count'] == 3
+        for nested_collection in collection['elements']:
+            nested_collection = nested_collection['object']
+            assert nested_collection['element_count'] == 2
+            for element in nested_collection['elements']:
+                assert element['object']['state'] == 'error'
+
     def test_nonadmin_users_cannot_create_tools(self):
         payload = dict(
             representation=json.dumps(MINIMAL_TOOL),

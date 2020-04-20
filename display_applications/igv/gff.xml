@@ -20,6 +20,11 @@
                 $gff_file.dbkey
             #end if
         </param>
+        <param type="template" name="site_organism_query_param" strip="True">
+            #if str($site_organism) not in ['','?']:
+                &amp;genome=${qp($site_organism)}
+            #end if
+        </param>
         <param type="template" name="jnlp" url="galaxy_${DATASET_HASH}.jnlp" viewable="True" mimetype="application/x-java-jnlp-file"><![CDATA[
 <?xml version="1.0" encoding="utf-8"?>
 <jnlp
@@ -64,8 +69,10 @@
         <nativelib href="hdfnative-linux64.jar"/>
     </resources>
   <application-desc main-class="org.broad.igv.ui.IGVMainFrame">
+     #if str($site_organism) not in ['?','']:
      <argument>-g</argument>
      <argument>${site_organism}</argument>
+     #end if
      <argument>${gff_file.url}</argument>
   </application-desc>
 </jnlp>
@@ -73,9 +80,9 @@
         </param>
         <param type="template" name="redirect_url" strip="True" >
             #if $site_id.startswith( 'local_' )
-                ${site_link}?file=${gff_file.qp}&amp;genome=${site_organism}&amp;merge=true&amp;name=${qp( ( $gff_file.name or $DATASET_HASH ).replace( ',', ';' ) )}
+                ${site_link}?file=${gff_file.qp}${site_organism_query_param}&amp;merge=true&amp;name=${qp( ( $gff_file.name or $DATASET_HASH ).replace( ',', ';' ) )}
             #elif $site_id.startswith( 'web_link_' ):
-                ${site_link}?sessionURL=${gff_file.qp}&amp;genome=${site_organism}&amp;merge=true&amp;name=${qp( ( $gff_file.name or $DATASET_HASH ).replace( ',', ';' ) )}
+                ${site_link}?sessionURL=${gff_file.qp}${site_organism_query_param}&amp;merge=true&amp;name=${qp( ( $gff_file.name or $DATASET_HASH ).replace( ',', ';' ) )}
             #else:
                 ${jnlp.url}
             #end if
@@ -85,7 +92,7 @@
         <!-- Our input data table is one line per dbkey -->
         <filter>${ $dataset.dbkey == $value }</filter>
         <!-- We define url and params as normal, but values defined in dynamic_param are available by specified name -->
-        <url>http://www.broadinstitute.org/igv/projects/current/igv.php?sessionURL=${gff_file.qp}&amp;genome=${gff_file.dbkey}&amp;merge=true&amp;name=${qp( ( $gff_file.name or $DATASET_HASH ).replace( ',', ';' ) )}</url>
+        <url>http://www.broadinstitute.org/igv/projects/current/igv.php?sessionURL=${gff_file.qp}&amp;genome=${qp($gff_file.dbkey)}&amp;merge=true&amp;name=${qp( ( $gff_file.name or $DATASET_HASH ).replace( ',', ';' ) )}</url>
         <param type="data" name="gff_file" url="galaxy_${DATASET_HASH}.${dataset.ext}" />
     </dynamic_links>
 </display>

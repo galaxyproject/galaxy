@@ -14,7 +14,7 @@ steps:
   - tool_id: cat1
     state:
       input1:
-        $link: first_cat#out_file1
+        $link: first_cat/out_file1
       queries:
         - input2:
-            $link: embed1#output1
+            $link: embed1/output1

@@ -5,7 +5,7 @@ export function init_refresh_on_change() {
 
     $("select[refresh_on_change='true']")
         .off("change")
-        .change(function() {
+        .change(function () {
             var select_field = $(this);
             var select_val = select_field.val();
             var ref_on_change_vals = select_field.attr("refresh_on_change_values");
@@ -27,7 +27,7 @@ export function init_refresh_on_change() {
     // checkboxes refresh on change
     $(":checkbox[refresh_on_change='true']")
         .off("click")
-        .click(function() {
+        .click(function () {
             var select_field = $(this);
             var select_val = select_field.val();
             var ref_on_change_vals = select_field.attr("refresh_on_change_values");
@@ -48,7 +48,7 @@ export function init_refresh_on_change() {
     // Links with confirmation
     $("a[confirm]")
         .off("click")
-        .click(function() {
+        .click(function () {
             return confirm($(this).attr("confirm"));
         });
 }

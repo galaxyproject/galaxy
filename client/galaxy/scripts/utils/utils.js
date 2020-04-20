@@ -73,9 +73,7 @@ export function isJSON(text) {
  * @param{String}   content - Content to be sanitized
  */
 export function sanitize(content) {
-    return $("<div/>")
-        .text(content)
-        .html();
+    return $("<div/>").text(content).html();
 }
 
 /**
@@ -133,17 +131,17 @@ export function get(options) {
         request({
             url: options.url,
             data: options.data,
-            success: function(response) {
+            success: function (response) {
                 top.__utils__get__[cache_key] = response;
                 if (options.success) {
                     options.success(response);
                 }
             },
-            error: function(response, status) {
+            error: function (response, status) {
                 if (options.error) {
                     options.error(response, status);
                 }
-            }
+            },
         });
     }
 }
@@ -162,7 +160,7 @@ export function request(options) {
         contentType: "application/json",
         type: options.type || "GET",
         data: options.data || {},
-        url: options.url
+        url: options.url,
     };
     // encode data into url
     if (ajaxConfig.type == "GET" || ajaxConfig.type == "DELETE") {
@@ -178,7 +176,7 @@ export function request(options) {
 
     // make request
     $.ajax(ajaxConfig)
-        .done(response => {
+        .done((response) => {
             if (typeof response === "string") {
                 try {
                     response = response.replace("Infinity,", '"Infinity",');
@@ -191,7 +189,7 @@ export function request(options) {
                 options.success(response);
             }
         })
-        .fail(response => {
+        .fail((response) => {
             var response_text = null;
             try {
                 response_text = $.parseJSON(response.responseText);
@@ -317,15 +315,11 @@ export function time() {
 export function appendScriptStyle(data) {
     // create a script tag inside head tag
     if (data.script && data.script !== "") {
-        $("<script/>", { type: "text/javascript" })
-            .text(data.script)
-            .appendTo("head");
+        $("<script/>", { type: "text/javascript" }).text(data.script).appendTo("head");
     }
     // create a style tag inside head tag
     if (data.styles && data.styles !== "") {
-        $("<style/>", { type: "text/css" })
-            .text(data.styles)
-            .appendTo("head");
+        $("<style/>", { type: "text/css" }).text(data.styles).appendTo("head");
     }
 }
 
@@ -357,9 +351,9 @@ export function setWindowTitle(title) {
  * @returns {integer}
  */
 export function hashFnv32a(str) {
-    var i,
-        l,
-        hval = 0x811c9dc5;
+    var i;
+    var l;
+    var hval = 0x811c9dc5;
 
     for (i = 0, l = str.length; i < l; i++) {
         hval ^= str.charCodeAt(i);
@@ -387,5 +381,5 @@ export default {
     linkify: linkify,
     appendScriptStyle: appendScriptStyle,
     getQueryString: getQueryString,
-    setWindowTitle: setWindowTitle
+    setWindowTitle: setWindowTitle,
 };

@@ -29,6 +29,7 @@ from galaxy.util import (
     Params,
     parse_int,
     sanitize_text,
+    string_as_bool,
     unicodify
 )
 from galaxy.web import url_for
@@ -456,8 +457,8 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         return trans.fill_template_mako(
             "history/as_xml.mako",
             history=history,
-            show_deleted=galaxy.util.string_as_bool(show_deleted),
-            show_hidden=galaxy.util.string_as_bool(show_hidden))
+            show_deleted=string_as_bool(show_deleted),
+            show_hidden=string_as_bool(show_hidden))
 
     @web.expose
     @web.json
@@ -554,9 +555,9 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         """
         View a history. If a history is importable, then it is viewable by any user.
         """
-        show_deleted = galaxy.util.string_as_bool(show_deleted)
-        show_hidden = galaxy.util.string_as_bool(show_hidden)
-        use_panels = galaxy.util.string_as_bool(use_panels)
+        show_deleted = string_as_bool(show_deleted)
+        show_hidden = string_as_bool(show_hidden)
+        use_panels = string_as_bool(use_panels)
 
         history_dictionary = {}
         user_is_owner = False
@@ -602,7 +603,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         """
         current_history_id = trans.security.encode_id(trans.history.id)
         # TODO: allow specifying user_id for admin?
-        include_deleted_histories = galaxy.util.string_as_bool(include_deleted_histories)
+        include_deleted_histories = string_as_bool(include_deleted_histories)
         limit = parse_int(limit, min_val=1, default=10, allow_none=True)
 
         return trans.fill_template_mako("history/view_multiple.mako", current_history_id=current_history_id,
@@ -690,6 +691,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         permissions for the history to private, for future datasets.
         """
         histories = []
+        all_histories = string_as_bool(all_histories)
         if all_histories:
             histories = trans.user.histories
         elif history_id:
@@ -1074,7 +1076,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
     @web.expose
     def resume_paused_jobs(self, trans, current=False, ids=None):
         """Resume paused jobs the active history -- this does not require a logged in user."""
-        if not ids and galaxy.util.string_as_bool(current):
+        if not ids and string_as_bool(current):
             histories = [trans.get_history()]
             refresh_frames = ['history']
         else:

@@ -57,7 +57,7 @@ var defaults = {
     /** should a column of row control prompts be used */
     includePrompts: true,
     /** what is the content of the top left cell (often a title) */
-    topLeftContent: "Columns:"
+    topLeftContent: "Columns:",
 };
 
 /** class added to the pre.peek element (to allow css on just the control) */
@@ -116,16 +116,12 @@ function validateControl(control) {
 
 /** build the inner control surface (i.e. button-like) */
 function buildButton(control, columnIndex) {
-    return $("<div/>")
-        .addClass(BUTTON_CLASS)
-        .text(control.label);
+    return $("<div/>").addClass(BUTTON_CLASS).text(control.label);
 }
 
 /** build the basic (shared) cell structure */
 function buildControlCell(control, columnIndex) {
-    var $td = $("<td/>")
-        .html(buildButton(control, columnIndex))
-        .attr(`data-${COLUMN_INDEX_DATA_KEY}`, columnIndex);
+    var $td = $("<td/>").html(buildButton(control, columnIndex)).attr(`data-${COLUMN_INDEX_DATA_KEY}`, columnIndex);
 
     // disable if index in disabled array
     if (control.disabled && control.disabled.indexOf(columnIndex) !== -1) {
@@ -160,11 +156,8 @@ function buildSingleSelectCell(control, columnIndex) {
             // don't re-select or fire event if already selected
             if (!$cell.hasClass(SELECTED_CLASS)) {
                 // only one can be selected - remove selected on all others, add it here
-                var $otherSelected = $cell
-                    .parent()
-                    .children(`.${SELECTED_CLASS}`)
-                    .removeClass(SELECTED_CLASS);
-                $otherSelected.each(function() {
+                var $otherSelected = $cell.parent().children(`.${SELECTED_CLASS}`).removeClass(SELECTED_CLASS);
+                $otherSelected.each(function () {
                     setSelectedText($(this), control, columnIndex);
                 });
 
@@ -231,13 +224,9 @@ function buildControlCells(count, control) {
 
 /** build a row of controls for the peek */
 function buildControlRow(cellCount, control, includePrompts) {
-    var $controlRow = $("<tr/>")
-        .attr("id", control.id)
-        .addClass(ROW_CLASS);
+    var $controlRow = $("<tr/>").attr("id", control.id).addClass(ROW_CLASS);
     if (includePrompts) {
-        var $promptCell = $("<td/>")
-            .addClass(PROMPT_CLASS)
-            .text(`${control.label}:`);
+        var $promptCell = $("<td/>").addClass(PROMPT_CLASS).text(`${control.label}:`);
         $controlRow.append($promptCell);
     }
     $controlRow.append(buildControlCells(cellCount, control));
@@ -258,13 +247,10 @@ function peekColumnSelector(options) {
     var rowCount = $peektable.find("tr").length;
 
     var // get the rows containing text starting with the comment char (also make them grey)
-        $commentRows = $peektable.find("td[colspan]").map(function(e, i) {
+        $commentRows = $peektable.find("td[colspan]").map(function (e, i) {
             var $this = $(this);
             if ($this.text() && $this.text().match(new RegExp(`^${options.commentChar}`))) {
-                return $(this)
-                    .css("color", "grey")
-                    .parent()
-                    .get(0);
+                return $(this).css("color", "grey").parent().get(0);
             }
             return null;
         });
@@ -278,18 +264,12 @@ function peekColumnSelector(options) {
 
     // should a first column of control prompts be added?
     if (options.includePrompts) {
-        var $topLeft = $("<th/>")
-            .addClass("top-left")
-            .text(options.topLeftContent)
-            .attr("rowspan", rowCount);
-        $peektable
-            .find("tr")
-            .first()
-            .prepend($topLeft);
+        var $topLeft = $("<th/>").addClass("top-left").text(options.topLeftContent).attr("rowspan", rowCount);
+        $peektable.find("tr").first().prepend($topLeft);
     }
 
     // save either the options column name or the parsed text of each column header in html5 data attr and text
-    var $headers = $peektable.find("th:not(.top-left)").each(function(i, e) {
+    var $headers = $peektable.find("th:not(.top-left)").each(function (i, e) {
         var $this = $(this);
 
         var // can be '1.name' or '1'
@@ -319,7 +299,7 @@ function peekColumnSelector(options) {
                     $this
                         .parent()
                         .children("th:not(.top-left)")
-                        .map(function() {
+                        .map(function () {
                             return $(this).data(COLUMN_NAME_DATA_KEY);
                         })
                 );
@@ -341,8 +321,8 @@ function peekColumnSelector(options) {
 // as jq plugin
 $.fn.extend({
     peekColumnSelector: function $peekColumnSelector(options) {
-        return this.map(function() {
+        return this.map(function () {
             return peekColumnSelector.call(this, options);
         });
-    }
+    },
 });

@@ -11,6 +11,12 @@
     <outputs>
         <data name="output" format="twobit"/>
     </outputs>
+    <tests>
+        <test>
+            <param name="input" format="fasta" value="chr_m.fasta"/>
+            <output name="output" format="twobit" value="chr_m.twobit"/>
+        </test>
+    </tests>
     <help>
     </help>
 </tool>

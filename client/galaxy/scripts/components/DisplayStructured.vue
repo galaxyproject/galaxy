@@ -20,18 +20,18 @@ export default {
     props: {
         id: {
             type: String,
-            required: false
-        }
+            required: false,
+        },
     },
     data() {
         return {
             historyTemplate: "",
             historyJSON: {},
             // TODO: Error message standardization -- use bootstrap-vue component or the like.
-            errorMessages: []
+            errorMessages: [],
         };
     },
-    created: function() {
+    created: function () {
         const historyId = this.id;
         let url = "";
         if (historyId !== undefined && historyId !== "" && historyId !== null) {
@@ -42,52 +42,52 @@ export default {
         this.ajaxCall(url);
     },
     methods: {
-        ajaxCall: function(url) {
+        ajaxCall: function (url) {
             axios
                 .get(url)
-                .then(response => {
+                .then((response) => {
                     this._updateHistoryData(response);
                 })
-                .catch(e => {
+                .catch((e) => {
                     console.error(e);
                     this.errorMessages.push(
                         "Error fetching history data -- reload the page to retry this request.  Please contact an administrator if the problem persists."
                     );
                 });
         },
-        _updateHistoryData: function(response) {
+        _updateHistoryData: function (response) {
             const historyItems = response.data;
             this.historyTemplate = historyItems.template;
             this.historyJSON = historyItems.history_json;
         },
-        makeHistoryView: function(historyDict) {
-            window.hdas = historyDict.map(hda => {
+        makeHistoryView: function (historyDict) {
+            window.hdas = historyDict.map((hda) => {
                 const Galaxy = getGalaxyInstance();
                 return new HDAListItemEdit.HDAListItemEdit({
                     model: new HDAModel.HistoryDatasetAssociation(hda),
                     el: $("#hda-" + hda.id),
                     linkTarget: "galaxy_main",
                     purgeAllowed: Galaxy.config.allow_user_dataset_purge,
-                    logger: Galaxy.logger
+                    logger: Galaxy.logger,
                 }).render(0);
             });
             // toggle the body section of each item in the structure
-            $(function() {
+            $(function () {
                 $(".workflow, .tool").each((index, element) => {
                     const body = $(element).children(".body");
                     $(element)
                         .children(".header")
-                        .click(e => {
+                        .click((e) => {
                             body.toggle();
                         })
                         .addClass("clickable");
                 });
             });
-        }
+        },
     },
-    updated: function() {
+    updated: function () {
         this.makeHistoryView(this.historyJSON);
-    }
+    },
 };
 </script>
 

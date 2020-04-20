@@ -40,8 +40,6 @@
                 striped
                 id="jobs-table"
             >
-                <!-- Enable cell formatting for the command line column -->
-                <span slot="html" slot-scope="data" v-html="data.value"> </span>
                 <template v-slot:cell(actions)="row">
                     <b-button-group>
                         <b-button v-b-tooltip.hover title="Rerun" target="_top" :href="jobs[row.index]['runUrl']">
@@ -85,13 +83,13 @@ import Alert from "components/Alert.vue";
 
 export default {
     components: {
-        Alert
+        Alert,
     },
     props: {
         id: {
             type: String,
-            required: true
-        }
+            required: true,
+        },
     },
     data() {
         return {
@@ -104,14 +102,14 @@ export default {
                 { key: "state" },
                 { key: "actions" },
                 { key: "jobRunnerName", label: "Job Runner" },
-                { key: "jobRunnerExternalId", label: "PID/Cluster ID", sortable: true }
+                { key: "jobRunnerExternalId", label: "PID/Cluster ID", sortable: true },
             ],
             showCommandLine: true,
             filter: "",
             viewOnly: false,
             message: "",
             status: "",
-            loading: true
+            loading: true,
         };
     },
     computed: {
@@ -119,17 +117,17 @@ export default {
             return [
                 {
                     text: "Data Managers",
-                    to: "/"
+                    to: "/",
                 },
                 {
                     text: this.dataManager["name"] + " ( " + this.dataManager["description"] + " )",
                     href: this.dataManager["toolUrl"],
-                    target: "_blank"
+                    target: "_blank",
                 },
                 {
                     text: "Jobs",
-                    active: true
-                }
+                    active: true,
+                },
             ];
         },
         tableFields() {
@@ -137,7 +135,7 @@ export default {
             if (this.showCommandLine) {
                 tableFields.splice(5, 0, {
                     key: "commandLine",
-                    tdClass: ["code", "command-line"]
+                    tdClass: ["code", "command-line"],
                 });
             }
             return tableFields;
@@ -173,12 +171,12 @@ export default {
                 }
             }
             return tableItems;
-        }
+        },
     },
     created() {
         axios
             .get(`${getAppRoot()}data_manager/jobs_list?id=${decodeURIComponent(this.id)}`)
-            .then(response => {
+            .then((response) => {
                 this.dataManager = response.data.dataManager;
                 this.jobs = response.data.jobs;
                 this.viewOnly = response.data.viewOnly;
@@ -186,10 +184,10 @@ export default {
                 this.status = response.data.status;
                 this.loading = false;
             })
-            .catch(error => {
+            .catch((error) => {
                 console.error(error);
             });
-    }
+    },
 };
 </script>
 

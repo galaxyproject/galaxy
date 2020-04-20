@@ -6,7 +6,7 @@ import axios from "axios";
 import { Credential, IdentityProvider } from "./index";
 import { getRootFromIndexLink } from "onload";
 
-const getUrl = path => getRootFromIndexLink() + path;
+const getUrl = (path) => getRootFromIndexLink() + path;
 
 export async function listCredentials() {
     const url = getUrl("api/cloud/authz");
@@ -76,5 +76,5 @@ export default {
     getCredential,
     saveCredential,
     deleteCredential,
-    getIdentityProviders
+    getIdentityProviders,
 };

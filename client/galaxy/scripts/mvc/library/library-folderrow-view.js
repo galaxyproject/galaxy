@@ -14,7 +14,7 @@ var FolderRowView = Backbone.View.extend({
         "click .undelete_folder_btn": "undeleteFolder",
         "click .edit_folder_btn": "startModifications",
         "click .cancel_folder_btn": "cancelModifications",
-        "click .save_folder_btn": "saveModifications"
+        "click .save_folder_btn": "saveModifications",
     },
 
     defaults: {
@@ -23,17 +23,17 @@ var FolderRowView = Backbone.View.extend({
             edit_folder_btn: false,
             save_folder_btn: false,
             cancel_folder_btn: false,
-            permission_folder_btn: false
+            permission_folder_btn: false,
         },
-        edit_mode: false
+        edit_mode: false,
     },
 
-    initialize: function(options) {
+    initialize: function (options) {
         this.options = _.defaults(options || {}, this.defaults);
         this.render(this.options);
     },
 
-    render: function(options) {
+    render: function (options) {
         this.options = _.extend(this.options, options);
         var folder_item = this.options.model;
         var template = null;
@@ -66,7 +66,7 @@ var FolderRowView = Backbone.View.extend({
             template({
                 content_item: folder_item,
                 edit_mode: this.options.edit_mode,
-                button_config: this.options.visibility_config
+                button_config: this.options.visibility_config,
             })
         );
         this.$el.show();
@@ -93,7 +93,7 @@ var FolderRowView = Backbone.View.extend({
      * Modify the visibility of buttons for
      * the filling of the row template of a given folder.
      */
-    prepareButtons: function(folder) {
+    prepareButtons: function (folder) {
         var vis_config = this.options.visibility_config;
         if (this.options.edit_mode === false) {
             vis_config.save_folder_btn = false;
@@ -121,84 +121,80 @@ var FolderRowView = Backbone.View.extend({
     },
 
     /* Show the page with dataset details. */
-    showDatasetDetails: function() {
+    showDatasetDetails: function () {
         const Galaxy = getGalaxyInstance();
         Galaxy.libraries.datasetView = new mod_library_dataset_view.LibraryDatasetView({ id: this.id });
     },
 
     /* Undelete the dataset on server and render the row again. */
-    undeleteDataset: function(event) {
+    undeleteDataset: function (event) {
         $(".tooltip").hide();
         const Galaxy = getGalaxyInstance();
         var that = this;
-        var dataset_id = $(event.target)
-            .closest("tr")
-            .data("id");
+        var dataset_id = $(event.target).closest("tr").data("id");
         var dataset = Galaxy.libraries.folderListView.collection.get(dataset_id);
         dataset.url = `${dataset.urlRoot + dataset.id}?undelete=true`;
         dataset.destroy({
-            success: function(model, response) {
+            success: function (model, response) {
                 Galaxy.libraries.folderListView.collection.remove(dataset_id);
                 var updated_dataset = new mod_library_model.Item(response);
                 Galaxy.libraries.folderListView.collection.add(updated_dataset);
                 Galaxy.libraries.folderListView.collection.sortFolder("name", "asc");
                 Toast.success("Dataset undeleted. Click this to see it.", "", {
-                    onclick: function() {
+                    onclick: function () {
                         var folder_id = that.model.get("folder_id");
                         window.location = `${getAppRoot()}library/list#folders/${folder_id}/datasets/${that.id}`;
-                    }
+                    },
                 });
             },
-            error: function(model, response) {
+            error: function (model, response) {
                 if (typeof response.responseJSON !== "undefined") {
                     Toast.error(`Dataset was not undeleted. ${response.responseJSON.err_msg}`);
                 } else {
                     Toast.error("An error occurred! Dataset was not undeleted. Please try again.");
                 }
-            }
+            },
         });
     },
 
     /* Undelete the folder on server and render the row again. */
-    undeleteFolder: function(event) {
+    undeleteFolder: function (event) {
         const Galaxy = getGalaxyInstance();
         $(".tooltip").hide();
-        var folder_id = $(event.target)
-            .closest("tr")
-            .data("id");
+        var folder_id = $(event.target).closest("tr").data("id");
         var folder = Galaxy.libraries.folderListView.collection.get(folder_id);
         folder.url = `${folder.urlRoot + folder.id}?undelete=true`;
         folder.destroy({
-            success: function(model, response) {
+            success: function (model, response) {
                 Galaxy.libraries.folderListView.collection.remove(folder_id);
                 var updated_folder = new mod_library_model.FolderAsModel(response);
                 Galaxy.libraries.folderListView.collection.add(updated_folder);
                 Galaxy.libraries.folderListView.collection.sortFolder("name", "asc");
                 Toast.success("Folder undeleted.");
             },
-            error: function(model, response) {
+            error: function (model, response) {
                 if (typeof response.responseJSON !== "undefined") {
                     Toast.error(`Folder was not undeleted. ${response.responseJSON.err_msg}`);
                 } else {
                     Toast.error("An error occurred! Folder was not undeleted. Please try again.");
                 }
-            }
+            },
         });
     },
 
     /* User clicked the 'edit' button on row so render the row as editable. */
-    startModifications: function() {
+    startModifications: function () {
         this.options.edit_mode = true;
         this.repaint();
     },
 
     /* User clicked the 'cancel' button so render normal row */
-    cancelModifications: function() {
+    cancelModifications: function () {
         this.options.edit_mode = false;
         this.repaint();
     },
 
-    saveModifications: function() {
+    saveModifications: function () {
         const Galaxy = getGalaxyInstance();
         var folder = Galaxy.libraries.folderListView.collection.get(this.$el.data("id"));
         var is_changed = false;
@@ -221,18 +217,18 @@ var FolderRowView = Backbone.View.extend({
             var row_view = this;
             folder.save(null, {
                 patch: true,
-                success: function(folder) {
+                success: function (folder) {
                     row_view.options.edit_mode = false;
                     row_view.repaint(folder);
                     Toast.success("Changes to folder saved.");
                 },
-                error: function(model, response) {
+                error: function (model, response) {
                     if (typeof response.responseJSON !== "undefined") {
                         Toast.error(response.responseJSON.err_msg);
                     } else {
                         Toast.error("An error occurred while attempting to update the folder.");
                     }
-                }
+                },
             });
         } else {
             this.options.edit_mode = false;
@@ -241,7 +237,7 @@ var FolderRowView = Backbone.View.extend({
         }
     },
 
-    repaint: function() {
+    repaint: function () {
         /* need to hide manually because of the element removal in setElement
     invoked in render() */
         $(".tooltip").hide();
@@ -256,7 +252,7 @@ var FolderRowView = Backbone.View.extend({
         this.$el.find('[data-toggle="tooltip"]').tooltip({ trigger: "hover" });
     },
 
-    templateRowFolder: function() {
+    templateRowFolder: function () {
         return _.template(
             `<tr class="folder_row library-row" data-id="<%- content_item.id %>">
                 <td class="mid">
@@ -327,7 +323,7 @@ var FolderRowView = Backbone.View.extend({
         );
     },
 
-    templateRowFile: function() {
+    templateRowFile: function () {
         return _.template(
             `<tr class="dataset_row library-row" data-id="<%- content_item.id %>">
                 <td class="mid">
@@ -388,7 +384,7 @@ var FolderRowView = Backbone.View.extend({
         );
     },
 
-    templateRowDeletedFile: function() {
+    templateRowDeletedFile: function () {
         return _.template(
             `<tr class="active deleted_dataset library-row" data-id="<%- content_item.id %>">
                 <td class="mid">
@@ -431,7 +427,7 @@ var FolderRowView = Backbone.View.extend({
         );
     },
 
-    templateRowDeletedFolder: function() {
+    templateRowDeletedFolder: function () {
         return _.template(
             `<tr class="active deleted_folder library-row" data-id="<%- content_item.id %>">
                 <td class="mid">
@@ -473,9 +469,9 @@ var FolderRowView = Backbone.View.extend({
                 </td>
             </tr>`
         );
-    }
+    },
 });
 
 export default {
-    FolderRowView: FolderRowView
+    FolderRowView: FolderRowView,
 };

@@ -13,7 +13,7 @@ var User = Backbone.Model.extend(baseMVC.LoggableMixin).extend(
         _logNamespace: logNamespace,
 
         /** API location for this resource */
-        urlRoot: function() {
+        urlRoot: function () {
             return `${getAppRoot()}api/users`;
         },
 
@@ -29,49 +29,49 @@ var User = Backbone.Model.extend(baseMVC.LoggableMixin).extend(
             nice_total_disk_usage: "",
             quota_percent: null,
             is_admin: false,
-            preferences: {}
+            preferences: {},
         },
 
         /** Set up and bind events
          *  @param {Object} data Initial model data.
          */
-        initialize: function(data) {
+        initialize: function (data) {
             this.log("User.initialize:", data);
 
-            this.on("loaded", function(model, resp) {
+            this.on("loaded", function (model, resp) {
                 this.log(`${this} has loaded:`, model, resp);
             });
-            this.on("change", function(model, data) {
+            this.on("change", function (model, data) {
                 this.log(`${this} has changed:`, model, data.changes);
             });
         },
 
-        isAnonymous: function() {
+        isAnonymous: function () {
             return !this.get("email");
         },
 
-        isAdmin: function() {
+        isAdmin: function () {
             return this.get("is_admin");
         },
 
-        updatePreferences: function(name, new_value) {
+        updatePreferences: function (name, new_value) {
             const preferences = this.get("preferences");
             preferences[name] = JSON.stringify(new_value);
             this.preferences = preferences;
         },
 
-        getFavorites: function() {
+        getFavorites: function () {
             const preferences = this.get("preferences");
             if (preferences && preferences.favorites) {
                 return JSON.parse(preferences.favorites);
             } else {
                 return {
-                    tools: []
+                    tools: [],
                 };
             }
         },
 
-        updateFavorites: function(object_type, new_favorites) {
+        updateFavorites: function (object_type, new_favorites) {
             const favorites = this.getFavorites();
             favorites[object_type] = new_favorites[object_type];
             this.updatePreferences("favorites", favorites);
@@ -84,7 +84,7 @@ var User = Backbone.Model.extend(baseMVC.LoggableMixin).extend(
          *  @param {Object} options hash to pass to Backbone.Model.fetch. Can contain success, error fns.
          *  @fires loaded when the model has been loaded from the API, passing the newModel and AJAX response.
          */
-        loadFromApi: function(idOrCurrent, options) {
+        loadFromApi: function (idOrCurrent, options) {
             idOrCurrent = idOrCurrent || User.CURRENT_ID_STR;
 
             options = options || {};
@@ -108,7 +108,7 @@ var User = Backbone.Model.extend(baseMVC.LoggableMixin).extend(
 
         /** Clears all data from the sessionStorage.
          */
-        clearSessionStorage: function() {
+        clearSessionStorage: function () {
             for (var key in sessionStorage) {
                 //TODO: store these under the user key so we don't have to do this
                 // currently only history
@@ -121,14 +121,14 @@ var User = Backbone.Model.extend(baseMVC.LoggableMixin).extend(
         },
 
         /** string representation */
-        toString: function() {
+        toString: function () {
             var userInfo = [this.get("username")];
             if (this.get("id")) {
                 userInfo.unshift(this.get("id"));
                 userInfo.push(this.get("email"));
             }
             return `User(${userInfo.join(":")})`;
-        }
+        },
     }
 );
 
@@ -136,7 +136,7 @@ var User = Backbone.Model.extend(baseMVC.LoggableMixin).extend(
 User.CURRENT_ID_STR = "current";
 
 // class method to load the current user via the api and return that model
-User.getCurrentUserFromApi = options => {
+User.getCurrentUserFromApi = (options) => {
     var currentUser = new User();
     currentUser.loadFromApi(User.CURRENT_ID_STR, options);
     return currentUser;
@@ -153,5 +153,5 @@ User.getCurrentUserFromApi = options => {
 
 //==============================================================================
 export default {
-    User: User
+    User: User,
 };

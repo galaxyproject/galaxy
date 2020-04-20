@@ -123,6 +123,8 @@ def preprocess_volumes(volumes_raw_str, container_type):
     ['/a/b:rw']
     >>> preprocess_volumes("/a/b:ro,/a/b/c:rw", DOCKER_CONTAINER_TYPE)
     ['/a/b:ro', '/a/b/c:rw']
+    >>> preprocess_volumes("/a/b:/a:ro,/a/b/c:/a/b:rw", DOCKER_CONTAINER_TYPE)
+    ['/a/b:/a:ro', '/a/b/c:/a/b:rw']
     >>> preprocess_volumes("/a/b:default_ro,/a/b/c:rw", DOCKER_CONTAINER_TYPE)
     ['/a/b:ro', '/a/b/c:rw']
     >>> preprocess_volumes("/a/b:default_ro,/a/b/c:rw", SINGULARITY_CONTAINER_TYPE)
@@ -135,8 +137,12 @@ def preprocess_volumes(volumes_raw_str, container_type):
 
     for volume_raw_str in volumes_raw_strs:
         volume_parts = volume_raw_str.split(":")
-        if len(volume_parts) > 2:
+        if len(volume_parts) > 3:
             raise Exception("Unparsable volumes string in configuration [%s]" % volumes_raw_str)
+        if len(volume_parts) == 3:
+            volume_parts = ["%s:%s" % (volume_parts[0], volume_parts[1]), volume_parts[2]]
+        if len(volume_parts) == 2 and volume_parts[1] not in ("rw", "ro", "default_ro"):
+            volume_parts = ["%s:%s" % (volume_parts[0], volume_parts[1]), "rw"]
         if len(volume_parts) == 1:
             volume_parts.append("rw")
         volumes.append(volume_parts)

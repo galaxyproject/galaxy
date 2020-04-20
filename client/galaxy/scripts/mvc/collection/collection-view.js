@@ -29,7 +29,7 @@ var CollectionView = _super.extend(
         /** Set up the view, set up storage, bind listeners to HistoryContents events
          *  @param {Object} attributes optional settings for the panel
          */
-        initialize: function(attributes) {
+        initialize: function (attributes) {
             _super.prototype.initialize.call(this, attributes);
             this.linkTarget = attributes.linkTarget || "_blank";
             this.dragItems = true;
@@ -43,13 +43,13 @@ var CollectionView = _super.extend(
             this.downloadUrl = `${getAppRoot()}api/dataset_collections/${this.model.attributes.id}/download`;
         },
 
-        getNestedDCDCEViewClass: function() {
+        getNestedDCDCEViewClass: function () {
             return DC_LI.NestedDCDCEListItemView.extend({
-                foldoutPanelClass: CollectionView
+                foldoutPanelClass: CollectionView,
             });
         },
 
-        _queueNewRender: function($newRender, speed) {
+        _queueNewRender: function ($newRender, speed) {
             speed = speed === undefined ? this.fxSpeed : speed;
             var panel = this;
             this.handleWarning($newRender);
@@ -61,7 +61,7 @@ var CollectionView = _super.extend(
             panel.trigger("rendered", panel);
         },
 
-        handleWarning: function($newRender) {
+        handleWarning: function ($newRender) {
             var viewLength = this.views.length;
             var elementCount = this.model.get("element_count");
             if (elementCount && elementCount !== viewLength) {
@@ -73,13 +73,13 @@ var CollectionView = _super.extend(
 
         // ------------------------------------------------------------------------ sub-views
         /** In this override, use model.getVisibleContents */
-        _filterCollection: function() {
+        _filterCollection: function () {
             //TODO: should *not* be model.getVisibleContents - visibility is not model related
             return this.model.getVisibleContents();
         },
 
         /** override to return proper view class based on element_type */
-        _getItemViewClass: function(model) {
+        _getItemViewClass: function (model) {
             //this.debug( this + '._getItemViewClass:', model );
             //TODO: subclasses use DCEViewClass - but are currently unused - decide
             switch (model.get("element_type")) {
@@ -92,47 +92,45 @@ var CollectionView = _super.extend(
         },
 
         /** override to add link target and anon */
-        _getItemViewOptions: function(model) {
+        _getItemViewOptions: function (model) {
             var options = _super.prototype._getItemViewOptions.call(this, model);
             return _.extend(options, {
                 linkTarget: this.linkTarget,
                 hasUser: this.hasUser,
                 //TODO: could move to only nested: list:paired
-                foldoutStyle: this.foldoutStyle
+                foldoutStyle: this.foldoutStyle,
             });
         },
 
         // ------------------------------------------------------------------------ collection sub-views
         /** In this override, add/remove expanded/collapsed model ids to/from web storage */
-        _setUpItemViewListeners: function(view) {
+        _setUpItemViewListeners: function (view) {
             var panel = this;
             _super.prototype._setUpItemViewListeners.call(panel, view);
 
             // use pub-sub to: handle drilldown expansion and collapse
             panel.listenTo(view, {
-                "expanded:drilldown": function(v, drilldown) {
+                "expanded:drilldown": function (v, drilldown) {
                     this._expandDrilldownPanel(drilldown);
                 },
-                "collapsed:drilldown": function(v, drilldown) {
+                "collapsed:drilldown": function (v, drilldown) {
                     this._collapseDrilldownPanel(drilldown);
-                }
+                },
             });
             return this;
         },
 
         /** Handle drill down by hiding this panels list and controls and showing the sub-panel */
-        _expandDrilldownPanel: function(drilldown) {
+        _expandDrilldownPanel: function (drilldown) {
             this.panelStack.push(drilldown);
             // hide this panel's controls and list, set the name for back navigation, and attach to the $el
-            this.$("> .controls")
-                .add(this.$list())
-                .hide();
+            this.$("> .controls").add(this.$list()).hide();
             drilldown.parentName = this.model.get("name");
             this.$el.append(drilldown.render().$el);
         },
 
         /** Handle drilldown close by freeing the panel and re-rendering this panel */
-        _collapseDrilldownPanel: function(drilldown) {
+        _collapseDrilldownPanel: function (drilldown) {
             this.panelStack.pop();
             this.render();
         },
@@ -140,20 +138,20 @@ var CollectionView = _super.extend(
         // ------------------------------------------------------------------------ panel events
         /** event map */
         events: {
-            "click .navigation .back": "close"
+            "click .navigation .back": "close",
         },
 
         /** close/remove this collection panel */
-        close: function(event) {
+        close: function (event) {
             this.remove();
             this.trigger("close");
         },
 
         // ........................................................................ misc
         /** string rep */
-        toString: function() {
+        toString: function () {
             return `CollectionView(${this.model ? this.model.get("name") : ""})`;
-        }
+        },
     }
 );
 
@@ -189,7 +187,7 @@ CollectionView.prototype.templates = (() => {
     };
 
     return _.extend(_.clone(_super.prototype.templates), {
-        controls: controlsTemplate
+        controls: controlsTemplate,
     });
 })();
 
@@ -228,5 +226,5 @@ function collectionDescription(collection) {
 export default {
     collectionTypeDescription: collectionTypeDescription,
     collectionDescription: collectionDescription,
-    CollectionView: CollectionView
+    CollectionView: CollectionView,
 };

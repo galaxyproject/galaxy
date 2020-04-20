@@ -214,7 +214,7 @@ class CommunityRBACAgent(RBACAgent):
 
     def can_push(self, app, user, repository):
         if user:
-            return user.username in listify(repository.allow_push(app))
+            return user.username in listify(repository.allow_push())
         return False
 
     def user_can_administer_repository(self, user, repository):

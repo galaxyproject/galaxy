@@ -2,7 +2,7 @@ import $ from "jquery";
 import { make_popup_menus } from "ui/popupmenu";
 
 export function render_embedded_items() {
-    $(".embedded-item").each(function() {
+    $(".embedded-item").each(function () {
         var container = $(this);
         if (container.hasClass("history")) {
             return;
@@ -13,7 +13,7 @@ export function render_embedded_items() {
         //  and add new ones (in embed_in_frame.mako) ...ugh.
 
         // Show embedded item.
-        var show_embedded_item = function() {
+        var show_embedded_item = function () {
             var ajax_url = container.find("input[type=hidden]").val();
             if (!ajax_url) {
                 ajax_url = container.data("item-url");
@@ -24,10 +24,10 @@ export function render_embedded_items() {
                 $.ajax({
                     type: "GET",
                     url: ajax_url,
-                    error: function() {
+                    error: function () {
                         alert("Getting item content failed.");
                     },
-                    success: function(item_content) {
+                    success: function (item_content) {
                         container.find(".summary-content").hide("fast");
                         container.find(".item-content").html(item_content);
                         container.find(".expanded-content").show("fast");
@@ -35,7 +35,7 @@ export function render_embedded_items() {
                         container.find(".toggle").show();
 
                         make_popup_menus();
-                    }
+                    },
                 });
             } else {
                 container.find(".summary-content").hide("fast");
@@ -46,7 +46,7 @@ export function render_embedded_items() {
         };
 
         // Hide embedded item.
-        var hide_embedded_item = function() {
+        var hide_embedded_item = function () {
             container.find(".expanded-content").hide("fast");
             container.find(".summary-content").show("fast");
             container.find(".toggle").hide();
@@ -55,20 +55,20 @@ export function render_embedded_items() {
 
         // Setup toggle expand.
         var toggle_expand = $(this).find(".toggle-expand");
-        toggle_expand.click(function() {
+        toggle_expand.click(function () {
             show_embedded_item();
             return false;
         });
         // Setup toggle contract.
         var toggle_contract = $(this).find(".toggle");
-        toggle_contract.click(function() {
+        toggle_contract.click(function () {
             hide_embedded_item();
             return false;
         });
 
         // Setup toggle embed.
         var toggle_embed = $(this).find(".toggle-embed");
-        toggle_embed.click(function() {
+        toggle_embed.click(function () {
             if (container.find(".expanded-content").is(":visible")) {
                 hide_embedded_item();
             } else {

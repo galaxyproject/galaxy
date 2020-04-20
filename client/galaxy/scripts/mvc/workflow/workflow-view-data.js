@@ -1,21 +1,18 @@
 import $ from "jquery";
 
-// TODO; tie into Galaxy state?
-window.workflow_globals = window.workflow_globals || {};
-
 export class DataInputView {
     constructor(options = {}) {
         this.input = options.input;
         this.nodeView = options.nodeView;
         this.terminalElement = options.terminalElement;
-        this.$el = $("<div class='form-row dataRow input-data-row'/>");
+        this.$el = $(`<div class="form-row dataRow input-data-row"/>`);
         this.$el.attr("name", this.input.name).html(this.input.label || this.input.name);
         if (!options.skipResize) {
             this.$el.css({
                 position: "absolute",
                 left: -1000,
                 top: -1000,
-                display: "none"
+                display: "none",
             });
             $("body").append(this.el);
             this.nodeView.updateMaxWidth(this.$el.outerWidth());
@@ -23,7 +20,7 @@ export class DataInputView {
                 position: "",
                 left: "",
                 top: "",
-                display: ""
+                display: "",
             });
             this.$el.remove();
         }
@@ -31,8 +28,8 @@ export class DataInputView {
 }
 
 export class DataOutputView {
-    constructor(options = {}) {
-        this.$el = $("<div class='form-row dataRow'/>");
+    constructor(app, options = {}) {
+        this.$el = $(`<div class="form-row dataRow"/>`);
         this.output = options.output;
         this.terminalElement = options.terminalElement;
         this.nodeView = options.nodeView;
@@ -40,25 +37,26 @@ export class DataOutputView {
         let label = output.label || output.name;
         const node = this.nodeView.node;
         const isInput = output.extensions.indexOf("input") >= 0;
+        const datatype = output.force_datatype || output.extensions.join(", ");
         if (!isInput) {
-            label = `${label} (${output.force_datatype || output.extensions.join(", ")})`;
+            label = `${label} (${datatype})`;
         }
         this.$el.html(label);
         this.calloutView = null;
         if (["tool", "subworkflow"].indexOf(node.type) >= 0) {
-            const calloutView = new OutputCalloutView({
+            const calloutView = new OutputCalloutView(app, {
                 label: label,
                 output: output,
-                node: node
+                node: node,
             });
             this.calloutView = calloutView;
-            this.$el.append(calloutView.el);
+            this.$el.prepend(calloutView.$el);
         }
         this.$el.css({
             position: "absolute",
             left: -1000,
             top: -1000,
-            display: "none"
+            display: "none",
         });
         $("body").append(this.el);
         this.nodeView.updateMaxWidth(this.$el.outerWidth() + 17);
@@ -67,20 +65,20 @@ export class DataOutputView {
                 position: "",
                 left: "",
                 top: "",
-                display: ""
+                display: "",
             })
             .detach();
     }
     redrawWorkflowOutput() {
         if (this.calloutView) {
-            this.calloutView.resetImage();
+            this.calloutView.render();
         }
     }
 }
 
 export class ParameterOutputView {
-    constructor(options = {}) {
-        this.$el = $("<div class='form-row dataRow'/>");
+    constructor(app, options = {}) {
+        this.$el = $(`<div class="form-row dataRow"/>`);
         this.output = options.output;
         this.terminalElement = options.terminalElement;
         this.nodeView = options.nodeView;
@@ -90,19 +88,19 @@ export class ParameterOutputView {
         this.$el.html(label);
         this.calloutView = null;
         if (["tool", "subworkflow"].indexOf(node.type) >= 0) {
-            const calloutView = new OutputCalloutView({
+            const calloutView = new OutputCalloutView(app, {
                 label: label,
                 output: output,
-                node: node
+                node: node,
             });
             this.calloutView = calloutView;
-            this.$el.append(calloutView.el);
+            this.$el.append(calloutView.$el);
         }
         this.$el.css({
             position: "absolute",
             left: -1000,
             top: -1000,
-            display: "none"
+            display: "none",
         });
         $("body").append(this.el);
         this.nodeView.updateMaxWidth(this.$el.outerWidth() + 17);
@@ -111,56 +109,48 @@ export class ParameterOutputView {
                 position: "",
                 left: "",
                 top: "",
-                display: ""
+                display: "",
             })
             .detach();
     }
     redrawWorkflowOutput() {
         if (this.calloutView) {
-            this.calloutView.resetImage();
+            this.calloutView.render();
         }
     }
 }
 
 export class OutputCalloutView {
-    constructor(options = {}) {
+    constructor(app, options = {}) {
         this.$el = $("<div/>");
         this.label = options.label;
         this.node = options.node;
         this.output = options.output;
-        const view = this;
         const node = this.node;
+        const outputName = this.output.name;
         this.$el
-            .attr("class", `callout-terminal ${this.label}`)
-            .css({ display: "none" })
+            .attr("class", `callout-terminal ${outputName}`)
             .append(
-                $("<icon class='mark-terminal fa fa-asterisk'/>").click(() => {
-                    const outputName = view.output.name;
-                    if (node.isWorkflowOutput(outputName)) {
-                        node.removeWorkflowOutput(outputName);
-                        view.$("icon").removeClass("mark-terminal-active");
-                    } else {
-                        node.addWorkflowOutput(outputName);
-                        view.$("icon").addClass("mark-terminal-active");
-                    }
-                    window.workflow_globals.workflow.has_changes = true;
-                    window.workflow_globals.canvas_manager.draw_overview();
-                })
+                $("<icon />")
+                    .addClass("mark-terminal")
+                    .click(() => {
+                        if (node.isWorkflowOutput(outputName)) {
+                            node.removeWorkflowOutput(outputName);
+                        } else {
+                            node.addWorkflowOutput(outputName);
+                        }
+                        this.render();
+                        app.has_changes = true;
+                        app.canvas_manager.draw_overview();
+                    })
             )
             .tooltip({
                 delay: 500,
-                title: "Mark dataset as a workflow output. All unmarked datasets will be hidden."
+                title: "Unchecked output datasets will be hidden.",
             });
-
-        this.$el.css({
-            top: "50%",
-            margin: "-8px 0px 0px 0px",
-            right: 8
-        });
-        this.$el.show();
-        this.resetImage();
+        this.render();
     }
-    resetImage() {
+    render() {
         if (!this.node.isWorkflowOutput(this.output.name)) {
             this.$el.find("icon").removeClass("mark-terminal-active");
         } else {

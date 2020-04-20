@@ -91,9 +91,7 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         check_migrate_tools = self.config.check_migrate_tools
         self._configure_models(check_migrate_databases=self.config.check_migrate_databases, check_migrate_tools=check_migrate_tools, config_file=config_file)
 
-        # Manage installed tool shed repositories.
         self.installed_repository_manager = InstalledRepositoryManager(self)
-
         self._configure_datatypes_registry(self.installed_repository_manager)
         galaxy.model.set_datatypes_registry(self.datatypes_registry)
 

@@ -16,8 +16,8 @@ export default {
     props: {
         requirements: {
             type: Array,
-            required: true
-        }
-    }
+            required: true,
+        },
+    },
 };
 </script>

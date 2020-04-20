@@ -34,6 +34,15 @@ mapping:
           other Galaxy config files (e.g. datatypes_config_file). Defaults to the
           directory in which galaxy.yml is located.
 
+      managed_config_dir:
+        type: str
+        required: false
+        desc: |
+          The directory that will be prepended to relative paths in options specifying
+          config files controlled by Galaxy (such as shed_tool_config_file, etc.). Must be
+          writable by the user running Galaxy.  Defaults to `<config_dir>/` if running
+          Galaxy from source or `<data_dir>/config` otherwise.
+
       data_dir:
         type: str
         required: false
@@ -223,7 +232,7 @@ mapping:
           installation, whereas Galaxy will fail to start if any files in
           tool_config_file cannot be read.
 
-          The value of this option will be resolved with respect to <mutable_config_dir>.
+          The value of this option will be resolved with respect to <managed_config_dir>.
 
       check_migrate_tools:
         type: bool
@@ -245,7 +254,7 @@ mapping:
           scripts to install tools that have been migrated to the tool shed upon a new
           release, they will be added to this tool config file.
 
-          The value of this option will be resolved with respect to <config_dir>.
+          The value of this option will be resolved with respect to <managed_config_dir>.
 
       integrated_tool_panel_config:
         type: str
@@ -256,6 +265,8 @@ mapping:
           files integrated into a single file that defines the tool panel layout.  This
           file can be changed by the Galaxy administrator to alter the layout of the
           tool panel.  If not present, Galaxy will create it.
+
+          The value of this option will be resolved with respect to <managed_config_dir>.
 
       tool_path:
         type: str
@@ -526,15 +537,6 @@ mapping:
           server process should be able to check for repository updates.  The
           setting for hours_between_check should be an integer between 1 and 24.
 
-      manage_dependency_relationships:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Enable use of an in-memory registry with bi-directional relationships between
-          repositories (i.e., in addition to lists of dependencies for a repository,
-          keep an in-memory registry of dependent items for each repository.
-
       tool_data_table_config_path:
         type: str
         default: config/tool_data_table_conf.xml
@@ -556,7 +558,7 @@ mapping:
           entries are automatically added to the following file, which is parsed and
           applied to the ToolDataTableManager at server start up.
 
-          The value of this option will be resolved with respect to <mutable_config_dir>.
+          The value of this option will be resolved with respect to <managed_config_dir>.
 
       tool_data_path:
         type: str
@@ -589,11 +591,13 @@ mapping:
 
       build_sites_config_file:
         type: str
-        default: config/build_sites.yml.sample
+        default: build_sites.yml
         required: false
         desc: |
           File that defines the builds (dbkeys) available at sites used by display applications
           and the URL to those sites.
+
+          The value of this option will be resolved with respect to <config_dir>.
 
       builds_file_path:
         type: str
@@ -898,6 +902,18 @@ mapping:
 
           Example value 'config/disposable_email_blacklist.conf'
 
+      whitelist_file:
+        type: str
+        default: disposable_email_whitelist.conf
+        path_resolves_to: config_dir
+        required: false
+        desc: |
+          E-mail domains whitelist is used to specify allowed email address domains.
+          If the list is non-empty and a user attempts registration using an email
+          address belonging to a domain that is not on the list, registration will be
+          enied. This is a more restrictive option than <blacklist_file>, and therefore,
+          in case <whitelist_file> is defined, <blacklist_file> will be ignored.
+
       registration_warning_message:
         type: str
         default: >-
@@ -1009,6 +1025,19 @@ mapping:
         required: false
         desc: |
           Enable InteractiveTools.
+
+      interactivetools_proxy_host:
+        type: str
+        desc: |
+          Proxy host - assumed to just be hosted on the same hostname and port as
+          Galaxy by default.
+
+      interactivetools_map:
+        type: str
+        default: interactivetools_map.sqlite
+        path_resolves_to: data_dir
+        desc: |
+          Map for interactivetool proxy.
 
       visualizations_visible:
         type: bool
@@ -1179,14 +1208,6 @@ mapping:
         required: false
         desc: |
           The URL linked by the "Videos" link in the "Help" menu.
-
-      genomespace_ui_url:
-        type: str
-        default: https://gsui.genomespace.org/jsui/
-        required: false
-        desc: |
-          Points to the GenomeSpace UI service which will be used by
-          the GenomeSpace importer and exporter tools
 
       terms_url:
         type: str
@@ -1574,13 +1595,15 @@ mapping:
 
       sanitize_whitelist_file:
         type: str
-        default: config/sanitize_whitelist.txt
+        default: sanitize_whitelist.txt
         required: false
         desc: |
           Whitelist sanitization file.
           Datasets created by tools listed in this file are trusted and will not have
           their HTML sanitized on display.  This can be manually edited or manipulated
           through the Admin control panel -- see "Manage Display Whitelist"
+
+          The value of this option will be resolved with respect to <mutable_config_dir>.
 
       serve_xss_vulnerable_mimetypes:
         type: bool
@@ -2412,6 +2435,15 @@ mapping:
           Details" option in the history. This option also exposes the command line to
           non-administrative users. Administrators can always see dataset paths.
 
+      job_metrics_config_file:
+        type: str
+        default: job_metrics_conf.xml
+        required: false
+        desc: |
+          XML config file that contains the job metric collection configuration.
+
+          The value of this option will be resolved with respect to <config_dir>.
+
       expose_potentially_sensitive_job_metrics:
         type: bool
         default: false
@@ -2450,7 +2482,7 @@ mapping:
           File where Tool Shed based Data Managers are configured. This file will be created
           automatically upon data manager installation.
 
-          The value of this option will be resolved with respect to <mutable_config_dir>.
+          The value of this option will be resolved with respect to <managed_config_dir>.
 
       galaxy_data_manager_data_path:
         type: str
@@ -2723,7 +2755,7 @@ mapping:
         default: markdown_export_pages.css
         required: false
         desc: |
-          CSS file to apply to "Galaxy Page" exports to PDF. Generally prefer 
+          CSS file to apply to "Galaxy Page" exports to PDF. Generally prefer
           markdown_export_css, but this is here for deployments that
           would like to tailor different kinds of exports.
 
@@ -2732,7 +2764,7 @@ mapping:
         default: markdown_export_invocation_reports.css
         required: false
         desc: |
-          CSS file to apply to invocation report exports to PDF. Generally prefer 
+          CSS file to apply to invocation report exports to PDF. Generally prefer
           markdown_export_css, but this is here for deployments that
           would like to tailor different kinds of exports.
 
@@ -2963,3 +2995,44 @@ mapping:
           use 0 in order to always use select2 fields,
           use -1 (default) in order to always use the regular select fields,
           use any other positive number as threshold (above threshold: regular select fields will be used)
+
+      enable_tool_recommendations:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Allow the display of tool recommendations in workflow editor and after tool execution.
+          If it is enabled and set to true, please enable 'tool_recommendation_model_path' as well
+
+      tool_recommendation_model_path:
+        type: str
+        default: 'https://github.com/galaxyproject/galaxy-test-data/raw/master/tool_recommendation_model.hdf5'
+        required: false
+        desc: |
+          Set remote path of the trained model (HDF5 file) for tool recommendation.
+
+      topk_recommendations:
+        type: int
+        default: 20
+        required: false
+        desc: |
+          Set the number of predictions/recommendations to be made by the model
+
+      admin_tool_recommendations_path:
+        type: str
+        required: false
+        default: 'tool_recommendations_overwrite.yml'
+        path_resolves_to: config_dir
+        desc: |
+          Set path to the additional tool preferences from Galaxy admins.
+          It has two blocks. One for listing deprecated tools which will be removed from the recommendations and
+          another is for adding additional tools to be recommended along side those from the deep learning model.
+
+      overwrite_model_recommendations:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Overwrite or append to the tool recommendations by the deep learning model. When set to true, all the recommendations by the deep learning model
+          are overwritten by the recommendations set by an admin in a config file 'tool_recommendations_overwrite.yml'. When set to false, the recommended tools
+          by admins and predicted by the deep learning model are shown.

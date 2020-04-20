@@ -21,10 +21,10 @@ export var Dataset = Backbone.Model.extend({
         type: "",
         name: "",
         hda_ldda: "hda",
-        metadata: null
+        metadata: null,
     },
 
-    initialize: function() {
+    initialize: function () {
         // Metadata can be passed in as a model or a set of attributes; if it's
         // already a model, there's no need to set metadata.
         if (!this.get("metadata")) {
@@ -35,13 +35,13 @@ export var Dataset = Backbone.Model.extend({
         this.on("change", this._set_metadata, this);
     },
 
-    _set_metadata: function() {
+    _set_metadata: function () {
         var metadata = new DatasetMetadata();
 
         // Move metadata from dataset attributes to metadata object.
         _.each(
             _.keys(this.attributes),
-            function(k) {
+            function (k) {
                 if (k.indexOf("metadata_") === 0) {
                     // Found metadata.
                     var new_key = k.split("metadata_")[1];
@@ -59,11 +59,11 @@ export var Dataset = Backbone.Model.extend({
     /**
      * Returns dataset metadata for a given attribute.
      */
-    get_metadata: function(attribute) {
+    get_metadata: function (attribute) {
         return this.attributes.metadata.get(attribute);
     },
 
-    urlRoot: `${getAppRoot()}api/datasets`
+    urlRoot: `${getAppRoot()}api/datasets`,
 });
 
 /**
@@ -74,10 +74,10 @@ export var TabularDataset = Dataset.extend({
         chunk_url: null,
         first_data_chunk: null,
         offset: 0,
-        at_eof: false
+        at_eof: false,
     }),
 
-    initialize: function(options) {
+    initialize: function (options) {
         Dataset.prototype.initialize.call(this);
 
         // If first data chunk is available, next chunk is 1.
@@ -91,7 +91,7 @@ export var TabularDataset = Dataset.extend({
     /**
      * Returns a jQuery Deferred object that resolves to the next data chunk or null if at EOF.
      */
-    get_next_chunk: function() {
+    get_next_chunk: function () {
         // If already at end of file, do nothing.
         if (this.attributes.at_eof) {
             return null;
@@ -102,8 +102,8 @@ export var TabularDataset = Dataset.extend({
 
         var next_chunk = $.Deferred();
         $.getJSON(this.attributes.chunk_url, {
-            offset: self.attributes.offset
-        }).success(chunk => {
+            offset: self.attributes.offset,
+        }).success((chunk) => {
             var rval;
             if (chunk.ck_data !== "") {
                 // Found chunk.
@@ -118,11 +118,11 @@ export var TabularDataset = Dataset.extend({
         });
 
         return next_chunk;
-    }
+    },
 });
 
 export var DatasetCollection = Backbone.Collection.extend({
-    model: Dataset
+    model: Dataset,
 });
 
 /**
@@ -134,7 +134,7 @@ var TabularDatasetChunkedView = Backbone.View.extend({
     /**
      * Initialize view and, importantly, set a scroll element.
      */
-    initialize: function(options) {
+    initialize: function (options) {
         // Row count for rendering.
         this.row_count = 0;
         this.loading_chunk = false;
@@ -142,22 +142,22 @@ var TabularDatasetChunkedView = Backbone.View.extend({
         // load trackster button
         new TabularButtonTracksterView({
             model: options.model,
-            $el: this.$el
+            $el: this.$el,
         });
     },
 
-    expand_to_container: function() {
+    expand_to_container: function () {
         if (this.$el.height() < this.scroll_elt.height()) {
             this.attempt_to_fetch();
         }
     },
 
-    attempt_to_fetch: function(func) {
+    attempt_to_fetch: function (func) {
         var self = this;
         if (!this.loading_chunk && this.scrolled_to_bottom()) {
             this.loading_chunk = true;
             this.loading_indicator.show();
-            $.when(self.model.get_next_chunk()).then(result => {
+            $.when(self.model.get_next_chunk()).then((result) => {
                 if (result) {
                     self._renderChunk(result);
                     self.loading_chunk = false;
@@ -168,7 +168,7 @@ var TabularDatasetChunkedView = Backbone.View.extend({
         }
     },
 
-    render: function() {
+    render: function () {
         // Add loading indicator.
         this.loading_indicator = $("<div/>").attr("id", "loading_indicator");
         this.$el.append(this.loading_indicator);
@@ -176,7 +176,7 @@ var TabularDatasetChunkedView = Backbone.View.extend({
         // Add data table and header.
         var data_table = $("<table/>").attr({
             id: "content_table",
-            cellpadding: 0
+            cellpadding: 0,
         });
         this.$el.append(data_table);
         var column_names = this.model.get_metadata("column_names");
@@ -199,7 +199,7 @@ var TabularDatasetChunkedView = Backbone.View.extend({
             this._renderChunk(first_chunk);
         } else {
             // No bootstrapping, so get first chunk and then render.
-            $.when(self.model.get_next_chunk()).then(result => {
+            $.when(self.model.get_next_chunk()).then((result) => {
                 self._renderChunk(result);
             });
         }
@@ -215,13 +215,13 @@ var TabularDatasetChunkedView = Backbone.View.extend({
     /**
      * Returns true if user has scrolled to the bottom of the view.
      */
-    scrolled_to_bottom: function() {
+    scrolled_to_bottom: function () {
         return false;
     },
 
     // -- Helper functions. --
 
-    _renderCell: function(cell_contents, index, colspan) {
+    _renderCell: function (cell_contents, index, colspan) {
         var $cell = $("<td>").text(cell_contents);
         var column_types = this.model.get_metadata("column_types");
         if (colspan !== undefined) {
@@ -237,7 +237,7 @@ var TabularDatasetChunkedView = Backbone.View.extend({
         return $cell;
     },
 
-    _renderRow: function(line) {
+    _renderRow: function (line) {
         // Check length of cells to ensure this is a complete row.
         var cells = line.split("\t");
 
@@ -251,7 +251,7 @@ var TabularDatasetChunkedView = Backbone.View.extend({
         if (cells.length === num_columns) {
             _.each(
                 cells,
-                function(cell_contents, index) {
+                function (cell_contents, index) {
                     row.append(this._renderCell(cell_contents, index));
                 },
                 this
@@ -260,7 +260,7 @@ var TabularDatasetChunkedView = Backbone.View.extend({
             // SAM file or like format with optional metadata included.
             _.each(
                 cells.slice(0, num_columns - 1),
-                function(cell_contents, index) {
+                function (cell_contents, index) {
                     row.append(this._renderCell(cell_contents, index));
                 },
                 this
@@ -271,7 +271,7 @@ var TabularDatasetChunkedView = Backbone.View.extend({
             if (cells.length === num_columns) {
                 _.each(
                     cells,
-                    function(cell_contents, index) {
+                    function (cell_contents, index) {
                         row.append(this._renderCell(cell_contents, index));
                     },
                     this
@@ -281,7 +281,7 @@ var TabularDatasetChunkedView = Backbone.View.extend({
                 if (cells.length === num_columns) {
                     _.each(
                         cells,
-                        function(cell_contents, index) {
+                        function (cell_contents, index) {
                             row.append(this._renderCell(cell_contents, index));
                         },
                         this
@@ -297,7 +297,7 @@ var TabularDatasetChunkedView = Backbone.View.extend({
             // Could also be a tabular file with a line with missing columns.
             _.each(
                 cells,
-                function(cell_contents, index) {
+                function (cell_contents, index) {
                     row.append(this._renderCell(cell_contents, index));
                 },
                 this
@@ -311,18 +311,18 @@ var TabularDatasetChunkedView = Backbone.View.extend({
         return row;
     },
 
-    _renderChunk: function(chunk) {
+    _renderChunk: function (chunk) {
         var data_table = this.$el.find("table");
         _.each(
             chunk.ck_data.split("\n"),
-            function(line, index) {
+            function (line, index) {
                 if (line !== "") {
                     data_table.append(this._renderRow(line));
                 }
             },
             this
         );
-    }
+    },
 });
 
 /**
@@ -330,11 +330,11 @@ var TabularDatasetChunkedView = Backbone.View.extend({
  * view top-level elements outside of view.
  */
 var TopLevelTabularDatasetChunkedView = TabularDatasetChunkedView.extend({
-    initialize: function(options) {
+    initialize: function (options) {
         TabularDatasetChunkedView.prototype.initialize.call(this, options);
 
         // Scrolling happens in top-level elements.
-        var scroll_elt = _.find(this.$el.parents(), p => $(p).css("overflow") === "auto");
+        var scroll_elt = _.find(this.$el.parents(), (p) => $(p).css("overflow") === "auto");
 
         // If no scrolling element found, use window.
         if (!scroll_elt) {
@@ -348,32 +348,32 @@ var TopLevelTabularDatasetChunkedView = TabularDatasetChunkedView.extend({
     /**
      * Returns true if user has scrolled to the bottom of the view.
      */
-    scrolled_to_bottom: function() {
+    scrolled_to_bottom: function () {
         return this.$el.height() - this.scroll_elt.scrollTop() - this.scroll_elt.height() <= 0;
-    }
+    },
 });
 
 /**
  * Tabular view tnat is embedded in a page. Scrolling occurs in view's el.
  */
 var EmbeddedTabularDatasetChunkedView = TabularDatasetChunkedView.extend({
-    initialize: function(options) {
+    initialize: function (options) {
         TabularDatasetChunkedView.prototype.initialize.call(this, options);
 
         // Because view is embedded, set up div to do scrolling.
         this.scroll_elt = this.$el.css({
             position: "relative",
             overflow: "scroll",
-            height: options.height || "500px"
+            height: options.height || "500px",
         });
     },
 
     /**
      * Returns true if user has scrolled to the bottom of the view.
      */
-    scrolled_to_bottom: function() {
+    scrolled_to_bottom: function () {
         return this.$el.scrollTop() + this.$el.innerHeight() >= this.el.scrollHeight;
-    }
+    },
 });
 
 function search(str, array) {
@@ -387,7 +387,7 @@ var TabularButtonTracksterView = Backbone.View.extend({
     col: {
         chrom: null,
         start: null,
-        end: null
+        end: null,
     },
 
     // url for trackster
@@ -403,7 +403,7 @@ var TabularButtonTracksterView = Backbone.View.extend({
     file_ext: null,
 
     // backbone initialize
-    initialize: function(options) {
+    initialize: function (options) {
         // check if environment is available
         const Galaxy = getGalaxyInstance();
 
@@ -495,8 +495,8 @@ var TabularButtonTracksterView = Backbone.View.extend({
             model: new mod_icon_btn.IconButton({
                 title: _l("Visualize"),
                 icon_class: "chart_curve",
-                id: "btn_viz"
-            })
+                id: "btn_viz",
+            }),
         });
 
         // set element
@@ -512,11 +512,11 @@ var TabularButtonTracksterView = Backbone.View.extend({
     /** Add event handlers */
     events: {
         "mouseover tr": "show",
-        mouseleave: "hide"
+        mouseleave: "hide",
     },
 
     // show button
-    show: function(e) {
+    show: function (e) {
         var self = this;
 
         // is numeric
@@ -531,29 +531,18 @@ var TabularButtonTracksterView = Backbone.View.extend({
         var row = $(e.target).parent();
 
         // verify that location has been found
-        var chrom = row
-            .children()
-            .eq(this.col.chrom)
-            .html();
-        var start = row
-            .children()
-            .eq(this.col.start)
-            .html();
+        var chrom = row.children().eq(this.col.chrom).html();
+        var start = row.children().eq(this.col.start).html();
 
         // end is optional
-        var end = this.col.end
-            ? row
-                  .children()
-                  .eq(this.col.end)
-                  .html()
-            : start;
+        var end = this.col.end ? row.children().eq(this.col.end).html() : start;
 
         // double check location
         if (!chrom.match("^#") && chrom !== "" && is_numeric(start)) {
             // get target gene region
             var btn_viz_pars = {
                 dataset_id: this.dataset_id,
-                gene_region: `${chrom}:${start}-${end}`
+                gene_region: `${chrom}:${start}-${end}`,
             };
 
             // get button position
@@ -565,13 +554,13 @@ var TabularButtonTracksterView = Backbone.View.extend({
             $("#btn_viz").css({
                 position: "fixed",
                 top: `${top}px`,
-                left: `${left}px`
+                left: `${left}px`,
             });
             $("#btn_viz").off("click");
             $("#btn_viz").click(() => {
                 self.frame.add({
                     title: _l("Trackster"),
-                    url: `${self.url_viz}/trackster?${$.param(btn_viz_pars)}`
+                    url: `${self.url_viz}/trackster?${$.param(btn_viz_pars)}`,
                 });
             });
 
@@ -584,16 +573,16 @@ var TabularButtonTracksterView = Backbone.View.extend({
     },
 
     /** hide button */
-    hide: function() {
+    hide: function () {
         this.$("#btn_viz").hide();
-    }
+    },
 });
 
 /**
  * Create a tabular dataset chunked view (and requisite tabular dataset model)
  * and appends to parent_elt.
  */
-export var createTabularDatasetChunkedView = options => {
+export var createTabularDatasetChunkedView = (options) => {
     // If no model, create and set model from dataset config.
     if (!options.model) {
         options.model = new TabularDataset(options.dataset_config);

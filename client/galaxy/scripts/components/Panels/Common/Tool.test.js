@@ -5,8 +5,8 @@ describe("Tool", () => {
     it("test tool", () => {
         const wrapper = mount(Tool, {
             propsData: {
-                tool: {}
-            }
+                tool: {},
+            },
         });
         const nameElement = wrapper.findAll(".name");
         expect(nameElement.at(0).text()).to.equal("");
@@ -23,11 +23,11 @@ describe("Tool", () => {
         const wrapper = mount(Tool, {
             propsData: {
                 tool: {
-                    name: "name"
+                    name: "name",
                 },
                 operationIcon: "operationIconClass",
-                operationTitle: "operationTitle"
-            }
+                operationTitle: "operationTitle",
+            },
         });
         const nameElement = wrapper.findAll(".name");
         expect(nameElement.at(0).text()).to.equal("name");
@@ -41,10 +41,10 @@ describe("Tool", () => {
             propsData: {
                 tool: {
                     name: "name",
-                    description: "description"
+                    description: "description",
                 },
-                hideName: true
-            }
+                hideName: true,
+            },
         });
         const nameElement = wrapper.findAll(".name");
         expect(nameElement.length).to.equal(0);

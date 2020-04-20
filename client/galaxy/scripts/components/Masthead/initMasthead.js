@@ -11,6 +11,6 @@ export function initMasthead(config, container) {
     return new Component({
         props: Object.keys(config),
         propsData: config,
-        el: container
+        el: container,
     });
 }

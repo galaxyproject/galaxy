@@ -121,7 +121,7 @@ def collect_dynamic_outputs(
                 hdca = job_context.create_hdca(name, structure)
             persist_elements_to_hdca(job_context, elements, hdca, collector=DEFAULT_DATASET_COLLECTOR)
         elif destination_type == "hdas":
-            persist_hdas(elements, job_context)
+            persist_hdas(elements, job_context, final_job_state=job_context.final_job_state)
 
     for name, has_collection in output_collections.items():
         output_collection_def = job_context.output_collection_def(name)
@@ -152,6 +152,7 @@ def collect_dynamic_outputs(
                 filenames,
                 name=output_collection_def.name,
                 metadata_source_name=output_collection_def.metadata_source,
+                final_job_state=job_context.final_job_state,
             )
             collection_builder.populate()
         except Exception:
@@ -175,7 +176,7 @@ class BaseJobContext(object):
 
 class JobContext(ModelPersistenceContext, BaseJobContext):
 
-    def __init__(self, tool, tool_provided_metadata, job, job_working_directory, permission_provider, metadata_source_provider, input_dbkey, object_store):
+    def __init__(self, tool, tool_provided_metadata, job, job_working_directory, permission_provider, metadata_source_provider, input_dbkey, object_store, final_job_state):
         self.tool = tool
         self.metadata_source_provider = metadata_source_provider
         self.permission_provider = permission_provider
@@ -186,6 +187,7 @@ class JobContext(ModelPersistenceContext, BaseJobContext):
         self.job_working_directory = job_working_directory
         self.tool_provided_metadata = tool_provided_metadata
         self.object_store = object_store
+        self.final_job_state = final_job_state
 
     @property
     def work_context(self):
@@ -296,7 +298,7 @@ class JobContext(ModelPersistenceContext, BaseJobContext):
 
 class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
 
-    def __init__(self, metadata_params, tool_provided_metadata, object_store, export_store, import_store, working_directory):
+    def __init__(self, metadata_params, tool_provided_metadata, object_store, export_store, import_store, working_directory, final_job_state):
         # TODO: use a metadata source provider... (pop from inputs and add parameter)
         # TODO: handle input_dbkey...
         input_dbkey = "?"
@@ -305,6 +307,7 @@ class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
         self.tool_provided_metadata = tool_provided_metadata
         self.import_store = import_store
         self.input_dbkey = input_dbkey
+        self.final_job_state = final_job_state
 
     def output_collection_def(self, name):
         tool_as_dict = self.metadata_params["tool"]

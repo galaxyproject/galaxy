@@ -1,5 +1,8 @@
-<tool id="CONVERTER_encodepeak_to_tabix_0" name="Convert ENCODEPeak to tabix" version="1.0.0" hidden="true">
+<tool id="CONVERTER_encodepeak_to_tabix_0" name="Convert ENCODEPeak to tabix" version="1.0.1" hidden="true" profile="16.04">
     <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+    <requirements>
+        <requirement type="package" version="0.15.4">pysam</requirement>
+    </requirements>
     <command>
         python '$__tool_directory__/interval_to_tabix_converter.py'
         -c ${input1.metadata.chromCol}

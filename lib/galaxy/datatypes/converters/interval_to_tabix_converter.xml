@@ -1,4 +1,7 @@
-<tool id="CONVERTER_interval_to_tabix_0" name="Convert Interval to tabix" version="1.0.0" hidden="true">
+<tool id="CONVERTER_interval_to_tabix_0" name="Convert Interval to tabix" version="1.0.1" hidden="true" profile="16.04">
+    <requirements>
+        <requirement type="package" version="0.15.4">pysam</requirement>
+    </requirements>
     <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
     <command>
         python '$__tool_directory__/interval_to_tabix_converter.py'
@@ -14,6 +17,12 @@
     <outputs>
         <data format="tabix" name="output1"/>
     </outputs>
+    <tests>
+        <test>
+            <param name="input1" format="interval" value="2.interval"/>
+            <output name="output1" format="tabix" value="2.tabix"/>
+        </test>
+    </tests>
     <help>
     </help>
 </tool>

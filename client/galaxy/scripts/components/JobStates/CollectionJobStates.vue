@@ -28,10 +28,10 @@ import ProgressBar from "components/ProgressBar";
 export default {
     props: {
         collection: { type: Object, required: true }, // backbone model
-        jobStatesSummary: { required: true }
+        jobStatesSummary: { required: true },
     },
     components: {
-        ProgressBar
+        ProgressBar,
     },
     mixins: [mixin],
     computed: {
@@ -54,7 +54,7 @@ export default {
             var jobCount = this.jobCount;
             var errorCount = this.jobStatesSummary.numInError();
             return `a ${this.collectionTypeDescription} with ${errorCount} / ${jobCount} jobs in error`;
-        }
-    }
+        },
+    },
 };
 </script>

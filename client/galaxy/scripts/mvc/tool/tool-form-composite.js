@@ -7,17 +7,14 @@ import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import Utils from "utils/utils";
 import Deferred from "utils/deferred";
-import Ui from "mvc/ui/ui-misc";
 import Form from "mvc/form/form-view";
 import FormData from "mvc/form/form-data";
 import ToolFormBase from "mvc/tool/tool-form-base";
 import Modal from "mvc/ui/ui-modal";
-import Webhooks from "mvc/webhooks";
-import WorkflowIcons from "mvc/workflow/workflow-icons";
-import { mountWorkflowInvocationState } from "components/WorkflowInvocationState";
+import WorkflowIcons from "components/Workflow/icons";
 
 var View = Backbone.View.extend({
-    initialize: function(options) {
+    initialize: function (options) {
         const Galaxy = getGalaxyInstance();
         this.modal = Galaxy.modal || new Modal.View();
         this.model = (options && options.model) || new Backbone.Model(options);
@@ -25,20 +22,15 @@ var View = Backbone.View.extend({
         if (options && options.active_tab) {
             this.active_tab = options.active_tab;
         }
-        this.setElement(
-            $("<div/>")
-                .addClass("ui-form-composite")
-                .append((this.$message = $("<div/>").addClass("mb-4")))
-                .append((this.$header = $("<div/>")))
-                .append((this.$steps = $("<div/>")))
-        );
-        $("body").append(this.$el);
+        this.setRunButtonStatus = options.setRunButtonStatus;
+        this.handleInvocations = options.handleInvocations;
+        this.setElement(options.el);
         this._configure();
         this.render();
     },
 
     /** Configures form/step options for each workflow step */
-    _configure: function() {
+    _configure: function () {
         var self = this;
         const Galaxy = getGalaxyInstance();
         this.forms = [];
@@ -77,7 +69,7 @@ var View = Backbone.View.extend({
                     cls: "ui-portlet-section",
                     hide_operations: true,
                     needs_refresh: false,
-                    always_refresh: step.step_type != "tool"
+                    always_refresh: step.step_type != "tool",
                 },
                 step
             );
@@ -95,7 +87,7 @@ var View = Backbone.View.extend({
 
         // iterate through data input modules and collect linked sub steps
         _.each(this.steps, (step, i) => {
-            _.each(step.output_connections, output_connection => {
+            _.each(step.output_connections, (output_connection) => {
                 _.each(self.steps, (sub_step, j) => {
                     if (sub_step.step_index === output_connection.input_step_index) {
                         self.links[i].push(sub_step);
@@ -109,7 +101,7 @@ var View = Backbone.View.extend({
         _.each(this.steps, (step, i) => {
             _.each(self.steps, (sub_step, j) => {
                 var connections_by_name = {};
-                _.each(step.output_connections, connection => {
+                _.each(step.output_connections, (connection) => {
                     if (sub_step.step_index === connection.input_step_index) {
                         connections_by_name[connection.input_name] = connection;
                     }
@@ -138,7 +130,7 @@ var View = Backbone.View.extend({
                 type: "text",
                 color: `hsl( ${++wp_count * 100}, 70%, 30% )`,
                 style: "ui-form-wp-source",
-                links: []
+                links: [],
             });
         }
 
@@ -152,7 +144,7 @@ var View = Backbone.View.extend({
         }
         _.each(this.steps, (step, i) => {
             _.each(self.parms[i], (input, name) => {
-                _handleWorkflowParameter(input.value, wp_input => {
+                _handleWorkflowParameter(input.value, (wp_input) => {
                     wp_input.links.push(step);
                     input.wp_linked = true;
                     input.type = "text";
@@ -160,7 +152,7 @@ var View = Backbone.View.extend({
                     input.style = "ui-form-wp-target";
                 });
             });
-            _.each(step.replacement_parameters, wp_name => {
+            _.each(step.replacement_parameters, (wp_name) => {
                 _ensureWorkflowParameter(wp_name);
             });
         });
@@ -205,69 +197,20 @@ var View = Backbone.View.extend({
         });
     },
 
-    render: function() {
+    render: function () {
         var self = this;
         this.deferred.reset();
-        this._renderHeader();
-        this._renderMessage();
         this._renderParameters();
         this._renderHistory();
         this._renderUseCachedJob();
         this._renderResourceParameters();
-        _.each(this.steps, step => {
+        _.each(this.steps, (step) => {
             self._renderStep(step);
         });
     },
 
-    /** Render header */
-    _renderHeader: function() {
-        var self = this;
-        this.execute_btn = new Ui.Button({
-            id: "run-workflow",
-            icon: "fa-check",
-            title: _l("Run workflow"),
-            cls: "btn btn-primary",
-            onclick: function() {
-                self._execute();
-            }
-        });
-        this.$header
-            .addClass("h4")
-            .empty()
-            .append(`<b>Workflow: ${this.model.get("name")}<b>`)
-            .append(this.execute_btn.$el);
-    },
-
-    /** Render message */
-    _renderMessage: function() {
-        this.$message.empty();
-        if (this.model.get("has_upgrade_messages")) {
-            this.$message.append(
-                new Ui.Message({
-                    message:
-                        "Some tools in this workflow may have changed since it was last saved or some errors were found. The workflow may still run, but any new options will have default values. Please review the messages below to make a decision about whether the changes will affect your analysis.",
-                    status: "warning",
-                    persistent: true,
-                    fade: false
-                }).$el
-            );
-        }
-        var step_version_changes = this.model.get("step_version_changes");
-        if (step_version_changes && step_version_changes.length > 0) {
-            this.$message.append(
-                new Ui.Message({
-                    message:
-                        "Some tools are being executed with different versions compared to those available when this workflow was last saved because the other versions are not or no longer available on this Galaxy instance. To upgrade your workflow and dismiss this message simply edit the workflow and re-save it.",
-                    status: "warning",
-                    persistent: true,
-                    fade: false
-                }).$el
-            );
-        }
-    },
-
     /** Render workflow parameters */
-    _renderParameters: function() {
+    _renderParameters: function () {
         var self = this;
         this.wp_form = null;
         if (!_.isEmpty(this.wp_inputs)) {
@@ -275,20 +218,20 @@ var View = Backbone.View.extend({
                 title: "<b>Workflow Parameters</b>",
                 inputs: this.wp_inputs,
                 cls: "ui-portlet-section",
-                onchange: function() {
+                onchange: function () {
                     _.each(self.wp_form.input_list, (input_def, i) => {
-                        _.each(input_def.links, step => {
+                        _.each(input_def.links, (step) => {
                             self._refreshStep(step);
                         });
                     });
-                }
+                },
             });
-            this._append(this.$steps.empty(), this.wp_form.$el);
+            this._append(this.$el.empty(), this.wp_form.$el);
         }
     },
 
     /** Render workflow parameters */
-    _renderHistory: function() {
+    _renderHistory: function () {
         this.history_form = new Form({
             cls: "ui-portlet-section",
             title: "<b>History Options</b>",
@@ -301,7 +244,7 @@ var View = Backbone.View.extend({
                         label: "Send results to a new history",
                         type: "boolean",
                         value: "false",
-                        help: ""
+                        help: "",
                     },
                     cases: [
                         {
@@ -311,32 +254,32 @@ var View = Backbone.View.extend({
                                     name: "name",
                                     label: "History name",
                                     type: "text",
-                                    value: this.model.get("name")
-                                }
-                            ]
-                        }
-                    ]
-                }
-            ]
+                                    value: this.model.get("name"),
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ],
         });
-        this._append(this.$steps, this.history_form.$el);
+        this._append(this.$el, this.history_form.$el);
     },
 
     /** Render Workflow Options */
-    _renderResourceParameters: function() {
+    _renderResourceParameters: function () {
         this.workflow_resource_parameters_form = null;
         if (!_.isEmpty(this.model.get("workflow_resource_parameters"))) {
             this.workflow_resource_parameters_form = new Form({
                 cls: "ui-portlet-section",
                 title: "<b>Workflow Resource Options</b>",
-                inputs: this.model.get("workflow_resource_parameters")
+                inputs: this.model.get("workflow_resource_parameters"),
             });
-            this._append(this.$steps, this.workflow_resource_parameters_form.$el);
+            this._append(this.$el, this.workflow_resource_parameters_form.$el);
         }
     },
 
     /** Render job caching option */
-    _renderUseCachedJob: function() {
+    _renderUseCachedJob: function () {
         const Galaxy = getGalaxyInstance();
         var extra_user_preferences = {};
         if (Galaxy.user.attributes.preferences && "extra_user_preferences" in Galaxy.user.attributes.preferences) {
@@ -360,28 +303,28 @@ var View = Backbone.View.extend({
                             label: "BETA: Attempt to reuse jobs with identical parameters?",
                             type: "boolean",
                             value: "false",
-                            help: "This may skip executing jobs that you have already run."
-                        }
-                    }
-                ]
+                            help: "This may skip executing jobs that you have already run.",
+                        },
+                    },
+                ],
             });
-            this._append(this.$steps, this.job_options_form.$el);
+            this._append(this.$el, this.job_options_form.$el);
         }
     },
 
     /** Render step */
-    _renderStep: function(step) {
+    _renderStep: function (step) {
         const Galaxy = getGalaxyInstance();
         var self = this;
         var form = null;
-        this.deferred.execute(promise => {
-            self.$steps.addClass("ui-steps");
+        this.deferred.execute((promise) => {
+            self.$el.addClass("ui-steps");
             if (step.step_type == "tool") {
-                step.postchange = function(process, form) {
+                step.postchange = function (process, form) {
                     var current_state = {
                         tool_id: step.id,
                         tool_version: step.version,
-                        inputs: $.extend(true, {}, form.data.create())
+                        inputs: $.extend(true, {}, form.data.create()),
                     };
                     form.wait(true);
                     Galaxy.emit.debug("tool-form-composite::postchange()", "Sending current state.", current_state);
@@ -389,16 +332,16 @@ var View = Backbone.View.extend({
                         type: "POST",
                         url: `${getAppRoot()}api/tools/${step.id}/build`,
                         data: current_state,
-                        success: function(data) {
+                        success: function (data) {
                             form.update(data);
                             form.wait(false);
                             Galaxy.emit.debug("tool-form-composite::postchange()", "Received new model.", data);
                             process.resolve();
                         },
-                        error: function(response) {
+                        error: function (response) {
                             Galaxy.emit.debug("tool-form-composite::postchange()", "Refresh request failed.", response);
                             process.reject();
-                        }
+                        },
                     });
                 };
                 form = new ToolFormBase(step);
@@ -406,11 +349,7 @@ var View = Backbone.View.extend({
                     form.portlet.append(
                         $("<div/>")
                             .addClass("ui-form-element-disabled")
-                            .append(
-                                $("<div/>")
-                                    .addClass("ui-form-title")
-                                    .html("<b>Job Post Actions</b>")
-                            )
+                            .append($("<div/>").addClass("ui-form-title").html("<b>Job Post Actions</b>"))
                             .append(
                                 $("<div/>")
                                     .addClass("ui-form-preview")
@@ -426,7 +365,7 @@ var View = Backbone.View.extend({
                 }
             } else {
                 var is_simple_input = ["data_input", "data_collection_input"].indexOf(step.step_type) != -1;
-                _.each(step.inputs, input => {
+                _.each(step.inputs, (input) => {
                     input.flavor = "module";
                     input.hide_label = is_simple_input;
                 });
@@ -434,8 +373,8 @@ var View = Backbone.View.extend({
                     Utils.merge(
                         {
                             title: step.fixed_title,
-                            onchange: function() {
-                                _.each(self.links[step.index], link => {
+                            onchange: function () {
+                                _.each(self.links[step.index], (link) => {
                                     self._refreshStep(link);
                                 });
                             },
@@ -446,9 +385,9 @@ var View = Backbone.View.extend({
                                           {
                                               type: "hidden",
                                               name: "No options available.",
-                                              ignore: null
-                                          }
-                                      ]
+                                              ignore: null,
+                                          },
+                                      ],
                         },
                         step
                     )
@@ -458,17 +397,14 @@ var View = Backbone.View.extend({
                 }
             }
             self.forms[step.index] = form;
-            self._append(self.$steps, form.$el);
+            self._append(self.$el, form.$el);
             if (step.needs_refresh) {
                 self._refreshStep(step);
             }
             form.portlet[!self.show_progress ? "enable" : "disable"]();
             if (self.show_progress) {
-                self.execute_btn.model.set({
-                    wait: true,
-                    wait_text: "Preparing...",
-                    percentage: ((step.index + 1) * 100.0) / self.steps.length
-                });
+                const percentage = ((step.index + 1) * 100.0) / self.steps.length;
+                this.setRunButtonStatus(false, "Preparing...", percentage);
             }
             Galaxy.emit.debug("tool-form-composite::initialize()", `${step.index} : Workflow step state ready.`, step);
             window.setTimeout(() => {
@@ -478,7 +414,7 @@ var View = Backbone.View.extend({
     },
 
     /** Refreshes step values from source step values */
-    _refreshStep: function(step) {
+    _refreshStep: function (step) {
         var self = this;
         var form = this.forms[step.index];
         if (form) {
@@ -489,11 +425,11 @@ var View = Backbone.View.extend({
                         var new_value;
                         if (input.step_linked) {
                             new_value = { values: [] };
-                            _.each(input.step_linked, source_step => {
+                            _.each(input.step_linked, (source_step) => {
                                 if (self._isDataStep(source_step)) {
                                     var value = self.forms[source_step.index].data.create().input;
                                     if (value) {
-                                        _.each(value.values, v => {
+                                        _.each(value.values, (v) => {
                                             new_value.values.push(v);
                                         });
                                     }
@@ -501,7 +437,7 @@ var View = Backbone.View.extend({
                             });
                             if (!input.multiple && new_value.values.length > 0) {
                                 new_value = {
-                                    values: [new_value.values[0]]
+                                    values: [new_value.values[0]],
                                 };
                             }
                         } else if (input.wp_linked) {
@@ -528,40 +464,20 @@ var View = Backbone.View.extend({
         }
     },
 
-    /** Refresh the history after job submission while form is shown */
-    _refreshHistory: function() {
-        const Galaxy = getGalaxyInstance();
-        var self = this;
-        var history = Galaxy && Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model;
-        if (this._refresh_history) {
-            window.clearTimeout(this._refresh_history);
-        }
-        if (history) {
-            history.refresh().success(() => {
-                if (history.numOfUnfinishedShownContents() === 0) {
-                    self._refresh_history = window.setTimeout(() => {
-                        self._refreshHistory();
-                    }, history.UPDATE_DELAY);
-                }
-            });
-        }
-    },
-
     /** Build remaining steps */
-    _execute: function() {
-        var self = this;
+    execute: function () {
         this.show_progress = true;
         this._enabled(false);
-        this.deferred.execute(promise => {
+        this.deferred.execute((promise) => {
             window.setTimeout(() => {
                 promise.resolve();
-                self._submit();
+                this._submit();
             }, 0);
         });
     },
 
     /** Validate and submit workflow */
-    _submit: function() {
+    _submit: function () {
         const Galaxy = getGalaxyInstance();
         var self = this;
         var history_form_data = this.history_form.data.create();
@@ -579,7 +495,7 @@ var View = Backbone.View.extend({
             parameters_normalized: true,
             // Tool form always wants a list of invocations back
             // so that inputs can be batched.
-            batch: true
+            batch: true,
         };
         if (this.display_use_cached_job_checkbox) {
             job_def.use_cached_job = this.job_options_form.data.create()["use_cached_job|check"] === "true";
@@ -628,24 +544,15 @@ var View = Backbone.View.extend({
                 type: "POST",
                 url: `${getAppRoot()}api/workflows/${this.model.id}/invocations`,
                 data: job_def,
-                success: function(response) {
+                success: (response) => {
                     Galaxy.emit.debug("tool-form-composite::submit", "Submission successful.", response);
-                    self.$el.children().hide();
-                    self.$el.append(self._templateSuccess(response));
-                    mountWorkflowInvocationState();
-                    // Show Webhook if job is running
                     if ($.isArray(response) && response.length > 0) {
-                        self.$el.append($("<div/>", { id: "webhook-view" }));
-                        new Webhooks.WebhookView({
-                            type: "workflow",
-                            toolId: job_def.tool_id,
-                            toolVersion: job_def.tool_version
-                        });
+                        this.handleInvocations(response);
+                    } else {
+                        this.submissionErrorModal(job_def, response);
                     }
-
-                    self._refreshHistory();
                 },
-                error: function(response) {
+                error: (response) => {
                     Galaxy.emit.debug("tool-form-composite::submit", "Submission failed.", response);
                     var input_found = false;
                     if (response && response.err_data) {
@@ -663,43 +570,31 @@ var View = Backbone.View.extend({
                         }
                     }
                     if (!input_found) {
-                        self.modal.show({
-                            title: _l("Workflow submission failed"),
-                            body: self._templateError(job_def, response && response.err_msg),
-                            buttons: {
-                                Close: function() {
-                                    self.modal.hide();
-                                }
-                            }
-                        });
+                        this.submissionErrorModal(job_def, response);
                     }
                 },
-                complete: function() {
+                complete: function () {
                     self._enabled(true);
-                }
+                },
             });
         }
     },
 
     /** Append new dom to body */
-    _append: function($container, $el) {
+    _append: function ($container, $el) {
         $container.append("<p/>").append($el);
     },
 
     /** Set enabled/disabled state */
-    _enabled: function(enabled) {
-        this.execute_btn.model.set({
-            wait: !enabled,
-            wait_text: "Sending...",
-            percentage: -1
-        });
+    _enabled: function (enabled) {
+        this.setRunButtonStatus(enabled, "Sending...", -1);
         if (this.wp_form) {
             this.wp_form.portlet[enabled ? "enable" : "disable"]();
         }
         if (this.history_form) {
             this.history_form.portlet[enabled ? "enable" : "disable"]();
         }
-        _.each(this.forms, form => {
+        _.each(this.forms, (form) => {
             if (form) {
                 form.portlet[enabled ? "enable" : "disable"]();
             }
@@ -707,7 +602,7 @@ var View = Backbone.View.extend({
     },
 
     /** Is data input module/step */
-    _isDataStep: function(steps) {
+    _isDataStep: function (steps) {
         var lst = $.isArray(steps) ? steps : [steps];
         for (var i = 0; i < lst.length; i++) {
             var step = lst[i];
@@ -718,65 +613,32 @@ var View = Backbone.View.extend({
         return true;
     },
 
-    /** Templates */
-    _templateSuccess: function(response) {
-        const Galaxy = getGalaxyInstance();
-        if ($.isArray(response) && response.length > 0) {
-            let timesExecuted = "";
-            // Default destination blurb, used for a single execution, same history.
-            let destinationBlurb =
-                "You can check the status of queued jobs and view the resulting data by refreshing the History pane, if this has not already happened automatically.";
-            const newHistoryTarget =
-                (response[0].history_id &&
-                    Galaxy.currHistoryPanel &&
-                    Galaxy.currHistoryPanel.model.id != response[0].history_id) ||
-                false;
-            if (response.length > 1) {
-                // Executed more than one time, build blurb but skip history link.
-                timesExecuted = `<em> - ${response.length} times</em>`;
-                if (newHistoryTarget) {
-                    destinationBlurb = `This workflow will generate results in multiple histories.  You can observe progress in the <a href="${getAppRoot()}history/view_multiple">history multi-view</a>.`;
-                }
-            } else if (newHistoryTarget) {
-                // Single execution, with a destination other than the
-                // current history.  Present a link.
-                destinationBlurb = `This workflow will generate results in a new history. <a href="${getAppRoot()}history/switch_to_history?hist_id=${
-                    response[0].history_id
-                }">Switch to that history now</a>.`;
-            }
-            let success = `
-            <div>
-                <div class="donemessagelarge">
-                    <p>
-                        Successfully invoked workflow <b>${Utils.sanitize(this.model.get("name"))}</b>${timesExecuted}.
-                    </p>
-                    <p>
-                        ${destinationBlurb}
-                    </p>
-                </div>`;
-            for (const invocation of response) {
-                success += `<div class="workflow-invocation-state" workflow_invocation_id="${invocation.id}"></div>`;
-            }
-            success += "</div>";
-            return $(success);
-        } else {
-            return this._templateError(response, "Invalid success response. No invocations found.");
-        }
+    submissionErrorModal: function (job_def, response) {
+        this.modal.show({
+            title: _l("Workflow submission failed"),
+            body: this._templateError(job_def, response && response.err_msg),
+            buttons: {
+                Close: () => {
+                    this.modal.hide();
+                },
+            },
+        });
     },
 
-    _templateError: function(response, err_msg) {
+    /** Templates */
+    _templateError: function (response, err_msg) {
         return $("<div/>")
             .addClass("errormessagelarge")
             .append(
                 $("<p/>").text(
-                    `The server could not complete the request. Please contact the Galaxy Team if this error persists. ${JSON.stringify(
-                        err_msg
-                    ) || ""}`
+                    `The server could not complete the request. Please contact the Galaxy Team if this error persists. ${
+                        JSON.stringify(err_msg) || ""
+                    }`
                 )
             )
             .append($("<pre/>").text(JSON.stringify(response, null, 4)));
-    }
+    },
 });
 export default {
-    View: View
+    View: View,
 };

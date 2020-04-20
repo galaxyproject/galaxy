@@ -31,7 +31,7 @@ describe("Default.vue", () => {
         const { wrapper } = mountWithApp(Default, {
             currentFtp: () => {
                 return null;
-            }
+            },
         });
         expect(wrapper.findAll("#btn-ftp").length).to.equals(0);
     });

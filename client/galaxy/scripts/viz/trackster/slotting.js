@@ -9,7 +9,7 @@ var PACK_SPACING = 5;
 /**
  * Hold slotting information for a feature.
  */
-var SlottedInfo = function(slot, feature) {
+var SlottedInfo = function (slot, feature) {
     this.slot = slot;
     this.feature = feature;
 };
@@ -21,7 +21,7 @@ var SlottedInfo = function(slot, feature) {
  * This implementation is incremental, any feature assigned a slot will be
  * retained for slotting future features.
  */
-var FeatureSlotter = function(w_scale, mode, max_rows, measureText) {
+var FeatureSlotter = function (w_scale, mode, max_rows, measureText) {
     this.slots = {};
     this.start_end_dct = {};
     this.w_scale = w_scale;
@@ -39,7 +39,7 @@ extend(FeatureSlotter.prototype, {
     /**
      * Get drawing coordinate for a feature.
      */
-    _get_draw_coords: function(feature) {
+    _get_draw_coords: function (feature) {
         // Get initial draw coordinates using w_scale.
         var draw_start = Math.floor(feature[1] * this.w_scale);
 
@@ -91,7 +91,7 @@ extend(FeatureSlotter.prototype, {
      * Find the first slot such that current feature doesn't overlap any other features in that slot.
      * Returns -1 if no slot was found.
      */
-    _find_slot: function(draw_coords) {
+    _find_slot: function (draw_coords) {
         // TODO: Use a data structure for faster searching of available slots.
         var draw_start = draw_coords[0];
 
@@ -120,7 +120,7 @@ extend(FeatureSlotter.prototype, {
     /**
      * Slot features.
      */
-    slot_features: function(features) {
+    slot_features: function (features) {
         var start_end_dct = this.start_end_dct;
         var undone = [];
         var highest_slot = 0;
@@ -196,9 +196,9 @@ extend(FeatureSlotter.prototype, {
         }
         */
         return highest_slot + 1;
-    }
+    },
 });
 
 export default {
-    FeatureSlotter: FeatureSlotter
+    FeatureSlotter: FeatureSlotter,
 };

@@ -35,7 +35,7 @@ export class Model {
     /** Finalizes the results from added records **/
     finalize() {
         let results = [];
-        Object.values(this.values).forEach(v => {
+        Object.values(this.values).forEach((v) => {
             let value = null;
             if (this.format) {
                 value = v[this.format];

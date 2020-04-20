@@ -16,13 +16,11 @@ var Model = Backbone.Model.extend({
         percentage: 0,
         space_to_tab: false,
         to_posix_lines: true,
-        enabled: true
+        enabled: true,
     },
-    reset: function(attr) {
-        this.clear()
-            .set(this.defaults)
-            .set(attr);
-    }
+    reset: function (attr) {
+        this.clear().set(this.defaults).set(attr);
+    },
 });
 var Collection = Backbone.Collection.extend({ model: Model });
 export default { Model: Model, Collection: Collection };

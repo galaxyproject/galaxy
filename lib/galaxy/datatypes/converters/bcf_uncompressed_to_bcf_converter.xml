@@ -12,6 +12,12 @@ bcftools view -o '$output1' -O b '$input1'
     <outputs>
         <data name="output1" format="bcf" />
     </outputs>
+    <tests>
+        <test>
+            <param name="input1" format="bcf_uncompressed" value="bcf_uncompressed_index_metadata_test.bcf_uncompressed"/>
+            <output name="output1" format="bcf" value="bcf_index_metadata_test.bcf" compare="sim_size"/>
+        </test>
+    </tests>
     <help>
     </help>
 </tool>

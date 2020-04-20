@@ -164,7 +164,7 @@ Vue.use(BootstrapVue);
 
 export default {
     components: {
-        Multiselect
+        Multiselect,
     },
     data() {
         const Galaxy = getGalaxyInstance();
@@ -178,7 +178,7 @@ export default {
                 { key: "name", label: "Name" },
                 { key: "id", label: "Key" },
                 { key: "count", label: "Number of chroms/contigs" },
-                { key: "action", label: "" }
+                { key: "action", label: "" },
             ],
             customBuilds: [],
             alertType: "info",
@@ -189,25 +189,25 @@ export default {
                 id: "",
                 name: "",
                 file: "",
-                text: ""
+                text: "",
             },
             dataSources: [
                 { value: "fasta", text: "FASTA-file from history" },
                 { value: "file", text: "Len-file from disk" },
-                { value: "text", text: "Len-file by copy/paste" }
+                { value: "text", text: "Len-file by copy/paste" },
             ],
             selectedDataSource: "fasta",
             fastaFilesLoading: true,
             fastaFilesSelectDisabled: true,
             fastaFiles: [],
-            selectedFastaFile: null
+            selectedFastaFile: null,
         };
     },
     computed: {
-        lengthType: function() {
+        lengthType: function () {
             return this.selectedDataSource || "";
         },
-        lengthValue: function() {
+        lengthValue: function () {
             let value = "";
             if (this.lengthType === "fasta") {
                 value = this.selectedFastaFile || "";
@@ -217,7 +217,7 @@ export default {
                 value = this.form.text;
             }
             return value;
-        }
+        },
     },
     created() {
         const Galaxy = getGalaxyInstance();
@@ -233,10 +233,10 @@ export default {
         loadCustomBuilds() {
             axios
                 .get(this.customBuildsUrl)
-                .then(response => {
+                .then((response) => {
                     this.customBuilds = response.data;
                 })
-                .catch(error => {
+                .catch((error) => {
                     this.showAlert("danger", error.response);
                 });
         },
@@ -244,7 +244,7 @@ export default {
             const Galaxy = getGalaxyInstance();
             axios
                 .get(`${Galaxy.root}api/histories/${historyId}/custom_builds_metadata`)
-                .then(response => {
+                .then((response) => {
                     const fastaHdas = response.data.fasta_hdas;
                     for (let i = 0; i < fastaHdas.length; i++) {
                         fastaHdas[i].text = fastaHdas[i].label;
@@ -260,7 +260,7 @@ export default {
                         this.installedBuilds[i].text = this.installedBuilds[i].label;
                     }
                 })
-                .catch(error => {
+                .catch((error) => {
                     this.showAlert("danger", error.response);
                     this.fastaFilesLoading = false;
                 });
@@ -270,7 +270,7 @@ export default {
                 id: this.form.id,
                 name: this.form.name,
                 "len|type": this.lengthType,
-                "len|value": this.lengthValue
+                "len|value": this.lengthValue,
             };
             if (!data.id.trim() || !data.name.trim() || !data["len|value"].trim()) {
                 this.showAlert("danger", "All inputs are required.");
@@ -278,7 +278,7 @@ export default {
             }
             axios
                 .put(`${this.customBuildsUrl}/${data.id}`, data)
-                .then(response => {
+                .then((response) => {
                     if (response.data.message) {
                         this.showAlert("warning", response.data.message);
                     } else {
@@ -286,7 +286,7 @@ export default {
                     }
                     this.loadCustomBuilds();
                 })
-                .catch(error => {
+                .catch((error) => {
                     const message = error.response.data.err_msg;
                     this.showAlert("danger", message || "Failed to create custom build.");
                 });
@@ -294,10 +294,10 @@ export default {
         deleteBuild(id) {
             axios
                 .delete(`${this.customBuildsUrl}/${id}`)
-                .then(response => {
-                    this.customBuilds = this.customBuilds.filter(i => i.id !== id);
+                .then((response) => {
+                    this.customBuilds = this.customBuilds.filter((i) => i.id !== id);
                 })
-                .catch(error => {
+                .catch((error) => {
                     const message = error.response.data.err_msg;
                     this.showAlert("danger", message || "Failed to delete custom build.");
                 });
@@ -306,7 +306,7 @@ export default {
             const file = event.target.files && event.target.files[0];
             if (file) {
                 const reader = new FileReader();
-                reader.onprogress = e => {
+                reader.onprogress = (e) => {
                     if (e.lengthComputable) {
                         this.fileLoaded = Math.round(e.loaded / e.total) * 100;
                     }
@@ -325,8 +325,8 @@ export default {
         },
         countDownChanged(dismissCountDown) {
             this.dismissCountDown = dismissCountDown;
-        }
-    }
+        },
+    },
 };
 </script>
 

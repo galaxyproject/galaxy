@@ -12,9 +12,9 @@ export function panelManagement(panelConfig) {
 
     if (left_panel) {
         var lp = new window.bundleEntries.panels.LeftPanel({
-            el: leftPanelSelector
+            el: leftPanelSelector,
         });
-        window.force_left_panel = function(x) {
+        window.force_left_panel = function (x) {
             console.log("window.force_left_panel fired");
             lp.force_panel(x);
         };
@@ -22,13 +22,13 @@ export function panelManagement(panelConfig) {
 
     if (right_panel) {
         var rp = new window.bundleEntries.panels.RightPanel({
-            el: rightPanelSelector
+            el: rightPanelSelector,
         });
-        window.handle_minwidth_hint = function(x) {
+        window.handle_minwidth_hint = function (x) {
             console.log("window.handle_minwidth_hint", x);
             rp.handle_minwidth_hint(x);
         };
-        window.force_right_panel = function(x) {
+        window.force_right_panel = function (x) {
             console.log("window.force_right_panel", x);
             rp.force_panel(x);
         };

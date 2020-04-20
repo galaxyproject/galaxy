@@ -13,13 +13,13 @@ describe("Tags/tagService.js", () => {
         id: 123,
         itemClass: "fooClass",
         context: "",
-        debounceInterval: 50 // shorter value than default for unit tests
+        debounceInterval: 50, // shorter value than default for unit tests
     };
 
     let svc = new TagService(svcParams);
 
     let mockAxios = {
-        get: () => null
+        get: () => null,
     };
 
     let stub;
@@ -87,10 +87,10 @@ describe("Tags/tagService.js", () => {
 
         let successResponse = {
             status: 200,
-            data: autocompleteResponse
+            data: autocompleteResponse,
         };
 
-        let checkAutocompleteResult = result => {
+        let checkAutocompleteResult = (result) => {
             assert(result);
             assert(result instanceof Array);
             assert(result.length == 2);
@@ -109,7 +109,7 @@ describe("Tags/tagService.js", () => {
 
         // hit the search input with multiple entries, only one ajax call
         // should result because of debouncing
-        it("should debounce autocomplete search inputs", done => {
+        it("should debounce autocomplete search inputs", (done) => {
             let searchResult;
 
             // ends subscription to observable so test doesn't go on forever
@@ -121,8 +121,8 @@ describe("Tags/tagService.js", () => {
             stub = sinon.stub(mockAxios, "get").resolves(successResponse);
 
             svc.autocompleteOptions.pipe(takeUntil(timer)).subscribe(
-                result => (searchResult = result),
-                err => console.log("error", err),
+                (result) => (searchResult = result),
+                (err) => console.log("error", err),
                 () => {
                     assert(stub.called, "Ajax call not made");
                     assert(stub.callCount == 1, `Wrong number of ajax calls: ${stub.callCount}`);

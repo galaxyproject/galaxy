@@ -241,5 +241,5 @@ define({
 
     ja: true,
     fr: true,
-    zh: true
+    zh: true,
 });

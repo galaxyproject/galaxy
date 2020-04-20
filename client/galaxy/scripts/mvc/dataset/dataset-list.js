@@ -25,18 +25,18 @@ var DatasetList = _super.extend(
         /** Set up the view, set up storage, bind listeners to HistoryContents events
          *  @param {Object} attributes optional settings for the panel
          */
-        initialize: function(attributes) {
+        initialize: function (attributes) {
             _super.prototype.initialize.call(this, attributes);
         },
 
         /** Return a string rep of the history */
-        toString: function() {
+        toString: function () {
             return `DatasetList(${this.collection})`;
-        }
+        },
     }
 );
 
 //==============================================================================
 export default {
-    DatasetList: DatasetList
+    DatasetList: DatasetList,
 };

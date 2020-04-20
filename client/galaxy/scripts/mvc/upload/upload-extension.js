@@ -3,28 +3,28 @@ import _ from "underscore";
 import Backbone from "backbone";
 import Popover from "mvc/ui/ui-popover";
 export default Backbone.View.extend({
-    initialize: function(options) {
+    initialize: function (options) {
         this.model = new Backbone.Model(options);
         this.setElement("<div/>");
         this.render();
     },
 
-    render: function() {
+    render: function () {
         var options = this.model.attributes;
         var description = _.findWhere(options.list, {
-            id: options.extension
+            id: options.extension,
         });
         this.extension_popup && this.extension_popup.remove();
         this.extension_popup = new Popover({
             title: options.title,
             placement: options.placement || "bottom",
-            container: options.$el
+            container: options.$el,
         });
         this.extension_popup.show(this._templateDescription(description));
     },
 
     /** Template for extensions description */
-    _templateDescription: function(options) {
+    _templateDescription: function (options) {
         if (options.description) {
             var tmpl = options.description;
             if (options.description_url) {
@@ -34,5 +34,5 @@ export default Backbone.View.extend({
         } else {
             return "There is no description available for this file extension.";
         }
-    }
+    },
 });

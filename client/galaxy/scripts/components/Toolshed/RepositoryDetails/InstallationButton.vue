@@ -24,7 +24,7 @@ export default {
     props: ["installed", "status"],
     data() {
         return {
-            buttonClass: "btn-sm text-nowrap"
+            buttonClass: "btn-sm text-nowrap",
         };
     },
     computed: {
@@ -36,7 +36,7 @@ export default {
         },
         errorState() {
             return this.status == "Error";
-        }
+        },
     },
     methods: {
         onInstall() {
@@ -49,7 +49,7 @@ export default {
             if (window.confirm(`Do you want to reset this repository?`)) {
                 this.$emit("onUninstall");
             }
-        }
-    }
+        },
+    },
 };
 </script>

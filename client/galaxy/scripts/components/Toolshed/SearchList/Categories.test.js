@@ -13,13 +13,13 @@ describe("Categories", () => {
                         {
                             name: "name_0",
                             description: "description_0",
-                            repositories: "repositories_0"
+                            repositories: "repositories_0",
                         },
                         {
                             name: "name_1",
                             description: "description_1",
-                            repositories: "repositories_1"
-                        }
+                            repositories: "repositories_1",
+                        },
                     ];
                 }
             }
@@ -30,8 +30,8 @@ describe("Categories", () => {
         const wrapper = mount(Categories, {
             propsData: {
                 loading: true,
-                toolshedUrl: "toolshedUrl"
-            }
+                toolshedUrl: "toolshedUrl",
+            },
         });
         expect(wrapper.find(".loading-message").text()).to.equal("Loading categories...");
     });
@@ -40,8 +40,8 @@ describe("Categories", () => {
         const wrapper = mount(Categories, {
             propsData: {
                 loading: false,
-                toolshedUrl: "toolshedUrl"
-            }
+                toolshedUrl: "toolshedUrl",
+            },
         });
         await Vue.nextTick();
         const links = wrapper.findAll("a");

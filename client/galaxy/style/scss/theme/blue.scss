@@ -48,7 +48,7 @@ $theme-colors: map-merge(
         "warning": $brand-warning,
         "info": $brand-info,
         "light": $brand-light,
-        "dark": $brand-dark
+        "dark": $brand-dark,
     ),
     $theme-colors
 );
@@ -122,11 +122,6 @@ $panel_footer_height: 25px;
 // Portlets
 $portlet-bg-color: $gray-200;
 
-// Layout
-$layout_top_padding: 0px;
-$layout-border-color: $gray-900;
-$layout-border: none;
-
 // Borders
 $border-radius-base: 0.1875rem;
 $border-radius-large: 0.3125rem;
@@ -136,7 +131,7 @@ $border-default: 1px solid $border-color;
 // Buttons
 $btn-default-color: $text-color;
 $btn-default-bg: $gray-200;
-$btn-default-border: $border-color;
+$btn-default-border: transparent;
 
 // Forms
 $form-heading-bg: $panel-bg-color;
@@ -145,7 +140,7 @@ $form-border: darken($form-heading-bg, 20%);
 // Table
 $table-heading-bg: $panel-bg-color;
 $table-bg-accent: darken($panel-bg-color, 5%);
-$table-border-color: $border-color;
+$table-border-color: transparent;
 
 // Additional state colors
 $state-default-bg: $gray-200;
@@ -156,7 +151,10 @@ $state-running-border: $border-color;
 
 // Workflow editor
 $workflow-editor-bg: $white;
-$workflow-overview-bg: $gray-200;
+$workflow-editor-grid-size: 0.7rem;
+$workflow-editor-grid-color: lighten($brand-primary, 65%);
+$workflow-overview-bg: $panel-bg-color;
+$worfklow-node-width: 10rem;
 
 // Margins
 $spacer: 1rem;

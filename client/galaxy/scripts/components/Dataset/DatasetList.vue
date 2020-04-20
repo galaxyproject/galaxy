@@ -48,7 +48,7 @@ export default {
         LoadingSpan,
         DelayedInput,
         UtcDate,
-        Tags
+        Tags,
     },
     data() {
         return {
@@ -57,31 +57,31 @@ export default {
             fields: [
                 {
                     key: "name",
-                    sortable: true
+                    sortable: true,
                 },
                 {
                     key: "tags",
-                    sortable: false
+                    sortable: false,
                 },
                 {
                     label: "History",
                     key: "history_id",
-                    sortable: true
+                    sortable: true,
                 },
                 {
                     key: "extension",
-                    sortable: true
+                    sortable: true,
                 },
                 {
                     label: "Updated",
                     key: "update_time",
-                    sortable: true
+                    sortable: true,
                 },
                 {
                     key: "context",
                     label: "",
-                    sortable: false
-                }
+                    sortable: false,
+                },
             ],
             query: "",
             limit: 50,
@@ -91,7 +91,7 @@ export default {
             loading: true,
             message: null,
             messageVariant: null,
-            rows: []
+            rows: [],
         };
     },
     computed: {
@@ -103,7 +103,7 @@ export default {
         },
         showMessage() {
             return !!this.message;
-        }
+        },
     },
     created() {
         this.fetchHistories();
@@ -121,9 +121,9 @@ export default {
                     sortBy: this.sortBy,
                     sortDesc: this.sortDesc,
                     offset: this.offset,
-                    limit: this.limit
+                    limit: this.limit,
                 })
-                .then(datasets => {
+                .then((datasets) => {
                     if (concat) {
                         this.rows = this.rows.concat(datasets);
                     } else {
@@ -131,7 +131,7 @@ export default {
                     }
                     this.loading = false;
                 })
-                .catch(error => {
+                .catch((error) => {
                     this.error = error;
                 });
         },
@@ -142,10 +142,10 @@ export default {
             const history_id = history.model.id;
             this.services
                 .copyDataset(dataset_id, history_id)
-                .then(response => {
+                .then((response) => {
                     history.loadCurrentHistory();
                 })
-                .catch(error => {
+                .catch((error) => {
                     this.onError(error);
                 });
         },
@@ -153,17 +153,17 @@ export default {
             const Galaxy = getGalaxyInstance();
             this.services
                 .setHistory(item.history_id)
-                .then(history => {
+                .then((history) => {
                     Galaxy.currHistoryPanel.loadCurrentHistory();
                 })
-                .catch(error => {
+                .catch((error) => {
                     this.onError(error);
                 });
         },
         onTags(tags, index) {
             const item = this.rows[index];
             item.tags = tags;
-            this.services.updateTags(item.id, "HistoryDatasetAssociation", tags).catch(error => {
+            this.services.updateTags(item.id, "HistoryDatasetAssociation", tags).catch((error) => {
                 this.onError(error);
             });
         },
@@ -193,7 +193,7 @@ export default {
         onError(message) {
             this.message = message;
             this.messageVariant = "danger";
-        }
-    }
+        },
+    },
 };
 </script>
