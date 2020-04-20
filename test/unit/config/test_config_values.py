@@ -169,7 +169,8 @@ def mock_config_running_not_from_source(monkeypatch, mock_config_file):
 
 @pytest.fixture
 def appconfig(monkeypatch):
-    return config.Configuration()
+    monkeypatch.setattr(config.GalaxyAppConfiguration, '_override_tempdir', lambda a, b: None)
+    return config.GalaxyAppConfiguration()
 
 
 def test_root(appconfig):
@@ -196,7 +197,8 @@ def test_common_base_config(appconfig):
 
 
 def get_config_data():
-    configuration = config.Configuration()
+    config.GalaxyAppConfiguration._override_tempdir = lambda a, b: None  # method must be mocked
+    configuration = config.GalaxyAppConfiguration()
     ev = ExpectedValues(configuration)
     items = ((k, v) for k, v in configuration.schema.app_schema.items() if k not in DO_NOT_TEST)
     for key, data in items:
