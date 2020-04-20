@@ -53,6 +53,9 @@ class AdminAppTestCase(SeleniumTestCase):
     @selenium_test
     @skip_if_jenkins  # Jenkins currently does not have docker available, which is required for testing containers
     def test_admin_dependencies_display(self):
+        admin_component = self.components.admin
+        self.admin_login()
+        self.admin_open()
         self.screenshot("admin_landing")
         admin_component.index.dependencies.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
