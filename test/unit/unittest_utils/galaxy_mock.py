@@ -181,7 +181,7 @@ class MockAppConfig(Bunch):
         # Handle the automatic config file _set options
         if name.endswith('_file_set'):
             return False
-        return super(MockAppConfig, self).__getattr__(name)
+        raise AttributeError(name)
 
     def __del__(self):
         if self._remove_root:
