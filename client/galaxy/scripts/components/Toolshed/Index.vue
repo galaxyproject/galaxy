@@ -4,6 +4,7 @@
         <div v-else>
             <b-input-group class="mb-3">
                 <b-input
+                    id="toolshed-repo-search"
                     placeholder="Search Repositories"
                     v-model="queryInput"
                     @input="delayQuery"

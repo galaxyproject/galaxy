@@ -367,6 +367,11 @@ admin:
       job_lock: '#prevent-job-dispatching'
       cutoff: '#cutoff'
 
+  toolshed:
+    selectors:
+      repo_search: '#toolshed-repo-search'
+      search_results: '#shed-search-results'
+
   index:
     selectors:
       datatypes: '#admin-link-datatypes'
