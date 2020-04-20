@@ -1,4 +1,5 @@
 from galaxy_test.base.populators import flakey
+from galaxy_test.driver.integration_util import skip_if_jenkins
 from .framework import (
     selenium_test,
     SeleniumTestCase,
@@ -50,6 +51,7 @@ class AdminAppTestCase(SeleniumTestCase):
         self.screenshot('admin_toolshed_repo_uninstalled')
 
     @selenium_test
+    @skip_if_jenkins  # Jenkins currently does not have docker available, which is required for testing containers
     def test_admin_dependencies_display(self):
         self.screenshot("admin_landing")
         admin_component.index.dependencies.wait_for_and_click()
