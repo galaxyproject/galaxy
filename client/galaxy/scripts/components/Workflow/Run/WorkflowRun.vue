@@ -7,7 +7,7 @@
             <loading-span message="Loading workflow run data" />
         </b-alert>
         <workflow-run-success v-else-if="invocations != null" :invocations="invocations" :workflowName="workflowName" />
-        <div v-else ref="run" class="ui-form-composite">
+        <div v-else class="ui-form-composite">
             <div class="ui-form-composite-messages mb-4">
                 <b-alert v-if="hasUpgradeMessages" variant="warning" show>
                     Some tools in this workflow may have changed since it was last saved or some errors were found. The
@@ -27,7 +27,6 @@
                     title="Run Workflow"
                     id="run-workflow"
                     variant="primary"
-                    icon="fa-check"
                     :disabled="!runButtonEnabled"
                     :waiting="!runButtonEnabled"
                     :waitText="runButtonWaitText"
@@ -36,7 +35,12 @@
                 >
                 </wait-button>
             </div>
-            <div class="ui-form-composite-form" ref="form"></div>
+            <workflow-run-form
+                ref="run-form"
+                :runData="runData"
+                :setRunButtonStatus="setRunButtonStatus"
+                @submissionSuccess="handleInvocations"
+            />
         </div>
     </span>
 </template>
@@ -47,8 +51,8 @@ import axios from "axios";
 import WaitButton from "components/WaitButton";
 import LoadingSpan from "components/LoadingSpan";
 import WorkflowRunSuccess from "./WorkflowRunSuccess";
+import WorkflowRunForm from "./WorkflowRunForm";
 import { getAppRoot } from "onload";
-import ToolFormComposite from "mvc/tool/tool-form-composite";
 import { errorMessageAsString } from "utils/simple-error";
 
 export default {
@@ -56,6 +60,7 @@ export default {
         LoadingSpan,
         WaitButton,
         WorkflowRunSuccess,
+        WorkflowRunForm,
     },
     props: {
         workflowId: { type: String },
@@ -72,6 +77,7 @@ export default {
             runButtonWaitText: "",
             runButtonPercentage: -1,
             invocations: null,
+            runData: null,
         };
     },
     created() {
@@ -80,19 +86,11 @@ export default {
             .get(url)
             .then((response) => {
                 const runData = response.data;
+                this.runData = runData;
                 this.hasUpgradeMessages = runData.has_upgrade_messages;
                 this.hasStepVersionChanges = runData.step_version_changes && runData.step_version_changes.length > 0;
                 this.workflowName = runData.name;
                 this.loading = false;
-                this.$nextTick(() => {
-                    const el = this.$refs["form"];
-                    const formProps = {
-                        el,
-                        setRunButtonStatus: this.setRunButtonStatus,
-                        handleInvocations: this.handleInvocations,
-                    };
-                    this.runForm = new ToolFormComposite.View(Object.assign({}, runData, formProps));
-                });
             })
             .catch((response) => {
                 this.error = errorMessageAsString(response);
@@ -100,7 +98,7 @@ export default {
     },
     methods: {
         execute() {
-            this.runForm.execute();
+            this.$refs["run-form"].execute();
         },
         setRunButtonStatus(enabled, waitText, percentage) {
             this.runButtonEnabled = enabled;
