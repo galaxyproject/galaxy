@@ -102,7 +102,7 @@ class GalaxyInteractorApi(object):
     def __init__(self, **kwds):
         self.api_url = "%s/api" % kwds["galaxy_url"].rstrip("/")
         self.master_api_key = kwds["master_api_key"]
-        self.verify = not kwds.get('noverify', False)
+        self.verify = kwds.get('verify', False)
         if not self.verify:
             # disable the following warning:
             # Unverified HTTPS request is being made.
