@@ -1,5 +1,6 @@
 bleach
 boltons
+chardet
 bz2file; python_version < '3.3'
 docutils
 markupsafe

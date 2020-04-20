@@ -7,8 +7,10 @@ from __future__ import absolute_import
 
 import binascii
 import collections
+import contextlib
 import errno
 import importlib
+import io
 import json
 import os
 import random
@@ -42,6 +44,7 @@ from boltons.iterutils import (
     default_enter,
     remap,
 )
+from chardet.universaldetector import UniversalDetector
 from six import binary_type, iteritems, PY2, string_types, text_type
 from six.moves import (
     xrange,
@@ -126,6 +129,25 @@ def is_binary(value):
         if binary_char in value:
             return True
     return False
+
+
+def guess_encoding(fname, block_size=CHUNK_SIZE):
+    """Return detected source encoding"""
+    detector = UniversalDetector()
+    could_be_utf_8 = True
+    with open(fname, 'rb') as fh:
+        for chunk in file_reader(fh, block_size):
+            try:
+                chunk.decode('utf-8')
+            except UnicodeDecodeError:
+                # Always go with utf-8 if possible
+                could_be_utf_8 = False
+            detector.feed(chunk)
+            if detector.done:
+                break
+    detector.close()
+    result = detector.result['encoding'] if not could_be_utf_8 else 'utf-8'
+    return result
 
 
 def is_uuid(value):
@@ -218,12 +240,12 @@ def file_iter(fname, sep=None):
 
 def file_reader(fp, chunk_size=CHUNK_SIZE):
     """This generator yields the open fileobject in chunks (default 64k). Closes the file at the end"""
-    while 1:
-        data = fp.read(chunk_size)
-        if not data:
-            break
-        yield data
-    fp.close()
+    sentinel = b"" if 'b' in fp.mode else ""
+    try:
+        for chunk in iter(partial(fp.read, CHUNK_SIZE), sentinel):
+            yield chunk
+    finally:
+        fp.close()
 
 
 def unique_id(KEY_SIZE=128):
@@ -1282,6 +1304,15 @@ def stringify_dictionary_keys(in_dict):
     for key, value in iteritems(in_dict):
         out_dict[str(key)] = value
     return out_dict
+
+
+@contextlib.contextmanager
+def writable_mkstemp(final_destination=None, mode='wb', **kwargs):
+    fd, temp_name = tempfile.mkstemp(*kwargs)
+    with io.open(fd, mode=mode) as fh:
+        yield temp_name, fh
+    if final_destination:
+        shutil.move(temp_name, final_destination)
 
 
 def mkstemp_ln(src, prefix='mkstemp_ln_'):
