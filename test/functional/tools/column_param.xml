@@ -1,8 +1,8 @@
 <tool id="column_param" name="Column Param">
   <command><![CDATA[
-    echo "col $col" >> '$output1' &&
-    echo "col_names $col_names" >> '$output1' &&
-	cut -f '$col' '$input1' >> '$output1'
+    cut -f '$col' '$input1' >> '$output1'
+    echo "col $col" >> '$output2' &&
+    echo "col_names $col_names" >> '$output2' &&
   ]]></command>
   <inputs>
     <param type="data" format="tabular" name="input1" label="Input 1" />
@@ -11,6 +11,7 @@
   </inputs>
   <outputs>
     <data name="output1" format="tabular" />
+    <data name="output2" format="tabular" />
   </outputs>
   <tests>
     <test>
@@ -19,9 +20,13 @@
       <param name="col_names" value="2" />
       <output name="output1">
         <assert_contents>
+          <has_line line="68" />
+        </assert_contents>
+      </output>
+      <output name="output2">
+        <assert_contents>
           <has_line line="col 2" />
           <has_line line="col_names 2" />
-          <has_line line="68" />
         </assert_contents>
       </output>
     </test>
