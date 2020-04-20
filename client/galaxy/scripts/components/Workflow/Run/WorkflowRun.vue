@@ -37,7 +37,7 @@
             </div>
             <workflow-run-form
                 ref="run-form"
-                :runData="runData"
+                :model="model"
                 :setRunButtonStatus="setRunButtonStatus"
                 @submissionSuccess="handleInvocations"
             />
@@ -52,6 +52,7 @@ import WaitButton from "components/WaitButton";
 import LoadingSpan from "components/LoadingSpan";
 import WorkflowRunSuccess from "./WorkflowRunSuccess";
 import WorkflowRunForm from "./WorkflowRunForm";
+import { WorkflowRunModel } from "./model.js";
 import { getAppRoot } from "onload";
 import { errorMessageAsString } from "utils/simple-error";
 
@@ -77,7 +78,7 @@ export default {
             runButtonWaitText: "",
             runButtonPercentage: -1,
             invocations: null,
-            runData: null,
+            model: null,
         };
     },
     created() {
@@ -86,10 +87,11 @@ export default {
             .get(url)
             .then((response) => {
                 const runData = response.data;
-                this.runData = runData;
-                this.hasUpgradeMessages = runData.has_upgrade_messages;
-                this.hasStepVersionChanges = runData.step_version_changes && runData.step_version_changes.length > 0;
-                this.workflowName = runData.name;
+                const model = new WorkflowRunModel(runData);
+                this.model = model;
+                this.hasUpgradeMessages = model.hasUpgradeMessages;
+                this.hasStepVersionChanges = model.hasStepVersionChanges;
+                this.workflowName = this.model.name;
                 this.loading = false;
             })
             .catch((response) => {

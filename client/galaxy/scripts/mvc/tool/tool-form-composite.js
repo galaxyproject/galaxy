@@ -8,20 +8,17 @@ import _l from "utils/localization";
 import Utils from "utils/utils";
 import Deferred from "utils/deferred";
 import Form from "mvc/form/form-view";
-import FormData from "mvc/form/form-data";
+import { isDataStep } from "components/Workflow/Run/model";
+
 import ToolFormBase from "mvc/tool/tool-form-base";
 import Modal from "mvc/ui/ui-modal";
-import WorkflowIcons from "components/Workflow/icons";
 
 var View = Backbone.View.extend({
     initialize: function (options) {
         const Galaxy = getGalaxyInstance();
         this.modal = Galaxy.modal || new Modal.View();
-        this.model = (options && options.model) || new Backbone.Model(options);
+        this.runWorkflowModel = options.model;
         this.deferred = new Deferred();
-        if (options && options.active_tab) {
-            this.active_tab = options.active_tab;
-        }
         this.setRunButtonStatus = options.setRunButtonStatus;
         this.handleInvocations = options.handleInvocations;
         this.setElement(options.el);
@@ -31,169 +28,11 @@ var View = Backbone.View.extend({
 
     /** Configures form/step options for each workflow step */
     _configure: function () {
-        const Galaxy = getGalaxyInstance();
         this.forms = [];
-        this.steps = [];
-        this.links = [];
-        this.parms = [];
-        _.each(this.model.get("steps"), (step, i) => {
-            Galaxy.emit.debug("tool-form-composite::initialize()", `${i} : Preparing workflow step.`);
-            var icon = WorkflowIcons[step.step_type];
-            var title = `${parseInt(i + 1)}: ${step.step_label || step.step_name}`;
-            if (step.annotation) {
-                title += ` - ${step.annotation}`;
-            }
-            if (step.step_version) {
-                title += ` (Galaxy Version ${step.step_version})`;
-            }
-            step = Utils.merge(
-                {
-                    index: i,
-                    fixed_title: _.escape(title),
-                    icon: icon || "",
-                    help: null,
-                    citations: null,
-                    collapsible: true,
-                    collapsed: i > 0 && !this._isDataStep(step),
-                    sustain_version: true,
-                    sustain_repeats: true,
-                    sustain_conditionals: true,
-                    narrow: true,
-                    text_enable: "Edit",
-                    text_disable: "Undo",
-                    cls_enable: "fa fa-edit",
-                    cls_disable: "fa fa-undo",
-                    errors: step.messages,
-                    initial_errors: true,
-                    cls: "ui-portlet-section",
-                    hide_operations: true,
-                    needs_refresh: false,
-                    always_refresh: step.step_type != "tool",
-                },
-                step
-            );
-            this.steps[i] = step;
-            this.links[i] = [];
-            this.parms[i] = {};
-        });
-
-        // build linear index of step input pairs
-        _.each(this.steps, (step, i) => {
-            FormData.visitInputs(step.inputs, (input, name) => {
-                this.parms[i][name] = input;
-            });
-        });
-
-        // iterate through data input modules and collect linked sub steps
-        _.each(this.steps, (step, i) => {
-            _.each(step.output_connections, (output_connection) => {
-                _.each(this.steps, (sub_step, j) => {
-                    if (sub_step.step_index === output_connection.input_step_index) {
-                        this.links[i].push(sub_step);
-                    }
-                });
-            });
-        });
-
-        // convert all connected data inputs to hidden fields with proper labels,
-        // and track the linked source step
-        _.each(this.steps, (step, i) => {
-            _.each(this.steps, (sub_step, j) => {
-                var connections_by_name = {};
-                _.each(step.output_connections, (connection) => {
-                    if (sub_step.step_index === connection.input_step_index) {
-                        connections_by_name[connection.input_name] = connection;
-                    }
-                });
-                _.each(this.parms[j], (input, name) => {
-                    var connection = connections_by_name[name];
-                    if (connection) {
-                        input.type = "hidden";
-                        input.help = input.step_linked ? `${input.help}, ` : "";
-                        input.help += `Output dataset '${connection.output_name}' from step ${parseInt(i) + 1}`;
-                        input.step_linked = input.step_linked || [];
-                        input.step_linked.push({ index: step.index, step_type: step.step_type });
-                    }
-                });
-            });
-        });
-
-        // identify and configure workflow parameters
-        var wp_count = 0;
-        this.wp_inputs = {};
-
-        const _ensureWorkflowParameter = (wp_name) => {
-            return (this.wp_inputs[wp_name] = this.wp_inputs[wp_name] || {
-                label: wp_name,
-                name: wp_name,
-                type: "text",
-                color: `hsl( ${++wp_count * 100}, 70%, 30% )`,
-                style: "ui-form-wp-source",
-                links: [],
-            });
-        };
-
-        function _handleWorkflowParameter(value, callback) {
-            var re = /\$\{(.+?)\}/g;
-            var match;
-            while ((match = re.exec(String(value)))) {
-                var wp_name = match[1];
-                callback(_ensureWorkflowParameter(wp_name));
-            }
-        }
-        _.each(this.steps, (step, i) => {
-            _.each(this.parms[i], (input, name) => {
-                _handleWorkflowParameter(input.value, (wp_input) => {
-                    wp_input.links.push(step);
-                    input.wp_linked = true;
-                    input.type = "text";
-                    input.backdrop = true;
-                    input.style = "ui-form-wp-target";
-                });
-            });
-            _.each(step.replacement_parameters, (wp_name) => {
-                _ensureWorkflowParameter(wp_name);
-            });
-        });
-
-        // select fields are shown for dynamic fields if all putative data inputs are available,
-        // or if an explicit reference is specified as data_ref and available
-        _.each(this.steps, (step, i) => {
-            if (step.step_type == "tool") {
-                var data_resolved = true;
-                FormData.visitInputs(step.inputs, (input, name, context) => {
-                    var is_runtime_value = input.value && input.value.__class__ == "RuntimeValue";
-                    var is_data_input = ["data", "data_collection"].indexOf(input.type) != -1;
-                    var data_ref = context[input.data_ref];
-                    if (input.step_linked && !this._isDataStep(input.step_linked)) {
-                        data_resolved = false;
-                    }
-                    if (input.options && ((input.options.length == 0 && !data_resolved) || input.wp_linked)) {
-                        input.is_workflow = true;
-                    }
-                    if (data_ref) {
-                        input.is_workflow =
-                            (data_ref.step_linked && !this._isDataStep(data_ref.step_linked)) || input.wp_linked;
-                    }
-                    if (
-                        is_data_input ||
-                        (input.value && input.value.__class__ == "RuntimeValue" && !input.step_linked)
-                    ) {
-                        step.collapsed = false;
-                    }
-                    if (is_runtime_value) {
-                        input.value = null;
-                    }
-                    input.flavor = "workflow";
-                    if (!is_runtime_value && !is_data_input && input.type !== "hidden" && !input.wp_linked) {
-                        if (input.optional || (!Utils.isEmpty(input.value) && input.value !== "")) {
-                            input.collapsible_value = input.value;
-                            input.collapsible_preview = true;
-                        }
-                    }
-                });
-            }
-        });
+        this.steps = this.runWorkflowModel.steps;
+        this.links = this.runWorkflowModel.links;
+        this.parms = this.runWorkflowModel.parms;
+        this.wp_inputs = this.runWorkflowModel.wpInputs;
     },
 
     render: function () {
@@ -251,7 +90,7 @@ var View = Backbone.View.extend({
                                     name: "name",
                                     label: "History name",
                                     type: "text",
-                                    value: this.model.get("name"),
+                                    value: this.runWorkflowModel.name,
                                 },
                             ],
                         },
@@ -265,11 +104,11 @@ var View = Backbone.View.extend({
     /** Render Workflow Options */
     _renderResourceParameters: function () {
         this.workflow_resource_parameters_form = null;
-        if (!_.isEmpty(this.model.get("workflow_resource_parameters"))) {
+        if (!_.isEmpty(this.runWorkflowModel.workflowResourceParameters)) {
             this.workflow_resource_parameters_form = new Form({
                 cls: "ui-portlet-section",
                 title: "<b>Workflow Resource Options</b>",
-                inputs: this.model.get("workflow_resource_parameters"),
+                inputs: this.runWorkflowModel.workflowResourceParameters,
             });
             this._append(this.$el, this.workflow_resource_parameters_form.$el);
         }
@@ -421,7 +260,7 @@ var View = Backbone.View.extend({
                         if (input.step_linked) {
                             new_value = { values: [] };
                             _.each(input.step_linked, (source_step) => {
-                                if (this._isDataStep(source_step)) {
+                                if (isDataStep(source_step)) {
                                     var value = this.forms[source_step.index].data.create().input;
                                     if (value) {
                                         _.each(value.values, (v) => {
@@ -477,7 +316,7 @@ var View = Backbone.View.extend({
         var history_form_data = this.history_form.data.create();
         var job_def = {
             new_history_name: history_form_data["new_history|name"] ? history_form_data["new_history|name"] : null,
-            history_id: !history_form_data["new_history|name"] ? this.model.get("history_id") : null,
+            history_id: !history_form_data["new_history|name"] ? this.runWorkflowModel.historyId : null,
             resource_params: this.workflow_resource_parameters_form
                 ? this.workflow_resource_parameters_form.data.create()
                 : {},
@@ -506,7 +345,7 @@ var View = Backbone.View.extend({
                 var input_id = form.data.match(job_input_id);
                 var input_def = form.input_list[input_id];
                 if (!input_def.step_linked) {
-                    if (this._isDataStep(step)) {
+                    if (isDataStep(step)) {
                         validated = input_value && input_value.values && input_value.values.length > 0;
                         if (!validated && input_def.optional) {
                             validated = true;
@@ -536,7 +375,7 @@ var View = Backbone.View.extend({
             Galaxy.emit.debug("tool-form-composite::submit()", "Validation complete.", job_def);
             Utils.request({
                 type: "POST",
-                url: `${getAppRoot()}api/workflows/${this.model.id}/invocations`,
+                url: `${getAppRoot()}api/workflows/${this.runWorkflowModel.workflowId}/invocations`,
                 data: job_def,
                 success: (response) => {
                     Galaxy.emit.debug("tool-form-composite::submit", "Submission successful.", response);
@@ -593,18 +432,6 @@ var View = Backbone.View.extend({
                 form.portlet[enabled ? "enable" : "disable"]();
             }
         });
-    },
-
-    /** Is data input module/step */
-    _isDataStep: function (steps) {
-        var lst = $.isArray(steps) ? steps : [steps];
-        for (var i = 0; i < lst.length; i++) {
-            var step = lst[i];
-            if (!step || !step.step_type || !step.step_type.startsWith("data")) {
-                return false;
-            }
-        }
-        return true;
     },
 
     submissionErrorModal: function (job_def, response) {

@@ -7,7 +7,7 @@ import ToolFormComposite from "mvc/tool/tool-form-composite";
 
 export default {
     props: {
-        runData: {
+        model: {
             type: Object,
             required: true,
         },
@@ -26,10 +26,11 @@ export default {
             const el = this.$refs["form"];
             const formProps = {
                 el,
+                model: this.model,
                 setRunButtonStatus: this.setRunButtonStatus,
                 handleInvocations: this.handleInvocations,
             };
-            this.runForm = new ToolFormComposite.View(Object.assign({}, this.runData, formProps));
+            this.runForm = new ToolFormComposite.View(formProps);
         });
     },
     methods: {
