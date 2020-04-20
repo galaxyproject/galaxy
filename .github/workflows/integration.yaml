@@ -27,10 +27,15 @@ jobs:
     steps:
     - name: Prune unused docker image, volumes and containers
       run: docker system prune -a -f
+    - name: Clean dotnet folder for space
+      if: matrix.subset == 'kubernetes'
+      run: rm -Rf /usr/share/dotnet
     - name: Setup Minikube
       if: matrix.subset == 'kubernetes'
       id: minikube
-      uses: CodingNagger/minikube-setup-action@v1.0.2
+      uses: CodingNagger/minikube-setup-action@v1.0.3
+      with:
+        minikube-version: "1.9.0-0_amd64"
     - name: Launch Minikube
       if: matrix.subset == 'kubernetes'
       run: eval ${{ steps.minikube.outputs.launcher }}

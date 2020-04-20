@@ -237,6 +237,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         # Since logging an event requires a session, we'll log prior to ending the session
         trans.log_event("User logged out")
         trans.handle_user_logout(logout_all=logout_all)
+        return {"message": "Success."}
 
     @expose_api_anonymous_and_sessionless
     def create(self, trans, payload={}, **kwd):

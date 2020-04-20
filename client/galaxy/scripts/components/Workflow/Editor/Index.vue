@@ -4,8 +4,8 @@
             <template v-slot:panel>
                 <ToolBoxWorkflow
                     :toolbox="toolbox"
-                    :module-sections="module_sections"
-                    :data-managers="data_managers"
+                    :module-sections="moduleSections"
+                    :data-managers="dataManagers"
                     :workflows="workflows"
                     @onInsertTool="onInsertTool"
                     @onInsertModule="onInsertModule"
@@ -110,30 +110,39 @@ export default {
     props: {
         id: {
             type: String,
+            required: true,
         },
         version: {
             type: Number,
+            required: true,
         },
         name: {
             type: String,
+            required: true,
         },
         tags: {
             type: Array,
+            required: true,
         },
         annotation: {
             type: String,
+            required: true,
         },
-        module_sections: {
+        moduleSections: {
             type: Array,
+            required: true,
         },
-        data_managers: {
+        dataManagers: {
             type: Array,
+            required: true,
         },
         workflows: {
             type: Array,
+            required: true,
         },
         toolbox: {
             type: Array,
+            required: true,
         },
     },
     data() {
