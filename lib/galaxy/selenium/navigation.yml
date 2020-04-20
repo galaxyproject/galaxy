@@ -353,6 +353,11 @@ tour:
 
 admin:
 
+  toolshed:
+    selectors:
+      repo_search: '#toolshed-repo-search'
+      search_results: '#shed-search-results'
+
   index:
     selectors:
       datatypes: '#admin-link-datatypes'
