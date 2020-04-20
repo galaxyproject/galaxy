@@ -46,14 +46,12 @@
 </template>
 
 <script>
-import axios from "axios";
-
+import { getRunData } from "./services.js";
 import WaitButton from "components/WaitButton";
 import LoadingSpan from "components/LoadingSpan";
 import WorkflowRunSuccess from "./WorkflowRunSuccess";
 import WorkflowRunForm from "./WorkflowRunForm";
 import { WorkflowRunModel } from "./model.js";
-import { getAppRoot } from "onload";
 import { errorMessageAsString } from "utils/simple-error";
 
 export default {
@@ -82,11 +80,8 @@ export default {
         };
     },
     created() {
-        const url = `${getAppRoot()}api/workflows/${this.workflowId}/download?style=run`;
-        axios
-            .get(url)
-            .then((response) => {
-                const runData = response.data;
+        getRunData(this.workflowId)
+            .then((runData) => {
                 const model = new WorkflowRunModel(runData);
                 this.model = model;
                 this.hasUpgradeMessages = model.hasUpgradeMessages;

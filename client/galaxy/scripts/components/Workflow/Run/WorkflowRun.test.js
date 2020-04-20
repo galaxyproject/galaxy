@@ -22,7 +22,7 @@ describe("WorkflowRun.vue", () => {
         axiosMock.onGet(`/api/workflows/${run1WorkflowId}/download?style=run`).reply(200, sampleRunData1);
         wrapper = mount(WorkflowRun, {
             propsData: propsData,
-            localVue
+            localVue,
         });
     });
 
