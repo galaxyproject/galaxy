@@ -73,14 +73,28 @@ function buildPlugins(callback){
     /*
      * Walk plugin build glob and attempt to build anything with a package.json 
      * */
+
+    const client_hash_path = '../static/client_build_hash.txt';
     paths.plugin_build_dirs.map( build_dir => {
         glob(build_dir, {}, (er, files) => {
             files.map( file => {
+                let skip_build = false;
                 const f = path.join(process.cwd(), file).slice(0, -12);
-                console.log("Installing Dependencies for", f);
-                spawn('yarn', ['install', '--production=false', '--network-timeout=300000', '--check-files'], { cwd: f, stdio: 'inherit', shell: true });
-                console.log("Building ", f);
-                spawn('yarn', ['build'], { cwd: f, stdio: 'inherit', shell: true });
+
+                if (fs.existsSync(client_hash_path)) {
+                    skip_build = spawn('git', ['diff', '--quiet', '"$(cat ../static/client_build_hash.txt)"', '--', f], {
+                        stdio: 'pipe',
+                        shell: true
+                    }).status === 0;
+                }
+                if(skip_build){
+                    console.log("No changes detected for", f)
+                } else {
+                    console.log("Installing Dependencies for", f);
+                    spawn('yarn', ['install', '--production=false', '--network-timeout=300000', '--check-files'], { cwd: f, stdio: 'inherit', shell: true });
+                    console.log("Building ", f);
+                    spawn('yarn', ['build'], { cwd: f, stdio: 'inherit', shell: true });
+                }
             });
         });
     });
