@@ -1,0 +1,11 @@
+# PEFF 1.0
+# //
+# DbName=Minimal Test example PEFF_Minimal_Valid.peff
+# Prefix=sp
+# DbSource=http://www.peptideatlas.org/formats/PEFF/PEFF_Minimal_Valid.peff
+# DbVersion=1
+# SequenceType=AA
+# NumberOfEntries=1
+# //
+>sp:Q9Y2X3 \Length=1
+M

@@ -230,19 +230,27 @@
     <datatype extension="directory" type="galaxy.datatypes.data:Directory">
     </datatype>
     <!-- Proteomics Datatypes -->
+    <datatype extension="mrm" type="galaxy.datatypes.tabular:Tabular" display_in_upload="true" subclass="true"/>
+    <datatype extension="dta" type="galaxy.datatypes.proteomics:Dta" display_in_upload="true" />
+    <datatype extension="dta2d" type="galaxy.datatypes.proteomics:Dta2d" display_in_upload="true" />
+    <datatype extension="edta" type="galaxy.datatypes.proteomics:Edta" display_in_upload="true" />
     <datatype extension="pepxml" type="galaxy.datatypes.proteomics:PepXml" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="raw_pepxml" type="galaxy.datatypes.proteomics:PepXml" mimetype="application/xml" subclass="true"/>
     <datatype extension="peptideprophet_pepxml" type="galaxy.datatypes.proteomics:PepXml" mimetype="application/xml" subclass="true"/>
     <datatype extension="interprophet_pepxml" type="galaxy.datatypes.proteomics:PepXml" mimetype="application/xml" subclass="true"/>
     <datatype extension="protxml" type="galaxy.datatypes.proteomics:ProtXML" mimetype="application/xml" display_in_upload="true"/>
-    <datatype extension="trafoxml" type="galaxy.datatypes.xml:GenericXml" mimetype="application/xml" subclass="true" display_in_upload="true" description="Transformation of retention times"/>
+    <datatype extension="paramxml" type="galaxy.datatypes.proteomics:ParamXml" mimetype="application/xml" subclass="true" display_in_upload="true" />
     <datatype extension="qcml" type="galaxy.datatypes.xml:GenericXml" mimetype="application/xml" subclass="true" display_in_upload="true" description="Quality control data in XML format (https://code.google.com/p/qcml/)."/>
+    <datatype extension="kroenik" type="galaxy.datatypes.proteomics:Kroenik" display_in_upload="true"/>
+    <datatype extension="peplist" type="galaxy.datatypes.proteomics:PepList" display_in_upload="true"/>
+    <datatype extension="psms" type="galaxy.datatypes.proteomics:PSMS" display_in_upload="true"/>
     <datatype extension="pepxml.tsv" type="galaxy.datatypes.proteomics:PepXmlReport" display_in_upload="true"/>
     <datatype extension="protxml.tsv" type="galaxy.datatypes.proteomics:ProtXmlReport" display_in_upload="true"/>
     <datatype extension="mascotdat" type="galaxy.datatypes.proteomics:MascotDat" display_in_upload="false"/>
     <datatype extension="mzid" type="galaxy.datatypes.proteomics:MzIdentML" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="idxml" type="galaxy.datatypes.proteomics:IdXML" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="tandem" type="galaxy.datatypes.proteomics:TandemXML" mimetype="application/xml" display_in_upload="true"/>
+    <datatype extension="sirius.ms" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="false"/>
     <datatype extension="thermo.raw" type="galaxy.datatypes.proteomics:ThermoRAW" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="brukerbaf.d.tar" type="galaxy.datatypes.binary:BafTar" display_in_upload="true"/>
     <datatype extension="agilentbrukeryep.d.tar" type="galaxy.datatypes.binary:YepTar" display_in_upload="true"/>
@@ -250,6 +258,9 @@
     <datatype extension="agilentmasshunter.d.tar" type="galaxy.datatypes.binary:MassHunterTar" display_in_upload="true"/>
     <datatype extension="watersmasslynx.raw.tar" type="galaxy.datatypes.binary:MassLynxTar" display_in_upload="true"/>
     <datatype extension="wiff.tar" type="galaxy.datatypes.binary:WiffTar" display_in_upload="true"/>
+    <datatype extension="mascotxml" type="galaxy.datatypes.proteomics:MascotXML" mimetype="application/xml" display_in_upload="true"/>
+    <datatype extension="mztab" type="galaxy.datatypes.proteomics:MzTab" display_in_upload="true"/>
+    <datatype extension="mztab2" type="galaxy.datatypes.proteomics:MzTab2" display_in_upload="true"/>
     <datatype extension="mzml" type="galaxy.datatypes.proteomics:MzML" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="nmrml" type="galaxy.datatypes.proteomics:NmrML" mimetype="application/xml" display_in_upload="true" description="nmrML is an open mark-up language for NMR data." description_url="http://nmrml.org/schema/"/>
     <datatype extension="mgf" type="galaxy.datatypes.proteomics:Mgf" display_in_upload="true"/>
@@ -258,11 +269,18 @@
     <datatype extension="mzdata" type="galaxy.datatypes.proteomics:MzData" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="ms2" type="galaxy.datatypes.proteomics:Ms2" display_in_upload="true"/>
     <datatype extension="mzq" type="galaxy.datatypes.proteomics:MzQuantML" mimetype="application/xml" display_in_upload="true"/>
+    <datatype extension="sqlite" type="galaxy.datatypes.binary:SQlite" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="mz.sqlite" type="galaxy.datatypes.binary:MzSQlite" mimetype="application/octet-stream" display_in_upload="true"/>
+    <datatype extension="osw" type="galaxy.datatypes.binary:OSW" mimetype="application/octet-stream" display_in_upload="true"/>
+    <datatype extension="pqp" type="galaxy.datatypes.binary:PQP" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="traml" type="galaxy.datatypes.proteomics:TraML" mimetype="application/xml" display_in_upload="true"/>
+    <datatype extension="trafoxml" type="galaxy.datatypes.proteomics:TrafoXML" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="featurexml" type="galaxy.datatypes.proteomics:FeatureXML" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="consensusxml" type="galaxy.datatypes.proteomics:ConsensusXML" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="uniprotxml" type="galaxy.datatypes.proteomics:UniProtXML" mimetype="application/xml" display_in_upload="true"/>
+    <datatype extension="xquest.xml" type="galaxy.datatypes.proteomics:XquestXML" mimetype="application/xml" display_in_upload="true"/>
+    <datatype extension="spec.xml" type="galaxy.datatypes.proteomics:XquestSpecXML" mimetype="application/xml" display_in_upload="true"/>
+    <datatype extension="qcml" type="galaxy.datatypes.proteomics:QCML" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="msp" type="galaxy.datatypes.proteomics:Msp" display_in_upload="true"/>
     <datatype extension="splib_noindex" type="galaxy.datatypes.proteomics:SPLibNoIndex" display_in_upload="true"/>
     <datatype extension="splib" type="galaxy.datatypes.proteomics:SPLib" display_in_upload="true"/>
@@ -286,6 +304,7 @@
     <datatype extension="kronik" type="galaxy.datatypes.tabular:Tabular" subclass="true"/>
     <datatype extension="imzml" type="galaxy.datatypes.proteomics:ImzML" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="analyze75" type="galaxy.datatypes.proteomics:Analyze75" mimetype="application/xml" display_in_upload="true"/>
+    <datatype extension="peff" type="galaxy.datatypes.proteomics:PEFF" display_in_upload="true"/>
     <!-- End Proteomics Datatypes -->
     <datatype extension="deeptools_compute_matrix_archive" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true"/>
     <datatype extension="deeptools_coverage_matrix" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true"/>
@@ -343,9 +362,7 @@
       <converter file="tabular_to_csv.xml" target_datatype="csv"/>
     </datatype>
     <datatype extension="twobit" type="galaxy.datatypes.binary:TwoBit" mimetype="application/octet-stream" display_in_upload="true"/>
-    <datatype extension="sqlite" type="galaxy.datatypes.binary:SQlite" mimetype="application/octet-stream" display_in_upload="true"/>
-    <datatype extension="pqp" type="galaxy.datatypes.binary:SQlite" mimetype="application/octet-stream" display_in_upload="true" subclass="true"/>
-    <datatype extension="osw" type="galaxy.datatypes.binary:SQlite" mimetype="application/octet-stream" display_in_upload="true" subclass="true"/>
+    <datatype extension="sqmass" type="galaxy.datatypes.binary:SQmass" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="gemini.sqlite" type="galaxy.datatypes.binary:GeminiSQLite" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="cuffdiff.sqlite" type="galaxy.datatypes.binary:CuffDiffSQlite" display_in_upload="true"/>
     <datatype extension="gafa.sqlite" type="galaxy.datatypes.binary:GAFASQLite" mimetype="application/octet-stream" display_in_upload="true"/>
@@ -801,7 +818,10 @@
     <sniffer type="galaxy.datatypes.tabular:Vcf"/>
     <sniffer type="galaxy.datatypes.binary:TwoBit"/>
     <sniffer type="galaxy.datatypes.binary:GeminiSQLite"/>
+    <sniffer type="galaxy.datatypes.binary:SQmass"/>
     <sniffer type="galaxy.datatypes.binary:MzSQlite"/>
+    <sniffer type="galaxy.datatypes.binary:OSW"/>
+    <sniffer type="galaxy.datatypes.binary:PQP"/>
     <sniffer type="galaxy.datatypes.binary:IdpDB"/>
     <sniffer type="galaxy.datatypes.binary:ElibSQlite"/>
     <sniffer type="galaxy.datatypes.binary:DlibSQlite"/>
@@ -851,21 +871,40 @@
     <sniffer type="galaxy.datatypes.xml:Phyloxml"/>
     <sniffer type="galaxy.datatypes.xml:Owl"/>
     <sniffer type="galaxy.datatypes.xml:Sbml"/>
-    <sniffer type="galaxy.datatypes.proteomics:MzML"/>
-    <sniffer type="galaxy.datatypes.proteomics:NmrML"/>
-    <sniffer type="galaxy.datatypes.proteomics:TandemXML"/>
-    <sniffer type="galaxy.datatypes.proteomics:PepXml"/>
+    <sniffer type="galaxy.datatypes.proteomics:Dta2d"/>
+    <sniffer type="galaxy.datatypes.proteomics:Edta"/>
+    <sniffer type="galaxy.datatypes.proteomics:ConsensusXML"/>
+    <sniffer type="galaxy.datatypes.proteomics:IdXML"/>
+    <sniffer type="galaxy.datatypes.proteomics:FeatureXML"/>
+    <sniffer type="galaxy.datatypes.proteomics:MascotXML"/>
     <sniffer type="galaxy.datatypes.proteomics:Mgf"/>
-    <sniffer type="galaxy.datatypes.proteomics:ProtXML"/>
-    <sniffer type="galaxy.datatypes.proteomics:MzXML"/>
-    <sniffer type="galaxy.datatypes.proteomics:MzData"/>
-    <sniffer type="galaxy.datatypes.proteomics:TraML"/>
-    <sniffer type="galaxy.datatypes.proteomics:MzIdentML"/>
-    <sniffer type="galaxy.datatypes.proteomics:MzQuantML"/>
-    <sniffer type="galaxy.datatypes.proteomics:UniProtXML"/>
+    <sniffer type="galaxy.datatypes.proteomics:Ms2"/>
     <sniffer type="galaxy.datatypes.proteomics:Msp"/>
+    <sniffer type="galaxy.datatypes.proteomics:MzData"/>
+    <sniffer type="galaxy.datatypes.proteomics:MzIdentML"/>
+    <sniffer type="galaxy.datatypes.proteomics:MzML"/>
+    <sniffer type="galaxy.datatypes.proteomics:MzQuantML"/>
+    <sniffer type="galaxy.datatypes.proteomics:MzTab"/>
+    <sniffer type="galaxy.datatypes.proteomics:MzTab2"/>
+    <sniffer type="galaxy.datatypes.proteomics:ParamXml"/>
+    <sniffer type="galaxy.datatypes.proteomics:MzXML"/>
+    <sniffer type="galaxy.datatypes.proteomics:NmrML"/>
+    <sniffer type="galaxy.datatypes.proteomics:Kroenik"/>
+    <sniffer type="galaxy.datatypes.proteomics:PepList"/>
+    <sniffer type="galaxy.datatypes.proteomics:PSMS"/>
+    <sniffer type="galaxy.datatypes.proteomics:PepXml"/>
+    <sniffer type="galaxy.datatypes.proteomics:ProtXML"/>
     <sniffer type="galaxy.datatypes.proteomics:SPLib"/>
+    <sniffer type="galaxy.datatypes.proteomics:TandemXML"/>
     <sniffer type="galaxy.datatypes.proteomics:ThermoRAW"/>
+    <sniffer type="galaxy.datatypes.proteomics:TraML"/>
+    <sniffer type="galaxy.datatypes.proteomics:TrafoXML"/>
+    <sniffer type="galaxy.datatypes.proteomics:UniProtXML"/>
+    <sniffer type="galaxy.datatypes.proteomics:XquestXML"/>
+    <sniffer type="galaxy.datatypes.proteomics:XquestSpecXML"/>
+    <sniffer type="galaxy.datatypes.proteomics:QCML"/>
+    <sniffer type="galaxy.datatypes.proteomics:Wiff"/>
+    <sniffer type="galaxy.datatypes.proteomics:PEFF"/>
     <sniffer type="galaxy.datatypes.molecules:CML"/>
     <sniffer type="galaxy.datatypes.xml:GenericXml"/>
     <sniffer type="galaxy.datatypes.triples:HDT"/>
