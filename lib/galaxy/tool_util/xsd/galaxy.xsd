@@ -79,7 +79,7 @@ the tool menu immediately following the hyperlink for the tool (based on the
         <xs:element name="stdio" type="Stdio" minOccurs="0"/>
         <xs:element name="help" type="xs:string" minOccurs="0">
           <xs:annotation gxdocs:best_practices="help-tag">
-            <xs:documentation xml:lang="en"><![CDATA[This tag set includes all of the necessary details of how to use the tool. This tag set should be included as the next to the last tag set, before citations, in the tool config. Tool help is written in reStructuredText. Included here is only an overview of a subset of features. For more information see http://docutils.sourceforge.net/docs/ref/rst/restructuredtext.html .
+            <xs:documentation xml:lang="en"><![CDATA[This tag set includes all of the necessary details of how to use the tool. This tag set should be included as the next to the last tag set, before citations, in the tool config. Tool help is written in reStructuredText. Included here is only an overview of a subset of features. For more information see [here](http://docutils.sourceforge.net/docs/ref/rst/restructuredtext.html).
 
 tag | details
 --- | -------
@@ -217,7 +217,7 @@ fragments be repeated in a file (for instance similar conditional branches,
 repeated options, etc...) or among tools in the same repository. Galaxy tools
 have a macro system to address this problem.
 
-For more information, see https://planemo.readthedocs.io/en/latest/writing_advanced.html#macros-reusable-elements</xs:documentation>
+For more information, see [planemo documentation](https://planemo.readthedocs.io/en/latest/writing_advanced.html#macros-reusable-elements)</xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <xs:element name="import" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
@@ -3820,7 +3820,7 @@ Style used for tool provided metadata file (i.e.
 - this can be either "legacy" or "default". The default of tools with a profile
 of 17.09 or newer are "default", and "legacy" for older and tools and tools
 without a specified profile. A discussion of the differences between the styles
-can be found at https://github.com/galaxyproject/galaxy/pull/4437 .
+can be found [here](https://github.com/galaxyproject/galaxy/pull/4437).
 ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
@@ -4174,9 +4174,9 @@ Describe datasets to dynamically collect after the job complete.
 There are many simple tools with examples of this element distributed with
 Galaxy, including:
 
-* https://github.com/galaxyproject/galaxy/tree/master/test/functional/tools/multi_output.xml
-* https://github.com/galaxyproject/galaxy/tree/master/test/functional/tools/multi_output_assign_primary.xml
-* https://github.com/galaxyproject/galaxy/tree/master/test/functional/tools/multi_output_configured.xml
+* [multi_output.xml](https://github.com/galaxyproject/galaxy/tree/master/test/functional/tools/multi_output.xml)
+* [multi_output_assign_primary.xml](https://github.com/galaxyproject/galaxy/tree/master/test/functional/tools/multi_output_assign_primary.xml)
+* [multi_output_configured.xml](https://github.com/galaxyproject/galaxy/tree/master/test/functional/tools/multi_output_configured.xml)
 
 More information can be found on Planemo's documentation for
 [multiple output files](https://planemo.readthedocs.io/en/latest/writing_advanced.html#multiple-output-files).
@@ -4234,9 +4234,9 @@ expressions after the job is complete.
 There are many simple tools with examples of this element distributed with
 Galaxy, including:
 
-* https://github.com/galaxyproject/galaxy/blob/master/test/functional/tools/collection_split_on_column.xml
-* https://github.com/galaxyproject/galaxy/blob/master/test/functional/tools/collection_creates_dynamic_list_of_pairs.xml
-* https://github.com/galaxyproject/galaxy/blob/master/test/functional/tools/collection_creates_dynamic_nested.xml
+* [collection_split_on_column.xml](https://github.com/galaxyproject/galaxy/blob/master/test/functional/tools/collection_split_on_column.xml)
+* [collection_creates_dynamic_list_of_pairs.xml](https://github.com/galaxyproject/galaxy/blob/master/test/functional/tools/collection_creates_dynamic_list_of_pairs.xml)
+* [collection_creates_dynamic_nested.xml](https://github.com/galaxyproject/galaxy/blob/master/test/functional/tools/collection_creates_dynamic_nested.xml)
 
 ]]></xs:documentation>
     </xs:annotation>
@@ -5138,7 +5138,7 @@ Tools may use exit codes to indicate specific execution errors. Many programs us
 
 The exit code's range can be any consecutive group of integers. More advanced ranges, such as noncontiguous ranges, are currently not supported. Ranges can be specified in the form "m:n", where m is the start integer and n is the end integer. If ":n" is specified, then the exit code will be compared against all integers less than or equal to n. If "m:" is used, then the exit code will be compared against all integers greater than or equal to m. If the exit code matches, then the error level is applied and the error's description is added to stderr. If a tool's exit code does not match any of the supplied ``<exit_code>`` tags' ranges, then no errors are applied to the tool's execution.
 
-Note that most Unix and Linux variants only support positive integers 0 to 255 for exit codes. If an exit code falls out of the range 0 to 255, the usual convention is to only use the lower 8 bits for the exit code. The only known exception is if a job is broken into subtasks using the tasks runner and one of those tasks is stopped with a POSIX signal. (Note that signals should be used as a last resort for terminating processes.) In those cases, the task will receive -1 times the signal number. For example, suppose that a job uses the tasks runner and 8 tasks are created for the job. If one of the tasks hangs, then a sysadmin may choose to send the "kill" signal, SIGKILL, to the process. In that case, the task (and its job) will exit with an exit code of -9. More on POSIX signals can be found at https://en.wikipedia.org/wiki/Unix_signal as well as man pages on "signal".
+Note that most Unix and Linux variants only support positive integers 0 to 255 for exit codes. If an exit code falls out of the range 0 to 255, the usual convention is to only use the lower 8 bits for the exit code. The only known exception is if a job is broken into subtasks using the tasks runner and one of those tasks is stopped with a POSIX signal. (Note that signals should be used as a last resort for terminating processes.) In those cases, the task will receive -1 times the signal number. For example, suppose that a job uses the tasks runner and 8 tasks are created for the job. If one of the tasks hangs, then a sysadmin may choose to send the "kill" signal, SIGKILL, to the process. In that case, the task (and its job) will exit with an exit code of -9. More on POSIX signals can be found at [wikipedia](https://en.wikipedia.org/wiki/Unix_signal) as well as man pages on "signal".
 
 The ``<exit_code>`` tag's supported attributes are as follows:
 
