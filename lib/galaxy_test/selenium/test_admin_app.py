@@ -90,18 +90,17 @@ class AdminAppTestCase(SeleniumTestCase):
         # label for the job lock toggle to verify that job locking actually happens
         label = self.driver.find_element_by_xpath("//label[@for='prevent-job-dispatching']/strong")
         lock = self.driver.find_element_by_id("prevent-job-dispatching")
-        previous_label = label.text
+        original_label = label.text
         self.action_chains().move_to_element_with_offset(lock, -20, 5).click().perform()
         # Make sure the job lock has been toggled.
-        self.assertNotEqual(label.text, previous_label)
-        new_label = label.text
+        self.assertNotEqual(label.text, original_label)
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("admin_jobs_locked")
         self.action_chains().move_to_element_with_offset(lock, -20, 5).click().perform()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("admin_jobs_unlocked")
         # And confirm that it has toggled back to what it was.
-        self.assertEqual(label.text, previous_label)
+        self.assertEqual(label.text, original_label)
 
     @selenium_test
     def test_admin_server_display(self):
