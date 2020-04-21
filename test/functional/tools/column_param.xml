@@ -1,8 +1,8 @@
 <tool id="column_param" name="Column Param">
   <command><![CDATA[
-    cut -f '$col' '$input1' >> '$output1'
-    echo "col $col" >> '$output2' &&
-    echo "col_names $col_names" >> '$output2' &&
+cut -f '$col' '$input1' > '$output1' &&
+echo "col $col" > '$output2' &&
+echo "col_names $col_names" >> '$output2'
   ]]></command>
   <inputs>
     <param type="data" format="tabular" name="input1" label="Input 1" />
