@@ -102,7 +102,6 @@ class AdminAppTestCase(SeleniumTestCase):
         self.screenshot("admin_jobs_unlocked")
         # And confirm that it has toggled back to what it was.
         self.assertEqual(label.text, previous_label)
-        self.assertNotEqual(label.text, new_label)
 
     @selenium_test
     def test_admin_server_display(self):
