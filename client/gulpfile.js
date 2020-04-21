@@ -74,26 +74,33 @@ function buildPlugins(callback){
      * Walk plugin build glob and attempt to build anything with a package.json 
      * */
 
-    const client_hash_path = '../static/client_build_hash.txt';
-    paths.plugin_build_dirs.map( build_dir => {
+    const static_viz_path = '../static/plugins/visualizations';
+    paths.plugin_build_dirs.map(build_dir => {
         glob(build_dir, {}, (er, files) => {
             files.map( file => {
                 let skip_build = false;
                 const f = path.join(process.cwd(), file).slice(0, -12);
 
-                if (fs.existsSync(client_hash_path)) {
-                    skip_build = spawn('git', ['diff', '--quiet', '"$(cat ../static/client_build_hash.txt)"', '--', f], {
+                const plugin_name = path.dirname(file).split(path.sep).pop()
+                const hash_file_name = plugin_name + '_plugin_build_hash.txt'
+                const hash_file_path = path.join(static_viz_path, plugin_name, 'static', hash_file_name)
+
+                if (fs.existsSync(hash_file_path)) {
+                    skip_build = spawn('git', ['diff', '--quiet', '"$(cat ' + hash_file_path + ')"', '--', f], {
                         stdio: 'pipe',
                         shell: true
                     }).status === 0;
                 }
+
                 if(skip_build){
-                    console.log("No changes detected for", f)
+                    console.log("No changes detected for", plugin_name)
                 } else {
-                    console.log("Installing Dependencies for", f);
+                    console.log("Installing Dependencies for", plugin_name);
                     spawn('yarn', ['install', '--production=false', '--network-timeout=300000', '--check-files'], { cwd: f, stdio: 'inherit', shell: true });
-                    console.log("Building ", f);
+                    console.log("Building ", plugin_name);
                     spawn('yarn', ['build'], { cwd: f, stdio: 'inherit', shell: true });
+                    // hash_file_name is copied to static during stagePlugins()
+                    spawn('bash', ['-c', '"(git rev-parse HEAD 2>/dev/null || echo ``) > ' + f + '/static/' + hash_file_name + '"'], {shell: true});
                 }
             });
         });
@@ -106,7 +113,7 @@ function cleanPlugins() {
 }
 
 client = parallel(fonts, stageLibs);
-plugins = series(cleanPlugins, buildPlugins, stagePlugins);
+plugins = series(buildPlugins, cleanPlugins, stagePlugins);
 
 module.exports.client = client;
 module.exports.plugins = plugins;
