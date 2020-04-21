@@ -410,8 +410,6 @@ def output_to_cwl_json(
     if output_metadata is None:
         output_metadata = get_metadata(galaxy_output.history_content_type, galaxy_output.history_content_id)
 
-    print(output_metadata)
-
     def dataset_dict_to_json_content(dataset_dict):
         if "content" in dataset_dict:
             return json.loads(dataset_dict["content"])
