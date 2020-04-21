@@ -118,11 +118,6 @@ class AuthenticationFailed(MessageException):
     err_code = error_codes.USER_AUTHENTICATION_FAILED
 
 
-class AuthenticationDuplicate(MessageException):
-    status_code = 401
-    err_code = error_codes.USER_AUTHENTICATION_DUPLICATE
-
-
 class AuthenticationRequired(MessageException):
     status_code = 403
     # TODO: as 401 and send WWW-Authenticate: ???

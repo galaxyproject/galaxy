@@ -7,11 +7,13 @@ from datetime import datetime, timedelta
 
 import jwt
 import requests
+import base64
 from oauthlib.common import generate_nonce
 from requests_oauthlib import OAuth2Session
 from six.moves.urllib.parse import quote
 
 from galaxy import util
+from galaxy import exceptions
 from galaxy.model import CustosAuthnzToken, User
 from ..authnz import IdentityProvider
 
@@ -27,6 +29,9 @@ class CustosAuthnz(IdentityProvider):
         self.config['url'] = oidc_backend_config['url']
         self.config['client_id'] = oidc_backend_config['client_id']
         self.config['client_secret'] = oidc_backend_config['client_secret']
+        if provider == 'custos':
+            #Keycloak client secret used to get token
+            self.config['iam_client_secret'] = oidc_backend_config['iam_client_secret']
         self.config['redirect_uri'] = oidc_backend_config['redirect_uri']
         self.config['ca_bundle'] = oidc_backend_config.get('ca_bundle', None)
         self.config['extra_params'] = {
@@ -41,14 +46,17 @@ class CustosAuthnz(IdentityProvider):
             self.config['token_endpoint'] = well_known_oidc_config['token_endpoint']
             self.config['userinfo_endpoint'] = well_known_oidc_config['userinfo_endpoint']
             self.config['end_session_endpoint'] = well_known_oidc_config['end_session_endpoint']
+        elif provider == 'cilogon':
+            self._load_config_for_cilogon()
+        elif provider == 'custos':
+            self._load_config_for_custos()
         else:
             realm = oidc_backend_config['realm']
             self._load_config_for_provider_and_realm(self.config['provider'], realm)
 
-    #edit here Juleen for cilogon state?
     def authenticate(self, trans, idphint=None):
-        base_authorize_url = self._create_cilogon_authorize_url(idphint)
-        oauth2_session = self._create_oauth2_session(scope=('openid', 'email', 'profile', 'org.cilogon.userinfo')) #maybe set state to be state_cookie like in callback
+        base_authorize_url = self._create_authorize_url(trans)
+        oauth2_session = self._create_oauth2_session(scope=('openid', 'email', 'profile', 'org.cilogon.userinfo'))
         nonce = generate_nonce()
         nonce_hash = self._hash_nonce(nonce)
         extra_params = {"nonce": nonce_hash}
@@ -73,8 +81,7 @@ class CustosAuthnz(IdentityProvider):
         access_token = token['access_token']
         id_token = token['id_token']
         refresh_token = token['refresh_token'] if 'refresh_token' in token else None
-        #expiration_time = datetime.now() + timedelta(seconds=token['expires_in'])
-        expiration_time = datetime.now() + timedelta(seconds=token.get('expires_in', 3600)) #revisit later Juleen, once CILogon bug fixed
+        expiration_time = datetime.now() + timedelta(seconds=token.get('expires_in', 3600))
         refresh_expiration_time = (datetime.now() + timedelta(seconds=token['refresh_expires_in'])) if 'refresh_expires_in' in token else None
 
         # Get nonce from token['id_token'] and validate. 'nonce' in the
@@ -85,11 +92,14 @@ class CustosAuthnz(IdentityProvider):
         self._validate_nonce(trans, nonce_hash)
 
         # Get userinfo and lookup/create Galaxy user record
-        userinfo = self._get_userinfo(oauth2_session)
+        if id_token_decoded['email']:
+            userinfo = id_token_decoded
+        else:
+            userinfo = self._get_userinfo(oauth2_session)
         log.debug("userinfo={}".format(json.dumps(userinfo, indent=True)))
         email = userinfo['email']
-        username = userinfo.get('preferred_username', email.split('@')[0]) #TBD handle is username already exists
-        #username = userinfo.get('preferred_username', self.generate_username(email)) #TBD handle is username already exists
+        #Check if username if already taken
+        username = userinfo.get('preferred_username', self._generate_username(trans, email))
         user_id = userinfo['sub']
 
         # Create or update custos_authnz_token record
@@ -112,7 +122,7 @@ class CustosAuthnz(IdentityProvider):
                     else:
                         message = 'There already exists a user this email.  To associate this external login, you must first be logged in as that existing account.'
                         log.exception(message)
-                        raise exceptions.AuthenticationDuplicate(message)
+                        raise exceptions.AuthenticationFailed(message)
                 else:
                     user = trans.app.user_manager.create(email=email, username=username)
                     user.set_random_password()
@@ -134,7 +144,7 @@ class CustosAuthnz(IdentityProvider):
             custos_authnz_token.refresh_expiration_time = refresh_expiration_time
         trans.sa_session.add(custos_authnz_token)
         trans.sa_session.flush()
-        return login_redirect_url, custos_authnz_token.user
+        return True, "", (login_redirect_url, custos_authnz_token.user)
 
     def disconnect(self, provider, trans, disconnect_redirect_url=None):
         try:
@@ -176,21 +186,24 @@ class CustosAuthnz(IdentityProvider):
         return session
 
     def _fetch_token(self, oauth2_session, trans):
-        client_secret = self.config['client_secret']
-
-        idsec = self.config['client_id'] + ":" + self.config['client_secret']
-        encodedIdSec = base64.b64encode(idsec)
+        if self.config.get('iam_client_secret'):
+            #Custos uses the Keycloak client secret to get the token
+            client_secret = self.config['iam_client_secret']
+        else:
+            client_secret = self.config['client_secret']
         token_endpoint = self.config['token_endpoint']
+        clientIdAndSec = self.config['client_id'] + ":" + self.config['client_secret'] #for custos
         return oauth2_session.fetch_token(
             token_endpoint,
             client_secret=client_secret,
-            authorization_response=trans.request.url,
+            authorization_response=trans.request.url, 
+            headers={"Authorization": "Basic %s" % base64.b64encode(clientIdAndSec)}, #for custos
             verify=self._get_verify_param())
 
     def _get_userinfo(self, oauth2_session):
         userinfo_endpoint = self.config['userinfo_endpoint']
         return oauth2_session.get(userinfo_endpoint,
-                                  verify=self._get_verify_param()).json()                        
+                                  verify=self._get_verify_param()).json()
 
     def _get_custos_authnz_token(self, sa_session, user_id, provider):
         return sa_session.query(CustosAuthnzToken).filter_by(
@@ -206,16 +219,28 @@ class CustosAuthnz(IdentityProvider):
         nonce_cookie_hash = self._hash_nonce(nonce_cookie)
         if nonce_hash != nonce_cookie_hash:
             raise Exception("Nonce mismatch!")
-
+    
     def _load_config_for_cilogon (self):
         #set cilogon endpoints
         self.config['authorization_endpoint'] = "https://cilogon.org/authorize"
         self.config['token_endpoint'] = "https://cilogon.org/oauth2/token"
         self.config['userinfo_endpoint'] = "https://cilogon.org/oauth2/userinfo"
 
-    def _create_cilogon_authorize_url (self, idphint):
-        return "{}/?idphint={}&response_type=code&client_id={}&redirect_uri={}".format(
-            self.config['authorization_endpoint'], self.config['url'], idphint, self.config['client_id'], self.config['redirect_uri'])
+    def _load_config_for_custos (self):
+        #set custos endpoints
+        clientIdAndSec = self.config['client_id'] + ":" + self.config['client_secret']
+        eps = requests.get("https://custos.scigap.org:32036/identity-management/v1.0.0/.well-known/openid-configuration", 
+                            headers={"Authorization": "Basic %s" % base64.b64encode(clientIdAndSec)},
+                            verify=False, params = {'client_id': self.config['client_id']})
+        endpoints = eps.json()
+        self.config['authorization_endpoint'] = endpoints['authorization_endpoint']
+        self.config['token_endpoint'] = endpoints['token_endpoint']
+        self.config['userinfo_endpoint'] = "https://custos.scigap.org:32036/user-management/v1.0.0/user"
+        self.config['end_session_endpoint'] = endpoints['end_session_endpoint']
+
+    def _create_authorize_url (self, trans):
+        return "{}/?kc_idp_hint=oidc&response_type=code&client_id={}&redirect_uri={}".format(
+                self.config['authorization_endpoint'], self.config['client_id'], self.config['redirect_uri'])
 
     def _load_config_for_provider_and_realm(self, provider, realm):
         self.config['well_known_oidc_config_uri'] = self._get_well_known_uri_for_provider_and_realm(provider, realm)
@@ -251,10 +276,15 @@ class CustosAuthnz(IdentityProvider):
         else:
             return self.config['verify_ssl']
 
-    #def generate_username(email):
-    #    temp_username = email.split('@')[0]
-    #    count = 0
+    def _generate_username(self, trans, email):
+        temp_username = email.split('@')[0] #username created from username portion of email
+        count = 0
+        existing_usernames = trans.sa_session.query(trans.app.model.User).filter_by(username=(temp_username)).first()
 
-    #    while (temp_username in database):
-    #        count += 1
-    #    return temp_username if count == 0 else temp_username + str(count) #do I have 
+        if (trans.sa_session.query(trans.app.model.User).filter_by(username=temp_username).first()):
+            #if username already exists in database, append integer and iterate until unique username found
+            while (trans.sa_session.query(trans.app.model.User).filter_by(username=(temp_username+str(count))).first()):
+                count += 1
+        else:
+            return temp_username
+        return temp_username + str(count)

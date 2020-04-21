@@ -1,12 +1,7 @@
-/**
- * Data retrieval/storage for the auth keys
- */
-
 import axios from "axios";
-import { /*Credential, IdentityProvider*/ } from "./model/index";
 import { getRootFromIndexLink } from "onload";
 
-const getUrl = path => getRootFromIndexLink() + path;
+const getUrl = (path) => getRootFromIndexLink() + path;
 
 export async function disconnectIdentity(doomed) {
     if (doomed) {
@@ -16,8 +11,6 @@ export async function disconnectIdentity(doomed) {
             throw new Error("Delete failure.");
         }
     }
-    
-    return;
 }
 
 // Memoize results (basically never changes)
@@ -29,7 +22,7 @@ export async function getIdentityProviders() {
     if (response.status != 200) {
         throw new Error("Unable to load connected external identities");
     }
-    identityProviders = response.data;//.map(IdentityProvider.create);
+    identityProviders = response.data;
     return identityProviders;
 }
 
@@ -46,7 +39,6 @@ export async function hasUsername() {
     const result = getCurrentUser();
     console.log(result.username);
     return getCurrentUser().username;
-    //return true;
 }
 
 export async function getCurrentUser() {
@@ -58,26 +50,9 @@ export async function getCurrentUser() {
     return response.data;
 }
 
-/*export async function getCredential(id) {
-    const url = getUrl("api/cloud/authz/${id}");
-    const response = await axios.get(url);
-    if (response.status != 200) {
-        throw new Error("Unexpected response loading key.");
-    }
-    return Credential.create(response.data);
-}
-
-async function saveOrUpdate(model) {
-    return model.id
-        ? axios.put(getUrl(`api/cloud/authz/${model.id}`), model)
-        : axios.post(getUrl("api/cloud/authz"), model);
-}*/
-
 export default {
-    //listIdentities,
-    //getCredential,
     saveIdentity,
     disconnectIdentity,
     getIdentityProviders,
-    hasUsername
+    hasUsername,
 };

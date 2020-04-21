@@ -7,7 +7,8 @@
                 variant="warning"
                 :show="errorMessage !== null"
                 @dismissed="errorMessage = null"
-            >{{ errorMessage }}</b-alert>
+                >{{ errorMessage }}</b-alert
+            >
 
             <hgroup class="external-id-title">
                 <h1>Manage External Identities</h1>
@@ -23,9 +24,7 @@
 
             <p>
                 See more information, including a list of supported identity providers,
-                <a
-                    href="https://galaxyproject.org/authnz/use/oidc/"
-                >here</a>.
+                <a href="https://galaxyproject.org/authnz/use/oidc/">here</a>.
             </p>
         </header>
 
@@ -67,8 +66,8 @@
                     @cancel="doomedItem = null"
                 >
                     <p>
-                        If you delete this identity, you will be logged out and need to reset your Galaxy password the next time you log in
-                        or reconnect to this third party identity.
+                        If you delete this identity, you will be logged out and need to reset your Galaxy password the
+                        next time you log in or reconnect to this third party identity.
                     </p>
                 </b-modal>
             </div>
@@ -79,17 +78,13 @@
                 variant="warning"
                 :show="errorMessage !== null"
                 @dismissed="errorMessage = null"
-            >{{ errorMessage }}</b-alert>
+                >{{ errorMessage }}</b-alert
+            >
         </div>
 
         <div class="external-subheading" v-if="enable_oidc">
             <h3>Connect Other External Identities</h3>
-            <b-button
-                v-for="idp in oidc_idps"
-                :key="idp"
-                class="d-block mt-3"
-                @click="submitOIDCLogin(idp)"
-            >
+            <b-button v-for="idp in oidc_idps" :key="idp" class="d-block mt-3" @click="submitOIDCLogin(idp)">
                 <i v-bind:class="oidc_idps_icons[idp]" />
                 Sign in with
                 {{ idp.charAt(0).toUpperCase() + idp.slice(1) }}
@@ -101,14 +96,19 @@
 <script>
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import Selectize from "vue2-selectize";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
 import svc from "./service";
+import axios from "axios";
 import { logoutClick } from "layout/menu";
 
 Vue.use(BootstrapVue);
 
 export default {
+    components: {
+        Selectize
+    },
     data() {
         const galaxy = getGalaxyInstance();
         const oidc_idps = galaxy.config.oidc;
@@ -130,7 +130,10 @@ export default {
             errorMessage: null,
             enable_oidc: galaxy.config.enable_oidc,
             oidc_idps: oidc_idps,
-            oidc_idps_icons: oidc_idps_icons
+            oidc_idps_icons: oidc_idps_icons,
+            cilogon_idps: [],
+            selected: "",
+            cilogonSelected: false
         };
     },
     computed: {
@@ -147,6 +150,12 @@ export default {
             // This setter is here because vue-bootstrap modal
             // tries to set this property for unfathomable reasons
             set() {}
+        },
+        filtered_oidc_idps() {
+            return this.oidc_idps.filter(idp => idp != "cilogon");
+        },
+        cilogonShow() {
+            return this.oidc_idps.includes("cilogon") && this.cilogonSelected; //&& cilogon button clicked
         }
     },
     watch: {
@@ -157,16 +166,12 @@ export default {
     methods: {
         loadIdentities() {
             this.loading = true;
-            console.log("before loading");
-            console.log(this.items);
             svc.getIdentityProviders()
                 .then(results => {
                     this.items = results;
                 })
                 .catch(this.setError("Unable to load connected external identities."))
                 .finally(() => (this.loading = false));
-            console.log("after loading");
-            console.log(this.items);
         },
         onDisconnect(doomed) {
             this.doomedItem = doomed;
@@ -183,8 +188,10 @@ export default {
                     );
                 }
             } else {
-                this.setError("Before disconnecting this identity, you need to set your account password, "
-                + "in order to avoid being locked out of your account.");
+                this.setError(
+                    "Before disconnecting this identity, you need to set your account password, " +
+                        "in order to avoid being locked out of your account."
+                );
             }
         },
         disconnectID() {
@@ -204,8 +211,6 @@ export default {
                     this.removeItem(this.doomedItem);
                     this.doomedItem = null;
                 });
-            console.log("after disconnectID");
-            console.log(this.items);
         },
         disconnectAndReset() {
             // Disconnects the user's final ext id and logouts of current session
@@ -228,55 +233,22 @@ export default {
                     this.messageText = message || "Login failed for an unknown reason.";
                 });
         },
-        setError(msg) {
-            return err => {
-                this.errorMessage = msg;
-                console.warn(err);
-            };
-        }
-    },
-    created() {
-        this.loadIdentities();
-    }
-};
-
-/*
-    data() {
-
-        return {
-            login: null,
-            password: null,
-            url: null,
-            provider: null,
-            messageText: null,
-            messageVariant: null,
-            
-
-            allowUserCreation: galaxy.config.allow_user_creation,
-            session_csrf_token: galaxy.session_csrf_token,
-            
-        };
-    },
-    methods: {
-        toggleLogin: function() {
-            if (this.$root.toggleLogin) {
-                this.$root.toggleLogin();
-            }
-        },
-        submitGalaxyLogin: function(method) {
+        getCILogonIdps: function() {
             const rootUrl = getAppRoot();
+            axios.get(`${rootUrl}authnz/get_cilogon_idps`).then(response => {
+                this.cilogon_idps = response.data;
+                //List is originally sorted by OrganizationName which can be different from DisplayName
+                this.cilogon_idps.sort((a, b) => (a.DisplayName > b.DisplayName ? 1 : -1));
+            });
+        },
+        submitCILogon: function() {
+            const rootUrl = getAppRoot();
+
             axios
-                .post(`${rootUrl}user/login`, this.$data)
+                .post(`${rootUrl}authnz/cilogon/login/?idphint=${this.selected}`)
                 .then(response => {
-                    if (response.data.message && response.data.status) {
-                        alert(response.data.message);
-                    }
-                    if (response.data.expired_user) {
-                        window.location = `${rootUrl}root/login?expired_user=${response.data.expired_user}`;
-                    } else if (response.data.redirect) {
-                        window.location = encodeURI(response.data.redirect);
-                    } else {
-                        window.location = `${rootUrl}`;
+                    if (response.data.redirect_uri) {
+                        window.location = response.data.redirect_uri;
                     }
                 })
                 .catch(error => {
@@ -285,11 +257,17 @@ export default {
                     this.messageText = message || "Login failed for an unknown reason.";
                 });
         },
-        
-        */
-
-
-
+        setError(msg) {
+            return err => {
+                this.errorMessage = msg;
+                console.warn(err);
+            };
+        }
+    },
+    created() {
+        this.loadIdentities(), this.getCILogonIdps();
+    }
+};
 </script>
 
 <style lang="scss">
@@ -297,7 +275,7 @@ export default {
 @import "~bootstrap/scss/variables";
 @import "~bootstrap/scss/mixins";
 @import "~bootstrap/scss/utilities/spacing";
-
+@import "~selectize/dist/css/selectize.bootstrap3.css";
 @import "scss/theme/blue.scss";
 @import "scss/mixins";
 
@@ -339,11 +317,10 @@ export default {
                     color: $brand-primary;
                 }
             }
-
-            .cloudKeyHelp a {
-                @include fontawesome($fa-var-info-circle);
-            }
         }
+    }
+    .external-subheading {
+        margin-top: 1rem;
     }
 }
 
@@ -366,13 +343,11 @@ export default {
     form {
         @extend .my-3;
         @extend .pt-3;
-
-        // removes wierd double arrows on select
+        // removes weird double arrows on select
         .custom-select {
             background: none;
         }
-
-        // Undo butchering from base.css so side-by-side labels work
+        // Allow side-by-side labels to work
         .form-row {
             display: flex;
             input,
@@ -398,7 +373,6 @@ export default {
     }
 
     // icon menu
-
     .operations {
         list-style-type: none;
 
@@ -410,7 +384,6 @@ export default {
 }
 
 // Transitions
-
 .fade-enter-active,
 .fade-leave-active {
     transition: opacity 0.5s;
@@ -422,7 +395,6 @@ export default {
 }
 
 // Delete modal
-
 #disconnectIDModal {
     .modal-body {
         display: none;

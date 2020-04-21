@@ -4,16 +4,15 @@ OAuth 2.0 and OpenID Connect Authentication and Authorization Controller.
 
 from __future__ import absolute_import
 
-import logging
 import json
+import logging
 import requests
 
 from galaxy import exceptions
 from galaxy import web
-from galaxy.web import url_for
 from galaxy.util import url_get
+from galaxy.web import url_for
 from galaxy.webapps.base.controller import JSAppLauncher
-#from galaxy.authnz.custos_authnz import get_useremail
 
 log = logging.getLogger(__name__)
 
@@ -43,9 +42,17 @@ class OIDC(JSAppLauncher):
             rtv.append({'id': trans.app.security.encode_id(authnz.id), 'provider': authnz.provider, 'email': authnz.uid})
         #add cilogon and custos identities
         for token in trans.user.custos_auth:
-            uinfo = requests.get("https://cilogon.org/oauth2/userinfo", params = {'access_token': token.access_token})
-            userinfo = uinfo.json()
-            rtv.append({'id': trans.app.security.encode_id(token.id), 'provider': token.provider, 'email': userinfo['email']})
+        #    if (token.provider == 'cilogon'):
+        #        userinfo_endpoint = "https://cilogon.org/oauth2/userinfo"
+        #    elif (token.provider == 'custos'):
+        #        userinfo_endpoint = "https://custos.scigap.org:32036/user-management/v1.0.0/user"
+        #    #userinfo_endpoint = "https://cilogon.org/oauth2/userinfo" #to delete
+        #    uinfo = requests.get(userinfo_endpoint, params = {'access_token': token.access_token})
+        #    print ("\n\n\nUINFO", uinfo) #to delete
+        #    print ("\n\n\nUSERINFO", uinfo.json()) #to delete
+        #    userinfo = uinfo.json()
+        #    rtv.append({'id': trans.app.security.encode_id(token.id), 'provider': token.provider, 'email': userinfo['email']})
+            rtv.append({'id': trans.app.security.encode_id(token.id), 'provider': token.provider})
         return rtv
 
     @web.json
@@ -62,7 +69,7 @@ class OIDC(JSAppLauncher):
             raise exceptions.AuthenticationFailed(message)
 
     @web.expose
-    def callback(self, trans, provider, **kwargs):
+    def callback(self, trans, provider, idphint=None, **kwargs):
         user = trans.user.username if trans.user is not None else 'anonymous'
         if not bool(kwargs):
             log.error("OIDC callback received no data for provider `{}` and user `{}`".format(provider, user))
@@ -84,7 +91,7 @@ class OIDC(JSAppLauncher):
                                                                                 trans,
                                                                                 login_redirect_url=url_for('/'),
                                                                                 idphint=idphint)
-        except exceptions.AuthenticationDuplicate as e:
+        except exceptions.AuthenticationFailed as e:
             return trans.response.send_redirect(trans.request.base + url_for('/') + 'root/login?message=' + (e.message or "Duplicate Email"))
         if success is False:
             return trans.show_error_message(message)

@@ -43,8 +43,8 @@ import DatasetEditAttributes from "mvc/dataset/dataset-edit-attributes";
 import Citations from "components/Citations.vue";
 import DisplayStructure from "components/DisplayStructured.vue";
 import { CloudAuth } from "components/User/CloudAuth";
-import Vue from "vue";
 import { ExternalIdentities } from "components/User/ExternalIdentities";
+import Vue from "vue";
 import store from "store";
 
 /** Routes */
@@ -138,11 +138,11 @@ export const getAnalysisRouter = (Galaxy) =>
             this._display_vue_helper(CloudAuth);
         },
 
-        show_external_ids: function() {
+        show_external_ids: function () {
             this._display_vue_helper(ExternalIdentities);
         },
 
-        show_visualizations: function(action_id) {
+        show_visualizations: function (action_id) {
             const activeTab = action_id == "list_published" ? "shared" : "user";
             this.page.display(
                 new GridShared.View({
