@@ -153,6 +153,7 @@ class InteractiveToolsRemoteProxyIntegrationTestCase(BaseInteractiveToolsIntegra
 
 @integration_util.skip_unless_kubernetes()
 @integration_util.skip_unless_amqp()
+@integration_util.skip_if_github_workflow()
 class KubeInteractiveToolsRemoteProxyIntegrationTestCase(BaseInteractiveToolsIntegrationTestCase, RunsInterativeToolTests):
     """
     $ git clone https://github.com/galaxyproject/gx-it-proxy.git $HOME/gx-it-proxy
