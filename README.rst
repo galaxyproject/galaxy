@@ -5,13 +5,13 @@ The latest information about Galaxy can be found on the `Galaxy Community Hub <h
 
 Community support is available at `Galaxy Help <https://help.galaxyproject.org/>`__.
 
-.. image:: https://img.shields.io/badge/chat-irc.freenode.net%23galaxyproject-blue.svg
-    :target: https://webchat.freenode.net/?channels=galaxyproject
-    :alt: Chat on irc
-
 .. image:: https://img.shields.io/badge/chat-gitter-blue.svg
     :target: https://gitter.im/galaxyproject/Lobby
     :alt: Chat on gitter
+
+.. image:: https://img.shields.io/badge/chat-irc.freenode.net%23galaxyproject-blue.svg
+    :target: https://webchat.freenode.net/?channels=galaxyproject
+    :alt: Chat on irc
 
 .. image:: https://img.shields.io/badge/release-documentation-blue.svg
     :target: https://docs.galaxyproject.org/en/master/
@@ -24,7 +24,7 @@ Community support is available at `Galaxy Help <https://help.galaxyproject.org/>
 Galaxy Quickstart
 =================
 
-Galaxy requires Python 3.6 or 3.5 To check your python version, run:
+Galaxy requires Python 3.5 or 3.6 . To check your Python version, run:
 
 .. code:: console
 
@@ -40,10 +40,14 @@ Start Galaxy:
 Once Galaxy completes startup, you should be able to view Galaxy in your
 browser at: http://localhost:8080
 
-For more installation details please see https://getgalaxy.org/.
+For more installation details please see: https://getgalaxy.org/
+
+Documentation is available at: https://docs.galaxyproject.org/
+
+Tutorials on how to use Galaxy, perform scientific analyses with it, develop Galaxy and its tools, and admin a Galaxy server are at: https://training.galaxyproject.org/
 
 Tools
-=====================
+=====
 
 Tools can be either installed from the Tool Shed or added manually.
 For details please see the `tutorial <https://galaxyproject.org/admin/tools/add-tool-from-toolshed-tutorial/>`__.
@@ -55,8 +59,3 @@ Issues and Galaxy Development
 =============================
 
 Please see `CONTRIBUTING.md <CONTRIBUTING.md>`_ .
-
-Roadmap
-=============================
-
-Interested in the next steps for Galaxy? Take a look at the `roadmap <https://github.com/galaxyproject/galaxy/projects/8>`__.
