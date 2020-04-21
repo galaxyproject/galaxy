@@ -209,7 +209,7 @@ multi_history_view:
     delete: '.copy-history'
     current_history_check: '#history-column-${history_id} .current-label'
     empty_message_check: '.empty-message'
-
+    switch_button: '#history-column-${history_id} .switch-to'
 
   history_dropdown_menu:
     selectors:
