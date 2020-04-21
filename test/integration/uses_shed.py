@@ -72,8 +72,8 @@ class UsesShed(object):
             model.RepositoryDependency,
             model.ToolVersion,
             model.ToolVersionAssociation,
+            model.ToolDependency,
             model.ToolShedRepository,
-            model.ToolDependency
         ]
         for item in models_to_delete:
             model.context.query(item).delete()
