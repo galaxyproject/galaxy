@@ -1484,7 +1484,6 @@ def send_mail(frm, to, subject, body, config, html=None):
         s = smtplib.SMTP_SSL(config.smtp_server)
     else:
         s = smtplib.SMTP(config.smtp_server)
-    s.connect(config.smtp_server)
     if not smtp_ssl:
         try:
             s.starttls()
