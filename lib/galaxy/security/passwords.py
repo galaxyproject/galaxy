@@ -47,7 +47,7 @@ def hash_password_PBKDF2(password):
     # Generate a random salt
     salt = b64encode(urandom(SALT_LENGTH))
     # Apply the pbkdf2 encoding
-    hashed_password = pbkdf2_bin(password, salt, COST_FACTOR, KEY_LENGTH, getattr(hashlib, HASH_FUNCTION))
+    hashed_password = pbkdf2_bin(password, salt, COST_FACTOR, KEY_LENGTH, HASH_FUNCTION)
     encoded_password = unicodify(b64encode(hashed_password))
     # Format
     return 'PBKDF2${0}${1}${2}${3}'.format(HASH_FUNCTION, COST_FACTOR, unicodify(salt), encoded_password)
@@ -57,7 +57,7 @@ def check_password_PBKDF2(guess, hashed):
     # Split the database representation to extract cost_factor and salt
     name, hash_function, cost_factor, salt, encoded_original = hashed.split('$', 5)
     # Hash the guess using the same parameters
-    hashed_guess = pbkdf2_bin(guess, salt, int(cost_factor), KEY_LENGTH, getattr(hashlib, hash_function))
+    hashed_guess = pbkdf2_bin(guess, salt, int(cost_factor), KEY_LENGTH, hash_function)
     encoded_guess = unicodify(b64encode(hashed_guess))
     return safe_str_cmp(encoded_original, encoded_guess)
 
@@ -71,13 +71,8 @@ def pbkdf2_bin(data, salt, iterations=1000, keylen=24, hashfunc=None):
     key of `keylen` bytes.  By default SHA-1 is used as hash function,
     a different hashlib `hashfunc` can be provided.
     """
-    hashfunc = hashfunc or hashlib.sha1
+    hashfunc = hashfunc or "sha1"
     data = bytes(smart_str(data))
     salt = bytes(smart_str(salt))
 
-    if callable(hashfunc):
-        _test_hash = hashfunc()
-        hash_name = getattr(_test_hash, "name", None)
-    else:
-        hash_name = hashfunc
-    return hashlib.pbkdf2_hmac(hash_name, data, salt, iterations, keylen)
+    return hashlib.pbkdf2_hmac(hashfunc, data, salt, iterations, keylen)
