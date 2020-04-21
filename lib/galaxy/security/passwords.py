@@ -62,10 +62,8 @@ def check_password_PBKDF2(guess, hashed):
     return safe_str_cmp(encoded_original, encoded_guess)
 
 
-# Taken from https://github.com/mitsuhiko/python-pbkdf2/blob/master/pbkdf2.py
-# (c) Copyright 2011 by Armin Ronacher, BSD LICENSE
-_pack_int = Struct('>I').pack
-
+# Inspiration taken from https://github.com/pallets/werkzeug/blob/master/src/werkzeug/security.py
+# (which itself was based on the previous version of the code here, from python-pbkdf2)
 
 def pbkdf2_bin(data, salt, iterations=1000, keylen=24, hashfunc=None):
     """Returns a binary digest for the PBKDF2 hash algorithm of `data`
@@ -74,22 +72,12 @@ def pbkdf2_bin(data, salt, iterations=1000, keylen=24, hashfunc=None):
     a different hashlib `hashfunc` can be provided.
     """
     hashfunc = hashfunc or hashlib.sha1
-    mac = hmac.new(smart_str(data), None, hashfunc)
+    data = bytes(smart_str(data))
+    salt = bytes(smart_str(salt))
 
-    def _pseudorandom(x, mac=mac):
-        h = mac.copy()
-        h.update(x)
-        digest = h.digest()
-        if six.PY2:
-            return digest, [ord(_) for _ in digest]
-        return digest, digest
-
-    buf = []
-    salt = smart_str(salt)
-    for block in range(1, -(-keylen // mac.digest_size) + 1):
-        digest, rv = _pseudorandom(salt + _pack_int(block))
-        for _ in range(iterations - 1):
-            digest, u = _pseudorandom(digest)
-            rv = starmap(xor, zip(rv, u))
-        buf.extend(rv)
-    return bytes(bytearray(buf))[:keylen]
+    if callable(hashfunc):
+        _test_hash = hashfunc()
+        hash_name = getattr(_test_hash, "name", None)
+    else:
+        hash_name = hashfunc
+    return hashlib.pbkdf2_hmac(hash_name, data, salt, iterations, keylen)
