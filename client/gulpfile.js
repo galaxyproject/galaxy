@@ -9,7 +9,7 @@ const paths = {
     node_modules: "./node_modules",
     plugin_dirs: [
         "../config/plugins/{visualizations,interactive_environments}/*/static/**/*",
-        "../config/plugins/{visualizations,interactive_environments}/*/*/static/**/*"
+        "../config/plugins/{visualizations,interactive_environments}/*/*/static/**/*",
     ],
     /*
      * We'll want a flexible glob down the road, but for now there are no
@@ -20,9 +20,7 @@ const paths = {
     //    "../config/plugins/{visualizations,interactive_environments}/*/package.json",
     //    "../config/plugins/{visualizations,interactive_environments}/*/*/package.json"
     //],
-    plugin_build_dirs: [
-        "../config/plugins/visualizations/{annotate_image,hyphyvision,openlayers,editor}/package.json",
-    ],
+    plugin_build_dirs: ["../config/plugins/visualizations/{annotate_image,hyphyvision,openlayers,editor}/package.json"],
     lib_locs: {
         // This is a stepping stone towards having all this staged
         // automatically.  Eventually, this dictionary and staging step will
@@ -37,13 +35,13 @@ const paths = {
         "jquery-mousewheel": ["jquery.mousewheel.js", "jquery/jquery.mousewheel.js"],
         "raven-js": ["dist/raven.js", "raven.js"],
         requirejs: ["require.js", "require.js"],
-        underscore: ["underscore.js", "underscore.js"]
+        underscore: ["underscore.js", "underscore.js"],
     },
-    libs: ["galaxy/scripts/libs/**/*.js"]
+    libs: ["galaxy/scripts/libs/**/*.js"],
 };
 
 function stageLibs(callback) {
-    Object.keys(paths.lib_locs).forEach(lib => {
+    Object.keys(paths.lib_locs).forEach((lib) => {
         var p1 = path.resolve(path.join(paths.node_modules, lib, paths.lib_locs[lib][0]));
         var p2 = path.resolve(path.join("galaxy", "scripts", "libs", paths.lib_locs[lib][1]));
         if (fs.existsSync(p1)) {
@@ -69,38 +67,50 @@ function stagePlugins() {
     return src(paths.plugin_dirs).pipe(dest("../static/plugins/"));
 }
 
-function buildPlugins(callback){
+function buildPlugins(callback) {
     /*
-     * Walk plugin build glob and attempt to build anything with a package.json 
+     * Walk plugin build glob and attempt to build anything with a package.json
      * */
 
-    const static_viz_path = '../static/plugins/visualizations';
-    paths.plugin_build_dirs.map(build_dir => {
+    const static_viz_path = "../static/plugins/visualizations";
+    paths.plugin_build_dirs.map((build_dir) => {
         glob(build_dir, {}, (er, files) => {
-            files.map( file => {
+            files.map((file) => {
                 let skip_build = false;
                 const f = path.join(process.cwd(), file).slice(0, -12);
 
-                const plugin_name = path.dirname(file).split(path.sep).pop()
-                const hash_file_name = plugin_name + '_plugin_build_hash.txt'
-                const hash_file_path = path.join(static_viz_path, plugin_name, 'static', hash_file_name)
+                const plugin_name = path.dirname(file).split(path.sep).pop();
+                const hash_file_name = plugin_name + "_plugin_build_hash.txt";
+                const hash_file_path = path.join(static_viz_path, plugin_name, "static", hash_file_name);
 
                 if (fs.existsSync(hash_file_path)) {
-                    skip_build = spawn('git', ['diff', '--quiet', '"$(cat ' + hash_file_path + ')"', '--', f], {
-                        stdio: 'pipe',
-                        shell: true
-                    }).status === 0;
+                    skip_build =
+                        spawn("git", ["diff", "--quiet", '"$(cat ' + hash_file_path + ')"', "--", f], {
+                            stdio: "pipe",
+                            shell: true,
+                        }).status === 0;
                 }
 
-                if(skip_build){
-                    console.log("No changes detected for", plugin_name)
+                if (skip_build) {
+                    console.log("No changes detected for", plugin_name);
                 } else {
                     console.log("Installing Dependencies for", plugin_name);
-                    spawn('yarn', ['install', '--production=false', '--network-timeout=300000', '--check-files'], { cwd: f, stdio: 'inherit', shell: true });
+                    spawn("yarn", ["install", "--production=false", "--network-timeout=300000", "--check-files"], {
+                        cwd: f,
+                        stdio: "inherit",
+                        shell: true,
+                    });
                     console.log("Building ", plugin_name);
-                    spawn('yarn', ['build'], { cwd: f, stdio: 'inherit', shell: true });
+                    spawn("yarn", ["build"], { cwd: f, stdio: "inherit", shell: true });
                     // hash_file_name is copied to static during stagePlugins()
-                    spawn('bash', ['-c', '"(git rev-parse HEAD 2>/dev/null || echo ``) > ' + f + '/static/' + hash_file_name + '"'], {shell: true});
+                    spawn(
+                        "bash",
+                        [
+                            "-c",
+                            '"(git rev-parse HEAD 2>/dev/null || echo ``) > ' + f + "/static/" + hash_file_name + '"',
+                        ],
+                        { shell: true }
+                    );
                 }
             });
         });
