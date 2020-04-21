@@ -22,6 +22,7 @@ def get_schema(app_mapping):
 def mock_init(monkeypatch):
     monkeypatch.setattr(AppSchema, '_read_schema', lambda a, b: get_schema(MOCK_SCHEMA))
     monkeypatch.setattr(GalaxyAppConfiguration, '_process_config', lambda a, b: None)
+    monkeypatch.setattr(GalaxyAppConfiguration, '_override_tempdir', lambda a, b: None)
 
 
 def test_load_config_from_schema(mock_init):

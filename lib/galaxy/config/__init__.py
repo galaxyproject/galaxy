@@ -348,10 +348,15 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
 
     def __init__(self, **kwargs):
         super(GalaxyAppConfiguration, self).__init__(**kwargs)
+        self._override_tempdir(kwargs)
         self._process_config(kwargs)
 
     def _load_schema(self):
         return AppSchema(GALAXY_CONFIG_SCHEMA_PATH, GALAXY_APP_NAME)
+
+    def _override_tempdir(self, kwargs):
+        if string_as_bool(kwargs.get("override_tempdir", "True")):
+            tempfile.tempdir = self.new_file_path
 
     def _process_config(self, kwargs):
         # Resolve paths of other config files
@@ -377,10 +382,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             self.thread_local_log = threading.local()
         # Install database related configuration (if different)
         self.install_database_engine_options = get_database_engine_options(kwargs, model_prefix="install_")
-
-        override_tempdir = string_as_bool(kwargs.get("override_tempdir", "True"))
-        if override_tempdir:
-            tempfile.tempdir = self.new_file_path
         self.shared_home_dir = kwargs.get("shared_home_dir")
         self.cookie_path = kwargs.get("cookie_path")
         self.tool_path = self._in_root_dir(self.tool_path)

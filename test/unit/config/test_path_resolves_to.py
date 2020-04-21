@@ -44,6 +44,7 @@ def test_deprecated_prefixes_set_correctly(monkeypatch):
     # Before we mock them, check that correct values are assigned
     monkeypatch.setattr(AppSchema, '_read_schema', lambda a, b: get_schema(MOCK_SCHEMA))
     monkeypatch.setattr(GalaxyAppConfiguration, '_process_config', lambda a, b: None)
+    monkeypatch.setattr(GalaxyAppConfiguration, '_override_tempdir', lambda a, b: None)
 
     config = GalaxyAppConfiguration()
     assert config.deprecated_dirs == {'config_dir': 'config', 'data_dir': 'database'}
@@ -53,6 +54,7 @@ def test_deprecated_prefixes_set_correctly(monkeypatch):
 def mock_init(monkeypatch):
     monkeypatch.setattr(AppSchema, '_read_schema', lambda a, b: get_schema(MOCK_SCHEMA))
     monkeypatch.setattr(GalaxyAppConfiguration, '_process_config', lambda a, b: None)
+    monkeypatch.setattr(GalaxyAppConfiguration, '_override_tempdir', lambda a, b: None)
     monkeypatch.setattr(GalaxyAppConfiguration, 'deprecated_dirs', MOCK_DEPRECATED_DIRS)
 
 
