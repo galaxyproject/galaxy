@@ -52,7 +52,7 @@ class TestRepositoryInstallIntegrationTestCase(integration_util.IntegrationTestC
         self.uninstall_repository(*repo)
 
     def test_tool_with_package_dependency_uninstall(self):
-        repo = ('iuc', 'fastqc', 'e7b2202befea')
+        repo = ('devteam', 'fastqc', 'e7b2202befea')
         self.install_repository(*repo)
         self.uninstall_repository(*repo)
 
