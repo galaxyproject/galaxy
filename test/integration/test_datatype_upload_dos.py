@@ -40,7 +40,7 @@ DISK_OBJECT_STORE_CONFIG = string.Template("""
     </backends>
 </object_store>
 """)
-IRODS__OBJECT_STORE_CONFIG = string.Template("""
+IRODS_OBJECT_STORE_CONFIG = string.Template("""
 <object_store type="distributed">
     <backends>
         <backend id="files1" type="disk" weight="1">
@@ -64,46 +64,41 @@ IRODS__OBJECT_STORE_CONFIG = string.Template("""
 
 class UploadTestDosDiskAndDiskTestCase(UploadTestDatatypeDataTestCase):
 
+    UploadTestDatatypeDataTestCase.object_store_config = DISK_OBJECT_STORE_CONFIG
+
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super(UploadTestDosDiskAndDiskTestCase, cls).handle_galaxy_config_kwds(config)
         temp_directory = cls._test_driver.mkdtemp()
-        print('temp_directory:', temp_directory)
         cls.object_stores_parent = temp_directory
-        config_path = os.path.join(temp_directory, "object_store_conf.xml")
+        cls.object_store_config_path = os.path.join(temp_directory, "object_store_conf.xml")
         # This doesn't quite work yet, fails with extra_files_path
         # config["metadata_strategy"] = "extended"
         config["outpus_to_working_dir"] = True
         config["retry_metadata_internally"] = False
         config["object_store_store_by"] = "uuid"
-        with open(config_path, "w") as f:
+        with open(cls.object_store_config_path, "w") as f:
             f.write(
-                DISK_OBJECT_STORE_CONFIG.safe_substitute(
+                UploadTestDatatypeDataTestCase.object_store_config.safe_substitute(
                     {
-                        "temp_directory": temp_directory,
+                        "temp_directory": cls.object_stores_parent,
                     }
                 )
             )
-        config["object_store_config_file"] = config_path
 
 
 class UploadTestDosIrodsAndDiskTestCase(IrodsUploadTestDatatypeDataTestCase):
 
+    UploadTestDatatypeDataTestCase.object_store_config = IRODS_OBJECT_STORE_CONFIG
+
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
-        temp_directory = cls._test_driver.mkdtemp()
-        print('temp_directory:', temp_directory)
-        cls.object_stores_parent = temp_directory
-        config_path = os.path.join(temp_directory, "object_store_conf.xml")
-        # This doesn't quite work yet, fails with extra_files_path
-        # config["metadata_strategy"] = "extended"
-        config["outpus_to_working_dir"] = True
-        config["retry_metadata_internally"] = False
-        config["object_store_store_by"] = "uuid"
-        with open(config_path, "w") as f:
+        super(UploadTestDosIrodsAndDiskTestCase, cls).handle_galaxy_config_kwds(config)
+        with open(cls.object_store_config_path, "w") as f:
             f.write(
-                IRODS__OBJECT_STORE_CONFIG.safe_substitute(
+                UploadTestDatatypeDataTestCase.object_store_config.safe_substitute(
                     {
-                        "temp_directory": temp_directory,
+                        "temp_directory": cls.object_stores_parent,
                         "host": IRODS_OBJECT_STORE_HOST,
                         "port": IRODS_OBJECT_STORE_PORT,
                         "timeout": IRODS_OBJECT_STORE_TIMEOUT,
@@ -114,7 +109,6 @@ class UploadTestDosIrodsAndDiskTestCase(IrodsUploadTestDatatypeDataTestCase):
                     }
                 )
             )
-        config["object_store_config_file"] = config_path
 
 
 instance1 = integration_util.integration_module_instance(UploadTestDosDiskAndDiskTestCase)

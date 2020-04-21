@@ -58,6 +58,8 @@ def stop_irods(container_name):
 
 class IrodsUploadTestDatatypeDataTestCase(UploadTestDatatypeDataTestCase):
 
+    UploadTestDatatypeDataTestCase.object_store_config = OBJECT_STORE_CONFIG
+
     @classmethod
     def setUpClass(cls):
         cls.container_name = "%s_container" % cls.__name__
@@ -71,17 +73,18 @@ class IrodsUploadTestDatatypeDataTestCase(UploadTestDatatypeDataTestCase):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super(IrodsUploadTestDatatypeDataTestCase, cls).handle_galaxy_config_kwds(config)
         temp_directory = cls._test_driver.mkdtemp()
         cls.object_stores_parent = temp_directory
-        config_path = os.path.join(temp_directory, "object_store_conf.xml")
+        cls.object_store_config_path = os.path.join(temp_directory, "object_store_conf.xml")
         # This doesn't quite work yet, fails with extra_files_path
         # config["metadata_strategy"] = "extended"
         config["outpus_to_working_dir"] = True
         config["retry_metadata_internally"] = False
         config["object_store_store_by"] = "uuid"
-        with open(config_path, "w") as f:
+        with open(cls.object_store_config_path, "w") as f:
             f.write(
-                OBJECT_STORE_CONFIG.safe_substitute(
+                UploadTestDatatypeDataTestCase.object_store_config.safe_substitute(
                     {
                         "temp_directory": temp_directory,
                         "host": OBJECT_STORE_HOST,
@@ -94,7 +97,7 @@ class IrodsUploadTestDatatypeDataTestCase(UploadTestDatatypeDataTestCase):
                     }
                 )
             )
-        config["object_store_config_file"] = config_path
+        config["object_store_config_file"] = cls.object_store_config_path
 
 
 instance = integration_util.integration_module_instance(IrodsUploadTestDatatypeDataTestCase)

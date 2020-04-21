@@ -42,6 +42,8 @@ def collect_test_data(registry):
 class UploadTestDatatypeDataTestCase(BaseUploadContentConfigurationInstance):
     framework_tool_and_types = False
     datatypes_conf_override = DATATYPES_CONFIG
+    object_store_config = None
+    object_store_config_path = None
 
 
 instance = integration_util.integration_module_instance(UploadTestDatatypeDataTestCase)
