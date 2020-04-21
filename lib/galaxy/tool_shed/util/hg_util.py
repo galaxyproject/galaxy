@@ -77,7 +77,7 @@ def get_ctx_file_path_from_manifest(filename, repo, changeset_revision):
     for changeset in reversed_upper_bounded_changelog(repo, changeset_revision):
         manifest_ctx = repo[changeset]
         for ctx_file in manifest_ctx.files():
-            ctx_file_name = basic_util.strip_path(ctx_file)
+            ctx_file_name = basic_util.strip_path(unicodify(ctx_file))
             if ctx_file_name == stripped_filename:
                 return manifest_ctx, ctx_file
     return None, None
@@ -93,7 +93,7 @@ def get_file_context_from_ctx(ctx, filename):
     deleted = False
     filename = basic_util.strip_path(filename)
     for ctx_file in ctx.files():
-        ctx_file_name = basic_util.strip_path(ctx_file)
+        ctx_file_name = basic_util.strip_path(unicodify(ctx_file))
         if filename == ctx_file_name:
             try:
                 # If the file was moved, its destination will be returned here.
@@ -105,18 +105,6 @@ def get_file_context_from_ctx(ctx, filename):
     if deleted:
         return 'DELETED'
     return None
-
-
-def get_repo_for_repository(app, repository=None, repo_path=None):
-    # Import from mercurial here to let Galaxy start under Python 3
-    from mercurial import (
-        hg,
-        ui
-    )
-    if repository is not None:
-        return hg.repository(ui.ui(), repository.repo_path(app))
-    if repo_path is not None:
-        return hg.repository(ui.ui(), repo_path)
 
 
 def pull_repository(repo_path, repository_clone_url, ctx_rev):
@@ -199,7 +187,6 @@ __all__ = (
     'get_config_from_disk',
     'get_ctx_file_path_from_manifest',
     'get_file_context_from_ctx',
-    'get_repo_for_repository',
     'pull_repository',
     'reversed_lower_upper_bounded_changelog',
     'reversed_upper_bounded_changelog',

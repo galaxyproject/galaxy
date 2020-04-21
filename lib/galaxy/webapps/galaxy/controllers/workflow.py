@@ -707,8 +707,8 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             'version'                 : version,
             'annotation'              : self.get_item_annotation_str(trans.sa_session, trans.user, stored),
             'toolbox'                 : trans.app.toolbox.to_dict(trans),
-            'module_sections'         : module_sections,
-            'data_managers'           : data_managers,
+            'moduleSections'          : module_sections,
+            'dataManagers'            : data_managers,
             'workflows'               : workflows
         }
 

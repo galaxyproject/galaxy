@@ -19,7 +19,7 @@ class HgController(BaseUIController):
         cmd = kwd.get('cmd', None)
 
         def make_web_app():
-            hgwebapp = hgwebdir(hgweb_config)
+            hgwebapp = hgwebdir(hgweb_config.encode('utf-8'))
             return hgwebapp
         wsgi_app = wsgiapplication(make_web_app)
         if cmd == 'getbundle':

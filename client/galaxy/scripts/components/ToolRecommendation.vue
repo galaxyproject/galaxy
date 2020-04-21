@@ -1,6 +1,6 @@
 <template>
-    <div id="tool-recommendation" class="tool-recommendation-view">
-        <div v-if="!deprecated" class="infomessagelarge">
+    <div>
+        <div v-if="!deprecated && showMessage" class="infomessagelarge">
             <h4>Tool recommendation</h4>
             You have used {{ getToolId }} tool. For further analysis, you could try using the following/recommended
             tools. The recommended tools are shown in the decreasing order of their scores predicted using machine
@@ -8,14 +8,17 @@
             tool than a tool with a lower score. Please click on one of the following/recommended tools to open its
             definition.
         </div>
-        <div v-else class="warningmessagelarge">You have used {{ getToolId }} tool. {{ deprecatedMessage }}</div>
+        <div v-else-if="deprecated" class="warningmessagelarge">
+            You have used {{ getToolId }} tool. {{ deprecatedMessage }}
+        </div>
+        <div id="tool-recommendation" class="tool-recommendation-view"></div>
     </div>
 </template>
 
 <script>
 import * as d3 from "d3";
 import { getAppRoot } from "onload/loadConfig";
-import axios from "axios";
+import { getDatatypeMapping, getToolPredictions } from "components/Workflow/Editor/services";
 
 export default {
     props: {
@@ -26,8 +29,9 @@ export default {
     },
     data() {
         return {
-            deprecated: null,
+            deprecated: false,
             deprecatedMessage: "",
+            showMessage: false,
         };
     },
     created() {
@@ -46,86 +50,75 @@ export default {
     methods: {
         loadRecommendations() {
             const toolId = this.getToolId;
-            const url = `${getAppRoot()}api/workflows/get_tool_predictions`;
-            axios
-                .post(url, {
-                    tool_sequence: toolId,
-                })
-                .then((response) => {
-                    axios.get(`${getAppRoot()}api/datatypes/mapping`).then((responseMapping) => {
-                        const predData = response.data.predicted_data;
-                        const datatypesMapping = responseMapping.data;
-                        const extToType = datatypesMapping.ext_to_class_name;
-                        const typeToType = datatypesMapping.class_to_classes;
-                        this.deprecated = predData.is_deprecated;
-
-                        if (response.data !== null && predData.children.length > 0) {
-                            const filteredData = {};
-                            const compatibleTools = {};
-                            const filteredChildren = [];
-                            const outputDatatypes = predData.o_extensions;
-                            const children = predData.children;
-                            for (const nameObj of children.entries()) {
-                                const inputDatatypes = nameObj[1].i_extensions;
-                                for (const out_t of outputDatatypes.entries()) {
-                                    for (const in_t of inputDatatypes.entries()) {
-                                        const child = extToType[out_t[1]];
-                                        const parent = extToType[in_t[1]];
-                                        if (
-                                            (typeToType[child] && parent in typeToType[child]) === true ||
-                                            out_t[1] === "input" ||
-                                            out_t[1] === "_sniff_" ||
-                                            out_t[1] === "input_collection"
-                                        ) {
-                                            compatibleTools[nameObj[1].tool_id] = nameObj[1].name;
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-                            for (const id in compatibleTools) {
-                                for (const nameObj of children.entries()) {
-                                    if (nameObj[1].tool_id === id) {
-                                        filteredChildren.push(nameObj[1]);
+            const requestData = {
+                tool_sequence: toolId,
+            };
+            getToolPredictions(requestData).then((responsePred) => {
+                getDatatypeMapping().then((datatypesMapping) => {
+                    const predData = responsePred.predicted_data;
+                    const extToType = datatypesMapping.ext_to_class_name;
+                    const typeToType = datatypesMapping.class_to_classes;
+                    this.deprecated = predData.is_deprecated;
+                    this.deprecatedMessage = predData.message;
+                    if (responsePred !== null && predData.children.length > 0) {
+                        const filteredData = {};
+                        const compatibleTools = {};
+                        const filteredChildren = [];
+                        const outputDatatypes = predData.o_extensions;
+                        const children = predData.children;
+                        for (const nameObj of children.entries()) {
+                            const inputDatatypes = nameObj[1].i_extensions;
+                            for (const outT of outputDatatypes.entries()) {
+                                for (const inTool of inputDatatypes.entries()) {
+                                    const child = extToType[outT[1]];
+                                    const parent = extToType[inTool[1]];
+                                    if (
+                                        (typeToType[child] && parent in typeToType[child]) === true ||
+                                        outT[1] === "input" ||
+                                        outT[1] === "_sniff_" ||
+                                        outT[1] === "input_collection"
+                                    ) {
+                                        compatibleTools[nameObj[1].tool_id] = nameObj[1].name;
                                         break;
                                     }
                                 }
                             }
-                            filteredData.o_extensions = predData.o_extensions;
-                            filteredData.name = predData.name;
-                            filteredData.children = filteredChildren;
-                            if (filteredChildren.length > 0 && this.deprecated === false) {
-                                this.renderD3Tree(filteredData);
-                            } else if (this.deprecated === true) {
-                                this.deprecatedMessage = predData.message;
+                        }
+                        for (const id in compatibleTools) {
+                            for (const nameObj of children.entries()) {
+                                if (nameObj[1].tool_id === id) {
+                                    filteredChildren.push(nameObj[1]);
+                                    break;
+                                }
                             }
                         }
-                    });
+                        filteredData.o_extensions = predData.o_extensions;
+                        filteredData.name = predData.name;
+                        filteredData.children = filteredChildren;
+                        if (filteredChildren.length > 0 && this.deprecated === false) {
+                            this.showMessage = true;
+                            this.renderD3Tree(filteredData);
+                        }
+                    }
                 });
+            });
         },
         renderD3Tree(predictedTools) {
-            const duration = 750;
-            const svg = d3.select("#tool-recommendation").append("svg").attr("class", "tree-size").append("g");
             let i = 0;
             let root = null;
-            let x = 0;
-            let y = 0;
-            let translateX = 0;
-
+            const duration = 750;
+            const maxTextLength = 20;
+            const svg = d3.select("#tool-recommendation").append("svg").attr("class", "tree-size").append("g");
             const gElem = svg[0][0];
             const svgElem = gElem.parentNode;
             const clientH = svgElem.clientHeight;
             const clientW = svgElem.clientWidth;
-            y = parseInt(clientH * 0.9);
-            x = parseInt(clientW * 0.6);
-            translateX = parseInt(clientW * 0.15);
+            const translateX = parseInt(clientW * 0.15);
 
-            svgElem.setAttribute("viewBox", "0 0 " + x + " " + clientH);
-            svgElem.setAttribute("preserveAspectRatio", "xMinYMin");
-            gElem.setAttribute("transform", "translate(" + translateX + ", 5)");
+            svgElem.setAttribute("viewBox", -translateX + " 0 " + 0.5 * clientW + " " + clientH);
+            svgElem.setAttribute("preserveAspectRatio", "xMidYMid meet");
 
-            const tree = d3.layout.tree().size([y, x]);
-
+            const tree = d3.layout.tree().size([clientH, clientW]);
             const diagonal = d3.svg.diagonal().projection((d) => {
                 return [d.y, d.x];
             });
@@ -135,9 +128,9 @@ export default {
                 const links = tree.links(nodes);
                 // Normalize for fixed-depth.
                 nodes.forEach((d) => {
-                    d.y = d.depth * 180;
+                    d.y = d.depth * (clientW / 10);
                 });
-                // Update the nodes…
+                // Update the nodes
                 const node = svg.selectAll("g.node").data(nodes, (d) => {
                     return d.id || (d.id = ++i);
                 });
@@ -161,11 +154,14 @@ export default {
                         return d.children || d._children ? "end" : "start";
                     })
                     .text((d) => {
+                        const tName = d.name;
+                        if (tName.length > maxTextLength) {
+                            return tName.slice(0, maxTextLength) + "...";
+                        }
                         return d.name;
-                    })
-                    .attr("class", "node-enter");
+                    });
                 nodeEnter.append("title").text((d) => {
-                    return d.children || d._children ? "Click to collapse" : "Click to open tool definition";
+                    return d.children || d._children ? d.name : "Open tool - " + d.name;
                 });
                 // Transition nodes to their new position.
                 const nodeUpdate = node
@@ -174,19 +170,15 @@ export default {
                     .attr("transform", (d) => {
                         return "translate(" + d.y + "," + d.x + ")";
                     });
-                nodeUpdate.select("circle").attr("r", 4.5);
-                nodeUpdate.select("text").attr("class", "node-update");
+                nodeUpdate.select("circle").attr("r", 2.5);
                 // Transition exiting nodes to the parent's new position.
-                const nodeExit = node
-                    .exit()
+                node.exit()
                     .transition()
                     .duration(duration)
                     .attr("transform", (d) => {
                         return "translate(" + source.y + "," + source.x + ")";
                     })
                     .remove();
-                nodeExit.select("circle").attr("r", 1e-6);
-                nodeExit.select("text").attr("class", "node-enter");
                 // Update the links
                 const link = svg.selectAll("path.link").data(links, (d) => {
                     return d.target.id;
@@ -239,7 +231,7 @@ export default {
                 }
             };
             root = predictedTools;
-            root.x0 = y / 2;
+            root.x0 = parseInt(clientH / 2);
             root.y0 = 0;
             root.children.forEach(collapse);
             update(root);

@@ -116,9 +116,9 @@ class PSAAuthnz(IdentityProvider):
 
         # Secondary AuthZ with Google identities is currently supported
         if provider != "google":
-            if "SOCIAL_AUTH_SECONDARY_AUTH_PROVIDER" in self.config:
+            if 'SOCIAL_AUTH_SECONDARY_AUTH_PROVIDER' in self.config:
                 del self.config["SOCIAL_AUTH_SECONDARY_AUTH_PROVIDER"]
-            if "SOCIAL_AUTH_SECONDARY_AUTH_ENDPOINT" in self.config:
+            if 'SOCIAL_AUTH_SECONDARY_AUTH_ENDPOINT' in self.config:
                 del self.config["SOCIAL_AUTH_SECONDARY_AUTH_ENDPOINT"]
 
     def _setup_idp(self, oidc_backend_config):

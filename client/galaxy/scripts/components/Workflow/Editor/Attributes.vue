@@ -68,15 +68,19 @@ export default {
         },
         annotation: {
             type: String,
+            default: "",
         },
         version: {
             type: Number,
+            default: null,
         },
         versions: {
             type: Array,
+            default: null,
         },
         parameters: {
             type: Array,
+            default: null,
         },
     },
     data() {
