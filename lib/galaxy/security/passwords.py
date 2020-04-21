@@ -1,12 +1,6 @@
 import hashlib
-import hmac
 from base64 import b64encode
-from itertools import starmap
-from operator import xor
 from os import urandom
-from struct import Struct
-
-import six
 
 from galaxy.util import (
     safe_str_cmp,
