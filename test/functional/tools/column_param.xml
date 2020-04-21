@@ -11,7 +11,7 @@ echo "col_names $col_names" >> '$output2'
   </inputs>
   <outputs>
     <data name="output1" format="tabular" />
-    <data name="output2" format="tabular" />
+    <data name="output2" format="txt" />
   </outputs>
   <tests>
     <test>

@@ -2561,7 +2561,7 @@ Set to ``false`` to not force user to select an option in the list.</xs:document
         <xs:attribute name="use_header_names" type="PermissiveBoolean">
           <xs:annotation>
             <xs:documentation xml:lang="en">Used only if the ``type`` attribute
-value is ``data_column``, if ``true`` Galaxy assumes first row of ``data_ref``
+value is ``data_column``. If ``true``, Galaxy assumes the first row of ``data_ref``
 is a header and builds the select list with these values rather than the more
 generic ``c1`` ... ``cN`` (i.e. it will be ``c1: head1`` ... ``cN: headN``).
 Note that the content of the Cheetah variable is still
