@@ -62,9 +62,6 @@ def check_password_PBKDF2(guess, hashed):
     return safe_str_cmp(encoded_original, encoded_guess)
 
 
-# Inspiration taken from https://github.com/pallets/werkzeug/blob/master/src/werkzeug/security.py
-# (which itself was based on the previous version of the code here, from python-pbkdf2)
-
 def pbkdf2_bin(data, salt, iterations=1000, keylen=24, hashfunc=None):
     """Returns a binary digest for the PBKDF2 hash algorithm of `data`
     with the given `salt`.  It iterates `iterations` time and produces a
