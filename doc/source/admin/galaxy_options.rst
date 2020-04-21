@@ -1376,6 +1376,18 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~
+``aws_estimate``
+~~~~~~~~~~~~~~~~
+
+:Description:
+    This flag enables an AWS cost estimate for every job based on their runtime matrices.
+    CPU, RAM and runtime usage is mapped against AWS pricing table.
+    Please note, that those numbers are only estimates.
+:Default: ``false``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``interactivetools_proxy_host``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

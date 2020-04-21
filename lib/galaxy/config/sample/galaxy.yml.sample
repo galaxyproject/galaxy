@@ -761,6 +761,9 @@ galaxy:
   # Enable InteractiveTools.
   #interactivetools_enable: false
 
+  # Enable AWS estimate.
+  #aws_estimate: false
+
   # Proxy host - assumed to just be hosted on the same hostname and port
   # as Galaxy by default.
   #interactivetools_proxy_host: null
