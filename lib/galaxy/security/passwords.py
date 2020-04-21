@@ -56,7 +56,7 @@ def check_password_PBKDF2(guess, hashed):
     return safe_str_cmp(encoded_original, encoded_guess)
 
 
-def pbkdf2_bin(data, salt, iterations=1000, keylen=24, hashfunc=None):
+def pbkdf2_bin(data, salt, iterations=COST_FACTOR, keylen=24, hashfunc=None):
     """Returns a binary digest for the PBKDF2 hash algorithm of `data`
     with the given `salt`.  It iterates `iterations` time and produces a
     key of `keylen` bytes.  By default SHA-256 is used as hash function,
