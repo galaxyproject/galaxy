@@ -11,7 +11,7 @@ from galaxy.util import (
 SALT_LENGTH = 12
 KEY_LENGTH = 24
 HASH_FUNCTION = 'sha256'
-COST_FACTOR = 10000
+COST_FACTOR = 100000
 
 
 def hash_password(password):
