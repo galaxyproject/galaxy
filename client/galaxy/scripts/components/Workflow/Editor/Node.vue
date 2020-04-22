@@ -77,6 +77,7 @@ import { getGalaxyInstance } from "app";
 import WorkflowRecommendations from "components/Workflow/Editor/Recommendations";
 import NodeInput from "./NodeInput";
 import NodeOutput from "./NodeOutput";
+import { ActiveOutputs } from "./model";
 
 Vue.use(BootstrapVue);
 
@@ -121,7 +122,6 @@ export default {
             outputs: [],
             inputTerminals: {},
             outputTerminals: {},
-            workflowOutputs: [],
             errors: null,
             label: null,
             config_form: {},
@@ -129,9 +129,9 @@ export default {
         };
     },
     mounted() {
+        this.activeOutputs = new ActiveOutputs();
         this.manager = this.getManager();
         this.element = this.f;
-        this.workflow_outputs = [];
     },
     computed: {
         hasInputs() {
@@ -206,7 +206,7 @@ export default {
             return this;
         },
         setData(data) {
-            this.type = data.type;
+            this.type = data.type || this.type;
             this.name = data.name;
             this.config_form = data.config_form;
             this.tool_state = data.tool_state;
@@ -216,7 +216,7 @@ export default {
             this.postJobActions = data.post_job_actions || {};
             this.label = data.label;
             this.uuid = data.uuid;
-            this.workflowOutputs = data.workflow_outputs || [];
+            this.activeOutputs.update(data.workflow_outputs);
             if (this.type === "tool" && this.config_form) {
                 this.tool_version = this.config_form.version;
                 this.content_id = this.config_form.id;
@@ -288,61 +288,31 @@ export default {
             });
 
             // removes output from list of workflow outputs
-            this.workflowOutputs.forEach((wf_output, i) => {
+            this.activeOutputs.getAll().forEach((wf_output, i) => {
                 if (!this.outputTerminals[wf_output.output_name]) {
-                    this.workflowOutputs.splice(i, 1);
+                    this.activeOutputs.remove(wf_output.output_name);
                 }
             });
 
             Vue.nextTick(() => {
-                this.workflow_outputs = this.workflowOutputs;
                 this.manager.node_changed(this);
                 this.redraw();
             });
         },
-        getWorkflowOutput(outputName) {
-            /*return _.findWhere(this.workflowOutputs, {
-                output_name: outputName,
-            });*/
-        },
-        isWorkflowOutput(outputName) {
-            return this.getWorkflowOutput(outputName) !== undefined;
-        },
-        removeWorkflowOutput(outputName) {
-            while (this.isWorkflowOutput(outputName)) {
-                //const target = this.getWorkflowOutput(outputName);
-                //this.workflowOutputs.splice(_.indexOf(this.workflowOutputs, target), 1);
-            }
-        },
-        addWorkflowOutput(outputName, label) {
-            if (!this.isWorkflowOutput(outputName)) {
-                var output = { output_name: outputName };
-                if (label) {
-                    output.label = label;
-                }
-                this.workflowOutputs.push(output);
-                return true;
-            }
-            return false;
-        },
-        markWorkflowOutput(outputName) {
-            //var callout = $(this.element).find(`.callout-terminal.${outputName.replace(/(?=[()])/g, "\\")}`);
-            //callout.find("icon").addClass("mark-terminal-active");
-        },
         labelWorkflowOutput(outputName, label) {
             var changed = false;
             var oldLabel = null;
-            if (this.isWorkflowOutput(outputName)) {
-                var workflowOutput = this.getWorkflowOutput(outputName);
+            if (this.activeOutputs.get(outputName)) {
+                var workflowOutput = this.activeOutputs.get(outputName);
                 oldLabel = workflowOutput.label;
                 workflowOutput.label = label;
                 changed = oldLabel != label;
             } else {
-                changed = this.addWorkflowOutput(outputName, label);
+                changed = this.activeOutputs.add(outputName, label);
             }
             if (changed) {
-                this.app.updateOutputLabel(oldLabel, label);
-                this.markChanged();
+                this.manager.updateOutputLabel(oldLabel, label);
+                this.manager.node_changed(this);
             }
             return changed;
         },
@@ -495,7 +465,6 @@ export default {
             this.post_job_actions = data.post_job_actions ? data.post_job_actions : {};
             this.label = data.label;
             this.uuid = data.uuid;
-            this.workflow_outputs = data.workflow_outputs ? data.workflow_outputs : [];
             if (this.type === "tool" && this.config_form) {
                 this.tool_version = this.config_form.version;
                 this.content_id = this.config_form.id;

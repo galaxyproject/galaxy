@@ -1,7 +1,7 @@
 <template>
     <div class="form-row dataRow output-data-row">
         <div v-if="showCallout" :class="['callout-terminal', output.name]" @click="onToggle">
-            <i :class="['mark-terminal', activeClass]" />
+            <i :class="['mark-terminal', activeClass && 'mark-terminal-active']" />
         </div>
         {{ label }}
         <div ref="terminal" class="terminal output-terminal" />
@@ -27,14 +27,12 @@ export default {
             required: true,
         },
     },
+    data() {
+        return {
+            activeClass: false,
+        };
+    },
     computed: {
-        activeClass() {
-            const node = this.getNode();
-            if (node.isWorkflowOutput(this.output.name)) {
-                return "mark-terminal-active";
-            }
-            return "";
-        },
         label() {
             return this.output.label || this.output.name;
         },
@@ -77,16 +75,22 @@ export default {
             el: this.$refs.terminal,
             terminal: this.terminal,
         });
+        const node = this.getNode();
+        if (node.activeOutputs.exists(this.output.name)) {
+            this.activeClass = true;
+        }
     },
     methods: {
         onToggle() {
             const node = this.getNode();
             const manager = this.getManager();
             const outputName = this.output.name;
-            if (node.isWorkflowOutput(outputName)) {
-                node.removeWorkflowOutput(outputName);
+            if (node.activeOutputs.exists(outputName)) {
+                node.activeOutputs.remove(outputName);
+                this.activeClass = false;
             } else {
-                node.addWorkflowOutput(outputName);
+                node.activeOutputs.add(outputName);
+                this.activeClass = true;
             }
             manager.has_changes = true;
         },

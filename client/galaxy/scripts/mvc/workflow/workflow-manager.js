@@ -52,8 +52,7 @@ class Workflow extends EventEmitter {
         Vue.nextTick(() => {
             node.update_field_data(data);
             Object.values(node.outputTerminals).forEach((ot) => {
-                node.addWorkflowOutput(ot.name);
-                node.markWorkflowOutput(ot.name);
+                node.activeOutputs.add(ot.name);
             });
             this.activate_node(node);
         });
@@ -211,7 +210,7 @@ class Workflow extends EventEmitter {
         var using_workflow_outputs = false;
         var has_existing_pjas = false;
         Object.values(this.nodes).forEach((node) => {
-            if (node.type === "tool" && node.workflow_outputs && node.workflow_outputs.length > 0) {
+            if (node.type === "tool" && node.activeOutputs.count() > 0) {
                 using_workflow_outputs = true;
             }
             Object.values(node.post_job_actions).forEach((pja) => {
@@ -242,7 +241,7 @@ class Workflow extends EventEmitter {
                 }
                 if (using_workflow_outputs) {
                     Object.values(node.outputTerminals).forEach((ot) => {
-                        var create_pja = !node.isWorkflowOutput(ot.name);
+                        var create_pja = !node.activeOutputs.exists(ot.name);
                         if (create_pja === true) {
                             node_changed = true;
                             var pja = {
@@ -298,10 +297,6 @@ class Workflow extends EventEmitter {
                     post_job_actions[act.action_type + act.output_name] = pja;
                 });
             }
-            if (!node.workflow_outputs) {
-                node.workflow_outputs = [];
-                // Just in case.
-            }
             var node_data = {
                 id: node.id,
                 type: node.type,
@@ -315,7 +310,7 @@ class Workflow extends EventEmitter {
                 post_job_actions: node.post_job_actions,
                 uuid: node.uuid,
                 label: node.label,
-                workflow_outputs: node.workflow_outputs,
+                workflow_outputs: node.activeOutputs.getAll(),
             };
             nodes[node.id] = node_data;
         });
@@ -360,7 +355,7 @@ class Workflow extends EventEmitter {
                 // For older workflows, it's possible to have HideDataset PJAs, but not WorkflowOutputs.
                 // Check for either, and then add outputs in the next pass.
                 if (!using_workflow_outputs) {
-                    if (node.workflow_outputs.length > 0) {
+                    if (node.activeOutputs.count() > 0) {
                         using_workflow_outputs = true;
                     } else {
                         Object.values(node.post_job_actions).forEach((pja) => {
@@ -394,8 +389,7 @@ class Workflow extends EventEmitter {
                     // Ensure that every output terminal has a WorkflowOutput or HideDatasetAction.
                     Object.values(node.outputTerminals).forEach((ot) => {
                         if (node.post_job_actions[`HideDatasetAction${ot.name}`] === undefined) {
-                            node.addWorkflowOutput(ot.name);
-                            node.markWorkflowOutput(ot.name);
+                            node.activeOutputs.add(ot.name);
                             wf.has_changes = true;
                         }
                     });
@@ -516,7 +510,10 @@ class Workflow extends EventEmitter {
         node_ids_by_level.forEach((ids) => {
             // We keep nodes in the same order in a level to give the user
             // some control over ordering
-            ids.sort((a, b) => all_nodes[a].element.getBoundingClientRect().top - all_nodes[b].element.getBoundingClientRect().top);
+            ids.sort(
+                (a, b) =>
+                    all_nodes[a].element.getBoundingClientRect().top - all_nodes[b].element.getBoundingClientRect().top
+            );
             // Position each node
             var max_width = 0;
             var top = v_pad;

@@ -229,7 +229,7 @@ function _makeSection(self, output_id, label, node) {
         0: "Leave unchanged",
         1: "__empty__",
     });
-    var output;
+    const output = node.activeOutputs.get(output_id);
     var input_config = {
         title: `Configure Output: '${label}'`,
         type: "section",
@@ -238,7 +238,7 @@ function _makeSection(self, output_id, label, node) {
             {
                 label: "Label",
                 type: "text",
-                value: ((output = node.getWorkflowOutput(output_id)) && output.label) || "",
+                value: output && output.label || "",
                 help: "This will provide a short name to describe the output - this must be unique across workflows.",
                 onchange: function (new_value) {
                     workflow.attemptUpdateOutputLabel(node, output_id, new_value);
