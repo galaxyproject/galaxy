@@ -3845,11 +3845,11 @@
     from workflow_resource_params_file). If this this is a function
     reference it will be passed various inputs (workflow model object
     and user) and it should produce a list of input IDs. If it is a
-    path it is expected to an XML or YAML file describing how to map
-    group names to parameter descriptions (additional types of
+    path it is expected to be an XML or YAML file describing how to
+    map group names to parameter descriptions (additional types of
     mappings via these files could be implemented but haven't yet -
     for instance using workflow tags to do the mapping).
-:Default: ``config/workflow_resource_mapper_conf.yml``
+:Default: ``None``
 :Type: str
 
 

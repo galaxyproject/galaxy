@@ -494,14 +494,9 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         # you want yours tools to be broken in the future.
         self.enable_beta_tool_formats = string_as_bool(kwargs.get('enable_beta_tool_formats', 'False'))
 
-        workflow_resource_params_mapper = kwargs.get("workflow_resource_params_mapper")
-        if not workflow_resource_params_mapper:
-            workflow_resource_params_mapper = None
-        elif ":" not in workflow_resource_params_mapper:
-            # Assume it is not a Python function, so a file
-            workflow_resource_params_mapper = self._in_root_dir(workflow_resource_params_mapper)
-        # else: a Python a function!
-        self.workflow_resource_params_mapper = workflow_resource_params_mapper
+        if self.workflow_resource_params_mapper and ':' not in self.workflow_resource_params_mapper:
+            # Assume it is not a Python function, so a file; else: a Python function
+            self.workflow_resource_params_mapper = self._in_root_dir(self.workflow_resource_params_mapper)
 
         self.pbs_application_server = kwargs.get('pbs_application_server', "")
         self.pbs_dataset_server = kwargs.get('pbs_dataset_server', "")
