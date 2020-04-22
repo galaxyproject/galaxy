@@ -6,18 +6,9 @@ import pytest
 
 from galaxy import config
 from galaxy.util import listify
+from galaxy.web.formatting import expand_pretty_datetime_format
 
 TestData = namedtuple('TestData', ('key', 'expected', 'loaded'))
-
-# TODO: all these will be fixed
-DO_NOT_TEST = [
-    'database_connection',
-    'pretty_datetime_format',
-    'heartbeat_log',
-    'ftp_upload_dir_template',
-    'workflow_resource_params_mapper',
-    'amqp_internal_connection',
-]
 
 
 def listify_strip(value):
@@ -26,33 +17,39 @@ def listify_strip(value):
 
 class ExpectedValues:
 
-    RESOLVERS = {
-        'disable_library_comptypes': [''],  # TODO: we can do better
-        'mulled_channels': listify_strip,
-        'object_store_store_by': 'uuid',
-        'password_expiration_period': timedelta,
-        'persistent_communication_rooms': listify_strip,
-        'statsd_host': '',  # TODO: do we need '' as the default?
-        'tool_config_file': listify_strip,
-        'tool_data_table_config_path': listify_strip,
-        'tool_filters': listify_strip,
-        'tool_label_filters': listify_strip,
-        'tool_section_filters': listify_strip,
-        'toolbox_filter_base_modules': listify_strip,
-        'use_remote_user': None,  # TODO: should be False (config logic incorrect)
-        'user_library_import_symlink_whitelist': listify_strip,
-        'user_tool_section_filters': listify_strip,
-        'user_tool_filters': listify_strip,
-        'user_tool_label_filters': listify_strip,
-    }
-    # RESOLVERS provides expected values for config options.
-    # - key: config option
-    # - value: expected value or a callable. The callable will be called with a
-    #   single argument, which is the default value of the config option.
-
     def __init__(self, config):
         self._config = config
+        self._load_resolvers()
         self._load_paths()
+
+    def _load_resolvers(self):
+        self._resolvers = {
+            'amqp_internal_connection': self.get_expected_amqp_internal_connection,
+            'database_connection': self.get_expected_database_connection,
+            'disable_library_comptypes': [''],  # TODO: we can do better
+            'ftp_upload_dir_template': self.get_expected_ftp_upload_dir_template,
+            'mulled_channels': listify_strip,
+            'object_store_store_by': 'uuid',
+            'password_expiration_period': timedelta,
+            'persistent_communication_rooms': listify_strip,
+            'pretty_datetime_format': expand_pretty_datetime_format,
+            'statsd_host': '',  # TODO: do we need '' as the default?
+            'tool_config_file': listify_strip,
+            'tool_data_table_config_path': listify_strip,
+            'tool_filters': listify_strip,
+            'tool_label_filters': listify_strip,
+            'tool_section_filters': listify_strip,
+            'toolbox_filter_base_modules': listify_strip,
+            'use_remote_user': None,  # TODO: should be False (config logic incorrect)
+            'user_library_import_symlink_whitelist': listify_strip,
+            'user_tool_filters': listify_strip,
+            'user_tool_label_filters': listify_strip,
+            'user_tool_section_filters': listify_strip,
+        }
+        # _resolvers provides expected values for config options.
+        # - key: config option
+        # - value: expected value or a callable. The callable will be called with a
+        #   single argument, which is the default value of the config option.
 
     def _load_paths(self):
         self._expected_paths = {
@@ -139,13 +136,22 @@ class ExpectedValues:
         if key in self._expected_paths:
             value = self._expected_paths[key]
         # 2. AFTER resolving paths, apply resolver, if one exists
-        if key in ExpectedValues.RESOLVERS:
-            resolver = ExpectedValues.RESOLVERS[key]
+        if key in self._resolvers:
+            resolver = self._resolvers[key]
             if callable(resolver):
                 value = resolver(value)
             else:
                 value = resolver
         return value
+
+    def get_expected_database_connection(self, value):
+        return 'sqlite:///{}/universe.sqlite?isolation_level=IMMEDIATE'.format(self._config.data_dir)
+
+    def get_expected_ftp_upload_dir_template(self, value):
+        return '${ftp_upload_dir}%s${ftp_upload_dir_identifier}' % os.path.sep
+
+    def get_expected_amqp_internal_connection(self, value):
+        return 'sqlalchemy+sqlite:///{}/control.sqlite?isolation_level=IMMEDIATE'.format(self._config.data_dir)
 
 
 @pytest.fixture
@@ -200,7 +206,7 @@ def get_config_data():
     config.GalaxyAppConfiguration._override_tempdir = lambda a, b: None  # method must be mocked
     configuration = config.GalaxyAppConfiguration()
     ev = ExpectedValues(configuration)
-    items = ((k, v) for k, v in configuration.schema.app_schema.items() if k not in DO_NOT_TEST)
+    items = ((k, v) for k, v in configuration.schema.app_schema.items())
     for key, data in items:
         expected = ev.get_value(key, data)
         loaded = getattr(configuration, key)

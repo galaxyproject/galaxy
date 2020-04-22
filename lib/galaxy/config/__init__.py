@@ -494,14 +494,9 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         # you want yours tools to be broken in the future.
         self.enable_beta_tool_formats = string_as_bool(kwargs.get('enable_beta_tool_formats', 'False'))
 
-        workflow_resource_params_mapper = kwargs.get("workflow_resource_params_mapper")
-        if not workflow_resource_params_mapper:
-            workflow_resource_params_mapper = None
-        elif ":" not in workflow_resource_params_mapper:
-            # Assume it is not a Python function, so a file
-            workflow_resource_params_mapper = self._in_root_dir(workflow_resource_params_mapper)
-        # else: a Python a function!
-        self.workflow_resource_params_mapper = workflow_resource_params_mapper
+        if self.workflow_resource_params_mapper and ':' not in self.workflow_resource_params_mapper:
+            # Assume it is not a Python function, so a file; else: a Python function
+            self.workflow_resource_params_mapper = self._in_root_dir(self.workflow_resource_params_mapper)
 
         self.pbs_application_server = kwargs.get('pbs_application_server', "")
         self.pbs_dataset_server = kwargs.get('pbs_dataset_server', "")
@@ -601,8 +596,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         # Heartbeat log file name override
         if self.global_conf is not None and 'heartbeat_log' in self.global_conf:
             self.heartbeat_log = self.global_conf['heartbeat_log']
-        if self.heartbeat_log is None:
-            self.heartbeat_log = 'heartbeat_{server_name}.log'
         # Determine which 'server:' this is
         self.server_name = 'main'
         for arg in sys.argv:

@@ -1381,9 +1381,10 @@
 ~~~~~~~~~~~~~~~~
 
 :Description:
-    This flag enables an AWS cost estimate for every job based on their runtime matrices.
-    CPU, RAM and runtime usage is mapped against AWS pricing table.
-    Please note, that those numbers are only estimates.
+    This flag enables an AWS cost estimate for every job based on
+    their runtime matrices. CPU, RAM and runtime usage is mapped
+    against AWS pricing table. Please note, that those numbers are
+    only estimates.
 :Default: ``false``
 :Type: bool
 
@@ -2329,8 +2330,7 @@
 :Description:
     Heartbeat log filename. Can accept the template variables
     {server_name} and {pid}
-    Sample default 'heartbeat_{server_name}.log'
-:Default: ``None``
+:Default: ``heartbeat_{server_name}.log``
 :Type: str
 
 
@@ -3848,11 +3848,13 @@
     from workflow_resource_params_file). If this this is a function
     reference it will be passed various inputs (workflow model object
     and user) and it should produce a list of input IDs. If it is a
-    path it is expected to an XML or YAML file describing how to map
-    group names to parameter descriptions (additional types of
+    path it is expected to be an XML or YAML file describing how to
+    map group names to parameter descriptions (additional types of
     mappings via these files could be implemented but haven't yet -
     for instance using workflow tags to do the mapping).
-:Default: ``config/workflow_resource_mapper_conf.yml``
+    Sample default path
+    'config/workflow_resource_mapper_conf.yml.sample'
+:Default: ``None``
 :Type: str
 
 
