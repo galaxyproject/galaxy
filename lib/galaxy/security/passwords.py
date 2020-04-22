@@ -63,7 +63,7 @@ def pbkdf2_bin(data, salt, iterations=COST_FACTOR, keylen=24, hashfunc=None):
     a different hashlib `hashfunc` can be provided.
     """
     hashfunc = hashfunc or HASH_FUNCTION
-    data = bytes(smart_str(data))
-    salt = bytes(smart_str(salt))
+    data = smart_str(data)
+    salt = smart_str(salt)
 
     return hashlib.pbkdf2_hmac(hashfunc, data, salt, iterations, keylen)
