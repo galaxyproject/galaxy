@@ -69,7 +69,7 @@ function stagePlugins() {
 
 function buildPlugins(callback) {
     /*
-     * Walk plugin build glob and attempt to build anything with a package.json
+     * Walk plugin_build_dirs glob and attempt to build modules.
      * */
 
     paths.plugin_build_dirs.map((build_dir) => {
@@ -77,7 +77,6 @@ function buildPlugins(callback) {
             files.map((file) => {
                 let skip_build = false;
                 const f = path.join(process.cwd(), file).slice(0, -12);
-
                 const plugin_name = path.dirname(file).split(path.sep).pop();
                 const hash_file_path = path.join(f, "static", "plugin_build_hash.txt");
 
@@ -92,15 +91,15 @@ function buildPlugins(callback) {
                 }
 
                 if (skip_build) {
-                    console.log("No changes detected for", plugin_name);
+                    console.log(`No changes detected for ${plugin_name}`);
                 } else {
-                    console.log("Installing Dependencies for", plugin_name);
+                    console.log(`Installing Dependencies for ${plugin_name}`);
                     spawn("yarn", ["install", "--production=false", "--network-timeout=300000", "--check-files"], {
                         cwd: f,
                         stdio: "inherit",
                         shell: true,
                     });
-                    console.log("Building ", plugin_name);
+                    console.log(`Building ${plugin_name}`);
                     spawn("yarn", ["build"], { cwd: f, stdio: "inherit", shell: true });
                     spawn("bash", ["-c", `"(git rev-parse HEAD 2>/dev/null || echo \`\`) > ${hash_file_path} "`], {
                         shell: true,
