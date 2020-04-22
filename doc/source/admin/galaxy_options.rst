@@ -1381,7 +1381,10 @@
 ~~~~~~~~~~~~~~~~
 
 :Description:
-    Enable AWS estimate.
+    This flag enables an AWS cost estimate for every job based on
+    their runtime matrices. CPU, RAM and runtime usage is mapped
+    against AWS pricing table. Please note, that those numbers are
+    only estimates.
 :Default: ``false``
 :Type: bool
 
@@ -3849,6 +3852,7 @@
     map group names to parameter descriptions (additional types of
     mappings via these files could be implemented but haven't yet -
     for instance using workflow tags to do the mapping).
+    Sample default path 'config/workflow_resource_mapper_conf.yml'
 :Default: ``None``
 :Type: str
 

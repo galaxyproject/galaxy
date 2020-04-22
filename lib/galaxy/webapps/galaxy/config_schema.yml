@@ -1031,7 +1031,9 @@ mapping:
         default: false
         required: false
         desc: |
-          Enable AWS estimate.
+          This flag enables an AWS cost estimate for every job based on their runtime matrices.
+          CPU, RAM and runtime usage is mapped against AWS pricing table.
+          Please note, that those numbers are only estimates.
 
       interactivetools_proxy_host:
         type: str
@@ -2848,6 +2850,8 @@ mapping:
           it is expected to be an XML or YAML file describing how to map group names to parameter
           descriptions (additional types of mappings via these files could be implemented but
           haven't yet - for instance using workflow tags to do the mapping).
+
+          Sample default path 'config/workflow_resource_mapper_conf.yml'
 
       workflow_schedulers_config_file:
         type: str
