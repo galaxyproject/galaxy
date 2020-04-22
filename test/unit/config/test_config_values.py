@@ -10,11 +10,6 @@ from galaxy.web.formatting import expand_pretty_datetime_format
 
 TestData = namedtuple('TestData', ('key', 'expected', 'loaded'))
 
-# TODO: all these will be fixed
-DO_NOT_TEST = [
-    'amqp_internal_connection',
-]
-
 
 def listify_strip(value):
     return listify(value, do_strip=True)
@@ -29,6 +24,7 @@ class ExpectedValues:
 
     def _load_resolvers(self):
         self._resolvers = {
+            'amqp_internal_connection': self.get_expected_amqp_internal_connection,
             'database_connection': self.get_expected_database_connection,
             'disable_library_comptypes': [''],  # TODO: we can do better
             'ftp_upload_dir_template': self.get_expected_ftp_upload_dir_template,
@@ -154,6 +150,9 @@ class ExpectedValues:
     def get_expected_ftp_upload_dir_template(self, value):
         return '${ftp_upload_dir}%s${ftp_upload_dir_identifier}' % os.path.sep
 
+    def get_expected_amqp_internal_connection(self, value):
+        return 'sqlalchemy+sqlite:///{}/control.sqlite?isolation_level=IMMEDIATE'.format(self._config.data_dir)
+
 
 @pytest.fixture
 def mock_config_file(monkeypatch):
@@ -207,7 +206,7 @@ def get_config_data():
     config.GalaxyAppConfiguration._override_tempdir = lambda a, b: None  # method must be mocked
     configuration = config.GalaxyAppConfiguration()
     ev = ExpectedValues(configuration)
-    items = ((k, v) for k, v in configuration.schema.app_schema.items() if k not in DO_NOT_TEST)
+    items = ((k, v) for k, v in configuration.schema.app_schema.items())
     for key, data in items:
         expected = ev.get_value(key, data)
         loaded = getattr(configuration, key)
