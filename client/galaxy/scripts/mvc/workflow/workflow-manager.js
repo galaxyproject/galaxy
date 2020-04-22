@@ -116,8 +116,8 @@ class Workflow extends EventEmitter {
     }
     add_node(node) {
         node.id = this.id_counter;
-        node.element.attr("id", `wf-node-step-${node.id}`);
-        node.element.attr("node-label", node.label);
+        node.element.setAttribute("id", `wf-node-step-${node.id}`);
+        node.element.setAttribute("node-label", node.label);
         this.id_counter++;
         this.nodes[node.id] = node;
         this.has_changes = true;
@@ -310,7 +310,7 @@ class Workflow extends EventEmitter {
                 tool_state: node.tool_state,
                 errors: node.errors,
                 input_connections: input_connections,
-                position: $(node.element).position(),
+                position: node.element.getBoundingClientRect(),
                 annotation: node.annotation,
                 post_job_actions: node.post_job_actions,
                 uuid: node.uuid,
@@ -349,14 +349,12 @@ class Workflow extends EventEmitter {
             node.init_field_data(step);
             Vue.nextTick(() => {
                 if (step.position) {
-                    node.element.css({
-                        top: step.position.top,
-                        left: step.position.left,
-                    });
+                    node.element.style.top = step.position.top + "px";
+                    node.element.style.left = step.position.left + "px";
                 }
                 node.id = parseInt(step.id) + offset;
-                node.element.attr("id", `wf-node-step-${node.id}`);
-                node.element.attr("node-label", step.label);
+                node.element.setAttribute("id", `wf-node-step-${node.id}`);
+                node.element.setAttribute("node-label", step.label);
                 wf.nodes[node.id] = node;
                 max_id = Math.max(max_id, parseInt(id) + offset);
                 // For older workflows, it's possible to have HideDataset PJAs, but not WorkflowOutputs.
@@ -518,7 +516,7 @@ class Workflow extends EventEmitter {
         node_ids_by_level.forEach((ids) => {
             // We keep nodes in the same order in a level to give the user
             // some control over ordering
-            ids.sort((a, b) => $(all_nodes[a].element).position().top - $(all_nodes[b].element).position().top);
+            ids.sort((a, b) => all_nodes[a].element.getBoundingClientRect().top - all_nodes[b].element.getBoundingClientRect().top);
             // Position each node
             var max_width = 0;
             var top = v_pad;

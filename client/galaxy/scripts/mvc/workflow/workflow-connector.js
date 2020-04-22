@@ -74,14 +74,10 @@ class Connector {
         if (this.dragging) {
             this.canvas.style.zIndex = zIndex;
         }
-        this.canvas.setAttribute(
-            "handle1-id",
-            handle1 && handle1.element.getAttribute ? handle1.element.getAttribute("id") : ""
-        );
-        this.canvas.setAttribute(
-            "handle2-id",
-            handle2 && handle2.element.getAttribute ? handle2.element.getAttribute("id") : ""
-        );
+        const handle1Id = handle1 && handle1.element.getAttribute ? handle1.element.getAttribute("id") : "";
+        this.canvas.setAttribute("handle1-id", handle1Id);
+        const handle2Id = handle2 && handle2.element.getAttribute ? handle2.element.getAttribute("id") : "";
+        this.canvas.setAttribute("handle2-id", handle2Id);
         const relativeLeft = (e) => ($(e).offset().left - canvas_container.offset().left) / canvasZoom;
         const relativeTop = (e) => ($(e).offset().top - canvas_container.offset().top) / canvasZoom;
         if (!handle1 || !handle2) {

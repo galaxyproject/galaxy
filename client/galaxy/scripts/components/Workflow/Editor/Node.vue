@@ -130,7 +130,7 @@ export default {
     },
     mounted() {
         this.manager = this.getManager();
-        this.element = $(this.f);
+        this.element = this.f;
         this.workflow_outputs = [];
     },
     computed: {
@@ -476,7 +476,7 @@ export default {
         make_inactive() {
             // Keep inactive nodes stacked from most to least recently active
             // by moving element to the end of parent's node list
-            var element = this.element.get(0);
+            var element = this.element;
             ((p) => {
                 p.removeChild(element);
                 p.appendChild(element);
