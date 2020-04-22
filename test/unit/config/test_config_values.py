@@ -12,7 +12,6 @@ TestData = namedtuple('TestData', ('key', 'expected', 'loaded'))
 
 # TODO: all these will be fixed
 DO_NOT_TEST = [
-    'ftp_upload_dir_template',
     'workflow_resource_params_mapper',
     'amqp_internal_connection',
 ]
@@ -33,6 +32,7 @@ class ExpectedValues:
         self._resolvers = {
             'database_connection': self.get_expected_database_connection,
             'disable_library_comptypes': [''],  # TODO: we can do better
+            'ftp_upload_dir_template': self.get_expected_ftp_upload_dir_template,
             'mulled_channels': listify_strip,
             'object_store_store_by': 'uuid',
             'password_expiration_period': timedelta,
@@ -151,6 +151,9 @@ class ExpectedValues:
 
     def get_expected_database_connection(self, value):
         return 'sqlite:///{}/universe.sqlite?isolation_level=IMMEDIATE'.format(self._config.data_dir)
+
+    def get_expected_ftp_upload_dir_template(self, value):
+        return '${ftp_upload_dir}%s${ftp_upload_dir_identifier}' % os.path.sep
 
 
 @pytest.fixture
