@@ -2851,7 +2851,7 @@ mapping:
           descriptions (additional types of mappings via these files could be implemented but
           haven't yet - for instance using workflow tags to do the mapping).
 
-          Sample default path 'config/workflow_resource_mapper_conf.yml'
+          Sample default path 'config/workflow_resource_mapper_conf.yml.sample'
 
       workflow_schedulers_config_file:
         type: str
