@@ -601,8 +601,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         # Heartbeat log file name override
         if self.global_conf is not None and 'heartbeat_log' in self.global_conf:
             self.heartbeat_log = self.global_conf['heartbeat_log']
-        if self.heartbeat_log is None:
-            self.heartbeat_log = 'heartbeat_{server_name}.log'
         # Determine which 'server:' this is
         self.server_name = 'main'
         for arg in sys.argv:

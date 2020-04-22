@@ -1381,9 +1381,7 @@
 ~~~~~~~~~~~~~~~~
 
 :Description:
-    This flag enables an AWS cost estimate for every job based on their runtime matrices.
-    CPU, RAM and runtime usage is mapped against AWS pricing table.
-    Please note, that those numbers are only estimates.
+    Enable AWS estimate.
 :Default: ``false``
 :Type: bool
 
@@ -2329,8 +2327,7 @@
 :Description:
     Heartbeat log filename. Can accept the template variables
     {server_name} and {pid}
-    Sample default 'heartbeat_{server_name}.log'
-:Default: ``None``
+:Default: ``heartbeat_{server_name}.log``
 :Type: str
 
 

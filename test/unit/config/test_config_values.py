@@ -12,7 +12,6 @@ TestData = namedtuple('TestData', ('key', 'expected', 'loaded'))
 
 # TODO: all these will be fixed
 DO_NOT_TEST = [
-    'heartbeat_log',
     'ftp_upload_dir_template',
     'workflow_resource_params_mapper',
     'amqp_internal_connection',

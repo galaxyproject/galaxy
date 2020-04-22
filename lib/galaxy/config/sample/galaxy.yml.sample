@@ -1164,8 +1164,7 @@ galaxy:
 
   # Heartbeat log filename. Can accept the template variables
   # {server_name} and {pid}
-  # Sample default 'heartbeat_{server_name}.log'
-  #heartbeat_log: null
+  #heartbeat_log: heartbeat_{server_name}.log
 
   # Log to Sentry Sentry is an open source logging and error aggregation
   # platform.  Setting sentry_dsn will enable the Sentry middleware and

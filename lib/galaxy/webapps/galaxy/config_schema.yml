@@ -1709,12 +1709,10 @@ mapping:
 
       heartbeat_log:
         type: str
+        default: heartbeat_{server_name}.log
         required: false
         desc: |
-          Heartbeat log filename. Can accept the template variables {server_name} and
-          {pid}
-
-          Sample default 'heartbeat_{server_name}.log'
+          Heartbeat log filename. Can accept the template variables {server_name} and {pid}
 
       sentry_dsn:
         type: str
