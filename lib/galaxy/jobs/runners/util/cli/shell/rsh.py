@@ -72,6 +72,7 @@ class ParamikoShell(object):
         log.info("Attempting establishment of new paramiko SSH channel")
         self.ssh = paramiko.SSHClient()
         self.ssh.set_missing_host_key_policy(paramiko.RejectPolicy() if self.strict_host_key_checking else paramiko.WarningPolicy())
+        self.ssh.load_system_host_keys()
         self.ssh.connect(hostname=self.hostname,
                          port=self.port,
                          username=self.username,

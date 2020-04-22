@@ -200,7 +200,7 @@ export default {
                 { key: "tool_id", label: "Tool", tdClass: ["break-word"] },
                 { key: "state" },
                 { key: "job_runner_name", label: "Job Runner" },
-                { key: "job_runner_external_id", label: "PID/Cluster ID", sortable: true }
+                { key: "job_runner_external_id", label: "PID/Cluster ID", sortable: true },
             ],
             cutoff: 180,
             cutoffDisplay: 180,
@@ -213,7 +213,7 @@ export default {
             message: "",
             status: "",
             loading: true,
-            busy: true
+            busy: true,
         };
     },
     watch: {
@@ -228,7 +228,7 @@ export default {
                 this.indeterminate = true;
                 this.allSelected = false;
             }
-        }
+        },
     },
     methods: {
         update() {
@@ -238,7 +238,7 @@ export default {
             params = params.join("&");
             axios
                 .get(`${getAppRoot()}admin/jobs_list?${params}`)
-                .then(response => {
+                .then((response) => {
                     this.jobsItems = response.data.jobs;
                     this.recentJobsItems = response.data.recent_jobs;
                     this.cutoffDisplay = response.data.cutoff;
@@ -247,7 +247,7 @@ export default {
                     this.loading = false;
                     this.busy = false;
                 })
-                .catch(error => {
+                .catch((error) => {
                     this.message = error.response.data.err_msg;
                     this.status = "error";
                     console.log(error.response);
@@ -257,7 +257,7 @@ export default {
             this.update();
         },
         onStopJobs() {
-            axios.all(this.selectedStopJobIds.map(jobId => cancelJob(jobId, this.stopMessage))).then(res => {
+            axios.all(this.selectedStopJobIds.map((jobId) => cancelJob(jobId, this.stopMessage))).then((res) => {
                 this.update();
                 this.selectedStopJobIds = [];
                 this.stopMessage = "";
@@ -282,16 +282,16 @@ export default {
                 new: "primary",
                 queued: "secondary",
                 running: "info",
-                upload: "dark"
+                upload: "dark",
             };
             return translateDict[state] || "primary";
         },
         computeItems(items) {
-            return items.map(job => {
+            return items.map((job) => {
                 return {
                     ...job,
                     _showDetails: false,
-                    _cellVariants: { state: this.translateState(job.state) }
+                    _cellVariants: { state: this.translateState(job.state) },
                 };
             });
         },
@@ -311,14 +311,14 @@ export default {
                 done: "success",
                 info: "info",
                 warning: "warning",
-                error: "danger"
+                error: "danger",
             };
             if (variant in galaxyKwdToBoostrapDict) {
                 return galaxyKwdToBoostrapDict[variant];
             } else {
                 return variant;
             }
-        }
+        },
     },
     computed: {
         jobsItemsComputed() {
@@ -340,11 +340,11 @@ export default {
         },
         selectedJobUrl() {
             return `${getAppRoot()}admin/job_info?jobid=${this.selectedJobId}`;
-        }
+        },
     },
     created() {
         this.update();
-    }
+    },
 };
 </script>
 

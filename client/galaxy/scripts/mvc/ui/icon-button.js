@@ -19,21 +19,21 @@ var IconButton = Backbone.Model.extend({
         target: null,
         enabled: true,
         visible: true,
-        tooltip_config: {}
-    }
+        tooltip_config: {},
+    },
 });
 
 /**
  *  backbone view for icon buttons
  */
 var IconButtonView = Backbone.View.extend({
-    initialize: function() {
+    initialize: function () {
         // better rendering this way
         this.model.attributes.tooltip_config = { placement: "bottom" };
         this.model.bind("change", this.render, this);
     },
 
-    render: function() {
+    render: function () {
         // hide tooltip
         this.$el.tooltip("hide");
 
@@ -46,10 +46,10 @@ var IconButtonView = Backbone.View.extend({
     },
 
     events: {
-        click: "click"
+        click: "click",
     },
 
-    click: function(event) {
+    click: function (event) {
         // if on_click pass to that function
         if (_.isFunction(this.model.get("on_click"))) {
             this.model.get("on_click")(event);
@@ -60,7 +60,7 @@ var IconButtonView = Backbone.View.extend({
     },
 
     // generate html element
-    template: function(options) {
+    template: function (options) {
         var buffer = `title="${options.title}" class="icon-button`;
 
         if (options.is_menu_button) {
@@ -99,12 +99,12 @@ var IconButtonView = Backbone.View.extend({
 
         // return element
         return $(buffer);
-    }
+    },
 });
 
 // define collection
 var IconButtonCollection = Backbone.Collection.extend({
-    model: IconButton
+    model: IconButton,
 });
 
 /**
@@ -114,14 +114,14 @@ var IconButtonCollection = Backbone.Collection.extend({
 var IconButtonMenuView = Backbone.View.extend({
     tagName: "div",
 
-    initialize: function() {
+    initialize: function () {
         this.render();
     },
 
-    render: function() {
+    render: function () {
         // initialize icon buttons
         var self = this;
-        this.collection.each(button => {
+        this.collection.each((button) => {
             // create and add icon button to menu
             var elt = $("<a/>")
                 .attr("href", "javascript:void(0)")
@@ -145,7 +145,7 @@ var IconButtonMenuView = Backbone.View.extend({
 
         // return
         return this;
-    }
+    },
 });
 
 /**
@@ -160,7 +160,7 @@ var create_icon_buttons_menu = (config, global_config) => {
 
     // create and initialize menu
     var buttons = new IconButtonCollection(
-        _.map(config, button_config => new IconButton(_.extend(button_config, global_config)))
+        _.map(config, (button_config) => new IconButton(_.extend(button_config, global_config)))
     );
 
     // return menu
@@ -173,5 +173,5 @@ export default {
     IconButtonView: IconButtonView,
     IconButtonCollection: IconButtonCollection,
     IconButtonMenuView: IconButtonMenuView,
-    create_icon_buttons_menu: create_icon_buttons_menu
+    create_icon_buttons_menu: create_icon_buttons_menu,
 };

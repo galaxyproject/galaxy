@@ -27,31 +27,31 @@ export const DESCRIPTION = {
     cached_mulled_singularity:
         "The cached_mulled_singularity container resolver finds mulled containers cached in a directory mounted by the Galaxy server.",
     build_mulled: "",
-    build_mulled_cached: ""
+    build_mulled_cached: "",
 };
 
 export default {
     components: { DisplayRaw },
     props: {
         containerResolver: {
-            type: Object
+            type: Object,
         },
         compact: {
             type: Boolean,
-            default: true
-        }
+            default: true,
+        },
     },
     computed: {
-        title: function() {
+        title: function () {
             return this.compact ? this.description : "";
         },
-        description: function() {
+        description: function () {
             const description = DESCRIPTION[this.resolverType] || `Container resolver of type ${this.resolverType}.`;
             return `${description}`;
         },
-        resolverType: function() {
+        resolverType: function () {
             return this.containerResolver && this.containerResolver.resolver_type;
-        }
-    }
+        },
+    },
 };
 </script>

@@ -91,7 +91,7 @@ MetricsLogger.defaultOptions = {
     /** an (optional) function that should return an object; used to send additional data with the metrics */
     getPingData: undefined,
     /** an (optional) function that will handle the servers response after successfully posting messages */
-    onServerResponse: undefined
+    onServerResponse: undefined,
 };
 
 //----------------------------------------------------------------------------- set up
@@ -127,7 +127,7 @@ MetricsLogger.prototype._initCache = function _initCache() {
     try {
         this.cache = new LoggingCache({
             maxSize: this.options.maxCacheSize,
-            key: this.options.cacheKeyPrefix + this.userId
+            key: this.options.cacheKeyPrefix + this.userId,
         });
     } catch (err) {
         this._emitToConsole("warn", "MetricsLogger", ["Could not intitialize logging cache:", err]);
@@ -180,7 +180,7 @@ MetricsLogger.prototype._addToCache = function _addToCache(level, namespace, log
         "_addToCache:",
         arguments,
         this.options.addTime,
-        this.cache.length()
+        this.cache.length(),
     ]);
     //this._emitToConsole( 'debug', 'MetricsLogger', [ '\t logArguments:', logArguments ]);
     var self = this;
@@ -195,7 +195,7 @@ MetricsLogger.prototype._addToCache = function _addToCache(level, namespace, log
         self._emitToConsole("warn", "MetricsLogger", [
             "Metrics logger could not stringify logArguments:",
             namespace,
-            logArguments
+            logArguments,
         ]);
         self._emitToConsole("error", "MetricsLogger", [err]);
     }
@@ -208,7 +208,7 @@ MetricsLogger.prototype._buildEntry = function _buildEntry(level, namespace, log
     var entry = {
         level: level,
         namespace: this.options.clientPrefix + namespace,
-        args: logArguments
+        args: logArguments,
     };
     if (this.options.addTime) {
         entry.time = new Date().toISOString();
@@ -261,12 +261,12 @@ MetricsLogger.prototype._postCache = function _postCache(options) {
                 "_postCache error:",
                 xhr.readyState,
                 xhr.status,
-                xhr.responseJSON || xhr.responseText
+                xhr.responseJSON || xhr.responseText,
             ]);
             //TODO: still doesn't solve the problem that when cache == max, post will be tried on every emit
             //TODO: see _delayPost
         })
-        .done(response => {
+        .done((response) => {
             if (typeof self.options.onServerResponse === "function") {
                 self.options.onServerResponse(response);
             }
@@ -385,7 +385,7 @@ function LoggingCache(options) {
 /** default options */
 LoggingCache.defaultOptions = {
     /** maximum number of entries to keep before discarding oldest */
-    maxSize: 5000
+    maxSize: 5000,
 };
 
 /** initialize with options */
@@ -493,5 +493,5 @@ LoggingCache.prototype.print = function print() {
 //=============================================================================
 export default {
     MetricsLogger: MetricsLogger,
-    LoggingCache: LoggingCache
+    LoggingCache: LoggingCache,
 };

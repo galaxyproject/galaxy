@@ -41,6 +41,7 @@ from ._framework import ApiTestCase
 
 
 WORKFLOW_SIMPLE = """
+<<<<<<< HEAD
 class: GalaxyWorkflow
 name: Simple Workflow
 inputs:
@@ -56,44 +57,20 @@ steps:
 """
 
 NESTED_WORKFLOW_AUTO_LABELS_LEGACY_SYNTAX = """
+=======
+>>>>>>> BioComputeDev
 class: GalaxyWorkflow
+name: Simple Workflow
 inputs:
-  outer_input: data
+  input1: data
 outputs:
-  outer_output:
-    outputSource: second_cat/out_file1
+  wf_output_1:
+    outputSource: first_cat/out_file1
 steps:
   first_cat:
     tool_id: cat1
     in:
-      input1: outer_input
-  nested_workflow:
-    run:
-      class: GalaxyWorkflow
-      inputs:
-        - id: inner_input
-      outputs:
-        - source: 1#out_file1
-      steps:
-        random:
-          tool_id: random_lines1
-          state:
-            num_lines: 1
-            input:
-              $link: inner_input
-            seed_source:
-              seed_source_selector: set_seed
-              seed: asdf
-    in:
-      inner_input: first_cat/out_file1
-  second_cat:
-    tool_id: cat1
-    state:
-      input1:
-        $link: nested_workflow#1:out_file1
-      queries:
-        - input2:
-            $link: nested_workflow#1:out_file1
+      input1: input1
 """
 
 NESTED_WORKFLOW_AUTO_LABELS_MODERN_SYNTAX = """
@@ -346,6 +323,29 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase):
             self._assert_user_has_workflow_with_name(name)
         return upload_response
 
+    def test_get_tool_predictions(self):
+        request = {"tool_sequence": "Cut1", "remote_model_url": "https://github.com/galaxyproject/galaxy-test-data/raw/master/tool_recommendation_model.hdf5"}
+        actual_recommendations = ['Filter1', 'cat1', 'addValue', 'comp1', 'Grep1']
+        route = "workflows/get_tool_predictions"
+        response = self._post(route, data=request)
+        recommendation_response = response.json()
+        is_empty = bool(recommendation_response["current_tool"])
+        if is_empty is False:
+            self._assert_status_code_is(response, 400)
+        else:
+            # check Ok response from the API
+            self._assert_status_code_is(response, 200)
+            recommendation_response = response.json()
+            # check the input tool sequence
+            assert recommendation_response["current_tool"] == request["tool_sequence"]
+            # check non-empty predictions list
+            predicted_tools = recommendation_response["predicted_data"]["children"]
+            assert len(predicted_tools) > 0
+            # check for the correct predictions
+            for tool in predicted_tools:
+                assert tool["tool_id"] in actual_recommendations
+                break
+
     def test_update(self):
         original_workflow = self.workflow_populator.load_workflow(name="test_import")
         uuids = {}
@@ -479,10 +479,10 @@ steps:
   - tool_id: cat1
     state:
       input1:
-        $link: first_cat#out_file1
+        $link: first_cat/out_file1
       queries:
         input2:
-          $link: embed1#output1
+          $link: embed1/output1
 test_data:
   input1: "hello world"
 """)
@@ -824,12 +824,12 @@ steps:
         inner_cond:
           cond_param_inner: true
           input1:
-            $link: 0#out_file1
+            $link: 0/out_file1
   cat:
     tool_id: cat1
     in:
-      input1: identifier#output1
-      queries_0|input2: identifier#output1
+      input1: identifier/output1
+      queries_0|input2: identifier/output1
 """)
         with self.dataset_populator.test_history() as history_id:
             invocation_id = self.__invoke_workflow(history_id, workflow_id)
@@ -865,11 +865,11 @@ steps:
   list_in_list_out:
     tool_id: collection_creates_list
     in:
-      input1: job_props#list_output
+      input1: job_props/list_output
   identifier:
     tool_id: identifier_collection
     in:
-      input1: list_in_list_out#list_output
+      input1: list_in_list_out/list_output
 """)
         with self.dataset_populator.test_history() as history_id:
             invocation_id = self.__invoke_workflow(history_id, workflow_id)
@@ -1212,8 +1212,7 @@ test_data:
                     "chrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\nchrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\n",
                     content)
 
-        for workflow_text in [NESTED_WORKFLOW_AUTO_LABELS_LEGACY_SYNTAX, NESTED_WORKFLOW_AUTO_LABELS_MODERN_SYNTAX]:
-            run_test(workflow_text)
+        run_test(NESTED_WORKFLOW_AUTO_LABELS_MODERN_SYNTAX)
 
     @skip_without_tool("cat1")
     @skip_without_tool("collection_paired_test")
@@ -1266,7 +1265,7 @@ steps:
     tool_id: '__FLATTEN__'
     state:
       input:
-        $link: nested#list_output
+        $link: nested/list_output
       join_identifier: '-'
 """, test_data={}, history_id=history_id)
             details = self.dataset_populator.get_history_collection_details(history_id, hid=14)
@@ -1408,7 +1407,7 @@ steps:
     tool_id: "__FILTER_FAILED_DATASETS__"
     state:
       input:
-        $link: mixed_collection#out_file1
+        $link: mixed_collection/out_file1
 
   cat:
     tool_id: cat1
@@ -1866,7 +1865,7 @@ steps:
     state:
       num_lines: 2
       input:
-        $link: empty_list#output
+        $link: empty_list/output
       seed_source:
         seed_source_selector: set_seed
         seed: asdf
@@ -1949,7 +1948,7 @@ steps:
     state:
       num_lines: 2
       input:
-        $link: empty_list#output
+        $link: empty_list/output
       seed_source:
         seed_source_selector: set_seed
         seed: asdf
@@ -2384,7 +2383,7 @@ steps:
   state:
     floattest: 3.14
     inttest:
-      $link: forty_two#out1
+      $link: forty_two/out1
 test_data: {}
 """, history_id=history_id)
 
@@ -2413,7 +2412,7 @@ steps:
 - label: consume_expression_parameter
   tool_id: validation_default
   in:
-    input1: param_out#text_param
+    input1: param_out/text_param
   outputs:
     out_file1:
       rename: "replaced_param_collection"
@@ -2549,7 +2548,7 @@ outer_input:
         for workflow_file in ["test_workflow_topoambigouity", "test_workflow_topoambigouity_auto_laidout"]:
             workflow = self.workflow_populator.load_workflow_from_resource(workflow_file)
             last_step_map = self._step_map(workflow)
-            for i in range(num_tests):
+            for _ in range(num_tests):
                 uploaded_workflow_id = self.workflow_populator.create_workflow(workflow)
                 downloaded_workflow = self._download_workflow(uploaded_workflow_id)
                 step_map = self._step_map(downloaded_workflow)
@@ -3268,7 +3267,7 @@ steps:
   create_pair:
     tool_id: collection_creates_pair
     in:
-      input1: first_cat#out_file1
+      input1: first_cat/out_file1
     outputs:
       paired_output:
         remove_tags:
@@ -3902,7 +3901,7 @@ input_c:
 
     def _wait_for_invocation_non_new(self, workflow_id, invocation_id):
         target_state_reached = False
-        for i in range(50):
+        for _ in range(50):
             invocation = self._invocation_details(workflow_id, invocation_id)
             if invocation['state'] != 'new':
                 target_state_reached = True
@@ -3918,7 +3917,7 @@ input_c:
 
     def _wait_for_invocation_state(self, workflow_id, invocation_id, target_state):
         target_state_reached = False
-        for i in range(25):
+        for _ in range(25):
             invocation = self._invocation_details(workflow_id, invocation_id)
             if invocation['state'] == target_state:
                 target_state_reached = True
@@ -4087,10 +4086,10 @@ steps:
   - tool_id: cat1
     state:
       input1:
-        $link: first_cat#out_file1
+        $link: first_cat/out_file1
       queries:
       - input2:
-          $link: embed1#output1
+          $link: embed1/output1
 test_data:
   input1: "hello world"
 """)

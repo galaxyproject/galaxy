@@ -10,30 +10,30 @@ import Repeat from "mvc/form/form-repeat";
 import FormData from "mvc/form/form-data";
 
 var GroupView = Backbone.View.extend({
-    initialize: function(app, options) {
+    initialize: function (app, options) {
         var self = this;
         this.deferred = app.deferred;
         this.chart = app.chart;
         this.group = options.group;
         this.setElement($("<div/>"));
-        this.listenTo(this.chart, "change:dataset_id", function() {
+        this.listenTo(this.chart, "change:dataset_id", function () {
             self.render();
         });
         this.render();
     },
-    render: function() {
+    render: function () {
         var self = this;
         var inputs = Utils.clone(this.chart.plugin.groups) || [];
         var dataset_id = this.chart.get("dataset_id");
         if (dataset_id) {
             this.chart.state("wait", "Loading metadata...");
-            this.deferred.execute(function(process) {
+            this.deferred.execute(function (process) {
                 Utils.get({
                     url: getAppRoot() + "api/datasets/" + dataset_id,
                     cache: true,
-                    success: function(dataset) {
+                    success: function (dataset) {
                         var data_columns = {};
-                        FormData.visitInputs(inputs, function(input, prefixed) {
+                        FormData.visitInputs(inputs, function (input, prefixed) {
                             if (input.type == "data_column") {
                                 data_columns[prefixed] = Utils.clone(input);
                                 var columns = [];
@@ -63,30 +63,30 @@ var GroupView = Backbone.View.extend({
                             name: "__data_columns",
                             type: "hidden",
                             hidden: true,
-                            value: data_columns
+                            value: data_columns,
                         });
                         self.chart.state("ok", "Metadata initialized...");
                         self.form = new Form({
                             inputs: inputs,
-                            onchange: function() {
+                            onchange: function () {
                                 self.group.set(self.form.data.create());
                                 self.chart.set("modified", true);
                                 self.chart.trigger("redraw");
-                            }
+                            },
                         });
                         self.group.set(self.form.data.create());
                         self.$el.empty().append(self.form.$el);
                         process.resolve();
                         self.chart.trigger("redraw");
-                    }
+                    },
                 });
             });
         }
-    }
+    },
 });
 
 export default Backbone.View.extend({
-    initialize: function(app) {
+    initialize: function (app) {
         var self = this;
         this.app = app;
         this.chart = app.chart;
@@ -94,33 +94,33 @@ export default Backbone.View.extend({
             title: "Data series",
             title_new: "Data series",
             min: 1,
-            onnew: function() {
+            onnew: function () {
                 self.chart.groups.add({ id: Utils.uid() });
-            }
+            },
         });
         this.setElement($("<div/>").append(this.repeat.$el));
-        this.listenTo(this.chart.groups, "remove", function(group) {
+        this.listenTo(this.chart.groups, "remove", function (group) {
             self.repeat.del(group.id);
             self.chart.trigger("redraw");
         });
-        this.listenTo(this.chart.groups, "reset", function() {
+        this.listenTo(this.chart.groups, "reset", function () {
             self.repeat.delAll();
         });
-        this.listenTo(this.chart.groups, "add", function(group) {
+        this.listenTo(this.chart.groups, "add", function (group) {
             self.repeat.add({
                 id: group.id,
                 $el: new GroupView(self.app, { group: group }).$el,
-                ondel: function() {
+                ondel: function () {
                     self.chart.groups.remove(group);
-                }
+                },
             });
         });
     },
-    render: function() {
+    render: function () {
         if (_.size(this.chart.plugin.groups) > 0) {
             this.repeat.$el.show();
         } else {
             this.repeat.$el.hide();
         }
-    }
+    },
 });

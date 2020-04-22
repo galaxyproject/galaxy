@@ -17,14 +17,14 @@ import Vue from "vue";
 import axios from "axios";
 
 export default FormBase.extend({
-    initialize: function(options) {
+    initialize: function (options) {
         const Galaxy = getGalaxyInstance();
         var self = this;
         this.deferred = new Deferred();
         FormBase.prototype.initialize.call(this, options);
 
         // optional model update
-        this._update(this.model.get("initialmodel"));
+        this._update();
 
         // listen to history panel
         if (this.model.get("listen_to_history") && Galaxy.currHistoryPanel) {
@@ -39,12 +39,12 @@ export default FormBase.extend({
     },
 
     /** Allows tool form variation to update tool model */
-    _update: function(callback) {
+    _update: function () {
         var self = this;
-        callback = callback || this.model.get("buildmodel");
+        var callback = this.model.get("buildmodel");
         if (callback) {
             this.deferred.reset();
-            this.deferred.execute(process => {
+            this.deferred.execute((process) => {
                 callback(process, self);
                 process.then(() => {
                     self._render();
@@ -56,7 +56,7 @@ export default FormBase.extend({
     },
 
     /** Wait for deferred build processes before removal */
-    _destroy: function() {
+    _destroy: function () {
         var self = this;
         this.$el.off().hide();
         this.deferred.execute(() => {
@@ -67,7 +67,7 @@ export default FormBase.extend({
     },
 
     /** Build form */
-    _render: function() {
+    _render: function () {
         var self = this;
         var options = this.model.attributes;
         this.model.set({
@@ -75,38 +75,34 @@ export default FormBase.extend({
                 options.fixed_title ||
                 `<b>${options.name}</b> ${options.description} (Galaxy Version ${options.version})`,
             operations: !options.hide_operations && this._operations(),
-            onchange: function() {
+            onchange: function () {
                 self.deferred.reset();
-                self.deferred.execute(process => {
+                self.deferred.execute((process) => {
                     self.model.get("postchange")(process, self);
                 });
-            }
+            },
         });
         this.render();
         if (!this.model.get("collapsible")) {
-            this.$el.append(
-                $("<div/>")
-                    .addClass("mt-2")
-                    .append(this._footer())
-            );
+            this.$el.append($("<div/>").addClass("mt-2").append(this._footer()));
         }
         options.tool_errors &&
             this.message.update({
                 status: "danger",
                 message: options.tool_errors,
-                persistent: true
+                persistent: true,
             });
         this.show_message &&
             this.message.update({
                 status: "success",
                 message: `Now you are using '${options.name}' version ${options.version}, id '${options.id}'.`,
-                persistent: false
+                persistent: false,
             });
         this.show_message = true;
     },
 
     /** Create tool operation menu */
-    _operations: function() {
+    _operations: function () {
         var self = this;
         var options = this.model.attributes;
         const Galaxy = getGalaxyInstance();
@@ -121,13 +117,13 @@ export default FormBase.extend({
             onclick: () => {
                 axios
                     .put(`${Galaxy.root}api/users/${Galaxy.user.id}/favorites/tools`, { object_id: options.id })
-                    .then(response => {
+                    .then((response) => {
                         favorite_button.hide();
                         remove_favorite_button.show();
                         Galaxy.user.updateFavorites("tools", response.data);
                         ariaAlert("added to favorites");
                     });
-            }
+            },
         });
 
         var remove_favorite_button = new Ui.Button({
@@ -140,20 +136,20 @@ export default FormBase.extend({
                     .delete(
                         `${Galaxy.root}api/users/${Galaxy.user.id}/favorites/tools/${encodeURIComponent(options.id)}`
                     )
-                    .then(response => {
+                    .then((response) => {
                         remove_favorite_button.hide();
                         favorite_button.show();
                         Galaxy.user.updateFavorites("tools", response.data);
                         ariaAlert("removed from favorites");
                     });
-            }
+            },
         });
 
         // button for version selection
         var versions_button = new Ui.ButtonMenu({
             icon: "fa-cubes",
             title: options.narrow ? null : "Versions",
-            tooltip: "Select another tool version"
+            tooltip: "Select another tool version",
         });
 
         if (!options.sustain_version && options.versions && options.versions.length > 1) {
@@ -164,12 +160,12 @@ export default FormBase.extend({
                         title: `Switch to ${version}`,
                         version: version,
                         icon: "fa-cube",
-                        onclick: function() {
+                        onclick: function () {
                             // here we update the tool version (some tools encode the version also in the id)
                             self.model.set("id", options.id.replace(options.version, this.version));
                             self.model.set("version", this.version);
                             self._update();
-                        }
+                        },
                     });
                 }
             }
@@ -182,17 +178,17 @@ export default FormBase.extend({
             id: "options",
             icon: "fa-caret-down",
             title: options.narrow ? null : "Options",
-            tooltip: "View available options"
+            tooltip: "View available options",
         });
         menu_button.addMenu({
             icon: "fa-share",
             title: _l("Share"),
-            onclick: function() {
+            onclick: function () {
                 prompt(
                     "Copy to clipboard: Ctrl+C, Enter",
                     `${window.location.origin + getAppRoot()}root?tool_id=${options.id}`
                 );
-            }
+            },
         });
 
         // add admin operations
@@ -200,9 +196,9 @@ export default FormBase.extend({
             menu_button.addMenu({
                 icon: "fa-download",
                 title: _l("Download"),
-                onclick: function() {
+                onclick: function () {
                     window.location.href = `${getAppRoot()}api/tools/${options.id}/download`;
-                }
+                },
             });
         }
 
@@ -211,20 +207,20 @@ export default FormBase.extend({
             menu_button.addMenu({
                 icon: "fa-info-circle",
                 title: _l("Requirements"),
-                onclick: function() {
+                onclick: function () {
                     if (!this.requirements_visible || self.portlet.collapsed) {
                         this.requirements_visible = true;
                         self.portlet.expand();
                         self.message.update({
                             persistent: true,
                             message: self._templateRequirements(options),
-                            status: "info"
+                            status: "info",
                         });
                     } else {
                         this.requirements_visible = false;
                         self.message.update({ message: "" });
                     }
-                }
+                },
             });
         }
 
@@ -233,42 +229,42 @@ export default FormBase.extend({
             menu_button.addMenu({
                 icon: "fa-external-link",
                 title: _l("See in Tool Shed"),
-                onclick: function() {
+                onclick: function () {
                     window.open(options.sharable_url);
-                }
+                },
             });
         }
 
         // add tool menu webhooks
         Webhooks.load({
             type: "tool-menu",
-            callback: function(webhooks) {
-                webhooks.each(model => {
+            callback: function (webhooks) {
+                webhooks.each((model) => {
                     var webhook = model.toJSON();
                     if (webhook.activate && webhook.config.function) {
                         menu_button.addMenu({
                             icon: webhook.config.icon,
                             title: webhook.config.title,
-                            onclick: function() {
+                            onclick: function () {
                                 var func = new Function("options", webhook.config.function);
                                 func(options);
-                            }
+                            },
                         });
                     }
                 });
-            }
+            },
         });
 
         return {
             menu: menu_button,
             versions: versions_button,
             favorite: favorite_button,
-            remove_favorite: remove_favorite_button
+            remove_favorite: remove_favorite_button,
         };
     },
 
     /** Create footer */
-    _footer: function() {
+    _footer: function () {
         var options = this.model.attributes;
         var $el = $("<div/>").append(this._templateHelp(options));
         if (options.citations) {
@@ -278,8 +274,8 @@ export default FormBase.extend({
             new citationInstance({
                 propsData: {
                     id: options.id,
-                    source: "tools"
-                }
+                    source: "tools",
+                },
             }).$mount(vm);
         }
         if (options.xrefs && options.xrefs.length) {
@@ -289,20 +285,18 @@ export default FormBase.extend({
             new xrefInstance({
                 propsData: {
                     id: options.id,
-                    source: "tools"
-                }
+                    source: "tools",
+                },
             }).$mount(vm);
         }
         return $el;
     },
 
     /** Templates */
-    _templateHelp: function(options) {
-        var $tmpl = $("<div/>")
-            .addClass("form-help form-text mt-4")
-            .append(options.help);
+    _templateHelp: function (options) {
+        var $tmpl = $("<div/>").addClass("form-help form-text mt-4").append(options.help);
         $tmpl.find("a").attr("target", "_blank");
-        $tmpl.find("img").each(function() {
+        $tmpl.find("img").each(function () {
             var img_src = $(this).attr("src");
             if (img_src.indexOf("admin_toolshed") !== -1) {
                 $(this).attr("src", getAppRoot() + img_src);
@@ -311,7 +305,7 @@ export default FormBase.extend({
         return $tmpl;
     },
 
-    _templateRequirements: function(options) {
+    _templateRequirements: function (options) {
         var nreq = options.requirements.length;
         if (nreq > 0) {
             var requirements_message = "This tool requires ";
@@ -331,5 +325,5 @@ export default FormBase.extend({
                 .append(" for more information.");
         }
         return "No requirements found.";
-    }
+    },
 });

@@ -9,17 +9,17 @@ export default {
     props: {
         toolId: {
             type: String,
-            required: true
+            required: true,
         },
         toolVersion: {
             type: String,
-            default: null
-        }
+            default: null,
+        },
     },
     computed: {
-        showVersion: function() {
+        showVersion: function () {
             return this.toolVersion && !this.toolId.endsWith(this.toolVersion);
-        }
-    }
+        },
+    },
 };
 </script>

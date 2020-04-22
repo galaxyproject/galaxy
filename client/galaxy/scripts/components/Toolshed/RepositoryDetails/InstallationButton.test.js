@@ -6,8 +6,8 @@ describe("InstallationButton", () => {
         const wrapper = mount(InstallationButton, {
             propsData: {
                 installed: true,
-                status: "Installed"
-            }
+                status: "Installed",
+            },
         });
         const $el = wrapper.find("button");
         expect($el.classes()).to.include("btn-danger");
@@ -19,8 +19,8 @@ describe("InstallationButton", () => {
         const wrapper = mount(InstallationButton, {
             propsData: {
                 installed: false,
-                status: "Uninstalled"
-            }
+                status: "Uninstalled",
+            },
         });
         const $el = wrapper.find("button");
         expect($el.classes()).to.include("btn-primary");

@@ -1650,3 +1650,35 @@ body.reports {
     bottom: 0;
     background: url(../../images/largespinner.gif) no-repeat center center fixed;
 }
+
+/* Used for tree in tool recommendations */
+.tool-recommendation-view {
+    .node {
+        cursor: pointer;
+        circle {
+            fill: $brand-primary;
+            stroke: $brand-primary;
+        }
+        text {
+            font-size: 0.4rem;
+        }
+    }
+
+    .tree-size {
+        width: 100%;
+    }
+
+    .link {
+        fill: none;
+        stroke: $brand-primary;
+        stroke-width: 1;
+    }
+}
+
+.workflow-recommendations {
+    display: block;
+    .header-background {
+        border-bottom: solid 1px $brand-primary;
+        margin-bottom: 0.5rem;
+    }
+}

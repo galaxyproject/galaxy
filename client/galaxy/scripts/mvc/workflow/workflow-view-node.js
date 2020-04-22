@@ -9,26 +9,31 @@ export class NodeView {
         this.$el = options.$el;
         this.node = options.node;
         this.output_width = Math.max(150, this.$el.width());
-        this.tool_body = this.$el.find(".toolFormBody");
-        this.tool_body.find("div").remove();
-        this.newInputsDiv().appendTo(this.tool_body);
+        this.node_body = this.$el.find(".node-body");
+        this.node_body.find("div").remove();
+        this.newInputsDiv().appendTo(this.node_body);
         this.terminalViews = {};
         this.outputViews = {};
     }
 
     render() {
-        this.renderToolLabel();
-        this.renderToolErrors();
+        this.renderLabel();
+        this.renderErrors();
         this.$el.css("width", Math.min(250, Math.max(this.$el.width(), this.output_width)));
     }
 
-    renderToolLabel() {
+    renderLabel() {
         this.$el.find(".node-title").text(this.node.label || this.node.name);
         this.$el.attr("node-label", this.node.label);
     }
 
-    renderToolErrors() {
-        this.node.errors ? this.$el.addClass("tool-node-error") : this.$el.removeClass("tool-node-error");
+    renderErrors() {
+        if (this.node.errors) {
+            this.$el.addClass("node-error");
+            this.node_body.text(this.node.errors);
+        } else {
+            this.$el.removeClass("node-error");
+        }
     }
 
     newInputsDiv() {
@@ -40,7 +45,7 @@ export class NodeView {
     }
 
     addRule() {
-        this.tool_body.append($("<div/>").addClass("rule"));
+        this.node_body.append($("<div/>").addClass("rule"));
     }
 
     addDataInput(input, body) {
@@ -59,16 +64,16 @@ export class NodeView {
             terminalViewClass = TerminalViews.InputParameterTerminalView;
         }
         if (terminalView && !(terminalView instanceof terminalViewClass)) {
-            terminalView.el.terminal.destroy();
+            terminalView.terminal.destroy();
             terminalView = null;
         }
         if (!terminalView) {
             terminalView = new terminalViewClass(this.app, {
                 node: this.node,
-                input: input
+                input: input,
             });
         } else {
-            var terminal = terminalView.el.terminal;
+            var terminal = terminalView.terminal;
             terminal.update(input);
             terminal.destroyInvalidConnections();
         }
@@ -78,10 +83,10 @@ export class NodeView {
             terminalElement: terminalElement,
             input: input,
             nodeView: this,
-            skipResize: skipResize
+            skipResize: skipResize,
         });
         var ib = inputView.$el;
-        body.append(ib.prepend(terminalView.terminalElements()));
+        body.append(ib.prepend(terminalView.el));
         return terminalView;
     }
 
@@ -94,7 +99,7 @@ export class NodeView {
         }
         return new terminalViewClass(this.app, {
             node: this.node,
-            output: output
+            output: output,
         });
     }
 
@@ -103,7 +108,7 @@ export class NodeView {
         return new outputViewClass(this.app, {
             output: output,
             terminalElement: terminalView.el,
-            nodeView: this
+            nodeView: this,
         });
     }
 
@@ -111,11 +116,11 @@ export class NodeView {
         const terminalView = this.terminalViewForOutput(output);
         const outputView = this.outputViewforOutput(output, terminalView);
         this.outputViews[output.name] = outputView;
-        this.tool_body.append(outputView.$el.append(terminalView.terminalElements()));
+        this.node_body.append(outputView.$el.append(terminalView.el));
     }
 
     redrawWorkflowOutputs() {
-        _.each(this.outputViews, outputView => {
+        _.each(this.outputViews, (outputView) => {
             outputView.redrawWorkflowOutput();
         });
     }

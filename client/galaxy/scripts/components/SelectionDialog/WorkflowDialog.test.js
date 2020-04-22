@@ -9,7 +9,7 @@ import { shallowMount, createLocalVue } from "@vue/test-utils";
 
 const mockOptions = {
     callback: () => {},
-    modalStatic: true
+    modalStatic: true,
 };
 
 describe("WorkflowDialog.vue", () => {
@@ -20,11 +20,11 @@ describe("WorkflowDialog.vue", () => {
     beforeEach(() => {
         axiosMock = new MockAdapter(axios);
         setupTestGalaxy();
-        rewire.__Rewire__("_addAttributes", workflow => workflow);
+        rewire.__Rewire__("_addAttributes", (workflow) => workflow);
         localVue = createLocalVue();
         wrapper = shallowMount(WorkflowDialog, {
             propsData: mockOptions,
-            localVue: localVue
+            localVue: localVue,
         });
     });
 

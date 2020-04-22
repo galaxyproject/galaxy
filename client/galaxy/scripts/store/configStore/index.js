@@ -3,13 +3,13 @@ import { getConfig } from "./queries";
 const defaultConfigs = {};
 
 const state = {
-    config: Object.assign({}, defaultConfigs)
+    config: Object.assign({}, defaultConfigs),
 };
 
 const mutations = {
     setConfigs(state, newConfigs = {}) {
         state.config = Object.assign({}, defaultConfigs, state.config, newConfigs);
-    }
+    },
 };
 
 const actions = {
@@ -19,14 +19,14 @@ const actions = {
     },
     async $init({ dispatch }) {
         await dispatch("loadConfigs");
-    }
+    },
 };
 
 export const configStore = {
     namespaced: true,
     state,
     mutations,
-    actions
+    actions,
 };
 
 export default configStore;

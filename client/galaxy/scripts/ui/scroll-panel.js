@@ -5,7 +5,7 @@ import $ from "jquery";
 // ("viewport") so that the draggable is always visible.
 
 $.ui.plugin.add("draggable", "scrollPanel", {
-    drag: function(e, ui) {
+    drag: function (e, ui) {
         var instance = $(this).data("draggable");
         clearTimeout(instance.timeout);
         var o = ui.options;
@@ -91,8 +91,8 @@ $.ui.plugin.add("draggable", "scrollPanel", {
             }, 50);
         }
     },
-    stop: function(e, ui) {
+    stop: function (e, ui) {
         var instance = $(this).data("draggable");
         clearTimeout(instance.timeout);
-    }
+    },
 });

@@ -111,14 +111,15 @@ class RepositoriesController(BaseAPIController):
         if owner is None:
             owner = kwd.get('owner', None)
         tsr_id = kwd.get('tsr_id', None)
+        eagerload_columns = ['downloadable_revisions']
         if None not in [name, owner]:
             # Get the repository information.
-            repository = repository_util.get_repository_by_name_and_owner(self.app, name, owner)
+            repository = repository_util.get_repository_by_name_and_owner(self.app, name, owner, eagerload_columns=eagerload_columns)
             if repository is None:
                 trans.response.status = 404
                 return {'status': 'error', 'message': 'No repository named %s found with owner %s' % (name, owner)}
         elif tsr_id is not None:
-            repository = repository_util.get_repository_in_tool_shed(self.app, tsr_id)
+            repository = repository_util.get_repository_in_tool_shed(self.app, tsr_id, eagerload_columns=eagerload_columns)
         else:
             error_message = "Error in the Tool Shed repositories API in get_ordered_installable_revisions: "
             error_message += "invalid parameters received."
@@ -197,7 +198,7 @@ class RepositoriesController(BaseAPIController):
         # http://<xyz>/api/repositories/get_repository_revision_install_info?name=<n>&owner=<o>&changeset_revision=<cr>
         if name and owner and changeset_revision:
             # Get the repository information.
-            repository = repository_util.get_repository_by_name_and_owner(self.app, name, owner)
+            repository = repository_util.get_repository_by_name_and_owner(self.app, name, owner, eagerload_columns=['downloadable_revisions'])
             if repository is None:
                 log.debug('Cannot locate repository %s owned by %s' % (str(name), str(owner)))
                 return {}, {}, {}
@@ -263,7 +264,7 @@ class RepositoriesController(BaseAPIController):
         # Example URL: http://localhost:9009/api/repositories/get_installable_revisions?tsr_id=9d37e53072ff9fa4
         tsr_id = kwd.get('tsr_id', None)
         if tsr_id is not None:
-            repository = repository_util.get_repository_in_tool_shed(self.app, tsr_id)
+            repository = repository_util.get_repository_in_tool_shed(self.app, tsr_id, eagerload_columns=['downloadable_revisions'])
         else:
             error_message = "Error in the Tool Shed repositories API in get_ordered_installable_revisions: "
             error_message += "missing or invalid parameter received."
@@ -713,16 +714,17 @@ class RepositoriesController(BaseAPIController):
         owner = kwd.get('owner', None)
         changeset_revision = kwd.get('changeset_revision', None)
         hexlify_this = util.asbool(kwd.get('hexlify', True))
-        repository = repository_util.get_repository_by_name_and_owner(trans.app, name, owner)
-        if repository:
+        repository = repository_util.get_repository_by_name_and_owner(trans.app, name, owner, eagerload_columns=['downloadable_revisions'])
+        if repository and repository.downloadable_revisions:
             repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(trans.app,
                                                                                               trans.security.encode_id(repository.id),
                                                                                               changeset_revision)
             tool_shed_status_dict = {}
             # Handle repository deprecation.
             tool_shed_status_dict['repository_deprecated'] = str(repository.deprecated)
+            tip_revision = repository.downloadable_revisions[0]
             # Handle latest installable revision.
-            if changeset_revision == repository.tip(trans.app):
+            if changeset_revision == tip_revision:
                 tool_shed_status_dict['latest_installable_revision'] = 'True'
             else:
                 next_installable_revision = metadata_util.get_next_downloadable_changeset_revision(trans.app, repository, changeset_revision)
@@ -737,7 +739,7 @@ class RepositoriesController(BaseAPIController):
                     else:
                         tool_shed_status_dict['latest_installable_revision'] = 'True'
             # Handle revision updates.
-            if changeset_revision == repository.tip(trans.app):
+            if changeset_revision == tip_revision:
                 tool_shed_status_dict['revision_update'] = 'False'
             else:
                 if repository_metadata is None:
@@ -801,7 +803,7 @@ class RepositoriesController(BaseAPIController):
             raise MalformedId('The given id is invalid.')
         recursive = util.asbool(kwd.get('recursive', 'True'))
         all_metadata = {}
-        repository = repository_util.get_repository_in_tool_shed(self.app, id)
+        repository = repository_util.get_repository_in_tool_shed(self.app, id, eagerload_columns=['downloadable_revisions'])
         for changeset, changehash in repository.installable_revisions(self.app):
             metadata = metadata_util.get_current_repository_metadata_for_changeset_revision(self.app, repository, changehash)
             if metadata is None:
@@ -975,7 +977,7 @@ class RepositoriesController(BaseAPIController):
         repo_dir = repository.repo_path(self.app)
 
         upload_point = commit_util.get_upload_point(repository, **kwd)
-        tip = repository.tip(self.app)
+        tip = repository.tip()
 
         file_data = payload.get('file')
         # Code stolen from gx's upload_common.py
@@ -1025,7 +1027,7 @@ class RepositoriesController(BaseAPIController):
             # Update the repository files for browsing.
             hg_util.update_repository(repo_dir)
             # Get the new repository tip.
-            if tip == repository.tip(self.app):
+            if tip == repository.tip():
                 trans.response.status = 400
                 message = 'No changes to repository.'
                 ok = False

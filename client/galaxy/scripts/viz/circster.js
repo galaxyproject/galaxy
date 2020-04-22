@@ -20,7 +20,7 @@ var SVGUtils = Backbone.Model.extend({
     /**
      * Returns true if element is visible.
      */
-    is_visible: function(svg_elt, svg) {
+    is_visible: function (svg_elt, svg) {
         var eltBRect = svg_elt.getBoundingClientRect();
         var svgBRect = $("svg")[0].getBoundingClientRect();
 
@@ -37,14 +37,14 @@ var SVGUtils = Backbone.Model.extend({
             return false;
         }
         return true;
-    }
+    },
 });
 
 /**
  * Mixin for using ticks.
  */
 var UsesTicks = {
-    drawTicks: function(parent_elt, data, dataHandler, textTransform, horizontal) {
+    drawTicks: function (parent_elt, data, dataHandler, textTransform, horizontal) {
         // Set up group elements for chroms and for each tick.
         var ticks = parent_elt
             .append("g")
@@ -57,14 +57,14 @@ var UsesTicks = {
             .enter()
             .append("g")
             .attr("class", "tick")
-            .attr("transform", d => `rotate(${(d.angle * 180) / Math.PI - 90})translate(${d.radius},0)`);
+            .attr("transform", (d) => `rotate(${(d.angle * 180) / Math.PI - 90})translate(${d.radius},0)`);
 
         // Add line + text for ticks.
         var tick_coords = [];
 
         var text_coords = [];
 
-        var text_anchor = d => (d.angle > Math.PI ? "end" : null);
+        var text_anchor = (d) => (d.angle > Math.PI ? "end" : null);
 
         if (horizontal) {
             tick_coords = [0, 0, 0, -4];
@@ -91,13 +91,13 @@ var UsesTicks = {
             .attr("dy", text_coords[3])
             .attr("text-anchor", text_anchor)
             .attr("transform", textTransform)
-            .text(d => d.label);
+            .text((d) => d.label);
     },
 
     /**
      * Format number for display at a tick.
      */
-    formatNum: function(num, sigDigits) {
+    formatNum: function (num, sigDigits) {
         // Use default of 2 sig. digits.
         if (sigDigits === undefined) sigDigits = 2;
 
@@ -126,7 +126,7 @@ var UsesTicks = {
         }
 
         return rval;
-    }
+    },
 };
 
 /**
@@ -140,7 +140,7 @@ var CircsterLabelTrack = Backbone.Model.extend({});
 var CircsterView = Backbone.View.extend({
     className: "circster",
 
-    initialize: function(options) {
+    initialize: function (options) {
         this.genome = options.genome;
         this.label_arc_height = 50;
         this.scale = 1;
@@ -162,21 +162,21 @@ var CircsterView = Backbone.View.extend({
     /**
      * Returns tracks to be rendered using circular view.
      */
-    get_circular_tracks: function() {
-        return this.model.get("drawables").filter(track => track.get("track_type") !== "DiagonalHeatmapTrack");
+    get_circular_tracks: function () {
+        return this.model.get("drawables").filter((track) => track.get("track_type") !== "DiagonalHeatmapTrack");
     },
 
     /**
      * Returns tracks to be rendered using chords view.
      */
-    get_chord_tracks: function() {
-        return this.model.get("drawables").filter(track => track.get("track_type") === "DiagonalHeatmapTrack");
+    get_chord_tracks: function () {
+        return this.model.get("drawables").filter((track) => track.get("track_type") === "DiagonalHeatmapTrack");
     },
 
     /**
      * Returns a list of circular tracks' radius bounds.
      */
-    get_tracks_bounds: function() {
+    get_tracks_bounds: function () {
         var circular_tracks = this.get_circular_tracks();
 
         var dataset_arc_height = this.model.get("config").get_value("arc_dataset_height");
@@ -199,13 +199,13 @@ var CircsterView = Backbone.View.extend({
             tracks_start_radii = d3.range(radius_start, min_dimension / 2, dataset_arc_height + track_gap);
 
         // Map from track start to bounds.
-        return _.map(tracks_start_radii, radius => [radius, radius + dataset_arc_height]);
+        return _.map(tracks_start_radii, (radius) => [radius, radius + dataset_arc_height]);
     },
 
     /**
      * Renders circular tracks, chord tracks, and label tracks.
      */
-    render: function() {
+    render: function () {
         var self = this;
         var width = self.$el.width();
         var height = self.$el.height();
@@ -262,7 +262,7 @@ var CircsterView = Backbone.View.extend({
                 track: track,
                 radius_bounds: tracks_bounds[index],
                 genome: self.genome,
-                total_gap: total_gap
+                total_gap: total_gap,
             });
 
             view.render();
@@ -272,13 +272,13 @@ var CircsterView = Backbone.View.extend({
 
         // -- Render chords tracks. --
 
-        this.chords_views = chords_tracks.map(track => {
+        this.chords_views = chords_tracks.map((track) => {
             var view = new CircsterChromInteractionsTrackView({
                 el: svg.append("g")[0],
                 track: track,
                 radius_bounds: tracks_bounds[0],
                 genome: self.genome,
-                total_gap: total_gap
+                total_gap: total_gap,
             });
 
             view.render();
@@ -300,7 +300,7 @@ var CircsterView = Backbone.View.extend({
             track: new CircsterLabelTrack(),
             radius_bounds: track_bounds,
             genome: self.genome,
-            total_gap: total_gap
+            total_gap: total_gap,
         });
 
         this.label_track_view.render();
@@ -309,7 +309,7 @@ var CircsterView = Backbone.View.extend({
     /**
      * Render a single track on the outside of the current visualization.
      */
-    add_track: function(new_track) {
+    add_track: function (new_track) {
         var total_gap = this.model.get("config").get_value("total_gap");
 
         if (new_track.get("track_type") === "DiagonalHeatmapTrack") {
@@ -321,7 +321,7 @@ var CircsterView = Backbone.View.extend({
                 track: new_track,
                 radius_bounds: innermost_radius_bounds,
                 genome: this.genome,
-                total_gap: total_gap
+                total_gap: total_gap,
             });
 
             new_view.render();
@@ -336,7 +336,7 @@ var CircsterView = Backbone.View.extend({
             });
 
             // Update chords tracks.
-            _.each(this.chords_views, track_view => {
+            _.each(this.chords_views, (track_view) => {
                 track_view.update_radius_bounds(new_track_bounds[0]);
             });
 
@@ -348,7 +348,7 @@ var CircsterView = Backbone.View.extend({
                 track: new_track,
                 radius_bounds: new_track_bounds[track_index],
                 genome: this.genome,
-                total_gap: total_gap
+                total_gap: total_gap,
             });
 
             track_view.render();
@@ -368,7 +368,7 @@ var CircsterView = Backbone.View.extend({
     /**
      * Remove a track from the view.
      */
-    remove_track: function(track, tracks, options) {
+    remove_track: function (track, tracks, options) {
         // -- Remove track from view. --
         var track_view = this.circular_views[options.index];
         this.circular_views.splice(options.index, 1);
@@ -381,7 +381,7 @@ var CircsterView = Backbone.View.extend({
         });
     },
 
-    update_track_bounds: function() {
+    update_track_bounds: function () {
         // Recompute and update track bounds.
         var new_track_bounds = this.get_tracks_bounds();
         _.each(this.circular_views, (track_view, i) => {
@@ -389,10 +389,10 @@ var CircsterView = Backbone.View.extend({
         });
 
         // Update chords tracks.
-        _.each(this.chords_views, track_view => {
+        _.each(this.chords_views, (track_view) => {
             track_view.update_radius_bounds(new_track_bounds[0]);
         });
-    }
+    },
 });
 
 /**
@@ -403,7 +403,7 @@ var CircsterTrackView = Backbone.View.extend({
 
     /* ----------------------- Public Methods ------------------------- */
 
-    initialize: function(options) {
+    initialize: function (options) {
         this.bg_stroke = "#ddd";
         // Fill color when loading data.
         this.loading_bg_fill = "#ffc";
@@ -422,7 +422,7 @@ var CircsterTrackView = Backbone.View.extend({
     /**
      * Get fill color from config.
      */
-    get_fill_color: function() {
+    get_fill_color: function () {
         var color = this.track.get("config").get_value("block_color");
         if (!color) {
             color = this.track.get("config").get_value("color");
@@ -433,24 +433,17 @@ var CircsterTrackView = Backbone.View.extend({
     /**
      * Render track's data by adding SVG elements to parent.
      */
-    render: function() {
+    render: function () {
         // -- Create track group element. --
         var track_parent_elt = this.parent_elt;
 
         // -- Render background arcs. --
         var genome_arcs = this.chroms_layout;
 
-        var arc_gen = d3.svg
-            .arc()
-            .innerRadius(this.radius_bounds[0])
-            .outerRadius(this.radius_bounds[1]);
+        var arc_gen = d3.svg.arc().innerRadius(this.radius_bounds[0]).outerRadius(this.radius_bounds[1]);
 
         var // Attach data to group element.
-            chroms_elts = track_parent_elt
-                .selectAll("g")
-                .data(genome_arcs)
-                .enter()
-                .append("svg:g");
+            chroms_elts = track_parent_elt.selectAll("g").data(genome_arcs).enter().append("svg:g");
 
         var // Draw chrom arcs/paths.
             chroms_paths = chroms_elts
@@ -461,7 +454,7 @@ var CircsterTrackView = Backbone.View.extend({
                 .style("fill", this.loading_bg_fill);
 
         // Append titles to paths.
-        chroms_paths.append("title").text(d => d.data.chrom);
+        chroms_paths.append("title").text((d) => d.data.chrom);
 
         // -- Render track data and, when track data is rendered, apply preferences and update chrom_elts fill. --
 
@@ -486,26 +479,19 @@ var CircsterTrackView = Backbone.View.extend({
     /**
      * Render track labels.
      */
-    render_labels: function() {},
+    render_labels: function () {},
 
     /**
      * Update radius bounds.
      */
-    update_radius_bounds: function(radius_bounds) {
+    update_radius_bounds: function (radius_bounds) {
         // Update bounds.
         this.radius_bounds = radius_bounds;
 
         // -- Update background arcs. --
-        var new_d = d3.svg
-            .arc()
-            .innerRadius(this.radius_bounds[0])
-            .outerRadius(this.radius_bounds[1]);
+        var new_d = d3.svg.arc().innerRadius(this.radius_bounds[0]).outerRadius(this.radius_bounds[1]);
 
-        this.parent_elt
-            .selectAll("g>path.chrom-background")
-            .transition()
-            .duration(1000)
-            .attr("d", new_d);
+        this.parent_elt.selectAll("g>path.chrom-background").transition().duration(1000).attr("d", new_d);
 
         this._transition_chrom_data();
 
@@ -515,7 +501,7 @@ var CircsterTrackView = Backbone.View.extend({
     /**
      * Update view scale. This fetches more data if scale is increased.
      */
-    update_scale: function(new_scale) {
+    update_scale: function (new_scale) {
         // -- Update scale and return if new scale is less than old scale. --
 
         var old_scale = this.scale;
@@ -533,10 +519,10 @@ var CircsterTrackView = Backbone.View.extend({
         // Select all chrom data and filter to operate on those that are visible.
         this.parent_elt
             .selectAll("path.chrom-data")
-            .filter(function(d, i) {
+            .filter(function (d, i) {
                 return utils.is_visible(this);
             })
-            .each(function(d, i) {
+            .each(function (d, i) {
                 // -- Now operating on a single path element representing chromosome data. --
 
                 var path_elt = d3.select(this);
@@ -557,7 +543,7 @@ var CircsterTrackView = Backbone.View.extend({
                     .get_more_detailed_data(chrom_region, "Coverage", 0, new_scale);
 
                 // When more data is available, use new data to redraw path.
-                $.when(data_deferred).then(data => {
+                $.when(data_deferred).then((data) => {
                     // Remove current data path.
                     path_elt.remove();
 
@@ -565,7 +551,7 @@ var CircsterTrackView = Backbone.View.extend({
                     self._update_data_bounds();
 
                     // Find chromosome arc to draw data on.
-                    var chrom_arc = _.find(self.chroms_layout, layout => layout.data.chrom === chrom);
+                    var chrom_arc = _.find(self.chroms_layout, (layout) => layout.data.chrom === chrom);
 
                     // Add new data path and apply preferences.
                     var color = self.get_fill_color();
@@ -583,7 +569,7 @@ var CircsterTrackView = Backbone.View.extend({
     /**
      * Transitions chrom data to new values (e.g new radius or data bounds).
      */
-    _transition_chrom_data: function() {
+    _transition_chrom_data: function () {
         var track = this.track;
         var chrom_arcs = this.chroms_layout;
         var chrom_data_paths = this.parent_elt.selectAll("g>path.chrom-data");
@@ -591,7 +577,7 @@ var CircsterTrackView = Backbone.View.extend({
 
         if (num_paths > 0) {
             var self = this;
-            $.when(track.get("data_manager").get_genome_wide_data(this.genome)).then(genome_wide_data => {
+            $.when(track.get("data_manager").get_genome_wide_data(this.genome)).then((genome_wide_data) => {
                 // Map chrom data to path data, filtering out null values.
                 var path_data = _.reject(
                     _.map(genome_wide_data, (chrom_data, i) => {
@@ -604,12 +590,12 @@ var CircsterTrackView = Backbone.View.extend({
                         }
                         return rval;
                     }),
-                    p_data => p_data === null
+                    (p_data) => p_data === null
                 );
 
                 // Transition each path for data and color.
                 var color = track.get("config").get_value("color");
-                chrom_data_paths.each(function(path, index) {
+                chrom_data_paths.each(function (path, index) {
                     d3.select(this)
                         .transition()
                         .duration(1000)
@@ -624,13 +610,13 @@ var CircsterTrackView = Backbone.View.extend({
     /**
      * Transition labels to new values (e.g new radius or data bounds).
      */
-    _transition_labels: function() {},
+    _transition_labels: function () {},
 
     /**
      * Update data bounds. If there are new_bounds, use them; otherwise use
      * default data bounds.
      */
-    _update_data_bounds: function(new_bounds) {
+    _update_data_bounds: function (new_bounds) {
         this.data_bounds =
             new_bounds || this.get_data_bounds(this.track.get("data_manager").get_genome_wide_data(this.genome));
         this._transition_chrom_data();
@@ -639,14 +625,14 @@ var CircsterTrackView = Backbone.View.extend({
     /**
      * Render data as elements attached to svg.
      */
-    _render_data: function(svg) {
+    _render_data: function (svg) {
         var self = this;
         var chrom_arcs = this.chroms_layout;
         var track = this.track;
         var rendered_deferred = $.Deferred();
 
         // When genome-wide data is available, render data.
-        $.when(track.get("data_manager").get_genome_wide_data(this.genome)).then(genome_wide_data => {
+        $.when(track.get("data_manager").get_genome_wide_data(this.genome)).then((genome_wide_data) => {
             // Set bounds.
             self.data_bounds = self.get_data_bounds(genome_wide_data);
 
@@ -655,17 +641,17 @@ var CircsterTrackView = Backbone.View.extend({
             // accordingly (set up in initialize). Because we are setting up, we don't want
             // the watch to trigger events here.
             track.get("config").set_value("min_value", self.data_bounds[0], {
-                silent: true
+                silent: true,
             });
             track.get("config").set_value("max_value", self.data_bounds[1], {
-                silent: true
+                silent: true,
             });
 
             // Merge chroms layout with data.
             var layout_and_data = _.zip(chrom_arcs, genome_wide_data);
 
             // Render each chromosome's data.
-            _.each(layout_and_data, chrom_info => {
+            _.each(layout_and_data, (chrom_info) => {
                 var chrom_arc = chrom_info[0];
                 var data = chrom_info[1];
                 return self._render_chrom_data(svg, chrom_arc, data);
@@ -673,10 +659,7 @@ var CircsterTrackView = Backbone.View.extend({
 
             // Apply prefs to all track data.
             var color = self.get_fill_color();
-            self.parent_elt
-                .selectAll("path.chrom-data")
-                .style("stroke", color)
-                .style("fill", color);
+            self.parent_elt.selectAll("path.chrom-data").style("stroke", color).style("fill", color);
 
             rendered_deferred.resolve(svg);
         });
@@ -687,24 +670,24 @@ var CircsterTrackView = Backbone.View.extend({
     /**
      * Render a chromosome data and attach elements to svg.
      */
-    _render_chrom_data: function(svg, chrom_arc, data) {},
+    _render_chrom_data: function (svg, chrom_arc, data) {},
 
     /**
      * Returns data for creating a path for the given data using chrom_arc and data bounds.
      */
-    _get_path_function: function(chrom_arc, chrom_data) {},
+    _get_path_function: function (chrom_arc, chrom_data) {},
 
     /**
      * Returns arc layouts for genome's chromosomes/contigs. Arcs are arranged in a circle
      * separated by gaps.
      */
-    _chroms_layout: function() {
+    _chroms_layout: function () {
         // Setup chroms layout using pie.
         var chroms_info = this.genome.get_chroms_info();
 
         var pie_layout = d3.layout
             .pie()
-            .value(d => d.len)
+            .value((d) => d.len)
             .sort(null);
 
         var init_arcs = pie_layout(chroms_info);
@@ -718,14 +701,14 @@ var CircsterTrackView = Backbone.View.extend({
         });
 
         return chrom_arcs;
-    }
+    },
 });
 
 /**
  * Render chromosome labels.
  */
 var CircsterChromLabelTrackView = CircsterTrackView.extend({
-    initialize: function(options) {
+    initialize: function (options) {
         CircsterTrackView.prototype.initialize.call(this, options);
         // Use a single arc for rendering data.
         this.innerRadius = this.radius_bounds[0];
@@ -740,35 +723,35 @@ var CircsterChromLabelTrackView = CircsterTrackView.extend({
     /**
      * Render labels.
      */
-    _render_data: function(svg) {
+    _render_data: function (svg) {
         // -- Add chromosome label where it will fit; an alternative labeling mechanism
         // would be nice for small chromosomes. --
         var self = this;
 
         var chrom_arcs = svg.selectAll("g");
 
-        chrom_arcs.selectAll("path").attr("id", d => `label-${d.data.chrom}`);
+        chrom_arcs.selectAll("path").attr("id", (d) => `label-${d.data.chrom}`);
 
         chrom_arcs
             .append("svg:text")
-            .filter(d => d.endAngle - d.startAngle > self.min_arc_len)
+            .filter((d) => d.endAngle - d.startAngle > self.min_arc_len)
             .attr("text-anchor", "middle")
             .append("svg:textPath")
             .attr("class", "chrom-label")
-            .attr("xlink:href", d => `#label-${d.data.chrom}`)
+            .attr("xlink:href", (d) => `#label-${d.data.chrom}`)
             .attr("startOffset", "25%")
-            .text(d => d.data.chrom);
+            .text((d) => d.data.chrom);
 
         // -- Add ticks to denote chromosome length. --
 
         /** Returns an array of tick angles and labels, given a chrom arc. */
-        var chromArcTicks = d => {
+        var chromArcTicks = (d) => {
             var k = (d.endAngle - d.startAngle) / d.value;
 
             var ticks = d3.range(0, d.value, 25000000).map((v, i) => ({
                 radius: self.innerRadius,
                 angle: v * k + d.startAngle,
-                label: i === 0 ? 0 : i % 3 ? null : self.formatNum(v)
+                label: i === 0 ? 0 : i % 3 ? null : self.formatNum(v),
             }));
 
             // If there are fewer that 4 ticks, label last tick so that at least one non-zero tick is labeled.
@@ -782,13 +765,13 @@ var CircsterChromLabelTrackView = CircsterTrackView.extend({
         };
 
         /** Rotate and move text as needed. */
-        var textTransform = d => (d.angle > Math.PI ? "rotate(180)translate(-16)" : null);
+        var textTransform = (d) => (d.angle > Math.PI ? "rotate(180)translate(-16)" : null);
 
         // Filter chroms for only those large enough for display.
-        var visibleChroms = _.filter(this.chroms_layout, c => c.endAngle - c.startAngle > self.min_arc_len);
+        var visibleChroms = _.filter(this.chroms_layout, (c) => c.endAngle - c.startAngle > self.min_arc_len);
 
         this.drawTicks(this.parent_elt, visibleChroms, chromArcTicks, textTransform);
-    }
+    },
 });
 _.extend(CircsterChromLabelTrackView.prototype, UsesTicks);
 
@@ -796,7 +779,7 @@ _.extend(CircsterChromLabelTrackView.prototype, UsesTicks);
  * View for quantitative track in Circster.
  */
 var CircsterQuantitativeTrackView = CircsterTrackView.extend({
-    initialize: function(options) {
+    initialize: function (options) {
         CircsterTrackView.prototype.initialize.call(this, options);
 
         // When config settings change, update view.
@@ -809,7 +792,7 @@ var CircsterQuantitativeTrackView = CircsterTrackView.extend({
     /**
      * Update track when min and/or max are changed.
      */
-    _update_min_max: function() {
+    _update_min_max: function () {
         var track_config = this.track.get("config");
 
         var new_bounds = [track_config.get_value("min_value"), track_config.get_value("max_value")];
@@ -824,7 +807,7 @@ var CircsterQuantitativeTrackView = CircsterTrackView.extend({
     /**
      * Returns quantile for an array of numbers.
      */
-    _quantile: function(numbers, quantile) {
+    _quantile: function (numbers, quantile) {
         numbers.sort(d3.ascending);
         return d3.quantile(numbers, quantile);
     },
@@ -833,7 +816,7 @@ var CircsterQuantitativeTrackView = CircsterTrackView.extend({
      * Renders quantitative data with the form [x, value] and assumes data is equally spaced across
      * chromosome. Attachs a dict with track and chrom name information to DOM element.
      */
-    _render_chrom_data: function(svg, chrom_arc, chrom_data) {
+    _render_chrom_data: function (svg, chrom_arc, chrom_data) {
         var path_data = this._get_path_function(chrom_arc, chrom_data);
 
         if (!path_data) {
@@ -855,18 +838,14 @@ var CircsterQuantitativeTrackView = CircsterTrackView.extend({
     /**
      * Returns function for creating a path across the chrom arc.
      */
-    _get_path_function: function(chrom_arc, chrom_data) {
+    _get_path_function: function (chrom_arc, chrom_data) {
         // If no chrom data, return null.
         if (typeof chrom_data === "string" || !chrom_data.data || chrom_data.data.length === 0) {
             return null;
         }
 
         // Radius scaler.
-        var radius = d3.scale
-            .linear()
-            .domain(this.data_bounds)
-            .range(this.radius_bounds)
-            .clamp(true);
+        var radius = d3.scale.linear().domain(this.data_bounds).range(this.radius_bounds).clamp(true);
 
         // Scaler for placing data points across arc.
         var angle = d3.scale
@@ -878,7 +857,7 @@ var CircsterQuantitativeTrackView = CircsterTrackView.extend({
         var line = d3.svg.line
             .radial()
             .interpolate("linear")
-            .radius(d => radius(d[1]))
+            .radius((d) => radius(d[1]))
             .angle((d, i) => angle(i));
 
         return d3.svg.area
@@ -892,7 +871,7 @@ var CircsterQuantitativeTrackView = CircsterTrackView.extend({
     /**
      * Render track min, max using ticks.
      */
-    render_labels: function() {
+    render_labels: function () {
         var self = this;
 
         var // Keep counter of visible chroms.
@@ -912,10 +891,10 @@ var CircsterQuantitativeTrackView = CircsterTrackView.extend({
         ).classed("min_max", true);
 
         // Show config when ticks are clicked on.
-        _.each(ticks, tick => {
+        _.each(ticks, (tick) => {
             $(tick).click(() => {
                 var view = new config.ConfigSettingCollectionView({
-                    collection: self.track.get("config")
+                    collection: self.track.get("config"),
                 });
                 view.render_in_modal("Configure Track");
             });
@@ -933,7 +912,7 @@ var CircsterQuantitativeTrackView = CircsterTrackView.extend({
     /**
      * Transition labels to new values (e.g new radius or data bounds).
      */
-    _transition_labels: function() {
+    _transition_labels: function () {
         // FIXME: (a) pull out function for getting labeled chroms? and (b) function used in transition below
         // is copied from UseTicks mixin, so pull out and make generally available.
 
@@ -945,23 +924,23 @@ var CircsterQuantitativeTrackView = CircsterTrackView.extend({
         // Transition labels to new radius bounds.
         var self = this;
 
-        var visibleChroms = _.filter(this.chroms_layout, c => c.endAngle - c.startAngle > 0.08);
+        var visibleChroms = _.filter(this.chroms_layout, (c) => c.endAngle - c.startAngle > 0.08);
 
         var labeledChroms = _.filter(visibleChroms, (c, i) => i % 3 === 0);
 
-        var new_data = _.flatten(_.map(labeledChroms, c => self._data_bounds_ticks_fn()(c)));
+        var new_data = _.flatten(_.map(labeledChroms, (c) => self._data_bounds_ticks_fn()(c)));
 
         this.parent_elt
             .selectAll("g.tick")
             .data(new_data)
             .transition()
-            .attr("transform", d => `rotate(${(d.angle * 180) / Math.PI - 90})translate(${d.radius},0)`);
+            .attr("transform", (d) => `rotate(${(d.angle * 180) / Math.PI - 90})translate(${d.radius},0)`);
     },
 
     /**
      * Get function for locating data bounds ticks.
      */
-    _data_bounds_ticks_fn: function() {
+    _data_bounds_ticks_fn: function () {
         // Closure vars.
         var self = this;
 
@@ -972,13 +951,13 @@ var CircsterQuantitativeTrackView = CircsterTrackView.extend({
             {
                 radius: self.radius_bounds[0],
                 angle: d.startAngle,
-                label: self.formatNum(self.data_bounds[0])
+                label: self.formatNum(self.data_bounds[0]),
             },
             {
                 radius: self.radius_bounds[1],
                 angle: d.startAngle,
-                label: self.formatNum(self.data_bounds[1])
-            }
+                label: self.formatNum(self.data_bounds[1]),
+            },
         ];
     },
 
@@ -986,7 +965,7 @@ var CircsterQuantitativeTrackView = CircsterTrackView.extend({
      * Returns an array with two values denoting the minimum and maximum
      * values for the track.
      */
-    get_data_bounds: function(data) {}
+    get_data_bounds: function (data) {},
 });
 _.extend(CircsterQuantitativeTrackView.prototype, UsesTicks);
 
@@ -994,11 +973,11 @@ _.extend(CircsterQuantitativeTrackView.prototype, UsesTicks);
  * Bigwig track view in Circster.
  */
 var CircsterBigWigTrackView = CircsterQuantitativeTrackView.extend({
-    get_data_bounds: function(data) {
+    get_data_bounds: function (data) {
         // Set max across dataset by extracting all values, flattening them into a
         // single array, and getting third quartile.
         var values = _.flatten(
-            _.map(data, d => {
+            _.map(data, (d) => {
                 if (d) {
                     // Each data point has the form [position, value], so return all values.
                     return _.map(
@@ -1016,27 +995,27 @@ var CircsterBigWigTrackView = CircsterQuantitativeTrackView.extend({
         // For max, use 98% quantile in attempt to avoid very large values. However, this max may be 0
         // for sparsely populated data, so use max in that case.
         return [_.min(values), this._quantile(values, 0.98) || _.max(values)];
-    }
+    },
 });
 
 /**
  * Chromosome interactions track view in Circster.
  */
 var CircsterChromInteractionsTrackView = CircsterTrackView.extend({
-    render: function() {
+    render: function () {
         var self = this;
 
         // When data is ready, render track.
         $.when(self.track.get("data_manager").data_is_ready()).then(() => {
             // When data has been fetched, render track.
-            $.when(self.track.get("data_manager").get_genome_wide_data(self.genome)).then(genome_wide_data => {
+            $.when(self.track.get("data_manager").get_genome_wide_data(self.genome)).then((genome_wide_data) => {
                 var chord_data = [];
                 var chroms_info = self.genome.get_chroms_info();
                 // Convert chromosome data into chord data.
                 _.each(genome_wide_data, (chrom_data, index) => {
                     // Map each interaction into chord data.
                     var cur_chrom = chroms_info[index].chrom;
-                    var chrom_chord_data = _.map(chrom_data.data, datum => {
+                    var chrom_chord_data = _.map(chrom_data.data, (datum) => {
                         // Each datum is an interaction/chord.
                         var source_angle = self._get_region_angle(cur_chrom, datum[1]);
 
@@ -1045,12 +1024,12 @@ var CircsterChromInteractionsTrackView = CircsterTrackView.extend({
                         return {
                             source: {
                                 startAngle: source_angle,
-                                endAngle: source_angle + 0.01
+                                endAngle: source_angle + 0.01,
                             },
                             target: {
                                 startAngle: target_angle,
-                                endAngle: target_angle + 0.01
-                            }
+                                endAngle: target_angle + 0.01,
+                            },
                         };
                     });
 
@@ -1071,20 +1050,17 @@ var CircsterChromInteractionsTrackView = CircsterTrackView.extend({
         });
     },
 
-    update_radius_bounds: function(radius_bounds) {
+    update_radius_bounds: function (radius_bounds) {
         this.radius_bounds = radius_bounds;
-        this.parent_elt
-            .selectAll("path")
-            .transition()
-            .attr("d", d3.svg.chord().radius(this.radius_bounds[0]));
+        this.parent_elt.selectAll("path").transition().attr("d", d3.svg.chord().radius(this.radius_bounds[0]));
     },
 
     /**
      * Returns radians for a genomic position.
      */
-    _get_region_angle: function(chrom, position) {
+    _get_region_angle: function (chrom, position) {
         // Find chrom angle data
-        var chrom_angle_data = _.find(this.chroms_layout, chrom_layout => chrom_layout.data.chrom === chrom);
+        var chrom_angle_data = _.find(this.chroms_layout, (chrom_layout) => chrom_layout.data.chrom === chrom);
 
         // Return angle at position.
         return (
@@ -1092,12 +1068,12 @@ var CircsterChromInteractionsTrackView = CircsterTrackView.extend({
             ((chrom_angle_data.endAngle - chrom_angle_data.startAngle) * (chrom_angle_data.data.len - position)) /
                 chrom_angle_data.data.len
         );
-    }
+    },
 });
 
 // circster app loader
 var Circster = Backbone.View.extend({
-    initialize: function() {
+    initialize: function () {
         // load css
         mod_utils.cssLoadFile("static/style/circster.css");
         // -- Configure visualization --
@@ -1112,14 +1088,14 @@ var Circster = Backbone.View.extend({
                 label: "Arc Dataset Height",
                 type: "int",
                 value: 25,
-                view: "circster"
+                view: "circster",
             },
             {
                 key: "track_gap",
                 label: "Gap Between Tracks",
                 type: "int",
                 value: 5,
-                view: "circster"
+                view: "circster",
             },
             {
                 key: "total_gap",
@@ -1127,15 +1103,15 @@ var Circster = Backbone.View.extend({
                 type: "float",
                 value: 0.4,
                 view: "circster",
-                hidden: true
-            }
+                hidden: true,
+            },
         ]);
 
         var viz_view = new CircsterView({
             // view pane
             el: $("#center .unified-panel-body"),
             genome: genome,
-            model: vis
+            model: vis,
         });
 
         // Render vizualization
@@ -1152,32 +1128,32 @@ var Circster = Backbone.View.extend({
                 {
                     icon_class: "plus-button",
                     title: _l("Add tracks"),
-                    on_click: function() {
-                        visualization.select_datasets({ dbkey: vis.get("dbkey") }, tracks => {
+                    on_click: function () {
+                        visualization.select_datasets({ dbkey: vis.get("dbkey") }, (tracks) => {
                             vis.add_tracks(tracks);
                         });
-                    }
+                    },
                 },
                 {
                     icon_class: "gear",
                     title: _l("Settings"),
-                    on_click: function() {
+                    on_click: function () {
                         var view = new config.ConfigSettingCollectionView({
-                            collection: vis.get("config")
+                            collection: vis.get("config"),
                         });
                         view.render_in_modal("Configure Visualization");
-                    }
+                    },
                 },
                 {
                     icon_class: "disk--arrow",
                     title: _l("Save"),
-                    on_click: function() {
+                    on_click: function () {
                         const Galaxy = getGalaxyInstance();
 
                         // show saving dialog box
                         Galaxy.modal.show({
                             title: _l("Saving..."),
-                            body: "progress"
+                            body: "progress",
                         });
 
                         // send to server
@@ -1190,10 +1166,10 @@ var Circster = Backbone.View.extend({
                                 title: vis.get("title"),
                                 dbkey: vis.get("dbkey"),
                                 type: "trackster",
-                                vis_json: JSON.stringify(vis)
-                            }
+                                vis_json: JSON.stringify(vis),
+                            },
                         })
-                            .success(vis_info => {
+                            .success((vis_info) => {
                                 Galaxy.modal.hide();
                                 vis.set("vis_id", vis_info.vis_id);
                             })
@@ -1203,21 +1179,21 @@ var Circster = Backbone.View.extend({
                                     title: _l("Could Not Save"),
                                     body: "Could not save visualization. Please try again later.",
                                     buttons: {
-                                        Cancel: function() {
+                                        Cancel: function () {
                                             Galaxy.modal.hide();
-                                        }
-                                    }
+                                        },
+                                    },
                                 });
                             });
-                    }
+                    },
                 },
                 {
                     icon_class: "cross-circle",
                     title: _l("Close"),
-                    on_click: function() {
+                    on_click: function () {
                         window.top.location = `${getAppRoot()}visualizations/list`;
-                    }
-                }
+                    },
+                },
             ],
             { tooltip_config: { placement: "bottom" } }
         );
@@ -1228,10 +1204,10 @@ var Circster = Backbone.View.extend({
 
         // manual tooltip config because default gravity is S and cannot be changed
         $(".menu-button").tooltip({ placement: "bottom" });
-    }
+    },
 });
 
 // Module exports.
 export default {
-    GalaxyApp: Circster
+    GalaxyApp: Circster,
 };

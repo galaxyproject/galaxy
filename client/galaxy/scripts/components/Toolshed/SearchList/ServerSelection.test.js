@@ -8,8 +8,8 @@ describe("ServerSelection", () => {
                 toolshedUrl: "url_0",
                 toolshedUrls: ["url_0", "url_1"],
                 loading: false,
-                total: "total"
-            }
+                total: "total",
+            },
         });
         expect(wrapper.find(".description").text()).to.equal("total repositories available at");
         const $options = wrapper.findAll("a");

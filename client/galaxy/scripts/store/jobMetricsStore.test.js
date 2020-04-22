@@ -3,7 +3,7 @@ import { jobMetricsStore } from "./jobMetricsStore";
 describe("store/jobMetricsStore.js", () => {
     it("getter should return empty list for unfetched job IDs", () => {
         const state = {
-            jobMetricsByJobId: {}
+            jobMetricsByJobId: {},
         };
         let metrics = jobMetricsStore.getters.getJobMetricsByJobId(state)("123");
         assert(metrics.length == 0);
@@ -11,7 +11,7 @@ describe("store/jobMetricsStore.js", () => {
 
     it("should simply return fetched metrics list for job ID", () => {
         const state = {
-            jobMetricsByJobId: { "123": [{ plugin: "core", value: 123 }] }
+            jobMetricsByJobId: { "123": [{ plugin: "core", value: 123 }] },
         };
         let metrics = jobMetricsStore.getters.getJobMetricsByJobId(state)("123");
         assert(metrics.length == 1);

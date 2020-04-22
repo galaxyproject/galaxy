@@ -6,27 +6,27 @@ import { getAppRoot } from "onload/loadConfig";
 
 // collection of libraries
 var Libraries = Backbone.Collection.extend({
-    url: `${getAppRoot()}api/libraries?deleted=false`
+    url: `${getAppRoot()}api/libraries?deleted=false`,
 });
 
 // collection of dataset
 var LibraryDatasets = Backbone.Collection.extend({
-    initialize: function() {
+    initialize: function () {
         var self = this;
         this.config = new Backbone.Model({ library_id: null });
         this.config.on("change", () => {
             self.fetch({ reset: true });
         });
     },
-    url: function() {
+    url: function () {
         return `${getAppRoot()}api/libraries/${this.config.get("library_id")}/contents`;
-    }
+    },
 });
 
 // hda/hdca content selector ui element
 var View = Backbone.View.extend({
     // initialize
-    initialize: function(options) {
+    initialize: function (options) {
         // link this
         var self = this;
 
@@ -40,9 +40,9 @@ var View = Backbone.View.extend({
         // select field for the library
         // TODO: Remove this once the library API supports searching for library datasets
         this.library_select = new Ui.Select.View({
-            onchange: function(value) {
+            onchange: function (value) {
                 self.datasets.config.set("library_id", value);
-            }
+            },
         });
 
         // create ui-list view to keep track of selected data libraries
@@ -50,18 +50,18 @@ var View = Backbone.View.extend({
             name: "dataset",
             optional: options.optional,
             multiple: options.multiple,
-            onchange: function() {
+            onchange: function () {
                 self.trigger("change");
-            }
+            },
         });
 
         // add reset handler for fetched libraries
         this.libraries.on("reset", () => {
             var data = [];
-            self.libraries.each(model => {
+            self.libraries.each((model) => {
                 data.push({
                     value: model.id,
-                    label: model.get("name")
+                    label: model.get("name"),
                 });
             });
             self.library_select.update({ data: data });
@@ -72,11 +72,11 @@ var View = Backbone.View.extend({
             var data = [];
             var library_current = self.library_select.text();
             if (library_current !== null) {
-                self.datasets.each(model => {
+                self.datasets.each((model) => {
                     if (model.get("type") === "file") {
                         data.push({
                             value: model.id,
-                            label: model.get("name")
+                            label: model.get("name"),
                         });
                     }
                 });
@@ -99,28 +99,28 @@ var View = Backbone.View.extend({
         // initial fetch of libraries
         this.libraries.fetch({
             reset: true,
-            success: function() {
+            success: function () {
                 self.library_select.trigger("change");
                 if (self.options.value !== undefined) {
                     self.value(self.options.value);
                 }
-            }
+            },
         });
     },
 
     /** Return/Set currently selected library datasets */
-    value: function(val) {
+    value: function (val) {
         return this.dataset_list.value(val);
     },
 
     /** Template */
-    _template: function() {
+    _template: function () {
         return `<div class="ui-select-library">
                     <div class="library-select mb-2"/>
                 </div>`;
-    }
+    },
 });
 
 export default {
-    View: View
+    View: View,
 };

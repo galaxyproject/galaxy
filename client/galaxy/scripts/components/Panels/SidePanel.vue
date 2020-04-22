@@ -9,7 +9,7 @@
                 :class="{
                     left: side === 'left',
                     right: side === 'right',
-                    hidden: !show
+                    hidden: !show,
                 }"
                 @click="toggle"
             />
@@ -28,7 +28,7 @@ export default {
     data() {
         return {
             show: true,
-            width: 288
+            width: 288,
         };
     },
     computed: {
@@ -37,7 +37,7 @@ export default {
             styles[this.side] = this.show ? "0" : `-${this.width}px`;
             styles["width"] = this.width + "px";
             return styles;
-        }
+        },
     },
     methods: {
         dragHandler(e) {
@@ -84,8 +84,16 @@ export default {
                     document.getElementById("center").style.transition = "";
                 }, 250);
             }
-        }
-    }
+        },
+        hide() {
+            this.show = false;
+            document.getElementById("center").style.transition = `${this.side} 200ms linear`;
+            document.getElementById("center").style[this.side] = "0";
+            setTimeout(() => {
+                document.getElementById("center").style.transition = "";
+            }, 250);
+        },
+    },
 };
 </script>
 

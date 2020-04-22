@@ -936,7 +936,7 @@ class SelectToolParameter(ToolParameter):
         # FIXME: Currently only translating values back to labels if they
         #        are not dynamic
         if self.is_dynamic:
-            rval = map(str, value)
+            rval = [str(_) for _ in value]
         else:
             options = list(self.static_options)
             rval = []
@@ -1258,7 +1258,7 @@ class ColumnListParameter(SelectToolParameter):
             try:
                 with open(dataset.get_file_name(), 'r') as f:
                     head = f.readline()
-                cnames = head.rstrip().split('\t')
+                cnames = head.rstrip("\n\r ").split('\t')
                 column_list = [('%d' % (i + 1), 'c%d: %s' % (i + 1, x)) for i, x in enumerate(cnames)]
                 if self.numerical:  # If numerical was requested, filter columns based on metadata
                     if hasattr(dataset, 'metadata') and hasattr(dataset.metadata, 'column_types'):
@@ -1913,7 +1913,7 @@ class DataToolParameter(BaseDataToolParameter):
             ref = getattr(ref, attribute)
         if call_attribute:
             ref = ref()
-        return ref
+        return str(ref)
 
     def to_dict(self, trans, other_values={}):
         # create dictionary and fill default parameters

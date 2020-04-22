@@ -94,22 +94,22 @@ export default {
         Requirements,
         StatusDisplay,
         ToolDisplay,
-        Tools
+        Tools,
     },
     props: {
         resolution: {
             type: Object,
-            required: true
-        }
+            required: true,
+        },
     },
     computed: {
-        singleTool: function() {
+        singleTool: function () {
             return this.resolution.tool_id != undefined;
         },
-        isContainerResolution: function() {
+        isContainerResolution: function () {
             return this.resolution.status.length >= 1 && this.resolution.status[0].model_class == "ContainerDependency";
         },
-        containerResolution: function() {
+        containerResolution: function () {
             return { ...this.resolution, status: this.resolution.status[0] };
         },
         /*
@@ -121,11 +121,11 @@ export default {
             return !anyUnresolved;
         },
         */
-        separateDetails: function() {
+        separateDetails: function () {
             return (
                 this.resolution.status.length > 1 && this.resolution.status[0].model_class != "MergedCondaDependency"
             );
-        }
-    }
+        },
+    },
 };
 </script>

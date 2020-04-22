@@ -19,14 +19,14 @@ export default {
         StatusDisplay,
         Statuses,
         ToolDisplay,
-        Tools
+        Tools,
     },
     created() {
         this.root = getAppRoot();
         this.load();
     },
     computed: {
-        hasSelection: function() {
+        hasSelection: function () {
             // Not reactive yet...
             for (const item of this.items) {
                 if (item["selected"]) {
@@ -34,7 +34,7 @@ export default {
                 }
             }
             return false;
-        }
+        },
     },
     methods: {
         showRowDetails(row, index, e) {
@@ -44,6 +44,6 @@ export default {
         },
         handleError(e) {
             this.error = e;
-        }
-    }
+        },
+    },
 };

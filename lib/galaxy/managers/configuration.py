@@ -62,6 +62,11 @@ class ConfigSerializer(base.ModelSerializer):
             'communication_server_port'         : _use_config,
             'communication_server_host'         : _use_config,
             'persistent_communication_rooms'    : _use_config,
+            'enable_tool_recommendations'       : _use_config,
+            'tool_recommendation_model_path'    : _use_config,
+            'admin_tool_recommendations_path'   : _use_config,
+            'overwrite_model_recommendations'   : _use_config,
+            'topk_recommendations'              : _use_config,
             'allow_user_impersonation'          : _use_config,
             'allow_user_creation'               : _defaults_to(False),  # schema default is True
             'use_remote_user'                   : _defaults_to(None),  # schema default is False; or config.single_user
@@ -86,6 +91,7 @@ class ConfigSerializer(base.ModelSerializer):
             'inactivity_box_content'            : _use_config,
             'visualizations_visible'            : _use_config,
             'interactivetools_enable'           : _use_config,
+            'aws_estimate'                      : _use_config,
             'message_box_content'               : _use_config,
             'message_box_visible'               : _use_config,
             'message_box_class'                 : _use_config,

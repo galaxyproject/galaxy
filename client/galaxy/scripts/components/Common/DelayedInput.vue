@@ -30,35 +30,35 @@ library.add(faTimesCircle);
 
 export default {
     components: {
-        FontAwesomeIcon
+        FontAwesomeIcon,
     },
     props: {
         query: {
-            type: String
+            type: String,
         },
         loading: {
-            type: Boolean
+            type: Boolean,
         },
         placeholder: {
             type: String,
-            default: "Enter your search term here."
+            default: "Enter your search term here.",
         },
         delay: {
             type: Number,
-            default: 1000
-        }
+            default: 1000,
+        },
     },
     data() {
         return {
             queryInput: null,
             queryTimer: null,
-            queryCurrent: null
+            queryCurrent: null,
         };
     },
     watch: {
         query(queryNew) {
             this.setQuery(queryNew);
-        }
+        },
     },
     methods: {
         clearTimer() {
@@ -82,7 +82,7 @@ export default {
                 this.queryCurrent = this.queryInput = queryNew;
                 this.$emit("onChange", this.queryCurrent);
             }
-        }
-    }
+        },
+    },
 };
 </script>

@@ -113,13 +113,13 @@ const RENDER_FUNCTIONS = {
     job_parameters: (action, args, content) => {
         const jobId = args.job_id;
         return `<div class="job-parameters" job_id="${jobId}"></div>`;
-    }
+    },
 };
 
-md.renderer.rules.fence = function(tokens, idx, options, env, slf) {
-    const token = tokens[idx],
-        info = token.info ? token.info.trim() : "",
-        content = token.content;
+md.renderer.rules.fence = function (tokens, idx, options, env, slf) {
+    const token = tokens[idx];
+    const info = token.info ? token.info.trim() : "";
+    const content = token.content;
     if (info == "galaxy") {
         const arr = FUNCTION_CALL_LINE_TEMPLATE.exec(content);
         const action = arr[1];
@@ -142,25 +142,23 @@ function render_fenced_output(tag, objects, idAttr, metadataKey) {
     $("." + tag).each((i, el) => {
         const objectId = $(el).attr(idAttr);
         const meta = objects[objectId][metadataKey];
-        $(el)
-            .find("code")
-            .text(meta);
+        $(el).find("code").text(meta);
     });
 }
 
 export default {
     props: {
         markdownConfig: {
-            type: Object
+            type: Object,
         },
         readOnly: {
             type: Boolean,
-            default: true
+            default: true,
         },
         exportLink: {
             type: String,
-            required: false
-        }
+            required: false,
+        },
     },
     data() {
         return {
@@ -168,17 +166,17 @@ export default {
             historyDatasets: {},
             historyDatasetCollections: {},
             workflows: {},
-            jobs: {}
+            jobs: {},
         };
     },
     computed: {
         effectiveExportLink() {
             const Galaxy = getGalaxyInstance();
             return Galaxy.config.enable_beta_markdown_export ? this.exportLink : null;
-        }
+        },
     },
     watch: {
-        markdownConfig: function(mConfig, oldVal) {
+        markdownConfig: function (mConfig, oldVal) {
             const markdown = mConfig.markdown;
             this.markdownRendered = md.render(markdown);
             this.historyDatasets = mConfig.history_datasets || {};
@@ -222,12 +220,12 @@ export default {
                         el: $(el),
                         linkTarget: "galaxy_main",
                         purgeAllowed: Galaxy.config.allow_user_dataset_purge,
-                        logger: Galaxy.logger
+                        logger: Galaxy.logger,
                     }).render(0);
                 });
             });
-        }
-    }
+        },
+    },
 };
 </script>
 

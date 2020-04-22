@@ -5,20 +5,30 @@
             {{ message }}
         </b-alert>
         <p>
-            You are logged in as <strong>{{ email }}</strong
+            You are logged in as <strong id="user-preferences-current-email">{{ email }}</strong
             >.
         </p>
         <b-row class="ml-3 mb-1" v-for="(link, index) in activeLinks" :key="index">
             <i :class="['pref-icon pt-1 fa fa-lg', link.icon]" />
             <div class="pref-content pr-1">
-                <a v-if="link.onclick" @click="link.onclick" href="javascript:void(0)"
+                <a :id="link.id" v-if="link.onclick" @click="link.onclick" href="javascript:void(0)"
                     ><b>{{ link.title }}</b></a
                 >
-                <a v-else :href="`${baseUrl}/${link.action}`"
+                <a :id="link.id" v-else :href="`${baseUrl}/${link.action}`"
                     ><b>{{ link.title }}</b></a
                 >
                 <div class="form-text text-muted">
                     {{ link.description }}
+                </div>
+            </div>
+        </b-row>
+        <b-row class="ml-3 mb-1">
+            <i class="pref-icon pt-1 fa fa-lg fa-plus-square-o" />
+            <div class="pref-content pr-1">
+                <a @click="toggleNotifications" href="javascript:void(0)"><b>Enable notifications</b></a>
+                <div class="form-text text-muted">
+                    Allow push and tab notifcations on job completion. To disable, revoke the site notification
+                    privilege in your browser.
                 </div>
             </div>
         </b-row>
@@ -48,12 +58,12 @@ export default {
     props: {
         userId: {
             type: String,
-            required: true
+            required: true,
         },
         enableQuotas: {
             type: Boolean,
-            required: true
-        }
+            required: true,
+        },
     },
     data() {
         return {
@@ -62,7 +72,7 @@ export default {
             quotaUsageString: "",
             baseUrl: `${getAppRoot()}user`,
             messageVariant: null,
-            message: null
+            message: null,
         };
     },
     created() {
@@ -72,7 +82,7 @@ export default {
             this.message = message;
             this.messageVariant = status;
         }
-        axios.get(`${getAppRoot()}api/users/${this.userId}`).then(response => {
+        axios.get(`${getAppRoot()}api/users/${this.userId}`).then((response) => {
             this.email = response.data.email;
             this.diskUsage = response.data.nice_total_disk_usage;
             this.quotaUsageString = this.enableQuotas
@@ -104,9 +114,21 @@ export default {
             }
 
             return activeLinks;
-        }
+        },
     },
     methods: {
+        toggleNotifications() {
+            Notification.requestPermission().then(function (permission) {
+                //If the user accepts, let's create a notification
+                if (permission === "granted") {
+                    new Notification("Notifications enabled", {
+                        icon: "static/favicon.ico",
+                    });
+                } else {
+                    alert("Notifications disabled, please re-enable through browser settings.");
+                }
+            });
+        },
         openManageCustomBuilds() {
             const Galaxy = getGalaxyInstance();
             Galaxy.page.router.push(`${getAppRoot()}custom_builds`);
@@ -126,15 +148,15 @@ export default {
                     )
                 )
             ) {
-                axios.post(`${getAppRoot()}history/make_private?all_histories=true`).then(response => {
+                axios.post(`${getAppRoot()}history/make_private?all_histories=true`).then((response) => {
                     Galaxy.modal.show({
                         title: _l("Datasets are now private"),
                         body: `All of your histories and datsets have been made private.  If you'd like to make all *future* histories private please use the <a href="${Galaxy.root}user/permissions">User Permissions</a> interface.`,
                         buttons: {
                             Close: () => {
                                 Galaxy.modal.hide();
-                            }
-                        }
+                            },
+                        },
                     });
                 });
             }
@@ -145,18 +167,18 @@ export default {
                 title: _l("Sign out"),
                 body: "Do you want to continue and sign out of all active sessions?",
                 buttons: {
-                    Cancel: function() {
+                    Cancel: function () {
                         Galaxy.modal.hide();
                     },
-                    "Sign out": function() {
+                    "Sign out": function () {
                         window.location.href = `${getAppRoot()}user/logout?session_csrf_token=${
                             Galaxy.session_csrf_token
                         }`;
-                    }
-                }
+                    },
+                },
             });
-        }
-    }
+        },
+    },
 };
 </script>
 

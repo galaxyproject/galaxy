@@ -1,5 +1,7 @@
 from collections import OrderedDict
 
+DEFAULT_DELTA = "10000"
+
 
 def is_dict(item):
     return isinstance(item, dict) or isinstance(item, OrderedDict)

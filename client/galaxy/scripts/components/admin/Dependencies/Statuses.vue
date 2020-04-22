@@ -17,17 +17,17 @@ export default {
     props: {
         statuses: {
             type: Array,
-            required: true
+            required: true,
         },
         compact: {
             type: Boolean,
-            default: true
-        }
+            default: true,
+        },
     },
     computed: {
-        merged: function() {
+        merged: function () {
             return this.statuses.length >= 1 && this.statuses[0].model_class == "MergedCondaDependency";
-        }
-    }
+        },
+    },
 };
 </script>

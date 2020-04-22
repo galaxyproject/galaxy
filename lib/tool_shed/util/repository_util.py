@@ -406,7 +406,7 @@ def change_repository_name_in_hgrc_file(hgrc_file, new_name):
     config = configparser.ConfigParser()
     config.read(hgrc_file)
     config.set('web', 'name', new_name)
-    with open(hgrc_file, 'wb') as fh:
+    with open(hgrc_file, 'w') as fh:
         config.write(fh)
 
 

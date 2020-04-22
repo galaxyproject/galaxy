@@ -22,16 +22,16 @@ export default {
         return {
             sourceFile: null,
             sourceURL: null,
-            errorMessage: null
+            errorMessage: null,
         };
     },
     computed: {
         hasErrorMessage() {
             return this.errorMessage != null;
-        }
+        },
     },
     methods: {
-        submit: function(ev) {
+        submit: function (ev) {
             ev.preventDefault();
             if (!this.sourceFile && !this.sourceURL) {
                 this.errorMessage = "You must provide a history archive URL or file.";
@@ -41,17 +41,17 @@ export default {
                 formData.append("archive_source", this.sourceURL);
                 axios
                     .post(`${getAppRoot()}api/histories`, formData)
-                    .then(response => {
+                    .then((response) => {
                         window.location = `${getAppRoot()}histories/list?message=${
                             response.data.message
                         }&status=success`;
                     })
-                    .catch(error => {
+                    .catch((error) => {
                         const message = error.response.data && error.response.data.err_msg;
                         this.errorMessage = message || "Import failed for an unknown reason.";
                     });
             }
-        }
-    }
+        },
+    },
 };
 </script>

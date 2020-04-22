@@ -3,6 +3,7 @@ from __future__ import print_function
 
 import binascii
 import gzip
+import io
 import logging
 import os
 import shutil
@@ -247,6 +248,16 @@ class CompressedZipArchive(CompressedArchive):
             return dataset.peek
         except Exception:
             return "Compressed zip file (%s)" % (nice_size(dataset.get_size()))
+
+    def sniff(self, filename):
+        with zipfile.ZipFile(filename) as zf:
+            zf_files = zf.infolist()
+            count = 0
+            for f in zf_files:
+                if f.file_size > 0 and not f.filename.startswith('__MACOSX/') and not f.filename.endswith('.DS_Store'):
+                    count += 1
+                if count > 1:
+                    return True
 
 
 class GenericAsn1Binary(Binary):
@@ -1570,6 +1581,91 @@ class MzSQlite(SQlite):
         return False
 
 
+class PQP(SQlite):
+    """
+    Class describing a Peptide query parameters file
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.pqp')
+    >>> PQP().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.osw')
+    >>> PQP().sniff(fname)
+    False
+    """
+    file_ext = "pqp"
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        super(PQP, self).set_meta(dataset, overwrite=overwrite, **kwd)
+
+    def sniff(self, filename):
+        """
+        table definition according to https://github.com/grosenberger/OpenMS/blob/develop/src/openms/source/ANALYSIS/OPENSWATH/TransitionPQPFile.cpp#L264
+        for now VERSION GENE PEPTIDE_GENE_MAPPING are excluded, since
+        there is test data wo these tables, see also here https://github.com/OpenMS/OpenMS/issues/4365
+        """
+        if not super(PQP, self).sniff(filename):
+            return False
+        table_names = ['COMPOUND', 'PEPTIDE', 'PEPTIDE_PROTEIN_MAPPING', 'PRECURSOR',
+                       'PRECURSOR_COMPOUND_MAPPING', 'PRECURSOR_PEPTIDE_MAPPING', 'PROTEIN',
+                       'TRANSITION', 'TRANSITION_PEPTIDE_MAPPING', 'TRANSITION_PRECURSOR_MAPPING']
+        osw_table_names = ['FEATURE', 'FEATURE_MS1', 'FEATURE_MS2', 'FEATURE_TRANSITION', 'RUN']
+        return self.sniff_table_names(filename, table_names) and not self.sniff_table_names(filename, osw_table_names)
+
+
+class OSW(SQlite):
+    """
+    Class describing OpenSwath output
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.osw')
+    >>> OSW().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.sqmass')
+    >>> OSW().sniff(fname)
+    False
+    """
+    file_ext = "osw"
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        super(OSW, self).set_meta(dataset, overwrite=overwrite, **kwd)
+
+    def sniff(self, filename):
+        # osw seems to be an extension of pqp (few tables are added)
+        # see also here https://github.com/OpenMS/OpenMS/issues/4365
+        if not super(OSW, self).sniff(filename):
+            return False
+        table_names = ['COMPOUND', 'PEPTIDE', 'PEPTIDE_PROTEIN_MAPPING', 'PRECURSOR',
+                       'PRECURSOR_COMPOUND_MAPPING', 'PRECURSOR_PEPTIDE_MAPPING', 'PROTEIN',
+                       'TRANSITION', 'TRANSITION_PEPTIDE_MAPPING', 'TRANSITION_PRECURSOR_MAPPING',
+                       'FEATURE', 'FEATURE_MS1', 'FEATURE_MS2', 'FEATURE_TRANSITION', 'RUN']
+        return self.sniff_table_names(filename, table_names)
+
+
+class SQmass(SQlite):
+    """
+    Class describing a Sqmass database
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.sqmass')
+    >>> SQmass().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.pqp')
+    >>> SQmass().sniff(fname)
+    False
+    """
+    file_ext = "sqmass"
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        super(SQmass, self).set_meta(dataset, overwrite=overwrite, **kwd)
+
+    def sniff(self, filename):
+        if super(SQmass, self).sniff(filename):
+            table_names = ["CHROMATOGRAM", "PRECURSOR", "RUN", "SPECTRUM", "DATA", "PRODUCT", "RUN_EXTRA"]
+            return self.sniff_table_names(filename, table_names)
+        return False
+
+
 class BlibSQlite(SQlite):
     """Class describing a Proteomics Spectral Library Sqlite database """
     MetadataElement(name="blib_version", default='1.8', param=MetadataParameter, desc="Blib Version",
@@ -2167,7 +2263,7 @@ class SearchGuiArchive(CompressedArchive):
                 with zipfile.ZipFile(dataset.file_name) as tempzip:
                     if 'searchgui.properties' in tempzip.namelist():
                         with tempzip.open('searchgui.properties') as fh:
-                            for line in fh:
+                            for line in io.TextIOWrapper(fh):
                                 if line.startswith('searchgui.version'):
                                     version = line.split('=')[1].strip()
                                     dataset.metadata.searchgui_version = version

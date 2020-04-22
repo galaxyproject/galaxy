@@ -100,11 +100,28 @@ LOGGING_CONFIG_DEFAULT = {
 
 
 def find_root(kwargs):
-    root = os.path.abspath(kwargs.get('root_dir', '.'))
-    return root
+    return os.path.abspath(kwargs.get('root_dir', '.'))
 
 
 class BaseAppConfiguration(object):
+    # Override in subclasses (optional): {KEY: config option, VALUE: deprecated directory name}
+    # If VALUE == first directory in a user-supplied path that resolves to KEY, it will be stripped from that path
+    deprecated_dirs = None
+
+    def __init__(self, **kwargs):
+        self.config_dict = kwargs
+        self.root = find_root(kwargs)
+        self._set_config_base(kwargs)
+        self.schema = self._load_schema()  # Load schema from schema definition file
+        self._raw_config = self.schema.defaults.copy()  # Save schema defaults as initial config values (raw_config)
+        self._update_raw_config_from_kwargs(kwargs)  # Overwrite raw_config with values passed in kwargs
+        self._create_attributes_from_raw_config()  # Create attributes based on raw_config
+        self._resolve_paths()  # Overwrite attribute values with resolved paths
+
+    def resolve_path(self, path):
+        """Resolve a path relative to Galaxy's root."""
+        return self._in_root_dir(path)
+
     def _set_config_base(self, config_kwargs):
 
         def _set_global_conf():
@@ -133,46 +150,122 @@ class BaseAppConfiguration(object):
                 self.config_dir = os.path.abspath(self.config_dir)
 
             self.data_dir = config_kwargs.get('data_dir')
-            # mutable_config_dir is intentionally not configurable. You can
-            # override individual mutable configs with config options, but they
-            # should be considered Galaxy-controlled data files and will by default
-            # just live in the data dir
             self.sample_config_dir = os.path.join(os.path.dirname(__file__), 'sample')
+            self.managed_config_dir = config_kwargs.get('managed_config_dir')
+            if self.managed_config_dir:
+                self.managed_config_dir = os.path.abspath(self.managed_config_dir)
 
             if running_from_source:
-                if self.config_dir is None:
+                if not self.config_dir:
                     self.config_dir = os.path.join(self.root, 'config')
-                if self.data_dir is None:
+                if not self.data_dir:
                     self.data_dir = os.path.join(self.root, 'database')
-                self.mutable_config_dir = self.config_dir
+                if not self.managed_config_dir:
+                    self.managed_config_dir = self.config_dir
             else:
-                if self.config_dir is None:
+                if not self.config_dir:
                     self.config_dir = os.getcwd()
-                if self.data_dir is None:
-                    self.data_dir = os.path.join(self.config_dir, 'data')
-                self.mutable_config_dir = os.path.join(self.data_dir, 'config')
+                if not self.data_dir:
+                    self.data_dir = self._in_config_dir('data')
+                if not self.managed_config_dir:
+                    self.managed_config_dir = self._in_data_dir('config')
 
             # TODO: do we still need to support ../shed_tools when running_from_source?
-            self.shed_tools_dir = os.path.join(self.data_dir, 'shed_tools')
+            self.shed_tools_dir = self._in_data_dir('shed_tools')
 
             log.debug("Configuration directory is %s", self.config_dir)
             log.debug("Data directory is %s", self.data_dir)
-            log.debug("Mutable config directory is %s", self.mutable_config_dir)
+            log.debug("Managed config directory is %s", self.managed_config_dir)
 
         _set_global_conf()
         _set_config_directories()
 
-    def _in_mutable_config_dir(self, path):
-        return os.path.join(self.mutable_config_dir, path)
+    def _load_schema(self):
+        # Override in subclasses
+        raise Exception('Not implemented')
+
+    def _update_raw_config_from_kwargs(self, kwargs):
+
+        def convert_datatype(key, value):
+            datatype = self.schema.app_schema[key].get('type')
+            # check for `not None` explicitly (value can be falsy)
+            if value is not None and datatype in type_converters:
+                return type_converters[datatype](value)
+            return value
+
+        def strip_deprecated_dir(key, value):
+            resolves_to = self.schema.paths_to_resolve.get(key)
+            if resolves_to:  # value is a path that will be resolved
+                first_dir = value.split(os.sep)[0]  # get first directory component
+                if first_dir == self.deprecated_dirs.get(resolves_to):  # first_dir is deprecated for this option
+                    ignore = first_dir + os.sep
+                    log.warning(
+                        "Paths for the '%s' option are now relative to '%s', remove the leading '%s' "
+                        "to suppress this warning: %s", key, resolves_to, ignore, value
+                    )
+                    return value[len(ignore):]
+            return value
+
+        type_converters = {'bool': string_as_bool, 'int': int, 'float': float, 'str': str}
+
+        for key, value in kwargs.items():
+            if key in self.schema.app_schema:
+                value = convert_datatype(key, value)
+                if value and self.deprecated_dirs:
+                    value = strip_deprecated_dir(key, value)
+                self._raw_config[key] = value
+
+    def _create_attributes_from_raw_config(self):
+        # `base_configs` are a special case: these attributes have been created and will be ignored
+        # by the code below. Trying to overwrite any other existing attributes will raise an error.
+        base_configs = {'config_dir', 'data_dir', 'managed_config_dir'}
+        for key, value in self._raw_config.items():
+            if not hasattr(self, key):
+                setattr(self, key, value)
+            elif key not in base_configs:
+                raise ConfigurationError("Attempting to override existing attribute '%s'" % key)
+
+    def _resolve_paths(self):
+
+        def resolve(key):
+            if key in _cache:  # resolve each path only once
+                return _cache[key]
+
+            path = getattr(self, key)  # path prior to being resolved
+            parent = self.schema.paths_to_resolve.get(key)
+            if not parent:  # base case: nothing else needs resolving
+                return path
+            parent_path = resolve(parent)  # recursively resolve parent path
+            if path is not None:
+                path = os.path.join(parent_path, path)  # resolve path
+            else:
+                path = parent_path  # or use parent path
+
+            setattr(self, key, path)  # update property
+            _cache[key] = path  # cache it!
+            return path
+
+        _cache = {}
+        for key in self.schema.paths_to_resolve:
+            resolve(key)
+
+    def _in_root_dir(self, path):
+        return self._in_dir(self.root, path)
+
+    def _in_managed_config_dir(self, path):
+        return self._in_dir(self.managed_config_dir, path)
 
     def _in_config_dir(self, path):
-        return os.path.join(self.config_dir, path)
+        return self._in_dir(self.config_dir, path)
 
     def _in_sample_dir(self, path):
-        return os.path.join(self.sample_config_dir, path)
+        return self._in_dir(self.sample_config_dir, path)
 
     def _in_data_dir(self, path):
-        return os.path.join(self.data_dir, path)
+        return self._in_dir(self.data_dir, path)
+
+    def _in_dir(self, _dir, path):
+        return os.path.join(_dir, path) if path else None
 
     def _parse_config_file_options(self, defaults, listify_defaults, config_kwargs):
         for var, values in defaults.items():
@@ -208,136 +301,62 @@ class BaseAppConfiguration(object):
             setattr(self, var, [os.path.join(self.root, x) for x in paths])
 
 
-class GalaxyAppConfiguration(BaseAppConfiguration):
+class CommonConfigurationMixin(object):
+    """Shared configuration settings code for Galaxy and ToolShed."""
+
+    @property
+    def admin_users(self):
+        return self._admin_users
+
+    @admin_users.setter
+    def admin_users(self, value):
+        self._admin_users = value
+        if value:
+            self.admin_users_list = [u.strip() for u in value.split(',') if u]
+        else:  # provide empty list for convenience (check membership, etc.)
+            self.admin_users_list = []
+
+    def is_admin_user(self, user):
+        """Determine if the provided user is listed in `admin_users`."""
+        return user is not None and user.email in self.admin_users_list
+
+    @property
+    def sentry_dsn_public(self):
+        """
+        Sentry URL with private key removed for use in client side scripts,
+        sentry server will need to be configured to accept events
+        """
+        if self.sentry_dsn:
+            return re.sub(r"^([^:/?#]+:)?//(\w+):(\w+)", r"\1//\2", self.sentry_dsn)
+
+    def get_bool(self, key, default):
+        # Warning: the value of self.config_dict['foo'] may be different from self.foo
+        if key in self.config_dict:
+            return string_as_bool(self.config_dict[key])
+        else:
+            return default
+
+    def get(self, key, default=None):
+        # Warning: the value of self.config_dict['foo'] may be different from self.foo
+        return self.config_dict.get(key, default)
+
+
+class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     deprecated_options = ('database_file', 'track_jobs_in_database')
     default_config_file_name = 'galaxy.yml'
-    # {key: config option, value: deprecated directory name}
-    # If value == first dir in a user path that resolves to key, it will be stripped from the path
     deprecated_dirs = {'config_dir': 'config', 'data_dir': 'database'}
 
     def __init__(self, **kwargs):
-        self._load_schema()  # Load schema from schema definition file
-        self._load_config_from_schema()  # Load default propery values from schema
-        self._validate_schema_paths()  # check that paths can be resolved
-        self._update_raw_config_from_kwargs(kwargs)  # Overwrite default values passed as kwargs
-        self._create_attributes_from_raw_config()  # Create attributes for LOADED properties
-
-        self.config_dict = kwargs
-        self.root = find_root(kwargs)
-        self._set_config_base(kwargs)  # must be called prior to _resolve_paths()
-
-        self._resolve_paths(kwargs)  # Overwrite attributes (not _raw_config) w/resolved paths
-        self._process_config(kwargs)  # Finish processing configuration
+        super(GalaxyAppConfiguration, self).__init__(**kwargs)
+        self._override_tempdir(kwargs)
+        self._process_config(kwargs)
 
     def _load_schema(self):
-        self.schema = AppSchema(GALAXY_CONFIG_SCHEMA_PATH, GALAXY_APP_NAME)
-        self.appschema = self.schema.app_schema
+        return AppSchema(GALAXY_CONFIG_SCHEMA_PATH, GALAXY_APP_NAME)
 
-    def _load_config_from_schema(self):
-        self._raw_config = {}  # keeps track of startup values (kwargs or schema default)
-        self.reloadable_options = set()  # config options we can reload at runtime
-        self._paths_to_resolve = {}  # {config option: referenced config option}
-        for key, data in self.appschema.items():
-            self._raw_config[key] = data.get('default')
-            if data.get('reloadable'):
-                self.reloadable_options.add(key)
-            if data.get('path_resolves_to'):
-                self._paths_to_resolve[key] = data.get('path_resolves_to')
-
-    def _validate_schema_paths(self):
-
-        def check_exists(option, key):
-            if not option:
-                message = "Invalid schema: property '{}' listed as path resolution target " \
-                    "for '{}' does not exist".format(resolves_to, key)
-                raise_error(message)
-
-        def check_type_is_str(option, key):
-            if option.get('type') != 'str':
-                message = "Invalid schema: property '{}' should have type 'str'".format(key)
-                raise_error(message)
-
-        def check_is_dag():
-            visited = set()
-            for key in self._paths_to_resolve:
-                visited.clear()
-                while key:
-                    visited.add(key)
-                    key = self.appschema[key].get('path_resolves_to')
-                    if key and key in visited:
-                        raise_error('Invalid schema: cycle detected')
-
-        def raise_error(message):
-            log.error(message)
-            raise ConfigurationError(message)
-
-        for key, resolves_to in self._paths_to_resolve.items():
-            parent = self.appschema.get(resolves_to)
-            check_exists(parent, key)
-            check_type_is_str(parent, key)
-            check_type_is_str(self.appschema[key], key)
-        check_is_dag()  # must be called last: walks entire graph
-
-    def _update_raw_config_from_kwargs(self, kwargs):
-
-        def convert_datatype(key, value):
-            datatype = self.appschema[key].get('type')
-            # check for `not None` explicitly (value can be falsy)
-            if value is not None and datatype in type_converters:
-                return type_converters[datatype](value)
-            return value
-
-        def strip_deprecated_dir(key, value):
-            resolves_to = self.appschema[key].get('path_resolves_to')
-            if resolves_to:  # value is a path that will be resolved
-                first_dir = value.split(os.sep)[0]  # get first directory component
-                if first_dir == self.deprecated_dirs[resolves_to]:  # first_dir is deprecated for this option
-                    ignore = first_dir + os.sep
-                    log.warning(
-                        "Paths for the '%s' option are now relative to '%s', remove the leading '%s' "
-                        "to suppress this warning: %s", key, resolves_to, ignore, value
-                    )
-                    return value[len(ignore):]
-            return value
-
-        type_converters = {'bool': string_as_bool, 'int': int, 'float': float, 'str': str}
-
-        for key, value in kwargs.items():
-            if key in self.appschema:
-                value = convert_datatype(key, value)
-                if value:
-                    value = strip_deprecated_dir(key, value)
-                self._raw_config[key] = value
-
-    def _create_attributes_from_raw_config(self):
-        for key, value in self._raw_config.items():
-            if hasattr(self, key):
-                raise ConfigurationError("Attempting to override existing attribute '%s'" % key)
-            setattr(self, key, value)
-
-    def _resolve_paths(self, kwargs):
-
-        def resolve(key):
-            if key in _cache:  # resolve each path only once
-                return _cache[key]
-
-            path = getattr(self, key)  # path prior to being resolved
-            parent = self.appschema[key].get('path_resolves_to')
-            if not parent:  # base case: nothing else needs resolving
-                return path
-            parent_path = resolve(parent)  # recursively resolve parent path
-            if path is not None:
-                path = os.path.join(parent_path, path)  # resolve path
-            else:
-                path = parent_path  # or use parent path
-
-            setattr(self, key, path)  # update property
-            _cache[key] = path  # cache it!
-            return path
-
-        _cache = {}
-        for key in self._paths_to_resolve:
-            resolve(key)
+    def _override_tempdir(self, kwargs):
+        if string_as_bool(kwargs.get("override_tempdir", "True")):
+            tempfile.tempdir = self.new_file_path
 
     def _process_config(self, kwargs):
         # Resolve paths of other config files
@@ -353,37 +372,32 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         # Database related configuration
         self.check_migrate_databases = kwargs.get('check_migrate_databases', True)
         if not self.database_connection:  # Provide default if not supplied by user
-            db_path = os.path.join(self.data_dir, 'universe.sqlite')
+            db_path = self._in_data_dir('universe.sqlite')
             self.database_connection = 'sqlite:///%s?isolation_level=IMMEDIATE' % db_path
         self.database_engine_options = get_database_engine_options(kwargs)
         self.database_create_tables = string_as_bool(kwargs.get('database_create_tables', 'True'))
         self.database_encoding = kwargs.get('database_encoding')  # Create new databases with this encoding
-        self.database_log_query_counts = string_as_bool(kwargs.get("database_log_query_counts", 'False'))
         self.thread_local_log = None
         if self.enable_per_request_sql_debugging:
             self.thread_local_log = threading.local()
         # Install database related configuration (if different)
         self.install_database_engine_options = get_database_engine_options(kwargs, model_prefix="install_")
-
-        override_tempdir = string_as_bool(kwargs.get("override_tempdir", "True"))
-        if override_tempdir:
-            tempfile.tempdir = self.new_file_path
         self.shared_home_dir = kwargs.get("shared_home_dir")
         self.cookie_path = kwargs.get("cookie_path")
-        self.tool_path = os.path.join(self.root, self.tool_path)
-        self.tool_data_path = os.path.join(self.root, self.tool_data_path)
+        self.tool_path = self._in_root_dir(self.tool_path)
+        self.tool_data_path = self._in_root_dir(self.tool_data_path)
         if not running_from_source and kwargs.get("tool_data_path") is None:
-            self.tool_data_path = os.path.join(self.data_dir, "tool-data")
+            self.tool_data_path = self._in_data_dir(self.schema.defaults['tool_data_path'])
         self.builds_file_path = os.path.join(self.tool_data_path, self.builds_file_path)
         self.len_file_path = os.path.join(self.tool_data_path, self.len_file_path)
         # Galaxy OIDC settings.
         self.oidc_config = kwargs.get("oidc_config_file", self.oidc_config_file)
         self.oidc_backends_config = kwargs.get("oidc_backends_config_file", self.oidc_backends_config_file)
         self.oidc = []
-        self.integrated_tool_panel_config = os.path.join(self.mutable_config_dir, self.integrated_tool_panel_config)
+        self.integrated_tool_panel_config = self._in_managed_config_dir(self.integrated_tool_panel_config)
         integrated_tool_panel_tracking_directory = kwargs.get('integrated_tool_panel_tracking_directory')
         if integrated_tool_panel_tracking_directory:
-            self.integrated_tool_panel_tracking_directory = os.path.join(self.root, integrated_tool_panel_tracking_directory)
+            self.integrated_tool_panel_tracking_directory = self._in_root_dir(integrated_tool_panel_tracking_directory)
         else:
             self.integrated_tool_panel_tracking_directory = None
         self.toolbox_filter_base_modules = listify(self.toolbox_filter_base_modules)
@@ -399,7 +413,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.password_expiration_period = timedelta(days=int(self.password_expiration_period))
 
         if self.shed_tool_data_path:
-            self.shed_tool_data_path = os.path.join(self.root, self.shed_tool_data_path)
+            self.shed_tool_data_path = self._in_root_dir(self.shed_tool_data_path)
         else:
             self.shed_tool_data_path = self.tool_data_path
 
@@ -434,21 +448,21 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             for ip in kwargs.get("fetch_url_whitelist", "").split(',')
             if len(ip.strip()) > 0
         ]
-        self.template_path = os.path.join(self.root, kwargs.get("template_path", "templates"))
+        self.template_path = self._in_root_dir(kwargs.get("template_path", "templates"))
         self.job_queue_cleanup_interval = int(kwargs.get("job_queue_cleanup_interval", "5"))
-        self.cluster_files_directory = self.resolve_path(self.cluster_files_directory)
+        self.cluster_files_directory = self._in_root_dir(self.cluster_files_directory)
 
         # Fall back to legacy job_working_directory config variable if set.
-        self.jobs_directory = os.path.join(self.data_dir, kwargs.get("jobs_directory", self.job_working_directory))
+        self.jobs_directory = self._in_data_dir(kwargs.get("jobs_directory", self.job_working_directory))
         if self.preserve_python_environment not in ["legacy_only", "legacy_and_local", "always"]:
             log.warning("preserve_python_environment set to unknown value [%s], defaulting to legacy_only")
             self.preserve_python_environment = "legacy_only"
         self.nodejs_path = kwargs.get("nodejs_path")
         # Older default container cache path, I don't think anyone is using it anymore and it wasn't documented - we
         # should probably drop the backward compatiblity to save the path check.
-        self.container_image_cache_path = os.path.join(self.data_dir, kwargs.get("container_image_cache_path", "container_images"))
+        self.container_image_cache_path = self._in_data_dir(kwargs.get("container_image_cache_path", "container_images"))
         if not os.path.exists(self.container_image_cache_path):
-            self.container_image_cache_path = self.resolve_path(kwargs.get("container_image_cache_path", os.path.join(self.data_dir, "container_cache")))
+            self.container_image_cache_path = self._in_root_dir(kwargs.get("container_image_cache_path", self._in_data_dir("container_cache")))
         self.output_size_limit = int(kwargs.get('output_size_limit', 0))
         # activation_email was used until release_15.03
         activation_email = kwargs.get('activation_email')
@@ -457,12 +471,21 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         #  Get the disposable email domains blacklist file and its contents
         self.blacklist_content = None
         if self.blacklist_file:
-            self.blacklist_file = os.path.join(self.root, self.blacklist_file)
+            self.blacklist_file = self._in_root_dir(self.blacklist_file)
             try:
                 with open(self.blacklist_file) as f:
                     self.blacklist_content = [line.rstrip() for line in f]
             except IOError:
                 log.error("CONFIGURATION ERROR: Can't open supplied blacklist file from path: %s", self.blacklist_file)
+
+        #  Create whitelist file to accept only certain email domains
+        self.whitelist_content = None
+        if self.whitelist_file:
+            try:
+                with open(self.whitelist_file) as f:
+                    self.whitelist_content = [line.rstrip() for line in f]
+            except IOError:
+                log.error("CONFIGURATION ERROR: Can't open supplied whitelist file from path: %s", self.whitelist_file)
 
         self.persistent_communication_rooms = listify(self.persistent_communication_rooms, do_strip=True)
         # The transfer manager and deferred job queue
@@ -476,7 +499,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             workflow_resource_params_mapper = None
         elif ":" not in workflow_resource_params_mapper:
             # Assume it is not a Python function, so a file
-            workflow_resource_params_mapper = self.resolve_path(workflow_resource_params_mapper)
+            workflow_resource_params_mapper = self._in_root_dir(workflow_resource_params_mapper)
         # else: a Python a function!
         self.workflow_resource_params_mapper = workflow_resource_params_mapper
 
@@ -484,7 +507,17 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.pbs_dataset_server = kwargs.get('pbs_dataset_server', "")
         self.pbs_dataset_path = kwargs.get('pbs_dataset_path', "")
         self.pbs_stage_path = kwargs.get('pbs_stage_path', "")
-        self.sanitize_whitelist_file = os.path.join(self.root, self.sanitize_whitelist_file)
+
+        _sanitize_whitelist_path = self._in_managed_config_dir(self.sanitize_whitelist_file)
+        if not os.path.isfile(_sanitize_whitelist_path):  # then check old default location
+            deprecated = self._in_root_dir('config/sanitize_whitelist.txt')
+            if os.path.isfile(deprecated):
+                log.warning("The path '%s' for the 'sanitize_whitelist_file' config option is "
+                    "deprecated and will be no longer checked in a future release. Please consult "
+                    "the latest version of the sample configuration file." % deprecated)
+                _sanitize_whitelist_path = deprecated
+        self.sanitize_whitelist_file = _sanitize_whitelist_path
+
         self.allowed_origin_hostnames = self._parse_allowed_origin_hostnames(kwargs)
         if "trust_jupyter_notebook_conversion" not in kwargs:
             # if option not set, check IPython-named alternative, falling back to schema default if not set either
@@ -505,29 +538,26 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         # not needed on production systems but useful if running many functional tests.
         self.index_tool_help = string_as_bool(kwargs.get("index_tool_help", True))
         self.tool_labels_boost = kwargs.get("tool_labels_boost", 1)
-        default_tool_test_data_directories = os.environ.get("GALAXY_TEST_FILE_DIR", os.path.join(self.root, "test-data"))
+        default_tool_test_data_directories = os.environ.get("GALAXY_TEST_FILE_DIR", self._in_root_dir("test-data"))
         self.tool_test_data_directories = kwargs.get("tool_test_data_directories", default_tool_test_data_directories)
         # Deployers may either specify a complete list of mapping files or get the default for free and just
         # specify a local mapping file to adapt and extend the default one.
         if "conda_mapping_files" not in kwargs:
-            conda_mapping_files = [
-                self.local_conda_mapping_file,
-                os.path.join(self.root, "lib", "galaxy", "tool_util", "deps", "resolvers", "default_conda_mapping.yml"),
-            ]
+            _default_mapping = self._in_root_dir(os.path.join("lib", "galaxy", "tool_util", "deps", "resolvers", "default_conda_mapping.yml"))
             # dependency resolution options are consumed via config_dict - so don't populate
             # self, populate config_dict
-            self.config_dict["conda_mapping_files"] = conda_mapping_files
+            self.config_dict["conda_mapping_files"] = [self.local_conda_mapping_file, _default_mapping]
 
         if self.containers_resolvers_config_file:
-            self.containers_resolvers_config_file = os.path.join(self.config_dir, self.containers_resolvers_config_file)
+            self.containers_resolvers_config_file = self._in_config_dir(self.containers_resolvers_config_file)
 
         # tool_dependency_dir can be "none" (in old configs). If so, set it to None
         if self.tool_dependency_dir and self.tool_dependency_dir.lower() == 'none':
             self.tool_dependency_dir = None
         if self.involucro_path is None:
-            target_dir = self.tool_dependency_dir or self.appschema['tool_dependency_dir'].get('default')
-            self.involucro_path = os.path.join(self.data_dir, target_dir, "involucro")
-        self.involucro_path = os.path.join(self.root, self.involucro_path)
+            target_dir = self.tool_dependency_dir or self.schema.defaults['tool_dependency_dir']
+            self.involucro_path = self._in_data_dir(os.path.join(target_dir, "involucro"))
+        self.involucro_path = self._in_root_dir(self.involucro_path)
         if self.mulled_channels:
             self.mulled_channels = [c.strip() for c in self.mulled_channels.split(',')]
 
@@ -541,18 +571,12 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             self.nginx_upload_store = os.path.abspath(self.nginx_upload_store)
         self.object_store = kwargs.get('object_store', 'disk')
         self.object_store_check_old_style = string_as_bool(kwargs.get('object_store_check_old_style', False))
-        self.object_store_cache_path = self.resolve_path(kwargs.get("object_store_cache_path", os.path.join(self.data_dir, "object_store_cache")))
-        object_store_store_by = kwargs.get('object_store_store_by', None)
-        if object_store_store_by is None:
-            if not self.file_path_set:
-                if self.file_path.endswith('objects'):
-                    object_store_store_by = 'uuid'
-                else:
-                    object_store_store_by = 'id'
-            else:
-                object_store_store_by = 'id'
-        assert object_store_store_by in ['id', 'uuid'], "Invalid value for object_store_store_by [%s]" % object_store_store_by
-        self.object_store_store_by = object_store_store_by
+        self.object_store_cache_path = self._in_root_dir(kwargs.get("object_store_cache_path", self._in_data_dir("object_store_cache")))
+        if self.object_store_store_by is None:
+            self.object_store_store_by = 'id'
+            if not self.file_path_set and self.file_path.endswith('objects'):
+                self.object_store_store_by = 'uuid'
+        assert self.object_store_store_by in ['id', 'uuid'], "Invalid value for object_store_store_by [%s]" % self.object_store_store_by
         # Handle AWS-specific config options for backward compatibility
         if kwargs.get('aws_access_key') is not None:
             self.os_access_key = kwargs.get('aws_access_key')
@@ -571,7 +595,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.object_store_cache_size = float(kwargs.get('object_store_cache_size', -1))
         self.distributed_object_store_config_file = kwargs.get('distributed_object_store_config_file')
         if self.distributed_object_store_config_file is not None:
-            self.distributed_object_store_config_file = os.path.join(self.root, self.distributed_object_store_config_file)
+            self.distributed_object_store_config_file = self._in_root_dir(self.distributed_object_store_config_file)
         self.irods_root_collection_path = kwargs.get('irods_root_collection_path')
         self.irods_default_resource = kwargs.get('irods_default_resource')
         # Heartbeat log file name override
@@ -617,7 +641,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         elif 'database_connection' in kwargs:
             self.amqp_internal_connection = "sqlalchemy+" + self.database_connection
         else:
-            self.amqp_internal_connection = "sqlalchemy+sqlite:///%s?isolation_level=IMMEDIATE" % os.path.join(self.data_dir, "control.sqlite")
+            self.amqp_internal_connection = "sqlalchemy+sqlite:///%s?isolation_level=IMMEDIATE" % self._in_data_dir("control.sqlite")
         self.pretty_datetime_format = expand_pretty_datetime_format(self.pretty_datetime_format)
         try:
             with open(self.user_preferences_extra_conf_path, 'r') as stream:
@@ -634,7 +658,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         # This is for testing new library browsing capabilities.
         self.new_lib_browse = string_as_bool(kwargs.get('new_lib_browse', False))
         # Logging configuration with logging.config.configDict:
-        self.logging = kwargs.get('logging')
         # Statistics and profiling with statsd
         self.statsd_host = kwargs.get('statsd_host', '')
 
@@ -647,8 +670,9 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.manage_dynamic_proxy = self.dynamic_proxy_manage  # Set to false if being launched externally
 
         # InteractiveTools propagator mapping file
-        self.interactivetool_map = self.resolve_path(kwargs.get("interactivetools_map", os.path.join(self.data_dir, "interactivetools_map.sqlite")))
+        self.interactivetools_map = self._in_root_dir(kwargs.get("interactivetools_map", self._in_data_dir("interactivetools_map.sqlite")))
         self.interactivetool_prefix = kwargs.get("interactivetools_prefix", "interactivetool")
+        self.interactivetool_proxy_host = kwargs.get("interactivetool_proxy_host", None)
 
         self.containers_conf = parse_containers_config(self.containers_config_file)
 
@@ -725,36 +749,11 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
                 'UWSGI_PORT': port
             })
 
-    @property
-    def admin_users(self):
-        return self._admin_users
-
-    @admin_users.setter
-    def admin_users(self, value):
-        self._admin_users = value
-        if value:
-            self.admin_users_list = [u.strip() for u in value.split(',') if u]
-        else:  # provide empty list for convenience (check membership, etc.)
-            self.admin_users_list = []
-
-    @property
-    def sentry_dsn_public(self):
-        """
-        Sentry URL with private key removed for use in client side scripts,
-        sentry server will need to be configured to accept events
-        """
-        if self.sentry_dsn:
-            return re.sub(r"^([^:/?#]+:)?//(\w+):(\w+)", r"\1//\2", self.sentry_dsn)
-        else:
-            return None
-
     def parse_config_file_options(self, kwargs):
-        """
-        Backwards compatibility for config files moved to the config/ dir.
-        """
+        """Backwards compatibility for config files moved to the config/ dir."""
         defaults = dict(
             auth_config_file=[self._in_config_dir('auth_conf.xml')],
-            build_sites_config_file=[self._in_config_dir('build_sites.yml')],
+            build_sites_config_file=[self._in_config_dir('build_sites.yml'), self._in_sample_dir('build_sites.yml.sample')],
             containers_config_file=[self._in_config_dir('containers_conf.yml')],
             data_manager_config_file=[self._in_config_dir('data_manager_conf.xml')],
             datatypes_config_file=[self._in_config_dir('datatypes_conf.xml'), self._in_sample_dir('datatypes_conf.xml.sample')],
@@ -764,14 +763,14 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             job_metrics_config_file=[self._in_config_dir('job_metrics_conf.xml'), self._in_sample_dir('job_metrics_conf.xml.sample')],
             job_resource_params_file=[self._in_config_dir('job_resource_params_conf.xml')],
             local_conda_mapping_file=[self._in_config_dir('local_conda_mapping.yml')],
-            migrated_tools_config=[self._in_mutable_config_dir('migrated_tools_conf.xml')],
+            migrated_tools_config=[self._in_managed_config_dir('migrated_tools_conf.xml')],
             modules_mapping_files=[self._in_config_dir('environment_modules_mapping.yml')],
             object_store_config_file=[self._in_config_dir('object_store_conf.xml')],
             oidc_backends_config_file=[self._in_config_dir('oidc_backends_config.xml')],
             oidc_config_file=[self._in_config_dir('oidc_config.xml')],
-            shed_data_manager_config_file=[self._in_mutable_config_dir('shed_data_manager_conf.xml')],
-            shed_tool_config_file=[self._in_mutable_config_dir('shed_tool_conf.xml')],
-            shed_tool_data_table_config=[self._in_mutable_config_dir('shed_tool_data_table_conf.xml')],
+            shed_data_manager_config_file=[self._in_managed_config_dir('shed_data_manager_conf.xml')],
+            shed_tool_config_file=[self._in_managed_config_dir('shed_tool_conf.xml')],
+            shed_tool_data_table_config=[self._in_managed_config_dir('shed_tool_data_table_conf.xml')],
             tool_destinations_config_file=[self._in_config_dir('tool_destinations.yml')],
             tool_sheds_config_file=[self._in_config_dir('tool_sheds_conf.xml')],
             user_preferences_extra_conf_path=[self._in_config_dir('user_preferences_extra_conf.yml')],
@@ -809,15 +808,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             if explicit:
                 log.warning("Sanitize log file explicitly specified as '%s' but does not exist, continuing with no tools whitelisted.", self.sanitize_whitelist_file)
 
-    def get(self, key, default=None):
-        return self.config_dict.get(key, default)
-
-    def get_bool(self, key, default):
-        if key in self.config_dict:
-            return string_as_bool(self.config_dict[key])
-        else:
-            return default
-
     def ensure_tempdir(self):
         self._ensure_directory(self.new_file_path)
 
@@ -829,7 +819,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
                 raise ConfigurationError("Unable to create missing directory: %s\n%s" % (path, unicodify(e)))
 
     def check(self):
-        paths_to_check = [self.tool_data_path, self.data_dir, self.mutable_config_dir]
+        paths_to_check = [self.tool_data_path, self.data_dir, self.managed_config_dir]
         # Check that required directories exist
         for path in paths_to_check:
             if path not in [None, False] and not os.path.isdir(path):
@@ -854,20 +844,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         for key in self.config_dict.keys():
             if key in self.deprecated_options:
                 log.warning("Config option '%s' is deprecated and will be removed in a future release.  Please consult the latest version of the sample configuration file." % key)
-
-    def is_admin_user(self, user):
-        """
-        Determine if the provided user is listed in `admin_users`.
-
-        NOTE: This is temporary, admin users will likely be specified in the
-              database in the future.
-        """
-        return user is not None and user.email in self.admin_users_list
-
-    def resolve_path(self, path):
-        """ Resolve a path relative to Galaxy's root.
-        """
-        return os.path.join(self.root, path)
 
     @staticmethod
     def _parse_allowed_origin_hostnames(kwargs):
@@ -894,9 +870,9 @@ Configuration = GalaxyAppConfiguration
 
 
 def reload_config_options(current_config):
-    """ Reload modified reloadable config options """
+    """Reload modified reloadable config options."""
     modified_config = read_properties_from_file(current_config.config_file)
-    for option in current_config.reloadable_options:
+    for option in current_config.schema.reloadable_options:
         if option in modified_config:
             # compare to raw value, as that one is set only on load and reload
             if current_config._raw_config[option] != modified_config[option]:
@@ -995,8 +971,7 @@ def configure_logging(config):
 
 
 class ConfiguresGalaxyMixin(object):
-    """ Shared code for configuring Galaxy-like app objects.
-    """
+    """Shared code for configuring Galaxy-like app objects."""
 
     def _configure_genome_builds(self, data_table_name="__dbkeys__", load_old_style=True):
         self.genome_builds = GenomeBuilds(self, data_table_name=data_table_name, load_old_style=load_old_style)
@@ -1133,9 +1108,7 @@ class ConfiguresGalaxyMixin(object):
             self.tool_shed_registry = galaxy.tool_shed.tool_shed_registry.Registry()
 
     def _configure_models(self, check_migrate_databases=False, check_migrate_tools=False, config_file=None):
-        """
-        Preconditions: object_store must be set on self.
-        """
+        """Preconditions: object_store must be set on self."""
         db_url = get_database_url(self.config)
         install_db_url = self.config.install_database_connection
         # TODO: Consider more aggressive check here that this is not the same

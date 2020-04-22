@@ -1254,7 +1254,7 @@ class JobWrapper(HasResourceParameters):
             if exception:
                 # Save the traceback immediately in case we generate another
                 # below
-                job.traceback = traceback.format_exc()
+                job.traceback = unicodify(traceback.format_exc(), strip_null=True)
                 # Get the exception and let the tool attempt to generate
                 # a better message
                 etype, evalue, tb = sys.exc_info()
@@ -1703,7 +1703,7 @@ class JobWrapper(HasResourceParameters):
         if not extended_metadata:
             # importing metadata will discover outputs if extended metadata
             # is enabled.
-            self.discover_outputs(job, inp_data, out_data, out_collections)
+            self.discover_outputs(job, inp_data, out_data, out_collections, final_job_state=final_job_state)
 
         # Certain tools require tasks to be completed after job execution
         # ( this used to be performed in the "exec_after_process" hook, but hooks are deprecated ).
@@ -1751,7 +1751,7 @@ class JobWrapper(HasResourceParameters):
         self.cleanup(delete_files=delete_files)
         log.debug(finish_timer.to_str(job_id=self.job_id, tool_id=job.tool_id))
 
-    def discover_outputs(self, job, inp_data, out_data, out_collections):
+    def discover_outputs(self, job, inp_data, out_data, out_collections, final_job_state):
         # Try to just recover input_ext and dbkey from job parameters (used and set in
         # galaxy.tools.actions). Old jobs may have not set these in the job parameters
         # before persisting them.
@@ -1784,6 +1784,7 @@ class JobWrapper(HasResourceParameters):
             inp_data=inp_data,
             input_ext=input_ext,
             input_dbkey=input_dbkey,
+            final_job_state=final_job_state,
         )
 
     def check_tool_output(self, tool_stdout, tool_stderr, tool_exit_code, job, job_stdout=None, job_stderr=None):
@@ -1957,7 +1958,7 @@ class JobWrapper(HasResourceParameters):
         self.output_paths = [t[2] for t in results]
         self.output_hdas_and_paths = dict([(t[0], t[1:]) for t in results])
         if special:
-            false_path = dataset_path_rewriter.rewrite_dataset_path(special.dataset, 'output')
+            false_path = dataset_path_rewriter.rewrite_dataset_path(special, 'output')
             dsp = DatasetPath(special.dataset.id, special.dataset.file_name, false_path)
             self.output_paths.append(dsp)
         return self.output_paths

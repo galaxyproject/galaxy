@@ -106,6 +106,7 @@ class WebApplication(base.WebApplication):
         if isinstance(e, MessageException):
             # In the case of a controller exception, sanitize to make sure
             # unsafe html input isn't reflected back to the user
+            trans.response.status = e.status_code
             return trans.show_message(sanitize_html(e.err_msg), e.type)
 
     def make_body_iterable(self, trans, body):
@@ -250,7 +251,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
                         self.user = None
                         self.galaxy_session = None
                     else:
-                        self.response.send_redirect(url_for(controller='user',
+                        self.response.send_redirect(url_for(controller='root',
                                                      action='login',
                                                      message="You have been logged out due to inactivity.  Please log in again to continue using Galaxy.",
                                                      status='info',

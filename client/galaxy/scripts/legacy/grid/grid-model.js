@@ -12,20 +12,20 @@ export default Backbone.Model.extend({
         cur_page: 1,
         num_pages: 1,
         operation: undefined,
-        item_ids: undefined
+        item_ids: undefined,
     },
 
     /**
      * Return true if operation can be done asynchronously.
      */
-    can_async_op: function(op) {
+    can_async_op: function (op) {
         return _.indexOf(this.attributes.async_ops, op) !== -1;
     },
 
     /**
      * Add filtering criterion.
      */
-    add_filter: function(key, value, append) {
+    add_filter: function (key, value, append) {
         // Update URL arg with new condition.
         if (append) {
             // Update or append value.
@@ -61,7 +61,7 @@ export default Backbone.Model.extend({
     /**
      * Remove filtering criterion.
      */
-    remove_filter: function(key, condition) {
+    remove_filter: function (key, condition) {
         var cur_val = this.attributes.filters[key];
         if (cur_val === null || cur_val === undefined) {
             return false;
@@ -82,13 +82,13 @@ export default Backbone.Model.extend({
     /**
      * Returns URL data for obtaining a new grid.
      */
-    get_url_data: function() {
+    get_url_data: function () {
         var url_data = {
             async: this.attributes.async,
             sort: this.attributes.sort_key,
             page: this.attributes.cur_page,
             show_item_checkboxes: this.attributes.show_item_checkboxes,
-            advanced_search: this.attributes.advanced_search
+            advanced_search: this.attributes.advanced_search,
         };
 
         // Add operation, item_ids only if they have values.
@@ -101,14 +101,14 @@ export default Backbone.Model.extend({
 
         // Add filter arguments to data, placing "f-" in front of all arguments.
         var self = this;
-        _.each(_.pairs(self.attributes.filters), k => {
+        _.each(_.pairs(self.attributes.filters), (k) => {
             url_data[`f-${k[0]}`] = k[1];
         });
         return url_data;
     },
 
     // Return URL for obtaining a new grid
-    get_url: function(args) {
+    get_url: function (args) {
         return `${this.get("url_base")}?${$.param(this.get_url_data())}&${$.param(args)}`;
-    }
+    },
 });

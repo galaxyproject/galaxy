@@ -175,6 +175,9 @@ class ConditionalDependencies(object):
     def check_kamaki(self):
         return 'pithos' in self.object_stores
 
+    def check_python_irodsclient(self):
+        return 'irods' in self.object_stores
+
     def check_watchdog(self):
         install_set = {'auto', 'True', 'true', 'polling'}
         return (self.config['watch_tools'] in install_set or
@@ -193,6 +196,12 @@ class ConditionalDependencies(object):
 
     def check_influxdb(self):
         return 'influxdb' in self.error_report_modules
+
+    def check_keras(self):
+        return asbool(self.config["enable_tool_recommendations"])
+
+    def check_tensorflow(self):
+        return asbool(self.config["enable_tool_recommendations"])
 
 
 def optional(config_file=None):

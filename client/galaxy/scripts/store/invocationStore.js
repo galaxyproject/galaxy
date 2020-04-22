@@ -1,6 +1,6 @@
 export const state = {
     invocationDetailsById: {},
-    invocationJobsSummaryById: {}
+    invocationJobsSummaryById: {},
 };
 
 import Vue from "vue";
@@ -8,12 +8,12 @@ import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 
 const getters = {
-    getInvocationById: state => invocationId => {
+    getInvocationById: (state) => (invocationId) => {
         return state.invocationDetailsById[invocationId];
     },
-    getInvocationJobsSummaryById: state => invocationId => {
+    getInvocationJobsSummaryById: (state) => (invocationId) => {
         return state.invocationJobsSummaryById[invocationId];
-    }
+    },
 };
 
 const actions = {
@@ -24,7 +24,7 @@ const actions = {
     fetchInvocationJobsSummaryForId: async ({ commit }, invocationId) => {
         const { data } = await axios.get(`${getAppRoot()}api/invocations/${invocationId}/jobs_summary`);
         commit("saveInvocationJobsSummaryForId", { invocationId, jobsSummary: data });
-    }
+    },
 };
 
 const mutations = {
@@ -33,12 +33,12 @@ const mutations = {
     },
     saveInvocationJobsSummaryForId: (state, { invocationId, jobsSummary }) => {
         Vue.set(state.invocationJobsSummaryById, invocationId, jobsSummary);
-    }
+    },
 };
 
 export const invocationStore = {
     state,
     getters,
     actions,
-    mutations
+    mutations,
 };

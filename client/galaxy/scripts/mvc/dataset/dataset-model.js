@@ -5,8 +5,10 @@ import { getAppRoot } from "onload/loadConfig";
 import STATES from "mvc/dataset/states";
 import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
+import TAB_UPDATES from "mvc/user/tab-updates";
 
 var logNamespace = "dataset";
+var hiddenupdates = 1;
 //==============================================================================
 var searchableMixin = BASE_MVC.SearchableModelMixin;
 /** @class base model for any DatasetAssociation (HDAs, LDDAs, DatasetCollectionDAs).
@@ -37,14 +39,14 @@ var DatasetAssociation = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
                 misc_blurb: "",
                 misc_info: "",
 
-                tags: []
+                tags: [],
                 // do NOT default on annotation, as this default is valid and will be passed on 'save'
                 //  which is incorrect behavior when the model is only partially fetched (annos are not passed in summary data)
                 //annotation          : ''
             },
 
             /** instance vars and listeners */
-            initialize: function(attributes, options) {
+            initialize: function (attributes, options) {
                 this.debug(`${this}(Dataset).initialize`, attributes, options);
 
                 //!! this state is not in trans.app.model.Dataset.states - set it here -
@@ -58,12 +60,12 @@ var DatasetAssociation = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
                 this._setUpListeners();
             },
 
-            _getDatasetId: function() {
+            _getDatasetId: function () {
                 return this.get("id");
             },
 
             /** returns misc. web urls for rendering things like re-run, display, etc. */
-            _generateUrls: function() {
+            _generateUrls: function () {
                 const id = this._getDatasetId();
                 if (!id) {
                     return {};
@@ -77,7 +79,7 @@ var DatasetAssociation = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
                     rerun: `tool_runner/rerun?id=${id}`,
                     show_params: `datasets/${id}/show_params`,
                     visualization: "visualization",
-                    meta_download: `dataset/get_metadata_file?hda_id=${id}&metadata_name=`
+                    meta_download: `dataset/get_metadata_file?hda_id=${id}&metadata_name=`,
                 };
                 _.each(urls, (value, key) => {
                     urls[key] = getAppRoot() + value;
@@ -86,53 +88,71 @@ var DatasetAssociation = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
                 return urls;
             },
 
-            _downloadQueryParameters: function() {
+            _downloadQueryParameters: function () {
                 return `?to_ext=${this.get("file_ext")}`;
             },
 
             /** set up any event listeners
              *  event: state:ready  fired when this DA moves into/is already in a ready state
              */
-            _setUpListeners: function() {
+            _setUpListeners: function () {
                 // if the state has changed and the new state is a ready state, fire an event
-                this.on("change:state", function(currModel, newState) {
+                this.on("change:state", function (currModel, newState) {
                     this.log(`${this} has changed state:`, currModel, newState);
                     if (this.inReadyState()) {
                         this.trigger("state:ready", currModel, newState, this.previous("state"));
+                        if (newState != "discarded") {
+                            if (newState === "ok") {
+                                new Notification(`Job complete: ${this.get("name")}`, {
+                                    icon: "static/favicon.ico",
+                                });
+                                if (TAB_UPDATES.is_hidden()) {
+                                    TAB_UPDATES.hidden_count(hiddenupdates);
+                                    hiddenupdates++;
+                                }
+                            } else if (newState == "error") {
+                                new Notification(`Job failure: ${this.get("name")}`, {
+                                    icon: "static/erricon.ico",
+                                });
+                                if (TAB_UPDATES.is_hidden() && Notification.permission == "granted") {
+                                    TAB_UPDATES.change_favicon("static/erricon.ico");
+                                }
+                            }
+                        }
                     }
                 });
                 // the download url (currently) relies on having a correct file extension
-                this.on("change:id change:file_ext", function(currModel) {
+                this.on("change:id change:file_ext", function (currModel) {
                     this._generateUrls();
                 });
             },
 
             // ........................................................................ common queries
             /** override to add urls */
-            toJSON: function() {
+            toJSON: function () {
                 var json = Backbone.Model.prototype.toJSON.call(this);
                 //console.warn( 'returning json?' );
                 //return json;
                 return _.extend(json, {
-                    urls: this.urls
+                    urls: this.urls,
                 });
             },
 
             /** Is this dataset deleted or purged? */
-            isDeletedOrPurged: function() {
+            isDeletedOrPurged: function () {
                 return this.get("deleted") || this.get("purged");
             },
 
             /** Is this dataset in a 'ready' state; where 'Ready' states are states where no
              *      processing (for the ds) is left to do on the server.
              */
-            inReadyState: function() {
+            inReadyState: function () {
                 var ready = _.contains(STATES.READY_STATES, this.get("state"));
                 return this.isDeletedOrPurged() || ready;
             },
 
             /** Does this model already contain detailed data (as opposed to just summary level data)? */
-            hasDetails: function() {
+            hasDetails: function () {
                 // if it's inaccessible assume it has everything it needs
                 if (!this.get("accessible")) {
                     return true;
@@ -141,12 +161,12 @@ var DatasetAssociation = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
             },
 
             /** Convenience function to match dataset.has_data. */
-            hasData: function() {
+            hasData: function () {
                 return this.get("file_size") > 0;
             },
 
             // ........................................................................ ajax
-            fetch: function(options) {
+            fetch: function (options) {
                 var dataset = this;
                 return Backbone.Model.prototype.fetch.call(this, options).always(() => {
                     dataset._generateUrls();
@@ -154,7 +174,7 @@ var DatasetAssociation = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
             },
 
             /** override to use actual Dates objects for create/update times */
-            parse: function(response, options) {
+            parse: function (response, options) {
                 var parsed = Backbone.Model.prototype.parse.call(this, response, options);
                 if (parsed.create_time) {
                     parsed.create_time = new Date(parsed.create_time);
@@ -166,7 +186,7 @@ var DatasetAssociation = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
             },
 
             /** override to wait by default */
-            save: function(attrs, options) {
+            save: function (attrs, options) {
                 options = options || {};
                 options.wait = _.isUndefined(options.wait) ? true : options.wait;
                 return Backbone.Model.prototype.save.call(this, attrs, options);
@@ -174,14 +194,14 @@ var DatasetAssociation = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
 
             //NOTE: subclasses of DA's will need to implement url and urlRoot in order to have these work properly
             /** save this dataset, _Mark_ing it as deleted (just a flag) */
-            delete: function(options) {
+            delete: function (options) {
                 if (this.get("deleted")) {
                     return jQuery.when();
                 }
                 return this.save({ deleted: true }, options);
             },
             /** save this dataset, _Mark_ing it as undeleted */
-            undelete: function(options) {
+            undelete: function (options) {
                 if (!this.get("deleted") || this.get("purged")) {
                     return jQuery.when();
                 }
@@ -218,7 +238,7 @@ var DatasetAssociation = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
                     }
                     xhr.responseText = error;
                     hda.trigger("error", hda, xhr, options, _l(error), {
-                        error: error
+                        error: error,
                     });
                 });
                 return xhr;
@@ -239,18 +259,18 @@ var DatasetAssociation = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
                 blurb: "misc_blurb",
                 description: "misc_blurb",
                 info: "misc_info",
-                tag: "tags"
+                tag: "tags",
             },
 
             // ........................................................................ misc
             /** String representation */
-            toString: function() {
+            toString: function () {
                 var nameAndId = this.get("id") || "";
                 if (this.get("name")) {
                     nameAndId = `"${this.get("name")}",${nameAndId}`;
                 }
                 return `Dataset(${nameAndId})`;
-            }
+            },
         }
     )
 );
@@ -268,7 +288,7 @@ var DatasetAssociationCollection = Backbone.Collection.extend(BASE_MVC.LoggableM
         urlRoot: `${getAppRoot()}api/datasets`,
 
         /** url fn */
-        url: function() {
+        url: function () {
             return this.urlRoot;
         },
 
@@ -276,25 +296,25 @@ var DatasetAssociationCollection = Backbone.Collection.extend(BASE_MVC.LoggableM
         /** Get the ids of every item in this collection
          *  @returns array of encoded ids
          */
-        ids: function() {
-            return this.map(item => item.get("id"));
+        ids: function () {
+            return this.map((item) => item.get("id"));
         },
 
         /** Get contents that are not ready
          *  @returns array of content models
          */
-        notReady: function() {
-            return this.filter(content => !content.inReadyState());
+        notReady: function () {
+            return this.filter((content) => !content.inReadyState());
         },
 
         /** return true if any datasets don't have details */
-        haveDetails: function() {
-            return this.all(dataset => dataset.hasDetails());
+        haveDetails: function () {
+            return this.all((dataset) => dataset.hasDetails());
         },
 
         // ........................................................................ ajax
         /** using a queue, perform ajaxFn on each of the models in this collection */
-        ajaxQueue: function(ajaxFn, options) {
+        ajaxQueue: function (ajaxFn, options) {
             var deferred = jQuery.Deferred();
             var startingLength = this.length;
             var responses = [];
@@ -310,17 +330,17 @@ var DatasetAssociationCollection = Backbone.Collection.extend(BASE_MVC.LoggableM
                 .map((dataset, i) => () => {
                     var xhr = ajaxFn.call(dataset, options);
                     // if successful, notify using the deferred to allow tracking progress
-                    xhr.done(response => {
+                    xhr.done((response) => {
                         deferred.notify({
                             curr: i,
                             total: startingLength,
                             response: response,
-                            model: dataset
+                            model: dataset,
                         });
                     });
                     // (regardless of previous error or success) if not last ajax call, shift and call the next
                     //  if last fn, resolve deferred
-                    xhr.always(response => {
+                    xhr.always((response) => {
                         responses.push(response);
                         if (ajaxFns.length) {
                             ajaxFns.shift()();
@@ -338,19 +358,27 @@ var DatasetAssociationCollection = Backbone.Collection.extend(BASE_MVC.LoggableM
 
         // ........................................................................ sorting/filtering
         /** return a new collection of datasets whose attributes contain the substring matchesWhat */
-        matches: function(matchesWhat) {
-            return this.filter(dataset => dataset.matches(matchesWhat));
+        matches: function (matchesWhat) {
+            return this.filter((dataset) => dataset.matches(matchesWhat));
         },
 
         /** String representation. */
-        toString: function() {
+        toString: function () {
             return ["DatasetAssociationCollection(", this.length, ")"].join("");
-        }
+        },
     }
 );
 
+window.addEventListener("focus", function () {
+    const testing = document.getElementById("tabicon");
+    if (testing && testing.href.search("erricon") != -1) {
+        TAB_UPDATES.change_favicon("static/favicon.ico");
+    }
+    document.title = "Galaxy";
+    hiddenupdates = 1;
+});
 //==============================================================================
 export default {
     DatasetAssociation: DatasetAssociation,
-    DatasetAssociationCollection: DatasetAssociationCollection
+    DatasetAssociationCollection: DatasetAssociationCollection,
 };

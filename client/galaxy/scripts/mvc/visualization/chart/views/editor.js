@@ -11,14 +11,14 @@ import Settings from "mvc/visualization/chart/views/settings";
 import Description from "mvc/visualization/chart/views/description";
 
 export default Backbone.View.extend({
-    initialize: function(app, options) {
+    initialize: function (app, options) {
         this.app = app;
         this.chart = this.app.chart;
         this.description = new Description(this.app);
         this.title = new Ui.Input({
             onchange: () => {
                 this.chart.set("title", this.title.value());
-            }
+            },
         });
         this.tabs = new Tabs.View({});
         this.tabs.add({
@@ -33,14 +33,14 @@ export default Backbone.View.extend({
                         .addClass("form-text text-muted")
                         .html("This title will appear in the list of 'Saved Visualizations'.")
                 )
-                .append(new Settings(this.app).$el)
+                .append(new Settings(this.app).$el),
         });
         if (this.chart.plugin.groups) {
             this.tabs.add({
                 id: "groups",
                 icon: "fa-database",
                 tooltip: "Select data.",
-                $el: new Groups(this.app).$el
+                $el: new Groups(this.app).$el,
             });
         }
         this.setElement("<div class='charts-editor'/>");
@@ -49,5 +49,5 @@ export default Backbone.View.extend({
         this.listenTo(this.chart, "load", () => {
             this.title.value(this.chart.get("title"));
         });
-    }
+    },
 });

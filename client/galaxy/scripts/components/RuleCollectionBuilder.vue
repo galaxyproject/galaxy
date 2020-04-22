@@ -40,7 +40,7 @@
                         :class="{
                             'rules-container-vertical': initialElements && vertical,
                             'rules-container-horizontal': initialElements && horizontal,
-                            'rules-container-full': initialElements == null
+                            'rules-container-full': initialElements == null,
                         }"
                     >
                         <rule-component rule-type="sort" :display-rule-type="displayRuleType" :builder="this">
@@ -351,8 +351,8 @@
                                     :key="map.type"
                                     @remove="removeMapping(index)"
                                     @edit="displayRuleType = 'mapping'"
-                                    @mouseover.native="map.columns.forEach(col => highlightColumn(col))"
-                                    @mouseout.native="map.columns.forEach(col => unhighlightColumn(col))"
+                                    @mouseover.native="map.columns.forEach((col) => highlightColumn(col))"
+                                    @mouseout.native="map.columns.forEach((col) => unhighlightColumn(col))"
                                     :col-headers="colHeaders"
                                 />
                                 <div v-if="mapping.length == 0">
@@ -576,364 +576,27 @@ import RuleDefs from "mvc/rules/rule-definitions";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import Select2 from "components/Select2";
+import ColumnSelector from "components/RuleBuilder/ColumnSelector";
+import RegularExpressionInput from "components/RuleBuilder/RegularExpressionInput";
+import RuleDisplay from "components/RuleBuilder/RuleDisplay";
+import IdentifierDisplay from "components/RuleBuilder/IdentifierDisplay";
+import RuleTargetComponent from "components/RuleBuilder/RuleTargetComponent";
+import RuleComponent from "components/RuleBuilder/RuleComponent";
+import RuleModalHeader from "components/RuleBuilder/RuleModalHeader";
+import RuleModalMiddle from "components/RuleBuilder/RuleModalMiddle";
+import RuleModalFooter from "components/RuleBuilder/RuleModalFooter";
+import StateDiv from "components/RuleBuilder/StateDiv";
 
 Vue.use(BootstrapVue);
 
 const RULES = RuleDefs.RULES;
 const MAPPING_TARGETS = RuleDefs.MAPPING_TARGETS;
 
-const ColumnSelector = {
-    template: `
-        <div class="rule-column-selector" v-if="!multiple || !ordered">
-            <label class="d-flex justify-content-end align-items-center">
-                <span class="mr-auto" v-b-tooltip.hover :title="help">{{ label }}</span>
-                <div class="mr-1" v-b-tooltip.hover :title="title"><select2 :value="target" @input="handleInput" :multiple="multiple">
-                    <option v-for="(col, index) in colHeaders" :value="index">{{ col }}</option>
-                </select2></div>
-                <slot></slot>
-            </label>
-        </div>
-        <div class="rule-column-selector" v-else>
-            <span>{{ label }}</span>
-            <slot></slot>
-            <ol>
-                <li v-for="(targetEl, index) in target"
-                    v-bind:index="index"
-                    v-bind:key="targetEl"
-                    class="rule-column-selector-target">
-                    {{ colHeaders[targetEl] }}
-                    <span class="fa fa-times rule-column-selector-target-remove" @click="handleRemove(index)"></span>
-                    <span class="fa fa-arrow-up rule-column-selector-up" v-if="index !== 0" @click="moveUp(index)"></span>
-                    <span class="fa fa-arrow-down rule-column-selector-down" v-if="index < target.length - 1" @click="moveUp(index + 1)"></span>
-                </li>
-                <li v-if="this.target.length < this.colHeaders.length">
-                    <span class="rule-column-selector-target-add" v-if="!orderedEdit">
-                        <i @click="$emit('update:orderedEdit', true)">... {{ l("Assign Another Column") }}</i>
-                    </span>
-                    <span class="rule-column-selector-target-select" v-else>
-                        <select2 @input="handleAdd" placeholder="Select a column">
-                            <option /><!-- empty option selection for placeholder -->
-                            <option v-for="(col, index) in remainingHeaders" :value="index">{{ col }}</option>
-                        </select2>
-                    </span>
-                </li>
-            </ol>
-        </div>
-    `,
-    data: function() {
-        return {
-            l: _l
-        };
-    },
-    props: {
-        target: {
-            required: true
-        },
-        label: {
-            required: false,
-            type: String,
-            default: _l("From Column")
-        },
-        help: {
-            required: false
-        },
-        colHeaders: {
-            type: Array,
-            required: true
-        },
-        multiple: {
-            type: Boolean,
-            required: false,
-            default: false
-        },
-        ordered: {
-            type: Boolean,
-            required: false,
-            default: false
-        },
-        valueAsList: {
-            type: Boolean,
-            required: false,
-            default: false
-        },
-        orderedEdit: {
-            type: Boolean,
-            required: false,
-            default: false
-        }
-    },
-    computed: {
-        remainingHeaders() {
-            const colHeaders = this.colHeaders;
-            if (!this.multiple) {
-                return colHeaders;
-            }
-            const remaining = {};
-            for (const key in colHeaders) {
-                if (this.target.indexOf(parseInt(key)) === -1) {
-                    remaining[key] = colHeaders[key];
-                }
-            }
-            return remaining;
-        },
-        title() {
-            return _l("Select a column");
-        }
-    },
-    methods: {
-        handleInput(value) {
-            if (this.multiple) {
-                // https://stackoverflow.com/questions/262427/why-does-parseint-yield-nan-with-arraymap
-                const val = value.map(idx => parseInt(idx));
-                this.$emit("update:target", val);
-            } else {
-                let val = parseInt(value);
-                if (this.valueAsList) {
-                    val = [val];
-                }
-                this.$emit("update:target", val);
-            }
-        },
-        handleAdd(value) {
-            this.target.push(parseInt(value));
-            this.$emit("update:orderedEdit", false);
-        },
-        handleRemove(index) {
-            this.target.splice(index, 1);
-        },
-        moveUp(value) {
-            const swapVal = this.target[value - 1];
-            Vue.set(this.target, value - 1, this.target[value]);
-            Vue.set(this.target, value, swapVal);
-        }
-    },
-    components: {
-        Select2
-    }
-};
-
-const RegularExpressionInput = {
-    template: `
-        <div>
-            <label for="regular_expression" v-b-tooltip.hover :title="title">{{ label }}</label>
-            <span v-b-popover.html="popoverContent" :title="popoverTitle" class="fa fa-question"></span>
-            <input v-b-tooltip.hover.left :title="title" name="regular_expression" class="rule-regular-expression" type="text" :value="target" @input="$emit('update:target', $event.target.value)" />
-        </div>
-    `,
-    props: {
-        target: {
-            required: true
-        }
-    },
-    computed: {
-        label() {
-            return _l("Regular Expression");
-        },
-        title() {
-            return _l("Enter a regular expression.");
-        },
-        popoverTitle() {
-            return _l("Regular Expressions");
-        },
-        popoverContent() {
-            return _l(
-                `Regular expressions are patterns used to match character combinations in strings. This input accepts Python-style regular expressions, find more information about these in <a href="https://pythonforbiologists.com/regular-expressions/">this Python for Biologists tutorial</a>.`
-            );
-        }
-    }
-};
-
-const RuleDisplay = {
-    template: `
-        <li class="rule">
-            <span class="rule-display">
-                <span class="mr-1">{{ title }}</span>
-                <span v-b-tooltip.hover :title="editTitle" class="fa fa-edit mr-1" @click="edit"></span>
-                <span v-b-tooltip.hover :title="removeTitle" class="fa fa-times map" @click="remove"></span>
-            </span>
-            <span class="rule-warning" v-if="rule.warn">
-                {{ rule.warn }}
-            </span>
-            <span class="rule-error" v-if="rule.error">
-                <span class="alert-message">{{ rule.error }}</span>
-            </span>
-        </li>
-    `,
-    props: {
-        rule: {
-            required: true,
-            type: Object
-        },
-        colHeaders: {
-            type: Array,
-            required: true
-        }
-    },
-    computed: {
-        title() {
-            const ruleType = this.rule.type;
-            return RULES[ruleType].display(this.rule, this.colHeaders);
-        },
-        editTitle() {
-            return _l("Edit this rule.");
-        },
-        removeTitle() {
-            return _l("Remove this rule.");
-        }
-    },
-    methods: {
-        edit() {
-            this.$emit("edit");
-        },
-        remove() {
-            this.$emit("remove");
-        }
-    }
-};
-
-const IdentifierDisplay = {
-    template: `
-      <li class="rule">
-        <span v-b-tooltip.hover :title="help">Set {{ columnsLabel }} as {{ typeDisplay }}</span>
-        <span v-b-tooltip.hover :title="titleEdit" class="fa fa-edit" @click="edit"></span>
-        <span v-b-tooltip.hover :title="titleRemove" class="fa fa-times" @click="remove"></span>
-      </li>
-    `,
-    props: {
-        type: {
-            type: String,
-            required: true
-        },
-        columns: {
-            required: true
-        },
-        colHeaders: {
-            type: Array,
-            required: true
-        }
-    },
-    methods: {
-        remove() {
-            this.$emit("remove");
-        },
-        edit() {
-            this.$emit("edit");
-        }
-    },
-    computed: {
-        typeDisplay() {
-            return MAPPING_TARGETS[this.type].label;
-        },
-        help() {
-            return MAPPING_TARGETS[this.type].help || "";
-        },
-        titleEdit() {
-            return _l("Edit column definition");
-        },
-        titleRemove() {
-            return _l("Remove this column definition");
-        },
-        columnsLabel() {
-            return RuleDefs.columnDisplay(this.columns, this.colHeaders);
-        }
-    }
-};
-
-const RuleTargetComponent = {
-    template: `<a class="rule-link dropdown-item" href="javascript:void(0)" :class="linkClassName" @click="builder.addNewRule(ruleType)">{{title}}</a>`,
-    props: {
-        ruleType: {
-            type: String,
-            required: true
-        },
-        builder: {
-            required: true
-        }
-    },
-    computed: {
-        linkClassName() {
-            return "rule-link-" + this.ruleType.replace(/_/g, "-");
-        },
-        title() {
-            return RULES[this.ruleType].title;
-        }
-    }
-};
-
-const RuleComponent = {
-    template: `
-    <div v-if="ruleType == displayRuleType" class="rule-editor" :class="typeToClass">
-        <slot></slot>
-        <div class="buttons rule-edit-buttons d-flex justify-content-end">
-           <button type="button" class="btn rule-editor-cancel mr-1" @click="cancel">{{ cancelLabel }}</button>
-           <button type="button" class="btn btn-primary rule-editor-ok" @click="okay">{{ applyLabel }}</button>
-        </div>
-    </div>`,
-    data: function() {
-        return {
-            applyLabel: _l("Apply"),
-            cancelLabel: _l("Cancel")
-        };
-    },
-    props: {
-        ruleType: {
-            type: String,
-            required: true
-        },
-        displayRuleType: {
-            required: true
-        },
-        builder: {
-            required: true
-        }
-    },
-    methods: {
-        cancel() {
-            this.builder.displayRuleType = null;
-        },
-        okay() {
-            this.builder.handleRuleSave(this.ruleType);
-            this.cancel();
-        }
-    },
-    computed: {
-        typeToClass() {
-            return "rule-edit-" + this.ruleType.replace(/_/g, "-");
-        }
-    }
-};
-
-const StateDiv = {
-    template: `
-        <div class="rule-collection-creator collection-creator flex-row-container">
-            <slot></slot>
-        </div>`
-};
-
-const RuleModalHeader = {
-    template: `<div class="header flex-row no-flex"><slot></slot></div>`
-};
-
-const RuleModalMiddle = {
-    template: `<div class="middle flex-row flex-row-container"><slot></slot></div>`
-};
-
-const RuleModalFooter = {
-    template: `
-        <div class="rule-footer footer flex-row no-flex">
-            <slot name="inputs"></slot>
-            <div class="actions clear vertically-spaced">
-                <div class="main-options float-right">
-                    <slot></slot>
-                </div>
-            </div>
-        </div>`
-};
-
 export default {
-    data: function() {
+    data: function () {
         let orientation = "vertical";
-        let mapping, rules;
+        let mapping;
+        let rules;
         if (this.initialRules) {
             mapping = this.initialRules.mapping.slice();
             rules = this.initialRules.rules.slice();
@@ -953,7 +616,7 @@ export default {
                     for (const index in collectionTypeRanks) {
                         rules.push({
                             type: "add_column_metadata",
-                            value: "identifier" + index
+                            value: "identifier" + index,
                         });
                     }
                 } else {
@@ -961,29 +624,29 @@ export default {
                     // just assume a list is given by default.
                     rules.push({
                         type: "add_column_metadata",
-                        value: "identifier0"
+                        value: "identifier0",
                     });
                 }
             } else if (this.elementsType == "datasets") {
                 rules.push(
                     {
                         type: "add_column_metadata",
-                        value: "hid"
+                        value: "hid",
                     },
                     {
                         type: "add_column_metadata",
-                        value: "name"
+                        value: "name",
                     }
                 );
             } else if (this.elementsType == "library_datasets") {
                 rules.push({
                     type: "add_column_metadata",
-                    value: "name"
+                    value: "name",
                 });
             } else if (this.elementsType == "ftp") {
                 rules.push({
                     type: "add_column_metadata",
-                    value: "path"
+                    value: "path",
                 });
             }
         }
@@ -1064,58 +727,58 @@ export default {
             genome: null,
             hideSourceItems: this.defaultHideSourceItems,
             addNameTag: false,
-            orientation: orientation
+            orientation: orientation,
         };
     },
     props: {
         initialElements: {
-            required: true
+            required: true,
         },
         importType: {
             type: String,
             required: false,
-            default: "collections"
+            default: "collections",
         },
         elementsType: {
             type: String,
             required: false,
-            default: "datasets"
+            default: "datasets",
         },
         // required if elementsType is "datasets" - hook into Backbone code for creating
         // collections from HDAs, etc...
         creationFn: {
             required: false,
-            type: Function
+            type: Function,
         },
         // required if elementsType is "collection_contents" - hook into tool form to update
         // rule parameter
         saveRulesFn: {
             required: false,
-            type: Function
+            type: Function,
         },
         initialRules: {
             required: false,
-            type: Object
+            type: Object,
         },
         defaultHideSourceItems: {
             type: Boolean,
             required: false,
-            default: true
+            default: true,
         },
         // Callbacks sent in by modal code.
         oncancel: {
             required: true,
-            type: Function
+            type: Function,
         },
         oncreate: {
             required: true,
-            type: Function
+            type: Function,
         },
         ftpUploadSite: {
             type: String,
             required: false,
-            default: null
-        }
+            default: null,
+        },
     },
     computed: {
         exisistingDatasets() {
@@ -1168,7 +831,7 @@ export default {
             }
         },
         hasActiveMappingEdit() {
-            const has = _.any(_.values(this.mapping), mapping => mapping.editing);
+            const has = _.any(_.values(this.mapping), (mapping) => mapping.editing);
             return has;
         },
         activeRule() {
@@ -1236,7 +899,7 @@ export default {
                 } else if (mappingDisplay.length > 1) {
                     formattedHeaders[colIndex] += ` (${[
                         mappingDisplay.slice(0, -1).join(", "),
-                        mappingDisplay.slice(-1)[0]
+                        mappingDisplay.slice(-1)[0],
                     ].join(" & ")})`;
                 }
             }
@@ -1291,7 +954,7 @@ export default {
             if (this.mappingAsDict.list_identifiers) {
                 identifierColumns = this.mappingAsDict.list_identifiers.columns;
             }
-            let collectionType = identifierColumns.map(col => "list").join(":");
+            let collectionType = identifierColumns.map((col) => "list").join(":");
             if (this.mappingAsDict.paired_identifier) {
                 if (collectionType) {
                     collectionType += ":paired";
@@ -1334,14 +997,16 @@ export default {
             return valid;
         },
         hotData() {
-            let data, sources, columns;
+            let data;
+            let sources;
+            let columns;
             if (
                 this.elementsType == "datasets" ||
                 this.elementsType == "library_datasets" ||
                 this.elementsType == "ftp"
             ) {
                 sources = this.initialElements.slice();
-                data = sources.map(el => []);
+                data = sources.map((el) => []);
                 columns = [];
             } else if (this.elementsType == "collection_contents") {
                 const collection = this.initialElements;
@@ -1360,7 +1025,7 @@ export default {
                 }
             } else {
                 data = this.initialElements.slice();
-                sources = data.map(el => null);
+                sources = data.map((el) => null);
                 columns = [];
                 if (this.initialElements) {
                     this.initialElements[0].forEach(() => columns.push("new"));
@@ -1370,7 +1035,7 @@ export default {
         },
         colHeadersPerRule() {
             return this.hotData.colHeadersPerRule;
-        }
+        },
     },
     methods: {
         l(str) {
@@ -1413,7 +1078,7 @@ export default {
             this.ruleView = "source";
         },
         resetSource() {
-            const replacer = function(key, value) {
+            const replacer = function (key, value) {
                 if (key == "error" || key == "warn") {
                     return undefined;
                 }
@@ -1421,7 +1086,7 @@ export default {
             };
             const asJson = {
                 rules: this.rules,
-                mapping: this.mapping
+                mapping: this.mapping,
             };
             if (!this.exisistingDatasets) {
                 if (this.extension !== UploadUtils.DEFAULT_EXTENSION) {
@@ -1494,7 +1159,7 @@ export default {
         },
         waitOnJob(response) {
             const jobId = response.data.jobs[0].id;
-            const handleJobShow = jobResponse => {
+            const handleJobShow = (jobResponse) => {
                 const state = jobResponse.data.state;
                 this.waitingJobState = state;
                 if (JobStatesModel.NON_TERMINAL_STATES.indexOf(state) !== -1) {
@@ -1512,15 +1177,12 @@ export default {
                 }
             };
             const doJobCheck = () => {
-                axios
-                    .get(`${getAppRoot()}api/jobs/${jobId}`)
-                    .then(handleJobShow)
-                    .catch(this.renderFetchError);
+                axios.get(`${getAppRoot()}api/jobs/${jobId}`).then(handleJobShow).catch(this.renderFetchError);
             };
             setTimeout(doJobCheck, 1000);
         },
         doFullJobCheck(jobId) {
-            const handleJobShow = jobResponse => {
+            const handleJobShow = (jobResponse) => {
                 const stderr = jobResponse.data.stderr;
                 if (stderr) {
                     let errorMessage = "An error was encountered while running your upload job. ";
@@ -1532,10 +1194,7 @@ export default {
                     this.errorMessage = errorMessage;
                 }
             };
-            axios
-                .get(`${getAppRoot()}api/jobs/${jobId}?full=True`)
-                .then(handleJobShow)
-                .catch(this.renderFetchError);
+            axios.get(`${getAppRoot()}api/jobs/${jobId}?full=True`).then(handleJobShow).catch(this.renderFetchError);
         },
         renderFetchError(error) {
             this.state = "error";
@@ -1551,17 +1210,17 @@ export default {
             this.orientation = this.orientation == "horizontal" ? "vertical" : "horizontal";
             const hotTable = this.$refs.hotTable.table;
             if (this.orientation == "horizontal") {
-                this.$nextTick(function() {
+                this.$nextTick(function () {
                     const fullWidth = $(".rule-builder-body").width();
                     hotTable.updateSettings({
-                        width: fullWidth
+                        width: fullWidth,
                     });
                 });
             } else {
-                this.$nextTick(function() {
+                this.$nextTick(function () {
                     const fullWidth = $(".rule-builder-body").width();
                     hotTable.updateSettings({
-                        width: fullWidth - 270
+                        width: fullWidth - 270,
                     });
                 });
             }
@@ -1593,7 +1252,8 @@ export default {
             } else {
                 const Galaxy = getGalaxyInstance();
                 const historyId = Galaxy.currHistoryPanel.model.id;
-                let elements, targets;
+                let elements;
+                let targets;
                 if (collectionType) {
                     targets = [];
                     const elementsByCollectionName = this.creationElementsForFetch();
@@ -1602,7 +1262,7 @@ export default {
                             destination: { type: "hdca" },
                             elements: elementsByCollectionName[collectionName],
                             collection_type: collectionType,
-                            name: collectionName
+                            name: collectionName,
                         };
                         if (this.addNameTag) {
                             target["tags"] = ["name:" + collectionName];
@@ -1615,8 +1275,8 @@ export default {
                         {
                             destination: { type: "hdas" },
                             elements: elements,
-                            name: name
-                        }
+                            name: name,
+                        },
                     ];
                 }
 
@@ -1625,7 +1285,7 @@ export default {
                         .post(`${getAppRoot()}api/tools/fetch`, {
                             history_id: historyId,
                             targets: targets,
-                            auto_decompress: true
+                            auto_decompress: true,
                         })
                         .then(this.refreshAndWait)
                         .catch(this.renderFetchError);
@@ -1718,10 +1378,7 @@ export default {
                             identifiersAtDepth.push(identifier);
                         } else {
                             // Create nesting for this element.
-                            collectionTypeAtDepth = collectionTypeAtDepth
-                                .split(":")
-                                .slice(1)
-                                .join(":");
+                            collectionTypeAtDepth = collectionTypeAtDepth.split(":").slice(1).join(":");
                             let found = false;
                             for (const element of elementsAtDepth) {
                                 if (element["name"] == identifier) {
@@ -1761,7 +1418,7 @@ export default {
                     const src = this.elementsType == "datasets" ? "hda" : "ldda";
                     return { id: source["id"], name: identifier, src: src, tags: res.tags };
                 },
-                identifier => {
+                (identifier) => {
                     return { name: identifier, src: "new_collection" };
                 },
                 "element_identifiers"
@@ -1779,7 +1436,7 @@ export default {
                     res["name"] = identifier;
                     return res;
                 },
-                identifier => {
+                (identifier) => {
                     return { name: identifier };
                 },
                 "elements"
@@ -1912,7 +1569,7 @@ export default {
                 res["tags"] = tags;
             }
             return res;
-        }
+        },
     },
     created() {
         if (this.elementsType !== "collection_contents") {
@@ -1938,28 +1595,28 @@ export default {
                 }
             }
             UploadUtils.getUploadDatatypes(
-                extensions => {
+                (extensions) => {
                     this.extensions = extensions;
                     this.extension = UploadUtils.DEFAULT_EXTENSION;
                 },
                 false,
                 UploadUtils.AUTO_EXTENSION
             );
-            UploadUtils.getUploadGenomes(genomes => {
+            UploadUtils.getUploadGenomes((genomes) => {
                 this.genomes = genomes;
                 this.genome = UploadUtils.DEFAULT_GENOME;
             }, UploadUtils.DEFAULT_GENOME);
         }
     },
     watch: {
-        addColumnRegexType: function(val) {
+        addColumnRegexType: function (val) {
             if (val == "groups") {
                 this.addColumnRegexGroupCount = 1;
             }
             if (val == "replacement") {
                 this.addColumnRegexReplacement = "\0";
             }
-        }
+        },
     },
     components: {
         HotTable,
@@ -1973,8 +1630,8 @@ export default {
         RuleModalHeader,
         RuleModalMiddle,
         RuleModalFooter,
-        Select2
-    }
+        Select2,
+    },
 };
 </script>
 
@@ -1982,19 +1639,19 @@ export default {
 <style>
 .table-column {
     width: 100%;
-    /* overflow: scroll; */
+    overflow: hidden;
 }
 .select2-container {
     min-width: 60px;
 }
 .vertical #hot-table {
     width: 100%;
-    overflow: scroll;
+    overflow: hidden;
     height: 400px;
 }
 .horizontal #hot-table {
     width: 100%;
-    overflow: scroll;
+    overflow: hidden;
     height: 250px;
 }
 .rule-builder-body {

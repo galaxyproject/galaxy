@@ -296,10 +296,10 @@ steps:
   - tool_id: cat1
     state:
       input1:
-        $link: first_cat#out_file1
+        $link: first_cat/out_file1
       queries:
         - input2:
-            $link: embed1#output1
+            $link: embed1/output1
 test_data:
   input1: "hello world"
 """, history_id=history_id)

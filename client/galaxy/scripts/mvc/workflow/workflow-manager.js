@@ -1,5 +1,4 @@
 import $ from "jquery";
-import { getGalaxyInstance } from "app";
 import Connector from "mvc/workflow/workflow-connector";
 import { Toast } from "ui/toast";
 import { Node } from "mvc/workflow/workflow-node";
@@ -19,6 +18,7 @@ class Workflow extends EventEmitter {
         this.has_changes = false;
         this.workflowOutputLabels = {};
         this.workflow_version = 0;
+        this.popover_counter = 0;
 
         // Canvas overview management
         this.canvas_manager = new WorkflowCanvas(this, $("#canvas-viewport"), $("#overview-container"));
@@ -28,12 +28,12 @@ class Workflow extends EventEmitter {
         if (overview_size !== undefined) {
             $(".workflow-overview").css({
                 width: overview_size,
-                height: overview_size
+                height: overview_size,
             });
         }
 
         // Stores the size of the overview into local storage when it's resized
-        $(".workflow-overview").bind("dragend", function(e, d) {
+        $(".workflow-overview").bind("dragend", function (e, d) {
             var op = $(this).offsetParent();
             var opo = op.offset();
             var new_size = Math.max(op.width() - (d.offsetX - opo.left), op.height() - (d.offsetY - opo.top));
@@ -48,18 +48,11 @@ class Workflow extends EventEmitter {
         };
     }
     set_node(node, data) {
-        const Galaxy = getGalaxyInstance();
         node.init_field_data(data);
         node.update_field_data(data);
-        // Post init/update, for new modules we want to default to
-        // nodes being outputs
-        // TODO: Overhaul the handling of all this when we modernize
-        // the editor, replace callout image manipulation with a simple
-        // class toggle, etc.
-        $.each(node.output_terminals, (ot_id, ot) => {
+        Object.values(node.output_terminals).forEach((ot) => {
             node.addWorkflowOutput(ot.name);
-            var callout = $(node.element).find(`.callout.${ot.name.replace(/(?=[()])/g, "\\")}`);
-            callout.find("img").attr("src", `${Galaxy.root}static/images/fugue/asterisk-small.png`);
+            node.markWorkflowOutput(ot.name);
         });
         this.activate_node(node);
     }
@@ -102,7 +95,6 @@ class Workflow extends EventEmitter {
     attemptUpdateOutputLabel(node, outputName, label) {
         if (this.canLabelOutputWith(label)) {
             node.labelWorkflowOutput(outputName, label);
-            node.nodeView.redrawWorkflowOutputs();
             return true;
         } else {
             return false;
@@ -134,7 +126,7 @@ class Workflow extends EventEmitter {
 
         // Create node wrapper
         const container = document.createElement("div");
-        container.className = "toolForm toolFormInCanvas";
+        container.className = "workflow-node";
         document.getElementById("canvas-container").appendChild(container);
         var $f = $(container);
 
@@ -150,9 +142,11 @@ class Workflow extends EventEmitter {
             id: content_id,
             type: type,
             title: title_text,
-            node: node
+            node: node,
+            nodeId: this.popover_counter,
         });
 
+        this.popover_counter++;
         // Set initial scroll position
         $f.css("left", $(window).scrollLeft() + 20);
         $f.css("top", $(window).scrollTop() + 20);
@@ -164,13 +158,13 @@ class Workflow extends EventEmitter {
         var height = $f.height();
         $f.css({
             left: -o.left + p.width() / 2 - width / 2,
-            top: -o.top + p.height() / 2 - height / 2
+            top: -o.top + p.height() / 2 - height / 2,
         });
         $f.css("width", width);
         $f.bind("dragstart", () => {
             self.activate_node(node);
         })
-            .bind("dragend", function() {
+            .bind("dragend", function () {
                 self.node_changed(node);
                 self.fit_canvas_to_nodes();
                 self.canvas_manager.draw_overview();
@@ -178,11 +172,9 @@ class Workflow extends EventEmitter {
             .bind("dragclickonly", () => {
                 self.activate_node(node);
             })
-            .bind("drag", function(e, d) {
+            .bind("drag", function (e, d) {
                 // Move
-                var po = $(this)
-                    .offsetParent()
-                    .offset();
+                var po = $(this).offsetParent().offset();
                 // Find relative offset and scale by zoom
                 var x = (d.offsetX - po.left) / self.canvas_manager.canvasZoom;
                 var y = (d.offsetY - po.top) / self.canvas_manager.canvasZoom;
@@ -190,7 +182,7 @@ class Workflow extends EventEmitter {
                 // Redraw
                 $(this)
                     .find(".terminal")
-                    .each(function() {
+                    .each(function () {
                         this.terminal.redraw();
                     });
             });
@@ -206,20 +198,20 @@ class Workflow extends EventEmitter {
     }
     remove_all() {
         var wf = this;
-        $.each(this.nodes, (k, v) => {
-            v.destroy();
-            wf.remove_node(v);
+        Object.values(this.nodes).forEach((node) => {
+            node.destroy();
+            wf.remove_node(node);
         });
     }
     rectify_workflow_outputs() {
         // Find out if we're using workflow_outputs or not.
         var using_workflow_outputs = false;
         var has_existing_pjas = false;
-        $.each(this.nodes, (k, node) => {
+        Object.values(this.nodes).forEach((node) => {
             if (node.type === "tool" && node.workflow_outputs && node.workflow_outputs.length > 0) {
                 using_workflow_outputs = true;
             }
-            $.each(node.post_job_actions, (pja_id, pja) => {
+            Object.values(node.post_job_actions).forEach((pja) => {
                 if (pja.action_type === "HideDatasetAction") {
                     has_existing_pjas = true;
                 }
@@ -227,33 +219,33 @@ class Workflow extends EventEmitter {
         });
         if (using_workflow_outputs !== false || has_existing_pjas !== false) {
             // Using workflow outputs, or has existing pjas.  Remove all PJAs and recreate based on outputs.
-            $.each(this.nodes, (k, node) => {
+            Object.values(this.nodes).forEach((node) => {
                 var node_changed = false;
                 if (node.post_job_actions === null) {
                     node.post_job_actions = {};
                     node_changed = true;
                 }
                 var pjas_to_rem = [];
-                $.each(node.post_job_actions, (pja_id, pja) => {
+                Object.entries(node.post_job_actions).forEach(([pja_id, pja]) => {
                     if (pja.action_type == "HideDatasetAction") {
                         pjas_to_rem.push(pja_id);
                     }
                 });
                 if (pjas_to_rem.length > 0) {
-                    $.each(pjas_to_rem, (i, pja_name) => {
+                    pjas_to_rem.forEach((pja_name) => {
                         node_changed = true;
                         delete node.post_job_actions[pja_name];
                     });
                 }
                 if (using_workflow_outputs) {
-                    $.each(node.output_terminals, (ot_id, ot) => {
+                    Object.values(node.output_terminals).forEach((ot) => {
                         var create_pja = !node.isWorkflowOutput(ot.name);
                         if (create_pja === true) {
                             node_changed = true;
                             var pja = {
                                 action_type: "HideDatasetAction",
                                 output_name: ot.name,
-                                action_arguments: {}
+                                action_arguments: {},
                             };
                             node.post_job_actions[`HideDatasetAction${ot.name}`] = null;
                             node.post_job_actions[`HideDatasetAction${ot.name}`] = pja;
@@ -269,18 +261,18 @@ class Workflow extends EventEmitter {
     }
     to_simple() {
         var nodes = {};
-        $.each(this.nodes, (i, node) => {
+        Object.values(this.nodes).forEach((node) => {
             var input_connections = {};
-            $.each(node.input_terminals, (k, t) => {
+            Object.values(node.input_terminals).forEach((t) => {
                 input_connections[t.name] = null;
                 // There should only be 0 or 1 connectors, so this is
                 // really a sneaky if statement
                 var cons = [];
-                $.each(t.connectors, (i, c) => {
+                t.connectors.forEach((c, i) => {
                     if (c.handle1) {
                         var con_dict = {
                             id: c.handle1.node.id,
-                            output_name: c.handle1.name
+                            output_name: c.handle1.name,
                         };
                         var input_subworkflow_step_id = t.attributes.input.input_subworkflow_step_id;
                         if (input_subworkflow_step_id !== undefined) {
@@ -293,11 +285,11 @@ class Workflow extends EventEmitter {
             });
             var post_job_actions = {};
             if (node.post_job_actions) {
-                $.each(node.post_job_actions, (i, act) => {
-                    var pja = {
+                Object.values(node.post_job_actions).forEach((act) => {
+                    const pja = {
                         action_type: act.action_type,
                         output_name: act.output_name,
-                        action_arguments: act.action_arguments
+                        action_arguments: act.action_arguments,
                     };
                     post_job_actions[act.action_type + act.output_name] = null;
                     post_job_actions[act.action_type + act.output_name] = pja;
@@ -320,15 +312,14 @@ class Workflow extends EventEmitter {
                 post_job_actions: node.post_job_actions,
                 uuid: node.uuid,
                 label: node.label,
-                workflow_outputs: node.workflow_outputs
+                workflow_outputs: node.workflow_outputs,
             };
             nodes[node.id] = node_data;
         });
         const report = this.report;
         return { steps: nodes, report: report };
     }
-    from_simple(data, initialImport_) {
-        var initialImport = initialImport_ === undefined ? true : initialImport_;
+    from_simple(data, initialImport = true) {
         var wf = this;
         var offset = 0;
         if (initialImport) {
@@ -341,13 +332,13 @@ class Workflow extends EventEmitter {
         var using_workflow_outputs = false;
         wf.workflow_version = data.version;
         wf.report = data.report || {};
-        $.each(data.steps, (id, step) => {
+        Object.entries(data.steps).forEach(([id, step]) => {
             var node = wf.prebuildNode(step.type, step.name, step.content_id);
             // If workflow being copied into another, wipe UUID and let
             // Galaxy assign new ones.
             if (!initialImport) {
                 step.uuid = null;
-                $.each(step.workflow_outputs, (name, workflow_output) => {
+                step.workflow_outputs.forEach((workflow_output) => {
                     workflow_output.uuid = null;
                 });
             }
@@ -355,7 +346,7 @@ class Workflow extends EventEmitter {
             if (step.position) {
                 node.element.css({
                     top: step.position.top,
-                    left: step.position.left
+                    left: step.position.left,
                 });
             }
             node.id = parseInt(step.id) + offset;
@@ -369,7 +360,7 @@ class Workflow extends EventEmitter {
                 if (node.workflow_outputs.length > 0) {
                     using_workflow_outputs = true;
                 } else {
-                    $.each(node.post_job_actions || [], (pja_id, pja) => {
+                    Object.values(node.post_job_actions).forEach((pja) => {
                         if (pja.action_type === "HideDatasetAction") {
                             using_workflow_outputs = true;
                         }
@@ -379,16 +370,16 @@ class Workflow extends EventEmitter {
         });
         wf.id_counter = max_id + 1;
         // Second pass, connections
-        $.each(data.steps, (id, step) => {
-            var node = wf.nodes[parseInt(id) + offset];
-            $.each(step.input_connections, (k, v) => {
+        Object.entries(data.steps).forEach(([id, step]) => {
+            const node = wf.nodes[parseInt(id) + offset];
+            Object.entries(step.input_connections).forEach(([k, v]) => {
                 if (v) {
-                    if (!$.isArray(v)) {
+                    if (!Array.isArray(v)) {
                         v = [v];
                     }
-                    $.each(v, (l, x) => {
-                        var other_node = wf.nodes[parseInt(x.id) + offset];
-                        var c = new Connector(this.canvas_manager);
+                    v.forEach((x) => {
+                        const other_node = wf.nodes[parseInt(x.id) + offset];
+                        const c = new Connector(this.canvas_manager);
                         c.connect(other_node.output_terminals[x.output_name], node.input_terminals[k]);
                         c.redraw();
                     });
@@ -396,7 +387,7 @@ class Workflow extends EventEmitter {
             });
             if (using_workflow_outputs) {
                 // Ensure that every output terminal has a WorkflowOutput or HideDatasetAction.
-                $.each(node.output_terminals, (ot_id, ot) => {
+                Object.values(node.output_terminals).forEach((ot) => {
                     if (node.post_job_actions[`HideDatasetAction${ot.name}`] === undefined) {
                         node.addWorkflowOutput(ot.name);
                         node.markWorkflowOutput(ot.name);
@@ -462,7 +453,7 @@ class Workflow extends EventEmitter {
         var n_pred = {};
         var successors = {};
         // First pass to initialize arrays even for nodes with no connections
-        $.each(this.nodes, (id, node) => {
+        Object.keys(this.nodes).forEach((id) => {
             if (n_pred[id] === undefined) {
                 n_pred[id] = 0;
             }
@@ -471,9 +462,9 @@ class Workflow extends EventEmitter {
             }
         });
         // Second pass to count predecessors and successors
-        $.each(this.nodes, (id, node) => {
-            $.each(node.input_terminals, (j, t) => {
-                $.each(t.connectors, (k, c) => {
+        Object.values(this.nodes).forEach((node) => {
+            Object.values(node.input_terminals).forEach((t) => {
+                t.connectors.forEach((c) => {
                     // A connection exists from `other` to `node`
                     var other = c.handle1.node;
                     // node gains a predecessor
@@ -516,14 +507,14 @@ class Workflow extends EventEmitter {
         var h_pad = 80;
         var v_pad = 30;
         var left = h_pad;
-        $.each(node_ids_by_level, (i, ids) => {
+        node_ids_by_level.forEach((ids) => {
             // We keep nodes in the same order in a level to give the user
             // some control over ordering
             ids.sort((a, b) => $(all_nodes[a].element).position().top - $(all_nodes[b].element).position().top);
             // Position each node
             var max_width = 0;
             var top = v_pad;
-            $.each(ids, (j, id) => {
+            ids.forEach((id) => {
                 var node = all_nodes[id];
                 var element = $(node.element);
                 $(element).css({ top: top, left: left });
@@ -533,7 +524,7 @@ class Workflow extends EventEmitter {
             left += max_width + h_pad;
         });
         // Need to redraw all connectors
-        $.each(all_nodes, (_, node) => {
+        Object.values(all_nodes).forEach((node) => {
             node.redraw();
         });
     }
@@ -543,7 +534,7 @@ class Workflow extends EventEmitter {
         var ymin = Infinity;
         var ymax = -Infinity;
         var p;
-        $.each(this.nodes, (id, node) => {
+        Object.values(this.nodes).forEach((node) => {
             var e = $(node.element);
             p = e.position();
             xmin = Math.min(xmin, p.left);
@@ -588,10 +579,10 @@ class Workflow extends EventEmitter {
             left: left / canvasZoom,
             top: top / canvasZoom,
             width: width,
-            height: height
+            height: height,
         });
         // Move elements back if needed
-        this.canvas_container.children().each(function() {
+        this.canvas_container.children().each(function () {
             var p = $(this).position();
             $(this).css("left", (p.left + xmin_delta) / canvasZoom);
             $(this).css("top", (p.top + ymin_delta) / canvasZoom);

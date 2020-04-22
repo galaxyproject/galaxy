@@ -15,7 +15,7 @@ function applyRules(rules, data, sources) {
 }
 
 function itShouldConform(specTestCase, i) {
-    it("should pass conformance test case " + i, function() {
+    it("should pass conformance test case " + i, function () {
         chai.assert.property(specTestCase, "rules");
         if (specTestCase.initial) {
             chai.assert.property(specTestCase, "final");
@@ -38,6 +38,6 @@ function itShouldConform(specTestCase, i) {
     });
 }
 
-describe("Rules DSL Spec", function() {
+describe("Rules DSL Spec", function () {
     SPEC_TEST_CASES.forEach(itShouldConform);
 });

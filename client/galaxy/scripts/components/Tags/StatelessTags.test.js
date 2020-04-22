@@ -5,7 +5,7 @@ import Vue from "vue";
 
 describe("Tags/StatelessTags.vue", () => {
     const localVue = createLocalVue();
-    localVue.filter("localize", value => _l(value));
+    localVue.filter("localize", (value) => _l(value));
 
     let testTags = ["abc", "def", "ghi"];
     let wrapper, emitted;
@@ -13,7 +13,7 @@ describe("Tags/StatelessTags.vue", () => {
     beforeEach(async () => {
         wrapper = mount(StatelessTags, { localVue });
         wrapper.setProps({
-            value: testTags
+            value: testTags,
         });
         emitted = wrapper.emitted();
         await Vue.nextTick();

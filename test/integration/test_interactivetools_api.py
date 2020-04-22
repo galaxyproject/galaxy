@@ -2,6 +2,7 @@
 
 import os
 
+import pytest
 import requests
 
 from galaxy_test.base import api_asserts
@@ -12,6 +13,7 @@ from galaxy_test.base.populators import (
 from .test_containerized_jobs import (
     ContainerizedIntegrationTestCase,
     disable_dependency_resolution,
+    DOCKERIZED_JOB_CONFIG_FILE,
 )
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
@@ -119,4 +121,24 @@ class InteractiveToolsPulsarIntegrationTestCase(BaseInteractiveToolsIntegrationT
     def handle_galaxy_config_kwds(cls, config):
         config["job_config_file"] = EMBEDDED_PULSAR_JOB_CONFIG_FILE_DOCKER
         config["galaxy_infrastructure_url"] = 'http://localhost:$UWSGI_PORT'
+        disable_dependency_resolution(config)
+
+
+class InteractiveToolsRemoteProxyIntegrationTestCase(BaseInteractiveToolsIntegrationTestCase, RunsInterativeToolTests):
+    """
+    $ cd gx-it-proxy
+    $ ./lib/createdb.js --sessions $HOME/gxitexproxy.sqlite
+    $ ./lib/main.js --port 9001 --ip 0.0.0.0 --verbose --sessions $HOME/gxitexproxy.sqlite
+    $ # Need to create new DB for each test I think, duplicate IDs are the problem I think because each test starts at 1
+    $ GALAXY_TEST_EXTERNAL_PROXY_HOST="localhost:9001" GALAXY_TEST_EXTERNAL_PROXY_MAP="$HOME/gxitexproxy.sqlite" pytest -s test/integration/test_interactivetools_api.py::InteractiveToolsRemoteProxyIntegrationTestCase
+    """
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        interactivetools_map = os.environ.get("GALAXY_TEST_EXTERNAL_PROXY_MAP")
+        interactivetools_proxy_host = os.environ.get("GALAXY_TEST_EXTERNAL_PROXY_HOST")
+        if not interactivetools_map or not interactivetools_proxy_host:
+            pytest.skip("External proxy not configured for test [map=%s,host=%s]" % (interactivetools_map, interactivetools_proxy_host))
+        config["job_config_file"] = DOCKERIZED_JOB_CONFIG_FILE
+        config["interactivetools_proxy_host"] = interactivetools_proxy_host
+        config["interactivetools_map"] = interactivetools_map
         disable_dependency_resolution(config)
