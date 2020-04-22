@@ -72,7 +72,6 @@ function buildPlugins(callback) {
      * Walk plugin build glob and attempt to build anything with a package.json
      * */
 
-    const static_viz_path = "../static/plugins/visualizations";
     paths.plugin_build_dirs.map((build_dir) => {
         glob(build_dir, {}, (er, files) => {
             files.map((file) => {
@@ -80,13 +79,12 @@ function buildPlugins(callback) {
                 const f = path.join(process.cwd(), file).slice(0, -12);
 
                 const plugin_name = path.dirname(file).split(path.sep).pop();
-                const hash_file_name = plugin_name + "_plugin_build_hash.txt";
-                const hash_file_path = path.join(static_viz_path, plugin_name, "static", hash_file_name);
+                const hash_file_path = path.join(f, "static", "plugin_build_hash.txt");
 
                 if (fs.existsSync(hash_file_path)) {
                     skip_build =
-                        spawn("git", ["diff", "--quiet", '"$(cat ' + hash_file_path + ')"', "--", f], {
-                            stdio: "pipe",
+                        spawn("git", ["diff", "--quiet", `$(cat ${hash_file_path})`, "--", f], {
+                            stdio: "inherit",
                             shell: true,
                         }).status === 0;
                 }
@@ -102,15 +100,9 @@ function buildPlugins(callback) {
                     });
                     console.log("Building ", plugin_name);
                     spawn("yarn", ["build"], { cwd: f, stdio: "inherit", shell: true });
-                    // hash_file_name is copied to static during stagePlugins()
-                    spawn(
-                        "bash",
-                        [
-                            "-c",
-                            '"(git rev-parse HEAD 2>/dev/null || echo ``) > ' + f + "/static/" + hash_file_name + '"',
-                        ],
-                        { shell: true }
-                    );
+                    spawn("bash", ["-c", `"(git rev-parse HEAD 2>/dev/null || echo \`\`) > ${hash_file_path} "`], {
+                        shell: true,
+                    });
                 }
             });
         });

@@ -178,5 +178,4 @@ packages/*/*.egg-info
 config/plugins/visualizations/**/static/script.js
 # TODO: Really need to follow up on this and make it standard.
 config/plugins/visualizations/**/static/main.css
-
-config/plugins/visualizations/**/static/*_plugin_build_hash.txt
+config/plugins/visualizations/**/static/plugin_build_hash.txt
