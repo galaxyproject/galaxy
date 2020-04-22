@@ -3852,7 +3852,8 @@
     map group names to parameter descriptions (additional types of
     mappings via these files could be implemented but haven't yet -
     for instance using workflow tags to do the mapping).
-    Sample default path 'config/workflow_resource_mapper_conf.yml'
+    Sample default path
+    'config/workflow_resource_mapper_conf.yml.sample'
 :Default: ``None``
 :Type: str
 

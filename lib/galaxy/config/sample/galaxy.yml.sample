@@ -1889,7 +1889,8 @@ galaxy:
   # to parameter descriptions (additional types of mappings via these
   # files could be implemented but haven't yet - for instance using
   # workflow tags to do the mapping).
-  # Sample default path 'config/workflow_resource_mapper_conf.yml'
+  # Sample default path
+  # 'config/workflow_resource_mapper_conf.yml.sample'
   #workflow_resource_params_mapper: null
 
   # Optional configuration file similar to `job_config_file` to specify
