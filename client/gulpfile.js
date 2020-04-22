@@ -2,7 +2,7 @@ const path = require("path");
 const fs = require("fs");
 const del = require("del");
 const { src, dest, series, parallel } = require("gulp");
-const spawn = require("child_process").spawnSync;
+const child_process = require("child_process");
 const glob = require("glob");
 
 const paths = {
@@ -71,7 +71,6 @@ function buildPlugins(callback) {
     /*
      * Walk plugin_build_dirs glob and attempt to build modules.
      * */
-
     paths.plugin_build_dirs.map((build_dir) => {
         glob(build_dir, {}, (er, files) => {
             files.map((file) => {
@@ -82,7 +81,7 @@ function buildPlugins(callback) {
 
                 if (fs.existsSync(hash_file_path)) {
                     skip_build =
-                        spawn("git", ["diff", "--quiet", `$(cat ${hash_file_path})`, "--", f], {
+                        child_process.spawnSync("git", ["diff", "--quiet", `$(cat ${hash_file_path})`, "--", f], {
                             stdio: "inherit",
                             shell: true,
                         }).status === 0;
@@ -94,16 +93,18 @@ function buildPlugins(callback) {
                     console.log(`No changes detected for ${plugin_name}`);
                 } else {
                     console.log(`Installing Dependencies for ${plugin_name}`);
-                    spawn("yarn", ["install", "--production=false", "--network-timeout=300000", "--check-files"], {
-                        cwd: f,
-                        stdio: "inherit",
-                        shell: true,
-                    });
+                    child_process.spawnSync(
+                        "yarn",
+                        ["install", "--production=false", "--network-timeout=300000", "--check-files"],
+                        {
+                            cwd: f,
+                            stdio: "inherit",
+                            shell: true,
+                        }
+                    );
                     console.log(`Building ${plugin_name}`);
-                    spawn("yarn", ["build"], { cwd: f, stdio: "inherit", shell: true });
-                    spawn("bash", ["-c", `"(git rev-parse HEAD 2>/dev/null || echo \`\`) > ${hash_file_path} "`], {
-                        shell: true,
-                    });
+                    child_process.spawnSync("yarn", ["build"], { cwd: f, stdio: "inherit", shell: true });
+                    child_process.exec(`"(git rev-parse HEAD 2>/dev/null || echo \`\`) > ${hash_file_path} "`);
                 }
             });
         });
