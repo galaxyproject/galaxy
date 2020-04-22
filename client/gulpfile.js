@@ -87,6 +87,8 @@ function buildPlugins(callback) {
                             stdio: "inherit",
                             shell: true,
                         }).status === 0;
+                } else {
+                    console.log(`No build hashfile detected for ${plugin_name}, generating now.`);
                 }
 
                 if (skip_build) {
