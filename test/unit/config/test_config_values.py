@@ -6,12 +6,12 @@ import pytest
 
 from galaxy import config
 from galaxy.util import listify
+from galaxy.web.formatting import expand_pretty_datetime_format
 
 TestData = namedtuple('TestData', ('key', 'expected', 'loaded'))
 
 # TODO: all these will be fixed
 DO_NOT_TEST = [
-    'pretty_datetime_format',
     'heartbeat_log',
     'ftp_upload_dir_template',
     'workflow_resource_params_mapper',
@@ -38,6 +38,7 @@ class ExpectedValues:
             'object_store_store_by': 'uuid',
             'password_expiration_period': timedelta,
             'persistent_communication_rooms': listify_strip,
+            'pretty_datetime_format': expand_pretty_datetime_format,
             'statsd_host': '',  # TODO: do we need '' as the default?
             'tool_config_file': listify_strip,
             'tool_data_table_config_path': listify_strip,
