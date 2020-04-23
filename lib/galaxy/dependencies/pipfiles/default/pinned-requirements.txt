@@ -194,3 +194,4 @@ webob==1.8.6
 whoosh==2.7.4
 wrapt==1.12.1
 zipp==1.2.0
+weasyprint==51
