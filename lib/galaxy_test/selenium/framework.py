@@ -200,13 +200,17 @@ class TestWithSeleniumMixin(NavigatesGalaxy, UsesApiTestCaseMixin):
     # GALAXY_TEST_SELENIUM_ADMIN_USER_PASSWORD
     requires_admin = False
 
-    def setup_selenium(self):
+    def _target_url_from_selenium(self):
         # Deal with the case when Galaxy has a different URL when being accessed by Selenium
         # then when being accessed by local API calls.
         if GALAXY_TEST_EXTERNAL_FROM_SELENIUM is not None:
-            self.target_url_from_selenium = GALAXY_TEST_EXTERNAL_FROM_SELENIUM
+            target_url_from_selenium = GALAXY_TEST_EXTERNAL_FROM_SELENIUM
         else:
-            self.target_url_from_selenium = self.url
+            target_url_from_selenium = self.url
+        return target_url_from_selenium
+
+    def setup_selenium(self):
+        self.target_url_from_selenium = self._target_url_from_selenium()
         self.snapshots = []
         self.setup_driver_and_session()
         if self.requires_admin and GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL == DEFAULT_ADMIN_USER:
