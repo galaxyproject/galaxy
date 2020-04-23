@@ -1,2 +1,2 @@
-These characters should not result in a unicode decoding error: ®ÃââèÃ
+These characters should not result in a unicode decoding error: cÃ³mplÇcá¸tÃ«d strÄ©Ã±g
 ....

@@ -1,5 +1,5 @@
 <template>
-    <b-modal :static="modalStatic" v-model="modalShow" @ok="onOk" @hide="onHide">
+    <b-modal id="repo-install-settings" :static="modalStatic" v-model="modalShow" @ok="onOk" @hide="onHide">
         <template v-slot:modal-header>
             <h4 class="title m-0">
                 {{ modalTitle }}

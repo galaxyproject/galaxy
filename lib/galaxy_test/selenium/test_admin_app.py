@@ -1,3 +1,4 @@
+from galaxy_test.base.populators import flakey
 from .framework import (
     selenium_test,
     SeleniumTestCase,
@@ -7,6 +8,46 @@ from .framework import (
 class AdminAppTestCase(SeleniumTestCase):
 
     requires_admin = True
+
+    @selenium_test
+    @flakey  # This test relies on an external server that may or may not be available to the testing environment.
+    def test_admin_toolshed(self):
+        admin_component = self.components.admin
+        self.admin_login()
+        self.admin_open()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.screenshot('admin_landing')
+        admin_component.index.toolshed.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.screenshot('admin_toolshed_landing')
+        repo_search_input = self.driver.find_element_by_id('toolshed-repo-search')
+        repo_search_input.clear()
+        repo_search_input.send_keys('all_fasta')
+        # If this hasn't succeeded after 30 seconds, the @flakey context should
+        # allow the test to still pass, since there should definitely be results
+        # after 30 seconds.
+        self.sleep_for(self.wait_types.SHED_SEARCH)
+        self.screenshot('admin_toolshed_search')
+        admin_component.toolshed.search_results.wait_for_visible()
+        # It's very unlikely that this data manager will ever stop existing.
+        repository_row = self.driver.find_element_by_link_text('data_manager_fetch_genome_dbkeys_all_fasta')
+        repository_row.click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.screenshot('admin_toolshed_repo_details')
+        install_button = self.driver.find_element_by_xpath("(//button[contains(., 'Install')])[1]")
+        install_button.click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.screenshot('admin_toolshed_repo_install_settings')
+        ok_button = self.driver.find_element_by_xpath("//*[@id='repo-install-settings___BV_modal_footer_']/button[contains(., 'OK')]")
+        ok_button.click()
+        self.sleep_for(self.wait_types.REPO_INSTALL)
+        self.screenshot('admin_toolshed_repo_installed')
+        # Unfortunately reusing the element isn't feasible, since the div
+        # containing the button gets replaced with a new div and button.
+        uninstall_button = self.driver.find_element_by_xpath("(//button[contains(., 'Uninstall')])[1]")
+        uninstall_button.click()
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        self.screenshot('admin_toolshed_repo_uninstalled')
 
     @selenium_test
     def test_admin_server_display(self):

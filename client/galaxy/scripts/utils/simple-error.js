@@ -9,5 +9,6 @@ export function errorMessageAsString(e) {
 }
 
 export function rethrowSimple(e) {
+    console.debug(e);
     throw errorMessageAsString(e);
 }

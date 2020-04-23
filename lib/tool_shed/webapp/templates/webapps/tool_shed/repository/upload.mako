@@ -3,7 +3,7 @@
 <%namespace file="/webapps/tool_shed/common/repository_actions_menu.mako" import="render_tool_shed_repository_actions" />
 
 <%
-    is_new = repository.is_new( trans.app )
+    is_new = repository.is_new()
 %>
 
 <%!
@@ -138,7 +138,7 @@ ${render_tool_shed_repository_actions( repository=repository)}
                 </div>
                 <div style="clear: both"></div>
             </div>
-            %if not repository.is_new( trans.app ):
+            %if not repository.is_new():
                 <div class="form-row" >
                     <label>Contents:</label>
                     <div id="tree" >
