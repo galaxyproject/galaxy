@@ -56,7 +56,7 @@
 import _l from "utils/localization";
 import ToolSection from "./Common/ToolSection";
 import ToolSearch from "./Common/ToolSearch";
-import { filterToolSections } from "./utilities";
+import { filterToolsinCats } from "./utilities";
 
 export default {
     name: "ToolBox",
@@ -102,7 +102,7 @@ export default {
             };
         },
         categories() {
-            return filterToolSections(this.toolsLayout, this.results);
+            return filterToolsinCats(this.toolsLayout, this.results);
         },
         toolsLayout() {
             return this.toolbox.map((section) => {
