@@ -238,7 +238,7 @@ function _makeSection(self, output_id, label, node) {
             {
                 label: "Label",
                 type: "text",
-                value: output && output.label || "",
+                value: (output && output.label) || "",
                 help: "This will provide a short name to describe the output - this must be unique across workflows.",
                 onchange: function (new_value) {
                     workflow.attemptUpdateOutputLabel(node, output_id, new_value);

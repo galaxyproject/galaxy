@@ -594,7 +594,7 @@ class InputCollectionTerminal extends BaseInputTerminal {
     }
 }
 
-class OutputCollectionTerminal extends Terminal {
+class OutputCollectionTerminal extends OutputTerminal {
     constructor(attr) {
         super(attr);
         this.datatypes = attr.datatypes;

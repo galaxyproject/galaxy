@@ -33,9 +33,10 @@ export class ActiveOutputs {
 
     update(incomingArray) {
         this.entries = {};
-        incomingArray && incomingArray.forEach((entry) => {
-            this.entries[entry.output_name] = entry;
-        });
+        incomingArray &&
+            incomingArray.forEach((entry) => {
+                this.entries[entry.output_name] = entry;
+            });
     }
 
     remove(name) {

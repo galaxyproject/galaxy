@@ -105,8 +105,8 @@ class Workflow extends EventEmitter {
         node.changeOutputDatatype(outputName, newDatatype);
         return true;
     }
-    create_node(type, title_text, content_id) {
-        const node = this.build_node(type, title_text, content_id);
+    create_node(type, name, content_id) {
+        const node = this.build_node(type, name, content_id);
         this.add_node(node);
         this.fit_canvas_to_nodes();
         this.canvas_manager.draw_overview();
@@ -122,7 +122,7 @@ class Workflow extends EventEmitter {
         this.has_changes = true;
         node.workflow = this;
     }
-    build_node(type, title_text, content_id) {
+    build_node(type, name, content_id) {
         var self = this;
 
         // Create node wrapper
@@ -137,7 +137,7 @@ class Workflow extends EventEmitter {
         const node = mountWorkflowNode(child, {
             id: content_id,
             type: type,
-            title: title_text,
+            name: name,
             node: node,
             nodeId: this.popover_counter,
             f: container,

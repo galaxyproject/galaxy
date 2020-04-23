@@ -93,9 +93,9 @@ export default {
             type: String,
             default: "",
         },
-        title: {
+        name: {
             type: String,
-            default: "title",
+            default: "name",
         },
         type: {
             type: String,
@@ -134,6 +134,9 @@ export default {
         this.element = this.f;
     },
     computed: {
+        title() {
+            return this.label || this.name;
+        },
         hasInputs() {
             return Object.keys(this.inputs).length > 0;
         },
