@@ -59,3 +59,8 @@ export function filterTools(layout, results) {
         return layout;
     }
 }
+
+export function resizePanel(newWidth) {
+    document.getElementById("left").style["width"] = newWidth + "px";
+    document.getElementById("center").style["left"] = newWidth + "px";
+}

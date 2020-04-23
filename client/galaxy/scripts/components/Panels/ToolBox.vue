@@ -41,6 +41,14 @@
                 </div>
             </div>
         </div>
+
+        <!--<div class="vld-parent">
+
+            <li v-for="tool in searchTools" :key="tool.id">
+                {{ tool.name }}
+                <favorites-button @onFavorites="onAddFavorite" v-if="isUser" />
+            </li>
+        </div>-->
     </div>
 </template>
 
@@ -49,10 +57,13 @@ import ToolSection from "./Common/ToolSection";
 import ToolSearch from "./Common/ToolSearch";
 import UploadButton from "./Buttons/UploadButton";
 import FavoritesButton from "./Buttons/FavoritesButton";
-import { filterToolsinCats, filterTools } from "./utilities";
+import { filterToolsinCats, filterTools, resizePanel } from "./utilities";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
 import _l from "utils/localization";
+
+const EXPANDED_WIDTH = 400;
+const DEFAULT_WIDTH = 288;
 
 export default {
     name: "ToolBox",
@@ -119,9 +130,20 @@ export default {
         },
         onResults(results) {
             this.results = results;
+            this.onResultsResize();
+        },
+        onResultsResize() {
+            if (this.results) {
+                resizePanel(EXPANDED_WIDTH);
+            } else {
+                resizePanel(DEFAULT_WIDTH);
+            }
         },
         onFavorites(term) {
             this.query = term;
+        },
+        onAddFavorite(tool) {
+            //todo
         },
         onOpen(tool, evt) {
             const Galaxy = getGalaxyInstance();
