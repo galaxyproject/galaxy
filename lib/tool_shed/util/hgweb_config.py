@@ -80,9 +80,8 @@ class HgWebConfigManager(object):
             # raise Exception( "Required file %s does not exist - check config setting for hgweb_config_dir." % hgweb_config )
             # ...but now we just log the missing file and create a new empty one.
             log.debug("Required file %s does not exist, so creating a new, empty file.  Check your config setting for hgweb_config_dir." % hgweb_config)
-            hgweb_config_file = open(hgweb_config, 'wb')
-            hgweb_config_file.write(new_hgweb_config_template)
-            hgweb_config_file.close()
+            with open(hgweb_config, 'w') as hgweb_config_file:
+                hgweb_config_file.write(new_hgweb_config_template)
         return os.path.abspath(hgweb_config)
 
     def make_backup(self):
@@ -101,6 +100,8 @@ class HgWebConfigManager(object):
 
     def write_config(self):
         """Writing the in-memory configuration to the hgweb.config file on disk."""
-        config_file = open(self.hgweb_config, 'wb')
-        self.in_memory_config.write(config_file)
-        config_file.close
+        with open(self.hgweb_config, 'w') as config_file:
+            self.in_memory_config.write(config_file)
+
+
+hgweb_config_manager = HgWebConfigManager()

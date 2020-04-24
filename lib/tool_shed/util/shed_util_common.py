@@ -250,7 +250,7 @@ def get_repository_from_refresh_on_change(app, **kwd):
         if k.startswith(changeset_revision_str):
             repository_id = app.security.encode_id(int(k.lstrip(changeset_revision_str)))
             repository = repository_util.get_repository_in_tool_shed(app, repository_id)
-            if repository.tip(app) != v:
+            if repository.tip() != v:
                 return v, repository
     # This should never be reached - raise an exception?
     return v, None
@@ -321,7 +321,7 @@ def handle_email_alerts(app, host, repository, content_alert_str='', new_repo_al
        that was included in the change set.
     """
     sa_session = app.model.context.current
-    repo = hg_util.get_repo_for_repository(app, repository=repository)
+    repo = repository.hg_repo
     sharable_link = repository_util.generate_sharable_link_for_repository_in_tool_shed(repository, changeset_revision=None)
     smtp_server = app.config.smtp_server
     if smtp_server and (new_repo_alert or repository.email_alerts):

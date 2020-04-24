@@ -251,7 +251,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
                         self.user = None
                         self.galaxy_session = None
                     else:
-                        self.response.send_redirect(url_for(controller='user',
+                        self.response.send_redirect(url_for(controller='root',
                                                      action='login',
                                                      message="You have been logged out due to inactivity.  Please log in again to continue using Galaxy.",
                                                      status='info',

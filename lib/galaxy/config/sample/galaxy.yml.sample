@@ -761,6 +761,18 @@ galaxy:
   # Enable InteractiveTools.
   #interactivetools_enable: false
 
+  # This flag enables an AWS cost estimate for every job based on their
+  # runtime matrices. CPU, RAM and runtime usage is mapped against AWS
+  # pricing table. Please note, that those numbers are only estimates.
+  #aws_estimate: false
+
+  # Proxy host - assumed to just be hosted on the same hostname and port
+  # as Galaxy by default.
+  #interactivetools_proxy_host: null
+
+  # Map for interactivetool proxy.
+  #interactivetools_map: interactivetools_map.sqlite
+
   # Show visualization tab and list in masthead.
   #visualizations_visible: true
 
@@ -1154,8 +1166,7 @@ galaxy:
 
   # Heartbeat log filename. Can accept the template variables
   # {server_name} and {pid}
-  # Sample default 'heartbeat_{server_name}.log'
-  #heartbeat_log: null
+  #heartbeat_log: heartbeat_{server_name}.log
 
   # Log to Sentry Sentry is an open source logging and error aggregation
   # platform.  Setting sentry_dsn will enable the Sentry middleware and
@@ -1874,11 +1885,13 @@ galaxy:
   # workflow_resource_params_file). If this this is a function reference
   # it will be passed various inputs (workflow model object and user)
   # and it should produce a list of input IDs. If it is a path it is
-  # expected to an XML or YAML file describing how to map group names to
-  # parameter descriptions (additional types of mappings via these files
-  # could be implemented but haven't yet - for instance using workflow
-  # tags to do the mapping).
-  #workflow_resource_params_mapper: config/workflow_resource_mapper_conf.yml
+  # expected to be an XML or YAML file describing how to map group names
+  # to parameter descriptions (additional types of mappings via these
+  # files could be implemented but haven't yet - for instance using
+  # workflow tags to do the mapping).
+  # Sample default path
+  # 'config/workflow_resource_mapper_conf.yml.sample'
+  #workflow_resource_params_mapper: null
 
   # Optional configuration file similar to `job_config_file` to specify
   # which Galaxy processes should schedule workflows.

@@ -110,4 +110,25 @@ Please mind `http` and `https`.
         <prompt>consent</prompt>
     </provider>
 
+    <provider name="Okta">
+        <client_id> ... </client_id>
+        <client_secret> ... </client_secret>
+        <redirect_uri>http://localhost:8080/authnz/okta/callback</redirect_uri>
+        <!-- Okta API URL, based on 'Single Sign-On to Okta' URL here: https://developer.okta.com/docs/api/resources/oidc#2-okta-as-the-identity-platform-for-your-app-or-api
+        This has subsequently had the '/v1/authorize' removed. In productive deployments, this will likely resemble:
+        https://${company}.okta.com/oauth2/${authServerId}/
+
+        To get the URL, you have to create an application in Okta. The following settings serve as example as of the time of writing:
+        - Page 1 - Platform
+          - Platform: Web
+        - Page 2 - Settings
+          - Name: (Decide yourself)
+          - Base URIs: http://localhost:8080/
+          - Login redirect URIs: http://localhost:8080/authnz/okta/callback
+          - Grant type allowed: Authorization code
+
+        You should subsequently be able to get the client ID and the client secret from the Okta website.
+         -->
+        <api_url> ... </api_url>
+    </provider>
 </OIDC>

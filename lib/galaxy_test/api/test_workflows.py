@@ -40,47 +40,6 @@ from galaxy_test.base.workflow_fixtures import (
 from ._framework import ApiTestCase
 
 
-NESTED_WORKFLOW_AUTO_LABELS_LEGACY_SYNTAX = """
-class: GalaxyWorkflow
-inputs:
-  outer_input: data
-outputs:
-  outer_output:
-    outputSource: second_cat/out_file1
-steps:
-  first_cat:
-    tool_id: cat1
-    in:
-      input1: outer_input
-  nested_workflow:
-    run:
-      class: GalaxyWorkflow
-      inputs:
-        - id: inner_input
-      outputs:
-        - source: 1#out_file1
-      steps:
-        random:
-          tool_id: random_lines1
-          state:
-            num_lines: 1
-            input:
-              $link: inner_input
-            seed_source:
-              seed_source_selector: set_seed
-              seed: asdf
-    in:
-      inner_input: first_cat/out_file1
-  second_cat:
-    tool_id: cat1
-    state:
-      input1:
-        $link: nested_workflow#1:out_file1
-      queries:
-        - input2:
-            $link: nested_workflow#1:out_file1
-"""
-
 NESTED_WORKFLOW_AUTO_LABELS_MODERN_SYNTAX = """
 class: GalaxyWorkflow
 inputs:
@@ -487,10 +446,10 @@ steps:
   - tool_id: cat1
     state:
       input1:
-        $link: first_cat#out_file1
+        $link: first_cat/out_file1
       queries:
         input2:
-          $link: embed1#output1
+          $link: embed1/output1
 test_data:
   input1: "hello world"
 """)
@@ -832,12 +791,12 @@ steps:
         inner_cond:
           cond_param_inner: true
           input1:
-            $link: 0#out_file1
+            $link: 0/out_file1
   cat:
     tool_id: cat1
     in:
-      input1: identifier#output1
-      queries_0|input2: identifier#output1
+      input1: identifier/output1
+      queries_0|input2: identifier/output1
 """)
         with self.dataset_populator.test_history() as history_id:
             invocation_id = self.__invoke_workflow(history_id, workflow_id)
@@ -873,11 +832,11 @@ steps:
   list_in_list_out:
     tool_id: collection_creates_list
     in:
-      input1: job_props#list_output
+      input1: job_props/list_output
   identifier:
     tool_id: identifier_collection
     in:
-      input1: list_in_list_out#list_output
+      input1: list_in_list_out/list_output
 """)
         with self.dataset_populator.test_history() as history_id:
             invocation_id = self.__invoke_workflow(history_id, workflow_id)
@@ -1220,8 +1179,7 @@ test_data:
                     "chrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\nchrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\n",
                     content)
 
-        for workflow_text in [NESTED_WORKFLOW_AUTO_LABELS_LEGACY_SYNTAX, NESTED_WORKFLOW_AUTO_LABELS_MODERN_SYNTAX]:
-            run_test(workflow_text)
+        run_test(NESTED_WORKFLOW_AUTO_LABELS_MODERN_SYNTAX)
 
     @skip_without_tool("cat1")
     @skip_without_tool("collection_paired_test")
@@ -1274,7 +1232,7 @@ steps:
     tool_id: '__FLATTEN__'
     state:
       input:
-        $link: nested#list_output
+        $link: nested/list_output
       join_identifier: '-'
 """, test_data={}, history_id=history_id)
             details = self.dataset_populator.get_history_collection_details(history_id, hid=14)
@@ -1400,7 +1358,7 @@ steps:
     tool_id: "__FILTER_FAILED_DATASETS__"
     state:
       input:
-        $link: mixed_collection#out_file1
+        $link: mixed_collection/out_file1
 
   cat:
     tool_id: cat1
@@ -1870,7 +1828,7 @@ steps:
     state:
       num_lines: 2
       input:
-        $link: empty_list#output
+        $link: empty_list/output
       seed_source:
         seed_source_selector: set_seed
         seed: asdf
@@ -1953,7 +1911,7 @@ steps:
     state:
       num_lines: 2
       input:
-        $link: empty_list#output
+        $link: empty_list/output
       seed_source:
         seed_source_selector: set_seed
         seed: asdf
@@ -2388,7 +2346,7 @@ steps:
   state:
     floattest: 3.14
     inttest:
-      $link: forty_two#out1
+      $link: forty_two/out1
 test_data: {}
 """, history_id=history_id)
 
@@ -2417,7 +2375,7 @@ steps:
 - label: consume_expression_parameter
   tool_id: validation_default
   in:
-    input1: param_out#text_param
+    input1: param_out/text_param
   outputs:
     out_file1:
       rename: "replaced_param_collection"
@@ -3272,7 +3230,7 @@ steps:
   create_pair:
     tool_id: collection_creates_pair
     in:
-      input1: first_cat#out_file1
+      input1: first_cat/out_file1
     outputs:
       paired_output:
         remove_tags:
@@ -4103,10 +4061,10 @@ steps:
   - tool_id: cat1
     state:
       input1:
-        $link: first_cat#out_file1
+        $link: first_cat/out_file1
       queries:
       - input2:
-          $link: embed1#output1
+          $link: embed1/output1
 test_data:
   input1: "hello world"
 """)

@@ -1,0 +1,39 @@
+<tool id="interactive_tool_higlass" tool_type="interactive" name="HiGlass" version="1.8.0">
+    <description>an interactive Hi-C data visualizer</description>
+    <requirements>
+        <container type="docker">quay.io/bgruening/galaxy-higlass</container>
+    </requirements>
+    <entry_points>
+        <entry_point name="HiGlass Visualisation on $matrix.display_name" requires_domain="True">
+            <port>80</port>
+        </entry_point>
+    </entry_points>
+    <command><![CDATA[
+        cp '$matrix' /tmp/matrix.cool &&
+        cd /home/higlass/projects &&
+        mkdir -p data/log/ &&
+        supervisord &&
+       	sleep 5 &&
+        python higlass-server/manage.py ingest_tileset --filename /tmp/matrix.cool --filetype cooler --datatype matrix &&
+        tail -f /var/log/supervisor/*
+    ]]>
+    </command>
+    <inputs>
+	<param name="matrix" type="data" format="mcool" label="Cool file with multiple resolutions"/>
+    </inputs>
+    <outputs>
+	<data name="outfile" format="txt" />
+    </outputs>
+    <tests>
+    </tests>
+    <help>
+    Interactive tool for visualising Hi-C data, works only for multi-cooler files which store multiple resolutions.
+    For a detailed documentaition please visit https://docs.higlass.io/.
+    </help>
+    <xml name="citations">
+        <citations>
+            <citation type="doi">10.1186/s13059-018-1486-1</citation>
+        </citations>
+    </xml>
+</tool>
+

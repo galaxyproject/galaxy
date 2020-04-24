@@ -41,6 +41,21 @@ class TestRepositoryInstallIntegrationTestCase(integration_util.IntegrationTestC
         self._install_repository()
         self._uninstall_repository()
 
+    def test_datatype_uninstall(self):
+        repo = ('devteam', 'blast_datatypes', '01b38f20197e')
+        self.install_repository(*repo)
+        self.uninstall_repository(*repo)
+
+    def test_package_uninstall(self):
+        repo = ('iuc', 'package_fastqc_0_11_4', 'a8f485b2efd9')
+        self.install_repository(*repo)
+        self.uninstall_repository(*repo)
+
+    def test_tool_with_package_dependency_uninstall(self):
+        repo = ('devteam', 'fastqc', 'e7b2202befea')
+        self.install_repository(*repo)
+        self.uninstall_repository(*repo)
+
     def test_repository_update(self):
         response = self._install_repository(revision=REVISION_4, version="0.0.3")[0]
         assert response['ctx_rev'] == '4'
