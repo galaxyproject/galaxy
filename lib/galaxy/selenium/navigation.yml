@@ -464,6 +464,11 @@ gies:
 upload:
   selectors:
     tab: '#tab-title-link-${tab}'
+    ftp_add: '#btn-ftp'
+    ftp_popup: '.upload-ftp-body'
+    ftp_items: '.upload-ftp-row'
+    ftp_close: '.popover-header .popover-close'
+    row: '#upload-row-${n}'
     start: '.upload-button'
     rule_source_content: 'textarea.upload-rule-source-content'
     rule_select_data_type: '.rule-data-type'

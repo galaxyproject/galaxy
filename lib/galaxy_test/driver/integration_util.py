@@ -140,6 +140,11 @@ class IntegrationInstance(UsesApiTestCaseMixin):
     def _run_tool_test(self, *args, **kwargs):
         return self._test_driver.run_tool_test(*args, **kwargs)
 
+    @classmethod
+    def temp_config_dir(cls, name):
+        # realpath here to get around problems with symlinks being blocked.
+        return os.path.realpath(os.path.join(cls._test_driver.galaxy_test_tmp_dir, name))
+
 
 class IntegrationTestCase(IntegrationInstance, TestCase):
     """Unit TestCase with utilities for spinning up Galaxy."""
