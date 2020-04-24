@@ -217,6 +217,7 @@ export default {
             this.annotation = data.annotation;
             this.tooltip = data.tooltip ? data.tooltip : "";
             this.postJobActions = data.post_job_actions || {};
+            this.post_job_actions = data.post_job_actions ? data.post_job_actions : {};
             this.label = data.label;
             this.uuid = data.uuid;
             this.activeOutputs.update(data.workflow_outputs);
@@ -458,20 +459,6 @@ export default {
             $(element).removeClass("node-active");
         },
         init_field_data(data) {
-            this.type = data.type;
-            this.name = data.name;
-            this.config_form = data.config_form;
-            this.tool_state = data.tool_state;
-            this.errors = data.errors;
-            this.annotation = data.annotation;
-            this.tooltip = data.tooltip ? data.tooltip : "";
-            this.post_job_actions = data.post_job_actions ? data.post_job_actions : {};
-            this.label = data.label;
-            this.uuid = data.uuid;
-            if (this.type === "tool" && this.config_form) {
-                this.tool_version = this.config_form.version;
-                this.content_id = this.config_form.id;
-            }
             this.setData(data);
             this.inputs = data.inputs.slice();
             this.outputs = data.outputs.slice();

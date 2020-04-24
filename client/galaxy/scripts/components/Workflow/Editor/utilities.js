@@ -72,22 +72,25 @@ export function showAttributes() {
 
 export function showForm(workflow, node, datatypes) {
     if (node && node.config_form) {
-        const content = node.config_form;
         const cls = "right-content";
         var id = `${cls}-${node.id}`;
+        console.log(node.id);
         var $container = $(`#${cls}`);
         if ($container.find(`#${id}`).length === 0) {
             var $el = $(`<div id="${id}" class="${cls}"/>`);
-            content.node = node;
-            content.workflow = workflow;
-            content.datatypes = datatypes;
-            content.icon = WorkflowIcons[node.type];
-            content.cls = "ui-portlet-section";
+            node.config_form.icon = WorkflowIcons[node.type];
+            node.config_form.inputs = node.config_form.inputs || [];
+            console.log(node.config_form);
+            const options =  {
+                node,
+                workflow,
+                datatypes,
+            }
             let formWrapper = null;
             if (node.type == "tool") {
-                formWrapper = new ToolForm(content);
+                formWrapper = new ToolForm(options);
             } else {
-                formWrapper = new DefaultForm(content);
+                formWrapper = new DefaultForm(options);
             }
             $el.append(formWrapper.form.$el);
             $container.append($el);

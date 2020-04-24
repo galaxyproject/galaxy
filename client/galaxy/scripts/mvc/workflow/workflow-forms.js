@@ -14,7 +14,8 @@ export class DefaultForm {
         this.workflow = options.workflow;
         _addLabelAnnotation(this, node);
         this.form = new Form({
-            ...options,
+            ...node.config_form,
+            cls: "ui-portlet-section",
             onchange() {
                 axios
                     .post(`${getAppRoot()}api/workflows/build_module`, {
