@@ -121,6 +121,11 @@ class AuthnzManager(object):
             'enable_idp_logout': asbool(config_xml.findtext('enable_idp_logout', 'false'))}
         if config_xml.find('prompt') is not None:
             rtv['prompt'] = config_xml.find('prompt').text
+        if config_xml.find('api_url') is not None:
+            rtv['api_url'] = config_xml.find('api_url').text
+        if config_xml.find('url') is not None:
+            rtv['url'] = config_xml.find('url').text
+
         return rtv
 
     def _parse_custos_config(self, config_xml):
