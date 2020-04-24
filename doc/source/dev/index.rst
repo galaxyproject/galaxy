@@ -11,3 +11,6 @@ Development Documentation
   data_managers
   data_types
   faq
+  debugging_tests
+  debugging_galaxy
+
