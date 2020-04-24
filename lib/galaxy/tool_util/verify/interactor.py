@@ -375,9 +375,7 @@ class GalaxyInteractorApi(object):
                     "files_0|file_data": file_content
                 }
         submit_response_object = self.__submit_tool(history_id, "upload1", tool_input, extra_data={"type": "upload_dataset"}, files=files)
-        if submit_response_object.status_code != 200:
-            raise Exception("Request to upload dataset failed [%s]" % submit_response_object.content)
-        submit_response = submit_response_object.json()
+        submit_response = ensure_tool_run_response_okay(submit_response_object, "upload dataset %s" % name)
         assert "outputs" in submit_response, "Invalid response from server [%s], expecting outputs in response." % submit_response
         outputs = submit_response["outputs"]
         assert len(outputs) > 0, "Invalid response from server [%s], expecting an output dataset." % submit_response
@@ -418,7 +416,7 @@ class GalaxyInteractorApi(object):
                 inputs_tree[key] = value[0]
 
         submit_response = self.__submit_tool(history_id, tool_id=testdef.tool_id, tool_input=inputs_tree)
-        submit_response_object = submit_response.json()
+        submit_response_object = ensure_tool_run_response_okay(submit_response, "execute tool", inputs_tree)
         try:
             return Bunch(
                 inputs=inputs_tree,
@@ -662,11 +660,40 @@ class GalaxyInteractorApi(object):
         return requests.get(url, params=params)
 
 
+def ensure_tool_run_response_okay(submit_response_object, request_desc, inputs=None):
+    if submit_response_object.status_code != 200:
+        message = None
+        dynamic_param_error = False
+        try:
+            err_response = submit_response_object.json()
+            if "param_errors" in err_response:
+                param_errors = err_response["param_errors"]
+                if "dbkey" in param_errors:
+                    dbkey_err_obj = param_errors["dbkey"]
+                    dbkey_val = dbkey_err_obj.get("parameter_value")
+                    message = "Invalid dbkey specified [%s]" % dbkey_val
+                for key, val in param_errors.items():
+                    if isinstance(val, dict) and val.get("is_dynamic"):
+                        dynamic_param_error = True
+            if message is None:
+                message = err_response.get("err_msg") or None
+        except Exception:
+            # invalid JSON content.
+            pass
+        if message is None:
+            template = "Request to %s failed - invalid JSON content returned from Galaxy server [%s]"
+            message = template % (request_desc, submit_response_object.text)
+        raise RunToolException(message, inputs, dynamic_param_error=dynamic_param_error)
+    submit_response = submit_response_object.json()
+    return submit_response
+
+
 class RunToolException(Exception):
 
-    def __init__(self, message, inputs=None):
+    def __init__(self, message, inputs=None, dynamic_param_error=False):
         super(RunToolException, self).__init__(message)
         self.inputs = inputs
+        self.dynamic_param_error = dynamic_param_error
 
 
 # Galaxy specific methods - rest of this can be used with arbitrary files and such.
@@ -797,11 +824,16 @@ def verify_tool(tool_id,
                 test_history=None,
                 force_path_paste=False,
                 maxseconds=DEFAULT_TOOL_TEST_WAIT,
-                tool_test_dicts=None):
+                tool_test_dicts=None,
+                skip_on_dynamic_param_errors=False):
     if resource_parameters is None:
         resource_parameters = {}
     tool_test_dicts = tool_test_dicts or galaxy_interactor.get_tool_tests(tool_id, tool_version=tool_version)
     tool_test_dict = tool_test_dicts[test_index]
+    if "test_index" not in tool_test_dict:
+        tool_test_dict["test_index"] = test_index
+    if "tool_id" not in tool_test_dict:
+        tool_test_dict["tool_id"] = tool_id
     tool_test_dict.setdefault('maxseconds', maxseconds)
     testdef = ToolTestDescription(tool_test_dict)
     _handle_def_errors(testdef)
@@ -872,7 +904,9 @@ def verify_tool(tool_id,
                 status = "failure"
             if tool_execution_exception:
                 job_data["execution_problem"] = util.unicodify(tool_execution_exception)
-                status = "error"
+                dynamic_param_error = getattr(tool_execution_exception, "dynamic_param_error", False)
+                job_data["dynamic_param_error"] = dynamic_param_error
+                status = "error" if not skip_on_dynamic_param_errors or not dynamic_param_error else "skip"
             job_data["status"] = status
             register_job_data(job_data)
 
@@ -1053,6 +1087,7 @@ class ToolTestDescription(object):
     """
 
     def __init__(self, processed_test_dict):
+        assert "test_index" in processed_test_dict, "Invalid processed test description, must have a 'test_index' for naming, etc.."
         test_index = processed_test_dict["test_index"]
         name = processed_test_dict.get('name', 'Test-%d' % (test_index + 1))
         maxseconds = processed_test_dict.get('maxseconds', DEFAULT_TOOL_TEST_WAIT)
@@ -1060,6 +1095,7 @@ class ToolTestDescription(object):
             maxseconds = int(maxseconds)
 
         self.test_index = test_index
+        assert "tool_id" in processed_test_dict, "Invalid processed test description, must have a 'tool_id' for naming, etc.."
         self.tool_id = processed_test_dict["tool_id"]
         self.name = name
         self.maxseconds = maxseconds
@@ -1075,7 +1111,7 @@ class ToolTestDescription(object):
 
         self.inputs = loaded_inputs
         self.outputs = processed_test_dict.get("outputs", [])
-        self.num_outputs = processed_test_dict.get("num_outputs", 0)
+        self.num_outputs = processed_test_dict.get("num_outputs", None)
 
         self.error = processed_test_dict.get("error", False)
         self.exception = processed_test_dict.get("exception", None)
