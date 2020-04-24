@@ -5,6 +5,7 @@ import _l from "utils/localization";
 import Utils from "utils/utils";
 import Form from "mvc/form/form-view";
 import ToolFormBase from "mvc/tool/tool-form-base";
+import WorkflowIcons from "components/Workflow/icons";
 
 /** Default form wrapper for non-tool modules in the workflow editor. */
 export class DefaultForm {
@@ -15,6 +16,7 @@ export class DefaultForm {
         _addLabelAnnotation(this, node);
         this.form = new Form({
             ...node.config_form,
+            icon: WorkflowIcons[node.type],
             cls: "ui-portlet-section",
             onchange() {
                 axios
@@ -43,6 +45,8 @@ export class ToolForm {
         this._customize(node);
         this.form = new ToolFormBase({
             ...node.config_form,
+            tool_version: node.config_form.version,
+            icon: WorkflowIcons[node.type],
             text_enable: "Set in Advance",
             text_disable: "Set at Runtime",
             narrow: true,

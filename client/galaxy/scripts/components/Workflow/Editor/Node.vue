@@ -90,8 +90,12 @@ export default {
     },
     props: {
         id: {
+            type: Number,
+            default: -1,
+        },
+        contentId: {
             type: String,
-            default: "",
+            default: ""
         },
         name: {
             type: String,
@@ -104,10 +108,6 @@ export default {
         f: {
             type: HTMLDivElement,
             default: null,
-        },
-        nodeId: {
-            type: Number,
-            default: -1,
         },
         getManager: {
             type: Function,
@@ -125,13 +125,13 @@ export default {
             errors: null,
             label: null,
             config_form: {},
-            content_id: null,
         };
     },
     mounted() {
         this.activeOutputs = new ActiveOutputs();
         this.manager = this.getManager();
         this.element = this.f;
+        this.content_id = this.contentId;
     },
     computed: {
         title() {
@@ -157,7 +157,7 @@ export default {
             return null;
         },
         popoverId() {
-            return `popover-${this.nodeId}`;
+            return `popover-${this.id}`;
         },
         canClone() {
             return this.type != "subworkflow";
@@ -221,10 +221,6 @@ export default {
             this.label = data.label;
             this.uuid = data.uuid;
             this.activeOutputs.update(data.workflow_outputs);
-            if (this.type === "tool" && this.config_form) {
-                this.tool_version = this.config_form.version;
-                this.content_id = this.config_form.id;
-            }
         },
         update_field_data(data) {
             this.setData(data);
@@ -409,14 +405,14 @@ export default {
             return found;
         },
         clone() {
-            var copiedData = {
+            /*var copiedData = {
                 name: this.name,
                 label: this.label,
                 annotation: this.annotation,
                 post_job_actions: this.post_job_actions,
             };
             var node = this.app.create_node(this.type, this.name, this.content_id);
-            /*Utils.request({
+            Utils.request({
                 type: "POST",
                 url: `${getAppRoot()}api/workflows/build_module`,
                 data: {

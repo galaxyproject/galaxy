@@ -18,7 +18,7 @@ class Workflow extends EventEmitter {
         this.has_changes = false;
         this.workflowOutputLabels = {};
         this.workflow_version = 0;
-        this.popover_counter = 0;
+        this.nodeId = 0;
 
         // Canvas overview management
         this.canvas_manager = new WorkflowCanvas(this, $("#canvas-viewport"), $("#overview-container"));
@@ -107,20 +107,10 @@ class Workflow extends EventEmitter {
     }
     create_node(type, name, content_id) {
         const node = this.build_node(type, name, content_id);
-        this.add_node(node);
         this.fit_canvas_to_nodes();
         this.canvas_manager.draw_overview();
         this.activate_node(node);
         return node;
-    }
-    add_node(node) {
-        node.id = this.id_counter;
-        node.element.setAttribute("id", `wf-node-step-${node.id}`);
-        node.element.setAttribute("node-label", node.label);
-        this.id_counter++;
-        this.nodes[node.id] = node;
-        this.has_changes = true;
-        node.workflow = this;
     }
     build_node(type, name, content_id) {
         var self = this;
@@ -135,20 +125,20 @@ class Workflow extends EventEmitter {
         const child = document.createElement("div");
         container.appendChild(child);
         const node = mountWorkflowNode(child, {
-            id: content_id,
             type: type,
             name: name,
             node: node,
-            nodeId: this.popover_counter,
+            id: this.nodeId,
+            contentId: content_id,
             f: container,
             getManager: () => {
                 return this;
             },
         });
-        node.type = type;
-        node.content_id = content_id;
 
-        this.popover_counter++;
+        // Increase node id counter
+        this.nodeId++;
+
         // Set initial scroll position
         $f.css("left", $(window).scrollLeft() + 20);
         $f.css("top", $(window).scrollTop() + 20);
@@ -188,6 +178,13 @@ class Workflow extends EventEmitter {
                         this.terminal.redraw();
                     });
             });
+
+        // Set node attributes and add to nodes list
+        node.element.setAttribute("id", `wf-node-step-${node.id}`);
+        node.element.setAttribute("node-label", node.label);
+        this.nodes[node.id] = node;
+        this.has_changes = true;
+        node.workflow = this;
         return node;
     }
     remove_node(node) {

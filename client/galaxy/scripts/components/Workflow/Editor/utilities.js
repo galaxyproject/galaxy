@@ -3,7 +3,6 @@ import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
 import Utils from "utils/utils";
-import WorkflowIcons from "components/Workflow/icons";
 import { DefaultForm, ToolForm } from "mvc/workflow/workflow-forms";
 import { loadWorkflow } from "./services";
 import { hide_modal, show_message, show_modal } from "layout/modal";
@@ -71,21 +70,17 @@ export function showAttributes() {
 }
 
 export function showForm(workflow, node, datatypes) {
-    if (node && node.config_form) {
+    if (node && Object.keys(node.config_form).length > 0) {
         const cls = "right-content";
         var id = `${cls}-${node.id}`;
-        console.log(node.id);
         var $container = $(`#${cls}`);
         if ($container.find(`#${id}`).length === 0) {
             var $el = $(`<div id="${id}" class="${cls}"/>`);
-            node.config_form.icon = WorkflowIcons[node.type];
-            node.config_form.inputs = node.config_form.inputs || [];
-            console.log(node.config_form);
-            const options =  {
+            const options = {
                 node,
                 workflow,
                 datatypes,
-            }
+            };
             let formWrapper = null;
             if (node.type == "tool") {
                 formWrapper = new ToolForm(options);
