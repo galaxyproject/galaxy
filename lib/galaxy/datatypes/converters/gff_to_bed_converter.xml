@@ -6,7 +6,7 @@
         <param format="gff" name="input1" type="data" label="Choose GFF file"/>
     </inputs>
     <outputs>
-        <data format="bed" name="output1"/>
+        <data format="bed6" name="output1"/>
     </outputs>
     <tests>
         <test>

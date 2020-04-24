@@ -14,7 +14,10 @@ def get_bed_line(chrom, name, strand, blocks):
         #   chrom, chromStart, chromEnd, name, score, strand
         #
         start, end = blocks[0]
-        return "%s\t%i\t%i\t%s\t0\t%s\n" % (chrom, start, end, name, strand)
+        return "%s\t%i\t%i\t%s\t0\t%s\t%i\t%i\t0\t1\t%i\t0\n" % (chrom, start, end,
+                                                             name, strand,
+                                                             start, end,
+                                                             end - start, )
 
     #
     # Build lists for transcript blocks' starts, sizes.
