@@ -28,7 +28,7 @@ export class DefaultForm {
                     })
                     .then((response) => {
                         const data = response.data;
-                        node.update_field_data(data);
+                        node.updateFieldData(data);
                     });
             },
         });
@@ -74,7 +74,7 @@ export class ToolForm {
                         // module information for the tool to update the workflow
                         // state stored on the client with. User needs to save
                         // for this to take effect.
-                        node.update_field_data(data);
+                        node.updateFieldData(data);
                         Galaxy.emit.debug("tool-form-workflow::postchange()", "Received new model.", data);
                         process.resolve();
                     })

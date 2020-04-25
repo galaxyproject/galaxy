@@ -95,7 +95,7 @@ export default {
         },
         contentId: {
             type: String,
-            default: ""
+            default: "",
         },
         name: {
             type: String,
@@ -222,7 +222,7 @@ export default {
             this.uuid = data.uuid;
             this.activeOutputs.update(data.workflow_outputs);
         },
-        update_field_data(data) {
+        updateFieldData(data) {
             this.setData(data);
 
             // Create a list of all current output names
@@ -422,7 +422,7 @@ export default {
                 },
                 success: (data) => {
                     var newData = Object.assign({}, data, copiedData);
-                    node.init_field_data(newData);
+                    node.initFieldData(newData);
                     Vue.nextTick(() => {
                         node.update_field_data(newData);
                         this.app.activate_node(node);
@@ -454,7 +454,7 @@ export default {
             // Remove active class
             $(element).removeClass("node-active");
         },
-        init_field_data(data) {
+        initFieldData(data) {
             this.setData(data);
             this.inputs = data.inputs.slice();
             this.outputs = data.outputs.slice();

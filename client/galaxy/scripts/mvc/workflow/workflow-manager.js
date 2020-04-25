@@ -48,9 +48,9 @@ class Workflow extends EventEmitter {
         };
     }
     set_node(node, data) {
-        node.init_field_data(data);
+        node.initFieldData(data);
         Vue.nextTick(() => {
-            node.update_field_data(data);
+            node.updateFieldData(data);
             Object.values(node.outputTerminals).forEach((ot) => {
                 node.activeOutputs.add(ot.name);
             });
@@ -338,7 +338,7 @@ class Workflow extends EventEmitter {
                     workflow_output.uuid = null;
                 });
             }
-            node.init_field_data(step);
+            node.initFieldData(step);
             Vue.nextTick(() => {
                 if (step.position) {
                     node.element.style.top = step.position.top + "px";

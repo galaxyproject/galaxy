@@ -187,48 +187,6 @@ class Terminal extends EventEmitter {
     resetMappingIfNeeded() {}
 }
 
-class OutputTerminal extends Terminal {
-    constructor(attr) {
-        super(attr);
-        this.datatypes = attr.datatypes;
-        this.optional = attr.optional;
-        this.force_datatype = attr.force_datatype;
-    }
-    update(output) {
-        this.datatypes = output.datatypes || output.extensions;
-        this.optional = output.optional;
-        this.force_datatype = output.force_datatype;
-        this.attributes.type = output.type;
-    }
-    resetMappingIfNeeded() {
-        // If inputs were only mapped over to preserve
-        // an output just disconnected reset these...
-        if (!this.node.hasConnectedOutputTerminals() && !this.node.hasConnectedMappedInputTerminals()) {
-            _.each(this.node.mappedInputTerminals(), (mappedInput) => {
-                mappedInput.resetMappingIfNeeded();
-            });
-        }
-
-        var noMappedInputs = !this.node.hasMappedOverInputTerminals();
-        if (noMappedInputs) {
-            this.resetMapping();
-        }
-    }
-    resetMapping() {
-        super.resetMapping();
-        _.each(this.connectors, (connector) => {
-            var connectedInput = connector.handle2;
-            if (connectedInput) {
-                // Not exactly right because this is still connected.
-                // Either rewrite resetMappingIfNeeded or disconnect
-                // and reconnect if valid.
-                connectedInput.resetMappingIfNeeded();
-                connector.destroyIfInvalid();
-            }
-        });
-    }
-}
-
 class BaseInputTerminal extends Terminal {
     constructor(attr) {
         super(attr);
@@ -594,7 +552,43 @@ class InputCollectionTerminal extends BaseInputTerminal {
     }
 }
 
-class OutputCollectionTerminal extends OutputTerminal {
+class OutputTerminal extends Terminal {
+    constructor(attr) {
+        super(attr);
+        this.datatypes = attr.datatypes;
+        this.optional = attr.optional;
+        this.force_datatype = attr.force_datatype;
+    }
+    resetMappingIfNeeded() {
+        // If inputs were only mapped over to preserve
+        // an output just disconnected reset these...
+        if (!this.node.hasConnectedOutputTerminals() && !this.node.hasConnectedMappedInputTerminals()) {
+            _.each(this.node.mappedInputTerminals(), (mappedInput) => {
+                mappedInput.resetMappingIfNeeded();
+            });
+        }
+
+        var noMappedInputs = !this.node.hasMappedOverInputTerminals();
+        if (noMappedInputs) {
+            this.resetMapping();
+        }
+    }
+    resetMapping() {
+        super.resetMapping();
+        _.each(this.connectors, (connector) => {
+            var connectedInput = connector.handle2;
+            if (connectedInput) {
+                // Not exactly right because this is still connected.
+                // Either rewrite resetMappingIfNeeded or disconnect
+                // and reconnect if valid.
+                connectedInput.resetMappingIfNeeded();
+                connector.destroyIfInvalid();
+            }
+        });
+    }
+}
+
+class OutputCollectionTerminal extends Terminal {
     constructor(attr) {
         super(attr);
         this.datatypes = attr.datatypes;
@@ -612,7 +606,9 @@ class OutputCollectionTerminal extends OutputTerminal {
         this.isCollection = true;
     }
     update(output) {
-        super.update(output);
+        this.datatypes = output.datatypes || output.extensions;
+        this.optional = output.optional;
+        this.force_datatype = output.force_datatype;
         var newCollectionType;
         if (output.collection_type) {
             newCollectionType = new CollectionTypeDescription(output.collection_type);
@@ -635,11 +631,17 @@ class OutputCollectionTerminal extends OutputTerminal {
     }
 }
 
+class OutputParameterTerminal extends Terminal {
+    update(output) {
+        this.attributes.type = output.type;
+    }
+}
+
 export default {
     InputTerminal: InputTerminal,
     InputParameterTerminal: InputParameterTerminal,
     OutputTerminal: OutputTerminal,
-    OutputParameterTerminal: OutputTerminal,
+    OutputParameterTerminal: OutputParameterTerminal,
     InputCollectionTerminal: InputCollectionTerminal,
     OutputCollectionTerminal: OutputCollectionTerminal,
 
