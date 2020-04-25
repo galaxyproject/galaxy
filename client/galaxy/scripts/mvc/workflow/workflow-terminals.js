@@ -2,18 +2,7 @@ import $ from "jquery";
 import _ from "underscore";
 import EventEmitter from "events";
 
-function CollectionTypeDescription(collectionType) {
-    this.collectionType = collectionType;
-    this.isCollection = true;
-    this.rank = collectionType.split(":").length;
-}
-
-function ConnectionAcceptable(canAccept, reason) {
-    this.canAccept = canAccept;
-    this.reason = reason;
-}
-
-var NULL_COLLECTION_TYPE_DESCRIPTION = {
+const NULL_COLLECTION_TYPE_DESCRIPTION = {
     isCollection: false,
     canMatch: function () {
         return false;
@@ -32,7 +21,7 @@ var NULL_COLLECTION_TYPE_DESCRIPTION = {
     },
 };
 
-var ANY_COLLECTION_TYPE_DESCRIPTION = {
+const ANY_COLLECTION_TYPE_DESCRIPTION = {
     isCollection: true,
     canMatch: function (other) {
         return NULL_COLLECTION_TYPE_DESCRIPTION !== other;
@@ -51,8 +40,20 @@ var ANY_COLLECTION_TYPE_DESCRIPTION = {
     },
 };
 
-$.extend(CollectionTypeDescription.prototype, {
-    append: function (otherCollectionTypeDescription) {
+class ConnectionAcceptable {
+    constructor(canAccept, reason) {
+        this.canAccept = canAccept;
+        this.reason = reason;
+    }
+}
+
+class CollectionTypeDescription {
+    constructor(collectionType) {
+        this.collectionType = collectionType;
+        this.isCollection = true;
+        this.rank = collectionType.split(":").length;
+    }
+    append(otherCollectionTypeDescription) {
         if (otherCollectionTypeDescription === NULL_COLLECTION_TYPE_DESCRIPTION) {
             return this;
         }
@@ -60,8 +61,8 @@ $.extend(CollectionTypeDescription.prototype, {
             return otherCollectionTypeDescription;
         }
         return new CollectionTypeDescription(`${this.collectionType}:${otherCollectionTypeDescription.collectionType}`);
-    },
-    canMatch: function (otherCollectionTypeDescription) {
+    }
+    canMatch(otherCollectionTypeDescription) {
         if (otherCollectionTypeDescription === NULL_COLLECTION_TYPE_DESCRIPTION) {
             return false;
         }
@@ -69,8 +70,8 @@ $.extend(CollectionTypeDescription.prototype, {
             return true;
         }
         return otherCollectionTypeDescription.collectionType == this.collectionType;
-    },
-    canMapOver: function (otherCollectionTypeDescription) {
+    }
+    canMapOver(otherCollectionTypeDescription) {
         if (otherCollectionTypeDescription === NULL_COLLECTION_TYPE_DESCRIPTION) {
             return false;
         }
@@ -83,25 +84,25 @@ $.extend(CollectionTypeDescription.prototype, {
         }
         var requiredSuffix = otherCollectionTypeDescription.collectionType;
         return this._endsWith(this.collectionType, requiredSuffix);
-    },
-    effectiveMapOver: function (otherCollectionTypeDescription) {
+    }
+    effectiveMapOver(otherCollectionTypeDescription) {
         var otherCollectionType = otherCollectionTypeDescription.collectionType;
         var effectiveCollectionType = this.collectionType.substring(
             0,
             this.collectionType.length - otherCollectionType.length - 1
         );
         return new CollectionTypeDescription(effectiveCollectionType);
-    },
-    equal: function (otherCollectionTypeDescription) {
+    }
+    equal(otherCollectionTypeDescription) {
         return otherCollectionTypeDescription.collectionType == this.collectionType;
-    },
-    toString: function () {
+    }
+    toString() {
         return `CollectionType[${this.collectionType}]`;
-    },
-    _endsWith: function (str, suffix) {
+    }
+    _endsWith(str, suffix) {
         return str.indexOf(suffix, str.length - suffix.length) !== -1;
-    },
-});
+    }
+}
 
 class Terminal extends EventEmitter {
     constructor(attr) {
@@ -129,18 +130,18 @@ class Terminal extends EventEmitter {
         this.emit("change");
     }
     redraw() {
-        $.each(this.connectors, (_, c) => {
+        this.connectors.forEach((c) => {
             c.redraw();
         });
     }
     destroy() {
-        $.each(this.connectors.slice(), (_, c) => {
+        this.connectors.slice().forEach((c) => {
             c.destroy();
         });
         this.emit("change");
     }
     destroyInvalidConnections() {
-        _.each(this.connectors, (connector) => {
+        this.connectors.forEach((connector) => {
             if (connector) {
                 connector.destroyIfInvalid();
             }
@@ -160,7 +161,7 @@ class Terminal extends EventEmitter {
         }
         if (!this.mapOver.equal(val)) {
             this.mapOver = val;
-            _.each(this.node.outputTerminals, (outputTerminal) => {
+            Object.values(this.node.outputTerminals).forEach((outputTerminal) => {
                 outputTerminal.setMapOver(output_val);
             });
         }
@@ -175,7 +176,7 @@ class Terminal extends EventEmitter {
     }
     resetCollectionTypeSource() {
         const node = this.node;
-        _.each(node.outputTerminals, function (output_terminal) {
+        Object.values(node.outputTerminals).forEach((output_terminal) => {
             const type_source = output_terminal.attributes.collection_type_source;
             if (type_source && output_terminal.attributes.collection_type) {
                 output_terminal.attributes.collection_type = null;
@@ -219,7 +220,7 @@ class BaseInputTerminal extends Terminal {
     resetMapping() {
         super.resetMapping();
         if (!this.node.hasMappedOverInputTerminals()) {
-            _.each(this.node.outputTerminals, (terminal) => {
+            Object.values(this.node.outputTerminals).forEach((terminal) => {
                 // This shouldn't be called if there are mapped over
                 // outputs.
                 terminal.resetMapping();
@@ -435,7 +436,7 @@ class InputCollectionTerminal extends BaseInputTerminal {
         this.optional = input.optional;
         var collectionTypes = [];
         if (input.collection_types) {
-            _.each(input.collection_types, (collectionType) => {
+            input.collection_types.forEach((collectionType) => {
                 collectionTypes.push(new CollectionTypeDescription(collectionType));
             });
         } else {
@@ -450,7 +451,7 @@ class InputCollectionTerminal extends BaseInputTerminal {
             return;
         } else {
             const node = this.node;
-            _.each(node.outputTerminals, function (output_terminal) {
+            Object.values(node.outputTerminals).forEach((output_terminal) => {
                 if (output_terminal.attributes.collection_type_source && !connector.dragging) {
                     if (other.isMappedOver()) {
                         if (other.isCollection) {
@@ -475,7 +476,6 @@ class InputCollectionTerminal extends BaseInputTerminal {
         var collectionTypes = this.collectionTypes;
         var otherCollectionType = this._otherCollectionType(other);
         var canMatch = _.some(collectionTypes, (collectionType) => collectionType.canMatch(otherCollectionType));
-
         if (!canMatch) {
             for (var collectionTypeIndex in collectionTypes) {
                 var collectionType = collectionTypes[collectionTypeIndex];
@@ -624,7 +624,7 @@ class OutputCollectionTerminal extends Terminal {
         // we need to iterate over a copy, as we slice this.connectors in the process of destroying connections
         var connectors = this.connectors.slice(0);
         if (newCollectionType.collectionType != oldCollectionType.collectionType) {
-            _.each(connectors, (connector) => {
+            connectors.forEach((connector) => {
                 connector.destroyIfInvalid(true);
             });
         }
