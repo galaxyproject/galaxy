@@ -333,29 +333,6 @@ export default {
             this.markChanged();
             output_terminal.destroyInvalidConnections();
         },
-        mappedInputTerminals() {
-            return this._mappedTerminals(this.inputTerminals);
-        },
-        _mappedTerminals(terminals) {
-            var mappedTerminals = [];
-            $.each(terminals, (_, t) => {
-                var mapOver = t.mapOver;
-                if (mapOver.isCollection) {
-                    mappedTerminals.push(t);
-                }
-            });
-            return mappedTerminals;
-        },
-        hasMappedOverInputTerminals() {
-            var found = false;
-            Object.values(this.inputTerminals).forEach((t) => {
-                var mapOver = t.mapOver;
-                if (mapOver.isCollection) {
-                    found = true;
-                }
-            });
-            return found;
-        },
         clone() {
             /*var copiedData = {
                 name: this.name,

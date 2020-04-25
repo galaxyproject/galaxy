@@ -205,6 +205,17 @@ class Terminal extends EventEmitter {
         }
         return false;
     }
+    hasMappedOverInputTerminals() {
+        const node = this.node;
+        const inputTerminals = node.inputTerminals;
+        for (const inputName in inputTerminals) {
+            const terminal = inputTerminals[inputName];
+            if (terminal.mapOver.isCollection) {
+                return true;
+            }
+        }
+        return false;
+    }
     // Subclasses should override this...
     resetMappingIfNeeded() {}
 }
@@ -240,7 +251,7 @@ class BaseInputTerminal extends Terminal {
     }
     resetMapping() {
         super.resetMapping();
-        if (!this.node.hasMappedOverInputTerminals()) {
+        if (!this.hasMappedOverInputTerminals()) {
             Object.values(this.node.outputTerminals).forEach((terminal) => {
                 // This shouldn't be called if there are mapped over
                 // outputs.
@@ -589,11 +600,14 @@ class OutputTerminal extends Terminal {
         // If inputs were only mapped over to preserve
         // an output just disconnected reset these...
         if (!this.hasConnectedOutputTerminals() && !this.hasConnectedMappedInputTerminals()) {
-            _.each(this.node.mappedInputTerminals(), (mappedInput) => {
-                mappedInput.resetMappingIfNeeded();
+            const node = this.node;
+            Object.values(node.inputTerminals).forEach((t) => {
+                if (t.mapOver.isCollection) {
+                    t.resetMappingIfNeeded();
+                }
             });
         }
-        var noMappedInputs = !this.node.hasMappedOverInputTerminals();
+        var noMappedInputs = !this.hasMappedOverInputTerminals();
         if (noMappedInputs) {
             this.resetMapping();
         }
