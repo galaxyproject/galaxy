@@ -184,6 +184,27 @@ class Terminal extends EventEmitter {
             }
         });
     }
+    hasConnectedMappedInputTerminals() {
+        const node = this.node;
+        const inputTerminals = node.inputTerminals;
+        for (const inputName in inputTerminals) {
+            const inputTerminal = inputTerminals[inputName];
+            if (inputTerminal.connectors.length > 0 && inputTerminal.isMappedOver()) {
+                return true;
+            }
+        }
+        return false;
+    }
+    hasConnectedOutputTerminals() {
+        const node = this.node;
+        const outputTerminals = node.outputTerminals;
+        for (const outputName in outputTerminals) {
+            if (outputTerminals[outputName].connectors.length > 0) {
+                return true;
+            }
+        }
+        return false;
+    }
     // Subclasses should override this...
     resetMappingIfNeeded() {}
 }
@@ -212,7 +233,7 @@ class BaseInputTerminal extends Terminal {
         // No output terminals are counting on this being mapped
         // over if connected inputs are still mapped over or if none
         // of the outputs are connected...
-        var reset = this.node.hasConnectedMappedInputTerminals() || !this.node.hasConnectedOutputTerminals();
+        var reset = this.hasConnectedMappedInputTerminals() || !this.hasConnectedOutputTerminals();
         if (reset) {
             this.resetMapping();
         }
@@ -268,22 +289,27 @@ class BaseInputTerminal extends Terminal {
     _mappingConstraints() {
         // If this is a connected terminal, return list of collection types
         // other terminals connected to node are constraining mapping to.
-        if (!this.node) {
+        const node = this.node;
+        if (!node) {
             return []; // No node - completely unconstrained
         }
         var mapOver = this.mapOver;
         if (mapOver.isCollection) {
             return [mapOver];
         }
-
-        var constraints = [];
-        if (!this.node.hasConnectedOutputTerminals()) {
-            _.each(this.node.connectedMappedInputTerminals(), (inputTerminal) => {
-                constraints.push(inputTerminal.mapOver);
+        const constraints = [];
+        if (!this.hasConnectedOutputTerminals()) {
+            Object.values(node.inputTerminals).forEach((t) => {
+                const mapOver = t.mapOver;
+                if (mapOver.isCollection) {
+                    if (t.connectors.length > 0) {
+                        constraints.push(t.mapOver);
+                    }
+                }
             });
         } else {
             // All outputs should have same mapOver status - least specific.
-            constraints.push(_.first(_.values(this.node.outputTerminals)).mapOver);
+            constraints.push(Object.values(node.outputTerminals)[0].mapOver);
         }
         return constraints;
     }
@@ -383,7 +409,7 @@ class InputTerminal extends BaseInputTerminal {
                 } else {
                     if (mapOver.isCollection) {
                         // incompatible collection type attached
-                        if (this.node.hasConnectedMappedInputTerminals()) {
+                        if (this.hasConnectedMappedInputTerminals()) {
                             return new ConnectionAcceptable(
                                 false,
                                 "Can't map over this input with output collection type - other inputs have an incompatible map over collection type. Disconnect inputs (and potentially outputs) and retry."
@@ -507,7 +533,7 @@ class InputCollectionTerminal extends BaseInputTerminal {
                 // Otherwise we need to mapOver
             } else if (mapOver.isCollection) {
                 // In this case, mapOver already set and we didn't match skipping...
-                if (this.node.hasConnectedMappedInputTerminals()) {
+                if (this.hasConnectedMappedInputTerminals()) {
                     return new ConnectionAcceptable(
                         false,
                         "Can't map over this input with output collection type - other inputs have an incompatible map over collection type. Disconnect inputs (and potentially outputs) and retry."
@@ -531,7 +557,7 @@ class InputCollectionTerminal extends BaseInputTerminal {
                 if (mappingConstraints.every((d) => effectiveMapOver.canMatch(d))) {
                     return this._producesAcceptableDatatypeAndOptionalness(other);
                 } else {
-                    if (this.node.hasConnectedMappedInputTerminals()) {
+                    if (this.hasConnectedMappedInputTerminals()) {
                         return new ConnectionAcceptable(
                             false,
                             "Can't map over this input with output collection type - other inputs have an incompatible map over collection type. Disconnect inputs (and potentially outputs) and retry."
@@ -562,12 +588,11 @@ class OutputTerminal extends Terminal {
     resetMappingIfNeeded() {
         // If inputs were only mapped over to preserve
         // an output just disconnected reset these...
-        if (!this.node.hasConnectedOutputTerminals() && !this.node.hasConnectedMappedInputTerminals()) {
+        if (!this.hasConnectedOutputTerminals() && !this.hasConnectedMappedInputTerminals()) {
             _.each(this.node.mappedInputTerminals(), (mappedInput) => {
                 mappedInput.resetMappingIfNeeded();
             });
         }
-
         var noMappedInputs = !this.node.hasMappedOverInputTerminals();
         if (noMappedInputs) {
             this.resetMapping();

@@ -345,42 +345,6 @@ export default {
             });
             return connectedTerminals;
         },
-        hasConnectedOutputTerminals() {
-            // return this.connectedOutputTerminals().length > 0; <- optimized this
-            var outputTerminals = this.outputTerminals;
-            for (var outputName in outputTerminals) {
-                if (outputTerminals[outputName].connectors.length > 0) {
-                    return true;
-                }
-            }
-            return false;
-        },
-        connectedMappedInputTerminals() {
-            return this._connectedMappedTerminals(this.inputTerminals);
-        },
-        hasConnectedMappedInputTerminals() {
-            // return this.connectedMappedInputTerminals().length > 0; <- optimized this
-            var inputTerminals = this.inputTerminals;
-            for (var inputName in inputTerminals) {
-                var inputTerminal = inputTerminals[inputName];
-                if (inputTerminal.connectors.length > 0 && inputTerminal.isMappedOver()) {
-                    return true;
-                }
-            }
-            return false;
-        },
-        _connectedMappedTerminals(terminals) {
-            var mapped_outputs = [];
-            $.each(terminals, (_, t) => {
-                var mapOver = t.mapOver;
-                if (mapOver.isCollection) {
-                    if (t.connectors.length > 0) {
-                        mapped_outputs.push(t);
-                    }
-                }
-            });
-            return mapped_outputs;
-        },
         mappedInputTerminals() {
             return this._mappedTerminals(this.inputTerminals);
         },
