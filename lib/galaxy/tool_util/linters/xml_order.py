@@ -8,6 +8,8 @@ https://github.com/galaxy-iuc/standards.
 TAG_ORDER = [
     'description',
     'macros',
+    'edam_topics',
+    'edam_operations',
     'parallelism',
     'requirements',
     'code',

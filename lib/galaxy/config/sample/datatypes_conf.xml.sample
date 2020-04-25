@@ -142,7 +142,7 @@
       <!-- <display file="genetrack.xml" /> -->
     </datatype>
     <datatype extension="gff" type="galaxy.datatypes.interval:Gff" display_in_upload="true" description="GFF lines have nine required fields that must be tab-separated." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#GFF">
-      <converter file="gff_to_bed_converter.xml" target_datatype="bed"/>
+      <converter file="gff_to_bed_converter.xml" target_datatype="bed6"/>
       <converter file="gff_to_interval_index_converter.xml" target_datatype="interval_index"/>
       <converter file="bed_gff_or_vcf_to_bigwig_converter.xml" target_datatype="bigwig"/>
       <converter file="gff_to_fli_converter.xml" target_datatype="fli"/>

@@ -1,19 +1,42 @@
-<tool id="CONVERTER_gff_to_bed_0" name="Convert GFF to BED" version="1.0.1" profile="16.04">
+<tool id="CONVERTER_gff_to_bed_0" name="Convert GFF to BED6" version="1.0.2" profile="16.04">
     <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
     <!-- Used on the metadata edit page. -->
-    <command>python '$__tool_directory__/gff_to_bed_converter.py' '$input1' '$output1'</command>
+    <edam_operations>
+        <edam_operation>operation_3434</edam_operation>
+    </edam_operations>
+    <requirements>
+        <requirement type="package" version="3.7">python</requirement>
+    </requirements>
+    <command><![CDATA[
+python '$__tool_directory__/gff_to_bed_converter.py'
+--bedcols 6
+'$input1'
+'$output1'
+    ]]></command>
     <inputs>
-        <param format="gff" name="input1" type="data" label="Choose GFF file"/>
+        <param name="input1" type="data" format="gff" label="Choose GFF file"/>
     </inputs>
     <outputs>
-        <data format="bed6" name="output1"/>
+        <data name="output1" format="bed6"/>
     </outputs>
     <tests>
         <test>
-            <param name="input1" format="gff" value="gff_filter_by_feature_count_out2.gff"/>
-            <output name="output1" format="bed" value="bed_filter_by_feature_count_out2.bed"/>
+            <param name="input1" ftype="gff" value="gff_filter_by_feature_count_out2.gff"/>
+            <output name="output1" file="bed_filter_by_feature_count_out2.bed"/>
+        </test>
+        <test>
+            <param name="input1" value="5.gff" ftype="gff"/>
+            <output name="output1" file="gff2bed_out.bed"/>
+        </test>
+        <!-- Test conversion of GFF3 file -->
+        <test>
+            <param name="input1" value="5.gff3" ftype="gff"/>
+            <output name="output1" file="gff2bed_out3.bed"/>
         </test>
     </tests>
-    <help>
-    </help>
+    <help><![CDATA[
+**What it does**
+
+This tool converts data from GFF format to BED6 format.
+    ]]></help>
 </tool>

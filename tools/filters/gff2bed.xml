@@ -1,36 +1,35 @@
 <tool id="gff2bed1" name="GFF-to-BED12" version="1.0.2">
-  <description>converter</description>
-  <edam_operations>
-    <edam_operation>operation_3434</edam_operation>
-  </edam_operations>
-  <command interpreter="python">gff_to_bed_converter.py '$input' '$out_file1'</command>
-  <inputs>
-    <param format="gff" name="input" type="data" label="Convert this dataset"/>
-  </inputs>
-  <outputs>
-    <data format="bed12" name="out_file1" />
-  </outputs>
-  <tests>
-    <test>
-      <param name="input" value="5.gff" ftype="gff"/>
-      <output name="out_file1" file="gff2bed_out.bed" format="bed12"/>
-    </test>
-    <test>
-      <param name="input" value="gff2bed_in2.gff" ftype="gff"/>
-      <output name="out_file1" file="gff2bed_out2.bed" format="bed12"/>
-    </test>
-    <test>
-      <!-- Test conversion of gff3 file. -->
-      <param name="input" value="5.gff3" ftype="gff"/>
-      <output name="out_file1" file="gff2bed_out3.bed" format="bed12"/>
-    </test>
-    <test>
-      <param name="input" value="gencode.v29.annotation.gff3" ftype="gff"/>
-      <output name="out_file1" file="gencode.v29.annotation.bed"/>
-    </test>
-  </tests>
-  <help>
-
+    <!-- This should be moved to lib/galaxy/datatypes/converters/ and added to
+         the gff converters in lib/galaxy/config/sample/datatypes_conf.xml.sample
+         when https://github.com/galaxyproject/galaxy/issues/9649 is solved -->
+    <description>converter</description>
+    <edam_operations>
+        <edam_operation>operation_3434</edam_operation>
+    </edam_operations>
+    <command><![CDATA[
+python '$__tool_directory__/gff_to_bed_converter.py'
+--bedcols 12
+'$input'
+'$out_file1'
+    ]]></command>
+    <inputs>
+        <param name="input" type="data" format="gff" label="Convert this dataset"/>
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="bed12" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" value="gff2bed_in2.gff" ftype="gff"/>
+            <output name="out_file1" file="gff2bed_out2.bed"/>
+        </test>
+        <!-- Test conversion of GFF3 file -->
+        <test>
+            <param name="input" value="gencode.v29.annotation.gff3" ftype="gff"/>
+            <output name="out_file1" file="gencode.v29.annotation.bed"/>
+        </test>
+    </tests>
+    <help><![CDATA[
 **What it does**
 
 This tool converts data from GFF format to BED format (scroll down for format description).
@@ -89,6 +88,5 @@ The additional BED fields (optional) are::
     7. strand - Valid entries include '+', '-', or '.' (for don't know/care).
     8. frame - If the feature is a coding exon, frame should be a number between 0-2 that represents the reading frame of the first base. If the feature is not a coding exon, the value should be '.'.
     9. group - All lines with the same group are linked together into a single item.
-
-</help>
+    ]]></help>
 </tool>
