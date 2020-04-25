@@ -333,18 +333,6 @@ export default {
             this.markChanged();
             output_terminal.destroyInvalidConnections();
         },
-        connectedOutputTerminals() {
-            return this._connectedTerminals(this.outputTerminals);
-        },
-        _connectedTerminals(terminals) {
-            var connectedTerminals = [];
-            $.each(terminals, (_, t) => {
-                if (t.connectors.length > 0) {
-                    connectedTerminals.push(t);
-                }
-            });
-            return connectedTerminals;
-        },
         mappedInputTerminals() {
             return this._mappedTerminals(this.inputTerminals);
         },
