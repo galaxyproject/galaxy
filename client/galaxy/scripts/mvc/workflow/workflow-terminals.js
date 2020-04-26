@@ -596,6 +596,11 @@ class OutputTerminal extends Terminal {
         this.optional = attr.optional;
         this.force_datatype = attr.force_datatype;
     }
+    update(output) {
+        this.datatypes = output.datatypes || output.extensions;
+        this.optional = output.optional;
+        this.force_datatype = output.force_datatype;
+    }
     resetMappingIfNeeded() {
         // If inputs were only mapped over to preserve
         // an output just disconnected reset these...
