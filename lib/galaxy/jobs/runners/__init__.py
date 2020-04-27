@@ -425,7 +425,7 @@ class BaseJobRunner(object):
             compute_tmp_directory = job_wrapper.tmp_directory()
 
         tool = job_wrapper.tool
-        guest_ports = [ep.get('port') for ep in getattr(job_wrapper, 'interactivetools', [])]
+        guest_ports = job_wrapper.guest_ports
         tool_info = ToolInfo(
             tool.containers,
             tool.requirements,
