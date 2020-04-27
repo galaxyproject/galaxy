@@ -44,7 +44,9 @@ Server-side configuration of Galaxy InteractiveTools
 
 The **galaxy.yml** file will need to be populated as seen in **config/galaxy.yml.interactivetools**.
 
-Because Galaxy interactive tools need to resolve to a wildcard DNS, this needs to be configured to work with and existing server. For users who manage their own DNS, you can set the appropriate A records to redirect *.interactivetool.yourdomain, following the same format as below. For individual users, as a convenience, using **localhost.blankenberglab.org** in place of **server address** to resolve to 127.0.0.1 on your local machine in order to allow local deployment of interactive tools.
+Galaxy InteractiveTool routing relies on wildcard subdomain routes. For users who manage their own DNS, you can set the appropriate A records to redirect *.interactivetool.yourdomain, following format seen below.
+
+It's not recommended for production, but for a quick local deployment **localhost.blankenberglab.org** is a domain record provided by Dan Blankenberg (a Galaxy contributor and the architect of ITs) configured with the appropriate wildcard redirect to 127.0.0.1, which you can use that in place of **server address** to resolve to your local machine.
 
 In the **uwsgi:** section:
 
