@@ -1,3 +1,5 @@
+@import "~@fortawesome/fontawesome-free/scss/_variables";
+
 // prevents highlighting i.e. text selection on double click
 .no-highlight {
     -webkit-user-select: none; /* webkit (safari, chrome) browsers */
@@ -306,10 +308,10 @@ $ui-margin-horizontal-large: $margin-v * 2;
         input[type="checkbox"] + label:before {
             font-family: "Font Awesome 5 Free";
             margin-right: 5px;
-            content: "\f0c8";
+            content: fa-content($fa-var-square);
         }
         input[type="checkbox"]:checked + label:before {
-            content: "\f14a";
+            content: fa-content($fa-var-check-square);
         }
         input[type="radio"] + label:before {
             font-family: FontAwesome;
