@@ -1673,11 +1673,11 @@ def build_url(base_url, port=80, scheme='http', pathspec=None, params=None, dose
     return url
 
 
-def url_get(base_url, auth=None, pathspec=None, params=None):
+def url_get(base_url, auth=None, pathspec=None, params=None, max_retries=5, backoff_factor=1):
     """Make contact with the uri provided and return any contents."""
     full_url = build_url(base_url, pathspec=pathspec, params=params)
     s = requests.Session()
-    retries = Retry(total=5, backoff_factor=1, status_forcelist=[429])
+    retries = Retry(total=max_retries, backoff_factor=backoff_factor, status_forcelist=[429])
     s.mount(base_url, HTTPAdapter(max_retries=retries))
     response = s.get(full_url, auth=auth)
     response.raise_for_status()
