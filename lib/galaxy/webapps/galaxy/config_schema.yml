@@ -749,6 +749,33 @@ mapping:
           should be disabled. Containerized jobs always use /bin/sh - so more maximum
           portability tool authors should assume generated commands run in sh.
 
+      tool_cache_data_dir:
+        type: str
+        default: tool_cache
+        path_resolves_to: data_dir
+        required: false
+        desc: |
+          Tool related caching. Fully expanded tools and metadata will be stored at this path.
+          Per tool_conf cache locations can be configured in (shed_)tool_conf.xml files using
+          the tool_cache_data_dir attribute.
+
+      tool_search_index_dir:
+        type: str
+        default: tool_search_index
+        path_resolves_to: data_dir
+        required: false
+        desc:
+          Directory in which the toolbox search index is stored.
+
+      delay_tool_initialization:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Set this to true to delay parsing of tool inputs and outputs until they are needed.
+          This results in faster startup times but uses more memory when using forked Galaxy
+          processes.
+
       citation_cache_type:
         type: str
         default: file

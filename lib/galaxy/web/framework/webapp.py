@@ -79,6 +79,7 @@ class WebApplication(base.WebApplication):
     def __init__(self, galaxy_app, session_cookie='galaxysession', name=None):
         self.name = name
         base.WebApplication.__init__(self)
+        galaxy_app.is_webapp = True
         self.set_transaction_factory(lambda e: self.transaction_chooser(e, galaxy_app, session_cookie))
         # Mako support
         self.mako_template_lookup = self.create_mako_template_lookup(galaxy_app, name)
