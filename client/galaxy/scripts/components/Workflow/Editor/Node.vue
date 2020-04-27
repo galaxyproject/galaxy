@@ -1,5 +1,5 @@
 <template>
-    <div :node-label="label">
+    <div :node-label="label" :name="name">
         <div class="node-header unselectable clearfix">
             <b-button
                 class="node-destroy py-0 float-right"
