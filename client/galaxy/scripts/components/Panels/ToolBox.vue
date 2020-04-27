@@ -10,21 +10,34 @@
             </div>
         </div>
         <div class="unified-panel-controls">
-            <tool-search :query="query" placeholder="search tools" @onQuery="onQuery" @onResults="onResults" />
+            <tool-search
+                :query="query"
+                placeholder="search tools"
+                @onQuery="onQuery"
+                @onResults="onResults"
+            />
 
             <div class="float-none" v-if="results">
-                <button class="btn btn-secondary btn-sm" v-if="!show" @click="onToggle">Show Categories</button>
-                <button class="btn btn-secondary btn-sm" v-if="show" @click="onToggle">Hide Categories</button>
+                <button
+                    class="btn btn-secondary btn-sm"
+                    v-if="!show"
+                    @click="onToggle"
+                >Show Categories</button>
+                <button
+                    class="btn btn-secondary btn-sm"
+                    v-if="show"
+                    @click="onToggle"
+                >Hide Categories</button>
             </div>
         </div>
         <div class="unified-panel-body">
             <div class="toolMenuContainer">
                 <div class="toolMenu">
                     <tool-section
-                        v-for="category in categories"
-                        :category="category"
+                        v-for="section in sections"
+                        :category="section"
                         :query-filter="query"
-                        :key="category.id"
+                        :key="section.id"
                         @onClick="onOpen"
                     />
                 </div>
@@ -34,9 +47,7 @@
                 <div id="internal-workflows" class="toolSectionBody">
                     <div class="toolSectionBg" />
                     <div class="toolTitle" v-for="wf in this.workflows" :key="wf.id">
-                        <a :href="wf.href">
-                            {{ wf.title }}
-                        </a>
+                        <a :href="wf.href">{{ wf.title }}</a>
                     </div>
                 </div>
             </div>
@@ -85,7 +96,7 @@ export default {
         },
     },
     computed: {
-        categories() {
+        sections() {
             if (this.show) {
                 return filterToolsinCats(this.toolbox, this.results);
             } else {
