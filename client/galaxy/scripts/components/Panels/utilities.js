@@ -2,11 +2,13 @@ export function filterToolsinCats(layout, results) {
     if (results) {
         const filteredLayout = layout.map((category) => {
             var toolRes = [];
-            category.elems.forEach((el) => {
-                if (!el.text && results.includes(el.id)) {
-                    toolRes.push(el);
-                }
-            });
+            if (category.elems) {
+                category.elems.forEach((el) => {
+                    if (!el.text && results.includes(el.id)) {
+                        toolRes.push(el);
+                    }
+                });
+            }
             //Sorts tools in category by rank in results
             toolRes.sort((el1, el2) => {
                 if (results.indexOf(el1.id) < results.indexOf(el2.id)) {
@@ -22,7 +24,7 @@ export function filterToolsinCats(layout, results) {
             };
         });
 
-        //Filters out to only display categories that have tools that were in results
+        //Filter out categories without tools in results
         return filteredLayout
             .filter((category) => {
                 const isSection = category.elems && category.elems.length > 0;
@@ -48,11 +50,13 @@ export function filterTools(layout, results) {
         //Goes through each category and adds each tools that's in results to
         //toolsResults, sorted by search ranking
         layout.map((category) => {
-            category.elems.forEach((el) => {
-                if (!el.text && results.includes(el.id)) {
-                    toolsResults[results.indexOf(el.id)] = el;
-                }
-            });
+            if (category.elems) {
+                category.elems.forEach((el) => {
+                    if (!el.text && results.includes(el.id)) {
+                        toolsResults[results.indexOf(el.id)] = el;
+                    }
+                });
+            }
         });
         return toolsResults;
     } else {
