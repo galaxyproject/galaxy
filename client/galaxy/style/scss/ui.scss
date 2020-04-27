@@ -304,7 +304,7 @@ $ui-margin-horizontal-large: $margin-v * 2;
             margin-left: 25px;
         }
         input[type="checkbox"] + label:before {
-            font-family: FontAwesome;
+            font-family: "Font Awesome 5 Free";
             display: inline-block;
             font-style: normal;
             font-size: 1.2em;
@@ -312,10 +312,10 @@ $ui-margin-horizontal-large: $margin-v * 2;
             position: relative;
             top: 1px;
             width: 10px;
-            content: "\f096";
+            content: "\f0c8";
         }
         input[type="checkbox"]:checked + label:before {
-            content: "\f046";
+            content: "\f14a";
         }
         input[type="radio"] + label:before {
             font-family: FontAwesome;
