@@ -1,4 +1,4 @@
-export function filterToolsinCats(layout, results) {
+export function filterToolSections(layout, results) {
     if (results) {
         const filteredLayout = layout.map((section) => {
             var toolRes = [];

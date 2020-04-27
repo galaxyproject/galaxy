@@ -30,10 +30,10 @@
                 />
                 <div class="toolMenu" id="workflow-tool-menu">
                     <tool-section
-                        v-for="category in categories"
-                        :category="category"
+                        v-for="section in sections"
+                        :category="section"
                         :query-filter="query"
-                        :key="category.id"
+                        :key="section.id"
                         @onClick="onInsertTool"
                     />
                 </div>
@@ -56,7 +56,7 @@
 import _l from "utils/localization";
 import ToolSection from "./Common/ToolSection";
 import ToolSearch from "./Common/ToolSearch";
-import { filterToolsinCats } from "./utilities";
+import { filterToolSections } from "./utilities";
 
 export default {
     name: "ToolBox",
@@ -101,8 +101,8 @@ export default {
                 elems: this.dataManagers,
             };
         },
-        categories() {
-            return filterToolsinCats(this.toolsLayout, this.results);
+        sections() {
+            return filterToolSections(this.toolsLayout, this.results);
         },
         toolsLayout() {
             return this.toolbox.map((section) => {

@@ -36,7 +36,7 @@
                     <tool-section
                         v-for="section in sections"
                         :category="section"
-                        :query-filter="query"
+                        :query-filter="queryFilter"
                         :key="section.id"
                         @onClick="onOpen"
                     />
@@ -60,7 +60,7 @@ import ToolSection from "./Common/ToolSection";
 import ToolSearch from "./Common/ToolSearch";
 import UploadButton from "./Buttons/UploadButton";
 import FavoritesButton from "./Buttons/FavoritesButton";
-import { filterToolsinCats, filterTools } from "./utilities";
+import { filterToolSections, filterTools } from "./utilities";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
 import _l from "utils/localization";
@@ -77,6 +77,7 @@ export default {
         return {
             query: null,
             results: null,
+            queryFilter: null,
             workflow: null,
             show: true,
         };
@@ -98,7 +99,7 @@ export default {
     computed: {
         sections() {
             if (this.show) {
-                return filterToolsinCats(this.toolbox, this.results);
+                return filterToolSections(this.toolbox, this.results);
             } else {
                 return filterTools(this.toolbox, this.results);
             }
@@ -127,6 +128,7 @@ export default {
     methods: {
         onQuery(query) {
             this.query = query;
+            this.queryFilter = (query.length >= 3) ? query : null
         },
         onResults(results) {
             this.results = results;
