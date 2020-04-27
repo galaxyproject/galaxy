@@ -13,4 +13,3 @@ Development Documentation
   faq
   debugging_tests
   debugging_galaxy
-
