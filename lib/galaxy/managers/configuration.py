@@ -91,6 +91,7 @@ class ConfigSerializer(base.ModelSerializer):
             'inactivity_box_content'            : _use_config,
             'visualizations_visible'            : _use_config,
             'interactivetools_enable'           : _use_config,
+            'aws_estimate'                      : _use_config,
             'message_box_content'               : _use_config,
             'message_box_visible'               : _use_config,
             'message_box_class'                 : _use_config,

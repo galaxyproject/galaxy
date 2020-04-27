@@ -84,6 +84,7 @@ export default {
         const oidc_idps_icons = {
             google: "https://developers.google.com/identity/images/btn_google_signin_light_normal_web.png",
             elixir: "https://elixir-europe.org/sites/default/files/images/login-button-orange.png",
+            okta: "https://www.okta.com/sites/all/themes/Okta/images/blog/Logos/Okta_Logo_BrightBlue_Medium.png",
         };
         return {
             login: null,

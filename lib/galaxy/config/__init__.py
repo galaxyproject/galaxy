@@ -340,6 +340,13 @@ class CommonConfigurationMixin(object):
         # Warning: the value of self.config_dict['foo'] may be different from self.foo
         return self.config_dict.get(key, default)
 
+    def _ensure_directory(self, path):
+        if path not in [None, False] and not os.path.isdir(path):
+            try:
+                os.makedirs(path)
+            except Exception as e:
+                raise ConfigurationError("Unable to create missing directory: %s\n%s" % (path, unicodify(e)))
+
 
 class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     deprecated_options = ('database_file', 'track_jobs_in_database')
@@ -348,10 +355,15 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
 
     def __init__(self, **kwargs):
         super(GalaxyAppConfiguration, self).__init__(**kwargs)
+        self._override_tempdir(kwargs)
         self._process_config(kwargs)
 
     def _load_schema(self):
         return AppSchema(GALAXY_CONFIG_SCHEMA_PATH, GALAXY_APP_NAME)
+
+    def _override_tempdir(self, kwargs):
+        if string_as_bool(kwargs.get("override_tempdir", "True")):
+            tempfile.tempdir = self.new_file_path
 
     def _process_config(self, kwargs):
         # Resolve paths of other config files
@@ -377,10 +389,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             self.thread_local_log = threading.local()
         # Install database related configuration (if different)
         self.install_database_engine_options = get_database_engine_options(kwargs, model_prefix="install_")
-
-        override_tempdir = string_as_bool(kwargs.get("override_tempdir", "True"))
-        if override_tempdir:
-            tempfile.tempdir = self.new_file_path
         self.shared_home_dir = kwargs.get("shared_home_dir")
         self.cookie_path = kwargs.get("cookie_path")
         self.tool_path = self._in_root_dir(self.tool_path)
@@ -493,14 +501,9 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         # you want yours tools to be broken in the future.
         self.enable_beta_tool_formats = string_as_bool(kwargs.get('enable_beta_tool_formats', 'False'))
 
-        workflow_resource_params_mapper = kwargs.get("workflow_resource_params_mapper")
-        if not workflow_resource_params_mapper:
-            workflow_resource_params_mapper = None
-        elif ":" not in workflow_resource_params_mapper:
-            # Assume it is not a Python function, so a file
-            workflow_resource_params_mapper = self._in_root_dir(workflow_resource_params_mapper)
-        # else: a Python a function!
-        self.workflow_resource_params_mapper = workflow_resource_params_mapper
+        if self.workflow_resource_params_mapper and ':' not in self.workflow_resource_params_mapper:
+            # Assume it is not a Python function, so a file; else: a Python function
+            self.workflow_resource_params_mapper = self._in_root_dir(self.workflow_resource_params_mapper)
 
         self.pbs_application_server = kwargs.get('pbs_application_server', "")
         self.pbs_dataset_server = kwargs.get('pbs_dataset_server', "")
@@ -600,8 +603,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         # Heartbeat log file name override
         if self.global_conf is not None and 'heartbeat_log' in self.global_conf:
             self.heartbeat_log = self.global_conf['heartbeat_log']
-        if self.heartbeat_log is None:
-            self.heartbeat_log = 'heartbeat_{server_name}.log'
         # Determine which 'server:' this is
         self.server_name = 'main'
         for arg in sys.argv:
@@ -670,8 +671,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
 
         # InteractiveTools propagator mapping file
         self.interactivetools_map = self._in_root_dir(kwargs.get("interactivetools_map", self._in_data_dir("interactivetools_map.sqlite")))
-        self.interactivetool_prefix = kwargs.get("interactivetools_prefix", "interactivetool")
-        self.interactivetool_proxy_host = kwargs.get("interactivetool_proxy_host", None)
+        self.interactivetools_prefix = kwargs.get("interactivetools_prefix", "interactivetool")
+        self.interactivetools_proxy_host = kwargs.get("interactivetool_proxy_host", None)
 
         self.containers_conf = parse_containers_config(self.containers_config_file)
 
@@ -810,26 +811,21 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     def ensure_tempdir(self):
         self._ensure_directory(self.new_file_path)
 
-    def _ensure_directory(self, path):
-        if path not in [None, False] and not os.path.isdir(path):
-            try:
-                os.makedirs(path)
-            except Exception as e:
-                raise ConfigurationError("Unable to create missing directory: %s\n%s" % (path, unicodify(e)))
-
     def check(self):
-        paths_to_check = [self.tool_data_path, self.data_dir, self.managed_config_dir]
-        # Check that required directories exist
+        # Check that required directories exist; attempt to create otherwise
+        paths_to_check = [
+            self.data_dir,
+            self.ftp_upload_dir,
+            self.library_import_dir,
+            self.managed_config_dir,
+            self.new_file_path,
+            self.nginx_upload_store,
+            self.object_store_cache_path,
+            self.template_cache_path,
+            self.tool_data_path,
+            self.user_library_import_dir,
+        ]
         for path in paths_to_check:
-            if path not in [None, False] and not os.path.isdir(path):
-                try:
-                    os.makedirs(path)
-                except Exception as e:
-                    raise ConfigurationError("Unable to create missing directory: %s\n%s" % (path, unicodify(e)))
-        # Create the directories that it makes sense to create
-        for path in (self.new_file_path, self.template_cache_path, self.ftp_upload_dir,
-                     self.library_import_dir, self.user_library_import_dir,
-                     self.nginx_upload_store, self.object_store_cache_path):
             self._ensure_directory(path)
         # Check that required files exist
         tool_configs = self.tool_configs

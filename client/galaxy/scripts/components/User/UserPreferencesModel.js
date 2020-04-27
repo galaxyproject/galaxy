@@ -83,7 +83,7 @@ export const getUserPreferencesModel = () => {
         },
         logout: {
             title: _l("Sign Out"),
-            id: "edit-preferences-custom-builds",
+            id: "edit-preferences-sign-out",
             description: _l("Click here to sign out of all sessions."),
             icon: "fa-sign-out",
             shouldRender: !!Galaxy.session_csrf_token,
