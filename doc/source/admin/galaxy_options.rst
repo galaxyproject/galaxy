@@ -1003,6 +1003,31 @@
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~
+``tool_cache_data_dir``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Tool related caching. Fully expanded tools and metadata will be
+    stored at this path. Per tool_conf cache locations can be
+    configured in (shed_)tool_conf.xml files using the
+    tool_cache_data_dir attribute.
+:Default: ``tool_cache``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``delay_tool_initialization``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set this to true to delay parsing of tool inputs and outputs until
+    they are needed. This results in faster startup times but uses
+    more memory when using forked Galaxy processes.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~
 ``citation_cache_type``
 ~~~~~~~~~~~~~~~~~~~~~~~
 

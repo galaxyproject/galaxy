@@ -50,6 +50,9 @@ class XmlToolSource(ToolSource):
         self._macro_paths = macro_paths or []
         self.legacy_defaults = self.parse_profile() == "16.01"
 
+    def to_string(self):
+        return xml_to_string(self.root)
+
     def parse_version(self):
         return self.root.get("version", None)
 
@@ -711,21 +714,18 @@ def __expand_input_elems(root_elem, prefix=""):
         new_prefix = __prefix_join(prefix, name, index=index)
         __expand_input_elems(repeat_elem, new_prefix)
         __pull_up_params(root_elem, repeat_elem)
-        root_elem.remove(repeat_elem)
 
     cond_elems = root_elem.findall('conditional')
     for cond_elem in cond_elems:
         new_prefix = __prefix_join(prefix, cond_elem.get("name"))
         __expand_input_elems(cond_elem, new_prefix)
         __pull_up_params(root_elem, cond_elem)
-        root_elem.remove(cond_elem)
 
     section_elems = root_elem.findall('section')
     for section_elem in section_elems:
         new_prefix = __prefix_join(prefix, section_elem.get("name"))
         __expand_input_elems(section_elem, new_prefix)
         __pull_up_params(root_elem, section_elem)
-        root_elem.remove(section_elem)
 
 
 def __append_prefix_to_params(elem, prefix):
@@ -736,7 +736,6 @@ def __append_prefix_to_params(elem, prefix):
 def __pull_up_params(parent_elem, child_elem):
     for param_elem in child_elem.findall('param'):
         parent_elem.append(param_elem)
-        child_elem.remove(param_elem)
 
 
 def __prefix_join(prefix, name, index=None):

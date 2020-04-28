@@ -4244,7 +4244,7 @@ Galaxy, including:
     </xs:annotation>
     <xs:attribute name="from_provided_metadata" type="xs:boolean" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Indicate that dataset filenames should simply be read from the provided metadata file (e.g. galaxy.json). If this is set - pattern and sort must not be set.</xs:documentation>
+        <xs:documentation xml:lang="en">Indicate that dataset filenames should simply be read from the provided metadata file (e.g. galaxy.json). If this is set - pattern and sort_by must not be set.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="pattern" type="xs:string" use="optional">
@@ -4267,9 +4267,14 @@ Galaxy, including:
         <xs:documentation xml:lang="en">Format (or datatype) of discovered datasets (an alias with ``format``).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="sort_by" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">A string `[reverse_]SORTBY[_SORT_COMP]` describing the desired sort order of the collection elements. `SORTBY` can be `filename`, `name`, `designation`, `dbkey` and the optional `SORT_COMP` can be either `lexical` or `numeric`. Default is lexical sorting by filename.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="visible" type="xs:boolean" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Indication if this dataset is visible in output history. This defaults to ``false``, but probably shouldn't - be sure to set to ``true`` if that is your intention.</xs:documentation>
+        <xs:documentation xml:lang="en">Indication if this dataset is visible in the history. This defaults to ``false``, but probably shouldn't - be sure to set to ``true`` if that is your intention.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
