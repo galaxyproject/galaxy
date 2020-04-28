@@ -295,9 +295,10 @@ export class Node {
                 // the output already exists, but the output formats may have changed.
                 // Therefore we update the datatypes and destroy invalid connections.
                 node.output_terminals[output.name].datatypes = output.extensions;
-                const changeOutputDatatype = node.post_job_actions["ChangeOutputDatatype" + output.name]
+                const changeOutputDatatype = node.post_job_actions["ChangeOutputDatatype" + output.name];
                 if (changeOutputDatatype) {
-                    node.output_terminals[output.name].force_datatype = changeOutputDatatype.action_arguments["newtype"];
+                    node.output_terminals[output.name].force_datatype =
+                        changeOutputDatatype.action_arguments["newtype"];
                 } else {
                     node.output_terminals[output.name].force_datatype = null;
                 }
