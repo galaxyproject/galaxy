@@ -29,9 +29,10 @@ class CustosAuthnz(IdentityProvider):
         self.config['url'] = oidc_backend_config['url']
         self.config['client_id'] = oidc_backend_config['client_id']
         self.config['client_secret'] = oidc_backend_config['client_secret']
-        if provider == 'custos':
-            #Keycloak client secret used to get token
-            self.config['iam_client_secret'] = oidc_backend_config['iam_client_secret']
+        if oidc_backend_config.get('credential_url'):
+            # Keycloak client secret used to get token for custos
+            self.config['credential_url'] = oidc_backend_config['credential_url']
+            self._get_custos_credentials()
         self.config['redirect_uri'] = oidc_backend_config['redirect_uri']
         self.config['ca_bundle'] = oidc_backend_config.get('ca_bundle', None)
         self.config['extra_params'] = {
@@ -98,7 +99,7 @@ class CustosAuthnz(IdentityProvider):
             userinfo = self._get_userinfo(oauth2_session)
         log.debug("userinfo={}".format(json.dumps(userinfo, indent=True)))
         email = userinfo['email']
-        #Check if username if already taken
+        # Check if username if already taken
         username = userinfo.get('preferred_username', self._generate_username(trans, email))
         user_id = userinfo['sub']
 
@@ -221,22 +222,30 @@ class CustosAuthnz(IdentityProvider):
             raise Exception("Nonce mismatch!")
     
     def _load_config_for_cilogon (self):
-        #set cilogon endpoints
+        # Set cilogon endpoints
         self.config['authorization_endpoint'] = "https://cilogon.org/authorize"
         self.config['token_endpoint'] = "https://cilogon.org/oauth2/token"
         self.config['userinfo_endpoint'] = "https://cilogon.org/oauth2/userinfo"
 
     def _load_config_for_custos (self):
-        #set custos endpoints
+        # Set custos endpoints
         clientIdAndSec = self.config['client_id'] + ":" + self.config['client_secret']
-        eps = requests.get("https://custos.scigap.org:32036/identity-management/v1.0.0/.well-known/openid-configuration", 
+        eps = requests.get(self.config['url'], 
                             headers={"Authorization": "Basic %s" % base64.b64encode(clientIdAndSec)},
                             verify=False, params = {'client_id': self.config['client_id']})
         endpoints = eps.json()
         self.config['authorization_endpoint'] = endpoints['authorization_endpoint']
         self.config['token_endpoint'] = endpoints['token_endpoint']
-        self.config['userinfo_endpoint'] = "https://custos.scigap.org:32036/user-management/v1.0.0/user"
+        self.config['userinfo_endpoint'] = endpoints['userinfo_endpoint']
         self.config['end_session_endpoint'] = endpoints['end_session_endpoint']
+
+    def _get_custos_credentials (self):
+        clientIdAndSec = self.config['client_id'] + ":" + self.config['client_secret']
+        creds = requests.get(self.config['credential_url'],
+                            headers={"Authorization": "Basic %s" % base64.b64encode(clientIdAndSec)},
+                            verify=False, params = {'client_id': self.config['client_id']})
+        credentials = creds.json()
+        self.config['iam_client_secret'] = credentials['iam_client_secret']
 
     def _create_authorize_url (self, trans):
         return "{}/?kc_idp_hint=oidc&response_type=code&client_id={}&redirect_uri={}".format(

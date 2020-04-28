@@ -130,8 +130,8 @@ class AuthnzManager(object):
             'redirect_uri': config_xml.find('redirect_uri').text,
             'realm': config_xml.find('realm').text,
             'enable_idp_logout': asbool(config_xml.findtext('enable_idp_logout', 'false'))}
-        if config_xml.find('iam_client_secret') is not None:
-            rtv['iam_client_secret'] = config_xml.find('iam_client_secret').text
+        if config_xml.find('credential_url') is not None:
+            rtv['credential_url'] = config_xml.find('credential_url').text
         if config_xml.find('well_known_oidc_config_uri') is not None:
             rtv['well_known_oidc_config_uri'] = config_xml.find('well_known_oidc_config_uri').text
         if config_xml.find('idphint') is not None:
