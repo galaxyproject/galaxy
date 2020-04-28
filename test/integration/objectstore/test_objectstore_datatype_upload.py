@@ -119,6 +119,7 @@ class BaseObjectstoreUploadTest(UploadTestDatatypeDataTestCase):
         config["object_store_store_by"] = "uuid"
         with open(cls.object_store_config_path, "w") as f:
             f.write(cls.object_store_template.safe_substitute(**cls.get_object_store_kwargs()))
+        config["object_store_config_file"] = cls.object_store_config_path
 
     @classmethod
     def get_object_store_kwargs(cls):
