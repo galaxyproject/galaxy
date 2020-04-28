@@ -6,6 +6,7 @@ from __future__ import absolute_import
 
 import json
 import logging
+import jwt
 import requests
 
 from galaxy import exceptions
@@ -40,19 +41,10 @@ class OIDC(JSAppLauncher):
         rtv = []
         for authnz in trans.user.social_auth:
             rtv.append({'id': trans.app.security.encode_id(authnz.id), 'provider': authnz.provider, 'email': authnz.uid})
-        #add cilogon and custos identities
+        # Add cilogon and custos identities
         for token in trans.user.custos_auth:
-        #    if (token.provider == 'cilogon'):
-        #        userinfo_endpoint = "https://cilogon.org/oauth2/userinfo"
-        #    elif (token.provider == 'custos'):
-        #        userinfo_endpoint = "https://custos.scigap.org:32036/user-management/v1.0.0/user"
-        #    #userinfo_endpoint = "https://cilogon.org/oauth2/userinfo" #to delete
-        #    uinfo = requests.get(userinfo_endpoint, params = {'access_token': token.access_token})
-        #    print ("\n\n\nUINFO", uinfo) #to delete
-        #    print ("\n\n\nUSERINFO", uinfo.json()) #to delete
-        #    userinfo = uinfo.json()
-        #    rtv.append({'id': trans.app.security.encode_id(token.id), 'provider': token.provider, 'email': userinfo['email']})
-            rtv.append({'id': trans.app.security.encode_id(token.id), 'provider': token.provider})
+            userinfo = jwt.decode(token.id_token, verify=False)
+            rtv.append({'id': trans.app.security.encode_id(token.id), 'provider': token.provider, 'email': userinfo['email']})
         return rtv
 
     @web.json
