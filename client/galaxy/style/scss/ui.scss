@@ -306,7 +306,7 @@ $ui-margin-horizontal-large: $margin-v * 2;
             margin-left: 25px;
         }
         input[type="checkbox"] + label:before {
-            @extend .fa;
+            @extend .far;
             margin-right: 5px;
             content: fa-content($fa-var-square);
         }
@@ -314,7 +314,7 @@ $ui-margin-horizontal-large: $margin-v * 2;
             content: fa-content($fa-var-check-square);
         }
         input[type="radio"] + label:before {
-            @extend .fa;
+            @extend .far;
             margin-right: 5px;
             content: fa-content($fa-var-circle);
         }
