@@ -70,6 +70,7 @@ masthead:
 
 preferences:
   selectors:
+    sign_out: "#edit-preferences-sign-out"
     change_password: "#edit-preferences-password"
     manage_information: '#edit-preferences-information'
     current_email: "#user-preferences-current-email"
@@ -87,6 +88,11 @@ change_user_address:
     address_button:
       type: xpath
       selector: '//span[contains(text(), "Insert Address")]'
+
+sign_out:
+  selectors:
+    cancel_button: '.modal-footer .buttons #button-0'
+    sign_out_button: '.modal-footer .buttons #button-1'
 
 history_panel:
   menu:
@@ -203,7 +209,7 @@ multi_history_view:
     delete: '.copy-history'
     current_history_check: '#history-column-${history_id} .current-label'
     empty_message_check: '.empty-message'
-
+    switch_button: '#history-column-${history_id} .switch-to'
 
   history_dropdown_menu:
     selectors:
@@ -473,6 +479,11 @@ gies:
 upload:
   selectors:
     tab: '#tab-title-link-${tab}'
+    ftp_add: '#btn-ftp'
+    ftp_popup: '.upload-ftp-body'
+    ftp_items: '.upload-ftp-row'
+    ftp_close: '.popover-header .popover-close'
+    row: '#upload-row-${n}'
     start: '.upload-button'
     rule_source_content: 'textarea.upload-rule-source-content'
     rule_select_data_type: '.rule-data-type'

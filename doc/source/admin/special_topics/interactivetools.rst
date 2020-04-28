@@ -44,6 +44,10 @@ Server-side configuration of Galaxy InteractiveTools
 
 The **galaxy.yml** file will need to be populated as seen in **config/galaxy.yml.interactivetools**.
 
+Galaxy InteractiveTool routing relies on wildcard subdomain routes. For users who manage their own DNS, you can set the appropriate A records to redirect *.interactivetool.yourdomain, following format seen below.
+
+It's not recommended for production, but for a quick local deployment **localhost.blankenberglab.org** is a domain record provided by Dan Blankenberg (a Galaxy contributor and the architect of ITs) configured with the appropriate wildcard redirect to 127.0.0.1, which you can use that in place of **server address** to resolve to your local machine.
+
 In the **uwsgi:** section:
 
 .. code-block:: yaml
@@ -53,10 +57,10 @@ In the **uwsgi:** section:
 
   interactivetools_map: database/interactivetools_map.sqlite
   python-raw: scripts/interactivetools/key_type_token_mapping.py
-  route-host: ^([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)-([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.(interactivetool\.localhost:8080)$ goto:interactivetool
+  route-host: ^([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)-([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.(interactivetool\.<server address>:8080)$ goto:interactivetool
   route-run: goto:endendend
   route-label: interactivetool
-  route-host: ^([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)-([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.(interactivetool\.localhost:8080)$ rpcvar:TARGET_HOST rtt_key_type_token_mapper_cached $1 $3 $2 $4 $0 5
+  route-host: ^([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)-([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.(interactivetool\.<server address>:8080)$ rpcvar:TARGET_HOST rtt_key_type_token_mapper_cached $1 $3 $2 $4 $0 5
   route-if-not: empty:${TARGET_HOST} httpdumb:${TARGET_HOST}
   route: .* break:404 Not Found
   route-label: endendend
@@ -67,6 +71,8 @@ In the **galaxy:** section:
 .. code-block:: yaml
 
   interactivetools_enable: true
+  interactivetools_map: database/interactivetools_map.sqlite
+  galaxy_infrastructure_url: http://<server address>.org:8080
 
 
 The admin should modify the **route-host**s and **interactivetools_prefix** to match their preferred configuration.

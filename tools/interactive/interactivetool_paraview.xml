@@ -1,0 +1,50 @@
+<tool id="interactive_tool_paraview" tool_type="interactive" name="Paraview" version="0.1">
+    <requirements>
+        <!-- kitware/paraviewweb:pvw-v5.6.0-osmesa -->
+        <container type="docker">bmcv/galaxy-paraviewweb:latest</container>
+    </requirements>
+    <entry_points>
+        <entry_point name="Paraview based Visualisation of $infile.display_name" requires_domain="True">
+            <port>8777</port>
+            <!--url>apps/Visualizer</url-->
+        </entry_point>
+    </entry_points>
+    <environment_variables>
+        <environment_variable name="SERVER_NAME" strip="True">localhost:8080</environment_variable>
+        <environment_variable name="PROTOCOL">wss</environment_variable>
+        <environment_variable name="EXTRA_PVPYTHON_ARGS">-dr,--mesa-swr</environment_variable>
+    </environment_variables>
+    <command><![CDATA[
+
+service nginx start &&
+
+export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/usr/local/lib/paraview-\$PV_VERSION_MAJOR/:/usr/local/lib/ &&
+
+mkdir /input/ &&
+
+#if $infile:
+    ln -s '$infile' /input/infile.${infile.ext} &&
+#end if
+
+Visualizer --paraview /usr/local/lib/paraview-\$PV_VERSION_MAJOR/
+    --data /input
+    --port 9777
+    --server-only
+    #if $infile:
+       --load-file infile.${infile.ext}
+    #end if
+
+    ]]>
+    </command>
+    <inputs>
+        <param name="infile" type="data" format="png,jpg,tiff" optional="true" label="Optional input dataset"/>
+    </inputs>
+    <outputs>
+        <data name="outfile" format="txt" />
+    </outputs>
+    <tests>
+    </tests>
+    <help>
+        ParaView is an open-source, multi-platform application designed to visualize data sets of varying sizes from small to very large.
+    </help>
+</tool>

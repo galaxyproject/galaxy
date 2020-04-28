@@ -31,6 +31,7 @@ from galaxy.tools.parameters import (
 from galaxy.tools.parameters.basic import (
     BaseDataToolParameter,
     BooleanToolParameter,
+    ColorToolParameter,
     ConnectedValue,
     DataCollectionToolParameter,
     DataToolParameter,
@@ -815,8 +816,8 @@ class InputParameterModule(WorkflowModule):
         parameter_type_cond.test_param = input_parameter_type
         cases = []
 
-        for param_type in ["text", "integer", "float"]:
-            default_source = dict(name="default", label="Default Value", type=parameter_type)
+        for param_type in ["text", "integer", "float", "boolean", "color"]:
+            default_source = dict(name="default", label="Default Value", type=param_type)
             if param_type == "text":
                 if parameter_type == "text":
                     default = parameter_def.get("default") or ""
@@ -838,7 +839,22 @@ class InputParameterModule(WorkflowModule):
                     default = 0.0
                 default_source["value"] = default
                 input_default_value = FloatToolParameter(None, default_source)
-            # color parameter defaults?
+            elif param_type == "boolean":
+                if parameter_type == "boolean":
+                    default = parameter_def.get("default") or False
+                else:
+                    default = False
+                default_source["value"] = default
+                default_source["checked"] = default
+                input_default_value = BooleanToolParameter(None, default_source)
+            elif param_type == "color":
+                if parameter_type == 'color':
+                    default = parameter_def.get('default') or '#000000'
+                else:
+                    default = '#000000'
+                default_source["value"] = default
+                input_default_value = ColorToolParameter(None, default_source)
+
             optional_value = optional_param(optional)
             optional_cond = Conditional()
             optional_cond.name = "optional"
@@ -1023,6 +1039,8 @@ class InputParameterModule(WorkflowModule):
         if optional:
             default_value = parameter_def.get("default", self.default_default_value)
             parameter_kwds["value"] = default_value
+            if parameter_type == 'boolean':
+                parameter_kwds['checked'] = default_value
 
         if "value" not in parameter_kwds and parameter_type in ["integer", "float"]:
             parameter_kwds["value"] = str(0)
@@ -1233,9 +1251,10 @@ class ToolModule(WorkflowModule):
         self.tool_version = tool_version
         self.tool_uuid = tool_uuid
         self.tool = trans.app.toolbox.get_tool(tool_id, tool_version=tool_version, exact=exact_tools, tool_uuid=tool_uuid)
-        if self.tool and tool_version and exact_tools and str(self.tool.version) != str(tool_version):
-            log.info("Exact tool specified during workflow module creation for [%s] but couldn't find correct version [%s]." % (tool_id, tool_version))
-            self.tool = None
+        if self.tool:
+            if tool_version and exact_tools and str(self.tool.version) != str(tool_version):
+                log.info("Exact tool specified during workflow module creation for [%s] but couldn't find correct version [%s]." % (tool_id, tool_version))
+                self.tool = None
         self.post_job_actions = {}
         self.runtime_post_job_actions = {}
         self.workflow_outputs = []

@@ -5,9 +5,11 @@ Author Peter van Heusden (pvh@sanbi.ac.za)
 """
 import logging
 import shlex
-from subprocess import PIPE, Popen
 
-from galaxy.util import string_as_bool
+from galaxy.util import (
+    commands,
+    string_as_bool
+)
 from ..providers import AuthProvider
 
 log = logging.getLogger(__name__)
@@ -118,12 +120,13 @@ class PAM(AuthProvider):
             else:
                 auth_cmd = shlex.split('/usr/bin/sudo -n {}'.format(authentication_helper))
                 log.debug("PAM auth: external helper cmd: {}".format(auth_cmd))
-                proc = Popen(auth_cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
                 message = '{}\n{}\n{}\n'.format(pam_service, pam_username, password)
-                (output, error) = proc.communicate(message)
-                status = proc.wait()
-                if status != 0 and error != '':
-                    log.debug("PAM auth: external authentication script had errors: status {} error {}".format(status, error))
+                try:
+                    output = commands.execute(auth_cmd, input=message)
+                except commands.CommandLineException as e:
+                    if e.stderr != '':
+                        log.debug("PAM auth: external authentication script had errors: status {} error {}".format(e.returncode, e.stderr))
+                    output = e.stdout
                 if output.strip() == 'True':
                     authenticated = True
                 else:

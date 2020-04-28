@@ -1,5 +1,3 @@
-from selenium.common.exceptions import NoSuchElementException
-
 from .framework import (
     selenium_test,
     SeleniumTestCase
@@ -95,42 +93,39 @@ class HistoryMultiViewTestCase(SeleniumTestCase):
         self.assert_history(history_id, should_exist=False)
 
     @selenium_test
-    def test_switching_history(self):
-        history_id = self.current_history_id()
-        method = self.dataset_collection_populator.create_list_in_history(history_id, contents=["0", "1", "0", "1"]).json
-
-        self.prepare_multi_history_view(method)
-        self.copy_history(history_id)
-        self.components.multi_history_view.switch_history.wait_for_and_click()
-        self.sleep_for(self.wait_types.UX_RENDER)
-        self.assert_history(history_id, histories_number=2)
-        # assert that id of current history equals history_id
-        assert self.components.multi_history_view.current_history_check(history_id=history_id).is_displayed
-        self.components.multi_history_view.switch_history.wait_for_and_click()
-        self.sleep_for(self.wait_types.UX_RENDER)
-        # assert that 'history_id' is not current history
-        self.assertRaises(NoSuchElementException, lambda:
-                          self.components.multi_history_view.current_history_check(history_id=history_id).is_displayed)
-
-    @selenium_test
-    def test_create_new_history(self):
-        history_id = self.current_history_id()
-        method = self.dataset_collection_populator.create_list_in_history(history_id, contents=["0", "1", "0", "1"]).json
-
-        self.prepare_multi_history_view(method)
-        # assert that empty history is not created in advance
-        self.components.multi_history_view.empty_message_check.assert_absent_or_hidden()
-
+    def test_switch_history(self):
+        '''
+        1. Load the multi history view. There should be a selector for the button
+           to create a new history.
+        2. Create a new history. This *should* automatically switch to the newly
+           created history.
+        3. Switch back to the original history. A button should appear on the old,
+           previously created history that allows switching back to that one, and
+           the history ID should now match the ID of the history with which we
+           started.
+        '''
+        self.home()
+        original_history_id = self.current_history_id()
+        # Load the multi-view
+        self.components.history_panel.multi_view_button.wait_for_and_click()
+        # There should be only one
+        self.assert_history(original_history_id, histories_number=1)
+        # Creating a new history should automatically switch to it
         self.components.multi_history_view.create_new_button.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
-
-        self.assert_history(history_id, histories_number=2)
+        new_history_id = self.current_history_id()
+        # Otherwise this assertion would fail
+        self.screenshot("multi_history_switch_created_history")
+        self.assertNotEqual(original_history_id, new_history_id)
+        # Switch back to the original history
+        switch_button = self.components.multi_history_view.switch_button(history_id=original_history_id)
+        switch_button.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
-
-        # assert that empty history is present
-        self.components.multi_history_view.empty_message_check.wait_for_present()
+        self.screenshot("multi_history_switch_changed_history")
+        self.assertEqual(original_history_id, self.current_history_id())
 
     def assert_history(self, history_id, histories_number=1, should_exist=True):
+        self.components.multi_history_view.histories.wait_for_present()
         histories = self.components.multi_history_view.histories.all()
         assert len(histories) == histories_number
         # search for history with history_id

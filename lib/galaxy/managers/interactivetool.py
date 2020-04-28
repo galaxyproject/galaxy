@@ -263,10 +263,10 @@ class InteractiveToolManager(object):
             protocol = trans.request.host_url.split('//', 1)[0]
             entry_point_encoded_id = trans.security.encode_id(entry_point.id)
             entry_point_class = entry_point.__class__.__name__.lower()
-            entry_point_prefix = self.app.config.interactivetool_prefix
-            interactivetool_proxy_host = self.app.config.interactivetool_proxy_host or request_host
+            entry_point_prefix = self.app.config.interactivetools_prefix
+            interactivetools_proxy_host = self.app.config.interactivetools_proxy_host or request_host
             rval = '%s//%s-%s.%s.%s.%s/' % (protocol, entry_point_encoded_id,
-                    entry_point.token, entry_point_class, entry_point_prefix, interactivetool_proxy_host)
+                    entry_point.token, entry_point_class, entry_point_prefix, interactivetools_proxy_host)
             if entry_point.entry_url:
                 rval = '%s/%s' % (rval.rstrip('/'), entry_point.entry_url.lstrip('/'))
             return rval

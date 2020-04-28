@@ -21,11 +21,15 @@ from __future__ import print_function
 
 import atexit
 import errno
+import grp
 import logging
 import optparse
 import os
+import pwd
 import re
+import resource
 import signal
+import socket
 import subprocess
 import sys
 import textwrap
@@ -662,7 +666,6 @@ class ServeCommand(Command):
             except AttributeError as e:
                 # Capturing bad error response from paste
                 if str(e) == "'WSGIThreadPoolServer' object has no attribute 'thread_pool'":
-                    import socket
                     raise socket.error(98, 'Address already in use')
                 else:
                     raise AttributeError(e)
@@ -699,7 +702,6 @@ class ServeCommand(Command):
 
         # @@: Should we set the umask and cwd now?
 
-        import resource  # Resource usage information.
         maxfd = resource.getrlimit(resource.RLIMIT_NOFILE)[1]
         if maxfd == resource.RLIM_INFINITY:
             maxfd = MAXFD
@@ -746,7 +748,7 @@ class ServeCommand(Command):
                 print("Could not delete: %s" % e)
                 return 2
             return 1
-        for j in range(10):
+        for _i in range(10):
             if not live_pidfile(pid_file):
                 break
             os.kill(pid, signal.SIGTERM)
@@ -820,15 +822,12 @@ class ServeCommand(Command):
     def change_user_group(self, user, group):
         if not user and not group:
             return
-        import pwd
-        import grp
         uid = gid = None
         if group:
             try:
                 gid = int(group)
                 group = grp.getgrgid(gid).gr_name
             except ValueError:
-                import grp
                 try:
                     entry = grp.getgrnam(group)
                 except KeyError:
@@ -983,15 +982,13 @@ def ensure_port_cleanup(bound_addresses, maxtries=30, sleeptime=2):
 
 def _cleanup_ports(bound_addresses, maxtries=30, sleeptime=2):
     # Wait for the server to bind to the port.
-    import socket
-    import errno
     for bound_address in bound_addresses:
-        for attempt in range(maxtries):
+        for _i in range(maxtries):
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             try:
                 sock.connect(bound_address)
             except socket.error as e:
-                if e.args[0] != errno.ECONNREFUSED:
+                if e.errno != errno.ECONNREFUSED:
                     raise
                 break
             else:

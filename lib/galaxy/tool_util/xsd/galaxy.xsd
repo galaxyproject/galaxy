@@ -1291,8 +1291,8 @@ and this can be used instead.
         <xs:documentation xml:lang="en"><![CDATA[
 
 If specified, the target output's checksum should match the value specified
-here. This value should have the form ``hash_type:hash_value``
-(e.g. ``sha1:8156d7ca0f46ed7abac98f82e36cfaddb2aca041``). For large static files
+here. This value should have the form ``hash_type$hash_value``
+(e.g. ``sha1$8156d7ca0f46ed7abac98f82e36cfaddb2aca041``). For large static files
 it may be inconvenient to upload the entiry file and this can be used instead.
 
 ]]></xs:documentation>
@@ -2561,10 +2561,12 @@ Set to ``false`` to not force user to select an option in the list.</xs:document
         <xs:attribute name="use_header_names" type="PermissiveBoolean">
           <xs:annotation>
             <xs:documentation xml:lang="en">Used only if the ``type`` attribute
-value is ``data_column``, if ``true`` Galaxy assumes first row of ``data_ref``
+value is ``data_column``. If ``true``, Galaxy assumes the first row of ``data_ref``
 is a header and builds the select list with these values rather than the more
-generic ``c1`` ... ``cN``.
-</xs:documentation>
+generic ``c1`` ... ``cN`` (i.e. it will be ``c1: head1`` ... ``cN: headN``).
+Note that the content of the Cheetah variable is still
+the column index.
+            </xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="display" type="DisplayType">
@@ -4242,7 +4244,7 @@ Galaxy, including:
     </xs:annotation>
     <xs:attribute name="from_provided_metadata" type="xs:boolean" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Indicate that dataset filenames should simply be read from the provided metadata file (e.g. galaxy.json). If this is set - pattern and sort must not be set.</xs:documentation>
+        <xs:documentation xml:lang="en">Indicate that dataset filenames should simply be read from the provided metadata file (e.g. galaxy.json). If this is set - pattern and sort_by must not be set.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="pattern" type="xs:string" use="optional">
@@ -4265,9 +4267,14 @@ Galaxy, including:
         <xs:documentation xml:lang="en">Format (or datatype) of discovered datasets (an alias with ``format``).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="sort_by" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">A string `[reverse_]SORTBY[_SORT_COMP]` describing the desired sort order of the collection elements. `SORTBY` can be `filename`, `name`, `designation`, `dbkey` and the optional `SORT_COMP` can be either `lexical` or `numeric`. Default is lexical sorting by filename.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="visible" type="xs:boolean" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Indication if this dataset is visible in output history. This defaults to ``false``, but probably shouldn't - be sure to set to ``true`` if that is your intention.</xs:documentation>
+        <xs:documentation xml:lang="en">Indication if this dataset is visible in the history. This defaults to ``false``, but probably shouldn't - be sure to set to ``true`` if that is your intention.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -4830,7 +4837,7 @@ write out a JSON representation of the tool parameters.
 
 *Example*
 
-The following will create a cheetah variable that can be evaluated as ``$inputs`` that
+The following will create a Cheetah variable that can be evaluated as ``$inputs`` that
 will contain the tool parameter inputs.
 
 ```xml

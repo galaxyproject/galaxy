@@ -204,7 +204,6 @@ uwsgi_app_factory = uwsgi_app
 
 def postfork_setup():
     from galaxy.app import app
-    app.queue_worker.bind_and_start()
     app.application_stack.log_startup()
 
 

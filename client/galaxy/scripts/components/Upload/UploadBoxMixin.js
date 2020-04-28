@@ -260,6 +260,7 @@ export default {
             // add ftp file viewer
             this.ftp = new Popover({
                 title: _l("FTP files"),
+                class: "ftp-upload",
                 container: $(this.$refs.btnFtp),
             });
         },
