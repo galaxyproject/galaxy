@@ -158,7 +158,7 @@ class UnivaJobRunner(DRMAAJobRunner):
         # way seems more generic
         cmd = ['qstat', '-u', '"*"']
         try:
-            stdout = commands.execute(cmd).split()
+            stdout = commands.execute(cmd).strip()
         except commands.CommandLineException as e:
             log.error(unicodify(e))
             raise self.drmaa.InternalException()
@@ -208,7 +208,7 @@ class UnivaJobRunner(DRMAAJobRunner):
                     slp *= 2
                     continue
                 else:
-                    log.exception(unicodify(e))
+                    log.error(unicodify(e))
                     return self.drmaa.JobState.UNDETERMINED
             else:
                 break
