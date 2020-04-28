@@ -32,7 +32,8 @@ import time
 from galaxy.jobs.runners.drmaa import DRMAAJobRunner
 from galaxy.util import (
     commands,
-    size_to_bytes
+    size_to_bytes,
+    unicodify
 )
 
 log = logging.getLogger(__name__)
@@ -159,7 +160,7 @@ class UnivaJobRunner(DRMAAJobRunner):
         try:
             stdout = commands.execute(cmd)
         except commands.CommandLineException as e:
-            log.error(str(e))
+            log.error(unicodify(e))
             raise self.drmaa.InternalException()
         state = self.drmaa.JobState.UNDETERMINED
         for line in stdout.split('\n'):
@@ -207,7 +208,7 @@ class UnivaJobRunner(DRMAAJobRunner):
                     slp *= 2
                     continue
                 else:
-                    log.exception(str(e))
+                    log.exception(unicodify(e))
                     return self.drmaa.JobState.UNDETERMINED
             else:
                 break

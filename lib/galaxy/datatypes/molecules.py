@@ -37,7 +37,7 @@ def count_lines(filename, non_empty=False):
     try:
         out = commands.execute(cmd)
     except commands.CommandLineException as e:
-        log.error(str(e))
+        log.error(unicodify(e))
         return 0
     return int(out.split()[0])
 

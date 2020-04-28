@@ -78,7 +78,7 @@ def condor_submit(submit_file):
     try:
         message = commands.execute(('condor_submit', submit_file))
     except commands.CommandLineException as e:
-        message = str(e)
+        message = unicodify(e)
     else:
         try:
             external_id = parse_external_id(message, type='condor')

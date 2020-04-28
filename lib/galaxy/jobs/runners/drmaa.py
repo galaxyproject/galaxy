@@ -19,7 +19,8 @@ from galaxy.jobs.runners import (
 )
 from galaxy.util import (
     asbool,
-    commands
+    commands,
+    unicodify
 )
 
 drmaa = None
@@ -365,7 +366,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         except drmaa.InvalidJobException:
             log.exception("(%s/%s) User killed running job, but it was already dead" % (job.id, ext_id))
         except commands.CommandLineException as e:
-            log.error("(%s/%s) User killed running job, but command execution failed: %s" % (job.id, ext_id, e))
+            log.error("(%s/%s) User killed running job, but command execution failed: %s" % (job.id, ext_id, unicodify(e)))
         except Exception:
             log.exception("(%s/%s) User killed running job, but error encountered removing from DRM queue" % (job.id, ext_id))
 
@@ -412,7 +413,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         try:
             stdoutdata = commands.execute(cmd)
         except commands.CommandLineException as e:
-            log.exception("External_runjob failed %s" % e)
+            log.exception("External_runjob failed %s" % unicodify(e))
             return None
         # The expected output is a single line containing a single numeric value:
         # the DRMAA job-ID. If not the case, will throw an error.

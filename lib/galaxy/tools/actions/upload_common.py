@@ -326,12 +326,14 @@ def create_paramfile(trans, uploaded_datasets):
             cmd = shlex.split(trans.app.config.external_chown_script)
             cmd.extend([path, pwent[0], str(pwent[3])])
         except Exception as e:
-            log.debug('Failed to construct command to change ownership %s' % str(e))
+            log.debug('Failed to construct command to change ownership %s' %
+                      unicodify(e))
         log.debug('Changing ownership of %s with: %s' % (path, ' '.join(cmd)))
         try:
             commands.execute(cmd)
         except commands.CommandLineException as e:
-            log.warning('Changing ownership of uploaded file %s failed: %s', path, str(e))
+            log.warning('Changing ownership of uploaded file %s failed: %s',
+                        path, unicodify(e))
 
     tool_params = []
     json_file_path = None

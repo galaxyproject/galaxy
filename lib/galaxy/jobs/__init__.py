@@ -2209,7 +2209,7 @@ class JobWrapper(HasResourceParameters):
             try:
                 commands.execute(cmd)
             except commands.CommandLineException as e:
-                log.error('external script failed: %s' % e)
+                log.error('external script failed: %s' % unicodify(e))
 
     def change_ownership_for_run(self):
         job = self.get_job()
