@@ -114,7 +114,7 @@ def argv_to_str(command_argv, quote=True):
 def _wait(cmds, input=None, **popen_kwds):
     p = subprocess.Popen(cmds, **popen_kwds)
     stdout, stderr = p.communicate(input)
-    stdout, stderr = unicodify(stdout).strip(), unicodify(stderr).strip()
+    stdout, stderr = unicodify(stdout), unicodify(stderr)
     if p.returncode != 0:
         raise CommandLineException(argv_to_str(cmds), stdout, stderr, p.returncode)
     return stdout

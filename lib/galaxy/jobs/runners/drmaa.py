@@ -411,7 +411,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         cmd.extend([str(username), jobtemplate_filename])
         log.info("Running command %s" % cmd)
         try:
-            stdoutdata = commands.execute(cmd)
+            stdoutdata = commands.execute(cmd).strip()
         except commands.CommandLineException as e:
             log.exception("External_runjob failed %s" % unicodify(e))
             return None

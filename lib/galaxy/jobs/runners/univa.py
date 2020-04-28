@@ -158,7 +158,7 @@ class UnivaJobRunner(DRMAAJobRunner):
         # way seems more generic
         cmd = ['qstat', '-u', '"*"']
         try:
-            stdout = commands.execute(cmd)
+            stdout = commands.execute(cmd).split()
         except commands.CommandLineException as e:
             log.error(unicodify(e))
             raise self.drmaa.InternalException()
@@ -201,7 +201,7 @@ class UnivaJobRunner(DRMAAJobRunner):
         # max wait is approx 1min)
         while True:
             try:
-                stdout = commands.execute(cmd)
+                stdout = commands.execute(cmd).strip()
             except commands.CommandLineException as e:
                 if slp <= 32 and "job id {jobid} not found".format(jobid=job_id) in e.stderr:
                     time.sleep(slp)

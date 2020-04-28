@@ -51,7 +51,7 @@ class SlurmJobRunner(DRMAAJobRunner):
             try:
                 stdout = commands.execute(cmd)
             except commands.CommandLineException as e:
-                if e.stderr == 'SLURM accounting storage is disabled':
+                if e.stderr.strip() == 'SLURM accounting storage is disabled':
                     log.warning('SLURM accounting storage is not properly configured, unable to run sacct')
                     return
                 raise e
@@ -73,7 +73,7 @@ class SlurmJobRunner(DRMAAJobRunner):
                 cluster = None
             cmd.extend(['show', 'job', job_id])
             try:
-                stdout = commands.execute(cmd)
+                stdout = commands.execute(cmd).strip()
             except commands.CommandLineException as e:
                 if e.stderr == 'slurm_load_jobs error: Invalid job id specified\n':
                     # The job may be old, try to get its state with sacct
