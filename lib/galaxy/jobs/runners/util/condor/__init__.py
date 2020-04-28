@@ -18,8 +18,6 @@ DEFAULT_QUERY_CLASSAD = dict(
     notification='NEVER',
 )
 
-PROBLEM_RUNNING_CONDOR_SUBMIT = \
-    "Problem encountered while running condor_submit."
 PROBLEM_PARSING_EXTERNAL_ID = \
     "Failed to find job id from condor_submit"
 
