@@ -89,12 +89,13 @@ def shell_process(cmds, env=None, **kwds):
     return p
 
 
-def execute(cmds):
+def execute(cmds, input=None):
     """Execute commands and throw an exception on a non-zero exit.
+    if input is not None then the string is sent to the process' stdin.
 
     Return the standard output if the commands are successful
     """
-    return _wait(cmds, shell=False, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+    return _wait(cmds, input=input, shell=False, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 
 def argv_to_str(command_argv, quote=True):
@@ -110,9 +111,10 @@ def argv_to_str(command_argv, quote=True):
     return " ".join(map_func(c) for c in command_argv if c is not None)
 
 
-def _wait(cmds, **popen_kwds):
+def _wait(cmds, input=None, **popen_kwds):
     p = subprocess.Popen(cmds, **popen_kwds)
-    stdout, stderr = p.communicate()
+    stdout, stderr = p.communicate(input)
+    stdout, stderr = unicodify(stdout), unicodify(stderr)
     if p.returncode != 0:
         raise CommandLineException(argv_to_str(cmds), stdout, stderr, p.returncode)
     return stdout
