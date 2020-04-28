@@ -363,6 +363,7 @@ admin:
     selectors:
       repo_search: '#toolshed-repo-search'
       search_results: '#shed-search-results'
+      upgrade_notification: '#repository-table .badge'
 
   index:
     selectors:
