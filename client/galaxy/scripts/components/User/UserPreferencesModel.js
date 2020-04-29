@@ -31,7 +31,7 @@ export const getUserPreferencesModel = () => {
             icon: "fa-id-card-o",
             submit_title: "Disconnect identity",
             submit_icon: "fa-trash",
-            shouldRender: config.enable_oidc
+            shouldRender: config.enable_oidc,
         },
         communication: {
             title: _l("Change Communication Settings"),

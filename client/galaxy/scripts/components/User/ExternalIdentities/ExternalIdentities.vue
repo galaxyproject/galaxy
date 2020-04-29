@@ -96,7 +96,6 @@
 <script>
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import Selectize from "vue2-selectize";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
 import svc from "./service";
@@ -106,9 +105,6 @@ import { logoutClick } from "layout/menu";
 Vue.use(BootstrapVue);
 
 export default {
-    components: {
-        Selectize
-    },
     data() {
         const galaxy = getGalaxyInstance();
         const oidc_idps = galaxy.config.oidc;
@@ -116,10 +112,10 @@ export default {
         const oidc_idps_icons = { google: "fa fa-google" };
         // Add default icons to IdPs without icons
         oidc_idps
-            .filter(function(key) {
+            .filter(function (key) {
                 return oidc_idps_icons[key] === undefined;
             })
-            .forEach(function(idp) {
+            .forEach(function (idp) {
                 oidc_idps_icons[idp] = "fa fa-id-card";
             });
         return {
@@ -133,7 +129,7 @@ export default {
             oidc_idps_icons: oidc_idps_icons,
             cilogon_idps: [],
             selected: "",
-            cilogonSelected: false
+            cilogonSelected: false,
         };
     },
     computed: {
@@ -149,25 +145,25 @@ export default {
             },
             // This setter is here because vue-bootstrap modal
             // tries to set this property for unfathomable reasons
-            set() {}
+            set() {},
         },
         filtered_oidc_idps() {
-            return this.oidc_idps.filter(idp => idp != "cilogon");
+            return this.oidc_idps.filter((idp) => idp != "cilogon");
         },
         cilogonShow() {
             return this.oidc_idps.includes("cilogon") && this.cilogonSelected; //&& cilogon button clicked
-        }
+        },
     },
     watch: {
         showDeleted(deleted) {
             this.loadIdentities({ deleted });
-        }
+        },
     },
     methods: {
         loadIdentities() {
             this.loading = true;
             svc.getIdentityProviders()
-                .then(results => {
+                .then((results) => {
                     this.items = results;
                 })
                 .catch(this.setError("Unable to load connected external identities."))
@@ -200,7 +196,7 @@ export default {
                 .then(() => {
                     this.removeItem(this.doomedItem);
                 })
-                .catch(error => {
+                .catch((error) => {
                     if (error.data) {
                         this.setError("Unable to disconnect external identity.");
                     } else {
@@ -218,55 +214,55 @@ export default {
             logoutClick;
         },
         removeItem(item) {
-            this.items = this.items.filter(o => o != item);
+            this.items = this.items.filter((o) => o != item);
         },
         submitOIDCLogin(idp) {
             svc.saveIdentity(idp)
-                .then(response => {
+                .then((response) => {
                     if (response.data.redirect_uri) {
                         window.location = response.data.redirect_uri;
                     }
                 })
-                .catch(error => {
+                .catch((error) => {
                     this.messageVariant = "danger";
                     const message = error.response.data && error.response.data.err_msg;
                     this.messageText = message || "Login failed for an unknown reason.";
                 });
         },
-        getCILogonIdps: function() {
+        getCILogonIdps: function () {
             const rootUrl = getAppRoot();
-            axios.get(`${rootUrl}authnz/get_cilogon_idps`).then(response => {
+            axios.get(`${rootUrl}authnz/get_cilogon_idps`).then((response) => {
                 this.cilogon_idps = response.data;
                 //List is originally sorted by OrganizationName which can be different from DisplayName
                 this.cilogon_idps.sort((a, b) => (a.DisplayName > b.DisplayName ? 1 : -1));
             });
         },
-        submitCILogon: function() {
+        submitCILogon: function () {
             const rootUrl = getAppRoot();
 
             axios
                 .post(`${rootUrl}authnz/cilogon/login/?idphint=${this.selected}`)
-                .then(response => {
+                .then((response) => {
                     if (response.data.redirect_uri) {
                         window.location = response.data.redirect_uri;
                     }
                 })
-                .catch(error => {
+                .catch((error) => {
                     this.messageVariant = "danger";
                     const message = error.response.data && error.response.data.err_msg;
                     this.messageText = message || "Login failed for an unknown reason.";
                 });
         },
         setError(msg) {
-            return err => {
+            return (err) => {
                 this.errorMessage = msg;
                 console.warn(err);
             };
-        }
+        },
     },
     created() {
         this.loadIdentities(), this.getCILogonIdps();
-    }
+    },
 };
 </script>
 
@@ -275,7 +271,6 @@ export default {
 @import "~bootstrap/scss/variables";
 @import "~bootstrap/scss/mixins";
 @import "~bootstrap/scss/utilities/spacing";
-@import "~selectize/dist/css/selectize.bootstrap3.css";
 @import "scss/theme/blue.scss";
 @import "scss/mixins";
 
