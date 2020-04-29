@@ -13,11 +13,9 @@
                                 <b-form-input name="password" type="password" v-model="password" />
                                 <b-form-text>
                                     Forgot password?
-                                    <a
-                                        @click="reset"
-                                        href="javascript:void(0)"
-                                        role="button"
-                                    >Click here to reset your password.</a>
+                                    <a @click="reset" href="javascript:void(0)" role="button"
+                                        >Click here to reset your password.</a
+                                    >
                                 </b-form-text>
                             </b-form-group>
                             <b-button name="login" type="submit">Login</b-button>
@@ -30,7 +28,8 @@
                                     href="javascript:void(0)"
                                     role="button"
                                     @click.prevent="toggleLogin"
-                                >Register here.</a>
+                                    >Register here.</a
+                                >
                             </span>
                             <span v-else>
                                 Registration for this Galaxy instance is disabled. Please contact an administrator for
@@ -60,33 +59,29 @@
                             <b-button
                                 v-if="oidc_idps.includes('cilogon')"
                                 @click="submitCILogon('cilogon')"
-                                :disabled="selected===null"
-                            >Sign in with Institutional Credentials*</b-button>
+                                :disabled="selected === null"
+                                >Sign in with Institutional Credentials*</b-button
+                            >
                             <!--convert to v-else-if to allow only one or the other. if both enabled, put the one that should be default first-->
                             <b-button
                                 v-if="oidc_idps.includes('custos')"
                                 @click="submitCILogon('custos')"
-                                :disabled="selected===null"
-                            >Sign in with Custos*</b-button>
+                                :disabled="selected === null"
+                                >Sign in with Custos*</b-button
+                            >
 
                             <p>
-                                *Galaxy uses CILogon to enable you to Log In from this organization.
-                                By clicking 'Sign In', you agree to the
-                                <a
-                                    href="https://ca.cilogon.org/policy/privacy"
-                                >CILogon privacy policy</a> and you agree to share your username, email address, and
-                                affiliation with CILogon and Galaxy. You also agree for CILogon to issue a certificate
-                                that allows Galaxy to act on your behalf.
+                                *Galaxy uses CILogon to enable you to Log In from this organization. By clicking 'Sign
+                                In', you agree to the
+                                <a href="https://ca.cilogon.org/policy/privacy">CILogon privacy policy</a> and you agree
+                                to share your username, email address, and affiliation with CILogon and Galaxy. You also
+                                agree for CILogon to issue a certificate that allows Galaxy to act on your behalf.
                             </p>
                         </div>
 
                         <div v-for="idp in filtered_oidc_idps" :key="idp" class="m-1">
                             <span v-if="oidc_idps_icons[idp]">
-                                <b-button
-                                    variant="link"
-                                    class="d-block mt-3"
-                                    @click="submitOIDCLogin(idp)"
-                                >
+                                <b-button variant="link" class="d-block mt-3" @click="submitOIDCLogin(idp)">
                                     <img :src="oidc_idps_icons[idp]" height="45" :alt="idp" />
                                 </b-button>
                             </span>
@@ -100,22 +95,17 @@
                         </div>
                     </div>
                 </b-card>
-                <b-modal
-                    centered
-                    id="duplicateEmail"
-                    ref="duplicateEmail"
-                    title="Duplicate Email"
-                    ok-only
-                >
+                <b-modal centered id="duplicateEmail" ref="duplicateEmail" title="Duplicate Email" ok-only>
                     <p>
-                        There already exists a user with this email. To associate this external login,
-                        you must first be logged in as that existing account.
+                        There already exists a user with this email. To associate this external login, you must first be
+                        logged in as that existing account.
                     </p>
 
                     <p>
-                        Reminder: Registration and usage of multiple accounts is tracked and such accounts are subject to
-                        termination and data deletion. Connect existing account now to avoid possible loss of data.
-                    </p>-->
+                        Reminder: Registration and usage of multiple accounts is tracked and such accounts are subject
+                        to termination and data deletion. Connect existing account now to avoid possible loss of data.
+                    </p>
+                    -->
                 </b-modal>
             </div>
 
@@ -129,7 +119,7 @@
 <script>
 import axios from "axios";
 import Vue from "vue";
-import Multiselect from 'vue-multiselect';
+import Multiselect from "vue-multiselect";
 import BootstrapVue from "bootstrap-vue";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
@@ -138,7 +128,7 @@ Vue.use(BootstrapVue);
 
 export default {
     components: {
-        Multiselect
+        Multiselect,
     },
     props: {
         show_welcome_with_login: {
@@ -176,7 +166,7 @@ export default {
     },
     computed: {
         filtered_oidc_idps() {
-            return this.oidc_idps.filter(idp => idp != "cilogon" && idp != "custos");
+            return this.oidc_idps.filter((idp) => idp != "cilogon" && idp != "custos");
         },
         cilogonListShow() {
             return this.oidc_idps.includes("cilogon") || this.oidc_idps.includes("custos");
@@ -230,15 +220,15 @@ export default {
         },
         submitCILogon(idp) {
             const rootUrl = getAppRoot();
-                
+
             axios
                 .post(`${rootUrl}authnz/${idp}/login/?idphint=${this.selected.EntityID}`)
-                .then(response => {
+                .then((response) => {
                     if (response.data.redirect_uri) {
                         window.location = response.data.redirect_uri;
                     }
                 })
-                .catch(error => {
+                .catch((error) => {
                     this.messageVariant = "danger";
                     const message = error.response.data && error.response.data.err_msg;
 
@@ -247,7 +237,7 @@ export default {
                 .finally(() => {
                     var urlParams = new URLSearchParams(window.location.search);
 
-                    if (urlParams.has('message') && urlParams.get('message') == "Duplicate Email"){
+                    if (urlParams.has("message") && urlParams.get("message") == "Duplicate Email") {
                         this.$refs.duplicateEmail.show();
                     }
                 });
@@ -270,16 +260,15 @@ export default {
         getCILogonIdps() {
             const rootUrl = getAppRoot();
 
-            axios.get(`${rootUrl}authnz/get_cilogon_idps`)
-                .then(response => {
-                    this.cilogon_idps = response.data;
-                    //List is originally sorted by OrganizationName which can be different from DisplayName
-                    this.cilogon_idps.sort((a, b) => (a.DisplayName > b.DisplayName) ? 1 : -1);
-                });
+            axios.get(`${rootUrl}authnz/get_cilogon_idps`).then((response) => {
+                this.cilogon_idps = response.data;
+                //List is originally sorted by OrganizationName which can be different from DisplayName
+                this.cilogon_idps.sort((a, b) => (a.DisplayName > b.DisplayName ? 1 : -1));
+            });
         },
     },
     created() {
-        this.getCILogonIdps()
+        this.getCILogonIdps();
     },
 };
 </script>
