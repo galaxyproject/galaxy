@@ -24,7 +24,7 @@ Vue.use(BootstrapVue);
 export default {
     props: {
         parameter_value: {
-            type: String,
+            type: Array,
         },
     },
     methods: {
