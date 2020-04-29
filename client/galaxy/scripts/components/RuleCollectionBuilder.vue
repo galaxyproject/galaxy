@@ -369,11 +369,11 @@
                                         class="rule-menu-rules-button primary-button dropdown-toggle"
                                         data-toggle="dropdown"
                                     >
-                                        <span class="fa fa-plus"></span> {{ l("Saved Rules") }}<span class="caret"></span>
+                                        <span class="fa fa-plus"></span> {{ l("Saved Rules")
+                                        }}<span class="caret"></span>
                                     </button>
-                                    <saved-rules-selector :builder="this" 
-                                    ref="savedRulesSelector"/>
-                                </div>                            
+                                    <saved-rules-selector :builder="this" ref="savedRulesSelector" />
+                                </div>
                             </ol>
                             <div class="rules-buttons">
                                 <div class="btn-group dropup">
@@ -1241,9 +1241,7 @@ export default {
             }
         },
         createCollection() {
-            this.$refs.savedRulesSelector.saveSession(JSON.stringify(
-                     this.ruleSourceJson
-            ));
+            this.$refs.savedRulesSelector.saveSession(JSON.stringify(this.ruleSourceJson));
             this.state = "wait";
             const name = this.collectionName;
             const collectionType = this.collectionType;

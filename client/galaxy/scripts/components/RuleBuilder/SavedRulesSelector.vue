@@ -1,21 +1,17 @@
 <template>
     <div class="dropdown-menu" role="menu">
-        <a
-            v-for="dateTime in getRules()"
-            :key="dateTime"
-            @click="loadSession(dateTime)"
-        >
+        <a v-for="dateTime in getRules()" :key="dateTime" @click="loadSession(builder, dateTime)">
             {{ dateTime }}
         </a>
     </div>
 </template>
 
 <script>
-export default {    
+export default {
     props: {
         builder: {
-            required: true
-        }
+            required: true,
+        },
     },
     methods: {
         getRules() {
@@ -33,9 +29,9 @@ export default {
             }
             return savedRules;
         },
-        loadSession(dateTime) {
+        loadSession(builder, dateTime) {
             var currentSession = JSON.parse(localStorage.getItem(dateTime));
-            console.log("Loaded ", stored);
+            console.log("Loaded ", currentSession);
             builder.rules = currentSession.rules;
             builder.mapping = currentSession.mapping;
         },
