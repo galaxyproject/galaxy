@@ -47,7 +47,7 @@ def hash_password_PBKDF2(password):
     # Generate a random salt
     salt = b64encode(urandom(SALT_LENGTH))
     # Apply the pbkdf2 encoding
-    hashed_password = pbkdf2_bin(password, salt, COST_FACTOR, KEY_LENGTH, getattr(hashlib, HASH_FUNCTION))
+    hashed_password = pbkdf2_bin(password, salt, COST_FACTOR, KEY_LENGTH, HASH_FUNCTION)
     encoded_password = unicodify(b64encode(hashed_password))
     # Format
     return 'PBKDF2${0}${1}${2}${3}'.format(HASH_FUNCTION, COST_FACTOR, unicodify(salt), encoded_password)
@@ -57,7 +57,7 @@ def check_password_PBKDF2(guess, hashed):
     # Split the database representation to extract cost_factor and salt
     name, hash_function, cost_factor, salt, encoded_original = hashed.split('$', 5)
     # Hash the guess using the same parameters
-    hashed_guess = pbkdf2_bin(guess, salt, int(cost_factor), KEY_LENGTH, getattr(hashlib, hash_function))
+    hashed_guess = pbkdf2_bin(guess, salt, int(cost_factor), KEY_LENGTH, hash_function)
     encoded_guess = unicodify(b64encode(hashed_guess))
     return safe_str_cmp(encoded_original, encoded_guess)
 
@@ -67,29 +67,39 @@ def check_password_PBKDF2(guess, hashed):
 _pack_int = Struct('>I').pack
 
 
-def pbkdf2_bin(data, salt, iterations=1000, keylen=24, hashfunc=None):
+def pbkdf2_bin(data, salt, iterations=1000, keylen=KEY_LENGTH, hashfunc=HASH_FUNCTION):
     """Returns a binary digest for the PBKDF2 hash algorithm of `data`
     with the given `salt`.  It iterates `iterations` time and produces a
-    key of `keylen` bytes.  By default SHA-1 is used as hash function,
+    key of `keylen` bytes.  By default SHA-256 is used as hash function,
     a different hashlib `hashfunc` can be provided.
     """
-    hashfunc = hashfunc or hashlib.sha1
-    mac = hmac.new(smart_str(data), None, hashfunc)
 
-    def _pseudorandom(x, mac=mac):
-        h = mac.copy()
-        h.update(x)
-        digest = h.digest()
-        if six.PY2:
-            return digest, [ord(_) for _ in digest]
-        return digest, digest
+    if hasattr(hashlib, 'pbkdf2_hmac'):
+        # Use hashlib.pbkdf2_hmac, new in python 2.7.8
+        data = smart_str(data)
+        salt = smart_str(salt)
+        return hashlib.pbkdf2_hmac(hashfunc, data, salt, iterations, keylen)
+    else:
+        # Use the old implementation of hashing as a fallback
+        if isinstance(hashfunc, six.string_types):
+            hashfunc = getattr(hashlib, hashfunc, None)
+        hashfunc = hashfunc or hashlib.sha1
+        mac = hmac.new(smart_str(data), None, hashfunc)
 
-    buf = []
-    salt = smart_str(salt)
-    for block in range(1, -(-keylen // mac.digest_size) + 1):
-        digest, rv = _pseudorandom(salt + _pack_int(block))
-        for _ in range(iterations - 1):
-            digest, u = _pseudorandom(digest)
-            rv = starmap(xor, zip(rv, u))
-        buf.extend(rv)
-    return bytes(bytearray(buf))[:keylen]
+        def _pseudorandom(x, mac=mac):
+            h = mac.copy()
+            h.update(x)
+            digest = h.digest()
+            if six.PY2:
+                return digest, [ord(_) for _ in digest]
+            return digest, digest
+
+        buf = []
+        salt = smart_str(salt)
+        for block in range(1, -(-keylen // mac.digest_size) + 1):
+            digest, rv = _pseudorandom(salt + _pack_int(block))
+            for _ in range(iterations - 1):
+                digest, u = _pseudorandom(digest)
+                rv = starmap(xor, zip(rv, u))
+            buf.extend(rv)
+        return bytes(bytearray(buf))[:keylen]
