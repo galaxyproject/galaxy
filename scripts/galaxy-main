@@ -108,7 +108,6 @@ def load_galaxy_app(
         **kwds
     )
     app.database_heartbeat.start()
-    app.queue_worker.bind_and_start()
     app.application_stack.log_startup()
     return app
 

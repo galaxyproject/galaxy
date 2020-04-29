@@ -40,8 +40,11 @@ def get_authenticators(auth_config_file, auth_config_file_set):
     authenticators = []
     # process authenticators
     for auth_elem in conf_root:
-        type_elem = auth_elem.find('type')
-        plugin = __plugins_dict.get(type_elem.text)()
+        type_elem_text = auth_elem.find('type').text
+        plugin_class = __plugins_dict.get(type_elem_text)
+        if not plugin_class:
+            raise Exception("Authenticator type '%s' not recognized, should be one of %s" % (type_elem_text, ', '.join(__plugins_dict)))
+        plugin = plugin_class()
 
         # check filterelem
         filter_elem = auth_elem.find('filter')

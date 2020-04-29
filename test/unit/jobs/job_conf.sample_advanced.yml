@@ -792,6 +792,11 @@ execution:
       docker_default_container_id: 'conda/miniconda2'
       # Specify a non-default Pulsar staging container.
       #pulsar_container_image: 'galaxy/pulsar-pod-staging:0.12.0'
+      # Generate job names with a string unique to this Galaxy (see
+      # Kubernetes runner description).
+      #k8s_galaxy_instance_id: mycoolgalaxy
+      # Path to Kubernetes configuration fil (see Kubernetes runner description.)
+      #k8s_config_path: /path/to/kubeconfig
 
     # Example CLI runners.
     ssh_torque:

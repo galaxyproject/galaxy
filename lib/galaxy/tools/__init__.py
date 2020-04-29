@@ -57,6 +57,7 @@ from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.model_operations import ModelOperationToolAction
+from galaxy.tools.cache import create_cache_region
 from galaxy.tools.parameters import (
     check_param,
     params_from_strings,
@@ -113,6 +114,7 @@ from .execute import (
     execute as execute_job,
     MappingParameters,
 )
+
 
 log = logging.getLogger(__name__)
 
@@ -244,6 +246,9 @@ class ToolBox(BaseGalaxyToolBox):
     def __init__(self, config_filenames, tool_root_dir, app, save_integrated_tool_panel=True):
         self._reload_count = 0
         self.tool_location_fetcher = ToolLocationFetcher()
+        self.cache_regions = {}
+        if not os.path.exists(app.config.tool_cache_data_dir):
+            os.makedirs(app.config.tool_cache_data_dir)
         # This is here to deal with the old default value, which doesn't make
         # sense in an "installed Galaxy" world.
         # FIXME: ./
@@ -282,9 +287,22 @@ class ToolBox(BaseGalaxyToolBox):
         # Deprecated method, TODO - eliminate calls to this in test/.
         return self._tools_by_id
 
-    def create_tool(self, config_file, **kwds):
+    def get_cache_region(self, tool_cache_data_dir):
+        if tool_cache_data_dir not in self.cache_regions:
+            self.cache_regions[tool_cache_data_dir] = create_cache_region(tool_cache_data_dir)
+        return self.cache_regions[tool_cache_data_dir]
+
+    def create_tool(self, config_file, tool_cache_data_dir=None, **kwds):
+        cache = self.get_cache_region(tool_cache_data_dir or self.app.config.tool_cache_data_dir)
+        tool_source = cache.get_or_create(config_file, creator=self.get_expanded_tool_source, expiration_time=-1, creator_args=((config_file,), {}))
+        tool = self._create_tool_from_source(tool_source, config_file=config_file, **kwds)
+        if not self.app.config.delay_tool_initialization:
+            tool.assert_finalized(raise_if_invalid=True)
+        return tool
+
+    def get_expanded_tool_source(self, config_file):
         try:
-            tool_source = get_tool_source(
+            return get_tool_source(
                 config_file,
                 enable_beta_formats=getattr(self.app.config, "enable_beta_tool_formats", False),
                 tool_location_fetcher=self.tool_location_fetcher,
@@ -293,7 +311,6 @@ class ToolBox(BaseGalaxyToolBox):
             # capture and log parsing errors
             global_tool_errors.add_error(config_file, "Tool XML parsing", e)
             raise e
-        return self._create_tool_from_source(tool_source, config_file=config_file, **kwds)
 
     def _create_tool_from_source(self, tool_source, **kwds):
         return create_tool_from_source(self.app, tool_source, **kwds)
@@ -447,7 +464,6 @@ class Tool(Dictifiable):
         self.repository_id = repository_id
         self._allow_code_files = allow_code_files
         # setup initial attribute values
-        self.inputs = OrderedDict()
         self.stdio_exit_codes = list()
         self.stdio_regexes = list()
         self.inputs_by_page = list()
@@ -492,6 +508,9 @@ class Tool(Dictifiable):
         self.populate_resource_parameters(tool_source)
         self.tool_errors = None
         # Parse XML element containing configuration
+        self.tool_source = tool_source
+        self._is_workflow_compatible = None
+        self.finalized = False
         try:
             self.parse(tool_source, guid=guid, dynamic=dynamic)
         except Exception as e:
@@ -501,6 +520,50 @@ class Tool(Dictifiable):
         # loading tools into the toolshed for validation.
         if self.app.name == 'galaxy':
             self.job_search = JobSearch(app=self.app)
+
+    def __getattr__(self, name):
+        lazy_attributes = {
+            'action',
+            'check_values',
+            'display_by_page',
+            'enctype',
+            'has_multiple_pages',
+            'inputs',
+            'inputs_by_page',
+            'last_page',
+            'method',
+            'npages',
+            'nginx_upload',
+            'target',
+            'template_macro_params',
+            'outputs',
+            'output_collections'
+        }
+        if name in lazy_attributes:
+            self.assert_finalized()
+            return getattr(self, name)
+        raise AttributeError(name)
+
+    def assert_finalized(self, raise_if_invalid=False):
+        if self.finalized is False:
+            try:
+                self.parse_inputs(self.tool_source)
+                self.parse_outputs(self.tool_source)
+                self.finalized = True
+            except Exception:
+                toolbox = getattr(self.app, 'toolbox', None)
+                if toolbox:
+                    toolbox.remove_tool_by_id(self.id)
+                if raise_if_invalid:
+                    raise
+                else:
+                    log.warning("An error occured while parsing the tool wrapper xml, the tool is not functional", exc_info=True)
+
+    def remove_from_cache(self):
+        source_path = self.tool_source._source_path
+        if source_path:
+            for region in self.app.toolbox.cache_regions.values():
+                region.delete(source_path)
 
     @property
     def history_manager(self):
@@ -528,7 +591,7 @@ class Tool(Dictifiable):
     def tool_versions(self):
         # If we have versions, return them.
         if self.lineage:
-            return self.lineage.tool_versions
+            return list(self.lineage.tool_versions)
         else:
             return []
 
@@ -803,14 +866,8 @@ class Tool(Dictifiable):
         self.provided_metadata_file = tool_source.parse_provided_metadata_file()
         self.provided_metadata_style = tool_source.parse_provided_metadata_style()
 
-        # Parse tool inputs (if there are any required)
-        self.parse_inputs(tool_source)
-
         # Parse tool help
         self.parse_help(tool_source)
-
-        # Description of outputs produced by an invocation of the tool
-        self.parse_outputs(tool_source)
 
         # Parse result handling for tool exit codes and stdout/stderr messages:
         self.parse_stdio(tool_source)
@@ -844,8 +901,6 @@ class Tool(Dictifiable):
         self.citations = self._parse_citations(tool_source)
         self.xrefs = tool_source.parse_xrefs()
 
-        # Determine if this tool can be used in workflows
-        self.is_workflow_compatible = self.check_workflow_compatible(tool_source)
         self.__parse_trackster_conf(tool_source)
         # Record macro paths so we can reload a tool if any of its macro has changes
         self._macro_paths = tool_source.macro_paths()
@@ -930,6 +985,7 @@ class Tool(Dictifiable):
 
     @property
     def tests(self):
+        self.assert_finalized()
         if not self.__tests_populated:
             tests_source = self.__tests_source
             if tests_source:
@@ -1015,6 +1071,7 @@ class Tool(Dictifiable):
         This implementation supports multiple pages and grouping constructs.
         """
         # Load parameters (optional)
+        self.inputs = OrderedDict()
         pages = tool_source.parse_input_pages()
         enctypes = set()
         if pages.inputs_defined:
@@ -1352,6 +1409,15 @@ class Tool(Dictifiable):
         else:
             return self.outputs.get(name, None)
 
+    @property
+    def is_workflow_compatible(self):
+        is_workflow_compatible = self._is_workflow_compatible
+        if is_workflow_compatible is None:
+            is_workflow_compatible = self.check_workflow_compatible(self.tool_source)
+            if self.finalized:
+                self._is_workflow_compatible = is_workflow_compatible
+        return is_workflow_compatible
+
     def check_workflow_compatible(self, tool_source):
         """
         Determine if a tool can be used in workflows. External tools and the
@@ -1359,7 +1425,7 @@ class Tool(Dictifiable):
         """
         # Multiple page tools are not supported -- we're eliminating most
         # of these anyway
-        if self.has_multiple_pages:
+        if self.finalized and self.has_multiple_pages:
             return False
         # This is probably the best bet for detecting external web tools
         # right now

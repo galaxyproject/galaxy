@@ -294,12 +294,11 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
             if orm_filter.filter_type == "orm_function":
                 contained_query = contained_query.filter(orm_filter.filter(self.contained_class))
                 subcontainer_query = subcontainer_query.filter(orm_filter.filter(self.subcontainer_class))
-        contents_query = contained_query.union(subcontainer_query)
+            elif orm_filter.filter_type == "orm":
+                contained_query = self._apply_orm_filter(contained_query, orm_filter.filter)
+                subcontainer_query = self._apply_orm_filter(subcontainer_query, orm_filter.filter)
 
-        for orm_filter in filters:
-            if orm_filter.filter_type == "orm":
-                contents_query = contents_query.filter(orm_filter.filter)
-
+        contents_query = contained_query.union_all(subcontainer_query)
         contents_query = contents_query.order_by(*order_by)
 
         if limit is not None:
@@ -307,6 +306,15 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
         if offset is not None:
             contents_query = contents_query.offset(offset)
         return contents_query
+
+    def _apply_orm_filter(self, qry, orm_filter):
+        if isinstance(orm_filter, sql.elements.BinaryExpression):
+            for match in filter(lambda col: col['name'] == orm_filter.left.name, qry.column_descriptions):
+                column = match['expr']
+                new_filter = orm_filter._clone()
+                new_filter.left = column
+                qry = qry.filter(new_filter)
+        return qry
 
     def _contents_common_columns(self, component_class, **kwargs):
         columns = []

@@ -321,10 +321,7 @@ export const getAnalysisRouter = (Galaxy) =>
         },
 
         show_workflows: function () {
-            const workflowListInstance = Vue.extend(WorkflowList);
-            const vm = document.createElement("div");
-            this.page.display(vm);
-            new workflowListInstance().$mount(vm);
+            this._display_vue_helper(WorkflowList);
         },
 
         show_workflows_create: function () {

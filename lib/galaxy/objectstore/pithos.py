@@ -163,7 +163,7 @@ class PithosObjectStore(ConcreteObjectStore):
             # alt_name can contain parent directory references, but S3 will not
             # follow them, so if they are valid we normalize them out
             alt_name = os.path.normpath(alt_name)
-        rel_path = os.path.join(*directory_hash_id(obj.id))
+        rel_path = os.path.join(*directory_hash_id(self._get_object_id(obj)))
         if extra_dir is not None:
             if extra_dir_at_root:
                 rel_path = os.path.join(extra_dir, rel_path)
@@ -172,7 +172,7 @@ class PithosObjectStore(ConcreteObjectStore):
 
         # for JOB_WORK directory
         if obj_dir:
-            rel_path = os.path.join(rel_path, str(obj.id))
+            rel_path = os.path.join(rel_path, str(self._get_object_id(obj)))
         if base_dir:
             base = self.extra_dirs.get(base_dir)
             return os.path.join(base, rel_path)
@@ -181,7 +181,7 @@ class PithosObjectStore(ConcreteObjectStore):
         rel_path = '{0}/'.format(rel_path)
 
         if not dir_only:
-            an = alt_name if alt_name else 'dataset_{0}.dat'.format(obj.id)
+            an = alt_name if alt_name else 'dataset_{0}.dat'.format(self._get_object_id(obj))
             rel_path = os.path.join(rel_path, an)
         return rel_path
 
@@ -263,7 +263,7 @@ class PithosObjectStore(ConcreteObjectStore):
             alt_name = kwargs.get('alt_name', None)
 
             # Construct hashed path
-            rel_path = os.path.join(*directory_hash_id(obj.id))
+            rel_path = os.path.join(*directory_hash_id(self._get_object_id(obj)))
 
             # Optionally append extra_dir
             if extra_dir is not None:
@@ -283,7 +283,7 @@ class PithosObjectStore(ConcreteObjectStore):
             else:
                 rel_path = os.path.join(
                     rel_path,
-                    alt_name if alt_name else 'dataset_{0}.dat'.format(obj.id))
+                    alt_name if alt_name else 'dataset_{0}.dat'.format(self._get_object_id(obj)))
                 new_file = os.path.join(self.staging_path, rel_path)
                 open(new_file, 'w').close()
                 self.pithos.upload_from_string(rel_path, '')
