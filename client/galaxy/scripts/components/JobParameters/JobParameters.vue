@@ -16,16 +16,7 @@
                             {{ parameter.text }}
                         </td>
                         <td v-if="Array.isArray(parameter.value)">
-                            <ul style="padding-inline-start: 25px;">
-                                <li v-for="(elVal, pvIndex) in parameter.value" :key="pvIndex">
-                                    <span v-if="elVal.src == 'hda'">
-                                        <a :href="appRoot() + 'datasets/' + elVal.id + '/show_params'">
-                                            {{ elVal.hid }}: {{ elVal.name }}
-                                        </a>
-                                    </span>
-                                    <span v-else> {{ elVal.hid }}: {{ elVal.name }} </span>
-                                </li>
-                            </ul>
+                            <JobParametersArrayValue v-bind:parameter_value="parameter.value" />
                         </td>
                         <td v-else>
                             {{ parameter.value }}
@@ -41,7 +32,12 @@
             </b-alert>
         </div>
         <div v-if="isSingleParam">
-            {{ singleParam }}
+            <div v-if="Array.isArray(singleParam)">
+                <JobParametersArrayValue v-bind:parameter_value="singleParam" />
+            </div>
+            <td v-else>
+                {{ singleParam }}
+            </td>
         </div>
     </div>
 </template>
@@ -52,6 +48,7 @@ import axios from "axios";
 
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import JobParametersArrayValue from "./JobParametersArrayValue";
 
 Vue.use(BootstrapVue);
 
@@ -74,6 +71,9 @@ export default {
             type: Boolean,
             default: true,
         },
+    },
+    components: {
+        JobParametersArrayValue,
     },
     data() {
         return {
