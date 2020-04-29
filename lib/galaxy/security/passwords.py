@@ -89,9 +89,7 @@ def pbkdf2_bin(data, salt, iterations=COST_FACTOR, keylen=KEY_LENGTH, hashfunc=H
             h = mac.copy()
             h.update(x)
             digest = h.digest()
-            if six.PY2:
-                return digest, [ord(_) for _ in digest]
-            return digest, digest
+            return digest, [ord(_) for _ in digest]
 
         buf = []
         salt = smart_str(salt)
