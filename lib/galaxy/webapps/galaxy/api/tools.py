@@ -286,7 +286,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         Attempts to cache installed dependencies.
 
         parameters:
-            force_rebuild:           If true and chache dir exists, attempts to delete cache dir
+            force_rebuild:           If true and cache dir exists, attempts to delete cache dir
         """
         tool = self._get_tool(id)
         tool.build_dependency_cache(**kwds)
@@ -567,7 +567,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
 
     def _patch_library_inputs(self, trans, inputs, target_history):
         """
-        Transform inputs from the data libaray to history items.
+        Transform inputs from the data library to history items.
         """
         for k, v in inputs.items():
             new_value = self._patch_library_dataset(trans, v, target_history)
