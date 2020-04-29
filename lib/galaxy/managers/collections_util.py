@@ -127,7 +127,7 @@ def dictify_dataset_collection_instance(dataset_collection_instance, parent, sec
             element_func = dictify_element_reference
         dict_value['elements'] = [element_func(_, rank_fuzzy_counts=rest_fuzzy_counts) for _ in elements]
 
-    security.encode_all_ids(dict_value, recursive=True)  # TODO: Use Kyle's recursive formulation of this.
+    # security.encode_all_ids(dict_value, recursive=True)  # TODO: Use Kyle's recursive formulation of this.
     return dict_value
 
 
@@ -146,13 +146,12 @@ def dictify_element_reference(element, rank_fuzzy_counts=None, recursive=True, s
         )
         if element.child_collection:
             object_details["collection_type"] = element_object.collection_type
-            object_details["contents_url"] = element_object.get_contents_url(security) if security else None
 
             # Recursively yield elements for each nested collection...
             if recursive:
                 child_collection = element.child_collection
                 elements, rest_fuzzy_counts = get_fuzzy_count_elements(child_collection, rank_fuzzy_counts)
-                object_details["elements"] = [dictify_element_reference(_, rank_fuzzy_counts=rest_fuzzy_counts) for _ in elements]
+                object_details["elements"] = [dictify_element_reference(_, rank_fuzzy_counts=rest_fuzzy_counts, recursive=recursive) for _ in elements]
                 object_details["element_count"] = child_collection.element_count
         else:
             object_details["state"] = element_object.state

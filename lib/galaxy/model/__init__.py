@@ -19,7 +19,6 @@ from datetime import datetime, timedelta
 from string import Template
 from uuid import UUID, uuid4
 
-import routes
 from boltons.iterutils import remap
 from six import string_types
 from social_core.storage import AssociationMixin, CodeMixin, NonceMixin, PartialMixin, UserMixin
@@ -41,6 +40,7 @@ from sqlalchemy.orm import (
     aliased,
     joinedload,
     object_session,
+    Query,
 )
 from sqlalchemy.schema import UniqueConstraint
 
@@ -4049,11 +4049,6 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
         serialization_options.attach_identifier(id_encoder, self, rval)
         return rval
 
-    def get_contents_url(self, security):
-        encoded_id = security.encode_id(self.id)
-        contents_url = routes.url_for('contents_dataset_collection', id=encoded_id)
-        return contents_url
-
 
 class DatasetCollectionInstance(HasName):
     """
@@ -4286,6 +4281,35 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
         object_session(self).add(hdca)
         object_session(self).flush()
         return hdca
+
+    def contains_collection(self, collection_id):
+        """Checks to see that the indicated collection is a member of the
+        hdca by using a recursive CTE sql query to find the collection's parents
+        and checking to see if any of the parents are associated with this hdca"""
+
+        sa_session = object_session(self)
+        DCE = DatasetCollectionElement
+        HDCA = HistoryDatasetCollectionAssociation
+
+        # non-recursive part of the cte (starting point)
+        parents_cte = Query(DCE.dataset_collection_id) \
+            .filter(or_(DCE.child_collection_id == collection_id, DCE.dataset_collection_id == collection_id)) \
+            .cte(name="element_parents", recursive="True")
+        ep = aliased(parents_cte, name="ep")
+
+        # add the recursive part of the cte expression
+        dce = aliased(DCE, name="dce")
+        rec = Query(dce.dataset_collection_id.label('dataset_collection_id')) \
+            .filter(dce.child_collection_id == ep.c.dataset_collection_id)
+        parents_cte = parents_cte.union(rec)
+
+        # join parents to hdca, look for matching hdca_id
+        hdca = aliased(HDCA, name="hdca")
+        jointohdca = parents_cte.join(hdca, hdca.collection_id == parents_cte.c.dataset_collection_id)
+        qry = Query(hdca.id).select_entity_from(jointohdca).filter(hdca.id == self.id)
+
+        results = qry.with_session(sa_session).all()
+        return len(results) > 0
 
 
 class LibraryDatasetCollectionAssociation(DatasetCollectionInstance, RepresentById):

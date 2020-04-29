@@ -3,6 +3,8 @@ from __future__ import absolute_import
 import logging
 from collections import OrderedDict
 
+from sqlalchemy.orm import joinedload, Query
+
 from galaxy import model
 from galaxy.exceptions import (
     ItemAccessibilityException,
@@ -562,3 +564,13 @@ class DatasetCollectionManager(object):
             if not trans.app.security_agent.can_access_library_item(trans.get_current_user_roles(), collection_instance, trans.user):
                 raise ItemAccessibilityException("LibraryDatasetCollectionAssociation is not accessible to the current user", type='error')
         return collection_instance
+
+    def get_collection_contents_qry(self, parent_id, limit=None, offset=None):
+        """Find first level of collection contents by containing collection parent_id"""
+        DCE = model.DatasetCollectionElement
+        qry = Query(DCE).filter(DCE.dataset_collection_id == parent_id)
+        qry = qry.order_by(DCE.element_index)
+        qry = qry.options(joinedload('child_collection'), joinedload('hda'))
+        qry = qry.limit(limit) if limit is not None else qry
+        qry = qry.offset(offset) if offset is not None else qry
+        return qry

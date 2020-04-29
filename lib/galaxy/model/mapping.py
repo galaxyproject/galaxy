@@ -2347,13 +2347,7 @@ simple_mapping(model.DatasetCollection,
         primaryjoin=(model.DatasetCollection.table.c.id == model.DatasetCollectionElement.table.c.dataset_collection_id),
         remote_side=[model.DatasetCollectionElement.table.c.dataset_collection_id],
         backref="collection",
-        order_by=model.DatasetCollectionElement.table.c.element_index),
-    # exactly the same as elements above but returns a query object so we can limit/offset
-    children=relation(model.DatasetCollectionElement,
-        primaryjoin=(model.DatasetCollection.table.c.id == model.DatasetCollectionElement.table.c.dataset_collection_id),
-        remote_side=[model.DatasetCollectionElement.table.c.dataset_collection_id],
-        order_by=model.DatasetCollectionElement.table.c.element_index,
-        lazy="dynamic")
+        order_by=model.DatasetCollectionElement.table.c.element_index)
 )
 
 simple_mapping(model.HistoryDatasetCollectionAssociation,
