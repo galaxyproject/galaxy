@@ -6,19 +6,78 @@
                 <b-form id="login" @submit.prevent="submitGalaxyLogin()">
                     <b-card no-body header="Welcome to Galaxy, please log in">
                         <b-card-body>
-                            <b-form-group label="Public Name or Email Address">
-                                <b-form-input name="login" type="text" v-model="login" />
-                            </b-form-group>
-                            <b-form-group label="Password">
-                                <b-form-input name="password" type="password" v-model="password" />
-                                <b-form-text>
-                                    Forgot password?
-                                    <a @click="reset" href="javascript:void(0)" role="button"
-                                        >Click here to reset your password.</a
+                            <div>
+                                <!-- standard internal galaxy login -->
+                                <b-form-group label="Public Name or Email Address">
+                                    <b-form-input name="login" type="text" v-model="login" />
+                                </b-form-group>
+                                <b-form-group label="Password">
+                                    <b-form-input name="password" type="password" v-model="password" />
+                                    <b-form-text>
+                                        Forgot password?
+                                        <a @click="reset" href="javascript:void(0)" role="button"
+                                            >Click here to reset your password.</a
+                                        >
+                                    </b-form-text>
+                                </b-form-group>
+                                <b-button name="login" type="submit">Login</b-button>
+                            </div>
+                            <div v-if="enable_oidc">
+                                <!-- OIDC login-->
+                                <hr class="my-4" />
+                                <div class="card-title">Using your existing institutional login</div>
+                                <div class="cilogon" v-if="cilogonListShow">
+                                    <!--Only Display if CILogon/Custos is configured-->
+                                    <multiselect
+                                        placeholder="Select your institution"
+                                        v-model="selected"
+                                        :options="cilogon_idps"
+                                        label="DisplayName"
+                                        track-by="EntityID"
                                     >
-                                </b-form-text>
-                            </b-form-group>
-                            <b-button name="login" type="submit">Login</b-button>
+                                    </multiselect>
+
+                                    <b-button
+                                        v-if="oidc_idps.includes('cilogon')"
+                                        @click="submitCILogon('cilogon')"
+                                        :disabled="selected === null"
+                                        >Sign in with Institutional Credentials*</b-button
+                                    >
+                                    <!--convert to v-else-if to allow only one or the other. if both enabled, put the one that should be default first-->
+                                    <b-button
+                                        v-if="oidc_idps.includes('custos')"
+                                        @click="submitCILogon('custos')"
+                                        :disabled="selected === null"
+                                        >Sign in with Custos*</b-button
+                                    >
+
+                                    <p>
+                                        <small class="text-muted">
+                                            *Galaxy uses CILogon to enable you to Log In from this organization. By
+                                            clicking 'Sign In', you agree to the
+                                            <a href="https://ca.cilogon.org/policy/privacy">CILogon privacy policy</a>
+                                            and you agree to share your username, email address, and affiliation with
+                                            CILogon and Galaxy. You also agree for CILogon to issue a certificate that
+                                            allows Galaxy to act on your behalf.
+                                        </small>
+                                    </p>
+                                </div>
+
+                                <div v-for="idp in filtered_oidc_idps" :key="idp" class="m-1">
+                                    <span v-if="oidc_idps_icons[idp]">
+                                        <b-button variant="link" class="d-block mt-3" @click="submitOIDCLogin(idp)">
+                                            <img :src="oidc_idps_icons[idp]" height="45" :alt="idp" />
+                                        </b-button>
+                                    </span>
+                                    <span v-else>
+                                        <b-button class="d-block mt-3" @click="submitOIDCLogin(idp)">
+                                            <i :class="oidc_idps[idp]" />
+                                            Sign in with
+                                            {{ idp.charAt(0).toUpperCase() + idp.slice(1) }}
+                                        </b-button>
+                                    </span>
+                                </div>
+                            </div>
                         </b-card-body>
                         <b-card-footer>
                             Don't have an account?
@@ -39,62 +98,6 @@
                     </b-card>
                 </b-form>
 
-                <b-card no-body header="OR" v-if="enable_oidc">
-                    <div class="external-subheading">
-                        <div class="cilogon" v-if="cilogonListShow">
-                            <!--Only Display if CILogon/Custos is configured-->
-                            <div id="cilogon-prompt" class="text-center">
-                                <p>Use your existing institutional login</p>
-                                <p class="hint">e.g., university, lab, facility, project</p>
-                            </div>
-                            <multiselect
-                                placeholder="Select your institution"
-                                v-model="selected"
-                                :options="cilogon_idps"
-                                label="DisplayName"
-                                track-by="EntityID"
-                            >
-                            </multiselect>
-
-                            <b-button
-                                v-if="oidc_idps.includes('cilogon')"
-                                @click="submitCILogon('cilogon')"
-                                :disabled="selected === null"
-                                >Sign in with Institutional Credentials*</b-button
-                            >
-                            <!--convert to v-else-if to allow only one or the other. if both enabled, put the one that should be default first-->
-                            <b-button
-                                v-if="oidc_idps.includes('custos')"
-                                @click="submitCILogon('custos')"
-                                :disabled="selected === null"
-                                >Sign in with Custos*</b-button
-                            >
-
-                            <p>
-                                *Galaxy uses CILogon to enable you to Log In from this organization. By clicking 'Sign
-                                In', you agree to the
-                                <a href="https://ca.cilogon.org/policy/privacy">CILogon privacy policy</a> and you agree
-                                to share your username, email address, and affiliation with CILogon and Galaxy. You also
-                                agree for CILogon to issue a certificate that allows Galaxy to act on your behalf.
-                            </p>
-                        </div>
-
-                        <div v-for="idp in filtered_oidc_idps" :key="idp" class="m-1">
-                            <span v-if="oidc_idps_icons[idp]">
-                                <b-button variant="link" class="d-block mt-3" @click="submitOIDCLogin(idp)">
-                                    <img :src="oidc_idps_icons[idp]" height="45" :alt="idp" />
-                                </b-button>
-                            </span>
-                            <span v-else>
-                                <b-button class="d-block mt-3" @click="submitOIDCLogin(idp)">
-                                    <i :class="oidc_idps[idp]" />
-                                    Sign in with
-                                    {{ idp.charAt(0).toUpperCase() + idp.slice(1) }}
-                                </b-button>
-                            </span>
-                        </div>
-                    </div>
-                </b-card>
                 <b-modal centered id="duplicateEmail" ref="duplicateEmail" title="Duplicate Email" ok-only>
                     <p>
                         There already exists a user with this email. To associate this external login, you must first be
