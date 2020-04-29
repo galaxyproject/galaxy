@@ -34,7 +34,6 @@
                                             :options="cilogon_idps"
                                             label="DisplayName"
                                             track-by="EntityID"
-                                            openDirection="bottom"
                                         >
                                         </multiselect>
                                     </b-form-group>
