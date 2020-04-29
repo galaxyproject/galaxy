@@ -60,11 +60,13 @@
                             <b-button
                                 v-if="oidc_idps.includes('cilogon')"
                                 @click="submitCILogon('cilogon')"
+                                :disabled="selected===null"
                             >Sign in with Institutional Credentials*</b-button>
                             <!--convert to v-else-if to allow only one or the other. if both enabled, put the one that should be default first-->
                             <b-button
                                 v-if="oidc_idps.includes('custos')"
                                 @click="submitCILogon('custos')"
+                                :disabled="selected===null"
                             >Sign in with Custos*</b-button>
 
                             <p>
@@ -169,7 +171,7 @@ export default {
             oidc_idps: galaxy.config.oidc,
             oidc_idps_icons: oidc_idps_icons,
             cilogon_idps: [],
-            selected: '',
+            selected: null,
         };
     },
     computed: {
