@@ -1,5 +1,5 @@
 <template>
-    <div :node-label="label" :name="name">
+    <div class="workflow-node" :node-label="label" :name="name">
         <div class="node-header unselectable clearfix">
             <b-button
                 class="node-destroy py-0 float-right"
@@ -105,10 +105,6 @@ export default {
             type: String,
             default: "tool",
         },
-        f: {
-            type: HTMLDivElement,
-            default: null,
-        },
         getManager: {
             type: Function,
             default: null,
@@ -130,7 +126,7 @@ export default {
     mounted() {
         this.activeOutputs = new ActiveOutputs();
         this.manager = this.getManager();
-        this.element = this.f;
+        this.element = this.$el;
         this.content_id = this.contentId;
     },
     computed: {

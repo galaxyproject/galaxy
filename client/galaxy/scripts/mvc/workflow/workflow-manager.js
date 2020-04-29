@@ -117,20 +117,15 @@ class Workflow extends EventEmitter {
 
         // Create node wrapper
         const container = document.createElement("div");
-        container.className = "workflow-node";
         document.getElementById("canvas-container").appendChild(container);
-        var $f = $(container);
 
         // Mount node component as child dom to node wrapper
-        const child = document.createElement("div");
-        container.appendChild(child);
-        const node = mountWorkflowNode(child, {
+        const node = mountWorkflowNode(container, {
             type: type,
             name: name,
             node: node,
             id: this.nodeId,
             contentId: content_id,
-            f: container,
             getManager: () => {
                 return this;
             },
@@ -140,6 +135,7 @@ class Workflow extends EventEmitter {
         this.nodeId++;
 
         // Set initial scroll position
+        var $f = $(node.$el);
         $f.css("left", $(window).scrollLeft() + 20);
         $f.css("top", $(window).scrollTop() + 20);
 
