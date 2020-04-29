@@ -104,7 +104,7 @@ function buildPlugins(callback) {
                     );
                     console.log(`Building ${plugin_name}`);
                     child_process.spawnSync("yarn", ["build"], { cwd: f, stdio: "inherit", shell: true });
-                    child_process.exec(`"(git rev-parse HEAD 2>/dev/null || echo \`\`) > ${hash_file_path} "`);
+                    child_process.exec(`(git rev-parse HEAD 2>/dev/null || echo \`\`) > ${hash_file_path}`);
                 }
             });
         });
