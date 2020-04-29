@@ -1150,8 +1150,24 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         for dataset_assoc in self.output_datasets:
             return dataset_assoc.dataset.tool_version
 
-    def update_output_dataset_states(self):
+    def update_output_states(self):
         sql = '''
+            UPDATE history_dataset_collection_association
+            SET update_time = :update_time
+            WHERE id in (
+                SELECT hdca.id
+                FROM history_dataset_collection_association hdca
+                INNER JOIN implicit_collection_jobs icj
+                    on icj.id = hdca.implicit_collection_jobs_id
+                INNER JOIN implicit_collection_jobs_job_association icjja
+                    on icj.id = icjja.implicit_collection_jobs_id
+                WHERE icjja.job_id = :job_id
+                UNION
+                SELECT hdca2.id
+                FROM history_dataset_collection_association hdca2
+                WHERE hdca2.job_id = :job_id
+            );
+
             UPDATE dataset
             SET
                 state = :state,
@@ -1200,7 +1216,7 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
             'update_time': galaxy.model.orm.now.now()
         }
         sa_session.execute(sql, params)
-        sa_session.flush()
+        # sa_session.flush()
 
 
 class Task(JobLike, RepresentById):

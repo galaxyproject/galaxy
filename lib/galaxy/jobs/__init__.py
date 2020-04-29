@@ -1376,9 +1376,9 @@ class JobWrapper(HasResourceParameters):
             job.info = info
         job.set_state(state)
         self.sa_session.add(job)
+        job.update_output_states()
         if flush:
             self.sa_session.flush()
-        job.update_output_dataset_states()
 
     def get_state(self):
         job = self.get_job()
