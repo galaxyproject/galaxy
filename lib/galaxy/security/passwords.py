@@ -17,7 +17,7 @@ from galaxy.util import (
 SALT_LENGTH = 12
 KEY_LENGTH = 24
 HASH_FUNCTION = 'sha256'
-COST_FACTOR = 10000
+COST_FACTOR = 100000
 
 
 def hash_password(password):
@@ -67,13 +67,12 @@ def check_password_PBKDF2(guess, hashed):
 _pack_int = Struct('>I').pack
 
 
-def pbkdf2_bin(data, salt, iterations=1000, keylen=KEY_LENGTH, hashfunc=HASH_FUNCTION):
+def pbkdf2_bin(data, salt, iterations=COST_FACTOR, keylen=KEY_LENGTH, hashfunc=HASH_FUNCTION):
     """Returns a binary digest for the PBKDF2 hash algorithm of `data`
     with the given `salt`.  It iterates `iterations` time and produces a
     key of `keylen` bytes.  By default SHA-256 is used as hash function,
     a different hashlib `hashfunc` can be provided.
     """
-
     if hasattr(hashlib, 'pbkdf2_hmac'):
         # Use hashlib.pbkdf2_hmac, new in python 2.7.8
         data = smart_str(data)
