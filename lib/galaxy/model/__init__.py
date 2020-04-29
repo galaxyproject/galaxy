@@ -19,6 +19,7 @@ from datetime import datetime, timedelta
 from string import Template
 from uuid import UUID, uuid4
 
+import routes
 from boltons.iterutils import remap
 from six import string_types
 from social_core.storage import AssociationMixin, CodeMixin, NonceMixin, PartialMixin, UserMixin
@@ -4047,6 +4048,11 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
         )
         serialization_options.attach_identifier(id_encoder, self, rval)
         return rval
+
+    def get_contents_url(self, security):
+        encoded_id = security.encode_id(self.id)
+        contents_url = routes.url_for('contents_dataset_collection', id=encoded_id)
+        return contents_url
 
 
 class DatasetCollectionInstance(HasName):

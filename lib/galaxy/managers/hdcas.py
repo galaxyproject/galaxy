@@ -228,7 +228,8 @@ class HDCASerializer(
             'visible',
             'type', 'url',
             'create_time', 'update_time',
-            'tags',  # TODO: detail view only (maybe)
+            'tags',  # TODO: detail view only (maybe),
+            'contents_url'
         ])
         self.add_view('detailed', [
             'populated',
@@ -254,4 +255,6 @@ class HDCASerializer(
                                                      history_id=self.app.security.encode_id(i.history_id),
                                                      id=self.app.security.encode_id(i.id),
                                                      type=self.hdca_manager.model_class.content_type),
+
+            'contents_url'              : lambda hdca, key, **c: hdca.collection.get_contents_url(self.app.security)
         })

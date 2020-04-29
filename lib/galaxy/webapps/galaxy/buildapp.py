@@ -318,7 +318,7 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('/api/tool_data/{id:.+?}/fields/{value:.+?}/files/{path:.+?}', action='download_field_file', controller="tool_data")
     webapp.mapper.connect('/api/tool_data/{id:.+?}/fields/{value:.+?}', action='show_field', controller="tool_data")
     webapp.mapper.connect('/api/tool_data/{id:.+?}/reload', action='reload', controller="tool_data")
-    webapp.mapper.resource('dataset_collection', 'dataset_collections', path_prefix='/api/')
+    webapp.mapper.resource('dataset_collection', 'dataset_collections', path_prefix='/api', member={'contents': 'GET'})
     webapp.mapper.resource('form', 'forms', path_prefix='/api')
     webapp.mapper.resource('role', 'roles', path_prefix='/api')
     webapp.mapper.resource('upload', 'uploads', path_prefix='/api')
@@ -482,7 +482,7 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect("/api/dataset_collections/{id}/download",
                           controller='history_contents',
                           action='download_dataset_collection',
-                          conditions=dict(method=["GET"]))
+                          conditions=dict(method=["GET"])),
 
     webapp.mapper.connect("/api/histories/{history_id}/jobs_summary",
                           action="index_jobs_summary",

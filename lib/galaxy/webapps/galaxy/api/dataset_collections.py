@@ -1,7 +1,12 @@
 from logging import getLogger
 
 from galaxy import managers
-from galaxy.managers.collections_util import api_payload_to_create_params, dictify_dataset_collection_instance
+from galaxy.managers.collections_util import (
+    api_payload_to_create_params,
+    dictify_dataset_collection_instance,
+    dictify_element_reference
+)
+from galaxy.model import DatasetCollectionElement
 from galaxy.web import expose_api
 from galaxy.webapps.base.controller import (
     BaseAPIController,
@@ -80,6 +85,32 @@ class DatasetCollectionsController(
             parent=parent,
             view='element'
         )
+
+    @expose_api
+    def contents(self, trans, id, **kwds):
+        """Show direct child contents of indicated dataset collection parent id"""
+
+        # /api/dataset_collection/5969b1f7201f12ae/children
+        limit = kwds.get('limit', None)
+        offset = kwds.get('offset', None)
+        decoded_id = trans.app.security.decode_id(id)
+
+        # lookup elements by parent id
+        qry = trans.sa_session.query(DatasetCollectionElement)
+        qry = qry.filter(DatasetCollectionElement.dataset_collection_id == decoded_id)
+        qry = qry.order_by(DatasetCollectionElement.element_index)
+
+        if limit is not None:
+            qry = qry.limit(limit)
+        if offset is not None:
+            qry = qry.limit(offset)
+
+        def process_element(dsc_element):
+            result = dictify_element_reference(dsc_element, recursive=False, security=trans.security)
+            trans.security.encode_all_ids(result, recursive=True)
+            return result
+
+        return [process_element(el) for el in qry]
 
     def __service(self, trans):
         service = trans.app.dataset_collections_service
