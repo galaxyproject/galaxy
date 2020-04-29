@@ -88,9 +88,15 @@ class DatasetCollectionsController(
 
     @expose_api
     def contents(self, trans, id, **kwds):
-        """Show direct child contents of indicated dataset collection parent id"""
+        """
+        Show direct child contents of indicated dataset collection parent id
+        GET /api/dataset_collection/{id}/contents
 
-        # /api/dataset_collection/5969b1f7201f12ae/children
+        Optional pagination parameters
+            limit:  integer
+            offset: integer
+        """
+
         limit = kwds.get('limit', None)
         offset = kwds.get('offset', None)
         decoded_id = trans.app.security.decode_id(id)
