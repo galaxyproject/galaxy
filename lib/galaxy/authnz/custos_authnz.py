@@ -188,17 +188,17 @@ class CustosAuthnz(IdentityProvider):
 
     def _fetch_token(self, oauth2_session, trans):
         if self.config.get('iam_client_secret'):
-            #Custos uses the Keycloak client secret to get the token
+            # Custos uses the Keycloak client secret to get the token
             client_secret = self.config['iam_client_secret']
         else:
             client_secret = self.config['client_secret']
         token_endpoint = self.config['token_endpoint']
-        clientIdAndSec = self.config['client_id'] + ":" + self.config['client_secret'] #for custos
+        clientIdAndSec = self.config['client_id'] + ":" + self.config['client_secret']  # for custos
         return oauth2_session.fetch_token(
             token_endpoint,
             client_secret=client_secret,
-            authorization_response=trans.request.url, 
-            headers={"Authorization": "Basic %s" % base64.b64encode(clientIdAndSec)}, #for custos
+            authorization_response=trans.request.url,
+            headers={"Authorization": "Basic %s" % base64.b64encode(clientIdAndSec)},  # for custos
             verify=self._get_verify_param())
 
     def _get_userinfo(self, oauth2_session):
@@ -220,36 +220,38 @@ class CustosAuthnz(IdentityProvider):
         nonce_cookie_hash = self._hash_nonce(nonce_cookie)
         if nonce_hash != nonce_cookie_hash:
             raise Exception("Nonce mismatch!")
-    
-    def _load_config_for_cilogon (self):
+
+    def _load_config_for_cilogon(self):
         # Set cilogon endpoints
         self.config['authorization_endpoint'] = "https://cilogon.org/authorize"
         self.config['token_endpoint'] = "https://cilogon.org/oauth2/token"
         self.config['userinfo_endpoint'] = "https://cilogon.org/oauth2/userinfo"
 
-    def _load_config_for_custos (self):
+    def _load_config_for_custos(self):
         # Set custos endpoints
         clientIdAndSec = self.config['client_id'] + ":" + self.config['client_secret']
-        eps = requests.get(self.config['url'], 
-                            headers={"Authorization": "Basic %s" % base64.b64encode(clientIdAndSec)},
-                            verify=False, params = {'client_id': self.config['client_id']})
+        eps = requests.get(self.config['url'],
+                           headers={"Authorization": "Basic %s" % base64.b64encode(clientIdAndSec)},
+                           verify=False, params={'client_id': self.config['client_id']})
         endpoints = eps.json()
         self.config['authorization_endpoint'] = endpoints['authorization_endpoint']
         self.config['token_endpoint'] = endpoints['token_endpoint']
         self.config['userinfo_endpoint'] = endpoints['userinfo_endpoint']
         self.config['end_session_endpoint'] = endpoints['end_session_endpoint']
 
-    def _get_custos_credentials (self):
+    def _get_custos_credentials(self):
         clientIdAndSec = self.config['client_id'] + ":" + self.config['client_secret']
         creds = requests.get(self.config['credential_url'],
                             headers={"Authorization": "Basic %s" % base64.b64encode(clientIdAndSec)},
-                            verify=False, params = {'client_id': self.config['client_id']})
+                            verify=False, params={'client_id': self.config['client_id']})
         credentials = creds.json()
         self.config['iam_client_secret'] = credentials['iam_client_secret']
 
-    def _create_authorize_url (self, trans):
+    def _create_authorize_url(self, trans):
         return "{}/?kc_idp_hint=oidc&response_type=code&client_id={}&redirect_uri={}".format(
-                self.config['authorization_endpoint'], self.config['client_id'], self.config['redirect_uri'])
+               self.config['authorization_endpoint'],
+               self.config['client_id'],
+               self.config['redirect_uri'])
 
     def _load_config_for_provider_and_realm(self, provider, realm):
         self.config['well_known_oidc_config_uri'] = self._get_well_known_uri_for_provider_and_realm(provider, realm)
@@ -286,13 +288,13 @@ class CustosAuthnz(IdentityProvider):
             return self.config['verify_ssl']
 
     def _generate_username(self, trans, email):
-        temp_username = email.split('@')[0] #username created from username portion of email
+        temp_username = email.split('@')[0]  # username created from username portion of email
         count = 0
         existing_usernames = trans.sa_session.query(trans.app.model.User).filter_by(username=(temp_username)).first()
 
         if (trans.sa_session.query(trans.app.model.User).filter_by(username=temp_username).first()):
-            #if username already exists in database, append integer and iterate until unique username found
-            while (trans.sa_session.query(trans.app.model.User).filter_by(username=(temp_username+str(count))).first()):
+            # if username already exists in database, append integer and iterate until unique username found
+            while (trans.sa_session.query(trans.app.model.User).filter_by(username=(temp_username + str(count))).first()):
                 count += 1
         else:
             return temp_username
