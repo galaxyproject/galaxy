@@ -10,11 +10,24 @@
             </div>
         </div>
         <div class="unified-panel-controls">
-            <tool-search :query="query" placeholder="search tools" @onQuery="onQuery" @onResults="onResults" />
+            <tool-search
+                :query="query"
+                placeholder="search tools"
+                @onQuery="onQuery"
+                @onResults="onResults"
+            />
 
             <div class="float-none" v-if="results">
-                <button class="btn btn-secondary btn-sm" v-if="!show" @click="onToggle">Show Categories</button>
-                <button class="btn btn-secondary btn-sm" v-if="show" @click="onToggle">Hide Categories</button>
+                <button
+                    class="btn btn-secondary btn-sm"
+                    v-if="!show"
+                    @click="onToggle"
+                >Show Categories</button>
+                <button
+                    class="btn btn-secondary btn-sm"
+                    v-if="show"
+                    @click="onToggle"
+                >Hide Categories</button>
             </div>
         </div>
         <div class="unified-panel-body">
@@ -28,27 +41,17 @@
                         @onClick="onOpen"
                     />
                 </div>
-                <div class="toolSectionTitle" id="title_XXinternalXXworkflow">
+                <div class="toolSectionTitle" id="title_XXinternalXXworkflow" v-if="workflow">
                     <a>{{ workflowTitle }}</a>
                 </div>
-                <div id="internal-workflows" class="toolSectionBody">
+                <div id="internal-workflows" class="toolSectionBody" v-if="workflow">
                     <div class="toolSectionBg" />
-                    <div class="toolTitle" v-for="wf in this.workflows" :key="wf.id">
-                        <a :href="wf.href">
-                            {{ wf.title }}
-                        </a>
+                    <div class="toolTitle" v-for="wf in this.workflow" :key="wf.id">
+                        <a :href="wf.href">{{ wf.title }}</a>
                     </div>
                 </div>
             </div>
         </div>
-
-        <!--<div class="vld-parent">
-
-            <li v-for="tool in searchTools" :key="tool.id">
-                {{ tool.name }}
-                <favorites-button @onFavorites="onAddFavorite" v-if="isUser" />
-            </li>
-        </div>-->
     </div>
 </template>
 
@@ -108,7 +111,7 @@ export default {
             return !!(Galaxy.user && Galaxy.user.id);
         },
         workflows() {
-            return [
+            this.workflow = [
                 {
                     title: _l("All workflows"),
                     href: `${getAppRoot()}workflows/list`,
@@ -122,6 +125,7 @@ export default {
                     };
                 }),
             ];
+            return this.workflow;
         },
     },
     methods: {
@@ -141,9 +145,6 @@ export default {
         },
         onFavorites(term) {
             this.query = term;
-        },
-        onAddFavorite(tool) {
-            //todo
         },
         onOpen(tool, evt) {
             const Galaxy = getGalaxyInstance();
