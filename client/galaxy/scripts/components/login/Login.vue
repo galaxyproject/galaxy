@@ -25,17 +25,19 @@
                             <div v-if="enable_oidc">
                                 <!-- OIDC login-->
                                 <hr class="my-4" />
-                                <div class="card-title">Using your existing institutional login</div>
                                 <div class="cilogon" v-if="cilogonListShow">
                                     <!--Only Display if CILogon/Custos is configured-->
-                                    <multiselect
-                                        placeholder="Select your institution"
-                                        v-model="selected"
-                                        :options="cilogon_idps"
-                                        label="DisplayName"
-                                        track-by="EntityID"
-                                    >
-                                    </multiselect>
+                                    <b-form-group label="Use existing institutional login">
+                                        <multiselect
+                                            placeholder="Select your institution"
+                                            v-model="selected"
+                                            :options="cilogon_idps"
+                                            label="DisplayName"
+                                            track-by="EntityID"
+                                            openDirection="bottom"
+                                        >
+                                        </multiselect>
+                                    </b-form-group>
 
                                     <b-button
                                         v-if="oidc_idps.includes('cilogon')"
@@ -51,7 +53,7 @@
                                         >Sign in with Custos*</b-button
                                     >
 
-                                    <p>
+                                    <p class="mt-3">
                                         <small class="text-muted">
                                             *Galaxy uses CILogon to enable you to Log In from this organization. By
                                             clicking 'Sign In', you agree to the
@@ -275,3 +277,8 @@ export default {
     },
 };
 </script>
+<style scoped>
+.card-body {
+    overflow: visible;
+}
+</style>
