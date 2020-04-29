@@ -361,6 +361,19 @@
                                     <a href="javascript:void(0)" @click="displayRuleType = 'mapping'">Click here</a> to
                                     manage column definitions.
                                 </div>
+                                <div class="btn-group dropup">
+                                    <button
+                                        type="button"
+                                        v-b-tooltip.hover.bottom
+                                        :title="titleRulesMenu"
+                                        class="rule-menu-rules-button primary-button dropdown-toggle"
+                                        data-toggle="dropdown"
+                                    >
+                                        <span class="fa fa-plus"></span> {{ l("Saved Rules") }}<span class="caret"></span>
+                                    </button>
+                                    <saved-rules-selector :builder="this" 
+                                    ref="savedRulesSelector"/>
+                                </div>                            
                             </ol>
                             <div class="rules-buttons">
                                 <div class="btn-group dropup">
@@ -586,6 +599,7 @@ import RuleModalHeader from "components/RuleBuilder/RuleModalHeader";
 import RuleModalMiddle from "components/RuleBuilder/RuleModalMiddle";
 import RuleModalFooter from "components/RuleBuilder/RuleModalFooter";
 import StateDiv from "components/RuleBuilder/StateDiv";
+import SavedRulesSelector from "components/RuleBuilder/SavedRulesSelector";
 
 Vue.use(BootstrapVue);
 
@@ -675,6 +689,7 @@ export default {
             titleSourceReset: _l("Reset text area to current set of rules"),
             titleSourceApply: _l("Apply changes to rule source and return to rule preview"),
             titleRulesMenu: _l("General rules to apply"),
+            savedRulesMenu: _l("Load saved rules"),
             titleFilterMenu: _l("Rules that filter rows from the data"),
             titleColumMenu: _l("Rules that generate new columns"),
             titleRemoveMapping: _l("Remove column definition assignment"),
@@ -1226,6 +1241,9 @@ export default {
             }
         },
         createCollection() {
+            this.$refs.savedRulesSelector.saveSession(JSON.stringify(
+                     this.ruleSourceJson
+            ));
             this.state = "wait";
             const name = this.collectionName;
             const collectionType = this.collectionType;
@@ -1622,6 +1640,7 @@ export default {
         HotTable,
         RuleComponent,
         RuleTargetComponent,
+        SavedRulesSelector,
         RuleDisplay,
         IdentifierDisplay,
         ColumnSelector,
