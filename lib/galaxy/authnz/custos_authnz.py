@@ -1,4 +1,3 @@
-
 import hashlib
 import json
 import logging
@@ -242,7 +241,7 @@ class CustosAuthnz(IdentityProvider):
     def _get_custos_credentials(self):
         clientIdAndSec = self.config['client_id'] + ":" + self.config['client_secret']
         creds = requests.get(self.config['credential_url'],
-                            headers={"Authorization": "Basic %s" % base64.b64encode(clientIdAndSec)},
+                            headers={"Authorization": "Basic %s" % base64.b64encode(util.smart_str(clientIdAndSec))},
                             verify=False, params={'client_id': self.config['client_id']})
         credentials = creds.json()
         self.config['iam_client_secret'] = credentials['iam_client_secret']
