@@ -80,9 +80,7 @@ def pbkdf2_bin(data, salt, iterations=COST_FACTOR, keylen=KEY_LENGTH, hashfunc=H
         return hashlib.pbkdf2_hmac(hashfunc, data, salt, iterations, keylen)
     else:
         # Use the old implementation of hashing as a fallback
-        if isinstance(hashfunc, six.string_types):
-            hashfunc = getattr(hashlib, hashfunc, None)
-        hashfunc = hashfunc or hashlib.sha1
+        hashfunc = getattr(hashlib, hashfunc, None)
         mac = hmac.new(smart_str(data), None, hashfunc)
 
         def _pseudorandom(x, mac=mac):
