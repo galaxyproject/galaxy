@@ -7,7 +7,6 @@ from __future__ import absolute_import
 import json
 import logging
 import jwt
-import requests
 
 from galaxy import exceptions
 from galaxy import web
