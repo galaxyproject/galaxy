@@ -13,4 +13,5 @@ social_auth_core
 SQLAlchemy
 sqlalchemy-migrate
 sqlalchemy-utils
+sqlalchemy-views
 WebOb

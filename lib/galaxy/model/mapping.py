@@ -43,6 +43,8 @@ from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.orm.now import now
 from galaxy.model.security import GalaxyRBACAgent
 from galaxy.model.triggers import install_timestamp_triggers
+from galaxy.model.view import HistoryDatasetCollectionJobStateSummary
+from galaxy.model.view.utils import install_views
 
 log = logging.getLogger(__name__)
 
@@ -2377,6 +2379,11 @@ simple_mapping(model.HistoryDatasetCollectionAssociation,
         backref=backref("history_dataset_collection_associations", uselist=True),
         uselist=False,
     ),
+    job_state_summary=relation(HistoryDatasetCollectionJobStateSummary,
+        primaryjoin=((model.HistoryDatasetCollectionAssociation.table.c.id == HistoryDatasetCollectionJobStateSummary.__view__.c.hdca_id)),
+        foreign_keys=HistoryDatasetCollectionJobStateSummary.__view__.c.hdca_id,
+        uselist=False
+    ),
     tags=relation(model.HistoryDatasetCollectionTagAssociation,
         order_by=model.HistoryDatasetCollectionTagAssociation.table.c.id,
         backref='dataset_collections'),
@@ -2876,6 +2883,7 @@ def init(file_path, url, engine_options=None, create_tables=False, map_install_m
     if create_tables:
         metadata.create_all()
         install_timestamp_triggers(engine)
+        install_views(engine)
         # metadata.engine.commit()
 
     result.create_tables = create_tables

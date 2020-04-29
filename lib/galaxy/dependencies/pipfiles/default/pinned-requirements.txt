@@ -63,7 +63,7 @@ futures==3.3.0 ; python_version == '2.6' or python_version == '2.7'
 galaxy-sequence-utils==1.1.5
 google-api-python-client==1.7.8
 google-auth-httplib2==0.0.3
-google-auth==1.13.1
+google-auth==1.14.0
 gxformat2==0.11.1
 h5py==2.10.0
 httplib2==0.17.2
@@ -174,6 +174,7 @@ social-auth-core[openidconnect]==3.3.0
 sortedcontainers==2.1.0
 sqlalchemy-migrate==0.13.0
 sqlalchemy-utils==0.36.3
+sqlalchemy-views==0.2.4
 sqlalchemy==1.3.16
 sqlparse==0.3.1
 stevedore==1.32.0

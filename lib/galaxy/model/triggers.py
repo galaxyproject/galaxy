@@ -8,12 +8,14 @@ from sqlalchemy import DDL
 def install_timestamp_triggers(engine):
     """Install update_time propagation triggers for history data tables"""
     statements = get_timestamp_install_sql(engine.name)
+    statements = statements + get_job_state_trigger_install_sql(engine.name)
     execute_statements(engine, statements)
 
 
 def drop_timestamp_triggers(engine):
     """Remove update_time propagation triggers for historydata tables"""
     statements = get_timestamp_drop_sql(engine.name)
+    statements = statements + get_job_state_trigger_drop_sql(engine.name)
     execute_statements(engine, statements)
 
 
@@ -104,13 +106,14 @@ def build_pg_timestamp_fn(fn_name, table_name, local_key='id', source_key='id', 
     return sql.format(**locals())
 
 
-def build_pg_trigger(table_name, fn_name):
-    """assigns a postgres trigger to indicated table, calling user-defined function"""
+def build_pg_trigger(table_name, fn_name, when='BEFORE'):
+    """creates sql to assigns a postgres trigger to indicated table, calling user-defined function"""
 
-    trigger_name = "trigger_{table_name}_biudr".format(**locals())
+    when_initial = when.lower()[0]
+    trigger_name = "trigger_{table_name}_{when_initial}iudr".format(**locals())
     tmpl = """
         CREATE TRIGGER {trigger_name}
-            BEFORE INSERT OR DELETE OR UPDATE
+            {when} INSERT OR DELETE OR UPDATE
             ON {table_name}
             FOR EACH ROW
             EXECUTE PROCEDURE {fn_name}();
@@ -120,8 +123,6 @@ def build_pg_trigger(table_name, fn_name):
 
 def build_timestamp_trigger(operation, source_table, target_table, source_key='id', target_key='id', when='BEFORE'):
     """creates a non-postgres update_time trigger"""
-
-    trigger_name = get_trigger_name(operation, source_table, when)
 
     # three different update clauses depending on update/insert/delete
     clause = ""
@@ -133,15 +134,25 @@ def build_timestamp_trigger(operation, source_table, target_table, source_key='i
         clause = "{target_key} = NEW.{source_key}"
     clause = clause.format(**locals())
 
+    trigger_body = """
+        UPDATE {target_table}
+        SET update_time = current_timestamp
+        WHERE {clause};
+    """.format(**locals())
+
+    return format_create_trigger(operation, source_table, trigger_body, when)
+
+
+def format_create_trigger(operation, source_table, trigger_body, when='BEFORE'):
+    """Format a standard non-postgres create trigger statement"""
+    trigger_name = get_trigger_name(operation, source_table, when)
     tmpl = """
         CREATE TRIGGER {trigger_name}
             {when} {operation}
             ON {source_table}
             FOR EACH ROW
             BEGIN
-                UPDATE {target_table}
-                SET update_time = current_timestamp
-                WHERE {clause};
+                {trigger_body}
             END;
     """
     return tmpl.format(**locals())
@@ -154,8 +165,79 @@ def build_drop_trigger(operation, source_table, when='BEFORE'):
 
 
 def get_trigger_name(operation, source_table, when='BEFORE'):
-    """non-postgres trigger name"""
+    """generates a non-postgres trigger name that corresponds to our naming convention"""
     op_initial = operation.lower()[0]
     when_initial = when.lower()[0]
     trigger_name = "trigger_{source_table}_{when_initial}{op_initial}r".format(**locals())
     return trigger_name
+
+
+# Job State
+# When a job state changes, we mark the update_time on HDCA
+# rows that reference the job
+
+job_state_update_trigger_sql = """
+    UPDATE history_dataset_collection_association
+    SET update_time = current_timestamp
+    WHERE id in (
+        SELECT hdca.id
+        FROM history_dataset_collection_association hdca
+        INNER JOIN implicit_collection_jobs icj
+            on icj.id = hdca.implicit_collection_jobs_id
+        INNER JOIN implicit_collection_jobs_job_association icjja
+            on icj.id = icjja.implicit_collection_jobs_id
+        WHERE icjja.job_id = NEW.id
+        UNION
+        SELECT hdca2.id
+        FROM history_dataset_collection_association hdca2
+        WHERE hdca2.job_id = NEW.id
+    );
+"""
+
+job_trigger_fn_name = 'update_history_timestamps_from_job_change'
+
+
+def get_job_state_trigger_install_sql(variant):
+    """generates sql statements for installation of job_state_trigger"""
+    sql = get_job_state_trigger_drop_sql(variant)
+    if 'postgres' in variant:
+        sql.append(build_pg_job_state_trigger_fn(job_trigger_fn_name))
+        sql.append(build_pg_trigger('job', job_trigger_fn_name, 'AFTER'))
+    else:
+        for operation in ['INSERT', 'UPDATE']:
+            sql.append(build_job_state_trigger(operation, 'job', 'AFTER'))
+    return sql
+
+
+def get_job_state_trigger_drop_sql(variant):
+    sql = []
+    if 'postgres' in variant:
+        sql.append("DROP FUNCTION IF EXISTS {fn_name}() CASCADE;".format(fn_name=job_trigger_fn_name))
+    else:
+        for operation in ['INSERT', 'UPDATE']:
+            sql.append(build_drop_trigger(operation, 'job', 'AFTER'))
+    return sql
+
+
+def build_pg_job_state_trigger_fn(fn_name):
+    """build postgres trigger function for job state changes"""
+    sql = """
+        CREATE OR REPLACE FUNCTION {fn_name}()
+            RETURNS trigger
+            LANGUAGE 'plpgsql'
+        AS $BODY$
+            BEGIN
+                IF (TG_OP = 'INSERT' OR (TG_OP = 'UPDATE' AND NEW.state <> OLD.state)) THEN
+                    {trigger_body}
+                    RETURN NEW;
+                END IF;
+                RETURN NULL;
+            END;
+        $BODY$;
+    """
+    return sql.format(fn_name=fn_name, trigger_body=job_state_update_trigger_sql)
+
+
+def build_job_state_trigger(operation, source_table, when='BEFORE'):
+    """build non-postgres trigger for job state changes"""
+    return format_create_trigger(operation, source_table, job_state_update_trigger_sql, when)

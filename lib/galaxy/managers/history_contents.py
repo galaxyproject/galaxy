@@ -14,7 +14,7 @@ from sqlalchemy import (
     true
 )
 from sqlalchemy.orm import (
-    eagerload,
+    joinedload,
     undefer
 )
 
@@ -393,9 +393,9 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
         query = (self._session().query(component_class)
             .filter(component_class.id.in_(id_list))
             .options(undefer('_metadata'))
-            .options(eagerload('dataset.actions'))
-            .options(eagerload('tags'))
-            .options(eagerload('annotations')))
+            .options(joinedload('dataset.actions'))
+            .options(joinedload('tags'))
+            .options(joinedload('annotations')))
         return dict((row.id, row) for row in query.all())
 
     def _subcontainer_id_map(self, id_list):
@@ -405,9 +405,10 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
         component_class = self.subcontainer_class
         query = (self._session().query(component_class)
             .filter(component_class.id.in_(id_list))
-            .options(eagerload('collection'))
-            .options(eagerload('tags'))
-            .options(eagerload('annotations')))
+            .options(joinedload('collection'))
+            .options(joinedload('tags'))
+            .options(joinedload('annotations'))
+            .options(joinedload('job_state_summary')))
         return dict((row.id, row) for row in query.all())
 
 
