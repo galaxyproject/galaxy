@@ -290,8 +290,6 @@ class CustosAuthnz(IdentityProvider):
     def _generate_username(self, trans, email):
         temp_username = email.split('@')[0]  # username created from username portion of email
         count = 0
-        existing_usernames = trans.sa_session.query(trans.app.model.User).filter_by(username=(temp_username)).first()
-
         if (trans.sa_session.query(trans.app.model.User).filter_by(username=temp_username).first()):
             # if username already exists in database, append integer and iterate until unique username found
             while (trans.sa_session.query(trans.app.model.User).filter_by(username=(temp_username + str(count))).first()):
