@@ -48,14 +48,14 @@
                                 <p>Use your existing institutional login</p>
                                 <p class="hint">e.g., university, lab, facility, project</p>
                             </div>
-
-                            <selectize v-model="selected" placeholder="Select your institution:">
-                                <option
-                                    v-for="idp in cilogon_idps"
-                                    :key="idp.EntityID"
-                                    :value="idp.EntityID"
-                                >{{ idp.DisplayName }}</option>
-                            </selectize>
+                            <multiselect
+                                placeholder="Select your institution"
+                                v-model="selected"
+                                :options="cilogon_idps"
+                                label="DisplayName"
+                                track-by="EntityID"
+                            >
+                            </multiselect>
 
                             <b-button
                                 v-if="oidc_idps.includes('cilogon')"
@@ -127,7 +127,7 @@
 <script>
 import axios from "axios";
 import Vue from "vue";
-import Selectize from 'vue2-selectize';
+import Multiselect from 'vue-multiselect';
 import BootstrapVue from "bootstrap-vue";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
@@ -136,7 +136,7 @@ Vue.use(BootstrapVue);
 
 export default {
     components: {
-        Selectize
+        Multiselect
     },
     props: {
         show_welcome_with_login: {
@@ -230,7 +230,7 @@ export default {
             const rootUrl = getAppRoot();
                 
             axios
-                .post(`${rootUrl}authnz/${idp}/login/?idphint=${this.selected}`)
+                .post(`${rootUrl}authnz/${idp}/login/?idphint=${this.selected.EntityID}`)
                 .then(response => {
                     if (response.data.redirect_uri) {
                         window.location = response.data.redirect_uri;
@@ -281,7 +281,3 @@ export default {
     },
 };
 </script>
-
-<style lang="scss">
-@import "~selectize/dist/css/selectize.bootstrap3.css";
-</style>
