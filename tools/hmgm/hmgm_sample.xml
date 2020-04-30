@@ -3,7 +3,7 @@
   <command detect_errors="exit_code">$__tool_directory__/hmgm_sample_wrapper.py $json_out</command>
   <inputs>
     <param name="input" type="data" format="json" label="Input JSON file" help="A JSON file"/>
-    <param name="context" type="text" label="Human MGM Task Context" help="Context information needed for creating Human MGM tasks"/> 
+    <param name="context_json" type="text" label="Human MGM Task Context" help="Context information needed for creating Human MGM tasks"/> 
   </inputs>
   <outputs>
     <data name="json_out" format="json" />
