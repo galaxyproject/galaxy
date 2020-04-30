@@ -17,7 +17,8 @@ from sqlalchemy.orm import joinedload
 from galaxy import (
     exceptions,
     model,
-    util
+    util,
+    version
 )
 from galaxy.managers import (
     histories,
@@ -48,6 +49,7 @@ from galaxy.workflow.modules import module_factory
 from galaxy.workflow.reports import generate_report
 from galaxy.workflow.run import invoke, queue_invoke
 from galaxy.workflow.run_request import build_workflow_run_configs
+from galaxy.version import VERSION
 
 log = logging.getLogger(__name__)
 
@@ -1179,8 +1181,16 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             'environment_variables': {}
         }
 
-        galaxy_extension = []  # TODO
-        input_subdomain = input_subdomain  # TODO
+        extension = [
+            {
+                'extension_schema': 'https://raw.githubusercontent.com/biocompute-objects/extension_domain/6d2cd8482e6075746984662edcf78b57d3d38065/galaxy/galaxy_extension.json',
+                'galaxy_extension': {
+                    'galaxy_url': url_for('/', qualified=True),
+                    'galaxy_version': VERSION
+                }
+            }
+        ]
+        input_subdomain = input_subdomain
 
         ret_dict = {
             'bco_id': url_for('invocation_export_bco', invocation_id=invocation_id, qualified=True),
@@ -1188,7 +1198,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             'etag': str(model.uuid4().hex),
             'provenance_domain': provenance_domain,
             'usability_domain': usability_domain,
-            'extension_domain': galaxy_extension,
+            'extension_domain': extension,
             'description_domain': {
                 'keywords': keywords,
                 'xref': kwd.get('xref', []),
