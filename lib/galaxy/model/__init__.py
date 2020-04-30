@@ -1151,7 +1151,7 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
             return dataset_assoc.dataset.tool_version
 
     def update_output_states(self):
-        sql = '''
+        statements = ['''
             UPDATE history_dataset_collection_association
             SET update_time = :update_time
             WHERE id in (
@@ -1167,7 +1167,7 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
                 FROM history_dataset_collection_association hdca2
                 WHERE hdca2.job_id = :job_id
             );
-
+        ''', '''
             UPDATE dataset
             SET
                 state = :state,
@@ -1177,7 +1177,7 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
                 INNER JOIN job_to_output_dataset jtod
                 ON jtod.dataset_id = hda.id AND jtod.job_id = :job_id
             );
-
+        ''', '''
             UPDATE dataset
             SET
                 state = :state,
@@ -1187,7 +1187,7 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
                 INNER JOIN job_to_output_library_dataset jtold
                 ON jtold.ldda_id = ldda.id AND jtold.job_id = :job_id
             );
-
+        ''', '''
             UPDATE history_dataset_association
             SET
                 info = :info,
@@ -1197,7 +1197,7 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
                 FROM job_to_output_dataset jtod
                 WHERE jtod.job_id = :job_id
             );
-
+        ''', '''
             UPDATE library_dataset_dataset_association
             SET
                 info = :info,
@@ -1207,7 +1207,7 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
                 FROM job_to_output_library_dataset jtold
                 WHERE jtold.job_id = :job_id
             );
-        '''
+        ''']
         sa_session = object_session(self)
         params = {
             'job_id': self.id,
@@ -1215,7 +1215,8 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
             'info': self.info,
             'update_time': galaxy.model.orm.now.now()
         }
-        sa_session.execute(sql, params)
+        for statement in statements:
+            sa_session.execute(statement, params)
         # sa_session.flush()
 
 
