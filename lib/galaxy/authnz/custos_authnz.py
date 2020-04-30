@@ -92,7 +92,7 @@ class CustosAuthnz(IdentityProvider):
         self._validate_nonce(trans, nonce_hash)
 
         # Get userinfo and lookup/create Galaxy user record
-        if id_token_decoded['email']:
+        if id_token_decoded.get('email', None):
             userinfo = id_token_decoded
         else:
             userinfo = self._get_userinfo(oauth2_session)
