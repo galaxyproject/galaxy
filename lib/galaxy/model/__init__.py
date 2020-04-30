@@ -2400,6 +2400,7 @@ class Dataset(StorableObject, RepresentById):
             if self.object_store.exists(self, extra_dir=rel_path, dir_only=True):
                 for root, dirs, files in os.walk(self.extra_files_path):
                     self.total_size += sum([os.path.getsize(os.path.join(root, file)) for file in files if os.path.exists(os.path.join(root, file))])
+        return self.total_size
 
     def has_data(self):
         """Detects whether there is any data"""

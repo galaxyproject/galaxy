@@ -1714,14 +1714,13 @@ class JobWrapper(HasResourceParameters):
         self.tool.call_hook('exec_after_process', self.app, inp_data=inp_data,
                             out_data=out_data, param_dict=param_dict,
                             tool=self.tool, stdout=job.stdout, stderr=job.stderr)
-        job.command_line = unicodify(self.command_line)
 
         collected_bytes = 0
         # Once datasets are collected, set the total dataset size (includes extra files)
         for dataset_assoc in job.output_datasets:
             if not dataset_assoc.dataset.dataset.purged:
-                dataset_assoc.dataset.dataset.set_total_size()
-                collected_bytes += dataset_assoc.dataset.dataset.get_total_size()
+                # don't call get_total_size - forces a flush we don't want in here.
+                collected_bytes += dataset_assoc.dataset.dataset.set_total_size()
 
         if job.user:
             job.user.adjust_total_disk_usage(collected_bytes)
