@@ -1,5 +1,5 @@
 <template>
-    <div class="workflow-node" :node-label="label" :name="name">
+    <div id="idString" class="workflow-node" :node-label="label" :name="name">
         <div class="node-header unselectable clearfix">
             <b-button
                 class="node-destroy py-0 float-right"
@@ -132,6 +132,9 @@ export default {
     computed: {
         title() {
             return this.label || this.name;
+        },
+        idString() {
+            return `wf-node-step-${this.id}`;
         },
         hasInputs() {
             return Object.keys(this.inputs).length > 0;

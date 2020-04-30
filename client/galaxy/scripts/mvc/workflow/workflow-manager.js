@@ -176,8 +176,6 @@ class Workflow extends EventEmitter {
             });
 
         // Set node attributes and add to nodes list
-        node.element.setAttribute("id", `wf-node-step-${node.id}`);
-        node.element.setAttribute("node-label", node.label);
         this.nodes[node.id] = node;
         this.has_changes = true;
         node.workflow = this;
