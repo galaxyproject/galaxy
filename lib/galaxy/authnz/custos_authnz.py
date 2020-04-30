@@ -1,3 +1,4 @@
+import base64
 import hashlib
 import json
 import logging
@@ -6,13 +7,12 @@ from datetime import datetime, timedelta
 
 import jwt
 import requests
-import base64
 from oauthlib.common import generate_nonce
 from requests_oauthlib import OAuth2Session
 from six.moves.urllib.parse import quote
 
-from galaxy import util
 from galaxy import exceptions
+from galaxy import util
 from galaxy.model import CustosAuthnzToken, User
 from ..authnz import IdentityProvider
 
@@ -240,9 +240,11 @@ class CustosAuthnz(IdentityProvider):
 
     def _get_custos_credentials(self):
         clientIdAndSec = self.config['client_id'] + ":" + self.config['client_secret']
+        import pprint
         creds = requests.get(self.config['credential_url'],
                             headers={"Authorization": "Basic %s" % base64.b64encode(util.smart_str(clientIdAndSec))},
                             verify=False, params={'client_id': self.config['client_id']})
+        pprint.pprint(creds)
         credentials = creds.json()
         self.config['iam_client_secret'] = credentials['iam_client_secret']
 

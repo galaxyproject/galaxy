@@ -30,6 +30,7 @@ from .psa_authnz import (
 
 log = logging.getLogger(__name__)
 
+
 class AuthnzManager(object):
 
     def __init__(self, app, oidc_config_file, oidc_backends_config_file):
