@@ -1190,7 +1190,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 }
             }
         ]
-        input_subdomain = input_subdomain
+
+        error_domain = {
+            'empirical_error': kwd.get('empirical_error', []),
+            'algorithmic_error': kwd.get('algorithmic_error', [])
+        }
 
         ret_dict = {
             'bco_id': url_for('invocation_export_bco', invocation_id=invocation_id, qualified=True),
@@ -1211,7 +1215,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 'input_subdomain': input_subdomain,
                 'output_subdomain': output_subdomain,
             },
-            'error_domain': {},
+            'error_domain': error_domain,
         }
         return ret_dict
 
