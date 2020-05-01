@@ -126,24 +126,24 @@ function searchInput(parentNode, options) {
                 'data-placement="bottom" ',
                 'data-content="',
                 _l(
-                    "You can use advanced searches here using keyword search and syntax like name=&#8220;My DataSet&#8221;"
+                    "<p>You can use advanced searches here using keywords and syntax like <em>name=mydataset</em> or <em>state=error</em>."
                 ),
                 "<br/>",
                 _l(
-                    "Supported keywords for Advanced Searching are: name, format, database, annotation, description, info, tag, hid, and state."
+                    "Supported keywords are <em>name, format, database, annotation, description, info, tag, hid, and state</em>."
                 ),
                 "<br/>",
-                _l("To learn more: "),
-                "<a href='https://galaxyproject.org/tutorials/histories/#advanced-searching'>",
-                _l("Advanced Searching Tutorials"),
-                '</a>" title="',
-                _l("Advanced Search Tips"),
+                _l("To learn more visit "),
+                "<a href='https://galaxyproject.org/tutorials/histories/#advanced-searching' target='_blank'>",
+                _l("the Hub"),
+                '.</a></p>" title="',
+                _l("search tips"),
                 '"></span>',
             ].join("")
         )
             .tooltip({ placement: "bottom" })
             .click(function () {
-                $('[data-toggle="advSearchPopover"]').popover({ html: true });
+                $('[data-toggle="advSearchPopover"]').popover({ html: true, container: '.history-right-panel' });
             });
     }
 
