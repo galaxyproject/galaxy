@@ -12,7 +12,7 @@
         <div class="unified-panel-controls">
             <tool-search :query="query" placeholder="search tools" @onQuery="onQuery" @onResults="onResults" />
 
-            <div class="float-none py-2" v-if="hasResults">
+            <div class="py-2" v-if="hasResults">
                 <b-button @click="onToggle">{{ buttonText }}</b-button>
             </div>
             <div class="py-2" v-else-if="query">
