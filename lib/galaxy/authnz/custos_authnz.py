@@ -144,7 +144,7 @@ class CustosAuthnz(IdentityProvider):
             custos_authnz_token.refresh_expiration_time = refresh_expiration_time
         trans.sa_session.add(custos_authnz_token)
         trans.sa_session.flush()
-        return True, "", (login_redirect_url, custos_authnz_token.user)
+        return login_redirect_url, custos_authnz_token.user
 
     def disconnect(self, provider, trans, disconnect_redirect_url=None):
         try:
