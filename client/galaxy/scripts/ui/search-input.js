@@ -125,10 +125,14 @@ function searchInput(parentNode, options) {
                 'data-toggle="advSearchPopover" ',
                 'data-placement="bottom" ',
                 'data-content="',
-                _l("You can use advanced searches here using keyword search and syntax like name=&#8220;My DataSet&#8221;"),
-                '<br/>',
-                _l("Supported keywords for Advanced Searching are: name, format, database, annotation, description, info, tag, hid, and state."),
-                '<br/>',
+                _l(
+                    "You can use advanced searches here using keyword search and syntax like name=&#8220;My DataSet&#8221;"
+                ),
+                "<br/>",
+                _l(
+                    "Supported keywords for Advanced Searching are: name, format, database, annotation, description, info, tag, hid, and state."
+                ),
+                "<br/>",
                 _l("To learn more: "),
                 "<a href='https://galaxyproject.org/tutorials/histories/#advanced-searching'>",
                 _l("Advanced Searching Tutorials"),
