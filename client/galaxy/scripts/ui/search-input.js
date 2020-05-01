@@ -143,7 +143,7 @@ function searchInput(parentNode, options) {
         )
             .tooltip({ placement: "bottom" })
             .click(function () {
-                $('[data-toggle="advSearchPopover"]').popover({ html: true, container: '.history-right-panel' });
+                $('[data-toggle="advSearchPopover"]').popover({ html: true, container: ".history-right-panel" });
             });
     }
 
