@@ -540,7 +540,7 @@ class SubWorkflowModule(WorkflowModule):
                     if input.type in ['data', 'data_collection']:
                         return
 
-                    if is_runtime_value(value):
+                    if is_runtime_value(value) and runtime_to_json(value)["__class__"] != "ConnectedValue":
                         input_name = "%d|%s" % (step.order_index, prefixed_name)
                         inputs[input_name] = InputProxy(input, input_name)
 
