@@ -11,6 +11,7 @@ Subpackages
 
 .. toctree::
 
+    galaxy.workflow.reports
     galaxy.workflow.resources
     galaxy.workflow.schedulers
 
