@@ -160,16 +160,11 @@ export const getAnalysisRouter = (Galaxy) =>
         },
 
         show_visualizations_sharing: function () {
-            const sharingInstance = Vue.extend(Sharing);
-            const vm = document.createElement("div");
-            this.page.display(vm);
-            new sharingInstance({
-                propsData: {
-                    id: QueryStringParsing.get("id"),
-                    plural_name: "Visualizations",
-                    model_class: "Visualization",
-                },
-            }).$mount(vm);
+            this._display_vue_helper(Sharing, {
+                id: QueryStringParsing.get("id"),
+                plural_name: "Visualizations",
+                model_class: "Visualization",
+            });
         },
 
         show_workflows_published: function () {
@@ -186,10 +181,7 @@ export const getAnalysisRouter = (Galaxy) =>
         },
 
         show_history_view: function () {
-            const historyInstance = Vue.extend(HistoryView);
-            const vm = document.createElement("div");
-            this.page.display(vm);
-            new historyInstance({ propsData: { id: QueryStringParsing.get("id") } }).$mount(vm);
+            this._display_vue_helper(HistoryView, { id: QueryStringParsing.get("id") });
         },
 
         show_workflow_invocation_report: function () {
@@ -202,10 +194,7 @@ export const getAnalysisRouter = (Galaxy) =>
         },
 
         show_history_structure: function () {
-            const displayStructureInstance = Vue.extend(DisplayStructure);
-            const vm = document.createElement("div");
-            this.page.display(vm);
-            new displayStructureInstance({ propsData: { id: QueryStringParsing.get(" id: ") } }).$mount(vm);
+            this._display_vue_helper(DisplayStructure, { id: QueryStringParsing.get(" id: ") });
         },
 
         show_histories: function (action_id) {
@@ -214,10 +203,7 @@ export const getAnalysisRouter = (Galaxy) =>
         },
 
         show_history_citations: function () {
-            const citationInstance = Vue.extend(Citations);
-            const vm = document.createElement("div");
-            this.page.display(vm);
-            new citationInstance({ propsData: { id: QueryStringParsing.get("id"), source: "histories" } }).$mount(vm);
+            this._display_vue_helper(Citations, { id: QueryStringParsing.get("id"), source: "histories" });
         },
 
         show_histories_rename: function () {
@@ -230,16 +216,11 @@ export const getAnalysisRouter = (Galaxy) =>
         },
 
         show_histories_sharing: function () {
-            const sharingInstance = Vue.extend(Sharing);
-            const vm = document.createElement("div");
-            this.page.display(vm);
-            new sharingInstance({
-                propsData: {
-                    id: QueryStringParsing.get("id"),
-                    plural_name: "Histories",
-                    model_class: "History",
-                },
-            }).$mount(vm);
+            this._display_vue_helper(Sharing, {
+                id: QueryStringParsing.get("id"),
+                plural_name: "Histories",
+                model_class: "History",
+            });
         },
 
         show_histories_import: function () {
@@ -301,23 +282,15 @@ export const getAnalysisRouter = (Galaxy) =>
         },
 
         show_pages_sharing: function () {
-            const sharingInstance = Vue.extend(Sharing);
-            const vm = document.createElement("div");
-            this.page.display(vm);
-            new sharingInstance({
-                propsData: {
-                    id: QueryStringParsing.get("id"),
-                    plural_name: "Pages",
-                    model_class: "Page",
-                },
-            }).$mount(vm);
+            this._display_vue_helper(Sharing, {
+                id: QueryStringParsing.get("id"),
+                plural_name: "Pages",
+                model_class: "Page",
+            });
         },
 
         show_plugins: function () {
-            const pluginListInstance = Vue.extend(PluginList);
-            const vm = document.createElement("div");
-            this.page.display(vm);
-            new pluginListInstance().$mount(vm);
+            this._display_vue_helper(PluginList);
         },
 
         show_workflows: function () {
@@ -339,10 +312,7 @@ export const getAnalysisRouter = (Galaxy) =>
         },
 
         show_workflows_import: function () {
-            const workflowImportInstance = Vue.extend(WorkflowImport);
-            const vm = document.createElement("div");
-            this.page.display(vm);
-            new workflowImportInstance().$mount(vm);
+            this._display_vue_helper(WorkflowImport);
         },
 
         show_custom_builds: function () {
@@ -353,10 +323,7 @@ export const getAnalysisRouter = (Galaxy) =>
                 }, 500);
                 return;
             }
-            const customBuildsInstance = Vue.extend(CustomBuilds);
-            const vm = document.createElement("div");
-            this.page.display(vm);
-            new customBuildsInstance().$mount(vm);
+            this._display_vue_helper(CustomBuilds);
         },
 
         show_dataset_edit_attributes: function () {
