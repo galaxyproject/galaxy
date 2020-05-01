@@ -13,8 +13,8 @@
             <tool-search :query="query" placeholder="search tools" @onQuery="onQuery" @onResults="onResults" />
 
             <div class="float-none py-2" v-if="results">
-                <button class="btn btn-secondary btn-sm" v-if="!show" @click="onToggle">Show Categories</button>
-                <button class="btn btn-secondary btn-sm" v-if="show" @click="onToggle">Hide Categories</button>
+                <button class="btn btn-secondary btn-sm" v-if="!showSections" @click="onToggle">Show Categories</button>
+                <button class="btn btn-secondary btn-sm" v-if="showSections" @click="onToggle">Hide Categories</button>
             </div>
         </div>
         <div class="unified-panel-body">
@@ -66,7 +66,7 @@ export default {
             results: null,
             queryFilter: null,
             workflow: null,
-            show: false,
+            showSections: false,
         };
     },
     props: {
@@ -85,7 +85,7 @@ export default {
     },
     computed: {
         sections() {
-            if (this.show) {
+            if (this.showSections) {
                 return filterToolSections(this.toolbox, this.results);
             } else {
                 return filterTools(this.toolbox, this.results);
@@ -137,7 +137,7 @@ export default {
             }
         },
         onToggle() {
-            this.show = !this.show;
+            this.showSections = !this.showSections;
         },
     },
 };
