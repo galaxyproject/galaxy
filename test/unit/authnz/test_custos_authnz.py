@@ -148,9 +148,13 @@ class CustosAuthnzTestCase(unittest.TestCase):
             provider = None
             custos_authnz_token = None
 
-            def filter_by(self, email=None, external_user_id=None, provider=None):
+            def filter_by(self, email=None, external_user_id=None, provider=None, username=None):
                 self.external_user_id = external_user_id
                 self.provider = provider
+                if username:
+                    # This is only called with a specific username to check if it
+                    # already exists in the database.  Say no, for testing.
+                    return QueryResult()
                 if self.custos_authnz_token:
                     return QueryResult([self.custos_authnz_token])
                 else:
