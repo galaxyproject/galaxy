@@ -30,6 +30,7 @@ function searchInput(parentNode, options) {
         onsearch: function (inputVal) {},
         minSearchLen: 0,
         escWillClear: true,
+        advsearchlink: null,
         oninit: function () {},
     };
 
@@ -116,6 +117,32 @@ function searchInput(parentNode, options) {
             });
     }
 
+    //advanced Search popover
+    function $advancedSearchPopover() {
+        return $(
+            [
+                '<span class="search-advanced fa fa-question-circle" ',
+                'data-toggle="advSearchPopover" ',
+                'data-placement="bottom" ',
+                'data-content="',
+                _l("You can use advanced searches here using keyword search and syntax like name=&#8220;My DataSet&#8221;"),
+                '<br/>',
+                _l("Supported keywords for Advanced Searching are: name, format, database, annotation, description, info, tag, hid, and state."),
+                '<br/>',
+                _l("To learn more: "),
+                "<a href='https://galaxyproject.org/tutorials/histories/#advanced-searching'>",
+                _l("Advanced Searching Tutorials"),
+                '</a>" title="',
+                _l("Advanced Search Tips"),
+                '"></span>',
+            ].join("")
+        )
+            .tooltip({ placement: "bottom" })
+            .click(function () {
+                $('[data-toggle="advSearchPopover"]').popover({ html: true });
+            });
+    }
+
     // .................................................................... loadingIndicator rendering
     // a button for clearing the search bar, placed on the right hand side
     function $loadingIndicator() {
@@ -146,8 +173,17 @@ function searchInput(parentNode, options) {
     if (jQuery.type(options) === "object") {
         options = jQuery.extend(true, {}, defaults, options);
     }
+
+    var buttonsArr = [$clearBtn(), $loadingIndicator()];
+    if (options.advsearchlink) {
+        buttonsArr.push($advancedSearchPopover());
+    }
+
+    var buttonDiv = $('<div class "search-button-panel"></div>');
+    $(buttonDiv).prepend(buttonsArr);
+
     //NOTE: prepended
-    return $parentNode.addClass("search-input").prepend([$input(), $clearBtn(), $loadingIndicator()]);
+    return $parentNode.addClass("search-input").prepend([$input(), $(buttonDiv)]);
 }
 
 // as jq plugin
