@@ -10,24 +10,11 @@
             </div>
         </div>
         <div class="unified-panel-controls">
-            <tool-search
-                :query="query"
-                placeholder="search tools"
-                @onQuery="onQuery"
-                @onResults="onResults"
-            />
+            <tool-search :query="query" placeholder="search tools" @onQuery="onQuery" @onResults="onResults" />
 
-            <div class="float-none" v-if="results">
-                <button
-                    class="btn btn-secondary btn-sm"
-                    v-if="!show"
-                    @click="onToggle"
-                >Show Categories</button>
-                <button
-                    class="btn btn-secondary btn-sm"
-                    v-if="show"
-                    @click="onToggle"
-                >Hide Categories</button>
+            <div class="float-none py-2" v-if="results">
+                <button class="btn btn-secondary btn-sm" v-if="!show" @click="onToggle">Show Categories</button>
+                <button class="btn btn-secondary btn-sm" v-if="show" @click="onToggle">Hide Categories</button>
             </div>
         </div>
         <div class="unified-panel-body">
@@ -79,7 +66,7 @@ export default {
             results: null,
             queryFilter: null,
             workflow: null,
-            show: true,
+            show: false,
         };
     },
     props: {
@@ -128,7 +115,7 @@ export default {
     methods: {
         onQuery(query) {
             this.query = query;
-            this.queryFilter = (query.length >= 3) ? query : null
+            this.queryFilter = (query && query.length) >= 3 ? query : null;
         },
         onResults(results) {
             this.results = results;
