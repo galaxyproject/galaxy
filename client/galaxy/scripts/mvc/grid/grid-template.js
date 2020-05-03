@@ -451,7 +451,7 @@ export default {
                     if (column.is_text) {
                         filter_value = JSON.stringify(filter_value);
                     }
-                    tmpl += `<input type="hidden" id="${column.key}" name="f-${column.key}" value="${filter_value}"/>`
+                    tmpl += `<input type="hidden" id="${column.key}" name="f-${column.key}" value="${filter_value}"/>`;
                 }
             }
             // Print current filtering criteria and links to delete.
