@@ -447,13 +447,11 @@ export default {
             // Carry forward filtering criteria with hidden inputs.
             for (const column of options.columns) {
                 var filter_value = filters[column.key];
-                if (filter_value) {
-                    if (filter_value != "All") {
-                        if (column.is_text) {
-                            filter_value = JSON.stringify(filter_value);
-                        }
-                        tmpl += `<input type="hidden" id="${column.key}" name="f-${column.key}" value="${filter_value}"/>`;
+                if (filter_value && filter_value != "All") {
+                    if (column.is_text) {
+                        filter_value = JSON.stringify(filter_value);
                     }
+                    tmpl += `<input type="hidden" id="${column.key}" name="f-${column.key}" value="${filter_value}"/>`
                 }
             }
             // Print current filtering criteria and links to delete.
