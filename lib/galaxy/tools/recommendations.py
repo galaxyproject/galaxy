@@ -216,9 +216,6 @@ class ToolRecommendations():
         Get predicted tools. If predicted tools are less in number, combine them with published tools
         """
         intersection = list(set(predictions).intersection(set(base_tools)))
-        if len(intersection) < topk:
-            difference = list(set(base_tools).difference(set(predictions)))
-            intersection.extend(difference)
         return intersection[:topk]
 
     def __sort_by_usage(self, t_list, class_weights, d_dict):
@@ -258,7 +255,6 @@ class ToolRecommendations():
         Return a payload with the tool sequences and recommended tools
         Return an empty payload with just the tool sequence if anything goes wrong within the try block
         """
-        tool_sequence = "freebayes,bowtie2"
         topk = trans.app.config.topk_recommendations
         prediction_data = dict()
         tool_sequence = tool_sequence.split(",")[::-1]
