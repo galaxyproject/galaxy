@@ -6,7 +6,7 @@ import galaxy.workflow.schedulers
 from galaxy import model
 from galaxy.exceptions import HandlerAssignmentError
 from galaxy.util import plugin_config
-from galaxy.util.logging import get_logger
+from galaxy.util.custom_logging import get_logger
 from galaxy.util.monitors import Monitors
 from galaxy.web_stack.handlers import ConfiguresHandlers, HANDLER_ASSIGNMENT_METHODS
 from galaxy.web_stack.message import WorkflowSchedulingMessage

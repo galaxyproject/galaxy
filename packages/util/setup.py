@@ -33,7 +33,7 @@ PACKAGES = [
     'galaxy',
     'galaxy.exceptions',
     'galaxy.util',
-    'galaxy.util.logging',
+    'galaxy.util.custom_logging',
     'galaxy.util.path',
 ]
 ENTRY_POINTS = '''
