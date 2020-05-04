@@ -1,6 +1,11 @@
 <template>
     <div class="dropdown-menu" role="menu">
-        <a v-for="dateTime in getRules()" :key="dateTime" @click="loadSession(builder, dateTime)">
+        <a
+            class="rule-link dropdown-item"
+            v-for="dateTime in getRules()"
+            :key="dateTime"
+            @click="loadSession(builder, dateTime)"
+        >
             {{ dateTime }}
         </a>
     </div>
@@ -31,7 +36,6 @@ export default {
         },
         loadSession(builder, dateTime) {
             var currentSession = JSON.parse(localStorage.getItem(dateTime));
-            console.log("Loaded ", currentSession);
             builder.rules = currentSession.rules;
             builder.mapping = currentSession.mapping;
         },

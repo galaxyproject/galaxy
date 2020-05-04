@@ -1632,7 +1632,7 @@ export default {
             if (val == "replacement") {
                 this.addColumnRegexReplacement = "\0";
             }
-        },
+        }
     },
     components: {
         HotTable,
