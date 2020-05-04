@@ -110,4 +110,51 @@
         <columns>value, name, url</columns>
         <file path="tool-data/icn3d_simple_display.loc" />
     </table>
+    <!-- Refgenie __dbkeys__ -->
+    <table name="__dbkeys__" type="refgenie" asset="fasta" >
+        <file from_config="refgenie_config_file" />
+        <field name="value" template="true">${__REFGENIE_GENOME__}</field>
+        <field name="name" template="true">${__REFGENIE_DISPLAY_NAME__}</field>
+        <field name="len_path" template="true">${__REFGENIE_SEEK_KEY__('chrom_sizes')}</field>
+    </table>
+    <!-- Refgenie all_fasta -->
+    <table name="all_fasta" type="refgenie" asset="fasta" >
+        <file from_config="refgenie_config_file" />
+        <field name="value" template="true">${__REFGENIE_UUID__}</field>
+        <field name="dbkey" template="true">${__REFGENIE_GENOME__}</field>
+        <field name="name" template="true">${__REFGENIE_DISPLAY_NAME__}</field>
+        <field name="path" template="true">${__REFGENIE_ASSET__}</field>
+    </table>
+    <!-- Refgenie fasta_indexes (samtools) -->
+    <table name="fasta_indexes" type="refgenie" asset="fasta" >
+        <file from_config="refgenie_config_file" />
+        <field name="value" template="true">${__REFGENIE_UUID__}</field>
+        <field name="dbkey" template="true">${__REFGENIE_GENOME__}</field>
+        <field name="name" template="true">${__REFGENIE_DISPLAY_NAME__}</field>
+        <field name="path" template="true">${__REFGENIE_ASSET__}</field>
+    </table>
+    <!-- Refgenie bowtie2_indexes -->
+    <table name="bowtie2_indexes" type="refgenie" asset="bowtie2_index" >
+        <file from_config="refgenie_config_file" />
+        <field name="value" template="true">${__REFGENIE_UUID__}</field>
+        <field name="dbkey" template="true">${__REFGENIE_GENOME__}</field>
+        <field name="name" template="true">${__REFGENIE_DISPLAY_NAME__}</field>
+        <field name="path" template="true">${__REFGENIE_ASSET__}</field>
+    </table>
+    <!-- Refgenie bwa_indexes -->
+    <table name="bwa_mem_indexes" type="refgenie" asset="bwa_index" >
+        <file from_config="refgenie_config_file" />
+        <field name="value" template="true">${__REFGENIE_UUID__}</field>
+        <field name="dbkey" template="true">${__REFGENIE_GENOME__}</field>
+        <field name="name" template="true">${__REFGENIE_DISPLAY_NAME__}</field>
+        <field name="path" template="true">${__REFGENIE_ASSET__}</field>
+    </table>
+    <!-- Refgenie hisat2_indexes -->
+    <table name="hisat2_indexes" type="refgenie" asset="hisat2_index" >
+        <file from_config="refgenie_config_file" />
+        <field name="value" template="true">${__REFGENIE_UUID__}</field>
+        <field name="dbkey" template="true">${__REFGENIE_GENOME__}</field>
+        <field name="name" template="true">${__REFGENIE_DISPLAY_NAME__}</field>
+        <field name="path" template="true">${__REFGENIE_ASSET__}</field>
+    </table>
 </tables>
