@@ -264,9 +264,7 @@ class AuthnzManager(object):
             success, message, backend = self._get_authnz_backend(provider, idphint=idphint)
             if success is False:
                 return False, message, (None, None)
-            elif (provider == 'cilogon' or provider == 'custos'):
-                return backend.callback(state_token, authz_code, trans, login_redirect_url)
-            return True, message, backend.callback(state_token, authz_code, trans, login_redirect_url)
+            return success, message, backend.callback(state_token, authz_code, trans, login_redirect_url)
         except exceptions.AuthenticationFailed as e:
             log.exception(e.message)
             raise exceptions.AuthenticationFailed(e.message)
