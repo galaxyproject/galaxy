@@ -1,12 +1,10 @@
 import logging
 import os
-from collections import OrderedDict
 from json import dumps, loads
 
 from galaxy import exceptions, managers, util, web
 from galaxy.managers.collections_util import dictify_dataset_collection_instance
 from galaxy.tools import global_tool_errors
-from galaxy.util.json import safe_dumps
 from galaxy.web import (
     expose_api,
     expose_api_anonymous,
@@ -185,7 +183,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
                     }
         return test_counts_by_tool
 
-    @expose_api_raw_anonymous_and_sessionless
+    @expose_api_anonymous_and_sessionless
     def test_data(self, trans, id, **kwd):
         """
         GET /api/tools/{tool_id}/test_data?tool_version={tool_version}
@@ -201,18 +199,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
             kwd = kwd.get('payload')
         tool_version = kwd.get('tool_version', None)
         tool = self._get_tool(id, tool_version=tool_version, user=trans.user)
-
-        # Encode in this method to handle OrderedDict objects in tool representation.
-        def json_encodeify(obj):
-            if isinstance(obj, OrderedDict):
-                return dict(obj)
-            elif isinstance(obj, map):
-                return list(obj)
-            else:
-                return obj
-
-        result = [t.to_dict() for t in tool.tests]
-        return safe_dumps(result, default=json_encodeify)
+        return [t.to_dict() for t in tool.tests]
 
     @web.require_admin
     @expose_api

@@ -1,3 +1,4 @@
+from galaxy_test.base.populators import flakey
 from .framework import (
     selenium_test,
     SeleniumTestCase,
@@ -7,6 +8,66 @@ from .framework import (
 class AdminAppTestCase(SeleniumTestCase):
 
     requires_admin = True
+
+    @selenium_test
+    @flakey
+    def test_admin_toolshed(self):
+        '''
+        This tests installing a repository, checking for upgrades, and uninstalling.
+
+        A repository named a_selenium_test_repo has been created for this test,
+        owned by devteam@galaxyproject.org. The repository contains a tool with two versions,
+        and the oldest version gets installed so that there will be an upgrade available
+        on the 'Installed Only' view. Unfortunately, since this test relies on the presence
+        of the toolshed server, in some cases it will fail even if the galaxy code is correct,
+        necessitating the use of the @flakey decorator.
+        '''
+        repository_name = 'a_selenium_test_repo'
+        admin_component = self.components.admin
+        self.admin_login()
+        self.admin_open()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.screenshot('admin_landing')
+        admin_component.index.toolshed.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.screenshot('admin_toolshed_landing')
+        repo_search_input = self.driver.find_element_by_id('toolshed-repo-search')
+        repo_search_input.clear()
+        repo_search_input.send_keys(repository_name)
+        # If this hasn't succeeded after 30 seconds, the @flakey context should
+        # allow the test to still pass, since there should definitely be results
+        # after 30 seconds.
+        self.sleep_for(self.wait_types.SHED_SEARCH)
+        self.screenshot('admin_toolshed_search')
+        admin_component.toolshed.search_results.wait_for_visible()
+        repository_row = self.driver.find_element_by_link_text(repository_name)
+        repository_row.click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.screenshot('admin_toolshed_repo_details')
+        install_button = self.driver.find_element_by_xpath("(//button[contains(., 'Install')])[2]")
+        install_button.click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.screenshot('admin_toolshed_repo_install_settings')
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        ok_button = self.driver.find_element_by_xpath("//*[@id='repo-install-settings___BV_modal_footer_']/button[contains(., 'OK')]")
+        ok_button.click()
+        self.sleep_for(self.wait_types.REPO_INSTALL)
+        installed_only = self.driver.find_element_by_xpath("//span[contains(. ,'Installed Only')]/../../input")
+        self.action_chains().move_to_element(installed_only).click().perform()
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        # This serves as a check for the presence of the upgrade notification.
+        admin_component.toolshed.upgrade_notification.wait_for_visible()
+        self.screenshot('admin_toolshed_repo_installed')
+        repository_row = self.driver.find_element_by_xpath("//div[contains(text(), '%s')]/.." % repository_name)
+        repository_row.click()
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        self.screenshot('admin_toolshed_installed_only')
+        # Unfortunately reusing the element isn't feasible, since the div
+        # containing the button gets replaced with a new div and button.
+        uninstall_button = self.driver.find_element_by_xpath("(//button[contains(., 'Uninstall')])[1]")
+        uninstall_button.click()
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        self.screenshot('admin_toolshed_repo_uninstalled')
 
     @selenium_test
     def test_admin_server_display(self):

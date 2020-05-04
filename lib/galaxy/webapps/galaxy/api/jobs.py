@@ -15,6 +15,7 @@ from galaxy import util
 from galaxy.managers.jobs import (
     JobManager,
     JobSearch,
+    summarize_destination_params,
     summarize_job_metrics,
     summarize_job_parameters,
 )
@@ -282,6 +283,22 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
         """
         job = self.__get_job(trans, **kwd)
         return summarize_job_metrics(trans, job)
+
+    @require_admin
+    @expose_api
+    def destination_params(self, trans, **kwd):
+        """
+        * GET /api/jobs/{job_id}/destination_params
+            Return destination parameters for specified job.
+
+        :type   job_id: string
+        :param  job_id: Encoded job id
+
+        :rtype:     list
+        :returns:   list containing job destination parameters
+        """
+        job = self.__get_job(trans, **kwd)
+        return summarize_destination_params(trans, job)
 
     @expose_api_anonymous
     def parameters_display(self, trans, **kwd):

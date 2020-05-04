@@ -2,43 +2,32 @@ import logging
 import os
 
 from mercurial import hg, ui
-from whoosh import index
 from whoosh.writing import AsyncWriter
 
 import tool_shed.webapp.model.mapping as ts_mapping
 from galaxy.tool_util.loader_directory import load_tool_elements_from_path
+from galaxy.tools.search import get_or_create_index
 from galaxy.util import (
     directory_hash_id,
     ExecutionTimer,
     pretty_print_time_interval,
     unicodify
 )
+from tool_shed.util.hgweb_config import hgweb_config_manager
 from tool_shed.webapp import model
 from tool_shed.webapp.search.repo_search import schema as repo_schema
 from tool_shed.webapp.search.tool_search import schema as tool_schema
-from tool_shed.webapp.util.hgweb_config import HgWebConfigManager
 
 log = logging.getLogger(__name__)
 
 
-def get_or_create_index(whoosh_index_dir):
+def _get_or_create_index(whoosh_index_dir):
     tool_index_dir = os.path.join(whoosh_index_dir, 'tools')
     if not os.path.exists(whoosh_index_dir):
         os.makedirs(whoosh_index_dir)
     if not os.path.exists(tool_index_dir):
         os.makedirs(tool_index_dir)
-    return _get_or_create_index(whoosh_index_dir, repo_schema), _get_or_create_index(tool_index_dir, tool_schema)
-
-
-def _get_or_create_index(index_dir, schema):
-    if index.exists_in(index_dir):
-        idx = index.open_dir(index_dir)
-        try:
-            assert idx.schema == repo_schema
-            return idx
-        except AssertionError:
-            log.warning("Index at '%s' uses outdated schema, creating new index", index_dir)
-    return index.create_in(index_dir, schema=schema)
+    return get_or_create_index(whoosh_index_dir, repo_schema), get_or_create_index(tool_index_dir, tool_schema)
 
 
 def build_index(whoosh_index_dir, file_path, hgweb_config_dir, dburi, **kwargs):
@@ -50,7 +39,7 @@ def build_index(whoosh_index_dir, file_path, hgweb_config_dir, dburi, **kwargs):
     """
     model = ts_mapping.init(file_path, dburi, engine_options={}, create_tables=False)
     sa_session = model.context.current
-    repo_index, tool_index = get_or_create_index(whoosh_index_dir)
+    repo_index, tool_index = _get_or_create_index(whoosh_index_dir)
 
     repo_index_writer = AsyncWriter(repo_index)
     tool_index_writer = AsyncWriter(tool_index)
@@ -92,7 +81,7 @@ def get_repos(sa_session, file_path, hgweb_config_dir, **kwargs):
     """
     Load repos from DB and included tools from .xml configs.
     """
-    hgwcm = HgWebConfigManager()
+    hgwcm = hgweb_config_manager
     hgwcm.hgweb_config_dir = hgweb_config_dir
     # Do not index deleted, deprecated, or "tool_dependency_definition" type repositories.
     q = sa_session.query(model.Repository).filter_by(deleted=False).filter_by(deprecated=False).order_by(model.Repository.update_time.desc())
@@ -147,20 +136,20 @@ def get_repos(sa_session, file_path, hgweb_config_dir, **kwargs):
                     tools_in_dir = load_one_dir(os.path.join(root, dirname))
                     tools_list.extend(tools_in_dir)
 
-        yield (dict(id=repo_id,
-                    name=name,
-                    description=description,
-                    long_description=long_description,
-                    homepage_url=homepage_url,
-                    remote_repository_url=remote_repository_url,
-                    repo_owner_username=repo_owner_username,
-                    times_downloaded=times_downloaded,
-                    approved=approved,
-                    last_updated=last_updated,
-                    full_last_updated=full_last_updated,
+        yield (dict(id=unicodify(repo_id),
+                    name=unicodify(name),
+                    description=unicodify(description),
+                    long_description=unicodify(long_description),
+                    homepage_url=unicodify(homepage_url),
+                    remote_repository_url=unicodify(remote_repository_url),
+                    repo_owner_username=unicodify(repo_owner_username),
+                    times_downloaded=unicodify(times_downloaded),
+                    approved=unicodify(approved),
+                    last_updated=unicodify(last_updated),
+                    full_last_updated=unicodify(full_last_updated),
                     tools_list=tools_list,
-                    repo_lineage=repo_lineage,
-                    categories=categories))
+                    repo_lineage=unicodify(repo_lineage),
+                    categories=unicodify(categories)))
 
 
 def debug_handler(path, exc_info):

@@ -873,7 +873,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                     changeset_revision = elem.get('changeset_revision')
                     params = dict(name=repository_name, owner='devteam', changeset_revision=changeset_revision)
                     pathspec = ['repository', 'get_tool_dependencies']
-                    text = url_get(shed_url, password_mgr=self.app.tool_shed_registry.url_auth(shed_url), pathspec=pathspec, params=params)
+                    text = url_get(shed_url, auth=self.app.tool_shed_registry.url_auth(shed_url), pathspec=pathspec, params=params)
                     if text:
                         tool_dependencies_dict = encoding_util.tool_shed_decode(text)
                         for dependency_key, requirements_dict in tool_dependencies_dict.items():

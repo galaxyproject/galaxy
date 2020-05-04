@@ -32,26 +32,24 @@ from os.path import relpath
 from xml.etree import ElementInclude, ElementTree
 from xml.etree.ElementTree import ParseError
 
+import requests
 try:
     import grp
 except ImportError:
     # For Pulsar on Windows (which does not use the function that uses grp)
     grp = None
-
 from boltons.iterutils import (
     default_enter,
     remap,
 )
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 from six import binary_type, iteritems, PY2, string_types, text_type
 from six.moves import (
     xrange,
     zip
 )
-from six.moves.urllib import (
-    parse as urlparse,
-    request as urlrequest
-)
-from six.moves.urllib.request import urlopen
+from six.moves.urllib import parse as urlparse
 
 try:
     import docutils.core as docutils_core
@@ -1494,10 +1492,9 @@ def send_mail(frm, to, subject, body, config, html=None):
 
     smtp_ssl = asbool(getattr(config, 'smtp_ssl', False))
     if smtp_ssl:
-        s = smtplib.SMTP_SSL()
+        s = smtplib.SMTP_SSL(config.smtp_server)
     else:
-        s = smtplib.SMTP()
-    s.connect(config.smtp_server)
+        s = smtplib.SMTP(config.smtp_server)
     if not smtp_ssl:
         try:
             s.starttls()
@@ -1676,32 +1673,23 @@ def build_url(base_url, port=80, scheme='http', pathspec=None, params=None, dose
     return url
 
 
-def url_get(base_url, password_mgr=None, pathspec=None, params=None):
+def url_get(base_url, auth=None, pathspec=None, params=None, max_retries=5, backoff_factor=1):
     """Make contact with the uri provided and return any contents."""
-    # Uses system proxy settings if they exist.
-    proxy = urlrequest.ProxyHandler()
-    if password_mgr is not None:
-        auth = urlrequest.HTTPDigestAuthHandler(password_mgr)
-        urlopener = urlrequest.build_opener(proxy, auth)
-    else:
-        urlopener = urlrequest.build_opener(proxy)
-    urlrequest.install_opener(urlopener)
     full_url = build_url(base_url, pathspec=pathspec, params=params)
-    response = urlopener.open(full_url)
-    content = response.read()
-    response.close()
-    return unicodify(content)
+    s = requests.Session()
+    retries = Retry(total=max_retries, backoff_factor=backoff_factor, status_forcelist=[429])
+    s.mount(base_url, HTTPAdapter(max_retries=retries))
+    response = s.get(full_url, auth=auth)
+    response.raise_for_status()
+    return response.text
 
 
 def download_to_file(url, dest_file_path, timeout=30, chunk_size=2 ** 20):
     """Download a URL to a file in chunks."""
-    src = urlopen(url, timeout=timeout)
-    with open(dest_file_path, 'wb') as f:
-        while True:
-            chunk = src.read(chunk_size)
-            if not chunk:
-                break
-            f.write(chunk)
+    with requests.get(url, timeout=timeout, stream=True) as r, open(dest_file_path, 'wb') as f:
+        for chunk in r.iter_content(chunk_size):
+            if chunk:
+                f.write(chunk)
 
 
 def get_executable():

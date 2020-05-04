@@ -1,6 +1,6 @@
 <template>
     <div>
-        <b-table striped :items="repositories" :fields="fields">
+        <b-table striped id="shed-search-results" :items="repositories" :fields="fields">
             <template v-slot:cell(name)="row">
                 <b-link href="javascript:void(0)" role="button" class="font-weight-bold" @click="row.toggleDetails">
                     {{ row.item.name }}

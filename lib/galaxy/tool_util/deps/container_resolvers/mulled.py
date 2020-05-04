@@ -11,7 +11,7 @@ from galaxy.util import (
     string_as_bool,
     unicodify,
 )
-from ..commands import shell
+from galaxy.util.commands import shell
 from ..container_classes import CONTAINER_CLASSES
 from ..container_resolvers import (
     ContainerResolver,

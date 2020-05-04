@@ -30,6 +30,13 @@ from .psa_authnz import (
 
 log = logging.getLogger(__name__)
 
+# Note: This if for backward compatibility. Icons can be specified in oidc_backends_config.xml.
+DEFAULT_OIDC_IDP_ICONS = {
+    'google': 'https://developers.google.com/identity/images/btn_google_signin_light_normal_web.png',
+    'elixir': 'https://elixir-europe.org/sites/default/files/images/login-button-orange.png',
+    'okta': 'https://www.okta.com/sites/all/themes/Okta/images/blog/Logos/Okta_Logo_BrightBlue_Medium.png'
+}
+
 
 class AuthnzManager(object):
 
@@ -78,6 +85,9 @@ class AuthnzManager(object):
         except ParseError as e:
             raise ParseError("Invalid configuration at `{}`: {} -- unable to continue.".format(config_file, e))
 
+    def _get_idp_icon(self, idp):
+        return self.oidc_backends_config[idp].get('icon') or DEFAULT_OIDC_IDP_ICONS.get(idp)
+
     def _parse_oidc_backends_config(self, config_file):
         self.oidc_backends_config = {}
         self.oidc_backends_implementation = {}
@@ -99,11 +109,11 @@ class AuthnzManager(object):
                 if idp in BACKENDS_NAME:
                     self.oidc_backends_config[idp] = self._parse_idp_config(child)
                     self.oidc_backends_implementation[idp] = 'psa'
-                    self.app.config.oidc.append(idp)
+                    self.app.config.oidc[idp] = {'icon': self._get_idp_icon(idp)}
                 elif idp == 'custos':
                     self.oidc_backends_config[idp] = self._parse_custos_config(child)
                     self.oidc_backends_implementation[idp] = 'custos'
-                    self.app.config.oidc.append(idp)
+                    self.app.config.oidc[idp] = {'icon': self._get_idp_icon(idp)}
                 else:
                     raise ParseError("Unknown provider specified")
             if len(self.oidc_backends_config) == 0:
@@ -121,6 +131,13 @@ class AuthnzManager(object):
             'enable_idp_logout': asbool(config_xml.findtext('enable_idp_logout', 'false'))}
         if config_xml.find('prompt') is not None:
             rtv['prompt'] = config_xml.find('prompt').text
+        if config_xml.find('api_url') is not None:
+            rtv['api_url'] = config_xml.find('api_url').text
+        if config_xml.find('url') is not None:
+            rtv['url'] = config_xml.find('url').text
+        if config_xml.find('icon') is not None:
+            rtv['icon'] = config_xml.find('icon').text
+
         return rtv
 
     def _parse_custos_config(self, config_xml):
@@ -137,6 +154,8 @@ class AuthnzManager(object):
             rtv['idphint'] = config_xml.find('idphint').text
         if config_xml.find('ca_bundle') is not None:
             rtv['ca_bundle'] = config_xml.find('ca_bundle').text
+        if config_xml.find('icon') is not None:
+            rtv['icon'] = config_xml.find('icon').text
         return rtv
 
     def _unify_provider_name(self, provider):

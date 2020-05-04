@@ -153,7 +153,7 @@ def get_tool_shed_repo_requirements(app, tool_shed_url, repositories=None, repo_
     tools = []
     for params in repository_params:
         response = util.url_get(tool_shed_url,
-                                password_mgr=app.tool_shed_registry.url_auth(tool_shed_url),
+                                auth=app.tool_shed_registry.url_auth(tool_shed_url),
                                 pathspec=pathspec,
                                 params=params
                                 )
@@ -250,7 +250,7 @@ def get_repository_from_refresh_on_change(app, **kwd):
         if k.startswith(changeset_revision_str):
             repository_id = app.security.encode_id(int(k.lstrip(changeset_revision_str)))
             repository = repository_util.get_repository_in_tool_shed(app, repository_id)
-            if repository.tip(app) != v:
+            if repository.tip() != v:
                 return v, repository
     # This should never be reached - raise an exception?
     return v, None
@@ -264,7 +264,7 @@ def get_repository_type_from_tool_shed(app, tool_shed_url, name, owner):
     tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(app, tool_shed_url)
     params = dict(name=name, owner=owner)
     pathspec = ['repository', 'get_repository_type']
-    repository_type = util.url_get(tool_shed_url, password_mgr=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
+    repository_type = util.url_get(tool_shed_url, auth=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
     return repository_type
 
 
@@ -277,7 +277,7 @@ def get_tool_dependency_definition_metadata_from_tool_shed(app, tool_shed_url, n
     tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(app, tool_shed_url)
     params = dict(name=name, owner=owner)
     pathspec = ['repository', 'get_tool_dependency_definition_metadata']
-    metadata = util.url_get(tool_shed_url, password_mgr=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
+    metadata = util.url_get(tool_shed_url, auth=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
     return metadata
 
 
@@ -321,7 +321,7 @@ def handle_email_alerts(app, host, repository, content_alert_str='', new_repo_al
        that was included in the change set.
     """
     sa_session = app.model.context.current
-    repo = hg_util.get_repo_for_repository(app, repository=repository)
+    repo = repository.hg_repo
     sharable_link = repository_util.generate_sharable_link_for_repository_in_tool_shed(repository, changeset_revision=None)
     smtp_server = app.config.smtp_server
     if smtp_server and (new_repo_alert or repository.email_alerts):

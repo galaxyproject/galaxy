@@ -1,6 +1,5 @@
 import json
 import os
-import socket
 import subprocess
 import sys
 import tempfile
@@ -12,6 +11,7 @@ sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pa
 import requests
 
 from galaxy.tool_util.deps import docker_util
+from galaxy.util.sockets import get_ip
 
 
 def parse_ports(container_name, connection_configuration):
@@ -48,11 +48,7 @@ def main():
         try:
             ports_raw = parse_ports(container_name, connection_configuration)
             if ports_raw is not None:
-                try:
-                    host_ip = socket.gethostbyname(socket.gethostname())
-                except Exception:
-                    # doesn't work on OS X
-                    host_ip = None
+                host_ip = get_ip()
                 ports = docker_util.parse_port_text(ports_raw)
                 if host_ip is not None:
                     for key in ports:

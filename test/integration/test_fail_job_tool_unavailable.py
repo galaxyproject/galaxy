@@ -27,20 +27,21 @@ class FailJobWhenToolUnavailableTestCase(integration_util.IntegrationTestCase):
         self.workflow_populator.run_workflow("""
 class: GalaxyWorkflow
 steps:
-  - label: sleep
+  sleep:
     run:
       class: GalaxyTool
       command: sleep 20s && echo 'hello world 2' > '$output1'
       outputs:
         output1:
           format: txt
-  - tool_id: cat1
+  cat:
+    tool_id: cat1
     state:
       input1:
-        $link: sleep#output1
+        $link: sleep/output1
       queries:
         input2:
-          $link: sleep#output1
+          $link: sleep/output1
 """, history_id=self.history_id, assert_ok=False, wait=False)
         # Wait until workflow is fully scheduled, otherwise can't test effect of removing tool from queued job
         time.sleep(10)

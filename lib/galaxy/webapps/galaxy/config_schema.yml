@@ -749,6 +749,33 @@ mapping:
           should be disabled. Containerized jobs always use /bin/sh - so more maximum
           portability tool authors should assume generated commands run in sh.
 
+      tool_cache_data_dir:
+        type: str
+        default: tool_cache
+        path_resolves_to: data_dir
+        required: false
+        desc: |
+          Tool related caching. Fully expanded tools and metadata will be stored at this path.
+          Per tool_conf cache locations can be configured in (shed_)tool_conf.xml files using
+          the tool_cache_data_dir attribute.
+
+      tool_search_index_dir:
+        type: str
+        default: tool_search_index
+        path_resolves_to: data_dir
+        required: false
+        desc:
+          Directory in which the toolbox search index is stored.
+
+      delay_tool_initialization:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Set this to true to delay parsing of tool inputs and outputs until they are needed.
+          This results in faster startup times but uses more memory when using forked Galaxy
+          processes.
+
       citation_cache_type:
         type: str
         default: file
@@ -1025,6 +1052,28 @@ mapping:
         required: false
         desc: |
           Enable InteractiveTools.
+
+      aws_estimate:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          This flag enables an AWS cost estimate for every job based on their runtime matrices.
+          CPU, RAM and runtime usage is mapped against AWS pricing table.
+          Please note, that those numbers are only estimates.
+
+      interactivetools_proxy_host:
+        type: str
+        desc: |
+          Proxy host - assumed to just be hosted on the same hostname and port as
+          Galaxy by default.
+
+      interactivetools_map:
+        type: str
+        default: interactivetools_map.sqlite
+        path_resolves_to: data_dir
+        desc: |
+          Map for interactivetool proxy.
 
       visualizations_visible:
         type: bool
@@ -1689,12 +1738,10 @@ mapping:
 
       heartbeat_log:
         type: str
+        default: heartbeat_{server_name}.log
         required: false
         desc: |
-          Heartbeat log filename. Can accept the template variables {server_name} and
-          {pid}
-
-          Sample default 'heartbeat_{server_name}.log'
+          Heartbeat log filename. Can accept the template variables {server_name} and {pid}
 
       sentry_dsn:
         type: str
@@ -2821,16 +2868,17 @@ mapping:
 
       workflow_resource_params_mapper:
         type: str
-        default: config/workflow_resource_mapper_conf.yml
         required: false
         desc: |
           This parameter describes how to map users and workflows to a set of workflow
           resource parameter to present (typically input IDs from workflow_resource_params_file).
           If this this is a function reference it will be passed various inputs (workflow model
           object and user) and it should produce a list of input IDs. If it is a path
-          it is expected to an XML or YAML file describing how to map group names to parameter
+          it is expected to be an XML or YAML file describing how to map group names to parameter
           descriptions (additional types of mappings via these files could be implemented but
           haven't yet - for instance using workflow tags to do the mapping).
+
+          Sample default path 'config/workflow_resource_mapper_conf.yml.sample'
 
       workflow_schedulers_config_file:
         type: str

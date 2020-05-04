@@ -170,6 +170,8 @@ class MockAppConfig(Bunch):
 
         # set by MockDir
         self.root = root
+        self.tool_cache_data_dir = os.path.join(root, 'tool_cache')
+        self.delay_tool_initialization = True
 
         self.config_file = None
 
@@ -181,7 +183,7 @@ class MockAppConfig(Bunch):
         # Handle the automatic config file _set options
         if name.endswith('_file_set'):
             return False
-        return super(MockAppConfig, self).__getattr__(name)
+        raise AttributeError(name)
 
     def __del__(self):
         if self._remove_root:

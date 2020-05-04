@@ -145,6 +145,7 @@ class MockJobWrapper(object):
         self.cleanup_job = "never"
         self.tmp_dir_creation_statement = ""
         self.use_metadata_binary = False
+        self.guest_ports = []
 
         # Cruft for setting metadata externally, axe at some point.
         self.external_output_metadata = bunch.Bunch(

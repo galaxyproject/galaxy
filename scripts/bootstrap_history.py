@@ -333,13 +333,10 @@ def release_issue(argv):
     )
     release_issue_contents = RELEASE_ISSUE_TEMPLATE.safe_substitute(**release_issue_template_params)
     github = _github_client()
-    github.issues.create(
-        data=dict(
-            title="Publication of Galaxy Release v %s" % release_name,
-            body=release_issue_contents,
-        ),
-        user=PROJECT_OWNER,
-        repo=PROJECT_NAME,
+    repo = github.get_repo("%s/%s" % (PROJECT_OWNER, PROJECT_NAME))
+    repo.create_issue(
+        title="Publication of Galaxy Release v %s" % release_name,
+        body=release_issue_contents,
     )
     return release_issue
 

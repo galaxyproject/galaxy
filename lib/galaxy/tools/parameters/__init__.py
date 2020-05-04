@@ -136,7 +136,7 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
             replace = new_value != no_replacement_value
         if replace:
             input_values[input.name] = new_value
-        elif replace_optional_connections and is_runtime_value(value):
+        elif replace_optional_connections and is_runtime_value(value) and hasattr(input, 'value'):
             input_values[input.name] = input.value
 
     def get_current_case(input, input_values):
