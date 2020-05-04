@@ -2,7 +2,6 @@
 import $ from "jquery";
 import DatatypesMapping from "qunit/test-data/json/datatypes.mapping.json";
 import sinon from "sinon";
-import Utils from "utils/utils";
 import WorkflowManager from "mvc/workflow/workflow-manager";
 import Terminals from "mvc/workflow/workflow-terminals";
 import TerminalsView from "mvc/workflow/workflow-view-terminals";
@@ -567,54 +566,65 @@ QUnit.module("Node view", {
                     return true;
                 },
             };
+            callback(new Connector({}, outputTerminal, terminal));
+        });
+    },
+    connectAttachedMultiInputTerminal: function (inputType, outputType, callback) {
+        const data = {
+            inputs: [{ name: "TestName", extensions: [inputType], multiple: true }],
+            outputs: [],
+        };
+        this.node.updateFieldData(data);
+        Vue.nextTick(() => {
+            var terminal = this.node.inputTerminals["TestName"];
+            var outputTerminal = new Terminals.OutputTerminal({
+                name: "TestOutput",
+                datatypes: ["txt"],
+                mapOver: new Terminals.CollectionTypeDescription("list"),
+            });
+            outputTerminal.node = {
+                markChanged: function () {},
+                postJobActions: [],
+                inputTerminals: {},
+                outputTerminals: {},
+                hasMappedOverInputTerminals: function () {
+                    return false;
+                },
+                hasConnectedOutputTerminals: function () {
+                    return true;
+                },
+            };
+            callback(new Connector({}, outputTerminal, terminal));
+        });
+    },
+    connectAttachedMappedOutput: function (callback) {
+        const data = {
+            inputs: [{ name: "TestName", extensions: ["txt"], input_type: "dataset_collection" }],
+            outputs: [],
+        };
+        this.node.updateFieldData(data);
+        Vue.nextTick(() => {
+            var terminal = this.node.inputTerminals["TestName"];
+            var outputTerminal = new Terminals.OutputTerminal({
+                name: "TestOutput",
+                datatypes: ["txt"],
+                mapOver: new Terminals.CollectionTypeDescription("list"),
+            });
+            outputTerminal.node = {
+                markChanged: function () {},
+                postJobActions: [],
+                inputTerminals: {},
+                outputTerminals: {},
+                hasMappedOverInputTerminals: function () {
+                    return false;
+                },
+                hasConnectedOutputTerminals: function () {
+                    return true;
+                },
+            };
             const connector = new Connector({}, outputTerminal, terminal);
             callback(connector);
         });
-    },
-    connectAttachedMultiInputTerminal: function (inputType, outputType) {
-        this.view.addDataInput({ name: "TestName", extensions: [inputType], multiple: true });
-        var terminal = this.view.node.inputTerminals["TestName"];
-
-        var outputTerminal = new Terminals.OutputTerminal({
-            name: "TestOuptut",
-            datatypes: ["txt"],
-            mapOver: new Terminals.CollectionTypeDescription("list"),
-        });
-        outputTerminal.node = {
-            markChanged: function () {},
-            postJobActions: [],
-            inputTerminals: {},
-            outputTerminals: {},
-            hasMappedOverInputTerminals: function () {
-                return false;
-            },
-            hasConnectedOutputTerminals: function () {
-                return true;
-            },
-        };
-        return new Connector({}, outputTerminal, terminal);
-    },
-    connectAttachedMappedOutput: function () {
-        this.view.addDataInput({ name: "TestName", extensions: ["txt"], input_type: "dataset_collection" });
-        var terminal = this.view.node.inputTerminals["TestName"];
-        var outputTerminal = new Terminals.OutputTerminal({
-            name: "TestOuptut",
-            datatypes: ["txt"],
-            mapOver: new Terminals.CollectionTypeDescription("list"),
-        });
-        outputTerminal.node = {
-            markChanged: function () {},
-            postJobActions: [],
-            inputTerminals: {},
-            outputTerminals: {},
-            hasMappedOverInputTerminals: function () {
-                return false;
-            },
-            hasConnectedOutputTerminals: function () {
-                return true;
-            },
-        };
-        return new Connector({}, outputTerminal, terminal);
     },
 });
 
@@ -627,19 +637,33 @@ QUnit.test("replacing terminal on data input update preserves connections", func
 });
 
 QUnit.test("replacing terminal on data multiple input update preserves collection connections", function (assert) {
-    var connector = this.connectAttachedMultiInputTerminal("txt", "txt");
-    var connector_destroy_spy = sinon.spy(connector, "destroy");
-    var newElement = $("<div class='inputs'></div>");
-    this.view.addDataInput({ name: "TestName", extensions: ["txt"], multiple: true }, newElement);
-    assert.ok(!connector_destroy_spy.called);
+    this.node.inputs.push({ name: "TestName", extensions: ["txt"] });
+    this.connectAttachedMultiInputTerminal("txt", "txt", (connector) => {
+        var connector_destroy_spy = sinon.spy(connector, "destroy");
+        const data = {
+            inputs: [{ name: "TestName", extensions: ["txt"], multiple: true }],
+            outputs: [],
+        };
+        this.node.updateFieldData(data);
+        Vue.nextTick(() => {
+            assert.ok(!connector_destroy_spy.called);
+        });
+    });
 });
 
 QUnit.test("replacing mapped terminal on data collection input update preserves connections", function (assert) {
-    var connector = this.connectAttachedMappedOutput();
-    var newElement = $("<div class='inputs'></div>");
-    this.view.addDataInput({ name: "TestName", extensions: ["txt"], input_type: "dataset_collection" }, newElement);
-    var terminal = newElement.find(".input-terminal")[0].terminal;
-    assert.ok(connector.handle2 === terminal);
+    this.node.inputs.push({ name: "TestName", extensions: ["txt"], input_type: "dataset_collection" });
+    this.connectAttachedMappedOutput((connector) => {
+        const terminal = $(this.node.element).find(".input-terminal")[0].terminal;
+        const data = {
+            inputs: [{ name: "TestName", extensions: ["txt"], input_type: "dataset_collection" }],
+            outputs: [],
+        };
+        this.node.updateFieldData(data);
+        Vue.nextTick(() => {
+            assert.ok(connector.handle2 === terminal);
+        });
+    });
 });
 
 QUnit.test("replacing terminal on data input destroys invalid connections", function (assert) {
@@ -660,20 +684,14 @@ QUnit.test("replacing terminal on data input destroys invalid connections", func
 });
 
 QUnit.test("replacing terminal on data input with collection changes mapping view type", function (assert) {
-    const node = this.node;
-    node.inputs.push({ name: "TestName", extensions: ["txt"] });
-    this.connectAttachedTerminal("txt", "txt", (connector) => {
-        const connector_destroy_spy = sinon.spy(connector, "destroy");
-        const data = {
-            inputs: [{ name: "TestName", extensions: ["txt"], input_type: "dataset_collection" }],
-            outputs: [],
-        };
-        node.updateFieldData(data);
-        Vue.nextTick(() => {
-            $(node.element).find(".input-terminal")[0].terminal;
-            assert.ok(connector_destroy_spy.called);
-        });
-    });
+    var connector = this.connectAttachedTerminal("txt", "txt");
+    var newElement = $("<div class='inputs'></div>");
+    var connector_destroy_spy = sinon.spy(connector, "destroy");
+    this.view.addDataInput({ name: "TestName", extensions: ["txt"], input_type: "dataset_collection" }, newElement);
+    // Input type changed to dataset_collection - old connections are reset.
+    // Would be nice to preserve these connections and make them map over.
+    newElement.find(".input-terminal")[0].terminal;
+    assert.ok(connector_destroy_spy.called);
 });
 
 QUnit.test("replacing terminal on data collection input with simple input changes mapping view type", function (
@@ -691,12 +709,9 @@ QUnit.test("replacing terminal on data collection input with simple input change
 QUnit.module("Input terminal view", {
     beforeEach: function () {
         this.app = create_app();
-        this.node = { inputTerminals: {} };
+        this.node = this.app.build_node("tool", "newnode");
         this.input = { name: "i1", extensions: "txt", multiple: false };
-        this.view = new TerminalsView.InputTerminalView(this.app, {
-            node: this.node,
-            input: this.input,
-        });
+        this.node.updateFieldData({ inputs: [this.input], outputs: []});
     },
 });
 
@@ -707,6 +722,12 @@ QUnit.test("terminal added to node", function (assert) {
 });
 
 QUnit.test("terminal element", function (assert) {
+    this.view = new TerminalsView.InputTerminalView(this.app, {
+        node: this.node,
+        input: this.input,
+        el: document.createElement("div"),
+        terminal: { on: () => {} },
+    });
     var el = this.view.el;
     assert.equal(el.tagName, "DIV");
     assert.equal(el.className, "terminal input-terminal");
@@ -715,12 +736,9 @@ QUnit.test("terminal element", function (assert) {
 QUnit.module("Output terminal view", {
     beforeEach: function () {
         this.app = create_app();
-        this.node = { outputTerminals: [] };
+        this.node = this.app.build_node("tool", "newnode");
         this.output = { name: "o1", extensions: "txt" };
-        this.view = new TerminalsView.OutputTerminalView(this.app, {
-            node: this.node,
-            output: this.output,
-        });
+        this.node.updateFieldData({ inputs: [], outputs: [this.output]});
     },
 });
 
@@ -730,6 +748,12 @@ QUnit.test("terminal added to node", function (assert) {
 });
 
 QUnit.test("terminal element", function (assert) {
+    this.view = new TerminalsView.OutputTerminalView(this.app, {
+        node: this.node,
+        output: this.output,
+        el: document.createElement("div"),
+        terminal: { on: () => {} },
+    });
     var el = this.view.el;
     assert.equal(el.tagName, "DIV");
     assert.equal(el.className, "terminal output-terminal");
@@ -824,6 +848,8 @@ QUnit.test("resetMapping", function (assert) {
     });
     terminal.node = {
         hasMappedOverInputTerminals: () => true,
+        inputTerminals: {},
+        outputTerminals: {},
     };
     var changeSpy = sinon.spy();
     terminal.on("change", changeSpy);
