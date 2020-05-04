@@ -147,7 +147,7 @@
         <field name="value" template="true">${__REFGENIE_UUID__}</field>
         <field name="dbkey" template="true">${__REFGENIE_GENOME__}</field>
         <field name="name" template="true">${__REFGENIE_DISPLAY_NAME__}</field>
-        <field name="path" template="true">${__REFGENIE_ASSET__}${__REFGENIE_GENOME__}.fa</field> <!-- fix upstream in refgenie? -->
+        <field name="path" template="true">${__REFGENIE_ASSET__}</field>
     </table>
     <!-- Refgenie hisat2_indexes -->
     <table name="hisat2_indexes" type="refgenie" asset="hisat2_index" >
@@ -155,6 +155,6 @@
         <field name="value" template="true">${__REFGENIE_UUID__}</field>
         <field name="dbkey" template="true">${__REFGENIE_GENOME__}</field>
         <field name="name" template="true">${__REFGENIE_DISPLAY_NAME__}</field>
-        <field name="path" template="true">${__REFGENIE_ASSET__}${__REFGENIE_GENOME__}</field> <!-- fix upstream in refgenie? -->
+        <field name="path" template="true">${__REFGENIE_ASSET__}</field>
     </table>
 </tables>
