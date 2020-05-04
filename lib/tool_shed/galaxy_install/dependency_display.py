@@ -458,7 +458,7 @@ class DependencyDisplayer(object):
                                   owner=str(repository.owner),
                                   changeset_revision=str(repository.installed_changeset_revision))
                     pathspec = ['repository', 'get_readme_files']
-                    raw_text = util.url_get(tool_shed_url, password_mgr=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
+                    raw_text = util.url_get(tool_shed_url, auth=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
                     readme_files_dict = json.loads(raw_text)
                 else:
                     readme_files_dict = readme_util.build_readme_files_dict(self.app,

@@ -6,11 +6,6 @@ from datetime import (
     timedelta
 )
 
-from mercurial import (
-    hg,
-    ui
-)
-
 import tool_shed.repository_types.util as rt_util
 from galaxy import util
 from galaxy.model.orm.now import now
@@ -202,6 +197,10 @@ class Repository(Dictifiable):
 
     @property
     def hg_repo(self):
+        from mercurial import (
+            hg,
+            ui
+        )
         if not WEAK_HG_REPO_CACHE.get(self):
             WEAK_HG_REPO_CACHE[self] = hg.cachedlocalrepo(hg.repository(ui.ui(), self.repo_path().encode('utf-8')))
         return WEAK_HG_REPO_CACHE[self].fetch()[0]

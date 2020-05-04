@@ -233,7 +233,7 @@ class AdminToolshed(AdminGalaxy):
             raise Exception(message)
         params = dict(name=repository_name, owner=repository_owner, changeset_revision=changeset_revision)
         pathspec = ['repository', 'get_tool_dependencies']
-        raw_text = util.url_get(tool_shed_url, password_mgr=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
+        raw_text = util.url_get(tool_shed_url, auth=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
         if len(raw_text) > 2:
             encoded_text = json.loads(raw_text)
             text = encoding_util.tool_shed_decode(encoded_text)
@@ -260,7 +260,7 @@ class AdminToolshed(AdminGalaxy):
                       owner=str(repository_owner),
                       changeset_revision=changeset_revision)
         pathspec = ['repository', 'get_updated_repository_information']
-        raw_text = util.url_get(tool_shed_url, password_mgr=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
+        raw_text = util.url_get(tool_shed_url, auth=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
         repo_information_dict = json.loads(raw_text)
         return repo_information_dict
 
@@ -320,7 +320,7 @@ class AdminToolshed(AdminGalaxy):
                               name=name,
                               owner=owner)
                 pathspec = ['repository', 'get_latest_downloadable_changeset_revision']
-                raw_text = util.url_get(tool_shed_url, password_mgr=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
+                raw_text = util.url_get(tool_shed_url, auth=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
                 url = util.build_url(tool_shed_url, pathspec=pathspec, params=params)
                 latest_downloadable_revision = json.loads(raw_text)
                 if latest_downloadable_revision == hg_util.INITIAL_CHANGELOG_HASH:
@@ -615,7 +615,7 @@ class AdminToolshed(AdminGalaxy):
                 try:
                     params = dict(name=str(repository.name), owner=str(repository.owner))
                     pathspec = ['repository', 'get_repository_id']
-                    repository_ids = util.url_get(tool_shed_url, password_mgr=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
+                    repository_ids = util.url_get(tool_shed_url, auth=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
                 except Exception as e:
                     # The Tool Shed cannot handle the get_repository_id request, so the code must be older than the
                     # 04/2014 Galaxy release when it was introduced.  It will be safest to error out and let the
@@ -631,7 +631,7 @@ class AdminToolshed(AdminGalaxy):
             # Get the information necessary to install each repository.
             params = dict(repository_ids=str(repository_ids), changeset_revisions=str(changeset_revisions))
             pathspec = ['repository', 'get_repository_information']
-            raw_text = util.url_get(tool_shed_url, password_mgr=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
+            raw_text = util.url_get(tool_shed_url, auth=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
             repo_information_dict = json.loads(raw_text)
             for encoded_repo_info_dict in repo_information_dict.get('repo_info_dicts', []):
                 decoded_repo_info_dict = encoding_util.tool_shed_decode(encoded_repo_info_dict)
@@ -1061,7 +1061,7 @@ class AdminToolshed(AdminGalaxy):
                               owner=tool_shed_repository.owner,
                               changeset_revision=tool_shed_repository.installed_changeset_revision)
                 pathspec = ['repository', 'get_readme_files']
-                raw_text = util.url_get(tool_shed_url, password_mgr=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
+                raw_text = util.url_get(tool_shed_url, auth=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
                 readme_files_dict = json.loads(raw_text)
                 tool_dependencies = metadata.get('tool_dependencies', None)
             rdim = repository_dependency_manager.RepositoryDependencyInstallManager(trans.app)

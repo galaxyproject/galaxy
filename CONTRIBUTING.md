@@ -55,11 +55,15 @@ https://help.github.com/en/github/getting-started-with-github/git-and-github-lea
 
 3. Choose the correct branch to develop your changes against.
 
-   * Additions of new features to the codebase should be pushed to the `dev`
-     branch (`git checkout dev`).
+   * The `master` branch is kept in sync with the latest tagged release, but
+     should **not** be used as the base (i.e. target) branch of a pull request.
 
-   * Most bug fixes to previous (or frozen) releases should be made against the
-     corrisponding `release_XX.XX` branch (`git checkout release_XX.XX`).
+   * Additions of new features to the codebase should be based off the `dev`
+     branch (`git checkout -b feature_branch dev`), with few
+     [exceptions](doc/source/project/organization.rst#handling-pull-requests).
+
+   * Most bug fixes should target the oldest supported release exhibiting the
+     issue (`git checkout -b bugfix_branch release_XX.XX`).
 
    * Serious security problems should not be fixed via pull request - please see
      [the Galaxy security policies](SECURITY_POLICY.md) for information about

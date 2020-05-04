@@ -99,7 +99,7 @@ def get_ctx_rev(app, tool_shed_url, name, owner, changeset_revision):
     tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(app, tool_shed_url)
     params = dict(name=name, owner=owner, changeset_revision=changeset_revision)
     pathspec = ['repository', 'get_ctx_rev']
-    ctx_rev = util.url_get(tool_shed_url, password_mgr=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
+    ctx_rev = util.url_get(tool_shed_url, auth=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
     return ctx_rev
 
 

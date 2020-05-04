@@ -49,6 +49,14 @@ galaxy.webapps.galaxy.api.configuration module
     :undoc-members:
     :show-inheritance:
 
+galaxy.webapps.galaxy.api.container\_resolution module
+------------------------------------------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.container_resolution
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy.webapps.galaxy.api.dataset\_collections module
 -----------------------------------------------------
 
@@ -185,6 +193,14 @@ galaxy.webapps.galaxy.api.job\_files module
     :undoc-members:
     :show-inheritance:
 
+galaxy.webapps.galaxy.api.job\_ports module
+-------------------------------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.job_ports
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy.webapps.galaxy.api.jobs module
 -------------------------------------
 
@@ -289,6 +305,14 @@ galaxy.webapps.galaxy.api.search module
     :undoc-members:
     :show-inheritance:
 
+galaxy.webapps.galaxy.api.tags module
+-------------------------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.tags
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy.webapps.galaxy.api.tool\_data module
 -------------------------------------------
 
@@ -301,6 +325,14 @@ galaxy.webapps.galaxy.api.tool\_dependencies module
 ---------------------------------------------------
 
 .. automodule:: galaxy.webapps.galaxy.api.tool_dependencies
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.webapps.galaxy.api.tool\_entry\_points module
+----------------------------------------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.tool_entry_points
     :members:
     :undoc-members:
     :show-inheritance:
