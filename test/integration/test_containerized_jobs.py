@@ -4,7 +4,7 @@ import json
 import os
 import unittest
 
-from galaxy.tool_util.deps.commands import which
+from galaxy.util.commands import which
 from galaxy_test.base.populators import (
     DatasetPopulator,
 )

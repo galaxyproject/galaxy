@@ -50,6 +50,10 @@ WAIT_TYPES = Bunch(
     JOB_COMPLETION=WaitType("job_completion", 30),
     # Wait time for a GIE to spawn.
     GIE_SPAWN=WaitType("gie_spawn", 30),
+    # Wait time for toolshed search
+    SHED_SEARCH=WaitType('shed_search', 30),
+    # Wait time for repository installation
+    REPO_INSTALL=WaitType('repo_install', 60),
 )
 
 # Choose a moderate wait type for operations that don't specify a type.

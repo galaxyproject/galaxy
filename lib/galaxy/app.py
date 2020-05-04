@@ -24,7 +24,10 @@ from galaxy.managers.users import UserManager
 from galaxy.managers.workflows import WorkflowsManager
 from galaxy.model.database_heartbeat import DatabaseHeartbeat
 from galaxy.model.tags import GalaxyTagHandler
-from galaxy.queue_worker import GalaxyQueueWorker
+from galaxy.queue_worker import (
+    GalaxyQueueWorker,
+    send_local_control_task,
+)
 from galaxy.tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
 from galaxy.tool_shed.galaxy_install.update_repository_manager import UpdateRepositoryManager
 from galaxy.tool_util.deps.views import DependencyResolversView
@@ -65,6 +68,8 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
             logging.basicConfig(level=logging.DEBUG)
         log.debug("python path is: %s", ", ".join(sys.path))
         self.name = 'galaxy'
+        # is_webapp will be set to true when building WSGI app
+        self.is_webapp = False
         self.startup_timer = ExecutionTimer()
         self.new_installation = False
         # Read config file and check for errors
@@ -244,6 +249,9 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
 
         # Start web stack message handling
         self.application_stack.register_postfork_function(self.application_stack.start)
+        self.application_stack.register_postfork_function(self.queue_worker.bind_and_start)
+        # Delay toolbox index until after startup
+        self.application_stack.register_postfork_function(lambda: send_local_control_task(self, 'rebuild_toolbox_search_index'))
 
         self.model.engine.dispose()
 

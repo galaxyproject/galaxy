@@ -38,15 +38,15 @@
                         </b-card-footer>
                     </b-card>
                 </b-form>
-                <div v-for="idp in oidc_idps" :key="idp" style="margin: 0.5em;">
-                    <span v-if="oidc_idps_icons[idp]">
+                <div v-for="(idp_info, idp) in oidc_idps" :key="idp" style="margin: 0.5em;">
+                    <span v-if="idp_info['icon']">
                         <b-button variant="link" class="d-block mt-3" @click="submitOIDCLogin(idp)">
-                            <img :src="oidc_idps_icons[idp]" height="45" :alt="idp" />
+                            <img :src="idp_info['icon']" height="45" :alt="idp" />
                         </b-button>
                     </span>
                     <span v-else>
                         <b-button class="d-block mt-3" @click="submitOIDCLogin(idp)">
-                            <i :class="oidc_idps[idp]" /> Sign in with
+                            <i :class="idp" /> Sign in with
                             {{ idp.charAt(0).toUpperCase() + idp.slice(1) }}
                         </b-button>
                     </span>
@@ -80,11 +80,6 @@ export default {
     },
     data() {
         const galaxy = getGalaxyInstance();
-        // Icons to use for each IdP
-        const oidc_idps_icons = {
-            google: "https://developers.google.com/identity/images/btn_google_signin_light_normal_web.png",
-            elixir: "https://elixir-europe.org/sites/default/files/images/login-button-orange.png",
-        };
         return {
             login: null,
             password: null,
@@ -97,7 +92,6 @@ export default {
             session_csrf_token: galaxy.session_csrf_token,
             enable_oidc: galaxy.config.enable_oidc,
             oidc_idps: galaxy.config.oidc,
-            oidc_idps_icons: oidc_idps_icons,
         };
     },
     computed: {

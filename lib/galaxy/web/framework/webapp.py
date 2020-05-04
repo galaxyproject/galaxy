@@ -79,6 +79,7 @@ class WebApplication(base.WebApplication):
     def __init__(self, galaxy_app, session_cookie='galaxysession', name=None):
         self.name = name
         base.WebApplication.__init__(self)
+        galaxy_app.is_webapp = True
         self.set_transaction_factory(lambda e: self.transaction_chooser(e, galaxy_app, session_cookie))
         # Mako support
         self.mako_template_lookup = self.create_mako_template_lookup(galaxy_app, name)
@@ -251,7 +252,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
                         self.user = None
                         self.galaxy_session = None
                     else:
-                        self.response.send_redirect(url_for(controller='user',
+                        self.response.send_redirect(url_for(controller='root',
                                                      action='login',
                                                      message="You have been logged out due to inactivity.  Please log in again to continue using Galaxy.",
                                                      status='info',

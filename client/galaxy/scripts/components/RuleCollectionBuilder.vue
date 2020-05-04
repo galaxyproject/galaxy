@@ -576,359 +576,21 @@ import RuleDefs from "mvc/rules/rule-definitions";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import Select2 from "components/Select2";
+import ColumnSelector from "components/RuleBuilder/ColumnSelector";
+import RegularExpressionInput from "components/RuleBuilder/RegularExpressionInput";
+import RuleDisplay from "components/RuleBuilder/RuleDisplay";
+import IdentifierDisplay from "components/RuleBuilder/IdentifierDisplay";
+import RuleTargetComponent from "components/RuleBuilder/RuleTargetComponent";
+import RuleComponent from "components/RuleBuilder/RuleComponent";
+import RuleModalHeader from "components/RuleBuilder/RuleModalHeader";
+import RuleModalMiddle from "components/RuleBuilder/RuleModalMiddle";
+import RuleModalFooter from "components/RuleBuilder/RuleModalFooter";
+import StateDiv from "components/RuleBuilder/StateDiv";
 
 Vue.use(BootstrapVue);
 
 const RULES = RuleDefs.RULES;
 const MAPPING_TARGETS = RuleDefs.MAPPING_TARGETS;
-
-const ColumnSelector = {
-    template: `
-        <div class="rule-column-selector" v-if="!multiple || !ordered">
-            <label class="d-flex justify-content-end align-items-center">
-                <span class="mr-auto" v-b-tooltip.hover :title="help">{{ label }}</span>
-                <div class="mr-1" v-b-tooltip.hover :title="title"><select2 :value="target" @input="handleInput" :multiple="multiple">
-                    <option v-for="(col, index) in colHeaders" :value="index">{{ col }}</option>
-                </select2></div>
-                <slot></slot>
-            </label>
-        </div>
-        <div class="rule-column-selector" v-else>
-            <span>{{ label }}</span>
-            <slot></slot>
-            <ol>
-                <li v-for="(targetEl, index) in target"
-                    v-bind:index="index"
-                    v-bind:key="targetEl"
-                    class="rule-column-selector-target">
-                    {{ colHeaders[targetEl] }}
-                    <span class="fa fa-times rule-column-selector-target-remove" @click="handleRemove(index)"></span>
-                    <span class="fa fa-arrow-up rule-column-selector-up" v-if="index !== 0" @click="moveUp(index)"></span>
-                    <span class="fa fa-arrow-down rule-column-selector-down" v-if="index < target.length - 1" @click="moveUp(index + 1)"></span>
-                </li>
-                <li v-if="this.target.length < this.colHeaders.length">
-                    <span class="rule-column-selector-target-add" v-if="!orderedEdit">
-                        <i @click="$emit('update:orderedEdit', true)">... {{ l("Assign Another Column") }}</i>
-                    </span>
-                    <span class="rule-column-selector-target-select" v-else>
-                        <select2 @input="handleAdd" placeholder="Select a column">
-                            <option /><!-- empty option selection for placeholder -->
-                            <option v-for="(col, index) in remainingHeaders" :value="index">{{ col }}</option>
-                        </select2>
-                    </span>
-                </li>
-            </ol>
-        </div>
-    `,
-    data: function () {
-        return {
-            l: _l,
-        };
-    },
-    props: {
-        target: {
-            required: true,
-        },
-        label: {
-            required: false,
-            type: String,
-            default: _l("From Column"),
-        },
-        help: {
-            required: false,
-        },
-        colHeaders: {
-            type: Array,
-            required: true,
-        },
-        multiple: {
-            type: Boolean,
-            required: false,
-            default: false,
-        },
-        ordered: {
-            type: Boolean,
-            required: false,
-            default: false,
-        },
-        valueAsList: {
-            type: Boolean,
-            required: false,
-            default: false,
-        },
-        orderedEdit: {
-            type: Boolean,
-            required: false,
-            default: false,
-        },
-    },
-    computed: {
-        remainingHeaders() {
-            const colHeaders = this.colHeaders;
-            if (!this.multiple) {
-                return colHeaders;
-            }
-            const remaining = {};
-            for (const key in colHeaders) {
-                if (this.target.indexOf(parseInt(key)) === -1) {
-                    remaining[key] = colHeaders[key];
-                }
-            }
-            return remaining;
-        },
-        title() {
-            return _l("Select a column");
-        },
-    },
-    methods: {
-        handleInput(value) {
-            if (this.multiple) {
-                // https://stackoverflow.com/questions/262427/why-does-parseint-yield-nan-with-arraymap
-                const val = value.map((idx) => parseInt(idx));
-                this.$emit("update:target", val);
-            } else {
-                let val = parseInt(value);
-                if (this.valueAsList) {
-                    val = [val];
-                }
-                this.$emit("update:target", val);
-            }
-        },
-        handleAdd(value) {
-            this.target.push(parseInt(value));
-            this.$emit("update:orderedEdit", false);
-        },
-        handleRemove(index) {
-            this.target.splice(index, 1);
-        },
-        moveUp(value) {
-            const swapVal = this.target[value - 1];
-            Vue.set(this.target, value - 1, this.target[value]);
-            Vue.set(this.target, value, swapVal);
-        },
-    },
-    components: {
-        Select2,
-    },
-};
-
-const RegularExpressionInput = {
-    template: `
-        <div>
-            <label for="regular_expression" v-b-tooltip.hover :title="title">{{ label }}</label>
-            <span v-b-popover.html="popoverContent" :title="popoverTitle" class="fa fa-question"></span>
-            <input v-b-tooltip.hover.left :title="title" name="regular_expression" class="rule-regular-expression" type="text" :value="target" @input="$emit('update:target', $event.target.value)" />
-        </div>
-    `,
-    props: {
-        target: {
-            required: true,
-        },
-    },
-    computed: {
-        label() {
-            return _l("Regular Expression");
-        },
-        title() {
-            return _l("Enter a regular expression.");
-        },
-        popoverTitle() {
-            return _l("Regular Expressions");
-        },
-        popoverContent() {
-            return _l(
-                `Regular expressions are patterns used to match character combinations in strings. This input accepts Python-style regular expressions, find more information about these in <a href="https://pythonforbiologists.com/regular-expressions/">this Python for Biologists tutorial</a>.`
-            );
-        },
-    },
-};
-
-const RuleDisplay = {
-    template: `
-        <li class="rule">
-            <span class="rule-display">
-                <span class="mr-1">{{ title }}</span>
-                <span v-b-tooltip.hover :title="editTitle" class="fa fa-edit mr-1" @click="edit"></span>
-                <span v-b-tooltip.hover :title="removeTitle" class="fa fa-times map" @click="remove"></span>
-            </span>
-            <span class="rule-warning" v-if="rule.warn">
-                {{ rule.warn }}
-            </span>
-            <span class="rule-error" v-if="rule.error">
-                <span class="alert-message">{{ rule.error }}</span>
-            </span>
-        </li>
-    `,
-    props: {
-        rule: {
-            required: true,
-            type: Object,
-        },
-        colHeaders: {
-            type: Array,
-            required: true,
-        },
-    },
-    computed: {
-        title() {
-            const ruleType = this.rule.type;
-            return RULES[ruleType].display(this.rule, this.colHeaders);
-        },
-        editTitle() {
-            return _l("Edit this rule.");
-        },
-        removeTitle() {
-            return _l("Remove this rule.");
-        },
-    },
-    methods: {
-        edit() {
-            this.$emit("edit");
-        },
-        remove() {
-            this.$emit("remove");
-        },
-    },
-};
-
-const IdentifierDisplay = {
-    template: `
-      <li class="rule">
-        <span v-b-tooltip.hover :title="help">Set {{ columnsLabel }} as {{ typeDisplay }}</span>
-        <span v-b-tooltip.hover :title="titleEdit" class="fa fa-edit" @click="edit"></span>
-        <span v-b-tooltip.hover :title="titleRemove" class="fa fa-times" @click="remove"></span>
-      </li>
-    `,
-    props: {
-        type: {
-            type: String,
-            required: true,
-        },
-        columns: {
-            required: true,
-        },
-        colHeaders: {
-            type: Array,
-            required: true,
-        },
-    },
-    methods: {
-        remove() {
-            this.$emit("remove");
-        },
-        edit() {
-            this.$emit("edit");
-        },
-    },
-    computed: {
-        typeDisplay() {
-            return MAPPING_TARGETS[this.type].label;
-        },
-        help() {
-            return MAPPING_TARGETS[this.type].help || "";
-        },
-        titleEdit() {
-            return _l("Edit column definition");
-        },
-        titleRemove() {
-            return _l("Remove this column definition");
-        },
-        columnsLabel() {
-            return RuleDefs.columnDisplay(this.columns, this.colHeaders);
-        },
-    },
-};
-
-const RuleTargetComponent = {
-    template: `<a class="rule-link dropdown-item" href="javascript:void(0)" :class="linkClassName" @click="builder.addNewRule(ruleType)">{{title}}</a>`,
-    props: {
-        ruleType: {
-            type: String,
-            required: true,
-        },
-        builder: {
-            required: true,
-        },
-    },
-    computed: {
-        linkClassName() {
-            return "rule-link-" + this.ruleType.replace(/_/g, "-");
-        },
-        title() {
-            return RULES[this.ruleType].title;
-        },
-    },
-};
-
-const RuleComponent = {
-    template: `
-    <div v-if="ruleType == displayRuleType" class="rule-editor" :class="typeToClass">
-        <slot></slot>
-        <div class="buttons rule-edit-buttons d-flex justify-content-end">
-           <button type="button" class="btn rule-editor-cancel mr-1" @click="cancel">{{ cancelLabel }}</button>
-           <button type="button" class="btn btn-primary rule-editor-ok" @click="okay">{{ applyLabel }}</button>
-        </div>
-    </div>`,
-    data: function () {
-        return {
-            applyLabel: _l("Apply"),
-            cancelLabel: _l("Cancel"),
-        };
-    },
-    props: {
-        ruleType: {
-            type: String,
-            required: true,
-        },
-        displayRuleType: {
-            required: true,
-        },
-        builder: {
-            required: true,
-        },
-    },
-    methods: {
-        cancel() {
-            this.builder.displayRuleType = null;
-        },
-        okay() {
-            this.builder.handleRuleSave(this.ruleType);
-            this.cancel();
-        },
-    },
-    computed: {
-        typeToClass() {
-            return "rule-edit-" + this.ruleType.replace(/_/g, "-");
-        },
-    },
-};
-
-const StateDiv = {
-    template: `
-        <div class="rule-collection-creator collection-creator flex-row-container">
-            <slot></slot>
-        </div>`,
-};
-
-const RuleModalHeader = {
-    template: `<div class="header flex-row no-flex"><slot></slot></div>`,
-};
-
-const RuleModalMiddle = {
-    template: `<div class="middle flex-row flex-row-container"><slot></slot></div>`,
-};
-
-const RuleModalFooter = {
-    template: `
-        <div class="rule-footer footer flex-row no-flex">
-            <slot name="inputs"></slot>
-            <div class="actions clear vertically-spaced">
-                <div class="main-options float-right">
-                    <slot></slot>
-                </div>
-            </div>
-        </div>`,
-};
 
 export default {
     data: function () {
@@ -1977,19 +1639,19 @@ export default {
 <style>
 .table-column {
     width: 100%;
-    /* overflow: scroll; */
+    overflow: hidden;
 }
 .select2-container {
     min-width: 60px;
 }
 .vertical #hot-table {
     width: 100%;
-    overflow: scroll;
+    overflow: hidden;
     height: 400px;
 }
 .horizontal #hot-table {
     width: 100%;
-    overflow: scroll;
+    overflow: hidden;
     height: 250px;
 }
 .rule-builder-body {

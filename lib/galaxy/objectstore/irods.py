@@ -258,7 +258,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             # alt_name can contain parent directory references, but S3 will not
             # follow them, so if they are valid we normalize them out
             alt_name = os.path.normpath(alt_name)
-        rel_path = os.path.join(*directory_hash_id(obj.id))
+        rel_path = os.path.join(*directory_hash_id(self._get_object_id(obj)))
         if extra_dir is not None:
             if extra_dir_at_root:
                 rel_path = os.path.join(extra_dir, rel_path)
@@ -267,13 +267,13 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
 
         # for JOB_WORK directory
         if obj_dir:
-            rel_path = os.path.join(rel_path, str(obj.id))
+            rel_path = os.path.join(rel_path, str(self._get_object_id(obj)))
         if base_dir:
             base = self.extra_dirs.get(base_dir)
             return os.path.join(base, rel_path)
 
         if not dir_only:
-            rel_path = os.path.join(rel_path, alt_name if alt_name else "dataset_%s.dat" % obj.id)
+            rel_path = os.path.join(rel_path, alt_name if alt_name else "dataset_%s.dat" % self._get_object_id(obj))
         return rel_path
 
     def _get_cache_path(self, rel_path):
@@ -420,7 +420,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                       os.path.getsize(self._get_cache_path(rel_path)), self._get_size_in_irods(rel_path))
         return False
 
-    def exists(self, obj, **kwargs):
+    def _exists(self, obj, **kwargs):
         in_cache = in_irods = False
         rel_path = self._construct_path(obj, **kwargs)
 
@@ -451,8 +451,8 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         else:
             return False
 
-    def create(self, obj, **kwargs):
-        if not self.exists(obj, **kwargs):
+    def _create(self, obj, **kwargs):
+        if not self._exists(obj, **kwargs):
             # Pull out locally used fields
             extra_dir = kwargs.get('extra_dir', None)
             extra_dir_at_root = kwargs.get('extra_dir_at_root', False)
@@ -460,7 +460,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             alt_name = kwargs.get('alt_name', None)
 
             # Construct hashed path
-            rel_path = os.path.join(*directory_hash_id(obj.id))
+            rel_path = os.path.join(*directory_hash_id(self._get_object_id(obj)))
 
             # Optionally append extra_dir
             if extra_dir is not None:
@@ -475,30 +475,30 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                 os.makedirs(cache_dir)
 
             if not dir_only:
-                rel_path = os.path.join(rel_path, alt_name if alt_name else "dataset_%s.dat" % obj.id)
+                rel_path = os.path.join(rel_path, alt_name if alt_name else "dataset_%s.dat" % self._get_object_id(obj))
                 open(os.path.join(self.staging_path, rel_path), 'w').close()
                 self._push_to_irods(rel_path, from_string='')
 
-    def empty(self, obj, **kwargs):
-        if self.exists(obj, **kwargs):
-            return bool(self.size(obj, **kwargs) > 0)
+    def _empty(self, obj, **kwargs):
+        if self._exists(obj, **kwargs):
+            return bool(self._size(obj, **kwargs) > 0)
         else:
             raise ObjectNotFound('objectstore.empty, object does not exist: %s, kwargs: %s'
                                  % (str(obj), str(kwargs)))
 
-    def size(self, obj, **kwargs):
+    def _size(self, obj, **kwargs):
         rel_path = self._construct_path(obj, **kwargs)
         if self._in_cache(rel_path):
             try:
                 return os.path.getsize(self._get_cache_path(rel_path))
             except OSError as ex:
                 log.info("Could not get size of file '%s' in local cache, will try S3. Error: %s", rel_path, ex)
-        elif self.exists(obj, **kwargs):
+        elif self._exists(obj, **kwargs):
             return self._get_size_in_irods(rel_path)
         log.warning("Did not find dataset '%s', returning 0 for size", rel_path)
         return 0
 
-    def delete(self, obj, entire_dir=False, **kwargs):
+    def _delete(self, obj, entire_dir=False, **kwargs):
         rel_path = self._construct_path(obj, **kwargs)
         extra_dir = kwargs.get('extra_dir', None)
         base_dir = kwargs.get('base_dir', None)
@@ -558,10 +558,10 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                     return True
 
         except OSError:
-            log.exception('%s delete error', self.get_filename(obj, **kwargs))
+            log.exception('%s delete error', self._get_filename(obj, **kwargs))
         return False
 
-    def get_data(self, obj, start=0, count=-1, **kwargs):
+    def _get_data(self, obj, start=0, count=-1, **kwargs):
         rel_path = self._construct_path(obj, **kwargs)
         # Check cache first and get file if not there
         if not self._in_cache(rel_path):
@@ -573,7 +573,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         data_file.close()
         return content
 
-    def get_filename(self, obj, **kwargs):
+    def _get_filename(self, obj, **kwargs):
         base_dir = kwargs.get('base_dir', None)
         dir_only = kwargs.get('dir_only', False)
         obj_dir = kwargs.get('obj_dir', False)
@@ -596,7 +596,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         if self._in_cache(rel_path):
             return cache_path
         # Check if the file exists in persistent storage and, if it does, pull it into cache
-        elif self.exists(obj, **kwargs):
+        elif self._exists(obj, **kwargs):
             if dir_only:  # Directories do not get pulled into cache
                 return cache_path
             else:
@@ -610,10 +610,10 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                              % (str(obj), str(kwargs)))
         # return cache_path # Until the upload tool does not explicitly create the dataset, return expected path
 
-    def update_from_file(self, obj, file_name=None, create=False, **kwargs):
+    def _update_from_file(self, obj, file_name=None, create=False, **kwargs):
         if create:
-            self.create(obj, **kwargs)
-        if self.exists(obj, **kwargs):
+            self._create(obj, **kwargs)
+        if self._exists(obj, **kwargs):
             rel_path = self._construct_path(obj, **kwargs)
             # Chose whether to use the dataset file itself or an alternate file
             if file_name:
@@ -636,8 +636,8 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                                  % (str(obj), str(kwargs)))
 
     # Unlike S3, url is not really applicable to iRODS
-    def get_object_url(self, obj, **kwargs):
-        if self.exists(obj, **kwargs):
+    def _get_object_url(self, obj, **kwargs):
+        if self._exists(obj, **kwargs):
             rel_path = self._construct_path(obj, **kwargs)
 
             p = Path(rel_path)
@@ -649,5 +649,5 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
 
             return data_object_path
 
-    def get_store_usage_percent(self):
+    def _get_store_usage_percent(self):
         return 0.0

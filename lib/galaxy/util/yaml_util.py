@@ -5,13 +5,17 @@ import os
 from collections import OrderedDict
 
 import yaml
+try:
+    from yaml import CSafeLoader as SafeLoader
+except ImportError:
+    from yaml import SafeLoader
 from yaml.constructor import ConstructorError
 
 
 log = logging.getLogger(__name__)
 
 
-class OrderedLoader(yaml.SafeLoader):
+class OrderedLoader(SafeLoader):
     # This class was pulled out of ordered_load() for the sake of
     # mocking __init__ in a unit test.
     def __init__(self, stream):

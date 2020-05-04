@@ -49,6 +49,7 @@ def test_basecase(monkeypatch):
     }
     monkeypatch.setattr(AppSchema, '_read_schema', lambda a, b: get_schema(mock_schema))
     monkeypatch.setattr(GalaxyAppConfiguration, '_process_config', lambda a, b: None)
+    monkeypatch.setattr(GalaxyAppConfiguration, '_override_tempdir', lambda a, b: None)
 
     config = GalaxyAppConfiguration()
     assert config.component1_path0 == 'value0'
@@ -159,6 +160,7 @@ def test_resolves_with_empty_component(monkeypatch):
     }
     monkeypatch.setattr(AppSchema, '_read_schema', lambda a, b: get_schema(mock_schema))
     monkeypatch.setattr(GalaxyAppConfiguration, '_process_config', lambda a, b: None)
+    monkeypatch.setattr(GalaxyAppConfiguration, '_override_tempdir', lambda a, b: None)
 
     config = GalaxyAppConfiguration()
     assert config.path0 == 'value0'

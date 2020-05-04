@@ -1503,6 +1503,27 @@ class GeminiSQLite(SQlite):
             return "Gemini SQLite Database, version %s" % (dataset.metadata.gemini_version or 'unknown')
 
 
+class ChiraSQLite(SQlite):
+    """Class describing a ChiRAViz Sqlite database """
+    file_ext = "chira.sqlite"
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        super(ChiraSQLite, self).set_meta(dataset, overwrite=overwrite, **kwd)
+
+    def sniff(self, filename):
+        if super(ChiraSQLite, self).sniff(filename):
+            try:
+                conn = sqlite.connect(filename)
+                c = conn.cursor()
+                tables_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+                result = c.execute(tables_query).fetchall()
+                result = [_[0] for _ in result]
+                return True
+            except Exception as e:
+                log.warning('%s, sniff Exception: %s', self, e)
+        return False
+
+
 class CuffDiffSQlite(SQlite):
     """Class describing a CuffDiff SQLite database """
     MetadataElement(name="cuffdiff_version", default='2.2.1', param=MetadataParameter, desc="CuffDiff Version",
@@ -1577,6 +1598,91 @@ class MzSQlite(SQlite):
         if super(MzSQlite, self).sniff(filename):
             table_names = ["DBSequence", "Modification", "Peaks", "Peptide", "PeptideEvidence",
                            "Score", "SearchDatabase", "Source", "SpectraData", "Spectrum", "SpectrumIdentification"]
+            return self.sniff_table_names(filename, table_names)
+        return False
+
+
+class PQP(SQlite):
+    """
+    Class describing a Peptide query parameters file
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.pqp')
+    >>> PQP().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.osw')
+    >>> PQP().sniff(fname)
+    False
+    """
+    file_ext = "pqp"
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        super(PQP, self).set_meta(dataset, overwrite=overwrite, **kwd)
+
+    def sniff(self, filename):
+        """
+        table definition according to https://github.com/grosenberger/OpenMS/blob/develop/src/openms/source/ANALYSIS/OPENSWATH/TransitionPQPFile.cpp#L264
+        for now VERSION GENE PEPTIDE_GENE_MAPPING are excluded, since
+        there is test data wo these tables, see also here https://github.com/OpenMS/OpenMS/issues/4365
+        """
+        if not super(PQP, self).sniff(filename):
+            return False
+        table_names = ['COMPOUND', 'PEPTIDE', 'PEPTIDE_PROTEIN_MAPPING', 'PRECURSOR',
+                       'PRECURSOR_COMPOUND_MAPPING', 'PRECURSOR_PEPTIDE_MAPPING', 'PROTEIN',
+                       'TRANSITION', 'TRANSITION_PEPTIDE_MAPPING', 'TRANSITION_PRECURSOR_MAPPING']
+        osw_table_names = ['FEATURE', 'FEATURE_MS1', 'FEATURE_MS2', 'FEATURE_TRANSITION', 'RUN']
+        return self.sniff_table_names(filename, table_names) and not self.sniff_table_names(filename, osw_table_names)
+
+
+class OSW(SQlite):
+    """
+    Class describing OpenSwath output
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.osw')
+    >>> OSW().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.sqmass')
+    >>> OSW().sniff(fname)
+    False
+    """
+    file_ext = "osw"
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        super(OSW, self).set_meta(dataset, overwrite=overwrite, **kwd)
+
+    def sniff(self, filename):
+        # osw seems to be an extension of pqp (few tables are added)
+        # see also here https://github.com/OpenMS/OpenMS/issues/4365
+        if not super(OSW, self).sniff(filename):
+            return False
+        table_names = ['COMPOUND', 'PEPTIDE', 'PEPTIDE_PROTEIN_MAPPING', 'PRECURSOR',
+                       'PRECURSOR_COMPOUND_MAPPING', 'PRECURSOR_PEPTIDE_MAPPING', 'PROTEIN',
+                       'TRANSITION', 'TRANSITION_PEPTIDE_MAPPING', 'TRANSITION_PRECURSOR_MAPPING',
+                       'FEATURE', 'FEATURE_MS1', 'FEATURE_MS2', 'FEATURE_TRANSITION', 'RUN']
+        return self.sniff_table_names(filename, table_names)
+
+
+class SQmass(SQlite):
+    """
+    Class describing a Sqmass database
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.sqmass')
+    >>> SQmass().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.pqp')
+    >>> SQmass().sniff(fname)
+    False
+    """
+    file_ext = "sqmass"
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        super(SQmass, self).set_meta(dataset, overwrite=overwrite, **kwd)
+
+    def sniff(self, filename):
+        if super(SQmass, self).sniff(filename):
+            table_names = ["CHROMATOGRAM", "PRECURSOR", "RUN", "SPECTRUM", "DATA", "PRODUCT", "RUN_EXTRA"]
             return self.sniff_table_names(filename, table_names)
         return False
 

@@ -100,6 +100,6 @@ def get_readme_files_dict_for_display(app, tool_shed_url, repo_info_dict):
     tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(app, tool_shed_url)
     params = dict(name=name, owner=repository_owner, changeset_revision=changeset_revision)
     pathspec = ['repository', 'get_readme_files']
-    raw_text = url_get(tool_shed_url, password_mgr=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
+    raw_text = url_get(tool_shed_url, auth=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
     readme_files_dict = json.loads(raw_text)
     return readme_files_dict

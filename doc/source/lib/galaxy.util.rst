@@ -51,6 +51,14 @@ galaxy.util.checkers module
     :undoc-members:
     :show-inheritance:
 
+galaxy.util.commands module
+---------------------------
+
+.. automodule:: galaxy.util.commands
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy.util.compression\_utils module
 -------------------------------------
 
@@ -375,6 +383,14 @@ galaxy.util.xml\_macros module
 ------------------------------
 
 .. automodule:: galaxy.util.xml_macros
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.util.yaml\_util module
+-----------------------------
+
+.. automodule:: galaxy.util.yaml_util
     :members:
     :undoc-members:
     :show-inheritance:
