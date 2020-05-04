@@ -55,7 +55,7 @@ class CustosAuthnz(IdentityProvider):
             self._load_config_for_provider_and_realm(self.config['provider'], realm)
 
     def authenticate(self, trans, idphint=None):
-        base_authorize_url = self._create_authorize_url(trans)
+        base_authorize_url = self.config['authorization_endpoint']
         oauth2_session = self._create_oauth2_session(scope=('openid', 'email', 'profile', 'org.cilogon.userinfo'))
         nonce = generate_nonce()
         nonce_hash = self._hash_nonce(nonce)
@@ -247,12 +247,6 @@ class CustosAuthnz(IdentityProvider):
         pprint.pprint(creds)
         credentials = creds.json()
         self.config['iam_client_secret'] = credentials['iam_client_secret']
-
-    def _create_authorize_url(self, trans):
-        return "{}/?kc_idp_hint=oidc&response_type=code&client_id={}&redirect_uri={}".format(
-               self.config['authorization_endpoint'],
-               self.config['client_id'],
-               self.config['redirect_uri'])
 
     def _load_config_for_provider_and_realm(self, provider, realm):
         self.config['well_known_oidc_config_uri'] = self._get_well_known_uri_for_provider_and_realm(provider, realm)
