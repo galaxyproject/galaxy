@@ -35,7 +35,7 @@ class CustosAuthnz(IdentityProvider):
         self.config['redirect_uri'] = oidc_backend_config['redirect_uri']
         self.config['ca_bundle'] = oidc_backend_config.get('ca_bundle', None)
         self.config['extra_params'] = {
-            'kc_idp_hint': oidc_backend_config.get('idphint', 'cilogon')
+            'kc_idp_hint': oidc_backend_config.get('idphint', 'oidc' if self.config['provider'] == 'custos' else 'cilogon')
         }
         # Either get OIDC config from well-known config URI or lookup known urls based on provider name and realm
         if 'well_known_oidc_config_uri' in oidc_backend_config:
