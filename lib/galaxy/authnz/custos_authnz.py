@@ -240,11 +240,9 @@ class CustosAuthnz(IdentityProvider):
 
     def _get_custos_credentials(self):
         clientIdAndSec = self.config['client_id'] + ":" + self.config['client_secret']
-        import pprint
         creds = requests.get(self.config['credential_url'],
                             headers={"Authorization": "Basic %s" % base64.b64encode(util.smart_str(clientIdAndSec))},
                             verify=False, params={'client_id': self.config['client_id']})
-        pprint.pprint(creds)
         credentials = creds.json()
         self.config['iam_client_secret'] = credentials['iam_client_secret']
 
