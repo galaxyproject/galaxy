@@ -229,7 +229,7 @@ class CustosAuthnzTestCase(unittest.TestCase):
         authorization_url = self.custos_authnz.authenticate(self.trans)
         parsed = urlparse(authorization_url)
         param1_value = parse_qs(parsed.query)['kc_idp_hint'][0]
-        self.assertEqual(param1_value, 'cilogon')
+        self.assertEqual(param1_value, 'oidc')
 
     def test_authenticate_sets_env_var_when_localhost_redirect(self):
         """Verify that OAUTHLIB_INSECURE_TRANSPORT var is set with localhost redirect."""
