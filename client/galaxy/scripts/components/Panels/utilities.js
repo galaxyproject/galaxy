@@ -10,12 +10,8 @@ export function filterToolSections(layout, results) {
                 });
             }
             //Sorts tools in section by rank in results
-            toolRes.sort((el1, el2) => {
-                if (results.indexOf(el1.id) < results.indexOf(el2.id)) {
-                    return -1;
-                } else {
-                    return 1;
-                }
+            toolRes.sort((tool1, tool2) => {
+                return results.indexOf(tool1.id) - results.indexOf(tool2.id);
             });
 
             return {
@@ -32,11 +28,7 @@ export function filterToolSections(layout, results) {
                 return isSection || isMatchedTool;
             })
             .sort((sect1, sect2) => {
-                if (results.indexOf(sect1.elems[0].id) < results.indexOf(sect2.elems[0].id)) {
-                    return -1;
-                } else {
-                    return 1;
-                }
+                return results.indexOf(sect1.elems[0].id) - results.indexOf(sect2.elems[0].id);
             });
     } else {
         return layout;
@@ -45,10 +37,10 @@ export function filterToolSections(layout, results) {
 
 export function filterTools(layout, results) {
     if (results) {
+        var toolsResults = [];
         if (results.length < 1) {
-            return [];
+            return toolsResults;
         }
-        var toolsResults = [results.length];
 
         //Goes through each section and adds each tools that's in results to
         //toolsResults, sorted by search ranking
@@ -56,12 +48,16 @@ export function filterTools(layout, results) {
             if (section.elems) {
                 section.elems.forEach((el) => {
                     if (!el.text && results.includes(el.id)) {
-                        toolsResults[results.indexOf(el.id)] = el;
+                        toolsResults.push(el);
                     }
                 });
             }
         });
-        return toolsResults;
+        
+        return toolsResults.sort((tool1, tool2) => {
+            return results.indexOf(tool1.id) - results.indexOf(tool2.id);
+        });
+
     } else {
         return layout;
     }
