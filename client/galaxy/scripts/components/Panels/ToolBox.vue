@@ -78,9 +78,6 @@ import { getAppRoot } from "onload";
 import svc from "./service";
 import _l from "utils/localization";
 
-const EXPANDED_WIDTH = 400;
-const DEFAULT_WIDTH = 288;
-
 export default {
     name: "ToolBox",
     components: {
@@ -99,6 +96,7 @@ export default {
             toolsets: ["None"],
             toolsetIds: [],
             selected: "None",
+            savedWidth: null,
         };
     },
     props: {
@@ -168,9 +166,10 @@ export default {
         },
         onResultsResize() {
             if (this.results) {
-                resizePanel(EXPANDED_WIDTH);
+                this.savedWidth = parseInt(document.getElementById("left").style["width"]);
+                resizePanel(this.savedWidth * 2);
             } else {
-                resizePanel(DEFAULT_WIDTH);
+                resizePanel(this.savedWidth);
             }
         },
         onFavorites(term) {
