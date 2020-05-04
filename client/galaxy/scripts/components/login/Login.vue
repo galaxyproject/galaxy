@@ -39,14 +39,14 @@
                                     </b-form-group>
 
                                     <b-button
-                                        v-if="oidc_idps.includes('cilogon')"
+                                        v-if="oidc_idps.hasOwnProperty('cilogon')"
                                         @click="submitCILogon('cilogon')"
                                         :disabled="selected === null"
                                         >Sign in with Institutional Credentials*</b-button
                                     >
                                     <!--convert to v-else-if to allow only one or the other. if both enabled, put the one that should be default first-->
                                     <b-button
-                                        v-if="oidc_idps.includes('custos')"
+                                        v-if="oidc_idps.hasOwnProperty('custos')"
                                         @click="submitCILogon('custos')"
                                         :disabled="selected === null"
                                         >Sign in with Custos*</b-button
@@ -64,7 +64,7 @@
                                     </p>
                                 </div>
 
-                                <div v-for="(idp_info, idp) in oidc_idps" :key="idp" class="m-1">
+                                <div v-for="(idp_info, idp) in filtered_oidc_idps" :key="idp" class="m-1">
                                     <span v-if="idp_info['icon']">
                                         <b-button variant="link" class="d-block mt-3" @click="submitOIDCLogin(idp)">
                                             <img :src="idp_info['icon']" height="45" :alt="idp" />
@@ -111,7 +111,6 @@
                     </p>
                     -->
                 </b-modal>
-
             </div>
 
             <div v-if="show_welcome_with_login" class="col">
@@ -165,10 +164,13 @@ export default {
     },
     computed: {
         filtered_oidc_idps() {
-            return this.oidc_idps.filter((idp) => idp != "cilogon" && idp != "custos");
+            const filtered = Object.assign({}, this.oidc_idps);
+            delete filtered.custos;
+            delete filtered.cilogon;
+            return filtered;
         },
         cilogonListShow() {
-            return this.oidc_idps.includes("cilogon") || this.oidc_idps.includes("custos");
+            return this.oidc_idps.hasOwnProperty("cilogon") || this.oidc_idps.hasOwnProperty("custos");
         },
         messageShow() {
             return this.messageText != null;
