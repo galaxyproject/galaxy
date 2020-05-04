@@ -4,11 +4,10 @@ import DatatypesMapping from "qunit/test-data/json/datatypes.mapping.json";
 import sinon from "sinon";
 import Utils from "utils/utils";
 import WorkflowManager from "mvc/workflow/workflow-manager";
-import { Node } from "mvc/workflow/workflow-node";
-import { NodeView } from "mvc/workflow/workflow-view-node";
 import Terminals from "mvc/workflow/workflow-terminals";
 import TerminalsView from "mvc/workflow/workflow-view-terminals";
 import Connector from "mvc/workflow/workflow-connector";
+import Vue from "vue";
 
 // create body and app
 var create_app = function () {
@@ -32,6 +31,31 @@ var create_app = function () {
         $("#canvas-container")
     );
 };
+
+class Node {
+    constructor(app, attr = {}) {
+        this.app = app;
+        this.element = attr.element;
+        this.inputTerminals = {};
+        this.outputTerminals = {};
+        this.errors = null;
+        this.workflowOutputs = [];
+    }
+    markChanged() {}
+}
+
+class NodeView {
+    constructor(app, options) {
+        this.app = app;
+        this.$el = options.$el;
+        this.node = options.node;
+        this.node_body = this.$el.find(".node-body");
+        this.node_body.find("div").remove();
+        this.newInputsDiv().appendTo(this.node_body);
+        this.terminalViews = {};
+        this.outputViews = {};
+    }
+}
 
 QUnit.module("Input terminal model test", {
     beforeEach: function () {
@@ -321,13 +345,13 @@ QUnit.module("Node unit test", {
         this.input_terminal = { destroy: sinon.spy(), redraw: sinon.spy() };
         this.output_terminal = { destroy: sinon.spy(), redraw: sinon.spy() };
         this.app = create_app();
-        this.node = this.app.prebuildNode("tool", "newnode");
+        this.node = this.app.build_node("tool", "newnode");
         this.element = this.node.element;
-        this.node.input_terminals.i1 = this.input_terminal;
-        this.node.output_terminals.o1 = this.output_terminal;
+        this.node.inputTerminals.i1 = this.input_terminal;
+        this.node.outputTerminals.o1 = this.output_terminal;
     },
     $: function (selector) {
-        return $(this.node.element.find(selector));
+        return $(this.node.element).find(selector);
     },
     expect_workflow_node_changed: function (assert, f) {
         const node = this.node;
@@ -335,32 +359,35 @@ QUnit.module("Node unit test", {
         f();
         assert.ok(node_changed_spy.calledWith(node));
     },
-    init_field_data_simple: function (option_overrides) {
-        const data = Utils.merge(option_overrides, {
+    init_field_data_simple: function (option_overrides, name = "newnode") {
+        const overrides = Object.assign({}, option_overrides);
+        const data = Object.assign(overrides, {
             inputs: [{ name: "input1", extensions: ["data"] }],
             outputs: [{ name: "output1", extensions: ["data"] }],
+            name: name,
             label: null,
         });
-        this.node.init_field_data(data);
+        this.node.initFieldData(data);
     },
     update_field_data_with_new_input: function (option_overrides) {
-        const new_data = Utils.merge(option_overrides, {
+        const overrides = Object.assign({}, option_overrides);
+        const data = Object.assign(overrides, {
             inputs: [
                 { name: "input1", extensions: ["data"] },
                 { name: "extra_0|input1", extensions: ["data"] },
             ],
             outputs: [{ name: "output1", extensions: ["data"] }],
-            post_job_actions: "{}",
+            postJobActions: {},
             label: "New Label",
         });
-        this.node.update_field_data(new_data);
+        this.node.updateFieldData(data);
     },
 });
 
 QUnit.test("make active", function (assert) {
-    assert.ok(!this.element.hasClass("node-active"));
+    assert.ok(this.element.className.indexOf("node-active") == -1);
     this.node.make_active();
-    assert.ok(this.element.hasClass("node-active"));
+    assert.ok(this.element.className.indexOf("node-active") != -1);
 });
 
 QUnit.test("destroy", function (assert) {
@@ -373,30 +400,33 @@ QUnit.test("destroy", function (assert) {
 
 QUnit.test("error", function (assert) {
     // Test body of div updated and workflow notified of change.
-    var test = this;
-    this.expect_workflow_node_changed(assert, function () {
-        test.node.init_field_data({ errors: "NODE ERROR", inputs: [], outputs: [] });
-        assert.equal(test.$(".node-body").html(), "NODE ERROR");
+    const node_changed_spy = sinon.spy(this.app, "node_changed");
+    this.node.initFieldData({ errors: "NODE ERROR", inputs: [], outputs: [] });
+    Vue.nextTick(() => {
+        const errorText = $(this.node.element).find(".node-error").text().trim();
+        assert.equal(errorText, "NODE ERROR");
+        assert.ok(node_changed_spy.calledWith(this.node));
     });
 });
 
 QUnit.test("init_field_data properties", function (assert) {
-    var node = this.node;
-    this.expect_workflow_node_changed(assert, function () {
-        var data = {
-            inputs: [],
-            outputs: [],
-            type: "tool",
-            name: "cat1",
-            config_form: "{}",
-            tool_state: "ok",
-            tool_errors: false,
-            tooltip: "tool tooltip",
-            annotation: "tool annotation",
-            workflow_outputs: [{ output_name: "out1" }],
-            label: "Cat that data.",
-        };
-        node.init_field_data(data);
+    const data = {
+        inputs: [],
+        outputs: [],
+        type: "tool",
+        name: "cat1",
+        config_form: "{}",
+        tool_state: "ok",
+        tool_errors: false,
+        tooltip: "tool tooltip",
+        annotation: "tool annotation",
+        workflowOutputs: [{ output_name: "out1" }],
+        label: "Cat that data.",
+    };
+    const node = this.node;
+    const node_changed_spy = sinon.spy(this.app, "node_changed");
+    this.node.initFieldData(data);
+    Vue.nextTick(() => {
         assert.equal(node.type, "tool");
         assert.equal(node.name, "cat1");
         assert.equal(node.config_form, "{}");
@@ -404,19 +434,21 @@ QUnit.test("init_field_data properties", function (assert) {
         assert.equal(node.tooltip, "tool tooltip");
         assert.equal(node.annotation, "tool annotation");
         assert.equal(node.label, "Cat that data.");
-        assert.deepEqual(node.post_job_actions, {});
-        assert.deepEqual(node.workflow_outputs, [{ output_name: "out1" }]);
+        assert.deepEqual(node.postJobActions, {});
+        assert.deepEqual(node.workflowOutputs, [{ output_name: "out1" }]);
+        assert.ok(node_changed_spy.calledWith(node));
     });
 });
 
 QUnit.test("init_field_data data", function (assert) {
-    this.expect_workflow_node_changed(assert, () => {
-        // pre-init not tool form body...
-        assert.equal(this.$(".output-terminal").length, 0);
-        assert.equal(this.$(".input-terminal").length, 0);
-        assert.equal(this.$(".rule").length, 0);
-        this.init_field_data_simple();
-        // After init tool form should have three "rows"/divs - , inputs div, one output, and rule...
+    // pre-init not tool form body...
+    assert.equal(this.$(".output-terminal").length, 0);
+    assert.equal(this.$(".input-terminal").length, 0);
+    assert.equal(this.$(".rule").length, 0);
+    const node_changed_spy = sinon.spy(this.app, "node_changed");
+    this.init_field_data_simple();
+    Vue.nextTick(() => {
+        assert.ok(node_changed_spy.calledWith(this.node));
         assert.equal(this.$(".output-terminal").length, 1);
         assert.equal(this.$(".input-terminal").length, 1);
         assert.equal(this.$(".rule").length, 1);
@@ -427,71 +459,76 @@ QUnit.test("init_field_data data", function (assert) {
 });
 
 QUnit.test("node title behavior", function (assert) {
-    this.expect_workflow_node_changed(assert, () => {
-        // Node created with name newnode
-        assert.equal(this.$(".node-title").text(), "newnode");
-        // init_field_data_simple doesn't change label, so it should
-        // remain original name.
-        this.init_field_data_simple();
-        assert.equal(this.$(".node-title").text(), "newnode");
-        // Despite awkward name, update does change the label...
-        this.update_field_data_with_new_input();
+    assert.equal(this.$(".node-title").text(), "newnode");
+    const node_changed_spy = sinon.spy(this.app, "node_changed");
+    this.init_field_data_simple();
+    this.update_field_data_with_new_input();
+    Vue.nextTick(() => {
         assert.equal(this.$(".node-title").text(), "New Label");
+        assert.ok(node_changed_spy.calledWith(this.node));
     });
 });
 
 QUnit.test("update_field_data updated data inputs and outputs", function (assert) {
-    this.expect_workflow_node_changed(assert, () => {
-        // Call init with one input and output.
-        this.init_field_data_simple();
-
-        this.update_field_data_with_new_input();
-
+    const node_changed_spy = sinon.spy(this.app, "node_changed");
+    // Call init with one input and output.
+    this.init_field_data_simple();
+    this.update_field_data_with_new_input();
+    Vue.nextTick(() => {
         // Now there are 2 inputs...
         assert.equal(this.$(".input-terminal").length, 2);
         assert.equal(this.$(".output-terminal").length, 1);
         assert.equal(this.$(".rule").length, 1);
+        assert.ok(node_changed_spy.calledWith(this.node));
     });
 });
 
 QUnit.test("update_field_data preserves connectors", function (assert) {
-    var node = this.node;
-    this.expect_workflow_node_changed(assert, () => {
-        // Call init with one input and output.
-        this.init_field_data_simple();
+    const node_changed_spy = sinon.spy(this.app, "node_changed");
+    // Call init with one input and output.
+    this.init_field_data_simple();
 
-        var connector = new Connector({});
-        var old_input_terminal = node.input_terminals.input1;
+    Vue.nextTick(() => {
+        const node = this.node;
+        const connector = new Connector({});
+        const old_input_terminal = node.inputTerminals.input1;
         old_input_terminal.connectors.push(connector);
 
         // Update node, make sure connector still the same...
         this.update_field_data_with_new_input();
-        var new_input_terminal = node.input_terminals.input1;
-        assert.equal(connector, new_input_terminal.connectors[0]);
+        Vue.nextTick(() => {
+            assert.ok(node_changed_spy.calledWith(this.node));
 
-        // Update a second time, make sure connector still the same...
-        this.update_field_data_with_new_input();
-        new_input_terminal = node.input_terminals.input1;
-        assert.equal(connector, new_input_terminal.connectors[0]);
+            var new_input_terminal = node.inputTerminals.input1;
+            assert.equal(connector, new_input_terminal.connectors[0]);
+
+            // Update a second time, make sure connector still the same...
+            this.update_field_data_with_new_input();
+            Vue.nextTick(() => {
+                new_input_terminal = node.inputTerminals.input1;
+                assert.equal(connector, new_input_terminal.connectors[0]);
+            });
+        });
     });
 });
 
 QUnit.test("update_field_data destroys old terminals", function (assert) {
-    var node = this.node;
-    this.expect_workflow_node_changed(assert, () => {
-        var data = {
-            inputs: [
-                { name: "input1", extensions: ["data"] },
-                { name: "willDisappear", extensions: ["data"] },
-            ],
-            outputs: [{ name: "output1", extensions: ["data"] }],
-        };
-        node.init_field_data(data);
-        var old_input_terminal = node.input_terminals.willDisappear;
-        var destroy_spy = sinon.spy(old_input_terminal, "destroy");
-        // Update
+    const node = this.node;
+    const node_changed_spy = sinon.spy(this.app, "node_changed");
+    var data = {
+        inputs: [
+            { name: "input1", extensions: ["data"] },
+            { name: "willDisappear", extensions: ["data"] },
+        ],
+        outputs: [{ name: "output1", extensions: ["data"] }],
+    };
+    node.initFieldData(data);
+    Vue.nextTick(() => {
+        const old_input_terminal = node.inputTerminals.willDisappear;
+        const destroy_spy = sinon.spy(old_input_terminal, "destroy");
         this.update_field_data_with_new_input();
         assert.ok(destroy_spy.called);
+        assert.ok(node_changed_spy.called);
     });
 });
 
@@ -502,18 +539,17 @@ QUnit.module("create_node", {
 });
 
 QUnit.test("node added to workflow", function (assert) {
-    var add_node_spy = sinon.spy(this.app, "add_node");
-    var node = this.app.create_node("tool", "Cat Files", "cat1");
-    assert.ok(add_node_spy.calledWith(node));
+    const activate_node_spy = sinon.spy(this.app, "activate_node");
+    const node = this.app.create_node("tool", "Cat Files", "cat1");
+    assert.ok(activate_node_spy.calledWith(node));
 });
 
-// global NodeView
-QUnit.module("Node view ", {
+QUnit.module("Node view", {
     beforeEach: function () {
         this.app = create_app();
         this.set_for_node({
-            input_terminals: {},
-            output_terminals: {},
+            inputTerminals: {},
+            outputTerminals: {},
             markChanged: function () {},
             hasConnectedOutputTerminals: function () {},
             connectedMappedInputTerminals: function () {},
@@ -528,7 +564,7 @@ QUnit.module("Node view ", {
     },
     connectAttachedTerminal: function (inputType, outputType) {
         this.view.addDataInput({ name: "TestName", extensions: [inputType] });
-        var terminal = this.view.node.input_terminals["TestName"];
+        var terminal = this.view.node.inputTerminals["TestName"];
 
         var outputTerminal = new Terminals.OutputTerminal({
             name: "TestOuptut",
@@ -537,7 +573,7 @@ QUnit.module("Node view ", {
         });
         outputTerminal.node = {
             markChanged: function () {},
-            post_job_actions: [],
+            postJobActions: [],
             hasMappedOverInputTerminals: function () {
                 return false;
             },
@@ -549,7 +585,7 @@ QUnit.module("Node view ", {
     },
     connectAttachedMultiInputTerminal: function (inputType, outputType) {
         this.view.addDataInput({ name: "TestName", extensions: [inputType], multiple: true });
-        var terminal = this.view.node.input_terminals["TestName"];
+        var terminal = this.view.node.inputTerminals["TestName"];
 
         var outputTerminal = new Terminals.OutputTerminal({
             name: "TestOuptut",
@@ -558,7 +594,7 @@ QUnit.module("Node view ", {
         });
         outputTerminal.node = {
             markChanged: function () {},
-            post_job_actions: [],
+            postJobActions: [],
             hasMappedOverInputTerminals: function () {
                 return false;
             },
@@ -570,7 +606,7 @@ QUnit.module("Node view ", {
     },
     connectAttachedMappedOutput: function () {
         this.view.addDataInput({ name: "TestName", extensions: ["txt"], input_type: "dataset_collection" });
-        var terminal = this.view.node.input_terminals["TestName"];
+        var terminal = this.view.node.inputTerminals["TestName"];
 
         var outputTerminal = new Terminals.OutputTerminal({
             name: "TestOuptut",
@@ -579,7 +615,7 @@ QUnit.module("Node view ", {
         });
         outputTerminal.node = {
             markChanged: function () {},
-            post_job_actions: [],
+            postJobActions: [],
             hasMappedOverInputTerminals: function () {
                 return false;
             },
@@ -660,7 +696,7 @@ QUnit.test("replacing terminal on data collection input with simple input change
 QUnit.module("Input terminal view", {
     beforeEach: function () {
         this.app = create_app();
-        this.node = { input_terminals: [] };
+        this.node = { inputTerminals: {} };
         this.input = { name: "i1", extensions: "txt", multiple: false };
         this.view = new TerminalsView.InputTerminalView(this.app, {
             node: this.node,
@@ -670,9 +706,9 @@ QUnit.module("Input terminal view", {
 });
 
 QUnit.test("terminal added to node", function (assert) {
-    assert.ok(this.node.input_terminals.i1);
-    assert.equal(this.node.input_terminals.i1.datatypes, ["txt"]);
-    assert.equal(this.node.input_terminals.i1.multiple, false);
+    assert.ok(this.node.inputTerminals.i1);
+    assert.equal(this.node.inputTerminals.i1.datatypes, ["txt"]);
+    assert.equal(this.node.inputTerminals.i1.multiple, false);
 });
 
 QUnit.test("terminal element", function (assert) {
@@ -684,7 +720,7 @@ QUnit.test("terminal element", function (assert) {
 QUnit.module("Output terminal view", {
     beforeEach: function () {
         this.app = create_app();
-        this.node = { output_terminals: [] };
+        this.node = { outputTerminals: [] };
         this.output = { name: "o1", extensions: "txt" };
         this.view = new TerminalsView.OutputTerminalView(this.app, {
             node: this.node,
@@ -694,8 +730,8 @@ QUnit.module("Output terminal view", {
 });
 
 QUnit.test("terminal added to node", function (assert) {
-    assert.ok(this.node.output_terminals.o1);
-    assert.equal(this.node.output_terminals.o1.datatypes, ["txt"]);
+    assert.ok(this.node.outputTerminals.o1);
+    assert.equal(this.node.outputTerminals.o1.datatypes, ["txt"]);
 });
 
 QUnit.test("terminal element", function (assert) {
@@ -878,7 +914,7 @@ QUnit.module("terminal mapping logic", {
             var inputTerminal = self.newInputTerminal();
             new Connector({}, inputTerminal, output);
         }
-        this._addTerminalTo(output, node.output_terminals);
+        this._addTerminalTo(output, node.outputTerminals);
         return output;
     },
     addOutput: function (terminal, connected) {
@@ -902,7 +938,7 @@ QUnit.module("terminal mapping logic", {
         var node = terminal.node;
         var outputTerminal = self.newOutputTerminal();
         new Connector({}, connectedInput, outputTerminal);
-        this._addTerminalTo(connectedInput, node.input_terminals);
+        this._addTerminalTo(connectedInput, node.inputTerminals);
         return connectedInput;
     },
     _addTerminalTo: function (terminal, terminals) {

@@ -121,6 +121,7 @@ export default {
             errors: null,
             label: null,
             config_form: {},
+            workflowOutputs: {},
         };
     },
     mounted() {
@@ -219,6 +220,7 @@ export default {
             this.post_job_actions = data.post_job_actions ? data.post_job_actions : {};
             this.label = data.label;
             this.uuid = data.uuid;
+            this.workflowOutputs = data.workflowOutputs;
             this.activeOutputs.update(data.workflow_outputs);
         },
         updateFieldData(data) {
@@ -227,7 +229,7 @@ export default {
             // Create a list of all current output names
             const outputNames = {};
             data.outputs.forEach(({ name }) => {
-                outputNames[name] = true;
+                outputNames[name] = 1;
             });
 
             // Identify unused outputs which existed previously
@@ -245,24 +247,27 @@ export default {
                     // Remove the reference to the output and output terminal
                     delete this.outputTerminals[name];
                     this.outputs.splice(i, 1);
+                } else {
+                    outputNames[name] = 2;
                 }
             }
 
             // Add or update remaining outputs
             data.outputs.forEach((output) => {
                 const terminal = this.outputTerminals[output.name];
-                if (!terminal) {
-                    this.outputs.push(output);
-                } else {
+                if (terminal) {
                     terminal.update(output);
                     terminal.destroyInvalidConnections();
+                }
+                if (outputNames[output.name] == 1) {
+                    this.outputs.push(output);
                 }
             });
 
             // Create a list of all current input names
             const inputNames = {};
             data.inputs.forEach(({ name }) => {
-                inputNames[name] = true;
+                inputNames[name] = 1;
             });
 
             // Identify unused inputs which existed previously
@@ -272,27 +277,31 @@ export default {
                     this.inputTerminals[name].destroy();
                     delete this.inputTerminals[name];
                     this.inputs.splice(i, 1);
+                } else {
+                    inputNames[name] = 2;
                 }
             }
 
             // Add and update input rows
             data.inputs.forEach((input) => {
                 const terminal = this.inputTerminals[input.name];
-                if (!terminal) {
-                    this.inputs.push(input);
-                } else {
+                if (terminal) {
                     terminal.update(input);
                     terminal.destroyInvalidConnections();
+                }
+                if (inputNames[input.name] == 1) {
+                    this.inputs.push(input);
                 }
             });
 
             // removes output from list of workflow outputs
             this.activeOutputs.getAll().forEach((wf_output, i) => {
-                if (!this.outputTerminals[wf_output.output_name]) {
+                if (!outputNames[wf_output.output_name]) {
                     this.activeOutputs.remove(wf_output.output_name);
                 }
             });
 
+            // trigger legacy events
             Vue.nextTick(() => {
                 this.manager.node_changed(this);
                 this.redraw();
