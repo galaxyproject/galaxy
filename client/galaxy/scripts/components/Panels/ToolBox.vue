@@ -31,7 +31,7 @@
                         @onClick="onOpen"
                     />
                 </div>
-                <div class="toolSectionTitle" id="title_XXinternalXXworkflow">
+                <div class="toolPanelLabel" id="title_XXinternalXXworkflow">
                     <a>{{ workflowTitle }}</a>
                 </div>
                 <div id="internal-workflows" class="toolSectionBody">
