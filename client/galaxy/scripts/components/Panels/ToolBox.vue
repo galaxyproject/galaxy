@@ -31,12 +31,12 @@
                         @onClick="onOpen"
                     />
                 </div>
-                <div class="toolSectionTitle" id="title_XXinternalXXworkflow" v-if="workflow">
+                <div class="toolSectionTitle" id="title_XXinternalXXworkflow">
                     <a>{{ workflowTitle }}</a>
                 </div>
-                <div id="internal-workflows" class="toolSectionBody" v-if="workflow">
+                <div id="internal-workflows" class="toolSectionBody">
                     <div class="toolSectionBg" />
-                    <div class="toolTitle" v-for="wf in this.workflow" :key="wf.id">
+                    <div class="toolTitle" v-for="wf in workflows" :key="wf.id">
                         <a :href="wf.href">{{ wf.title }}</a>
                     </div>
                 </div>
@@ -68,7 +68,6 @@ export default {
             query: null,
             results: null,
             queryFilter: null,
-            workflow: null,
             showSections: false,
             buttonText: "",
         };
@@ -100,7 +99,7 @@ export default {
             return !!(Galaxy.user && Galaxy.user.id);
         },
         workflows() {
-            this.workflow = [
+            return [
                 {
                     title: _l("All workflows"),
                     href: `${getAppRoot()}workflows/list`,
@@ -114,7 +113,6 @@ export default {
                     };
                 }),
             ];
-            return this.workflow;
         },
         hasResults() {
             return this.results && (this.results.length > 0);
