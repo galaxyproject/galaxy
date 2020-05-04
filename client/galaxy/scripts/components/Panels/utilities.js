@@ -45,6 +45,9 @@ export function filterToolSections(layout, results) {
 
 export function filterTools(layout, results) {
     if (results) {
+        if (results.length < 1) {
+            return [];
+        }
         var toolsResults = [results.length];
 
         //Goes through each section and adds each tools that's in results to
