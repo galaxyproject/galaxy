@@ -627,15 +627,6 @@ QUnit.module("Node view", {
     },
 });
 
-QUnit.test("tool error styling", function (assert) {
-    this.set_for_node({ errors: false });
-    this.view.render();
-    assert.ok(!this.view.$el.hasClass("node-error"));
-    this.set_for_node({ errors: true });
-    this.view.render();
-    assert.ok(this.view.$el.hasClass("node-error"));
-});
-
 QUnit.test("replacing terminal on data input update preserves connections", function (assert) {
     var connector = this.connectAttachedTerminal("txt", "txt");
     var newElement = $("<div class='inputs'></div>");
