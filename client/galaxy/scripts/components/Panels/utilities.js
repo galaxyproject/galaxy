@@ -53,11 +53,10 @@ export function filterTools(layout, results) {
                 });
             }
         });
-        
+
         return toolsResults.sort((tool1, tool2) => {
             return results.indexOf(tool1.id) - results.indexOf(tool2.id);
         });
-
     } else {
         return layout;
     }

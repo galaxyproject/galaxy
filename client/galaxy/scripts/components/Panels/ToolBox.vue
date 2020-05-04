@@ -16,7 +16,7 @@
                 <b-button @click="onToggle">{{ buttonText }}</b-button>
             </div>
             <div class="py-2" v-else-if="query">
-                <span v-if="query.length<3" class="font-weight-bold">***Search string too short***</span>
+                <span v-if="query.length < 3" class="font-weight-bold">***Search string too short***</span>
                 <span v-else class="font-weight-bold">***No Results Found***</span>
             </div>
         </div>
@@ -115,7 +115,7 @@ export default {
             ];
         },
         hasResults() {
-            return this.results && (this.results.length > 0);
+            return this.results && this.results.length > 0;
         },
     },
     methods: {
