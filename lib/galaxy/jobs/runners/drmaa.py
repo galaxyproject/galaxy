@@ -222,7 +222,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         log.info("(%s) queued as %s" % (galaxy_id_tag, external_job_id))
 
         # store runner information for tracking if Galaxy restarts
-        job_wrapper.set_job_destination(job_destination, external_job_id)
+        job_wrapper.set_external_id(external_job_id)
 
         # Store DRM related state information for job
         ajs.job_id = external_job_id

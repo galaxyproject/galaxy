@@ -1422,6 +1422,14 @@ class JobWrapper(HasResourceParameters):
         if flush:
             self.sa_session.flush()
 
+    def set_external_id(self, external_id, job=None, flush=True):
+        if job is None:
+            job = self.get_job()
+        job.job_runner_external_id = external_id
+        self.sa_session.add(job)
+        if flush:
+            self.sa_session.flush()
+
     @property
     def home_target(self):
         home_target = self.tool.home_target
