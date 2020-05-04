@@ -39,14 +39,14 @@
                                     </b-form-group>
 
                                     <b-button
-                                        v-if="oidc_idps.hasOwnProperty('cilogon')"
+                                        v-if="Object.prototype.hasOwnProperty.call(oidc_idps, 'cilogon')"
                                         @click="submitCILogon('cilogon')"
                                         :disabled="selected === null"
                                         >Sign in with Institutional Credentials*</b-button
                                     >
                                     <!--convert to v-else-if to allow only one or the other. if both enabled, put the one that should be default first-->
                                     <b-button
-                                        v-if="oidc_idps.hasOwnProperty('custos')"
+                                        v-if="Object.prototype.hasOwnProperty.call(oidc_idps, 'custos')"
                                         @click="submitCILogon('custos')"
                                         :disabled="selected === null"
                                         >Sign in with Custos*</b-button
@@ -170,7 +170,10 @@ export default {
             return filtered;
         },
         cilogonListShow() {
-            return this.oidc_idps.hasOwnProperty("cilogon") || this.oidc_idps.hasOwnProperty("custos");
+            return (
+                Object.prototype.hasOwnProperty.call(this.oidc_idps, "cilogon") ||
+                Object.prototype.hasOwnProperty.call(this.oidc_idps, "custos")
+            );
         },
         messageShow() {
             return this.messageText != null;
