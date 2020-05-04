@@ -10,12 +10,7 @@
             </div>
         </div>
         <div class="unified-panel-controls">
-            <tool-search
-                :query="query"
-                placeholder="search tools"
-                @onQuery="onQuery"
-                @onResults="onResults"
-            />
+            <tool-search :query="query" placeholder="search tools" @onQuery="onQuery" @onResults="onResults" />
 
             <div class="float-none" v-if="results">
                 <button
@@ -65,9 +60,6 @@ import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
 import _l from "utils/localization";
 
-const EXPANDED_WIDTH = 400;
-const DEFAULT_WIDTH = 288;
-
 export default {
     name: "ToolBox",
     components: {
@@ -81,7 +73,8 @@ export default {
             query: null,
             results: null,
             workflow: null,
-            show: true,
+            show: false,
+            savedWidth: null,
         };
     },
     props: {
@@ -138,9 +131,10 @@ export default {
         },
         onResultsResize() {
             if (this.results) {
-                resizePanel(EXPANDED_WIDTH);
+                this.savedWidth = parseInt(document.getElementById("left").style["width"]);
+                resizePanel(this.savedWidth * 2);
             } else {
-                resizePanel(DEFAULT_WIDTH);
+                resizePanel(this.savedWidth);
             }
         },
         onFavorites(term) {
