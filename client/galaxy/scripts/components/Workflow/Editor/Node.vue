@@ -242,7 +242,7 @@ export default {
             this.tool_state = data.tool_state;
             this.errors = data.errors;
             this.annotation = data.annotation;
-            this.tooltip = data.tooltip ? data.tooltip : "";
+            this.tooltip = data.tooltip || "";
             this.postJobActions = data.post_job_actions || {};
             this.label = data.label;
             this.uuid = data.uuid;

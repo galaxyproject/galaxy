@@ -70,7 +70,7 @@ export function showAttributes() {
 }
 
 export function showForm(workflow, node, datatypes) {
-    if (node && Object.keys(node.config_form).length > 0) {
+    if (node && node.config_form && Object.keys(node.config_form).length > 0) {
         const cls = "right-content";
         var id = `${cls}-${node.id}`;
         var $container = $(`#${cls}`);
