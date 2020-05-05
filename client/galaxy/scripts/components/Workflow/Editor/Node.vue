@@ -8,7 +8,7 @@
                 aria-label="destroy node"
                 v-b-tooltip.hover
                 title="Remove"
-                @click="destroy"
+                @click="onDestroy"
             >
                 <i class="fa fa-times" />
             </b-button>
@@ -33,7 +33,7 @@
                 aria-label="clone node"
                 v-b-tooltip.hover
                 title="Duplicate"
-                @click="clone"
+                @click="onClone"
             >
                 <i class="fa fa-files-o" />
             </b-button>
@@ -197,7 +197,35 @@ export default {
                 this.popoverShow = false;
             });
         },
-        redraw() {
+        onClone() {
+            var copiedData = {
+                name: this.name,
+                label: this.label,
+                annotation: this.annotation,
+                post_job_actions: this.postJobActions,
+            };
+            var node = this.manager.create_node(this.type, this.name, this.content_id);
+            const requestData = {
+                type: this.type,
+                tool_id: this.content_id,
+                tool_state: this.tool_state,
+            };
+            getModule(requestData).then((response) => {
+                var newData = Object.assign({}, response, copiedData);
+                this.manager.set_node(node, newData);
+            });
+        },
+        onDestroy() {
+            Object.values(this.inputTerminals).forEach((t) => {
+                t.destroy();
+            });
+            Object.values(this.outputTerminals).forEach((t) => {
+                t.destroy();
+            });
+            this.manager.remove_node(this);
+            $(this.element).remove();
+        },
+        onRedraw() {
             Object.values(this.inputTerminals).forEach((t) => {
                 t.redraw();
             });
@@ -221,6 +249,14 @@ export default {
             this.uuid = data.uuid;
             this.workflowOutputs = data.workflow_outputs;
             this.activeOutputs.update(data.workflow_outputs);
+        },
+        initFieldData(data) {
+            this.setData(data);
+            this.inputs = data.inputs.slice();
+            this.outputs = data.outputs.slice();
+            Vue.nextTick(() => {
+                this.manager.node_changed(this);
+            });
         },
         updateFieldData(data) {
             this.setData(data);
@@ -306,7 +342,7 @@ export default {
             // trigger legacy events
             Vue.nextTick(() => {
                 this.manager.node_changed(this);
-                this.redraw();
+                this.onRedraw();
             });
         },
         labelWorkflowOutput(outputName, label) {
@@ -343,46 +379,10 @@ export default {
             this.markChanged();
             output_terminal.destroyInvalidConnections();
         },
-        clone() {
-            /*var copiedData = {
-                name: this.name,
-                label: this.label,
-                annotation: this.annotation,
-                post_job_actions: this.postJobActions,
-            };
-            var node = this.app.create_node(this.type, this.name, this.content_id);
-            Utils.request({
-                type: "POST",
-                url: `${getAppRoot()}api/workflows/build_module`,
-                data: {
-                    type: this.type,
-                    tool_id: this.content_id,
-                    tool_state: this.tool_state,
-                },
-                success: (data) => {
-                    var newData = Object.assign({}, data, copiedData);
-                    node.initFieldData(newData);
-                    Vue.nextTick(() => {
-                        node.update_field_data(newData);
-                        this.app.activate_node(node);
-                    });
-                },
-            });*/
-        },
-        destroy() {
-            Object.values(this.inputTerminals).forEach((t) => {
-                t.destroy();
-            });
-            Object.values(this.outputTerminals).forEach((t) => {
-                t.destroy();
-            });
-            this.manager.remove_node(this);
-            $(this.element).remove();
-        },
-        make_active() {
+        makeActive() {
             $(this.element).addClass("node-active");
         },
-        make_inactive() {
+        makeInactive() {
             // Keep inactive nodes stacked from most to least recently active
             // by moving element to the end of parent's node list
             var element = this.element;
@@ -392,14 +392,6 @@ export default {
             })(element.parentNode);
             // Remove active class
             $(element).removeClass("node-active");
-        },
-        initFieldData(data) {
-            this.setData(data);
-            this.inputs = data.inputs.slice();
-            this.outputs = data.outputs.slice();
-            Vue.nextTick(() => {
-                this.manager.node_changed(this);
-            });
         },
         markChanged() {
             this.manager.node_changed(this);

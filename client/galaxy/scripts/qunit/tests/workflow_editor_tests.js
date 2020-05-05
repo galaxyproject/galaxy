@@ -373,13 +373,13 @@ QUnit.module("Node unit test", {
 
 QUnit.test("make active", function (assert) {
     assert.ok(this.element.className.indexOf("node-active") == -1);
-    this.node.make_active();
+    this.node.makeActive();
     assert.ok(this.element.className.indexOf("node-active") != -1);
 });
 
 QUnit.test("destroy", function (assert) {
     var remove_node_spy = sinon.spy(this.app, "remove_node");
-    this.node.destroy();
+    this.node.onDestroy();
     assert.ok(this.input_terminal.destroy.called);
     assert.ok(this.output_terminal.destroy.called);
     assert.ok(remove_node_spy.calledWith(this.node));

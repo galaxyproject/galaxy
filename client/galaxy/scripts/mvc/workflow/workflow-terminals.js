@@ -554,9 +554,7 @@ class InputCollectionTerminal extends BaseInputTerminal {
                         "Can't map over this input with output collection type - this step has outputs defined constraining the mapping of this tool. Disconnect outputs and retry."
                     );
                 }
-            } else if (
-                this.collectionTypes.some((collectionType) => otherCollectionType.canMapOver(collectionType))
-            ) {
+            } else if (this.collectionTypes.some((collectionType) => otherCollectionType.canMapOver(collectionType))) {
                 // we're not mapped over - but hey maybe we could be... lets check.
                 var effectiveMapOver = this._effectiveMapOver(other);
                 if (!effectiveMapOver.isCollection) {

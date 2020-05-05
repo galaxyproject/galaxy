@@ -192,7 +192,7 @@ class Workflow extends EventEmitter {
     remove_all() {
         var wf = this;
         Object.values(this.nodes).forEach((node) => {
-            node.destroy();
+            node.onDestroy();
             wf.remove_node(node);
         });
     }
@@ -397,7 +397,7 @@ class Workflow extends EventEmitter {
     }
     clear_active_node() {
         if (this.active_node) {
-            this.active_node.make_inactive();
+            this.active_node.makeInactive();
             this.active_node = null;
         }
         document.activeElement.blur();
@@ -406,7 +406,7 @@ class Workflow extends EventEmitter {
     activate_node(node) {
         if (this.active_node != node) {
             this.clear_active_node();
-            node.make_active();
+            node.makeActive();
             this.active_node = node;
         }
         this.emit("onActiveNode", node);
@@ -519,7 +519,7 @@ class Workflow extends EventEmitter {
         });
         // Need to redraw all connectors
         Object.values(all_nodes).forEach((node) => {
-            node.redraw();
+            node.onRedraw();
         });
     }
     bounds_for_all_nodes() {
