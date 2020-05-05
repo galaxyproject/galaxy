@@ -60,8 +60,12 @@
                 @cancel="doomedItem = null"
             >
                 <p>
-                    If you delete this identity, you will be logged out and need to reset your Galaxy password the next
-                    time you log in or reconnect to this third party identity.
+                    This is your only defined external identity.  If you delete
+                    this identity, you will be logged out.  To log back in you
+                    will need to use a password associated with your account,
+                    or reconnect to this third party identity.  If you don't
+                    know your Galaxy user password, you can reset it or contact
+                    an administrator for help.
                 </p>
             </b-modal>
 
