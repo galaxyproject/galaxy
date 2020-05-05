@@ -67,7 +67,6 @@
 </template>
 
 <script>
-import $ from "jquery";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import WorkflowIcons from "components/Workflow/icons";
@@ -223,7 +222,7 @@ export default {
                 t.destroy();
             });
             this.manager.remove_node(this);
-            $(this.element).remove();
+            this.element.remove();
         },
         onRedraw() {
             Object.values(this.inputTerminals).forEach((t) => {
@@ -380,7 +379,7 @@ export default {
             output_terminal.destroyInvalidConnections();
         },
         makeActive() {
-            $(this.element).addClass("node-active");
+            this.element.classList.add("node-active");
         },
         makeInactive() {
             // Keep inactive nodes stacked from most to least recently active
@@ -391,7 +390,7 @@ export default {
                 p.appendChild(element);
             })(element.parentNode);
             // Remove active class
-            $(element).removeClass("node-active");
+            element.classList.remove("node-active");
         },
         markChanged() {
             this.manager.node_changed(this);
