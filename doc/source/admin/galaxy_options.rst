@@ -1027,16 +1027,6 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~
-``tool_search_index_dir``
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Directory in which the toolbox search index is stored.
-:Default: ``tool_search_index``
-:Type: str
-
-
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``delay_tool_initialization``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

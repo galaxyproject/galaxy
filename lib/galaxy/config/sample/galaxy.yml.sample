@@ -599,9 +599,6 @@ galaxy:
   # attribute.
   #tool_cache_data_dir: tool_cache
 
-  # Directory in which the toolbox search index is stored.
-  #tool_search_index_dir: tool_search_index
-
   # Set this to true to delay parsing of tool inputs and outputs until
   # they are needed. This results in faster startup times but uses more
   # memory when using forked Galaxy processes.
