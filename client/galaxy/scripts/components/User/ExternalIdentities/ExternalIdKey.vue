@@ -12,7 +12,7 @@
                                 aria-label="Disconnect External Identity"
                                 title="Disconnect External Identity"
                             >
-                                <span>Disconnect External Identityyyyyyyyyy</span>
+                                <span>Disconnect External Identity</span>
                             </a>
                         </li>
                     </ul>
