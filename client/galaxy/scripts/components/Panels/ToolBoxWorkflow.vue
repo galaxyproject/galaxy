@@ -30,10 +30,10 @@
                 />
                 <div class="toolMenu" id="workflow-tool-menu">
                     <tool-section
-                        v-for="category in categories"
-                        :category="category"
+                        v-for="section in sections"
+                        :category="section"
                         :query-filter="query"
-                        :key="category.id"
+                        :key="section.id"
                         @onClick="onInsertTool"
                     />
                 </div>
@@ -101,7 +101,7 @@ export default {
                 elems: this.dataManagers,
             };
         },
-        categories() {
+        sections() {
             return filterToolSections(this.toolsLayout, this.results);
         },
         toolsLayout() {
