@@ -348,19 +348,17 @@ QUnit.module("Node unit test", {
         f();
         assert.ok(node_changed_spy.calledWith(node));
     },
-    init_field_data_simple: function (option_overrides, name = "newnode") {
-        const overrides = Object.assign({}, option_overrides);
-        const data = Object.assign(overrides, {
+    init_field_data_simple: function () {
+        const data = {
             inputs: [{ name: "input1", extensions: ["data"] }],
             outputs: [{ name: "output1", extensions: ["data"] }],
-            name: name,
+            name: "newnode",
             label: null,
-        });
+        };
         this.node.initFieldData(data);
     },
-    update_field_data_with_new_input: function (option_overrides) {
-        const overrides = Object.assign({}, option_overrides);
-        const data = Object.assign(overrides, {
+    update_field_data_with_new_input: function () {
+        const data = {
             inputs: [
                 { name: "input1", extensions: ["data"] },
                 { name: "extra_0|input1", extensions: ["data"] },
@@ -368,7 +366,7 @@ QUnit.module("Node unit test", {
             outputs: [{ name: "output1", extensions: ["data"] }],
             postJobActions: {},
             label: "New Label",
-        });
+        };
         this.node.updateFieldData(data);
     },
 });
@@ -598,11 +596,6 @@ QUnit.module("Node view", {
         });
     },
     connectAttachedMappedOutput: function (callback) {
-        const data = {
-            inputs: [{ name: "TestName", extensions: ["txt"], input_type: "dataset_collection" }],
-            outputs: [],
-        };
-        this.node.updateFieldData(data);
         Vue.nextTick(() => {
             var terminal = this.node.inputTerminals["TestName"];
             var outputTerminal = new Terminals.OutputTerminal({
@@ -684,25 +677,41 @@ QUnit.test("replacing terminal on data input destroys invalid connections", func
 });
 
 QUnit.test("replacing terminal on data input with collection changes mapping view type", function (assert) {
-    var connector = this.connectAttachedTerminal("txt", "txt");
-    var newElement = $("<div class='inputs'></div>");
-    var connector_destroy_spy = sinon.spy(connector, "destroy");
-    this.view.addDataInput({ name: "TestName", extensions: ["txt"], input_type: "dataset_collection" }, newElement);
-    // Input type changed to dataset_collection - old connections are reset.
-    // Would be nice to preserve these connections and make them map over.
-    newElement.find(".input-terminal")[0].terminal;
-    assert.ok(connector_destroy_spy.called);
+    const node = this.node;
+    node.inputs.push({ name: "TestName", extensions: ["txt"] });
+    this.connectAttachedTerminal("txt", "txt", (connector) => {
+        const connector_destroy_spy = sinon.spy(connector, "destroy");
+        const data = {
+            inputs: [{ name: "TestName", extensions: ["txt"], input_type: "dataset_collection" }],
+            outputs: [],
+        };
+        node.updateFieldData(data);
+        Vue.nextTick(() => {
+            // Input type changed to dataset_collection - old connections are reset.
+            // Would be nice to preserve these connections and make them map over.
+            $(node.element).find(".input-terminal")[0].terminal;
+            assert.ok(connector_destroy_spy.called);
+        });
+    });
 });
 
 QUnit.test("replacing terminal on data collection input with simple input changes mapping view type", function (
     assert
 ) {
-    var connector = this.connectAttachedMappedOutput();
-    var newElement = $("<div class='inputs'></div>");
-    var connector_destroy_spy = sinon.spy(connector, "destroy");
-    this.view.addDataInput({ name: "TestName", extensions: ["txt"], input_type: "dataset" }, newElement);
-    newElement.find(".input-terminal")[0].terminal;
-    assert.ok(connector_destroy_spy.called);
+    const node = this.node;
+    node.inputs.push({ name: "TestName", extensions: ["txt"] });
+    this.connectAttachedMappedOutput((connector) => {
+        const connector_destroy_spy = sinon.spy(connector, "destroy");
+        const data = {
+            inputs: [{ name: "TestName", extensions: ["txt"], input_type: "dataset" }],
+            outputs: [],
+        };
+        node.updateFieldData(data);
+        Vue.nextTick(() => {
+            $(node.element).find(".input-terminal")[0].terminal;
+            assert.ok(connector_destroy_spy.called);
+        });
+    });
 });
 
 // global InputTerminalView
@@ -711,7 +720,7 @@ QUnit.module("Input terminal view", {
         this.app = create_app();
         this.node = this.app.build_node("tool", "newnode");
         this.input = { name: "i1", extensions: "txt", multiple: false };
-        this.node.updateFieldData({ inputs: [this.input], outputs: []});
+        this.node.updateFieldData({ inputs: [this.input], outputs: [] });
     },
 });
 
@@ -738,7 +747,7 @@ QUnit.module("Output terminal view", {
         this.app = create_app();
         this.node = this.app.build_node("tool", "newnode");
         this.output = { name: "o1", extensions: "txt" };
-        this.node.updateFieldData({ inputs: [], outputs: [this.output]});
+        this.node.updateFieldData({ inputs: [], outputs: [this.output] });
     },
 });
 

@@ -35,30 +35,33 @@ export default {
         },
     },
     mounted() {
-        var terminalClass = Terminals.InputTerminal;
-        const input = this.input;
-        if (input.input_type == "dataset_collection") {
-            terminalClass = Terminals.InputCollectionTerminal;
-        } else if (input.input_type == "parameter") {
-            terminalClass = Terminals.InputParameterTerminal;
-        }
-        if (this.terminal && !(this.terminal instanceof terminalClass)) {
-            this.terminal.destroy();
-        }
-        this.terminal = new terminalClass({
-            app: this.getManager(),
-            element: this.$refs.terminal,
-            input: input,
-        });
+        this.terminal = this.createTerminal(this.input);
         this.$emit("onAdd", this.input, this.terminal);
-        new TerminalViews.InputTerminalView(this.getManager(), {
-            node: this.getNode(),
-            input: this.input,
-            el: this.$refs.terminal,
-            terminal: this.terminal,
-        });
     },
     methods: {
+        createTerminal(input) {
+            let terminalClass = Terminals.InputTerminal;
+            if (input.input_type == "dataset_collection") {
+                terminalClass = Terminals.InputCollectionTerminal;
+            } else if (input.input_type == "parameter") {
+                terminalClass = Terminals.InputParameterTerminal;
+            }
+            if (this.terminal && !(this.terminal instanceof terminalClass)) {
+                this.terminal.destroy();
+            }
+            const terminal = new terminalClass({
+                app: this.getManager(),
+                element: this.$refs.terminal,
+                input: input,
+            });
+            new TerminalViews.InputTerminalView(this.getManager(), {
+                node: this.getNode(),
+                input: this.input,
+                el: this.$refs.terminal,
+                terminal: terminal,
+            });
+            return terminal;
+        },
         onRemove() {
             this.$emit("onRemove");
             if (this.terminal.connectors.length > 0) {
