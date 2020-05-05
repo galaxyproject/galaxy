@@ -199,7 +199,7 @@ export default {
         disconnectAndReset() {
             // Disconnects the user's final ext id and logouts of current session
             this.disconnectID();
-            logoutClick;
+            logoutClick();
         },
         removeItem(item) {
             this.items = this.items.filter((o) => o != item);
