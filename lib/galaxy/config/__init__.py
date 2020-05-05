@@ -37,8 +37,8 @@ from galaxy.util import (
     string_as_bool,
     unicodify,
 )
+from galaxy.util.custom_logging import LOGLV_TRACE
 from galaxy.util.dbkeys import GenomeBuilds
-from galaxy.util.logging import LOGLV_TRACE
 from galaxy.util.properties import (
     find_config_file,
     read_properties_from_file,

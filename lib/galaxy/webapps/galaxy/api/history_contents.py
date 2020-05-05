@@ -522,6 +522,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             dataset_collection_instance = service.create(
                 trans,
                 parent=history,
+                history=history,
                 **create_params
             )
         elif source == "hdca":
