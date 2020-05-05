@@ -43,7 +43,7 @@ import DatasetEditAttributes from "mvc/dataset/dataset-edit-attributes";
 import Citations from "components/Citations.vue";
 import DisplayStructure from "components/DisplayStructured.vue";
 import { CloudAuth } from "components/User/CloudAuth";
-
+import { ExternalIdentities } from "components/User/ExternalIdentities";
 import Vue from "vue";
 import store from "store";
 
@@ -58,6 +58,7 @@ export const getAnalysisRouter = (Galaxy) =>
             "(/)tours(/)(:tour_id)": "show_tours",
             "(/)user(/)": "show_user",
             "(/)user(/)cloud_auth": "show_cloud_auth",
+            "(/)user(/)external_ids": "show_external_ids",
             "(/)user(/)(:form_id)": "show_user_form",
             "(/)pages(/)create(/)": "show_pages_create",
             "(/)pages(/)edit(/)": "show_pages_edit",
@@ -89,7 +90,7 @@ export const getAnalysisRouter = (Galaxy) =>
             "(/)interactivetool_entry_points(/)list": "show_interactivetool_list",
         },
 
-        require_login: ["show_user", "show_user_form", "show_workflows", "show_cloud_auth"],
+        require_login: ["show_user", "show_user_form", "show_workflows", "show_cloud_auth", "show_external_ids"],
 
         authenticate: function (args, name) {
             const Galaxy = getGalaxyInstance();
@@ -135,6 +136,10 @@ export const getAnalysisRouter = (Galaxy) =>
 
         show_cloud_auth: function () {
             this._display_vue_helper(CloudAuth);
+        },
+
+        show_external_ids: function () {
+            this._display_vue_helper(ExternalIdentities);
         },
 
         show_visualizations: function (action_id) {

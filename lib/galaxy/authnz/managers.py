@@ -110,7 +110,7 @@ class AuthnzManager(object):
                     self.oidc_backends_config[idp] = self._parse_idp_config(child)
                     self.oidc_backends_implementation[idp] = 'psa'
                     self.app.config.oidc[idp] = {'icon': self._get_idp_icon(idp)}
-                elif idp == 'custos':
+                elif idp == 'custos' or idp == 'cilogon':
                     self.oidc_backends_config[idp] = self._parse_custos_config(child)
                     self.oidc_backends_implementation[idp] = 'custos'
                     self.app.config.oidc[idp] = {'icon': self._get_idp_icon(idp)}
@@ -148,6 +148,8 @@ class AuthnzManager(object):
             'redirect_uri': config_xml.find('redirect_uri').text,
             'realm': config_xml.find('realm').text,
             'enable_idp_logout': asbool(config_xml.findtext('enable_idp_logout', 'false'))}
+        if config_xml.find('credential_url') is not None:
+            rtv['credential_url'] = config_xml.find('credential_url').text
         if config_xml.find('well_known_oidc_config_uri') is not None:
             rtv['well_known_oidc_config_uri'] = config_xml.find('well_known_oidc_config_uri').text
         if config_xml.find('idphint') is not None:
@@ -166,13 +168,16 @@ class AuthnzManager(object):
                 return k.lower()
         return None
 
-    def _get_authnz_backend(self, provider):
+    def _get_authnz_backend(self, provider, idphint=None):
         unified_provider_name = self._unify_provider_name(provider)
         if unified_provider_name in self.oidc_backends_config:
             provider = unified_provider_name
             identity_provider_class = self._get_identity_provider_class(self.oidc_backends_implementation[provider])
             try:
-                return True, "", identity_provider_class(unified_provider_name, self.oidc_config, self.oidc_backends_config[unified_provider_name])
+                if (provider == 'cilogon' or provider == 'custos'):
+                    return True, "", identity_provider_class(unified_provider_name, self.oidc_config, self.oidc_backends_config[unified_provider_name], idphint=idphint)
+                else:
+                    return True, "", identity_provider_class(unified_provider_name, self.oidc_config, self.oidc_backends_config[unified_provider_name])
             except Exception as e:
                 log.exception('An error occurred when loading {}'.format(identity_provider_class.__name__))
                 return False, unicodify(e), None
@@ -252,7 +257,7 @@ class AuthnzManager(object):
             raise exceptions.ItemAccessibilityException(msg)
         return qres
 
-    def authenticate(self, provider, trans):
+    def authenticate(self, provider, trans, idphint=None):
         """
         :type provider: string
         :param provider: set the name of the identity provider to be
@@ -262,21 +267,26 @@ class AuthnzManager(object):
         :return: an identity provider specific authentication redirect URI.
         """
         try:
-            success, message, backend = self._get_authnz_backend(provider)
+            success, message, backend = self._get_authnz_backend(provider, idphint=idphint)
             if success is False:
                 return False, message, None
+            elif (provider == 'cilogon' or provider == 'custos'):
+                return True, "Redirecting to the `{}` identity provider for authentication".format(provider), backend.authenticate(trans, idphint)
             return True, "Redirecting to the `{}` identity provider for authentication".format(provider), backend.authenticate(trans)
         except Exception:
             msg = 'An error occurred when authenticating a user on `{}` identity provider'.format(provider)
             log.exception(msg)
             return False, msg, None
 
-    def callback(self, provider, state_token, authz_code, trans, login_redirect_url):
+    def callback(self, provider, state_token, authz_code, trans, login_redirect_url, idphint=None):
         try:
-            success, message, backend = self._get_authnz_backend(provider)
+            success, message, backend = self._get_authnz_backend(provider, idphint=idphint)
             if success is False:
                 return False, message, (None, None)
-            return True, message, backend.callback(state_token, authz_code, trans, login_redirect_url)
+            return success, message, backend.callback(state_token, authz_code, trans, login_redirect_url)
+        except exceptions.AuthenticationFailed as e:
+            log.exception(e.message)
+            raise exceptions.AuthenticationFailed(e.message)
         except Exception as e:
             msg = 'The following error occurred when handling callback from `{}` identity provider: ' \
                   '{}'.format(provider, e.message)
@@ -312,9 +322,9 @@ class AuthnzManager(object):
             log.exception(msg)
             return False, msg, None
 
-    def disconnect(self, provider, trans, disconnect_redirect_url=None):
+    def disconnect(self, provider, trans, disconnect_redirect_url=None, idphint=None):
         try:
-            success, message, backend = self._get_authnz_backend(provider)
+            success, message, backend = self._get_authnz_backend(provider, idphint=idphint)
             if success is False:
                 return False, message, None
             return backend.disconnect(provider, trans, disconnect_redirect_url)
