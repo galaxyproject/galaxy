@@ -156,7 +156,7 @@ function _addLabelAnnotation(self, node) {
 
 /** Visit input nodes and enrich by name/value pairs from server data */
 function _visit(head, head_list, output_id, node) {
-    var post_job_actions = node.post_job_actions;
+    var postJobActions = node.postJobActions;
     head_list = head_list || [];
     head_list.push(head);
     for (var i in head.inputs) {
@@ -173,7 +173,7 @@ function _visit(head, head_list, output_id, node) {
                     delete input.payload[p_id];
                 }
             }
-            var d = post_job_actions[input.action + output_id];
+            var d = postJobActions[input.action + output_id];
             if (d) {
                 for (var j in head_list) {
                     head_list[j].expanded = true;
@@ -349,14 +349,14 @@ function _makeSection(self, output_id, label, node) {
 /** Builds all sub sections */
 function _addSections(self, node) {
     var inputs = node.config_form.inputs;
-    var post_job_actions = node.post_job_actions;
+    var postJobActions = node.postJobActions;
     var output_id = node.outputTerminals && Object.keys(node.outputTerminals)[0];
     if (output_id) {
         inputs.push({
             name: `pja__${output_id}__EmailAction`,
             label: "Email notification",
             type: "boolean",
-            value: String(Boolean(post_job_actions[`EmailAction${output_id}`])),
+            value: String(Boolean(postJobActions[`EmailAction${output_id}`])),
             ignore: "false",
             help: _l("An email notification will be sent when the job has completed."),
             payload: {
@@ -367,7 +367,7 @@ function _addSections(self, node) {
             name: `pja__${output_id}__DeleteIntermediatesAction`,
             label: "Output cleanup",
             type: "boolean",
-            value: String(Boolean(post_job_actions[`DeleteIntermediatesAction${output_id}`])),
+            value: String(Boolean(postJobActions[`DeleteIntermediatesAction${output_id}`])),
             ignore: "false",
             help:
                 "Upon completion of this step, delete non-starred outputs from completed workflow steps if they are no longer required as inputs.",

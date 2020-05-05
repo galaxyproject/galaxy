@@ -140,8 +140,8 @@ export function getWorkflowParameters(nodes) {
                 }
             });
         }
-        if (node.post_job_actions) {
-            Object.values(node.post_job_actions).forEach((pja) => {
+        if (node.postJobActions) {
+            Object.values(node.postJobActions).forEach((pja) => {
                 if (pja.action_arguments) {
                     Object.values(pja.action_arguments).forEach((action_argument) => {
                         if (typeof action_argument === "string") {

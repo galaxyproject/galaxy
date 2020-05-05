@@ -407,7 +407,7 @@ QUnit.test("init_field_data properties", function (assert) {
         tool_errors: false,
         tooltip: "tool tooltip",
         annotation: "tool annotation",
-        workflowOutputs: [{ output_name: "out1" }],
+        workflow_outputs: [{ output_name: "out1" }],
         label: "Cat that data.",
     };
     const node = this.node;

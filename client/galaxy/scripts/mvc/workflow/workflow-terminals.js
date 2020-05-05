@@ -600,7 +600,7 @@ class BaseOutputTerminal extends Terminal {
         this.datatypes = output.datatypes || output.extensions;
         this.optional = output.optional;
         this.force_datatype = output.force_datatype;
-        const changeOutputDatatype = this.node.post_job_actions["ChangeOutputDatatype" + output.name];
+        const changeOutputDatatype = this.node.postJobActions["ChangeOutputDatatype" + output.name];
         if (changeOutputDatatype) {
             this.node.outputTerminals[output.name].force_datatype = changeOutputDatatype.action_arguments["newtype"];
         } else {

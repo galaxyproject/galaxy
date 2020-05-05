@@ -217,10 +217,9 @@ export default {
             this.annotation = data.annotation;
             this.tooltip = data.tooltip ? data.tooltip : "";
             this.postJobActions = data.post_job_actions || {};
-            this.post_job_actions = data.post_job_actions ? data.post_job_actions : {};
             this.label = data.label;
             this.uuid = data.uuid;
-            this.workflowOutputs = data.workflowOutputs;
+            this.workflowOutputs = data.workflow_outputs;
             this.activeOutputs.update(data.workflow_outputs);
         },
         updateFieldData(data) {
@@ -333,13 +332,13 @@ export default {
             output_terminal.force_datatype = datatype;
             output.force_datatype = datatype;
             if (datatype) {
-                this.post_job_actions["ChangeDatatypeAction" + outputName] = {
+                this.postJobActions["ChangeDatatypeAction" + outputName] = {
                     action_arguments: { newtype: datatype },
                     action_type: "ChangeDatatypeAction",
                     output_name: outputName,
                 };
             } else {
-                delete this.post_job_actions["ChangeDatatypeAction" + outputName];
+                delete this.postJobActions["ChangeDatatypeAction" + outputName];
             }
             this.markChanged();
             output_terminal.destroyInvalidConnections();
@@ -349,7 +348,7 @@ export default {
                 name: this.name,
                 label: this.label,
                 annotation: this.annotation,
-                post_job_actions: this.post_job_actions,
+                post_job_actions: this.postJobActions,
             };
             var node = this.app.create_node(this.type, this.name, this.content_id);
             Utils.request({
