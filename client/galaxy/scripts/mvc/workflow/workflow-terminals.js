@@ -589,7 +589,7 @@ class InputCollectionTerminal extends BaseInputTerminal {
     }
 }
 
-class OutputTerminal extends Terminal {
+class BaseOutputTerminal extends Terminal {
     constructor(attr) {
         super(attr);
         this.datatypes = attr.datatypes;
@@ -600,7 +600,16 @@ class OutputTerminal extends Terminal {
         this.datatypes = output.datatypes || output.extensions;
         this.optional = output.optional;
         this.force_datatype = output.force_datatype;
+        const changeOutputDatatype = this.node.post_job_actions["ChangeOutputDatatype" + output.name];
+        if (changeOutputDatatype) {
+            this.node.outputTerminals[output.name].force_datatype = changeOutputDatatype.action_arguments["newtype"];
+        } else {
+            this.node.outputTerminals[output.name].force_datatype = null;
+        }
     }
+}
+
+class OutputTerminal extends BaseOutputTerminal {
     resetMappingIfNeeded() {
         // If inputs were only mapped over to preserve
         // an output just disconnected reset these...
@@ -632,12 +641,9 @@ class OutputTerminal extends Terminal {
     }
 }
 
-class OutputCollectionTerminal extends Terminal {
+class OutputCollectionTerminal extends BaseOutputTerminal {
     constructor(attr) {
         super(attr);
-        this.datatypes = attr.datatypes;
-        this.optional = attr.optional;
-        this.force_datatype = attr.force_datatype;
         if (attr.collection_type) {
             this.collectionType = new CollectionTypeDescription(attr.collection_type);
         } else {
@@ -650,9 +656,7 @@ class OutputCollectionTerminal extends Terminal {
         this.isCollection = true;
     }
     update(output) {
-        this.datatypes = output.datatypes || output.extensions;
-        this.optional = output.optional;
-        this.force_datatype = output.force_datatype;
+        super.update(output);
         var newCollectionType;
         if (output.collection_type) {
             newCollectionType = new CollectionTypeDescription(output.collection_type);
