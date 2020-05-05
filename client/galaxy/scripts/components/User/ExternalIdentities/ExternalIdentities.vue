@@ -84,8 +84,13 @@
 
         <div class="external-subheading" v-if="enable_oidc">
             <h3>Connect Other External Identities</h3>
-            <b-button v-for="idp in oidc_idps" :key="idp" class="d-block mt-3" @click="submitOIDCLogin(idp)">
-                <i v-bind:class="oidc_idps_icons[idp]" />
+            <b-button
+                v-for="(idp_info, idp) in oidc_idps"
+                :key="idp"
+                class="d-block mt-3"
+                @click="submitOIDCLogin(idp)"
+            >
+                <i v-bind:class="idp_info['icon']" />
                 Sign in with
                 {{ idp.charAt(0).toUpperCase() + idp.slice(1) }}
             </b-button>
@@ -108,16 +113,6 @@ export default {
     data() {
         const galaxy = getGalaxyInstance();
         const oidc_idps = galaxy.config.oidc;
-        // Icons to use for each IdP
-        const oidc_idps_icons = { google: "fa fa-google" };
-        // Add default icons to IdPs without icons
-        oidc_idps
-            .filter(function (key) {
-                return oidc_idps_icons[key] === undefined;
-            })
-            .forEach(function (idp) {
-                oidc_idps_icons[idp] = "fa fa-id-card";
-            });
         return {
             items: [],
             showHelp: true,
@@ -126,7 +121,6 @@ export default {
             errorMessage: null,
             enable_oidc: galaxy.config.enable_oidc,
             oidc_idps: oidc_idps,
-            oidc_idps_icons: oidc_idps_icons,
             cilogon_idps: [],
             selected: "",
             cilogonSelected: false,
@@ -146,12 +140,6 @@ export default {
             // This setter is here because vue-bootstrap modal
             // tries to set this property for unfathomable reasons
             set() {},
-        },
-        filtered_oidc_idps() {
-            return this.oidc_idps.filter((idp) => idp != "cilogon");
-        },
-        cilogonShow() {
-            return this.oidc_idps.includes("cilogon") && this.cilogonSelected; //&& cilogon button clicked
         },
     },
     watch: {
