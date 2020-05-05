@@ -59,7 +59,7 @@
             <div>
                 <b-modal
                     centered
-                    id="disconnectIDModal"
+                    id="disconnectAndResetModal"
                     ref="deleteAndResetModal"
                     title="Deleting last external identity"
                     @ok="disconnectAndReset"
