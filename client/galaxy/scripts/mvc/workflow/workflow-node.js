@@ -248,6 +248,11 @@ export class Node {
     update_field_data(data) {
         var node = this;
         var nodeView = node.nodeView;
+        if ("post_job_actions" in data) {
+            // Won't be present in response for data inputs
+            var pja_in = data.post_job_actions;
+            this.post_job_actions = pja_in ? pja_in : {};
+        }
         // remove unused output views and remove pre-existing output views from data.outputs,
         // so that these are not added twice.
         var unused_outputs = [];
@@ -290,7 +295,13 @@ export class Node {
                 // the output already exists, but the output formats may have changed.
                 // Therefore we update the datatypes and destroy invalid connections.
                 node.output_terminals[output.name].datatypes = output.extensions;
-                node.output_terminals[output.name].force_datatype = output.force_datatype;
+                const changeOutputDatatype = node.post_job_actions["ChangeOutputDatatype" + output.name];
+                if (changeOutputDatatype) {
+                    node.output_terminals[output.name].force_datatype =
+                        changeOutputDatatype.action_arguments["newtype"];
+                } else {
+                    node.output_terminals[output.name].force_datatype = null;
+                }
                 if (node.type == "parameter_input") {
                     node.output_terminals[output.name].attributes.type = output.type;
                 }
@@ -304,11 +315,6 @@ export class Node {
         this.errors = data.errors;
         this.annotation = data.annotation;
         this.label = data.label;
-        if ("post_job_actions" in data) {
-            // Won't be present in response for data inputs
-            var pja_in = data.post_job_actions;
-            this.post_job_actions = pja_in ? pja_in : {};
-        }
         node.nodeView.renderErrors();
         // Update input rows
         var old_body = nodeView.$el.find("div.inputs");

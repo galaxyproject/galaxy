@@ -459,6 +459,21 @@ class Bam(BamNative):
     data_sources = {"data": "bai", "index": "bigwig"}
 
     MetadataElement(name="bam_index", desc="BAM Index File", param=metadata.FileParameter, file_ext="bai", readonly=True, no_value=None, visible=False, optional=True)
+    MetadataElement(name="bam_csi_index", desc="BAM CSI Index File", param=metadata.FileParameter, file_ext="bam.csi", readonly=True, no_value=None, visible=False, optional=True)
+
+    def get_index_flag(self, file_name):
+        """
+        Return pysam flag for bai index (default) or csi index (contig size > (2**29 - 1) )
+        """
+        index_flag = '-b'  # bai index
+        try:
+            with pysam.AlignmentFile(file_name) as alignment_file:
+                if max(alignment_file.header.lengths) > (2 ** 29) - 1:
+                    index_flag = '-c'  # csi index
+        except Exception:
+            # File may not have a header, that's OK
+            pass
+        return index_flag
 
     def dataset_content_needs_grooming(self, file_name):
         """
@@ -466,12 +481,17 @@ class Bam(BamNative):
         """
         # The best way to ensure that BAM files are coordinate-sorted and indexable
         # is to actually index them.
+        index_flag = self.get_index_flag(file_name)
         index_name = tempfile.NamedTemporaryFile(prefix="bam_index").name
         try:
             # If pysam fails to index a file it will write to stderr,
             # and this causes the set_meta script to fail. So instead
             # we start another process and discard stderr.
-            cmd = ['python', '-c', "import pysam; pysam.index('%s', '%s')" % (file_name, index_name)]
+            if index_flag == '-b':
+                # IOError: No such file or directory: '-b' if index_flag is set to -b (pysam 0.15.4)
+                cmd = ['python', '-c', "import pysam; pysam.index('%s', '%s')" % (file_name, index_name)]
+            else:
+                cmd = ['python', '-c', "import pysam; pysam.index('%s', '%s', '%s')" % (index_flag, file_name, index_name)]
             with open(os.devnull, 'w') as devnull:
                 subprocess.check_call(cmd, stderr=devnull, shell=False)
             needs_sorting = False
@@ -486,10 +506,20 @@ class Bam(BamNative):
     def set_meta(self, dataset, overwrite=True, **kwd):
         # These metadata values are not accessible by users, always overwrite
         super(Bam, self).set_meta(dataset=dataset, overwrite=overwrite, **kwd)
-        index_file = dataset.metadata.bam_index
+        index_flag = self.get_index_flag(dataset.file_name)
+        if index_flag == '-b':
+            spec_key = 'bam_index'
+            index_file = dataset.metadata.bam_index
+        else:
+            spec_key = 'bam_csi_index'
+            index_file = dataset.metadata.bam_csi_index
         if not index_file:
-            index_file = dataset.metadata.spec['bam_index'].param.new_file(dataset=dataset)
-        pysam.index(dataset.file_name, index_file.file_name)
+            index_file = dataset.metadata.spec[spec_key].param.new_file(dataset=dataset)
+        if index_flag == '-b':
+            # IOError: No such file or directory: '-b' if index_flag is set to -b (pysam 0.15.4)
+            pysam.index(dataset.file_name, index_file.file_name)
+        else:
+            pysam.index(index_flag, dataset.file_name, index_file.file_name)
         dataset.metadata.bam_index = index_file
 
     def sniff(self, file_name):

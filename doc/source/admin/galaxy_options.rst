@@ -783,6 +783,18 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~
+``refgenie_config_file``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    File containing refgenie configuration, e.g.
+    /path/to/genome_config.yaml. Can be used by refgenie backed tool
+    data tables.
+:Default: ``None``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``build_sites_config_file``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
