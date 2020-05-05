@@ -361,19 +361,6 @@
                                     <a href="javascript:void(0)" @click="displayRuleType = 'mapping'">Click here</a> to
                                     manage column definitions.
                                 </div>
-                                <div class="btn-group dropup">
-                                    <button
-                                        type="button"
-                                        v-b-tooltip.hover.bottom
-                                        :title="titleRulesMenu"
-                                        class="rule-menu-rules-button primary-button dropdown-toggle"
-                                        data-toggle="dropdown"
-                                    >
-                                        <span class="fa fa-plus"></span> {{ l("Saved Rules")
-                                        }}<span class="caret"></span>
-                                    </button>
-                                    <saved-rules-selector :builder="this" ref="savedRulesSelector" />
-                                </div>
                             </ol>
                             <div class="rules-buttons">
                                 <div class="btn-group dropup">
@@ -445,6 +432,19 @@
                                         <rule-target-component :builder="this" rule-type="add_column_value" />
                                         <rule-target-component :builder="this" rule-type="add_column_substr" />
                                     </div>
+                                </div>
+                                <div class="btn-group dropup">
+                                    <button
+                                        type="button"
+                                        v-b-tooltip.hover.bottom
+                                        :title="titleRulesMenu"
+                                        class="rule-menu-rules-button primary-button dropdown-toggle"
+                                        data-toggle="dropdown"
+                                    >
+                                        <span class="fa fa-plus"></span> {{ l("Saved Rules")
+                                        }}<span class="caret"></span>
+                                    </button>
+                                    <saved-rules-selector :builder="this" ref="savedRulesSelector" />
                                 </div>
                             </div>
                         </div>
