@@ -381,6 +381,10 @@ class Workflow extends EventEmitter {
                         }
                     });
                 }
+                self.has_changes = false;
+                self.fit_canvas_to_nodes();
+                self.scroll_to_nodes();
+                self.canvas_manager.draw_overview();
             });
         });
     }
