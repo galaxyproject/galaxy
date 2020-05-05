@@ -1127,8 +1127,38 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
 
     def set_final_state(self, final_state):
         self.set_state(final_state)
-        if self.workflow_invocation_step:
-            self.workflow_invocation_step.update()
+        statements = ['''
+            UPDATE history_dataset_collection_association
+            SET update_time = :update_time
+            WHERE id in (
+                SELECT hdca.id
+                FROM history_dataset_collection_association hdca
+                INNER JOIN implicit_collection_jobs icj
+                    on icj.id = hdca.implicit_collection_jobs_id
+                INNER JOIN implicit_collection_jobs_job_association icjja
+                    on icj.id = icjja.implicit_collection_jobs_id
+                WHERE icjja.job_id = :job_id
+                UNION
+                SELECT hdca2.id
+                FROM history_dataset_collection_association hdca2
+                WHERE hdca2.job_id = :job_id
+            );
+        ''', '''
+            UPDATE workflow_invocation_step
+            SET update_time = :update_time
+            WHERE id in (
+                SELECT workflow_invocation_step.id
+                FROM workflow_invocation_step wis
+                WHERE wis.job_id = :job_id
+            );
+        ''']
+        sa_session = object_session(self)
+        params = {
+            'job_id': self.id,
+            'update_time': galaxy.model.orm.now.now()
+        }
+        for statement in statements:
+            sa_session.execute(statement, params)
 
     def get_destination_configuration(self, dest_params, config, key, default=None):
         """ Get a destination parameter that can be defaulted back
