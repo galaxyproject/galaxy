@@ -1,5 +1,3 @@
-import $ from "jquery";
-import _ from "underscore";
 import EventEmitter from "events";
 
 const NULL_COLLECTION_TYPE_DESCRIPTION = {
@@ -119,7 +117,8 @@ class Terminal extends EventEmitter {
         }
     }
     disconnect(connector) {
-        this.connectors.splice($.inArray(connector, this.connectors), 1);
+        const connectorIndex = this.connectors.findIndex((c) => c === connector);
+        this.connectors.splice(connectorIndex, 1);
         if (this.node) {
             this.node.markChanged();
             this.resetMappingIfNeeded();
@@ -415,7 +414,7 @@ class InputTerminal extends BaseInputTerminal {
             } else {
                 //  Need to check if this would break constraints...
                 var mappingConstraints = this._mappingConstraints();
-                if (mappingConstraints.every(_.bind(otherCollectionType.canMatch, otherCollectionType))) {
+                if (mappingConstraints.every(otherCollectionType.canMatch.bind(otherCollectionType))) {
                     return this._producesAcceptableDatatypeAndOptionalness(other);
                 } else {
                     if (mapOver.isCollection) {
@@ -512,7 +511,7 @@ class InputCollectionTerminal extends BaseInputTerminal {
     _effectiveMapOver(other) {
         var collectionTypes = this.collectionTypes;
         var otherCollectionType = this._otherCollectionType(other);
-        var canMatch = _.some(collectionTypes, (collectionType) => collectionType.canMatch(otherCollectionType));
+        var canMatch = collectionTypes.some((collectionType) => collectionType.canMatch(otherCollectionType));
         if (!canMatch) {
             for (var collectionTypeIndex in collectionTypes) {
                 var collectionType = collectionTypes[collectionTypeIndex];
@@ -528,14 +527,14 @@ class InputCollectionTerminal extends BaseInputTerminal {
     }
     _effectiveCollectionTypes() {
         var mapOver = this.mapOver;
-        return _.map(this.collectionTypes, (t) => mapOver.append(t));
+        return this.collectionTypes.map((t) => mapOver.append(t));
     }
     attachable(other) {
         var otherCollectionType = this._otherCollectionType(other);
         if (otherCollectionType.isCollection) {
             var effectiveCollectionTypes = this._effectiveCollectionTypes();
             var mapOver = this.mapOver;
-            var canMatch = _.some(effectiveCollectionTypes, (effectiveCollectionType) =>
+            var canMatch = effectiveCollectionTypes.some((effectiveCollectionType) =>
                 effectiveCollectionType.canMatch(otherCollectionType)
             );
             if (canMatch) {
@@ -556,7 +555,7 @@ class InputCollectionTerminal extends BaseInputTerminal {
                     );
                 }
             } else if (
-                _.some(this.collectionTypes, (collectionType) => otherCollectionType.canMapOver(collectionType))
+                this.collectionTypes.some((collectionType) => otherCollectionType.canMapOver(collectionType))
             ) {
                 // we're not mapped over - but hey maybe we could be... lets check.
                 var effectiveMapOver = this._effectiveMapOver(other);
@@ -628,7 +627,7 @@ class OutputTerminal extends BaseOutputTerminal {
     }
     resetMapping() {
         super.resetMapping();
-        _.each(this.connectors, (connector) => {
+        this.connectors.forEach((connector) => {
             var connectedInput = connector.handle2;
             if (connectedInput) {
                 // Not exactly right because this is still connected.
