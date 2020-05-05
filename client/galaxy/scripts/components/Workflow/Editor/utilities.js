@@ -11,7 +11,7 @@ export function copyIntoWorkflow(workflow, id = null, stepCount = null) {
     const _copy_into_workflow_ajax = () => {
         // Load workflow definition
         show_message("Importing workflow", "progress");
-        loadWorkflow(workflow, id, null, false).then((data) => {
+        loadWorkflow(workflow, id, null, true).then((data) => {
             // Determine if any parameters were 'upgraded' and provide message
             var upgrade_message = "";
             $.each(data.upgrade_messages, (k, v) => {

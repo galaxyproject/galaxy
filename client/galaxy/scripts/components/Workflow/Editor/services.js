@@ -33,11 +33,11 @@ export async function getModule(request_data) {
     }
 }
 
-export async function loadWorkflow(workflow, id, version, initialImport = true) {
+export async function loadWorkflow(workflow, id, version, appendData) {
     try {
         const versionQuery = version ? `version=${version}` : "";
         const { data } = await axios.get(`${getAppRoot()}workflow/load_workflow?_=true&id=${id}&${versionQuery}`);
-        workflow.from_simple(data, initialImport);
+        workflow.from_simple(data, appendData);
         workflow.has_changes = false;
         workflow.fit_canvas_to_nodes();
         workflow.scroll_to_nodes();

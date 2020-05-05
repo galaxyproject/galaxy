@@ -12,7 +12,6 @@ class Workflow extends EventEmitter {
         this.ext_to_type = options.datatypes_mapping.ext_to_class_name;
         this.type_to_type = options.datatypes_mapping.class_to_classes;
         this.canvas_container = $(canvas_container);
-        this.id_counter = 0;
         this.nodes = {};
         this.name = null;
         this.has_changes = false;
@@ -190,10 +189,9 @@ class Workflow extends EventEmitter {
         this.emit("onRemoveNode");
     }
     remove_all() {
-        var wf = this;
         Object.values(this.nodes).forEach((node) => {
             node.onDestroy();
-            wf.remove_node(node);
+            this.remove_node(node);
         });
     }
     rectify_workflow_outputs() {
@@ -308,25 +306,25 @@ class Workflow extends EventEmitter {
         const report = this.report;
         return { steps: nodes, report: report };
     }
-    from_simple(data, initialImport = true) {
-        var wf = this;
-        var offset = 0;
-        if (initialImport) {
-            wf.remove_all();
-            wf.name = data.name;
+    from_simple(data, appendData) {
+        const self = this;
+        let offset = 0;
+        if (!appendData) {
+            this.name = data.name;
+            this.remove_all();
         } else {
-            offset = Object.keys(wf.nodes).length;
+            offset = this.nodeId;
         }
-        var max_id = offset;
+
         // First pass, nodes
         var using_workflow_outputs = false;
-        wf.workflow_version = data.version;
-        wf.report = data.report || {};
-        Object.entries(data.steps).forEach(([id, step]) => {
-            const node = wf.build_node(step.type, step.name, step.content_id);
+        self.workflow_version = data.version;
+        self.report = data.report || {};
+        Object.values(data.steps).forEach((step) => {
+            const node = self.build_node(step.type, step.name, step.content_id);
             // If workflow being copied into another, wipe UUID and let
             // Galaxy assign new ones.
-            if (!initialImport) {
+            if (appendData) {
                 step.uuid = null;
                 step.workflow_outputs.forEach((workflow_output) => {
                     workflow_output.uuid = null;
@@ -338,11 +336,8 @@ class Workflow extends EventEmitter {
                     node.element.style.top = step.position.top + "px";
                     node.element.style.left = step.position.left + "px";
                 }
-                node.id = parseInt(step.id) + offset;
-                node.element.setAttribute("id", `wf-node-step-${node.id}`);
-                node.element.setAttribute("node-label", step.label);
-                wf.nodes[node.id] = node;
-                max_id = Math.max(max_id, parseInt(id) + offset);
+                self.nodes[node.id] = node;
+
                 // For older workflows, it's possible to have HideDataset PJAs, but not WorkflowOutputs.
                 // Check for either, and then add outputs in the next pass.
                 if (!using_workflow_outputs) {
@@ -358,20 +353,21 @@ class Workflow extends EventEmitter {
                 }
             });
         });
-        wf.id_counter = max_id + 1;
         Vue.nextTick(() => {
             // Second pass, connections
             Object.entries(data.steps).forEach(([id, step]) => {
-                const node = wf.nodes[parseInt(id) + offset];
+                const nodeIndex = parseInt(id) + offset;
+                const node = self.nodes[nodeIndex];
                 Object.entries(step.input_connections).forEach(([k, v]) => {
                     if (v) {
                         if (!Array.isArray(v)) {
                             v = [v];
                         }
                         v.forEach((x) => {
-                            const other_node = wf.nodes[parseInt(x.id) + offset];
+                            const otherNodeIndex = parseInt(x.id) + offset;
+                            const otherNode = self.nodes[otherNodeIndex];
                             const c = new Connector(this.canvas_manager);
-                            c.connect(other_node.outputTerminals[x.output_name], node.inputTerminals[k]);
+                            c.connect(otherNode.outputTerminals[x.output_name], node.inputTerminals[k]);
                             c.redraw();
                         });
                     }
@@ -381,7 +377,7 @@ class Workflow extends EventEmitter {
                     Object.values(node.outputTerminals).forEach((ot) => {
                         if (node.postJobActions[`HideDatasetAction${ot.name}`] === undefined) {
                             node.activeOutputs.add(ot.name);
-                            wf.has_changes = true;
+                            self.has_changes = true;
                         }
                     });
                 }
