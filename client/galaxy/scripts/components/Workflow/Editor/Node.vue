@@ -1,5 +1,5 @@
 <template>
-    <div id="idString" class="workflow-node" :node-label="label" :name="name">
+    <div :id="idString" class="workflow-node" :node-label="label" :name="name">
         <div class="node-header unselectable clearfix">
             <b-button
                 class="node-destroy py-0 float-right"
@@ -345,12 +345,13 @@ export default {
             });
         },
         labelWorkflowOutput(outputName, label) {
-            var changed = false;
-            var oldLabel = null;
+            let changed = false;
+            let oldLabel = null;
             if (this.activeOutputs.get(outputName)) {
-                var workflowOutput = this.activeOutputs.get(outputName);
+                const outputIndex = this.outputs.findIndex((o) => o.name == outputName);
+                const workflowOutput = this.outputs[outputIndex];
                 oldLabel = workflowOutput.label;
-                workflowOutput.label = label;
+                Vue.set(workflowOutput, "label", label);
                 changed = oldLabel != label;
             } else {
                 changed = this.activeOutputs.add(outputName, label);
