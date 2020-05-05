@@ -29,22 +29,17 @@
         </header>
 
         <div class="external-subheading" v-if="items.length">
-            <b-list-group class="external-id-key">
-                <h3>Connected External Identities</h3>
-                <ul class="operations">
-                    <li class="delete" v-for="item in filteredItems" v-bind:key="item">
-                        <button
-                            :key="item.id"
-                            @click="onDisconnect(item)"
-                            aria-label="Disconnect External Identity"
-                            title="Disconnect External Identity"
-                        >
-                            <span>Disconnect External Identity</span>
-                        </button>
-                        {{ item.provider.charAt(0).toUpperCase() + item.provider.slice(1) }} - {{ item.email }}
-                    </li>
-                </ul>
-            </b-list-group>
+            <h3>Connected External Identities</h3>
+            <b-button
+                @click="onDisconnect(item)"
+                aria-label="Disconnect External Identity"
+                title="Disconnect External Identity"
+                v-for="item in items"
+                :key="item.provider"
+                class="d-block mt-3"
+            >
+                Disconnect {{ item.provider.charAt(0).toUpperCase() + item.provider.slice(1) }} - {{ item.email }}
+            </b-button>
 
             <b-modal
                 centered
@@ -56,21 +51,19 @@
                 @cancel="doomedItem = null"
             ></b-modal>
 
-            <div>
-                <b-modal
-                    centered
-                    id="disconnectAndResetModal"
-                    ref="deleteAndResetModal"
-                    title="Deleting last external identity"
-                    @ok="disconnectAndReset"
-                    @cancel="doomedItem = null"
-                >
-                    <p>
-                        If you delete this identity, you will be logged out and need to reset your Galaxy password the
-                        next time you log in or reconnect to this third party identity.
-                    </p>
-                </b-modal>
-            </div>
+            <b-modal
+                centered
+                id="disconnectAndResetModal"
+                ref="deleteAndResetModal"
+                title="Deleting last external identity"
+                @ok="disconnectAndReset"
+                @cancel="doomedItem = null"
+            >
+                <p>
+                    If you delete this identity, you will be logged out and need to reset your Galaxy password the next
+                    time you log in or reconnect to this third party identity.
+                </p>
+            </b-modal>
 
             <b-alert
                 dismissible
@@ -127,9 +120,6 @@ export default {
         };
     },
     computed: {
-        filteredItems() {
-            return this.items;
-        },
         deleteButtonVariant() {
             return this.showDeleted ? "primary" : "secondary";
         },
@@ -164,7 +154,7 @@ export default {
                     // User must confirm that they want to disconnect the identity
                     this.$refs.deleteModal.show();
                 } else {
-                    // User is notifed to reset password to use regular Galaxy login and avoid lockout
+                    // User is notified to reset password to use regular Galaxy login and avoid lockout
                     this.$refs.deleteAndResetModal.show();
                     this.setError(
                         "Before disconnecting this identity, you need to set your account password, " +
