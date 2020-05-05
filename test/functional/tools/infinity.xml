@@ -1,0 +1,40 @@
+<!-- test for correct handling of Infinity, -Infinity, NaN of 
+     JSON en/decoder in Galaxy (i.e. in galaxy.util.json) -->
+<tool id="infinity" name="infinity" version="0.1.0">
+  <command><![CDATA[
+    echo "text $intext" > '$NaN' &&
+    echo "float $infloat" >> '$NaN' &&
+    echo "select $inselect" >> '$NaN' &&
+    echo "param $Infinity" >> '$NaN'
+  ]]></command>
+  <inputs>
+    <param name="intext" type="text" value=""/>
+    <param name="infloat" type="float" value=""/>
+    <param name="inselect" type="select" >
+        <option value="Infinity">Infinity</option>
+        <option value="NaN">NaN</option>
+    </param>
+    <param name="Infinity" type="text" value=""/>
+  </inputs>
+  <outputs>
+    <data name="NaN" format="txt" label="out"/>
+  </outputs>
+  <tests>
+    <test expect_num_outputs="1">
+      <param name="intext" value="Infinity" />
+      <param name="infloat" value="Inf" />
+      <param name="inselect" value="Infinity" />
+      <param name="Infinity" value="VAL" />
+      <output name="NaN" file="1.txt" compare="sim_size" delta_frac="Infinity">
+        <assert_contents>
+          <has_line line="text Infinity"/>
+          <has_line line="float inf"/>
+          <has_line line="select Infinity"/>
+          <has_line line="param VAL"/>
+          <has_text_matching expression="Infinity"/>
+        </assert_contents>
+      </output>
+    </test>
+  </tests>
+</tool>
+
