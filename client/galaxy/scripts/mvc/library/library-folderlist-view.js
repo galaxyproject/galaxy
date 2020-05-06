@@ -223,7 +223,7 @@ var FolderListView = Backbone.View.extend({
 
     drawSpinner: function (options) {
         const spinner = `<div id="folder_items_spinner" style="text-align: center;">
-                            <span class="fa fa-spinner fa-spin" style="font-size:5em !important;"/>
+                            <span class="fa fa-spinner fa-spin fa-5x"/>
                        </div>`
         $("#folder_items_element").append(spinner);
         $(".page_size").hide();
