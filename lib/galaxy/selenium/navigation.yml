@@ -359,6 +359,15 @@ tour:
 
 admin:
 
+  manage_dependencies:
+    selectors:
+      dependencies: 'a[contains(text(), "Dependencies")]'
+      containers: 'a[contains(text(), "Containers")]'
+      unused: 'a[contains(text(), "Unused")]'
+      resolver_type: '#manage-resolver-type'
+      container_type: '#manage-container-type'
+      unused_paths: '#unused-paths-table'
+
   toolshed:
     selectors:
       repo_search: '#toolshed-repo-search'
