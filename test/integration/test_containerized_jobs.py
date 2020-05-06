@@ -30,6 +30,12 @@ class MulledJobTestCases(object):
         output = self.dataset_populator.get_history_dataset_content(self.history_id, timeout=EXTENDED_TIMEOUT)
         assert "0.7.15-r1140" in output
 
+    def test_mulled_explicit_invalid_case(self):
+        self.dataset_populator.run_tool("mulled_example_invalid_case", {}, self.history_id)
+        self.dataset_populator.wait_for_history(self.history_id, assert_ok=True)
+        output = self.dataset_populator.get_history_dataset_content(self.history_id, timeout=EXTENDED_TIMEOUT)
+        assert "0.7.15-r1140" in output
+
 
 class ContainerizedIntegrationTestCase(integration_util.IntegrationTestCase):
 
