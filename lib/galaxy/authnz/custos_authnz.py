@@ -23,7 +23,8 @@ NONCE_COOKIE_NAME = 'custos-nonce'
 
 class CustosAuthnz(IdentityProvider):
     def __init__(self, provider, oidc_config, oidc_backend_config, idphint=None):
-        self.config = {'provider': provider.lower()}
+        provider = provider.lower()
+        self.config = {'provider': provider}
         self.config['verify_ssl'] = oidc_config['VERIFY_SSL']
         self.config['url'] = oidc_backend_config['url']
         self.config['client_id'] = oidc_backend_config['client_id']
