@@ -46,7 +46,7 @@ class Workflow extends EventEmitter {
             }
         };
     }
-    set_node(node, data) {
+    setNode(node, data) {
         data.workflow_outputs = [];
         data.outputs.forEach((o) => {
             data.workflow_outputs.push({
@@ -417,16 +417,16 @@ class Workflow extends EventEmitter {
         this.emit("onNodeChange", node);
     }
     scroll_to_nodes() {
-        var cv = $("#canvas-viewport");
-        var cc = $("#canvas-container");
-        var top;
-        var left;
-        if (cc.width() < cv.width()) {
+        const cv = $("#canvas-viewport");
+        const cc = $("#canvas-container");
+        let top;
+        let left;
+        if (cc.width() != cv.width()) {
             left = (cv.width() - cc.width()) / 2;
         } else {
             left = 0;
         }
-        if (cc.height() < cv.height()) {
+        if (cc.height() != cv.height()) {
             top = (cv.height() - cc.height()) / 2;
         } else {
             top = 0;

@@ -184,7 +184,7 @@ export default {
                 _: "true",
             };
             getModule(requestData).then((response) => {
-                this.manager.set_node(node, response);
+                this.manager.setNode(node, response);
             });
         },
         onInsertModule(module_id, module_name) {
@@ -198,7 +198,7 @@ export default {
                 _: "true",
             };
             getModule(requestData).then((response) => {
-                this.manager.set_node(node, response);
+                this.manager.setNode(node, response);
             });
         },
         onInsertWorkflow(workflow_id, workflow_name) {
@@ -213,7 +213,7 @@ export default {
                 _: "true",
             };
             getModule(requestData).then((response) => {
-                this.manager.set_node(node, response);
+                this.manager.setNode(node, response);
             });
         },
         onInsertWorkflowSteps(workflow_id, step_count) {

@@ -196,7 +196,7 @@ export default {
             };
             getModule(requestData).then((response) => {
                 var node = this.manager.create_node("tool", response.name, toolId);
-                this.manager.set_node(node, response);
+                this.manager.setNode(node, response);
                 this.popoverShow = false;
             });
         },
@@ -215,7 +215,7 @@ export default {
             };
             getModule(requestData).then((response) => {
                 var newData = Object.assign({}, response, copiedData);
-                this.manager.set_node(node, newData);
+                this.manager.setNode(node, newData);
             });
         },
         onDestroy() {
@@ -362,9 +362,10 @@ export default {
             return changed;
         },
         changeOutputDatatype(outputName, datatype) {
-            const output_terminal = this.outputTerminals[outputName];
-            const output = this.nodeView.outputViews[outputName].output;
-            output_terminal.force_datatype = datatype;
+            const outputTerminal = this.outputTerminals[outputName];
+            const outputIndex = this.outputs.findIndex((o) => o.name == outputName);
+            const output = this.outputs[outputIndex];
+            outputTerminal.force_datatype = datatype;
             output.force_datatype = datatype;
             if (datatype) {
                 this.postJobActions["ChangeDatatypeAction" + outputName] = {
@@ -376,7 +377,7 @@ export default {
                 delete this.postJobActions["ChangeDatatypeAction" + outputName];
             }
             this.markChanged();
-            output_terminal.destroyInvalidConnections();
+            outputTerminal.destroyInvalidConnections();
         },
         makeActive() {
             this.element.classList.add("node-active");
