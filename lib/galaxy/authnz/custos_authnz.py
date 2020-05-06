@@ -230,7 +230,7 @@ class CustosAuthnz(IdentityProvider):
         # Set custos endpoints
         clientIdAndSec = self.config['client_id'] + ":" + self.config['client_secret']
         eps = requests.get(self.config['url'],
-                           headers={"Authorization": "Basic %s" % base64.b64encode(clientIdAndSec)},
+                           headers={"Authorization": "Basic %s" % base64.b64encode(util.smart_str(clientIdAndSec))},
                            verify=False, params={'client_id': self.config['client_id']})
         endpoints = eps.json()
         self.config['authorization_endpoint'] = endpoints['authorization_endpoint']
