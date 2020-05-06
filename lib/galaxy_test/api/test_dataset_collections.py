@@ -274,3 +274,37 @@ class DatasetCollectionApiTestCase(ApiTestCase):
 
     def _download_dataset_collection(self, history_id, hdca_id):
         return self._get("histories/%s/contents/dataset_collections/%s/download" % (history_id, hdca_id))
+
+    def test_show_dataset_collection_contents(self):
+        hdca = self.dataset_collection_populator.create_list_of_list_in_history(self.history_id).json()
+
+        # look up the history contents using optional serialization key
+        history_contents_url = "histories/%s/contents?v=dev&view=summary&keys=contents_url" % (self.history_id)
+        json = self._get(history_contents_url).json()
+
+        # filter out the collection we just made id = hdca.id
+        # make sure the contents_url appears
+        matches = list(filter(lambda content: content['id'] == hdca['id'], json))
+        assert len(matches) == 1
+        assert 'contents_url' in matches[0]
+
+        # check root contents for this collection
+        root_contents_url = matches[0]['contents_url']
+        root_contents = self._get(root_contents_url).json()
+        assert len(root_contents) == len(hdca['elements'])
+        self._compare_collection_contents_elements(root_contents, hdca['elements'])
+
+        # drill down, retrieve nested collection contents
+        assert 'object' in root_contents[0]
+        assert 'contents_url' in root_contents[0]['object']
+        drill_contents_url = root_contents[0]['object']['contents_url']
+        drill_contents = self._get(drill_contents_url).json()
+        assert len(drill_contents) == len(hdca['elements'][0]['object']['elements'])
+        self._compare_collection_contents_elements(drill_contents, hdca['elements'][0]['object']['elements'])
+
+    def _compare_collection_contents_elements(self, contents_elements, hdca_elements):
+        # compare collection api results to existing hdca element contents
+        fields = ['element_identifier', 'element_index', 'element_type', 'id', 'model_class']
+        for (content_element, hdca_element) in zip(contents_elements, hdca_elements):
+            for f in fields:
+                assert content_element[f] == hdca_element[f]
