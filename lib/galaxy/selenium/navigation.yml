@@ -325,7 +325,7 @@ workflow_editor:
       output_terminal: "${_} [output-name='${name}']"
       input_terminal: "${_} [input-name='${name}']"
 
-      input_mapping_icon: "${_} [name='${name}'] .multiple"
+      input_mapping_icon: "${_} [input-name='${name}'].multiple"
 
   selectors:
     canvas_body: '#workflow-canvas'
