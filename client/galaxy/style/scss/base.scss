@@ -1071,10 +1071,10 @@ a.action-button {
 }
 
 .action-button:hover {
-    @extend .btn:hover;
+    @extend .btn, :hover;
 }
 .action-button:active {
-    @extend .btn.active;
+    @extend .btn, .active;
 }
 
 // A menu button is a button that has an attached popup menu
@@ -1084,10 +1084,10 @@ a.action-button {
     @extend .btn-secondary;
 
     &:hover {
-        @extend .btn:hover;
+        @extend .btn, :hover;
     }
     &:active {
-        @extend .btn.active;
+        @extend .btn, .active;
     }
 
     display: inline-block;
