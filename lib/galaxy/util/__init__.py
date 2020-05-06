@@ -65,6 +65,7 @@ try:
 except ImportError:
     uwsgi = None
 
+from .compression_utils import get_fileobj
 from .custom_logging import get_logger
 from .inflection import English, Inflector
 from .path import safe_contains, safe_makedirs, safe_relpath  # noqa: F401
@@ -207,7 +208,7 @@ def file_iter(fname, sep=None):
     >>> len(lines) !=  0
     True
     """
-    with open(fname) as fh:
+    with get_fileobj(fname) as fh:
         for line in fh:
             if line and line[0] != '#':
                 yield line.split(sep)
