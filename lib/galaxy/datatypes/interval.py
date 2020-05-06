@@ -212,7 +212,7 @@ class Interval(Tabular):
             c, s, e, t, n = dataset.metadata.chromCol, dataset.metadata.startCol, dataset.metadata.endCol, dataset.metadata.strandCol or 0, dataset.metadata.nameCol or 0
             c, s, e, t, n = int(c) - 1, int(s) - 1, int(e) - 1, int(t) - 1, int(n) - 1
             if t >= 0:  # strand column (should) exists
-                for i, elems in enumerate(util.file_iter(dataset.file_name)):
+                for i, elems in enumerate(compression_utils.file_iter(dataset.file_name)):
                     strand = "+"
                     name = "region_%i" % i
                     if n >= 0 and n < len(elems):
@@ -222,14 +222,14 @@ class Interval(Tabular):
                     tmp = [elems[c], elems[s], elems[e], name, '0', strand]
                     fh.write('%s\n' % '\t'.join(tmp))
             elif n >= 0:  # name column (should) exists
-                for i, elems in enumerate(util.file_iter(dataset.file_name)):
+                for i, elems in enumerate(compression_utils.file_iter(dataset.file_name)):
                     name = "region_%i" % i
                     if n >= 0 and n < len(elems):
                         name = elems[n]
                     tmp = [elems[c], elems[s], elems[e], name]
                     fh.write('%s\n' % '\t'.join(tmp))
             else:
-                for elems in util.file_iter(dataset.file_name):
+                for elems in compression_utils.file_iter(dataset.file_name):
                     tmp = [elems[c], elems[s], elems[e]]
                     fh.write('%s\n' % '\t'.join(tmp))
             return compression_utils.get_fileobj(fh.name, mode='rb')

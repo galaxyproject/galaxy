@@ -65,7 +65,6 @@ try:
 except ImportError:
     uwsgi = None
 
-from .compression_utils import get_fileobj
 from .custom_logging import get_logger
 from .inflection import English, Inflector
 from .path import safe_contains, safe_makedirs, safe_relpath  # noqa: F401
@@ -196,22 +195,6 @@ def iter_start_of_line(fh, chunk_size=None):
     """
     for line in iter(partial(fh.readline, chunk_size), ""):
         yield line
-
-
-def file_iter(fname, sep=None):
-    """
-    This generator iterates over a file and yields its lines
-    splitted via the C{sep} parameter. Skips empty lines and lines starting with
-    the C{#} character.
-
-    >>> lines = [ line for line in file_iter(__file__) ]
-    >>> len(lines) !=  0
-    True
-    """
-    with get_fileobj(fname) as fh:
-        for line in fh:
-            if line and line[0] != '#':
-                yield line.split(sep)
 
 
 def file_reader(fp, chunk_size=CHUNK_SIZE):
