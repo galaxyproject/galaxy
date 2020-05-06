@@ -318,6 +318,7 @@ class ToolEvaluator(object):
             wrapper_kwds = dict(
                 datatypes_registry=self.app.datatypes_registry,
                 compute_environment=self.compute_environment,
+                io_type='output',
                 tool=tool,
                 name=name
             )

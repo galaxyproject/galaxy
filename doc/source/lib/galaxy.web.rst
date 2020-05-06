@@ -49,4 +49,12 @@ galaxy.web.params module
     :undoc-members:
     :show-inheritance:
 
+galaxy.web.statsd\_client module
+--------------------------------
+
+.. automodule:: galaxy.web.statsd_client
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 

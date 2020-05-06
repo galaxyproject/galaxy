@@ -10,7 +10,7 @@ import { CommunicationServerView } from "layout/communication-server-view";
 import Webhooks from "mvc/webhooks";
 import Utils from "utils/utils";
 
-function logoutClick() {
+export function logoutClick() {
     const galaxy = getGalaxyInstance();
     const session_csrf_token = galaxy.session_csrf_token;
     const url = `${galaxy.root}user/logout?session_csrf_token=${session_csrf_token}`;

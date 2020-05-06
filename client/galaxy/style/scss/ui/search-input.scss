@@ -2,6 +2,11 @@
     ::placeholder {
         color: $text-muted;
     }
+
+    border: $border-default;
+    border-radius: 1rem;
+    background: #fff;
+    .search-advanced,
     .search-clear,
     .search-loading {
         @extend .mr-2;
@@ -10,6 +15,13 @@
         top: -27px;
         font-size: 1.2rem;
         color: $text-muted;
+    }
+    .search-advanced {
+        margin-right: 5px !important;
+    }
+    .search-advanced:hover {
+        color: $brand-info;
+        cursor: pointer;
     }
     .search-clear:hover {
         color: $brand-info;
@@ -29,7 +41,7 @@
         font-size: $font-size-base;
         line-height: $line-height-base;
         color: $text-color;
-        border: $border-default;
+        border: 0px;
         @include border-radius($border-radius-extralarge);
         max-width: auto;
         background: $white;

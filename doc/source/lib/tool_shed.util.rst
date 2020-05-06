@@ -65,6 +65,14 @@ tool\_shed.util.hg\_util module
     :undoc-members:
     :show-inheritance:
 
+tool\_shed.util.hgweb\_config module
+------------------------------------
+
+.. automodule:: tool_shed.util.hgweb_config
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 tool\_shed.util.metadata\_util module
 -------------------------------------
 
@@ -113,6 +121,14 @@ tool\_shed.util.search\_util module
     :undoc-members:
     :show-inheritance:
 
+tool\_shed.util.shed\_index module
+----------------------------------
+
+.. automodule:: tool_shed.util.shed_index
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 tool\_shed.util.shed\_util\_common module
 -----------------------------------------
 
@@ -141,14 +157,6 @@ tool\_shed.util.web\_util module
 --------------------------------
 
 .. automodule:: tool_shed.util.web_util
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-tool\_shed.util.workflow\_util module
--------------------------------------
-
-.. automodule:: tool_shed.util.workflow_util
     :members:
     :undoc-members:
     :show-inheritance:
