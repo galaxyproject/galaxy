@@ -1,5 +1,4 @@
 from galaxy_test.base.populators import flakey
-from galaxy_test.driver.integration_util import skip_if_jenkins
 from .framework import (
     selenium_test,
     SeleniumTestCase,
