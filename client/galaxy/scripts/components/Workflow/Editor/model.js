@@ -1,3 +1,5 @@
+import Vue from "vue";
+
 export class ActiveOutputs {
     constructor() {
         this.entries = {};
@@ -35,8 +37,14 @@ export class ActiveOutputs {
         this.entries = {};
         incomingArray &&
             incomingArray.forEach((entry) => {
-                this.entries[entry.output_name] = entry;
+                this.add(entry.output_name, entry.label);
             });
+    }
+
+    tag(outputs) {
+        outputs.forEach((o) => {
+            Vue.set(o, "isActiveOutput", this.exists(o.name));
+        });
     }
 
     remove(name) {

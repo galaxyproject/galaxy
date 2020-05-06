@@ -61,6 +61,7 @@
                 :get-node="getNode"
                 :get-manager="getManager"
                 @onAdd="onAddOutput"
+                @onToggle="onToggleOutput"
             />
         </div>
     </div>
@@ -120,7 +121,6 @@ export default {
             errors: null,
             label: null,
             config_form: {},
-            workflowOutputs: {},
         };
     },
     mounted() {
@@ -184,6 +184,15 @@ export default {
                 this.outputTerminals[output.name] = terminal;
             }
         },
+        onToggleOutput(outputName) {
+            if (this.activeOutputs.exists(outputName)) {
+                this.activeOutputs.remove(outputName);
+            } else {
+                this.activeOutputs.add(outputName);
+            }
+            this.activeOutputs.tag(this.outputs);
+            this.manager.has_changes = true;
+        },
         onCreate(toolId, event) {
             const requestData = {
                 tool_id: toolId,
@@ -246,13 +255,13 @@ export default {
             this.postJobActions = data.post_job_actions || {};
             this.label = data.label;
             this.uuid = data.uuid;
-            this.workflowOutputs = data.workflow_outputs;
             this.activeOutputs.update(data.workflow_outputs);
         },
         initFieldData(data) {
             this.setData(data);
             this.inputs = data.inputs.slice();
             this.outputs = data.outputs.slice();
+            this.activeOutputs.tag(this.outputs);
             Vue.nextTick(() => {
                 this.manager.node_changed(this);
             });
@@ -337,6 +346,7 @@ export default {
                     this.activeOutputs.remove(wf_output.output_name);
                 }
             });
+            this.activeOutputs.tag(this.outputs);
 
             // trigger legacy events
             Vue.nextTick(() => {

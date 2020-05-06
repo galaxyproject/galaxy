@@ -1,7 +1,7 @@
 <template>
     <div class="form-row dataRow output-data-row">
         <div v-if="showCallout" :class="['callout-terminal', output.name]" @click="onToggle">
-            <i :class="['mark-terminal', activeClass && 'mark-terminal-active']" />
+            <i :class="['mark-terminal', activeClass]" />
         </div>
         {{ label }}
         <div ref="terminal" class="terminal output-terminal" />
@@ -27,14 +27,12 @@ export default {
             required: true,
         },
     },
-    data() {
-        return {
-            activeClass: false,
-        };
-    },
     computed: {
         label() {
             return this.output.label || this.output.name;
+        },
+        activeClass() {
+            return this.output.isActiveOutput && "mark-terminal-active";
         },
         showCallout() {
             const node = this.getNode();
@@ -68,31 +66,17 @@ export default {
                 optional: output.optional,
             });
         }
-        this.$emit("onAdd", this.output, this.terminal);
         new TerminalViews.OutputTerminalView(this.getManager(), {
             node: this.getNode(),
             output: output,
             el: this.$refs.terminal,
             terminal: this.terminal,
         });
-        const node = this.getNode();
-        if (node.activeOutputs.exists(this.output.name)) {
-            this.activeClass = true;
-        }
+        this.$emit("onAdd", this.output, this.terminal);
     },
     methods: {
         onToggle() {
-            const node = this.getNode();
-            const manager = this.getManager();
-            const outputName = this.output.name;
-            if (node.activeOutputs.exists(outputName)) {
-                node.activeOutputs.remove(outputName);
-                this.activeClass = false;
-            } else {
-                node.activeOutputs.add(outputName);
-                this.activeClass = true;
-            }
-            manager.has_changes = true;
+            this.$emit("onToggle", this.output.name);
         },
     },
 };

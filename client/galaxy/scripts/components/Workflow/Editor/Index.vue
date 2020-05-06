@@ -126,7 +126,7 @@ export default {
         },
         annotation: {
             type: String,
-            default: ""
+            default: "",
         },
         moduleSections: {
             type: Array,

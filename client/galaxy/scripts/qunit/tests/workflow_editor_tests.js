@@ -38,7 +38,6 @@ class Node {
         this.inputTerminals = {};
         this.outputTerminals = {};
         this.errors = null;
-        this.workflowOutputs = [];
     }
     markChanged() {}
 }
@@ -422,7 +421,7 @@ QUnit.test("init_field_data properties", function (assert) {
         assert.equal(node.annotation, "tool annotation");
         assert.equal(node.label, "Cat that data.");
         assert.deepEqual(node.postJobActions, {});
-        assert.deepEqual(node.workflowOutputs, [{ output_name: "out1" }]);
+        assert.ok(node.activeOutputs.get("out1"));
         assert.ok(node_changed_spy.calledWith(node));
     });
 });

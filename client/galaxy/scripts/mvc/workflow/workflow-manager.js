@@ -47,12 +47,16 @@ class Workflow extends EventEmitter {
         };
     }
     set_node(node, data) {
+        data.workflow_outputs = [];
+        data.outputs.forEach((o) => {
+            data.workflow_outputs.push({
+                output_name: o.name,
+                label: o.label,
+            });
+        });
         node.initFieldData(data);
         Vue.nextTick(() => {
             node.updateFieldData(data);
-            Object.values(node.outputTerminals).forEach((ot) => {
-                node.activeOutputs.add(ot.name);
-            });
             this.activate_node(node);
         });
     }
