@@ -31,7 +31,7 @@
                 One or more of your original parameters may no longer be valid or displayed properly.
             </b-alert>
         </div>
-        <div v-if="isSingleParam">
+        <div id="single-param" v-if="isSingleParam">
             <div v-if="Array.isArray(singleParam)">
                 <JobParametersArrayValue v-bind:parameter_value="singleParam" />
             </div>
