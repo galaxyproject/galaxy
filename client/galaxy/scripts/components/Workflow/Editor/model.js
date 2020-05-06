@@ -18,6 +18,24 @@ export class ActiveOutputs {
         return false;
     }
 
+    removeMissing(outputNames, outputs) {
+        this.getAll().forEach((wf_output) => {
+            if (!outputNames[wf_output.output_name]) {
+                this.remove(wf_output.output_name);
+            }
+        });
+        this.tag(outputs);
+    }
+
+    toggle(name, outputs) {
+        if (this.exists(name)) {
+            this.remove(name);
+        } else {
+            this.add(name);
+        }
+        this.tag(outputs);
+    }
+
     /** Returns the number of added records **/
     count() {
         return Object.keys(this.entries).length;
@@ -33,12 +51,13 @@ export class ActiveOutputs {
         return !!this.entries[name];
     }
 
-    update(incomingArray) {
+    update(incomingArray, outputs) {
         this.entries = {};
         incomingArray &&
             incomingArray.forEach((entry) => {
                 this.add(entry.output_name, entry.label);
             });
+        this.tag(outputs);
     }
 
     tag(outputs) {

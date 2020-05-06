@@ -104,10 +104,7 @@ class Workflow extends EventEmitter {
             return false;
         }
     }
-    updateDatatype(node, outputName, newDatatype) {
-        node.changeOutputDatatype(outputName, newDatatype);
-        return true;
-    }
+
     create_node(type, name, content_id) {
         const node = this.build_node(type, name, content_id);
         this.fit_canvas_to_nodes();

@@ -271,7 +271,7 @@ function _makeSection(self, output_id, label, node) {
                     if (new_value === "__empty__") {
                         new_value = null;
                     }
-                    workflow.updateDatatype(node, output_id, new_value);
+                    node.changeOutputDatatype(output_id, new_value);
                 },
             },
             {

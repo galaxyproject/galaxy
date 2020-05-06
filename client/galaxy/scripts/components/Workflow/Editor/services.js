@@ -5,8 +5,8 @@ import { getAppRoot } from "onload/loadConfig";
 /** Workflow data request helper **/
 export async function getVersions(id) {
     try {
-        const response = await axios.get(`${getAppRoot()}api/workflows/${id}/versions`);
-        return response.data;
+        const { data } = await axios.get(`${getAppRoot()}api/workflows/${id}/versions`);
+        return data;
     } catch (e) {
         rethrowSimple(e);
     }
@@ -26,8 +26,8 @@ export async function getDatatypes() {
 
 export async function getModule(request_data) {
     try {
-        const response = await axios.post(`${getAppRoot()}api/workflows/build_module`, request_data);
-        return response.data;
+        const { data } = await axios.post(`${getAppRoot()}api/workflows/build_module`, request_data);
+        return data;
     } catch (e) {
         rethrowSimple(e);
     }
@@ -65,8 +65,8 @@ export async function saveWorkflow(workflow, id) {
 
 export async function getDatatypeMapping() {
     try {
-        const mappingRequest = await axios.get(`${getAppRoot()}api/datatypes/mapping`);
-        return mappingRequest.data;
+        const { data } = await axios.get(`${getAppRoot()}api/datatypes/mapping`);
+        return data;
     } catch (e) {
         rethrowSimple(e);
     }
@@ -74,8 +74,8 @@ export async function getDatatypeMapping() {
 
 export async function getToolPredictions(requestData) {
     try {
-        const response = await axios.post(`${getAppRoot()}api/workflows/get_tool_predictions`, requestData);
-        return response.data;
+        const { data } = await axios.post(`${getAppRoot()}api/workflows/get_tool_predictions`, requestData);
+        return data;
     } catch (e) {
         rethrowSimple(e);
     }

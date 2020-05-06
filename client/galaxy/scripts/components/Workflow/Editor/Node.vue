@@ -185,12 +185,7 @@ export default {
             }
         },
         onToggleOutput(outputName) {
-            if (this.activeOutputs.exists(outputName)) {
-                this.activeOutputs.remove(outputName);
-            } else {
-                this.activeOutputs.add(outputName);
-            }
-            this.activeOutputs.tag(this.outputs);
+            this.activeOutputs.toggle(outputName, this.outputs);
             this.manager.has_changes = true;
         },
         onCreate(toolId, event) {
@@ -255,13 +250,12 @@ export default {
             this.postJobActions = data.post_job_actions || {};
             this.label = data.label;
             this.uuid = data.uuid;
-            this.activeOutputs.update(data.workflow_outputs);
         },
         initFieldData(data) {
             this.setData(data);
             this.inputs = data.inputs.slice();
             this.outputs = data.outputs.slice();
-            this.activeOutputs.tag(this.outputs);
+            this.activeOutputs.update(data.workflow_outputs, this.outputs);
             Vue.nextTick(() => {
                 this.manager.node_changed(this);
             });
@@ -341,12 +335,7 @@ export default {
             });
 
             // removes output from list of workflow outputs
-            this.activeOutputs.getAll().forEach((wf_output, i) => {
-                if (!outputNames[wf_output.output_name]) {
-                    this.activeOutputs.remove(wf_output.output_name);
-                }
-            });
-            this.activeOutputs.tag(this.outputs);
+            this.activeOutputs.removeMissing(outputNames, this.outputs);
 
             // trigger legacy events
             Vue.nextTick(() => {
