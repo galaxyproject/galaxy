@@ -725,8 +725,17 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
             raise AssertionError(message)
 
     def verify_elements(element_objects, element_tests):
-        i = 0
+        sorted_test_ids = [None] * len(element_tests)
         for element_identifier, element_test in element_tests.items():
+            if isinstance(element_test, dict):
+                element_outfile, element_attrib = None, element_test
+            else:
+                element_outfile, element_attrib = element_test
+            sorted_test_ids[element_attrib["element_index"]] = element_identifier
+
+        i = 0
+        for element_identifier in sorted_test_ids:
+            element_test = element_tests[element_identifier]
             if isinstance(element_test, dict):
                 element_outfile, element_attrib = None, element_test
             else:
@@ -741,8 +750,10 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
                 i += 1
 
             if element is None:
-                template = "Failed to find identifier [%s] for testing or elements in wrong order, tool generated collection elements [%s]"
-                message = template % (element_identifier, element_objects)
+                template = "Failed to find identifier '%s' of test collection %s in the tool generated collection elements %s (at the correct position)"
+                eo_ids = [_["element_identifier"] for _ in element_objects]
+                message = template % (element_identifier, sorted_test_ids,
+                                      eo_ids)
                 raise AssertionError(message)
 
             element_type = element["element_type"]

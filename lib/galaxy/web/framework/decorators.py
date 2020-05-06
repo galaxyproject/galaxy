@@ -325,7 +325,7 @@ def format_return_as_json(rval, jsonp_callback=None, pretty=False):
 
     Use `pretty=True` to return pretty printed json.
     """
-    dumps_kwargs = dict(indent=4) if pretty else {}
+    dumps_kwargs = dict(indent=4, sort_keys=True) if pretty else {}
     json = safe_dumps(rval, **dumps_kwargs)
     if jsonp_callback:
         json = "{}({});".format(jsonp_callback, json)
