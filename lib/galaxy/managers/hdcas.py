@@ -6,8 +6,6 @@ history.
 """
 import logging
 
-import routes
-
 from galaxy import model
 from galaxy.managers import (
     annotatable,
@@ -263,7 +261,7 @@ class HDCASerializer(
 
     def generate_contents_url(self, hdca, key, **context):
         encode_id = self.app.security.encode_id
-        contents_url = routes.url_for('contents_dataset_collection',
+        contents_url = self.url_for('contents_dataset_collection',
             hdca_id=encode_id(hdca.id),
             parent_id=encode_id(hdca.collection_id))
         return contents_url
