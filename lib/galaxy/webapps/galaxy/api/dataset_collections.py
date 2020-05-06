@@ -121,9 +121,7 @@ class DatasetCollectionsController(
             raise ObjectNotFound(errmsg)
 
         # retrieve contents
-        contents_qry = svc.get_collection_contents_qry(decoded_parent_id,
-            limit=kwds.get('limit', None),
-            offset=kwds.get('offset', None))
+        contents_qry = svc.get_collection_contents_qry(decoded_parent_id, limit=limit, offset=offset)
 
         # dictify and tack on a collection_url for drilling down into nested collections
         def process_element(dsc_element):

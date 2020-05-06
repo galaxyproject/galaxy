@@ -275,21 +275,31 @@ class DatasetCollectionApiTestCase(ApiTestCase):
     def _download_dataset_collection(self, history_id, hdca_id):
         return self._get("histories/%s/contents/dataset_collections/%s/download" % (history_id, hdca_id))
 
+    def test_collection_contents_security(self):
+        # request contents on an hdca that doesn't belong to user
+        hdca, contents_url = self._create_collection_contents_pair()
+        with self._different_user():
+            contents_response = self._get(contents_url)
+            self._assert_status_code_is(contents_response, 403)
+
+    def test_collection_contents_invalid_collection(self):
+        # request an invalid collection from a valid hdca, should get 404
+        hdca, contents_url = self._create_collection_contents_pair()
+        response = self._get(contents_url)
+        assert response.status_code == 200
+        fake_collection_id = self.security.encode_id(1000)
+        fake_contents_url = '/api/dataset_collections/%s/contents/%s' % (hdca['id'], fake_collection_id)
+        error_response = self._get(fake_contents_url)
+        self._assert_status_code_is(error_response, 404)
+
     def test_show_dataset_collection_contents(self):
+        # Get contents_url from history contents, use it to show the first level
+        # of collection contents in the created HDCA, then use it again to drill
+        # down into the nested collection contents
         hdca = self.dataset_collection_populator.create_list_of_list_in_history(self.history_id).json()
-
-        # look up the history contents using optional serialization key
-        history_contents_url = "histories/%s/contents?v=dev&view=summary&keys=contents_url" % (self.history_id)
-        json = self._get(history_contents_url).json()
-
-        # filter out the collection we just made id = hdca.id
-        # make sure the contents_url appears
-        matches = list(filter(lambda content: content['id'] == hdca['id'], json))
-        assert len(matches) == 1
-        assert 'contents_url' in matches[0]
+        root_contents_url = self._get_contents_url_for_hdca(hdca)
 
         # check root contents for this collection
-        root_contents_url = matches[0]['contents_url']
         root_contents = self._get(root_contents_url).json()
         assert len(root_contents) == len(hdca['elements'])
         self._compare_collection_contents_elements(root_contents, hdca['elements'])
@@ -302,9 +312,46 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         assert len(drill_contents) == len(hdca['elements'][0]['object']['elements'])
         self._compare_collection_contents_elements(drill_contents, hdca['elements'][0]['object']['elements'])
 
+    def test_collection_contents_limit_offset(self):
+        # check limit/offset params for collection contents endpoint
+        hdca, root_contents_url = self._create_collection_contents_pair()
+
+        # check limit
+        limited_contents = self._get(root_contents_url + '?limit=1').json()
+        assert len(limited_contents) == 1
+        assert limited_contents[0]['element_index'] == 0
+
+        # check offset
+        offset_contents = self._get(root_contents_url + '?offset=1').json()
+        assert len(offset_contents) == 1
+        assert offset_contents[0]['element_index'] == 1
+
     def _compare_collection_contents_elements(self, contents_elements, hdca_elements):
         # compare collection api results to existing hdca element contents
         fields = ['element_identifier', 'element_index', 'element_type', 'id', 'model_class']
         for (content_element, hdca_element) in zip(contents_elements, hdca_elements):
             for f in fields:
                 assert content_element[f] == hdca_element[f]
+
+    def _create_collection_contents_pair(self):
+        # Create a simple collection, return hdca and contents_url
+        payload = self.dataset_collection_populator.create_pair_payload(self.history_id, instance_type="history")
+        create_response = self._post("dataset_collections", payload)
+        hdca = self._check_create_response(create_response)
+        root_contents_url = self._get_contents_url_for_hdca(hdca)
+        return hdca, root_contents_url
+
+    def _get_contents_url_for_hdca(self, hdca):
+        # look up the history contents using optional serialization key
+        history_contents_url = "histories/%s/contents?v=dev&view=summary&keys=contents_url" % (self.history_id)
+        json = self._get(history_contents_url).json()
+
+        # filter out the collection we just made id = hdca.id
+        # make sure the contents_url appears
+        matches = list(filter(lambda content: content['id'] == hdca['id'], json))
+        assert len(matches) == 1
+        assert 'contents_url' in matches[0]
+
+        # check root contents for this collection
+        contents_url = matches[0]['contents_url']
+        return contents_url
