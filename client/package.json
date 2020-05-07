@@ -108,7 +108,7 @@
     "eslint": "^6.8.0",
     "eslint-plugin-vue": "^6.2.2",
     "expose-loader": "^0.7.5",
-    "file-loader": "^5.0.2",
+    "file-loader": "^6.0.0",
     "gulp": "^4.0.2",
     "ignore-loader": "^0.1.2",
     "imports-loader": "^0.8.0",
