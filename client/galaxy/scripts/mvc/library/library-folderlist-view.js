@@ -74,28 +74,30 @@ var FolderListView = Backbone.View.extend({
         }
         this.listenTo(this.folderContainer, "fetch:started", this.drawSpinner());
 
-        this.folderContainer.fetch({
-            success: function (folder_container) {
-                self.folder_container = folder_container;
-                self.render();
-            },
-            error: function (model, response) {
-                const Galaxy = getGalaxyInstance();
-                if (typeof response.responseJSON !== "undefined") {
-                    Toast.error(`${response.responseJSON.err_msg} Click this to go back.`, "", {
-                        onclick: function () {
-                            Galaxy.libraries.library_router.back();
-                        },
-                    });
-                } else {
-                    Toast.error("An error occurred. Click this to go back.", "", {
-                        onclick: function () {
-                            Galaxy.libraries.library_router.back();
-                        },
-                    });
-                }
-            },
-        }).always(self.removeSpinner);
+        this.folderContainer
+            .fetch({
+                success: function (folder_container) {
+                    self.folder_container = folder_container;
+                    self.render();
+                },
+                error: function (model, response) {
+                    const Galaxy = getGalaxyInstance();
+                    if (typeof response.responseJSON !== "undefined") {
+                        Toast.error(`${response.responseJSON.err_msg} Click this to go back.`, "", {
+                            onclick: function () {
+                                Galaxy.libraries.library_router.back();
+                            },
+                        });
+                    } else {
+                        Toast.error("An error occurred. Click this to go back.", "", {
+                            onclick: function () {
+                                Galaxy.libraries.library_router.back();
+                            },
+                        });
+                    }
+                },
+            })
+            .always(self.removeSpinner);
     },
 
     render: function (options) {
@@ -224,7 +226,7 @@ var FolderListView = Backbone.View.extend({
     drawSpinner: function (options) {
         const spinner = `<div id="folder_items_spinner" style="text-align: center;">
                             <span class="fa fa-spinner fa-spin fa-5x"/>
-                       </div>`
+                       </div>`;
         $("#folder_items_element").append(spinner);
         $(".page_size").hide();
     },
