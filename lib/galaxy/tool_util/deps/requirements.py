@@ -166,7 +166,8 @@ class ContainerDescription(object):
         resolve_dependencies=DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES,
         shell=DEFAULT_CONTAINER_SHELL,
     ):
-        self.identifier = identifier
+        # Force to lowercase because container image names must be lowercase
+        self.identifier = identifier.lower() if identifier else None
         self.type = type
         self.resolve_dependencies = resolve_dependencies
         self.shell = shell
