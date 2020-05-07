@@ -286,7 +286,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         # request an invalid collection from a valid hdca, should get 404
         hdca, contents_url = self._create_collection_contents_pair()
         response = self._get(contents_url)
-        assert response.status_code == 200
+        self._assert_status_code_is(response, 200)
         fake_collection_id = self.security.encode_id(1000)
         fake_contents_url = '/api/dataset_collections/%s/contents/%s' % (hdca['id'], fake_collection_id)
         error_response = self._get(fake_contents_url)
@@ -349,9 +349,8 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         # filter out the collection we just made id = hdca.id
         # make sure the contents_url appears
         matches = list(filter(lambda content: content['id'] == hdca['id'], json))
-        assert len(matches) == 1
+        assert len(matches) > 0
         assert 'contents_url' in matches[0]
 
-        # check root contents for this collection
         contents_url = matches[0]['contents_url']
         return contents_url
