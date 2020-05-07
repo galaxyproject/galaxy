@@ -809,7 +809,7 @@
   dependencies:
     regenerator-runtime "^0.12.0"
 
-"@babel/runtime@^7.8.4":
+"@babel/runtime@^7.8.4", "@babel/runtime@^7.9.2":
   version "7.9.6"
   resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.9.6.tgz#a9102eb5cadedf3f31d08a9ecf294af7827ea29f"
   integrity sha512-64AF1xY3OAkFHqOb9s4jpgk1Mm5vDZ4L3acHvAml+53nO1XbXLuDodsVpO4OIUsmemlUHMxNdYMNJmsvOwLrvQ==
@@ -7801,7 +7801,7 @@ js-yaml@3.13.1, js-yaml@^3.13.1:
     argparse "^1.0.7"
     esprima "^4.0.0"
 
-js-yaml@^3.12.0, js-yaml@^3.5.2, js-yaml@^3.9.0:
+js-yaml@^3.12.0, js-yaml@^3.9.0:
   version "3.12.0"
   resolved "https://registry.yarnpkg.com/js-yaml/-/js-yaml-3.12.0.tgz#eaed656ec8344f10f527c6bfa1b6e2244de167d1"
   integrity sha512-PIt2cnwmPfL4hKNwqeiuz4bKfnzHTBv6HyVgjahA6mPLwPDzjDWrplJBMjHUFxku/N3FlmrbyPclad+I+4mJ3A==
@@ -14543,12 +14543,20 @@ yallist@^3.0.2:
   resolved "https://registry.yarnpkg.com/yallist/-/yallist-3.0.2.tgz#8452b4bb7e83c7c188d8041c1a837c773d6d8bb9"
   integrity sha1-hFK0u36Dx8GI2AQcGoN8dz1ti7k=
 
-yaml-loader@^0.5.0:
-  version "0.5.0"
-  resolved "https://registry.yarnpkg.com/yaml-loader/-/yaml-loader-0.5.0.tgz#86b1982d84a8e429e6647d93de9a0169e1c15827"
-  integrity sha512-p9QIzcFSNm4mCw/m5NdyMfN4RE4aFZJWRRb01ERVNGCym8VNbKtw3OYZXnvUIkim6U/EjqE/2yIh9F/msShH9A==
+yaml-loader@^0.6.0:
+  version "0.6.0"
+  resolved "https://registry.yarnpkg.com/yaml-loader/-/yaml-loader-0.6.0.tgz#fe1c48b9f4803dace55a59a1474e790ba6ab1b48"
+  integrity sha512-1bNiLelumURyj+zvVHOv8Y3dpCri0F2S+DCcmps0pA1zWRLjS+FhZQg4o3aUUDYESh73+pKZNI18bj7stpReow==
   dependencies:
-    js-yaml "^3.5.2"
+    loader-utils "^1.4.0"
+    yaml "^1.8.3"
+
+yaml@^1.8.3:
+  version "1.9.2"
+  resolved "https://registry.yarnpkg.com/yaml/-/yaml-1.9.2.tgz#f0cfa865f003ab707663e4f04b3956957ea564ed"
+  integrity sha512-HPT7cGGI0DuRcsO51qC1j9O16Dh1mZ2bnXwsi0jrSpsLz0WxOLSLXfkABVl6bZO629py3CU+OMJtpNHDLB97kg==
+  dependencies:
+    "@babel/runtime" "^7.9.2"
 
 yargs-parser@13.1.2, yargs-parser@^13.1.2:
   version "13.1.2"
