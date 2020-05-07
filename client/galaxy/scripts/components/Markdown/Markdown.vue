@@ -20,8 +20,10 @@ import JOB_STATES_MODEL from "mvc/history/job-states-model";
 import HDCAModel from "mvc/history/hdca-model";
 import HDCAListItemEdit from "mvc/history/hdca-li-edit";
 import HDCAListItem from "mvc/history/hdca-li";
-
-const FUNCTION_CALL_LINE_TEMPLATE = /\s*(\w+)\s*\((\s*\w+\s*=\s*\w+\s*)\)\s*/m;
+const FUNCTION_VALUE_REGEX = `\\s*(?:[\\w_\\-]+|\\"[^\\"]+\\"|\\'[^\\']+\\')\\s*`;
+const FUNCTION_CALL = `\\s*\\w+\\s*=` + FUNCTION_VALUE_REGEX;
+const FUNCTION_CALL_LINE = `\\s*(\\w+)\\s*\\((` + FUNCTION_CALL + `)(,` + FUNCTION_CALL + `)*\\)\\s*`;
+const FUNCTION_CALL_LINE_TEMPLATE = new RegExp(FUNCTION_CALL_LINE, "m");
 
 const md = MarkdownIt();
 
@@ -112,7 +114,8 @@ const RENDER_FUNCTIONS = {
     },
     job_parameters: (action, args, content) => {
         const jobId = args.job_id;
-        return `<div class="job-parameters" job_id="${jobId}"></div>`;
+        const param = args.param;
+        return `<div class="job-parameters" job_id="${jobId}" param="${param}"></div>`;
     },
 };
 
@@ -122,14 +125,16 @@ md.renderer.rules.fence = function (tokens, idx, options, env, slf) {
     const content = token.content;
     if (info == "galaxy") {
         const arr = FUNCTION_CALL_LINE_TEMPLATE.exec(content);
-        const action = arr[1];
-        const arguments_str = arr[2].trim();
+
         const args = {};
-        if (arguments_str) {
-            const parts = arguments_str.split(/(\s+)/);
-            for (const part of parts) {
-                const [key, val] = part.split("=");
-                args[key.trim()] = val.trim();
+        const action = arr[1];
+        for (let i = 2; i < arr.length; i++) {
+            if (arr[i] === undefined) continue;
+            const arguments_str = arr[i].replace(/,/g, "").trim();
+
+            if (arguments_str) {
+                const [key, val] = arguments_str.split("=");
+                args[key.trim()] = val.replace(/['"]+/g, "").trim();
             }
         }
         return RENDER_FUNCTIONS[action](action, args, content);
