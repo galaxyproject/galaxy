@@ -136,7 +136,7 @@
     "sinon": "^8.1.1",
     "store": "^2.0.12",
     "style-loader": "^1.2.1",
-    "vue-loader": "^15.8.3",
+    "vue-loader": "^15.9.2",
     "vue-styleguidist": "^3.11.4",
     "vue-template-compiler": "^2.6.11",
     "webpack": "^4.43.0",
