@@ -123,7 +123,7 @@ class Terminal extends EventEmitter {
             this.node.markChanged();
             this.resetMappingIfNeeded();
             if (!connector.dragging) {
-                connector.handle2.resetCollectionTypeSource();
+                connector.inputHandle.resetCollectionTypeSource();
             }
         }
         this.emit("change");
@@ -280,7 +280,7 @@ class BaseInputTerminal extends Terminal {
         if (!this.connected()) {
             return false;
         } else {
-            var firstOutput = this.connectors[0].handle1;
+            var firstOutput = this.connectors[0].outputHandle;
             if (!firstOutput) {
                 return false;
             } else {
@@ -378,7 +378,7 @@ class InputTerminal extends BaseInputTerminal {
     }
     connect(connector) {
         super.connect(connector);
-        var other_output = connector.handle1;
+        var other_output = connector.outputHandle;
         if (!other_output) {
             return;
         }
@@ -482,7 +482,7 @@ class InputCollectionTerminal extends BaseInputTerminal {
     }
     connect(connector) {
         super.connect(connector);
-        var other = connector.handle1;
+        var other = connector.outputHandle;
         if (!other) {
             return;
         } else {
@@ -626,7 +626,7 @@ class OutputTerminal extends BaseOutputTerminal {
     resetMapping() {
         super.resetMapping();
         this.connectors.forEach((connector) => {
-            var connectedInput = connector.handle2;
+            var connectedInput = connector.inputHandle;
             if (connectedInput) {
                 // Not exactly right because this is still connected.
                 // Either rewrite resetMappingIfNeeded or disconnect

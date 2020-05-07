@@ -624,7 +624,7 @@ QUnit.test("replacing terminal on data input update preserves connections", func
     this.node.inputs.push({ name: "TestName", extensions: ["txt"] });
     this.connectAttachedTerminal("txt", "txt", (connector) => {
         var terminal = $(this.node.element).find(".input-terminal")[0].terminal;
-        assert.ok(connector.handle2 === terminal);
+        assert.ok(connector.inputHandle === terminal);
     });
 });
 
@@ -653,7 +653,7 @@ QUnit.test("replacing mapped terminal on data collection input update preserves 
         };
         this.node.updateFieldData(data);
         Vue.nextTick(() => {
-            assert.ok(connector.handle2 === terminal);
+            assert.ok(connector.inputHandle === terminal);
         });
     });
 });

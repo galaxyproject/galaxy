@@ -46,7 +46,7 @@ export function ariaSelectOutputNode(options) {
             case 32:
                 removeMenu();
                 outputTerminal.connectors.forEach((x) => {
-                    if (x.handle2 === inputTerminal) {
+                    if (x.inputHandle === inputTerminal) {
                         x.destroy();
                         foundConnection = true;
                         ariaAlert("Connection destroyed");

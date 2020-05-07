@@ -261,10 +261,10 @@ class Workflow extends EventEmitter {
                 // really a sneaky if statement
                 var cons = [];
                 t.connectors.forEach((c, i) => {
-                    if (c.handle1) {
+                    if (c.outputHandle) {
                         var con_dict = {
-                            id: c.handle1.node.id,
-                            output_name: c.handle1.name,
+                            id: c.outputHandle.node.id,
+                            output_name: c.outputHandle.name,
                         };
                         var input_subworkflow_step_id = t.attributes.input.input_subworkflow_step_id;
                         if (input_subworkflow_step_id !== undefined) {
@@ -458,7 +458,7 @@ class Workflow extends EventEmitter {
             Object.values(node.inputTerminals).forEach((t) => {
                 t.connectors.forEach((c) => {
                     // A connection exists from `other` to `node`
-                    var other = c.handle1.node;
+                    var other = c.outputHandle.node;
                     // node gains a predecessor
                     n_pred[node.id] += 1;
                     // other gains a successor

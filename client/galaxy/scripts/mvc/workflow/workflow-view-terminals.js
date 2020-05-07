@@ -3,8 +3,6 @@ import Terminals from "mvc/workflow/workflow-terminals";
 import Connector from "mvc/workflow/workflow-connector";
 import { ariaSelectOutputNode } from "mvc/workflow/workflow-aria";
 
-var NODEINDEX = 0;
-
 class InputTerminalView {
     constructor(app, options = {}) {
         this.app = app;
@@ -14,8 +12,7 @@ class InputTerminalView {
         const node = options.node;
         const input = options.input;
         const name = input.name;
-        const nodeIndex = NODEINDEX++;
-        this.id = `node-${nodeIndex}-input-${name}`;
+        this.id = `node-${node.id}-input-${name}`;
         this.terminal.node = node;
         this.terminal.name = name;
         this.terminal.label = input.label;
@@ -96,8 +93,7 @@ export class OutputTerminalView {
         const node = options.node;
         const output = options.output;
         const name = output.name;
-        const nodeIndex = NODEINDEX++;
-        this.id = `node-${nodeIndex}-output-${name}`;
+        this.id = `node-${node.id}-output-${name}`;
         this.terminal.node = node;
         this.terminal.name = name;
         this.terminal.label = output.label;
