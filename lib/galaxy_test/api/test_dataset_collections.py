@@ -348,9 +348,11 @@ class DatasetCollectionApiTestCase(ApiTestCase):
 
         # filter out the collection we just made id = hdca.id
         # make sure the contents_url appears
-        matches = list(filter(lambda content: content['id'] == hdca['id'], json))
-        assert len(matches) > 0
+        def find_hdca(c):
+            return c['history_content_type'] == 'dataset_collection' and c['id'] == hdca['id']
+
+        matches = list(filter(find_hdca, json))
+        assert len(matches) == 1
         assert 'contents_url' in matches[0]
 
-        contents_url = matches[0]['contents_url']
-        return contents_url
+        return matches[0]['contents_url']
