@@ -1,7 +1,7 @@
 import $ from "jquery";
 import Terminals from "mvc/workflow/workflow-terminals";
 import Connector from "mvc/workflow/workflow-connector";
-import { screenReaderSelectOutputNode } from "mvc/workflow/workflow-aria";
+import { ariaSelectOutputNode } from "mvc/workflow/workflow-aria";
 
 var NODEINDEX = 0;
 
@@ -115,7 +115,14 @@ export class OutputTerminalView {
         this.$el.on("drag", (e, d) => this.onDrag(e, d));
         this.$el.on("dragstart", (e, d) => this.onDragStart(e, d));
         this.$el.on("dragend", (e, d) => this.onDragEnd(e, d));
-        this.$el.on("keydown", (e) => screenReaderSelectOutputNode(e, this));
+        this.$el.on("keydown", (e) =>
+            ariaSelectOutputNode({
+                e: e,
+                manager: app,
+                outputTerminal: options.terminal,
+                outputEl: this.el,
+            })
+        );
         this.terminal.on("change", this.render.bind(this));
     }
     render() {
