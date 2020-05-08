@@ -356,7 +356,7 @@ class JobHandlerQueue(Monitors):
                 job.id,
                 job.destination_id,
             )
-        job_wrapper.job_runner_mapper.cached_job_destination = job_destination
+        job_wrapper.job_runner_mapper.cache_job_destination(job_destination)
         return job_wrapper
 
     def __monitor(self):

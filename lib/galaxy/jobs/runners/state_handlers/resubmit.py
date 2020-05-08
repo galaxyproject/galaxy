@@ -114,8 +114,6 @@ def _handle_resubmit_definitions(resubmit_definitions, app, job_runner, job_stat
         else:
             new_destination = job_state.job_destination
 
-        # Resolve dynamic if necessary
-        new_destination = job_state.job_wrapper.job_runner_mapper.cache_job_destination(new_destination)
         # Reset job state
         job_state.job_wrapper.clear_working_directory()
         job_state.job_wrapper.invalidate_external_metadata()
@@ -126,9 +124,6 @@ def _handle_resubmit_definitions(resubmit_definitions, app, job_runner, job_stat
             job_runner.sa_session.add(job)
             # Is this safe to do here?
             job_runner.sa_session.flush()
-        # Cache the destination to prevent rerunning dynamic after
-        # resubmit
-        job_state.job_wrapper.job_runner_mapper.cached_job_destination = new_destination
         # Handle delaying before resubmission if needed.
         raw_delay = resubmit.get("delay")
         if raw_delay:
