@@ -5,7 +5,7 @@
         </div>
         {{ label }}
         <div :id="id" :output-name="output.name" ref="terminal" class="terminal output-terminal">
-            <icon />
+            <div class="icon" />
         </div>
     </div>
 </template>
@@ -35,7 +35,7 @@ export default {
             return `node-${node.id}-output-${this.output.name}`;
         },
         label() {
-            return this.output.label || this.output.name;
+            return this.output.labelActive || this.output.name;
         },
         activeClass() {
             return this.output.isActiveOutput && "mark-terminal-active";

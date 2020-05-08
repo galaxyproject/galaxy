@@ -209,18 +209,17 @@ function _makeRenameHelp(name_labels) {
 }
 
 /** Builds sub section with step actions/annotation */
-function _makeSection(self, output_id, label, node) {
-    var extensions = [];
-    var name_label_map = [];
-    var datatypes = self.datatypes;
-    var workflow = self.workflow;
+function _makeSection(self, node, output) {
+    const extensions = [];
+    const name_label_map = [];
+    const datatypes = self.datatypes;
     for (const key in datatypes) {
         extensions.push({ 0: datatypes[key], 1: datatypes[key] });
     }
-    for (const key in node.inputTerminals) {
-        name_label_map.push({ name: node.inputTerminals[key].name, label: node.inputTerminals[key].label });
+    for (const input of node.inputs) {
+        name_label_map.push({ name: input.name, label: input.label });
     }
-    var rename_help = _makeRenameHelp(name_label_map);
+    const renameHelp = _makeRenameHelp(name_label_map);
     extensions.sort((a, b) => (a.label > b.label ? 1 : a.label < b.label ? -1 : 0));
     extensions.unshift({
         0: "Sequences",
@@ -234,19 +233,31 @@ function _makeSection(self, output_id, label, node) {
         0: "Leave unchanged",
         1: "__empty__",
     });
-    const output = node.activeOutputs.get(output_id);
-    var input_config = {
-        title: `Configure Output: '${label}'`,
+    const activeOutput = node.activeOutputs.get(output.name);
+    const inputTitle = output.label || output.name;
+    const inputConfig = {
+        title: `Configure Output: '${inputTitle}'`,
         type: "section",
         flat: true,
         inputs: [
             {
                 label: "Label",
+                name: `__label__${output.name}`,
                 type: "text",
-                value: (output && output.label) || "",
+                value: activeOutput && activeOutput.label,
                 help: "This will provide a short name to describe the output - this must be unique across workflows.",
-                onchange: function (new_value) {
-                    workflow.attemptUpdateOutputLabel(node, output_id, new_value);
+                fixed: true,
+                onchange: (newLabel) => {
+                    const oldLabel = node.labelOutput(output, newLabel);
+                    const input_id = self.form.data.match(`__label__${output.name}`);
+                    const input_element = self.form.element_list[input_id];
+                    if (oldLabel) {
+                        input_element.field.model.set("value", oldLabel);
+                        input_element.model.set("error_text", `Duplicate output label '${newLabel}' will be ignored.`);
+                    } else {
+                        input_element.model.set("error_text", "");
+                    }
+                    self.form.trigger("change");
                 },
             },
             {
@@ -256,7 +267,7 @@ function _makeSection(self, output_id, label, node) {
                 type: "text",
                 value: "",
                 ignore: "",
-                help: rename_help,
+                help: renameHelp,
             },
             {
                 action: "ChangeDatatypeAction",
@@ -267,11 +278,8 @@ function _makeSection(self, output_id, label, node) {
                 value: "__empty__",
                 options: extensions,
                 help: "This action will change the datatype of the output to the indicated datatype.",
-                onchange: function (new_value) {
-                    if (new_value === "__empty__") {
-                        new_value = null;
-                    }
-                    node.changeOutputDatatype(output_id, new_value);
+                onchange: function (datatype) {
+                    node.changeOutputDatatype(output.name, datatype);
                 },
             },
             {
@@ -342,8 +350,8 @@ function _makeSection(self, output_id, label, node) {
             },
         ],
     };
-    _visit(input_config, [], output_id, node);
-    return input_config;
+    _visit(inputConfig, [], output, node);
+    return inputConfig;
 }
 
 /** Builds all sub sections */
@@ -372,9 +380,8 @@ function _addSections(self, node) {
             help:
                 "Upon completion of this step, delete non-starred outputs from completed workflow steps if they are no longer required as inputs.",
         });
-        for (const output_id in node.outputTerminals) {
-            const label = node.outputTerminals[output_id].label || output_id;
-            inputs.push(_makeSection(self, output_id, label, node));
+        for (const output of node.outputs) {
+            inputs.push(_makeSection(self, node, output));
         }
     }
 }

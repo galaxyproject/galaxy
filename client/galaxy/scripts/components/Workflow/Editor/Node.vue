@@ -1,5 +1,5 @@
 <template>
-    <div :id="idString" class="workflow-node" :node-label="label" :name="name">
+    <div :id="idString" :name="name" :node-label="label" class="workflow-node">
         <div class="node-header unselectable clearfix">
             <b-button
                 class="node-destroy py-0 float-right"
@@ -124,8 +124,8 @@ export default {
         };
     },
     mounted() {
-        this.activeOutputs = new ActiveOutputs();
         this.manager = this.getManager();
+        this.activeOutputs = new ActiveOutputs();
         this.element = this.$el;
         this.content_id = this.contentId;
     },
@@ -184,8 +184,8 @@ export default {
                 this.outputTerminals[output.name] = terminal;
             }
         },
-        onToggleOutput(outputName) {
-            this.activeOutputs.toggle(outputName, this.outputs);
+        onToggleOutput(name) {
+            this.activeOutputs.toggle(name);
             this.manager.has_changes = true;
         },
         onCreate(toolId, event) {
@@ -255,7 +255,7 @@ export default {
             this.setData(data);
             this.inputs = data.inputs.slice();
             this.outputs = data.outputs.slice();
-            this.activeOutputs.update(data.workflow_outputs, this.outputs);
+            this.activeOutputs.initialize(this.outputs, data.workflow_outputs);
             Vue.nextTick(() => {
                 this.manager.node_changed(this);
             });
@@ -335,7 +335,7 @@ export default {
             });
 
             // removes output from list of workflow outputs
-            this.activeOutputs.removeMissing(outputNames, this.outputs);
+            this.activeOutputs.removeMissing(outputNames);
 
             // trigger legacy events
             Vue.nextTick(() => {
@@ -343,25 +343,13 @@ export default {
                 this.onRedraw();
             });
         },
-        labelWorkflowOutput(outputName, label) {
-            let changed = false;
-            let oldLabel = null;
-            if (this.activeOutputs.get(outputName)) {
-                const outputIndex = this.outputs.findIndex((o) => o.name == outputName);
-                const workflowOutput = this.outputs[outputIndex];
-                oldLabel = workflowOutput.label;
-                Vue.set(workflowOutput, "label", label);
-                changed = oldLabel != label;
-            } else {
-                changed = this.activeOutputs.add(outputName, label);
-            }
-            if (changed) {
-                this.manager.updateOutputLabel(oldLabel, label);
-                this.manager.node_changed(this);
-            }
-            return changed;
+        labelOutput(output, label) {
+            return this.activeOutputs.labelOutput(output, label);
         },
         changeOutputDatatype(outputName, datatype) {
+            if (datatype === "__empty__") {
+                datatype = null;
+            }
             const outputTerminal = this.outputTerminals[outputName];
             const outputIndex = this.outputs.findIndex((o) => o.name == outputName);
             const output = this.outputs[outputIndex];

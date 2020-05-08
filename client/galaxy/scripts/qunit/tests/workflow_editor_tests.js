@@ -738,7 +738,6 @@ QUnit.test("terminal element", function (assert) {
     });
     var el = this.view.el;
     assert.equal(el.tagName, "DIV");
-    assert.equal(el.className, "terminal input-terminal");
 });
 
 QUnit.module("Output terminal view", {
@@ -764,7 +763,6 @@ QUnit.test("terminal element", function (assert) {
     });
     var el = this.view.el;
     assert.equal(el.tagName, "DIV");
-    assert.equal(el.className, "terminal output-terminal");
 });
 
 QUnit.module("CollectionTypeDescription", {

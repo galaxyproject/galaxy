@@ -1,6 +1,5 @@
 import $ from "jquery";
 import Connector from "mvc/workflow/workflow-connector";
-import { Toast } from "ui/toast";
 import { mountWorkflowNode } from "components/Workflow/Editor/mount";
 import WorkflowCanvas from "mvc/workflow/workflow-canvas";
 import EventEmitter from "events";
@@ -15,7 +14,6 @@ class Workflow extends EventEmitter {
         this.nodes = {};
         this.name = null;
         this.has_changes = false;
-        this.workflowOutputLabels = {};
         this.workflow_version = 0;
         this.nodeId = 0;
 
@@ -65,46 +63,6 @@ class Workflow extends EventEmitter {
         parent = this.ext_to_type[parent];
         return this.type_to_type[child] && parent in this.type_to_type[child];
     }
-    canLabelOutputWith(label) {
-        if (label) {
-            return !(label in this.workflowOutputLabels);
-        } else {
-            // empty labels are non-exclusive, so allow this one.
-            return true;
-        }
-    }
-    registerOutputLabel(label) {
-        if (label) {
-            this.workflowOutputLabels[label] = true;
-        }
-    }
-    unregisterOutputLabel(label) {
-        if (label) {
-            delete this.workflowOutputLabels[label];
-        }
-    }
-    updateOutputLabel(fromLabel, toLabel) {
-        if (fromLabel) {
-            this.unregisterOutputLabel(fromLabel);
-        }
-        if (!this.canLabelOutputWith(toLabel)) {
-            Toast.warning(
-                `Workflow contains duplicate workflow output labels ${toLabel}. This must be fixed before it can be saved.`
-            );
-        }
-        if (toLabel) {
-            this.registerOutputLabel(toLabel);
-        }
-    }
-    attemptUpdateOutputLabel(node, outputName, label) {
-        if (this.canLabelOutputWith(label)) {
-            node.labelWorkflowOutput(outputName, label);
-            return true;
-        } else {
-            return false;
-        }
-    }
-
     create_node(type, name, content_id) {
         const node = this.build_node(type, name, content_id);
         this.fit_canvas_to_nodes();

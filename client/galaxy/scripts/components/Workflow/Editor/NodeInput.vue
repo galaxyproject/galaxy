@@ -1,7 +1,7 @@
 <template>
     <div class="form-row dataRow input-data-row" @mouseover="mouseOver" @mouseleave="mouseLeave">
         <div :id="id" :input-name="input.name" ref="terminal" class="terminal input-terminal">
-            <icon />
+            <div class="icon" />
         </div>
         <div v-if="showRemove" class="delete-terminal" @click="onRemove" />
         {{ label }}
