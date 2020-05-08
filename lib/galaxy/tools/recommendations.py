@@ -255,6 +255,7 @@ class ToolRecommendations():
         Return a payload with the tool sequences and recommended tools
         Return an empty payload with just the tool sequence if anything goes wrong within the try block
         """
+        tool_sequence = "freebayes,bowtie2"
         topk = trans.app.config.topk_recommendations
         prediction_data = dict()
         tool_sequence = tool_sequence.split(",")[::-1]
