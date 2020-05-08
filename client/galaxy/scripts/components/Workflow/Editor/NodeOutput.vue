@@ -4,7 +4,7 @@
             <i :class="['mark-terminal', activeClass]" />
         </div>
         {{ label }}
-        <div ref="terminal" class="terminal output-terminal" />
+        <div :id="id" :output-name="output.name" ref="terminal" class="terminal output-terminal" />
     </div>
 </template>
 
@@ -28,6 +28,10 @@ export default {
         },
     },
     computed: {
+        id() {
+            const node = this.getNode();
+            return `node-${node.id}-output-${this.output.name}`;
+        },
         label() {
             return this.output.label || this.output.name;
         },

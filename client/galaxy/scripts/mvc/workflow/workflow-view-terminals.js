@@ -12,13 +12,10 @@ class InputTerminalView {
         const node = options.node;
         const input = options.input;
         const name = input.name;
-        this.id = `node-${node.id}-input-${name}`;
         this.terminal.node = node;
         this.terminal.name = name;
         this.terminal.label = input.label;
         this.el.terminal = this.terminal;
-        this.el.setAttribute("input-name", name);
-        this.el.setAttribute("id", this.id);
         const icon = document.createElement("icon");
         this.el.appendChild(icon);
         this.$el = $(this.el);
@@ -93,14 +90,11 @@ export class OutputTerminalView {
         const node = options.node;
         const output = options.output;
         const name = output.name;
-        this.id = `node-${node.id}-output-${name}`;
         this.terminal.node = node;
         this.terminal.name = name;
         this.terminal.label = output.label;
         this.el.terminal = this.terminal;
         this.$el = $(this.el);
-        this.$el.attr("output-name", name);
-        this.$el.attr("id", this.id);
         this.$el.append($("<icon/>"));
         this.$el.attr(
             "aria-label",

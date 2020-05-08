@@ -1,6 +1,6 @@
 <template>
     <div class="form-row dataRow input-data-row" @mouseover="mouseOver" @mouseleave="mouseLeave">
-        <div ref="terminal" class="terminal input-terminal" />
+        <div :id="id" :input-name="input.name" ref="terminal" class="terminal input-terminal" />
         <div v-if="showRemove" class="delete-terminal" @click="onRemove" />
         {{ label }}
     </div>
@@ -30,6 +30,10 @@ export default {
         };
     },
     computed: {
+        id() {
+            const node = this.getNode();
+            return `node-${node.id}-input-${this.input.name}`;
+        },
         label() {
             return this.input.label || this.input.name;
         },
