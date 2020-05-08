@@ -4,7 +4,9 @@
             <i :class="['mark-terminal', activeClass]" />
         </div>
         {{ label }}
-        <div :id="id" :output-name="output.name" ref="terminal" class="terminal output-terminal" />
+        <div :id="id" :output-name="output.name" ref="terminal" class="terminal output-terminal">
+            <icon />
+        </div>
     </div>
 </template>
 

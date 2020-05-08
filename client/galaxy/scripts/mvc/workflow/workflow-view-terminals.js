@@ -8,7 +8,6 @@ class InputTerminalView {
         this.app = app;
         this.el = options.el;
         this.terminal = options.terminal;
-        this.el.className = "terminal input-terminal";
         const node = options.node;
         const input = options.input;
         const name = input.name;
@@ -16,10 +15,7 @@ class InputTerminalView {
         this.terminal.name = name;
         this.terminal.label = input.label;
         this.el.terminal = this.terminal;
-        const icon = document.createElement("icon");
-        this.el.appendChild(icon);
         this.$el = $(this.el);
-        this.$el.append($("<icon/>"));
         this.$el.on("dropinit", (e, d) => this.onDropInit(e, d));
         this.$el.on("dropstart", (e, d) => this.onDropStart(e, d));
         this.$el.on("dropend", (e, d) => this.onDropEnd(e, d));
@@ -86,7 +82,6 @@ export class OutputTerminalView {
         this.app = app;
         this.el = options.el;
         this.terminal = options.terminal;
-        this.el.className = "terminal output-terminal";
         const node = options.node;
         const output = options.output;
         const name = output.name;
@@ -95,7 +90,6 @@ export class OutputTerminalView {
         this.terminal.label = output.label;
         this.el.terminal = this.terminal;
         this.$el = $(this.el);
-        this.$el.append($("<icon/>"));
         this.$el.attr(
             "aria-label",
             `connect output ${name} from ${node.name} to input. Press space to see a list of available inputs`
