@@ -466,7 +466,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 with open(job_state.error_file, 'w') as error_file:
                     error_file.write("No Kubernetes Jobs are available under expected selector app=%s\n" % job_state.job_id)
                 self.mark_as_failed(job_state)
-            except FileNotFoundError:
+            except IOError:
                 log.error("Job directory already cleaned up. Assuming already handled for selector app=%s", job_state.job_id)
             return job_state
         else:
@@ -476,7 +476,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 with open(job_state.error_file, 'w') as error_file:
                     error_file.write("More than one Kubernetes Job associated with job id '%s'\n" % job_state.job_id)
                 self.mark_as_failed(job_state)
-            except FileNotFoundError:
+            except IOError:
                 log.error("Job directory already cleaned up. Assuming already handled for selector app=%s", job_state.job_id)
             return job_state
 
