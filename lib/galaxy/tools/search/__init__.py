@@ -145,7 +145,7 @@ class ToolBoxSearch:
                     pass
         return add_doc_kwds
 
-    def search(self, q, tool_name_boost, tool_section_boost,
+    def search(self, q, tool_name_boost, tool_id_boost, tool_section_boost,
             tool_description_boost, tool_label_boost, tool_stub_boost,
             tool_help_boost, tool_search_limit, tool_enable_ngram_search,
             tool_ngram_minsize, tool_ngram_maxsize):
@@ -156,6 +156,7 @@ class ToolBoxSearch:
         self.searcher = self.index.searcher(
             weighting=BM25F(
                 field_B={'name_B': float(tool_name_boost),
+                         'id_B': float(tool_id_boost),
                          'section_B': float(tool_section_boost),
                          'description_B': float(tool_description_boost),
                          'labels_B': float(tool_label_boost),
@@ -171,7 +172,7 @@ class ToolBoxSearch:
         # Hence we introduce a bonus on multi-hits using the 'factory()' method using a scaling factor between 0-1.
         # https://whoosh.readthedocs.io/en/latest/parsing.html#searching-for-any-terms-instead-of-all-terms-by-default
         og = OrGroup.factory(0.9)
-        self.parser = MultifieldParser(['name', 'description', 'section', 'help', 'labels', 'stub'], schema=self.schema, group=og)
+        self.parser = MultifieldParser(['name', 'id', 'description', 'section', 'help', 'labels', 'stub'], schema=self.schema, group=og)
         cleaned_query = q.lower()
         if tool_enable_ngram_search is True:
             rval = self._search_ngrams(cleaned_query, tool_ngram_minsize, tool_ngram_maxsize, tool_search_limit)
@@ -179,7 +180,7 @@ class ToolBoxSearch:
         else:
             cleaned_query = ' '.join(token.text for token in self.rex(cleaned_query))
             # Use asterisk Whoosh wildcard so e.g. 'bow' easily matches 'bowtie'
-            parsed_query = self.parser.parse(cleaned_query + '*')
+            parsed_query = self.parser.parse('*' + cleaned_query + '*')
             hits = self.searcher.search(parsed_query, limit=float(tool_search_limit), sortedby='')
             return [hit['id'] for hit in hits]
 

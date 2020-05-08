@@ -360,6 +360,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         :return type: dict
         """
         tool_name_boost = self.app.config.get('tool_name_boost', 9)
+        tool_id_boost = self.app.config.get('tool_id_boost', 9)
         tool_section_boost = self.app.config.get('tool_section_boost', 3)
         tool_description_boost = self.app.config.get('tool_description_boost', 2)
         tool_label_boost = self.app.config.get('tool_label_boost', 1)
@@ -372,6 +373,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
 
         results = self.app.toolbox_search.search(q=q,
                                                  tool_name_boost=tool_name_boost,
+                                                 tool_id_boost=tool_id_boost,
                                                  tool_section_boost=tool_section_boost,
                                                  tool_description_boost=tool_description_boost,
                                                  tool_label_boost=tool_label_boost,
