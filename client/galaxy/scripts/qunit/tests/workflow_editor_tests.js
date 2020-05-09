@@ -333,7 +333,7 @@ QUnit.module("Node unit test", {
         this.input_terminal = { destroy: sinon.spy(), redraw: sinon.spy() };
         this.output_terminal = { destroy: sinon.spy(), redraw: sinon.spy() };
         this.app = create_app();
-        this.node = this.app.build_node("tool", "newnode");
+        this.node = this.app.buildNode("tool", "newnode");
         this.element = this.node.element;
         this.node.inputTerminals.i1 = this.input_terminal;
         this.node.outputTerminals.o1 = this.output_terminal;
@@ -343,7 +343,7 @@ QUnit.module("Node unit test", {
     },
     expect_workflow_node_changed: function (assert, f) {
         const node = this.node;
-        const node_changed_spy = sinon.spy(this.app, "node_changed");
+        const node_changed_spy = sinon.spy(this.app, "nodeChanged");
         f();
         assert.ok(node_changed_spy.calledWith(node));
     },
@@ -377,7 +377,7 @@ QUnit.test("make active", function (assert) {
 });
 
 QUnit.test("destroy", function (assert) {
-    var remove_node_spy = sinon.spy(this.app, "remove_node");
+    var remove_node_spy = sinon.spy(this.app, "removeNode");
     this.node.onDestroy();
     assert.ok(this.input_terminal.destroy.called);
     assert.ok(this.output_terminal.destroy.called);
@@ -386,7 +386,7 @@ QUnit.test("destroy", function (assert) {
 
 QUnit.test("error", function (assert) {
     // Test body of div updated and workflow notified of change.
-    const node_changed_spy = sinon.spy(this.app, "node_changed");
+    const node_changed_spy = sinon.spy(this.app, "nodeChanged");
     this.node.initFieldData({ errors: "NODE ERROR", inputs: [], outputs: [] });
     Vue.nextTick(() => {
         const errorText = $(this.node.element).find(".node-error").text().trim();
@@ -410,7 +410,7 @@ QUnit.test("init_field_data properties", function (assert) {
         label: "Cat that data.",
     };
     const node = this.node;
-    const node_changed_spy = sinon.spy(this.app, "node_changed");
+    const node_changed_spy = sinon.spy(this.app, "nodeChanged");
     this.node.initFieldData(data);
     Vue.nextTick(() => {
         assert.equal(node.type, "tool");
@@ -431,7 +431,7 @@ QUnit.test("init_field_data data", function (assert) {
     assert.equal(this.$(".output-terminal").length, 0);
     assert.equal(this.$(".input-terminal").length, 0);
     assert.equal(this.$(".rule").length, 0);
-    const node_changed_spy = sinon.spy(this.app, "node_changed");
+    const node_changed_spy = sinon.spy(this.app, "nodeChanged");
     this.init_field_data_simple();
     Vue.nextTick(() => {
         assert.ok(node_changed_spy.calledWith(this.node));
@@ -446,7 +446,7 @@ QUnit.test("init_field_data data", function (assert) {
 
 QUnit.test("node title behavior", function (assert) {
     assert.equal(this.$(".node-title").text(), "newnode");
-    const node_changed_spy = sinon.spy(this.app, "node_changed");
+    const node_changed_spy = sinon.spy(this.app, "nodeChanged");
     this.init_field_data_simple();
     this.update_field_data_with_new_input();
     Vue.nextTick(() => {
@@ -456,7 +456,7 @@ QUnit.test("node title behavior", function (assert) {
 });
 
 QUnit.test("update_field_data updated data inputs and outputs", function (assert) {
-    const node_changed_spy = sinon.spy(this.app, "node_changed");
+    const node_changed_spy = sinon.spy(this.app, "nodeChanged");
     // Call init with one input and output.
     this.init_field_data_simple();
     this.update_field_data_with_new_input();
@@ -470,7 +470,7 @@ QUnit.test("update_field_data updated data inputs and outputs", function (assert
 });
 
 QUnit.test("update_field_data preserves connectors", function (assert) {
-    const node_changed_spy = sinon.spy(this.app, "node_changed");
+    const node_changed_spy = sinon.spy(this.app, "nodeChanged");
     // Call init with one input and output.
     this.init_field_data_simple();
 
@@ -500,7 +500,7 @@ QUnit.test("update_field_data preserves connectors", function (assert) {
 
 QUnit.test("update_field_data destroys old terminals", function (assert) {
     const node = this.node;
-    const node_changed_spy = sinon.spy(this.app, "node_changed");
+    const node_changed_spy = sinon.spy(this.app, "nodeChanged");
     var data = {
         inputs: [
             { name: "input1", extensions: ["data"] },
@@ -525,15 +525,15 @@ QUnit.module("create_node", {
 });
 
 QUnit.test("node added to workflow", function (assert) {
-    const activate_node_spy = sinon.spy(this.app, "activate_node");
-    const node = this.app.create_node("tool", "Cat Files", "cat1");
+    const activate_node_spy = sinon.spy(this.app, "_activateNode");
+    const node = this.app.createNode("tool", "Cat Files", "cat1");
     assert.ok(activate_node_spy.calledWith(node));
 });
 
 QUnit.module("Node view", {
     beforeEach: function () {
         this.app = create_app();
-        this.node = this.app.build_node("tool", "newnode");
+        this.node = this.app.buildNode("tool", "newnode");
     },
     afterEach: function () {
         delete this.node;
@@ -717,7 +717,7 @@ QUnit.test("replacing terminal on data collection input with simple input change
 QUnit.module("Input terminal view", {
     beforeEach: function () {
         this.app = create_app();
-        this.node = this.app.build_node("tool", "newnode");
+        this.node = this.app.buildNode("tool", "newnode");
         this.input = { name: "i1", extensions: "txt", multiple: false };
         this.node.updateFieldData({ inputs: [this.input], outputs: [] });
     },
@@ -742,7 +742,7 @@ QUnit.test("terminal element", function (assert) {
 QUnit.module("Output terminal view", {
     beforeEach: function () {
         this.app = create_app();
-        this.node = this.app.build_node("tool", "newnode");
+        this.node = this.app.buildNode("tool", "newnode");
         this.output = { name: "o1", extensions: "txt" };
         this.node.updateFieldData({ inputs: [], outputs: [this.output] });
     },

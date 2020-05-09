@@ -21,7 +21,7 @@ class Workflow extends EventEmitter {
         this.canvas_manager = new WorkflowCanvas(this, $("#canvas-viewport"), $("#overview-container"));
 
         // On load, set the size to the pref stored in local storage if it exists
-        var overview_size = localStorage.getItem("overview-size");
+        const overview_size = localStorage.getItem("overview-size");
         if (overview_size !== undefined) {
             $(".workflow-overview").css({
                 width: overview_size,
@@ -31,9 +31,9 @@ class Workflow extends EventEmitter {
 
         // Stores the size of the overview into local storage when it's resized
         $(".workflow-overview").bind("dragend", function (e, d) {
-            var op = $(this).offsetParent();
-            var opo = op.offset();
-            var new_size = Math.max(op.width() - (d.offsetX - opo.left), op.height() - (d.offsetY - opo.top));
+            const op = $(this).offsetParent();
+            const opo = op.offset();
+            const new_size = Math.max(op.width() - (d.offsetX - opo.left), op.height() - (d.offsetY - opo.top));
             localStorage.setItem("overview-size", `${new_size}px`);
         });
 
@@ -45,17 +45,16 @@ class Workflow extends EventEmitter {
         };
     }
     setNode(node, data) {
-        data.workflow_outputs = [];
-        data.outputs.forEach((o) => {
-            data.workflow_outputs.push({
+        data.workflow_outputs = data.outputs.map((o) => {
+            return {
                 output_name: o.name,
                 label: o.label,
-            });
+            };
         });
         node.initFieldData(data);
         Vue.nextTick(() => {
             node.updateFieldData(data);
-            this.activate_node(node);
+            this._activateNode(node);
         });
     }
     isSubType(child, parent) {
@@ -63,15 +62,15 @@ class Workflow extends EventEmitter {
         parent = this.ext_to_type[parent];
         return this.type_to_type[child] && parent in this.type_to_type[child];
     }
-    create_node(type, name, content_id) {
-        const node = this.build_node(type, name, content_id);
-        this.fit_canvas_to_nodes();
+    createNode(type, name, content_id) {
+        const node = this.buildNode(type, name, content_id);
+        this.fitCanvasToNodes();
         this.canvas_manager.draw_overview();
-        this.activate_node(node);
+        this._activateNode(node);
         return node;
     }
-    build_node(type, name, content_id) {
-        var self = this;
+    buildNode(type, name, content_id) {
+        const self = this;
 
         // Create node wrapper
         const container = document.createElement("div");
@@ -93,37 +92,37 @@ class Workflow extends EventEmitter {
         this.nodeId++;
 
         // Set initial scroll position
-        var $f = $(node.$el);
+        const $f = $(node.$el);
         $f.css("left", $(window).scrollLeft() + 20);
         $f.css("top", $(window).scrollTop() + 20);
 
         // Position in container
-        var o = $("#canvas-container").position();
-        var p = $("#canvas-container").parent();
-        var width = $f.outerWidth() + 50;
-        var height = $f.height();
+        const o = $("#canvas-container").position();
+        const p = $("#canvas-container").parent();
+        const width = $f.outerWidth() + 50;
+        const height = $f.height();
         $f.css({
             left: -o.left + p.width() / 2 - width / 2,
             top: -o.top + p.height() / 2 - height / 2,
         });
         $f.css("width", width);
         $f.bind("dragstart", () => {
-            self.activate_node(node);
+            self._activateNode(node);
         })
             .bind("dragend", function () {
-                self.node_changed(node);
-                self.fit_canvas_to_nodes();
+                self.nodeChanged(node);
+                self.fitCanvasToNodes();
                 self.canvas_manager.draw_overview();
             })
             .bind("dragclickonly", () => {
-                self.activate_node(node);
+                self._activateNode(node);
             })
             .bind("drag", function (e, d) {
                 // Move
-                var po = $(this).offsetParent().offset();
+                const po = $(this).offsetParent().offset();
                 // Find relative offset and scale by zoom
-                var x = (d.offsetX - po.left) / self.canvas_manager.canvasZoom;
-                var y = (d.offsetY - po.top) / self.canvas_manager.canvasZoom;
+                const x = (d.offsetX - po.left) / self.canvas_manager.canvasZoom;
+                const y = (d.offsetY - po.top) / self.canvas_manager.canvasZoom;
                 $(this).css({ left: x, top: y });
                 // Redraw
                 $(this)
@@ -139,148 +138,29 @@ class Workflow extends EventEmitter {
         node.workflow = this;
         return node;
     }
-    remove_node(node) {
-        if (this.active_node == node) {
-            this.clear_active_node();
+    removeNode(node) {
+        if (this.activeNode == node) {
+            this._clearActiveNode();
         }
         delete this.nodes[node.id];
         this.has_changes = true;
         this.emit("onRemoveNode");
     }
-    remove_all() {
-        Object.values(this.nodes).forEach((node) => {
-            node.onDestroy();
-            this.remove_node(node);
-        });
-    }
-    rectify_workflow_outputs() {
-        // Find out if we're using workflow_outputs or not.
-        let using_workflow_outputs = false;
-        let has_existing_pjas = false;
-        Object.values(this.nodes).forEach((node) => {
-            if (node.activeOutputs.count() > 0) {
-                using_workflow_outputs = true;
-            }
-            Object.values(node.postJobActions).forEach((pja) => {
-                if (pja.action_type === "HideDatasetAction") {
-                    has_existing_pjas = true;
-                }
-            });
-        });
-        if (using_workflow_outputs !== false || has_existing_pjas !== false) {
-            // Using workflow outputs, or has existing pjas.  Remove all PJAs and recreate based on outputs.
-            Object.values(this.nodes).forEach((node) => {
-                var node_changed = false;
-                if (node.postJobActions === null) {
-                    node.postJobActions = {};
-                    node_changed = true;
-                }
-                var pjas_to_rem = [];
-                Object.entries(node.postJobActions).forEach(([pja_id, pja]) => {
-                    if (pja.action_type == "HideDatasetAction") {
-                        pjas_to_rem.push(pja_id);
-                    }
-                });
-                if (pjas_to_rem.length > 0) {
-                    pjas_to_rem.forEach((pja_name) => {
-                        node_changed = true;
-                        delete node.postJobActions[pja_name];
-                    });
-                }
-                if (using_workflow_outputs) {
-                    Object.values(node.outputs).forEach((ot) => {
-                        var create_pja = !node.activeOutputs.exists(ot.name);
-                        if (create_pja === true) {
-                            node_changed = true;
-                            var pja = {
-                                action_type: "HideDatasetAction",
-                                output_name: ot.name,
-                                action_arguments: {},
-                            };
-                            node.postJobActions[`HideDatasetAction${ot.name}`] = null;
-                            node.postJobActions[`HideDatasetAction${ot.name}`] = pja;
-                        }
-                    });
-                }
-                // lastly, if this is the active node, and we made changes, reload the display at right.
-                if (this.active_node == node && node_changed === true) {
-                    this.reload_active_node();
-                }
-            });
-        }
-    }
-    to_simple() {
-        var nodes = {};
-        Object.values(this.nodes).forEach((node) => {
-            var input_connections = {};
-            Object.values(node.inputTerminals).forEach((t) => {
-                input_connections[t.name] = null;
-                // There should only be 0 or 1 connectors, so this is
-                // really a sneaky if statement
-                var cons = [];
-                t.connectors.forEach((c, i) => {
-                    if (c.outputHandle) {
-                        var con_dict = {
-                            id: c.outputHandle.node.id,
-                            output_name: c.outputHandle.name,
-                        };
-                        var input_subworkflow_step_id = t.attributes.input.input_subworkflow_step_id;
-                        if (input_subworkflow_step_id !== undefined) {
-                            con_dict.input_subworkflow_step_id = input_subworkflow_step_id;
-                        }
-                        cons[i] = con_dict;
-                        input_connections[t.name] = cons;
-                    }
-                });
-            });
-            var postJobActions = {};
-            if (node.postJobActions) {
-                Object.values(node.postJobActions).forEach((act) => {
-                    const pja = {
-                        action_type: act.action_type,
-                        output_name: act.output_name,
-                        action_arguments: act.action_arguments,
-                    };
-                    postJobActions[act.action_type + act.output_name] = null;
-                    postJobActions[act.action_type + act.output_name] = pja;
-                });
-            }
-            var node_data = {
-                id: node.id,
-                type: node.type,
-                content_id: node.content_id,
-                tool_version: node.config_form ? node.config_form.version : null,
-                tool_state: node.tool_state,
-                errors: node.errors,
-                input_connections: input_connections,
-                position: node.element.getBoundingClientRect(),
-                annotation: node.annotation,
-                post_job_actions: node.postJobActions,
-                uuid: node.uuid,
-                label: node.label,
-                workflow_outputs: node.activeOutputs.getAll(),
-            };
-            nodes[node.id] = node_data;
-        });
-        const report = this.report;
-        return { steps: nodes, report: report };
-    }
-    from_simple(data, appendData) {
+    fromSimple(data, appendData) {
         const self = this;
         let offset = 0;
         if (!appendData) {
             this.name = data.name;
-            this.remove_all();
+            this._removeAll();
         } else {
             offset = this.nodeId;
         }
-
         // First pass, nodes
-        var using_workflow_outputs = false;
-        self.workflow_version = data.version;
-        self.report = data.report || {};
+        let using_workflow_outputs = false;
+        this.workflow_version = data.version;
+        this.report = data.report || {};
         Object.values(data.steps).forEach((step) => {
-            const node = self.build_node(step.type, step.name, step.content_id);
+            const node = self.buildNode(step.type, step.name, step.content_id);
             // If workflow being copied into another, wipe UUID and let
             // Galaxy assign new ones.
             if (appendData) {
@@ -341,40 +221,159 @@ class Workflow extends EventEmitter {
                     });
                 }
                 self.has_changes = false;
-                self.fit_canvas_to_nodes();
-                self.scroll_to_nodes();
+                self.fitCanvasToNodes();
+                self._scrollToNodes();
                 self.canvas_manager.draw_overview();
             });
         });
     }
-    reload_active_node() {
-        if (this.active_node) {
-            var node = this.active_node;
-            this.clear_active_node();
-            this.activate_node(node);
+    toSimple() {
+        const nodes = {};
+        this.rectifyOutputs();
+        Object.values(this.nodes).forEach((node) => {
+            const input_connections = {};
+            Object.values(node.inputTerminals).forEach((t) => {
+                input_connections[t.name] = null;
+                // There should only be 0 or 1 connectors, so this is
+                // really a sneaky if statement
+                const cons = [];
+                t.connectors.forEach((c, i) => {
+                    if (c.outputHandle) {
+                        const con_dict = {
+                            id: c.outputHandle.node.id,
+                            output_name: c.outputHandle.name,
+                        };
+                        const input_subworkflow_step_id = t.attributes.input.input_subworkflow_step_id;
+                        if (input_subworkflow_step_id !== undefined) {
+                            con_dict.input_subworkflow_step_id = input_subworkflow_step_id;
+                        }
+                        cons[i] = con_dict;
+                        input_connections[t.name] = cons;
+                    }
+                });
+            });
+            const postJobActions = {};
+            if (node.postJobActions) {
+                Object.values(node.postJobActions).forEach((act) => {
+                    const pja = {
+                        action_type: act.action_type,
+                        output_name: act.output_name,
+                        action_arguments: act.action_arguments,
+                    };
+                    postJobActions[act.action_type + act.output_name] = null;
+                    postJobActions[act.action_type + act.output_name] = pja;
+                });
+            }
+            const node_data = {
+                id: node.id,
+                type: node.type,
+                content_id: node.content_id,
+                tool_version: node.config_form ? node.config_form.version : null,
+                tool_state: node.tool_state,
+                errors: node.errors,
+                input_connections: input_connections,
+                position: node.element.getBoundingClientRect(),
+                annotation: node.annotation,
+                post_job_actions: node.postJobActions,
+                uuid: node.uuid,
+                label: node.label,
+                workflow_outputs: node.activeOutputs.getAll(),
+            };
+            nodes[node.id] = node_data;
+        });
+        const report = this.report;
+        return { steps: nodes, report: report };
+    }
+    _removeAll() {
+        Object.values(this.nodes).forEach((node) => {
+            node.onDestroy();
+            this.removeNode(node);
+        });
+    }
+    _rectifyOutputs() {
+        // Find out if we're using workflow_outputs or not.
+        let using_workflow_outputs = false;
+        let has_existing_pjas = false;
+        Object.values(this.nodes).forEach((node) => {
+            if (node.activeOutputs.count() > 0) {
+                using_workflow_outputs = true;
+            }
+            Object.values(node.postJobActions).forEach((pja) => {
+                if (pja.action_type === "HideDatasetAction") {
+                    has_existing_pjas = true;
+                }
+            });
+        });
+        if (using_workflow_outputs !== false || has_existing_pjas !== false) {
+            // Using workflow outputs, or has existing pjas.  Remove all PJAs and recreate based on outputs.
+            Object.values(this.nodes).forEach((node) => {
+                let nodeChanged = false;
+                if (node.postJobActions === null) {
+                    node.postJobActions = {};
+                    nodeChanged = true;
+                }
+                const pjas_to_rem = [];
+                Object.entries(node.postJobActions).forEach(([pja_id, pja]) => {
+                    if (pja.action_type == "HideDatasetAction") {
+                        pjas_to_rem.push(pja_id);
+                    }
+                });
+                if (pjas_to_rem.length > 0) {
+                    pjas_to_rem.forEach((pja_name) => {
+                        nodeChanged = true;
+                        delete node.postJobActions[pja_name];
+                    });
+                }
+                if (using_workflow_outputs) {
+                    Object.values(node.outputs).forEach((ot) => {
+                        const create_pja = !node.activeOutputs.exists(ot.name);
+                        if (create_pja === true) {
+                            nodeChanged = true;
+                            const pja = {
+                                action_type: "HideDatasetAction",
+                                output_name: ot.name,
+                                action_arguments: {},
+                            };
+                            node.postJobActions[`HideDatasetAction${ot.name}`] = null;
+                            node.postJobActions[`HideDatasetAction${ot.name}`] = pja;
+                        }
+                    });
+                }
+                // lastly, if this is the active node, and we made changes, reload the display at right.
+                if (this.activeNode == node && nodeChanged === true) {
+                    this._reloadActiveNode();
+                }
+            });
         }
     }
-    clear_active_node() {
-        if (this.active_node) {
-            this.active_node.makeInactive();
-            this.active_node = null;
+    _reloadActiveNode() {
+        if (this.activeNode) {
+            const node = this.activeNode;
+            this._clearActiveNode();
+            this._activateNode(node);
+        }
+    }
+    _clearActiveNode() {
+        if (this.activeNode) {
+            this.activeNode.makeInactive();
+            this.activeNode = null;
         }
         document.activeElement.blur();
         this.emit("onClearActiveNode");
     }
-    activate_node(node) {
-        if (this.active_node != node) {
-            this.clear_active_node();
+    _activateNode(node) {
+        if (this.activeNode != node) {
+            this._clearActiveNode();
             node.makeActive();
-            this.active_node = node;
+            this.activeNode = node;
         }
         this.emit("onActiveNode", node);
     }
-    node_changed(node) {
+    nodeChanged(node) {
         this.has_changes = true;
         this.emit("onNodeChange", node);
     }
-    scroll_to_nodes() {
+    _scrollToNodes() {
         const cv = $("#canvas-viewport");
         const cc = $("#canvas-container");
         let top;
@@ -391,17 +390,17 @@ class Workflow extends EventEmitter {
         }
         cc.css({ left: left, top: top });
     }
-    layout_auto() {
+    layoutAuto() {
         this.layout();
-        this.fit_canvas_to_nodes();
-        this.scroll_to_nodes();
+        this.fitCanvasToNodes();
+        this._scrollToNodes();
         this.canvas_manager.draw_overview();
     }
     layout() {
         this.has_changes = true;
         // Prepare predecessor / successor tracking
-        var n_pred = {};
-        var successors = {};
+        const n_pred = {};
+        const successors = {};
         // First pass to initialize arrays even for nodes with no connections
         Object.keys(this.nodes).forEach((id) => {
             if (n_pred[id] === undefined) {
@@ -416,7 +415,7 @@ class Workflow extends EventEmitter {
             Object.values(node.inputTerminals).forEach((t) => {
                 t.connectors.forEach((c) => {
                     // A connection exists from `other` to `node`
-                    var other = c.outputHandle.node;
+                    const other = c.outputHandle.node;
                     // node gains a predecessor
                     n_pred[node.id] += 1;
                     // other gains a successor
@@ -425,11 +424,11 @@ class Workflow extends EventEmitter {
             });
         });
         // Assemble order, tracking levels
-        var node_ids_by_level = [];
+        const node_ids_by_level = [];
         for (;;) {
             // Everything without a predecessor
-            var level_parents = [];
-            for (var pred_k in n_pred) {
+            const level_parents = [];
+            for (const pred_k in n_pred) {
                 if (n_pred[pred_k] === 0) {
                     level_parents.push(pred_k);
                 }
@@ -440,10 +439,10 @@ class Workflow extends EventEmitter {
             node_ids_by_level.push(level_parents);
             // Remove the parents from this level, and decrement the number
             // of predecessors for each successor
-            for (var k in level_parents) {
-                var v = level_parents[k];
+            for (const k in level_parents) {
+                const v = level_parents[k];
                 delete n_pred[v];
-                for (var sk in successors[v]) {
+                for (const sk in successors[v]) {
                     n_pred[successors[v][sk]] -= 1;
                 }
             }
@@ -453,10 +452,10 @@ class Workflow extends EventEmitter {
             return;
         }
         // Layout each level
-        var all_nodes = this.nodes;
-        var h_pad = 80;
-        var v_pad = 30;
-        var left = h_pad;
+        const all_nodes = this.nodes;
+        const h_pad = 80;
+        const v_pad = 30;
+        let left = h_pad;
         node_ids_by_level.forEach((ids) => {
             // We keep nodes in the same order in a level to give the user
             // some control over ordering
@@ -465,11 +464,11 @@ class Workflow extends EventEmitter {
                     all_nodes[a].element.getBoundingClientRect().top - all_nodes[b].element.getBoundingClientRect().top
             );
             // Position each node
-            var max_width = 0;
-            var top = v_pad;
+            let max_width = 0;
+            let top = v_pad;
             ids.forEach((id) => {
-                var node = all_nodes[id];
-                var element = $(node.element);
+                const node = all_nodes[id];
+                const element = $(node.element);
                 $(element).css({ top: top, left: left });
                 max_width = Math.max(max_width, $(element).width());
                 top += $(element).height() + v_pad;
@@ -481,14 +480,14 @@ class Workflow extends EventEmitter {
             node.onRedraw();
         });
     }
-    bounds_for_all_nodes() {
-        var xmin = Infinity;
-        var xmax = -Infinity;
-        var ymin = Infinity;
-        var ymax = -Infinity;
-        var p;
+    _boundsForAllNodes() {
+        let xmin = Infinity;
+        let xmax = -Infinity;
+        let ymin = Infinity;
+        let ymax = -Infinity;
+        let p;
         Object.values(this.nodes).forEach((node) => {
-            var e = $(node.element);
+            const e = $(node.element);
             p = e.position();
             xmin = Math.min(xmin, p.left);
             xmax = Math.max(xmax, p.left + e.width());
@@ -497,34 +496,34 @@ class Workflow extends EventEmitter {
         });
         return { xmin: xmin, xmax: xmax, ymin: ymin, ymax: ymax };
     }
-    fit_canvas_to_nodes() {
+    fitCanvasToNodes() {
         // Math utils
         function round_up(x, n) {
             return Math.ceil(x / n) * n;
         }
         function fix_delta(x, n) {
             if (x < n || x > 3 * n) {
-                var new_pos = (Math.ceil((x % n) / n) + 1) * n;
+                const new_pos = (Math.ceil((x % n) / n) + 1) * n;
                 return -(x - new_pos);
             }
             return 0;
         }
         // Span of all elements
-        var canvasZoom = this.canvas_manager.canvasZoom;
-        var bounds = this.bounds_for_all_nodes();
-        var position = this.canvas_container.position();
-        var parent = this.canvas_container.parent();
+        const canvasZoom = this.canvas_manager.canvasZoom;
+        const bounds = this._boundsForAllNodes();
+        const position = this.canvas_container.position();
+        const parent = this.canvas_container.parent();
         // Determine amount we need to expand on top/left
-        var xmin_delta = fix_delta(bounds.xmin, 100);
-        var ymin_delta = fix_delta(bounds.ymin, 100);
+        let xmin_delta = fix_delta(bounds.xmin, 100);
+        let ymin_delta = fix_delta(bounds.ymin, 100);
         // May need to expand farther to fill viewport
         xmin_delta = Math.max(xmin_delta, position.left);
         ymin_delta = Math.max(ymin_delta, position.top);
-        var left = position.left - xmin_delta;
-        var top = position.top - ymin_delta;
+        const left = position.left - xmin_delta;
+        const top = position.top - ymin_delta;
         // Same for width/height
-        var width = round_up(bounds.xmax + 100, 100) + xmin_delta;
-        var height = round_up(bounds.ymax + 100, 100) + ymin_delta;
+        let width = round_up(bounds.xmax + 100, 100) + xmin_delta;
+        let height = round_up(bounds.ymax + 100, 100) + ymin_delta;
         width = Math.max(width, -left + parent.width());
         height = Math.max(height, -top + parent.height());
         // Grow the canvas container
@@ -536,7 +535,7 @@ class Workflow extends EventEmitter {
         });
         // Move elements back if needed
         this.canvas_container.children().each(function () {
-            var p = $(this).position();
+            const p = $(this).position();
             $(this).css("left", (p.left + xmin_delta) / canvasZoom);
             $(this).css("top", (p.top + ymin_delta) / canvasZoom);
         });

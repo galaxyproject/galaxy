@@ -177,7 +177,7 @@ export default {
                 this.isCanvas = true;
                 return;
             }
-            var node = this.manager.create_node("tool", tool_name, tool_id);
+            var node = this.manager.createNode("tool", tool_name, tool_id);
             const requestData = {
                 type: "tool",
                 tool_id: tool_id,
@@ -192,7 +192,7 @@ export default {
                 this.isCanvas = true;
                 return;
             }
-            var node = this.manager.create_node(module_id, module_name);
+            var node = this.manager.createNode(module_id, module_name);
             const requestData = {
                 type: module_id,
                 _: "true",
@@ -206,7 +206,7 @@ export default {
                 this.isCanvas = true;
                 return;
             }
-            var node = this.manager.create_node("subworkflow", workflow_name, workflow_id);
+            var node = this.manager.createNode("subworkflow", workflow_name, workflow_id);
             const requestData = {
                 type: "subworkflow",
                 content_id: workflow_id,
@@ -230,7 +230,7 @@ export default {
             saveAs(this.manager);
         },
         onLayout() {
-            this.manager.layout_auto();
+            this.manager.layoutAuto();
         },
         onAttributes() {
             showAttributes();

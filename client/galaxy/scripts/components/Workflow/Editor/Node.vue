@@ -195,26 +195,26 @@ export default {
                 _: "true",
             };
             getModule(requestData).then((response) => {
-                var node = this.manager.create_node("tool", response.name, toolId);
+                const node = this.manager.createNode("tool", response.name, toolId);
                 this.manager.setNode(node, response);
                 this.popoverShow = false;
             });
         },
         onClone() {
-            var copiedData = {
+            const copiedData = {
                 name: this.name,
                 label: this.label,
                 annotation: this.annotation,
                 post_job_actions: this.postJobActions,
             };
-            var node = this.manager.create_node(this.type, this.name, this.content_id);
+            const node = this.manager.createNode(this.type, this.name, this.content_id);
             const requestData = {
                 type: this.type,
                 tool_id: this.content_id,
                 tool_state: this.tool_state,
             };
             getModule(requestData).then((response) => {
-                var newData = Object.assign({}, response, copiedData);
+                const newData = Object.assign({}, response, copiedData);
                 this.manager.setNode(node, newData);
             });
         },
@@ -225,7 +225,7 @@ export default {
             Object.values(this.outputTerminals).forEach((t) => {
                 t.destroy();
             });
-            this.manager.remove_node(this);
+            this.manager.removeNode(this);
             this.element.remove();
         },
         onRedraw() {
@@ -257,7 +257,7 @@ export default {
             this.outputs = data.outputs.slice();
             this.activeOutputs.initialize(this.outputs, data.workflow_outputs);
             Vue.nextTick(() => {
-                this.manager.node_changed(this);
+                this.manager.nodeChanged(this);
             });
         },
         updateFieldData(data) {
@@ -339,7 +339,7 @@ export default {
 
             // trigger legacy events
             Vue.nextTick(() => {
-                this.manager.node_changed(this);
+                this.manager.nodeChanged(this);
                 this.onRedraw();
             });
         },
@@ -373,7 +373,7 @@ export default {
         makeInactive() {
             // Keep inactive nodes stacked from most to least recently active
             // by moving element to the end of parent's node list
-            var element = this.element;
+            const element = this.element;
             ((p) => {
                 p.removeChild(element);
                 p.appendChild(element);
@@ -382,7 +382,7 @@ export default {
             element.classList.remove("node-active");
         },
         markChanged() {
-            this.manager.node_changed(this);
+            this.manager.nodeChanged(this);
         },
     },
 };
