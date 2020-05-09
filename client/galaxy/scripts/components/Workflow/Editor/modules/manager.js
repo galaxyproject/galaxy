@@ -64,7 +64,6 @@ class Workflow extends EventEmitter {
     }
     createNode(type, name, content_id) {
         const node = this.buildNode(type, name, content_id);
-        this.fitCanvasToNodes();
         this.canvas_manager.draw_overview();
         this._activateNode(node);
         return node;
@@ -111,7 +110,6 @@ class Workflow extends EventEmitter {
         })
             .bind("dragend", function () {
                 self.nodeChanged(node);
-                self.fitCanvasToNodes();
                 self.canvas_manager.draw_overview();
             })
             .bind("dragclickonly", () => {
@@ -221,15 +219,13 @@ class Workflow extends EventEmitter {
                     });
                 }
                 self.has_changes = false;
-                self.fitCanvasToNodes();
-                self._scrollToNodes();
-                self.canvas_manager.draw_overview();
+                self.canvas_manager.draw_overview(true);
             });
         });
     }
     toSimple() {
         const nodes = {};
-        this.rectifyOutputs();
+        this._rectifyOutputs();
         Object.values(this.nodes).forEach((node) => {
             const input_connections = {};
             Object.values(node.inputTerminals).forEach((t) => {
@@ -373,28 +369,9 @@ class Workflow extends EventEmitter {
         this.has_changes = true;
         this.emit("onNodeChange", node);
     }
-    _scrollToNodes() {
-        const cv = $("#canvas-viewport");
-        const cc = $("#canvas-container");
-        let top;
-        let left;
-        if (cc.width() != cv.width()) {
-            left = (cv.width() - cc.width()) / 2;
-        } else {
-            left = 0;
-        }
-        if (cc.height() != cv.height()) {
-            top = (cv.height() - cc.height()) / 2;
-        } else {
-            top = 0;
-        }
-        cc.css({ left: left, top: top });
-    }
     layoutAuto() {
         this.layout();
-        this.fitCanvasToNodes();
-        this._scrollToNodes();
-        this.canvas_manager.draw_overview();
+        this.canvas_manager.draw_overview(true);
     }
     layout() {
         this.has_changes = true;
@@ -478,66 +455,6 @@ class Workflow extends EventEmitter {
         // Need to redraw all connectors
         Object.values(all_nodes).forEach((node) => {
             node.onRedraw();
-        });
-    }
-    _boundsForAllNodes() {
-        let xmin = Infinity;
-        let xmax = -Infinity;
-        let ymin = Infinity;
-        let ymax = -Infinity;
-        let p;
-        Object.values(this.nodes).forEach((node) => {
-            const e = $(node.element);
-            p = e.position();
-            xmin = Math.min(xmin, p.left);
-            xmax = Math.max(xmax, p.left + e.width());
-            ymin = Math.min(ymin, p.top);
-            ymax = Math.max(ymax, p.top + e.width());
-        });
-        return { xmin: xmin, xmax: xmax, ymin: ymin, ymax: ymax };
-    }
-    fitCanvasToNodes() {
-        // Math utils
-        function round_up(x, n) {
-            return Math.ceil(x / n) * n;
-        }
-        function fix_delta(x, n) {
-            if (x < n || x > 3 * n) {
-                const new_pos = (Math.ceil((x % n) / n) + 1) * n;
-                return -(x - new_pos);
-            }
-            return 0;
-        }
-        // Span of all elements
-        const canvasZoom = this.canvas_manager.canvasZoom;
-        const bounds = this._boundsForAllNodes();
-        const position = this.canvas_container.position();
-        const parent = this.canvas_container.parent();
-        // Determine amount we need to expand on top/left
-        let xmin_delta = fix_delta(bounds.xmin, 100);
-        let ymin_delta = fix_delta(bounds.ymin, 100);
-        // May need to expand farther to fill viewport
-        xmin_delta = Math.max(xmin_delta, position.left);
-        ymin_delta = Math.max(ymin_delta, position.top);
-        const left = position.left - xmin_delta;
-        const top = position.top - ymin_delta;
-        // Same for width/height
-        let width = round_up(bounds.xmax + 100, 100) + xmin_delta;
-        let height = round_up(bounds.ymax + 100, 100) + ymin_delta;
-        width = Math.max(width, -left + parent.width());
-        height = Math.max(height, -top + parent.height());
-        // Grow the canvas container
-        this.canvas_container.css({
-            left: left / canvasZoom,
-            top: top / canvasZoom,
-            width: width,
-            height: height,
-        });
-        // Move elements back if needed
-        this.canvas_container.children().each(function () {
-            const p = $(this).position();
-            $(this).css("left", (p.left + xmin_delta) / canvasZoom);
-            $(this).css("top", (p.top + ymin_delta) / canvasZoom);
         });
     }
 }
