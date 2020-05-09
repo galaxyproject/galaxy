@@ -1,6 +1,6 @@
 import Vue from "vue";
 
-const outputLabels = {};
+const allLabels = {};
 
 export class ActiveOutputs {
     constructor() {
@@ -17,12 +17,10 @@ export class ActiveOutputs {
         incoming &&
             incoming.forEach((entry) => {
                 this.add(entry.output_name, entry.label);
+                if (entry.label) {
+                    allLabels[entry.label] = true;
+                }
             });
-        this.getAll().forEach((activeOutput) => {
-            if (activeOutput.label) {
-                outputLabels[activeOutput.label] = true;
-            }
-        });
     }
 
     /** Adds a new record to the value stack **/
@@ -47,8 +45,8 @@ export class ActiveOutputs {
     toggle(name) {
         const activeOutput = this.get(name);
         const activeLabel = activeOutput && activeOutput.label;
-        if (activeLabel && outputLabels[activeLabel]) {
-            delete outputLabels[activeLabel];
+        if (activeLabel && allLabels[activeLabel]) {
+            delete allLabels[activeLabel];
         }
         if (this.exists(name)) {
             this.remove(name);
@@ -59,13 +57,13 @@ export class ActiveOutputs {
 
     /** Change label for an output */
     labelOutput(output, newLabel) {
-        if (!outputLabels[newLabel]) {
+        if (!allLabels[newLabel]) {
             const oldLabel = this.update(output.name, newLabel);
-            if (oldLabel && outputLabels[oldLabel]) {
-                delete outputLabels[oldLabel];
+            if (oldLabel && allLabels[oldLabel]) {
+                delete allLabels[oldLabel];
             }
             if (newLabel) {
-                outputLabels[newLabel] = true;
+                allLabels[newLabel] = true;
             }
             return null;
         } else {
