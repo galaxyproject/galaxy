@@ -155,10 +155,10 @@ class Workflow extends EventEmitter {
     }
     rectify_workflow_outputs() {
         // Find out if we're using workflow_outputs or not.
-        var using_workflow_outputs = false;
-        var has_existing_pjas = false;
+        let using_workflow_outputs = false;
+        let has_existing_pjas = false;
         Object.values(this.nodes).forEach((node) => {
-            if (node.type === "tool" && node.activeOutputs.count() > 0) {
+            if (node.activeOutputs.count() > 0) {
                 using_workflow_outputs = true;
             }
             Object.values(node.postJobActions).forEach((pja) => {
@@ -188,7 +188,7 @@ class Workflow extends EventEmitter {
                     });
                 }
                 if (using_workflow_outputs) {
-                    Object.values(node.outputTerminals).forEach((ot) => {
+                    Object.values(node.outputs).forEach((ot) => {
                         var create_pja = !node.activeOutputs.exists(ot.name);
                         if (create_pja === true) {
                             node_changed = true;
@@ -333,7 +333,7 @@ class Workflow extends EventEmitter {
                 });
                 if (using_workflow_outputs) {
                     // Ensure that every output terminal has a WorkflowOutput or HideDatasetAction.
-                    Object.values(node.outputTerminals).forEach((ot) => {
+                    Object.values(node.outputs).forEach((ot) => {
                         if (node.postJobActions[`HideDatasetAction${ot.name}`] === undefined) {
                             node.activeOutputs.add(ot.name);
                             self.has_changes = true;
