@@ -9,8 +9,8 @@
 </template>
 
 <script>
-import Terminals from "mvc/workflow/workflow-terminals";
-import TerminalViews from "mvc/workflow/workflow-view-terminals";
+import Terminals from "./modules/terminals";
+import { InputDragging } from "./modules/dragging";
 export default {
     props: {
         input: {
@@ -60,7 +60,7 @@ export default {
                 element: this.$refs.terminal,
                 input: input,
             });
-            new TerminalViews.InputTerminalView(this.getManager(), {
+            new InputDragging(this.getManager(), {
                 node: this.getNode(),
                 input: this.input,
                 el: this.$refs.terminal,

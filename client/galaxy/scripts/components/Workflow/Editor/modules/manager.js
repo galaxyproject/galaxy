@@ -1,7 +1,7 @@
 import $ from "jquery";
-import Connector from "mvc/workflow/workflow-connector";
 import { mountWorkflowNode } from "components/Workflow/Editor/mount";
-import WorkflowCanvas from "mvc/workflow/workflow-canvas";
+import Connector from "./connector";
+import WorkflowCanvas from "./canvas";
 import EventEmitter from "events";
 import Vue from "vue";
 

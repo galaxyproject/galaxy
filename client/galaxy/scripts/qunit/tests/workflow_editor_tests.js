@@ -2,10 +2,10 @@
 import $ from "jquery";
 import DatatypesMapping from "qunit/test-data/json/datatypes.mapping.json";
 import sinon from "sinon";
-import WorkflowManager from "mvc/workflow/workflow-manager";
-import Terminals from "mvc/workflow/workflow-terminals";
-import TerminalsView from "mvc/workflow/workflow-view-terminals";
-import Connector from "mvc/workflow/workflow-connector";
+import Manager from "components/Workflow/Editor/modules/manager";
+import Terminals from "components/Workflow/Editor/modules/terminals";
+import { InputDragging, OutputDragging } from "components/Workflow/Editor/modules/dragging";
+import Connector from "components/Workflow/Editor/modules/connector";
 import Vue from "vue";
 
 // create body and app
@@ -22,7 +22,7 @@ var create_app = function () {
     );
 
     // build app
-    return new WorkflowManager(
+    return new Manager(
         {
             datatypes: [],
             datatypes_mapping: DatatypesMapping,
@@ -730,14 +730,13 @@ QUnit.test("terminal added to node", function (assert) {
 });
 
 QUnit.test("terminal element", function (assert) {
-    this.view = new TerminalsView.InputTerminalView(this.app, {
+    const dragging = new InputDragging(this.app, {
         node: this.node,
         input: this.input,
         el: document.createElement("div"),
         terminal: { on: () => {} },
     });
-    var el = this.view.el;
-    assert.equal(el.tagName, "DIV");
+    assert.equal(dragging.el.tagName, "DIV");
 });
 
 QUnit.module("Output terminal view", {
@@ -755,14 +754,13 @@ QUnit.test("terminal added to node", function (assert) {
 });
 
 QUnit.test("terminal element", function (assert) {
-    this.view = new TerminalsView.OutputTerminalView(this.app, {
+    const dragging = new OutputDragging(this.app, {
         node: this.node,
         output: this.output,
         el: document.createElement("div"),
         terminal: { on: () => {} },
     });
-    var el = this.view.el;
-    assert.equal(el.tagName, "DIV");
+    assert.equal(dragging.el.tagName, "DIV");
 });
 
 QUnit.module("CollectionTypeDescription", {

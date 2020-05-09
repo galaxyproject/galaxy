@@ -1,6 +1,6 @@
 import $ from "jquery";
 import ariaAlert from "utils/ariaAlert";
-import Connector from "mvc/workflow/workflow-connector";
+import Connector from "./connector";
 
 export function ariaSelectOutputNode(options) {
     const { e, manager, outputTerminal, outputEl } = options;
@@ -75,7 +75,13 @@ export function ariaSelectOutputNode(options) {
         Object.entries(manager.nodes).forEach(([inputNodeKey, inputNode]) => {
             Object.entries(inputNode.inputTerminals).forEach(([inputTerminalKey, inputTerminal]) => {
                 const connectionAcceptable = inputTerminal.canAccept(outputTerminal);
-                if (connectionAcceptable.canAccept) {
+                let foundConnection = false;
+                outputTerminal.connectors.forEach((x) => {
+                    if (x.inputHandle === inputTerminal) {
+                        foundConnection = true;
+                    }
+                });
+                if (connectionAcceptable.canAccept || foundConnection) {
                     const inputChoiceItem = document.createElement("li");
                     inputChoiceItem.textContent = `${inputTerminal.name} in ${inputTerminal.node.name} node`;
                     inputChoiceItem.tabIndex = -1;

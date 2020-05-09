@@ -11,8 +11,8 @@
 </template>
 
 <script>
-import Terminals from "mvc/workflow/workflow-terminals";
-import TerminalViews from "mvc/workflow/workflow-view-terminals";
+import Terminals from "./modules/terminals";
+import { OutputDragging } from "./modules/dragging";
 
 export default {
     props: {
@@ -72,7 +72,7 @@ export default {
                 optional: output.optional,
             });
         }
-        new TerminalViews.OutputTerminalView(this.getManager(), {
+        new OutputDragging(this.getManager(), {
             node: this.getNode(),
             output: output,
             el: this.$refs.terminal,

@@ -75,7 +75,7 @@
 </template>
 
 <script>
-import { getDatatypes, getModule, getVersions, saveWorkflow, loadWorkflow } from "./services";
+import { getDatatypes, getModule, getVersions, saveWorkflow, loadWorkflow } from "./modules/services";
 import {
     showWarnings,
     showUpgradeMessage,
@@ -84,8 +84,8 @@ import {
     showAttributes,
     showForm,
     saveAs,
-} from "./utilities";
-import WorkflowManager from "mvc/workflow/workflow-manager";
+} from "./modules/utilities";
+import WorkflowManager from "./modules/manager";
 import WorkflowOptions from "./Options";
 import MarkdownEditor from "components/Markdown/MarkdownEditor";
 import ToolBoxWorkflow from "components/Panels/ToolBoxWorkflow";

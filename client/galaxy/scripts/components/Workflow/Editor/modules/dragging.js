@@ -1,9 +1,9 @@
 import $ from "jquery";
-import Terminals from "mvc/workflow/workflow-terminals";
-import Connector from "mvc/workflow/workflow-connector";
-import { ariaSelectOutputNode } from "mvc/workflow/workflow-aria";
+import Terminals from "./terminals";
+import Connector from "./connector";
+import { ariaSelectOutputNode } from "./aria";
 
-class InputTerminalView {
+export class InputDragging {
     constructor(app, options = {}) {
         this.app = app;
         this.el = options.el;
@@ -77,7 +77,7 @@ class InputTerminalView {
     }
 }
 
-export class OutputTerminalView {
+export class OutputDragging {
     constructor(app, options) {
         this.app = app;
         this.el = options.el;
@@ -158,8 +158,3 @@ export class OutputTerminalView {
         $("#canvas-container").get(0).scroll_panel.stop();
     }
 }
-
-export default {
-    InputTerminalView: InputTerminalView,
-    OutputTerminalView: OutputTerminalView,
-};

@@ -3,7 +3,7 @@ import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
 import Utils from "utils/utils";
-import { DefaultForm, ToolForm } from "mvc/workflow/workflow-forms";
+import { DefaultForm, ToolForm } from "./forms";
 import { loadWorkflow } from "./services";
 import { hide_modal, show_message, show_modal } from "layout/modal";
 

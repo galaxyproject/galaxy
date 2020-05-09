@@ -71,13 +71,13 @@
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import WorkflowIcons from "components/Workflow/icons";
-import { getModule } from "./services";
+import { getModule } from "./modules/services";
 import LoadingSpan from "components/LoadingSpan";
 import { getGalaxyInstance } from "app";
 import WorkflowRecommendations from "components/Workflow/Editor/Recommendations";
 import NodeInput from "./NodeInput";
 import NodeOutput from "./NodeOutput";
-import { ActiveOutputs } from "./model";
+import { ActiveOutputs } from "./modules/outputs";
 
 Vue.use(BootstrapVue);
 
