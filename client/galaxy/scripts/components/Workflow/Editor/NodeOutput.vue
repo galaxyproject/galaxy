@@ -47,7 +47,7 @@ export default {
         },
         showCallout() {
             const node = this.getNode();
-            return ["tool", "subworkflow"].indexOf(node.type) >= 0;
+            return node.type == "tool";
         },
     },
     mounted() {
