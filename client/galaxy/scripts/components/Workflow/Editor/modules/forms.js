@@ -28,7 +28,7 @@ export class DefaultForm {
                     })
                     .then((response) => {
                         const data = response.data;
-                        node.updateFieldData(data);
+                        node.updateData(data);
                     });
             },
         });
@@ -65,7 +65,7 @@ export class ToolForm {
                 axios
                     .post(`${getAppRoot()}api/workflows/build_module`, current_state)
                     .then(({ data }) => {
-                        node.updateFieldData(data);
+                        node.updateData(data);
                         self.form.model.set(node.config_form);
                         self.form.update(node.config_form);
                         self.form.errors(node.config_form);

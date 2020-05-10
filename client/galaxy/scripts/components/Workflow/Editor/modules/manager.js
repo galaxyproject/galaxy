@@ -51,9 +51,9 @@ class Workflow extends EventEmitter {
                 label: o.label,
             };
         });
-        node.initFieldData(data);
+        node.initData(data);
         Vue.nextTick(() => {
-            node.updateFieldData(data);
+            node.updateData(data);
             this._activateNode(node);
         });
     }
@@ -168,7 +168,7 @@ class Workflow extends EventEmitter {
                     workflow_output.uuid = null;
                 });
             }
-            node.initFieldData(step);
+            node.initData(step);
             Vue.nextTick(() => {
                 if (step.position) {
                     node.element.style.top = step.position.top + "px";

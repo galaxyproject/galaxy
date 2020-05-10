@@ -251,7 +251,7 @@ export default {
             this.label = data.label;
             this.uuid = data.uuid;
         },
-        initFieldData(data) {
+        initData(data) {
             this.setData(data);
             this.inputs = data.inputs.slice();
             this.outputs = data.outputs.slice();
@@ -260,7 +260,7 @@ export default {
                 this.manager.nodeChanged(this);
             });
         },
-        updateFieldData(data) {
+        updateData(data) {
             this.setData(data);
 
             // Create a list of all current output names

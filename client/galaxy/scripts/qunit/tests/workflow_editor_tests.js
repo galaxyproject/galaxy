@@ -368,7 +368,7 @@ QUnit.module("Node unit test", {
             name: "newnode",
             label: null,
         };
-        this.node.initFieldData(data);
+        this.node.initData(data);
     },
     update_field_data_with_new_input: function () {
         const data = {
@@ -380,7 +380,7 @@ QUnit.module("Node unit test", {
             postJobActions: {},
             label: "New Label",
         };
-        this.node.updateFieldData(data);
+        this.node.updateData(data);
     },
 });
 
@@ -401,7 +401,7 @@ QUnit.test("destroy", function (assert) {
 QUnit.test("error", function (assert) {
     // Test body of div updated and workflow notified of change.
     const node_changed_spy = sinon.spy(this.app, "nodeChanged");
-    this.node.initFieldData({ errors: "NODE ERROR", inputs: [], outputs: [] });
+    this.node.initData({ errors: "NODE ERROR", inputs: [], outputs: [] });
     Vue.nextTick(() => {
         const errorText = $(this.node.element).find(".node-error").text().trim();
         assert.equal(errorText, "NODE ERROR");
@@ -412,7 +412,7 @@ QUnit.test("error", function (assert) {
 QUnit.test("init_field_data properties", function (assert) {
     const node = this.node;
     const node_changed_spy = sinon.spy(this.app, "nodeChanged");
-    this.node.initFieldData(nodeData);
+    this.node.initData(nodeData);
     Vue.nextTick(() => {
         assert.equal(node.type, "tool");
         assert.equal(node.name, "cat1");
@@ -509,7 +509,7 @@ QUnit.test("update_field_data destroys old terminals", function (assert) {
         ],
         outputs: [{ name: "output1", extensions: ["data"] }],
     };
-    node.initFieldData(data);
+    node.initData(data);
     Vue.nextTick(() => {
         const old_input_terminal = node.inputTerminals.willDisappear;
         const destroy_spy = sinon.spy(old_input_terminal, "destroy");
@@ -535,7 +535,7 @@ QUnit.module("Node view", {
     beforeEach: function () {
         this.app = create_app();
         this.node = this.app.buildNode("tool", "newnode");
-        this.node.initFieldData(nodeData);
+        this.node.initData(nodeData);
     },
     afterEach: function () {
         delete this.node;
@@ -545,7 +545,7 @@ QUnit.module("Node view", {
             inputs: [{ name: "TestName", extensions: [inputType] }],
             outputs: [],
         };
-        this.node.updateFieldData(data);
+        this.node.updateData(data);
         Vue.nextTick(() => {
             var terminal = this.node.inputTerminals["TestName"];
             var outputTerminal = new Terminals.OutputTerminal({
@@ -573,7 +573,7 @@ QUnit.module("Node view", {
             inputs: [{ name: "TestName", extensions: [inputType], multiple: true }],
             outputs: [],
         };
-        this.node.updateFieldData(data);
+        this.node.updateData(data);
         Vue.nextTick(() => {
             var terminal = this.node.inputTerminals["TestName"];
             var outputTerminal = new Terminals.OutputTerminal({
@@ -638,7 +638,7 @@ QUnit.test("replacing terminal on data multiple input update preserves collectio
             inputs: [{ name: "TestName", extensions: ["txt"], multiple: true }],
             outputs: [],
         };
-        this.node.updateFieldData(data);
+        this.node.updateData(data);
         Vue.nextTick(() => {
             assert.ok(!connector_destroy_spy.called);
         });
@@ -653,7 +653,7 @@ QUnit.test("replacing mapped terminal on data collection input update preserves 
             inputs: [{ name: "TestName", extensions: ["txt"], input_type: "dataset_collection" }],
             outputs: [],
         };
-        this.node.updateFieldData(data);
+        this.node.updateData(data);
         Vue.nextTick(() => {
             assert.ok(connector.inputHandle === terminal);
         });
@@ -669,7 +669,7 @@ QUnit.test("replacing terminal on data input destroys invalid connections", func
             inputs: [{ name: "TestName", extensions: ["bam"] }],
             outputs: [],
         };
-        node.updateFieldData(data);
+        node.updateData(data);
         Vue.nextTick(() => {
             $(node.element).find(".input-terminal")[0].terminal;
             assert.ok(connector_destroy_spy.called);
@@ -686,7 +686,7 @@ QUnit.test("replacing terminal on data input with collection changes mapping vie
             inputs: [{ name: "TestName", extensions: ["txt"], input_type: "dataset_collection" }],
             outputs: [],
         };
-        node.updateFieldData(data);
+        node.updateData(data);
         Vue.nextTick(() => {
             // Input type changed to dataset_collection - old connections are reset.
             // Would be nice to preserve these connections and make them map over.
@@ -707,7 +707,7 @@ QUnit.test("replacing terminal on data collection input with simple input change
             inputs: [{ name: "TestName", extensions: ["txt"], input_type: "dataset" }],
             outputs: [],
         };
-        node.updateFieldData(data);
+        node.updateData(data);
         Vue.nextTick(() => {
             $(node.element).find(".input-terminal")[0].terminal;
             assert.ok(connector_destroy_spy.called);
@@ -721,7 +721,7 @@ QUnit.module("Input terminal view", {
         this.app = create_app();
         this.node = this.app.buildNode("tool", "newnode");
         this.input = { name: "i1", extensions: "txt", multiple: false };
-        this.node.initFieldData({ inputs: [this.input], outputs: [] });
+        this.node.initData({ inputs: [this.input], outputs: [] });
     },
 });
 
@@ -746,7 +746,7 @@ QUnit.module("Output terminal view", {
         this.app = create_app();
         this.node = this.app.buildNode("tool", "newnode");
         this.output = { name: "o1", extensions: "txt" };
-        this.node.initFieldData({ inputs: [], outputs: [this.output] });
+        this.node.initData({ inputs: [], outputs: [this.output] });
     },
 });
 
