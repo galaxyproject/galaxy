@@ -105,6 +105,7 @@ class CollectionTypeDescription {
 class Terminal extends EventEmitter {
     constructor(attr) {
         super();
+        this.node = attr.node;
         this.element = attr.element;
         this.mapOver = attr.mapOver || NULL_COLLECTION_TYPE_DESCRIPTION;
         this.attributes = attr;
@@ -112,19 +113,15 @@ class Terminal extends EventEmitter {
     }
     connect(connector) {
         this.connectors.push(connector);
-        if (this.node) {
-            this.node.markChanged();
-        }
+        this.node.markChanged();
     }
     disconnect(connector) {
         const connectorIndex = this.connectors.findIndex((c) => c === connector);
         this.connectors.splice(connectorIndex, 1);
-        if (this.node) {
-            this.node.markChanged();
-            this.resetMappingIfNeeded();
-            if (!connector.dragging) {
-                connector.inputHandle.resetCollectionTypeSource();
-            }
+        this.node.markChanged();
+        this.resetMappingIfNeeded();
+        if (!connector.dragging) {
+            connector.inputHandle.resetCollectionTypeSource();
         }
         this.emit("change");
     }

@@ -8,10 +8,8 @@ export class InputDragging {
         this.app = app;
         this.el = options.el;
         this.terminal = options.terminal;
-        const node = options.node;
         const input = options.input;
         const name = input.name;
-        this.terminal.node = node;
         this.terminal.name = name;
         this.terminal.label = input.label;
         this.el.terminal = this.terminal;
@@ -82,17 +80,15 @@ export class OutputDragging {
         this.app = app;
         this.el = options.el;
         this.terminal = options.terminal;
-        const node = options.node;
         const output = options.output;
         const name = output.name;
-        this.terminal.node = node;
         this.terminal.name = name;
         this.terminal.label = output.label;
         this.el.terminal = this.terminal;
         this.$el = $(this.el);
         this.$el.attr(
             "aria-label",
-            `connect output ${name} from ${node.name} to input. Press space to see a list of available inputs`
+            `connect output ${name} to input. Press space to see a list of available inputs`
         );
         this.$el.attr("tabindex", "0");
         this.$el.attr("aria-grabbed", "false");

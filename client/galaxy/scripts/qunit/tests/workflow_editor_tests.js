@@ -61,7 +61,7 @@ QUnit.module("Input terminal model test", {
         this.app = create_app();
         this.node = new Node(this.app, {});
         this.input = { extensions: ["txt"], multiple: false, optional: false };
-        this.input_terminal = new Terminals.InputTerminal({ app: this.app, input: this.input });
+        this.input_terminal = new Terminals.InputTerminal({ app: this.app, input: this.input, node: this.node });
         this.input_terminal.node = this.node;
     },
     afterEach: function () {
@@ -72,7 +72,7 @@ QUnit.module("Input terminal model test", {
         this.input_terminal.update(this.input);
     },
     test_connector: function () {
-        var outputTerminal = new Terminals.OutputTerminal({ datatypes: ["input"] });
+        var outputTerminal = new Terminals.OutputTerminal({ datatypes: ["input"], node: this.node });
         var inputTerminal = this.input_terminal;
         return new Connector({}, outputTerminal, inputTerminal);
     },
@@ -757,7 +757,6 @@ QUnit.test("terminal added to node", function (assert) {
 
 QUnit.test("terminal element", function (assert) {
     const dragging = new OutputDragging(this.app, {
-        node: this.node,
         output: this.output,
         el: document.createElement("div"),
         terminal: { on: () => {} },

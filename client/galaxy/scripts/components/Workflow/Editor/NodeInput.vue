@@ -57,11 +57,11 @@ export default {
             }
             const terminal = new terminalClass({
                 app: this.getManager(),
+                node: this.getNode(),
                 element: this.$refs.terminal,
                 input: input,
             });
             new InputDragging(this.getManager(), {
-                node: this.getNode(),
                 input: this.input,
                 el: this.$refs.terminal,
                 terminal: terminal,

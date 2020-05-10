@@ -56,6 +56,7 @@ export default {
             const collection_type = output.collection_type;
             const collection_type_source = output.collection_type_source;
             this.terminal = new Terminals.OutputCollectionTerminal({
+                node: this.getNode(),
                 element: this.$refs.terminal,
                 collection_type: collection_type,
                 collection_type_source: collection_type_source,
@@ -65,12 +66,14 @@ export default {
             });
         } else if (output.parameter) {
             this.terminal = new Terminals.OutputParameterTerminal({
+                node: this.getNode(),
                 element: this.$refs.terminal,
                 type: output.type,
                 optional: output.optional,
             });
         } else {
             this.terminal = new Terminals.OutputTerminal({
+                node: this.getNode(),
                 element: this.$refs.terminal,
                 datatypes: output.extensions,
                 force_datatype: output.force_datatype,
@@ -78,7 +81,6 @@ export default {
             });
         }
         new OutputDragging(this.getManager(), {
-            node: this.getNode(),
             output: output,
             el: this.$refs.terminal,
             terminal: this.terminal,
