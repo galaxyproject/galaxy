@@ -142,6 +142,7 @@ class Workflow extends EventEmitter {
         }
         delete this.nodes[node.id];
         this.has_changes = true;
+        this.canvas_manager.draw_overview();
         this.emit("onRemoveNode");
     }
     fromSimple(data, appendData) {
