@@ -10,8 +10,8 @@ import WorkflowIcons from "components/Workflow/icons";
 /** Default form wrapper for non-tool modules in the workflow editor. */
 export class DefaultForm {
     constructor(options) {
-        var self = this;
-        var node = options.node;
+        const self = this;
+        const node = options.node;
         this.workflow = options.workflow;
         _addLabelAnnotation(this, node);
         this.form = new Form({
@@ -64,17 +64,12 @@ export class ToolForm {
                 Galaxy.emit.debug("tool-form-workflow::postchange()", "Sending current state.", current_state);
                 axios
                     .post(`${getAppRoot()}api/workflows/build_module`, current_state)
-                    .then((response) => {
-                        const data = response.data;
-                        self._customize(data);
-                        self.form.model.set(data.config_form);
-                        self.form.update(data.config_form);
-                        self.form.errors(data.config_form);
-                        // This hasn't modified the workflow, just returned
-                        // module information for the tool to update the workflow
-                        // state stored on the client with. User needs to save
-                        // for this to take effect.
+                    .then(({ data }) => {
                         node.updateFieldData(data);
+                        self.form.model.set(node.config_form);
+                        self.form.update(node.config_form);
+                        self.form.errors(node.config_form);
+                        self._customize(node);
                         Galaxy.emit.debug("tool-form-workflow::postchange()", "Received new model.", data);
                         process.resolve();
                     })
@@ -116,7 +111,7 @@ export class ToolForm {
 
 /** Augments the module form definition by adding label and annotation fields */
 function _addLabelAnnotation(self, node) {
-    var workflow = self.workflow;
+    const workflow = self.workflow;
     const inputs = node.config_form.inputs;
     inputs.unshift({
         type: "text",
@@ -135,16 +130,16 @@ function _addLabelAnnotation(self, node) {
         help: _l("Add a step label."),
         fixed: true,
         onchange: function (new_label) {
-            var duplicate = false;
-            for (var i in workflow.nodes) {
-                var n = workflow.nodes[i];
+            let duplicate = false;
+            for (const i in workflow.nodes) {
+                const n = workflow.nodes[i];
                 if (n.label && n.label == new_label && n.id != node.id) {
                     duplicate = true;
                     break;
                 }
             }
-            var input_id = self.form.data.match("__label");
-            var input_element = self.form.element_list[input_id];
+            const input_id = self.form.data.match("__label");
+            const input_element = self.form.element_list[input_id];
             input_element.model.set(
                 "error_text",
                 duplicate && "Duplicate label. Please fix this before saving the workflow."
@@ -155,27 +150,27 @@ function _addLabelAnnotation(self, node) {
 }
 
 /** Visit input nodes and enrich by name/value pairs from server data */
-function _visit(head, head_list, output_id, node) {
-    var postJobActions = node.postJobActions;
+function _visit(head, head_list, output, node) {
+    const postJobActions = node.postJobActions;
     head_list = head_list || [];
     head_list.push(head);
-    for (var i in head.inputs) {
-        var input = head.inputs[i];
-        var action = input.action;
+    for (const i in head.inputs) {
+        const input = head.inputs[i];
+        const action = input.action;
         if (action) {
-            input.name = `pja__${output_id}__${input.action}`;
+            input.name = `pja__${output.name}__${input.action}`;
             if (input.pja_arg) {
                 input.name += `__${input.pja_arg}`;
             }
             if (input.payload) {
-                for (var p_id in input.payload) {
+                for (const p_id in input.payload) {
                     input.payload[`${input.name}__${p_id}`] = input.payload[p_id];
                     delete input.payload[p_id];
                 }
             }
-            var d = postJobActions[input.action + output_id];
+            const d = postJobActions[input.action + output.name];
             if (d) {
-                for (var j in head_list) {
+                for (const j in head_list) {
                     head_list[j].expanded = true;
                 }
                 if (input.pja_arg) {
@@ -186,7 +181,7 @@ function _visit(head, head_list, output_id, node) {
             }
         }
         if (input.inputs) {
-            _visit(input, head_list.slice(0), output_id, node);
+            _visit(input, head_list.slice(0), output, node);
         }
     }
 }
@@ -279,7 +274,7 @@ function _makeSection(self, node, output) {
                 options: extensions,
                 help: "This action will change the datatype of the output to the indicated datatype.",
                 onchange: function (datatype) {
-                    node.changeOutputDatatype(output.name, datatype);
+                    node.changeOutputDatatype(output, datatype);
                 },
             },
             {
@@ -356,15 +351,15 @@ function _makeSection(self, node, output) {
 
 /** Builds all sub sections */
 function _addSections(self, node) {
-    var inputs = node.config_form.inputs;
-    var postJobActions = node.postJobActions;
-    var output_id = node.outputTerminals && Object.keys(node.outputTerminals)[0];
-    if (output_id) {
+    const inputs = node.config_form.inputs;
+    const postJobActions = node.postJobActions;
+    const outputFirst = node.outputs.length > 0 && node.outputs[0];
+    if (outputFirst) {
         inputs.push({
-            name: `pja__${output_id}__EmailAction`,
+            name: `pja__${outputFirst.name}__EmailAction`,
             label: "Email notification",
             type: "boolean",
-            value: String(Boolean(postJobActions[`EmailAction${output_id}`])),
+            value: String(Boolean(postJobActions[`EmailAction${outputFirst.name}`])),
             ignore: "false",
             help: _l("An email notification will be sent when the job has completed."),
             payload: {
@@ -372,10 +367,10 @@ function _addSections(self, node) {
             },
         });
         inputs.push({
-            name: `pja__${output_id}__DeleteIntermediatesAction`,
+            name: `pja__${outputFirst.name}__DeleteIntermediatesAction`,
             label: "Output cleanup",
             type: "boolean",
-            value: String(Boolean(postJobActions[`DeleteIntermediatesAction${output_id}`])),
+            value: String(Boolean(postJobActions[`DeleteIntermediatesAction${outputFirst.name}`])),
             ignore: "false",
             help:
                 "Upon completion of this step, delete non-starred outputs from completed workflow steps if they are no longer required as inputs.",

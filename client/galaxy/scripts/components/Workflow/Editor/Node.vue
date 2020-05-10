@@ -346,13 +346,12 @@ export default {
         labelOutput(output, label) {
             return this.activeOutputs.labelOutput(output, label);
         },
-        changeOutputDatatype(outputName, datatype) {
+        changeOutputDatatype(output, datatype) {
             if (datatype === "__empty__") {
                 datatype = null;
             }
+            const outputName = output.name;
             const outputTerminal = this.outputTerminals[outputName];
-            const outputIndex = this.outputs.findIndex((o) => o.name == outputName);
-            const output = this.outputs[outputIndex];
             outputTerminal.force_datatype = datatype;
             output.force_datatype = datatype;
             if (datatype) {
