@@ -8,24 +8,12 @@ export class InputDragging {
         this.app = app;
         this.el = options.el;
         this.terminal = options.terminal;
-        const input = options.input;
-        const name = input.name;
-        this.terminal.name = name;
-        this.terminal.label = input.label;
         this.el.terminal = this.terminal;
         this.$el = $(this.el);
         this.$el.on("dropinit", (e, d) => this.onDropInit(e, d));
         this.$el.on("dropstart", (e, d) => this.onDropStart(e, d));
         this.$el.on("dropend", (e, d) => this.onDropEnd(e, d));
         this.$el.on("drop", (e, d) => this.onDrop(e, d));
-        this.terminal.on("change", this.render.bind(this));
-    }
-    render() {
-        if (this.terminal.mapOver && this.terminal.mapOver.isCollection) {
-            this.$el.addClass("multiple");
-        } else {
-            this.$el.removeClass("multiple");
-        }
     }
     onDropInit(e, d = {}) {
         var terminal = this.terminal;
@@ -80,15 +68,11 @@ export class OutputDragging {
         this.app = app;
         this.el = options.el;
         this.terminal = options.terminal;
-        const output = options.output;
-        const name = output.name;
-        this.terminal.name = name;
-        this.terminal.label = output.label;
         this.el.terminal = this.terminal;
         this.$el = $(this.el);
         this.$el.attr(
             "aria-label",
-            `connect output ${name} to input. Press space to see a list of available inputs`
+            `connect output ${this.terminal.name} to input. Press space to see a list of available inputs`
         );
         this.$el.attr("tabindex", "0");
         this.$el.attr("aria-grabbed", "false");
@@ -103,14 +87,6 @@ export class OutputDragging {
                 outputEl: this.el,
             })
         );
-        this.terminal.on("change", this.render.bind(this));
-    }
-    render() {
-        if (this.terminal.mapOver && this.terminal.mapOver.isCollection) {
-            this.$el.addClass("multiple");
-        } else {
-            this.$el.removeClass("multiple");
-        }
     }
     onDrag(e, d = {}) {
         var onmove = () => {
@@ -137,7 +113,7 @@ export class OutputDragging {
                 return h.dropTooltip || "";
             },
         });
-        h.terminal = new Terminals.OutputTerminal({ element: h });
+        h.terminal = new Terminals.Terminal({ element: h, node: {} });
         const c = new Connector(this.app.canvas_manager);
         c.dragging = true;
         c.connect(this.terminal, h.terminal);

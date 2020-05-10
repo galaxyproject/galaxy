@@ -105,6 +105,7 @@ class CollectionTypeDescription {
 class Terminal extends EventEmitter {
     constructor(attr) {
         super();
+        this.name = attr.name;
         this.node = attr.node;
         this.element = attr.element;
         this.mapOver = attr.mapOver || NULL_COLLECTION_TYPE_DESCRIPTION;
@@ -113,12 +114,11 @@ class Terminal extends EventEmitter {
     }
     connect(connector) {
         this.connectors.push(connector);
-        this.node.markChanged();
+        this.emit("change");
     }
     disconnect(connector) {
         const connectorIndex = this.connectors.findIndex((c) => c === connector);
         this.connectors.splice(connectorIndex, 1);
-        this.node.markChanged();
         this.resetMappingIfNeeded();
         if (!connector.dragging) {
             connector.inputHandle.resetCollectionTypeSource();
@@ -367,7 +367,7 @@ class BaseInputTerminal extends Terminal {
 }
 
 class InputTerminal extends BaseInputTerminal {
-    update(input = {}) {
+    update(input) {
         this.datatypes = input.extensions;
         this.multiple = input.multiple;
         this.optional = input.optional;
@@ -480,9 +480,7 @@ class InputCollectionTerminal extends BaseInputTerminal {
     connect(connector) {
         super.connect(connector);
         var other = connector.outputHandle;
-        if (!other) {
-            return;
-        } else {
+        if (other) {
             const node = this.node;
             Object.values(node.outputTerminals).forEach((output_terminal) => {
                 if (output_terminal.attributes.collection_type_source && !connector.dragging) {
@@ -680,6 +678,7 @@ class OutputParameterTerminal extends Terminal {
 }
 
 export default {
+    Terminal: Terminal,
     InputTerminal: InputTerminal,
     InputParameterTerminal: InputParameterTerminal,
     OutputTerminal: OutputTerminal,

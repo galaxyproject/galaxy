@@ -61,8 +61,13 @@ QUnit.module("Input terminal model test", {
         this.app = create_app();
         this.node = new Node(this.app, {});
         this.input = { extensions: ["txt"], multiple: false, optional: false };
-        this.input_terminal = new Terminals.InputTerminal({ app: this.app, input: this.input, node: this.node });
-        this.input_terminal.node = this.node;
+        const inputEl = $("<div>")[0];
+        this.input_terminal = new Terminals.InputTerminal({
+            app: this.app,
+            element: inputEl,
+            input: this.input,
+            node: this.node,
+        });
     },
     afterEach: function () {
         delete this.node;
@@ -72,8 +77,15 @@ QUnit.module("Input terminal model test", {
         this.input_terminal.update(this.input);
     },
     test_connector: function () {
-        var outputTerminal = new Terminals.OutputTerminal({ datatypes: ["input"], node: this.node });
-        var inputTerminal = this.input_terminal;
+        const inputEl = $("<div>")[0];
+        const outputTerminal = new Terminals.OutputTerminal({
+            app: this.app,
+            element: inputEl,
+            datatypes: ["input"],
+            input: {},
+            node: this.node,
+        });
+        const inputTerminal = this.input_terminal;
         return new Connector({}, outputTerminal, inputTerminal);
     },
     with_test_connector: function (f) {
@@ -104,22 +116,18 @@ QUnit.test("test update", function (assert) {
 });
 
 QUnit.test("test connect", function (assert) {
-    this.node.markChanged = sinon.spy();
-    var connector = {};
+    const connector = { name: "connector" };
+    const changeSpy = sinon.spy();
+    this.input_terminal.on("change", changeSpy);
     this.input_terminal.connect(connector);
-    // Assert node markChanged called
-    assert.ok(this.node.markChanged.called);
-    // Assert connectors updated
-    assert.ok(this.input_terminal.connectors[0] === connector);
+    assert.ok(this.input_terminal.connectors[0].name === "connector");
 });
 
 QUnit.test("test disconnect", function (assert) {
-    this.node.markChanged = sinon.spy();
-    var connector = this.test_connector();
+    const connector = this.test_connector();
+    const changeSpy = sinon.spy();
+    this.input_terminal.on("change", changeSpy);
     this.input_terminal.disconnect(connector);
-    // Assert node markChanged called
-    assert.ok(this.node.markChanged.called);
-    // Assert connectors updated
     assert.equal(this.input_terminal.connectors.length, 0);
 });
 
@@ -300,8 +308,13 @@ QUnit.module("Input collection terminal model test", {
         this.app = create_app();
         this.node = new Node(this.app, {});
         this.input = { extensions: ["txt"], collection_types: ["list"] };
-        this.input_terminal = new Terminals.InputCollectionTerminal({ app: this.app, input: this.input });
-        this.input_terminal.node = this.node;
+        const inputEl = $("<div>")[0];
+        this.input_terminal = new Terminals.InputCollectionTerminal({
+            app: this.app,
+            element: inputEl,
+            input: this.input,
+            node: this.node,
+        });
     },
     afterEach: function () {
         delete this.node;
@@ -548,10 +561,12 @@ QUnit.module("Node view", {
         this.node.updateData(data);
         Vue.nextTick(() => {
             var terminal = this.node.inputTerminals["TestName"];
+            const inputEl = $("<div>")[0];
             var outputTerminal = new Terminals.OutputTerminal({
                 name: "TestOutput",
                 datatypes: [outputType],
                 mapOver: Terminals.NULL_COLLECTION_TYPE_DESCRIPTION,
+                element: inputEl,
             });
             outputTerminal.node = {
                 markChanged: function () {},
@@ -576,10 +591,12 @@ QUnit.module("Node view", {
         this.node.updateData(data);
         Vue.nextTick(() => {
             var terminal = this.node.inputTerminals["TestName"];
+            const inputEl = $("<div>")[0];
             var outputTerminal = new Terminals.OutputTerminal({
                 name: "TestOutput",
                 datatypes: ["txt"],
                 mapOver: new Terminals.CollectionTypeDescription("list"),
+                element: inputEl,
             });
             outputTerminal.node = {
                 markChanged: function () {},
@@ -597,12 +614,15 @@ QUnit.module("Node view", {
         });
     },
     connectAttachedMappedOutput: function (callback) {
+        const node = this.node;
         Vue.nextTick(() => {
-            var terminal = this.node.inputTerminals["TestName"];
+            var terminal = node.inputTerminals["TestName"];
+            const inputEl = $("<div>")[0];
             var outputTerminal = new Terminals.OutputTerminal({
                 name: "TestOutput",
                 datatypes: ["txt"],
                 mapOver: new Terminals.CollectionTypeDescription("list"),
+                element: inputEl,
             });
             outputTerminal.node = {
                 markChanged: function () {},
@@ -646,14 +666,15 @@ QUnit.test("replacing terminal on data multiple input update preserves collectio
 });
 
 QUnit.test("replacing mapped terminal on data collection input update preserves connections", function (assert) {
-    this.node.inputs.push({ name: "TestName", extensions: ["txt"], input_type: "dataset_collection" });
+    const node = this.node;
+    node.inputs.push({ name: "TestName", extensions: ["txt"], input_type: "dataset_collection" });
     this.connectAttachedMappedOutput((connector) => {
         const terminal = $(this.node.element).find(".input-terminal")[0].terminal;
         const data = {
             inputs: [{ name: "TestName", extensions: ["txt"], input_type: "dataset_collection" }],
             outputs: [],
         };
-        this.node.updateData(data);
+        node.updateData(data);
         Vue.nextTick(() => {
             assert.ok(connector.inputHandle === terminal);
         });
@@ -733,8 +754,6 @@ QUnit.test("terminal added to node", function (assert) {
 
 QUnit.test("terminal element", function (assert) {
     const dragging = new InputDragging(this.app, {
-        node: this.node,
-        input: this.input,
         el: document.createElement("div"),
         terminal: { on: () => {} },
     });
@@ -757,7 +776,6 @@ QUnit.test("terminal added to node", function (assert) {
 
 QUnit.test("terminal element", function (assert) {
     const dragging = new OutputDragging(this.app, {
-        output: this.output,
         el: document.createElement("div"),
         terminal: { on: () => {} },
     });
@@ -835,12 +853,13 @@ QUnit.test("equal", function (assert) {
 });
 
 QUnit.test("default constructor", function (assert) {
-    var terminal = new Terminals.InputTerminal({});
+    var terminal = new Terminals.InputTerminal({ input: {} });
     assert.ok(terminal.mapOver === Terminals.NULL_COLLECTION_TYPE_DESCRIPTION);
 });
 
 QUnit.test("constructing with mapOver", function (assert) {
     var terminal = new Terminals.InputTerminal({
+        input: {},
         mapOver: new Terminals.CollectionTypeDescription("list"),
     });
     assert.ok(terminal.mapOver.collectionType == "list");
@@ -848,8 +867,8 @@ QUnit.test("constructing with mapOver", function (assert) {
 
 QUnit.test("resetMapping", function (assert) {
     var terminal = new Terminals.InputTerminal({
-        terminal: terminal,
         mapOver: new Terminals.CollectionTypeDescription("list"),
+        input: {},
     });
     terminal.node = {
         hasMappedOverInputTerminals: () => true,
@@ -891,8 +910,8 @@ QUnit.module("terminal mapping logic", {
             app: app,
             element: inputEl,
             input: input,
+            node: node,
         });
-        inputTerminal.node = node;
         return inputTerminal;
     },
     newOutputTerminal: function (mapOver, output, node) {

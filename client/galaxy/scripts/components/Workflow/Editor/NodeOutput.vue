@@ -4,7 +4,7 @@
             <i :class="['mark-terminal', activeClass]" />
         </div>
         {{ label }}
-        <div :id="id" :output-name="output.name" ref="terminal" class="terminal output-terminal">
+        <div :id="id" :output-name="output.name" ref="terminal" :class="terminalClass">
             <div class="icon" />
         </div>
     </div>
@@ -29,6 +29,11 @@ export default {
             required: true,
         },
     },
+    data() {
+        return {
+            isMultiple: false,
+        };
+    },
     computed: {
         id() {
             const node = this.getNode();
@@ -49,6 +54,13 @@ export default {
             const node = this.getNode();
             return node.type == "tool";
         },
+        terminalClass() {
+            const cls = "terminal output-terminal";
+            if (this.isMultiple) {
+                return `${cls} multiple`;
+            }
+            return cls;
+        },
     },
     mounted() {
         const output = this.output;
@@ -57,6 +69,7 @@ export default {
             const collection_type_source = output.collection_type_source;
             this.terminal = new Terminals.OutputCollectionTerminal({
                 node: this.getNode(),
+                name: output.name,
                 element: this.$refs.terminal,
                 collection_type: collection_type,
                 collection_type_source: collection_type_source,
@@ -67,6 +80,7 @@ export default {
         } else if (output.parameter) {
             this.terminal = new Terminals.OutputParameterTerminal({
                 node: this.getNode(),
+                name: output.name,
                 element: this.$refs.terminal,
                 type: output.type,
                 optional: output.optional,
@@ -74,20 +88,26 @@ export default {
         } else {
             this.terminal = new Terminals.OutputTerminal({
                 node: this.getNode(),
+                name: output.name,
                 element: this.$refs.terminal,
                 datatypes: output.extensions,
                 force_datatype: output.force_datatype,
                 optional: output.optional,
             });
         }
+        this.terminal.on("change", this.onChange.bind(this));
         new OutputDragging(this.getManager(), {
-            output: output,
             el: this.$refs.terminal,
             terminal: this.terminal,
         });
         this.$emit("onAdd", this.output, this.terminal);
     },
     methods: {
+        onChange() {
+            this.isMultiple = this.terminal.mapOver && this.terminal.mapOver.isCollection;
+            const node = this.getNode();
+            node.markChanged();
+        },
         onToggle() {
             this.$emit("onToggle", this.output.name);
         },

@@ -1,6 +1,6 @@
 <template>
     <div class="form-row dataRow input-data-row" @mouseover="mouseOver" @mouseleave="mouseLeave">
-        <div :id="id" :input-name="input.name" ref="terminal" class="terminal input-terminal">
+        <div :id="id" :input-name="input.name" ref="terminal" :class="terminalClass">
             <div class="icon" />
         </div>
         <div v-if="showRemove" class="delete-terminal" @click="onRemove" />
@@ -29,6 +29,7 @@ export default {
     data() {
         return {
             showRemove: false,
+            isMultiple: false,
         };
     },
     computed: {
@@ -38,6 +39,13 @@ export default {
         },
         label() {
             return this.input.label || this.input.name;
+        },
+        terminalClass() {
+            const cls = "terminal input-terminal";
+            if (this.isMultiple) {
+                return `${cls} multiple`;
+            }
+            return cls;
         },
     },
     mounted() {
@@ -58,15 +66,21 @@ export default {
             const terminal = new terminalClass({
                 app: this.getManager(),
                 node: this.getNode(),
-                element: this.$refs.terminal,
+                name: input.name,
                 input: input,
+                element: this.$refs.terminal,
             });
+            terminal.on("change", this.onChange.bind(this));
             new InputDragging(this.getManager(), {
-                input: this.input,
                 el: this.$refs.terminal,
                 terminal: terminal,
             });
             return terminal;
+        },
+        onChange() {
+            this.isMultiple = this.terminal.mapOver && this.terminal.mapOver.isCollection;
+            const node = this.getNode();
+            node.markChanged();
         },
         onRemove() {
             this.$emit("onRemove");
