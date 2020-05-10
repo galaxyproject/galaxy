@@ -335,7 +335,7 @@ export default {
             });
 
             // removes output from list of workflow outputs
-            this.activeOutputs.removeMissing(outputNames);
+            this.activeOutputs.updateOutputs(outputNames);
 
             // trigger legacy events
             Vue.nextTick(() => {

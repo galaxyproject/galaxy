@@ -10,10 +10,7 @@ export class ActiveOutputs {
     /** Initialize list of active outputs from server response */
     initialize(outputs, incoming) {
         this.outputs = outputs;
-        this.outputsIndex = {};
-        outputs.forEach((o) => {
-            this.outputsIndex[o.name] = o;
-        });
+        this._refreshIndex();
         incoming &&
             incoming.forEach((entry) => {
                 this.add(entry.output_name, entry.label);
@@ -30,15 +27,6 @@ export class ActiveOutputs {
             return true;
         }
         return false;
-    }
-
-    /** Removes all entries which are not in outputNames */
-    removeMissing(names) {
-        this.getAll().forEach((wf_output) => {
-            if (!names[wf_output.output_name]) {
-                this.remove(wf_output.output_name);
-            }
-        });
     }
 
     /** Toggle an entry */
@@ -110,6 +98,16 @@ export class ActiveOutputs {
         return oldLabel;
     }
 
+    /** Removes all entries which are not in the parsed dictionary of names */
+    updateOutputs(names) {
+        this.getAll().forEach((wf_output) => {
+            if (!names[wf_output.output_name]) {
+                this.remove(wf_output.output_name);
+            }
+        });
+        this._refreshIndex();
+    }
+
     /** Update an output */
     _updateOutput(name) {
         const output = this.outputsIndex[name];
@@ -118,5 +116,13 @@ export class ActiveOutputs {
             Vue.set(output, "activeOutput", !!activeOutput);
             Vue.set(output, "activeLabel", activeOutput && activeOutput.label);
         }
+    }
+
+    /** Refreshes dictionary of outputs */
+    _refreshIndex() {
+        this.outputsIndex = {};
+        this.outputs.forEach((o) => {
+            this.outputsIndex[o.name] = o;
+        });
     }
 }

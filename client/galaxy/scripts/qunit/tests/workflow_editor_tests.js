@@ -42,6 +42,20 @@ class Node {
     markChanged() {}
 }
 
+const nodeData = {
+    inputs: [],
+    outputs: [],
+    type: "tool",
+    name: "cat1",
+    config_form: "{}",
+    tool_state: "ok",
+    tool_errors: false,
+    tooltip: "tool tooltip",
+    annotation: "tool annotation",
+    workflow_outputs: [{ output_name: "out1" }],
+    label: "Cat that data.",
+};
+
 QUnit.module("Input terminal model test", {
     beforeEach: function () {
         this.app = create_app();
@@ -396,22 +410,9 @@ QUnit.test("error", function (assert) {
 });
 
 QUnit.test("init_field_data properties", function (assert) {
-    const data = {
-        inputs: [],
-        outputs: [],
-        type: "tool",
-        name: "cat1",
-        config_form: "{}",
-        tool_state: "ok",
-        tool_errors: false,
-        tooltip: "tool tooltip",
-        annotation: "tool annotation",
-        workflow_outputs: [{ output_name: "out1" }],
-        label: "Cat that data.",
-    };
     const node = this.node;
     const node_changed_spy = sinon.spy(this.app, "nodeChanged");
-    this.node.initFieldData(data);
+    this.node.initFieldData(nodeData);
     Vue.nextTick(() => {
         assert.equal(node.type, "tool");
         assert.equal(node.name, "cat1");
@@ -534,6 +535,7 @@ QUnit.module("Node view", {
     beforeEach: function () {
         this.app = create_app();
         this.node = this.app.buildNode("tool", "newnode");
+        this.node.initFieldData(nodeData);
     },
     afterEach: function () {
         delete this.node;
@@ -719,7 +721,7 @@ QUnit.module("Input terminal view", {
         this.app = create_app();
         this.node = this.app.buildNode("tool", "newnode");
         this.input = { name: "i1", extensions: "txt", multiple: false };
-        this.node.updateFieldData({ inputs: [this.input], outputs: [] });
+        this.node.initFieldData({ inputs: [this.input], outputs: [] });
     },
 });
 
@@ -744,7 +746,7 @@ QUnit.module("Output terminal view", {
         this.app = create_app();
         this.node = this.app.buildNode("tool", "newnode");
         this.output = { name: "o1", extensions: "txt" };
-        this.node.updateFieldData({ inputs: [], outputs: [this.output] });
+        this.node.initFieldData({ inputs: [], outputs: [this.output] });
     },
 });
 
