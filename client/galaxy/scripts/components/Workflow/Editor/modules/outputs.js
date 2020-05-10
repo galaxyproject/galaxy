@@ -115,9 +115,8 @@ export class ActiveOutputs {
         const output = this.outputsIndex[name];
         if (output) {
             const activeOutput = this.get(output.name);
-            const label = (activeOutput && activeOutput.label) || output.label || output.name;
-            Vue.set(output, "isActiveOutput", !!activeOutput);
-            Vue.set(output, "labelActive", label);
+            Vue.set(output, "activeOutput", !!activeOutput);
+            Vue.set(output, "activeLabel", activeOutput && activeOutput.label);
         }
     }
 }

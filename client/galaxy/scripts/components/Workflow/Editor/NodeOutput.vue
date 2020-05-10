@@ -39,11 +39,11 @@ export default {
             if (Array.isArray(extensions)) {
                 extensions = extensions.join(", ");
             }
-            const labelActive = this.output.labelActive || this.output.name;
-            return `${labelActive} (${extensions})`
+            const activeLabel = this.output.activeLabel || this.output.label || this.output.name;
+            return `${activeLabel} (${extensions})`;
         },
         activeClass() {
-            return this.output.isActiveOutput && "mark-terminal-active";
+            return this.output.activeOutput && "mark-terminal-active";
         },
         showCallout() {
             const node = this.getNode();
