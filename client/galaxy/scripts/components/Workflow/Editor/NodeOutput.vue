@@ -35,7 +35,12 @@ export default {
             return `node-${node.id}-output-${this.output.name}`;
         },
         label() {
-            return this.output.labelActive || this.output.name;
+            let extensions = this.output.extensions;
+            if (Array.isArray(extensions)) {
+                extensions = extensions.join(", ");
+            }
+            const labelActive = this.output.labelActive || this.output.name;
+            return `${labelActive} (${extensions})`
         },
         activeClass() {
             return this.output.isActiveOutput && "mark-terminal-active";
