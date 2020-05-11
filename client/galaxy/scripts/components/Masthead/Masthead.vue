@@ -1,34 +1,32 @@
 <template>
-    <div>
-        <b-navbar
-            id="masthead"
-            toggleable="lg"
-            type="dark"
-            role="navigation"
-            aria-label="Main"
-            class="justify-content-center"
-        >
-            <b-navbar-brand :href="brandLink" aria-label="homepage">
-                <img alt="logo" class="navbar-brand-image" :src="brandImage" />
-                <span class="navbar-brand-title">{{ brandTitle }}</span>
-            </b-navbar-brand>
+    <b-navbar
+        id="masthead"
+        toggleable="lg"
+        type="dark"
+        role="navigation"
+        aria-label="Main"
+        class="justify-content-center"
+    >
+        <b-navbar-brand :href="brandLink" aria-label="homepage">
+            <img alt="logo" class="navbar-brand-image" :src="brandImage" />
+            <span class="navbar-brand-title">{{ brandTitle }}</span>
+        </b-navbar-brand>
 
-            <b-navbar-nav>
-                <masthead-item
-                    v-for="(tab, idx) in tabs"
-                    :tab="tab"
-                    :activeTab="activeTab"
-                    :key="`tab-${idx}`"
-                    :appRoot="appRoot"
-                    :Galaxy="Galaxy"
-                    @updateScratchbookTab="updateScratchbookTab"
-                >
-                </masthead-item>
-            </b-navbar-nav>
+        <b-navbar-nav>
+            <masthead-item
+                v-for="(tab, idx) in tabs"
+                :tab="tab"
+                :activeTab="activeTab"
+                :key="`tab-${idx}`"
+                :appRoot="appRoot"
+                :Galaxy="Galaxy"
+                @updateScratchbookTab="updateScratchbookTab"
+            >
+            </masthead-item>
+        </b-navbar-nav>
 
-            <div ref="quota-meter-container" class="quota-meter-container" />
-        </b-navbar>
-    </div>
+        <div ref="quota-meter-container" class="quota-meter-container" />
+    </b-navbar>
 </template>
 
 <script>
