@@ -10,6 +10,9 @@
     "url": "https://github.com/galaxyproject/galaxy.git"
   },
   "license": "AFL-3.0",
+  "resolutions": {
+      "**/chokidar": "3.4.0"
+  },
   "dependencies": {
     "@babel/polyfill": "^7.8.3",
     "@fortawesome/fontawesome-free": "^5.13.0",
