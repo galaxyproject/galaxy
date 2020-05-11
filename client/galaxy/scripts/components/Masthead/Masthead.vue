@@ -50,7 +50,7 @@ export default {
             type: Object,
         },
         activeTab: {
-            type: Function,
+            type: String,
         },
         tabs: {
             type: Array,

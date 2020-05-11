@@ -6,7 +6,6 @@ import QuotaMeter from "mvc/user/user-quotameter";
 import { getGalaxyInstance } from "app";
 import Masthead from "../components/Masthead/Masthead";
 import { mountVueComponent } from "../utils/mountVueComponent";
-import _ from "../libs/underscore";
 import { getAppRoot } from "onload/loadConfig";
 
 /** Masthead **/
@@ -73,18 +72,17 @@ const View = Backbone.View.extend({
         if (this.options.brand) {
             brandTitle += this.options.brand;
         }
+        const tabs = this.collection.models.map((el) => {
+            return el.toJSON();
+        });
         mountVueComponent(Masthead)(
             {
                 brandTitle: brandTitle,
                 brandLink: this.options.logo_url,
                 brandImage: this.options.logo_src,
                 quotaMeter: this.quotaMeter,
-                activeTab: () => {
-                    return this.activeView;
-                },
-                tabs: _.map(this.collection.models, (el) => {
-                    return el.toJSON();
-                }),
+                activeTab: this.activeView,
+                tabs: tabs,
                 frames: this.frame.getFrames(),
                 appRoot: getAppRoot(),
                 Galaxy: getGalaxyInstance(),

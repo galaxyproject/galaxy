@@ -64,7 +64,7 @@ export default {
             type: Object,
         },
         activeTab: {
-            type: Function,
+            type: String,
         },
         appRoot: {
             type: String,
@@ -79,7 +79,7 @@ export default {
         },
         classes() {
             let classesString = this.tab.cls || "";
-            if (this.tab.id == this.activeTab()) {
+            if (this.tab.id == this.activeTab) {
                 classesString = `${classesString} active`;
             }
             return classesString;
