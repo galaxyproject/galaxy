@@ -4,9 +4,8 @@
             <h4>Tool recommendation</h4>
             You have used {{ getToolId }} tool. For further analysis, you could try using the following/recommended
             tools. The recommended tools are shown in the decreasing order of their scores predicted using machine
-            learning analysis on workflows. A tool with a higher score (closer to 100%) may fit better as the following
-            tool than a tool with a lower score. Please click on one of the following/recommended tools to open its
-            definition.
+            learning analysis on workflows. Therefore, tools at the top may be more useful than the ones at the bottom.
+            Please click on one of the following/recommended tools to open its definition.
         </div>
         <div v-else-if="deprecated" class="warningmessagelarge">
             You have used {{ getToolId }} tool. {{ deprecatedMessage }}

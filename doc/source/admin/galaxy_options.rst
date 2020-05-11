@@ -1027,6 +1027,16 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~
+``tool_search_index_dir``
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Directory in which the toolbox search index is stored.
+:Default: ``tool_search_index``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``delay_tool_initialization``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -4144,7 +4154,7 @@
 :Description:
     Set the number of predictions/recommendations to be made by the
     model
-:Default: ``20``
+:Default: ``10``
 :Type: int
 
 

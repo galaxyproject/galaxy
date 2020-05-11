@@ -31,6 +31,7 @@ class ToolRecommendations():
         self.graph = None
         self.loaded_model = None
         self.compatible_tools = None
+        self.standard_connections = None
         self.max_seq_len = 25
 
     def get_predictions(self, trans, tool_sequence, remote_model_url):
@@ -93,6 +94,7 @@ class ToolRecommendations():
             # set the list of compatible tools
             self.compatible_tools = json.loads(trained_model['compatible_tools'][()])
             tool_weights = json.loads(trained_model['class_weights'][()])
+            self.standard_connections = json.loads(trained_model['standard_connections'][()])
             # sort the tools' usage dictionary
             tool_pos_sorted = [int(key) for key in tool_weights.keys()]
             for k in tool_pos_sorted:
@@ -168,6 +170,9 @@ class ToolRecommendations():
         if last_tool_name in self.compatible_tools:
             last_compatible_tools = self.compatible_tools[last_tool_name].split(",")
         prediction_data["is_deprecated"] = False
+        # get the list of datatype extensions of the last tool of the tool sequence
+        _, last_output_extensions = self.__get_tool_extensions(trans, self.all_tools[last_tool_name][0])
+        prediction_data["o_extensions"] = list(set(last_output_extensions))
         t_ids_scores = zip(tool_ids, tool_scores)
         # form the payload of the predicted tools to be shown
         for child, score in t_ids_scores:
@@ -206,6 +211,44 @@ class ToolRecommendations():
                 break
         return prediction_data
 
+    def __get_predicted_tools(self, base_tools, predictions, topk):
+        """
+        Get predicted tools. If predicted tools are less in number, combine them with published tools
+        """
+        intersection = list(set(predictions).intersection(set(base_tools)))
+        return intersection[:topk]
+
+    def __sort_by_usage(self, t_list, class_weights, d_dict):
+        """
+        Sort predictions by usage/class weights
+        """
+        tool_dict = dict()
+        for tool in t_list:
+            t_id = d_dict[tool]
+            tool_dict[tool] = class_weights[t_id]
+        tool_dict = dict(sorted(tool_dict.items(), key=lambda kv: kv[1], reverse=True))
+        return list(tool_dict.keys()), list(tool_dict.values())
+
+    def __separate_predictions(self, base_tools, predictions, last_tool_name, weight_values, topk):
+        """
+        Get predictions from published and normal workflows
+        """
+        last_base_tools = list()
+        predictions = predictions * weight_values
+        prediction_pos = np.argsort(predictions, axis=-1)
+        topk_prediction_pos = prediction_pos[-topk:]
+        # get tool ids
+        pred_tool_ids = [self.reverse_dictionary[int(tool_pos)] for tool_pos in topk_prediction_pos]
+        if last_tool_name in base_tools:
+            last_base_tools = base_tools[last_tool_name]
+            if type(last_base_tools).__name__ == "str":
+                # get published or compatible tools for the last tool in a sequence of tools
+                last_base_tools = last_base_tools.split(",")
+        # get predicted tools
+        p_tools = self.__get_predicted_tools(last_base_tools, pred_tool_ids, topk)
+        sorted_c_t, sorted_c_v = self.__sort_by_usage(p_tools, self.tool_weights_sorted, self.model_data_dictionary)
+        return sorted_c_t, sorted_c_v
+
     def __compute_tool_prediction(self, trans, tool_sequence):
         """
         Compute the predicted tools for a tool sequences
@@ -221,9 +264,6 @@ class ToolRecommendations():
         # do prediction only if the last is present in the collections of tools
         if last_tool_name in self.model_data_dictionary:
             sample = np.zeros(self.max_seq_len)
-            # get the list of datatype extensions of the last tool of the tool sequence
-            _, last_output_extensions = self.__get_tool_extensions(trans, self.all_tools[last_tool_name][0])
-            prediction_data["o_extensions"] = list(set(last_output_extensions))
             # get tool names without slashes and create a sequence vector
             for idx, tool_name in enumerate(tool_sequence):
                 if tool_name.find("/") > -1:
@@ -234,6 +274,8 @@ class ToolRecommendations():
                     log.exception("Failed to find tool %s in model" % (tool_name))
                     return prediction_data
             sample = np.reshape(sample, (1, self.max_seq_len))
+            # boost the predicted scores using tools' usage
+            weight_values = list(self.tool_weights_sorted.values())
             # predict next tools for a test path
             try:
                 # use the same graph and session to predict
@@ -243,20 +285,21 @@ class ToolRecommendations():
             except Exception as e:
                 log.exception(e)
                 return prediction_data
-            prediction = np.reshape(prediction, (prediction.shape[1],))
-            # boost the predicted scores using tools' usage
-            weight_values = list(self.tool_weights_sorted.values())
-            prediction = prediction * weight_values
-            # normalize the predicted scores with max and sort the predictions
-            max_prediction = float(np.max(prediction))
-            if max_prediction == 0.0:
-                max_prediction = 1.0
-            prediction = prediction / max_prediction
-            prediction_pos = np.argsort(prediction, axis=-1)
-            # get topk prediction
-            topk_prediction_pos = prediction_pos[-topk:]
-            # read tool names using reverse dictionary
-            pred_tool_ids = [self.reverse_dictionary[int(tool_pos)] for tool_pos in topk_prediction_pos]
-            predicted_scores = [int(prediction[pos] * 100) for pos in topk_prediction_pos]
-            prediction_data = self.__filter_tool_predictions(trans, prediction_data, pred_tool_ids[::-1], predicted_scores[::-1], last_tool_name)
+            # get dimensions
+            nw_dimension = prediction.shape[1]
+            prediction = np.reshape(prediction, (nw_dimension,))
+            half_len = int(nw_dimension / 2)
+            # get recommended tools from published workflows
+            pub_t, pub_v = self.__separate_predictions(self.standard_connections, prediction[:half_len], last_tool_name, weight_values, topk)
+            # get recommended tools from normal workflows
+            c_t, c_v = self.__separate_predictions(self.compatible_tools, prediction[half_len:], last_tool_name, weight_values, topk)
+            # combine predictions coming from different workflows
+            # promote recommended tools coming from published workflows
+            # to the top and then show other recommendations
+            pub_t.extend(c_t)
+            pub_v.extend(c_v)
+            # remove duplicates if any
+            pub_t = list(dict.fromkeys(pub_t))
+            pub_v = list(dict.fromkeys(pub_v))
+            prediction_data = self.__filter_tool_predictions(trans, prediction_data, pub_t, pub_v, last_tool_name)
         return prediction_data
