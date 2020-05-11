@@ -359,7 +359,7 @@ body {
     background-color: $brand-masthead;
     height: $masthead-height;
     .navbar-nav {
-        min-height: 100%;
+        height: $masthead-height;
         > li {
             // This allows the background color to fill the full height of the
             // masthead, while still keeping the contents centered (using flex)
