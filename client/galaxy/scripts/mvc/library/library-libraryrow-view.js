@@ -4,7 +4,6 @@ import Backbone from "backbone";
 import { Toast } from "ui/toast";
 import { getGalaxyInstance } from "app";
 
-
 // galaxy library row view
 var LibraryRowView = Backbone.View.extend({
     events: {
@@ -67,7 +66,7 @@ var LibraryRowView = Backbone.View.extend({
         this.$el.find('[data-toggle="tooltip"]').tooltip({ trigger: "hover" });
 
         // linkify new description, after its change
-        $('[description=true]').linkify();
+        $("[description=true]").linkify();
     },
 
     /**
