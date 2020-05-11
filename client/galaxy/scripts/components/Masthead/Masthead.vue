@@ -40,38 +40,38 @@ export default {
     name: "Masthead",
     props: {
         brandTitle: {
-            type: String
+            type: String,
         },
         brandLink: {
-            type: String
+            type: String,
         },
         brandImage: {
-            type: String
+            type: String,
         },
         quotaMeter: {
-            type: Object
+            type: Object,
         },
         activeTab: {
-            type: Function
+            type: Function,
         },
         tabs: {
-            type: Array
+            type: Array,
         },
         frames: {
-            type: Object
+            type: Object,
         },
         appRoot: {
-            type: String
+            type: String,
         },
         Galaxy: {
-            type: Object
-        }
+            type: Object,
+        },
     },
     components: {
         BNavbar,
         BNavbarBrand,
         BNavbarNav,
-        MastheadItem
+        MastheadItem,
     },
     methods: {
         updateScratchbookTab(tab) {
@@ -83,11 +83,11 @@ export default {
                         ...tab,
                         toggle: tab.active,
                         show_note: tab.active,
-                        note_cls: tab.active && "fa fa-check"
+                        note_cls: tab.active && "fa fa-check",
                     });
                 }
             });
-        }
+        },
     },
     mounted() {
         this.quotaMeter.setElement(this.$refs["quota-meter-container"]);
@@ -100,17 +100,17 @@ export default {
                     ...this.tabs[idx],
                     note: this.frames.length(),
                     visible: this.frames.length() > 0,
-                    show_note: this.frames.length() > 0
+                    show_note: this.frames.length() > 0,
                 });
             })
             .on("show hide", () => {
                 this.$set(this.tabs, idx, {
                     ...this.tabs[idx],
                     toggle: this.frames.visible,
-                    icon: (this.frames.visible && "fa-eye") || "fa-eye-slash"
+                    icon: (this.frames.visible && "fa-eye") || "fa-eye-slash",
                 });
             });
-    }
+    },
 };
 </script>
 

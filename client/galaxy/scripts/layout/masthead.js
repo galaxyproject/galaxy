@@ -13,9 +13,7 @@ import { getAppRoot } from "onload/loadConfig";
 const View = Backbone.View.extend({
     initialize: function (options) {
         const Galaxy = getGalaxyInstance();
-
         const self = this;
-        const Galaxy = getGalaxyInstance();
         this.options = options;
 
         // build tabs
@@ -84,12 +82,12 @@ const View = Backbone.View.extend({
                 activeTab: () => {
                     return this.activeView;
                 },
-                tabs: _.map(this.collection.models, el => {
+                tabs: _.map(this.collection.models, (el) => {
                     return el.toJSON();
                 }),
                 frames: this.frame.getFrames(),
                 appRoot: getAppRoot(),
-                Galaxy: getGalaxyInstance()
+                Galaxy: getGalaxyInstance(),
             },
             el
         );

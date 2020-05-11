@@ -5,6 +5,7 @@
 // import Vue from "vue";
 // import Masthead from "./Masthead";
 import Masthead from "../../layout/masthead";
+import $ from "jquery";
 
 export function initMasthead(config, container) {
     console.log("initMasthead");

@@ -35,7 +35,13 @@
         @show="open(tab, $event)"
     >
         <template v-for="(item, idx) in tab.menu">
-            <b-dropdown-item :href="formatUrl(item.url)" :key="`item-${idx}`" :target="item.target || '_parent'" role="menuitem" @click="open(item, $event)">
+            <b-dropdown-item
+                :href="formatUrl(item.url)"
+                :key="`item-${idx}`"
+                :target="item.target || '_parent'"
+                role="menuitem"
+                @click="open(item, $event)"
+            >
                 {{ item.title }}
             </b-dropdown-item>
             <div v-if="item.divider" class="dropdown-divider" :key="`divider-${idx}`" />
@@ -51,21 +57,21 @@ export default {
     name: "MastheadItem",
     directives: {
         "v-b-tooltip": VBTooltip,
-        "v-b-popover": VBPopover
+        "v-b-popover": VBPopover,
     },
     props: {
         tab: {
-            type: Object
+            type: Object,
         },
         activeTab: {
-            type: Function
+            type: Function,
         },
         appRoot: {
-            type: String
+            type: String,
         },
         Galaxy: {
-            type: Object
-        }
+            type: Object,
+        },
     },
     computed: {
         popoverNote() {
@@ -80,21 +86,21 @@ export default {
         },
         linkClasses() {
             return {
-                "nav-icon": this.tab.icon
+                "nav-icon": this.tab.icon,
             };
         },
         iconClasses() {
             return Object.fromEntries([
                 ["fa", true],
                 ["toggle", this.tab.toggle],
-                [this.tab.icon, this.tab.icon]
+                [this.tab.icon, this.tab.icon],
             ]);
         },
         styles() {
             return {
-                visibility: this.tab.visible ? "visible" : "hidden"
+                visibility: this.tab.visible ? "visible" : "hidden",
             };
-        }
+        },
     },
     created() {
         if (this.tab.onbeforeunload) {
@@ -124,9 +130,7 @@ export default {
                     this.Galaxy.page.router.executeUseRouter(this.formatUrl(tab.url));
                 } else {
                     try {
-                        this.Galaxy.frame.add({...tab,
-                            url: this.formatUrl(tab.url),
-                        });
+                        this.Galaxy.frame.add({ ...tab, url: this.formatUrl(tab.url) });
                     } catch (err) {
                         console.warn("Missing frame element on galaxy instance", err);
                     }
@@ -142,9 +146,11 @@ export default {
             }
         },
         formatUrl(url) {
-            return typeof url === "string" && url.indexOf("//") === -1 && url.charAt(0) != "/" ? this.appRoot + url : url;
+            return typeof url === "string" && url.indexOf("//") === -1 && url.charAt(0) != "/"
+                ? this.appRoot + url
+                : url;
         },
-    }
+    },
 };
 </script>
 
