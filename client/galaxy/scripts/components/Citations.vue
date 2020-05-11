@@ -49,12 +49,11 @@
     </div>
 </template>
 <script>
-import _ from "underscore";
-import axios from "axios";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { getAppRoot } from "onload/loadConfig";
+import axios from "axios";
 import Cite from "citation-js";
+import { getAppRoot } from "onload/loadConfig";
 
 Vue.use(BootstrapVue);
 
@@ -107,7 +106,7 @@ export default {
                 this.content = "";
                 response.data.forEach((rawCitation) => {
                     try {
-                        let cite = new Cite(rawCitation.content);
+                        const cite = new Cite(rawCitation.content);
                         this.citations.push(cite);
                         this.content += rawCitation.content;
                     } catch (err) {
