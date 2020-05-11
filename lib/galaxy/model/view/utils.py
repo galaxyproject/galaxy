@@ -45,4 +45,3 @@ def install_views(engine):
         # to change the sql that gest emitted when CreateView is rendered.
         engine.execute(DropView(ViewModel))
         engine.execute(CreateView(ViewModel))
-        print('here')
