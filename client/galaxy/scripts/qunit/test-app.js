@@ -27,7 +27,7 @@ export function setupTestGalaxy(galaxyOptions_ = null) {
             },
         };
         return galaxy;
-    });
+    }, true);
 }
 
 export default {

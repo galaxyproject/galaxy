@@ -6,8 +6,10 @@ import addLogging from "utils/add-logging";
 import { GalaxyApp } from "./galaxy";
 import { serverPath } from "utils/serverPath";
 
-export function setGalaxyInstance(factory) {
-    console.warn("setGalaxyInstance", serverPath());
+export function setGalaxyInstance(factory, testing = false) {
+    if (!testing === true) {
+        console.warn("setGalaxyInstance", serverPath());
+    }
 
     const storage = getStorage();
     let newInstance = factory(GalaxyApp);
