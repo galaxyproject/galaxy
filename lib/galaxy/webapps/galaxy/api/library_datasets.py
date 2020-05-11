@@ -26,13 +26,27 @@ from galaxy.managers import (
 )
 from galaxy.tools.actions import upload_common
 from galaxy.tools.parameters import populate_state
-from galaxy.util.path import full_path_permission_for_user, safe_contains, safe_relpath, unsafe_walk
+from galaxy.util.path import (
+    full_path_permission_for_user,
+    safe_contains,
+    safe_relpath,
+    unsafe_walk,
+)
 from galaxy.util.streamball import StreamBall
 from galaxy.web import (
     expose_api,
     expose_api_anonymous,
 )
-from galaxy.webapps.base.controller import BaseAPIController, UsesVisualizationMixin
+from galaxy.webapps.base.controller import (
+    BaseAPIController,
+    UsesVisualizationMixin,
+)
+
+try:
+    maketrans = str.maketrans
+except AttributeError:
+    from string import maketrans
+
 log = logging.getLogger(__name__)
 
 
@@ -575,7 +589,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         if format in ['zip', 'tgz', 'tbz']:
             # error = False
             killme = string.punctuation + string.whitespace
-            trantab = string.maketrans(killme, '_' * len(killme))
+            trantab = maketrans(killme, '_' * len(killme))
             try:
                 outext = 'zip'
                 if format == 'zip':

@@ -50,6 +50,10 @@ WAIT_TYPES = Bunch(
     JOB_COMPLETION=WaitType("job_completion", 30),
     # Wait time for a GIE to spawn.
     GIE_SPAWN=WaitType("gie_spawn", 30),
+    # Wait time for toolshed search
+    SHED_SEARCH=WaitType('shed_search', 30),
+    # Wait time for repository installation
+    REPO_INSTALL=WaitType('repo_install', 60),
 )
 
 # Choose a moderate wait type for operations that don't specify a type.
@@ -207,20 +211,28 @@ class NavigatesGalaxy(HasDriver):
     def history_panel_name(self):
         return self.history_panel_name_element().text
 
+    def history_contents(self, history_id=None, view='summary', datasets_only=True):
+        if history_id is None:
+            history_id = self.current_history_id()
+        histories = self.api_get('histories?keys=id')
+        if history_id not in [h['id'] for h in histories]:
+            return {}
+        if datasets_only:
+            endpoint = 'histories/%s/contents?view=%s' % (history_id, view)
+        else:
+            endpoint = 'histories/%s?view=%s' % (history_id, view)
+        return self.api_get(endpoint)
+
     def current_history(self):
-        history = self.api_get("histories")[0]
-        return history
+        full_url = self.build_url("history/current_history_json", for_selenium=False)
+        response = requests.get(full_url, cookies=self.selenium_to_requests_cookies())
+        return response.json()
 
     def current_history_id(self):
         return self.current_history()["id"]
 
-    def current_history_contents(self):
-        current_history_id = self.current_history_id()
-        history_contents = self.api_get("histories/%s/contents" % current_history_id)
-        return history_contents
-
     def latest_history_item(self):
-        history_contents = self.current_history_contents()
+        history_contents = self.history_contents()
         assert len(history_contents) > 0
         return history_contents[-1]
 
@@ -380,6 +392,12 @@ class NavigatesGalaxy(HasDriver):
         username = username or 'test'
         domain = domain or 'test.test'
         return self._get_random_name(prefix=username, suffix="@" + domain)
+
+    # Creates a random password of length len by creating an array with all ASCII letters and the numbers 0 to 9,
+    # then using the random number generator to pick one elemenent to concatinate it to the end of the password string until
+    # we have a password of length len.
+    def _get_random_password(self, len=6):
+        return ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(len))
 
     def submit_login(self, email, password=None, assert_valid=True, retries=0):
         if password is None:
@@ -816,7 +834,7 @@ class NavigatesGalaxy(HasDriver):
         return self.wait_for_and_click_selector("#workflow-options-button")
 
     def workflow_editor_options_menu_element(self):
-        return self.wait_for_selector_visible("#workflow-options-button-menu")
+        return self.wait_for_selector_visible("#workflow-options-button")
 
     def workflow_editor_click_run(self):
         return self.wait_for_and_click_selector("#workflow-run-button")

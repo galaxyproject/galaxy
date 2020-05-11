@@ -13,22 +13,20 @@
             <b-row>
                 <b-col>
                     <b-card id="data-table-card" flush>
-                        <b-container v-slot:header>
-                            <b-row align-v="center">
-                                <b-col cols="auto">
-                                    <b-button
-                                        @click="reload()"
-                                        v-b-tooltip.hover
-                                        :title="'Reload ' + this.dataTable['name'] + ' tool data table'"
-                                    >
-                                        <span class="fa fa-refresh" />
-                                    </b-button>
-                                </b-col>
-                                <b-col>
-                                    <b>{{ this.dataTable["name"] }}</b>
-                                </b-col>
-                            </b-row>
-                        </b-container>
+                        <template v-slot:header>
+                            <b-container>
+                                <b-row align-v="center">
+                                    <b-col cols="auto">
+                                        <b-button @click="reload()" v-b-tooltip.hover :title="buttonLabel">
+                                            <span class="fa fa-refresh" />
+                                        </b-button>
+                                    </b-col>
+                                    <b-col>
+                                        <b>{{ dataTableName }}</b>
+                                    </b-col>
+                                </b-row>
+                            </b-container>
+                        </template>
                         <b-table
                             :fields="fields(this.dataTable['columns'])"
                             :items="dataTable['data']"
@@ -50,13 +48,13 @@ import Alert from "components/Alert.vue";
 
 export default {
     components: {
-        Alert
+        Alert,
     },
     props: {
         name: {
             type: String,
-            required: true
-        }
+            required: true,
+        },
     },
     data() {
         return {
@@ -64,21 +62,27 @@ export default {
             viewOnly: false,
             message: "",
             status: "",
-            loading: true
+            loading: true,
         };
     },
     computed: {
+        dataTableName() {
+            return this.dataTable && this.dataTable.name ? this.dataTable.name : "null";
+        },
+        buttonLabel() {
+            return `Reload ${this.dataTableName} tool data table`;
+        },
         breadcrumbItems() {
             return [
                 {
                     text: "Tool Data Tables",
-                    to: "/"
+                    to: "/",
                 },
                 {
-                    text: this.dataTable["name"]
-                }
+                    text: this.dataTableName,
+                },
             ];
-        }
+        },
     },
     methods: {
         fields(columns) {
@@ -88,32 +92,32 @@ export default {
         },
         reload() {
             axios
-                .get(`${getAppRoot()}data_manager/reload_tool_data_tables?table_name=${this.dataTable["name"]}`)
-                .then(response => {
+                .get(`${getAppRoot()}data_manager/reload_tool_data_tables?table_name=${this.dataTableName}`)
+                .then((response) => {
                     if (response.data.dataTable) {
                         this.dataTable = response.data.dataTable;
                     }
                     this.message = response.data.message;
                     this.status = response.data.status;
                 })
-                .catch(error => {
+                .catch((error) => {
                     console.error(error);
                 });
-        }
+        },
     },
     created() {
         axios
             .get(`${getAppRoot()}data_manager/tool_data_table_info?table_name=${this.name}`)
-            .then(response => {
+            .then((response) => {
                 this.dataTable = response.data.dataTable;
                 this.viewOnly = response.data.viewOnly;
                 this.message = response.data.message;
                 this.status = response.data.status;
                 this.loading = false;
             })
-            .catch(error => {
+            .catch((error) => {
                 console.error(error);
             });
-    }
+    },
 };
 </script>

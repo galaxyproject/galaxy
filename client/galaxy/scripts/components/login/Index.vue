@@ -24,48 +24,48 @@ Vue.use(BootstrapVue);
 export default {
     data() {
         return {
-            login: true
+            login: true,
         };
     },
     computed: {
-        showLogin: function() {
+        showLogin: function () {
             return this.login;
-        }
+        },
     },
     components: {
         login: Login,
-        register: Register
+        register: Register,
     },
     methods: {
-        toggleLogin: function() {
+        toggleLogin: function () {
             this.login = !this.login;
-        }
+        },
     },
     props: {
         show_welcome_with_login: {
             type: Boolean,
-            required: false
+            required: false,
         },
         welcome_url: {
             type: String,
-            required: false
+            required: false,
         },
         terms_url: {
             type: String,
-            required: false
+            required: false,
         },
         registration_warning_message: {
             type: String,
-            required: false
+            required: false,
         },
         mailing_join_addr: {
             type: String,
-            required: false
+            required: false,
         },
         server_mail_configured: {
             type: Boolean,
-            required: false
-        }
-    }
+            required: false,
+        },
+    },
 };
 </script>

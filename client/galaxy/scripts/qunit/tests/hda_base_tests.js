@@ -7,17 +7,17 @@ import HDA_MODEL from "mvc/history/hda-model";
 import HDA_BASE from "mvc/history/hda-li";
 
 QUnit.module("HDA base backbone view tests", {
-    beforeEach: function() {
+    beforeEach: function () {
         testApp.create();
     },
-    afterEach: function() {
+    afterEach: function () {
         testApp.destroy();
-    }
+    },
 });
 
-QUnit.test("Base HDA view default construction, initialize", function(assert) {
+QUnit.test("Base HDA view default construction, initialize", function (assert) {
     var hda = new HDA_MODEL.HistoryDatasetAssociation({
-            id: "123"
+            id: "123",
         }),
         view = new HDA_BASE.HDAListItemView({ model: hda });
 

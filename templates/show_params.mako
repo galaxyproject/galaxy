@@ -113,32 +113,14 @@ ${ job.command_line | h }</pre>
 %endif
 
 %if job and (trans.user_is_admin or trans.app.config.expose_potentially_sensitive_job_metrics):
-<div class="job-metrics" dataset_id="${encoded_hda_id}" dataset_type="hda">
+<div class="job-metrics" dataset_id="${encoded_hda_id}" aws_estimate="${trans.app.config.aws_estimate}" dataset_type="hda">
 </div>
 %endif
 
 %if trans.user_is_admin:
 <h3>Destination Parameters</h3>
-    <table class="tabletip">
-        <tbody>
-            <tr><th scope="row">Runner</th><td>${ job.job_runner_name }</td></tr>
-            <tr><th scope="row">Runner Job ID</th><td>${ job.job_runner_external_id }</td></tr>
-            <tr><th scope="row">Handler</th><td>${ job.handler }</td></tr>
-            %if job.destination_params:
-            %for (k, v) in job.destination_params.items():
-                <tr><th scope="row">${ k | h }</th>
-                    <td>
-                        %if str(k) in ('nativeSpecification', 'rank', 'requirements'):
-                        <pre style="white-space: pre-wrap; word-wrap: break-word;">${ v | h }</pre>
-                        %else:
-                        ${ v | h }
-                        %endif
-                    </td>
-                </tr>
-            %endfor
-            %endif
-        </tbody>
-    </table>
+<div class="job-destination-parameters" job_id="${trans.security.encode_id(job.id)}">
+</div>
 %endif
 
 %if job and job.dependencies:
@@ -193,5 +175,6 @@ $(function(){
     })
     window.bundleEntries.mountJobMetrics();
     window.bundleEntries.mountJobParameters();
+    window.bundleEntries.mountDestinationParams();
 });
 </script>

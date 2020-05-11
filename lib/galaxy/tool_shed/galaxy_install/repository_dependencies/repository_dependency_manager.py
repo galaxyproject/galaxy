@@ -308,7 +308,7 @@ class RepositoryDependencyInstallManager(object):
                       changeset_revision=str(repository.changeset_revision))
         pathspec = ['repository', 'get_repository_dependencies']
         try:
-            raw_text = url_get(tool_shed_url, password_mgr=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
+            raw_text = url_get(tool_shed_url, auth=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
         except Exception:
             log.exception("Error while trying to get URL: %s", build_url(tool_shed_url, pathspec=pathspec, params=params))
             return ''

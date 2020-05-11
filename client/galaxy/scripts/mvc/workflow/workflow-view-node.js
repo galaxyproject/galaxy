@@ -1,51 +1,57 @@
 import $ from "jquery";
 import _ from "libs/underscore";
-import Backbone from "backbone";
 import TerminalViews from "mvc/workflow/workflow-view-terminals";
-import DataViews from "mvc/workflow/workflow-view-data";
+import { DataInputView, DataOutputView, ParameterOutputView } from "mvc/workflow/workflow-view-data";
 
-export default Backbone.View.extend({
-    initialize: function(options) {
+export class NodeView {
+    constructor(app, options) {
+        this.app = app;
+        this.$el = options.$el;
         this.node = options.node;
         this.output_width = Math.max(150, this.$el.width());
-        this.tool_body = this.$el.find(".toolFormBody");
-        this.tool_body.find("div").remove();
-        this.newInputsDiv().appendTo(this.tool_body);
+        this.node_body = this.$el.find(".node-body");
+        this.node_body.find("div").remove();
+        this.newInputsDiv().appendTo(this.node_body);
         this.terminalViews = {};
         this.outputViews = {};
-    },
+    }
 
-    render: function() {
-        this.renderToolLabel();
-        this.renderToolErrors();
+    render() {
+        this.renderLabel();
+        this.renderErrors();
         this.$el.css("width", Math.min(250, Math.max(this.$el.width(), this.output_width)));
-    },
+    }
 
-    renderToolLabel: function() {
-        this.$(".nodeTitle").text(this.node.label || this.node.name);
+    renderLabel() {
+        this.$el.find(".node-title").text(this.node.label || this.node.name);
         this.$el.attr("node-label", this.node.label);
-    },
+    }
 
-    renderToolErrors: function() {
-        this.node.errors ? this.$el.addClass("tool-node-error") : this.$el.removeClass("tool-node-error");
-    },
+    renderErrors() {
+        if (this.node.errors) {
+            this.$el.addClass("node-error");
+            this.node_body.text(this.node.errors);
+        } else {
+            this.$el.removeClass("node-error");
+        }
+    }
 
-    newInputsDiv: function() {
+    newInputsDiv() {
         return $("<div/>").addClass("inputs");
-    },
+    }
 
-    updateMaxWidth: function(newWidth) {
+    updateMaxWidth(newWidth) {
         this.output_width = Math.max(this.output_width, newWidth);
-    },
+    }
 
-    addRule: function() {
-        this.tool_body.append($("<div/>").addClass("rule"));
-    },
+    addRule() {
+        this.node_body.append($("<div/>").addClass("rule"));
+    }
 
-    addDataInput: function(input, body) {
+    addDataInput(input, body) {
         var skipResize = true;
         if (!body) {
-            body = this.$(".inputs");
+            body = this.$el.find(".inputs");
             // initial addition to node - resize input to help calculate node
             // width.
             skipResize = false;
@@ -58,69 +64,69 @@ export default Backbone.View.extend({
             terminalViewClass = TerminalViews.InputParameterTerminalView;
         }
         if (terminalView && !(terminalView instanceof terminalViewClass)) {
-            terminalView.el.terminal.destroy();
+            terminalView.terminal.destroy();
             terminalView = null;
         }
         if (!terminalView) {
-            terminalView = new terminalViewClass({
+            terminalView = new terminalViewClass(this.app, {
                 node: this.node,
-                input: input
+                input: input,
             });
         } else {
-            var terminal = terminalView.el.terminal;
+            var terminal = terminalView.terminal;
             terminal.update(input);
             terminal.destroyInvalidConnections();
         }
         this.terminalViews[input.name] = terminalView;
         var terminalElement = terminalView.el;
-        var inputView = new DataViews.DataInputView({
+        var inputView = new DataInputView({
             terminalElement: terminalElement,
             input: input,
             nodeView: this,
-            skipResize: skipResize
+            skipResize: skipResize,
         });
         var ib = inputView.$el;
-        body.append(ib.prepend(terminalView.terminalElements()));
+        body.append(ib.prepend(terminalView.el));
         return terminalView;
-    },
+    }
 
-    terminalViewForOutput: function(output) {
+    terminalViewForOutput(output) {
         let terminalViewClass = TerminalViews.OutputTerminalView;
         if (output.collection) {
             terminalViewClass = TerminalViews.OutputCollectionTerminalView;
         } else if (output.parameter) {
             terminalViewClass = TerminalViews.OutputParameterTerminalView;
         }
-        return new terminalViewClass({
+        return new terminalViewClass(this.app, {
             node: this.node,
-            output: output
+            output: output,
         });
-    },
+    }
 
-    outputViewforOutput: function(output, terminalView) {
-        const outputViewClass = output.parameter ? DataViews.ParameterOutputView : DataViews.DataOutputView;
-        return new outputViewClass({
+    outputViewforOutput(output, terminalView) {
+        const outputViewClass = output.parameter ? ParameterOutputView : DataOutputView;
+        return new outputViewClass(this.app, {
             output: output,
             terminalElement: terminalView.el,
-            nodeView: this
+            nodeView: this,
         });
-    },
+    }
 
-    addDataOutput: function(output) {
+    addDataOutput(output) {
         const terminalView = this.terminalViewForOutput(output);
         const outputView = this.outputViewforOutput(output, terminalView);
         this.outputViews[output.name] = outputView;
-        this.tool_body.append(outputView.$el.append(terminalView.terminalElements()));
-    },
+        this.node_body.append(outputView.$el.append(terminalView.el));
+    }
 
-    redrawWorkflowOutputs: function() {
-        _.each(this.outputViews, outputView => {
+    redrawWorkflowOutputs() {
+        _.each(this.outputViews, (outputView) => {
             outputView.redrawWorkflowOutput();
         });
-    },
+    }
 
-    updateDataOutput: function(output) {
+    updateDataOutput(output) {
         var outputTerminal = this.node.output_terminals[output.name];
         outputTerminal.update(output);
     }
-});
+}

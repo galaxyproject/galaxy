@@ -139,7 +139,7 @@ class InteractiveToolManager(object):
         self.security = app.security
         self.sa_session = app.model.context
         self.job_manager = app.job_manager
-        self.propagator = InteractiveToolSqlite(app.config.interactivetool_map, app.security.encode_id)
+        self.propagator = InteractiveToolSqlite(app.config.interactivetools_map, app.security.encode_id)
 
     def create_entry_points(self, job, tool, entry_points=None, flush=True):
         entry_points = entry_points or tool.ports
@@ -260,8 +260,13 @@ class InteractiveToolManager(object):
     def target_if_active(self, trans, entry_point):
         if entry_point.active and not entry_point.deleted:
             request_host = trans.request.host
-            rval = '%s//%s-%s.%s.%s.%s/' % (trans.request.host_url.split('//', 1)[0], trans.security.encode_id(entry_point.id),
-                    entry_point.token, entry_point.__class__.__name__.lower(), self.app.config.interactivetool_prefix, request_host)
+            protocol = trans.request.host_url.split('//', 1)[0]
+            entry_point_encoded_id = trans.security.encode_id(entry_point.id)
+            entry_point_class = entry_point.__class__.__name__.lower()
+            entry_point_prefix = self.app.config.interactivetools_prefix
+            interactivetools_proxy_host = self.app.config.interactivetools_proxy_host or request_host
+            rval = '%s//%s-%s.%s.%s.%s/' % (protocol, entry_point_encoded_id,
+                    entry_point.token, entry_point_class, entry_point_prefix, interactivetools_proxy_host)
             if entry_point.entry_url:
                 rval = '%s/%s' % (rval.rstrip('/'), entry_point.entry_url.lstrip('/'))
             return rval

@@ -7,6 +7,7 @@ import tempfile
 from six import string_types
 
 from galaxy import model
+from galaxy.job_execution.setup import ensure_configs_directory
 from galaxy.model.none_like import NoneDataset
 from galaxy.tools import global_tool_errors
 from galaxy.tools.parameters import (
@@ -317,6 +318,7 @@ class ToolEvaluator(object):
             wrapper_kwds = dict(
                 datatypes_registry=self.app.datatypes_registry,
                 compute_environment=self.compute_environment,
+                io_type='output',
                 tool=tool,
                 name=name
             )
@@ -521,9 +523,7 @@ class ToolEvaluator(object):
         for name, filename, content in self.tool.config_files:
             config_text, is_template = self.__build_config_file_text(content)
             # If a particular filename was forced by the config use it
-            directory = os.path.join(self.local_working_directory, "configs")
-            if not os.path.exists(directory):
-                os.makedirs(directory)
+            directory = ensure_configs_directory(self.local_working_directory)
             if filename is not None:
                 # Explicit filename was requested, needs to be placed in tool working directory
                 directory = os.path.join(self.local_working_directory, "working")

@@ -21,8 +21,8 @@ export class Services {
         try {
             const response = await axios.get(url);
             const data = response.data;
-            const incoming = data.hits.map(x => x.repository);
-            incoming.forEach(x => {
+            const incoming = data.hits.map((x) => x.repository);
+            incoming.forEach((x) => {
                 x.owner = x.repo_owner_username;
                 x.times_downloaded = this._formatCount(x.times_downloaded);
                 x.repository_url = `${data.hostname}repository?repository_id=${x.id}`;
@@ -38,12 +38,12 @@ export class Services {
         try {
             const response = await axios.get(url);
             const data = response.data;
-            const table = Object.keys(data).map(key => data[key]);
+            const table = Object.keys(data).map((key) => data[key]);
             if (table.length === 0) {
                 throw "Repository does not contain any installable revisions.";
             }
             table.sort((a, b) => b.numeric_revision - a.numeric_revision);
-            table.forEach(x => {
+            table.forEach((x) => {
                 if (Array.isArray(x.tools)) {
                     x.profile = x.tools.reduce(
                         (value, current) => (current.profile > value ? current.profile : value),
@@ -92,10 +92,10 @@ export class Services {
             const response = await axios.get(url);
             const data = response.data;
             const result = {};
-            data.forEach(x => {
+            data.forEach((x) => {
                 const d = {
                     status: x.status,
-                    installed: !x.deleted && !x.uninstalled
+                    installed: !x.deleted && !x.uninstalled,
                 };
                 result[x.changeset_revision] = result[x.installed_changeset_revision] = d;
             });
@@ -114,7 +114,7 @@ export class Services {
         }
     }
     async uninstallRepository(params) {
-        const paramsString = Object.keys(params).reduce(function(previous, key) {
+        const paramsString = Object.keys(params).reduce(function (previous, key) {
             return `${previous}${key}=${params[key]}&`;
         }, "");
         const url = `${getAppRoot()}api/tool_shed_repositories?${paramsString}`;
@@ -128,7 +128,7 @@ export class Services {
     _groupByNameOwner(incoming, filter) {
         const hash = {};
         const repositories = [];
-        incoming.forEach(x => {
+        incoming.forEach((x) => {
             const hashCode = `${x.name}_${x.owner}`;
             if (!filter || filter(x)) {
                 if (!hash[hashCode]) {
@@ -140,7 +140,7 @@ export class Services {
         return repositories;
     }
     _fixToolshedUrls(incoming, urls) {
-        incoming.forEach(x => {
+        incoming.forEach((x) => {
             for (const url of urls) {
                 if (url.includes(x.tool_shed)) {
                     x.tool_shed_url = url;
@@ -155,7 +155,7 @@ export class Services {
     }
     _getParamsString(params) {
         if (params) {
-            return Object.keys(params).reduce(function(previous, key) {
+            return Object.keys(params).reduce(function (previous, key) {
                 return `${previous}${key}=${params[key]}&`;
             }, "");
         } else {

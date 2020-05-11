@@ -14,10 +14,10 @@ var $ = jQuery;
  *          faIcon          : which font awesome icon to use
  *          onclick         : function to call when the button is clicked
  */
-var faIconButton = options => {
+var faIconButton = (options) => {
     options = options || {};
     options.tooltipConfig = options.tooltipConfig || {
-        placement: "bottom"
+        placement: "bottom",
     };
 
     options.classes = ["icon-btn"].concat(options.classes || []);
@@ -38,16 +38,13 @@ var faIconButton = options => {
         '<span class="fa ',
         options.faIcon,
         '"></span>',
-        "</a>"
+        "</a>",
     ].join("");
     var $button = $(html).tooltip(options.tooltipConfig);
     if (_.isFunction(options.onclick)) {
-        $button.click(function(ev) {
+        $button.click(function (ev) {
             $button.tooltip("hide");
-            $button
-                .parent()
-                .attr("tabindex", -1)
-                .focus();
+            $button.parent().attr("tabindex", -1).focus();
             options.onclick.apply(this, arguments);
         });
     }

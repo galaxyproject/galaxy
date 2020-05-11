@@ -31,11 +31,11 @@ export class TagService {
      */
     get autocompleteOptions() {
         return this._searchText.pipe(
-            map(txt => txt.replace("name:", "")),
-            filter(txt => txt.length),
+            map((txt) => txt.replace("name:", "")),
+            filter((txt) => txt.length),
             debounceTime(this.debounceInterval),
             distinctUntilChanged(),
-            switchMap(txt => this.autocomplete(txt))
+            switchMap((txt) => this.autocomplete(txt))
         );
     }
 
@@ -105,8 +105,8 @@ export class TagService {
 export function parseAutocompleteResults(rawResponse) {
     return rawResponse
         .split("\n")
-        .filter(line => line.includes("|"))
-        .map(line => line.split("|")[0])
-        .filter(label => label.length)
-        .filter(label => label !== "#Header");
+        .filter((line) => line.includes("|"))
+        .map((line) => line.split("|")[0])
+        .filter((label) => label.length)
+        .filter((label) => label !== "#Header");
 }

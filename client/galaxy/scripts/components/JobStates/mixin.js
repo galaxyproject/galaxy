@@ -37,7 +37,7 @@ export default {
         },
         otherPercent() {
             return 1.0 - this.okPercent - this.runningPercent - this.errorPercent;
-        }
+        },
     },
     methods: {
         countStates(states) {
@@ -48,6 +48,6 @@ export default {
                 }
             }
             return count;
-        }
-    }
+        },
+    },
 };

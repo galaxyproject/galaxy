@@ -56,7 +56,7 @@ var HistoryView = _super.extend(
         /** Set up the view, bind listeners.
          *  @param {Object} attributes optional settings for the panel
          */
-        initialize: function(attributes) {
+        initialize: function (attributes) {
             _super.prototype.initialize.call(this, attributes);
             // ---- instance vars
             // control contents/behavior based on where (and in what context) the panel is being used
@@ -65,15 +65,15 @@ var HistoryView = _super.extend(
         },
 
         /** create and return a collection for when none is initially passed */
-        _createDefaultCollection: function() {
+        _createDefaultCollection: function () {
             // override
             return new this.collectionClass([], {
-                history: this.model
+                history: this.model,
             });
         },
 
         /** In this override, clear the update timer on the model */
-        freeModel: function() {
+        freeModel: function () {
             _super.prototype.freeModel.call(this);
             if (this.model) {
                 this.model.stopPolling();
@@ -85,25 +85,25 @@ var HistoryView = _super.extend(
          *  @fires: rendered:initial    on the first render
          *  @fires: empty-history       when switching to a history with no contents or creating a new history
          */
-        _setUpListeners: function() {
+        _setUpListeners: function () {
             _super.prototype._setUpListeners.call(this);
             this.on({
-                error: function(model, xhr, options, msg, details) {
+                error: function (model, xhr, options, msg, details) {
                     this.errorHandler(model, xhr, options, msg, details);
                 },
-                "views:ready view:attached view:removed": function(view) {
+                "views:ready view:attached view:removed": function (view) {
                     this._renderSelectButton();
                 },
-                "view:attached": function(view) {
+                "view:attached": function (view) {
                     this.scrollTo(0);
-                }
+                },
             });
             // this.on( 'all', function(){ console.debug( arguments ); });
         },
 
         // ------------------------------------------------------------------------ loading history/hda models
         /** load the history with the given id then it's contents, sending ajax options to both */
-        loadHistory: function(historyId, options, contentsOptions) {
+        loadHistory: function (historyId, options, contentsOptions) {
             contentsOptions = _.extend(contentsOptions || { silent: true });
             this.info("loadHistory:", historyId, options, contentsOptions);
             this.setModel(new History({ id: historyId }));
@@ -117,7 +117,7 @@ var HistoryView = _super.extend(
         },
 
         /** convenience alias to the model. Updates the item list only (not the history) */
-        refreshContents: function(options) {
+        refreshContents: function (options) {
             if (this.model) {
                 return this.model.refresh(options);
             }
@@ -126,44 +126,44 @@ var HistoryView = _super.extend(
         },
 
         /** Override to reset web storage when the id changes (since it needs the id) */
-        _setUpCollectionListeners: function() {
+        _setUpCollectionListeners: function () {
             _super.prototype._setUpCollectionListeners.call(this);
             return this.listenTo(this.collection, {
                 // 'all' : function(){ console.log( this.collection + ':', arguments ); },
-                "fetching-more": function() {
+                "fetching-more": function () {
                     this._toggleContentsLoadingIndicator(true);
                     this.$emptyMessage().hide();
                 },
-                "fetching-more-done": function() {
+                "fetching-more-done": function () {
                     this._toggleContentsLoadingIndicator(false);
-                }
+                },
             });
         },
 
         // ------------------------------------------------------------------------ panel rendering
         /** hide the $el and display a loading indicator (in the $el's parent) when loading new data */
-        _showLoadingIndicator: function(msg, speed, callback) {
+        _showLoadingIndicator: function (msg, speed, callback) {
             var $indicator = $('<div class="loading-indicator"/>');
             this.$el.html($indicator.text(msg).slideDown(!_.isUndefined(speed) ? speed : this.fxSpeed));
         },
 
         /** hide the loading indicator */
-        _hideLoadingIndicator: function(speed) {
+        _hideLoadingIndicator: function (speed) {
             // make speed a bit slower to compensate for slow rendering of up to 500 contents
-            this.$(".loading-indicator").slideUp(!_.isUndefined(speed) ? speed : this.fxSpeed + 200, function() {
+            this.$(".loading-indicator").slideUp(!_.isUndefined(speed) ? speed : this.fxSpeed + 200, function () {
                 $(this).remove();
             });
         },
 
         /** In this override, add a btn to toggle the selectors */
-        _buildNewRender: function() {
+        _buildNewRender: function () {
             var $newRender = _super.prototype._buildNewRender.call(this);
             this._renderSelectButton($newRender);
             return $newRender;
         },
 
         /** button for starting select mode */
-        _renderSelectButton: function($where) {
+        _renderSelectButton: function ($where) {
             $where = $where || this.$el;
             // do not render selector option if no actions
             if (!this.multiselectActions().length) {
@@ -185,41 +185,33 @@ var HistoryView = _super.extend(
                 title: _l("Operations on multiple datasets"),
                 classes: "show-selectors-btn",
                 faIcon: "fa-check-square-o",
-                tooltipConfig: { placement: "top" }
+                tooltipConfig: { placement: "top" },
             }).prependTo($where.find(".controls .actions"));
         },
 
         /** override to avoid showing intial empty message using contents_active */
-        _renderEmptyMessage: function($whereTo) {
+        _renderEmptyMessage: function ($whereTo) {
             var $emptyMsg = this.$emptyMessage($whereTo);
             var empty = this.model.get("contents_active").active <= 0;
             if (empty) {
-                return $emptyMsg
-                    .empty()
-                    .append(this.emptyMsg)
-                    .show();
+                return $emptyMsg.empty().append(this.emptyMsg).show();
             } else if (this.searchFor && this.model.contents.haveSearchDetails() && !this.views.length) {
-                return $emptyMsg
-                    .empty()
-                    .append(this.noneFoundMsg)
-                    .show();
+                return $emptyMsg.empty().append(this.noneFoundMsg).show();
             }
             $emptyMsg.hide();
             return $();
         },
 
         /** the scroll container for this panel - can be $el, $el.parent(), or grandparent depending on context */
-        $scrollContainer: function($where) {
+        $scrollContainer: function ($where) {
             // override or set via attributes.$scrollContainer
             return this.$list($where);
         },
 
         // ------------------------------------------------------------------------ subviews
-        _toggleContentsLoadingIndicator: function(show) {
+        _toggleContentsLoadingIndicator: function (show) {
             if (!show) {
-                this.$list()
-                    .find(".contents-loading-indicator")
-                    .remove();
+                this.$list().find(".contents-loading-indicator").remove();
             } else {
                 this.$list().html(
                     '<div class="contents-loading-indicator">' + '<span class="fa fa-2x fa-spinner fa-spin"/></div>'
@@ -228,7 +220,7 @@ var HistoryView = _super.extend(
         },
 
         /** override to render pagination also */
-        renderItems: function($whereTo) {
+        renderItems: function ($whereTo) {
             // console.log( this + '.renderItems-----------------', new Date() );
             $whereTo = $whereTo || this.$el;
             var $list = this.$list($whereTo);
@@ -254,7 +246,7 @@ var HistoryView = _super.extend(
         },
 
         /** render pagination controls if not searching and contents says we're paginating */
-        _renderPagination: function($whereTo) {
+        _renderPagination: function ($whereTo) {
             var $paginationControls = $whereTo.find("> .controls .list-pagination");
             if (this.searchFor || !this.model.contents.shouldPaginate()) return $paginationControls.empty();
 
@@ -263,7 +255,7 @@ var HistoryView = _super.extend(
                     {
                         // pagination is 1-based for the user
                         current: this.model.contents.currentPage + 1,
-                        last: this.model.contents.getLastPage() + 1
+                        last: this.model.contents.getLastPage() + 1,
                     },
                     this
                 )
@@ -273,10 +265,10 @@ var HistoryView = _super.extend(
         },
 
         /** render a subset of the entire collection (client-side pagination) */
-        _renderSomeItems: function(models, $list) {
+        _renderSomeItems: function (models, $list) {
             var views = [];
             $list.append(
-                models.map(m => {
+                models.map((m) => {
                     var view = this._createItemView(m);
                     views.push(view);
                     return this._renderItemView$el(view);
@@ -287,7 +279,7 @@ var HistoryView = _super.extend(
 
         // ------------------------------------------------------------------------ sub-views
         /** in this override, check if the contents would also display based on includeDeleted/hidden */
-        _filterItem: function(model) {
+        _filterItem: function (model) {
             var contents = this.model.contents;
             return (
                 (contents.includeHidden || !model.hidden()) &&
@@ -299,7 +291,7 @@ var HistoryView = _super.extend(
         /** In this override, since history contents are mixed,
          *      get the appropo view class based on history_content_type
          */
-        _getItemViewClass: function(model) {
+        _getItemViewClass: function (model) {
             var contentType = model.get("history_content_type");
             switch (contentType) {
                 case "dataset":
@@ -311,40 +303,40 @@ var HistoryView = _super.extend(
         },
 
         /** in this override, add a linktarget, and expand if id is in web storage */
-        _getItemViewOptions: function(model) {
+        _getItemViewOptions: function (model) {
             var options = _super.prototype._getItemViewOptions.call(this, model);
             return _.extend(options, {
                 linkTarget: this.linkTarget,
                 expanded: this.model.contents.storage.isExpanded(model.id),
-                hasUser: this.model.ownedByCurrUser()
+                hasUser: this.model.ownedByCurrUser(),
             });
         },
 
         /** In this override, add/remove expanded/collapsed model ids to/from web storage */
-        _setUpItemViewListeners: function(view) {
+        _setUpItemViewListeners: function (view) {
             var panel = this;
             _super.prototype._setUpItemViewListeners.call(panel, view);
             //TODO: send from content view: this.model.collection.storage.addExpanded
             // maintain a list of items whose bodies are expanded
             return panel.listenTo(view, {
-                expanded: function(v) {
+                expanded: function (v) {
                     panel.model.contents.storage.addExpanded(v.model);
                 },
-                collapsed: function(v) {
+                collapsed: function (v) {
                     panel.model.contents.storage.removeExpanded(v.model);
-                }
+                },
             });
         },
 
         /** override to remove expandedIds from webstorage */
-        collapseAll: function() {
+        collapseAll: function () {
             this.model.contents.storage.clearExpanded();
             _super.prototype.collapseAll.call(this);
         },
 
         // ------------------------------------------------------------------------ selection
         /** Override to correctly set the historyId of the new collection */
-        getSelectedModels: function() {
+        getSelectedModels: function () {
             var collection = _super.prototype.getSelectedModels.call(this);
             collection.historyId = this.collection.historyId;
             return collection;
@@ -358,20 +350,20 @@ var HistoryView = _super.extend(
             "click > .controls .next": "_clickNextPage",
             "change > .controls .pages": "_changePageSelect",
             // allow (error) messages to be clicked away
-            "click .messages [class$=message]": "clearMessages"
+            "click .messages [class$=message]": "clearMessages",
         }),
 
-        _clickPrevPage: function(ev) {
+        _clickPrevPage: function (ev) {
             this.model.stopPolling();
             this.model.contents.fetchPrevPage();
         },
 
-        _clickNextPage: function(ev) {
+        _clickNextPage: function (ev) {
             this.model.stopPolling();
             this.model.contents.fetchNextPage();
         },
 
-        _changePageSelect: function(ev) {
+        _changePageSelect: function (ev) {
             this.model.stopPolling();
             var page = $(ev.currentTarget).val();
             this.model.contents.fetchPage(page);
@@ -380,7 +372,7 @@ var HistoryView = _super.extend(
         /** Toggle and store the deleted visibility and re-render items
          * @returns {Boolean} new setting
          */
-        toggleShowDeleted: function(show, options) {
+        toggleShowDeleted: function (show, options) {
             show = show !== undefined ? show : !this.model.contents.includeDeleted;
             var contents = this.model.contents;
             contents.setIncludeDeleted(show, options);
@@ -393,7 +385,7 @@ var HistoryView = _super.extend(
         /** Toggle and store whether to render explicity hidden contents
          * @returns {Boolean} new setting
          */
-        toggleShowHidden: function(show, store, options) {
+        toggleShowHidden: function (show, store, options) {
             // console.log( 'toggleShowHidden', show, store );
             show = show !== undefined ? show : !this.model.contents.includeHidden;
             var contents = this.model.contents;
@@ -405,7 +397,7 @@ var HistoryView = _super.extend(
         },
 
         /** On the first search, if there are no details - load them, then search */
-        _firstSearch: function(searchFor) {
+        _firstSearch: function (searchFor) {
             var inputSelector = "> .controls .search-input";
             this.log("onFirstSearch", searchFor);
 
@@ -434,7 +426,7 @@ var HistoryView = _super.extend(
         },
 
         /** clear the search filters and show all views that are normally shown */
-        clearSearch: function(searchFor) {
+        clearSearch: function (searchFor) {
             if (!this.searchFor) return this;
             //this.log( 'onSearchClear', this );
             this.searchFor = "";
@@ -455,7 +447,7 @@ var HistoryView = _super.extend(
          *  @param {XMLHTTPRequest} xhr     any ajax obj. assoc. with the error
          *  @param {Object} options         the options map commonly used with bbone ajax
          */
-        errorHandler: function(model, xhr, options) {
+        errorHandler: function (model, xhr, options) {
             //TODO: to mixin or base model
             // interrupted ajax or no connection
             if (xhr && xhr.status === 0 && xhr.readyState === 0) {
@@ -480,9 +472,9 @@ var HistoryView = _super.extend(
         },
 
         /** Remove all messages from the panel. */
-        clearMessages: function(ev) {
+        clearMessages: function (ev) {
             var $target = !_.isUndefined(ev) ? $(ev.currentTarget) : this.$messages().children('[class$="message"]');
-            $target.fadeOut(this.fxSpeed, function() {
+            $target.fadeOut(this.fxSpeed, function () {
                 $(this).remove();
             });
             return this;
@@ -493,13 +485,13 @@ var HistoryView = _super.extend(
          *  @param {Integer} hid    the hid of item to scroll into view
          *  @returns {HistoryView} the panel
          */
-        scrollToHid: function(hid) {
+        scrollToHid: function (hid) {
             return this.scrollToItem(_.first(this.viewsWhereModel({ hid: hid })));
         },
 
         // ........................................................................ misc
         /** utility for adding -st, -nd, -rd, -th to numbers */
-        ordinalIndicator: function(number) {
+        ordinalIndicator: function (number) {
             var numStr = `${number}`;
             switch (numStr.charAt(numStr.length - 1)) {
                 case "1":
@@ -514,9 +506,9 @@ var HistoryView = _super.extend(
         },
 
         /** Return a string rep of the history */
-        toString: function() {
+        toString: function () {
             return `HistoryView(${this.model ? this.model.get("name") : ""})`;
-        }
+        },
     }
 );
 
@@ -586,7 +578,7 @@ HistoryView.prototype.templates = (() => {
             "</div>",
             "</div>",
             '<div class="list-pagination form-inline"></div>',
-            "</div>"
+            "</div>",
         ],
         "history"
     );
@@ -604,7 +596,7 @@ HistoryView.prototype.templates = (() => {
             "</option>",
             "<% }); %>",
             "</select>",
-            '<button class="next" <%- pages.current === pages.last ? "disabled" : "" %>>next</button>'
+            '<button class="next" <%- pages.current === pages.last ? "disabled" : "" %>>next</button>',
         ],
         "pages"
     );
@@ -612,7 +604,7 @@ HistoryView.prototype.templates = (() => {
     return _.extend(_.clone(_super.prototype.templates), {
         el: mainTemplate,
         controls: controlsTemplate,
-        pagination: paginationTemplate
+        pagination: paginationTemplate,
     });
 })();
 
@@ -621,17 +613,17 @@ export function historyEntry(options) {
         initialMode: options.initialModeDeleted,
         modes: [
             { mode: "showing_deleted", html: _l("Exclude deleted") },
-            { mode: "not_showing_deleted", html: _l("Include deleted") }
-        ]
+            { mode: "not_showing_deleted", html: _l("Include deleted") },
+        ],
     });
     $("#toggle-hidden").modeButton({
         initialMode: options.initialModeHidden,
         modes: [
             { mode: "showing_hidden", html: _l("Exclude hidden") },
-            { mode: "not_showing_hidden", html: _l("Include hidden") }
-        ]
+            { mode: "not_showing_hidden", html: _l("Include hidden") },
+        ],
     });
-    $("#switch").click(function() {
+    $("#switch").click(function () {
         //##HACK:ity hack hack
         //##TODO: remove when out of iframe
         const Galaxy = getGalaxyInstance();
@@ -652,13 +644,13 @@ export function historyEntry(options) {
     const history = new History(options.historyJSON);
 
     // attach the copy dialog to the import button now that we have a history
-    $("#import").click(function() {
+    $("#import").click(function () {
         const Galaxy = getGalaxyInstance();
         HistoryCopyDialog(history, {
             useImport: true,
             // use default datasets option to match the toggle-deleted button
-            allDatasets: $("#toggle-deleted").modeButton("getMode").mode === "showing_deleted"
-        }).done(function() {
+            allDatasets: $("#toggle-deleted").modeButton("getMode").mode === "showing_deleted",
+        }).done(function () {
             if (window === window.parent) {
                 window.location = getAppRoot();
             } else if (Galaxy.currHistoryPanel) {
@@ -671,29 +663,29 @@ export function historyEntry(options) {
         el: $("#history-" + options.historyJSON.id),
         className: viewClass.prototype.className + " wide",
         $scrollContainer: options.hasMasthead
-            ? function() {
+            ? function () {
                   return this.$el.parent();
               }
             : undefined,
         model: history,
         show_deleted: options.showDeletedJson,
         show_hidden: options.showHiddenJson,
-        purgeAllowed: options.allow_user_dataset_purge
+        purgeAllowed: options.allow_user_dataset_purge,
     });
     historyView.trigger("loading");
     history
         .fetchContents({ silent: true })
-        .fail(function() {
+        .fail(function () {
             alert("Galaxy history failed to load");
         })
-        .done(function() {
+        .done(function () {
             historyView.trigger("loading-done");
             historyView.render();
         });
-    $("#toggle-deleted").on("click", function() {
+    $("#toggle-deleted").on("click", function () {
         historyView.toggleShowDeleted();
     });
-    $("#toggle-hidden").on("click", function() {
+    $("#toggle-hidden").on("click", function () {
         historyView.toggleShowHidden();
     });
 }
@@ -701,5 +693,5 @@ export function historyEntry(options) {
 //==============================================================================
 export default {
     HistoryView: HistoryView,
-    historyEntry: historyEntry
+    historyEntry: historyEntry,
 };

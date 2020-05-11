@@ -26,10 +26,11 @@ try:
 except ImportError:
     yaml = None
 
-from galaxy.tool_util.deps import commands, installable
+from galaxy.tool_util.deps import installable
 from galaxy.tool_util.deps.conda_util import best_search_result
 from galaxy.tool_util.deps.docker_util import command_list as docker_command_list
 from galaxy.util import (
+    commands,
     safe_makedirs,
     unicodify,
 )
@@ -129,7 +130,7 @@ def get_affected_packages(args):
     recipes_dir = args.recipes_dir
     hours = args.diff_hours
     cmd = ['git', 'log', '--diff-filter=ACMRTUXB', '--name-only', '--pretty=""', '--since="%s hours ago"' % hours]
-    changed_files = subprocess.check_output(cmd, cwd=recipes_dir).strip().split('\n')
+    changed_files = unicodify(subprocess.check_output(cmd, cwd=recipes_dir)).splitlines()
     pkg_list = {x for x in changed_files if x.startswith('recipes/') and x.endswith('meta.yaml')}
     for pkg in pkg_list:
         if pkg and os.path.exists(os.path.join(recipes_dir, pkg)):

@@ -1,36 +1,36 @@
 #!/usr/bin/env python
 
 import argparse
-import os
 import subprocess
+import tempfile
 from glob import glob
 from subprocess import check_output
 
+from galaxy.util import unicodify
 from .get_tests import hashed_test_search, main_test_search
 
 
 def get_list_from_file(filename):
-    r"""
+    """
     Returns a list of containers stored in a file (one on each line)
     """
-    return [n for n in open(filename).read().split('\n') if n != '']  # if blank lines are in the file empty strings must be removed
+    with open(filename) as fh:
+        return [_ for _ in fh.read().splitlines() if _]  # if blank lines are in the file empty strings must be removed
 
 
 def docker_to_singularity(container, installation, filepath, no_sudo=False):
     """
     Convert docker to singularity container.
     """
-
+    cmd = [installation, 'build', '/'.join((filepath, container)), 'docker://quay.io/biocontainers/' + container]
     try:
         if no_sudo:
-            check_output("%s build %s/%s docker://quay.io/biocontainers/%s" % (installation, filepath, container, container), stderr=subprocess.STDOUT, shell=True)
+            check_output(cmd, stderr=subprocess.STDOUT)
         else:
-            check_output("sudo %s build %s/%s docker://quay.io/biocontainers/%s && sudo rm -rf /root/.singularity/docker/" % (installation, filepath, container, container), stderr=subprocess.STDOUT, shell=True)
+            check_output(cmd.insert(0, 'sudo'), stderr=subprocess.STDOUT)
+            check_output(['sudo', 'rm', '-rf', '/root/.singularity/docker/'], stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as e:
-        error_info = {'code': e.returncode, 'cmd': e.cmd, 'out': e.output}
-        return error_info
-    else:
-        return None
+        raise Exception("Docker to Singularity conversion failed.\nOutput was:\n%" % unicodify(e.output))
 
 
 def singularity_container_test(tests, installation, filepath):
@@ -40,48 +40,44 @@ def singularity_container_test(tests, installation, filepath):
     test_results = {'passed': [], 'failed': [], 'notest': []}
 
     # create a 'sanitised home' directory in which the containers may be mounted - see http://singularity.lbl.gov/faq#solution-1-specify-the-home-to-mount
-    os.mkdir("/tmp/sing_home")
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        for container, test in tests.items():
+            if 'commands' not in test and 'imports' not in test:
+                test_results['notest'].append(container)
 
-    for container, test in tests.items():
-        if 'commands' not in test and 'imports' not in test:
-            test_results['notest'].append(container)
+            else:
+                exec_command = [installation, 'exec', '-H', tmpdirname, '/'.join((filepath, container))]
+                test_passed = True
+                errors = []
+                if test.get('commands', False):
+                    for test_command in test['commands']:
+                        test_command = test_command.replace('$PREFIX', '/usr/local/')
+                        test_command = test_command.replace('${PREFIX}', '/usr/local/')
+                        test_command = test_command.replace('$R ', 'Rscript ')
 
-        else:
-            test_passed = True
-            errors = []
-            if test.get('commands', False):
-                for command in test['commands']:
-                    command = command.replace('$PREFIX', '/usr/local/')
-                    command = command.replace('${PREFIX}', '/usr/local/')
-                    command = command.replace('$R ', 'Rscript ')
-
-                    try:
-                        check_output("%s exec -H /tmp/sing_home %s/%s bash -c \"%s\"" % (
-                            installation, filepath, container, command), stderr=subprocess.STDOUT, shell=True)
-                    except subprocess.CalledProcessError:
                         try:
-                            check_output("%s exec -H /tmp/sing_home %s/%s %s" % (
-                                installation, filepath, container, command), stderr=subprocess.STDOUT, shell=True)
+                            check_output(exec_command.extend(['bash', '-c', test_command]), stderr=subprocess.STDOUT)
+                        except subprocess.CalledProcessError:
+                            try:
+                                check_output(exec_command.append(test_command), stderr=subprocess.STDOUT)
+                            except subprocess.CalledProcessError as e:
+                                errors.append(
+                                    {'command': test_command, 'output': unicodify(e.output)})
+                                test_passed = False
+
+                if test.get('imports', False):
+                    for imp in test['imports']:
+                        try:
+                            check_output(exec_command.extend([test['import_lang'], 'import ' + imp]), stderr=subprocess.STDOUT)
                         except subprocess.CalledProcessError as e:
-                            errors.append(
-                                {'command': command, 'output': e.output})
+                            errors.append({'import': imp, 'output': unicodify(e.output)})
                             test_passed = False
 
-            if test.get('imports', False):
-                for imp in test['imports']:
-                    try:
-                        check_output("%s exec -H /tmp/sing_home %s/%s %s 'import %s'" % (installation, filepath,
-                                                                                         container, test['import_lang'], imp), stderr=subprocess.STDOUT, shell=True)
-                    except subprocess.CalledProcessError as e:
-                        errors.append({'import': imp, 'output': e.output})
-                        test_passed = False
-
-            if test_passed:
-                test_results['passed'].append(container)
-            else:
-                test['errors'] = errors
-                test_results['failed'].append(test)
-    os.rmdir("/tmp/sing_home")
+                if test_passed:
+                    test_results['passed'].append(container)
+                else:
+                    test['errors'] = errors
+                    test_results['failed'].append(test)
     return test_results
 
 

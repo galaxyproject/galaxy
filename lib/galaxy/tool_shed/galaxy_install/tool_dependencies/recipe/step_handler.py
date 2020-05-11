@@ -41,11 +41,15 @@ class Download(object):
         If the checksum does not match an exception is thrown.
         """
         file_path = os.path.join(install_dir, downloaded_file_name)
-        try:
-            download_to_file(download_url, file_path, chunk_size=basic_util.CHUNK_SIZE)
-        except Exception as e:
-            err_msg = 'Error downloading from URL %s : %s' % (str(download_url), str(e))
-            raise Exception(err_msg)
+        if download_url.startswith("file://"):
+            local_file_source = download_url[len('file://'):].split('#')[0]
+            shutil.copyfile(local_file_source, file_path)
+        else:
+            try:
+                download_to_file(download_url, file_path, chunk_size=basic_util.CHUNK_SIZE)
+            except Exception as e:
+                err_msg = 'Error downloading from URL %s : %s' % (str(download_url), str(e))
+                raise Exception(err_msg)
 
         if 'sha256sum' in checksums or '#sha256#' in download_url:
             downloaded_checksum = hashlib.sha256(open(file_path, 'rb').read()).hexdigest().lower()
@@ -549,9 +553,9 @@ class DownloadByUrl(Download, RecipeStep):
         if is_binary:
             log_file = os.path.join(install_environment.install_dir, basic_util.INSTALLATION_LOG)
             if os.path.exists(log_file):
-                logfile = open(log_file, 'ab')
+                logfile = open(log_file, 'a')
             else:
-                logfile = open(log_file, 'wb')
+                logfile = open(log_file, 'w')
             logfile.write('Successfully downloaded from url: %s\n' % action_dict['url'])
             logfile.close()
         log.debug('Successfully downloaded from url: %s' % action_dict['url'])

@@ -2,11 +2,13 @@
 
 import optparse
 import sqlite3
-import string
 import sys
 import tempfile
 
-import six
+try:
+    maketrans = str.maketrans
+except AttributeError:
+    from string import maketrans
 
 
 def stop_err(msg):
@@ -33,10 +35,7 @@ def solid2sanger(quality_string, min_qual=0):
 def Translator(frm='', to='', delete=''):
     if len(to) == 1:
         to = to * len(frm)
-    if six.PY2:
-        trans = string.maketrans(frm, to)
-    else:
-        trans = str.maketrans(frm, to)
+    trans = maketrans(frm, to)
 
     def callable(s):
         return s.translate(trans, delete)

@@ -6,20 +6,20 @@ import _ from "underscore";
 import jQuery from "jquery";
 import { getAppRoot } from "onload/loadConfig";
 
-($ => {
+(($) => {
     // add event properties
     jQuery.event.props.push("dataTransfer");
 
     /**
         xhr request helper
     */
-    var _uploadrequest = config => {
+    var _uploadrequest = (config) => {
         var cnf = $.extend(
             {
                 error_default: "Please make sure the file is available.",
                 error_server: "Upload request failed.",
                 error_login: "Uploads require you to log in.",
-                error_retry: "Waiting for server to resume..."
+                error_retry: "Waiting for server to resume...",
             },
             config
         );
@@ -63,7 +63,7 @@ import { getAppRoot } from "onload/loadConfig";
     /**
         Posts chunked files to the API.
     */
-    $.uploadchunk = function(config) {
+    $.uploadchunk = function (config) {
         // parse options
         var cnf = $.extend(
             {},
@@ -78,7 +78,7 @@ import { getAppRoot } from "onload/loadConfig";
                 url: null,
                 error_file: "File not provided.",
                 error_attempt: "Maximum number of attempts reached.",
-                error_tool: "Tool submission failed."
+                error_tool: "Tool submission failed.",
             },
             config
         );
@@ -118,7 +118,7 @@ import { getAppRoot } from "onload/loadConfig";
             _uploadrequest({
                 url: `${getAppRoot()}api/uploads`,
                 data: form,
-                success: upload_response => {
+                success: (upload_response) => {
                     var new_start = start + chunk_size;
                     if (new_start < size) {
                         attempts = cnf.attempts;
@@ -128,25 +128,25 @@ import { getAppRoot } from "onload/loadConfig";
                         data.payload.inputs = JSON.parse(data.payload.inputs);
                         data.payload.inputs["files_0|file_data"] = {
                             session_id: session_id,
-                            name: file.name
+                            name: file.name,
                         };
                         data.payload.inputs = JSON.stringify(data.payload.inputs);
                         $.ajax({
                             url: `${getAppRoot()}api/tools`,
                             method: "POST",
                             data: data.payload,
-                            success: tool_response => {
+                            success: (tool_response) => {
                                 cnf.success(tool_response);
                             },
-                            error: tool_response => {
+                            error: (tool_response) => {
                                 var err_msg =
                                     tool_response && tool_response.responseJSON && tool_response.responseJSON.err_msg;
                                 cnf.error(err_msg || cnf.error_tool);
-                            }
+                            },
                         });
                     }
                 },
-                warning: upload_response => {
+                warning: (upload_response) => {
                     if (--attempts > 0) {
                         console.debug("Retrying last chunk...");
                         cnf.warning(upload_response);
@@ -156,15 +156,15 @@ import { getAppRoot } from "onload/loadConfig";
                         cnf.error(cnf.error_attempt);
                     }
                 },
-                error: upload_response => {
+                error: (upload_response) => {
                     console.debug(upload_response);
                     cnf.error(upload_response);
                 },
-                progress: e => {
+                progress: (e) => {
                     if (e.lengthComputable) {
                         cnf.progress(Math.min(Math.round(((start + e.loaded) * 100) / file.size), 100));
                     }
-                }
+                },
             });
         }
 
@@ -175,7 +175,7 @@ import { getAppRoot } from "onload/loadConfig";
     /**
         Posts multiple files without chunking to the API.
     */
-    $.uploadpost = function(config) {
+    $.uploadpost = function (config) {
         var cnf = $.extend(
             {},
             {
@@ -185,7 +185,7 @@ import { getAppRoot } from "onload/loadConfig";
                 progress: () => {},
                 url: null,
                 maxfilesize: 1048576 * 2048,
-                error_filesize: "File exceeds 2GB. Please use a FTP client."
+                error_filesize: "File exceeds 2GB. Please use a FTP client.",
             },
             config
         );
@@ -221,18 +221,18 @@ import { getAppRoot } from "onload/loadConfig";
             data: form,
             success: cnf.success,
             error: cnf.error,
-            progress: e => {
+            progress: (e) => {
                 if (e.lengthComputable) {
                     cnf.progress(Math.round((e.loaded * 100) / e.total));
                 }
-            }
+            },
         });
     };
 
     /**
         Handles the upload events drag/drop etc.
     */
-    $.fn.uploadinput = function(options) {
+    $.fn.uploadinput = function (options) {
         // initialize
         var el = this;
         var opts = $.extend(
@@ -241,7 +241,7 @@ import { getAppRoot } from "onload/loadConfig";
                 ondragover: () => {},
                 ondragleave: () => {},
                 onchange: () => {},
-                multiple: false
+                multiple: false,
             },
             options
         );
@@ -249,7 +249,7 @@ import { getAppRoot } from "onload/loadConfig";
         // append hidden upload field
         var $input = $(`<input type="file" style="display: none" ${(opts.multiple && "multiple") || ""}/>`);
         el.append(
-            $input.change(e => {
+            $input.change((e) => {
                 opts.onchange(e.target.files);
                 e.target.value = null;
             })
@@ -257,18 +257,18 @@ import { getAppRoot } from "onload/loadConfig";
 
         // drag/drop events
         const element = el.get(0);
-        element.addEventListener("drop", e => {
+        element.addEventListener("drop", (e) => {
             opts.ondragleave(e);
             if (e.dataTransfer) {
                 opts.onchange(e.dataTransfer.files);
                 e.preventDefault();
             }
         });
-        element.addEventListener("dragover", e => {
+        element.addEventListener("dragover", (e) => {
             e.preventDefault();
             opts.ondragover(e);
         });
-        element.addEventListener("dragleave", e => {
+        element.addEventListener("dragleave", (e) => {
             e.stopPropagation();
             opts.ondragleave(e);
         });
@@ -277,29 +277,29 @@ import { getAppRoot } from "onload/loadConfig";
         return {
             dialog: () => {
                 $input.trigger("click");
-            }
+            },
         };
     };
 
     /**
         Handles the upload queue and events such as drag/drop etc.
     */
-    $.fn.uploadbox = function(options) {
+    $.fn.uploadbox = function (options) {
         // parse options
         var opts = $.extend(
             {},
             {
                 dragover: () => {},
                 dragleave: () => {},
-                announce: d => {},
-                initialize: d => {},
+                announce: (d) => {},
+                initialize: (d) => {},
                 progress: (d, m) => {},
                 success: (d, m) => {},
                 warning: (d, m) => {},
                 error: (d, m) => {
                     alert(m);
                 },
-                complete: () => {}
+                complete: () => {},
             },
             options
         );
@@ -321,14 +321,14 @@ import { getAppRoot } from "onload/loadConfig";
         // element
         var uploadinput = $(this).uploadinput({
             multiple: true,
-            onchange: files => {
-                _.each(files, file => {
+            onchange: (files) => {
+                _.each(files, (file) => {
                     file.chunk_mode = true;
                 });
                 add(files);
             },
             ondragover: options.ondragover,
-            ondragleave: options.ondragleave
+            ondragleave: options.ondragleave,
         });
 
         // add new files to upload queue
@@ -338,12 +338,12 @@ import { getAppRoot } from "onload/loadConfig";
                 _.each(files, (file, key) => {
                     if (
                         file.mode !== "new" &&
-                        _.filter(queue, f => f.name === file.name && f.size === file.size).length
+                        _.filter(queue, (f) => f.name === file.name && f.size === file.size).length
                     ) {
                         file.duplicate = true;
                     }
                 });
-                _.each(files, file => {
+                _.each(files, (file) => {
                     if (!file.duplicate) {
                         index = String(queue_index++);
                         queue[index] = file;
@@ -403,20 +403,20 @@ import { getAppRoot } from "onload/loadConfig";
                 url: opts.url,
                 data: opts.initialize(index),
                 session: session,
-                success: message => {
+                success: (message) => {
                     opts.success(index, message);
                     process();
                 },
-                warning: message => {
+                warning: (message) => {
                     opts.warning(index, message);
                 },
-                error: message => {
+                error: (message) => {
                     opts.error(index, message);
                     process();
                 },
-                progress: percentage => {
+                progress: (percentage) => {
                     opts.progress(index, percentage);
-                }
+                },
             });
         }
 
@@ -470,7 +470,7 @@ import { getAppRoot } from "onload/loadConfig";
             stop: stop,
             reset: reset,
             configure: configure,
-            compatible: compatible
+            compatible: compatible,
         };
     };
 })(jQuery);

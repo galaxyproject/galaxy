@@ -13,13 +13,16 @@ from fabric.operations import _AttributeString
 from six.moves import queue
 
 from galaxy.tool_shed.galaxy_install.tool_dependencies.recipe import asynchronous_reader
-from galaxy.tool_shed.util.basic_util import INSTALLATION_LOG, NO_OUTPUT_TIMEOUT
+from galaxy.tool_shed.util.basic_util import (
+    INSTALLATION_LOG,
+    NO_OUTPUT_TIMEOUT,
+)
 from galaxy.tool_shed.util.tool_dependency_util import set_tool_dependency_attributes
 from galaxy.util import (
     DATABASE_MAX_STRING_SIZE,
     DATABASE_MAX_STRING_SIZE_PRETTY,
     shrink_string_by_size,
-    unicodify
+    unicodify,
 )
 
 log = logging.getLogger(__name__)
@@ -78,13 +81,13 @@ class InstallEnvironment(object):
         """
         stdout_logger = logging.getLogger('install_environment.STDOUT')
         stderr_logger = logging.getLogger('install_environment.STDERR')
-        for line in iter(stdout.readline, ''):
-            output = line.rstrip()
+        for line in iter(stdout.readline, b''):
+            output = unicodify(line).rstrip()
             stdout_logger.debug(output)
             stdout_queue.put(output)
         stdout_queue.put(None)
-        for line in iter(stderr.readline, ''):
-            output = line.rstrip()
+        for line in iter(stderr.readline, b''):
+            output = unicodify(line).rstrip()
             stderr_logger.debug(output)
             stderr_queue.put(output)
         stderr_queue.put(None)
@@ -245,19 +248,18 @@ class InstallEnvironment(object):
 
     def log_results(self, command, fabric_AttributeString, file_path):
         """Write attributes of fabric.operations._AttributeString to a specified log file."""
-        if os.path.exists(file_path):
-            logfile = open(file_path, 'ab')
-        else:
-            logfile = open(file_path, 'wb')
-        logfile.write("\n#############################################\n")
-        logfile.write('%s\nSTDOUT\n' % command)
-        logfile.write(str(fabric_AttributeString.stdout))
-        logfile.write("\n#############################################\n")
-        logfile.write("\n#############################################\n")
-        logfile.write('%s\nSTDERR\n' % command)
-        logfile.write(str(fabric_AttributeString.stderr))
-        logfile.write("\n#############################################\n")
-        logfile.close()
+        mode = 'a' if os.path.exists(file_path) else 'w'
+        with open(file_path, mode) as logfile:
+            logfile.write("\n#############################################\n")
+            logfile.write(command)
+            logfile.write('\nSTDOUT\n')
+            logfile.write(fabric_AttributeString.stdout)
+            logfile.write("\n#############################################\n")
+            logfile.write("\n#############################################\n")
+            logfile.write(command)
+            logfile.write('\nSTDERR\n')
+            logfile.write(fabric_AttributeString.stderr)
+            logfile.write("\n#############################################\n")
 
     @contextmanager
     def use_tmp_dir(self):

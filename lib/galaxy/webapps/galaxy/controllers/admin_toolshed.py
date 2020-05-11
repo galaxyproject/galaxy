@@ -1,12 +1,14 @@
 import json
 import logging
 import os
+from functools import wraps
 
 from six import string_types
 from sqlalchemy import or_
 
 import tool_shed.repository_types.util as rt_util
 from galaxy import util, web
+from galaxy.exceptions import ConfigDoesNotAllowException
 from galaxy.tool_shed.galaxy_install import install_manager
 from galaxy.tool_shed.galaxy_install.repository_dependencies import repository_dependency_manager
 from galaxy.tool_shed.galaxy_install.tools import tool_panel_manager
@@ -31,12 +33,24 @@ from .admin import AdminGalaxy
 log = logging.getLogger(__name__)
 
 
+def legacy_tool_shed_endpoint(func):
+    # admin only and only available if running test cases.
+    @wraps(func)
+    def wrapper(trans, *args, **kwargs):
+        if not trans.app.config.config_dict.get("running_functional_tests", False):
+            raise ConfigDoesNotAllowException("Legacy tool shed endpoint only available during testing.")
+        return func(trans, *args, **kwargs)
+
+    return wrapper
+
+
 class AdminToolshed(AdminGalaxy):
 
     installed_repository_grid = admin_toolshed_grids.InstalledRepositoryGrid()
 
     @web.expose
     @web.require_admin
+    @legacy_tool_shed_endpoint
     def activate_repository(self, trans, **kwd):
         """Activate a repository that was deactivated but not uninstalled."""
         repository_id = kwd['id']
@@ -59,6 +73,7 @@ class AdminToolshed(AdminGalaxy):
 
     @web.legacy_expose_api
     @web.require_admin
+    @legacy_tool_shed_endpoint
     def browse_repositories(self, trans, **kwd):
         message = kwd.get('message', '')
         status = kwd.get('status', '')
@@ -73,6 +88,7 @@ class AdminToolshed(AdminGalaxy):
 
     @web.expose
     @web.require_admin
+    @legacy_tool_shed_endpoint
     def restore_repository(self, trans, **kwd):
         repository_id = kwd['id']
         repository = repository_util.get_installed_tool_shed_repository(trans.app, repository_id)
@@ -157,6 +173,7 @@ class AdminToolshed(AdminGalaxy):
 
     @web.expose
     @web.require_admin
+    @legacy_tool_shed_endpoint
     def view_tool_metadata(self, trans, repository_id, tool_id, **kwd):
         message = escape(kwd.get('message', ''))
         status = kwd.get('status', 'done')
@@ -192,14 +209,14 @@ class AdminToolshed(AdminGalaxy):
 
     @web.json
     @web.require_admin
+    @web.do_not_cache
+    @legacy_tool_shed_endpoint
     def get_file_contents(self, trans, file_path, repository_id):
-        # Avoid caching
-        trans.response.headers['Pragma'] = 'no-cache'
-        trans.response.headers['Expires'] = '0'
         return suc.get_repository_file_contents(trans.app, file_path, repository_id, is_admin=True)
 
     @web.expose
     @web.require_admin
+    @legacy_tool_shed_endpoint
     def get_tool_dependencies(self, trans, repository_id, repository_name, repository_owner, changeset_revision):
         """
         Send a request to the appropriate tool shed to retrieve the dictionary of tool dependencies defined for
@@ -216,7 +233,7 @@ class AdminToolshed(AdminGalaxy):
             raise Exception(message)
         params = dict(name=repository_name, owner=repository_owner, changeset_revision=changeset_revision)
         pathspec = ['repository', 'get_tool_dependencies']
-        raw_text = util.url_get(tool_shed_url, password_mgr=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
+        raw_text = util.url_get(tool_shed_url, auth=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
         if len(raw_text) > 2:
             encoded_text = json.loads(raw_text)
             text = encoding_util.tool_shed_decode(encoded_text)
@@ -226,6 +243,7 @@ class AdminToolshed(AdminGalaxy):
 
     @web.expose
     @web.require_admin
+    @legacy_tool_shed_endpoint
     def get_updated_repository_information(self, trans, repository_id, repository_name, repository_owner, changeset_revision):
         """
         Send a request to the appropriate tool shed to retrieve the dictionary of information required to reinstall
@@ -242,12 +260,13 @@ class AdminToolshed(AdminGalaxy):
                       owner=str(repository_owner),
                       changeset_revision=changeset_revision)
         pathspec = ['repository', 'get_updated_repository_information']
-        raw_text = util.url_get(tool_shed_url, password_mgr=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
+        raw_text = util.url_get(tool_shed_url, auth=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
         repo_information_dict = json.loads(raw_text)
         return repo_information_dict
 
     @web.expose
     @web.require_admin
+    @legacy_tool_shed_endpoint
     def initiate_tool_dependency_installation(self, trans, tool_dependencies, **kwd):
         """
         Install specified dependencies for repository tools.  The received list of tool_dependencies
@@ -287,6 +306,7 @@ class AdminToolshed(AdminGalaxy):
 
     @web.expose
     @web.require_admin
+    @legacy_tool_shed_endpoint
     def install_latest_repository_revision(self, trans, **kwd):
         """Install the latest installable revision of a repository that has been previously installed."""
         repository_id = kwd.get('id', None)
@@ -300,7 +320,7 @@ class AdminToolshed(AdminGalaxy):
                               name=name,
                               owner=owner)
                 pathspec = ['repository', 'get_latest_downloadable_changeset_revision']
-                raw_text = util.url_get(tool_shed_url, password_mgr=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
+                raw_text = util.url_get(tool_shed_url, auth=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
                 url = util.build_url(tool_shed_url, pathspec=pathspec, params=params)
                 latest_downloadable_revision = json.loads(raw_text)
                 if latest_downloadable_revision == hg_util.INITIAL_CHANGELOG_HASH:
@@ -338,6 +358,7 @@ class AdminToolshed(AdminGalaxy):
 
     @web.expose
     @web.require_admin
+    @legacy_tool_shed_endpoint
     def install_tool_dependencies_with_update(self, trans, **kwd):
         """
         Updating an installed tool shed repository where new tool dependencies but no new repository
@@ -413,6 +434,7 @@ class AdminToolshed(AdminGalaxy):
 
     @web.expose
     @web.require_admin
+    @legacy_tool_shed_endpoint
     def install_repositories(self, trans, **kwd):
         reinstalling = util.string_as_bool(kwd.get('reinstalling', False))
         encoded_kwd = kwd.get('encoded_kwd')
@@ -438,6 +460,7 @@ class AdminToolshed(AdminGalaxy):
 
     @web.expose
     @web.require_admin
+    @legacy_tool_shed_endpoint
     def manage_repository(self, trans, **kwd):
         message = escape(kwd.get('message', ''))
         status = kwd.get('status', 'done')
@@ -511,6 +534,7 @@ class AdminToolshed(AdminGalaxy):
 
     @web.expose
     @web.require_admin
+    @legacy_tool_shed_endpoint
     def monitor_repository_installation(self, trans, **kwd):
         tsr_ids = common_util.get_tool_shed_repository_ids(**kwd)
         if not tsr_ids:
@@ -532,6 +556,7 @@ class AdminToolshed(AdminGalaxy):
 
     @web.expose
     @web.require_admin
+    @legacy_tool_shed_endpoint
     def prepare_for_install(self, trans, **kwd):
         if not suc.have_shed_tool_conf_for_install(trans.app):
             message = 'The <b>tool_config_file</b> setting in <b>galaxy.ini</b> must include at least one '
@@ -590,7 +615,7 @@ class AdminToolshed(AdminGalaxy):
                 try:
                     params = dict(name=str(repository.name), owner=str(repository.owner))
                     pathspec = ['repository', 'get_repository_id']
-                    repository_ids = util.url_get(tool_shed_url, password_mgr=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
+                    repository_ids = util.url_get(tool_shed_url, auth=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
                 except Exception as e:
                     # The Tool Shed cannot handle the get_repository_id request, so the code must be older than the
                     # 04/2014 Galaxy release when it was introduced.  It will be safest to error out and let the
@@ -606,7 +631,7 @@ class AdminToolshed(AdminGalaxy):
             # Get the information necessary to install each repository.
             params = dict(repository_ids=str(repository_ids), changeset_revisions=str(changeset_revisions))
             pathspec = ['repository', 'get_repository_information']
-            raw_text = util.url_get(tool_shed_url, password_mgr=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
+            raw_text = util.url_get(tool_shed_url, auth=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
             repo_information_dict = json.loads(raw_text)
             for encoded_repo_info_dict in repo_information_dict.get('repo_info_dicts', []):
                 decoded_repo_info_dict = encoding_util.tool_shed_decode(encoded_repo_info_dict)
@@ -812,6 +837,7 @@ class AdminToolshed(AdminGalaxy):
 
     @web.expose
     @web.require_admin
+    @legacy_tool_shed_endpoint
     def reinstall_repository(self, trans, **kwd):
         """
         Reinstall a tool shed repository that has been previously uninstalled, making sure to handle all repository
@@ -963,10 +989,8 @@ class AdminToolshed(AdminGalaxy):
                                    reinstalling=True)
 
     @web.json
+    @web.do_not_cache
     def repository_installation_status_updates(self, trans, ids=None, status_list=None):
-        # Avoid caching
-        trans.response.headers['Pragma'] = 'no-cache'
-        trans.response.headers['Expires'] = '0'
         # Create new HTML for any ToolShedRepository records whose status that has changed.
         rval = []
         if ids is not None and status_list is not None:
@@ -985,6 +1009,7 @@ class AdminToolshed(AdminGalaxy):
 
     @web.expose
     @web.require_admin
+    @legacy_tool_shed_endpoint
     def reselect_tool_panel_section(self, trans, **kwd):
         """
         Select or change the tool panel section to contain the tools included in the tool shed repository
@@ -1036,7 +1061,7 @@ class AdminToolshed(AdminGalaxy):
                               owner=tool_shed_repository.owner,
                               changeset_revision=tool_shed_repository.installed_changeset_revision)
                 pathspec = ['repository', 'get_readme_files']
-                raw_text = util.url_get(tool_shed_url, password_mgr=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
+                raw_text = util.url_get(tool_shed_url, auth=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
                 readme_files_dict = json.loads(raw_text)
                 tool_dependencies = metadata.get('tool_dependencies', None)
             rdim = repository_dependency_manager.RepositoryDependencyInstallManager(trans.app)
@@ -1155,6 +1180,7 @@ class AdminToolshed(AdminGalaxy):
 
     @web.expose
     @web.require_admin
+    @legacy_tool_shed_endpoint
     def uninstall_tool_dependencies(self, trans, **kwd):
         message = escape(kwd.get('message', ''))
         status = kwd.get('status', 'done')
@@ -1199,6 +1225,7 @@ class AdminToolshed(AdminGalaxy):
 
     @web.expose
     @web.require_admin
+    @legacy_tool_shed_endpoint
     def update_to_changeset_revision(self, trans, **kwd):
         """Update a cloned repository to the latest revision possible."""
         message = escape(kwd.get('message', ''))

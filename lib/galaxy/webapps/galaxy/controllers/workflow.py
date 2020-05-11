@@ -574,7 +574,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             return {'id': trans.security.encode_id(stored_workflow.id), 'message': 'Workflow %s has been created.' % workflow_name}
 
     @web.json
-    def save_workflow_as(self, trans, workflow_name, workflow_data, workflow_annotation="", **kwd):
+    def save_workflow_as(self, trans, workflow_name, workflow_data, workflow_annotation="", from_tool_form=False):
         """
             Creates a new workflow based on Save As command. It is a new workflow, but
             is created with workflow_data already present.
@@ -604,6 +604,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
                     trans,
                     stored_workflow,
                     workflow_data,
+                    from_tool_form=from_tool_form,
                 )
             except workflows.MissingToolsException as e:
                 return dict(
@@ -706,8 +707,8 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             'version'                 : version,
             'annotation'              : self.get_item_annotation_str(trans.sa_session, trans.user, stored),
             'toolbox'                 : trans.app.toolbox.to_dict(trans),
-            'module_sections'         : module_sections,
-            'data_managers'           : data_managers,
+            'moduleSections'          : module_sections,
+            'dataManagers'            : data_managers,
             'workflows'               : workflows
         }
 

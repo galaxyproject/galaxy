@@ -36,41 +36,41 @@ export default {
             items: [],
             modalShow: true,
             optionsShow: false,
-            hasValue: false
+            hasValue: false,
         };
     },
-    created: function() {
+    created: function () {
         this.services = new Services();
         this.load();
     },
     methods: {
         formatRows() {},
-        clicked: function(record) {
+        clicked: function (record) {
             this.modalShow = false;
             this.callback(record);
         },
         /** Performs server request to retrieve data records **/
-        load: function() {
+        load: function () {
             this.filter = null;
             this.optionsShow = false;
             this.services
                 .getWorkflows()
-                .then(items => {
-                    this.items = items.map(item => {
+                .then((items) => {
+                    this.items = items.map((item) => {
                         return {
                             id: item.id,
                             label: item.name,
                             time: item.create_time,
-                            isLeaf: true
+                            isLeaf: true,
                         };
                     });
                     this.formatRows();
                     this.optionsShow = true;
                 })
-                .catch(errorMessage => {
+                .catch((errorMessage) => {
                     this.errorMessage = errorMessage.toString();
                 });
-        }
-    }
+        },
+    },
 };
 </script>

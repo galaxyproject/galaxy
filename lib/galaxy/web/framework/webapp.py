@@ -79,6 +79,7 @@ class WebApplication(base.WebApplication):
     def __init__(self, galaxy_app, session_cookie='galaxysession', name=None):
         self.name = name
         base.WebApplication.__init__(self)
+        galaxy_app.is_webapp = True
         self.set_transaction_factory(lambda e: self.transaction_chooser(e, galaxy_app, session_cookie))
         # Mako support
         self.mako_template_lookup = self.create_mako_template_lookup(galaxy_app, name)
@@ -106,6 +107,7 @@ class WebApplication(base.WebApplication):
         if isinstance(e, MessageException):
             # In the case of a controller exception, sanitize to make sure
             # unsafe html input isn't reflected back to the user
+            trans.response.status = e.status_code
             return trans.show_message(sanitize_html(e.err_msg), e.type)
 
     def make_body_iterable(self, trans, body):
@@ -250,7 +252,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
                         self.user = None
                         self.galaxy_session = None
                     else:
-                        self.response.send_redirect(url_for(controller='user',
+                        self.response.send_redirect(url_for(controller='root',
                                                      action='login',
                                                      message="You have been logged out due to inactivity.  Please log in again to continue using Galaxy.",
                                                      status='info',
@@ -1013,7 +1015,6 @@ def build_url_map(app, global_conf, local_conf):
     urlmap["/static"] = Static(conf.get("static_dir", default_url_path("static/")), cache_time)
     urlmap["/images"] = Static(conf.get("static_images_dir", default_url_path("static/images")), cache_time)
     urlmap["/static/scripts"] = Static(conf.get("static_scripts_dir", default_url_path("static/scripts/")), cache_time)
-    urlmap["/static/style"] = Static(conf.get("static_style_dir", default_url_path("static/style/blue")), cache_time)
     urlmap["/static/welcome.html"] = Static(conf.get("static_welcome_html", default_url_path("static/welcome.html")), cache_time)
     urlmap["/favicon.ico"] = Static(conf.get("static_favicon_dir", default_url_path("static/favicon.ico")), cache_time)
     urlmap["/robots.txt"] = Static(conf.get("static_robots_txt", default_url_path("static/robots.txt")), cache_time)

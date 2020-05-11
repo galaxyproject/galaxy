@@ -1,7 +1,7 @@
 module.exports = {
     extends: [
         "eslint:recommended",
-        "plugin:vue/strongly-recommended",
+        "plugin:vue/strongly-recommended"
         //"airbnb-base", eventually
     ],
     env: {
@@ -15,17 +15,20 @@ module.exports = {
         parser: "babel-eslint",
         sourceType: "module"
     },
-    plugins: ["html"],
     rules: {
         // Standard rules
         "no-console": "off",
         "no-unused-vars": ["error", { args: "none" }],
         "prefer-const": "error",
+        "one-var": ["error", "never"],
+
+        "vue/valid-v-slot": "error",
+        "vue/v-slot-style": ["error", { atComponent: "v-slot", default: "v-slot", named: "longform" }],
 
         // Vue TODO (enable these)
-        "vue/require-default-prop": "off",
-        "vue/require-prop-types": "off",
-        "vue/prop-name-casing": "off",
+        "vue/require-default-prop": "warn",
+        "vue/require-prop-types": "warn",
+        "vue/prop-name-casing": "warn",
 
         // Prettier compromises/workarounds -- mostly #wontfix?
         "vue/html-indent": "off",

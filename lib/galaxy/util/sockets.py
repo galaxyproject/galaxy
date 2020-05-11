@@ -1,7 +1,20 @@
 import random
-import shlex
 import socket
-import subprocess
+
+from galaxy.util import commands
+
+
+def get_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        # doesn't even have to be reachable
+        s.connect(('10.255.255.255', 1))
+        ip = s.getsockname()[0]
+    except Exception:
+        ip = None
+    finally:
+        s.close()
+    return ip
 
 
 def unused_port(range=None):
@@ -24,11 +37,11 @@ def __unused_port_on_range(range):
     assert range[0] and range[1]
 
     # Find all ports that are already occupied
-    cmd_netstat = shlex.split("netstat tuln")
-    p1 = subprocess.Popen(cmd_netstat, stdout=subprocess.PIPE)
+    cmd_netstat = ["netstat", "tuln"]
+    stdout = commands.execute(cmd_netstat)
 
     occupied_ports = set()
-    for line in p1.stdout.read().split('\n'):
+    for line in stdout.split('\n'):
         if line.startswith('tcp') or line.startswith('tcp6'):
             col = line.split()
             local_address = col[3]

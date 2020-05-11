@@ -23,10 +23,7 @@ uwsgi:
   # routing requests.
   offload-threads: 2
 
-  # Mapping to serve style content.
-  static-map: /static/style=static/style/blue
-
-  # Mapping to serve the remainder of the static content.
+  # Mapping to serve static content.
   static-map: /static=static
 
   # Mapping to serve the favicon.
@@ -93,7 +90,7 @@ uwsgi:
 reports:
 
   # Verbosity of console log messages.  Acceptable values can be found
-  # here: https://docs.python.org/2/library/logging.html#logging-levels
+  # here: https://docs.python.org/library/logging.html#logging-levels
   #log_level: DEBUG
 
   # Database connection. Galaxy Reports are intended for production

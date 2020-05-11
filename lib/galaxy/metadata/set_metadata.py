@@ -281,7 +281,15 @@ def set_metadata_portable():
         # discover extra outputs...
         from galaxy.job_execution.output_collect import collect_dynamic_outputs, collect_primary_datasets, SessionlessJobContext
 
-        job_context = SessionlessJobContext(metadata_params, tool_provided_metadata, object_store, export_store, import_model_store, os.path.join(tool_job_working_directory, "working"))
+        job_context = SessionlessJobContext(
+            metadata_params,
+            tool_provided_metadata,
+            object_store,
+            export_store,
+            import_model_store,
+            os.path.join(tool_job_working_directory, "working"),
+            final_job_state=final_job_state,
+        )
 
         output_collections = {}
         for name, output_collection in metadata_params["output_collections"].items():

@@ -1,11 +1,11 @@
 import logging
 import os
 
-from galaxy.tool_util.deps import commands
 from galaxy.tool_util.deps import docker_util
 from galaxy.tool_util.deps.container_classes import docker_cache_path
 from galaxy.tool_util.deps.requirements import parse_requirements_from_xml
 from galaxy.tool_util.loader_directory import load_tool_elements_from_path
+from galaxy.util import commands
 
 log = logging.getLogger(__name__)
 

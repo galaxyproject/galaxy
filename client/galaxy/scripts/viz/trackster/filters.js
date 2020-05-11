@@ -6,7 +6,7 @@ import { getGalaxyInstance } from "app";
 /**
  * Filters that enable users to show/hide data points dynamically.
  */
-var Filter = function(obj_dict) {
+var Filter = function (obj_dict) {
     this.manager = null;
     this.name = obj_dict.name;
     // Index into payload to filter.
@@ -20,14 +20,14 @@ _.extend(Filter.prototype, {
     /**
      * Convert filter to dictionary.
      */
-    to_dict: function() {
+    to_dict: function () {
         return {
             name: this.name,
             index: this.index,
             tool_id: this.tool_id,
-            tool_exp_name: this.tool_exp_name
+            tool_exp_name: this.tool_exp_name,
         };
-    }
+    },
 });
 
 /**
@@ -45,7 +45,7 @@ var create_action_icon = (title, css_class, on_click_fn) =>
 /**
  * Number filters have a min, max as well as a low, high; low and high are used
  */
-var NumberFilter = function(obj_dict) {
+var NumberFilter = function (obj_dict) {
     //
     // Attribute init.
     //
@@ -68,7 +68,7 @@ var NumberFilter = function(obj_dict) {
     // Function that supports inline text editing of slider values.
     // Enable users to edit parameter's value via a text box.
     var edit_slider_values = (container, span, slider) => {
-        container.click(function() {
+        container.click(function () {
             var cur_value = span.text();
             var max = parseFloat(slider.slider("option", "max"));
 
@@ -94,16 +94,16 @@ var NumberFilter = function(obj_dict) {
                 .appendTo(span)
                 .focus()
                 .select()
-                .click(e => {
+                .click((e) => {
                     // Don't want click to propogate up to values_span and restart everything.
                     e.stopPropagation();
                 })
-                .blur(function() {
+                .blur(function () {
                     $(this).remove();
                     span.text(cur_value);
                     slider_row.removeClass("input");
                 })
-                .keyup(function(e) {
+                .keyup(function (e) {
                     if (e.keyCode === 27) {
                         // Escape key.
                         $(this).trigger("blur");
@@ -116,7 +116,7 @@ var NumberFilter = function(obj_dict) {
 
                         var slider_max = slider.slider("option", "max");
 
-                        var invalid = a_val => isNaN(a_val) || a_val > slider_max || a_val < slider_min;
+                        var invalid = (a_val) => isNaN(a_val) || a_val > slider_max || a_val < slider_min;
 
                         var new_value = $(this).val();
                         if (!multi_value) {
@@ -148,14 +148,9 @@ var NumberFilter = function(obj_dict) {
     filter.parent_div = $("<div/>").addClass("filter-row slider-row");
 
     // Set up filter label (name, values).
-    var filter_label = $("<div/>")
-        .addClass("elt-label")
-        .appendTo(filter.parent_div);
+    var filter_label = $("<div/>").addClass("elt-label").appendTo(filter.parent_div);
 
-    $("<span/>")
-        .addClass("slider-name")
-        .text(`${filter.name}  `)
-        .appendTo(filter_label);
+    $("<span/>").addClass("slider-name").text(`${filter.name}  `).appendTo(filter_label);
 
     var values_span = $("<span/>").text(`${this.low}-${this.high}`);
 
@@ -169,24 +164,20 @@ var NumberFilter = function(obj_dict) {
     filter.values_span = values_span;
 
     // Set up slider for filter.
-    var slider_div = $("<div/>")
-        .addClass("slider")
-        .appendTo(filter.parent_div);
-    filter.control_element = $("<div/>")
-        .attr("id", `${filter.name}-filter-control`)
-        .appendTo(slider_div);
+    var slider_div = $("<div/>").addClass("slider").appendTo(filter.parent_div);
+    filter.control_element = $("<div/>").attr("id", `${filter.name}-filter-control`).appendTo(slider_div);
     filter.control_element.slider({
         range: true,
         min: this.min,
         max: this.max,
         step: this.get_slider_step(this.min, this.max),
         values: [this.low, this.high],
-        slide: function(event, ui) {
+        slide: function (event, ui) {
             filter.slide(event, ui);
         },
-        change: function(event, ui) {
+        change: function (event, ui) {
             filter.control_element.slider("option", "slide").call(filter.control_element, event, ui);
-        }
+        },
     });
     filter.slider = filter.control_element;
     filter.slider_label = values_span;
@@ -195,18 +186,13 @@ var NumberFilter = function(obj_dict) {
     edit_slider_values(values_span_container, values_span, filter.control_element);
 
     // Set up filter display controls.
-    var display_controls_div = $("<div/>")
-        .addClass("display-controls")
-        .appendTo(filter.parent_div);
+    var display_controls_div = $("<div/>").addClass("display-controls").appendTo(filter.parent_div);
     this.transparency_icon = create_action_icon("Use filter for data transparency", "layer-transparent", () => {
         if (filter.manager.alpha_filter !== filter) {
             // Setting this filter as the alpha filter.
             filter.manager.alpha_filter = filter;
             // Update UI for new filter.
-            filter.manager.parent_div
-                .find(".layer-transparent")
-                .removeClass("active")
-                .hide();
+            filter.manager.parent_div.find(".layer-transparent").removeClass("active").hide();
             filter.transparency_icon.addClass("active").show();
         } else {
             // Clearing filter as alpha filter.
@@ -215,7 +201,7 @@ var NumberFilter = function(obj_dict) {
         }
         filter.manager.track.request_draw({
             force: true,
-            clear_after: true
+            clear_after: true,
         });
     })
         .appendTo(display_controls_div)
@@ -225,10 +211,7 @@ var NumberFilter = function(obj_dict) {
             // Setting this filter as the height filter.
             filter.manager.height_filter = filter;
             // Update UI for new filter.
-            filter.manager.parent_div
-                .find(".arrow-resize-090")
-                .removeClass("active")
-                .hide();
+            filter.manager.parent_div.find(".arrow-resize-090").removeClass("active").hide();
             filter.height_icon.addClass("active").show();
         } else {
             // Clearing filter as alpha filter.
@@ -237,7 +220,7 @@ var NumberFilter = function(obj_dict) {
         }
         filter.manager.track.request_draw({
             force: true,
-            clear_after: true
+            clear_after: true,
         });
     })
         .appendTo(display_controls_div)
@@ -265,39 +248,39 @@ _.extend(NumberFilter.prototype, {
     /**
      * Convert filter to dictionary.
      */
-    to_dict: function() {
+    to_dict: function () {
         var obj_dict = Filter.prototype.to_dict.call(this);
         return _.extend(obj_dict, {
             type: "number",
             min: this.min,
             max: this.max,
             low: this.low,
-            high: this.high
+            high: this.high,
         });
     },
     /**
      * Return a copy of filter.
      */
-    copy: function() {
+    copy: function () {
         return new NumberFilter({
             name: this.name,
             index: this.index,
             tool_id: this.tool_id,
-            tool_exp_name: this.tool_exp_name
+            tool_exp_name: this.tool_exp_name,
         });
     },
     /**
      * Get step for slider.
      */
     // FIXME: make this a "static" function.
-    get_slider_step: function(min, max) {
+    get_slider_step: function (min, max) {
         var range = max - min;
         return range <= 2 ? 0.01 : 1;
     },
     /**
      * Handle slide events.
      */
-    slide: function(event, ui) {
+    slide: function (event, ui) {
         var values = ui.values;
 
         // Set new values in UI.
@@ -313,7 +296,7 @@ _.extend(NumberFilter.prototype, {
             if (values[0] === self.low && values[1] === self.high) {
                 self.manager.track.request_draw({
                     force: true,
-                    clear_after: true
+                    clear_after: true,
                 });
             }
         }, 25);
@@ -321,20 +304,20 @@ _.extend(NumberFilter.prototype, {
     /**
      * Returns true if filter can be applied to element.
      */
-    applies_to: function(element) {
+    applies_to: function (element) {
         return element.length > this.index;
     },
     /**
      * Helper function: returns true if value in in filter's [low, high] range.
      */
-    _keep_val: function(val) {
+    _keep_val: function (val) {
         return isNaN(val) || (val >= this.low && val <= this.high);
     },
     /**
      * Returns true if (a) element's value(s) is in [low, high] (range is inclusive)
      * or (b) if value is non-numeric and hence unfilterable.
      */
-    keep: function(element) {
+    keep: function (element) {
         if (!this.applies_to(element)) {
             // No element to filter on.
             return true;
@@ -359,7 +342,7 @@ _.extend(NumberFilter.prototype, {
     /**
      * Update filter's min and max values based on element's values.
      */
-    update_attrs: function(element) {
+    update_attrs: function (element) {
         var updated = false;
         if (!this.applies_to(element)) {
             return updated;
@@ -392,7 +375,7 @@ _.extend(NumberFilter.prototype, {
     /**
      * Update filter's slider.
      */
-    update_ui_elt: function() {
+    update_ui_elt: function () {
         // Only show filter if min < max because filter is not useful otherwise. This
         // covers all corner cases, such as when min, max have not been defined and
         // when min == max.
@@ -417,13 +400,13 @@ _.extend(NumberFilter.prototype, {
             //var values = this.slider.slider( "option", "values" );
             //this.slider.slider( "option", "values", values );
         }
-    }
+    },
 });
 
 /**
  * Manages a set of filters.
  */
-var FiltersManager = function(track, obj_dict) {
+var FiltersManager = function (track, obj_dict) {
     this.track = track;
     this.alpha_filter = null;
     this.height_filter = null;
@@ -436,21 +419,19 @@ var FiltersManager = function(track, obj_dict) {
     //
     // Create parent div.
     //
-    this.parent_div = $("<div/>")
-        .addClass("filters")
-        .hide();
+    this.parent_div = $("<div/>").addClass("filters").hide();
     // Disable dragging, double clicking, keys on div so that actions on slider do not impact viz.
     this.parent_div
-        .bind("drag", e => {
+        .bind("drag", (e) => {
             e.stopPropagation();
         })
-        .click(e => {
+        .click((e) => {
             e.stopPropagation();
         })
-        .bind("dblclick", e => {
+        .bind("dblclick", (e) => {
             e.stopPropagation();
         })
-        .bind("keydown", e => {
+        .bind("keydown", (e) => {
             e.stopPropagation();
         });
 
@@ -489,9 +470,7 @@ var FiltersManager = function(track, obj_dict) {
 
     // Add button to filter complete dataset.
     if (this.filters.length !== 0) {
-        var run_buttons_row = $("<div/>")
-            .addClass("param-row")
-            .appendTo(this.parent_div);
+        var run_buttons_row = $("<div/>").addClass("param-row").appendTo(this.parent_div);
         var run_on_dataset_button = $("<input type='submit'/>")
             .attr("value", "Run on complete dataset")
             .appendTo(run_buttons_row);
@@ -504,22 +483,22 @@ var FiltersManager = function(track, obj_dict) {
 
 _.extend(FiltersManager.prototype, {
     // HTML manipulation and inspection.
-    show: function() {
+    show: function () {
         this.parent_div.show();
     },
-    hide: function() {
+    hide: function () {
         this.parent_div.hide();
     },
-    toggle: function() {
+    toggle: function () {
         this.parent_div.toggle();
     },
-    visible: function() {
+    visible: function () {
         return this.parent_div.is(":visible");
     },
     /**
      * Returns dictionary for manager.
      */
-    to_dict: function() {
+    to_dict: function () {
         var obj_dict = {};
         var filter_dicts = [];
         var filter;
@@ -543,7 +522,7 @@ _.extend(FiltersManager.prototype, {
     /**
      * Return a copy of the manager.
      */
-    copy: function(new_track) {
+    copy: function (new_track) {
         var copy = new FiltersManager(new_track);
         for (var i = 0; i < this.filters.length; i++) {
             copy.add_filter(this.filters[i].copy());
@@ -553,7 +532,7 @@ _.extend(FiltersManager.prototype, {
     /**
      * Add a filter to the manager.
      */
-    add_filter: function(filter) {
+    add_filter: function (filter) {
         filter.manager = this;
         this.parent_div.append(filter.parent_div);
         this.filters.push(filter);
@@ -561,7 +540,7 @@ _.extend(FiltersManager.prototype, {
     /**
      * Remove all filters from manager.
      */
-    remove_all: function() {
+    remove_all: function () {
         this.filters = [];
         this.parent_div.children().remove();
     },
@@ -569,7 +548,7 @@ _.extend(FiltersManager.prototype, {
      * Initialize filters.
      */
 
-    init_filters: function() {
+    init_filters: function () {
         for (var i = 0; i < this.filters.length; i++) {
             var filter = this.filters[i];
             filter.update_ui_elt();
@@ -578,7 +557,7 @@ _.extend(FiltersManager.prototype, {
     /**
      * Clear filters so that they do not impact track display.
      */
-    clear_filters: function() {
+    clear_filters: function () {
         for (var i = 0; i < this.filters.length; i++) {
             var filter = this.filters[i];
             filter.slider.slider("option", "values", [filter.min, filter.max]);
@@ -589,7 +568,7 @@ _.extend(FiltersManager.prototype, {
         // Hide icons for setting filters.
         this.parent_div.find(".icon-button").hide();
     },
-    run_on_dataset: function() {
+    run_on_dataset: function () {
         // Get or create dictionary item.
         var get_or_create_dict_item = (dict, key, new_item) => {
             // Add new item to dict if
@@ -646,7 +625,7 @@ _.extend(FiltersManager.prototype, {
                 cond: tool_filter_str,
                 input: input_dataset_id,
                 target_dataset_id: input_dataset_id,
-                tool_id: tool_id
+                tool_id: tool_id,
             };
 
             // Remove current filter.
@@ -655,21 +634,21 @@ _.extend(FiltersManager.prototype, {
             // DBTODO: This will never work, run_tool_url doesn't exist?
             // https://github.com/galaxyproject/galaxy/issues/7224
             // eslint-disable-next-line no-undef
-            $.getJSON(run_tool_url, url_params, response => {
+            $.getJSON(run_tool_url, url_params, (response) => {
                 const Galaxy = getGalaxyInstance();
                 if (response.error) {
                     // General error.
                     Galaxy.modal.show({
                         title: _l("Filter Dataset"),
                         body: `Error running tool ${tool_id}`,
-                        buttons: { Close: Galaxy.modal.hide() }
+                        buttons: { Close: Galaxy.modal.hide() },
                     });
                 } else if (filters.length === 0) {
                     // No more filters to run.
                     Galaxy.modal.show({
                         title: _l("Filtering Dataset"),
                         body: "Filter(s) are running on the complete dataset. Outputs are in dataset's history.",
-                        buttons: { Close: Galaxy.modal.hide() }
+                        buttons: { Close: Galaxy.modal.hide() },
                     });
                 } else {
                     // More filters to run.
@@ -677,10 +656,10 @@ _.extend(FiltersManager.prototype, {
                 }
             });
         })(this.track.dataset_id, active_filters_list);
-    }
+    },
 });
 
 export default {
     FiltersManager: FiltersManager,
-    NumberFilter: NumberFilter
+    NumberFilter: NumberFilter,
 };

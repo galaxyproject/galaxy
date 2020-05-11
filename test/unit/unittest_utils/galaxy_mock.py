@@ -111,6 +111,9 @@ class MockLock(object):
 
 class MockAppConfig(Bunch):
 
+    class MockSchema(Bunch):
+        pass
+
     def __init__(self, root=None, **kwargs):
         Bunch.__init__(self, **kwargs)
         if not root:
@@ -118,6 +121,7 @@ class MockAppConfig(Bunch):
             self._remove_root = True
         else:
             self._remove_root = False
+        self.schema = self.MockSchema()
         self.security = idencoding.IdEncodingHelper(id_secret='6e46ed6483a833c100e68cc3f1d0dd76')
         self.database_connection = kwargs.get('database_connection', "sqlite:///:memory:")
         self.use_remote_user = kwargs.get('use_remote_user', False)
@@ -156,6 +160,8 @@ class MockAppConfig(Bunch):
         self.len_file_path = os.path.join('tool-data', 'shared', 'ucsc', 'chrom')
         self.builds_file_path = os.path.join('tool-data', 'shared', 'ucsc', 'builds.txt.sample')
 
+        self.shed_tool_config_file = "config/shed_tool_conf.xml"
+        self.shed_tool_config_file_set = False
         self.preserve_python_environment = "always"
         self.enable_beta_gdpr = False
         self.legacy_eager_objectstore_initialization = True
@@ -164,6 +170,8 @@ class MockAppConfig(Bunch):
 
         # set by MockDir
         self.root = root
+        self.tool_cache_data_dir = os.path.join(root, 'tool_cache')
+        self.delay_tool_initialization = True
 
         self.config_file = None
 
@@ -175,7 +183,7 @@ class MockAppConfig(Bunch):
         # Handle the automatic config file _set options
         if name.endswith('_file_set'):
             return False
-        return super(MockAppConfig, self).__getattr__(name)
+        raise AttributeError(name)
 
     def __del__(self):
         if self._remove_root:

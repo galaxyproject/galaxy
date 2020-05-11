@@ -22,13 +22,13 @@ describe("store/tagStore.js", () => {
 
         it("should update the state Map and store a Set", () => {
             assert(stateTags instanceof Set, "Stored list should be a Set");
-            testTags.forEach(t => {
+            testTags.forEach((t) => {
                 assert(stateTags.has(t), `Missing tag: ${t}`);
             });
         });
 
         it("that set should contain all the passed tags", () => {
-            testTags.forEach(t => {
+            testTags.forEach((t) => {
                 assert(stateTags.has(t), `Missing tag: ${t}`);
             });
         });

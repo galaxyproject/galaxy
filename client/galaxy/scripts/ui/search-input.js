@@ -2,7 +2,7 @@ import jQuery from "jquery";
 ("use_strict");
 
 var $ = jQuery;
-var _l = window._l || (s => s);
+var _l = window._l || ((s) => s);
 
 //TODO: consolidate with tool menu functionality, use there
 
@@ -25,24 +25,20 @@ function searchInput(parentNode, options) {
         name: "search",
         placeholder: "search",
         classes: "",
-        onclear: function() {},
+        onclear: function () {},
         onfirstsearch: null,
-        onsearch: function(inputVal) {},
+        onsearch: function (inputVal) {},
         minSearchLen: 0,
         escWillClear: true,
-        oninit: function() {}
+        advsearchlink: null,
+        oninit: function () {},
     };
 
     // .................................................................... input rendering and events
     // visually clear the search, trigger an event, and call the callback
     function clearSearchInput(event) {
-        var $input = $(this)
-            .parent()
-            .children("input");
-        $input
-            .val("")
-            .trigger("searchInput.clear")
-            .blur();
+        var $input = $(this).parent().children("input");
+        $input.val("").trigger("searchInput.clear").blur();
         options.onclear();
     }
 
@@ -72,7 +68,7 @@ function searchInput(parentNode, options) {
             'class="search-query ',
             options.classes,
             '" ',
-            "/>"
+            "/>",
         ].join("");
     }
 
@@ -81,11 +77,11 @@ function searchInput(parentNode, options) {
         return (
             $(inputTemplate())
                 // select all text on a focus
-                .focus(function(event) {
+                .focus(function (event) {
                     $(this).select();
                 })
                 // attach behaviors to esc, return if desired, search on some min len string
-                .keyup(function(event) {
+                .keyup(function (event) {
                     event.preventDefault();
                     event.stopPropagation();
 
@@ -116,8 +112,38 @@ function searchInput(parentNode, options) {
             )
         )
             .tooltip({ placement: "bottom" })
-            .click(function(event) {
+            .click(function (event) {
                 clearSearchInput.call(this, event);
+            });
+    }
+
+    //advanced Search popover
+    function $advancedSearchPopover() {
+        return $(
+            [
+                '<span class="search-advanced fa fa-question-circle" ',
+                'data-toggle="advSearchPopover" ',
+                'data-placement="bottom" ',
+                'data-content="',
+                _l(
+                    "<p>You can use advanced searches here using keywords and syntax like <em>name=mydataset</em> or <em>state=error</em>."
+                ),
+                "<br/>",
+                _l(
+                    "Supported keywords are <em>name, format, database, annotation, description, info, tag, hid, and state</em>."
+                ),
+                "<br/>",
+                _l("To learn more visit "),
+                "<a href='https://galaxyproject.org/tutorials/histories/#advanced-searching' target='_blank'>",
+                _l("the Hub"),
+                '.</a></p>" title="',
+                _l("search tips"),
+                '"></span>',
+            ].join("")
+        )
+            .tooltip({ placement: "bottom" })
+            .click(function () {
+                $('[data-toggle="advSearchPopover"]').popover({ html: true, container: ".history-right-panel" });
             });
     }
 
@@ -151,15 +177,24 @@ function searchInput(parentNode, options) {
     if (jQuery.type(options) === "object") {
         options = jQuery.extend(true, {}, defaults, options);
     }
+
+    var buttonsArr = [$clearBtn(), $loadingIndicator()];
+    if (options.advsearchlink) {
+        buttonsArr.push($advancedSearchPopover());
+    }
+
+    var buttonDiv = $('<div class "search-button-panel"></div>');
+    $(buttonDiv).prepend(buttonsArr);
+
     //NOTE: prepended
-    return $parentNode.addClass("search-input").prepend([$input(), $clearBtn(), $loadingIndicator()]);
+    return $parentNode.addClass("search-input").prepend([$input(), $(buttonDiv)]);
 }
 
 // as jq plugin
 jQuery.fn.extend({
     searchInput: function $searchInput(options) {
-        return this.each(function() {
+        return this.each(function () {
             return searchInput(this, options);
         });
-    }
+    },
 });

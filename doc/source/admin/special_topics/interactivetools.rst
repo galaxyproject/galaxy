@@ -9,8 +9,8 @@ How Galaxy InteractiveTools work
 --------------------------------
 
 A InteractiveTool is defined in the same familiar way as standard Galaxy Tools,
-but are specified with **tool_type="interactive"**, and providing additional entry point
-information:
+but are specified with ``tool_type="interactive"``, and providing additional
+entry point information:
 
 .. code-block:: xml
 
@@ -40,11 +40,22 @@ Some important benefits of using Galaxy InteractiveTools
 
 
 Server-side configuration of Galaxy InteractiveTools
--------------------------------------------------
+----------------------------------------------------
 
-The **galaxy.yml** file will need to be populated as seen in **config/galaxy.yml.interactivetools**.
+The ``galaxy.yml`` file will need to be populated as seen in
+``config/galaxy.yml.interactivetools``.
 
-In the **uwsgi:** section:
+Galaxy InteractiveTool routing relies on wildcard subdomain routes. For users
+who manage their own DNS, you can set the appropriate A records to redirect
+``*.interactivetool.yourdomain``, following format seen below.
+
+It's not recommended for production, but for a quick local deployment
+``localhost.blankenberglab.org`` is a domain record provided by Dan Blankenberg
+(a Galaxy contributor and the architect of ITs) configured with the appropriate
+wildcard redirect to 127.0.0.1, which you can use that in place of
+``<server address>`` to resolve to your local machine.
+
+In the ``uwsgi:`` section:
 
 .. code-block:: yaml
 
@@ -53,26 +64,27 @@ In the **uwsgi:** section:
 
   interactivetools_map: database/interactivetools_map.sqlite
   python-raw: scripts/interactivetools/key_type_token_mapping.py
-  route-host: ^([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)-([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.(interactivetool\.localhost:8080)$ goto:interactivetool
+  route-host: ^([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)-([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.(interactivetool\.<server address>:8080)$ goto:interactivetool
   route-run: goto:endendend
   route-label: interactivetool
-  route-host: ^([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)-([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.(interactivetool\.localhost:8080)$ rpcvar:TARGET_HOST rtt_key_type_token_mapper_cached $1 $3 $2 $4 $0 5
+  route-host: ^([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)-([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.(interactivetool\.<server address>:8080)$ rpcvar:TARGET_HOST rtt_key_type_token_mapper_cached $1 $3 $2 $4 $0 5
   route-if-not: empty:${TARGET_HOST} httpdumb:${TARGET_HOST}
   route: .* break:404 Not Found
   route-label: endendend
 
 
-In the **galaxy:** section:
+In the ``galaxy:`` section:
 
 .. code-block:: yaml
 
   interactivetools_enable: true
+  interactivetools_map: database/interactivetools_map.sqlite
+  galaxy_infrastructure_url: http://<server address>.org:8080
 
 
-The admin should modify the **route-host**s and **interactivetools_prefix** to match their preferred configuration.
+The admin should modify the ``route-host`` and ``interactivetools_prefix`` to match their preferred configuration.
 
-
-An example **job_conf.xml** file as seen in **config/job_conf.xml.interactivetools**:
+An example ``job_conf.xml`` file as seen in ``config/job_conf.xml.interactivetools``:
 
 .. code-block:: xml
 
@@ -109,13 +121,20 @@ Alternatively to the local job runner, InteractiveTools have been enabled for th
         </destination>
 
 
-**Note on resource consumption:** Keep in mind that Distributed Resource Management (DRM) / cluster systems may have a maximum runtime configured for jobs. From the Galaxy point of view, such a container could run as long as the user desires, this may not be advisable and an admin may want to restrict the runtime of InteractiveTools *(and jobs in general)*. However, if the job is killed by the DRM, the user is not informed beforehand and data in the container could be discarded.
+**Note on resource consumption:** Keep in mind that Distributed Resource
+Management (DRM) / cluster systems may have a maximum runtime configured for
+jobs. From the Galaxy point of view, such a container could run as long as the
+user desires, this may not be advisable and an admin may want to restrict the
+runtime of InteractiveTools *(and jobs in general)*. However, if the job is
+killed by the DRM, the user is not informed beforehand and data in the container
+could be discarded.
 
-Some **example test InteractiveTools** have been defined, and can be added to the **config/tool_conf.xml**:
+Some **example test InteractiveTools** have been defined, and can be added to
+the ``config/tool_conf.xml``:
 
 .. code-block:: xml
 
-        <tool file="../test/functional/tools/interactive_juypter_notebook.xml" />
-        <tool file="../test/functional/tools/interactive_cellxgene.xml" />
-
-
+    <toolbox monitor="true">
+        <tool file="interactive/interactivetool_jupyter_notebook.xml" />
+        <tool file="interactive/interactivetool_cellxgene.xml" />
+    </toolbox>

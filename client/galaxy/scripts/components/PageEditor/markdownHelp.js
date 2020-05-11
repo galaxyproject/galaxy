@@ -82,6 +82,6 @@ import { hide_modal, show_modal } from "layout/modal";
 export function showMarkdownHelp() {
     const markdownHelpBody = $(markdownHelp);
     show_modal("Pages Markdown Help", markdownHelpBody, {
-        Ok: hide_modal
+        Ok: hide_modal,
     });
 }

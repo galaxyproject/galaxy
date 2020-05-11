@@ -21,6 +21,13 @@ from .util import encode_dataset_user
 log = logging.getLogger(__name__)
 
 
+def quote_plus_string(value, **kwds):
+    # Simple helper to make sure value is a string when trying to quote
+    # Object passed in might not be a bare string/bytes, if is e.g., a template result
+    # Prevents e.g. issue of "quote_from_bytes() expected bytes"
+    return quote_plus(str(value), **kwds)
+
+
 class DisplayApplicationLink(object):
     @classmethod
     def from_elem(cls, elem, display_application, other_values=None):
@@ -63,7 +70,7 @@ class DisplayApplicationLink(object):
         else:
             rval = OrderedDict()
         rval.update({'BASE_URL': trans.request.base, 'APP': trans.app})  # trans automatically appears as a response, need to add properties of trans that we want here
-        BASE_PARAMS = {'qp': quote_plus, 'url_for': trans.app.url_for}
+        BASE_PARAMS = {'qp': quote_plus_string, 'url_for': trans.app.url_for}
         for key, value in BASE_PARAMS.items():  # add helper functions/variables
             rval[key] = value
         rval[DEFAULT_DATASET_NAME] = data  # always have the display dataset name available

@@ -39,6 +39,13 @@ def validate_email(trans, email, user=None, check_dup=True, allow_empty=False):
         message = "Email address cannot be more than %d characters in length." % EMAIL_MAX_LEN
     elif check_dup and trans.sa_session.query(trans.app.model.User).filter(func.lower(trans.app.model.User.table.c.email) == email.lower()).first():
         message = "User with email '%s' already exists." % email
+    #  If the whitelist is not empty filter out any domain not in the list and ignore blacklist.
+    elif trans.app.config.whitelist_content is not None:
+        domain = email.split('@')[1]
+        if len(domain.split('.')) > 2:
+            domain = ('.').join(domain.split('.')[-2:])
+        if domain not in trans.app.config.whitelist_content:
+            message = "Please enter an allowed domain email address for this server."
     #  If the blacklist is not empty filter out the disposable domains.
     elif trans.app.config.blacklist_content is not None:
         domain = email.split('@')[1]

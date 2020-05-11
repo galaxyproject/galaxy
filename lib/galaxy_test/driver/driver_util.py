@@ -66,12 +66,16 @@ uwsgi:
   http-raw-body: true
   interactivetools_map: $tempdir/interactivetools_map.sqlite
   python-raw: scripts/interactivetools/key_type_token_mapping.py
+  # if interactive tool path, jump to interactive tool, else skip to
+  # endendend (default uwsgi params).
   route-host: ^([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)-([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.(interactivetool\.$test_host:$test_port)$ goto:interactivetool
   route-run: goto:endendend
+
   route-label: interactivetool
   route-host: ^([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)-([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.(interactivetool\.$test_host:$test_port)$ rpcvar:TARGET_HOST rtt_key_type_token_mapper_cached $1 $3 $2 $4 $0 5
   route-if-not: empty:${TARGET_HOST} httpdumb:${TARGET_HOST}
   route: .* break:404 Not Found
+
   route-label: endendend
 """)
 
@@ -313,13 +317,15 @@ def _tool_data_table_config_path(default_tool_data_table_config_path=None):
     return tool_data_table_config_path
 
 
-def nose_config_and_run(argv=None, env=None, ignore_files=[], plugins=None):
+def nose_config_and_run(argv=None, env=None, ignore_files=None, plugins=None):
     """Setup a nose context and run tests.
 
     Tests are specified by argv (defaulting to sys.argv).
     """
     if env is None:
         env = os.environ
+    if ignore_files is None:
+        ignore_files = []
     if plugins is None:
         plugins = nose.plugins.manager.DefaultPluginManager()
     if argv is None:
@@ -459,7 +465,7 @@ def _get_static_settings():
         static_images_dir=os.path.join(static_dir, 'images', ''),
         static_favicon_dir=os.path.join(static_dir, 'favicon.ico'),
         static_scripts_dir=os.path.join(static_dir, 'scripts', ''),
-        static_style_dir=os.path.join(static_dir, 'style', 'blue'),
+        static_style_dir=os.path.join(static_dir, 'style'),
         static_robots_txt=os.path.join(static_dir, 'robots.txt'),
     )
 
@@ -475,7 +481,7 @@ def get_webapp_global_conf():
 def wait_for_http_server(host, port, sleep_amount=0.1, sleep_tries=150):
     """Wait for an HTTP server to boot up."""
     # Test if the server is up
-    for i in range(sleep_tries):
+    for _ in range(sleep_tries):
         # directly test the app, not the proxy
         conn = http_client.HTTPConnection(host, port)
         try:
@@ -500,7 +506,7 @@ def attempt_ports(port):
         raise Exception("An existing process seems bound to specified test server port [%s]" % port)
     else:
         random.seed()
-        for i in range(0, 9):
+        for _ in range(0, 9):
             port = str(random.randint(8000, 10000))
             yield port
 
@@ -518,7 +524,7 @@ def serve_webapp(webapp, port=None, host=None):
             server = httpserver.serve(webapp, host=host, port=port, start_loop=False)
             break
         except socket.error as e:
-            if e[0] == 98:
+            if e.errno == 98:
                 continue
             raise
 
@@ -732,9 +738,14 @@ def launch_uwsgi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=No
 
     enable_realtime_mapping = getattr(config_object, "enable_realtime_mapping", False)
     if enable_realtime_mapping:
-        config["galaxy"]["interactivetools_prefix"] = "interactivetool"
-        config["galaxy"]["interactivetools_map"] = os.path.join(tempdir, "interactivetools_map.sqlite")
-        config['galaxy']['interactivetools_enable'] = True
+        interactive_tool_defaults = {
+            "interactivetools_prefix": "interactivetool",
+            "interactivetools_map": os.path.join(tempdir, "interactivetools_map.sqlite"),
+            "interactivetools_enable": True
+        }
+        for key, value in interactive_tool_defaults.items():
+            if key not in config["galaxy"]:
+                config["galaxy"][key] = value
 
     yaml_config_path = os.path.join(tempdir, "galaxy.yml")
     with open(yaml_config_path, "w") as f:
@@ -951,7 +962,7 @@ class GalaxyTestDriver(TestDriver):
                 # one - other just read the properties above and use the default
                 # implementation from this file.
                 galaxy_config = getattr(config_object, "galaxy_config", None)
-                if hasattr(galaxy_config, '__call__'):
+                if callable(galaxy_config):
                     galaxy_config = galaxy_config()
                 if galaxy_config is None:
                     setup_galaxy_config_kwds = dict(
@@ -1042,7 +1053,9 @@ class GalaxyTestDriver(TestDriver):
             return test_classes
         return functional.test_toolbox
 
-    def run_tool_test(self, tool_id, index=0, resource_parameters={}):
+    def run_tool_test(self, tool_id, index=0, resource_parameters=None):
+        if resource_parameters is None:
+            resource_parameters = {}
         host, port, url = target_url_parts()
         galaxy_interactor_kwds = {
             "galaxy_url": url,

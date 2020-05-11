@@ -13,7 +13,7 @@ import Modal from "mvc/ui/ui-modal";
 
 /** Displays messages used e.g. in the tool form */
 export var Message = Backbone.View.extend({
-    initialize: function(options) {
+    initialize: function (options) {
         this.model =
             (options && options.model) ||
             new Backbone.Model({
@@ -21,7 +21,7 @@ export var Message = Backbone.View.extend({
                 status: "info",
                 cls: "",
                 persistent: false,
-                fade: true
+                fade: true,
             }).set(options);
         this.listenTo(this.model, "change", this.render, this);
         if (options && options.active_tab) {
@@ -29,15 +29,12 @@ export var Message = Backbone.View.extend({
         }
         this.render();
     },
-    update: function(options) {
+    update: function (options) {
         this.model.set(options);
     },
-    render: function() {
+    render: function () {
         var status = this.model.get("status");
-        this.$el
-            .removeClass()
-            .addClass(`alert alert-${status} mt-2`)
-            .addClass(this.model.get("cls"));
+        this.$el.removeClass().addClass(`alert alert-${status} mt-2`).addClass(this.model.get("cls"));
         if (this.model.get("message")) {
             this.$el.html(this.messageForDisplay());
             this.$el[this.model.get("fade") ? "fadeIn" : "show"]();
@@ -53,20 +50,20 @@ export var Message = Backbone.View.extend({
         }
         return this;
     },
-    messageForDisplay: function() {
+    messageForDisplay: function () {
         return _.escape(this.model.get("message"));
-    }
+    },
 });
 
 export var UnescapedMessage = Message.extend({
-    messageForDisplay: function() {
+    messageForDisplay: function () {
         return this.model.get("message");
-    }
+    },
 });
 
 /** Renders an input element used e.g. in the tool form */
 export var Input = Backbone.View.extend({
-    initialize: function(options) {
+    initialize: function (options) {
         this.model =
             (options && options.model) ||
             new Backbone.Model({
@@ -78,7 +75,7 @@ export var Input = Backbone.View.extend({
                 cls: "",
                 area: false,
                 color: null,
-                style: null
+                style: null,
             }).set(options);
         this.tagName = this.model.get("area") ? "textarea" : "input";
         this.setElement($(`<${this.tagName}/>`));
@@ -86,13 +83,13 @@ export var Input = Backbone.View.extend({
         this.render();
     },
     events: {
-        input: "_onchange"
+        input: "_onchange",
     },
-    value: function(new_val) {
+    value: function (new_val) {
         new_val !== undefined && this.model.set("value", typeof new_val === "string" ? new_val : "");
         return this.model.get("value");
     },
-    render: function() {
+    render: function () {
         var self = this;
         this.$el
             .removeClass()
@@ -107,32 +104,32 @@ export var Input = Backbone.View.extend({
         var datalist = this.model.get("datalist");
         if ($.isArray(datalist) && datalist.length > 0) {
             this.$el.autocomplete({
-                source: function(request, response) {
+                source: function (request, response) {
                     response(self.model.get("datalist"));
                 },
-                change: function() {
+                change: function () {
                     self._onchange();
-                }
+                },
             });
         }
         if (this.model.get("value") !== this.$el.val()) {
             this.$el.val(this.model.get("value"));
         }
-        _.each(["readonly", "disabled"], attr_name => {
+        _.each(["readonly", "disabled"], (attr_name) => {
             self.model.get(attr_name) ? self.$el.attr(attr_name, true) : self.$el.removeAttr(attr_name);
         });
         this.$el[this.model.get("visible") ? "show" : "hide"]();
         return this;
     },
-    _onchange: function() {
+    _onchange: function () {
         this.value(this.$el.val());
         this.model.get("onchange") && this.model.get("onchange")(this.model.get("value"));
-    }
+    },
 });
 
 /** Creates a hidden element input field used e.g. in the tool form */
 export var Hidden = Backbone.View.extend({
-    initialize: function(options) {
+    initialize: function (options) {
         this.model = (options && options.model) || new Backbone.Model(options);
         this.setElement(
             $("<div/>")
@@ -142,53 +139,49 @@ export var Hidden = Backbone.View.extend({
         this.listenTo(this.model, "change", this.render, this);
         this.render();
     },
-    value: function(new_val) {
+    value: function (new_val) {
         new_val !== undefined && this.model.set("value", new_val);
         return this.model.get("value");
     },
-    render: function() {
+    render: function () {
         this.$el.attr("id", this.model.id);
         this.$hidden.val(this.model.get("value"));
         this.model.get("info") ? this.$info.show().text(this.model.get("info")) : this.$info.hide();
         return this;
-    }
+    },
 });
 
 /** Creates an input element which switches between select and text field */
 export var TextSelect = Backbone.View.extend({
-    initialize: function(options) {
+    initialize: function (options) {
         this.select = new options.SelectClass.View(options);
         this.model = this.select.model;
         this.text = new Input({
-            onchange: this.model.get("onchange")
+            onchange: this.model.get("onchange"),
         });
         this.on("change", () => {
             if (this.model.get("onchange")) {
                 this.model.get("onchange")(this.value());
             }
         });
-        this.setElement(
-            $("<div/>")
-                .append(this.select.$el)
-                .append(this.text.$el)
-        );
+        this.setElement($("<div/>").append(this.select.$el).append(this.text.$el));
         this.update(options);
     },
-    wait: function() {
+    wait: function () {
         this.select.wait();
     },
-    unwait: function() {
+    unwait: function () {
         this.select.unwait();
     },
-    value: function(new_val) {
+    value: function (new_val) {
         var element = this.textmode ? this.text : this.select;
         return element.value(new_val);
     },
-    update: function(input_def) {
+    update: function (input_def) {
         var data = input_def.data;
         if (!data) {
             data = [];
-            _.each(input_def.options, option => {
+            _.each(input_def.options, (option) => {
                 data.push({ label: option[0], value: option[1] });
             });
         }
@@ -198,58 +191,50 @@ export var TextSelect = Backbone.View.extend({
         this.select.$el[this.textmode ? "hide" : "show"]();
         this.select.update({ data: data });
         this.value(v);
-    }
+    },
 });
 
 /** Creates a upload element input field */
 export var Upload = Backbone.View.extend({
-    initialize: function(options) {
+    initialize: function (options) {
         var self = this;
         this.model = (options && options.model) || new Backbone.Model(options);
         this.setElement(
             $("<div/>")
                 .append((this.$info = $("<div/>")))
-                .append(
-                    (this.$file = $("<input/>")
-                        .attr("type", "file")
-                        .addClass("mb-1"))
-                )
-                .append(
-                    (this.$text = $("<textarea/>")
-                        .addClass("ui-textarea")
-                        .attr("disabled", true))
-                )
+                .append((this.$file = $("<input/>").attr("type", "file").addClass("mb-1")))
+                .append((this.$text = $("<textarea/>").addClass("ui-textarea").attr("disabled", true)))
                 .append((this.$wait = $("<i/>").addClass("fa fa-spinner fa-spin")))
         );
         this.listenTo(this.model, "change", this.render, this);
-        this.$file.on("change", e => {
+        this.$file.on("change", (e) => {
             self._readFile(e);
         });
         this.render();
     },
-    value: function(new_val) {
+    value: function (new_val) {
         new_val !== undefined && this.model.set("value", new_val);
         return this.model.get("value");
     },
-    render: function() {
+    render: function () {
         this.$el.attr("id", this.model.id);
         this.model.get("info") ? this.$info.show().text(this.model.get("info")) : this.$info.hide();
         this.model.get("value") ? this.$text.text(this.model.get("value")).show() : this.$text.hide();
         this.model.get("wait") ? this.$wait.show() : this.$wait.hide();
         return this;
     },
-    _readFile: function(e) {
+    _readFile: function (e) {
         var self = this;
         var file = e.target.files && e.target.files[0];
         if (file) {
             var reader = new FileReader();
-            reader.onload = function() {
+            reader.onload = function () {
                 self.model.set({ wait: false, value: this.result });
             };
             this.model.set({ wait: true, value: null });
             reader.readAsText(file);
         }
-    }
+    },
 });
 
 /* Make more Ui stuff directly available at this namespace (for backwards
@@ -283,5 +268,5 @@ export default {
     TextSelect: TextSelect,
     Hidden: Hidden,
     Slider: Slider,
-    Drilldown: Drilldown
+    Drilldown: Drilldown,
 };

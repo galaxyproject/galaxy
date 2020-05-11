@@ -11,7 +11,9 @@ import { getAppRoot } from "onload/loadConfig";
 
 /** Masthead **/
 const View = Backbone.View.extend({
-    initialize: function(options) {
+    initialize: function (options) {
+        const Galaxy = getGalaxyInstance();
+
         const self = this;
         const Galaxy = getGalaxyInstance();
         this.options = options;
@@ -19,8 +21,8 @@ const View = Backbone.View.extend({
         // build tabs
         this.collection = new Menu.Collection();
         this.collection
-            .on("dispatch", callback => {
-                self.collection.each(m => {
+            .on("dispatch", (callback) => {
+                self.collection.each((m) => {
                     callback(m);
                 });
             })
@@ -31,26 +33,22 @@ const View = Backbone.View.extend({
 
         // scratchbook
         Galaxy.frame = this.frame = new Scratchbook({
-            collection: this.collection
+            collection: this.collection,
         });
 
         // set up the quota meter (And fetch the current user data from trans)
         // add quota meter to masthead
         Galaxy.quotaMeter = this.quotaMeter = new QuotaMeter.UserQuotaMeter({
-            model: Galaxy.user
+            model: Galaxy.user,
         });
 
         // loop through beforeunload functions if the user attempts to unload the page
         $(window)
-            .on("click", e => {
+            .on("click", (e) => {
                 const $download_link = $(e.target).closest("a[download]");
                 if ($download_link.length == 1) {
                     if ($("iframe[id=download]").length === 0) {
-                        $("body").append(
-                            $("<iframe/>")
-                                .attr("id", "download")
-                                .hide()
-                        );
+                        $("body").append($("<iframe/>").attr("id", "download").hide());
                     }
                     $("iframe[id=download]").attr("src", $download_link.attr("href"));
                     e.preventDefault();
@@ -58,7 +56,7 @@ const View = Backbone.View.extend({
             })
             .on("beforeunload", () => {
                 let text = "";
-                self.collection.each(model => {
+                self.collection.each((model) => {
                     const q = model.get("onbeforeunload") && model.get("onbeforeunload")();
                     if (q) {
                         text += `${q} `;
@@ -70,7 +68,7 @@ const View = Backbone.View.extend({
             });
     },
 
-    render: function() {
+    render: function () {
         const el = document.createElement("div");
         this.el.appendChild(el); // use this.el directly when feature parity is accomplished
         let brandTitle = this.options.display_galaxy_brand ? "Galaxy " : "";
@@ -98,14 +96,14 @@ const View = Backbone.View.extend({
         return this;
     },
 
-    highlight: function(id) {
+    highlight: function (id) {
         this.activeView = id;
-        this.collection.forEach(function(model) {
+        this.collection.forEach(function (model) {
             model.set("active", model.id == id);
         });
-    }
+    },
 });
 
 export default {
-    View: View
+    View: View,
 };

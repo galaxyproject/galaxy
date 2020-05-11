@@ -11,7 +11,6 @@ import pwd
 import shlex
 import shutil
 import string
-import subprocess
 import sys
 import time
 import traceback
@@ -44,6 +43,7 @@ from galaxy.job_execution.datasets import (
     TaskPathRewriter
 )
 from galaxy.job_execution.output_collect import collect_extra_files
+from galaxy.job_execution.setup import ensure_configs_directory
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.jobs.mapper import (
     JobMappingException,
@@ -59,6 +59,7 @@ from galaxy.tool_util.output_checker import (
     DETECTED_JOB_STATE,
 )
 from galaxy.util import (
+    commands,
     RWXRWXRWX,
     safe_makedirs,
     unicodify,
@@ -1091,6 +1092,7 @@ class JobWrapper(HasResourceParameters):
 
         tool_evaluator = self._get_tool_evaluator(job)
         compute_environment = compute_environment or self.default_compute_environment(job)
+        self.galaxy_url = compute_environment.galaxy_url
         tool_evaluator.set_compute_environment(compute_environment, get_special=get_special)
 
         self.sa_session.flush()
@@ -1138,6 +1140,14 @@ class JobWrapper(HasResourceParameters):
         except ObjectInvalid:
             raise Exception('(%s) Unable to create job working directory',
                             job.id)
+
+    @property
+    def guest_ports(self):
+        if hasattr(self, "interactivetools"):
+            guest_ports = [ep.get('port') for ep in self.interactivetools]
+            return guest_ports
+        else:
+            return []
 
     @property
     def working_directory(self):
@@ -1252,7 +1262,7 @@ class JobWrapper(HasResourceParameters):
             if exception:
                 # Save the traceback immediately in case we generate another
                 # below
-                job.traceback = traceback.format_exc()
+                job.traceback = unicodify(traceback.format_exc(), strip_null=True)
                 # Get the exception and let the tool attempt to generate
                 # a better message
                 etype, evalue, tb = sys.exc_info()
@@ -1407,6 +1417,14 @@ class JobWrapper(HasResourceParameters):
         job.destination_id = job_destination.id
         job.destination_params = job_destination.params
         job.job_runner_name = job_destination.runner
+        job.job_runner_external_id = external_id
+        self.sa_session.add(job)
+        if flush:
+            self.sa_session.flush()
+
+    def set_external_id(self, external_id, job=None, flush=True):
+        if job is None:
+            job = self.get_job()
         job.job_runner_external_id = external_id
         self.sa_session.add(job)
         if flush:
@@ -1701,7 +1719,7 @@ class JobWrapper(HasResourceParameters):
         if not extended_metadata:
             # importing metadata will discover outputs if extended metadata
             # is enabled.
-            self.discover_outputs(job, inp_data, out_data, out_collections)
+            self.discover_outputs(job, inp_data, out_data, out_collections, final_job_state=final_job_state)
 
         # Certain tools require tasks to be completed after job execution
         # ( this used to be performed in the "exec_after_process" hook, but hooks are deprecated ).
@@ -1749,7 +1767,7 @@ class JobWrapper(HasResourceParameters):
         self.cleanup(delete_files=delete_files)
         log.debug(finish_timer.to_str(job_id=self.job_id, tool_id=job.tool_id))
 
-    def discover_outputs(self, job, inp_data, out_data, out_collections):
+    def discover_outputs(self, job, inp_data, out_data, out_collections, final_job_state):
         # Try to just recover input_ext and dbkey from job parameters (used and set in
         # galaxy.tools.actions). Old jobs may have not set these in the job parameters
         # before persisting them.
@@ -1782,6 +1800,7 @@ class JobWrapper(HasResourceParameters):
             inp_data=inp_data,
             input_ext=input_ext,
             input_dbkey=input_dbkey,
+            final_job_state=final_job_state,
         )
 
     def check_tool_output(self, tool_stdout, tool_stderr, tool_exit_code, job, job_stdout=None, job_stderr=None):
@@ -1955,7 +1974,7 @@ class JobWrapper(HasResourceParameters):
         self.output_paths = [t[2] for t in results]
         self.output_hdas_and_paths = dict([(t[0], t[1:]) for t in results])
         if special:
-            false_path = dataset_path_rewriter.rewrite_dataset_path(special.dataset, 'output')
+            false_path = dataset_path_rewriter.rewrite_dataset_path(special, 'output')
             dsp = DatasetPath(special.dataset.id, special.dataset.file_name, false_path)
             self.output_paths.append(dsp)
         return self.output_paths
@@ -2114,26 +2133,34 @@ class JobWrapper(HasResourceParameters):
         if not container or not self.tool.produces_entry_points:
             return None
 
-        from os.path import abspath
-        from os import getcwd
-        exec_dir = kwds.get('exec_dir', abspath(getcwd()))
+        exec_dir = kwds.get('exec_dir', os.path.abspath(os.getcwd()))
         work_dir = self.working_directory
-        container_config = os.path.join(work_dir, "container_config.json")
+        configs_dir = ensure_configs_directory(work_dir)
+        container_config = os.path.join(configs_dir, "container_config.json")
+        self.extra_filenames.append(container_config)
 
-        # TODO: implement callback via URL callback for configuring ports instead
-        #       of fs polling.
-        # if self.app.config.galaxy_infrastructure_url_set:
-        #    # TODO: settable from job destination...
-        #    infrastructure_url = self.app.config.galaxy_infrastructure_url
-        # else:
-        #    infrastructure_url = "host.docker.internal"
+        # What should be done with the result... 'file' or 'callback'
+        result = self.get_destination_configuration("container_monitor_result", "file")
+        galaxy_url = self.galaxy_url()
+        container_config_dict = {
+            "container_name": container.container_name,
+            "container_type": container.container_type,
+            "connection_configuration": container.connection_configuration,
+        }
+        if result == "callback":
+            job_id = self.job_id
+            encoded_job_id = self.app.security.encode_id(job_id)
+            job_key = self.app.security.encode_id(job_id, kind="jobs_files")
+            endpoint_base = "%s/api/jobs/%s/ports?job_key=%s"
+            callback_url = endpoint_base % (
+                galaxy_url,
+                encoded_job_id,
+                job_key
+            )
+            container_config_dict["callback_url"] = callback_url
 
         with open(container_config, "w") as f:
-            json.dump({
-                "container_name": container.container_name,
-                "container_type": container.container_type,
-                "connection_configuration": container.connection_configuration,
-            }, f)
+            json.dump(container_config_dict, f)
 
         return "(python '%s'/lib/galaxy_ext/container_monitor/monitor.py &); sleep 1 " % exec_dir
 
@@ -2195,14 +2222,10 @@ class JobWrapper(HasResourceParameters):
             cmd = shlex.split(external_chown_script)
             cmd.extend([self.working_directory, username, str(gid)])
             log.debug('(%s) Changing ownership of working directory with: %s' % (job.id, ' '.join(cmd)))
-            p = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            stdout, stderr = p.communicate()
-            stdout, stderr = unicodify(stdout).strip(), unicodify(stderr).strip()
-            if p.returncode != 0:
-                log.error('external script failed.')
-                log.error('stdout was: %s' % stdout)
-                log.error('stderr was: %s' % stderr)
-            assert p.returncode == 0
+            try:
+                commands.execute(cmd)
+            except commands.CommandLineException as e:
+                log.error('external script failed: %s' % unicodify(e))
 
     def change_ownership_for_run(self):
         job = self.get_job()
@@ -2316,7 +2339,8 @@ class TaskWrapper(JobWrapper):
 
         self.sa_session.flush()
 
-        self.command_line, self.extra_filenames, self.environment_variables = tool_evaluator.build()
+        self.command_line, extra_filenames, self.environment_variables = tool_evaluator.build()
+        self.extra_filenames.extend(extra_filenames)
 
         # Ensure galaxy_lib_dir is set in case there are any later chdirs
         self.galaxy_lib_dir

@@ -125,18 +125,18 @@ export default {
     props: {
         isRepoInstalled: {
             type: Boolean,
-            required: true
+            required: true,
         },
         isToolShedInstalled: {
             type: Boolean,
-            required: true
-        }
+            required: true,
+        },
     },
     methods: {
-        useRouter: function(ev) {
+        useRouter: function (ev) {
             const Galaxy = getGalaxyInstance();
             Galaxy.page.router.push(ev.target.pathname.slice(root.length));
-        }
+        },
     },
     computed: {
         migrationStagesUrl: () => `${root}admin/review_tool_migration_stages`, // NOT ROUTER
@@ -152,7 +152,7 @@ export default {
         adminRolesUrl: () => `${root}admin/roles`,
         adminFormsUrl: () => `${root}admin/forms`,
         adminToolshedUrl: () => `${root}admin/toolshed`,
-        adminToolVersionsUrl: () => `${root}admin/tool_versions`
-    }
+        adminToolVersionsUrl: () => `${root}admin/tool_versions`,
+    },
 };
 </script>

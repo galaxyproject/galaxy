@@ -1,6 +1,5 @@
 import collections
 import os
-import tempfile
 
 import pytest
 
@@ -43,15 +42,11 @@ def collect_test_data(registry):
 class UploadTestDatatypeDataTestCase(BaseUploadContentConfigurationInstance):
     framework_tool_and_types = False
     datatypes_conf_override = DATATYPES_CONFIG
+    object_store_config = None
+    object_store_config_path = None
 
 
 instance = integration_util.integration_module_instance(UploadTestDatatypeDataTestCase)
-
-
-@pytest.fixture
-def temp_file():
-    with tempfile.NamedTemporaryFile(delete=True, mode='wb') as fh:
-        yield fh
 
 
 registry = Registry()
@@ -61,6 +56,10 @@ TEST_CASES = collect_test_data(registry)
 
 @pytest.mark.parametrize('test_data', TEST_CASES.values(), ids=list(TEST_CASES.keys()))
 def test_upload_datatype_auto(instance, test_data, temp_file):
+    upload_datatype_helper(instance, test_data, temp_file)
+
+
+def upload_datatype_helper(instance, test_data, temp_file):
     is_compressed = False
     for is_method in (is_bz2, is_gzip, is_zip):
         is_compressed = is_method(test_data.path)

@@ -3,6 +3,7 @@ from __future__ import print_function
 
 import binascii
 import gzip
+import io
 import logging
 import os
 import shutil
@@ -248,6 +249,16 @@ class CompressedZipArchive(CompressedArchive):
         except Exception:
             return "Compressed zip file (%s)" % (nice_size(dataset.get_size()))
 
+    def sniff(self, filename):
+        with zipfile.ZipFile(filename) as zf:
+            zf_files = zf.infolist()
+            count = 0
+            for f in zf_files:
+                if f.file_size > 0 and not f.filename.startswith('__MACOSX/') and not f.filename.endswith('.DS_Store'):
+                    count += 1
+                if count > 1:
+                    return True
+
 
 class GenericAsn1Binary(Binary):
     """Class for generic ASN.1 binary format"""
@@ -448,6 +459,21 @@ class Bam(BamNative):
     data_sources = {"data": "bai", "index": "bigwig"}
 
     MetadataElement(name="bam_index", desc="BAM Index File", param=metadata.FileParameter, file_ext="bai", readonly=True, no_value=None, visible=False, optional=True)
+    MetadataElement(name="bam_csi_index", desc="BAM CSI Index File", param=metadata.FileParameter, file_ext="bam.csi", readonly=True, no_value=None, visible=False, optional=True)
+
+    def get_index_flag(self, file_name):
+        """
+        Return pysam flag for bai index (default) or csi index (contig size > (2**29 - 1) )
+        """
+        index_flag = '-b'  # bai index
+        try:
+            with pysam.AlignmentFile(file_name) as alignment_file:
+                if max(alignment_file.header.lengths) > (2 ** 29) - 1:
+                    index_flag = '-c'  # csi index
+        except Exception:
+            # File may not have a header, that's OK
+            pass
+        return index_flag
 
     def dataset_content_needs_grooming(self, file_name):
         """
@@ -455,12 +481,17 @@ class Bam(BamNative):
         """
         # The best way to ensure that BAM files are coordinate-sorted and indexable
         # is to actually index them.
+        index_flag = self.get_index_flag(file_name)
         index_name = tempfile.NamedTemporaryFile(prefix="bam_index").name
         try:
             # If pysam fails to index a file it will write to stderr,
             # and this causes the set_meta script to fail. So instead
             # we start another process and discard stderr.
-            cmd = ['python', '-c', "import pysam; pysam.index('%s', '%s')" % (file_name, index_name)]
+            if index_flag == '-b':
+                # IOError: No such file or directory: '-b' if index_flag is set to -b (pysam 0.15.4)
+                cmd = ['python', '-c', "import pysam; pysam.index('%s', '%s')" % (file_name, index_name)]
+            else:
+                cmd = ['python', '-c', "import pysam; pysam.index('%s', '%s', '%s')" % (index_flag, file_name, index_name)]
             with open(os.devnull, 'w') as devnull:
                 subprocess.check_call(cmd, stderr=devnull, shell=False)
             needs_sorting = False
@@ -475,10 +506,20 @@ class Bam(BamNative):
     def set_meta(self, dataset, overwrite=True, **kwd):
         # These metadata values are not accessible by users, always overwrite
         super(Bam, self).set_meta(dataset=dataset, overwrite=overwrite, **kwd)
-        index_file = dataset.metadata.bam_index
+        index_flag = self.get_index_flag(dataset.file_name)
+        if index_flag == '-b':
+            spec_key = 'bam_index'
+            index_file = dataset.metadata.bam_index
+        else:
+            spec_key = 'bam_csi_index'
+            index_file = dataset.metadata.bam_csi_index
         if not index_file:
-            index_file = dataset.metadata.spec['bam_index'].param.new_file(dataset=dataset)
-        pysam.index(dataset.file_name, index_file.file_name)
+            index_file = dataset.metadata.spec[spec_key].param.new_file(dataset=dataset)
+        if index_flag == '-b':
+            # IOError: No such file or directory: '-b' if index_flag is set to -b (pysam 0.15.4)
+            pysam.index(dataset.file_name, index_file.file_name)
+        else:
+            pysam.index(index_flag, dataset.file_name, index_file.file_name)
         dataset.metadata.bam_index = index_file
 
     def sniff(self, file_name):
@@ -1492,6 +1533,27 @@ class GeminiSQLite(SQlite):
             return "Gemini SQLite Database, version %s" % (dataset.metadata.gemini_version or 'unknown')
 
 
+class ChiraSQLite(SQlite):
+    """Class describing a ChiRAViz Sqlite database """
+    file_ext = "chira.sqlite"
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        super(ChiraSQLite, self).set_meta(dataset, overwrite=overwrite, **kwd)
+
+    def sniff(self, filename):
+        if super(ChiraSQLite, self).sniff(filename):
+            try:
+                conn = sqlite.connect(filename)
+                c = conn.cursor()
+                tables_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+                result = c.execute(tables_query).fetchall()
+                result = [_[0] for _ in result]
+                return True
+            except Exception as e:
+                log.warning('%s, sniff Exception: %s', self, e)
+        return False
+
+
 class CuffDiffSQlite(SQlite):
     """Class describing a CuffDiff SQLite database """
     MetadataElement(name="cuffdiff_version", default='2.2.1', param=MetadataParameter, desc="CuffDiff Version",
@@ -1566,6 +1628,91 @@ class MzSQlite(SQlite):
         if super(MzSQlite, self).sniff(filename):
             table_names = ["DBSequence", "Modification", "Peaks", "Peptide", "PeptideEvidence",
                            "Score", "SearchDatabase", "Source", "SpectraData", "Spectrum", "SpectrumIdentification"]
+            return self.sniff_table_names(filename, table_names)
+        return False
+
+
+class PQP(SQlite):
+    """
+    Class describing a Peptide query parameters file
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.pqp')
+    >>> PQP().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.osw')
+    >>> PQP().sniff(fname)
+    False
+    """
+    file_ext = "pqp"
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        super(PQP, self).set_meta(dataset, overwrite=overwrite, **kwd)
+
+    def sniff(self, filename):
+        """
+        table definition according to https://github.com/grosenberger/OpenMS/blob/develop/src/openms/source/ANALYSIS/OPENSWATH/TransitionPQPFile.cpp#L264
+        for now VERSION GENE PEPTIDE_GENE_MAPPING are excluded, since
+        there is test data wo these tables, see also here https://github.com/OpenMS/OpenMS/issues/4365
+        """
+        if not super(PQP, self).sniff(filename):
+            return False
+        table_names = ['COMPOUND', 'PEPTIDE', 'PEPTIDE_PROTEIN_MAPPING', 'PRECURSOR',
+                       'PRECURSOR_COMPOUND_MAPPING', 'PRECURSOR_PEPTIDE_MAPPING', 'PROTEIN',
+                       'TRANSITION', 'TRANSITION_PEPTIDE_MAPPING', 'TRANSITION_PRECURSOR_MAPPING']
+        osw_table_names = ['FEATURE', 'FEATURE_MS1', 'FEATURE_MS2', 'FEATURE_TRANSITION', 'RUN']
+        return self.sniff_table_names(filename, table_names) and not self.sniff_table_names(filename, osw_table_names)
+
+
+class OSW(SQlite):
+    """
+    Class describing OpenSwath output
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.osw')
+    >>> OSW().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.sqmass')
+    >>> OSW().sniff(fname)
+    False
+    """
+    file_ext = "osw"
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        super(OSW, self).set_meta(dataset, overwrite=overwrite, **kwd)
+
+    def sniff(self, filename):
+        # osw seems to be an extension of pqp (few tables are added)
+        # see also here https://github.com/OpenMS/OpenMS/issues/4365
+        if not super(OSW, self).sniff(filename):
+            return False
+        table_names = ['COMPOUND', 'PEPTIDE', 'PEPTIDE_PROTEIN_MAPPING', 'PRECURSOR',
+                       'PRECURSOR_COMPOUND_MAPPING', 'PRECURSOR_PEPTIDE_MAPPING', 'PROTEIN',
+                       'TRANSITION', 'TRANSITION_PEPTIDE_MAPPING', 'TRANSITION_PRECURSOR_MAPPING',
+                       'FEATURE', 'FEATURE_MS1', 'FEATURE_MS2', 'FEATURE_TRANSITION', 'RUN']
+        return self.sniff_table_names(filename, table_names)
+
+
+class SQmass(SQlite):
+    """
+    Class describing a Sqmass database
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.sqmass')
+    >>> SQmass().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.pqp')
+    >>> SQmass().sniff(fname)
+    False
+    """
+    file_ext = "sqmass"
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        super(SQmass, self).set_meta(dataset, overwrite=overwrite, **kwd)
+
+    def sniff(self, filename):
+        if super(SQmass, self).sniff(filename):
+            table_names = ["CHROMATOGRAM", "PRECURSOR", "RUN", "SPECTRUM", "DATA", "PRODUCT", "RUN_EXTRA"]
             return self.sniff_table_names(filename, table_names)
         return False
 
@@ -2167,7 +2314,7 @@ class SearchGuiArchive(CompressedArchive):
                 with zipfile.ZipFile(dataset.file_name) as tempzip:
                     if 'searchgui.properties' in tempzip.namelist():
                         with tempzip.open('searchgui.properties') as fh:
-                            for line in fh:
+                            for line in io.TextIOWrapper(fh):
                                 if line.startswith('searchgui.version'):
                                     version = line.split('=')[1].strip()
                                     dataset.metadata.searchgui_version = version

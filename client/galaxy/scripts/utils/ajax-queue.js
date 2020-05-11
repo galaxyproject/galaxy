@@ -28,7 +28,7 @@ class AjaxQueue {
 
     /** add all fns in initialFunctions (if any) to the queue */
     init(initialFunctions) {
-        initialFunctions.forEach(fn => {
+        initialFunctions.forEach((fn) => {
             this.add(fn);
         });
     }
@@ -41,16 +41,16 @@ class AjaxQueue {
             var fnIndex = index;
             var xhr = fn();
             // if successful, notify using the deferred to allow tracking progress
-            xhr.done(response => {
+            xhr.done((response) => {
                 this.deferred.notify({
                     curr: fnIndex,
                     total: this.numToProcess,
-                    response: response
+                    response: response,
                 });
             });
             // (regardless of previous error or success) if not last ajax call, shift and call the next
             //  if last fn, resolve deferred
-            xhr.always(response => {
+            xhr.always((response) => {
                 this.responses.push(response);
                 if (this.queue.length) {
                     this.queue.shift()();
@@ -164,5 +164,5 @@ class NamedAjaxQueue extends AjaxQueue {
 //=============================================================================
 export default {
     AjaxQueue: AjaxQueue,
-    NamedAjaxQueue: NamedAjaxQueue
+    NamedAjaxQueue: NamedAjaxQueue,
 };

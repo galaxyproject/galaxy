@@ -3,13 +3,13 @@ Condor helper utilities.
 """
 from subprocess import (
     CalledProcessError,
-    check_call,
-    PIPE,
-    Popen,
-    STDOUT
+    check_call
 )
 
-from galaxy.util import unicodify
+from galaxy.util import (
+    commands,
+    unicodify
+)
 from ..external import parse_external_id
 
 DEFAULT_QUERY_CLASSAD = dict(
@@ -18,8 +18,6 @@ DEFAULT_QUERY_CLASSAD = dict(
     notification='NEVER',
 )
 
-PROBLEM_RUNNING_CONDOR_SUBMIT = \
-    "Problem encountered while running condor_submit."
 PROBLEM_PARSING_EXTERNAL_ID = \
     "Failed to find job id from condor_submit"
 
@@ -76,14 +74,14 @@ def condor_submit(submit_file):
     """
     external_id = None
     try:
-        submit = Popen(('condor_submit', submit_file), stdout=PIPE, stderr=STDOUT)
-        message, _ = submit.communicate()
-        if submit.returncode == 0:
-            external_id = parse_external_id(message, type='condor')
-        else:
-            message = PROBLEM_PARSING_EXTERNAL_ID
-    except Exception as e:
+        message = commands.execute(('condor_submit', submit_file))
+    except commands.CommandLineException as e:
         message = unicodify(e)
+    else:
+        try:
+            external_id = parse_external_id(message, type='condor')
+        except Exception:
+            message = PROBLEM_PARSING_EXTERNAL_ID
     return external_id, message
 
 

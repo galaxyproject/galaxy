@@ -10,11 +10,11 @@ addInitialization((Galaxy, { options = {} }) => {
     const pageOptions = Object.assign({}, options, {
         config: Object.assign({}, options.config, {
             hide_panels: Galaxy.params.hide_panels,
-            hide_masthead: Galaxy.params.hide_masthead
+            hide_masthead: Galaxy.params.hide_masthead,
         }),
         Left: ToolPanel,
         Right: HistoryPanel,
-        Router: getAnalysisRouter(Galaxy)
+        Router: getAnalysisRouter(Galaxy),
     });
 
     Galaxy.page = new Page.View(pageOptions);

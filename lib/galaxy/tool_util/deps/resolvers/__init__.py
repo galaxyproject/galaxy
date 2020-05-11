@@ -103,7 +103,7 @@ class MappableDependencyResolver(object):
         except (OSError, IOError) as exc:
             if exc.errno != errno.ENOENT:
                 raise
-        return map(RequirementMapping.from_dict, raw_mapping)
+        return list(map(RequirementMapping.from_dict, raw_mapping))
 
     def _expand_mappings(self, requirement):
         for mapping in self._mappings:

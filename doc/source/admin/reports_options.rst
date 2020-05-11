@@ -4,8 +4,7 @@
 
 :Description:
     Verbosity of console log messages.  Acceptable values can be found
-    here:
-    https://docs.python.org/2/library/logging.html#logging-levels
+    here: https://docs.python.org/library/logging.html#logging-levels
 :Default: ``DEBUG``
 :Type: str
 

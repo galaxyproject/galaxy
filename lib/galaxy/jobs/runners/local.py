@@ -112,9 +112,10 @@ class LocalJobRunner(BaseJobRunner):
                 self._procs.append(proc)
 
             try:
-                job_wrapper.set_job_destination(job_wrapper.job_destination, proc.pid)
-                job_wrapper.change_state(model.Job.states.RUNNING)
-
+                job = job_wrapper.get_job()
+                # Flush job with change_state.
+                job_wrapper.set_external_id(proc.pid, job=job, flush=False)
+                job_wrapper.change_state(model.Job.states.RUNNING, job=job)
                 self._handle_container(job_wrapper, proc)
 
                 terminated = self.__poll_if_needed(proc, job_wrapper, job_id)

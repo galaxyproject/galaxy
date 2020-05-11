@@ -25,19 +25,17 @@ def main():
 
 
 def convert_to_tsv(input_fname, output_fname):
-    with open(input_fname, 'rb') as csvfile:
-        with open(output_fname, 'wb') as ofh:
-            reader = csv.reader(csvfile)
-            for line in reader:
-                ofh.write('\t'.join(line) + '\n')
+    with open(input_fname, newline="") as csvfile, open(output_fname, 'w') as ofh:
+        reader = csv.reader(csvfile)
+        for line in reader:
+            ofh.write('\t'.join(line) + '\n')
 
 
 def convert_to_csv(input_fname, output_fname):
-    with open(input_fname, 'rb') as tabfile:
-        with open(output_fname, 'wb') as ofh:
-            writer = csv.writer(ofh, delimiter=',')
-            for line in tabfile.readlines():
-                writer.writerow(line.strip().split('\t'))
+    with open(input_fname) as tabfile, open(output_fname, 'w', newline='') as ofh:
+        writer = csv.writer(ofh, delimiter=',')
+        for line in tabfile.readlines():
+            writer.writerow(line.strip().split('\t'))
 
 
 if __name__ == "__main__":

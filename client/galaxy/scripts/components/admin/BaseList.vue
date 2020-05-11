@@ -43,83 +43,83 @@ Vue.use(BootstrapVue);
 export default {
     props: {
         icon: {
-            type: String
+            type: String,
         },
         tooltip: {
-            type: String
+            type: String,
         },
         plural: {
-            type: String
+            type: String,
         },
         success: {
-            type: String
+            type: String,
         },
         fields: {
-            type: Array
+            type: Array,
         },
         getter: {
-            type: Function
+            type: Function,
         },
         setter: {
-            type: Function
-        }
+            type: Function,
+        },
     },
     data() {
         return {
             items: [],
             busy: false,
             messageText: null,
-            messageVariant: null
+            messageVariant: null,
         };
     },
     computed: {
-        tooltipAll: function() {
+        tooltipAll: function () {
             return `${this.tooltip} all`;
         },
-        itemsIndex: function() {
+        itemsIndex: function () {
             return this.items.reduce((r, v) => {
                 r[v.id] = v;
                 return r;
             }, {});
         },
-        itemsAll: function() {
-            return this.items.map(v => v.id);
+        itemsAll: function () {
+            return this.items.map((v) => v.id);
         },
-        itemsVisible: function() {
+        itemsVisible: function () {
             return this.items.length > 0;
         },
-        itemsLength: function() {
+        itemsLength: function () {
             return this.items.length;
         },
-        messageVisible: function() {
+        messageVisible: function () {
             return this.messageText != null;
-        }
+        },
     },
     created() {
         this.messageText = null;
         this.getter()
-            .then(response => {
+            .then((response) => {
                 this.items = response.data;
                 if (!this.itemsVisible) {
                     this.messageVariant = "warning";
                     this.messageText = `No ${this.plural} available.`;
                 }
             })
-            .catch(e => {
+            .catch((e) => {
                 this._errorMessage(e);
             });
     },
     methods: {
-        executeAll: function() {
+        executeAll: function () {
             this.execute(this.itemsAll);
         },
-        execute: function(ids) {
+        execute: function (ids) {
             this.busy = true;
             this.messageVariant = "warning";
             this.messageText = "Executing request. Please wait...";
             this._highlightRows(this.itemsAll, "default");
             this.setter(ids)
-                .then(response => {
+                .then((response) => {
                     const data = response.data;
                     if (data) {
                         this.messageVariant = "info";
@@ -129,12 +129,12 @@ export default {
                     }
                     this.busy = false;
                 })
-                .catch(e => {
+                .catch((e) => {
                     this._errorMessage(e);
                     this.busy = false;
                 });
         },
-        _highlightRows: function(ids, status) {
+        _highlightRows: function (ids, status) {
             if (ids) {
                 for (const id of ids) {
                     const item = this.itemsIndex[id];
@@ -144,11 +144,11 @@ export default {
                 }
             }
         },
-        _errorMessage: function(e) {
+        _errorMessage: function (e) {
             const message = e && e.response && e.response.data && e.response.data.err_msg;
             this.messageText = message || "Request failed for an unknown reason.";
             this.messageVariant = "danger";
-        }
-    }
+        },
+    },
 };
 </script>

@@ -12,6 +12,10 @@ from sqlalchemy import (
     Table
 )
 from sqlalchemy.exc import NoSuchTableError
+from sqlalchemy_utils import (
+    create_database,
+    database_exists,
+)
 
 from galaxy.model.tool_shed_install import mapping
 
@@ -27,6 +31,11 @@ def create_or_verify_database(url, engine_options={}, app=None):
     """
     """
     # Create engine and metadata
+    if not database_exists(url):
+        message = "Creating database for URI [%s]" % url
+        log.info(message)
+        create_database(url)
+
     engine = create_engine(url, **engine_options)
 
     def migrate():

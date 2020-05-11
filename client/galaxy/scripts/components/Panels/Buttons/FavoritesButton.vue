@@ -24,16 +24,16 @@ export default {
     components: { FontAwesomeIcon },
     data() {
         return {
-            tooltipText: "Show favorites"
+            tooltipText: "Show favorites",
         };
     },
     directives: {
-        "v-b-tooltip": VBTooltip
+        "v-b-tooltip": VBTooltip,
     },
     methods: {
         onFavorites() {
             this.$emit("onFavorites", "#favorites");
-        }
-    }
+        },
+    },
 };
 </script>

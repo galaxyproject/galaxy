@@ -1,8 +1,8 @@
 // ---------------------------------------------------------------------------- generic panel list items
 
 %info-section {
-    border-radius: 3px;
-    border: 1px solid fade-out($layout-border-color, 0.7);
+    @extend .rounded;
+    border: 1px solid fade-out($border-color, 0.5);
     padding: 4px;
 }
 
@@ -17,8 +17,6 @@ $vertical-gap: 8px;
 }
 
 .list-item {
-    border: 1px solid $border-color;
-
     .vertical-spacing {
         @extend %vertical-spacing;
     }

@@ -1,7 +1,14 @@
 <?xml version="1.0"?>
 <object_store type="hierarchical">
     <backends>
-        <object_store type="distributed" id="primary" order="0">
+        <!-- In distributed and hierarchical world, you can choose that some
+             backends are automatically unused whenever they become too full.
+             Setting the maxpctfull attribute (on top level object_store it
+             behaves as a global default), or it can be applied to individual
+             backends to override a global setting. This only applies to disk
+             based backends and not remote object stores.
+             -->
+        <object_store type="distributed" id="primary" order="0" maxpctfull="90">
             <backends>
                 <backend id="files1" type="disk" weight="1">
                     <files_dir path="database/files1"/>

@@ -8,13 +8,13 @@ import { mapGetters } from "vuex";
 
 export default {
     props: {
-        item: Object
+        item: Object,
     },
     computed: {
         ...mapGetters(["getHistoryNameById"]),
         historyName() {
             return this.getHistoryNameById(this.item.history_id);
-        }
-    }
+        },
+    },
 };
 </script>

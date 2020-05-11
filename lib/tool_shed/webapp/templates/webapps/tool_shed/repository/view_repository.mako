@@ -8,14 +8,14 @@
     from galaxy.web.framework.helpers import time_ago
     from tool_shed.util.basic_util import to_html_string
 
-    is_new = repository.is_new( trans.app )
+    is_new = repository.is_new()
     is_deprecated = repository.deprecated
 
     can_browse_contents = trans.webapp.name == 'tool_shed' and not is_new
     can_push = not is_deprecated and trans.app.security_agent.can_push( trans.app, trans.user, repository )
     can_download = not is_deprecated and not is_new and ( not is_malicious or can_push )
     can_view_change_log = trans.webapp.name == 'tool_shed' and not is_new
-    changeset_revision_is_repository_tip = changeset_revision == repository.tip( trans.app )
+    changeset_revision_is_repository_tip = changeset_revision == repository.tip()
 
     if changeset_revision_is_repository_tip:
         tip_str = 'repository tip'

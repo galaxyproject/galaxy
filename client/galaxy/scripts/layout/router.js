@@ -8,12 +8,12 @@ import Ui from "mvc/ui/ui-misc";
 const Router = Backbone.Router.extend({
     // TODO: not many client routes at this point - fill and remove from server.
     // since we're at root here, this may be the last to be routed entirely on the client.
-    initialize: function(page, options) {
+    initialize: function (page, options) {
         this.page = page;
         this.options = options;
     },
 
-    executeUseRouter: function(url) {
+    executeUseRouter: function (url) {
         const prefix = getAppRoot();
         if (url.startsWith(prefix)) {
             url = url.replace(prefix, "/");
@@ -22,11 +22,9 @@ const Router = Backbone.Router.extend({
     },
 
     /** helper to push a new navigation state */
-    push: function(url, data) {
+    push: function (url, data) {
         data = data || {};
-        data.__identifer = Math.random()
-            .toString(36)
-            .substr(2);
+        data.__identifer = Math.random().toString(36).substr(2);
         url += url.indexOf("?") == -1 ? "?" : "&";
         const bustParam = $.param(data, true);
         url += bustParam;
@@ -37,7 +35,7 @@ const Router = Backbone.Router.extend({
     },
 
     /** override to parse query string into obj and send to each route */
-    execute: function(callback, args, name) {
+    execute: function (callback, args, name) {
         const Galaxy = getGalaxyInstance();
         Galaxy.debug("router execute:", callback, args, name);
         const queryObj = QUERY_STRING.parse(args.pop());
@@ -51,19 +49,19 @@ const Router = Backbone.Router.extend({
         }
     },
 
-    authenticate: function(args, name) {
+    authenticate: function (args, name) {
         return true;
     },
 
-    access_denied: function() {
+    access_denied: function () {
         this.page.display(
             new Ui.Message({
                 status: "danger",
                 message: "You must be logged in with proper credentials to make this request.",
-                persistent: true
+                persistent: true,
             })
         );
-    }
+    },
 });
 
 export default Router;

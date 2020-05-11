@@ -11,27 +11,33 @@
         </div>
         <div class="unified-panel-controls">
             <tool-search :query="query" placeholder="search tools" @onQuery="onQuery" @onResults="onResults" />
+
+            <div class="py-2" v-if="hasResults">
+                <b-button @click="onToggle">{{ buttonText }}</b-button>
+            </div>
+            <div class="py-2" v-else-if="query">
+                <span v-if="query.length < 3" class="font-weight-bold">***Search string too short***</span>
+                <span v-else class="font-weight-bold">***No Results Found***</span>
+            </div>
         </div>
         <div class="unified-panel-body">
             <div class="toolMenuContainer">
                 <div class="toolMenu">
                     <tool-section
-                        v-for="category in categories"
-                        :category="category"
-                        :query-filter="query"
-                        :key="category.id"
+                        v-for="section in sections"
+                        :category="section"
+                        :query-filter="queryFilter"
+                        :key="section.id"
                         @onClick="onOpen"
                     />
                 </div>
-                <div class="toolSectionTitle" id="title_XXinternalXXworkflow">
+                <div class="toolPanelLabel" id="title_XXinternalXXworkflow">
                     <a>{{ workflowTitle }}</a>
                 </div>
                 <div id="internal-workflows" class="toolSectionBody">
                     <div class="toolSectionBg" />
-                    <div class="toolTitle" v-for="wf in this.workflows" :key="wf.id">
-                        <a :href="wf.href">
-                            {{ wf.title }}
-                        </a>
+                    <div class="toolTitle" v-for="wf in workflows" :key="wf.id">
+                        <a :href="wf.href">{{ wf.title }}</a>
                     </div>
                 </div>
             </div>
@@ -44,7 +50,7 @@ import ToolSection from "./Common/ToolSection";
 import ToolSearch from "./Common/ToolSearch";
 import UploadButton from "./Buttons/UploadButton";
 import FavoritesButton from "./Buttons/FavoritesButton";
-import { filterToolSections } from "./utilities";
+import { filterToolSections, filterTools } from "./utilities";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
 import _l from "utils/localization";
@@ -55,32 +61,38 @@ export default {
         UploadButton,
         FavoritesButton,
         ToolSection,
-        ToolSearch
+        ToolSearch,
     },
     data() {
         return {
             query: null,
             results: null,
-            workflow: null
+            queryFilter: null,
+            showSections: false,
+            buttonText: "",
         };
     },
     props: {
         toolbox: {
             type: Array,
-            required: true
+            required: true,
         },
         stored_workflow_menu_entries: {
             type: Array,
-            required: true
+            required: true,
         },
         workflowTitle: {
             type: String,
-            default: _l("Workflows")
-        }
+            default: _l("Workflows"),
+        },
     },
     computed: {
-        categories() {
-            return filterToolSections(this.toolbox, this.results);
+        sections() {
+            if (this.showSections) {
+                return filterToolSections(this.toolbox, this.results);
+            } else {
+                return filterTools(this.toolbox, this.results);
+            }
         },
         isUser() {
             const Galaxy = getGalaxyInstance();
@@ -91,17 +103,20 @@ export default {
                 {
                     title: _l("All workflows"),
                     href: `${getAppRoot()}workflows/list`,
-                    id: "list"
+                    id: "list",
                 },
-                ...this.stored_workflow_menu_entries.map(menuEntry => {
+                ...this.stored_workflow_menu_entries.map((menuEntry) => {
                     return {
                         id: menuEntry.id,
                         title: menuEntry.name,
-                        href: `${getAppRoot()}workflows/run?id=${menuEntry.id}`
+                        href: `${getAppRoot()}workflows/run?id=${menuEntry.id}`,
                     };
-                })
+                }),
             ];
-        }
+        },
+        hasResults() {
+            return this.results && this.results.length > 0;
+        },
     },
     methods: {
         onQuery(query) {
@@ -109,6 +124,8 @@ export default {
         },
         onResults(results) {
             this.results = results;
+            this.queryFilter = this.hasResults ? this.query : null;
+            this.setButtonText();
         },
         onFavorites(term) {
             this.query = term;
@@ -122,10 +139,17 @@ export default {
                 evt.preventDefault();
                 Galaxy.router.push("/", {
                     tool_id: tool.id,
-                    version: tool.version
+                    version: tool.version,
                 });
             }
-        }
-    }
+        },
+        onToggle() {
+            this.showSections = !this.showSections;
+            this.setButtonText();
+        },
+        setButtonText() {
+            this.buttonText = this.showSections ? "Hide Sections" : "Show Sections";
+        },
+    },
 };
 </script>

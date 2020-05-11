@@ -9,7 +9,7 @@ import { shallowMount, createLocalVue } from "@vue/test-utils";
 const mockOptions = {
     callback: () => {},
     modalStatic: true,
-    history: "f2db41e1fa331b3e"
+    history: "f2db41e1fa331b3e",
 };
 
 describe("DatasetCollectionDialog.vue", () => {
@@ -23,7 +23,7 @@ describe("DatasetCollectionDialog.vue", () => {
         localVue = createLocalVue();
         wrapper = shallowMount(DatasetCollectionDialog, {
             propsData: mockOptions,
-            localVue: localVue
+            localVue: localVue,
         });
     });
 

@@ -15,7 +15,7 @@ module.exports = (env = {}, argv = {}) => {
     // environment name based on -d, -p, webpack flag
     const targetEnv = argv.mode || "development";
 
-    let buildconfig = {
+    const buildconfig = {
         entry: {
             login: ["polyfills", "bundleEntries", "entry/login"],
             analysis: ["polyfills", "bundleEntries", "entry/analysis"],
@@ -68,8 +68,12 @@ module.exports = (env = {}, argv = {}) => {
                 },
                 {
                     test: /\.js$/,
-                    // Pretty sure we don't want anything except node_modules here
-                    exclude: [/(node_modules\/(?!(handsontable)\/)|bower_components)/, libsBase],
+                    /*
+                     * Babel transpile excludes for:
+                     * - all node_modules except for handsontable, bootstrap-vue
+                     * - statically included libs (like old jquery plugins, etc.)
+                    */
+                    exclude: [/(node_modules\/(?!(handsontable|bootstrap-vue)\/))/, libsBase],
                     loader: "babel-loader",
                     options: {
                         cacheDirectory: true,

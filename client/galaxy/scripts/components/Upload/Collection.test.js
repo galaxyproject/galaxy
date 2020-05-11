@@ -22,7 +22,7 @@ describe("Collection.vue", () => {
         const { wrapper } = mountWithApp(Collection, {
             currentFtp: () => {
                 return null;
-            }
+            },
         });
         expect(wrapper.findAll("#btn-ftp").length).to.equals(0);
     });

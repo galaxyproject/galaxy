@@ -30,12 +30,12 @@ if __name__ == '__main__':
 from galaxy.config import GALAXY_CONFIG_SCHEMA_PATH
 from galaxy.config.schema import (
     AppSchema,
+    OPTION_DEFAULTS,
     Schema,
 )
 from galaxy.util import safe_makedirs
 from galaxy.util.properties import nice_config_parser
 from galaxy.util.yaml_util import (
-    OPTION_DEFAULTS,
     ordered_dump,
     ordered_load,
 )
@@ -88,17 +88,11 @@ UWSGI_OPTIONS = OrderedDict([
     }),
     ('static-map.1', {
         'key': 'static-map',
-        'desc': """Mapping to serve style content.""",
-        'default': '/static/style=static/style/blue',
-        'type': 'str',
-    }),
-    ('static-map.2', {
-        'key': 'static-map',
-        'desc': """Mapping to serve the remainder of the static content.""",
+        'desc': """Mapping to serve static content.""",
         'default': '/static=static',
         'type': 'str',
     }),
-    ('static-map.3', {
+    ('static-map.2', {
         'key': 'static-map',
         'desc': """Mapping to serve the favicon.""",
         'default': '/favicon.ico=static/favicon.ico',

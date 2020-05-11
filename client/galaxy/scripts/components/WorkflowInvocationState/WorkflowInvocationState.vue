@@ -75,47 +75,47 @@ import ProgressBar from "components/ProgressBar";
 
 import { mapGetters, mapActions } from "vuex";
 
-const getUrl = path => getRootFromIndexLink() + path;
+const getUrl = (path) => getRootFromIndexLink() + path;
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
-        ProgressBar
+        ProgressBar,
     },
     mixins: [mixin],
     props: {
         invocationId: {
             type: String,
-            required: true
+            required: true,
         },
         provideContext: {
             type: Boolean,
-            default: true
-        }
+            default: true,
+        },
     },
     data() {
         return {
             stepStatesInterval: null,
-            jobStatesInterval: null
+            jobStatesInterval: null,
         };
     },
-    created: function() {
+    created: function () {
         this.pollStepStatesUntilTerminal();
         this.pollJobStatesUntilTerminal();
     },
     computed: {
         ...mapGetters(["getInvocationById", "getInvocationJobsSummaryById"]),
-        invocationState: function() {
+        invocationState: function () {
             const invocation = this.getInvocationById(this.invocationId);
             const state = invocation ? invocation.state : "new";
             return state;
         },
-        createdTime: function() {
+        createdTime: function () {
             const invocation = this.getInvocationById(this.invocationId);
             return invocation ? this.getInvocationById(this.invocationId).create_time : null;
         },
-        stepCount: function() {
+        stepCount: function () {
             const invocation = this.getInvocationById(this.invocationId);
             if (invocation) {
                 return invocation.steps.length;
@@ -123,7 +123,7 @@ export default {
                 return null;
             }
         },
-        stepStates: function() {
+        stepStates: function () {
             const stepStates = {};
             const invocation = this.getInvocationById(this.invocationId);
             if (!invocation) {
@@ -138,37 +138,37 @@ export default {
             }
             return stepStates;
         },
-        invocationLink: function() {
+        invocationLink: function () {
             return getUrl(`workflows/invocations/report?id=${this.invocationId}`);
         },
-        invocationPdfLink: function() {
+        invocationPdfLink: function () {
             return getUrl(`api/invocations/${this.invocationId}/report.pdf`);
         },
-        invocationSchedulingTerminal: function() {
+        invocationSchedulingTerminal: function () {
             return (
                 this.invocationState == "scheduled" ||
                 this.invocationState == "cancelled" ||
                 this.invocationState == "failed"
             );
         },
-        jobStatesTerminal: function() {
+        jobStatesTerminal: function () {
             return this.jobStatesSummary && this.jobStatesSummary.terminal();
         },
-        stepScheduledPercent: function() {
+        stepScheduledPercent: function () {
             let percent = 0.0;
             if (this.stepCount !== null) {
                 percent = (this.stepStates["scheduled"] || 0) / this.stepCount;
             }
             return percent;
         },
-        stepOtherPercent: function() {
+        stepOtherPercent: function () {
             const percent = 1.0 - this.stepScheduledPercent;
             return percent;
         },
-        stepStatesStr: function() {
+        stepStatesStr: function () {
             return `${this.stepStates["scheduled"] || 0} of ${this.stepCount} steps successfully scheduled`;
         },
-        jobStatesStr: function() {
+        jobStatesStr: function () {
             let jobStr = `${this.jobStatesSummary.states()["ok"] || 0} of ${this.jobCount} jobs complete`;
             if (!this.invocationSchedulingTerminal) {
                 jobStr += " (total number of jobs will change until all steps fully scheduled)";
@@ -187,35 +187,35 @@ export default {
         jobStatesSummary() {
             const jobsSummary = this.getInvocationJobsSummaryById(this.invocationId);
             return !jobsSummary ? null : new JOB_STATES_MODEL.JobStatesSummary(jobsSummary);
-        }
+        },
     },
     methods: {
         ...mapActions(["fetchInvocationForId", "fetchInvocationJobsSummaryForId"]),
-        pollStepStatesUntilTerminal: function() {
+        pollStepStatesUntilTerminal: function () {
             clearInterval(this.stepStatesInterval);
             if (!this.invocationSchedulingTerminal) {
                 this.fetchInvocationForId(this.invocationId);
                 this.stepStatesInterval = setInterval(this.pollStepStatesUntilTerminal, 3000);
             }
         },
-        pollJobStatesUntilTerminal: function() {
+        pollJobStatesUntilTerminal: function () {
             clearInterval(this.jobStatesInterval);
             if (!this.jobStatesTerminal) {
                 this.fetchInvocationJobsSummaryForId(this.invocationId);
                 this.jobStatesInterval = setInterval(this.pollJobStatesUntilTerminal, 3000);
             }
         },
-        onError: function(e) {
+        onError: function (e) {
             console.error(e);
         },
-        cancelWorkflowScheduling: function() {
+        cancelWorkflowScheduling: function () {
             cancelWorkflowScheduling(this.invocationId).catch(this.onError);
-        }
+        },
     },
-    beforeDestroy: function() {
+    beforeDestroy: function () {
         clearInterval(this.jobStatesInterval);
         clearInterval(this.stepStatesInterval);
-    }
+    },
 };
 </script>
 <style scoped>

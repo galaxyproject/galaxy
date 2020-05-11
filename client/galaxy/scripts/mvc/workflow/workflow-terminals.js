@@ -1,9 +1,6 @@
 import $ from "jquery";
 import _ from "underscore";
-import Backbone from "backbone";
-
-// TODO; tie into Galaxy state?
-window.workflow_globals = window.workflow_globals || {};
+import EventEmitter from "events";
 
 function CollectionTypeDescription(collectionType) {
     this.collectionType = collectionType;
@@ -18,44 +15,44 @@ function ConnectionAcceptable(canAccept, reason) {
 
 var NULL_COLLECTION_TYPE_DESCRIPTION = {
     isCollection: false,
-    canMatch: function() {
+    canMatch: function () {
         return false;
     },
-    canMapOver: function() {
+    canMapOver: function () {
         return false;
     },
-    toString: function() {
+    toString: function () {
         return "NullCollectionType[]";
     },
-    append: function(otherCollectionType) {
+    append: function (otherCollectionType) {
         return otherCollectionType;
     },
-    equal: function(other) {
+    equal: function (other) {
         return other === this;
-    }
+    },
 };
 
 var ANY_COLLECTION_TYPE_DESCRIPTION = {
     isCollection: true,
-    canMatch: function(other) {
+    canMatch: function (other) {
         return NULL_COLLECTION_TYPE_DESCRIPTION !== other;
     },
-    canMapOver: function() {
+    canMapOver: function () {
         return false;
     },
-    toString: function() {
+    toString: function () {
         return "AnyCollectionType[]";
     },
-    append: function() {
+    append: function () {
         return ANY_COLLECTION_TYPE_DESCRIPTION;
     },
-    equal: function(other) {
+    equal: function (other) {
         return other === this;
-    }
+    },
 };
 
 $.extend(CollectionTypeDescription.prototype, {
-    append: function(otherCollectionTypeDescription) {
+    append: function (otherCollectionTypeDescription) {
         if (otherCollectionTypeDescription === NULL_COLLECTION_TYPE_DESCRIPTION) {
             return this;
         }
@@ -64,7 +61,7 @@ $.extend(CollectionTypeDescription.prototype, {
         }
         return new CollectionTypeDescription(`${this.collectionType}:${otherCollectionTypeDescription.collectionType}`);
     },
-    canMatch: function(otherCollectionTypeDescription) {
+    canMatch: function (otherCollectionTypeDescription) {
         if (otherCollectionTypeDescription === NULL_COLLECTION_TYPE_DESCRIPTION) {
             return false;
         }
@@ -73,7 +70,7 @@ $.extend(CollectionTypeDescription.prototype, {
         }
         return otherCollectionTypeDescription.collectionType == this.collectionType;
     },
-    canMapOver: function(otherCollectionTypeDescription) {
+    canMapOver: function (otherCollectionTypeDescription) {
         if (otherCollectionTypeDescription === NULL_COLLECTION_TYPE_DESCRIPTION) {
             return false;
         }
@@ -87,7 +84,7 @@ $.extend(CollectionTypeDescription.prototype, {
         var requiredSuffix = otherCollectionTypeDescription.collectionType;
         return this._endsWith(this.collectionType, requiredSuffix);
     },
-    effectiveMapOver: function(otherCollectionTypeDescription) {
+    effectiveMapOver: function (otherCollectionTypeDescription) {
         var otherCollectionType = otherCollectionTypeDescription.collectionType;
         var effectiveCollectionType = this.collectionType.substring(
             0,
@@ -95,46 +92,32 @@ $.extend(CollectionTypeDescription.prototype, {
         );
         return new CollectionTypeDescription(effectiveCollectionType);
     },
-    equal: function(otherCollectionTypeDescription) {
+    equal: function (otherCollectionTypeDescription) {
         return otherCollectionTypeDescription.collectionType == this.collectionType;
     },
-    toString: function() {
+    toString: function () {
         return `CollectionType[${this.collectionType}]`;
     },
-    _endsWith: function(str, suffix) {
+    _endsWith: function (str, suffix) {
         return str.indexOf(suffix, str.length - suffix.length) !== -1;
-    }
+    },
 });
 
-var TerminalMapping = Backbone.Model.extend({
-    initialize: function(attr) {
-        this.mapOver = attr.mapOver || NULL_COLLECTION_TYPE_DESCRIPTION;
-        this.terminal = attr.terminal;
-        this.terminal.terminalMapping = this;
-    },
-    disableMapOver: function() {
-        this.setMapOver(NULL_COLLECTION_TYPE_DESCRIPTION);
-    },
-    setMapOver: function(collectionTypeDescription) {
-        // TODO: Can I use "attributes" or something to auto trigger "change"
-        // event?
-        this.mapOver = collectionTypeDescription;
-        this.trigger("change");
-    }
-});
-
-var Terminal = Backbone.Model.extend({
-    initialize: function(attr) {
+class Terminal extends EventEmitter {
+    constructor(attr) {
+        super();
         this.element = attr.element;
+        this.mapOver = attr.mapOver || NULL_COLLECTION_TYPE_DESCRIPTION;
+        this.attributes = attr;
         this.connectors = [];
-    },
-    connect: function(connector) {
+    }
+    connect(connector) {
         this.connectors.push(connector);
         if (this.node) {
             this.node.markChanged();
         }
-    },
-    disconnect: function(connector) {
+    }
+    disconnect(connector) {
         this.connectors.splice($.inArray(connector, this.connectors), 1);
         if (this.node) {
             this.node.markChanged();
@@ -143,25 +126,28 @@ var Terminal = Backbone.Model.extend({
                 connector.handle2.resetCollectionTypeSource();
             }
         }
-    },
-    redraw: function() {
+        this.emit("change");
+    }
+    redraw() {
         $.each(this.connectors, (_, c) => {
             c.redraw();
         });
-    },
-    destroy: function() {
+    }
+    destroy() {
         $.each(this.connectors.slice(), (_, c) => {
             c.destroy();
         });
-    },
-    destroyInvalidConnections: function() {
-        _.each(this.connectors, connector => {
+        this.emit("change");
+    }
+    destroyInvalidConnections() {
+        _.each(this.connectors, (connector) => {
             if (connector) {
                 connector.destroyIfInvalid();
             }
         });
-    },
-    setMapOver: function(val) {
+        this.emit("change");
+    }
+    setMapOver(val) {
         let output_val = val;
         if (this.multiple) {
             // emulate list input
@@ -172,49 +158,42 @@ var Terminal = Backbone.Model.extend({
             }
             output_val = val.effectiveMapOver ? val.effectiveMapOver(description) : val;
         }
-
-        if (!this.mapOver().equal(val)) {
-            this.terminalMapping.setMapOver(val);
-            _.each(this.node.output_terminals, outputTerminal => {
+        if (!this.mapOver.equal(val)) {
+            this.mapOver = val;
+            _.each(this.node.output_terminals, (outputTerminal) => {
                 outputTerminal.setMapOver(output_val);
             });
         }
-    },
-    mapOver: function() {
-        if (!this.terminalMapping) {
-            return NULL_COLLECTION_TYPE_DESCRIPTION;
-        } else {
-            return this.terminalMapping.mapOver;
-        }
-    },
-    isMappedOver: function() {
-        return this.terminalMapping && this.terminalMapping.mapOver.isCollection;
-    },
-    resetMapping: function() {
-        this.terminalMapping.disableMapOver();
-    },
-
-    resetCollectionTypeSource: function() {
+        this.emit("change");
+    }
+    isMappedOver() {
+        return this.mapOver.isCollection;
+    }
+    resetMapping() {
+        this.mapOver = NULL_COLLECTION_TYPE_DESCRIPTION;
+        this.emit("change");
+    }
+    resetCollectionTypeSource() {
         const node = this.node;
-        _.each(node.output_terminals, function(output_terminal) {
+        _.each(node.output_terminals, function (output_terminal) {
             const type_source = output_terminal.attributes.collection_type_source;
             if (type_source && output_terminal.attributes.collection_type) {
                 output_terminal.attributes.collection_type = null;
                 output_terminal.update(output_terminal.attributes);
             }
         });
-    },
+    }
+    // Subclasses should override this...
+    resetMappingIfNeeded() {}
+}
 
-    resetMappingIfNeeded: function() {} // Subclasses should override this...
-});
-
-var OutputTerminal = Terminal.extend({
-    initialize: function(attr) {
-        Terminal.prototype.initialize.call(this, attr);
+class OutputTerminal extends Terminal {
+    constructor(attr) {
+        super(attr);
         this.datatypes = attr.datatypes;
         this.optional = attr.optional;
         this.force_datatype = attr.force_datatype;
-    },
+    }
     /*
     update: function(output) {
         // This isn't needed for datatypes or optional because WorkflowNode.update_field_data just updates the
@@ -222,11 +201,11 @@ var OutputTerminal = Terminal.extend({
         // don't disconnect from non-optional inputs.
     },
     */
-    resetMappingIfNeeded: function() {
+    resetMappingIfNeeded() {
         // If inputs were only mapped over to preserve
         // an output just disconnected reset these...
         if (!this.node.hasConnectedOutputTerminals() && !this.node.hasConnectedMappedInputTerminals()) {
-            _.each(this.node.mappedInputTerminals(), mappedInput => {
+            _.each(this.node.mappedInputTerminals(), (mappedInput) => {
                 mappedInput.resetMappingIfNeeded();
             });
         }
@@ -235,11 +214,10 @@ var OutputTerminal = Terminal.extend({
         if (noMappedInputs) {
             this.resetMapping();
         }
-    },
-
-    resetMapping: function() {
-        this.terminalMapping.disableMapOver();
-        _.each(this.connectors, connector => {
+    }
+    resetMapping() {
+        super.resetMapping();
+        _.each(this.connectors, (connector) => {
             var connectedInput = connector.handle2;
             if (connectedInput) {
                 // Not exactly right because this is still connected.
@@ -250,14 +228,15 @@ var OutputTerminal = Terminal.extend({
             }
         });
     }
-});
+}
 
-var BaseInputTerminal = Terminal.extend({
-    initialize: function(attr) {
-        Terminal.prototype.initialize.call(this, attr);
+class BaseInputTerminal extends Terminal {
+    constructor(attr) {
+        super(attr);
+        this.app = attr.app;
         this.update(attr.input); // subclasses should implement this...
-    },
-    canAccept: function(other) {
+    }
+    canAccept(other) {
         if (this._inputFilled()) {
             return new ConnectionAcceptable(
                 false,
@@ -266,9 +245,9 @@ var BaseInputTerminal = Terminal.extend({
         } else {
             return this.attachable(other);
         }
-    },
-    resetMappingIfNeeded: function() {
-        var mapOver = this.mapOver();
+    }
+    resetMappingIfNeeded() {
+        var mapOver = this.mapOver;
         if (!mapOver.isCollection) {
             return;
         }
@@ -279,21 +258,21 @@ var BaseInputTerminal = Terminal.extend({
         if (reset) {
             this.resetMapping();
         }
-    },
-    resetMapping: function() {
-        this.terminalMapping.disableMapOver();
+    }
+    resetMapping() {
+        super.resetMapping();
         if (!this.node.hasMappedOverInputTerminals()) {
-            _.each(this.node.output_terminals, terminal => {
+            _.each(this.node.output_terminals, (terminal) => {
                 // This shouldn't be called if there are mapped over
                 // outputs.
                 terminal.resetMapping();
             });
         }
-    },
-    connected: function() {
+    }
+    connected() {
         return this.connectors.length !== 0;
-    },
-    _inputFilled: function() {
+    }
+    _inputFilled() {
         var inputFilled;
         if (!this.connected()) {
             inputFilled = false;
@@ -307,8 +286,8 @@ var BaseInputTerminal = Terminal.extend({
             }
         }
         return inputFilled;
-    },
-    _collectionAttached: function() {
+    }
+    _collectionAttached() {
         if (!this.connected()) {
             return false;
         } else {
@@ -327,30 +306,30 @@ var BaseInputTerminal = Terminal.extend({
                 }
             }
         }
-    },
-    _mappingConstraints: function() {
+    }
+    _mappingConstraints() {
         // If this is a connected terminal, return list of collection types
         // other terminals connected to node are constraining mapping to.
         if (!this.node) {
             return []; // No node - completely unconstrained
         }
-        var mapOver = this.mapOver();
+        var mapOver = this.mapOver;
         if (mapOver.isCollection) {
             return [mapOver];
         }
 
         var constraints = [];
         if (!this.node.hasConnectedOutputTerminals()) {
-            _.each(this.node.connectedMappedInputTerminals(), inputTerminal => {
-                constraints.push(inputTerminal.mapOver());
+            _.each(this.node.connectedMappedInputTerminals(), (inputTerminal) => {
+                constraints.push(inputTerminal.mapOver);
             });
         } else {
             // All outputs should have same mapOver status - least specific.
-            constraints.push(_.first(_.values(this.node.output_terminals)).mapOver());
+            constraints.push(_.first(_.values(this.node.output_terminals)).mapOver);
         }
         return constraints;
-    },
-    _producesAcceptableDatatype: function(other) {
+    }
+    _producesAcceptableDatatype(other) {
         // other is a non-collection output...
         for (var t in this.datatypes) {
             var thisDatatype = this.datatypes[t];
@@ -366,7 +345,7 @@ var BaseInputTerminal = Terminal.extend({
                 if (
                     other_datatype == "input" ||
                     other_datatype == "_sniff_" ||
-                    window.workflow_globals.app.isSubType(cat_outputs[other_datatype_i], thisDatatype)
+                    this.app.isSubType(cat_outputs[other_datatype_i], thisDatatype)
                 ) {
                     return new ConnectionAcceptable(true, null);
                 }
@@ -376,35 +355,35 @@ var BaseInputTerminal = Terminal.extend({
             false,
             `Effective output data type(s) [${cat_outputs}] do not appear to match input type(s) [${this.datatypes}].`
         );
-    },
+    }
     _producesAcceptableDatatypeAndOptionalness(other) {
         if (!this.optional && !this.multiple && other.optional) {
             return new ConnectionAcceptable(false, "Cannot connect an optional output to a non-optional input");
         }
         return this._producesAcceptableDatatype(other);
-    },
-    _otherCollectionType: function(other) {
+    }
+    _otherCollectionType(other) {
         var otherCollectionType = NULL_COLLECTION_TYPE_DESCRIPTION;
         if (other.isCollection) {
             otherCollectionType = other.collectionType;
         }
-        var otherMapOver = other.mapOver();
+        var otherMapOver = other.mapOver;
         if (otherMapOver.isCollection) {
             otherCollectionType = otherMapOver.append(otherCollectionType);
         }
         return otherCollectionType;
     }
-});
+}
 
-var InputTerminal = BaseInputTerminal.extend({
-    update: function(input) {
+class InputTerminal extends BaseInputTerminal {
+    update(input = {}) {
         this.datatypes = input.extensions;
         this.multiple = input.multiple;
         this.optional = input.optional;
         this.collection = false;
-    },
-    connect: function(connector) {
-        BaseInputTerminal.prototype.connect.call(this, connector);
+    }
+    connect(connector) {
+        super.connect(connector);
         var other_output = connector.handle1;
         if (!other_output) {
             return;
@@ -413,10 +392,10 @@ var InputTerminal = BaseInputTerminal.extend({
         if (otherCollectionType.isCollection) {
             this.setMapOver(otherCollectionType);
         }
-    },
-    attachable: function(other) {
+    }
+    attachable(other) {
         var otherCollectionType = this._otherCollectionType(other);
-        var thisMapOver = this.mapOver();
+        var mapOver = this.mapOver;
         if (otherCollectionType.isCollection) {
             if (this.multiple) {
                 if (this.connected() && !this._collectionAttached()) {
@@ -432,7 +411,7 @@ var InputTerminal = BaseInputTerminal.extend({
                     );
                 }
             }
-            if (thisMapOver.isCollection && thisMapOver.canMatch(otherCollectionType)) {
+            if (mapOver.isCollection && mapOver.canMatch(otherCollectionType)) {
                 return this._producesAcceptableDatatypeAndOptionalness(other);
             } else if (this.multiple && new CollectionTypeDescription("list").canMatch(otherCollectionType)) {
                 // This handles the special case of a list input being connected to a multiple="true" data input.
@@ -444,7 +423,7 @@ var InputTerminal = BaseInputTerminal.extend({
                 if (mappingConstraints.every(_.bind(otherCollectionType.canMatch, otherCollectionType))) {
                     return this._producesAcceptableDatatypeAndOptionalness(other);
                 } else {
-                    if (thisMapOver.isCollection) {
+                    if (mapOver.isCollection) {
                         // incompatible collection type attached
                         if (this.node.hasConnectedMappedInputTerminals()) {
                             return new ConnectionAcceptable(
@@ -465,7 +444,7 @@ var InputTerminal = BaseInputTerminal.extend({
                     }
                 }
             }
-        } else if (thisMapOver.isCollection) {
+        } else if (mapOver.isCollection) {
             return new ConnectionAcceptable(
                 false,
                 "Cannot attach non-collection outputs to mapped over inputs, consider disconnecting inputs and outputs to reset this input's mapping."
@@ -473,28 +452,25 @@ var InputTerminal = BaseInputTerminal.extend({
         }
         return this._producesAcceptableDatatypeAndOptionalness(other);
     }
-});
+}
 
-var InputParameterTerminal = BaseInputTerminal.extend({
-    update: function(input) {
+class InputParameterTerminal extends BaseInputTerminal {
+    update(input) {
         this.type = input.type;
         this.optional = input.optional;
-    },
-    connect: function(connector) {
-        BaseInputTerminal.prototype.connect.call(this, connector);
-    },
-    effectiveType: function(parameterType) {
+    }
+    effectiveType(parameterType) {
         return parameterType == "select" ? "text" : parameterType;
-    },
-    attachable: function(other) {
+    }
+    attachable(other) {
         const effectiveThisType = this.effectiveType(this.type);
         const effectiveOtherType = this.effectiveType(other.attributes.type);
         return new ConnectionAcceptable(effectiveThisType == effectiveOtherType, "");
     }
-});
+}
 
-var InputCollectionTerminal = BaseInputTerminal.extend({
-    update: function(input) {
+class InputCollectionTerminal extends BaseInputTerminal {
+    update(input) {
         this.multiple = false;
         this.collection = true;
         this.collection_type = input.collection_type;
@@ -502,30 +478,30 @@ var InputCollectionTerminal = BaseInputTerminal.extend({
         this.optional = input.optional;
         var collectionTypes = [];
         if (input.collection_types) {
-            _.each(input.collection_types, collectionType => {
+            _.each(input.collection_types, (collectionType) => {
                 collectionTypes.push(new CollectionTypeDescription(collectionType));
             });
         } else {
             collectionTypes.push(ANY_COLLECTION_TYPE_DESCRIPTION);
         }
         this.collectionTypes = collectionTypes;
-    },
-    connect: function(connector) {
-        BaseInputTerminal.prototype.connect.call(this, connector);
+    }
+    connect(connector) {
+        super.connect(connector);
         var other = connector.handle1;
         if (!other) {
             return;
         } else {
             const node = this.node;
-            _.each(node.output_terminals, function(output_terminal) {
+            _.each(node.output_terminals, function (output_terminal) {
                 if (output_terminal.attributes.collection_type_source && !connector.dragging) {
                     if (other.isMappedOver()) {
                         if (other.isCollection) {
-                            output_terminal.attributes.collection_type = other.terminalMapping.mapOver.append(
+                            output_terminal.attributes.collection_type = other.mapOver.append(
                                 other.collectionType
                             ).collectionType;
                         } else {
-                            output_terminal.attributes.collection_type = other.terminalMapping.mapOver.collectionType;
+                            output_terminal.attributes.collection_type = other.mapOver.collectionType;
                         }
                     } else {
                         output_terminal.attributes.collection_type = other.attributes.collection_type;
@@ -537,11 +513,11 @@ var InputCollectionTerminal = BaseInputTerminal.extend({
 
         var effectiveMapOver = this._effectiveMapOver(other);
         this.setMapOver(effectiveMapOver);
-    },
-    _effectiveMapOver: function(other) {
+    }
+    _effectiveMapOver(other) {
         var collectionTypes = this.collectionTypes;
         var otherCollectionType = this._otherCollectionType(other);
-        var canMatch = _.some(collectionTypes, collectionType => collectionType.canMatch(otherCollectionType));
+        var canMatch = _.some(collectionTypes, (collectionType) => collectionType.canMatch(otherCollectionType));
 
         if (!canMatch) {
             for (var collectionTypeIndex in collectionTypes) {
@@ -555,24 +531,24 @@ var InputCollectionTerminal = BaseInputTerminal.extend({
             }
         }
         return NULL_COLLECTION_TYPE_DESCRIPTION;
-    },
-    _effectiveCollectionTypes: function() {
-        var thisMapOver = this.mapOver();
-        return _.map(this.collectionTypes, t => thisMapOver.append(t));
-    },
-    attachable: function(other) {
+    }
+    _effectiveCollectionTypes() {
+        var mapOver = this.mapOver;
+        return _.map(this.collectionTypes, (t) => mapOver.append(t));
+    }
+    attachable(other) {
         var otherCollectionType = this._otherCollectionType(other);
         if (otherCollectionType.isCollection) {
             var effectiveCollectionTypes = this._effectiveCollectionTypes();
-            var thisMapOver = this.mapOver();
-            var canMatch = _.some(effectiveCollectionTypes, effectiveCollectionType =>
+            var mapOver = this.mapOver;
+            var canMatch = _.some(effectiveCollectionTypes, (effectiveCollectionType) =>
                 effectiveCollectionType.canMatch(otherCollectionType)
             );
             if (canMatch) {
                 // Only way a direct match...
                 return this._producesAcceptableDatatypeAndOptionalness(other);
                 // Otherwise we need to mapOver
-            } else if (thisMapOver.isCollection) {
+            } else if (mapOver.isCollection) {
                 // In this case, mapOver already set and we didn't match skipping...
                 if (this.node.hasConnectedMappedInputTerminals()) {
                     return new ConnectionAcceptable(
@@ -585,7 +561,9 @@ var InputCollectionTerminal = BaseInputTerminal.extend({
                         "Can't map over this input with output collection type - this step has outputs defined constraining the mapping of this tool. Disconnect outputs and retry."
                     );
                 }
-            } else if (_.some(this.collectionTypes, collectionType => otherCollectionType.canMapOver(collectionType))) {
+            } else if (
+                _.some(this.collectionTypes, (collectionType) => otherCollectionType.canMapOver(collectionType))
+            ) {
                 // we're not mapped over - but hey maybe we could be... lets check.
                 var effectiveMapOver = this._effectiveMapOver(other);
                 if (!effectiveMapOver.isCollection) {
@@ -593,7 +571,7 @@ var InputCollectionTerminal = BaseInputTerminal.extend({
                 }
                 //  Need to check if this would break constraints...
                 var mappingConstraints = this._mappingConstraints();
-                if (mappingConstraints.every(d => effectiveMapOver.canMatch(d))) {
+                if (mappingConstraints.every((d) => effectiveMapOver.canMatch(d))) {
                     return this._producesAcceptableDatatypeAndOptionalness(other);
                 } else {
                     if (this.node.hasConnectedMappedInputTerminals()) {
@@ -615,11 +593,11 @@ var InputCollectionTerminal = BaseInputTerminal.extend({
             return new ConnectionAcceptable(false, "Cannot attach a data output to a collection input.");
         }
     }
-});
+}
 
-var OutputCollectionTerminal = Terminal.extend({
-    initialize: function(attr) {
-        Terminal.prototype.initialize.call(this, attr);
+class OutputCollectionTerminal extends Terminal {
+    constructor(attr) {
+        super(attr);
         this.datatypes = attr.datatypes;
         this.optional = attr.optional;
         this.force_datatype = attr.force_datatype;
@@ -633,8 +611,8 @@ var OutputCollectionTerminal = Terminal.extend({
             this.collectionType = ANY_COLLECTION_TYPE_DESCRIPTION;
         }
         this.isCollection = true;
-    },
-    update: function(output) {
+    }
+    update(output) {
         this.optional = output.optional;
         var newCollectionType;
         if (output.collection_type) {
@@ -652,14 +630,14 @@ var OutputCollectionTerminal = Terminal.extend({
         // we need to iterate over a copy, as we slice this.connectors in the process of destroying connections
         var connectors = this.connectors.slice(0);
         if (newCollectionType.collectionType != oldCollectionType.collectionType) {
-            _.each(connectors, connector => {
+            _.each(connectors, (connector) => {
                 connector.destroyIfInvalid(true);
             });
         }
     }
-});
+}
 
-var OutputParameterTerminal = Terminal.extend({});
+var OutputParameterTerminal = Terminal;
 
 export default {
     InputTerminal: InputTerminal,
@@ -668,10 +646,9 @@ export default {
     OutputParameterTerminal: OutputParameterTerminal,
     InputCollectionTerminal: InputCollectionTerminal,
     OutputCollectionTerminal: OutputCollectionTerminal,
-    TerminalMapping: TerminalMapping,
 
     // test export
     CollectionTypeDescription: CollectionTypeDescription,
     NULL_COLLECTION_TYPE_DESCRIPTION: NULL_COLLECTION_TYPE_DESCRIPTION,
-    ANY_COLLECTION_TYPE_DESCRIPTION: ANY_COLLECTION_TYPE_DESCRIPTION
+    ANY_COLLECTION_TYPE_DESCRIPTION: ANY_COLLECTION_TYPE_DESCRIPTION,
 };

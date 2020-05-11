@@ -20,6 +20,12 @@ samtools view -bh '$input' | bedtools genomecov -bg -split -ibam stdin
     <outputs>
         <data name="output" format="bigwig"/>
     </outputs>
+    <tests>
+        <test>
+            <param name="input" format="sam" value="bfast_out1.sam" dbkey="hg17"/>
+            <output name="output" format="bigwig" value="bfast_out1.bigwig"/>
+        </test>
+    </tests>
     <help>
     </help>
 </tool>

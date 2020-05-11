@@ -13,7 +13,6 @@ from galaxy.tool_shed.util.hg_util import (
     get_config_from_disk,
     get_ctx_file_path_from_manifest,
     get_file_context_from_ctx,
-    get_repo_for_repository,
     pull_repository,
     reversed_lower_upper_bounded_changelog,
     reversed_upper_bounded_changelog,
@@ -32,7 +31,7 @@ def add_changeset(repo_path, path_to_filename_in_archive):
     except Exception as e:
         error_message = "Error adding '%s' to repository: %s" % (path_to_filename_in_archive, unicodify(e))
         if isinstance(e, subprocess.CalledProcessError):
-            error_message += "\nOutput was:\n%s" % e.output
+            error_message += "\nOutput was:\n%s" % unicodify(e.output)
         raise Exception(error_message)
 
 
@@ -93,7 +92,7 @@ def get_named_tmpfile_from_ctx(ctx, filename, dir):
     """
     filename = basic_util.strip_path(filename)
     for ctx_file in ctx.files():
-        ctx_file_name = basic_util.strip_path(ctx_file)
+        ctx_file_name = basic_util.strip_path(unicodify(ctx_file))
         if filename == ctx_file_name:
             try:
                 # If the file was moved, its destination file contents will be returned here.
@@ -140,7 +139,7 @@ def get_revision_label(app, repository, changeset_revision, include_date=True, i
     Return a string consisting of the human readable changeset rev and the changeset revision string
     which includes the revision date if the receive include_date is True.
     """
-    repo = get_repo_for_repository(app, repository=repository)
+    repo = repository.hg_repo
     ctx = get_changectx_for_changeset(repo, changeset_revision)
     if ctx:
         return get_revision_label_from_ctx(ctx, include_date=include_date, include_hash=include_hash)
@@ -155,7 +154,7 @@ def get_rev_label_changeset_revision_from_repository_metadata(app, repository_me
                                                               include_date=True, include_hash=True):
     if repository is None:
         repository = repository_metadata.repository
-    repo = get_repo_for_repository(app, repository=repository)
+    repo = repository.hg_repo
     changeset_revision = repository_metadata.changeset_revision
     ctx = get_changectx_for_changeset(repo, changeset_revision)
     if ctx:
@@ -264,7 +263,6 @@ __all__ = (
     'get_file_context_from_ctx',
     'get_named_tmpfile_from_ctx',
     'get_readable_ctx_date',
-    'get_repo_for_repository',
     'get_repository_heads',
     'get_reversed_changelog_changesets',
     'get_revision_label',

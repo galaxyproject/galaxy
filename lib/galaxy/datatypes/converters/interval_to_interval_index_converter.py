@@ -33,18 +33,20 @@ def main():
     # Do conversion.
     index = Indexes()
     offset = 0
-    for line in open(input_fname, "r"):
-        feature = line.strip().split()
-        if not feature or feature[0].startswith("track") or feature[0].startswith("#"):
+    with open(input_fname) as in_fh:
+        for line in in_fh:
+            feature = line.strip().split()
+            if not feature or feature[0].startswith("track") or feature[0].startswith("#"):
+                offset += len(line)
+                continue
+            chrom = feature[options.chrom_col]
+            chrom_start = int(feature[options.start_col])
+            chrom_end = int(feature[options.end_col])
+            index.add(chrom, chrom_start, chrom_end, offset)
             offset += len(line)
-            continue
-        chrom = feature[options.chrom_col]
-        chrom_start = int(feature[options.start_col])
-        chrom_end = int(feature[options.end_col])
-        index.add(chrom, chrom_start, chrom_end, offset)
-        offset += len(line)
 
-    index.write(open(output_fname, "w"))
+    with open(output_fname, 'wb') as out:
+        index.write(out)
 
 
 if __name__ == "__main__":

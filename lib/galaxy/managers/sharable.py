@@ -152,7 +152,7 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
         # precondition: user has been validated
         # allow user to be a list and call recursivly
         if isinstance(user, list):
-            return map(lambda user: self.share_with(item, user, flush=False), user)
+            return [self.share_with(item, _, flush=False) for _ in user]
         # get or create
         existing = self.get_share_assocs(item, user=user)
         if existing:
@@ -181,7 +181,7 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
         Delete a user share (or list of shares) from the database.
         """
         if isinstance(user, list):
-            return map(lambda user: self.unshare_with(item, user, flush=False), user)
+            return [self.unshare_with(item, _, flush=False) for _ in user]
         # Look for and delete sharing relation for user.
         user_share_assoc = self.get_share_assocs(item, user=user)[0]
         self.session().delete(user_share_assoc)

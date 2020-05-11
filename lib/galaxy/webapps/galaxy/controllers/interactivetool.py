@@ -4,12 +4,7 @@ Provides web interaction with InteractiveTools
 import logging
 
 from galaxy import (
-    model,
     web
-)
-from galaxy.web.framework.helpers import (
-    grids,
-    time_ago,
 )
 from galaxy.webapps.base.controller import (
     BaseUIController,
@@ -18,48 +13,7 @@ from galaxy.webapps.base.controller import (
 log = logging.getLogger(__name__)
 
 
-class JobStatusColumn(grids.StateColumn):
-    def get_value(self, trans, grid, item):
-        return super(JobStatusColumn, self).get_value(trans, grid, item.job)
-
-
-class EntryPointLinkColumn(grids.GridColumn):
-    def get_value(self, trans, grid, item):
-        return '<a class="entry-point-link" entry_point_id="%s">%s</a>' % (trans.security.encode_id(item.id), item.name)
-
-
-class InteractiveToolEntryPointListGrid(grids.Grid):
-
-    use_panels = True
-    title = "Available InteractiveTools"
-    model_class = model.InteractiveToolEntryPoint
-    default_filter = {"name": "All"}
-    default_sort_key = "-update_time"
-    columns = [
-        EntryPointLinkColumn("Name", filterable="advanced"),
-        JobStatusColumn("Job Info", key="job_state", model_class=model.Job),
-        grids.GridColumn("Created", key="created_time", format=time_ago),
-        grids.GridColumn("Last Updated", key="modified_time", format=time_ago),
-    ]
-    columns.append(
-        grids.MulticolFilterColumn(
-            "Search",
-            cols_to_filter=[columns[0]],
-            key="free-text-search", visible=False, filterable="standard"
-        )
-    )
-    operations = [
-        grids.GridOperation("Stop", condition=(lambda item: item.active), async_compatible=False),
-    ]
-
-    def build_initial_query(self, trans, **kwargs):
-        # Get list of user's active InteractiveTools
-        return trans.app.interactivetool_manager.get_nonterminal_for_user_by_trans(trans)
-
-
 class InteractiveTool(BaseUIController):
-    entry_point_grid = InteractiveToolEntryPointListGrid()
-
     @web.expose_api_anonymous
     def list(self, trans, **kwargs):
         """List all available interactivetools"""
@@ -103,4 +57,4 @@ class InteractiveTool(BaseUIController):
         if message and status:
             kwargs['message'] = message
             kwargs['status'] = status
-        return self.entry_point_grid(trans, **kwargs)
+        return kwargs

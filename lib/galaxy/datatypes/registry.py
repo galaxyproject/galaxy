@@ -46,6 +46,7 @@ class Registry(object):
         self.datatype_converters = OrderedDict()
         # Converters defined in local datatypes_conf.xml
         self.converters = []
+        self.converter_tools = set()
         # Converters defined in datatypes_conf.xml included in installed tool shed repositories.
         self.proprietary_converters = []
         self.converter_deps = {}
@@ -614,6 +615,7 @@ class Registry(object):
             try:
                 config_path = os.path.join(converter_path, tool_config)
                 converter = toolbox.load_tool(config_path, use_cached=use_cached)
+                self.converter_tools.add(converter)
                 if installed_repository_dict:
                     # If the converter is included in an installed tool shed repository, set the tool
                     # shed related tool attributes.
@@ -763,23 +765,19 @@ class Registry(object):
                 'coverage'      : coverage.LastzCoverage(),
                 'customtrack'   : interval.CustomTrack(),
                 'csfasta'       : sequence.csFasta(),
-                'db3'           : binary.SQlite(),
                 'fasta'         : sequence.Fasta(),
                 'eland'         : tabular.Eland(),
                 'fastq'         : sequence.Fastq(),
                 'fastqsanger'   : sequence.FastqSanger(),
-                'gemini.sqlite' : binary.GeminiSQLite(),
                 'gtf'           : interval.Gtf(),
                 'gff'           : interval.Gff(),
                 'gff3'          : interval.Gff3(),
                 'genetrack'     : tracks.GeneTrack(),
                 'h5'            : binary.H5(),
-                'idpdb'         : binary.IdpDB(),
                 'interval'      : interval.Interval(),
                 'laj'           : images.Laj(),
                 'lav'           : sequence.Lav(),
                 'maf'           : sequence.Maf(),
-                'mz.sqlite'     : binary.MzSQlite(),
                 'pileup'        : tabular.Pileup(),
                 'qualsolid'     : qualityscore.QualityScoreSOLiD(),
                 'qualsolexa'    : qualityscore.QualityScoreSolexa(),
@@ -799,26 +797,21 @@ class Registry(object):
                 'axt'           : 'text/plain',
                 'bam'           : 'application/octet-stream',
                 'bed'           : 'text/plain',
-                'blib'          : 'application/octet-stream',
                 'customtrack'   : 'text/plain',
                 'csfasta'       : 'text/plain',
-                'db3'           : 'application/octet-stream',
                 'eland'         : 'application/octet-stream',
                 'fasta'         : 'text/plain',
                 'fastq'         : 'text/plain',
                 'fastqsanger'   : 'text/plain',
-                'gemini.sqlite' : 'application/octet-stream',
                 'gtf'           : 'text/plain',
                 'gff'           : 'text/plain',
                 'gff3'          : 'text/plain',
                 'h5'            : 'application/octet-stream',
-                'idpdb'         : 'application/octet-stream',
                 'interval'      : 'text/plain',
                 'laj'           : 'text/plain',
                 'lav'           : 'text/plain',
                 'maf'           : 'text/plain',
                 'memexml'       : 'application/xml',
-                'mz.sqlite'     : 'application/octet-stream',
                 'pileup'        : 'text/plain',
                 'qualsolid'     : 'text/plain',
                 'qualsolexa'    : 'text/plain',
@@ -844,10 +837,6 @@ class Registry(object):
                 binary.Bam(),
                 binary.Sff(),
                 binary.H5(),
-                binary.GeminiSQLite(),
-                binary.MzSQlite(),
-                binary.IdpDB(),
-                binary.SQlite(),
                 xml.GenericXml(),
                 sequence.Maf(),
                 sequence.Lav(),

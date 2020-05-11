@@ -65,13 +65,13 @@ export default {
     props: {
         resolution: {
             type: Object,
-            required: true
-        }
+            required: true,
+        },
     },
     computed: {
-        singleTool: function() {
+        singleTool: function () {
             return this.resolution.tool_id != undefined;
-        }
-    }
+        },
+    },
 };
 </script>

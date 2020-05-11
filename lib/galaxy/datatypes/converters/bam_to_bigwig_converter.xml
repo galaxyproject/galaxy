@@ -1,8 +1,9 @@
 <tool id="CONVERTER_bam_to_bigwig_0" name="Convert BAM to BigWig" version="1.0.2" hidden="true">
     <!--  <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
     <requirements>
-        <requirement type="package" version="357">ucsc-bedgraphtobigwig</requirement>
-        <requirement type="package" version="2.27.1">bedtools</requirement>
+        <requirement type="package" version="377">ucsc-bedgraphtobigwig</requirement>
+        <requirement type="package" version="2.29.2">bedtools</requirement>
+        <requirement type="package" version="8.25">coreutils</requirement>
     </requirements>
     <command detect_errors="aggressive"><![CDATA[
 bedtools genomecov -bg -split -ibam '$input'
@@ -21,6 +22,12 @@ bedtools genomecov -bg -split -ibam '$input'
     <outputs>
         <data name="output" format="bigwig"/>
     </outputs>
+    <tests>
+        <test>
+            <param name="input" format="bam" value="srma_out2.bam" dbkey="hg17"/>
+            <output name="output" format="bigwig" value="srma_out2.bigwig"/>
+        </test>
+    </tests>
     <help>
     </help>
 </tool>
