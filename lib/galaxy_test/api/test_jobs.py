@@ -53,7 +53,7 @@ class JobsApiTestCase(ApiTestCase):
 
         # Verify number of ok jobs is actually greater.
         count_increased = False
-        for i in range(10):
+        for _ in range(10):
             new_count = len(self.__uploads_with_state("ok"))
             if original_count < new_count:
                 count_increased = True
@@ -228,10 +228,11 @@ class JobsApiTestCase(ApiTestCase):
             )
             run_response = self._post("tools", data=payload).json()
             job_id = run_response['jobs'][0]["id"]
+            self.dataset_populator.wait_for_job(job_id)
             dataset_id = run_response['outputs'][0]['id']
             response = self._post('jobs/%s/error' % job_id,
                                   data={'dataset_id': dataset_id})
-            assert response.status_code == 200
+            assert response.status_code == 200, response.json()
 
     @skip_without_tool('detect_errors_aggressive')
     def test_report_error_anon(self):
@@ -243,9 +244,9 @@ class JobsApiTestCase(ApiTestCase):
         job_id = run_response['jobs'][0]["id"]
         dataset_id = run_response['outputs'][0]['id']
         response = requests.post('%s/jobs/%s/error' % (self.galaxy_interactor.api_url, job_id),
-                                 params={'email': 'someone@domain.com', 'dataset_id': dataset_id},
+                                 data={'email': 'someone@domain.com', 'dataset_id': dataset_id},
                                  cookies=cookies)
-        assert response.status_code == 200
+        assert response.status_code == 200, response.json()
 
     @uses_test_history(require_new=True)
     def test_deleting_output_keep_running_until_all_deleted(self, history_id):
@@ -597,7 +598,7 @@ class JobsApiTestCase(ApiTestCase):
     def _search(self, payload, expected_search_count=1):
         # in case job and history aren't updated at exactly the same
         # time give time to wait
-        for i in range(5):
+        for _ in range(5):
             search_count = self._search_count(payload)
             if search_count == expected_search_count:
                 break
