@@ -27,7 +27,7 @@ def main():
             if "data" in entity:
                 if "text" in entity["data"].keys():
                     text = entity["data"]["text"]
-                    transcript += text+" "
+                    transcript += entity["data"]["text"]+" "
                     if text[-1] in [',','.','!','?']:
                         punctuation = text[-1]
                         text = text[0:-1]
