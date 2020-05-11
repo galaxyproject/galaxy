@@ -79,8 +79,7 @@ export default {
         },
         onChange() {
             this.isMultiple = this.terminal.mapOver && this.terminal.mapOver.isCollection;
-            const node = this.getNode();
-            node.markChanged();
+            this.$emit("onChange");
         },
         onRemove() {
             this.$emit("onRemove");

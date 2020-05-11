@@ -755,7 +755,7 @@ QUnit.test("terminal added to node", function (assert) {
 QUnit.test("terminal element", function (assert) {
     const dragging = new InputDragging(this.app, {
         el: document.createElement("div"),
-        terminal: { on: () => {} },
+        terminal: {},
     });
     assert.equal(dragging.el.tagName, "DIV");
 });
@@ -777,7 +777,7 @@ QUnit.test("terminal added to node", function (assert) {
 QUnit.test("terminal element", function (assert) {
     const dragging = new OutputDragging(this.app, {
         el: document.createElement("div"),
-        terminal: { on: () => {} },
+        terminal: {},
     });
     assert.equal(dragging.el.tagName, "DIV");
 });

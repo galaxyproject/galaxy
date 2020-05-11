@@ -105,8 +105,7 @@ export default {
     methods: {
         onChange() {
             this.isMultiple = this.terminal.mapOver && this.terminal.mapOver.isCollection;
-            const node = this.getNode();
-            node.markChanged();
+            this.$emit("onChange");
         },
         onToggle() {
             this.$emit("onToggle", this.output.name);

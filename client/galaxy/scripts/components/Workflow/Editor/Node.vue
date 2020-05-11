@@ -52,6 +52,7 @@
                 :get-node="getNode"
                 :get-manager="getManager"
                 @onAdd="onAddInput"
+                @onChange="onChange"
             />
             <div v-if="showRule" class="rule" />
             <node-output
@@ -62,6 +63,7 @@
                 :get-manager="getManager"
                 @onAdd="onAddOutput"
                 @onToggle="onToggleOutput"
+                @onChange="onChange"
             />
         </div>
     </div>
@@ -166,6 +168,9 @@ export default {
         },
     },
     methods: {
+        onChange() {
+            this.manager.nodeChanged(this);
+        },
         onAddInput(input, terminal) {
             const existingTerminal = this.inputTerminals[input.name];
             if (existingTerminal) {
@@ -363,7 +368,7 @@ export default {
             } else {
                 delete this.postJobActions["ChangeDatatypeAction" + outputName];
             }
-            this.markChanged();
+            this.onChange();
             outputTerminal.destroyInvalidConnections();
         },
         makeActive() {
@@ -379,9 +384,6 @@ export default {
             })(element.parentNode);
             // Remove active class
             element.classList.remove("node-active");
-        },
-        markChanged() {
-            this.manager.nodeChanged(this);
         },
     },
 };
