@@ -1,6 +1,6 @@
 <template>
     <b-nav-item
-        v-if="!tab.menu"
+        v-if="!menu"
         :class="classes"
         :style="styles"
         :active="!tab.disabled"
@@ -74,12 +74,18 @@ export default {
         },
     },
     computed: {
+        menu() {
+            return this.tab.menu;
+        },
+        active() {
+            return this.tab.id == this.activeTab;
+        },
         popoverNote() {
             return `Please <a href="${this.appRoot}login">login or register</a> to use this feature.`;
         },
         classes() {
             let classesString = this.tab.cls || "";
-            if (this.tab.id == this.activeTab) {
+            if (this.active) {
                 classesString = `${classesString} active`;
             }
             return classesString;
