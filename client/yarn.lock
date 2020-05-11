@@ -3372,7 +3372,7 @@ check-error@^1.0.2:
   resolved "https://registry.yarnpkg.com/check-error/-/check-error-1.0.2.tgz#574d312edd88bb5dd8912e9286dd6c0aed4aac82"
   integrity sha1-V00xLt2Iu13YkS6Sht1sCu1KrII=
 
-chokidar@3.3.0, chokidar@3.4.0, "chokidar@>=2.0.0 <4.0.0", chokidar@^1.4.2, chokidar@^2.0.0, chokidar@^2.0.2, chokidar@^2.1.8, chokidar@^3.0.0:
+chokidar@3.3.0, chokidar@3.4.0, "chokidar@>=2.0.0 <4.0.0", chokidar@^1.4.2, chokidar@^2.0.0, chokidar@^2.0.2, chokidar@^2.1.8, chokidar@^3.0.0, chokidar@^3.4.0:
   version "3.4.0"
   resolved "https://registry.yarnpkg.com/chokidar/-/chokidar-3.4.0.tgz#b30611423ce376357c765b9b8f904b9fba3c0be8"
   integrity sha512-aXAaho2VJtisB/1fg1+3nlLJqGOuewTzQpd/Tz0yTg2R0e4IGtshYvtjowyEumcBv2z+y4+kc75Mz7j5xJskcQ==
