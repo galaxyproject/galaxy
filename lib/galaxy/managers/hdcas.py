@@ -254,4 +254,11 @@ class HDCASerializer(
                                                      history_id=self.app.security.encode_id(i.history_id),
                                                      id=self.app.security.encode_id(i.id),
                                                      type=self.hdca_manager.model_class.content_type),
+            'job_state_summary'         : self.serialize_job_state_summary
         })
+
+    def serialize_job_state_summary(self, hdca, key, **context):
+        states = hdca.job_state_summary.__dict__.copy()
+        del states['_sa_instance_state']
+        del states['hdca_id']
+        return states
