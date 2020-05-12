@@ -1139,17 +1139,6 @@ a.action-button {
     background: none;
 }
 
-// A split menu button, the main button has an action, the arrow causes the
-// popup menu to appear
-
-.menubutton.popup.split {
-    // padding-right: 2em;
-}
-
-.menubutton.popup.split:hover {
-    //background: url(../../images/ddarrowsplit.png) no-repeat right -39px;
-}
-
 // Popup menu styles
 div.popmenu-wrapper {
     position: absolute;
