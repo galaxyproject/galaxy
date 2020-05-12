@@ -115,4 +115,7 @@ export default {
 .citation-card .card-header .nav-tabs {
     margin-bottom: -0.75rem !important;
 }
+.formatted-reference {
+    margin-bottom: 0.5rem;
+}
 </style>
