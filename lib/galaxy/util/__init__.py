@@ -248,7 +248,7 @@ def parse_xml(fname, strip_whitespace=True, remove_comments=True):
     if remove_comments and LXML_AVAILABLE:
         # If using stdlib etree comments are always removed,
         # but lxml doesn't do this by default
-        parser = etree.XMLParser(remove_comments=True)
+        parser = etree.XMLParser(remove_comments=remove_comments)
     try:
         # Restore ENOENT that would otherwise be an OSError in lxml
         if not os.path.exists(fname):
