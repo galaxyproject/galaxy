@@ -3,7 +3,7 @@
         <b-card class="citation-card" v-if="!simple" header-tag="nav">
             <template v-slot:header>
                 <b-nav card-header tabs>
-                    <b-nav-item :active="!outputBibtex" @click="toggleOutput">Citations</b-nav-item>
+                    <b-nav-item :active="!outputBibtex" @click="toggleOutput">Citations (APA)</b-nav-item>
                     <b-nav-item :active="outputBibtex" @click="toggleOutput">BibTeX</b-nav-item>
                 </b-nav>
             </template>
