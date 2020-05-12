@@ -135,8 +135,9 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         self.screenshot("tool_form_citations_formatted")
 
         self.components.tool_form.show_bibtex.wait_for_and_click()
-        bibtex_area = self.components.tool_form.bibtex_area.wait_for_visible()
-        assert "Galaxy: A platform for interactive" in bibtex_area.text
+        references = assert_citations_visible()
+        r0text = references[0].text
+        assert "@article{Giardine_2005" in r0text
         self.screenshot("tool_form_citations_bibtex")
 
     def _check_dataset_details_for_inttest_value(self, hid, expected_value="42"):
