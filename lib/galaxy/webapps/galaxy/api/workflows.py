@@ -31,6 +31,7 @@ from galaxy.tools import recommendations
 from galaxy.tools.parameters import populate_state
 from galaxy.tools.parameters.basic import workflow_building_modes
 from galaxy.util.sanitize_html import sanitize_html
+from galaxy.version import VERSION
 from galaxy.web import (
     expose_api,
     expose_api_anonymous_and_sessionless,
@@ -48,7 +49,6 @@ from galaxy.workflow.modules import module_factory
 from galaxy.workflow.reports import generate_report
 from galaxy.workflow.run import invoke, queue_invoke
 from galaxy.workflow.run_request import build_workflow_run_configs
-from galaxy.version import VERSION
 
 log = logging.getLogger(__name__)
 
