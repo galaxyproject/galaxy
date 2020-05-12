@@ -1,5 +1,5 @@
 <%
-    app_root = h.url_for("/static/plugins/visualizations/chiraviz/static/")
+    app_root = h.url_for("/static/plugins/visualizations/chiraviz/static/dist/")
 %>
 
 <!DOCTYPE html>
