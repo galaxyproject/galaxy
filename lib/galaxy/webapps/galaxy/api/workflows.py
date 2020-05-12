@@ -17,7 +17,8 @@ from sqlalchemy.orm import joinedload
 from galaxy import (
     exceptions,
     model,
-    util
+    util,
+    version
 )
 from galaxy.managers import (
     histories,
@@ -48,6 +49,7 @@ from galaxy.workflow.modules import module_factory
 from galaxy.workflow.reports import generate_report
 from galaxy.workflow.run import invoke, queue_invoke
 from galaxy.workflow.run_request import build_workflow_run_configs
+from galaxy.version import VERSION
 
 log = logging.getLogger(__name__)
 
@@ -1179,16 +1181,28 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             'environment_variables': {}
         }
 
-        galaxy_extension = []  # TODO
-        input_subdomain = input_subdomain  # TODO
+        extension = [
+            {
+                'extension_schema': 'https://raw.githubusercontent.com/biocompute-objects/extension_domain/6d2cd8482e6075746984662edcf78b57d3d38065/galaxy/galaxy_extension.json',
+                'galaxy_extension': {
+                    'galaxy_url': url_for('/', qualified=True),
+                    'galaxy_version': VERSION
+                }
+            }
+        ]
 
-        ret_dict = {
+        error_domain = {
+            'empirical_error': kwd.get('empirical_error', []),
+            'algorithmic_error': kwd.get('algorithmic_error', [])
+        }
+
+        bco_dict = {
             'bco_id': url_for('invocation_export_bco', invocation_id=invocation_id, qualified=True),
             'spec_version': spec_version,
             'etag': str(model.uuid4().hex),
             'provenance_domain': provenance_domain,
             'usability_domain': usability_domain,
-            'extension_domain': galaxy_extension,
+            'extension_domain': extension,
             'description_domain': {
                 'keywords': keywords,
                 'xref': kwd.get('xref', []),
@@ -1201,9 +1215,21 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 'input_subdomain': input_subdomain,
                 'output_subdomain': output_subdomain,
             },
-            'error_domain': {},
+            'error_domain': error_domain,
         }
-        return ret_dict
+        return bco_dict
+
+    @expose_api
+    def download_invocation_bco(self, trans, invocation_id, **kwd):
+        """
+        GET /api/invocations/{invocations_id}/get_bco
+
+        Returns a selected BioCompute Object.
+
+        """
+        ret_dict = self.export_invocation_bco(trans, invocation_id, **kwd)
+
+        return format_return_as_json(ret_dict)
 
     @expose_api
     def invocation_step(self, trans, invocation_id, step_id, **kwd):

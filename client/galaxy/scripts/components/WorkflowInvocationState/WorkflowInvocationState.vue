@@ -61,7 +61,10 @@
                     <a class="fa fa-print" :href="invocationPdfLink"></a>
                 </div>
                 <div>
-                    <a :href="bcoLink">Create BioCompute Object</a>
+                    <a :href="bcoLink" class="btn btn-secondary">Edit BioCompute Object</a>
+                </div>
+                <div>
+                    <a :href="bcoJSON" class="btn btn-secondary">Download BioCompute Object</a>
                 </div>
             </span>
         </div>
@@ -146,10 +149,13 @@ export default {
         invocationLink: function () {
             return getUrl(`workflows/invocations/report?id=${this.invocationId}`);
         },
-        bcoLink: function () {
-            return getUrl(`workflows/invocations/report?id=${this.invocationId}`);
+        bcoJSON: function () {
+            return getUrl(`api/invocations/${this.invocationId}/get_bco`);
         },
-        invocationPdfLink: function () {
+        bcoLink: function () {
+            return getUrl(`api/invocations/${this.invocationId}/export_bco`);
+        },
+        invocationPdfLink: function() {
             return getUrl(`api/invocations/${this.invocationId}/report.pdf`);
         },
         invocationSchedulingTerminal: function () {
