@@ -250,9 +250,6 @@ def parse_xml(fname, strip_whitespace=True, remove_comments=True):
         # but lxml doesn't do this by default
         parser = etree.XMLParser(remove_comments=remove_comments)
     try:
-        # Restore ENOENT that would otherwise be an OSError in lxml
-        if not os.path.exists(fname):
-            raise IOError(errno.ENOENT, "xml file at path '%s' does not exist" % fname)
         tree = etree.parse(fname, parser=parser)
         root = tree.getroot()
         if strip_whitespace:
@@ -261,6 +258,11 @@ def parse_xml(fname, strip_whitespace=True, remove_comments=True):
                     elem.text = elem.text.strip()
                 if elem.tail is not None:
                     elem.tail = elem.tail.strip()
+    except IOError as e:
+        if e.errno is None and not os.path.exists(fname):
+            # lxml doesn't set errno
+            e.errno = errno.ENOENT
+        raise
     except etree.ParseError:
         log.exception("Error parsing file %s", fname)
         raise
