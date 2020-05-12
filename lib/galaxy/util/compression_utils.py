@@ -65,6 +65,22 @@ def get_fileobj_raw(filename, mode="r", compressed_formats=None):
         return compressed_format, fh
 
 
+def file_iter(fname, sep=None):
+    """
+    This generator iterates over a file and yields its lines
+    splitted via the C{sep} parameter. Skips empty lines and lines starting with
+    the C{#} character.
+
+    >>> lines = [ line for line in file_iter(__file__) ]
+    >>> len(lines) !=  0
+    True
+    """
+    with get_fileobj(fname) as fh:
+        for line in fh:
+            if line and line[0] != '#':
+                yield line.split(sep)
+
+
 class CompressedFile(object):
 
     @staticmethod

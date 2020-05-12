@@ -323,6 +323,7 @@ class Workflow extends EventEmitter {
         var wf = this;
         var offset = 0;
         if (initialImport) {
+            wf.remove_all();
             wf.name = data.name;
         } else {
             offset = Object.keys(wf.nodes).length;
