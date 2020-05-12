@@ -105,7 +105,7 @@
     "css-loader": "^3.5.3",
     "del": "^5.1.0",
     "duplicate-package-checker-webpack-plugin": "^3.0.0",
-    "eslint": "^6.8.0",
+    "eslint": "^7.0.0",
     "eslint-plugin-vue": "^6.2.2",
     "expose-loader": "^0.7.5",
     "file-loader": "^6.0.0",
