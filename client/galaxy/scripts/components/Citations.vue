@@ -4,8 +4,8 @@
             <template v-slot:header>
                 <h4 class="mb-0">
                     Citations
-                    <b-button title="Toggle BibTeX" size="sm" class="float-right" @click="toggleViewRender">
-                        <i class="fa fa-pencil"></i> Toggle BibTeX
+                    <b-button title="Toggle BibTeX" size="sm" class="float-right" @click="toggleOutput">
+                        <i class="fa fa-pencil"></i> Toggle Output Format
                     </b-button>
                 </h4>
             </template>
@@ -14,13 +14,13 @@
                 completely describe your work. Also, please remember to
                 <a href="https://galaxyproject.org/citing-galaxy">cite Galaxy</a>.
             </div>
-            <div v-if="viewRender" class="citations-formatted">
+            <div class="citations-formatted">
                 <template v-for="(citation, index) in formattedCitations">
                     <div class="formatted-reference" v-html="citation"></div>
                 </template>
             </div>
         </b-card>
-        <div v-else-if="citations.length">
+        <div v-else-if="formattedCitations.length">
             <b-btn v-b-toggle="id" variant="primary">Citations</b-btn>
             <b-collapse
                 :id="id.replace(/ /g, '_')"
@@ -31,9 +31,9 @@
                 @hidden="$emit('hidden')"
             >
                 <b-card>
-                    <p class="formatted-reference" v-for="citation in citations" :key="citation.text">
-                        {{ citation }}
-                    </p>
+                    <template v-for="(citation, index) in formattedCitations">
+                        <div class="formatted-reference" v-html="citation"></div>
+                    </template>
                 </b-card>
             </b-collapse>
         </div>
@@ -57,11 +57,6 @@ export default {
         id: {
             type: String,
             required: true,
-        },
-        viewRender: {
-            type: Boolean,
-            requried: false,
-            default: true,
         },
         simple: {
             type: Boolean,
@@ -112,7 +107,7 @@ export default {
             });
     },
     methods: {
-        toggleViewRender() {
+        toggleOutput() {
             this.outputBibtex = !this.outputBibtex;
         },
     },
