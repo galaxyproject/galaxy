@@ -80,7 +80,7 @@ class Torque(BaseJobExec):
         rval = {}
         for line in status.strip().splitlines():
             try:
-                tree = parse_xml_string(line.strip)
+                tree = parse_xml_string(line.strip())
                 assert tree.tag == 'Data'
                 break
             except Exception:
