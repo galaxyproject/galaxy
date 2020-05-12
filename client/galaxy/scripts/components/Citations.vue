@@ -111,3 +111,8 @@ export default {
     },
 };
 </script>
+<style>
+.card-header .nav-tabs {
+    margin-bottom: -.75rem !important;
+}
+</style>
