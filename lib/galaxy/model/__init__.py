@@ -4498,8 +4498,8 @@ class UCI(object):
 
 class StoredWorkflow(HasTags, Dictifiable, RepresentById):
 
-    dict_collection_visible_keys = ['id', 'name', 'create_time', 'published', 'deleted']
-    dict_element_visible_keys = ['id', 'name', 'create_time', 'published', 'deleted']
+    dict_collection_visible_keys = ['id', 'name', 'create_time', 'update_time', 'published', 'deleted']
+    dict_element_visible_keys = ['id', 'name', 'create_time', 'update_time', 'published', 'deleted']
 
     def __init__(self):
         self.id = None
@@ -4507,6 +4507,7 @@ class StoredWorkflow(HasTags, Dictifiable, RepresentById):
         self.name = None
         self.slug = None
         self.create_time = None
+        self.update_time = None
         self.published = False
         self.latest_workflow_id = None
         self.workflows = []

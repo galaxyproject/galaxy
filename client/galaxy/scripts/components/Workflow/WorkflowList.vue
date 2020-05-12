@@ -57,7 +57,7 @@
                     <template v-slot:cell(bookmark)="row">
                         <b-form-checkbox v-model="row.item.show_in_tool_panel" @change="bookmarkWorkflow(row.item)" />
                     </template>
-                    <template v-slot:cell(create_time)="data">
+                    <template v-slot:cell(update_time)="data">
                         <UtcDate :date="data.value" mode="elapsed" />
                     </template>
                     <template v-slot:cell(execute)="row">
@@ -117,8 +117,8 @@ export default {
                     sortable: true,
                 },
                 {
-                    label: "Created",
-                    key: "create_time",
+                    label: "Updated",
+                    key: "update_time",
                     sortable: true,
                 },
                 {
