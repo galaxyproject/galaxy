@@ -4,16 +4,8 @@
             <template v-slot:header>
                 <h4 class="mb-0">
                     Citations
-                    <b-button
-                        v-if="viewRender"
-                        title="Show all in BibTeX format."
-                        class="citations-to-bibtex"
-                        @click="toggleViewRender"
-                    >
-                        <i class="fa fa-pencil-square-o"></i> Show BibTeX
-                    </b-button>
-                    <b-button v-else title="Return to formatted citation list." @click="toggleViewRender">
-                        <i class="fa fa-times"></i> Hide BibTeX
+                    <b-button title="Toggle BibTeX" size="sm" class="float-right" @click="toggleViewRender">
+                        <i class="fa fa-pencil"></i> Toggle BibTeX
                     </b-button>
                 </h4>
             </template>
@@ -22,14 +14,11 @@
                 completely describe your work. Also, please remember to
                 <a href="https://galaxyproject.org/citing-galaxy">cite Galaxy</a>.
             </div>
-            <span v-if="viewRender" class="citations-formatted">
-                <p v-html="formattedReferences"></p>
-            </span>
-            <pre v-else>
-            <code class="citations-bibtex">
-                {{ content }}
-            </code>
-        </pre>
+            <div v-if="viewRender" class="citations-formatted">
+                <template v-for="(citation, index) in formattedCitations">
+                    <div class="formatted-reference" v-html="citation"></div>
+                </template>
+            </div>
         </b-card>
         <div v-else-if="citations.length">
             <b-btn v-b-toggle="id" variant="primary">Citations</b-btn>
@@ -42,7 +31,9 @@
                 @hidden="$emit('hidden')"
             >
                 <b-card>
-                    <p v-html="formattedReferences"></p>
+                    <p class="formatted-reference" v-for="citation in citations" :key="citation.text">
+                        {{ citation }}
+                    </p>
                 </b-card>
             </b-collapse>
         </div>
@@ -81,17 +72,21 @@ export default {
     data() {
         return {
             citations: [],
-            content: "",
             errors: [],
             showCollapse: false,
+            outputBibtex: false,
         };
     },
     computed: {
-        formattedReferences() {
-            return this.citations.reduce(
-                (a, b) => a.concat(`<p class="formatted-reference">${this.formattedReference(b)}</p>`),
-                ""
-            );
+        outputStyle() {
+            return this.outputBibtex ? "bibtex" : "citation-apa";
+        },
+        formattedCitations() {
+            return this.citations.length === 0
+                ? []
+                : this.citations.map((c) => {
+                      return c.get({ format: "string", type: "html", style: this.outputStyle });
+                  });
         },
     },
     updated() {
@@ -103,12 +98,10 @@ export default {
         axios
             .get(`${getAppRoot()}api/${this.source}/${this.id}/citations`)
             .then((response) => {
-                this.content = "";
                 response.data.forEach((rawCitation) => {
                     try {
                         const cite = new Cite(rawCitation.content);
                         this.citations.push(cite);
-                        this.content += rawCitation.content;
                     } catch (err) {
                         console.warn(`Error parsing bibtex: ${err}`);
                     }
@@ -119,17 +112,9 @@ export default {
             });
     },
     methods: {
-        formattedReference: function (citation) {
-            return citation.get({ format: "string", type: "html", style: "citation-apa" });
-        },
         toggleViewRender() {
-            this.viewRender = !this.viewRender;
+            this.outputBibtex = !this.outputBibtex;
         },
     },
 };
 </script>
-<style>
-pre code {
-    white-space: pre-wrap;
-}
-</style>
