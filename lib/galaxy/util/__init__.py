@@ -40,7 +40,12 @@ from boltons.iterutils import (
     default_enter,
     remap,
 )
-from lxml import etree
+LXML_AVAILABLE = True
+try:
+    from lxml import etree
+except ImportError:
+    LXML_AVAILABLE = False
+    import xml.etree.ElementTree as etree
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from six import binary_type, iteritems, PY2, string_types, text_type
@@ -240,7 +245,9 @@ def unique_id(KEY_SIZE=128):
 def parse_xml(fname, strip_whitespace=True, remove_comments=True):
     """Returns a parsed xml tree"""
     parser = None
-    if remove_comments:
+    if remove_comments and LXML_AVAILABLE:
+        # If using stdlib etree comments are always removed,
+        # but lxml doesn't do this by default
         parser = etree.XMLParser(remove_comments=True)
     try:
         # Restore ENOENT that would otherwise be an OSError in lxml

@@ -3,10 +3,16 @@ Dataproviders that iterate over lines from their sources.
 """
 import logging
 
-from lxml.etree import (
-    _Element,
-    iterparse,
-)
+try:
+    from lxml.etree import (
+        _Element,
+        iterparse,
+    )
+except ImportError:
+    from xml.etree.ElementTree import (
+        Element as _Element,
+        iterparse,
+    )
 
 from . import line
 
