@@ -1,16 +1,22 @@
 <tool id="hmgm_ner" name="HMGM NER Correction" version="1.0.0">
   <description>Manual NER correction by a human</description>
-  <command detect_errors="exit_code">$__tool_directory__/hmgm_main.py NER $__root_dir__ $input_ner $output_ner $task_info '$context_json'</command>
+  <command detect_errors="exit_code">
+  	$__tool_directory__/../amp_json_schema/ner_to_iiif.py $input_ner $input_iiif '$context_json';
+  	$__tool_directory__/hmgm_main.py NER $__root_dir__ $input_iiif $output_iiif $task_info '$context_json';
+    $__tool_directory__/../amp_json_schema/iiif_to_ner.py $output_iiif $input_ner $output_ner
+</command>                                    
   <inputs>
     <param name="input_ner" type="data" format="json" label="Input NER JSON file" help="JSON file for the NER file to be corrected "/>
     <param name="context_json" type="text" label="Human MGM Task Context" help="JSON string containing context information needed for creating Human MGM task">
-    	 <sanitizer sanitize="false">
+    	<sanitizer sanitize="false">
     	</sanitizer>
 	</param>
   </inputs>
   <outputs>
-    <data  name="output_ner" format="json" />
-    <data  name="task_info" format="json" />
+    <data name="input_iiif" format="json" />
+    <data name="output_iiif" format="json" />
+    <data name="output_ner" format="json" />
+    <data name="task_info" format="json" />
   </outputs>
   <tests>
   </tests>
