@@ -13,7 +13,7 @@
                 <a href="https://galaxyproject.org/citing-galaxy">cite Galaxy</a>.
             </div>
             <div class="citations-formatted">
-                <template v-for="(citation, index) in formattedCitations">
+                <template v-for="citation in formattedCitations">
                     <div class="formatted-reference" v-html="citation"></div>
                 </template>
             </div>
@@ -29,7 +29,7 @@
                 @hidden="$emit('hidden')"
             >
                 <b-card>
-                    <template v-for="(citation, index) in formattedCitations">
+                    <template v-for="citation in formattedCitations">
                         <div class="formatted-reference" v-html="citation"></div>
                     </template>
                 </b-card>
