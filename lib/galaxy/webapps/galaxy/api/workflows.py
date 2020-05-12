@@ -1196,7 +1196,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             'algorithmic_error': kwd.get('algorithmic_error', [])
         }
 
-        ret_dict = {
+        bco_dict = {
             'bco_id': url_for('invocation_export_bco', invocation_id=invocation_id, qualified=True),
             'spec_version': spec_version,
             'etag': str(model.uuid4().hex),
@@ -1217,7 +1217,19 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             },
             'error_domain': error_domain,
         }
-        return ret_dict
+        return bco_dict
+
+    @expose_api
+    def download_invocation_bco(self, trans, invocation_id, **kwd):
+        """
+        GET /api/invocations/{invocations_id}/get_bco
+
+        Returns a selected BioCompute Object.
+
+        """
+        ret_dict = self.export_invocation_bco(trans, invocation_id, **kwd)
+
+        return format_return_as_json(ret_dict)
 
     @expose_api
     def invocation_step(self, trans, invocation_id, step_id, **kwd):
