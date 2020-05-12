@@ -85,7 +85,7 @@
                 class="d-block mt-3"
                 @click="submitOIDCLogin(idp)"
             >
-                <i v-bind:class="idp_info['icon']" />
+                <i :class="idp_info['icon']" />
                 Sign in with
                 {{ idp.charAt(0).toUpperCase() + idp.slice(1) }}
             </b-button>

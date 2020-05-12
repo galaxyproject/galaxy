@@ -14,7 +14,7 @@
             </div>
             <div class="citations-formatted">
                 <template v-for="citation in formattedCitations">
-                    <div class="formatted-reference" v-html="citation"></div>
+                    <div :key="citation" class="formatted-reference" v-html="citation"></div>
                 </template>
             </div>
         </b-card>
@@ -30,7 +30,7 @@
             >
                 <b-card>
                     <template v-for="citation in formattedCitations">
-                        <div class="formatted-reference" v-html="citation"></div>
+                        <div :key="citation" class="formatted-reference" v-html="citation"></div>
                     </template>
                 </b-card>
             </b-collapse>

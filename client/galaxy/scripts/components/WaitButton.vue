@@ -1,10 +1,10 @@
 /** Button variant with waiting and progress tracking. */
 <template>
-    <button class="ui-button-default" v-bind:class="buttonClass" type="button" v-on:click="$emit('click')">
-        <i class="icon fa" v-bind:class="iconClass"> </i>
+    <button class="ui-button-default" :class="buttonClass" type="button" @click="$emit('click')">
+        <i class="icon fa" :class="iconClass"> </i>
         <span class="title"> {{ currentText }} </span>
         <div class="progress" v-if="percentage != -1">
-            <div class="progress-bar" v-bind:style="{ width: progressWidth }"></div>
+            <div class="progress-bar" :style="{ width: progressWidth }"></div>
         </div>
     </button>
 </template>
