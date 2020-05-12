@@ -22,7 +22,7 @@ import HDCAListItemEdit from "mvc/history/hdca-li-edit";
 import HDCAListItem from "mvc/history/hdca-li";
 const FUNCTION_VALUE_REGEX = `\\s*(?:[\\w_\\-]+|\\"[^\\"]+\\"|\\'[^\\']+\\')\\s*`;
 const FUNCTION_CALL = `\\s*\\w+\\s*=` + FUNCTION_VALUE_REGEX;
-const FUNCTION_CALL_LINE = `\\s*(\\w+)\\s*\\((` + FUNCTION_CALL + `)(,` + FUNCTION_CALL + `)*\\)\\s*`;
+const FUNCTION_CALL_LINE = `\\s*(\\w+)\\s*\\((${FUNCTION_CALL})(,${FUNCTION_CALL})*\\)\\s*`;
 const FUNCTION_CALL_LINE_TEMPLATE = new RegExp(FUNCTION_CALL_LINE, "m");
 
 const md = MarkdownIt();
@@ -60,6 +60,10 @@ const RENDER_FUNCTIONS = {
                 </div>
             </div>
         </div>`;
+    },
+    history_dataset_composite: (action, args, content) => {
+        const history_dataset_id = args.history_dataset_id;
+        return `<div class="composite-dataset" history_dataset_id="${history_dataset_id}></div>`;
     },
     history_dataset_collection_display: (action, args, content) => {
         const history_dataset_collection_id = args.history_dataset_collection_id;
@@ -123,21 +127,26 @@ md.renderer.rules.fence = function (tokens, idx, options, env, slf) {
     const token = tokens[idx];
     const info = token.info ? token.info.trim() : "";
     const content = token.content;
+
     if (info == "galaxy") {
-        const arr = FUNCTION_CALL_LINE_TEMPLATE.exec(content);
+        const galaxy_function = FUNCTION_CALL_LINE_TEMPLATE.exec(content);
 
         const args = {};
-        const action = arr[1];
-        for (let i = 2; i < arr.length; i++) {
-            if (arr[i] === undefined) continue;
-            const arguments_str = arr[i].replace(/,/g, "").trim();
+        const function_name = galaxy_function[1];
+        // we need [... ] to return empty string, if regex doesn't match
+        const function_arguments = [...content.matchAll(new RegExp(FUNCTION_CALL, "g"))]
+
+        for (let i = 0; i < function_arguments.length; i++) {
+            if (function_arguments[i] === undefined) continue;
+            const arguments_str = function_arguments[i].toString().replace(/,/g, "").trim();
 
             if (arguments_str) {
                 const [key, val] = arguments_str.split("=");
                 args[key.trim()] = val.replace(/['"]+/g, "").trim();
             }
         }
-        return RENDER_FUNCTIONS[action](action, args, content);
+
+        return RENDER_FUNCTIONS[function_name](function_name, args, content);
     } else {
         return default_fence(tokens, idx, options, env, slf);
     }
