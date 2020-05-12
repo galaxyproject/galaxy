@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 
 import jwt
 import requests
+import ssl
 from oauthlib.common import generate_nonce
 from requests_oauthlib import OAuth2Session
 from six.moves.urllib.parse import quote
@@ -24,7 +25,7 @@ NONCE_COOKIE_NAME = 'custos-nonce'
 class CustosAuthnz(IdentityProvider):
     def __init__(self, provider, oidc_config, oidc_backend_config, idphint=None):
         self.config = {'provider': provider.lower()}
-        self.config['verify_ssl'] = oidc_config['VERIFY_SSL']
+        self.config['verify_ssl'] = oidc_config['VERIFY_SSL'] or (provider == "custos")  # should I keep this?
         self.config['url'] = oidc_backend_config['url']
         self.config['client_id'] = oidc_backend_config['client_id']
         self.config['client_secret'] = oidc_backend_config['client_secret']
@@ -76,6 +77,7 @@ class CustosAuthnz(IdentityProvider):
         # this value.
         state_cookie = trans.get_cookie(name=STATE_COOKIE_NAME)
         oauth2_session = self._create_oauth2_session(state=state_cookie)
+        self._get_custos_certificate()
         token = self._fetch_token(oauth2_session, trans)
         log.debug("token={}".format(json.dumps(token, indent=True)))
         access_token = token['access_token']
@@ -87,6 +89,14 @@ class CustosAuthnz(IdentityProvider):
         # Get nonce from token['id_token'] and validate. 'nonce' in the
         # id_token is a hash of the nonce stored in the NONCE_COOKIE_NAME
         # cookie.
+        '''
+        token_verify = self._verify_token(token)
+        if (token_verify):
+            id_token_decoded = jwt.decode(id_token, 'secret', algorithms=token_verify.get('alg')) #ask dannon about this
+        else:
+            id_token_decoded = jwt.decode(id_token, verify=False)
+        '''
+
         id_token_decoded = jwt.decode(id_token, verify=False)
         nonce_hash = id_token_decoded['nonce']
         self._validate_nonce(trans, nonce_hash)
@@ -220,6 +230,28 @@ class CustosAuthnz(IdentityProvider):
         if nonce_hash != nonce_cookie_hash:
             raise Exception("Nonce mismatch!")
 
+    def _get_custos_certificate(self):
+        clientIdAndSec = self.config['client_id'] + ":" + self.config['client_secret']
+        response = requests.get(self.config['certificate_endpoint'],
+                           headers={"Authorization": "Basic %s" % util.unicodify(base64.b64encode(util.smart_str(clientIdAndSec)))},
+                           verify=False, params={'metadata.owner_type': "CUSTOS",
+                                                'metadata.resource_type': "SERVER_CERTIFICATE"})
+        self.config['ca_bundle'] = response.json().get("value")
+
+        res = ssl.get_default_verify_paths()
+        f = open(res[0], "a")
+        f.write(self.config['ca_bundle'])
+        f.close()
+
+    def _verify_token(self, token):
+        clientIdAndSec = self.config['client_id'] + ":" + self.config['client_secret']
+        response = requests.get(self.config['verify_token_endpoint'],
+                           headers={"Authorization": "Basic %s" % util.unicodify(base64.b64encode(util.smart_str(clientIdAndSec)))},
+                           verify=False, params={'client_id': self.config['client_id']})
+        print("\n\n\nVERIFY TOKEN: ", response)
+        log.debug("\n\nTOKEN VERIFICATION={}".format(json.dumps(response.json(), indent=True)))  # to delete
+        return response.json()
+
     def _load_config_for_cilogon(self):
         # Set cilogon endpoints
         self.config['authorization_endpoint'] = "https://cilogon.org/authorize"
@@ -236,6 +268,8 @@ class CustosAuthnz(IdentityProvider):
         self.config['authorization_endpoint'] = endpoints['authorization_endpoint']
         self.config['token_endpoint'] = endpoints['token_endpoint']
         self.config['userinfo_endpoint'] = endpoints['userinfo_endpoint']
+        self.config['certificate_endpoint'] = "https://custos.scigap.org/apiserver/resource-secret-management/v1.0.0/secret"
+        self.config['verify_token_endpoint'] = "https://custos.scigap.org/apiserver/resource-secret-management/v1.0.0/openid-connect/certs"
         self.config['end_session_endpoint'] = endpoints['end_session_endpoint']
 
     def _get_custos_credentials(self):
@@ -275,10 +309,9 @@ class CustosAuthnz(IdentityProvider):
     def _get_verify_param(self):
         """Return 'ca_bundle' if 'verify_ssl' is true and 'ca_bundle' is configured."""
         # in requests_oauthlib, the verify param can either be a boolean or a CA bundle path
-        if self.config['ca_bundle'] is not None and self.config['verify_ssl']:
-            return self.config['ca_bundle']
-        else:
-            return self.config['verify_ssl']
+        # if self.config['ca_bundle'] is not None and self.config['verify_ssl']:
+        #    return self.config['ca_bundle']
+        return self.config['verify_ssl']
 
     def _generate_username(self, trans, email):
         temp_username = email.split('@')[0]  # username created from username portion of email
