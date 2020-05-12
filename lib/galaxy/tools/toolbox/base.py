@@ -8,8 +8,8 @@ from collections import (
     OrderedDict
 )
 from errno import ENOENT
-from xml.etree.ElementTree import ParseError
 
+from lxml.etree import ParseError
 from markupsafe import escape
 from six.moves.urllib.parse import urlparse
 

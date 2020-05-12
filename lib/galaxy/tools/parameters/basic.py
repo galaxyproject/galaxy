@@ -8,8 +8,8 @@ import logging
 import os
 import os.path
 import re
-from xml.etree.ElementTree import XML
 
+from lxml.etree import XML
 from six import string_types
 from webob.compat import cgi_FieldStorage
 

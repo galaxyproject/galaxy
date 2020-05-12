@@ -2,9 +2,13 @@ import errno
 import logging
 import os
 import time
-from xml.etree import ElementTree
 
-from galaxy.util import xml_to_string
+from lxml.etree import ElementTree
+
+from galaxy.util import (
+    parse_xml_string,
+    xml_to_string,
+)
 from galaxy.util.renamed_temporary_file import RenamedTemporaryFile
 from galaxy.util.tool_shed.xml_util import parse_xml
 from . import tool_panel_manager
@@ -40,7 +44,7 @@ class DataManagerHandler(object):
             root_str = '<?xml version="1.0"?><data_managers tool_path="%s"></data_managers>' % data_managers_path
         else:
             root_str = '<?xml version="1.0"?><data_managers></data_managers>'
-        root = ElementTree.fromstring(root_str)
+        root = parse_xml_string(root_str)
         for elem in config_elems:
             root.append(elem)
         try:

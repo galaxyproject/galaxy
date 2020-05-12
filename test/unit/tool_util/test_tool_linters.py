@@ -1,5 +1,4 @@
-import xml.etree.ElementTree as ET
-
+import lxml.etree as ET
 import pytest
 
 from galaxy.tool_util.lint import LintContext

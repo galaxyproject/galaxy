@@ -17,7 +17,6 @@ import time
 from collections import OrderedDict
 from glob import glob
 from tempfile import NamedTemporaryFile
-from xml.etree import ElementTree
 
 import refgenconf
 import requests
@@ -205,7 +204,7 @@ class ToolDataTableManager(object):
         out_elems.extend(new_elems)
         out_path_is_new = not os.path.exists(full_path)
 
-        root = ElementTree.fromstring('<?xml version="1.0"?>\n<tables></tables>')
+        root = util.parse_xml_string('<?xml version="1.0"?>\n<tables></tables>')
         for elem in out_elems:
             root.append(elem)
         with RenamedTemporaryFile(full_path, mode='w') as out:

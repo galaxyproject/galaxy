@@ -1,10 +1,10 @@
-from xml.etree import ElementTree as ET
+from lxml.etree import Element
 
 from galaxy.tools.toolbox import ToolSection
 
 
 def test_tool_section():
-    elem = ET.Element('section')
+    elem = Element('section')
     elem.attrib['name'] = "Cool Tools"
     elem.attrib['id'] = "cool1"
 

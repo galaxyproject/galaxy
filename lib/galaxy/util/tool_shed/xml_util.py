@@ -2,34 +2,16 @@ import io
 import logging
 import os
 import tempfile
-from xml.etree import ElementTree as XmlET
+
+import lxml.etree as XmlET
 
 from galaxy.util import (
-    xml_to_string
+    parse_xml as galaxy_parse_xml,
+    unicodify,
+    xml_to_string,
 )
 
 log = logging.getLogger(__name__)
-
-
-class CommentedTreeBuilder(XmlET.TreeBuilder):
-
-    non_comment_seen = False
-
-    def doctype(*args):
-        # handle deprecation warning for XMLParsing a file with DOCTYPE
-        pass
-
-    def start(self, tag, attrib):
-        if tag is not XmlET.Comment:
-            self.non_comment_seen = True
-        super(CommentedTreeBuilder, self).start(tag, attrib)
-
-    def comment(self, data):
-        if self.non_comment_seen:
-            # Cannot start XML file with comment
-            self.start(XmlET.Comment, {})
-            self.data(data)
-            self.end(XmlET.Comment)
 
 
 def create_and_write_tmp_file(elem):
@@ -90,12 +72,10 @@ def parse_xml(file_name, check_exists=True):
     error_message = ''
     if check_exists and not os.path.exists(file_name):
         return None, "File does not exist %s" % str(file_name)
-
-    with open(file_name, 'r') as fobj:
-        try:
-            tree = XmlET.parse(fobj, parser=XmlET.XMLParser(target=CommentedTreeBuilder()))
-        except Exception as e:
-            error_message = "Exception attempting to parse %s: %s" % (str(file_name), str(e))
-            log.exception(error_message)
-            return None, error_message
+    try:
+        tree = galaxy_parse_xml(file_name, remove_comments=False, strip_whitespace=False)
+    except Exception as e:
+        error_message = "Exception attempting to parse %s: %s" % (str(file_name), unicodify(e))
+        log.exception(error_message)
+        return None, error_message
     return tree, error_message

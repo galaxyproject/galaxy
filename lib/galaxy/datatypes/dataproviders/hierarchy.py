@@ -2,9 +2,10 @@
 Dataproviders that iterate over lines from their sources.
 """
 import logging
-from xml.etree.ElementTree import (
-    Element,
-    iterparse
+
+from lxml.etree import (
+    _Element,
+    iterparse,
 )
 
 from . import line
@@ -34,7 +35,7 @@ class XMLDataProvider(HierarchalDataProvider):
     """
     Data provider that converts selected XML elements to dictionaries.
     """
-    # using xml.etree's iterparse method to keep mem down
+    # using lxml.etree's iterparse method to keep mem down
     # TODO:   this, however (AFAIK), prevents the use of xpath
     settings = {
         'selector'  : 'str',  # urlencoded
@@ -68,7 +69,7 @@ class XMLDataProvider(HierarchalDataProvider):
         # TODO: fails with '#' - browser thinks it's an anchor - use urlencode
         # TODO: need removal/replacement of etree namespacing here - then move to string match
         return bool((selector is None) or
-                    (isinstance(element, Element) and selector in element.tag))
+                    (isinstance(element, _Element) and selector in element.tag))
 
     def element_as_dict(self, element):
         """

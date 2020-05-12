@@ -29,8 +29,6 @@ from email.mime.text import MIMEText
 from functools import partial
 from hashlib import md5
 from os.path import relpath
-from xml.etree import ElementInclude, ElementTree
-from xml.etree.ElementTree import ParseError
 
 import requests
 try:
@@ -42,6 +40,7 @@ from boltons.iterutils import (
     default_enter,
     remap,
 )
+from lxml import etree
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from six import binary_type, iteritems, PY2, string_types, text_type
@@ -89,6 +88,8 @@ FILENAME_VALID_CHARS = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJK
 RW_R__R__ = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
 RWXR_XR_X = stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH
 RWXRWXRWX = stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO
+
+XML = etree.XML
 
 defaultdict = collections.defaultdict
 
@@ -236,34 +237,37 @@ def unique_id(KEY_SIZE=128):
     return md5(random_bits).hexdigest()
 
 
-def parse_xml(fname):
+def parse_xml(fname, strip_whitespace=True, remove_comments=True):
     """Returns a parsed xml tree"""
-    # handle deprecation warning for XMLParsing a file with DOCTYPE
-    class DoctypeSafeCallbackTarget(ElementTree.TreeBuilder):
-        def doctype(*args):
-            pass
-    tree = ElementTree.ElementTree()
+    parser = None
+    if remove_comments:
+        parser = etree.XMLParser(remove_comments=True)
     try:
-        root = tree.parse(fname, parser=ElementTree.XMLParser(target=DoctypeSafeCallbackTarget()))
-        for elem in root.iter('*'):
+        # Restore ENOENT that would otherwise be an OSError in lxml
+        if not os.path.exists(fname):
+            raise IOError(errno.ENOENT, "xml file at path '%s' does not exist" % fname)
+        tree = etree.parse(fname, parser=parser)
+        root = tree.getroot()
+        if strip_whitespace:
+            for elem in root.iter('*'):
+                if elem.text is not None:
+                    elem.text = elem.text.strip()
+                if elem.tail is not None:
+                    elem.tail = elem.tail.strip()
+    except etree.ParseError:
+        log.exception("Error parsing file %s", fname)
+        raise
+    return tree
+
+
+def parse_xml_string(xml_string, strip_whitespace=True):
+    tree = etree.fromstring(xml_string)
+    if strip_whitespace:
+        for elem in tree.iter('*'):
             if elem.text is not None:
                 elem.text = elem.text.strip()
             if elem.tail is not None:
                 elem.tail = elem.tail.strip()
-    except ParseError:
-        log.exception("Error parsing file %s", fname)
-        raise
-    ElementInclude.include(root)
-    return tree
-
-
-def parse_xml_string(xml_string):
-    tree = ElementTree.fromstring(xml_string)
-    for elem in tree.iter('*'):
-        if elem.text is not None:
-            elem.text = elem.text.strip()
-        if elem.tail is not None:
-            elem.tail = elem.tail.strip()
     return tree
 
 
@@ -274,9 +278,9 @@ def xml_to_string(elem, pretty=False):
     try:
         if elem is not None:
             if PY2:
-                xml_str = ElementTree.tostring(elem, encoding='utf-8')
+                xml_str = etree.tostring(elem, encoding='utf-8')
             else:
-                xml_str = ElementTree.tostring(elem, encoding='unicode')
+                xml_str = etree.tostring(elem, encoding='unicode')
         else:
             xml_str = ''
     except TypeError as e:

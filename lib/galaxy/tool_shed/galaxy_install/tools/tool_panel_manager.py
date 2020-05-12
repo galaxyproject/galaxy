@@ -1,12 +1,16 @@
 import errno
 import logging
-from xml.etree import ElementTree as XmlET
+
+import lxml.etree as XmlET
 
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.tool_shed.util.basic_util import strip_path
 from galaxy.tool_shed.util.repository_util import get_repository_owner
 from galaxy.tool_shed.util.shed_util_common import get_tool_panel_config_tool_path_install_dir
-from galaxy.util import xml_to_string
+from galaxy.util import (
+    parse_xml_string,
+    xml_to_string,
+)
 from galaxy.util.renamed_temporary_file import RenamedTemporaryFile
 from galaxy.util.tool_shed.common_util import remove_protocol_and_user_from_clone_url
 from galaxy.util.tool_shed.xml_util import parse_xml
@@ -97,7 +101,7 @@ class ToolPanelManager(object):
         value of config_filename.
         """
         try:
-            root = XmlET.fromstring('<?xml version="1.0"?>\n<toolbox tool_path="%s"></toolbox>' % str(tool_path))
+            root = parse_xml_string('<?xml version="1.0"?>\n<toolbox tool_path="%s"></toolbox>' % str(tool_path))
             for elem in config_elems:
                 root.append(elem)
             with RenamedTemporaryFile(config_filename, mode='w') as fh:

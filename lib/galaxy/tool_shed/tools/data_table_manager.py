@@ -1,7 +1,8 @@
 import logging
 import os
 import shutil
-from xml.etree import ElementTree as XmlET
+
+import lxml.etree as XmlET
 
 from galaxy.tool_shed.util import hg_util
 from galaxy.util.tool_shed import xml_util
