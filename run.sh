@@ -43,10 +43,6 @@ then
     export GALAXY_CONFIG_OVERRIDE_WEBHOOKS_DIR="test/functional/webhooks"
 fi
 
-if [ -n "$GALAXY_UNIVERSE_CONFIG_DIR" ]; then
-    python ./scripts/build_universe_config.py "$GALAXY_UNIVERSE_CONFIG_DIR"
-fi
-
 set_galaxy_config_file_var
 
 if [ "$INITIALIZE_TOOL_DEPENDENCIES" -eq 1 ]; then
