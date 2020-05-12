@@ -273,7 +273,7 @@ def populate_state(request_context, inputs, incoming, state, errors={}, prefix='
     """
     Populates nested state dict from incoming parameter values.
     >>> from collections import OrderedDict
-    >>> from lxml.etree import XML
+    >>> from galaxy.util import XML
     >>> from galaxy.util.bunch import Bunch
     >>> from galaxy.tools.parameters.basic import TextToolParameter, BooleanToolParameter
     >>> from galaxy.tools.parameters.grouping import Repeat
