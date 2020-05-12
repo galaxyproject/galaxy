@@ -41,24 +41,6 @@ from ._framework import ApiTestCase
 
 
 WORKFLOW_SIMPLE = """
-<<<<<<< HEAD
-class: GalaxyWorkflow
-name: Simple Workflow
-inputs:
-  input1: data
-outputs:
-  wf_output_1:
-    outputSource: first_cat/out_file1
-steps:
-  first_cat:
-    tool_id: cat1
-    in:
-      input1: input1
-"""
-
-NESTED_WORKFLOW_AUTO_LABELS_LEGACY_SYNTAX = """
-=======
->>>>>>> BioComputeDev
 class: GalaxyWorkflow
 name: Simple Workflow
 inputs:
