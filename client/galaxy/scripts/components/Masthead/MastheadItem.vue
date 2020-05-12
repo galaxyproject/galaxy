@@ -52,9 +52,15 @@
 <script>
 import { VBTooltip } from "bootstrap-vue";
 import { VBPopover } from "bootstrap-vue";
+import { BNavItem, BNavItemDropdown, BDropdownItem } from "bootstrap-vue";
 
 export default {
     name: "MastheadItem",
+    components: {
+        BNavItem,
+        BNavItemDropdown,
+        BDropdownItem,
+    },
     directives: {
         "v-b-tooltip": VBTooltip,
         "v-b-popover": VBPopover,

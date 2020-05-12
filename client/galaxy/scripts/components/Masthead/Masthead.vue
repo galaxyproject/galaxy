@@ -20,6 +20,7 @@
                 :key="`tab-${idx}`"
                 :appRoot="appRoot"
                 :Galaxy="Galaxy"
+                v-show="!(tab.hidden === undefined ? false : tab.hidden)"
                 @updateScratchbookTab="updateScratchbookTab"
             >
             </masthead-item>
