@@ -155,7 +155,7 @@ export default {
         bcoLink: function () {
             return getUrl(`api/invocations/${this.invocationId}/export_bco`);
         },
-        invocationPdfLink: function() {
+        invocationPdfLink: function () {
             return getUrl(`api/invocations/${this.invocationId}/report.pdf`);
         },
         invocationSchedulingTerminal: function () {

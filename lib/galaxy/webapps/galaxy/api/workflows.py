@@ -17,8 +17,7 @@ from sqlalchemy.orm import joinedload
 from galaxy import (
     exceptions,
     model,
-    util,
-    version
+    util
 )
 from galaxy.managers import (
     histories,
