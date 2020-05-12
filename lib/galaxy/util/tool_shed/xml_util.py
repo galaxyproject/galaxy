@@ -3,12 +3,8 @@ import logging
 import os
 import tempfile
 
-try:
-    from lxml import etree
-except ImportError:
-    import xml.etree.ElementTree as etree
-
 from galaxy.util import (
+    etree,
     parse_xml as galaxy_parse_xml,
     unicodify,
     xml_to_string,

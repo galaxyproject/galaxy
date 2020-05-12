@@ -15,8 +15,7 @@ class ToolInputTranslator(object):
     Handles Tool input translation.
     This is used for data source tools
 
-    >>> from galaxy.util import Params
-    >>> from lxml.etree import XML
+    >>> from galaxy.util import Params, XML
     >>> translator = ToolInputTranslator.from_element(XML(
     ... '''
     ... <request_param_translation>

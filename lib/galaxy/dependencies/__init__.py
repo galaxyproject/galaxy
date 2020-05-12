@@ -6,13 +6,13 @@ from __future__ import print_function
 import sys
 from os.path import dirname, join
 
-import lxml.etree as ElementTree
 import pkg_resources
 import yaml
 
 from galaxy.containers import parse_containers_config
 from galaxy.util import (
     asbool,
+    etree,
     parse_xml,
     which,
 )
@@ -69,7 +69,7 @@ class ConditionalDependencies(object):
                             self.job_rule_modules.append(plugin.text)
                     except (OSError, IOError):
                         pass
-                except ElementTree.ParseError:
+                except etree.ParseError:
                     pass
             else:
                 try:

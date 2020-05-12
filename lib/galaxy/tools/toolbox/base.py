@@ -9,7 +9,6 @@ from collections import (
 )
 from errno import ENOENT
 
-from lxml.etree import ParseError
 from markupsafe import escape
 from six.moves.urllib.parse import urlparse
 
@@ -24,6 +23,7 @@ from galaxy.tool_util.deps import (
 )
 from galaxy.tool_util.loader_directory import looks_like_a_tool
 from galaxy.util import (
+    etree,
     ExecutionTimer,
     listify,
     parse_xml,
@@ -143,7 +143,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 continue
             try:
                 self._init_tools_from_config(config_filename)
-            except ParseError:
+            except etree.ParseError:
                 # Occasionally we experience "Missing required parameter 'shed_tool_conf'."
                 # This happens if parsing the shed_tool_conf fails, so we just sleep a second and try again.
                 # TODO: figure out why this fails occasionally (try installing hundreds of tools in batch ...).

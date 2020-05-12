@@ -1,13 +1,12 @@
 import errno
 import logging
 
-import lxml.etree as XmlET
-
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.tool_shed.util.basic_util import strip_path
 from galaxy.tool_shed.util.repository_util import get_repository_owner
 from galaxy.tool_shed.util.shed_util_common import get_tool_panel_config_tool_path_install_dir
 from galaxy.util import (
+    etree,
     parse_xml_string,
     xml_to_string,
 )
@@ -113,24 +112,24 @@ class ToolPanelManager(object):
                            tool, tool_section):
         """Create and return an ElementTree tool Element."""
         if tool_section is not None:
-            tool_elem = XmlET.SubElement(tool_section, 'tool')
+            tool_elem = etree.SubElement(tool_section, 'tool')
         else:
-            tool_elem = XmlET.Element('tool')
+            tool_elem = etree.Element('tool')
         tool_elem.attrib['file'] = tool_file_path
         if not tool.guid:
             raise ValueError("tool has no guid")
         tool_elem.attrib['guid'] = tool.guid
-        tool_shed_elem = XmlET.SubElement(tool_elem, 'tool_shed')
+        tool_shed_elem = etree.SubElement(tool_elem, 'tool_shed')
         tool_shed_elem.text = tool_shed
-        repository_name_elem = XmlET.SubElement(tool_elem, 'repository_name')
+        repository_name_elem = etree.SubElement(tool_elem, 'repository_name')
         repository_name_elem.text = repository_name
-        repository_owner_elem = XmlET.SubElement(tool_elem, 'repository_owner')
+        repository_owner_elem = etree.SubElement(tool_elem, 'repository_owner')
         repository_owner_elem.text = owner
-        changeset_revision_elem = XmlET.SubElement(tool_elem, 'installed_changeset_revision')
+        changeset_revision_elem = etree.SubElement(tool_elem, 'installed_changeset_revision')
         changeset_revision_elem.text = changeset_revision
-        id_elem = XmlET.SubElement(tool_elem, 'id')
+        id_elem = etree.SubElement(tool_elem, 'id')
         id_elem.text = tool.id
-        version_elem = XmlET.SubElement(tool_elem, 'version')
+        version_elem = etree.SubElement(tool_elem, 'version')
         version_elem.text = tool.version
         return tool_elem
 
@@ -310,7 +309,7 @@ class ToolPanelManager(object):
         # { id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}
         if tool_section_dict['id']:
             # Create a new tool section.
-            tool_section = XmlET.Element('section')
+            tool_section = etree.Element('section')
             tool_section.attrib['id'] = tool_section_dict['id']
             tool_section.attrib['name'] = tool_section_dict['name']
             tool_section.attrib['version'] = tool_section_dict['version']

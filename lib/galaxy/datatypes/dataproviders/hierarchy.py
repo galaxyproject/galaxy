@@ -3,17 +3,7 @@ Dataproviders that iterate over lines from their sources.
 """
 import logging
 
-try:
-    from lxml.etree import (
-        _Element,
-        iterparse,
-    )
-except ImportError:
-    from xml.etree.ElementTree import (
-        Element as _Element,
-        iterparse,
-    )
-
+from galaxy.util import etree
 from . import line
 
 _TODO = """
@@ -74,8 +64,9 @@ class XMLDataProvider(HierarchalDataProvider):
         # TODO: add more flexibility here w/o re-implementing xpath
         # TODO: fails with '#' - browser thinks it's an anchor - use urlencode
         # TODO: need removal/replacement of etree namespacing here - then move to string match
+        Element = getattr(etree, '_Element', etree.Element)
         return bool((selector is None) or
-                    (isinstance(element, _Element) and selector in element.tag))
+                    (isinstance(element, Element) and selector in element.tag))
 
     def element_as_dict(self, element):
         """
@@ -110,7 +101,7 @@ class XMLDataProvider(HierarchalDataProvider):
                 yield child_data
 
     def __iter__(self):
-        context = iterparse(self.source, events=self.ITERPARSE_ALL_EVENTS)
+        context = etree.iterparse(self.source, events=self.ITERPARSE_ALL_EVENTS)
         context = iter(context)
 
         selected_element = None

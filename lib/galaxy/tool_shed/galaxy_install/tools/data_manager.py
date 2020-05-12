@@ -3,9 +3,8 @@ import logging
 import os
 import time
 
-from lxml.etree import ElementTree
-
 from galaxy.util import (
+    etree,
     parse_xml_string,
     xml_to_string,
 )
@@ -135,7 +134,7 @@ class DataManagerHandler(object):
                                                                       tool_path=shed_config_dict.get('tool_path', ''))
                     if data_manager:
                         rval.append(data_manager)
-                elif elem.tag is ElementTree.Comment:
+                elif elem.tag is etree.Comment:
                     pass
                 else:
                     log.warning("Encountered unexpected element '%s':\n%s" % (elem.tag, xml_to_string(elem)))
