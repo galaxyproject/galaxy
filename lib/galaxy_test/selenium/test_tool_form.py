@@ -125,8 +125,7 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         @retry_assertion_during_transitions
         def assert_citations_visible():
             references = self.components.tool_form.reference.all()
-            # This should be 29, but bugs I guess?
-            assert len(references) > 0, len(references)
+            assert len(references) == 29
             return references
 
         references = assert_citations_visible()
