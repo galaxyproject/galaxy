@@ -1,21 +1,43 @@
 <template>
-    <div class="dropdown-menu" role="menu">
-        <a
-            class="rule-link dropdown-item"
-            v-for="dateTime in getRules()"
-            :key="dateTime"
-            @click="loadSession(builder, dateTime)"
+    <div class="btn-group dropdown">
+        <span
+            class="fas fa-history rule-builder-view-source"
+            v-bind:class="{ disabled: numOfSavedRules == 0 }"
+            v-b-tooltip.hover.bottom
+            :title="savedRulesMenu"
+            data-toggle="dropdown"
+            ref="savedRulesButton"
         >
-            {{ dateTime }}
-        </a>
+        </span>
+        <div class="dropdown-menu" role="menu">
+            <a
+                class="rule-link dropdown-item saved-rule-item"
+                v-for="dateTime in getRules()"
+                :key="dateTime"
+                @click="loadSession(builder, dateTime)"
+            >
+                {{ dateTime }}
+            </a>
+        </div>
     </div>
 </template>
 
 <script>
+import _l from "utils/localization";
 export default {
+    data: function () {
+        return {
+            savedRulesMenu: _l("Recently used rules"),
+        };
+    },
     props: {
         builder: {
             required: true,
+        },
+    },
+    computed: {
+        numOfSavedRules: function () {
+            return this.getRules().length;
         },
     },
     methods: {
@@ -46,3 +68,9 @@ export default {
     },
 };
 </script>
+
+<style>
+.saved-rule-item:hover {
+    color: white !important;
+}
+</style>

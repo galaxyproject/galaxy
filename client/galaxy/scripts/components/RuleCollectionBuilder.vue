@@ -329,6 +329,7 @@
                                     :title="titleViewSource"
                                     @click="viewSource"
                                 ></span>
+                                <saved-rules-selector :builder="this" ref="savedRulesSelector" />
                             </span>
                             <div v-if="jaggedData" class="rule-warning">
                                 Rows contain differing numbers of columns, there was likely a problem parsing your data.
@@ -432,19 +433,6 @@
                                         <rule-target-component :builder="this" rule-type="add_column_value" />
                                         <rule-target-component :builder="this" rule-type="add_column_substr" />
                                     </div>
-                                </div>
-                                <div class="btn-group dropup">
-                                    <button
-                                        type="button"
-                                        v-b-tooltip.hover.bottom
-                                        :title="titleRulesMenu"
-                                        class="rule-menu-rules-button primary-button dropdown-toggle"
-                                        data-toggle="dropdown"
-                                    >
-                                        <span class="fa fa-plus"></span> {{ l("Saved Rules")
-                                        }}<span class="caret"></span>
-                                    </button>
-                                    <saved-rules-selector :builder="this" ref="savedRulesSelector" />
                                 </div>
                             </div>
                         </div>
@@ -689,7 +677,6 @@ export default {
             titleSourceReset: _l("Reset text area to current set of rules"),
             titleSourceApply: _l("Apply changes to rule source and return to rule preview"),
             titleRulesMenu: _l("General rules to apply"),
-            savedRulesMenu: _l("Load saved rules"),
             titleFilterMenu: _l("Rules that filter rows from the data"),
             titleColumMenu: _l("Rules that generate new columns"),
             titleRemoveMapping: _l("Remove column definition assignment"),
@@ -1241,7 +1228,11 @@ export default {
             }
         },
         createCollection() {
-            this.$refs.savedRulesSelector.saveSession(JSON.stringify(this.ruleSourceJson));
+            const asJson = {
+                rules: this.rules,
+                mapping: this.mapping,
+            };
+            this.$refs.savedRulesSelector.saveSession(JSON.stringify(asJson));
             this.state = "wait";
             const name = this.collectionName;
             const collectionType = this.collectionType;
@@ -1796,6 +1787,9 @@ export default {
 .fa-edit,
 .fa-times,
 .fa-wrench {
+    cursor: pointer;
+}
+.fa-history {
     cursor: pointer;
 }
 </style>
