@@ -1,13 +1,11 @@
 <template>
     <div>
-        <b-card v-if="!simple">
+        <b-card v-if="!simple" header-tag="nav">
             <template v-slot:header>
-                <h4 class="mb-0">
-                    Citations
-                    <b-button title="Toggle BibTeX" size="sm" class="float-right" @click="toggleOutput">
-                        <i class="fa fa-pencil"></i> Toggle Output Format
-                    </b-button>
-                </h4>
+                <b-nav card-header tabs>
+                    <b-nav-item :active="!outputBibtex" @click="toggleOutput">Citations</b-nav-item>
+                    <b-nav-item :active="outputBibtex" @click="toggleOutput">BibTeX</b-nav-item>
+                </b-nav>
             </template>
             <div v-if="source === 'histories'" class="infomessage">
                 When writing up your analysis, remember to include all references that should be cited in order to
