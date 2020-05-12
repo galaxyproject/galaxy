@@ -29,7 +29,7 @@ class ConfigWatchers(object):
             save_integrated_tool_panel = False
             try:
                 # Run and wait for toolbox reload on the process that watches the config files.
-                # The toolbpox reload will update the integrated_tool_panel_file
+                # The toolbox reload will update the integrated_tool_panel_file
                 self.app.queue_worker.send_local_control_task('reload_toolbox', get_response=True),
             except Exception:
                 save_integrated_tool_panel = True

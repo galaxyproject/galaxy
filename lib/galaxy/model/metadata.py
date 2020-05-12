@@ -46,7 +46,7 @@ class Statement(object):
     def __call__(self, *args, **kwargs):
         # get the locals dictionary of the frame object one down in the call stack (i.e. the Datatype class calling MetadataElement)
         class_locals = sys._getframe(1).f_locals
-        # get and set '__galaxy_statments__' to an empty list if not in locals dict
+        # get and set '__galaxy_statements__' to an empty list if not in locals dict
         statements = class_locals.setdefault(STATEMENTS, [])
         # add Statement containing info to populate a MetadataElementSpec
         statements.append((self, args, kwargs))
