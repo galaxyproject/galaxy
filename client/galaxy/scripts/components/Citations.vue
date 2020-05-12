@@ -1,6 +1,6 @@
 <template>
     <div>
-        <b-card v-if="!simple" header-tag="nav">
+        <b-card class="citation-card" v-if="!simple" header-tag="nav">
             <template v-slot:header>
                 <b-nav card-header tabs>
                     <b-nav-item :active="!outputBibtex" @click="toggleOutput">Citations</b-nav-item>
@@ -112,7 +112,7 @@ export default {
 };
 </script>
 <style>
-.card-header .nav-tabs {
-    margin-bottom: -.75rem !important;
+.citation-card .card-header .nav-tabs {
+    margin-bottom: -0.75rem !important;
 }
 </style>
