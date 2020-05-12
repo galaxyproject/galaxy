@@ -43,6 +43,8 @@ describe("Masthead.vue", () => {
             },
         ];
 
+        const activeTab = "shared";
+
         const frames = {
             on: () => {
                 return frames;
@@ -54,6 +56,7 @@ describe("Masthead.vue", () => {
                 quotaMeter,
                 frames,
                 tabs,
+                activeTab,
                 appRoot: "prefix/",
             },
             localVue,
@@ -84,4 +87,10 @@ describe("Masthead.vue", () => {
         expect(wrapper.find("#analysis").attributes().style).to.not.contain("display: none");
         expect(wrapper.find("#hiddentab").attributes().style).to.contain("display: none");
     });
+
+    it("should highlight the active tab", () => {
+        expect(wrapper.find("#analysis").classes("active")).to.equals(false);
+        expect(wrapper.find("#shared").classes("active")).to.equals(true);
+    });
+
 });
