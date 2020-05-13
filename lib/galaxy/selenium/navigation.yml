@@ -31,14 +31,12 @@ masthead:
   selectors:
     _: '#masthead'
 
-    user:
-      type: xpath
-      selector: '//li[@id="user"]'
+    # bootstrap-vue a tag doesn't work as link target, need to hit span inside
+    user: '#user.loggedin-only > a.nav-link.dropdown-toggle > span'
+    register_or_login: '#user.loggedout-only > .nav-link'
 
-    user_menu: 'li#user .dropdown-menu'
-    workflow:
-      type: xpath
-      selector: '//li[@id="workflow"]'
+    user_menu: '#user .dropdown-menu a'
+    workflow: '#workflow .nav-link > span'
 
     user_email:
       type: xpath

@@ -435,7 +435,7 @@ class NavigatesGalaxy(HasDriver):
             username = email.split("@")[0]
 
         self.home()
-        self.click_masthead_user()
+        self.components.masthead.register_or_login.wait_for_and_click()
         self.wait_for_and_click(self.navigation.registration.selectors.toggle)
         form = self.wait_for_visible(self.navigation.registration.selectors.form)
         self.fill(form, dict(
@@ -470,8 +470,8 @@ class NavigatesGalaxy(HasDriver):
             assert email in text
             assert self.get_logged_in_user()["email"] == email
 
-            # Hide masthead menu click
-            self.click_center()
+            # clicking away no longer closes menu post Masthead -> VueJS
+            self.click_masthead_user()
 
     def wait_for_logged_in(self):
         try:
