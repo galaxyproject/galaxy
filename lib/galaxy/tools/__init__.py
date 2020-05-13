@@ -2131,7 +2131,7 @@ class Tool(Dictifiable):
             'requirements'  : [{'name' : r.name, 'version' : r.version} for r in self.requirements],
             'errors'        : state_errors,
             'tool_errors'   : self.tool_errors,
-            'state_inputs'  : params_to_strings(self.inputs, state_inputs, self.app),
+            'state_inputs'  : params_to_strings(self.inputs, state_inputs, self.app, use_security=True, nested=True),
             'job_id'        : trans.security.encode_id(job.id) if job else None,
             'job_remap'     : self._get_job_remap(job),
             'history_id'    : trans.security.encode_id(history.id) if history else None,

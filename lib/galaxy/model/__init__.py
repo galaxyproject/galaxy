@@ -1062,7 +1062,7 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
             params_objects[key] = safe_loads(param_dict[key])
 
         def remap_objects(p, k, obj):
-            if isinstance(obj, dict) and "src" in obj and obj["src"] in ["hda", "hdca"]:
+            if isinstance(obj, dict) and "src" in obj and obj["src"] in ["hda", "hdca", "dce"]:
                 new_id = serialization_options.get_identifier_for_id(id_encoder, obj["id"])
                 new_obj = obj.copy()
                 new_obj["id"] = new_id

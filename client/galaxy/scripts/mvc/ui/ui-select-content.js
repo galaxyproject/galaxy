@@ -122,7 +122,7 @@ const Configurations = {
     ],
 };
 
-/** View for hda and hdca content selector ui elements */
+/** View for hda and dce content selector ui elements */
 const View = Backbone.View.extend({
     initialize: function (options) {
         const self = this;
@@ -223,7 +223,10 @@ const View = Backbone.View.extend({
     /** Return the currently selected dataset values */
     value: function (new_value) {
         const galaxy = getGalaxyInstance();
-        new_value !== undefined && this.model.set("value", new_value);
+        if (new_value) {
+            this._patchValue(new_value);
+            this.model.set("value", new_value);
+        }
         const current = this.model.get("current");
         if (this.config[current]) {
             let id_list = this.fields[current].value();
@@ -391,19 +394,20 @@ const View = Backbone.View.extend({
     _changeData: function () {
         const options = this.model.get("data");
         const self = this;
-        const select_options = {};
+        const select_options = { hda: [], hdca: [] };
         _.each(options, (items, src) => {
-            select_options[src] = [];
             _.each(items, (item) => {
-                select_options[src].push({
+                self._patchValue(item);
+                const current_src = item.src || src;
+                select_options[current_src].push({
                     hid: item.hid,
                     keep: item.keep,
-                    label: `${item.hid}: ${item.name}`,
+                    label: `${item.hid || "Selected"}: ${item.name}`,
                     value: item.id,
                     origin: item.origin,
                     tags: item.tags,
                 });
-                self.cache[`${item.id}_${src}`] = item;
+                self.cache[`${item.id}_${current_src}`] = item;
             });
         });
         _.each(this.config, (c, i) => {
@@ -444,11 +448,17 @@ const View = Backbone.View.extend({
         return v.history_content_type == "dataset_collection" ? "hdca" : "hda";
     },
 
-    /** Library datasets are displayed and selected together with history datasets **/
+    /** Library datasets are displayed and selected together with history datasets,
+        Dataset collection elements are displayed together with history dataset collections **/
     _patchValue: function (v) {
-        if (v.src == "ldda") {
-            v.src = "hda";
-            v.origin = "ldda";
+        const patch_to = { ldda: "hda", dce: "hdca" };
+        if (v.values) {
+            _.each(v.values, (v) => {
+                this._patchValue(v);
+            });
+        } else if (patch_to[v.src]) {
+            v.origin = v.src;
+            v.src = patch_to[v.src];
             v.id = `${v.origin}${v.id}`;
         }
     },
@@ -534,9 +544,9 @@ const View = Backbone.View.extend({
         result["batch"] = false;
         const current = this.model.get("current");
         const config = this.config[current];
-        if (config.src == "hdca") {
-            const hdca = this.cache[`${this.fields[current].value()}_hdca`];
-            if (hdca && hdca.map_over_type) {
+        if (config.src == "dce" || config.src == "hdca") {
+            const element = this.cache[`${this.fields[current].value()}_${config.src}`];
+            if (element && element.map_over_type) {
                 result["batch"] = true;
             }
         }
