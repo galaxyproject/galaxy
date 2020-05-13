@@ -131,7 +131,7 @@ def dictify_dataset_collection_instance(dataset_collection_instance, parent, sec
     return dict_value
 
 
-def dictify_element_reference(element, rank_fuzzy_counts=None):
+def dictify_element_reference(element, rank_fuzzy_counts=None, recursive=True, security=None):
     """Load minimal details of elements required to show outline of contents in history panel.
 
     History panel can use this reference to expand to full details if individual dataset elements
@@ -146,11 +146,13 @@ def dictify_element_reference(element, rank_fuzzy_counts=None):
         )
         if element.child_collection:
             object_details["collection_type"] = element_object.collection_type
-            child_collection = element.child_collection
-            elements, rest_fuzzy_counts = get_fuzzy_count_elements(child_collection, rank_fuzzy_counts)
+
             # Recursively yield elements for each nested collection...
-            object_details["elements"] = [dictify_element_reference(_, rank_fuzzy_counts=rest_fuzzy_counts) for _ in elements]
-            object_details["element_count"] = child_collection.element_count
+            if recursive:
+                child_collection = element.child_collection
+                elements, rest_fuzzy_counts = get_fuzzy_count_elements(child_collection, rank_fuzzy_counts)
+                object_details["elements"] = [dictify_element_reference(_, rank_fuzzy_counts=rest_fuzzy_counts, recursive=recursive) for _ in elements]
+                object_details["element_count"] = child_collection.element_count
         else:
             object_details["state"] = element_object.state
             object_details["hda_ldda"] = 'hda'
@@ -173,7 +175,6 @@ def dictify_element(element, rank_fuzzy_counts=None):
             elements, rest_fuzzy_counts = get_fuzzy_count_elements(child_collection, rank_fuzzy_counts)
 
             # Recursively yield elements for each nested collection...
-            child_collection = element.child_collection
             object_details["elements"] = [dictify_element(_, rank_fuzzy_counts=rest_fuzzy_counts) for _ in elements]
             object_details["populated"] = child_collection.populated
             object_details["element_count"] = child_collection.element_count
