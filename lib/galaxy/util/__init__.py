@@ -270,7 +270,13 @@ def parse_xml(fname, strip_whitespace=True, remove_comments=True):
 
 
 def parse_xml_string(xml_string, strip_whitespace=True):
-    tree = etree.fromstring(xml_string)
+    try:
+        tree = etree.fromstring(xml_string)
+    except ValueError as e:
+        if 'strings with encoding declaration are not supported' in unicodify(e):
+            tree = etree.fromstring(xml_string.encode('utf-8'))
+        else:
+            raise e
     if strip_whitespace:
         for elem in tree.iter('*'):
             if elem.text is not None:
