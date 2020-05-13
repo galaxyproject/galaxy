@@ -10,14 +10,14 @@ class SearchApiTestCase(ApiTestCase):
         workflow_populator = WorkflowPopulator(self.galaxy_interactor)
         workflow_id = workflow_populator.simple_workflow("test_for_search")
         search_response = self.__search("select * from workflow")
-        assert self.__has_result_with_name(search_response, "test_for_search"), search_response.json()
+        assert self.__has_result_with_name(search_response, "test_for_search"), search_response.text
 
         # Deleted
         delete_url = self._api_url("workflows/%s" % workflow_id, use_key=True)
         delete(delete_url)
 
         search_response = self.__search("select * from workflow where deleted = False")
-        assert not self.__has_result_with_name(search_response, "test_for_search"), search_response.json()
+        assert not self.__has_result_with_name(search_response, "test_for_search"), search_response.text
 
     def __search(self, query):
         data = dict(query=query)
