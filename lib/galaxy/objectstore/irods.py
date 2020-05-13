@@ -293,9 +293,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             return data_obj.__sizeof__()
         except (DataObjectDoesNotExist, CollectionDoesNotExist):
             log.warn("Collection or data object (%s) does not exist", data_object_path)
-        except Exception as e:
-            log.error("Exception in _get_size_in_irods(): " + str(e))
-        return -1
+            return -1
 
     # rel_path is file or folder?
     def _data_object_exists(self, rel_path):
@@ -310,10 +308,8 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             self.session.data_objects.get(data_object_path)
             return True
         except (DataObjectDoesNotExist, CollectionDoesNotExist):
-            log.debug("Collection or data object (%s) does not exist", data_object_path)
-        except Exception as e:
-            log.error("Exception in _data_object_exists(): " + str(e))
-        return False
+            log.warn("Collection or data object (%s) does not exist", data_object_path)
+            return False
 
     def _in_cache(self, rel_path):
         """ Check if the given dataset is in the local cache and return True if so. """
@@ -345,9 +341,6 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             data_obj = self.session.data_objects.get(data_object_path)
         except (DataObjectDoesNotExist, CollectionDoesNotExist):
             log.warn("Collection or data object (%s) does not exist", data_object_path)
-            return False
-        except Exception as e:
-            log.error("Exception in _download(): " + str(e))
             return False
 
         if self.cache_size > 0 and data_obj.__sizeof__() > self.cache_size:
@@ -499,9 +492,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             try:
                 return os.path.getsize(self._get_cache_path(rel_path))
             except OSError as ex:
-                log.info("Could not get size of file '%s' in local cache, will try irods. Error: %s", rel_path, ex)
-            except Exception as e:
-                log.error("Exception in _size(): " + str(e))
+                log.info("Could not get size of file '%s' in local cache, will try S3. Error: %s", rel_path, ex)
         elif self._exists(obj, **kwargs):
             return self._get_size_in_irods(rel_path)
         log.warning("Did not find dataset '%s', returning 0 for size", rel_path)
@@ -568,8 +559,6 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
 
         except OSError:
             log.exception('%s delete error', self._get_filename(obj, **kwargs))
-        except Exception as e:
-            log.error("Exception in _delete(): " + str(e))
         return False
 
     def _get_data(self, obj, start=0, count=-1, **kwargs):
@@ -638,8 +627,6 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                     self._fix_permissions(cache_file)
                 except OSError:
                     log.exception("Trouble copying source file '%s' to cache '%s'", source_file, cache_file)
-                except Exception as e:
-                    log.error("Exception in _update_from_file(): " + str(e))
             else:
                 source_file = self._get_cache_path(rel_path)
             # Update the file on iRODS
