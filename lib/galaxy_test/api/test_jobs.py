@@ -232,7 +232,7 @@ class JobsApiTestCase(ApiTestCase):
             dataset_id = run_response['outputs'][0]['id']
             response = self._post('jobs/%s/error' % job_id,
                                   data={'dataset_id': dataset_id})
-            assert response.status_code == 200, response.json()
+            assert response.status_code == 200, response.text
 
     @skip_without_tool('detect_errors_aggressive')
     def test_report_error_anon(self):
@@ -246,7 +246,7 @@ class JobsApiTestCase(ApiTestCase):
         response = requests.post('%s/jobs/%s/error' % (self.galaxy_interactor.api_url, job_id),
                                  data={'email': 'someone@domain.com', 'dataset_id': dataset_id},
                                  cookies=cookies)
-        assert response.status_code == 200, response.json()
+        assert response.status_code == 200, response.text
 
     @uses_test_history(require_new=True)
     def test_deleting_output_keep_running_until_all_deleted(self, history_id):
