@@ -268,15 +268,19 @@ export default {
         updateData(data) {
             this.setData(data);
 
-            // Create a list of all current output names
+            // Create a dictionary of all incoming outputs
             const outputNames = {};
-            data.outputs.forEach(({ name }) => {
+            const outputIndex = {};
+            data.outputs.forEach((output) => {
+                const name = output.name;
                 outputNames[name] = 1;
+                outputIndex[name] = output;
             });
 
             // Identify unused outputs which existed previously
             for (let i = this.outputs.length - 1; i >= 0; i--) {
-                const name = this.outputs[i].name;
+                const output = this.outputs[i];
+                const name = output.name;
                 if (!outputNames[name]) {
                     // Remove the noodle connectors
                     this.outputTerminals[name].connectors.forEach((x) => {
@@ -290,7 +294,13 @@ export default {
                     delete this.outputTerminals[name];
                     this.outputs.splice(i, 1);
                 } else {
+                    // Output exists in both sources
                     outputNames[name] = 2;
+                    // Update existing outputs with incoming output attributes
+                    const outputIncoming = outputIndex[name];
+                    Object.entries(outputIncoming).forEach(([key, newValue]) => {
+                        Vue.set(output, key, newValue);
+                    });
                 }
             }
 

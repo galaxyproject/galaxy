@@ -40,7 +40,7 @@ export default {
             return `node-${node.id}-output-${this.output.name}`;
         },
         label() {
-            let extensions = this.output.extensions;
+            let extensions = this.output.extensions || this.output.type || "unspecified";
             if (Array.isArray(extensions)) {
                 extensions = extensions.join(", ");
             }
