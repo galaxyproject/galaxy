@@ -24,6 +24,7 @@
 
 <script>
 import _l from "utils/localization";
+import BootstrapVue from "bootstrap-vue";
 export default {
     data: function () {
         return {
