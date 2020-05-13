@@ -38,7 +38,7 @@ log = logging.getLogger(__name__)
 
 def parse_config_xml(config_xml):
     """Parse and validate config_xml, return dict for convenience
-    :param config_xml: (xml.etree.ElementTree.Element) root of XML subtree
+    :param config_xml: (lxml.etree.Element) root of XML subtree
     :returns: (dict) according to syntax
     :raises: various XML parse errors
     """

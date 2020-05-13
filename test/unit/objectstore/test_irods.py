@@ -1,9 +1,9 @@
 import os
-import xml.etree.ElementTree as ET
 
 import pytest
 
 from galaxy.objectstore.irods import parse_config_xml
+from galaxy.util import parse_xml
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 
@@ -18,7 +18,7 @@ CONFIG_FILE_NO_AUTH = os.path.join(SCRIPT_DIRECTORY, CONFIG_FILE_NAME_NO_AUTH)
 
 
 def test_parse_valid_config_xml():
-    tree = ET.parse(CONFIG_FILE)
+    tree = parse_xml(CONFIG_FILE)
     root = tree.getroot()
     config = parse_config_xml(root)
 
@@ -38,14 +38,14 @@ def test_parse_valid_config_xml():
 
 
 def test_parse_config_xml_no_extra_dir():
-    tree = ET.parse(CONFIG_FILE_NO_EXTRA_DIR)
+    tree = parse_xml(CONFIG_FILE_NO_EXTRA_DIR)
     root = tree.getroot()
     with pytest.raises(Exception, match='No extra_dir element in config XML tree'):
         parse_config_xml(root)
 
 
 def test_parse_config_xml_no_auth():
-    tree = ET.parse(CONFIG_FILE_NO_AUTH)
+    tree = parse_xml(CONFIG_FILE_NO_AUTH)
     root = tree.getroot()
     with pytest.raises(Exception, match='No auth element in config XML tree'):
         parse_config_xml(root)
