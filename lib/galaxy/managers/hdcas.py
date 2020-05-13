@@ -255,7 +255,7 @@ class HDCASerializer(
                                                      history_id=self.app.security.encode_id(i.history_id),
                                                      id=self.app.security.encode_id(i.id),
                                                      type=self.hdca_manager.model_class.content_type),
-            'contents_url'              : self.generate_contents_url
+            'contents_url'              : self.generate_contents_url,
             'job_state_summary'         : self.serialize_job_state_summary
         })
 
