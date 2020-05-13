@@ -1,6 +1,8 @@
 <template>
-    <div id="app" class="small-container">
-        <p>Please provide a Galaxy workflow invocation.</p>
+    <div>
+        <span>
+            <h1>Test For BioCompute Galaxy App page</h1>
+        </span>
     </div>
 </template>
 
@@ -8,3 +10,9 @@
 
 </script>
 
+<style scoped>
+.context-wrapped {
+    border-left: 1px solid black;
+    padding-left: 10px;
+}
+</style>
