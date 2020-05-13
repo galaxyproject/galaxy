@@ -9,7 +9,7 @@ describe("SavedRulesSelector", () => {
                 numOfSavedRules: 0,
             },
         });
-        expect(wrapper.$refs.savedRulesButton.classes()).toContain("disabled");
+        expect(wrapper.find("#savedRulesButton").classes()).to.contain("disabled");
     });
 
     it("saves a session and loads it", () => {

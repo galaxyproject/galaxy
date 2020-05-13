@@ -6,7 +6,7 @@
             v-b-tooltip.hover.bottom
             :title="savedRulesMenu"
             data-toggle="dropdown"
-            ref="savedRulesButton"
+            id="savedRulesButton"
         >
         </span>
         <div class="dropdown-menu" role="menu">
