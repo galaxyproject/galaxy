@@ -153,7 +153,7 @@ export default {
             return getUrl(`api/invocations/${this.invocationId}/get_bco`);
         },
         bcoLink: function () {
-            return getUrl(`api/invocations/${this.invocationId}/export_bco`);
+            return getUrl(`workflows/invocations/view_bco?id=${(this.invocationId)}`);
         },
         invocationPdfLink: function () {
             return getUrl(`api/invocations/${this.invocationId}/report.pdf`);

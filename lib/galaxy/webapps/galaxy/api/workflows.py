@@ -1228,7 +1228,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         """
         ret_dict = self.export_invocation_bco(trans, invocation_id, **kwd)
 
-        return format_return_as_json(ret_dict)
+        trans.response.headers["Content-Disposition"] = 'attachment; filename="bco_%s.json"' % invocation_id
+        return ret_dict
 
     @expose_api
     def invocation_step(self, trans, invocation_id, step_id, **kwd):

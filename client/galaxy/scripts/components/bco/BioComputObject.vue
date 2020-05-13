@@ -1,7 +1,10 @@
 <template>
-    <div>
-        <h1>BioCompute Object</h1>
+    <div id="app" class="small-container">
+        <p>Please provide a Galaxy workflow invocation.</p>
     </div>
 </template>
 
-<script></script>
+<script>
+
+</script>
+

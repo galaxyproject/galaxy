@@ -18,7 +18,6 @@ import ErrorStack from "components/admin/ErrorStack.vue";
 import DisplayApplications from "components/admin/DisplayApplications.vue";
 import ResetMetadata from "components/admin/ResetMetadata.vue";
 import Toolshed from "components/Toolshed/Index.vue";
-import BioCompute from "components/bco/BioComputObject.vue";
 import Vue from "vue";
 import store from "store";
 
@@ -45,6 +44,7 @@ export const getAdminRouter = (Galaxy, options) => {
             "(/)admin/invocations": "show_invocations",
             "(/)admin/toolbox_dependencies": "show_toolbox_dependencies",
             "(/)admin/data_manager*path": "show_data_manager",
+            "(/)admin(/)reset_metadata": "show_reset_metadata",
             "(/)admin(/)reset_metadata": "show_reset_metadata",
             "*notFound": "not_found",
         },
