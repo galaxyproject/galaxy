@@ -37,22 +37,22 @@ def main():
         if not task_created(task_json):
             task = create_task(config, task_type, context, input_json, output_json, task_json)
             print ("Successfully created HMGM task " + task.key)
-            sys. stdout. flush()
+            sys.stdout.flush()
             exit(1) 
         else:
             editor_output = task_completed(config, output_json)
             if (editor_output):
                 task = close_task(config, context, editor_output, output_json, task_json)
                 print ("Successfully closed HMGM task " + task.key)
-                sys. stdout. flush()
+                sys.stdout.flush()
                 exit(0)
             else:
                 print ("Waiting for HMGM task to complete ...")
-                sys. stdout. flush()
+                sys.stdout.flush()
                 exit(1)        
     except Exception as e:
         print ("Exception while handling HMGM task: ", e)
-        sys. stdout. flush()
+        sys.stdout.flush()
         exit(-1)
 
 
@@ -129,7 +129,9 @@ def cleanup_editor_output_file(editor_output, output_json):
 
     # TODO decide if it's better to remove the input file here or do it in a batch process
     editor_input = editor_output[:-len(HMGM_OUTPUT_SUFFIX)]
-    os.remove(editor_input)
+    # need to check if the original file exists since in case it was never saved to a tmp file it would have been moved to .complete file
+    if os.path.exists(editor_input):
+        os.remove(editor_input)
     
     return editor_input
 

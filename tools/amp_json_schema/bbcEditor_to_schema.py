@@ -13,7 +13,7 @@ def main():
     with open(editor_output_file) as json_file:
         d = json.load(json_file)
         data = eval(json.dumps(d))
-	
+    print("the data in editor output is:",data)
     result = SpeechToTextResult()
     word_type = text = ''
     confidence = start_time = end_time = -1
@@ -92,11 +92,29 @@ def main():
             # Add the word to the result
             result.addWord(i["type"], start_time, end_time, text, "confidence", max_confidence)
 
-    #Output the file as it is
-    else:
-        # Write the output
-        outputFile = editor_output_file
-
+    #Standardizing Kaldi file
+    elif "words" in data.keys():
+        start_time = 0
+        confidence = 0
+        for word in data["words"]:
+            start_time = word["time"]
+            end_time = start_time + float(str(word["duration"]))
+            transcript += word["word"]+' '
+            text = word["word"]
+            
+            #if float(str(word["duration"])) > duration:
+            duration += float(str(word["duration"]))
+            if text[-1] in [',','.','!','?'] and len(text) > 1:
+                punctuation = text[-1]
+                text = text[0:-1]
+                result.addWord('pronunciation', start_time, end_time, text, "confidence",confidence)
+                result.addWord('punctuation', None, None, punctuation, "confidence",confidence)
+            elif text in [',','.','!','?']:
+                result.addWord('punctuation', None, None, text, "confidence",confidence)
+            else:
+                result.addWord('pronunciation', start_time, end_time, text, "confidence",confidence)
+        result.transcript = transcript
+        
     # Create the media object
     media = SpeechToTextMedia(duration, media_file)
 

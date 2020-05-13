@@ -10,6 +10,8 @@ from datetime import timedelta
 from datetime import datetime
 import math
 
+from requests_toolbelt import MultipartEncoder
+
 sys.path.insert(0, os.path.abspath('../../../../../tools/amp_json_schema'))
 
 from video_ocr import VideoOcrSchema, VideoOcrMediaSchema, VideoOcrResolutionSchema, VideoOcrFrameSchema, VideoOcrBoundingBoxSchema, VideoOcrBoundingBoxScoreSchema, VideoOcrBoundingBoxVerticesSchema
@@ -27,6 +29,9 @@ def main():
 
 	# You must initialize logging, otherwise you'll not see debug output.
 	logging.basicConfig()
+
+	# Turn on HTTP debugging here
+	http_client.HTTPConnection.debuglevel = 1
 
 	# Get an authorization token for subsequent requests
 	auth_token = get_auth_token(apiUrl, location, accountId, apiKey)
@@ -227,31 +232,33 @@ def get_video_auth_token(apiUrl, location, accountId, apiKey, videoId):
 # Upload the video using multipart form upload
 def upload_video(apiUrl, location, accountId, auth_token, input_file):
 
-	files = {'file': open(input_file, 'rb')}
-
 	# Create a unique file name 
 	millis = int(round(time.time() * 1000))
 
-	upload_url = apiUrl + "/trial" +  "/Accounts/" + accountId + "/Videos"
-	params = {'accessToken':auth_token,
-				'name':'file_' + str(millis),
+	upload_url = apiUrl + "/" + location +  "/Accounts/" + accountId + "/Videos"
+	
+	data = {}
+	with open(input_file, 'rb') as f:
+		data["file"] = ("file", f)
+		m = MultipartEncoder(fields=data)
+		headers = {'Content-Type':  m.content_type}
+		params = {'accessToken':auth_token,
+				'name':'amp_video_' + str(millis),
 				'description':'AMP File Upload',
 				'privacy':'private',
 				'partition':'No Partition'}
-
-
-	r = requests.post(url = upload_url, params = params, files = files) 
-	
-	if r.status_code != 200:
-		print("Upload failure")
-		print(r)
-		exit(1)
-	else:
-		data = json.loads(r.text)
-		if 'id' in data.keys():
-			return data['id']
-		else:
+		r = requests.post(upload_url, data=m, headers=headers, params = params)
+		
+		if r.status_code != 200:
+			print("Upload failure")
+			print(r)
 			exit(1)
+		else:
+			data = json.loads(r.text)
+			if 'id' in data.keys():
+				return data['id']
+			else:
+				exit(1)
 
 # Serialize obj and write it to output file
 def write_json_file(obj, output_file):
