@@ -8,7 +8,6 @@ import logging
 import os
 import os.path
 import re
-from xml.etree.ElementTree import XML
 
 from six import string_types
 from webob.compat import cgi_FieldStorage
@@ -19,7 +18,8 @@ from galaxy.tool_util.parser import get_input_source as ensure_input_source
 from galaxy.util import (
     sanitize_param,
     string_as_bool,
-    unicodify
+    unicodify,
+    XML,
 )
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
