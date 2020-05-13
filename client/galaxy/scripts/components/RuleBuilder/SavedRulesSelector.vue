@@ -23,8 +23,10 @@
 </template>
 
 <script>
+import Vue from "vue";
 import _l from "utils/localization";
 import BootstrapVue from "bootstrap-vue";
+Vue.use(BootstrapVue);
 export default {
     data: function () {
         return {
