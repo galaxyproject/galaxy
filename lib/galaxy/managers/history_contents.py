@@ -236,7 +236,8 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
         contained_ids = id_map[self.contained_class_type_name]
         id_map[self.contained_class_type_name] = self._contained_id_map(contained_ids)
         subcontainer_ids = id_map[self.subcontainer_class_type_name]
-        id_map[self.subcontainer_class_type_name] = self._subcontainer_id_map(subcontainer_ids)
+        serialization_params = kwargs.get('serialization_params', None)
+        id_map[self.subcontainer_class_type_name] = self._subcontainer_id_map(subcontainer_ids, serialization_params=serialization_params)
 
         # cycle back over the union query to create an ordered list of the objects returned in queries 2 & 3 above
         contents = []
@@ -398,7 +399,7 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
             .options(eagerload('annotations')))
         return dict((row.id, row) for row in query.all())
 
-    def _subcontainer_id_map(self, id_list):
+    def _subcontainer_id_map(self, id_list, serialization_params=None):
         """Return an id to model map of all subcontainer-type models in the id_list."""
         if not id_list:
             return []
@@ -408,6 +409,14 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
             .options(eagerload('collection'))
             .options(eagerload('tags'))
             .options(eagerload('annotations')))
+
+        # This will conditionally join a potentially costly job_state summary
+        # All the paranoia if-checking makes me wonder if serialization_params
+        # should really be a property of the manager class instance
+        if serialization_params and serialization_params['keys']:
+            if 'job_state_summary' in serialization_params['keys']:
+                query = query.options(eagerload('job_state_summary'))
+
         return dict((row.id, row) for row in query.all())
 
 
