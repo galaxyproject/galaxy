@@ -308,8 +308,10 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             self.session.data_objects.get(data_object_path)
             return True
         except (DataObjectDoesNotExist, CollectionDoesNotExist):
-            log.warn("Collection or data object (%s) does not exist", data_object_path)
+            log.debug("Collection or data object (%s) does not exist", data_object_path)
             return False
+        except Exception as e:
+            log.exception(e)
 
     def _in_cache(self, rel_path):
         """ Check if the given dataset is in the local cache and return True if so. """

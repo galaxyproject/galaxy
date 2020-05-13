@@ -235,12 +235,12 @@ class ToolsTestCase(ApiTestCase):
     @skip_without_tool("composite_output")
     def test_test_data_filepath_security(self):
         test_data_response = self._get("tools/%s/test_data_path?filename=../CONTRIBUTORS.md" % "composite_output", admin=True)
-        assert test_data_response.status_code == 404, test_data_response.json()
+        assert test_data_response.status_code == 404, test_data_response.text
 
     @skip_without_tool("composite_output")
     def test_test_data_admin_security(self):
         test_data_response = self._get("tools/%s/test_data_path?filename=../CONTRIBUTORS.md" % "composite_output")
-        assert test_data_response.status_code == 403, test_data_response.json()
+        assert test_data_response.status_code == 403, test_data_response.text
 
     @skip_without_tool("composite_output")
     def test_test_data_composite_output(self):
@@ -288,7 +288,7 @@ class ToolsTestCase(ApiTestCase):
     @skip_without_tool("composite_output")
     def test_test_data_downloads_security(self):
         test_data_response = self._get("tools/%s/test_data_download?filename=../CONTRIBUTORS.md" % "composite_output")
-        assert test_data_response.status_code == 404, test_data_response.json()
+        assert test_data_response.status_code == 404, test_data_response.text
 
     @skip_without_tool("composite_output")
     def test_test_data_download_composite(self):
@@ -2174,7 +2174,9 @@ class ToolsTestCase(ApiTestCase):
     def _run_cat1(self, history_id, inputs, assert_ok=False, **kwargs):
         return self._run('cat1', history_id, inputs, assert_ok=assert_ok, **kwargs)
 
-    def _run(self, tool_id=None, history_id=None, inputs={}, tool_uuid=None, assert_ok=False, tool_version=None, use_cached_job=False, wait_for_job=False):
+    def _run(self, tool_id=None, history_id=None, inputs=None, tool_uuid=None, assert_ok=False, tool_version=None, use_cached_job=False, wait_for_job=False):
+        if inputs is None:
+            inputs = {}
         if tool_id is None:
             assert tool_uuid is not None
         payload = self.dataset_populator.run_tool_payload(

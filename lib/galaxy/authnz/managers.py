@@ -4,8 +4,6 @@ import logging
 import os
 import random
 import string
-import xml.etree.ElementTree as ET
-from xml.etree.ElementTree import ParseError
 
 import requests
 from cloudauthz import CloudAuthz
@@ -16,8 +14,13 @@ from six.moves import builtins
 
 from galaxy import exceptions
 from galaxy import model
-from galaxy.util import asbool, string_as_bool
-from galaxy.util import unicodify
+from galaxy.util import (
+    asbool,
+    etree,
+    parse_xml,
+    string_as_bool,
+    unicodify,
+)
 from .custos_authnz import CustosAuthnz
 from .psa_authnz import (
     BACKENDS_NAME,
@@ -56,10 +59,10 @@ class AuthnzManager(object):
     def _parse_oidc_config(self, config_file):
         self.oidc_config = {}
         try:
-            tree = ET.parse(config_file)
+            tree = parse_xml(config_file)
             root = tree.getroot()
             if root.tag != 'OIDC':
-                raise ParseError("The root element in OIDC_Config xml file is expected to be `OIDC`, "
+                raise etree.ParseError("The root element in OIDC_Config xml file is expected to be `OIDC`, "
                                  "found `{}` instead -- unable to continue.".format(root.tag))
             for child in root:
                 if child.tag != 'Setter':
@@ -82,8 +85,8 @@ class AuthnzManager(object):
                 self.oidc_config[child.get('Property')] = func(child.get('Value'))
         except ImportError:
             raise
-        except ParseError as e:
-            raise ParseError("Invalid configuration at `{}`: {} -- unable to continue.".format(config_file, e))
+        except etree.ParseError as e:
+            raise etree.ParseError("Invalid configuration at `{}`: {} -- unable to continue.".format(config_file, e))
 
     def _get_idp_icon(self, idp):
         return self.oidc_backends_config[idp].get('icon') or DEFAULT_OIDC_IDP_ICONS.get(idp)
@@ -92,10 +95,10 @@ class AuthnzManager(object):
         self.oidc_backends_config = {}
         self.oidc_backends_implementation = {}
         try:
-            tree = ET.parse(config_file)
+            tree = parse_xml(config_file)
             root = tree.getroot()
             if root.tag != 'OIDC':
-                raise ParseError("The root element in OIDC config xml file is expected to be `OIDC`, "
+                raise etree.ParseError("The root element in OIDC config xml file is expected to be `OIDC`, "
                                  "found `{}` instead -- unable to continue.".format(root.tag))
             for child in root:
                 if child.tag != 'provider':
@@ -115,13 +118,13 @@ class AuthnzManager(object):
                     self.oidc_backends_implementation[idp] = 'custos'
                     self.app.config.oidc[idp] = {'icon': self._get_idp_icon(idp)}
                 else:
-                    raise ParseError("Unknown provider specified")
+                    raise etree.ParseError("Unknown provider specified")
             if len(self.oidc_backends_config) == 0:
-                raise ParseError("No valid provider configuration parsed.")
+                raise etree.ParseError("No valid provider configuration parsed.")
         except ImportError:
             raise
-        except ParseError as e:
-            raise ParseError("Invalid configuration at `{}`: {} -- unable to continue.".format(config_file, e))
+        except etree.ParseError as e:
+            raise etree.ParseError("Invalid configuration at `{}`: {} -- unable to continue.".format(config_file, e))
 
     def _parse_idp_config(self, config_xml):
         rtv = {

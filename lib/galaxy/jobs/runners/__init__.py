@@ -516,18 +516,18 @@ class BaseJobRunner(object):
                 job_stderr = None
 
             check_output_detected_state = job_wrapper.check_tool_output(tool_stdout, tool_stderr, tool_exit_code=exit_code, job=job, job_stdout=job_stdout, job_stderr=job_stderr)
-            job_not_ok = check_output_detected_state != DETECTED_JOB_STATE.OK
+            job_ok = check_output_detected_state == DETECTED_JOB_STATE.OK
 
             # clean up the job files
             cleanup_job = job_state.job_wrapper.cleanup_job
-            if cleanup_job == "always" or (job_not_ok and cleanup_job == "onsuccess"):
+            if cleanup_job == "always" or (job_ok and cleanup_job == "onsuccess"):
                 job_state.cleanup()
 
             # Flush with streams...
             self.sa_session.add(job)
             self.sa_session.flush()
 
-            if job_not_ok:
+            if not job_ok:
                 job_runner_state = JobState.runner_states.TOOL_DETECT_ERROR
                 if check_output_detected_state == DETECTED_JOB_STATE.OUT_OF_MEMORY_ERROR:
                     job_runner_state = JobState.runner_states.MEMORY_LIMIT_REACHED

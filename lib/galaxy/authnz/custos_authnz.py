@@ -197,7 +197,7 @@ class CustosAuthnz(IdentityProvider):
             token_endpoint,
             client_secret=client_secret,
             authorization_response=trans.request.url,
-            headers={"Authorization": "Basic %s" % base64.b64encode(clientIdAndSec)},  # for custos
+            headers={"Authorization": "Basic %s" % util.unicodify(base64.b64encode(util.smart_str(clientIdAndSec)))},  # for custos
             verify=self._get_verify_param())
 
     def _get_userinfo(self, oauth2_session):
@@ -230,7 +230,7 @@ class CustosAuthnz(IdentityProvider):
         # Set custos endpoints
         clientIdAndSec = self.config['client_id'] + ":" + self.config['client_secret']
         eps = requests.get(self.config['url'],
-                           headers={"Authorization": "Basic %s" % base64.b64encode(clientIdAndSec)},
+                           headers={"Authorization": "Basic %s" % util.unicodify(base64.b64encode(util.smart_str(clientIdAndSec)))},
                            verify=False, params={'client_id': self.config['client_id']})
         endpoints = eps.json()
         self.config['authorization_endpoint'] = endpoints['authorization_endpoint']
@@ -241,7 +241,7 @@ class CustosAuthnz(IdentityProvider):
     def _get_custos_credentials(self):
         clientIdAndSec = self.config['client_id'] + ":" + self.config['client_secret']
         creds = requests.get(self.config['credential_url'],
-                            headers={"Authorization": "Basic %s" % base64.b64encode(util.smart_str(clientIdAndSec))},
+                            headers={"Authorization": "Basic %s" % util.unicodify(base64.b64encode(util.smart_str(clientIdAndSec)))},
                             verify=False, params={'client_id': self.config['client_id']})
         credentials = creds.json()
         self.config['iam_client_secret'] = credentials['iam_client_secret']

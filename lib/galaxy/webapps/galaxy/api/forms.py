@@ -2,10 +2,10 @@
 API operations on FormDefinition objects.
 """
 import logging
-from xml.etree.ElementTree import XML
 
 from galaxy import web
 from galaxy.forms.forms import form_factory
+from galaxy.util import XML
 from galaxy.webapps.base.controller import BaseAPIController, url_for
 
 log = logging.getLogger(__name__)
