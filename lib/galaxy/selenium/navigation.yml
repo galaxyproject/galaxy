@@ -301,6 +301,7 @@ workflows:
     new_button: '#workflow-create'
     import_button: '#workflow-import'
     save_button: '#workflow-save-button'
+    search_box: "#workflow-search"
 
 workflow_run:
 
