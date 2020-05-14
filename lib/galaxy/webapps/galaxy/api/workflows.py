@@ -64,7 +64,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         self.tool_recommendations = recommendations.ToolRecommendations()
 
     def __get_full_shed_url(self, url):
-        for name, shed_url in self.app.tool_shed_registry.tool_sheds.items():
+        for shed_url in self.app.tool_shed_registry.tool_sheds.values():
             if url in shed_url:
                 return shed_url
         return None
@@ -186,7 +186,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             workflows_missing_tools = []
             workflows = []
             workflows_by_toolshed = dict()
-            for key, value in enumerate(rval):
+            for value in rval:
                 tool_ids = []
                 workflow_details = self.workflow_contents_manager.workflow_to_dict(trans, self.__get_stored_workflow(trans, value['id']), style='instance')
                 if 'steps' in workflow_details:
@@ -613,11 +613,13 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         return self.workflow_contents_manager.workflow_to_dict(trans, stored_workflow, style="instance")
 
     @expose_api
-    def build_module(self, trans, payload={}):
+    def build_module(self, trans, payload=None):
         """
         POST /api/workflows/build_module
         Builds module models for the workflow editor.
         """
+        if payload is None:
+            payload = {}
         inputs = payload.get('inputs', {})
         trans.workflow_building_mode = workflow_building_modes.ENABLED
         module = module_factory.from_dict(trans, payload, from_tool_form=True)
@@ -983,12 +985,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             target_format=target_format,
         )
 
-    @expose_api
-    def export_invocation_bco(self, trans, invocation_id, **kwd):
-        '''
-        GET /api/invocations/{invocations_id}/export_bco
-        Return a BioCompute Object for the workflow invocation.
-        '''
+    def _generate_invocation_bco(self, trans, invocation_id, **kwd):
         decoded_workflow_invocation_id = self.decode_id(invocation_id)
         workflow_invocation = self.workflow_manager.get_invocation(trans, decoded_workflow_invocation_id)
         history = workflow_invocation.history
@@ -1165,7 +1162,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         parametric_domain = []
         for inv_step in workflow_invocation.steps:
             try:
-                for k, v in inv_step.workflow_step.tool_inputs.iteritems():
+                for k, v in inv_step.workflow_step.tool_inputs.items():
                     param, value, step = k, v, inv_step.workflow_step.order_index
                     parametric_domain.append({'param': param, 'value': value, 'step': step})
             except Exception:
@@ -1219,6 +1216,14 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         return bco_dict
 
     @expose_api
+    def export_invocation_bco(self, trans, invocation_id, **kwd):
+        '''
+        GET /api/invocations/{invocations_id}/export_bco
+        Return a BioCompute Object for the workflow invocation.
+        '''
+        return self._generate_invocation_bco(trans, invocation_id, **kwd)
+
+    @expose_api_raw
     def download_invocation_bco(self, trans, invocation_id, **kwd):
         """
         GET /api/invocations/{invocations_id}/get_bco
@@ -1226,9 +1231,10 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         Returns a selected BioCompute Object.
 
         """
-        ret_dict = self.export_invocation_bco(trans, invocation_id, **kwd)
+        ret_dict = self._generate_invocation_bco(trans, invocation_id, **kwd)
         trans.response.headers["Content-Disposition"] = 'attachment; filename="bco_%s.json"' % invocation_id
-        return ret_dict
+        trans.response.set_content_type("application/json")
+        return format_return_as_json(ret_dict, pretty=True)
 
     @expose_api
     def invocation_step(self, trans, invocation_id, step_id, **kwd):
