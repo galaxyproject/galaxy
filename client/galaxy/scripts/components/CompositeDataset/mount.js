@@ -11,6 +11,7 @@ export const mountCompositeDataset = (propsData = {}) => {
         propsData.history_dataset_id = $(el).attr("history_dataset_id");
         propsData.path = $(el).attr("path");
         propsData.label = $(el).attr("label");
+        propsData.image = $(el).attr("image");
         mountVueComponent(CompositeDataset)(propsData, el);
     });
 };
