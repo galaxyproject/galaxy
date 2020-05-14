@@ -36,7 +36,7 @@ masthead:
     register_or_login: '#user.loggedout-only > .nav-link'
 
     user_menu: '#user .dropdown-menu a'
-    workflow: '#workflow .nav-link > span'
+    workflow: '#workflow .nav-link'
 
     user_email:
       type: xpath
