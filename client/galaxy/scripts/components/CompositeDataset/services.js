@@ -33,5 +33,4 @@ export class Services {
             rethrowSimple(e);
         }
     }
-
 }

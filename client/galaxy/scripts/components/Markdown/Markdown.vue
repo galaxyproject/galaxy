@@ -139,7 +139,7 @@ md.renderer.rules.fence = function (tokens, idx, options, env, slf) {
         const args = {};
         const function_name = galaxy_function[1];
         // we need [... ] to return empty string, if regex doesn't match
-        const function_arguments = [...content.matchAll(new RegExp(FUNCTION_CALL, "g"))]
+        const function_arguments = [...content.matchAll(new RegExp(FUNCTION_CALL, "g"))];
 
         for (let i = 0; i < function_arguments.length; i++) {
             if (function_arguments[i] === undefined) continue;
