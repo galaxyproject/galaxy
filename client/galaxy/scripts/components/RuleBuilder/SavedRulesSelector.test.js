@@ -13,6 +13,28 @@ describe("SavedRulesSelector", () => {
     });
 
     it("saves a session and loads it", () => {
-        expect();
+        const wrapper = mount (SavedRulesSelector)
+        const testRules = JSON.stringify({
+            "rules": [
+              {
+                "type": "add_filter_count",
+                "count": 1,
+                "which": "first",
+                "invert": false
+              }
+            ],
+            "mapping": [
+              {
+                "type": "url",
+                "columns": [
+                  0
+                ]
+              }
+            ]
+          })
+
+        wrapper.saveSession(testRules);
+
+        expect(wrapper.find.getRules()).to.contain(testRules);
     });
 });
