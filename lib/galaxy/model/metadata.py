@@ -46,7 +46,7 @@ class Statement(object):
     def __call__(self, *args, **kwargs):
         # get the locals dictionary of the frame object one down in the call stack (i.e. the Datatype class calling MetadataElement)
         class_locals = sys._getframe(1).f_locals
-        # get and set '__galaxy_statments__' to an empty list if not in locals dict
+        # get and set '__galaxy_statements__' to an empty list if not in locals dict
         statements = class_locals.setdefault(STATEMENTS, [])
         # add Statement containing info to populate a MetadataElementSpec
         statements.append((self, args, kwargs))
@@ -158,7 +158,8 @@ class MetadataCollection(object):
         dataset = self.parent
         if filename is not None:
             log.debug('loading metadata from file for: %s %s' % (dataset.__class__.__name__, dataset.id))
-            JSONified_dict = json.load(open(filename))
+            with open(filename) as fh:
+                JSONified_dict = json.load(fh)
         elif json_dict is not None:
             log.debug('loading metadata from dict for: %s %s' % (dataset.__class__.__name__, dataset.id))
             if isinstance(json_dict, string_types):
@@ -213,7 +214,8 @@ class MetadataCollection(object):
             meta_dict['__validated_state_message__'] = dataset_meta_dict['__validated_state_message__']
         if filename is None:
             return json.dumps(meta_dict)
-        json.dump(meta_dict, open(filename, 'wt+'))
+        with open(filename, 'wt+') as fh:
+            json.dump(meta_dict, fh)
 
     def __getstate__(self):
         # cannot pickle a weakref item (self._parent), when
@@ -631,12 +633,13 @@ class MetadataTempFile(object):
     @classmethod
     def cleanup_from_JSON_dict_filename(cls, filename):
         try:
-            for key, value in json.load(open(filename)).items():
-                if cls.is_JSONified_value(value):
-                    value = cls.from_JSON(value)
-                if isinstance(value, cls) and os.path.exists(value.file_name):
-                    log.debug('Cleaning up abandoned MetadataTempFile file: %s', value.file_name)
-                    os.unlink(value.file_name)
+            with open(filename) as fh:
+                for value in json.load(fh).values():
+                    if cls.is_JSONified_value(value):
+                        value = cls.from_JSON(value)
+                    if isinstance(value, cls) and os.path.exists(value.file_name):
+                        log.debug('Cleaning up abandoned MetadataTempFile file: %s', value.file_name)
+                        os.unlink(value.file_name)
         except Exception as e:
             log.debug('Failed to cleanup MetadataTempFile temp files from %s: %s', filename, unicodify(e))
 
