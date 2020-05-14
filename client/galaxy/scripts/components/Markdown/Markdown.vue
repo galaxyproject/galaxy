@@ -66,8 +66,9 @@ const RENDER_FUNCTIONS = {
         const history_dataset_id = args.history_dataset_id;
         const path = args.path;
         const label = args.label;
+        const image = args.image;
 
-        return `<div class="composite-dataset" history_dataset_id="${history_dataset_id}" path="${path}" label="${label}"></div>`;
+        return `<div class="composite-dataset" history_dataset_id="${history_dataset_id}" path="${path}" label="${label}" image="${image}"></div>`;
     },
     history_dataset_collection_display: (action, args, content) => {
         const history_dataset_collection_id = args.history_dataset_collection_id;
