@@ -220,8 +220,8 @@ class Workflow extends EventEmitter {
                     });
                 }
                 self.has_changes = false;
-                self.canvas_manager.draw_overview(true);
             });
+            self.canvas_manager.draw_overview(true);
         });
     }
     toSimple() {
@@ -366,9 +366,8 @@ class Workflow extends EventEmitter {
         }
         this.emit("onActiveNode", node);
     }
-    nodeChanged(node) {
+    nodeChanged() {
         this.has_changes = true;
-        this.emit("onNodeChange", node);
     }
     layoutAuto() {
         this.layout();

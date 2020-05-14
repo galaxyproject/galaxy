@@ -164,9 +164,6 @@ export default {
                 })
                 .on("onActiveNode", (node) => {
                     showForm(this.manager, node, datatypes);
-                })
-                .on("onNodeChange", () => {
-                    this.parameters = getWorkflowParameters(this.manager.nodes);
                 });
             this.loadCurrent(this.id, this.version);
         });
@@ -234,6 +231,7 @@ export default {
         },
         onAttributes() {
             showAttributes();
+            this.parameters = getWorkflowParameters(this.manager.nodes);
         },
         onEdit() {
             this.isCanvas = true;
