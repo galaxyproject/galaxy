@@ -33,7 +33,7 @@ describe("SavedRulesSelector", () => {
             ]
           })
 
-        wrapper.saveSession(testRules);
+        wrapper.vm.saveSession(testRules);
 
         expect(wrapper.find.getRules()).to.contain(testRules);
     });
