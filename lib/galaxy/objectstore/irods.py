@@ -212,16 +212,16 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         self.session = self._configure_connection(host=self.host, port=self.port, user=self.username, password=self.password, zone=self.zone)
 
     def _configure_connection(self, host='localhost', port='1247', user='rods', password='rods', zone='tempZone'):
-        with iRODSSession(host=host, port=port, user=user, password=password, zone=zone) as session:
-            # Set connection timeout
-            session.connection_timeout = self.timeout
-            # Throws NetworkException if connection fails
-            try:
-                session.pool.get_connection()
-            except NetworkException as e:
-                log.error('Could not create iRODS session: ' + str(e))
-                raise
-            return session
+        session = iRODSSession(host=host, port=port, user=user, password=password, zone=zone)
+        # Set connection timeout
+        session.connection_timeout = self.timeout
+        # Throws NetworkException if connection fails
+        try:
+            session.pool.get_connection()
+        except NetworkException as e:
+            log.error('Could not create iRODS session: ' + str(e))
+            raise
+        return session
 
     @classmethod
     def parse_xml(cls, config_xml):
@@ -312,6 +312,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             return False
         except Exception as e:
             log.exception(e)
+            return False
 
     def _in_cache(self, rel_path):
         """ Check if the given dataset is in the local cache and return True if so. """
@@ -377,7 +378,11 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             # Check if the data object exists in iRODS
             collection_path = self.home + "/" + str(subcollection_name)
             data_object_path = collection_path + "/" + str(data_object_name)
-            exists = self.session.data_objects.exists(data_object_path)
+            exists = False
+            try:
+                exists = self.session.data_objects.exists(data_object_path)
+            except NetworkException as e:
+                log.exception(e)
             if os.path.getsize(source_file) == 0 and exists:
                 log.debug("Wanted to push file '%s' to iRODS collection '%s' but its size is 0; skipping.", source_file, rel_path)
                 return True
