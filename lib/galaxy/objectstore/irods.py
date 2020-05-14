@@ -212,16 +212,16 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         self.session = self._configure_connection(host=self.host, port=self.port, user=self.username, password=self.password, zone=self.zone)
 
     def _configure_connection(self, host='localhost', port='1247', user='rods', password='rods', zone='tempZone'):
-        with iRODSSession(host=host, port=port, user=user, password=password, zone=zone) as session:
-            # Set connection timeout
-            session.connection_timeout = self.timeout
-            # Throws NetworkException if connection fails
-            try:
-                session.pool.get_connection()
-            except NetworkException as e:
-                log.error('Could not create iRODS session: ' + str(e))
-                raise
-            return session
+        session = iRODSSession(host=host, port=port, user=user, password=password, zone=zone)
+        # Set connection timeout
+        session.connection_timeout = self.timeout
+        # Throws NetworkException if connection fails
+        try:
+            session.pool.get_connection()
+        except NetworkException as e:
+            log.error('Could not create iRODS session: ' + str(e))
+            raise
+        return session
 
     @classmethod
     def parse_xml(cls, config_xml):
