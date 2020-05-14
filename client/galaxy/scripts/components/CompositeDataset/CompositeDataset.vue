@@ -1,10 +1,10 @@
 <template>
     <div>
         <a v-if="!directoryContent && !isImage" :href="fileLink" title="test" target="_blank">{{linkLabel}}</a>
-        <div v-else="directoryContent" class="directory-content">
+        <div v-if="directoryContent && !isImage" class="directory-content">
             <div v-html="directoryContent"></div>
         </div>
-        <img v-if="isImage" :src="fileLink"></img>
+        <img v-if="isImage" :src="fileLink"/>
     </div>
 </template>
 
