@@ -318,17 +318,17 @@ export default {
 
             // Create a list of all current input names
             const inputNames = {};
-            const inputObjects = {};
+            const inputIndex = {};
             data.inputs.forEach((input) => {
                 const name = input.name;
                 inputNames[name] = 1;
-                inputObjects[name] = input;
+                inputIndex[name] = input;
             });
 
             // Identify unused inputs which existed previously
             for (let i = this.inputs.length - 1; i >= 0; i--) {
                 const name = this.inputs[i].name;
-                if (!inputNames[name] || inputObjects[name].input_type !== this.inputs[i].input_type) {
+                if (!inputNames[name] || inputIndex[name].input_type !== this.inputs[i].input_type) {
                     this.inputTerminals[name].destroy();
                     delete this.inputTerminals[name];
                     this.inputs.splice(i, 1);

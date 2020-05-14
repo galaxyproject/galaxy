@@ -60,9 +60,6 @@ export default {
             } else if (input.input_type == "parameter") {
                 terminalClass = Terminals.InputParameterTerminal;
             }
-            if (this.terminal && !(this.terminal instanceof terminalClass)) {
-                this.terminal.destroy();
-            }
             const terminal = new terminalClass({
                 app: this.getManager(),
                 node: this.getNode(),
