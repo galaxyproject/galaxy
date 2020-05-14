@@ -3,6 +3,7 @@
 import json
 import sys
 import os
+from os import path
 import aws_transcribe_to_schema
 from speech_to_text_schema import SpeechToText, SpeechToTextMedia, SpeechToTextResult, SpeechToTextScore, SpeechToTextWord
 
@@ -14,20 +15,20 @@ def main():
         data = eval(json.dumps(d))
     print("the data in editor output is:",data)
     result = SpeechToTextResult()
-
-    transcript = word_type = text = ''
+    word_type = text = ''
     confidence = start_time = end_time = -1
     duration = 0.0
-
     #Standardising draft js format
     if "entityMap" in data.keys():
+        transcript = ''
         entityMap = data["entityMap"]
-        for entity in entityMap.values():
+        for i in range(0, len(entityMap.keys())):
             punctuation = ''
+            entity = entityMap[str(i)]
             if "data" in entity:
                 if "text" in entity["data"].keys():
                     text = entity["data"]["text"]
-                    transcript += text+" "
+                    transcript += entity["data"]["text"]+" "
                     if text[-1] in [',','.','!','?']:
                         punctuation = text[-1]
                         text = text[0:-1]

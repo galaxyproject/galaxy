@@ -1,8 +1,7 @@
 <tool id="hmgm_transcript" name="HMGM Transcript Correction" version="1.0.2">
   <description>Manual transcript correction by a human</description>
-  <command detect_errors="exit_code">
-  	$__tool_directory__/hmgm_main.py Transcript $__root_dir__ $input_transcript $output_transcript $task_info '$context_json';
-    $__tool_directory__/../amp_json_schema/bbcEditor_to_schema.py $output_transcript $output_std_transcript $input_transcript
+  <command detect_errors="exit_code">$__tool_directory__/hmgm_main.py Transcript $__root_dir__ $input_transcript $output_transcript $task_info '$context_json';
+                                    $__tool_directory__/../amp_json_schema/bbcEditor_to_schema.py $output_transcript $std_amp_output $input_transcript
   </command>
   <inputs>
     <param name="input_transcript" type="data" format="json" label="Input Transcript JSON file" help="JSON file for the transcript to be corrected "/>
@@ -12,9 +11,9 @@
 	</param>
   </inputs>
   <outputs>
-    <data name="output_transcript" format="json" />
-    <data name="task_info" format="json" />
-    <data name="output_std_transcript" format="json" />
+    <data  name="output_transcript" format="json" />
+    <data  name="task_info" format="json" />
+    <data  name="std_amp_output" format="json" />
   </outputs>
   <tests>
   </tests>
