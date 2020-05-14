@@ -1193,7 +1193,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         }
 
         bco_dict = {
-            'bco_id': url_for('invocation_export_bco', invocation_id=invocation_id, qualified=True),
+            'object_id': url_for('invocation_export_bco', invocation_id=invocation_id, qualified=True),
             'spec_version': spec_version,
             'etag': str(model.uuid4().hex),
             'provenance_domain': provenance_domain,
