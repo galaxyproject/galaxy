@@ -406,7 +406,7 @@ class NavigatesGalaxy(HasDriver):
             'login': email,
             'password': password,
         }
-        self.click_masthead_user()
+        self.components.masthead.register_or_login.wait_for_and_click()
         self.sleep_for(WAIT_TYPES.UX_RENDER)
         form = self.wait_for_visible(self.navigation.login.selectors.form)
         self.fill(form, login_info)
