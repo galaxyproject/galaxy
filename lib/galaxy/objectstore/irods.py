@@ -381,7 +381,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             exists = False
             try:
                 exists = self.session.data_objects.exists(data_object_path)
-            except Exception as e:
+            except NetworkException as e:
                 log.exception(e)
             if os.path.getsize(source_file) == 0 and exists:
                 log.debug("Wanted to push file '%s' to iRODS collection '%s' but its size is 0; skipping.", source_file, rel_path)
