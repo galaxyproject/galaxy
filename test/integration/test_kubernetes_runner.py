@@ -245,7 +245,7 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
 
             app = self._app
             sa_session = app.model.context.current
-            job = sa_session.query(app.model.Job).filter_by(tool_id="cat_data_and_sleep").one()
+            job = sa_session.query(app.model.Job).get(app.security.decode_id(job_dict["id"]))
 
             self._wait_for_external_state(sa_session, job, app.model.Job.states.RUNNING)
             assert not job.finished
@@ -279,10 +279,11 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
                 history_id,
                 assert_ok=False,
             )
+            job_dict = running_response.json()["jobs"][0]
 
             app = self._app
             sa_session = app.model.context.current
-            job = sa_session.query(app.model.Job).filter_by(tool_id="cat_data_and_sleep").one()
+            job = sa_session.query(app.model.Job).get(app.security.decode_id(job_dict["id"]))
 
             self._wait_for_external_state(sa_session, job, app.model.Job.states.RUNNING)
 
@@ -294,9 +295,11 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
             output = unicodify(subprocess.check_output(['kubectl', 'delete', 'job', external_id, '-o', 'name']))
             assert 'job.batch/%s' % external_id in output
 
-            self._wait_for_external_state(sa_session, job, app.model.Job.states.ERROR)
+            result = self.dataset_populator.wait_for_tool_run(run_response=running_response, history_id=history_id,
+                                                              assert_ok=False).json()
+            details = self.dataset_populator.get_job_details(result['jobs'][0]['id'], full=True).json()
 
-            assert job.state == app.model.Job.states.ERROR
+            assert details['state'] == app.model.Job.states.ERROR, details
 
     @skip_without_tool('job_properties')
     def test_exit_code_127(self):
