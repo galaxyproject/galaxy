@@ -216,6 +216,17 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
         job_env = self._run_and_get_environment_properties()
         assert job_env.some_env == '42'
 
+    @staticmethod
+    def _wait_for_external_state(sa_session, job, expected):
+        # Not checking the state here allows the change from queued to running to overwrite
+        # the change from queued to deleted_new in the API thread - this is a problem because
+        # the job will still run. See issue https://github.com/galaxyproject/galaxy/issues/4960.
+        max_tries = 60
+        while max_tries > 0 and job.job_runner_external_id is None or job.state != expected:
+            sa_session.refresh(job)
+            time.sleep(1)
+            max_tries -= 1
+
     @skip_without_tool('cat_data_and_sleep')
     def test_kill_process(self):
         with self.dataset_populator.test_history() as history_id:
@@ -234,22 +245,12 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
 
             app = self._app
             sa_session = app.model.context.current
-            external_id = None
-            state = False
-
             job = sa_session.query(app.model.Job).filter_by(tool_id="cat_data_and_sleep").one()
-            # Not checking the state here allows the change from queued to running to overwrite
-            # the change from queued to deleted_new in the API thread - this is a problem because
-            # the job will still run. See issue https://github.com/galaxyproject/galaxy/issues/4960.
-            max_tries = 60
-            while max_tries > 0 and external_id is None or state != app.model.Job.states.RUNNING:
-                sa_session.refresh(job)
-                assert not job.finished
-                external_id = job.job_runner_external_id
-                state = job.state
-                time.sleep(1)
-                max_tries -= 1
 
+            self._wait_for_external_state(sa_session, job, app.model.Job.states.RUNNING)
+            assert not job.finished
+
+            external_id = job.job_runner_external_id
             output = unicodify(subprocess.check_output(['kubectl', 'get', 'job', external_id, '-o', 'json']))
             status = json.loads(output)
             assert status['status']['active'] == 1
@@ -277,27 +278,15 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
                 running_inputs,
                 history_id,
                 assert_ok=False,
-            ).json()
-            job_dict = running_response["jobs"][0]
+            )
 
             app = self._app
             sa_session = app.model.context.current
-            external_id = None
-            state = False
-
             job = sa_session.query(app.model.Job).filter_by(tool_id="cat_data_and_sleep").one()
-            # Not checking the state here allows the change from queued to running to overwrite
-            # the change from queued to deleted_new in the API thread - this is a problem because
-            # the job will still run. See issue https://github.com/galaxyproject/galaxy/issues/4960.
-            max_tries = 60
-            while max_tries > 0 and external_id is None or state != app.model.Job.states.RUNNING:
-                sa_session.refresh(job)
-                assert not job.finished
-                external_id = job.job_runner_external_id
-                state = job.state
-                time.sleep(1)
-                max_tries -= 1
 
+            self._wait_for_external_state(sa_session, job, app.model.Job.states.RUNNING)
+
+            external_id = job.job_runner_external_id
             output = unicodify(subprocess.check_output(['kubectl', 'get', 'job', external_id, '-o', 'json']))
             status = json.loads(output)
             assert status['status']['active'] == 1
@@ -305,15 +294,9 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
             output = unicodify(subprocess.check_output(['kubectl', 'delete', 'job', external_id, '-o', 'name']))
             assert 'job.batch/%s' % external_id in output
 
-            max_tries = 60
-            state = False
-            while max_tries > 0 and external_id is None or state != app.model.Job.states.ERROR:
-                sa_session.refresh(job)
-                state = job.state
-                time.sleep(1)
-                max_tries -= 1
+            self._wait_for_external_state(sa_session, job, app.model.Job.states.ERROR)
 
-            assert state == app.model.Job.states.ERROR
+            assert job.state == app.model.Job.states.ERROR
 
     @skip_without_tool('job_properties')
     def test_exit_code_127(self):
