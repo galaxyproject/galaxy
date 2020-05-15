@@ -1,3 +1,4 @@
+import linkify from "linkifyjs/html";
 /**
  * Create alphabetical based two-argument comparator to handle library items (including folders)
  * If sort_key is not present it is set to ''.
@@ -32,6 +33,19 @@ var generateComparator = (sort_key, sort_order) => (itemA, itemB) => {
 
     return 0; // equal
 };
+
+/**
+ * Linkify Html Elements, that can be found with given selector
+ */
+var linkifyHtmlElements = (selector) => {
+    var element = document.querySelectorAll(selector);
+
+    element.forEach((description) => {
+        description.innerHTML = linkify(description.innerHTML);
+    });
+};
+
 export default {
     generateComparator: generateComparator,
+    linkifyHtmlElements: linkifyHtmlElements,
 };

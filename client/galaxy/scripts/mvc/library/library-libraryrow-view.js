@@ -3,6 +3,7 @@ import $ from "jquery";
 import Backbone from "backbone";
 import { Toast } from "ui/toast";
 import { getGalaxyInstance } from "app";
+import mod_util from "mvc/library/library-util";
 
 // galaxy library row view
 var LibraryRowView = Backbone.View.extend({
@@ -38,7 +39,6 @@ var LibraryRowView = Backbone.View.extend({
         }
         this.prepareButtons(library);
         var tmpl = this.templateRow();
-
         this.setElement(
             tmpl({
                 library: library,
@@ -47,7 +47,6 @@ var LibraryRowView = Backbone.View.extend({
             })
         );
         this.$el.show();
-
         return this;
     },
 
@@ -66,7 +65,7 @@ var LibraryRowView = Backbone.View.extend({
         this.$el.find('[data-toggle="tooltip"]').tooltip({ trigger: "hover" });
 
         // linkify new description, after its change
-        $("[description=true]").linkify();
+        mod_util.linkifyHtmlElements("[description=true]");
     },
 
     /**
