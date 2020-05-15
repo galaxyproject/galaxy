@@ -264,6 +264,57 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
                 subprocess.check_output(['kubectl', 'get', 'job', external_id, '-o', 'json'], stderr=subprocess.STDOUT)
             assert "not found" in unicodify(excinfo.value.output)
 
+    @skip_without_tool('cat_data_and_sleep')
+    def test_external_job_delete(self):
+        with self.dataset_populator.test_history() as history_id:
+            hda1 = self.dataset_populator.new_dataset(history_id, content="1 2 3")
+            running_inputs = {
+                "input1": {"src": "hda", "id": hda1["id"]},
+                "sleep_time": 240,
+            }
+            running_response = self.dataset_populator.run_tool(
+                "cat_data_and_sleep",
+                running_inputs,
+                history_id,
+                assert_ok=False,
+            ).json()
+            job_dict = running_response["jobs"][0]
+
+            app = self._app
+            sa_session = app.model.context.current
+            external_id = None
+            state = False
+
+            job = sa_session.query(app.model.Job).filter_by(tool_id="cat_data_and_sleep").one()
+            # Not checking the state here allows the change from queued to running to overwrite
+            # the change from queued to deleted_new in the API thread - this is a problem because
+            # the job will still run. See issue https://github.com/galaxyproject/galaxy/issues/4960.
+            max_tries = 60
+            while max_tries > 0 and external_id is None or state != app.model.Job.states.RUNNING:
+                sa_session.refresh(job)
+                assert not job.finished
+                external_id = job.job_runner_external_id
+                state = job.state
+                time.sleep(1)
+                max_tries -= 1
+
+            output = unicodify(subprocess.check_output(['kubectl', 'get', 'job', external_id, '-o', 'json']))
+            status = json.loads(output)
+            assert status['status']['active'] == 1
+
+            output = unicodify(subprocess.check_output(['kubectl', 'delete', 'job', external_id, '-o', 'name']))
+            assert 'job.batch/%s' % external_id in output
+
+            max_tries = 60
+            state = False
+            while max_tries > 0 and external_id is None or state != app.model.Job.states.ERROR:
+                sa_session.refresh(job)
+                state = job.state
+                time.sleep(1)
+                max_tries -= 1
+
+            assert state == app.model.Job.states.ERROR
+
     @skip_without_tool('job_properties')
     def test_exit_code_127(self):
         inputs = {
