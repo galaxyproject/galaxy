@@ -294,9 +294,12 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
             output = unicodify(subprocess.check_output(['kubectl', 'delete', 'job', external_id, '-o', 'name']))
             assert 'job.batch/%s' % external_id in output
 
-            self._wait_for_external_state(sa_session, job, app.model.Job.states.ERROR)
+            result = self.dataset_populator.wait_for_tool_run(run_response=running_response, history_id=history_id,
+                                                              assert_ok=False).json()
+            details = self.dataset_populator.get_job_details(result['jobs'][0]['id'], full=True).json()
 
-            assert job.state == app.model.Job.states.ERROR
+            assert details['state'] == app.model.Job.states.ERROR, details
+            assert 'No Kubernetes Jobs are available under expected selector' in details['stderr'].strip(), details
 
     @skip_without_tool('job_properties')
     def test_exit_code_127(self):
