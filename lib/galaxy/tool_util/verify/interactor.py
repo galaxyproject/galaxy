@@ -165,10 +165,14 @@ class GalaxyInteractorApi(object):
         outfile = output_testdef.outfile
         attributes = output_testdef.attributes
         name = output_testdef.name
+
         self.wait_for_jobs(history_id, jobs, maxseconds)
         hid = self.__output_id(output_data)
         # TODO: Twill version verifies dataset is 'ok' in here.
-        self.verify_output_dataset(history_id=history_id, hda_id=hid, outfile=outfile, attributes=attributes, tool_id=tool_id)
+        try:
+            self.verify_output_dataset(history_id=history_id, hda_id=hid, outfile=outfile, attributes=attributes, tool_id=tool_id)
+        except AssertionError as e:
+            raise AssertionError("Output %s: %s" % (name, str(e)))
 
         primary_datasets = attributes.get('primary_datasets', {})
         if primary_datasets:
@@ -188,7 +192,10 @@ class GalaxyInteractorApi(object):
                 raise Exception(msg_template % msg_args)
 
             primary_hda_id = primary_output["dataset"]["id"]
-            self.verify_output_dataset(history_id, primary_hda_id, primary_outfile, primary_attributes, tool_id=tool_id)
+            try:
+                self.verify_output_dataset(history_id, primary_hda_id, primary_outfile, primary_attributes, tool_id=tool_id)
+            except AssertionError as e:
+                raise AssertionError("Primary output %s: %s" % (name, str(e)))
 
     def wait_for_jobs(self, history_id, jobs, maxseconds):
         for job in jobs:
@@ -677,7 +684,7 @@ def verify_hid(filename, hda_id, attributes, test_data_downloader, hid="", datas
         _verify_extra_files_content(extra_files, hda_id, dataset_fetcher=dataset_fetcher, test_data_downloader=test_data_downloader, keep_outputs_dir=keep_outputs_dir)
 
     data = dataset_fetcher(hda_id)
-    item_label = "History item %s" % hid
+    item_label = ""
     verify(
         item_label,
         data,
