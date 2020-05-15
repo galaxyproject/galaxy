@@ -2,6 +2,7 @@
 Offload jobs to a Kubernetes cluster.
 """
 
+import errno
 import logging
 import math
 import os
@@ -132,7 +133,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
         # Checks if job exists and is trusted, or if it needs re-creation.
         job = Job(self._pykube_api, k8s_job_obj)
-        if job.exists() and not self._galaxy_instance_id:
+        job_exists = job.exists()
+        if job_exists and not self._galaxy_instance_id:
             # if galaxy instance id is not set, then we don't trust matching jobs and we simply delete and
             # re-create the job
             log.debug("Matching job exists, but Job is not trusted, so it will be deleted and a new one created.")
@@ -148,10 +150,10 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 log.debug("Waiting for job to be deleted " + k8s_job_name)
 
             Job(self._pykube_api, k8s_job_obj).create()
-        elif job.exists() and self._galaxy_instance_id:
+        elif job_exists and self._galaxy_instance_id:
             # The job exists and we trust the identifier.
             log.debug("Matching job exists, but Job is trusted, so we simply use the existing one for " + k8s_job_name)
-            # We simply leave the k8s job to be handled later on by the check watched-items.
+            # We simply leave the k8s job to be handled later on by check_watched_item().
         else:
             # Creates the Kubernetes Job if it doesn't exist.
             job.create()
@@ -397,7 +399,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         return "job-container"
 
     def check_watched_item(self, job_state):
-        """Checks the state of a job already submitted on k8s. Job state is a AsynchronousJobState"""
+        """Checks the state of a job already submitted on k8s. Job state is an AsynchronousJobState"""
         jobs = Job.objects(self._pykube_api).filter(selector="app=" + job_state.job_id,
                                                     namespace=self.runner_params['k8s_namespace'])
         if len(jobs.response['items']) == 1:
@@ -462,22 +464,30 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 return None
             # there is no job responding to this job_id, it is either lost or something happened.
             log.error("No Jobs are available under expected selector app=%s", job_state.job_id)
+            self.mark_as_failed(job_state)
             try:
                 with open(job_state.error_file, 'w') as error_file:
                     error_file.write("No Kubernetes Jobs are available under expected selector app=%s\n" % job_state.job_id)
-                self.mark_as_failed(job_state)
-            except IOError:
-                log.error("Job directory already cleaned up. Assuming already handled for selector app=%s", job_state.job_id)
+            except EnvironmentError as e:
+                # Python 2/3 compatible handling of FileNotFoundError
+                if e.errno == errno.ENOENT:
+                    log.error("Job directory already cleaned up. Assuming already handled for selector app=%s", job_state.job_id)
+                else:
+                    raise
             return job_state
         else:
             # there is more than one job associated to the expected unique job id used as selector.
             log.error("More than one Kubernetes Job associated to job id '%s'", job_state.job_id)
+            self.mark_as_failed(job_state)
             try:
                 with open(job_state.error_file, 'w') as error_file:
                     error_file.write("More than one Kubernetes Job associated with job id '%s'\n" % job_state.job_id)
-                self.mark_as_failed(job_state)
-            except IOError:
-                log.error("Job directory already cleaned up. Assuming already handled for selector app=%s", job_state.job_id)
+            except EnvironmentError as e:
+                # Python 2/3 compatible handling of FileNotFoundError
+                if e.errno == errno.ENOENT:
+                    log.error("Job directory already cleaned up. Assuming already handled for selector app=%s", job_state.job_id)
+                else:
+                    raise
             return job_state
 
     def _handle_job_failure(self, job, job_state):
@@ -496,7 +506,10 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 job_state.fail_message = "More pods failed than allowed. See stdout for pods details."
         job_state.running = False
         self.mark_as_failed(job_state)
-        self.__cleanup_k8s_job(job)
+        try:
+            self.__cleanup_k8s_job(job)
+        except Exception:
+            log.exception("Could not clean up k8s batch job. Ignoring...")
         return None
 
     def __cleanup_k8s_job(self, job):
@@ -539,7 +552,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             # assert not job_to_delete.exists(), "Could not delete job,"+job.job_runner_external_id+" it still exists"
             log.debug("(%s/%s) Terminated at user's request" % (job.id, job.job_runner_external_id))
         except Exception as e:
-            log.debug("(%s/%s) User killed running job, but error encountered during termination: %s" % (
+            log.exception("(%s/%s) User killed running job, but error encountered during termination: %s" % (
                 job.id, job.job_runner_external_id, e))
 
     def recover(self, job, job_wrapper):
@@ -571,7 +584,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         super(KubernetesJobRunner, self).finish_job(job_state)
         jobs = Job.objects(self._pykube_api).filter(selector="app=" + job_state.job_id,
                                                     namespace=self.runner_params['k8s_namespace'])
-        # If more than one job matches selector, leave all jobs intact as it's a configuration error
-        if len(jobs.response['items']) == 1:
-            job = Job(self._pykube_api, jobs.response['items'][0])
-            self.__cleanup_k8s_job(job)
+        if len(jobs.response['items']) != 1:
+            log.warning("More than one job matches selector. Possible configuration error"
+                        " in job id '%s'", job_state.job_id)
+        job = Job(self._pykube_api, jobs.response['items'][0])
+        self.__cleanup_k8s_job(job)
