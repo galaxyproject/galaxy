@@ -5,9 +5,7 @@ import { getGalaxyInstance } from "app";
 import { Toast } from "ui/toast";
 import mod_library_model from "mvc/library/library-model";
 import mod_library_libraryrow_view from "mvc/library/library-libraryrow-view";
-import linkifyJq from "linkifyjs/jquery";
-
-linkifyJq($, document);
+import mod_util from "mvc/library/library-util";
 
 var LibraryListView = Backbone.View.extend({
     el: "#libraries_element",
@@ -137,8 +135,8 @@ var LibraryListView = Backbone.View.extend({
             $center_tooltip_el.tooltip({ trigger: "hover" });
             $("#center").css("overflow", "auto");
         }
-        // linkify description
-        $("[description=true]").linkify();
+
+        mod_util.linkifyHtmlElements("[description=true]");
     },
 
     fetchDeleted: function () {
