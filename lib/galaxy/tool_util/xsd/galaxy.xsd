@@ -4865,6 +4865,8 @@ A contrived example of a tool that uses this is the test tool
 
 By default this file will not contain paths for data or collection inputs. To include simple
 paths for data parameters set the ``data_style`` attribute to ``paths`` (see [inputs_as_json_with_paths.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/inputs_as_json_with_paths.xml) for an example).
+
+For tools with profile >=20.05 a select with ``multiple="true"`` is rendered as a list which is empty if nothing is selected. For smaller profiles lists are rendered as comma separated string which and ``"None"`` in case nothing is selectecd.
 ]]></xs:documentation>
     </xs:annotation>
     <xs:simpleContent>
