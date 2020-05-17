@@ -1,4 +1,3 @@
-import errno
 import logging
 import os
 import time
@@ -60,16 +59,15 @@ class DataManagerHandler(object):
             repository_tools_by_guid = {}
             for tool_tup in repository_tools_tups:
                 repository_tools_by_guid[tool_tup[1]] = dict(tool_config_filename=tool_tup[0], tool=tool_tup[2])
+
+            # If conf file does not exist, create it.
+            if not os.path.exists(shed_data_manager_conf_filename):
+                with open(shed_data_manager_conf_filename, 'w') as fh:
+                    log.info('Creating shed data manager config with default contents: %s', shed_data_manager_conf_filename)
+                    fh.write(SHED_DATA_MANAGER_CONF_XML)
+
             # Load existing data managers.
-            try:
-                tree, error_message = parse_xml(shed_data_manager_conf_filename, check_exists=False)
-            except (OSError, IOError) as exc:
-                if exc.errno == errno.ENOENT:
-                    with open(shed_data_manager_conf_filename, 'w') as fh:
-                        fh.write(SHED_DATA_MANAGER_CONF_XML)
-                    tree, error_message = parse_xml(shed_data_manager_conf_filename)
-                else:
-                    raise
+            tree, error_message = parse_xml(shed_data_manager_conf_filename)
             if tree is None:
                 return rval
             config_elems = [elem for elem in tree.getroot()]

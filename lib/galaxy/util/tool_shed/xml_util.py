@@ -66,11 +66,12 @@ def create_element(tag, attributes=None, sub_elements=None):
     return None
 
 
-def parse_xml(file_name, check_exists=True):
+def parse_xml(file_name):
     """Returns a parsed xml tree with comments intact."""
-    error_message = ''
-    if check_exists and not os.path.exists(file_name):
+    if not os.path.exists(file_name):
         return None, "File does not exist %s" % str(file_name)
+
+    error_message = ''
     try:
         tree = galaxy_parse_xml(file_name, remove_comments=False, strip_whitespace=False)
     except Exception as e:
