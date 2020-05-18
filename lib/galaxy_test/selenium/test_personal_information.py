@@ -1,3 +1,4 @@
+from selenium.common.exceptions import NoSuchElementException
 from .framework import (
     selenium_test,
     SeleniumTestCase,
@@ -5,6 +6,32 @@ from .framework import (
 
 
 class ManageInformationTestCase(SeleniumTestCase):
+
+    @selenium_test
+    def test_toolbox_filters(self):
+        '''
+        Test applying and removing a toolbox filter.
+
+        This test applies the filter examples:restrict_text and confirms that
+        the text manipulation section is no longer displayed in the browser.
+        '''
+        self.register()
+        self.home()
+        # The text manipulation section should be visible and clickable at this stage
+        section = self.driver.find_element_by_link_text('Text Manipulation')
+        self.action_chains().move_to_element(section).click().perform()
+        self.navigate_to_user_preferences()
+        self.components.preferences.toolbox_filters.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        sibling_text = "This tool filter will disable the Text Manipulation section."
+        filter_upload = self.driver.find_element_by_xpath("//span[contains(. ,'%s')]/../div//label" % sibling_text)
+        self.action_chains().move_to_element(filter_upload).click().perform()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.components.toolbox_filters.submit.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.home()
+        # But now it should raise NoSuchElementException
+        self.assertRaises(NoSuchElementException, lambda: self.driver.find_element_by_link_text('Text Manipulation'))
 
     @selenium_test
     def test_change_email(self):
