@@ -4,25 +4,27 @@ from galaxy.util.oset import OrderedSet
 from .type_description import COLLECTION_TYPE_DESCRIPTION_FACTORY
 
 
-def build_collection(type, dataset_instances, collection=None, associated_identifiers=None):
+def build_collection(type, dataset_instances, collection=None, associated_identifiers=None, fields=None):
     """
     Build DatasetCollection with populated DatasetcollectionElement objects
     corresponding to the supplied dataset instances or throw exception if
     this is not a valid collection of the specified type.
     """
-    dataset_collection = collection or model.DatasetCollection()
+    dataset_collection = collection or model.DatasetCollection(fields=fields)
     associated_identifiers = associated_identifiers or set()
-    set_collection_elements(dataset_collection, type, dataset_instances, associated_identifiers)
+    set_collection_elements(dataset_collection, type, dataset_instances, associated_identifiers, fields=fields)
     return dataset_collection
 
 
-def set_collection_elements(dataset_collection, type, dataset_instances, associated_identifiers):
+def set_collection_elements(dataset_collection, type, dataset_instances, associated_identifiers, fields=None):
     new_element_keys = OrderedSet(dataset_instances.keys()) - associated_identifiers
     new_dataset_instances = {k: dataset_instances[k] for k in new_element_keys}
     dataset_collection.element_count = dataset_collection.element_count or 0
     element_index = dataset_collection.element_count
     elements = []
-    for element in type.generate_elements(new_dataset_instances):
+    if fields == "auto":
+        fields = guess_fields(dataset_instances)
+    for element in type.generate_elements(new_dataset_instances, fields=fields):
         element.element_index = element_index
         add_object_to_object_session(element, dataset_collection)
         element.collection = dataset_collection
@@ -33,6 +35,16 @@ def set_collection_elements(dataset_collection, type, dataset_instances, associa
 
     dataset_collection.element_count = element_index
     return dataset_collection
+
+
+def guess_fields(dataset_instances):
+    fields = []
+    for identifier, element in dataset_instances.items():
+        # TODO: Make generic enough to handle nested record types.
+        assert element.history_content_type == "dataset"
+        fields.append({"type": "File", "name": identifier})
+
+    return fields
 
 
 class CollectionBuilder:
