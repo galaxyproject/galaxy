@@ -26,6 +26,7 @@ from typing_extensions import (
     TypedDict,
 )
 
+from galaxy.schema.schema import FieldDict
 from galaxy.util import Element
 from galaxy.util.path import safe_walk
 from .parameter_validators import AnyValidatorModel
@@ -604,6 +605,7 @@ class XmlTestCollectionDefDict(TypedDict):
     model_class: Literal["TestCollectionDef"]
     attributes: TestCollectionAttributeDict
     collection_type: CollectionType
+    fields: Optional[List[FieldDict]]
     elements: List[TestCollectionDefElementDict]
     name: str
 
@@ -643,7 +645,7 @@ BaseJsonTestCollectionDefCollectionElementDict = TypedDict(
     "BaseJsonTestCollectionDefCollectionElementDict",
     {
         "class": Literal["Collection"],
-        "collection_type": str,
+        "collection_type": Optional[str],
         "elements": NotRequired[Optional[List[JsonTestCollectionDefElementDict]]],
     },
 )
@@ -652,7 +654,7 @@ JsonTestCollectionDefCollectionElementDict = TypedDict(
     {
         "identifier": str,
         "class": Literal["Collection"],
-        "collection_type": str,
+        "collection_type": Optional[str],
         "elements": NotRequired[Optional[List[JsonTestCollectionDefElementDict]]],
     },
 )
@@ -660,7 +662,7 @@ JsonTestCollectionDefDict = TypedDict(
     "JsonTestCollectionDefDict",
     {
         "class": Literal["Collection"],
-        "collection_type": str,
+        "collection_type": Optional[str],
         "elements": NotRequired[Optional[List[JsonTestCollectionDefElementDict]]],
         "name": NotRequired[Optional[str]],
     },
@@ -700,12 +702,17 @@ def _copy_if_exists(attributes, as_dict, name: str, as_name: Optional[str] = Non
 class TestCollectionDef:
     __test__ = False  # Prevent pytest from discovering this class (issue #12071)
     elements: List[TestCollectionDefElementInternal]
+    collection_type: Optional[str]
+    fields: Optional[List[FieldDict]]
 
-    def __init__(self, attrib, name, collection_type, elements):
+    def __init__(
+        self, attrib, name, collection_type: Optional[str], elements, fields: Optional[List[FieldDict]] = None
+    ):
         self.attrib = attrib
         self.collection_type = collection_type
         self.elements = elements
         self.name = name
+        self.fields = fields
 
     def _test_format_to_dict(self) -> "BaseJsonTestCollectionDefCollectionElementDict":
 
@@ -762,6 +769,7 @@ class TestCollectionDef:
             "collection_type": self.collection_type,
             "elements": list(map(element_to_dict, self.elements or [])),
             "name": self.name,
+            "fields": self.fields,
         }
 
     @staticmethod
@@ -785,6 +793,7 @@ class TestCollectionDef:
                 name=xml_as_dict.get("name", "Unnamed Collection"),
                 elements=list(map(element_from_dict, xml_as_dict["elements"] or [])),
                 collection_type=xml_as_dict["collection_type"],
+                fields=xml_as_dict.get("fields", None),
             )
         else:
             json_as_dict = cast(JsonTestCollectionDefDict, as_dict)
