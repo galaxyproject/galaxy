@@ -35,13 +35,13 @@ var generateComparator = (sort_key, sort_order) => (itemA, itemB) => {
 };
 
 /**
- * Linkify Html Elements, that can be found with given selector
+ * Linkify Html elements matching the given selector
  */
-var linkifyHtmlElements = (selector) => {
-    var element = document.querySelectorAll(selector);
+const linkifyHtmlElements = (selector) => {
+    const selectedElements = document.querySelectorAll(selector);
 
-    element.forEach((description) => {
-        description.innerHTML = linkify(description.innerHTML);
+    selectedElements.forEach((element) => {
+        element.innerHTML = linkify(element.innerHTML);
     });
 };
 
