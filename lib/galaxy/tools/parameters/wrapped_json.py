@@ -95,7 +95,7 @@ def _json_wrap_input(input, value_wrapper, profile, handle_files="skip"):
         if input.multiple and profile >= '20.05':
             json_value = [_ for _ in _cast_if_not_none(value_wrapper.value, list)]
         else:
-            json_value = _cast_if_not_none(value_wrapper.value, str)
+            json_value = _cast_if_not_none(value_wrapper, str)
     elif input_type == "data_column":
         # value is a SelectToolParameterWrapper()
         if input.multiple:
