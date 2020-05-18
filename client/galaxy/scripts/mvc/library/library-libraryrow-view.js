@@ -65,7 +65,7 @@ var LibraryRowView = Backbone.View.extend({
         this.$el.find('[data-toggle="tooltip"]').tooltip({ trigger: "hover" });
 
         // linkify new description, after its change
-        mod_util.linkifyHtmlElements("[description=true]");
+        mod_util.linkifyHtmlElements("[data-linkify=true]");
     },
 
     /**
@@ -248,12 +248,12 @@ var LibraryRowView = Backbone.View.extend({
                     <% } %>
                     <% if(library.get("description")) { %>
                         <% if( (library.get("description")).length> 40 ) { %>
-                            <td description=true data-toggle="tooltip" data-placement="bottom"
+                            <td data-linkify=true data-toggle="tooltip" data-placement="bottom"
                                 title="<%= _.escape(library.get("description")) %>">
                                 <%= _.escape(library.get("description")).substring(0, 40) + "..." %>
                             </td>
                         <% } else { %>
-                            <td description=true><%= _.escape(library.get("description"))%></td>
+                            <td data-linkify=true><%= _.escape(library.get("description"))%></td>
                         <% } %>
                     <% } else { %>
                         <td></td>
