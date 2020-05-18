@@ -1,5 +1,7 @@
 import logging
 
+import packaging.version
+
 log = logging.getLogger(__name__)
 
 SKIP_INPUT = object()
@@ -92,7 +94,7 @@ def _json_wrap_input(input, value_wrapper, profile, handle_files="skip"):
     elif input_type == "boolean":
         json_value = _cast_if_not_none(value_wrapper, bool)
     elif input_type == "select":
-        if input.multiple and profile >= '20.05':
+        if input.multiple and packaging.version.parse(str(profile)) >= packaging.version.parse('20.05'):
             json_value = [_ for _ in _cast_if_not_none(value_wrapper.value, list)]
         else:
             json_value = _cast_if_not_none(value_wrapper, str)
