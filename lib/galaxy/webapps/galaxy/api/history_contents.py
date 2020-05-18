@@ -904,7 +904,12 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         view = serialization_params.pop('view')
 
         contents = self.history_contents_manager.contents(history,
-            filters=filters, limit=limit, offset=offset, order_by=order_by)
+            filters=filters,
+            limit=limit,
+            offset=offset,
+            order_by=order_by,
+            serialization_params=serialization_params)
+
         for content in contents:
 
             # TODO: remove split

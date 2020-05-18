@@ -14,14 +14,14 @@ class HistorySharingTestCase(SeleniumTestCase):
         user1_email, user2_email, history_id = self.setup_two_users_with_one_shared_history()
         self.submit_login(user2_email, retries=VALID_LOGIN_RETRIES)
         response = self.api_get("histories/%s" % history_id, raw=True)
-        assert response.status_code == 200, response.json()
+        assert response.status_code == 200, response.text
 
     @selenium_test
     def test_sharing_valid_by_id(self):
         user1_email, user2_email, history_id = self.setup_two_users_with_one_shared_history(share_by_id=True)
         self.submit_login(user2_email, retries=VALID_LOGIN_RETRIES)
         response = self.api_get("histories/%s" % history_id, raw=True)
-        assert response.status_code == 200, response.json()
+        assert response.status_code == 200, response.text
 
     @selenium_test
     def test_unsharing(self):

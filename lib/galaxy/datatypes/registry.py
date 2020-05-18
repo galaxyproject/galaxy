@@ -8,7 +8,6 @@ import logging
 import os
 from collections import OrderedDict
 from string import Template
-from xml.etree.ElementTree import Element
 
 import yaml
 
@@ -108,7 +107,7 @@ class Registry(object):
             #           type="galaxy.datatypes.blast:BlastXml" />
             compressed_sniffers = {}
             handling_proprietary_datatypes = False
-            if not isinstance(config, Element):
+            if isinstance(config, str):
                 # Parse datatypes_conf.xml
                 tree = galaxy.util.parse_xml(config)
                 root = tree.getroot()

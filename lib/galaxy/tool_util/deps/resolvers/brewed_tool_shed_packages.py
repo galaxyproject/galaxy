@@ -5,8 +5,8 @@ via shed2tap (e.g. https://github.com/jmchilton/homebrew-toolshed).
 """
 import logging
 import os
-from xml.etree import ElementTree as ET
 
+from galaxy.util import parse_xml
 from . import (
     DependencyResolver,
     NullDependency
@@ -88,7 +88,7 @@ class HomebrewToolShedDependencyResolver(
 class RawDependencies(object):
 
     def __init__(self, dependencies_file):
-        self.root = ET.parse(dependencies_file).getroot()
+        self.root = parse_xml(dependencies_file).getroot()
         dependencies = []
         package_els = self.root.findall("package") or []
         for package_el in package_els:
