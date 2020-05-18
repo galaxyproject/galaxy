@@ -3,7 +3,6 @@ import json
 import os
 import random
 import string
-import time
 import unittest
 from collections import namedtuple
 from functools import wraps
@@ -25,6 +24,10 @@ from pkg_resources import resource_string
 from six import StringIO
 
 from galaxy.tool_util.verify.test_data import TestDataResolver
+from galaxy.tool_util.verify.wait import (
+    TimeoutAssertionError,
+    wait_on as tool_util_wait_on,
+)
 from galaxy.util import unicodify
 from . import api_asserts
 
@@ -1560,23 +1563,4 @@ class GiWorkflowPopulator(BaseWorkflowPopulator, GiPostGetMixin):
 
 
 def wait_on(function, desc, timeout=DEFAULT_TIMEOUT):
-    delta = .25
-    iteration = 0
-    while True:
-        total_wait = delta * iteration
-        if total_wait > timeout:
-            timeout_message = "Timed out after %s seconds waiting on %s." % (
-                total_wait, desc
-            )
-            raise TimeoutAssertionError(timeout_message)
-        iteration += 1
-        value = function()
-        if value is not None:
-            return value
-        time.sleep(delta)
-
-
-class TimeoutAssertionError(AssertionError):
-
-    def __init__(self, message):
-        super(TimeoutAssertionError, self).__init__(message)
+    return tool_util_wait_on(function, desc, timeout)
