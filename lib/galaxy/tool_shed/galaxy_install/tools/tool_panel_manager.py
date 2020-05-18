@@ -41,8 +41,8 @@ class ToolPanelManager(object):
 
         # If shed_tool_conf file does not exist, create it.
         if not os.path.exists(shed_tool_conf_filename):
+            log.info('Creating shed tool config with default contents: %s', shed_tool_conf_filename)
             with open(shed_tool_conf_filename, 'w') as fh:
-                log.info('Creating shed tool config with default contents: %s', shed_tool_conf_filename)
                 fh.write(shed_tool_conf_dict['create'])
 
         tree, error_message = parse_xml(shed_tool_conf_filename)
