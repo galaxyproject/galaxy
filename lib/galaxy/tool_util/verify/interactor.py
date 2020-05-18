@@ -33,6 +33,7 @@ from galaxy.tool_util.parser.interface import TestCollectionDef, TestCollectionO
 from galaxy.util.bunch import Bunch
 from . import verify
 from .asserts import verify_assertions
+from .wait import wait_on
 
 log = getLogger(__name__)
 
@@ -257,25 +258,11 @@ class GalaxyInteractorApi(object):
                     raise Exception(msg)
 
     def wait_for_job(self, job_id, history_id, maxseconds):
-        self.wait_for(lambda: not self.__job_ready(job_id, history_id), maxseconds=maxseconds)
+        self.wait_for(lambda: self.__job_ready(job_id, history_id), maxseconds=maxseconds)
 
-    def wait_for(self, func, what='Tool test run', **kwd):
-        sleep_amount = 0.2
-        slept = 0
+    def wait_for(self, func, what='tool test run', **kwd):
         walltime_exceeded = int(kwd.get("maxseconds", DEFAULT_TOOL_TEST_WAIT))
-
-        while slept <= walltime_exceeded:
-            result = func()
-            if result:
-                time.sleep(sleep_amount)
-                slept += sleep_amount
-                sleep_amount *= 2
-            else:
-                return
-
-        message = '%s exceeded walltime [total %s, max %s], terminating.' % (what, slept, walltime_exceeded)
-        log.info(message)
-        raise AssertionError(message)
+        wait_on(func, what, walltime_exceeded)
 
     def get_job_stdio(self, job_id):
         job_stdio = self.__get_job_stdio(job_id).json()
@@ -577,7 +564,7 @@ class GalaxyInteractorApi(object):
             return True
         elif state_str == 'error':
             raise Exception(error_msg)
-        return False
+        return None
 
     def __submit_tool(self, history_id, tool_id, tool_input, extra_data={}, files=None):
         data = dict(
