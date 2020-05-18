@@ -62,8 +62,8 @@ class DataManagerHandler(object):
 
             # If conf file does not exist, create it.
             if not os.path.exists(shed_data_manager_conf_filename):
+                log.info('Creating shed data manager config with default contents: %s', shed_data_manager_conf_filename)
                 with open(shed_data_manager_conf_filename, 'w') as fh:
-                    log.info('Creating shed data manager config with default contents: %s', shed_data_manager_conf_filename)
                     fh.write(SHED_DATA_MANAGER_CONF_XML)
 
             # Load existing data managers.
