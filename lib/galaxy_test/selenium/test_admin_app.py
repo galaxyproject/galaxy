@@ -106,13 +106,13 @@ class AdminAppTestCase(SeleniumTestCase):
         lock = self.driver.find_element_by_id("prevent-job-dispatching")
         original_label = label.text
         self.action_chains().move_to_element_with_offset(lock, -20, 5).click().perform()
-        self.sleep_for(self.wait_types.UX_RENDER)
+        self.sleep_for(self.wait_types.UX_TRANSITION)
         # Make sure the job lock has been toggled.
         label = self.driver.find_element_by_xpath("//label[@for='prevent-job-dispatching']/strong")
         self.assertNotEqual(label.text, original_label)
         self.screenshot("admin_jobs_locked")
         self.action_chains().move_to_element_with_offset(lock, -20, 5).click().perform()
-        self.sleep_for(self.wait_types.UX_RENDER)
+        self.sleep_for(self.wait_types.UX_TRANSITION)
         self.screenshot("admin_jobs_unlocked")
         # And confirm that it has toggled back to what it was.
         self.assertEqual(label.text, original_label)
