@@ -93,6 +93,8 @@ def parse_xml(file_name, check_exists=True):
 
     try:
         tree = XmlET.parse(file_name, parser=XmlET.XMLParser(target=CommentedTreeBuilder()))
+    except (IOError, OSError):
+        raise
     except Exception as e:
         error_message = "Exception attempting to parse %s: %s" % (str(file_name), str(e))
         log.exception(error_message)
