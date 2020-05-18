@@ -14,7 +14,7 @@ import { getGalaxyInstance } from "app";
 import { render_embedded_items } from "mvc/embedded-objects";
 import { mountJobMetrics } from "components/JobMetrics";
 import { mountJobParameters } from "components/JobParameters";
-import { mountCompositeDataset } from "components/CompositeDataset";
+import { mountDatasetLink } from "components/DatasetLink";
 import MarkdownIt from "markdown-it";
 
 import JOB_STATES_MODEL from "mvc/history/job-states-model";
@@ -62,13 +62,13 @@ const RENDER_FUNCTIONS = {
             </div>
         </div>`;
     },
-    history_dataset_composite: (action, args, content) => {
+    history_dataset_link: (action, args, content) => {
         const history_dataset_id = args.history_dataset_id;
         const path = args.path;
         const label = args.label;
         const image = args.image;
 
-        return `<div class="composite-dataset" history_dataset_id="${history_dataset_id}" path="${path}" label="${label}" image="${image}"></div>`;
+        return `<div class="dataset-link" history_dataset_id="${history_dataset_id}" path="${path}" label="${label}" image="${image}"></div>`;
     },
     history_dataset_collection_display: (action, args, content) => {
         const history_dataset_collection_id = args.history_dataset_collection_id;
@@ -207,7 +207,7 @@ export default {
                 render_embedded_items();
                 mountJobMetrics({ includeTitle: false });
                 mountJobParameters({ includeTitle: false });
-                mountCompositeDataset();
+                mountDatasetLink();
 
                 $("span.render-name").each((i, el) => {
                     const historyDatasetId = $(el).attr("history_dataset_id");
