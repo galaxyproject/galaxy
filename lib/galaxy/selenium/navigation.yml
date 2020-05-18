@@ -325,7 +325,7 @@ workflow_editor:
       output_terminal: "${_} [output-name='${name}']"
       input_terminal: "${_} [input-name='${name}']"
 
-      input_mapping_icon: "${_} [name='${name}'] .multiple"
+      input_mapping_icon: "${_} [input-name='${name}'].multiple"
 
   selectors:
     canvas_body: '#workflow-canvas'
@@ -342,7 +342,7 @@ workflow_editor:
     label_input: "[tour_id='__label'] input"
     annotation_input: "[tour_id='__annotation'] textarea"
 
-    connector_for: "div[handle1-id='${source_id}'][handle2-id='${sink_id}']"
+    connector_for: "div[output-handle-id='${source_id}'][input-handle-id='${sink_id}']"
 
     connector_destroy_callout: '.delete-terminal'
 

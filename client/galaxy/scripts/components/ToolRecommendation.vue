@@ -17,7 +17,7 @@
 <script>
 import * as d3 from "d3";
 import { getAppRoot } from "onload/loadConfig";
-import { getDatatypeMapping, getToolPredictions } from "components/Workflow/Editor/services";
+import { getDatatypeMapping, getToolPredictions } from "components/Workflow/Editor/modules/services";
 
 export default {
     props: {
