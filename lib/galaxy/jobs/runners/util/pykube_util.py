@@ -88,7 +88,7 @@ def _find_object_by_name(clazz, pykube_api, object_name, namespace=None):
     return obj
 
 
-def stop_job(job, cleanup="always"):
+def stop_job(job, cleanup="always", use_job_ttl=None):
     job_failed = (job.obj['status']['failed'] > 0
                   if 'failed' in job.obj['status'] else False)
     # Scale down the job just in case even if cleanup is never
@@ -97,13 +97,17 @@ def stop_job(job, cleanup="always"):
     if not api_delete and cleanup == "onsuccess" and not job_failed:
         api_delete = True
     if api_delete:
-        delete_options = {
-            "apiVersion": "v1",
-            "kind": "DeleteOptions",
-            "propagationPolicy": "Background"
-        }
-        r = job.api.delete(json=delete_options, **job.api_kwargs())
-        job.api.raise_for_status(r)
+        if use_job_ttl is None:
+            delete_options = {
+                "apiVersion": "v1",
+                "kind": "DeleteOptions",
+                "propagationPolicy": "Background"
+            }
+            r = job.api.delete(json=delete_options, **job.api_kwargs())
+            job.api.raise_for_status(r)
+        else:
+            # Let the k8s ttl take care of deletion
+            pass
 
 
 def job_object_dict(params, job_name, spec):
