@@ -37,13 +37,13 @@ var generateComparator = (sort_key, sort_order) => (itemA, itemB) => {
 /**
  * Linkify Html elements matching the given selector
  */
-const linkifyHtmlElements = (selector) => {
+export function linkifyHtmlElements(selector) {
     const selectedElements = document.querySelectorAll(selector);
 
     selectedElements.forEach((element) => {
         element.innerHTML = linkify(element.innerHTML);
     });
-};
+}
 
 export default {
     generateComparator: generateComparator,

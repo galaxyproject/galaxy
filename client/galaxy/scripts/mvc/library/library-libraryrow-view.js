@@ -3,7 +3,7 @@ import $ from "jquery";
 import Backbone from "backbone";
 import { Toast } from "ui/toast";
 import { getGalaxyInstance } from "app";
-import mod_util from "mvc/library/library-util";
+import { linkifyHtmlElements } from "mvc/library/library-util";
 
 // galaxy library row view
 var LibraryRowView = Backbone.View.extend({
@@ -65,7 +65,7 @@ var LibraryRowView = Backbone.View.extend({
         this.$el.find('[data-toggle="tooltip"]').tooltip({ trigger: "hover" });
 
         // linkify new description, after its change
-        mod_util.linkifyHtmlElements("[data-linkify=true]");
+        linkifyHtmlElements("[data-linkify=true]");
     },
 
     /**
