@@ -6545,12 +6545,21 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
 
     populated_states = DatasetCollectionPopulatedState
 
-    def __init__(self, id=None, collection_type=None, populated=True, element_count=None):
+    def __init__(
+        self,
+        id=None,
+        collection_type=None,
+        populated=True,
+        element_count=None,
+        fields=None,
+    ):
         self.id = id
         self.collection_type = collection_type
         if not populated:
             self.populated_state = DatasetCollection.populated_states.NEW
         self.element_count = element_count
+        # TODO: persist fields...
+        self.fields = fields
 
     def _build_nested_collection_attributes_stmt(
         self,
@@ -6724,6 +6733,10 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
             self._populated_optimized = _populated_optimized
 
         return self._populated_optimized
+
+    @property
+    def allow_implicit_mapping(self):
+        return self.collection_type != "record"
 
     @property
     def populated(self):
