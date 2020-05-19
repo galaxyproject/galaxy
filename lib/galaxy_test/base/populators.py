@@ -693,20 +693,9 @@ class DatasetPopulator(BaseDatasetPopulator):
         return self.galaxy_interactor.api_key
 
     def _post(self, route, data=None, files=None, admin=False):
-        if data is None:
-            data = {}
-
-        if files is None:
-            files = data.get("__files", None)
-            if files is not None:
-                del data["__files"]
-
         return self.galaxy_interactor.post(route, data, files=files, admin=admin)
 
     def _put(self, route, data=None):
-        if data is None:
-            data = {}
-
         return self.galaxy_interactor.put(route, data)
 
     def _get(self, route, data=None, admin=False):
