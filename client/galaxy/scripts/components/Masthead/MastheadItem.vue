@@ -115,7 +115,7 @@ export default {
             };
         },
         galaxyIframe() {
-            return document.querySelector("iframe#galaxy_main");
+            return document.getElementById("galaxy_main");
         },
     },
     created() {
