@@ -741,13 +741,20 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
             states.DELETED_NEW,
         ]
 
-    def io_dicts(self):
+    def io_dicts(self, exclude_implicit_outputs=False):
         inp_data = dict([(da.name, da.dataset) for da in self.input_datasets])
         out_data = dict([(da.name, da.dataset) for da in self.output_datasets])
         inp_data.update([(da.name, da.dataset) for da in self.input_library_datasets])
         out_data.update([(da.name, da.dataset) for da in self.output_library_datasets])
 
-        out_collections = dict([(obj.name, obj.dataset_collection_instance) for obj in self.output_dataset_collection_instances])
+        if not exclude_implicit_outputs:
+            out_collections = dict([(obj.name, obj.dataset_collection_instance) for obj in self.output_dataset_collection_instances])
+        else:
+            out_collections = {}
+            for obj in self.output_dataset_collection_instances:
+                if obj.name not in out_data:
+                    out_collections[obj.name] = obj.dataset_collection_instance
+                # else this is a mapped over output
         out_collections.update([(obj.name, obj.dataset_collection) for obj in self.output_dataset_collections])
         return inp_data, out_data, out_collections
 
