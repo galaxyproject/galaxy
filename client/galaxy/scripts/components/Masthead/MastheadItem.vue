@@ -114,6 +114,9 @@ export default {
                 visibility: this.tab.visible ? "visible" : "hidden",
             };
         },
+        getGalaxyIframe() {
+            return document.querySelector('iframe#galaxy_main');
+        },
     },
     created() {
         if (this.tab.onbeforeunload) {
@@ -121,8 +124,22 @@ export default {
                 this.tab.onbeforeunload();
             });
         }
+
+    },
+    mounted() {
+        this.getGalaxyIframe.addEventListener("load",  this.iframeListener);
+    },
+    destroyed() {
+        this.getGalaxyIframe.removeEventListener("load", this.iframeListener);
     },
     methods: {
+        iframeListener(){
+            return this.getGalaxyIframe.contentDocument.addEventListener('click', this.hideDropdown);
+        },
+        hideDropdown() {
+            if (this.$refs.dropdown)
+                this.$refs.dropdown.hide();
+        },
         open(tab, event) {
             if (tab.onclick) {
                 return this.propogateClick(tab, event);
@@ -162,12 +179,6 @@ export default {
             return typeof url === "string" && url.indexOf("//") === -1 && url.charAt(0) != "/"
                 ? this.appRoot + url
                 : url;
-        },
-        mounted() {
-            window.addEventListener("blur", () => {
-                // This doesn't work yet.
-                this.$refs.dropdown.hide(true);
-            });
         },
     },
 };
