@@ -695,7 +695,8 @@ class ModelImportStore(object):
             for order_index, job in enumerate(icj_attrs["jobs"]):
                 icja = model.ImplicitCollectionJobsJobAssociation()
                 icja.implicit_collection_jobs = icj
-                icja.job = object_import_tracker.jobs_by_key[job]
+                if job in object_import_tracker.jobs_by_key:
+                    icja.job = object_import_tracker.jobs_by_key[job]
                 icja.order_index = order_index
                 icj.jobs.append(icja)
                 self._session_add(icja)
