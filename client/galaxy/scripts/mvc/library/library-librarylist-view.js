@@ -136,7 +136,7 @@ var LibraryListView = Backbone.View.extend({
             $("#center").css("overflow", "auto");
         }
 
-        linkifyHtmlElements("[description=true]");
+        linkifyHtmlElements("[data-linkify=true]");
     },
 
     fetchDeleted: function () {
