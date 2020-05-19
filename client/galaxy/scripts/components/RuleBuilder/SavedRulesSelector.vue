@@ -7,17 +7,14 @@
             :title="savedRulesMenu"
             data-toggle="dropdown"
             id="savedRulesButton"
-        >
-        </span>
+        ></span>
         <div class="dropdown-menu" role="menu">
             <a
                 class="rule-link dropdown-item saved-rule-item"
-                v-for="dateTime in getRules()"
-                :key="dateTime"
-                @click="loadSession(builder, dateTime)"
-            >
-                {{ dateTime }}
-            </a>
+                v-for="session in getRules()"
+                :key="session.dateTime"
+                v-on:click="$emit('update-rules', JSON.parse(session.rule))"
+            >{{ session.dateTime }}</a>
         </div>
     </div>
 </template>
@@ -50,7 +47,10 @@ export default {
             var regExpForSavedRules = /Saved Rule:.*/;
             for (var i = 0; i < localStorage.length; i++) {
                 if (regExpForSavedRules.test(localStorage.key(i))) {
-                    savedRules.push(localStorage.key(i));
+                    savedRules.push({
+                        dateTime: localStorage.key(i), 
+                        rule: localStorage.getItem(localStorage.key(i))
+                    });
                     counter++;
                     if (counter == 10) {
                         break;
@@ -58,11 +58,6 @@ export default {
                 }
             }
             return savedRules;
-        },
-        loadSession(builder, dateTime) {
-            var currentSession = JSON.parse(localStorage.getItem(dateTime));
-            builder.rules = currentSession.rules;
-            builder.mapping = currentSession.mapping;
         },
         saveSession(jsonRules) {
             var dateTimeString = "Saved Rule: " + new Date().toISOString();

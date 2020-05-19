@@ -13,28 +13,32 @@ describe("SavedRulesSelector", () => {
     });
 
     it("saves a session and loads it", () => {
-        const wrapper = mount (SavedRulesSelector)
-        const testRules = JSON.stringify({
-            "rules": [
-              {
-                "type": "add_filter_count",
-                "count": 1,
-                "which": "first",
-                "invert": false
-              }
-            ],
-            "mapping": [
-              {
-                "type": "url",
-                "columns": [
-                  0
-                ]
-              }
-            ]
-          })
+        // use assert(emitted)
+        // example in StatelessTags.test.js >> assert(emitted["tag-click"], "click event not detected");
+        // const wrapper = mount (SavedRulesSelector)
+        // const testRules = JSON.stringify({
+        //     "rules": [
+        //       {
+        //         "type": "add_filter_count",
+        //         "count": 1,
+        //         "which": "first",
+        //         "invert": false
+        //       }
+        //     ],
+        //     "mapping": [
+        //       {
+        //         "type": "url",
+        //         "columns": [
+        //           0
+        //         ]
+        //       }
+        //     ]
+        //   })
 
-        wrapper.vm.saveSession(testRules);
+        // wrapper.vm.saveSession(testRules);
 
-        expect(wrapper.find.getRules()).to.contain(testRules);
+        // const retrievedRules = wrapper.vm.getRules()
+
+        expect(retrievedRules).to.contain(testRules);
     });
 });
