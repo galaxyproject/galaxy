@@ -115,7 +115,7 @@ export default {
             };
         },
         getGalaxyIframe() {
-            return document.querySelector('iframe#galaxy_main');
+            return document.querySelector("iframe#galaxy_main");
         },
     },
     created() {
@@ -124,21 +124,19 @@ export default {
                 this.tab.onbeforeunload();
             });
         }
-
     },
     mounted() {
-        this.getGalaxyIframe.addEventListener("load",  this.iframeListener);
+        this.getGalaxyIframe.addEventListener("load", this.iframeListener);
     },
     destroyed() {
         this.getGalaxyIframe.removeEventListener("load", this.iframeListener);
     },
     methods: {
-        iframeListener(){
-            return this.getGalaxyIframe.contentDocument.addEventListener('click', this.hideDropdown);
+        iframeListener() {
+            return this.getGalaxyIframe.contentDocument.addEventListener("click", this.hideDropdown);
         },
         hideDropdown() {
-            if (this.$refs.dropdown)
-                this.$refs.dropdown.hide();
+            if (this.$refs.dropdown) this.$refs.dropdown.hide();
         },
         open(tab, event) {
             if (tab.onclick) {
