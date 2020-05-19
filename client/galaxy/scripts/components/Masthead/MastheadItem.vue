@@ -23,6 +23,7 @@
         </template>
     </b-nav-item>
     <b-nav-item-dropdown
+        ref="dropdown"
         v-else
         :class="classes"
         :style="styles"
@@ -161,6 +162,12 @@ export default {
             return typeof url === "string" && url.indexOf("//") === -1 && url.charAt(0) != "/"
                 ? this.appRoot + url
                 : url;
+        },
+        mounted() {
+            window.addEventListener("blur", () => {
+                // This doesn't work yet.
+                this.$refs.dropdown.hide(true);
+            });
         },
     },
 };
