@@ -146,7 +146,7 @@ jobs:
       - run: tox -e check_py3_compatibility
   js_unit:
     docker:
-      - image: circleci/node:10-browsers
+      - image: circleci/node:12-browsers
     <<: *set_workdir
     steps:
       - *restore_yarn_cache
@@ -160,7 +160,7 @@ jobs:
       - run: cd client && yarn run test
   js_lint:
     docker:
-      - image: circleci/node:10-browsers
+      - image: circleci/node:12-browsers
     <<: *set_workdir
     steps:
       - *restore_yarn_cache
