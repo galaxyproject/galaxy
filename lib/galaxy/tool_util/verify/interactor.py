@@ -623,6 +623,13 @@ class GalaxyInteractorApi(object):
         params, data = self.__inject_api_key(data=data, key=key, admin=admin, anon=anon)
         # no params for POST
         data.update(params)
+
+        # handle encoded files
+        if files is None:
+            files = data.get("__files", None)
+            if files is not None:
+                del data["__files"]
+
         return requests.post("%s/%s" % (self.api_url, path), data=data, files=files)
 
     def _delete(self, path, data=None, key=None, admin=False, anon=False):
