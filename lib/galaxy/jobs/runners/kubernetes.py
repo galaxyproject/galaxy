@@ -518,8 +518,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
     def __cleanup_k8s_job(self, job):
         k8s_cleanup_job = self.runner_params['k8s_cleanup_job']
-        use_job_ttl = self.runner_params["k8s_job_ttl_secs_after_finished"]
-        stop_job(job, k8s_cleanup_job, use_job_ttl=use_job_ttl)
+        stop_job(job, k8s_cleanup_job)
 
     def __job_failed_due_to_walltime_limit(self, job):
         conditions = job.obj['status'].get('conditions') or []
