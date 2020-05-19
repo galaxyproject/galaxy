@@ -70,6 +70,11 @@ export default Backbone.View.extend({
         this.history_cache = {};
     },
 
+    getFrames() {
+        // needed for Vue.js integration
+        return this.frames;
+    },
+
     /** Add a dataset to the frames */
     addDataset: function (dataset_id) {
         const self = this;

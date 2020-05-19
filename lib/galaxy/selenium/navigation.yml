@@ -31,21 +31,19 @@ masthead:
   selectors:
     _: '#masthead'
 
-    user:
-      type: xpath
-      selector: '//li[@id="user"]'
+    # bootstrap-vue a tag doesn't work as link target, need to hit span inside
+    user: '#user.loggedin-only > a.nav-link.dropdown-toggle > span'
+    register_or_login: '#user.loggedout-only > .nav-link'
 
-    user_menu: 'li#user .dropdown-menu'
-    workflow:
-      type: xpath
-      selector: '//li[@id="workflow"]'
+    user_menu: '#user .dropdown-menu a'
+    workflow: '#workflow .nav-link'
 
     user_email:
       type: xpath
       selector: '//a[contains(text(), "Logged in as")]'
 
-    logged_in_only: 'a.loggedin-only'
-    logged_out_only: 'a.loggedout-only'
+    logged_in_only: '.loggedin-only'
+    logged_out_only: '.loggedout-only'
 
   labels:
     # top-level menus
@@ -303,6 +301,7 @@ workflows:
     new_button: '#workflow-create'
     import_button: '#workflow-import'
     save_button: '#workflow-save-button'
+    search_box: "#workflow-search"
 
 workflow_run:
 
