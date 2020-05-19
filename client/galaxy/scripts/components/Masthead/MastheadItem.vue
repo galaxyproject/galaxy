@@ -126,10 +126,14 @@ export default {
         }
     },
     mounted() {
-        this.getGalaxyIframe.addEventListener("load", this.iframeListener);
+        if (this.getGalaxyIframe) {
+            this.getGalaxyIframe.addEventListener("load", this.iframeListener);
+        }
     },
     destroyed() {
-        this.getGalaxyIframe.removeEventListener("load", this.iframeListener);
+        if (this.getGalaxyIframe) {
+            this.getGalaxyIframe.removeEventListener("load", this.iframeListener);
+        }
     },
     methods: {
         iframeListener() {
