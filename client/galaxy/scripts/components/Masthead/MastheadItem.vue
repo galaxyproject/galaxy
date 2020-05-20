@@ -23,6 +23,7 @@
         </template>
     </b-nav-item>
     <b-nav-item-dropdown
+        ref="dropdown"
         v-else
         :class="classes"
         :style="styles"
@@ -113,6 +114,9 @@ export default {
                 visibility: this.tab.visible ? "visible" : "hidden",
             };
         },
+        galaxyIframe() {
+            return document.getElementById("galaxy_main");
+        },
     },
     created() {
         if (this.tab.onbeforeunload) {
@@ -121,7 +125,23 @@ export default {
             });
         }
     },
+    mounted() {
+        if (this.galaxyIframe) {
+            this.galaxyIframe.addEventListener("load", this.iframeListener);
+        }
+    },
+    destroyed() {
+        if (this.galaxyIframe) {
+            this.galaxyIframe.removeEventListener("load", this.iframeListener);
+        }
+    },
     methods: {
+        iframeListener() {
+            return this.galaxyIframe.contentDocument.addEventListener("click", this.hideDropdown);
+        },
+        hideDropdown() {
+            if (this.$refs.dropdown) this.$refs.dropdown.hide();
+        },
         open(tab, event) {
             if (tab.onclick) {
                 return this.propogateClick(tab, event);
