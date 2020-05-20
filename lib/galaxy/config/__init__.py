@@ -717,12 +717,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             }
 
     def _load_list_from_file(filepath):
-        try:
-            with open(filepath) as f:
-                return [line.strip() for line in f]
-        except IOError:
-            log.error("CONFIGURATION ERROR: Can't open supplied file: %s", filepath)
-            raise
+        with open(filepath) as f:
+            return [line.strip() for line in f]
 
     def _set_galaxy_infrastructure_url(self, kwargs):
         # indicate if this was not set explicitly, so dependending on the context a better default
