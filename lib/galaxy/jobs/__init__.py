@@ -1757,7 +1757,7 @@ class JobWrapper(HasResourceParameters):
         # dataset creation, and will allow us to eliminate force_history_refresh.
         job.set_final_state(final_job_state)
         if not job.tasks:
-            # If job was composed of tasks, don't attempt to recollect statisitcs
+            # If job was composed of tasks, don't attempt to recollect statistics
             self._collect_metrics(job, job_metrics_directory)
         self.sa_session.flush()
         if job.state == job.states.ERROR:
@@ -2077,7 +2077,7 @@ class JobWrapper(HasResourceParameters):
             safe_makedirs(os.path.join(self.working_directory, 'metadata'))
             self.app.datatypes_registry.to_xml_file(path=datatypes_config)
 
-        inp_data, out_data, out_collections = job.io_dicts()
+        inp_data, out_data, out_collections = job.io_dicts(exclude_implicit_outputs=True)
         job_metadata = os.path.join(self.tool_working_directory, self.tool.provided_metadata_file)
         object_store_conf = self.object_store.to_dict()
         command = self.external_output_metadata.setup_external_metadata(out_data,

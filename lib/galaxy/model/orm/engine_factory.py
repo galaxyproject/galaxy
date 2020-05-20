@@ -18,7 +18,7 @@ def log_request_query_counts(req_id):
     try:
         times = QUERY_COUNT_LOCAL.times
         if times:
-            log.info("Executed [%s] SQL requests in for web request [%s] (%f(s)ms)" % (len(times), req_id, sum(times) * 1000.))
+            log.info("Executed [%s] SQL requests in for web request [%s] (%0.3f ms)" % (len(times), req_id, sum(times) * 1000.))
     except AttributeError:
         # Didn't record anything so don't worry.
         pass

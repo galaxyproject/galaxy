@@ -5,8 +5,8 @@ import { getAppRoot } from "onload/loadConfig";
 /** Workflow data request helper **/
 export async function getVersions(id) {
     try {
-        const response = await axios.get(`${getAppRoot()}api/workflows/${id}/versions`);
-        return response.data;
+        const { data } = await axios.get(`${getAppRoot()}api/workflows/${id}/versions`);
+        return data;
     } catch (e) {
         rethrowSimple(e);
     }
@@ -26,22 +26,18 @@ export async function getDatatypes() {
 
 export async function getModule(request_data) {
     try {
-        const response = await axios.post(`${getAppRoot()}api/workflows/build_module`, request_data);
-        return response.data;
+        const { data } = await axios.post(`${getAppRoot()}api/workflows/build_module`, request_data);
+        return data;
     } catch (e) {
         rethrowSimple(e);
     }
 }
 
-export async function loadWorkflow(workflow, id, version, initialImport = true) {
+export async function loadWorkflow(workflow, id, version, appendData) {
     try {
         const versionQuery = version ? `version=${version}` : "";
         const { data } = await axios.get(`${getAppRoot()}workflow/load_workflow?_=true&id=${id}&${versionQuery}`);
-        workflow.from_simple(data, initialImport);
-        workflow.has_changes = false;
-        workflow.fit_canvas_to_nodes();
-        workflow.scroll_to_nodes();
-        workflow.canvas_manager.draw_overview();
+        workflow.fromSimple(data, appendData);
         return data;
     } catch (e) {
         console.debug(e);
@@ -50,10 +46,9 @@ export async function loadWorkflow(workflow, id, version, initialImport = true) 
 }
 
 export async function saveWorkflow(workflow, id) {
-    workflow.rectify_workflow_outputs();
     if (workflow.has_changes) {
         try {
-            const requestData = { workflow: workflow.to_simple(), from_tool_form: true };
+            const requestData = { workflow: workflow.toSimple(), from_tool_form: true };
             const { data } = await axios.put(`${getAppRoot()}api/workflows/${id}`, requestData);
             workflow.name = data.name;
             workflow.has_changes = false;
@@ -69,8 +64,8 @@ export async function saveWorkflow(workflow, id) {
 
 export async function getDatatypeMapping() {
     try {
-        const mappingRequest = await axios.get(`${getAppRoot()}api/datatypes/mapping`);
-        return mappingRequest.data;
+        const { data } = await axios.get(`${getAppRoot()}api/datatypes/mapping`);
+        return data;
     } catch (e) {
         rethrowSimple(e);
     }
@@ -78,8 +73,8 @@ export async function getDatatypeMapping() {
 
 export async function getToolPredictions(requestData) {
     try {
-        const response = await axios.post(`${getAppRoot()}api/workflows/get_tool_predictions`, requestData);
-        return response.data;
+        const { data } = await axios.post(`${getAppRoot()}api/workflows/get_tool_predictions`, requestData);
+        return data;
     } catch (e) {
         rethrowSimple(e);
     }

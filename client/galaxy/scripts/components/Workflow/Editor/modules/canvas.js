@@ -109,7 +109,7 @@ class CanvasManager {
         this.cv.css("width", `${100 / this.canvasZoom}%`);
         this.cv.css("height", `${100 / this.canvasZoom}%`);
         // Update canvas size
-        this.app.fit_canvas_to_nodes();
+        this._fitCanvasToNodes();
         return this.zoomLevel;
     }
 
@@ -150,7 +150,6 @@ class CanvasManager {
                 move((d.offsetX + x_adjust) / this.canvasZoom, (d.offsetY + y_adjust) / this.canvasZoom);
             })
             .bind("dragend", () => {
-                self.app.fit_canvas_to_nodes();
                 self.draw_overview();
             });
         this.overview.click((e) => {
@@ -164,7 +163,6 @@ class CanvasManager {
                 var new_x_offset = e.pageX - self.oc.offset().left - self.ov.width() / 2;
                 var new_y_offset = e.pageY - self.oc.offset().top - self.ov.height() / 2;
                 move(-((new_x_offset / o_w) * in_w), -((new_y_offset / o_h) * in_h));
-                self.app.fit_canvas_to_nodes();
                 self.draw_overview();
             }
         });
@@ -181,7 +179,6 @@ class CanvasManager {
             })
             .bind("dragend", () => {
                 self.overview.addClass("blockaclick");
-                self.app.fit_canvas_to_nodes();
                 self.draw_overview();
             });
         // Dragging for overview border (resize)
@@ -255,10 +252,13 @@ class CanvasManager {
             height: (cv.height() / in_h) * o_h - 2,
         });
     }
-    draw_overview() {
+    draw_overview(scrollTo) {
+        this._fitCanvasToNodes();
+        if (scrollTo) {
+            this._scrollToNodes();
+        }
         var canvas_el = $("#overview-canvas");
         var size = canvas_el.parent().parent().width();
-
         var c = canvas_el.get(0).getContext("2d");
         var in_w = $("#canvas-container").width();
         var in_h = $("#canvas-container").height();
@@ -311,6 +311,83 @@ class CanvasManager {
             c.fillRect(x, y, w, h);
         });
         this.update_viewport_overlay();
+    }
+    _fitCanvasToNodes() {
+        // Math utils
+        function round_up(x, n) {
+            return Math.ceil(x / n) * n;
+        }
+        function fix_delta(x, n) {
+            if (x < n || x > 3 * n) {
+                const new_pos = (Math.ceil((x % n) / n) + 1) * n;
+                return -(x - new_pos);
+            }
+            return 0;
+        }
+        // Span of all elements
+        const canvasZoom = this.canvasZoom;
+        const bounds = this._boundsForAllNodes();
+        const position = this.cc.position();
+        const parent = this.cc.parent();
+        // Determine amount we need to expand on top/left
+        let xmin_delta = fix_delta(bounds.xmin, 100);
+        let ymin_delta = fix_delta(bounds.ymin, 100);
+        // May need to expand farther to fill viewport
+        xmin_delta = Math.max(xmin_delta, position.left);
+        ymin_delta = Math.max(ymin_delta, position.top);
+        const left = position.left - xmin_delta;
+        const top = position.top - ymin_delta;
+        // Same for width/height
+        let width = round_up(bounds.xmax + 100, 100) + xmin_delta;
+        let height = round_up(bounds.ymax + 100, 100) + ymin_delta;
+        width = Math.max(width, -left + parent.width());
+        height = Math.max(height, -top + parent.height());
+        // Grow the canvas container
+        this.cc.css({
+            left: left / canvasZoom,
+            top: top / canvasZoom,
+            width: width,
+            height: height,
+        });
+        // Move elements back if needed
+        this.cc.children().each(function () {
+            const p = $(this).position();
+            $(this).css("left", (p.left + xmin_delta) / canvasZoom);
+            $(this).css("top", (p.top + ymin_delta) / canvasZoom);
+        });
+    }
+    _boundsForAllNodes() {
+        let xmin = Infinity;
+        let xmax = -Infinity;
+        let ymin = Infinity;
+        let ymax = -Infinity;
+        let p;
+        Object.values(this.app.nodes).forEach((node) => {
+            const e = $(node.element);
+            p = e.position();
+            xmin = Math.min(xmin, p.left);
+            xmax = Math.max(xmax, p.left + e.width());
+            ymin = Math.min(ymin, p.top);
+            ymax = Math.max(ymax, p.top + e.width());
+        });
+        return { xmin: xmin, xmax: xmax, ymin: ymin, ymax: ymax };
+    }
+    _scrollToNodes() {
+        const cv = $("#canvas-viewport");
+        const cc = $("#canvas-container");
+        let top;
+        let left;
+        if (cc.width() != cv.width()) {
+            left = (cv.width() - cc.width()) / 2;
+        } else {
+            left = 0;
+        }
+        if (cc.height() != cv.height()) {
+            top = (cv.height() - cc.height()) / 2;
+        } else {
+            top = 0;
+        }
+        cc.css({ left: left, top: top });
     }
 }
 

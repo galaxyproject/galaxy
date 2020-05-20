@@ -3,8 +3,7 @@ import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
 import Utils from "utils/utils";
-import WorkflowIcons from "components/Workflow/icons";
-import { DefaultForm, ToolForm } from "mvc/workflow/workflow-forms";
+import { DefaultForm, ToolForm } from "./forms";
 import { loadWorkflow } from "./services";
 import { hide_modal, show_message, show_modal } from "layout/modal";
 
@@ -12,7 +11,7 @@ export function copyIntoWorkflow(workflow, id = null, stepCount = null) {
     const _copy_into_workflow_ajax = () => {
         // Load workflow definition
         show_message("Importing workflow", "progress");
-        loadWorkflow(workflow, id, null, false).then((data) => {
+        loadWorkflow(workflow, id, null, true).then((data) => {
             // Determine if any parameters were 'upgraded' and provide message
             var upgrade_message = "";
             $.each(data.upgrade_messages, (k, v) => {
@@ -71,23 +70,22 @@ export function showAttributes() {
 }
 
 export function showForm(workflow, node, datatypes) {
-    if (node && node.config_form) {
-        const content = node.config_form;
+    if (node && node.config_form && Object.keys(node.config_form).length > 0) {
         const cls = "right-content";
         var id = `${cls}-${node.id}`;
         var $container = $(`#${cls}`);
         if ($container.find(`#${id}`).length === 0) {
             var $el = $(`<div id="${id}" class="${cls}"/>`);
-            content.node = node;
-            content.workflow = workflow;
-            content.datatypes = datatypes;
-            content.icon = WorkflowIcons[node.type];
-            content.cls = "ui-portlet-section";
+            const options = {
+                node,
+                workflow,
+                datatypes,
+            };
             let formWrapper = null;
             if (node.type == "tool") {
-                formWrapper = new ToolForm(content);
+                formWrapper = new ToolForm(options);
             } else {
-                formWrapper = new DefaultForm(content);
+                formWrapper = new DefaultForm(options);
             }
             $el.append(formWrapper.form.$el);
             $container.append($el);
@@ -142,8 +140,8 @@ export function getWorkflowParameters(nodes) {
                 }
             });
         }
-        if (node.post_job_actions) {
-            Object.values(node.post_job_actions).forEach((pja) => {
+        if (node.postJobActions) {
+            Object.values(node.postJobActions).forEach((pja) => {
                 if (pja.action_arguments) {
                     Object.values(pja.action_arguments).forEach((action_argument) => {
                         if (typeof action_argument === "string") {

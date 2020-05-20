@@ -7,8 +7,9 @@ describe("Node", () => {
         const wrapper = mount(Node, {
             propsData: {
                 id: "node-id",
-                title: "node-title",
+                name: "node-name",
                 type: "tool",
+                getManager: () => {},
             },
         });
         const icon = wrapper.findAll("i");
@@ -21,6 +22,6 @@ describe("Node", () => {
         const subworkflowLinks = wrapper.findAll("i");
         expect(subworkflowLinks.length).to.equal(2);
         const workflowTitle = wrapper.find(".node-title");
-        expect(workflowTitle.text()).to.equal("node-title");
+        expect(workflowTitle.text()).to.equal("node-name");
     });
 });
