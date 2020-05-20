@@ -3,11 +3,12 @@
  */
 
 import addLogging from "utils/add-logging";
+import config from "config";
 import { GalaxyApp } from "./galaxy";
 import { serverPath } from "utils/serverPath";
 
-export function setGalaxyInstance(factory, testing = false) {
-    if (!testing === true) {
+export function setGalaxyInstance(factory) {
+    if (!config.testBuild === true) {
         console.warn("setGalaxyInstance", serverPath());
     }
 
