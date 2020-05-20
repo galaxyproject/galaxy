@@ -283,7 +283,7 @@ class BaseAppConfiguration(object):
                 setattr(self, var + '_set', True)
             else:
                 for value in values:
-                    if os.path.exists(root_join(value)):
+                    if os.path.exists(value):
                         path = value
                         break
                 else:
