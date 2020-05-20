@@ -433,6 +433,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                 log.debug("Pushed cache file '%s' to collection '%s' (%s bytes transfered in %s sec)",
                           source_file, rel_path, os.path.getsize(source_file), end_time - start_time)
             return True
+        else:
             log.error("Tried updating key '%s' from source file '%s', but source file does not exist.",
                       rel_path, source_file)
         return False
