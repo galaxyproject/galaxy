@@ -38,7 +38,7 @@ describe("ToolsView/ToolsView.vue", () => {
         assert(table.exists() === true, "Interactive Tools table doesn't exist");
     });
 
-    it("IT should disappear after stop button pressed", async () => {
+    it("Interactive Tool should disappear after stop button pressed", async () => {
         function checkIfExists(tag, toolId) {
             return wrapper.find(tag + toolId).exists();
         }
@@ -50,11 +50,11 @@ describe("ToolsView/ToolsView.vue", () => {
         const checkbox = wrapper.find("#checkbox-" + toolId);
         checkbox.trigger("click");
         await flushPromises();
+        await flushPromises();
         assert(tool.marked === true, "Clicking on checkbox did not select corresponding tool");
 
         const stopBtn = wrapper.find("#stopInteractiveTool");
         stopBtn.trigger("click");
-
         await flushPromises();
 
         const toolExists = wrapper.vm.activeInteractiveTools.includes((tool) => tool.id === toolId);
