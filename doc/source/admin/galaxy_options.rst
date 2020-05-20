@@ -1263,9 +1263,6 @@
     using disposable email addresses at registration.  If their
     address domain matches any domain on the list, they are refused
     registration.
-    If this option is set, galaxy will expect the file to be at the
-    specified location and will raise an error if the file is not
-    found.
     Example value 'email_blacklist.conf'
     The value of this option will be resolved with respect to
     <config_dir>.
@@ -1285,9 +1282,6 @@
     option than <blacklist_file>, and therefore, in case
     <whitelist_file> is set and is not empty, <blacklist_file> will be
     ignored.
-    If this option is set, galaxy will expect the file to be at the
-    specified location and will raise an error if the file is not
-    found.
     Example value 'email_whitelist.conf'
     The value of this option will be resolved with respect to
     <config_dir>.
