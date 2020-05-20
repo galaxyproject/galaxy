@@ -299,7 +299,7 @@ class BaseAppConfiguration(object):
             else:
                 for value in values:
                     for path in listify(value):
-                        if not os.path.exists(root_join(path)):
+                        if not os.path.exists(path):
                             break
                     else:
                         paths = listify(value)
