@@ -7,7 +7,7 @@ import testInteractiveToolsResponse from "./testData/testInteractiveToolsRespons
 import MockAdapter from "axios-mock-adapter";
 import axios from "axios";
 
-describe("ToolsView/ToolsView.vue", () => {
+describe("InteractiveTools/InteractiveTools.vue", () => {
     const localVue = createLocalVue();
     localVue.filter("localize", (value) => _l(value));
     let wrapper;
