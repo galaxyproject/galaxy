@@ -252,22 +252,38 @@ def galactic_job_json(
         hdca_id = collection["id"]
         return {"src": "hdca", "id": hdca_id}
 
-    def replacement_collection(value):
+    def to_elements(value, rank_collection_type):
         collection_element_identifiers = []
-        assert "collection_type" in value
         assert "elements" in value
-
-        collection_type = value["collection_type"]
         elements = value["elements"]
 
+        is_nested_collection = ":" in rank_collection_type
         for element in elements:
-            dataset = replacement_item(element, force_to_file=True)
-            collection_element = dataset.copy()
-            collection_element["name"] = element["identifier"]
-            collection_element_identifiers.append(collection_element)
+            if not is_nested_collection:
+                # flat collection
+                dataset = replacement_item(element, force_to_file=True)
+                collection_element = dataset.copy()
+                collection_element["name"] = element["identifier"]
+                collection_element_identifiers.append(collection_element)
+            else:
+                # nested collection
+                sub_collection_type = rank_collection_type[rank_collection_type.find(":") + 1:]
+                collection_element = {
+                    "name": element["identifier"],
+                    "src": "new_collection",
+                    "collection_type": sub_collection_type,
+                    "element_identifiers": to_elements(element, sub_collection_type)
+                }
+                collection_element_identifiers.append(collection_element)
 
-        # TODO: handle nested lists/arrays
-        collection = collection_create_func(collection_element_identifiers, collection_type)
+        return collection_element_identifiers
+
+    def replacement_collection(value):
+        assert "collection_type" in value
+        collection_type = value["collection_type"]
+        elements = to_elements(value, collection_type)
+
+        collection = collection_create_func(elements, collection_type)
         dataset_collections.append(collection)
         hdca_id = collection["id"]
         return {"src": "hdca", "id": hdca_id}
