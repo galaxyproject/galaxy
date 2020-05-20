@@ -1757,7 +1757,7 @@ class JobWrapper(HasResourceParameters):
         # dataset creation, and will allow us to eliminate force_history_refresh.
         job.set_final_state(final_job_state)
         if not job.tasks:
-            # If job was composed of tasks, don't attempt to recollect statisitcs
+            # If job was composed of tasks, don't attempt to recollect statistics
             self._collect_metrics(job, job_metrics_directory)
         self.sa_session.flush()
         if job.state == job.states.ERROR:
