@@ -275,7 +275,7 @@ class BaseAppConfiguration(object):
             except TypeError:
                 template = "Failed to set configuration variable %s, value %s of wrong type %s"
                 message = template % (var, val, type(val))
-                raise Exception(message)
+                raise ConfigurationError(message)
 
         for var, values in defaults.items():
             if config_kwargs.get(var) is not None:
