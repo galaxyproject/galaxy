@@ -13,6 +13,11 @@ else:
     import urllib.parse as urllib
     urlparse = urllib
 
+try:
+    import gitlab
+except ImportError:
+    pass
+    
 from galaxy.util import string_as_bool
 from .base_git import BaseGitPlugin
 
@@ -41,7 +46,8 @@ class GitLabPlugin(BaseGitPlugin):
         self.gitlab_labels = kwargs.get("gitlab_labels", [])
 
         try:
-            import gitlab
+            if 'gitlab' not in sys.modules:
+                raise ImportError
             self.gitlab = self.gitlab_connect()
             self.gitlab.auth()
 
@@ -206,7 +212,6 @@ class GitLabPlugin(BaseGitPlugin):
 
     def _open_issue(self, error_message, error_title, gitlab_projecturl, gl_project, gl_userid, issue_cache_key):
         """ Open an issue """
-        import gitlab
         try:
             # Create a new issue.
             self._create_issue(issue_cache_key, error_title, error_message, gl_project, gl_userid=gl_userid)
