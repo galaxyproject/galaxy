@@ -67,7 +67,7 @@ google-auth-httplib2==0.0.3
 google-auth==1.14.1
 gxformat2==0.11.1
 h5py==2.10.0
-httplib2==0.17.3
+httplib2==0.18.0
 humanfriendly==8.2
 idna==2.9
 importlib-metadata==1.6.0 ; python_version < '3.8'
