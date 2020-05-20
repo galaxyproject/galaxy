@@ -20,12 +20,16 @@ from ..authnz import IdentityProvider
 log = logging.getLogger(__name__)
 STATE_COOKIE_NAME = 'custos-state'
 NONCE_COOKIE_NAME = 'custos-nonce'
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# CA_CERTFILE_CUSTOS = os.path.join(BASE_DIR, "database/certs/certCustos.pem")
+#CA_CERTFILE_CUSTOS = "database/certs/certCustos.pem"
+CA_CERTFILE_CUSTOS = "certCustos.pem"
 
 
 class CustosAuthnz(IdentityProvider):
     def __init__(self, provider, oidc_config, oidc_backend_config, idphint=None):
         self.config = {'provider': provider.lower()}
-        self.config['verify_ssl'] = oidc_config['VERIFY_SSL'] or (provider == "custos")  # should I keep this?
+        self.config['verify_ssl'] = oidc_config['VERIFY_SSL']  # or (provider == "custos")  # should I keep this?
         self.config['url'] = oidc_backend_config['url']
         self.config['client_id'] = oidc_backend_config['client_id']
         self.config['client_secret'] = oidc_backend_config['client_secret']
@@ -51,6 +55,7 @@ class CustosAuthnz(IdentityProvider):
             self._load_config_for_cilogon()
         elif provider == 'custos':
             self._load_config_for_custos()
+            # self._get_custos_certificate()
         else:
             realm = oidc_backend_config['realm']
             self._load_config_for_provider_and_realm(self.config['provider'], realm)
@@ -77,7 +82,6 @@ class CustosAuthnz(IdentityProvider):
         # this value.
         state_cookie = trans.get_cookie(name=STATE_COOKIE_NAME)
         oauth2_session = self._create_oauth2_session(state=state_cookie)
-        self._get_custos_certificate()
         token = self._fetch_token(oauth2_session, trans)
         log.debug("token={}".format(json.dumps(token, indent=True)))
         access_token = token['access_token']
@@ -89,14 +93,6 @@ class CustosAuthnz(IdentityProvider):
         # Get nonce from token['id_token'] and validate. 'nonce' in the
         # id_token is a hash of the nonce stored in the NONCE_COOKIE_NAME
         # cookie.
-        '''
-        token_verify = self._verify_token(token)
-        if (token_verify):
-            id_token_decoded = jwt.decode(id_token, 'secret', algorithms=token_verify.get('alg')) #ask dannon about this
-        else:
-            id_token_decoded = jwt.decode(id_token, verify=False)
-        '''
-
         id_token_decoded = jwt.decode(id_token, verify=False)
         nonce_hash = id_token_decoded['nonce']
         self._validate_nonce(trans, nonce_hash)
@@ -203,10 +199,25 @@ class CustosAuthnz(IdentityProvider):
             client_secret = self.config['client_secret']
         token_endpoint = self.config['token_endpoint']
         clientIdAndSec = self.config['client_id'] + ":" + self.config['client_secret']  # for custos
+
+        print("\n\n\nREDIRECT_URI: ", self.config['redirect_uri'])
+        print("\nAUTH RESPONSE: ", trans.request.url)
+        if (trans.request.url.startswith('http://')
+                and self.config['redirect_uri'].startswith('https://')):
+            auth_response = trans.request.url.replace("http://", "https://")
+            # ORRRRR:
+            #log.warning("Setting OAUTHLIB_INSECURE_TRANSPORT to '1' to allow plain HTTP (non-SSL) callback")
+            #os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = "1"
+        else:
+            auth_response = trans.request.url
+
+        print("\nAUTH RESPONSE REPLACED: ", auth_response)
+
         return oauth2_session.fetch_token(
             token_endpoint,
             client_secret=client_secret,
-            authorization_response=trans.request.url,
+            # authorization_response=trans.request.url,
+            authorization_response=auth_response,
             headers={"Authorization": "Basic %s" % util.unicodify(base64.b64encode(util.smart_str(clientIdAndSec)))},  # for custos
             verify=self._get_verify_param())
 
@@ -231,26 +242,22 @@ class CustosAuthnz(IdentityProvider):
             raise Exception("Nonce mismatch!")
 
     def _get_custos_certificate(self):
-        clientIdAndSec = self.config['client_id'] + ":" + self.config['client_secret']
-        response = requests.get(self.config['certificate_endpoint'],
-                           headers={"Authorization": "Basic %s" % util.unicodify(base64.b64encode(util.smart_str(clientIdAndSec)))},
-                           verify=False, params={'metadata.owner_type': "CUSTOS",
-                                                'metadata.resource_type': "SERVER_CERTIFICATE"})
-        self.config['ca_bundle'] = response.json().get("value")
+        print("\n\n\nCA_CERTFILE: ", CA_CERTFILE_CUSTOS)
+        print("EXISTS? ", os.path.exists("database/certs/certCustos.pem"))
+        print("IS_FILE? ", os.path.isfile(CA_CERTFILE_CUSTOS))
+        print("CWD: ", os.getcwd())
+        print("ABS PATH: ", os.path.abspath(CA_CERTFILE_CUSTOS))
 
-        res = ssl.get_default_verify_paths()
-        f = open(res[0], "a")
-        f.write(self.config['ca_bundle'])
-        f.close()
+        if (not os.path.exists(CA_CERTFILE_CUSTOS) or not os.path.isfile(CA_CERTFILE_CUSTOS)):
+            clientIdAndSec = self.config['client_id'] + ":" + self.config['client_secret']
+            response = requests.get(self.config['certificate_endpoint'],
+                            headers={"Authorization": "Basic %s" % util.unicodify(base64.b64encode(util.smart_str(clientIdAndSec)))},
+                            verify=False, params={'metadata.owner_type': "CUSTOS",
+                                                  'metadata.resource_type': "SERVER_CERTIFICATE"})
+            with open(os.path.abspath(CA_CERTFILE_CUSTOS), "x") as f:
+                f.write(response.json().get("value"))
 
-    def _verify_token(self, token):
-        clientIdAndSec = self.config['client_id'] + ":" + self.config['client_secret']
-        response = requests.get(self.config['verify_token_endpoint'],
-                           headers={"Authorization": "Basic %s" % util.unicodify(base64.b64encode(util.smart_str(clientIdAndSec)))},
-                           verify=False, params={'client_id': self.config['client_id']})
-        print("\n\n\nVERIFY TOKEN: ", response)
-        log.debug("\n\nTOKEN VERIFICATION={}".format(json.dumps(response.json(), indent=True)))  # to delete
-        return response.json()
+        self.config['ca_bundle'] = CA_CERTFILE_CUSTOS
 
     def _load_config_for_cilogon(self):
         # Set cilogon endpoints
@@ -307,11 +314,15 @@ class CustosAuthnz(IdentityProvider):
             raise
 
     def _get_verify_param(self):
+        #s = requests.Session()
+        #s.verify = os.path.abspath(CA_CERTFILE_CUSTOS)
         """Return 'ca_bundle' if 'verify_ssl' is true and 'ca_bundle' is configured."""
         # in requests_oauthlib, the verify param can either be a boolean or a CA bundle path
-        # if self.config['ca_bundle'] is not None and self.config['verify_ssl']:
-        #    return self.config['ca_bundle']
-        return self.config['verify_ssl']
+        if self.config['ca_bundle'] is not None and self.config['verify_ssl']:
+            return self.config['ca_bundle']
+            # return os.path.abspath(CA_CERTFILE_CUSTOS)  # "/database/certs/certCustos.pem"
+        else:
+            return self.config['verify_ssl']
 
     def _generate_username(self, trans, email):
         temp_username = email.split('@')[0]  # username created from username portion of email
