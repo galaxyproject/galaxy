@@ -67,11 +67,11 @@ EXAMPLE_1 = {
         "elements": [
             {
                 "identifier": "i1",
-                "content": "0"
+                "contents": "0"
             },
             {
                 "identifier": "i2",
-                "content": "1"
+                "contents": "1"
             },
         ]
     },
@@ -104,11 +104,11 @@ EXAMPLE_2 = {
         "elements": [
             {
                 "identifier": "i1",
-                "content": "0"
+                "contents": "0"
             },
             {
                 "identifier": "i2",
-                "content": "1"
+                "contents": "1"
             },
         ]
     },
@@ -143,6 +143,21 @@ EXAMPLE_3 = {
     },
     "test_data": {
         "type": "list:paired",
+        "elements": [
+            {
+                "identifier": "test0",
+                "elements": [
+                    {
+                        "identifier": "forward",
+                        "contents": "TestData123"
+                    },
+                    {
+                        "identifier": "reverse",
+                        "contents": "TestData123"
+                    },
+                ]
+            }
+        ]
     },
     "check": check_example_3,
     "output_hid": 6,

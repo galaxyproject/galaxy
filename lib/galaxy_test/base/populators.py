@@ -23,6 +23,7 @@ from gxformat2._yaml import ordered_load
 from pkg_resources import resource_string
 from six import StringIO
 
+from galaxy.tool_util.client.staging import InteractorStaging
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.tool_util.verify.wait import (
     TimeoutAssertionError,
@@ -1375,6 +1376,7 @@ class DatasetCollectionPopulator(BaseDatasetCollectionPopulator):
 
 
 def load_data_dict(history_id, test_data, dataset_populator, dataset_collection_populator):
+    """Load a dictionary as inputs to a workflow (test data focused)."""
 
     def open_test_data(test_dict, mode="rb"):
         test_data_resolver = TestDataResolver()
@@ -1451,6 +1453,26 @@ def load_data_dict(history_id, test_data, dataset_populator, dataset_collection_
             raise ValueError("Invalid test_data def %" % test_data)
 
     return inputs, label_map, has_uploads
+
+
+def stage_inputs(galaxy_interactor, history_id, job, tool_or_workflow="workflow", **kwd):
+    """Alternative to load_data_dict that uses production-style workflow inputs."""
+    inputs, datasets = InteractorStaging(galaxy_interactor).stage(
+        tool_or_workflow,
+        history_id=history_id,
+        job=job,
+        **kwd
+    )
+    return inputs, datasets
+
+
+def stage_rules_test_data(galaxy_interactor, history_id, example):
+    """Wrapper around stage_inputs for staging collections defined by rules spec DSL."""
+    input_dict = example["test_data"].copy()
+    input_dict["collection_type"] = input_dict.pop("type")
+    input_dict["class"] = "Collection"
+    inputs, _ = stage_inputs(galaxy_interactor, history_id=history_id, job={"input": input_dict})
+    return inputs
 
 
 def wait_on_state(state_func, desc="state", skip_states=None, assert_ok=False, timeout=DEFAULT_TIMEOUT):
