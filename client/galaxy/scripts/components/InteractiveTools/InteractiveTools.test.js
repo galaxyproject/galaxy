@@ -1,5 +1,6 @@
 import InteractiveTools from "./InteractiveTools";
 import { mount, createLocalVue } from "@vue/test-utils";
+import flushPromises from "flush-promises";
 import _l from "utils/localization";
 import Vue from "vue";
 import testInteractiveToolsResponse from "./testData/testInteractiveToolsResponse";
@@ -10,7 +11,9 @@ import axios from "axios";
 describe("ToolsView/ToolsView.vue", () => {
     const localVue = createLocalVue();
     localVue.filter("localize", (value) => _l(value));
-    let wrapper, emitted, axiosMock;
+    let wrapper;
+    let emitted;
+    let axiosMock;
 
     beforeEach(async () => {
         axiosMock = new MockAdapter(axios);
@@ -26,9 +29,7 @@ describe("ToolsView/ToolsView.vue", () => {
         emitted = wrapper.emitted();
         axiosMock.onGet("/api/entry_points?running=true").reply(200, testInteractiveToolsResponse);
         axiosMock.onPost("/interactivetool/list").reply(200, { status: "ok", message: "ok" });
-        await Vue.nextTick();
-        await Vue.nextTick();
-        await Vue.nextTick();
+        await flushPromises();
     });
 
     afterEach(() => {
@@ -44,7 +45,6 @@ describe("ToolsView/ToolsView.vue", () => {
         function checkIfExists(tag, toolId) {
             return wrapper.find(tag + toolId).exists();
         }
-
         const toolId = testInteractiveToolsResponse[0].id;
         const tool = wrapper.vm.activeInteractiveTools.find((tool) => tool.id === toolId);
 
@@ -54,16 +54,14 @@ describe("ToolsView/ToolsView.vue", () => {
         // mark & delete tool
         const checkbox = wrapper.find("#checkbox-" + toolId);
         checkbox.trigger("click");
-        await Vue.nextTick();
+        await flushPromises();
         // ensure that the tool is marked
         assert(tool.marked === true, "clicking on checkbox did not mark corresponding tool!");
 
         const stopBtn = wrapper.find("#stopInteractiveTool");
         stopBtn.trigger("click");
 
-        await Vue.nextTick();
-        await Vue.nextTick();
-        await Vue.nextTick();
+        await flushPromises();
 
         const toolExists = wrapper.vm.activeInteractiveTools.includes((tool) => tool.id === toolId);
         // ensure that the tool was deleted from the list
