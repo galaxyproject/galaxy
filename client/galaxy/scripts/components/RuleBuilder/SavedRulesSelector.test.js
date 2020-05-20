@@ -3,42 +3,50 @@ import { mount } from "@vue/test-utils";
 import SavedRulesSelector from "components/RuleBuilder/SavedRulesSelector";
 
 describe("SavedRulesSelector", () => {
-    it("disables history icon if there is no history", () => {
-        const wrapper = mount(SavedRulesSelector, {
-            propsData: {
-                numOfSavedRules: 0,
-            },
-        });
-        expect(wrapper.find("#savedRulesButton").classes()).to.contain("disabled");
+
+  let wrapper, emitted;
+  beforeEach(async () => {
+    wrapper = mount(SavedRulesSelector);
+    emitted = wrapper.emitted();
+    await Vue.nextTick();
+  });
+
+  it("disables history icon if there is no history", async () => {
+    wrapper = mount(SavedRulesSelector, {
+      propsData: {
+        numOfSavedRules: 0,
+      },
     });
+    await Vue.nextTick();
+    expect(wrapper.find("#savedRulesButton").classes()).to.contain("disabled");
+  });
 
-    it("saves a session and loads it", () => {
-        // use assert(emitted)
-        // example in StatelessTags.test.js >> assert(emitted["tag-click"], "click event not detected");
-        // const wrapper = mount (SavedRulesSelector)
-        // const testRules = JSON.stringify({
-        //     "rules": [
-        //       {
-        //         "type": "add_filter_count",
-        //         "count": 1,
-        //         "which": "first",
-        //         "invert": false
-        //       }
-        //     ],
-        //     "mapping": [
-        //       {
-        //         "type": "url",
-        //         "columns": [
-        //           0
-        //         ]
-        //       }
-        //     ]
-        //   })
+  it("should emit a click event when a session is clicked", async () => {
+    const testRules = JSON.stringify({
+      "rules": [
+        {
+          "type": "add_filter_count",
+          "count": 1,
+          "which": "first",
+          "invert": false
+        }
+      ],
+      "mapping": [
+        {
+          "type": "url",
+          "columns": [
+            0
+          ]
+        }
+      ]
+    })
 
-        // wrapper.vm.saveSession(testRules);
+    wrapper.vm.saveSession(testRules);
+    await Vue.nextTick();
+    let session = wrapper.find("div.dropdown-menu > a.saved-rule-item");
+    session.trigger("click");
+    assert(emitted["update-rules"], "click event not detected");
 
-        // const retrievedRules = wrapper.vm.getRules()
+  });
 
-        expect(retrievedRules).to.contain(testRules);
-    });
 });

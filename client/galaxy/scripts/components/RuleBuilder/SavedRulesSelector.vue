@@ -13,7 +13,7 @@
                 class="rule-link dropdown-item saved-rule-item"
                 v-for="session in getRules()"
                 :key="session.dateTime"
-                v-on:click="$emit('update-rules', JSON.parse(session.rule))"
+                @click="$emit('update-rules', JSON.parse(session.rule))"
             >{{ session.dateTime }}</a>
         </div>
     </div>
