@@ -5963,7 +5963,7 @@ class CustosAuthnzToken(RepresentById):
         self.refresh_expiration_time = refresh_expiration_time
 
 
-class CloudAuthz(RepresentById):
+class CloudAuthz(object):
     def __init__(self, user_id, provider, config, authn_id, description=""):
         self.id = None
         self.user_id = user_id
@@ -5986,6 +5986,7 @@ class CloudAuthz(RepresentById):
     def equals(self, user_id, provider, authn_id, config):
         return (self.user_id == user_id
                 and self.provider == provider
+                and self.authn_id
                 and self.authn_id == authn_id
                 and len({k: self.config[k] for k in self.config if k in config
                          and self.config[k] == config[k]}) == len(self.config))
