@@ -369,6 +369,10 @@ class NavigatesGalaxy(HasDriver):
     def get_logged_in_user(self):
         return self.api_get("users/current")
 
+    def get_api_key(self):
+        user = self.get_logged_in_user()
+        return self.api_get("users/%s/api_key/inputs" % user["id"])["inputs"][0]["value"]
+
     def is_logged_in(self):
         return "email" in self.get_logged_in_user()
 
