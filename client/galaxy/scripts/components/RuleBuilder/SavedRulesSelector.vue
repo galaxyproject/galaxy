@@ -61,6 +61,10 @@ export default {
         saveSession(jsonRules) {
             var dateTimeString = "Saved Rule: " + new Date().toISOString();
             localStorage.setItem(dateTimeString, jsonRules);
+            this.savedRules.push({
+                    dateTime: dateTimeString, 
+                    rule: jsonRules
+                });
         },
     },
 };
