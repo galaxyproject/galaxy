@@ -1,4 +1,5 @@
 <template>
+    
     <state-div v-if="state == 'build'">
         <!-- Different instructions if building up from individual datasets vs.
         initial data import.-->
@@ -404,7 +405,7 @@
                                     :title="titleViewSource"
                                     @click="viewSource"
                                 ></span>
-                                <saved-rules-selector :builder="this" ref="savedRulesSelector" />
+                                <saved-rules-selector :builder="this" ref="savedRulesSelector" @update-rules="restoreRules" />
                             </span>
                             <div
                                 v-if="jaggedData"
