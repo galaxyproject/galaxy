@@ -19,9 +19,6 @@
         mkdir -p data/log/ &&
         supervisord &&
        	sleep 5 &&
-        ##git clone https://github.com/pkerpedjiev/negspy.git && ## REMOVE AND ADD TO CONTAINER
-        ##rsync -aP rsync://hgdownload.soe.ucsc.edu/genome/admin/exe/linux.x86_64/bedGraphToBigWig ./ &&
-        ##rsync -aP rsync://hgdownload.soe.ucsc.edu/genome/admin/exe/linux.x86_64/bigBedToBed ./ &&
 
         ## Generate coordSystems ahead of time from build in files
 
@@ -69,11 +66,12 @@
                     #set $filename = "data/" + $file.element_identifier + "." + str($file.ext)
                     cp $file $filename &&
                     clodius aggregate bedfile --assembly $file.metadata.dbkey $filename &&
-                    python higlass-server/manage.py ingest_tileset --filename ${filename}.beddb --filetype beddb --datatype bedlike --coordSystem $file.metadata.dbkey &&
+                    mv ${filename}.beddb data/${file.element_identifier} &&
+                    python higlass-server/manage.py ingest_tileset --filename data/${file.element_identifier} --filetype beddb --datatype bedlike --coordSystem $file.metadata.dbkey &&
                 #end for
             #elif $input.fileselect.typeselect == "bigwig":
                 #for $file in $input.fileselect.inputfiles:
-                    #set $filename = "data/" + $file.element_identifier + "." + str($file.ext)
+                    #set $filename = "data/" + $file.element_identifier
                     cp $file $filename &&
                     python higlass-server/manage.py ingest_tileset --filename ${filename} --filetype bigwig --datatype vector --coordSystem ${file.metadata.dbkey} &&
                 #end for
@@ -87,7 +85,8 @@
                     #else
                         bedGraphToBigWig ${filename}.presort $uploaded_genomes[str($file.metadata.dbkey)] ${filename}.bigwig &&
                     #end if
-                    python higlass-server/manage.py ingest_tileset --filename ${filename}.bigwig --filetype bigwig --datatype vector --coordSystem ${file.metadata.dbkey} &&
+                    mv ${filename}.bigwig data/${file.element_identifier} &&
+                    python higlass-server/manage.py ingest_tileset --filename data/${file.element_identifier} --filetype bigwig --datatype vector --coordSystem ${file.metadata.dbkey} &&
                 #end for
             #elif $input.fileselect.typeselect == "bigbed":
                 #for $file in $input.fileselect.inputfiles:
@@ -95,11 +94,12 @@
                     cp $file $filename &&
                     bigBedToBed ${filename} ${file.element_identifier} &&
                     clodius aggregate bedfile --assembly $file.metadata.dbkey ${file.element_identifier} &&
-                    python higlass-server/manage.py ingest_tileset --filename ${file.element_identifier}.beddb --filetype beddb --datatype bedlike --coordSystem $file.metadata.dbkey &&
+                    mv ${file.element_identifier}.beddb data/${file.element_identifier} &&
+                    python higlass-server/manage.py ingest_tileset --filename data/${file.element_identifier} --filetype beddb --datatype bedlike --coordSystem $file.metadata.dbkey &&
                 #end for
             #elif $input.fileselect.typeselect == "mcool":
                 #for $file in $input.fileselect.inputfiles:
-                    #set $filename = "data/" + $file.element_identifier + "." + str($file.ext)
+                    #set $filename = "data/" + $file.element_identifier
                     cp $file $filename &&
                     python higlass-server/manage.py ingest_tileset --filename $filename --filetype cooler --datatype matrix &&
                 #end for
@@ -107,7 +107,7 @@
                 #for $file in $input.fileselect.inputfiles:
                     #set $filename = "data/" + $file.element_identifier + "." + str($file.ext)
                     cp $file $filename &&
-                    cooler zoomify -r $input.fileselect.zoomval -o data/${file.element_identifier}.mcool $filename &&
+                    cooler zoomify -r $input.fileselect.zoomval -o data/${file.element_identifier} $filename &&
 
 
                     ###if $input.fileselect.granularity == "Yes":
@@ -117,7 +117,7 @@
                     ###end if
 
 
-                    python higlass-server/manage.py ingest_tileset --filename data/${file.element_identifier}.mcool --filetype cooler --datatype matrix &&
+                    python higlass-server/manage.py ingest_tileset --filename data/${file.element_identifier} --filetype cooler --datatype matrix &&
                 #end for
             #end if
         #end for
