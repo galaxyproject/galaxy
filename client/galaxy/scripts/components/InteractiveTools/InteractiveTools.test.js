@@ -48,8 +48,7 @@ describe("InteractiveTools/InteractiveTools.vue", () => {
         assert(tool.marked === undefined || false, "tool was selected before click");
 
         const checkbox = wrapper.find("#checkbox-" + toolId);
-        checkbox.trigger("click");
-        await flushPromises();
+        checkbox.setChecked();
         await flushPromises();
         assert(tool.marked === true, "Clicking on checkbox did not select corresponding tool");
 
