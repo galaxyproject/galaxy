@@ -488,24 +488,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         activation_email = kwargs.get('activation_email')
         self.email_from = self.email_from or activation_email
 
-        #  Get the disposable email domains blacklist file and its contents
-        self.blacklist_content = None
-        if self.blacklist_file:
-            self.blacklist_file = self._in_root_dir(self.blacklist_file)
-            try:
-                with open(self.blacklist_file) as f:
-                    self.blacklist_content = [line.rstrip() for line in f]
-            except IOError:
-                log.error("CONFIGURATION ERROR: Can't open supplied blacklist file from path: %s", self.blacklist_file)
-
-        #  Create whitelist file to accept only certain email domains
-        self.whitelist_content = None
-        if self.whitelist_file:
-            try:
-                with open(self.whitelist_file) as f:
-                    self.whitelist_content = [line.rstrip() for line in f]
-            except IOError:
-                log.error("CONFIGURATION ERROR: Can't open supplied whitelist file from path: %s", self.whitelist_file)
+        self.blacklist_content = self._load_list_from_file(self._in_config_dir(self.blacklist_file)) if self.blacklist_file else None
+        self.whitelist_content = self._load_list_from_file(self._in_config_dir(self.whitelist_file)) if self.whitelist_file else None
 
         self.persistent_communication_rooms = listify(self.persistent_communication_rooms, do_strip=True)
         # The transfer manager and deferred job queue
@@ -744,6 +728,10 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
                 'filename': kwargs['log_destination'],
                 'filters': ['stack']
             }
+
+    def _load_list_from_file(filepath):
+        with open(filepath) as f:
+            return [line.strip() for line in f]
 
     def _set_galaxy_infrastructure_url(self, kwargs):
         # indicate if this was not set explicitly, so dependending on the context a better default
