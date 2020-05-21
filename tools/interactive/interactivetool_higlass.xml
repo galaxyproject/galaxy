@@ -1,7 +1,7 @@
 <tool id="interactive_tool_higlass" tool_type="interactive" name="HiGlass" version="1.8.0">
     <description>an interactive Hi-C data visualizer.</description>
     <requirements>
-        <container type="docker">higlass/higlass-docker</container>
+        <container type="docker">galaxy/higlass-it</container>
     </requirements>
     <entry_points>
         <entry_point name="HiGlass Visualisation" requires_domain="True">
@@ -10,7 +10,7 @@
     </entry_points>
     <macros>
         <xml name="chromimport">
-            <param name="files" label="Chromosome size files" type="data" format="txt,tsv" help="If you are analyzing data not from one of the species/assemblies listed in the help section, please upload a 2-column file of chromosome names and sizes."/>
+            <param name="files" label="Chromosome size files" type="data" format="txt,tsv,tabular" help="If you are analyzing data not from one of the species/assemblies listed in the help section, please upload a 2-column file of chromosome names and sizes."/>
         </xml>
     </macros>
     <command><![CDATA[
@@ -19,9 +19,9 @@
         mkdir -p data/log/ &&
         supervisord &&
        	sleep 5 &&
-        git clone https://github.com/pkerpedjiev/negspy.git && ## REMOVE AND ADD TO CONTAINER
-        rsync -aP rsync://hgdownload.soe.ucsc.edu/genome/admin/exe/linux.x86_64/bedGraphToBigWig ./ &&
-        rsync -aP rsync://hgdownload.soe.ucsc.edu/genome/admin/exe/linux.x86_64/bigBedToBed ./ &&
+        ##git clone https://github.com/pkerpedjiev/negspy.git && ## REMOVE AND ADD TO CONTAINER
+        ##rsync -aP rsync://hgdownload.soe.ucsc.edu/genome/admin/exe/linux.x86_64/bedGraphToBigWig ./ &&
+        ##rsync -aP rsync://hgdownload.soe.ucsc.edu/genome/admin/exe/linux.x86_64/bigBedToBed ./ &&
 
         ## Generate coordSystems ahead of time from build in files
 
@@ -83,9 +83,9 @@
                     cp $file $filename &&
                     cat $filename | sort -k1,1 -k2,2n | awk '{ if (NF >= 4) print $${file.metadata.chromCol} "\t" $${file.metadata.startCol} "\t" $${file.metadata.endCol} "\t" $${input.fileselect.valuecol}}' > ${filename}.presort;
                     #if $file.metadata.dbkey in $existing_genomes:
-                        ./bedGraphToBigWig ${filename}.presort negspy/negspy/data/${file.metadata.dbkey}/chromInfo.txt ${filename}.bigwig &&
+                        bedGraphToBigWig ${filename}.presort negspy/negspy/data/${file.metadata.dbkey}/chromInfo.txt ${filename}.bigwig &&
                     #else
-                        ./bedGraphToBigWig ${filename}.presort $uploaded_genomes[str($file.metadata.dbkey)] ${filename}.bigwig &&
+                        bedGraphToBigWig ${filename}.presort $uploaded_genomes[str($file.metadata.dbkey)] ${filename}.bigwig &&
                     #end if
                     python higlass-server/manage.py ingest_tileset --filename ${filename}.bigwig --filetype bigwig --datatype vector --coordSystem ${file.metadata.dbkey} &&
                 #end for
@@ -93,7 +93,7 @@
                 #for $file in $input.fileselect.inputfiles:
                     #set $filename = "data/" + $file.element_identifier + "." + str($file.ext)
                     cp $file $filename &&
-                    ./bigBedToBed ${filename} ${file.element_identifier} &&
+                    bigBedToBed ${filename} ${file.element_identifier} &&
                     clodius aggregate bedfile --assembly $file.metadata.dbkey ${file.element_identifier} &&
                     python higlass-server/manage.py ingest_tileset --filename ${file.element_identifier}.beddb --filetype beddb --datatype bedlike --coordSystem $file.metadata.dbkey &&
                 #end for
@@ -108,6 +108,15 @@
                     #set $filename = "data/" + $file.element_identifier + "." + str($file.ext)
                     cp $file $filename &&
                     cooler zoomify -r $input.fileselect.zoomval -o data/${file.element_identifier}.mcool $filename &&
+
+
+                    ###if $input.fileselect.granularity == "Yes":
+                    ##    cooler zoomify -r $input.fileselect.granularity.zoomval -o data/${file.element_identifier}.mcool $filename &&
+                    ###else:
+                    ##    cooler coarsen -k $input.fileselect.granularity.binsize -o data/${file.element_identifier}.mcool $filename
+                    ###end if
+
+
                     python higlass-server/manage.py ingest_tileset --filename data/${file.element_identifier}.mcool --filetype cooler --datatype matrix &&
                 #end for
             #end if
@@ -144,9 +153,23 @@
                     <param name="inputfiles" type="data" format="mcool" multiple="true" label="Input file"/>
                 </when>
                 <when value="cool">
-                    <param name="inputfiles" type="data" format="cool" multiple="true" label="Input file"/>
+                    <param name="inputfiles" type="data" format="cool" multiple="true" label="Input file" help="Currently only supporting evenly-sized bins"/>
                     <param name="zoomval" type='text' value="10000" label="Comma-separated list of target resolutions"/>
                 </when>
+
+                <!-- for when it's expanded to uneven bins -->
+                <!-- <when value="cool">
+                    <param name="inputfiles" type="data" format="cool" multiple="true" label="Input file"/>
+                    <conditional name="granularity">
+                        <param name="even" type="boolean" label="Are the size bins of this cool file even?" truevalue="Yes" falsevalue="No" checked="true"/>
+                        <when value="Yes">
+                            <param name="zoomval" type='text' value="10000" label="Comma-separated list of target resolutions"/>
+                        </when>
+                        <when value="No">
+                            <param name="binsize" type='text' value="10000" label="Number of bins into which the data will be divided"/>
+                        </when>
+                    </conditional>
+                </when> -->
             </conditional>
         </repeat>
         <repeat name="chromfiles" title="Chromosome size files">
