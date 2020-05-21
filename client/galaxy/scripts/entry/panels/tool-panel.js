@@ -1,6 +1,6 @@
 import $ from "jquery";
 import Backbone from "backbone";
-import UploadModal from "components/Upload/UploadModal";
+import { UploadModal } from "components/Upload";
 import _l from "utils/localization";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
