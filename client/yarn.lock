@@ -11028,7 +11028,7 @@ react-simple-code-editor@^0.11.0:
   resolved "https://registry.yarnpkg.com/react-simple-code-editor/-/react-simple-code-editor-0.11.0.tgz#bb57c7c29b570f2ab229872599eac184f5bc673c"
   integrity sha512-xGfX7wAzspl113ocfKQAR8lWPhavGWHL3xSzNLeseDRHysT+jzRBi/ExdUqevSMos+7ZtdfeuBOXtgk9HTwsrw==
 
-react-styleguidist@^11.0.1:
+react-styleguidist@^11.0.6:
   version "11.0.6"
   resolved "https://registry.yarnpkg.com/react-styleguidist/-/react-styleguidist-11.0.6.tgz#bc7c25029fcb835ebee9c9bc7f914c6b7014a537"
   integrity sha512-jrbCdUW8fUC2IusY12JQb6UrABLixQeW9N7sxwKe7QPzy+qc+cpiaR51LFvcwLeGBigaEzNJcLvlTtxspt1YRQ==
@@ -13604,23 +13604,23 @@ vue-hot-reload-api@^2.3.0:
   resolved "https://registry.yarnpkg.com/vue-hot-reload-api/-/vue-hot-reload-api-2.3.1.tgz#b2d3d95402a811602380783ea4f566eb875569a2"
   integrity sha512-AA86yKZ5uOKz87/q1UpngEXhbRkaYg1b7HMMVRobNV1IVKqZe8oLIzo6iMocVwZXnYitlGwf2k4ZRLOZlS8oPQ==
 
-vue-inbrowser-compiler-utils@^4.16.0:
-  version "4.16.0"
-  resolved "https://registry.yarnpkg.com/vue-inbrowser-compiler-utils/-/vue-inbrowser-compiler-utils-4.16.0.tgz#6b9217d75c41ba7eb56033810f691addd5caadc6"
-  integrity sha512-D2khSYC7UiD232IFgQlcKpSyf0b5ecQVr5EhlJoLwDXHZURAfwLlJM9vJU1wjqsSlfYbyzIeaoYp7nRs1d7WOQ==
+vue-inbrowser-compiler-utils@^4.23.3:
+  version "4.23.3"
+  resolved "https://registry.yarnpkg.com/vue-inbrowser-compiler-utils/-/vue-inbrowser-compiler-utils-4.23.3.tgz#188f1a439d0b7776f4a4255076105239e0f31ee2"
+  integrity sha512-//NgjTyi9E2zEbVaXnkOHqKEpuCQ67HrEfvfLjBeuy9VOy07jH26FbdBG/bL3zA/iwXiHdiePSa1+YdvSyCKpA==
   dependencies:
     camelcase "^5.3.1"
 
-vue-inbrowser-compiler@^4.16.0:
-  version "4.16.0"
-  resolved "https://registry.yarnpkg.com/vue-inbrowser-compiler/-/vue-inbrowser-compiler-4.16.0.tgz#b97f84f9464d696511b9d6a398daa69761055b75"
-  integrity sha512-02EraHBdZtcxFgnmF2E+s2EGOzTJaR5tvH0ZzC0ZgLgAaIu3cIHWWvrWO/oAbIBq6X4d5jy1I/Qkp5AFyzeXrw==
+vue-inbrowser-compiler@^4.23.3:
+  version "4.23.3"
+  resolved "https://registry.yarnpkg.com/vue-inbrowser-compiler/-/vue-inbrowser-compiler-4.23.3.tgz#2992366dc14cb7efca74fce8a410307eb662b544"
+  integrity sha512-ac5wMcvH0dpSeE2TsO7dY9zkyJ9UBB6R7U0IMsyWf6j1xSeHavCFtuOOQwphobLYlPqvneK1DoMwhVkDVm/fkQ==
   dependencies:
     acorn "^6.1.1"
     acorn-jsx "^5.0.1"
     buble "^0.19.7"
     camelcase "^5.3.1"
-    vue-inbrowser-compiler-utils "^4.16.0"
+    vue-inbrowser-compiler-utils "^4.23.3"
     walkes "^0.2.1"
 
 vue-infinite-scroll@^2.0.2:
@@ -13662,10 +13662,10 @@ vue-style-loader@^4.1.0:
     hash-sum "^1.0.2"
     loader-utils "^1.0.2"
 
-vue-styleguidist@^4.23.2:
-  version "4.23.2"
-  resolved "https://registry.yarnpkg.com/vue-styleguidist/-/vue-styleguidist-4.23.2.tgz#eb63b531e638b162e77940bc585d78b930c817f4"
-  integrity sha512-XBhiQdjaQDy+rE3CKL5b5BMi5VZ+KBvCrI08eQY4oEOBKt1KUJTSu6PIECeQlxkkB74AIwaqqLPnqhSW7UkAug==
+vue-styleguidist@^4.23.3:
+  version "4.23.3"
+  resolved "https://registry.yarnpkg.com/vue-styleguidist/-/vue-styleguidist-4.23.3.tgz#7603ab4a6f2604213c2fa8881284de8f6b9dadd2"
+  integrity sha512-JTDGHBi/C+f77jQDA8ZGYGTSbtNnCQFYd8ljMd+b/VvusK7fIcL+RrZh0ZKiS0ff/6E8wC62FfmPfYjKWwNiuA==
   dependencies:
     "@vxna/mini-html-webpack-template" "^1.0.0"
     ast-types "^0.13.2"
@@ -13710,15 +13710,15 @@ vue-styleguidist@^4.23.2:
     react-icons "^3.7.0"
     react-lifecycles-compat "^3.0.4"
     react-simple-code-editor "^0.11.0"
-    react-styleguidist "^11.0.1"
+    react-styleguidist "^11.0.6"
     rewrite-imports "^2.0.3"
     style-loader "^1.0.0"
     terser-webpack-plugin "^2.2.2"
     to-ast "^1.0.0"
     vue-docgen-api "^4.23.1"
-    vue-inbrowser-compiler "^4.16.0"
-    vue-inbrowser-compiler-utils "^4.16.0"
-    webpack-dev-server "^3.10.3"
+    vue-inbrowser-compiler "^4.23.3"
+    vue-inbrowser-compiler-utils "^4.23.3"
+    webpack-dev-server "^3.11.0"
     webpack-merge "^4.0.0"
 
 vue-template-compiler@^2.0.0, vue-template-compiler@^2.6.11:
@@ -13818,7 +13818,7 @@ webpack-dev-middleware@^3.7.0, webpack-dev-middleware@^3.7.2:
     range-parser "^1.2.1"
     webpack-log "^2.0.0"
 
-webpack-dev-server@^3.10.3, webpack-dev-server@^3.11.0, webpack-dev-server@^3.9.0:
+webpack-dev-server@^3.11.0, webpack-dev-server@^3.9.0:
   version "3.11.0"
   resolved "https://registry.yarnpkg.com/webpack-dev-server/-/webpack-dev-server-3.11.0.tgz#8f154a3bce1bcfd1cc618ef4e703278855e7ff8c"
   integrity sha512-PUxZ+oSTxogFQgkTtFndEtJIPNmml7ExwufBZ9L2/Xyyd5PnOL5UreWe5ZT7IU25DSdykL9p1MLQzmLh2ljSeg==
