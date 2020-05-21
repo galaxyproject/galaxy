@@ -14,7 +14,8 @@
                 v-for="session in savedRules"
                 :key="session.dateTime"
                 @click="$emit('update-rules', JSON.parse(session.rule))"
-            >{{ session.dateTime }}</a>
+                >{{ session.dateTime }}</a
+            >
         </div>
     </div>
 </template>
@@ -28,17 +29,17 @@ export default {
     data: function () {
         return {
             savedRulesMenu: _l("Recently used rules"),
-            savedRules: []
+            savedRules: [],
         };
     },
     created() {
         let counter = 0;
-        let regExpForSavedRules = /Saved Rule:.*/;
+        const regExpForSavedRules = /Saved Rule:.*/;
         for (let i = 0; i < localStorage.length; i++) {
             if (regExpForSavedRules.test(localStorage.key(i))) {
                 this.savedRules.push({
-                    dateTime: localStorage.key(i), 
-                    rule: localStorage.getItem(localStorage.key(i))
+                    dateTime: localStorage.key(i),
+                    rule: localStorage.getItem(localStorage.key(i)),
                 });
                 counter++;
                 if (counter == 10) {
@@ -50,7 +51,7 @@ export default {
     props: {
         builder: {
             required: true,
-        }
+        },
     },
     computed: {
         numOfSavedRules: function () {
@@ -62,9 +63,9 @@ export default {
             var dateTimeString = "Saved Rule: " + new Date().toISOString();
             localStorage.setItem(dateTimeString, jsonRules);
             this.savedRules.push({
-                    dateTime: dateTimeString, 
-                    rule: jsonRules
-                });
+                dateTime: dateTimeString,
+                rule: jsonRules,
+            });
         },
     },
 };
