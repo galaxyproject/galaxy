@@ -8,20 +8,12 @@
 Flow analysis datatypes.
 """
 
-import gzip
-import json
 import logging
-import os
-import sys
 import re
 import subprocess
-import tempfile
 
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.tabular import Tabular
-from galaxy.datatypes.data import get_file_peek, Text
-from galaxy.datatypes.metadata import MetadataElement
-from galaxy.util import nice_size, string_as_bool
 from . import data
 
 log = logging.getLogger(__name__)
@@ -50,7 +42,7 @@ class FCS(Binary):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "Binary FCSfile (%s)" % (data.nice_size(dataset.get_size()))
 
     def sniff(self, filename):
@@ -68,7 +60,7 @@ class FCS(Binary):
                 return True
             else:
                 return False
-        except:
+        except Exception:
             False
 
     def get_mime(self):
@@ -79,7 +71,7 @@ class FCS(Binary):
 Binary.register_sniffable_binary_format("fcs", "fcs", FCS)
 
 
-class FlowFrame( Binary ):
+class FlowFrame(Binary):
     """R Object containing flowFrame saved with saveRDS"""
     file_ext = 'flowframe'
 
@@ -94,7 +86,7 @@ class FlowFrame( Binary ):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "Binary RDS flowFrame (%s)" % (data.nice_size(dataset.get_size()))
 
     def sniff(self, filename):
@@ -111,7 +103,7 @@ class FlowFrame( Binary ):
                 return True
             else:
                 return False
-        except:
+        except Exception:
             False
 
     def get_mime(self):
@@ -122,7 +114,7 @@ class FlowFrame( Binary ):
 Binary.register_sniffable_binary_format('flowframe', 'flowframe', FlowFrame)
 
 
-class FlowSOM( Binary ):
+class FlowSOM(Binary):
     """R Object containing fSOM saved with saveRDS"""
     file_ext = 'fsom'
 
@@ -137,7 +129,7 @@ class FlowSOM( Binary ):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "Binary RDS fsom (%s)" % (data.nice_size(dataset.get_size()))
 
     def sniff(self, filename):
@@ -154,7 +146,7 @@ class FlowSOM( Binary ):
                 return True
             else:
                 return False
-        except:
+        except Exception:
             False
 
     def get_mime(self):
@@ -165,7 +157,7 @@ class FlowSOM( Binary ):
 Binary.register_sniffable_binary_format('fsom', 'fsom', FlowSOM)
 
 
-class FlowSet( Binary ):
+class FlowSet(Binary):
     """R Object containing flowSet saved with saveRDS"""
     file_ext = 'flowset'
 
@@ -180,7 +172,7 @@ class FlowSet( Binary ):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "Binary RDS flowSet (%s)" % (data.nice_size(dataset.get_size()))
 
     def sniff(self, filename):
@@ -197,7 +189,7 @@ class FlowSet( Binary ):
                 return True
             else:
                 return False
-        except:
+        except Exception:
             False
 
     def get_mime(self):
@@ -223,7 +215,7 @@ class FlowText(Tabular):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "Text Flow file (%s)" % (data.nice_size(dataset.get_size()))
 
     def sniff(self, filename):
@@ -256,7 +248,7 @@ class FlowClustered(Tabular):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "Flow Text Clustered file (%s)" % (data.nice_size(dataset.get_size()))
 
     def sniff(self, filename):
@@ -291,7 +283,7 @@ class FlowMFI(Tabular):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "MFI Flow file (%s)" % (data.nice_size(dataset.get_size()))
 
     def sniff(self, filename):
@@ -326,7 +318,7 @@ class FlowStats1(Tabular):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "Flow Stats1 file (%s)" % (data.nice_size(dataset.get_size()))
 
     def sniff(self, filename):
@@ -357,7 +349,7 @@ class FlowStats2(Tabular):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "Flow Stats2 file (%s)" % (data.nice_size(dataset.get_size()))
 
     def sniff(self, filename):
@@ -388,7 +380,7 @@ class FlowStats3(Tabular):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "Flow Stats3 file (%s)" % (data.nice_size(dataset.get_size()))
 
     def sniff(self, filename):
@@ -423,7 +415,7 @@ class FlowScore(Tabular):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "Flow Score file (%s)" % (data.nice_size(dataset.get_size()))
 
     def sniff(self, filename):
