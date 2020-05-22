@@ -1065,8 +1065,9 @@ export default {
     },
     methods: {
         restoreRules(event) {
-            this.rules = event.rules;
-            this.mapping = event.mapping;
+            let json = JSON.parse(event);
+            this.rules = json.rules;
+            this.mapping = json.mapping;
         },
         l(str) {
             // _l conflicts private methods of Vue internals, expose as l instead

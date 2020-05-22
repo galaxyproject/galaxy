@@ -6,9 +6,15 @@ describe("SavedRulesSelector", () => {
     let wrapper, emitted;
     beforeEach(async () => {
         wrapper = mount(SavedRulesSelector);
-        emitted = wrapper.emitted();
+        
         await Vue.nextTick();
     });
+
+    afterEach(async () => {
+      wrapper.savedRules = [];
+    
+      await Vue.nextTick();
+    })
 
     it("disables history icon if there is no history", async () => {
         wrapper = mount(SavedRulesSelector, {
@@ -40,8 +46,10 @@ describe("SavedRulesSelector", () => {
 
         wrapper.vm.saveSession(testRules);
         await Vue.nextTick();
-        let session = wrapper.find("div.dropdown-menu > a.saved-rule-item");
-        session.trigger("click");
+        let sessions = wrapper.findAll("div.dropdown-menu > a.saved-rule-item");
+        assert(sessions.length > 0);
+        sessions.wrappers[0].trigger("click");
+        emitted = wrapper.emitted();
         assert(emitted["update-rules"], "click event not detected");
     });
 });
