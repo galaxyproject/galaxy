@@ -1065,7 +1065,7 @@ export default {
     },
     methods: {
         restoreRules(event) {
-            let json = JSON.parse(event);
+            const json = JSON.parse(event);
             this.rules = json.rules;
             this.mapping = json.mapping;
         },

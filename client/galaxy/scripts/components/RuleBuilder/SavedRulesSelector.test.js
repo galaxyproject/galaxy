@@ -6,15 +6,15 @@ describe("SavedRulesSelector", () => {
     let wrapper, emitted;
     beforeEach(async () => {
         wrapper = mount(SavedRulesSelector);
-        
+
         await Vue.nextTick();
     });
 
     afterEach(async () => {
-      wrapper.savedRules = [];
-    
-      await Vue.nextTick();
-    })
+        wrapper.savedRules = [];
+
+        await Vue.nextTick();
+    });
 
     it("disables history icon if there is no history", async () => {
         wrapper = mount(SavedRulesSelector, {
