@@ -729,7 +729,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
                 'filters': ['stack']
             }
 
-    def _load_list_from_file(filepath):
+    def _load_list_from_file(self, filepath):
         with open(filepath) as f:
             return [line.strip() for line in f]
 
