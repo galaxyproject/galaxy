@@ -1,6 +1,6 @@
 <template>
     <div>
-        <b-table striped :items="repositories" :fields="fields">
+        <b-table striped id="shed-search-results" :items="repositories" :fields="fields">
             <template v-slot:cell(name)="row">
                 <b-link href="javascript:void(0)" role="button" class="font-weight-bold" @click="row.toggleDetails">
                     {{ row.item.name }}
@@ -8,7 +8,7 @@
                 <div>{{ row.item.description }}</div>
             </template>
             <template v-slot:row-details="row">
-                <RepositoryDetails :repo="row.item" :toolshedUrl="toolshedUrl" />
+                <RepositoryDetails :repo="row.item" :toolshed-url="toolshedUrl" />
             </template>
         </b-table>
         <div class="unavailable-message" v-if="noResultsFound">
@@ -20,7 +20,7 @@
 <script>
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { Services } from "../services.js";
+import { Services } from "../services";
 import LoadingSpan from "components/LoadingSpan";
 import RepositoryDetails from "../RepositoryDetails/Index.vue";
 
@@ -32,7 +32,7 @@ const COMPLETE = 2;
 export default {
     components: {
         LoadingSpan,
-        RepositoryDetails
+        RepositoryDetails,
     },
     props: ["query", "scrolled", "toolshedUrl"],
     data() {
@@ -42,12 +42,12 @@ export default {
                 { key: "name" },
                 { key: "owner", label: "Owner" },
                 { key: "times_downloaded", label: "Downloaded" },
-                { key: "last_updated", label: "Updated" }
+                { key: "last_updated", label: "Updated" },
             ],
             page: 1,
             pageSize: 50,
             pageState: READY,
-            error: null
+            error: null,
         };
     },
     watch: {
@@ -61,7 +61,7 @@ export default {
             if (this.scrolled && this.pageState === READY) {
                 this.load(this.page + 1);
             }
-        }
+        },
     },
     computed: {
         pageLoading() {
@@ -69,7 +69,7 @@ export default {
         },
         noResultsFound() {
             return this.repositories.length === 0 && !this.pageLoading;
-        }
+        },
     },
     created() {
         this.services = new Services();
@@ -87,9 +87,9 @@ export default {
                     tool_shed_url: this.toolshedUrl,
                     q: this.query,
                     page: this.page,
-                    page_size: this.pageSize
+                    page_size: this.pageSize,
                 })
-                .then(incoming => {
+                .then((incoming) => {
                     this.repositories = this.repositories.concat(incoming);
                     if (incoming.length < this.pageSize) {
                         this.pageState = COMPLETE;
@@ -97,10 +97,10 @@ export default {
                         this.pageState = READY;
                     }
                 })
-                .catch(errorMessage => {
+                .catch((errorMessage) => {
                     this.$emit("onError", errorMessage);
                 });
-        }
-    }
+        },
+    },
 };
 </script>

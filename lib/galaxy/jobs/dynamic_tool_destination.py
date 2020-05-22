@@ -9,10 +9,11 @@ import os
 import re
 import sys
 from functools import reduce
-from xml.etree import ElementTree as ET
 
 import numpy as np
 import yaml
+
+from galaxy.util import parse_xml
 
 __version__ = '1.1.0'
 
@@ -67,10 +68,12 @@ def get_keys_from_dict(dl, keys_list):
     This function builds a list using the keys from nest dictionaries
     """
     if isinstance(dl, dict):
-        keys_list += dl.keys()
-        map(lambda x: get_keys_from_dict(x, keys_list), dl.values())
+        keys_list.extend(dl.keys())
+        for x in dl.values():
+            get_keys_from_dict(x, keys_list)
     elif isinstance(dl, list):
-        map(lambda x: get_keys_from_dict(x, keys_list), dl)
+        for x in dl:
+            get_keys_from_dict(x, keys_list)
 
 
 class RuleValidator(object):
@@ -1675,7 +1678,7 @@ def get_destination_list_from_job_config(job_config_location):
             log.debug(message)
 
     if job_config_location:
-        job_conf = ET.parse(job_config_location)
+        job_conf = parse_xml(job_config_location, strip_whitespace=False)
 
         # Add all destination IDs from the job configuration xml file
         for destination in job_conf.getroot().iter("destination"):

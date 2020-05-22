@@ -86,6 +86,7 @@ The following individuals have contributed code to Galaxy:
 * Joachim Jacob <joachim.jacob@gmail.com>
 * Xiaoqian Jiang <jxq198409@hotmail.com>
 * Jim Johnson <jj@umn.edu> <jj@msi.umn.edu>
+* Kaivan Kamali <kxk302@gmail.com>
 * Radhesh Kamath <radhesh@bx.psu.edu>
 * Iyad Kandalaft <ik@iyadk.com>
 * Jan Kanis <jan.code@jankanis.nl>
@@ -124,7 +125,7 @@ The following individuals have contributed code to Galaxy:
 * Chinmay Rao <chinmay@bx.psu.edu>
 * Matt Ralston <mrals89@gmail.com>
 * ramezrawas <ramezrawas@gmail.com>
-* Eric Rasche <esr@tamu.edu> <rasche.eric@gmail.com> <rasche.eric@yandex.ru>
+* Helena Rasche <helena.rasche@gmail.com>
 * Athos Ribeiro <athoscr@fedoraproject.org>
 * Andrew Robinson <Andrew.Robinson@latrobe.edu.au>
 * Devon Ryan <dpryan79@gmail.com>

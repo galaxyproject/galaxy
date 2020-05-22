@@ -10,7 +10,6 @@ import json
 import logging
 import tarfile
 from glob import glob
-from io import BytesIO
 
 import requests
 import yaml
@@ -21,7 +20,10 @@ except ImportError:
     Template = None
     UndefinedError = Exception
 
-from .util import split_container_name
+from .util import (
+    get_file_from_recipe_url,
+    split_container_name,
+)
 
 INSTALL_JINJA_EXCEPTION = "This mulled functionality required jinja2 but it is unavailable, install condatesting extras."
 
@@ -36,7 +38,7 @@ def get_commands_from_yaml(yaml_content):
 
     try:
         # we expect to get an input in bytes, so first decode to string; run the file through the jinja processing; load as yaml
-        meta_yaml = yaml.load(Template(yaml_content.decode('utf-8')).render(), Loader=yaml.SafeLoader)
+        meta_yaml = yaml.safe_load(Template(yaml_content.decode('utf-8')).render())
     except (yaml.scanner.ScannerError, UndefinedError) as e:  # what about things like {{ compiler('cxx') }}
         logging.info(e, exc_info=True)
         return None
@@ -102,10 +104,8 @@ def get_test_from_anaconda(url):
     """
     Given the URL of an anaconda tarball, return tests
     """
-    r = requests.get(url)
-
     try:
-        tarball = tarfile.open(mode="r:bz2", fileobj=BytesIO(r.content))
+        tarball = get_file_from_recipe_url(url)
     except tarfile.ReadError:
         return None
 

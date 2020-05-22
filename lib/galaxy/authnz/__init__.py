@@ -24,13 +24,13 @@ class IdentityProvider(object):
         :type provider: string
         :param provider: is the name of the identity provider (e.g., Google).
 
-        :type config: xml.etree.ElementTree.Element
+        :type config: lxml.etree.ElementTree._Element
         :param config: Is the configuration element of the provider
             from the configuration file (e.g., oidc_config.xml).
             This element contains the all the provider-specific
             configuration elements.
 
-        :type backend_config: xml.etree.ElementTree.Element
+        :type backend_config: lxml.etree.ElementTree._Element
         :param backend_config: Is the configuration element of the backend of
             the provider from the configuration file (e.g.,
             oidc_backends_config.xml). This element contains all the
@@ -69,4 +69,17 @@ class IdentityProvider(object):
         raise NotImplementedError()
 
     def disconnect(self, provider, trans, disconnect_redirect_url=None):
+        raise NotImplementedError()
+
+    def logout(self, trans, post_logout_redirect_url=None):
+        """
+        Return a URL that will log the user out of the IDP. In OIDC this is
+        called the 'end_session_endpoint'.
+
+        :type trans: GalaxyWebTransaction
+        :param trans: Galaxy web transaction.
+
+        :type trans: string
+        :param trans: Optional URL to redirect to after logging out of IDP.
+        """
         raise NotImplementedError()

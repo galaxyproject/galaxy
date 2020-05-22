@@ -52,17 +52,17 @@ function Edge(source, target, data) {
     return self;
 }
 /** String representation */
-Edge.prototype.toString = function() {
+Edge.prototype.toString = function () {
     return `${this.source}->${this.target}`;
 };
 
 /** Return a plain object representing this edge */
-Edge.prototype.toJSON = function() {
+Edge.prototype.toJSON = function () {
     //TODO: this is safe in most browsers (fns will be stripped) - alter tests to incorporate this in order to pass data
     //return this;
     var json = {
         source: this.source,
-        target: this.target
+        target: this.target,
     };
     if (this.data) {
         json.data = this.data;
@@ -84,22 +84,22 @@ function Vertex(name, data) {
 }
 
 /** String representation */
-Vertex.prototype.toString = function() {
+Vertex.prototype.toString = function () {
     return `Vertex(${this.name})`;
 };
 
 //TODO: better name w no collision for either this.eachEdge or this.edges
 /** Iterate over each edge from this vertex */
-Vertex.prototype.eachEdge = function(propsOrFn) {
+Vertex.prototype.eachEdge = function (propsOrFn) {
     return iterate(this.edges, propsOrFn);
 };
 
 /** Return a plain object representing this vertex */
-Vertex.prototype.toJSON = function() {
+Vertex.prototype.toJSON = function () {
     //return this;
     return {
         name: this.name,
-        data: this.data
+        data: this.data,
     };
 };
 
@@ -108,20 +108,20 @@ Vertex.prototype.toJSON = function() {
  *      Pass in the graph to search
  *      and an optional dictionary containing the 3 vertex/edge processing fns listed below.
  */
-var GraphSearch = function(graph, processFns) {
+var GraphSearch = function (graph, processFns) {
     var self = this;
     self.graph = graph;
 
     self.processFns = processFns || {
-        vertexEarly: function(vertex, search) {
+        vertexEarly: function (vertex, search) {
             //console.debug( 'processing vertex:', vertex.name, vertex );
         },
-        edge: function(from, edge, search) {
+        edge: function (from, edge, search) {
             //console.debug( this, 'edge:', from, edge, search );
         },
-        vertexLate: function(vertex, search) {
+        vertexLate: function (vertex, search) {
             //console.debug( this, 'vertexLate:', vertex, search );
-        }
+        },
     };
 
     self._cache = {};
@@ -147,7 +147,7 @@ GraphSearch.prototype._search = function __search(start, search) {
     search = search || {
         discovered: {},
         //parents : {},
-        edges: []
+        edges: [],
     };
     return search;
 };
@@ -162,14 +162,14 @@ GraphSearch.prototype._searchTree = function __searchTree(search) {
     var self = this;
     return new Graph(true, {
         edges: search.edges,
-        vertices: Object.keys(search.discovered).map(key => self.graph.vertices[key].toJSON())
+        vertices: Object.keys(search.discovered).map((key) => self.graph.vertices[key].toJSON()),
     });
 };
 
 // ============================================================================
 /** Breadth first search algo.
  */
-var BreadthFirstSearch = function(graph, processFns) {
+var BreadthFirstSearch = function (graph, processFns) {
     var self = this;
     GraphSearch.call(this, graph, processFns);
     return self;
@@ -182,7 +182,7 @@ BreadthFirstSearch.prototype._search = function __search(start, search) {
     search = search || {
         discovered: {},
         //parents : {},
-        edges: []
+        edges: [],
     };
 
     var self = this;
@@ -224,7 +224,7 @@ BreadthFirstSearch.prototype._search = function __search(start, search) {
 // ============================================================================
 /** Depth first search algorithm.
  */
-var DepthFirstSearch = function(graph, processFns) {
+var DepthFirstSearch = function (graph, processFns) {
     var self = this;
     GraphSearch.call(this, graph, processFns);
     return self;
@@ -233,14 +233,14 @@ DepthFirstSearch.prototype = new GraphSearch();
 DepthFirstSearch.prototype.constructor = DepthFirstSearch;
 
 /** (Private) implementation of DFS */
-DepthFirstSearch.prototype._search = function(start, search) {
+DepthFirstSearch.prototype._search = function (start, search) {
     //console.debug( 'depthFirstSearch:', start );
     search = search || {
         discovered: {},
         //parents    : {},
         edges: [],
         entryTimes: {},
-        exitTimes: {}
+        exitTimes: {},
     };
     var self = this;
     var time = 0;
@@ -257,7 +257,7 @@ DepthFirstSearch.prototype._search = function(start, search) {
             //search.parents[ adjacent.name ] = sourceVertex;
             search.edges.push({
                 source: sourceVertex.name,
-                target: adjacent.name
+                target: adjacent.name,
             });
             recurse(adjacent);
         }
@@ -296,7 +296,7 @@ function Graph(directed, data, options) {
 window.Graph = Graph;
 
 /** Set up options and instance variables */
-Graph.prototype.init = function(options) {
+Graph.prototype.init = function (options) {
     options = options || {};
     var self = this;
 
@@ -308,7 +308,7 @@ Graph.prototype.init = function(options) {
 };
 
 /** Read data from the plain object data - both in d3 form (nodes and links) or vertices and edges */
-Graph.prototype.read = function(data) {
+Graph.prototype.read = function (data) {
     if (!data) {
         return this;
     }
@@ -324,14 +324,14 @@ Graph.prototype.read = function(data) {
 
 //TODO: the next two could be combined
 /** Create the graph using a list of nodes and a list of edges (where source and target are indeces into nodes) */
-Graph.prototype.readNodesAndLinks = function(data) {
+Graph.prototype.readNodesAndLinks = function (data) {
     if (!(data && Object.prototype.hasOwnProperty.call(data, "nodes"))) {
         return this;
     }
     //console.debug( 'readNodesAndLinks:', data );
     //console.debug( 'data:\n' + JSON.stringify( data, null, '  ' ) );
     var self = this;
-    data.nodes.forEach(node => {
+    data.nodes.forEach((node) => {
         self.createVertex(node.name, node.data);
     });
     //console.debug( JSON.stringify( self.vertices, null, '  ' ) );
@@ -347,14 +347,14 @@ Graph.prototype.readNodesAndLinks = function(data) {
 };
 
 /** Create the graph using a list of nodes and a list of edges (where source and target are names of nodes) */
-Graph.prototype.readVerticesAndEdges = function(data) {
+Graph.prototype.readVerticesAndEdges = function (data) {
     if (!(data && Object.prototype.hasOwnProperty.call(data, "vertices"))) {
         return this;
     }
     //console.debug( 'readVerticesAndEdges:', data );
     //console.debug( 'data:\n' + JSON.stringify( data, null, '  ' ) );
     var self = this;
-    data.vertices.forEach(node => {
+    data.vertices.forEach((node) => {
         self.createVertex(node.name, node.data);
     });
     //console.debug( JSON.stringify( self.vertices, null, '  ' ) );
@@ -368,7 +368,7 @@ Graph.prototype.readVerticesAndEdges = function(data) {
 };
 
 /** Return the vertex with name, creating it if necessary */
-Graph.prototype.createVertex = function(name, data) {
+Graph.prototype.createVertex = function (name, data) {
     //console.debug( 'createVertex:', name, data );
     if (this.vertices[name]) {
         return this.vertices[name];
@@ -379,7 +379,7 @@ Graph.prototype.createVertex = function(name, data) {
 /** Create an edge in vertex named sourceName to targetName (optionally adding data to it)
  *      If directed is false, create a second edge from targetName to sourceName.
  */
-Graph.prototype.createEdge = function(sourceName, targetName, directed, data) {
+Graph.prototype.createEdge = function (sourceName, targetName, directed, data) {
     //note: allows multiple 'equivalent' edges (to/from same source/target)
     //console.debug( 'createEdge:', source, target, directed );
     var isReflexive = sourceName === targetName;
@@ -414,37 +414,40 @@ Graph.prototype.createEdge = function(sourceName, targetName, directed, data) {
 };
 
 /** Walk over all the edges of the graph using the vertex.eachEdge iterator */
-Graph.prototype.edges = function(propsOrFn) {
-    return Array.prototype.concat.apply([], this.eachVertex(vertex => vertex.eachEdge(propsOrFn)));
+Graph.prototype.edges = function (propsOrFn) {
+    return Array.prototype.concat.apply(
+        [],
+        this.eachVertex((vertex) => vertex.eachEdge(propsOrFn))
+    );
 };
 
 /** Iterate over all the vertices in the graph */
-Graph.prototype.eachVertex = function(propsOrFn) {
+Graph.prototype.eachVertex = function (propsOrFn) {
     return iterate(this.vertices, propsOrFn);
 };
 
 /** Return a list of the vertices adjacent to vertex */
-Graph.prototype.adjacent = function(vertex) {
+Graph.prototype.adjacent = function (vertex) {
     var self = this;
-    return iterate(vertex.edges, edge => self.vertices[edge.target]);
+    return iterate(vertex.edges, (edge) => self.vertices[edge.target]);
 };
 
 /** Call fn on each vertex adjacent to vertex */
-Graph.prototype.eachAdjacent = function(vertex, fn) {
+Graph.prototype.eachAdjacent = function (vertex, fn) {
     var self = this;
-    return iterate(vertex.edges, edge => {
+    return iterate(vertex.edges, (edge) => {
         var adj = self.vertices[edge.target];
         return fn.call(vertex, adj, edge);
     });
 };
 
 /** Print the graph to the console (debugging) */
-Graph.prototype.print = function() {
+Graph.prototype.print = function () {
     var self = this;
     console.log(`Graph has ${Object.keys(self.vertices).length} vertices`);
-    self.eachVertex(vertex => {
+    self.eachVertex((vertex) => {
         console.log(vertex.toString());
-        vertex.eachEdge(edge => {
+        vertex.eachEdge((edge) => {
             console.log(`\t ${edge}`);
         });
     });
@@ -452,11 +455,11 @@ Graph.prototype.print = function() {
 };
 
 /** Return a DOT format string of this graph */
-Graph.prototype.toDOT = function() {
+Graph.prototype.toDOT = function () {
     var self = this;
     var strings = [];
     strings.push("graph bler {");
-    self.edges(edge => {
+    self.edges((edge) => {
         strings.push(`\t${edge.from} -- ${edge.to};`);
     });
     strings.push("}");
@@ -464,7 +467,7 @@ Graph.prototype.toDOT = function() {
 };
 
 /** Return vertices and edges of this graph in d3 node/link format */
-Graph.prototype.toNodesAndLinks = function() {
+Graph.prototype.toNodesAndLinks = function () {
     var self = this;
     var indeces = {};
     return {
@@ -472,41 +475,41 @@ Graph.prototype.toNodesAndLinks = function() {
             indeces[vertex.name] = i;
             return vertex.toJSON();
         }),
-        links: self.edges(edge => {
+        links: self.edges((edge) => {
             var json = edge.toJSON();
             json.source = indeces[edge.source];
             json.target = indeces[edge.target];
             return json;
-        })
+        }),
     };
 };
 
 /** Return vertices and edges of this graph where edges use the name/id as source and target */
-Graph.prototype.toVerticesAndEdges = function() {
+Graph.prototype.toVerticesAndEdges = function () {
     var self = this;
     return {
         vertices: self.eachVertex((vertex, key) => vertex.toJSON()),
-        edges: self.edges(edge => edge.toJSON())
+        edges: self.edges((edge) => edge.toJSON()),
     };
 };
 
 /** Search this graph using BFS */
-Graph.prototype.breadthFirstSearch = function(start, processFns) {
+Graph.prototype.breadthFirstSearch = function (start, processFns) {
     return new BreadthFirstSearch(this).search(start);
 };
 
 /** Return a searchtree of this graph using BFS */
-Graph.prototype.breadthFirstSearchTree = function(start, processFns) {
+Graph.prototype.breadthFirstSearchTree = function (start, processFns) {
     return new BreadthFirstSearch(this).searchTree(start);
 };
 
 /** Search this graph using DFS */
-Graph.prototype.depthFirstSearch = function(start, processFns) {
+Graph.prototype.depthFirstSearch = function (start, processFns) {
     return new DepthFirstSearch(this).search(start);
 };
 
 /** Return a searchtree of this graph using DFS */
-Graph.prototype.depthFirstSearchTree = function(start, processFns) {
+Graph.prototype.depthFirstSearchTree = function (start, processFns) {
     return new DepthFirstSearch(this).searchTree(start);
 };
 
@@ -523,7 +526,7 @@ Graph.prototype.depthFirstSearchTree = function(start, processFns) {
 //};
 
 /** Return an array of weakly connected (no edges between) sub-graphs in this graph */
-Graph.prototype.weakComponents = function() {
+Graph.prototype.weakComponents = function () {
     //TODO: alternately, instead of returning graph-like objects:
     //  - could simply decorate the vertices (vertex.component = componentIndex), or clone the graph and do that
     var self = this;
@@ -537,11 +540,11 @@ Graph.prototype.weakComponents = function() {
         var search = new DepthFirstSearch(searchGraph)._search(undiscoveredVertex);
 
         // remove curr discovered from undiscovered
-        undiscovered = undiscovered.filter(name => !(name in search.discovered));
+        undiscovered = undiscovered.filter((name) => !(name in search.discovered));
 
         return {
-            vertices: Object.keys(search.discovered).map(vertexName => self.vertices[vertexName].toJSON()),
-            edges: search.edges.map(edge => {
+            vertices: Object.keys(search.discovered).map((vertexName) => self.vertices[vertexName].toJSON()),
+            edges: search.edges.map((edge) => {
                 // restore any reversed edges
                 var hasBeenReversed = self.vertices[edge.target].edges[edge.source] !== undefined;
                 if (self.directed && hasBeenReversed) {
@@ -550,7 +553,7 @@ Graph.prototype.weakComponents = function() {
                     edge.target = swap;
                 }
                 return edge;
-            })
+            }),
         };
     }
 
@@ -571,20 +574,20 @@ Graph.prototype.weakComponents = function() {
 };
 
 /** Return a single graph containing the weakly connected components in this graph */
-Graph.prototype.weakComponentGraph = function() {
+Graph.prototype.weakComponentGraph = function () {
     //note: although this can often look like the original graph - edges can be lost
     var components = this.weakComponents();
     return new Graph(this.directed, {
         vertices: components.reduce((reduction, curr) => reduction.concat(curr.vertices), []),
-        edges: components.reduce((reduction, curr) => reduction.concat(curr.edges), [])
+        edges: components.reduce((reduction, curr) => reduction.concat(curr.edges), []),
     });
 };
 
 /** Return an array of graphs of the weakly connected components in this graph */
-Graph.prototype.weakComponentGraphArray = function() {
+Graph.prototype.weakComponentGraphArray = function () {
     //note: although this can often look like the original graph - edges can be lost
     var graph = this;
-    return this.weakComponents().map(component => new Graph(graph.directed, component));
+    return this.weakComponents().map((component) => new Graph(graph.directed, component));
 };
 
 // ============================================================================
@@ -602,7 +605,7 @@ function randGraph(directed, numVerts, numEdges) {
     for (i = 0; i < numEdges; i++) {
         data.links.push({
             source: randRange(numVerts),
-            target: randRange(numVerts)
+            target: randRange(numVerts),
         });
     }
     //console.debug( JSON.stringify( data, null, '  ' ) );
@@ -616,5 +619,5 @@ export default {
     BreadthFirstSearch: BreadthFirstSearch,
     DepthFirstSearch: DepthFirstSearch,
     Graph: Graph,
-    randGraph: randGraph
+    randGraph: randGraph,
 };

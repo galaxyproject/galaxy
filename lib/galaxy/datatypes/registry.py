@@ -8,11 +8,11 @@ import logging
 import os
 from collections import OrderedDict
 from string import Template
-from xml.etree.ElementTree import Element
 
 import yaml
 
 import galaxy.util
+from galaxy.util import RW_R__R__
 from galaxy.util.bunch import Bunch
 from . import (
     binary,
@@ -45,6 +45,7 @@ class Registry(object):
         self.datatype_converters = OrderedDict()
         # Converters defined in local datatypes_conf.xml
         self.converters = []
+        self.converter_tools = set()
         # Converters defined in datatypes_conf.xml included in installed tool shed repositories.
         self.proprietary_converters = []
         self.converter_deps = {}
@@ -106,7 +107,7 @@ class Registry(object):
             #           type="galaxy.datatypes.blast:BlastXml" />
             compressed_sniffers = {}
             handling_proprietary_datatypes = False
-            if not isinstance(config, Element):
+            if isinstance(config, str):
                 # Parse datatypes_conf.xml
                 tree = galaxy.util.parse_xml(config)
                 root = tree.getroot()
@@ -247,13 +248,14 @@ class Registry(object):
                                         for mod in fields:
                                             module = getattr(module, mod)
                                         datatype_class = getattr(module, datatype_class_name)
-                                        self.log.debug('Retrieved datatype module %s:%s from the datatype registry.' % (str(datatype_module), datatype_class_name))
+                                        self.log.debug('Retrieved datatype module %s:%s from the datatype registry for extension %s.' % (str(datatype_module), datatype_class_name, extension))
                                     except Exception:
                                         self.log.exception('Error importing datatype module %s', str(datatype_module))
                                         ok = False
                         elif type_extension is not None:
                             try:
                                 datatype_class = self.datatypes_by_extension[type_extension].__class__
+                                self.log.debug('Retrieved datatype module %s from type_extension %s for extension %s.' % (str(datatype_class.__name__), type_extension, extension))
                             except Exception:
                                 self.log.exception('Error determining datatype_class for type_extension %s', str(type_extension))
                                 ok = False
@@ -612,6 +614,7 @@ class Registry(object):
             try:
                 config_path = os.path.join(converter_path, tool_config)
                 converter = toolbox.load_tool(config_path, use_cached=use_cached)
+                self.converter_tools.add(converter)
                 if installed_repository_dict:
                     # If the converter is included in an installed tool shed repository, set the tool
                     # shed related tool attributes.
@@ -761,23 +764,19 @@ class Registry(object):
                 'coverage'      : coverage.LastzCoverage(),
                 'customtrack'   : interval.CustomTrack(),
                 'csfasta'       : sequence.csFasta(),
-                'db3'           : binary.SQlite(),
                 'fasta'         : sequence.Fasta(),
                 'eland'         : tabular.Eland(),
                 'fastq'         : sequence.Fastq(),
                 'fastqsanger'   : sequence.FastqSanger(),
-                'gemini.sqlite' : binary.GeminiSQLite(),
                 'gtf'           : interval.Gtf(),
                 'gff'           : interval.Gff(),
                 'gff3'          : interval.Gff3(),
                 'genetrack'     : tracks.GeneTrack(),
                 'h5'            : binary.H5(),
-                'idpdb'         : binary.IdpDB(),
                 'interval'      : interval.Interval(),
                 'laj'           : images.Laj(),
                 'lav'           : sequence.Lav(),
                 'maf'           : sequence.Maf(),
-                'mz.sqlite'     : binary.MzSQlite(),
                 'pileup'        : tabular.Pileup(),
                 'qualsolid'     : qualityscore.QualityScoreSOLiD(),
                 'qualsolexa'    : qualityscore.QualityScoreSolexa(),
@@ -797,26 +796,21 @@ class Registry(object):
                 'axt'           : 'text/plain',
                 'bam'           : 'application/octet-stream',
                 'bed'           : 'text/plain',
-                'blib'          : 'application/octet-stream',
                 'customtrack'   : 'text/plain',
                 'csfasta'       : 'text/plain',
-                'db3'           : 'application/octet-stream',
                 'eland'         : 'application/octet-stream',
                 'fasta'         : 'text/plain',
                 'fastq'         : 'text/plain',
                 'fastqsanger'   : 'text/plain',
-                'gemini.sqlite' : 'application/octet-stream',
                 'gtf'           : 'text/plain',
                 'gff'           : 'text/plain',
                 'gff3'          : 'text/plain',
                 'h5'            : 'application/octet-stream',
-                'idpdb'         : 'application/octet-stream',
                 'interval'      : 'text/plain',
                 'laj'           : 'text/plain',
                 'lav'           : 'text/plain',
                 'maf'           : 'text/plain',
                 'memexml'       : 'application/xml',
-                'mz.sqlite'     : 'application/octet-stream',
                 'pileup'        : 'text/plain',
                 'qualsolid'     : 'text/plain',
                 'qualsolexa'    : 'text/plain',
@@ -842,10 +836,6 @@ class Registry(object):
                 binary.Bam(),
                 binary.Sff(),
                 binary.H5(),
-                binary.GeminiSQLite(),
-                binary.MzSQlite(),
-                binary.IdpDB(),
-                binary.SQlite(),
                 xml.GenericXml(),
                 sequence.Maf(),
                 sequence.Lav(),
@@ -973,7 +963,7 @@ class Registry(object):
                                                                             datatype_elems=datatype_elems,
                                                                             sniffer_elems=sniffer_elems)
         with open(os.path.abspath(path), 'w') as registry_xml:
-            os.chmod(path, 0o644)
+            os.chmod(path, RW_R__R__)
             registry_xml.write(self._registry_xml_string)
 
     def get_extension(self, elem):

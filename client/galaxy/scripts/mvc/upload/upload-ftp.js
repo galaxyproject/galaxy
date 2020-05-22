@@ -7,7 +7,7 @@ import Utils from "utils/utils";
 import UploadUtils from "mvc/upload/upload-utils";
 
 export default Backbone.View.extend({
-    initialize: function(options) {
+    initialize: function (options) {
         this.model = new Backbone.Model({
             cls: "upload-ftp",
             class_add: "upload-icon-button fa fa-square-o",
@@ -18,9 +18,9 @@ export default Backbone.View.extend({
             help_text: `This Galaxy server allows you to upload files via FTP. To upload some files, log in to the FTP server at <strong>${options.ftp_upload_site}</strong> using your Galaxy credentials.
             For help visit the <a href="https://galaxyproject.org/ftp-upload/" target="_blank">tutorial</a>.`,
             collection: null,
-            onchange: function() {},
-            onadd: function() {},
-            onremove: function() {}
+            onchange: function () {},
+            onadd: function () {},
+            onremove: function () {},
         }).set(options);
 
         this.collection = this.model.get("collection");
@@ -40,33 +40,33 @@ export default Backbone.View.extend({
         this.render();
     },
 
-    render: function() {
+    render: function () {
         var self = this;
         this.$wait.show();
         this.$content.hide();
         this.$warning.hide();
         this.$help.hide();
         UploadUtils.getRemoteFiles(
-            function(ftp_files) {
+            function (ftp_files) {
                 self.model.set("ftp_files", ftp_files);
                 self._index();
                 self._renderTable();
             },
-            function() {
+            function () {
                 self._renderTable();
             }
         );
     },
 
     /** Fill table with ftp entries */
-    _renderTable: function() {
+    _renderTable: function () {
         var self = this;
         var ftp_files = this.model.get("ftp_files");
         this.rows = [];
         if (ftp_files && ftp_files.length > 0) {
             this.$body.empty();
             var size = 0;
-            _.each(ftp_files, ftp_file => {
+            _.each(ftp_files, (ftp_file) => {
                 self.rows.push(self._renderRow(ftp_file));
                 size += ftp_file.size;
             });
@@ -91,7 +91,7 @@ export default Backbone.View.extend({
     },
 
     /** Add row */
-    _renderRow: function(ftp_file) {
+    _renderRow: function (ftp_file) {
         var self = this;
         var options = this.model.attributes;
         var $it = $(this._templateRow(ftp_file));
@@ -113,11 +113,11 @@ export default Backbone.View.extend({
     },
 
     /** Create ftp index */
-    _index: function() {
+    _index: function () {
         var self = this;
         this.ftp_index = {};
         this.collection &&
-            this.collection.each(model => {
+            this.collection.each((model) => {
                 if (model.get("file_mode") == "ftp") {
                     self.ftp_index[model.get("file_path")] = model.id;
                 }
@@ -125,7 +125,7 @@ export default Backbone.View.extend({
     },
 
     /** Select all event handler */
-    _all: function() {
+    _all: function () {
         var options = this.model.attributes;
         var ftp_files = this.model.get("ftp_files");
         var add = this.$select.hasClass(options.class_add);
@@ -140,7 +140,7 @@ export default Backbone.View.extend({
     },
 
     /** Handle collection changes */
-    _switch: function($icon, ftp_file) {
+    _switch: function ($icon, ftp_file) {
         $icon.removeClass();
         var options = this.model.attributes;
         var model_index = this.ftp_index[ftp_file.path];
@@ -156,7 +156,7 @@ export default Backbone.View.extend({
     },
 
     /** Refresh select all button state */
-    _refresh: function() {
+    _refresh: function () {
         var counts = _.reduce(
             this.ftp_index,
             (memo, element) => {
@@ -176,7 +176,7 @@ export default Backbone.View.extend({
     },
 
     /** Template of row */
-    _templateRow: function(options) {
+    _templateRow: function (options) {
         return `<tr class="upload-ftp-row">
                     <td class="_has_collection" style="display: none;">
                         <div class="icon"/>
@@ -188,7 +188,7 @@ export default Backbone.View.extend({
     },
 
     /** Template of main view */
-    _template: function() {
+    _template: function () {
         return `<div class="${this.model.get("cls")}">
                     <div class="upload-ftp-wait fa fa-spinner fa-spin"/>
                     <div class="upload-ftp-help">${this.model.get("help_text")}</div>
@@ -216,5 +216,5 @@ export default Backbone.View.extend({
                     </div>
                     <div class="upload-ftp-warning warningmessage">Your FTP directory does not contain any files.</div>
                 </div>`;
-    }
+    },
 });

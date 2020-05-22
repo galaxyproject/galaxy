@@ -50,7 +50,7 @@
                 <template v-slot:cell(tool)="row">
                     <tool-display :tool-id="row.item.tool" />
                 </template>
-                <template slot="row-details" slot-scope="row">
+                <template v-slot:row-details="row">
                     <resolution-details :resolution="row.item" />
                 </template>
             </b-table>
@@ -85,7 +85,7 @@ import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import DependencyIndexMixin from "./DependencyIndexMixin";
 import ResolutionDetails from "./ResolutionDetails";
-import { getToolboxDependencies, installDependencies, uninstallDependencies } from "../AdminServices.js";
+import { getToolboxDependencies, installDependencies, uninstallDependencies } from "../AdminServices";
 
 Vue.use(BootstrapVue);
 
@@ -94,11 +94,11 @@ export const RESOLVER_DESCRIPTIONS = {
     tool_shed_packages: "",
     galaxy_packages: "",
     lmod: "",
-    module: ""
+    module: "",
 };
-const RESOLVER_TYPE_OPTIONS = _.keys(RESOLVER_DESCRIPTIONS).map(resolverType => ({
+const RESOLVER_TYPE_OPTIONS = _.keys(RESOLVER_DESCRIPTIONS).map((resolverType) => ({
     value: resolverType,
-    text: resolverType
+    text: resolverType,
 }));
 RESOLVER_TYPE_OPTIONS.splice(0, 0, { value: null, text: "*any*" });
 
@@ -114,16 +114,16 @@ export default {
             resolverTypeOptions: RESOLVER_TYPE_OPTIONS,
             baseFields: [{ key: "selected", label: "" }, { key: "requirement" }, { key: "resolution" }],
             filterResolution: null,
-            requirements: []
+            requirements: [],
         };
     },
     watch: {
-        resolverType: function(val) {
+        resolverType: function (val) {
             this.load();
-        }
+        },
     },
     computed: {
-        fields: function() {
+        fields: function () {
             const fields = this.baseFields.slice();
             if (this.expandToolIds) {
                 fields.splice(1, 0, { key: "tool", label: "Tool" });
@@ -132,9 +132,9 @@ export default {
             }
             return fields;
         },
-        items: function() {
+        items: function () {
             let items = this.requirements
-                .filter(resolution => {
+                .filter((resolution) => {
                     if (this.filterResolution) {
                         let anyUnresolved = resolution.status.length == 0; // odd logic here, but we call no requirements unresolved in the GUI :(
                         for (const status of resolution.status) {
@@ -150,13 +150,13 @@ export default {
                     }
                     return true;
                 })
-                .map(resolution => {
+                .map((resolution) => {
                     return {
                         selected: false,
                         requirements: resolution.requirements,
                         status: resolution.status,
                         tool_ids: resolution.tool_ids,
-                        _showDetails: false
+                        _showDetails: false,
                     };
                 });
             if (this.expandToolIds) {
@@ -170,7 +170,7 @@ export default {
             }
             return items;
         },
-        selectedToolIds: function() {
+        selectedToolIds: function () {
             const toolIds = [];
             for (const item of this.items) {
                 if (item["selected"]) {
@@ -181,13 +181,13 @@ export default {
                 }
             }
             return toolIds;
-        }
+        },
     },
     methods: {
         load() {
             this.loading = true;
             getToolboxDependencies(this.apiParams())
-                .then(requirements => {
+                .then((requirements) => {
                     this.requirements = requirements;
                     this.loading = false;
                 })
@@ -222,7 +222,7 @@ export default {
         setExpandToolIds(expandToolIds) {
             this.expandToolIds = expandToolIds;
             this.load();
-        }
-    }
+        },
+    },
 };
 </script>

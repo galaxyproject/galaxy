@@ -8,7 +8,7 @@ import GridView from "mvc/grid/grid-view";
 import LoadingIndicator from "ui/loading-indicator";
 
 var View = Backbone.View.extend({
-    initialize: function(options) {
+    initialize: function (options) {
         var self = this;
         const Galaxy = getGalaxyInstance();
         LoadingIndicator.markViewAsLoading(this);
@@ -20,20 +20,20 @@ var View = Backbone.View.extend({
         }
         $.ajax({
             url: `${getAppRoot() + this.item}/${this.model.get("action_id")}?${$.param(Galaxy.params)}`,
-            success: function(response) {
+            success: function (response) {
                 self.model.set(response);
                 self.render();
-            }
+            },
         });
     },
 
-    render: function() {
+    render: function () {
         var grid = new GridView(this.model.attributes);
         this.$el.empty().append(grid.$el);
         this.$el.append(this._templateShared());
     },
 
-    _templateShared: function() {
+    _templateShared: function () {
         var self = this;
         var $tmpl = $(`<div><br/><h2>${this.model.get("plural")} shared with you by others</h2></div>`);
         var options = this.model.attributes;
@@ -61,9 +61,9 @@ var View = Backbone.View.extend({
             $tmpl.append(`No ${this.model.get("plural").toLowerCase()} have been shared with you.`);
         }
         return $tmpl;
-    }
+    },
 });
 
 export default {
-    View: View
+    View: View,
 };

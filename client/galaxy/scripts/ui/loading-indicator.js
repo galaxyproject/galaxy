@@ -8,7 +8,7 @@ function LoadingIndicator($where, options) {
     // defaults
     options = jQuery.extend(
         {
-            cover: false
+            cover: false,
         },
         options || {}
     );
@@ -20,14 +20,14 @@ function LoadingIndicator($where, options) {
             '<span class="fa fa-spinner fa-spin fa-lg"></span>',
             '<span class="loading-indicator-message">loading...</span>',
             "</div>",
-            "</div>"
+            "</div>",
         ].join("\n");
 
         var $indicator = $(html)
             .hide()
             .css(
                 options.css || {
-                    position: "fixed"
+                    position: "fixed",
                 }
             );
 
@@ -42,20 +42,20 @@ function LoadingIndicator($where, options) {
                 right: $where.css("right"),
                 opacity: 0.5,
                 "background-color": "white",
-                "text-align": "center"
+                "text-align": "center",
             });
             $text = $indicator.children(".loading-indicator-text").css({
-                "margin-top": "20px"
+                "margin-top": "20px",
             });
         } else {
             $text = $indicator.children(".loading-indicator-text").css({
                 margin: "12px 0px 0px 10px",
                 opacity: "0.85",
-                color: "grey"
+                color: "grey",
             });
             $text.children(".loading-indicator-message").css({
                 margin: "0px 8px 0px 0px",
-                "font-style": "italic"
+                "font-style": "italic",
             });
         }
         return $indicator;
@@ -65,10 +65,7 @@ function LoadingIndicator($where, options) {
         msg = msg || "loading...";
         speed = speed || "fast";
         // remove previous
-        $where
-            .parent()
-            .find(".loading-indicator")
-            .remove();
+        $where.parent().find(".loading-indicator").remove();
         // since position is fixed - we insert as sibling
         self.$indicator = render().insertBefore($where);
         self.message(msg);
@@ -76,7 +73,7 @@ function LoadingIndicator($where, options) {
         return self;
     };
 
-    self.message = msg => {
+    self.message = (msg) => {
         self.$indicator.find("i").text(msg);
     };
 
@@ -99,7 +96,7 @@ function LoadingIndicator($where, options) {
     return self;
 }
 
-const markViewAsLoading = function(view) {
+const markViewAsLoading = function (view) {
     view.setElement($('<div><div class="loading"></div></div>'));
     new LoadingIndicator(view.$(".loading")).show();
 };
@@ -107,5 +104,5 @@ const markViewAsLoading = function(view) {
 //============================================================================
 export default {
     LoadingIndicator: LoadingIndicator,
-    markViewAsLoading: markViewAsLoading
+    markViewAsLoading: markViewAsLoading,
 };

@@ -63,7 +63,33 @@ etc), and then will watch for changes in any of the galaxy client source files.
 When a file is changed, the client will automatically rebuild, after which you
 can usually force refresh your browser to see changes.  Note that it is still
 recommended to run `make client` after you are finished actively developing
-using `make client-watch`.
+using `make client-watch`.  
+
+Note that there's a new, better option described in the next section.  This
+method of building will likely be deprecated as HMR is more widely tested.
+
+
+Even Better Automatic Rebuilding (HMR)
+======================================
+
+For even more rapid development you can use the webpack development server for
+Hot Module Replacement (HMR).  This technique allows swapping out of modules
+while the application is running without requiring a full page reload most of
+the time.
+
+Setting this up is a little more involved, but it is the fastest possible way
+to iterate when developing the client.  You'll need to start two separate
+processes here.  The first command below starts a special webpack dev server
+after a client build, and the second starts a Galaxy server like usual, but
+with extra mappings that redirect client artifact requests to the mentioned
+webpack dev server.
+
+    make client-dev-server
+    GALAXY_CLIENT_DEV_SERVER=1 sh run.sh
+
+Note that this only works under uWSGI due to the extra internal routing rules
+employed.  If you're using the older Paste-based galaxy webserver you'll need
+to swap it over to take advantage of this functionality.
 
 
 Changing Styles/CSS
@@ -124,26 +150,26 @@ directory. This is what happens during a complete client build.
 
 During client-side development, it is more convenient to have granular testing
 options. The various testing scripts are defined inside package.json within the
-client folder, and are called either with npm (or yarn) as follows:
-
+client folder, and are called either with `yarn` as demonstrated in the 
+following commands.
 
 #### Run all tests (mocha and qunit):
 
-     npm run test
+     yarn run test
 
 #### Watch and rerun all client-side unit-tests every time a source file changes:
 
-     npm run test-watch
+     yarn run test-watch
 
 #### Run only specified test files when a source file changes:
 
-    npm run test-watch watch-only="Tags/*.test.js"
+    yarn run test-watch watch-only="Tags/*.test.js"
 
 (The above watch-only parameter will be mapped to the following glob expression "**/Tags/*.test.js")
 
 #### Run qunit legacy tests
 
-    npm run test-qunit
+    yarn run test-qunit
 
 
 ## Writing a test file

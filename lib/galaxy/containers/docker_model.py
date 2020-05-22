@@ -48,7 +48,7 @@ class DockerAttributeContainer(object):
         return hash(tuple(sorted([repr(x) for x in self._members])))
 
     def __str__(self):
-        return ', '.join([str(x) for x in self._members]) or 'None'
+        return ', '.join(str(x) for x in self._members) or 'None'
 
     def __iter__(self):
         return iter(self._members)

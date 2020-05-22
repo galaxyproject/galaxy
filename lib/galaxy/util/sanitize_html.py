@@ -3,6 +3,9 @@ HTML Sanitizer (lists of acceptable_* ripped from feedparser)
 """
 import bleach
 
+from galaxy.util import unicodify
+
+
 _acceptable_elements = ['a', 'abbr', 'acronym', 'address', 'area', 'article',
         'aside', 'audio', 'b', 'big', 'blockquote', 'br', 'button', 'canvas',
         'caption', 'center', 'cite', 'code', 'col', 'colgroup', 'command',
@@ -41,5 +44,8 @@ _acceptable_attributes = ['abbr', 'accept', 'accept-charset', 'accesskey',
         'volume', 'vspace', 'vrml', 'width', 'wrap', 'xml:lang']
 
 
-def sanitize_html(htmlSource):
-    return bleach.clean(htmlSource, tags=_acceptable_elements, attributes=_acceptable_attributes, strip=True)
+def sanitize_html(htmlSource, allow_data_urls=False):
+    kwd = dict(tags=_acceptable_elements, attributes=_acceptable_attributes, strip=True)
+    if allow_data_urls:
+        kwd["protocols"] = bleach.ALLOWED_PROTOCOLS + ["data"]
+    return bleach.clean(unicodify(htmlSource), **kwd)

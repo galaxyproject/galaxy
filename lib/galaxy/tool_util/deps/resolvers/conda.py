@@ -151,7 +151,7 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
             all_resolved = [r for r in all_resolved if r.dependency_type]
         if not all_resolved:
             return None
-        environments = set([os.path.basename(dependency.environment_path) for dependency in all_resolved])
+        environments = {os.path.basename(dependency.environment_path) for dependency in all_resolved}
         return self.uninstall_environments(environments)
 
     def uninstall_environments(self, environments):

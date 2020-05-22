@@ -1,6 +1,5 @@
 import os
 import tempfile
-from xml.etree.ElementTree import XML
 
 import pytest
 
@@ -20,6 +19,7 @@ from galaxy.tools.wrappers import (
     RawObjectWrapper,
     SelectToolParameterWrapper
 )
+from galaxy.util import XML
 from galaxy.util.bunch import Bunch
 
 
@@ -33,18 +33,44 @@ def with_mock_tool(func):
     return call
 
 
-@with_mock_tool
-def test_select_wrapper_simple_options(tool):
-    xml = XML('''<param name="blah" type="select">
+def selectwrapper(tool, value, multiple=False, optional=False):
+    optional = 'optional="true"' if optional else ''
+    multiple = 'multiple="true"' if multiple else ''
+    xml = XML('''<param name="blah" type="select" %s %s>
         <option value="x">I am X</option>
         <option value="y" selected="true">I am Y</option>
         <option value="z">I am Z</option>
-    </param>''')
+    </param>''' % (multiple, optional))
     parameter = SelectToolParameter(tool, xml)
-    wrapper = SelectToolParameterWrapper(parameter, "x")
-    assert str(wrapper) == "x"
+    return SelectToolParameterWrapper(parameter, value)
+
+
+@with_mock_tool
+def test_select_wrapper_simple_options(tool):
+    wrapper = selectwrapper(tool, "x")
     assert wrapper.name == "blah"
+    assert str(wrapper) == "x"
     assert wrapper.value_label == "I am X"
+    wrapper = selectwrapper(tool, None, optional=True)
+    assert str(wrapper) == "None"
+    assert wrapper == ""
+    assert wrapper == "None"
+
+
+@with_mock_tool
+def test_select_wrapper_multiple_options(tool):
+    wrapper = selectwrapper(tool, ["x"], multiple=True)
+    assert wrapper.name == "blah"
+    assert str(wrapper) == "x"
+    assert "x" in wrapper
+    wrapper = selectwrapper(tool, ["x", "z"], multiple=True)
+    assert str(wrapper) == "x,z"
+    assert "x" in wrapper
+    wrapper = selectwrapper(tool, [], multiple=True)
+    assert str(wrapper) == "None"
+    assert wrapper == ""
+    assert wrapper == "None"
+    assert "x" not in wrapper
 
 
 @with_mock_tool
@@ -89,15 +115,19 @@ def test_raw_object_wrapper():
     assert not false_wrapper
 
 
-def valuewrapper(tool, value, paramtype):
+def valuewrapper(tool, value, paramtype, optional=False):
     if paramtype == "integer":
-        parameter = IntegerToolParameter(tool, XML('<param name="blah" type="integer" value="10" min="0" />'))
+        optional = 'optional="true"' if optional else 'value="10"'
+        parameter = IntegerToolParameter(tool, XML('<param name="blah" type="integer" %s min="0" />' % optional))
     elif paramtype == "text":
-        parameter = TextToolParameter(tool, XML('<param name="blah" type="text" value="foo"/>'))
+        optional = 'optional="true"' if optional else 'value="foo"'
+        parameter = TextToolParameter(tool, XML('<param name="blah" type="text" %s/>' % optional))
     elif paramtype == "float":
-        parameter = FloatToolParameter(tool, XML('<param name="blah" type="float" value="10.0"/>'))
+        optional = 'optional="true"' if optional else 'value="10.0"'
+        parameter = FloatToolParameter(tool, XML('<param name="blah" type="float" %s/>' % optional))
     elif paramtype == "boolean":
-        parameter = BooleanToolParameter(tool, XML('<param name="blah" type="boolean" truevalue="truevalue" falsevalue="falsevalue"/>'))
+        optional = 'optional="true"' if optional else 'value=""'
+        parameter = BooleanToolParameter(tool, XML('<param name="blah" type="boolean" truevalue="truevalue" falsevalue="falsevalue" %s/>' % optional))
     return InputValueWrapper(parameter, value)
 
 
@@ -124,19 +154,24 @@ def test_input_value_wrapper_comparison(tool):
 
 @with_mock_tool
 def test_input_value_wrapper_comparison_optional(tool):
-    parameter = IntegerToolParameter(tool, XML('<param name="blah" type="integer" min="0" optional="true"/>'))
-    wrapper = InputValueWrapper(parameter, None)
+    wrapper = valuewrapper(tool, None, 'integer', optional=True)
     assert not wrapper
     with pytest.raises(ValueError):
         int(wrapper)
     assert str(wrapper) == ""
     assert wrapper == ""  # for backward-compatibility
-    parameter = IntegerToolParameter(tool, XML('<param name="blah" type="integer" min="0" optional="true"/>'))
-    wrapper = InputValueWrapper(parameter, 0)
+    wrapper = valuewrapper(tool, 0, 'integer', optional=True)
     assert wrapper == 0
     assert int(wrapper) == 0
     assert str(wrapper)
     assert wrapper != ""  # for backward-compatibility, the correct way to check if an optional integer param is not empty is to use str(wrapper)
+    wrapper = valuewrapper(tool, None, 'integer', optional=True)
+    assert wrapper != 1
+    assert str(wrapper) == ""
+    assert wrapper == None  # noqa: E711
+    wrapper = valuewrapper(tool, None, "boolean")
+    assert bool(wrapper) is False, wrapper
+    assert str(wrapper) == 'falsevalue'
 
 
 @with_mock_tool

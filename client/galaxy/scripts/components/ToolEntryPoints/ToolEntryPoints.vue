@@ -15,7 +15,7 @@
         <div v-else>
             There are multiple InteractiveTool result views available:
             <ul>
-                <li v-for="entryPoint of entryPoints" v-bind:key="entryPoint.id">
+                <li v-for="entryPoint of entryPoints" :key="entryPoint.id">
                     {{ entryPoint.name }}
                     <span v-if="entryPoint.active"> (<a :href="entryPoints[0].target">click here to display</a>) </span>
                     <span v-else>
@@ -38,35 +38,35 @@ export default {
     props: {
         jobId: {
             type: String,
-            required: true
-        }
+            required: true,
+        },
     },
     data() {
         return {
-            entryPoints: []
+            entryPoints: [],
         };
     },
-    created: function() {
+    created: function () {
         this.pollEntryPoints();
     },
-    beforeDestroy: function() {
+    beforeDestroy: function () {
         clearPolling();
     },
     computed: {
-        interactiveToolsLink: function() {
+        interactiveToolsLink: function () {
             return getAppRoot() + "interactivetool_entry_points/list";
-        }
+        },
     },
     methods: {
-        pollEntryPoints: function() {
-            const onUpdate = entryPoints => {
+        pollEntryPoints: function () {
+            const onUpdate = (entryPoints) => {
                 this.entryPoints = entryPoints;
             };
-            const onError = e => {
+            const onError = (e) => {
                 console.error(e);
             };
             pollUntilActive(onUpdate, onError, { job_id: this.jobId });
-        }
-    }
+        },
+    },
 };
 </script>

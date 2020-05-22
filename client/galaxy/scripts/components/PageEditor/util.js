@@ -1,24 +1,15 @@
-import $ from "jquery";
+import axios from "axios";
 import _l from "utils/localization";
 import { getAppRoot } from "onload/loadConfig";
 import { show_modal, hide_modal } from "layout/modal";
+import { Toast } from "ui/toast";
+import { errorMessageAsString } from "utils/simple-error";
 
 export const save = (pageId, content) => {
-    console.log(`content is ${content}`);
-
     show_modal(_l("Saving page"), _l("progress"));
 
-    // Do save.
-    $.ajax({
-        url: `${getAppRoot()}page/save`,
-        type: "POST",
-        data: {
-            id: pageId,
-            content: content,
-            _: "true"
-        },
-        success: function() {
-            hide_modal();
-        }
-    });
+    axios
+        .post(`${getAppRoot()}api/pages/${pageId}/revisions`, { content: content })
+        .finally(hide_modal)
+        .catch((error_message) => Toast.error("Failed to save page: " + errorMessageAsString(error_message)));
 };

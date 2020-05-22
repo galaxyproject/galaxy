@@ -300,6 +300,7 @@ class WorkflowContentsManager(UsesAnnotations):
         create_stored_workflow=True,
         exact_tools=True,
         fill_defaults=False,
+        from_tool_form=False,
     ):
         data = raw_workflow_description.as_dict
         # Put parameters in workflow mode
@@ -315,6 +316,7 @@ class WorkflowContentsManager(UsesAnnotations):
             name=name,
             exact_tools=exact_tools,
             fill_defaults=fill_defaults,
+            from_tool_form=from_tool_form,
         )
         if 'uuid' in data:
             workflow.uuid = data['uuid']
@@ -615,8 +617,8 @@ class WorkflowContentsManager(UsesAnnotations):
                 else:
                     data['upgrade_messages'][step.order_index] = {module.tool.name: "\n".join(module.version_changes)}
             # Get user annotation.
-            annotation_str = self.get_item_annotation_str(trans.sa_session, trans.user, step) or ''
             config_form = module.get_config_form(step=step)
+            annotation_str = self.get_item_annotation_str(trans.sa_session, trans.user, step) or ''
             # Pack attributes into plain dictionary
             step_dict = {
                 'id': step.order_index,
@@ -624,7 +626,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 'label': module.label,
                 'content_id': module.get_content_id(),
                 'name': module.get_name(),
-                'tool_state': module.get_state(),
+                'tool_state': module.get_tool_state(),
                 'errors': module.get_errors(),
                 'inputs': module.get_all_inputs(connectable_only=True),
                 'outputs': module.get_all_outputs(),
@@ -661,10 +663,6 @@ class WorkflowContentsManager(UsesAnnotations):
                         output_name=pja.output_name,
                         action_arguments=pja.action_arguments
                     )
-                    if pja.action_type == 'ChangeDatatypeAction':
-                        for output in step_dict['outputs']:
-                            if output['name'] == pja.output_name:
-                                output['force_datatype'] = [pja.action_arguments['newtype']]
                 step_dict['post_job_actions'] = pja_dict
 
             # workflow outputs
@@ -823,10 +821,7 @@ class WorkflowContentsManager(UsesAnnotations):
             annotation_str = self.get_item_annotation_str(trans.sa_session, trans.user, step) or ''
             content_id = module.get_content_id()
             # Export differences for backward compatibility
-            if module.type == 'tool':
-                tool_state = module.get_state(nested=False)
-            else:
-                tool_state = module.state.inputs
+            tool_state = module.get_export_state()
             # Step info
             step_dict = {
                 'id': step.order_index,
@@ -885,9 +880,10 @@ class WorkflowContentsManager(UsesAnnotations):
             # Data inputs, legacy section not used anywhere within core
             input_dicts = []
             step_state = module.state.inputs or {}
-            if "name" in step_state and module.type != 'tool':
-                name = step_state.get("name")
-                input_dicts.append({"name": name, "description": annotation_str})
+            if module.type != 'tool':
+                name = step_state.get("name") or module.label
+                if name:
+                    input_dicts.append({"name": name, "description": annotation_str})
             for name, val in step_state.items():
                 input_type = type(val)
                 if input_type == RuntimeValue:
@@ -942,7 +938,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
             # Encode input connections as dictionary
             input_conn_dict = {}
-            unique_input_names = set([conn.input_name for conn in input_connections])
+            unique_input_names = {conn.input_name for conn in input_connections}
             for input_name in unique_input_names:
                 input_conn_dicts = []
                 for conn in input_connections:
@@ -1133,7 +1129,7 @@ class WorkflowContentsManager(UsesAnnotations):
         steps_by_external_id[external_id] = step
         if 'workflow_outputs' in step_dict:
             workflow_outputs = step_dict['workflow_outputs']
-            found_output_names = set([])
+            found_output_names = set()
             for workflow_output in workflow_outputs:
                 # Allow workflow outputs as list of output_names for backward compatibility.
                 if not isinstance(workflow_output, dict):

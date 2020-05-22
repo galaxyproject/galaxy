@@ -4,6 +4,7 @@
         <div v-else>
             <b-input-group class="mb-3">
                 <b-input
+                    id="toolshed-repo-search"
                     placeholder="Search Repositories"
                     v-model="queryInput"
                     @input="delayQuery"
@@ -33,7 +34,7 @@ import InstalledList from "./InstalledList/Index.vue";
 export default {
     components: {
         SearchList,
-        InstalledList
+        InstalledList,
     },
     data() {
         return {
@@ -47,18 +48,21 @@ export default {
             total: 0,
             error: null,
             tabValue: true,
-            tabOptions: [{ text: "Search All", value: true }, { text: "Installed Only", value: false }]
+            tabOptions: [
+                { text: "Search All", value: true },
+                { text: "Installed Only", value: false },
+            ],
         };
     },
     watch: {
         tabValue() {
             this.setQuery("");
-        }
+        },
     },
     computed: {
         queryEmpty() {
             return !this.query || this.query.length < this.queryLength;
-        }
+        },
     },
     methods: {
         clearTimer() {
@@ -85,7 +89,7 @@ export default {
         },
         onScroll({ target: { scrollTop, clientHeight, scrollHeight } }) {
             this.scrolled = scrollTop + clientHeight >= scrollHeight;
-        }
-    }
+        },
+    },
 };
 </script>

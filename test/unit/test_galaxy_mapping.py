@@ -329,7 +329,7 @@ class MappingTests(unittest.TestCase):
         task.add_metric("gx", "galaxy_slots", 5)
         task.add_metric("system", "system_name", "localhost")
 
-        big_value = ":".join(["%d" % i for i in range(2000)])
+        big_value = ":".join("%d" % i for i in range(2000))
         task.add_metric("env", "BIG_PATH", big_value)
         self.persist(task)
         # Ensure big values truncated
@@ -602,6 +602,9 @@ class MockObjectStore(object):
 
     def get_filename(self, *args, **kwds):
         return "dataest_14.dat"
+
+    def get_store_by(self, *args, **kwds):
+        return 'id'
 
 
 def get_suite():

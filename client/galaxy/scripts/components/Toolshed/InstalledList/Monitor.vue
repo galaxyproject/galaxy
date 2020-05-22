@@ -33,14 +33,14 @@
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { getAppRoot } from "onload/loadConfig";
-import { Services } from "../services.js";
+import { Services } from "../services";
 import InstallationButton from "../RepositoryDetails/InstallationButton";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
-        InstallationButton
+        InstallationButton,
     },
     data() {
         return {
@@ -48,7 +48,7 @@ export default {
             loading: true,
             error: null,
             items: [],
-            fields: ["name", "status"]
+            fields: ["name", "status"],
         };
     },
     computed: {
@@ -57,7 +57,7 @@ export default {
         },
         showEmpty() {
             return !this.loading && this.items.length === 0;
-        }
+        },
     },
     created() {
         this.root = getAppRoot();
@@ -82,26 +82,26 @@ export default {
         load() {
             this.services
                 .getInstalledRepositories({
-                    filter: x => x.status !== "Installed"
+                    filter: (x) => x.status !== "Installed",
                 })
-                .then(items => {
+                .then((items) => {
                     this.items = items;
                     this.loading = false;
                     this.setTimeout();
                 })
-                .catch(error => {
+                .catch((error) => {
                     this.error = error;
                 });
         },
         onQuery(q) {
             this.$emit("onQuery", q);
         },
-        uninstallRepository: function(repository) {
-            this.services.uninstallRepository(repository).catch(error => {
+        uninstallRepository: function (repository) {
+            this.services.uninstallRepository(repository).catch((error) => {
                 this.error = error;
             });
-        }
-    }
+        },
+    },
 };
 </script>
 <style>

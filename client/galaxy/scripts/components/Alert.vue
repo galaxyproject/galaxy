@@ -13,21 +13,21 @@ export default {
          */
         message: {
             type: String,
-            default: ""
+            default: "",
         },
         /**
          * Alias for variant, takes precedence if both are set
          */
         status: {
             type: String,
-            default: ""
+            default: "",
         },
         /**
          * Alert type, one of done/success, info, warning, error/danger
          */
         variant: {
             type: String,
-            default: "done"
+            default: "done",
         },
         /** Display a close button in the alert that allows it to be dismissed */
         dismissible: Boolean,
@@ -36,7 +36,7 @@ export default {
         /** If a number, number of seconds to show before dismissing */
         show: [Boolean, Number],
         /** Should the alert fade out */
-        fade: Boolean
+        fade: Boolean,
     },
     computed: {
         galaxyKwdToBootstrap() {
@@ -48,7 +48,7 @@ export default {
                 done: "success",
                 info: "info",
                 warning: "warning",
-                error: "danger"
+                error: "danger",
             };
             if (variant in galaxyKwdToBoostrapDict) {
                 return galaxyKwdToBoostrapDict[variant];
@@ -66,7 +66,7 @@ export default {
             } else {
                 return false;
             }
-        }
-    }
+        },
+    },
 };
 </script>

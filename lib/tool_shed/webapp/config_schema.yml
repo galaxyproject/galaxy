@@ -208,7 +208,6 @@ mapping:
 
       remote_user_maildomain:
         type: str
-        default: null
         required: false
         desc: |
           If use_remote_user is enabled and your external authentication
@@ -228,7 +227,6 @@ mapping:
 
       remote_user_logout_href:
         type: str
-        default: null
         required: false
         desc: |
           If use_remote_user is enabled, you can set this to a URL that will log your
@@ -289,17 +287,17 @@ mapping:
 
       smtp_server:
         type: str
-        default: smtp.your_tool_shed_server
         required: false
         desc: |
           For use by email messages sent from the Tool Shed.
+          (smtp.your_tool_shed_server)
 
       email_from:
         type: str
-        default: your_tool_shed_email@server
         required: false
         desc: |
           For use by email messages sent from the Tool Shed.
+          (your_tool_shed_email@server)
 
       smtp_username:
         type: str
@@ -425,7 +423,7 @@ mapping:
 
       static_style_dir:
         type: str
-        default: static/style/blue
+        default: static/style
         required: false
         desc: |
           Serving static files (needed if running standalone)
@@ -457,7 +455,6 @@ mapping:
 
       nginx_x_accel_redirect_base:
         type: str
-        default: null
         required: false
         desc: |
           The same download handling can be done by nginx using X-Accel-Redirect.  This
@@ -466,7 +463,6 @@ mapping:
 
       nginx_upload_path:
         type: str
-        default: null
         required: false
         desc: |
           This value overrides the action set on the file upload form, e.g. the web
@@ -482,9 +478,20 @@ mapping:
           disposable email address during the registration.  If their address domain
           matches any domain in the blacklist, they are refused the registration.
 
+      whitelist_file:
+        type: str
+        default: disposable_email_whitelist.conf
+        path_resolves_to: config_dir
+        required: false
+        desc: |
+          E-mail domains whitelist is used to specify allowed email address domains.
+          If the list is non-empty and a user attempts registration using an email
+          address belonging to a domain that is not on the list, registration will be
+          enied. This is a more restrictive option than <blacklist_file>, and therefore,
+          in case <whitelist_file> is defined, <blacklist_file> will be ignored.
+
       brand:
         type: str
-        default: null
         required: false
         desc: |
           Append "/{brand}" to the "Galaxy" text in the masthead.
@@ -518,7 +525,7 @@ mapping:
 
       log_actions:
         type: bool
-        default: true
+        default: false
         required: false
         desc: |
           Turn on logging of user actions to the database.  Actions currently logged
@@ -537,7 +544,6 @@ mapping:
 
       sentry_dsn:
         type: str
-        default: null
         required: false
         desc: |
           Log to Sentry
@@ -557,7 +563,6 @@ mapping:
 
       terms_url:
         type: str
-        default: null
         required: false
         desc: |
           The URL linked by the "Terms and Conditions" link in the "Help" menu, as well

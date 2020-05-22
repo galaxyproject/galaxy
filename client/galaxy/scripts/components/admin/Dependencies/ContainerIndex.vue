@@ -89,7 +89,7 @@
                 <template v-slot:cell(tool)="row">
                     <tool-display :tool-id="row.item.tool_id" />
                 </template>
-                <template slot="row-details" slot-scope="row">
+                <template v-slot:row-details="row">
                     <container-resolution-details :resolution="row.item" />
                 </template>
             </b-table>
@@ -102,12 +102,12 @@ import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import DependencyIndexMixin from "./DependencyIndexMixin";
 import ContainerResolutionDetails from "./ContainerResolutionDetails";
-import { getContainerResolutionToolbox, resolveContainersWithInstall } from "../AdminServices.js";
+import { getContainerResolutionToolbox, resolveContainersWithInstall } from "../AdminServices";
 import { DESCRIPTION } from "./ContainerResolver";
 
 Vue.use(BootstrapVue);
 
-const RESOLVER_TYPE_OPTIONS = _.keys(DESCRIPTION).map(resolverType => ({ value: resolverType, text: resolverType }));
+const RESOLVER_TYPE_OPTIONS = _.keys(DESCRIPTION).map((resolverType) => ({ value: resolverType, text: resolverType }));
 RESOLVER_TYPE_OPTIONS.splice(0, 0, { value: null, text: "*any*" });
 
 export default {
@@ -123,20 +123,20 @@ export default {
                 { key: "requirement", label: "Requirements" },
                 { key: "resolution" },
                 { key: "resolver" },
-                { key: "container" }
+                { key: "container" },
             ],
             containerType: null,
             containerTypeOptions: [
                 { value: null, text: "*any*" },
                 { value: "docker", text: "Docker" },
-                { value: "singularity", text: "Singularity" }
+                { value: "singularity", text: "Singularity" },
             ],
             resolverType: null,
             resolverTypeOptions: RESOLVER_TYPE_OPTIONS,
             filterResolution: null,
             filterResolverType: null,
             filterContainerType: null,
-            resolutions: []
+            resolutions: [],
         };
     },
     methods: {
@@ -144,7 +144,7 @@ export default {
             this.loading = true;
             const params = this.apiParams();
             getContainerResolutionToolbox(params)
-                .then(resolutions => {
+                .then((resolutions) => {
                     this.resolutions = resolutions;
                     this.loading = false;
                 })
@@ -153,7 +153,7 @@ export default {
         installSelected() {
             this.loading = true;
             resolveContainersWithInstall(this.selectedToolIds(), this.apiParams())
-                .then(resolutions => {
+                .then((resolutions) => {
                     this.resolutions = resolutions;
                     this.loading = false;
                 })
@@ -180,26 +180,26 @@ export default {
                 }
             }
             return toolIds;
-        }
+        },
     },
     watch: {
-        containerType: function(val) {
+        containerType: function (val) {
             this.load();
         },
-        resolverType: function(val) {
+        resolverType: function (val) {
             this.load();
         },
-        filterResolution: function(val) {
+        filterResolution: function (val) {
             if (val == "unresolved") {
                 this.filterResolverType = null;
                 this.filterContainerType = null;
             }
-        }
+        },
     },
     computed: {
-        items: function() {
+        items: function () {
             return this.resolutions
-                .filter(resolution => {
+                .filter((resolution) => {
                     if (this.filterResolution == "unresolved" && resolution.status.dependency_type != null) {
                         return false;
                     }
@@ -224,16 +224,16 @@ export default {
                     }
                     return true;
                 })
-                .map(resolution => {
+                .map((resolution) => {
                     return {
                         selected: false,
                         requirements: resolution.requirements,
                         status: resolution.status,
                         tool_id: resolution.tool_id,
-                        _showDetails: false
+                        _showDetails: false,
                     };
                 });
-        }
-    }
+        },
+    },
 };
 </script>

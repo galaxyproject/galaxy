@@ -34,6 +34,9 @@ class RBACAgent(object):
         """
         return [x for x in [self.permitted_actions.get(action_string) for action_string in permitted_action_strings] if x is not None]
 
+    def create_user_role(self, user, app):
+        raise Exception("Unimplemented Method")
+
     def create_private_user_role(self, user):
         raise Exception("Unimplemented Method")
 
@@ -128,6 +131,9 @@ class CommunityRBACAgent(RBACAgent):
         self.associate_components(role=role, user=user)
         return role
 
+    def create_user_role(self, user, app):
+        self.get_private_user_role(user, auto_create=True)
+
     def get_item_actions(self, action, item):
         # item must be one of: Dataset, Library, LibraryFolder, LibraryDataset, LibraryDatasetDatasetAssociation
         return [permission for permission in item.actions if permission.action == action.action]
@@ -208,7 +214,7 @@ class CommunityRBACAgent(RBACAgent):
 
     def can_push(self, app, user, repository):
         if user:
-            return user.username in listify(repository.allow_push(app))
+            return user.username in listify(repository.allow_push())
         return False
 
     def user_can_administer_repository(self, user, repository):

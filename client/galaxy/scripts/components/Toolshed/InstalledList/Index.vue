@@ -25,7 +25,7 @@
                     id="repository-table"
                     striped
                     :fields="fields"
-                    :sortBy="sortBy"
+                    :sort-by="sortBy"
                     :items="repositories"
                     :filter="filter"
                     @filtered="filtered"
@@ -41,7 +41,7 @@
                         </b-link>
                         <div>{{ row.item.description }}</div>
                     </template>
-                    <template slot="row-details" slot-scope="row">
+                    <template v-slot:row-details="row">
                         <RepositoryDetails :repo="row.item" />
                     </template>
                 </b-table>
@@ -60,7 +60,7 @@
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { getAppRoot } from "onload/loadConfig";
-import { Services } from "../services.js";
+import { Services } from "../services";
 import LoadingSpan from "components/LoadingSpan";
 import Monitor from "./Monitor";
 import RepositoryDetails from "./Details";
@@ -71,7 +71,7 @@ export default {
     components: {
         LoadingSpan,
         Monitor,
-        RepositoryDetails
+        RepositoryDetails,
     },
     props: ["filter"],
     data() {
@@ -83,12 +83,12 @@ export default {
                     sortable: true,
                     sortByFormatted: (value, key, item) => {
                         return `${this.isLatest(item)}_${value}`;
-                    }
+                    },
                 },
                 {
                     key: "owner",
-                    sortable: true
-                }
+                    sortable: true,
+                },
             ],
             loading: true,
             message: null,
@@ -96,7 +96,7 @@ export default {
             nRepositories: 0,
             repositories: [],
             showMonitor: false,
-            sortBy: "name"
+            sortBy: "name",
         };
     },
     computed: {
@@ -108,7 +108,7 @@ export default {
         },
         showMessage() {
             return !!this.message;
-        }
+        },
     },
     created() {
         this.root = getAppRoot();
@@ -124,12 +124,12 @@ export default {
             this.loading = true;
             this.services
                 .getInstalledRepositories()
-                .then(repositories => {
+                .then((repositories) => {
                     this.repositories = repositories;
                     this.nRepositories = repositories.length;
                     this.loading = false;
                 })
-                .catch(error => {
+                .catch((error) => {
                     this.error = error;
                 });
         },
@@ -141,7 +141,7 @@ export default {
         },
         onQuery(query) {
             this.$emit("onQuery", query);
-        }
-    }
+        },
+    },
 };
 </script>

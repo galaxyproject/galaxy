@@ -1,5 +1,5 @@
 .navbar-fixed-top .navbar-brand {
-    font-family: Verdana;
+    font-family: Verdana, sans-serif;
     font-weight: bold;
     font-size: 160%;
 }
@@ -137,6 +137,7 @@ pre.code {
     a {
         font-weight: bold;
     }
+    border-color: transparent;
 }
 
 // increase visibility of dropdown menu section headers

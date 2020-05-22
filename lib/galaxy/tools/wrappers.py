@@ -77,8 +77,11 @@ class InputValueWrapper(ToolParameterValueWrapper):
         if self.input.type == 'boolean' and isinstance(other, string_types):
             return str(self)
         # For backward compatibility, allow `$wrapper != ""` for optional non-text param
-        if self.input.optional and self.value is None and isinstance(other, string_types):
-            return str(self)
+        if self.input.optional and self.value is None:
+            if isinstance(other, string_types):
+                return str(self)
+            else:
+                return None
         cast = {
             'text': str,
             'integer': int,
@@ -167,6 +170,9 @@ class SelectToolParameterWrapper(ToolParameterValueWrapper):
 
     def __eq__(self, other):
         if isinstance(other, string_types):
+            if other == '' and self.value in (None, []):
+                # Allow $wrapper == '' for select (self.value is None) and multiple select (self.value is []) params
+                return True
             return str(self) == other
         else:
             return super(SelectToolParameterWrapper, self) == other

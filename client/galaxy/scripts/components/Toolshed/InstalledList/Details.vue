@@ -8,14 +8,14 @@
                 </b-card>
             </span>
             <div v-else>
-                <RepositoryDetails :repo="toolshedRepository" :toolshedUrl="repo.tool_shed_url" />
+                <RepositoryDetails :repo="toolshedRepository" :toolshed-url="repo.tool_shed_url" />
             </div>
         </div>
     </div>
 </template>
 <script>
 import { getAppRoot } from "onload/loadConfig";
-import { Services } from "../services.js";
+import { Services } from "../services";
 import RepositoryDetails from "../RepositoryDetails/Index.vue";
 import LoadingSpan from "components/LoadingSpan";
 
@@ -23,13 +23,13 @@ export default {
     props: ["repo"],
     components: {
         LoadingSpan,
-        RepositoryDetails
+        RepositoryDetails,
     },
     data() {
         return {
             loading: true,
             toolshedRepository: null,
-            error: null
+            error: null,
         };
     },
     created() {
@@ -42,14 +42,14 @@ export default {
             this.loading = true;
             this.services
                 .getRepositoryByName(this.repo.tool_shed_url, this.repo.name, this.repo.owner)
-                .then(toolshedRepository => {
+                .then((toolshedRepository) => {
                     this.toolshedRepository = toolshedRepository;
                     this.loading = false;
                 })
-                .catch(error => {
+                .catch((error) => {
                     this.error = error;
                 });
-        }
-    }
+        },
+    },
 };
 </script>

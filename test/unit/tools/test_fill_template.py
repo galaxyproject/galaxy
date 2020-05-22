@@ -13,8 +13,8 @@ FILLED_SIMPLE_TEMPLATE = """    echo 1
     echo 2
 """
 LIST_COMPREHENSION_TEMPLATE = """#for $i in [1]:
-#set $v = "".join([str(_) for _ in [1] if _ == $i])
-echo $v
+#set $v = [str(_) for _ in [1] if _ == $i]
+echo $v[0]
 #end for
 """
 DICT_COMPREHENSION_TEMPLATE = """#for $i in [1]:
@@ -28,7 +28,7 @@ echo $v.pop()
 #end for
 """
 GEN_EXPR_TEMPLATE = """#for $i in [1]:
-#set $v = list((_ for _ in [1] if _ == $i))
+#set $v = list(_ for _ in [1] if _ == $i)
 echo $v[0]
 #end for
 """

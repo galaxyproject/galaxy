@@ -12,11 +12,13 @@
     everything including and beyond the first '&' is truncated from URL.  They said they'll let us know when this is fixed at their end.
 -->
 <tool name="HapMapMart" id="hapmapmart" tool_type="data_source" version="0.0.01">
-	<description>HapMap Biomart</description>
-	<command interpreter="python">data_source.py $output $__app__.config.output_size_limit</command>
-	<inputs action="http://hapmap.ncbi.nlm.nih.gov/biomart/martview" check_values="false" method="get" target="_top">
-		<display>go to HapMap BioMart $GALAXY_URL</display>
-		<param name="GALAXY_URL" type="baseurl" value="/tool_runner/hapmapmart" />
+    <description>HapMap Biomart</description>
+    <command><![CDATA[
+python '$__tool_directory__/data_source.py' '$output' $__app__.config.output_size_limit
+    ]]></command>
+    <inputs action="http://hapmap.ncbi.nlm.nih.gov/biomart/martview" check_values="false" method="get" target="_top">
+        <display>go to HapMap BioMart $GALAXY_URL</display>
+        <param name="GALAXY_URL" type="baseurl" value="/tool_runner/hapmapmart" />
     </inputs>
     <request_param_translation>
         <request_param galaxy_name="URL" remote_name="URL" missing="">
@@ -38,9 +40,9 @@
         <request_param galaxy_name="name" remote_name="name" missing="HapMap query" />
         <request_param galaxy_name="info" remote_name="info" missing="" />
     </request_param_translation>
-	<uihints minwidth="800"/>
-	<outputs>
-		<data name="output" format="tabular" />
-	</outputs>
-	<options sanitize="False" refresh="True"/>
+    <uihints minwidth="800"/>
+    <outputs>
+        <data name="output" format="tabular" />
+    </outputs>
+    <options sanitize="False" refresh="True"/>
 </tool>

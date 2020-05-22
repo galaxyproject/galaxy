@@ -5,29 +5,42 @@ or searching related parts it is deeply recommended to read
 through the library docs at https://whoosh.readthedocs.io.
 """
 import logging
+import os
 import re
-import tempfile
 
-from whoosh import analysis
+from whoosh import (
+    analysis,
+    index,
+)
 from whoosh.analysis import StandardAnalyzer
 from whoosh.fields import (
+    ID,
     KEYWORD,
     Schema,
-    STORED,
     TEXT
-)
-from whoosh.filedb.filestore import (
-    FileStorage,
-    RamStorage
 )
 from whoosh.qparser import MultifieldParser
 from whoosh.qparser import OrGroup
 from whoosh.scoring import BM25F
+from whoosh.writing import AsyncWriter
 
 from galaxy.util import ExecutionTimer
 from galaxy.web.framework.helpers import to_unicode
 
 log = logging.getLogger(__name__)
+
+
+def get_or_create_index(index_dir, schema):
+    if not os.path.exists(index_dir):
+        os.makedirs(index_dir)
+    if index.exists_in(index_dir):
+        idx = index.open_dir(index_dir)
+        try:
+            assert idx.schema == schema
+            return idx
+        except AssertionError:
+            log.warning("Index at '%s' uses outdated schema, creating new index", index_dir)
+    return index.create_in(index_dir, schema=schema)
 
 
 class ToolBoxSearch(object):
@@ -36,8 +49,8 @@ class ToolBoxSearch(object):
     the Whoosh search library.
     """
 
-    def __init__(self, toolbox, index_help=True):
-        self.schema = Schema(id=STORED,
+    def __init__(self, toolbox, index_dir=None, index_help=True):
+        self.schema = Schema(id=ID(stored=True),
                              stub=KEYWORD,
                              name=TEXT(analyzer=analysis.SimpleAnalyzer()),
                              description=TEXT,
@@ -45,8 +58,9 @@ class ToolBoxSearch(object):
                              help=TEXT,
                              labels=KEYWORD)
         self.rex = analysis.RegexTokenizer()
+        self.index_dir = index_dir
         self.toolbox = toolbox
-        self.storage, self.index = self._index_setup()
+        self.index = self._index_setup()
         # We keep track of how many times the tool index has been rebuilt.
         # We start at -1, so that after the first index the count is at 0,
         # which is the same as the toolbox reload count. This way we can skip
@@ -54,11 +68,7 @@ class ToolBoxSearch(object):
         self.index_count = -1
 
     def _index_setup(self):
-        RamStorage.temp_storage = _temp_storage
-        # Works around https://bitbucket.org/mchaput/whoosh/issues/391/race-conditions-with-temp-storage
-        storage = RamStorage()
-        index = storage.create_index(self.schema)
-        return storage, index
+        return get_or_create_index(index_dir=self.index_dir, schema=self.schema)
 
     def build_index(self, tool_cache, index_help=True):
         """
@@ -68,15 +78,18 @@ class ToolBoxSearch(object):
         log.debug('Starting to build toolbox index.')
         self.index_count += 1
         execution_timer = ExecutionTimer()
-        writer = self.index.writer()
-        for tool_id in tool_cache._removed_tool_ids:
-            writer.delete_by_term('id', tool_id)
-        for tool_id in tool_cache._new_tool_ids:
-            tool = tool_cache.get_tool_by_id(tool_id)
-            if tool and tool.is_latest_version:
-                add_doc_kwds = self._create_doc(tool_id=tool_id, tool=tool, index_help=index_help)
-                writer.add_document(**add_doc_kwds)
-        writer.commit()
+        with self.index.reader() as reader:
+            # Index ocasionally contains empty stored fields
+            indexed_tool_ids = {f['id'] for f in reader.all_stored_fields() if f}
+        tool_ids_to_remove = (indexed_tool_ids - set(tool_cache._tool_paths_by_id.keys())).union(tool_cache._removed_tool_ids)
+        with AsyncWriter(self.index) as writer:
+            for tool_id in tool_ids_to_remove:
+                writer.delete_by_term('id', tool_id)
+            for tool_id in tool_cache._new_tool_ids - indexed_tool_ids:
+                tool = tool_cache.get_tool_by_id(tool_id)
+                if tool and tool.is_latest_version:
+                    add_doc_kwds = self._create_doc(tool_id=tool_id, tool=tool, index_help=index_help)
+                    writer.add_document(**add_doc_kwds)
         log.debug("Toolbox index finished %s", execution_timer)
 
     def _create_doc(self, tool_id, tool, index_help=True):
@@ -91,14 +104,14 @@ class ToolBoxSearch(object):
         }
         if tool.name.find('-') != -1:
             # Replace hyphens, since they are wildcards in Whoosh causing false positives
-            add_doc_kwds['name'] = (' ').join([token.text for token in self.rex(to_unicode(tool.name))])
+            add_doc_kwds['name'] = (' ').join(token.text for token in self.rex(to_unicode(tool.name)))
         else:
             add_doc_kwds['name'] = to_unicode(tool.name)
         if tool.guid:
             # Create a stub consisting of owner, repo, and tool from guid
             slash_indexes = [m.start() for m in re.finditer('/', tool.guid)]
             id_stub = tool.guid[(slash_indexes[1] + 1): slash_indexes[4]]
-            add_doc_kwds['stub'] = (' ').join([token.text for token in self.rex(to_unicode(id_stub))])
+            add_doc_kwds['stub'] = (' ').join(token.text for token in self.rex(to_unicode(id_stub)))
         else:
             add_doc_kwds['stub'] = to_unicode(id)
         if tool.labels:
@@ -143,7 +156,7 @@ class ToolBoxSearch(object):
         cleaned_query = q.lower()
         # Replace hyphens, since they are wildcards in Whoosh causing false positives
         if cleaned_query.find('-') != -1:
-            cleaned_query = (' ').join([token.text for token in self.rex(to_unicode(cleaned_query))])
+            cleaned_query = (' ').join(token.text for token in self.rex(to_unicode(cleaned_query)))
         if tool_enable_ngram_search is True:
             rval = self._search_ngrams(cleaned_query, tool_ngram_minsize, tool_ngram_maxsize, tool_search_limit)
             return rval
@@ -181,9 +194,3 @@ class ToolBoxSearch(object):
         hits_with_score = sorted(hits_with_score.items(), key=lambda x: x[1], reverse=True)
         # Return the tool ids
         return [item[0] for item in hits_with_score[0:int(tool_search_limit)]]
-
-
-def _temp_storage(self, name=None):
-    path = tempfile.mkdtemp()
-    tempstore = FileStorage(path)
-    return tempstore.create()

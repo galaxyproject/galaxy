@@ -6,10 +6,9 @@ import pytest
 
 from galaxy.tool_util.deps.mulled.mulled_update_singularity_containers import docker_to_singularity, get_list_from_file, singularity_container_test
 from galaxy.util import which
-from ..test_conda_resolution import external_dependency_management
+from ..util import external_dependency_management
 
 
-@external_dependency_management
 def test_get_list_from_file():
     test_dir = tempfile.mkdtemp()
     try:
@@ -25,8 +24,7 @@ def test_get_list_from_file():
 @pytest.mark.skipif(not which('singularity'), reason="requires singularity but singularity not on PATH")
 def test_docker_to_singularity(tmp_path):
     tmp_dir = str(tmp_path)
-    errors = docker_to_singularity('abundancebin:1.0.1--0', 'singularity', tmp_dir, no_sudo=True)
-    assert errors is None
+    docker_to_singularity('abundancebin:1.0.1--0', 'singularity', tmp_dir, no_sudo=True)
     assert tmp_path.joinpath('abundancebin:1.0.1--0').exists()
 
 

@@ -8,20 +8,20 @@ import { serverPath } from "utils/serverPath";
 
 const galaxyStub = {
     root: getAppRoot(),
-    config: {}
+    config: {},
 };
 
 if (!window.Galaxy) {
     Object.defineProperty(window, "Galaxy", {
         enumerable: true,
-        get: function() {
+        get: function () {
             console.warn("accessing (get) window.Galaxy", serverPath());
             return getGalaxyInstance() || galaxyStub;
         },
-        set: function(newValue) {
+        set: function (newValue) {
             console.warn("accessing (set) window.Galaxy", serverPath());
             setGalaxyInstance(newValue);
-        }
+        },
     });
 } else {
     console.error("Detected redefinition of window.Galaxy -- skipping, but this should be investigated.", serverPath());

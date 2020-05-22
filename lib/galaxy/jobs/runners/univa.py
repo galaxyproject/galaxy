@@ -27,11 +27,15 @@ known bugs/problems:
 import logging
 import re
 import signal
-import subprocess
 import time
 
-from galaxy import util
 from galaxy.jobs.runners.drmaa import DRMAAJobRunner
+from galaxy.util import (
+    commands,
+    size_to_bytes,
+    unicodify
+)
+
 log = logging.getLogger(__name__)
 
 __all__ = ('UnivaJobRunner',)
@@ -153,10 +157,10 @@ class UnivaJobRunner(DRMAAJobRunner):
         # even if this could be disambiguated by the stderr message the `qstat -u "*"`
         # way seems more generic
         cmd = ['qstat', '-u', '"*"']
-        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = p.communicate()
-        if p.returncode != 0 or stderr != "":
-            log.exception('`%s` returned %d, stderr: %s' % (' '.join(cmd), p.returncode, stderr))
+        try:
+            stdout = commands.execute(cmd).strip()
+        except commands.CommandLineException as e:
+            log.error(unicodify(e))
             raise self.drmaa.InternalException()
         state = self.drmaa.JobState.UNDETERMINED
         for line in stdout.split('\n'):
@@ -196,17 +200,15 @@ class UnivaJobRunner(DRMAAJobRunner):
         # available immediately a simple retry mechanism is implemented ..
         # max wait is approx 1min)
         while True:
-            p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            stdout, stderr = p.communicate()
-            stderr = stderr.strip()
-            if p.returncode != 0:
-                if slp <= 32 and "job id {jobid} not found".format(jobid=job_id) in stderr:
-                    # log.debug('`%s` returned %s, stderr: %s => retry after %ds' % (' '.join(cmd), p.returncode, stderr, slp))
+            try:
+                stdout = commands.execute(cmd).strip()
+            except commands.CommandLineException as e:
+                if slp <= 32 and "job id {jobid} not found".format(jobid=job_id) in e.stderr:
                     time.sleep(slp)
                     slp *= 2
                     continue
                 else:
-                    log.exception('`%s` returned %s, stderr: %s' % (' '.join(cmd), p.returncode, stderr))
+                    log.error(unicodify(e))
                     return self.drmaa.JobState.UNDETERMINED
             else:
                 break
@@ -243,7 +245,7 @@ class UnivaJobRunner(DRMAAJobRunner):
         # qdel       100     137          user@mail
 
         extinfo["time_wasted"] = _parse_time(qacct["wallclock"])
-        extinfo["memory_wasted"] = util.size_to_bytes(qacct["maxvmem"])
+        extinfo["memory_wasted"] = size_to_bytes(qacct["maxvmem"])
         extinfo["slots"] = int(qacct["slots"])
 
         # deleted_by
@@ -569,7 +571,7 @@ def _parse_native_specs(job_id, native_spec):
     # parse memory
     m = re.search(r"mem=([\d.]+[KGMT]?)[\s,]*", native_spec)
     if m is not None:
-        mem = util.size_to_bytes(m.group(1))
+        mem = size_to_bytes(m.group(1))
         # mem = _parse_mem(m.group(1))
         if mem is None:
             log.error("DRMAAUniva: job {job_id} has unparsable memory native spec {spec}".format(job_id=job_id, spec=native_spec))

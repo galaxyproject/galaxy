@@ -8,12 +8,12 @@ addInitialization((Galaxy, { options }) => {
     console.log("Admin custom page setup");
 
     Object.assign(options.config, {
-        active_view: "admin"
+        active_view: "admin",
     });
 
     const pageOptions = Object.assign({}, options, {
         Left: AdminPanel,
-        Router: getAdminRouter(Galaxy, options)
+        Router: getAdminRouter(Galaxy, options),
     });
 
     Utils.setWindowTitle("Administration");

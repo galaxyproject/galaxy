@@ -16,7 +16,6 @@ try:
 except ImportError:
     # Use backport on python 2
     from pathlib2 import Path
-from xml.etree import ElementTree
 
 import packaging.version
 import webob.exc
@@ -57,6 +56,7 @@ from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.model_operations import ModelOperationToolAction
+from galaxy.tools.cache import create_cache_region
 from galaxy.tools.parameters import (
     check_param,
     params_from_strings,
@@ -89,9 +89,11 @@ from galaxy.util import (
     in_directory,
     listify,
     Params,
+    parse_xml_string,
     rst_to_html,
     string_as_bool,
     unicodify,
+    XML,
 )
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
@@ -114,6 +116,7 @@ from .execute import (
     MappingParameters,
 )
 
+
 log = logging.getLogger(__name__)
 
 REQUIRES_JS_RUNTIME_MESSAGE = ("The tool [%s] requires a nodejs runtime to execute "
@@ -127,14 +130,9 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     "send_to_cloud",
     "__DATA_FETCH__",
     # Legacy tools bundled with Galaxy.
-    "vcf_to_maf_customtrack1",
     "laj_1",
-    "meme_fimo",
-    "secure_hash_message_digest",
-    "join1",
     "gff2bed1",
     "gff_filter_by_feature_count",
-    "aggregate_scores_in_intervals2",
     "Interval_Maf_Merged_Fasta2",
     "GeneBed_Maf_Fasta2",
     "maf_stats1",
@@ -147,16 +145,12 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     "MAF_split_blocks_by_species1",
     "MAF_Limit_To_Species1",
     "maf_by_block_number1",
-    "wiggle2simple1",
     # Converters
     "CONVERTER_bed_to_fli_0",
-    "CONVERTER_fastq_to_fqtoc0",
     "CONVERTER_gff_to_fli_0",
     "CONVERTER_gff_to_interval_index_0",
     "CONVERTER_maf_to_fasta_0",
     "CONVERTER_maf_to_interval_0",
-    "CONVERTER_wiggle_to_interval_0",
-    "CONVERTER_tar_to_directory",
     # Tools improperly migrated to the tool shed (devteam)
     "qualityFilter",
     "winSplitter",
@@ -166,11 +160,8 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     "lastz_paired_reads_wrapper",
     "subRate1",
     "substitutions1",
-    "sam_pileup",
     "find_diag_hits",
     "cufflinks",
-    # Tools improperly migrated to the tool shed (iuc)
-    "tabular_to_dbnsfp",
     # Tools improperly migrated using Galaxy (from shed other)
     "column_join",
     "gd_coverage_distributions",  # Genome Diversity tools from miller-lab
@@ -179,18 +170,27 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     "gd_phylogenetic_tree",
     "gd_population_structure",
     "gd_prepare_population_structure",
-    # Datasources
-    "genomespace_importer"
 ]
 # Tools that needed galaxy on the PATH in the past but no longer do along
 # with the version at which they were fixed.
 GALAXY_LIB_TOOLS_VERSIONED = {
+    "meme_fimo": packaging.version.parse("5.0.5"),
     "Extract genomic DNA 1": packaging.version.parse("3.0.0"),
     "fetchflank": packaging.version.parse("1.0.1"),
     "gops_intersect_1": packaging.version.parse("1.0.0"),
     "lastz_wrapper_2": packaging.version.parse("1.3"),
     "PEsortedSAM2readprofile": packaging.version.parse("1.1.1"),
     "sam_to_bam": packaging.version.parse("1.1.3"),
+    "sam_pileup": packaging.version.parse("1.1.3"),
+    "vcf_to_maf_customtrack1": packaging.version.parse("1.0.1"),
+    "secure_hash_message_digest": packaging.version.parse("0.0.2"),
+    "join1": packaging.version.parse("2.1.3"),
+    "wiggle2simple1": packaging.version.parse("1.0.1"),
+    "CONVERTER_wiggle_to_interval_0": packaging.version.parse("1.0.1"),
+    "aggregate_scores_in_intervals2": packaging.version.parse("1.1.4"),
+    "CONVERTER_fastq_to_fqtoc0": packaging.version.parse("1.0.1"),
+    "CONVERTER_tar_to_directory": packaging.version.parse("1.0.1"),
+    "tabular_to_dbnsfp": packaging.version.parse("1.0.1"),
 }
 
 
@@ -244,9 +244,12 @@ class ToolBox(BaseGalaxyToolBox):
     how to construct them, action types, dependency management, etc....
     """
 
-    def __init__(self, config_filenames, tool_root_dir, app):
+    def __init__(self, config_filenames, tool_root_dir, app, save_integrated_tool_panel=True):
         self._reload_count = 0
         self.tool_location_fetcher = ToolLocationFetcher()
+        self.cache_regions = {}
+        if not os.path.exists(app.config.tool_cache_data_dir):
+            os.makedirs(app.config.tool_cache_data_dir)
         # This is here to deal with the old default value, which doesn't make
         # sense in an "installed Galaxy" world.
         # FIXME: ./
@@ -256,14 +259,28 @@ class ToolBox(BaseGalaxyToolBox):
             config_filenames=config_filenames,
             tool_root_dir=tool_root_dir,
             app=app,
+            save_integrated_tool_panel=save_integrated_tool_panel,
         )
+
+    def can_load_config_file(self, config_filename):
+        if config_filename == self.app.config.shed_tool_config_file and not self.app.config.shed_tool_config_file_set:
+            if self.dynamic_confs():
+                # Do not load or create a default shed_tool_config_file if another shed_tool_config file has already been loaded
+                return False
+        elif self.app.config.tool_config_file_set:
+            log.warning(
+                "The default shed tool config file (%s) has been added to the tool_config_file option, if this is "
+                "not the desired behavior, please set shed_tool_config_file to your primary shed-enabled tool "
+                "config file", self.app.config.shed_tool_config_file
+            )
+        return True
 
     def has_reloaded(self, other_toolbox):
         return self._reload_count != other_toolbox._reload_count
 
     @property
     def all_requirements(self):
-        reqs = set([req for _, tool in self.tools() for req in tool.tool_requirements])
+        reqs = {req for _, tool in self.tools() for req in tool.tool_requirements}
         return [r.to_dict() for r in reqs]
 
     @property
@@ -271,9 +288,22 @@ class ToolBox(BaseGalaxyToolBox):
         # Deprecated method, TODO - eliminate calls to this in test/.
         return self._tools_by_id
 
-    def create_tool(self, config_file, **kwds):
+    def get_cache_region(self, tool_cache_data_dir):
+        if tool_cache_data_dir not in self.cache_regions:
+            self.cache_regions[tool_cache_data_dir] = create_cache_region(tool_cache_data_dir)
+        return self.cache_regions[tool_cache_data_dir]
+
+    def create_tool(self, config_file, tool_cache_data_dir=None, **kwds):
+        cache = self.get_cache_region(tool_cache_data_dir or self.app.config.tool_cache_data_dir)
+        tool_source = cache.get_or_create(config_file, creator=self.get_expanded_tool_source, expiration_time=-1, creator_args=((config_file,), {}))
+        tool = self._create_tool_from_source(tool_source, config_file=config_file, **kwds)
+        if not self.app.config.delay_tool_initialization:
+            tool.assert_finalized(raise_if_invalid=True)
+        return tool
+
+    def get_expanded_tool_source(self, config_file):
         try:
-            tool_source = get_tool_source(
+            return get_tool_source(
                 config_file,
                 enable_beta_formats=getattr(self.app.config, "enable_beta_tool_formats", False),
                 tool_location_fetcher=self.tool_location_fetcher,
@@ -282,7 +312,6 @@ class ToolBox(BaseGalaxyToolBox):
             # capture and log parsing errors
             global_tool_errors.add_error(config_file, "Tool XML parsing", e)
             raise e
-        return self._create_tool_from_source(tool_source, config_file=config_file, **kwds)
 
     def _create_tool_from_source(self, tool_source, **kwds):
         return create_tool_from_source(self.app, tool_source, **kwds)
@@ -436,7 +465,6 @@ class Tool(Dictifiable):
         self.repository_id = repository_id
         self._allow_code_files = allow_code_files
         # setup initial attribute values
-        self.inputs = OrderedDict()
         self.stdio_exit_codes = list()
         self.stdio_regexes = list()
         self.inputs_by_page = list()
@@ -481,6 +509,9 @@ class Tool(Dictifiable):
         self.populate_resource_parameters(tool_source)
         self.tool_errors = None
         # Parse XML element containing configuration
+        self.tool_source = tool_source
+        self._is_workflow_compatible = None
+        self.finalized = False
         try:
             self.parse(tool_source, guid=guid, dynamic=dynamic)
         except Exception as e:
@@ -490,6 +521,50 @@ class Tool(Dictifiable):
         # loading tools into the toolshed for validation.
         if self.app.name == 'galaxy':
             self.job_search = JobSearch(app=self.app)
+
+    def __getattr__(self, name):
+        lazy_attributes = {
+            'action',
+            'check_values',
+            'display_by_page',
+            'enctype',
+            'has_multiple_pages',
+            'inputs',
+            'inputs_by_page',
+            'last_page',
+            'method',
+            'npages',
+            'nginx_upload',
+            'target',
+            'template_macro_params',
+            'outputs',
+            'output_collections'
+        }
+        if name in lazy_attributes:
+            self.assert_finalized()
+            return getattr(self, name)
+        raise AttributeError(name)
+
+    def assert_finalized(self, raise_if_invalid=False):
+        if self.finalized is False:
+            try:
+                self.parse_inputs(self.tool_source)
+                self.parse_outputs(self.tool_source)
+                self.finalized = True
+            except Exception:
+                toolbox = getattr(self.app, 'toolbox', None)
+                if toolbox:
+                    toolbox.remove_tool_by_id(self.id)
+                if raise_if_invalid:
+                    raise
+                else:
+                    log.warning("An error occured while parsing the tool wrapper xml, the tool is not functional", exc_info=True)
+
+    def remove_from_cache(self):
+        source_path = self.tool_source._source_path
+        if source_path:
+            for region in self.app.toolbox.cache_regions.values():
+                region.delete(source_path)
 
     @property
     def history_manager(self):
@@ -517,7 +592,7 @@ class Tool(Dictifiable):
     def tool_versions(self):
         # If we have versions, return them.
         if self.lineage:
-            return self.lineage.tool_versions
+            return list(self.lineage.tool_versions)
         else:
             return []
 
@@ -525,6 +600,10 @@ class Tool(Dictifiable):
     def is_latest_version(self):
         tool_versions = self.tool_versions
         return not tool_versions or self.version == self.tool_versions[-1]
+
+    @property
+    def is_datatype_converter(self):
+        return self in self.app.datatypes_registry.converter_tools
 
     @property
     def tool_shed_repository(self):
@@ -788,14 +867,8 @@ class Tool(Dictifiable):
         self.provided_metadata_file = tool_source.parse_provided_metadata_file()
         self.provided_metadata_style = tool_source.parse_provided_metadata_style()
 
-        # Parse tool inputs (if there are any required)
-        self.parse_inputs(tool_source)
-
         # Parse tool help
         self.parse_help(tool_source)
-
-        # Description of outputs produced by an invocation of the tool
-        self.parse_outputs(tool_source)
 
         # Parse result handling for tool exit codes and stdout/stderr messages:
         self.parse_stdio(tool_source)
@@ -829,8 +902,6 @@ class Tool(Dictifiable):
         self.citations = self._parse_citations(tool_source)
         self.xrefs = tool_source.parse_xrefs()
 
-        # Determine if this tool can be used in workflows
-        self.is_workflow_compatible = self.check_workflow_compatible(tool_source)
         self.__parse_trackster_conf(tool_source)
         # Record macro paths so we can reload a tool if any of its macro has changes
         self._macro_paths = tool_source.macro_paths()
@@ -915,6 +986,7 @@ class Tool(Dictifiable):
 
     @property
     def tests(self):
+        self.assert_finalized()
         if not self.__tests_populated:
             tests_source = self.__tests_source
             if tests_source:
@@ -922,7 +994,7 @@ class Tool(Dictifiable):
                     self.__tests = parse_tests(self, tests_source)
                 except Exception:
                     self.__tests = None
-                    log.exception("Failed to parse tool tests")
+                    log.exception("Failed to parse tool tests for tool '%s'", self.id)
             else:
                 self.__tests = None
             self.__tests_populated = True
@@ -936,10 +1008,10 @@ class Tool(Dictifiable):
         if getattr(self, 'tool_shed', None):
             tool_dir = Path(self.tool_dir)
             for repo_dir in itertools.chain([tool_dir], tool_dir.parents):
-                if repo_dir.stem == self.repository_name:
+                if repo_dir.name == self.repository_name:
                     return str(repo_dir)
             else:
-                log.error("Problem finding repository dir for tool [%s]" % self.id)
+                log.error("Problem finding repository dir for tool '%s'" % self.id)
 
         return repository_base_dir
 
@@ -1000,6 +1072,7 @@ class Tool(Dictifiable):
         This implementation supports multiple pages and grouping constructs.
         """
         # Load parameters (optional)
+        self.inputs = OrderedDict()
         pages = tool_source.parse_input_pages()
         enctypes = set()
         if pages.inputs_defined:
@@ -1128,8 +1201,7 @@ class Tool(Dictifiable):
                 group.min = int(input_source.get("min", 0))
                 # Use float instead of int so that 'inf' can be used for no max
                 group.max = float(input_source.get("max", "inf"))
-                assert group.min <= group.max, \
-                    ValueError("Min repeat count must be less-than-or-equal to the max.")
+                assert group.min <= group.max, ValueError("Tool with id '%s': min repeat count must be less-than-or-equal to the max." % self.id)
                 # Force default to be within min-max range
                 group.default = min(max(group.default, group.min), group.max)
                 rval[group.name] = group
@@ -1150,7 +1222,7 @@ class Tool(Dictifiable):
                         case = ConditionalWhen()
                         case.value = case_value
                         if case_inputs:
-                            page_source = XmlPageSource(ElementTree.XML("<when>%s</when>" % case_inputs))
+                            page_source = XmlPageSource(XML("<when>%s</when>" % case_inputs))
                             case.inputs = self.parse_input_elem(page_source, enctypes, context)
                         else:
                             case.inputs = OrderedDict()
@@ -1160,7 +1232,7 @@ class Tool(Dictifiable):
                     test_param_input_source = input_source.parse_test_input_source()
                     group.test_param = self.parse_param_elem(test_param_input_source, enctypes, context)
                     if group.test_param.optional:
-                        log.debug("Tool with id %s declares a conditional test parameter as optional, this is invalid and will be ignored." % self.id)
+                        log.debug("Tool with id '%s': declares a conditional test parameter as optional, this is invalid and will be ignored." % self.id)
                         group.test_param.optional = False
                     possible_cases = list(group.test_param.legal_values)  # store possible cases, undefined whens will have no inputs
                     # Must refresh when test_param changes
@@ -1174,10 +1246,10 @@ class Tool(Dictifiable):
                         try:
                             possible_cases.remove(case.value)
                         except Exception:
-                            log.debug("Tool %s: a when tag has been defined for '%s (%s) --> %s', but does not appear to be selectable." %
+                            log.debug("Tool with id '%s': a when tag has been defined for '%s (%s) --> %s', but does not appear to be selectable." %
                                       (self.id, group.name, group.test_param.name, case.value))
                     for unspecified_case in possible_cases:
-                        log.warning("Tool %s: a when tag has not been defined for '%s (%s) --> %s', assuming empty inputs." %
+                        log.warning("Tool with id '%s': a when tag has not been defined for '%s (%s) --> %s', assuming empty inputs." %
                                     (self.id, group.name, group.test_param.name, unspecified_case))
                         case = ConditionalWhen()
                         case.value = unspecified_case
@@ -1231,7 +1303,7 @@ class Tool(Dictifiable):
         for name in param.get_dependencies():
             # Let it throw exception, but give some hint what the problem might be
             if name not in context:
-                log.error("Could not find dependency '%s' of parameter '%s' in tool %s" % (name, param.name, self.name))
+                log.error("Tool with id '%s': Could not find dependency '%s' of parameter '%s'" % (self.id, name, param.name))
             context[name].refresh_on_change = True
         return param
 
@@ -1242,7 +1314,7 @@ class Tool(Dictifiable):
             if resource_xml is not None:
                 inputs = root.find('inputs')
                 if inputs is None:
-                    inputs = ElementTree.fromstring('<inputs/>')
+                    inputs = parse_xml_string('<inputs/>')
                     root.append(inputs)
                 inputs.append(resource_xml)
 
@@ -1294,7 +1366,7 @@ class Tool(Dictifiable):
                         self.app, help_text, encoded_repository_id=self.repository_id, tool_shed_repository=self.tool_shed_repository, tool_id=self.old_id, tool_version=self.version
                     )
             except Exception:
-                log.exception("Exception in parse_help, so images may not be properly displayed")
+                log.exception("Exception in parse_help, so images may not be properly displayed for tool with id '%s'", self.id)
             try:
                 self.__help = Template(rst_to_html(help_text), input_encoding='utf-8',
                                        default_filters=['decode.utf8'],
@@ -1338,6 +1410,15 @@ class Tool(Dictifiable):
         else:
             return self.outputs.get(name, None)
 
+    @property
+    def is_workflow_compatible(self):
+        is_workflow_compatible = self._is_workflow_compatible
+        if is_workflow_compatible is None:
+            is_workflow_compatible = self.check_workflow_compatible(self.tool_source)
+            if self.finalized:
+                self._is_workflow_compatible = is_workflow_compatible
+        return is_workflow_compatible
+
     def check_workflow_compatible(self, tool_source):
         """
         Determine if a tool can be used in workflows. External tools and the
@@ -1345,7 +1426,7 @@ class Tool(Dictifiable):
         """
         # Multiple page tools are not supported -- we're eliminating most
         # of these anyway
-        if self.has_multiple_pages:
+        if self.finalized and self.has_multiple_pages:
             return False
         # This is probably the best bet for detecting external web tools
         # right now
@@ -1409,7 +1490,7 @@ class Tool(Dictifiable):
                 rerun_remap_job_id = trans.app.security.decode_id(incoming['rerun_remap_job_id'])
             except Exception as exception:
                 log.error(str(exception))
-                raise exceptions.MessageException('Failure executing tool (attempting to rerun invalid job).')
+                raise exceptions.MessageException("Failure executing tool with id '%s' (attempting to rerun invalid job).", self.id)
 
         set_dataset_matcher_factory(request_context, self)
 
@@ -1421,7 +1502,7 @@ class Tool(Dictifiable):
         # remap if multi-runs of tools are being used.
         if rerun_remap_job_id and len(expanded_incomings) > 1:
             raise exceptions.MessageException(
-                'Failure executing tool (cannot create multiple jobs when remapping existing job).')
+                "Failure executing tool with id '%s' (cannot create multiple jobs when remapping existing job).", self.id)
 
         # Process incoming data
         validation_timer = self.app.execution_timer_factory.get_timer(
@@ -1522,8 +1603,8 @@ class Tool(Dictifiable):
         except ToolInputsNotReadyException as e:
             return False, e
         except Exception as e:
-            log.exception('Exception caught while attempting tool execution:')
-            message = 'Error executing tool: %s' % unicodify(e)
+            log.exception("Exception caught while attempting to execute tool with id '%s':", self.id)
+            message = "Error executing tool with id '%s': %s" % (self.id, unicodify(e))
             return False, message
         if isinstance(out_data, OrderedDict):
             return job, list(out_data.items())
@@ -1531,7 +1612,7 @@ class Tool(Dictifiable):
             if isinstance(out_data, string_types):
                 message = out_data
             else:
-                message = 'Failure executing tool (invalid data returned from tool execution)'
+                message = "Failure executing tool with id '%s' (invalid data returned from tool execution)" % self.id
             return False, message
 
     def find_fieldstorage(self, x):
@@ -1769,7 +1850,7 @@ class Tool(Dictifiable):
         """
         pass
 
-    def discover_outputs(self, out_data, out_collections, tool_provided_metadata, tool_working_directory, job, input_ext, input_dbkey, inp_data=None):
+    def discover_outputs(self, out_data, out_collections, tool_provided_metadata, tool_working_directory, job, input_ext, input_dbkey, inp_data=None, final_job_state='ok'):
         """
         Find any additional datasets generated by a tool and attach (for
         cases where number of outputs is not known in advance).
@@ -1788,6 +1869,7 @@ class Tool(Dictifiable):
             metadata_source_provider,
             input_dbkey,
             object_store=tool.app.object_store,
+            final_job_state=final_job_state,
         )
         collected = output_collect.collect_primary_datasets(
             job_context,
@@ -1905,7 +1987,7 @@ class Tool(Dictifiable):
             os.remove(temp_file)
         return tarball_archive
 
-    def to_dict(self, trans, link_details=False, io_details=False):
+    def to_dict(self, trans, link_details=False, io_details=False, tool_help=False):
         """ Returns dict of tool. """
 
         # Basic information
@@ -1913,6 +1995,8 @@ class Tool(Dictifiable):
 
         tool_dict["edam_operations"] = self.edam_operations
         tool_dict["edam_topics"] = self.edam_topics
+        tool_dict["hidden"] = self.hidden
+        tool_dict["is_workflow_compatible"] = self.is_workflow_compatible
         tool_dict["xrefs"] = self.xrefs
 
         # Fill in ToolShedRepository info
@@ -1953,6 +2037,13 @@ class Tool(Dictifiable):
         # FIXME: the Tool class should declare directly, instead of ad hoc inspection
         regular_form = tool_class == Tool or isinstance(self, (DatabaseOperationTool, InteractiveTool))
         tool_dict["form_style"] = "regular" if regular_form else "special"
+        if tool_help:
+            # create tool help
+            help_txt = ''
+            if self.help:
+                help_txt = self.help.render(static_path=self.app.url_for('/static'), host_url=self.app.url_for('/', qualified=True))
+                help_txt = unicodify(help_txt)
+            tool_dict['help'] = help_txt
 
         return tool_dict
 
@@ -2023,6 +2114,11 @@ class Tool(Dictifiable):
             tool_help = self.help.render(static_path=self.app.url_for('/static'), host_url=self.app.url_for('/', qualified=True))
             tool_help = unicodify(tool_help, 'utf-8')
 
+        if isinstance(self.action, tuple):
+            action = self.action[0] + self.app.url_for(self.action[1])
+        else:
+            action = self.app.url_for(self.action)
+
         # update tool model
         tool_model.update({
             'id'            : self.id,
@@ -2040,7 +2136,7 @@ class Tool(Dictifiable):
             'job_remap'     : self._get_job_remap(job),
             'history_id'    : trans.security.encode_id(history.id) if history else None,
             'display'       : self.display_interface,
-            'action'        : self.app.url_for(self.action),
+            'action'        : action,
             'method'        : self.method,
             'enctype'       : self.enctype
         })
@@ -2269,9 +2365,8 @@ class OutputParameterJSONTool(Tool):
             json_params['output_data'].append(data_dict)
             if json_filename is None:
                 json_filename = file_name
-        out = open(json_filename, 'w')
-        out.write(json.dumps(json_params))
-        out.close()
+        with open(json_filename, 'w') as out:
+            out.write(json.dumps(json_params))
 
 
 class ExpressionTool(Tool):
@@ -2349,7 +2444,7 @@ class DataSourceTool(OutputParameterJSONTool):
     default_tool_action = DataSourceToolAction
 
     def _build_GALAXY_URL_parameter(self):
-        return ToolParameter.build(self, ElementTree.XML('<param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=%s" />' % self.id))
+        return ToolParameter.build(self, XML('<param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=%s" />' % self.id))
 
     def parse_inputs(self, tool_source):
         super(DataSourceTool, self).parse_inputs(tool_source)
@@ -2409,7 +2504,7 @@ class AsyncDataSourceTool(DataSourceTool):
     tool_type = 'data_source_async'
 
     def _build_GALAXY_URL_parameter(self):
-        return ToolParameter.build(self, ElementTree.XML('<param name="GALAXY_URL" type="baseurl" value="/async/%s" />' % self.id))
+        return ToolParameter.build(self, XML('<param name="GALAXY_URL" type="baseurl" value="/async/%s" />' % self.id))
 
 
 class DataDestinationTool(Tool):
@@ -2438,9 +2533,16 @@ class SetMetadataTool(Tool):
         for name, dataset in inp_data.items():
             external_metadata = get_metadata_compute_strategy(app.config, job.id)
             sa_session = app.model.context
-            if external_metadata.external_metadata_set_successfully(dataset, name, sa_session, working_directory=working_directory):
-                external_metadata.load_metadata(dataset, name, sa_session, working_directory=working_directory)
-            else:
+            metadata_set_successfully = external_metadata.external_metadata_set_successfully(dataset, name, sa_session, working_directory=working_directory)
+            if metadata_set_successfully:
+                try:
+                    # external_metadata_set_successfully is only an approximation (the metadata json file exists),
+                    # things can still go wrong, but we don't want to fail here since it can lead to a resubmission loop
+                    external_metadata.load_metadata(dataset, name, sa_session, working_directory=working_directory)
+                except Exception:
+                    metadata_set_successfully = False
+                    log.exception("Exception occured while loading metadata results")
+            if not metadata_set_successfully:
                 dataset._state = model.Dataset.states.FAILED_METADATA
                 self.sa_session.add(dataset)
                 self.sa_session.flush()
@@ -2455,7 +2557,12 @@ class SetMetadataTool(Tool):
                 # Revert dataset.state to fall back to dataset.dataset.state
                 dataset._state = None
             # Need to reset the peek, which may rely on metadata
-            dataset.set_peek()
+            # TODO: move this into metadata setting, setting the peek requires dataset access,
+            # and large chunks of the dataset may be read here.
+            try:
+                dataset.set_peek()
+            except Exception:
+                log.exception("Exception occured while setting dataset peek")
             self.sa_session.add(dataset)
             self.sa_session.flush()
 
@@ -2611,7 +2718,8 @@ class DatabaseOperationTool(Tool):
                 if not input_dataset_collection.collection.populated:
                     raise ToolInputsNotReadyException("An input collection is not populated.")
 
-            map(check_dataset_instance, input_dataset_collection.dataset_instances)
+            for dataset_instance in input_dataset_collection.dataset_instances:
+                check_dataset_instance(dataset_instance)
 
     def _add_datasets_to_history(self, history, elements, datasets_visible=False):
         datasets = []

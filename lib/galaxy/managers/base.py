@@ -551,7 +551,7 @@ class ModelSerializer(HasAModelManager):
         #   this allows us to: 'mention' the key without adding the default serializer
         # TODO: we may want to eventually error if a key is requested
         #   that is in neither serializable_keyset or serializers
-        self.serializable_keyset = set([])
+        self.serializable_keyset = set()
         # a map of dictionary keys to the functions (often lambdas) that create the values for those keys
         self.serializers = {}
         # add subclass serializers defined there
@@ -659,7 +659,7 @@ class ModelSerializer(HasAModelManager):
             return None
         split = type_id.split(TYPE_ID_SEP, 1)
         # Note: it may not be best to encode the id at this layer
-        return TYPE_ID_SEP.join([split[0], self.app.security.encode_id(split[1])])
+        return TYPE_ID_SEP.join((split[0], self.app.security.encode_id(split[1])))
 
     # serializing to a view where a view is a predefied list of keys to serialize
     def serialize_to_view(self, item, view=None, keys=None, default_view=None, **context):
@@ -719,7 +719,7 @@ class ModelDeserializer(HasAModelManager):
         self.app = app
 
         self.deserializers = {}
-        self.deserializable_keyset = set([])
+        self.deserializable_keyset = set()
         self.add_deserializers()
         # a sub object that can validate incoming values
         self.validate = validator or ModelValidator(self.app)
@@ -935,8 +935,8 @@ class ModelFilterParser(HasAModelManager):
             'encoded_id'    : {'column' : 'id', 'op': ('in'), 'val': self.parse_id_list},
             # dates can be directly passed through the orm into a filter (no need to parse into datetime object)
             'extension'     : {'op': ('eq', 'like', 'in')},
-            'create_time'   : {'op': ('le', 'ge'), 'val': self.parse_date},
-            'update_time'   : {'op': ('le', 'ge'), 'val': self.parse_date},
+            'create_time'   : {'op': ('le', 'ge', 'lt', 'gt'), 'val': self.parse_date},
+            'update_time'   : {'op': ('le', 'ge', 'lt', 'gt'), 'val': self.parse_date},
         })
 
     def parse_filters(self, filter_tuple_list):
@@ -1122,7 +1122,7 @@ class ModelFilterParser(HasAModelManager):
 
         match = self.date_string_re.match(date_string)
         if match:
-            date_string = ' '.join([group for group in match.groups() if group])
+            date_string = ' '.join(group for group in match.groups() if group)
             return date_string
         raise ValueError('datetime strings must be in the ISO 8601 format and in the UTC')
 

@@ -9,14 +9,14 @@ import DATA from "qunit/test-data/paired-collection-creator.data";
 var PCC = PAIRED_COLLECTION_CREATOR.PairedCollectionCreator;
 
 QUnit.module("Galaxy client app tests", {
-    beforeEach: function() {
+    beforeEach: function () {
         testApp.create();
         $.fx.off = true;
     },
-    afterEach: function() {
+    afterEach: function () {
         testApp.destroy();
         $.fx.off = false;
-    }
+    },
 });
 
 // Following test no longer passes - something is wrong setting up Galaxy.root - but we have multiple Selenium tests that cover verifying
@@ -47,7 +47,7 @@ QUnit.module("Galaxy client app tests", {
 //     server.restore();
 // });
 
-QUnit.test("Creator base/empty construction/initializiation defaults", function(assert) {
+QUnit.test("Creator base/empty construction/initializiation defaults", function (assert) {
     var pcc = new PCC([]);
     assert.ok(pcc instanceof PCC);
     assert.deepEqual(pcc.filters, pcc.commonFilters[pcc.DEFAULT_FILTERS]);
@@ -56,9 +56,9 @@ QUnit.test("Creator base/empty construction/initializiation defaults", function(
     assert.equal(pcc.strategy, "autopairLCS");
 });
 
-QUnit.test("Creator construction/initializiation with datasets", function(assert) {
+QUnit.test("Creator construction/initializiation with datasets", function (assert) {
     var pcc = new PCC({
-        datasets: DATA._1
+        datasets: DATA._1,
     });
     //pcc.initialList.forEach( function( dataset, i ){
     //    console.log( i + ':\n' + JSON.stringify( dataset ) );
@@ -67,7 +67,7 @@ QUnit.test("Creator construction/initializiation with datasets", function(assert
     assert.deepEqual(pcc.initialList, DATA._1);
     // datasets 1 has no ids, so the pcc will create them
     assert.ok(
-        _.every(pcc.initialList, function(dataset) {
+        _.every(pcc.initialList, function (dataset) {
             return dataset.id;
         })
     );
@@ -76,31 +76,31 @@ QUnit.test("Creator construction/initializiation with datasets", function(assert
     assert.equal(pcc.paired.length, pcc.initialList.length / 2);
 });
 
-QUnit.test("Try easy autopairing with simple exact matching", function(assert) {
+QUnit.test("Try easy autopairing with simple exact matching", function (assert) {
     var pcc = new PCC({
         datasets: DATA._1,
         strategy: "simple",
-        twoPassAutopairing: false
+        twoPassAutopairing: false,
     });
     assert.equal(pcc.unpaired.length, 0);
     assert.equal(pcc.paired.length, pcc.initialList.length / 2);
 });
 
-QUnit.test("Try easy autopairing with LCS", function(assert) {
+QUnit.test("Try easy autopairing with LCS", function (assert) {
     var pcc = new PCC({
         datasets: DATA._1,
         strategy: "lcs",
-        twoPassAutopairing: false
+        twoPassAutopairing: false,
     });
     assert.equal(pcc.unpaired.length, 0);
     assert.equal(pcc.paired.length, pcc.initialList.length / 2);
 });
 
-QUnit.test("Try easy autopairing with Levenshtein", function(assert) {
+QUnit.test("Try easy autopairing with Levenshtein", function (assert) {
     var pcc = new PCC({
         datasets: DATA._1,
         strategy: "levenshtein",
-        twoPassAutopairing: false
+        twoPassAutopairing: false,
     });
     assert.equal(pcc.unpaired.length, 0);
     assert.equal(pcc.paired.length, pcc.initialList.length / 2);

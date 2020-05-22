@@ -5,7 +5,7 @@
             v-if="status !== 'error'"
             :columns="columns"
             :rows="dataTypes"
-            :isLoaded="isDataLoaded"
+            :is-loaded="isDataLoaded"
             id="data-types-grid"
         >
             <template v-slot:title>
@@ -26,7 +26,7 @@ import BaseGrid from "./BaseGrid.vue";
 export default {
     components: {
         Message,
-        BaseGrid
+        BaseGrid,
     },
 
     data() {
@@ -36,7 +36,7 @@ export default {
             keys: [],
             dataTypes: [],
             message: "",
-            status: ""
+            status: "",
         };
     },
 
@@ -47,9 +47,9 @@ export default {
                 { text: "Extension", dataIndex: "extension" },
                 { text: "Type", dataIndex: "type" },
                 { text: "MIME Type", dataIndex: "mimetype" },
-                { text: "Display in Upload", dataIndex: "display_in_upload" }
+                { text: "Display in Upload", dataIndex: "display_in_upload" },
             ];
-        }
+        },
     },
 
     computed: {
@@ -64,16 +64,16 @@ export default {
                     let keys = this.keys;
                     // Filter out the predefined column headers
                     for (const c of columns) {
-                        keys = keys.filter(k => k !== c["dataIndex"]);
+                        keys = keys.filter((k) => k !== c["dataIndex"]);
                     }
                     // Create column headers from each remaining key and merge
                     // with predefined column headers
-                    columns = keys.reduce(function(m, k) {
+                    columns = keys.reduce(function (m, k) {
                         let text = k[0].toUpperCase();
                         text += k.slice(1).replace(/_/g, " ");
                         m.push({
                             text: text,
-                            dataIndex: k
+                            dataIndex: k,
                         });
                         return m;
                     }, columns);
@@ -83,21 +83,21 @@ export default {
         },
         isDataLoaded() {
             return status !== "" || this.dataTypes.length > 0;
-        }
+        },
     },
 
     created() {
         axios
             .get(`${getAppRoot()}admin/data_types_list`)
-            .then(response => {
+            .then((response) => {
                 this.keys = response.data.keys;
                 this.dataTypes = response.data.data;
                 this.message = response.data.message;
                 this.status = response.data.status;
             })
-            .catch(error => {
+            .catch((error) => {
                 console.error(error);
             });
-    }
+    },
 };
 </script>

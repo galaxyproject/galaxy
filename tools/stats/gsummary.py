@@ -110,10 +110,10 @@ def main():
         outfile.write("#%s\n" % headings_str)
         if type(summary) is dict:
             # using rpy
-            outfile.write("%s\n" % "\t".join(["%g" % summary[k] for k in headings]))
+            outfile.write("%s\n" % "\t".join("%g" % summary[k] for k in headings))
         else:
             # using rpy2
-            outfile.write("%s\n" % "\t".join(["%g" % k for k in summary]))
+            outfile.write("%s\n" % "\t".join("%g" % k for k in summary))
         outfile.close()
 
         if skipped_lines:

@@ -45,7 +45,7 @@ Highlights
 **GDPR Beta Mode**
   We introduce beta GDPR privacy mode. Admins can enable it to help them comply with the European Union law
   known as `General Data Protection Regulation <http://eur-lex.europa.eu/legal-content/en/TXT/?uri=CELEX:32016R0679>`__,
-  which goes into effect on May 25, 2018. Thanks to `@erasche <https://github.com/erasche>`__.
+  which goes into effect on May 25, 2018. Thanks to `@hexylena <https://github.com/hexylena>`__.
 
   `Pull Request 6069`_
 

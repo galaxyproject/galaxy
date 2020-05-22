@@ -85,7 +85,7 @@ class RepositoryGrid(grids.Grid):
 
         def get_value(self, trans, grid, repository):
             """Display the current repository heads."""
-            repo = hg_util.get_repo_for_repository(trans.app, repository=repository)
+            repo = repository.hg_repo
             heads = hg_util.get_repository_heads(repo)
             multiple_heads = len(heads) > 1
             if multiple_heads:
@@ -140,7 +140,7 @@ class RepositoryGrid(grids.Grid):
 
         def get_value(self, trans, grid, repository):
             """Display the repository tip revision label."""
-            return escape_html(repository.revision(trans.app))
+            return escape_html(repository.revision())
 
     class DescriptionColumn(grids.TextColumn):
 
@@ -418,7 +418,7 @@ class MyWritableRepositoriesGrid(RepositoryGrid):
         for repository in trans.sa_session.query(model.Repository) \
                                           .filter(and_(model.Repository.table.c.deprecated == false(),
                                                        model.Repository.table.c.deleted == false())):
-            allow_push = repository.allow_push(trans.app)
+            allow_push = repository.allow_push()
             if allow_push:
                 allow_push_usernames = allow_push.split(',')
                 if username in allow_push_usernames:
@@ -710,7 +710,7 @@ class MyWritableRepositoriesMissingToolTestComponentsGrid(RepositoriesMissingToo
         for repository in trans.sa_session.query(model.Repository) \
                                           .filter(and_(model.Repository.table.c.deprecated == false(),
                                                        model.Repository.table.c.deleted == false())):
-            allow_push = repository.allow_push(trans.app)
+            allow_push = repository.allow_push()
             if allow_push:
                 allow_push_usernames = allow_push.split(',')
                 if username in allow_push_usernames:
@@ -849,7 +849,7 @@ class MyWritableRepositoriesWithInvalidToolsGrid(RepositoriesWithInvalidToolsGri
         for repository in trans.sa_session.query(model.Repository) \
                                           .filter(and_(model.Repository.table.c.deprecated == false(),
                                                        model.Repository.table.c.deleted == false())):
-            allow_push = repository.allow_push(trans.app)
+            allow_push = repository.allow_push()
             if allow_push:
                 allow_push_usernames = allow_push.split(',')
                 if username in allow_push_usernames:
@@ -1138,7 +1138,7 @@ class ToolDependenciesGrid(RepositoryMetadataGrid):
                             if num_env_dicts > 0:
                                 td_str += '<a href="browse_datatypes?operation=view_or_manage_repository&id=%s">' % trans.security.encode_id(repository_metadata.id)
                                 td_str += '<b>environment:</b> '
-                                td_str += ', '.join([escape_html(env_dict['name']) for env_dict in env_dicts])
+                                td_str += ', '.join(escape_html(env_dict['name']) for env_dict in env_dicts)
                                 td_str += '</a><br/>'
                         for index, key in enumerate(sorted_keys):
                             if key == 'set_environment':

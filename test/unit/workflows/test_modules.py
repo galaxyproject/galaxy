@@ -109,7 +109,7 @@ def test_data_collection_input_connections():
     assert len(outputs) == 1
     output = outputs[0]
     assert output["name"] == "output"
-    assert output["extensions"] == ["input_collection"]
+    assert output["extensions"] == ["input"]
     assert output["collection_type"] == "list:paired"
 
 
@@ -456,7 +456,8 @@ def __mock_tool(
                                           output_type='data')},
         params_from_strings=mock.Mock(),
         check_and_update_param_values=mock.Mock(),
-        to_json=_to_json
+        to_json=_to_json,
+        assert_finalized=lambda: None,
     )
 
     return tool

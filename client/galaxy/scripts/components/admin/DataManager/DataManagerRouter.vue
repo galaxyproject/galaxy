@@ -16,30 +16,30 @@ export default new VueRouter({
         {
             path: "/",
             name: "DataManager",
-            component: DataManager
+            component: DataManager,
         },
         {
             path: "/jobs/:id",
             name: "DataManagerJobs",
             component: DataManagerJobs,
-            props: true
+            props: true,
         },
         {
             path: "/job/:id",
             name: "DataManagerJob",
             component: DataManagerJob,
-            props: true
+            props: true,
         },
         {
             path: "/table/:name",
             name: "DataManagerTable",
             component: DataManagerTable,
-            props: true
+            props: true,
         },
         {
             path: "*",
-            redirect: "/"
-        }
-    ]
+            redirect: "/",
+        },
+    ],
 });
 </script>

@@ -1,11 +1,12 @@
 import axios from "axios";
 import { getGalaxyInstance } from "app";
 import { rethrowSimple } from "utils/simple-error";
+import { getAppRoot } from "onload/loadConfig";
 
 /** Workflow data request helper **/
 export class Services {
     constructor(options = {}) {
-        this.root = options.root;
+        this.root = options.root || getAppRoot();
     }
 
     async copyWorkflow(workflow) {
@@ -45,7 +46,7 @@ export class Services {
         try {
             const response = await axios.get(url);
             const workflows = response.data;
-            workflows.forEach(workflow => {
+            workflows.forEach((workflow) => {
                 this._addAttributes(workflow);
             });
             return workflows;

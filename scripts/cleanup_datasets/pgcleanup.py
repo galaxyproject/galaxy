@@ -207,7 +207,7 @@ class Action(object):
             self.log.info('%s: %s' % (primary_key, primary))
             for causal, s in zip(self.causals, results[primary]):
                 for r in sorted(s):
-                    secondaries = ', '.join(['%s: %s' % x for x in zip(causal[1:], r[1:])])
+                    secondaries = ', '.join('%s: %s' % x for x in zip(causal[1:], r[1:]))
                     self.log.info('%s %s caused %s' % (causal[0], r[0], secondaries))
 
     def handle_results(self, cur):
@@ -646,7 +646,7 @@ class PurgeDeletedUsers(PurgesHDAs, RemovesMetadataFiles, Action):
         user_ids = sorted(self.__zero_disk_usage_user_ids)
         args = {'user_ids': tuple(user_ids)}
         self._update(sql, args, add_event=False)
-        self.log.info('zero_disk_usage user_ids: %s', ' '.join([str(i) for i in user_ids]))
+        self.log.info('zero_disk_usage user_ids: %s', ' '.join(str(i) for i in user_ids))
 
 
 class PurgeDeletedHDAs(PurgesHDAs, RemovesMetadataFiles, RequiresDiskUsageRecalculation, Action):
@@ -1052,6 +1052,8 @@ class Cleanup(object):
         self.args.sequence = [x.strip() for x in self.args.sequence.split(',')]
         if self.args.sequence != ['']:
             self.args.actions.extend(self.args.sequence)
+        if not self.args.actions:
+            parser.error("Please specify one or more actions")
 
     def __setup_logging(self):
         logging.basicConfig(

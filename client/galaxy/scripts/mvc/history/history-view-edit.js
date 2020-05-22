@@ -42,7 +42,7 @@ var HistoryViewEdit = _super.extend(
         /** Set up the view, set up storage, bind listeners to HistoryContents events
          *  @param {Object} attributes
          */
-        initialize: function(attributes) {
+        initialize: function (attributes) {
             attributes = attributes || {};
             _super.prototype.initialize.call(this, attributes);
 
@@ -66,55 +66,55 @@ var HistoryViewEdit = _super.extend(
         },
 
         /** Override to handle history as drag-drop target */
-        _setUpListeners: function() {
+        _setUpListeners: function () {
             _super.prototype._setUpListeners.call(this);
             return this.on({
-                "droptarget:drop": function(ev, data) {
+                "droptarget:drop": function (ev, data) {
                     // process whatever was dropped and re-hide the drop target
                     this.dataDropped(data);
                     this.dropTargetOff();
                 },
-                "view:attached view:removed": function() {
+                "view:attached view:removed": function () {
                     this._renderCounts();
                 },
                 "search:loading-progress": this._renderSearchProgress,
-                "search:searching": this._renderSearchFindings
+                "search:searching": this._renderSearchFindings,
             });
         },
 
         // ------------------------------------------------------------------------ listeners
         /** listening for history and HDA events */
-        _setUpModelListeners: function() {
+        _setUpModelListeners: function () {
             _super.prototype._setUpModelListeners.call(this);
             this.listenTo(this.model, "change:size", this.updateHistoryDiskSize);
             return this;
         },
 
         /** listening for collection events */
-        _setUpCollectionListeners: function() {
+        _setUpCollectionListeners: function () {
             _super.prototype._setUpCollectionListeners.call(this);
             this.listenTo(this.collection, {
                 "change:deleted": this._handleItemDeletedChange,
                 "change:visible": this._handleItemVisibleChange,
-                "change:purged": function(model) {
+                "change:purged": function (model) {
                     // hafta get the new nice-size w/o the purged model
                     this.model.fetch();
                 },
                 // loading indicators for deleted/hidden
-                "fetching-deleted": function(collection) {
+                "fetching-deleted": function (collection) {
                     this.$("> .controls .deleted-count").html(`<i>${_l("loading...")}</i>`);
                 },
-                "fetching-hidden": function(collection) {
+                "fetching-hidden": function (collection) {
                     this.$("> .controls .hidden-count").html(`<i>${_l("loading...")}</i>`);
                 },
-                "fetching-deleted-done fetching-hidden-done": this._renderCounts
+                "fetching-deleted-done fetching-hidden-done": this._renderCounts,
             });
             return this;
         },
 
         // ------------------------------------------------------------------------ panel rendering
         /** In this override, add tag and annotation editors and a btn to toggle the selectors */
-        _buildNewRender: function() {
+        _buildNewRender: function () {
             var Galaxy = getGalaxyInstance();
 
             // create a new render using a skeleton template, render title buttons, render body, and set up events, etc.
@@ -131,12 +131,12 @@ var HistoryViewEdit = _super.extend(
         },
 
         /** Update the history size display (curr. upper right of panel). */
-        updateHistoryDiskSize: function() {
+        updateHistoryDiskSize: function () {
             this.$(".history-size").text(this.model.get("nice_size"));
         },
 
         /** override to render counts when the items are rendered */
-        renderItems: function($whereTo) {
+        renderItems: function ($whereTo) {
             var views = _super.prototype.renderItems.call(this, $whereTo);
             if (!this.searchFor) {
                 this._renderCounts($whereTo);
@@ -147,20 +147,20 @@ var HistoryViewEdit = _super.extend(
         },
 
         /** override to show counts, what's deleted/hidden, and links to toggle those */
-        _renderCounts: function($whereTo) {
+        _renderCounts: function ($whereTo) {
             $whereTo = $whereTo instanceof jQuery ? $whereTo : this.$el;
             var html = this.templates.counts(this.model.toJSON(), this);
             return $whereTo.find("> .controls .subtitle").html(html);
         },
 
         /** render the tags sub-view controller */
-        _renderTags: function($where) {
+        _renderTags: function ($where) {
             const el = $where.find(".controls .tags-display")[0];
 
             const propsData = {
                 model: this.model,
                 disabled: false,
-                context: "history-view-edit"
+                context: "history-view-edit",
             };
 
             const vm = mountModelTags(propsData, el);
@@ -170,7 +170,7 @@ var HistoryViewEdit = _super.extend(
                 title: _l("Edit history tags"),
                 classes: "history-tag-btn",
                 faIcon: "fa-tags",
-                tooltipConfig: { placement: "top" }
+                tooltipConfig: { placement: "top" },
             }).appendTo($where.find(".controls .actions"));
 
             activator.on("click", () => {
@@ -181,34 +181,34 @@ var HistoryViewEdit = _super.extend(
         },
 
         /** render the annotation sub-view controller */
-        _renderAnnotation: function($where) {
+        _renderAnnotation: function ($where) {
             var panel = this;
             this.annotationEditor = new ANNOTATIONS.AnnotationEditor({
                 model: this.model,
                 el: $where.find(".controls .annotation-display"),
-                onshowFirstTime: function() {
+                onshowFirstTime: function () {
                     this.render();
                 },
                 // show hide sub-view view annotation editors when this is shown/hidden
-                onshow: function() {
+                onshow: function () {
                     panel.toggleHDAAnnotationEditors(true, panel.fxSpeed);
                 },
-                onhide: function() {
+                onhide: function () {
                     panel.toggleHDAAnnotationEditors(false, panel.fxSpeed);
                 },
                 $activator: faIconButton({
                     title: _l("Edit history annotation"),
                     classes: "history-annotate-btn",
                     faIcon: "fa-comment",
-                    tooltipConfig: { placement: "top" }
-                }).appendTo($where.find(".controls .actions"))
+                    tooltipConfig: { placement: "top" },
+                }).appendTo($where.find(".controls .actions")),
             });
         },
 
         /** Set up HistoryViewEdit js/widget behaviours
          *  In this override, make the name editable
          */
-        _setUpBehaviors: function($where) {
+        _setUpBehaviors: function ($where) {
             var Galaxy = getGalaxyInstance();
 
             $where = $where || this.$el;
@@ -229,7 +229,7 @@ var HistoryViewEdit = _super.extend(
                 .attr("title", _l("Click to rename history"))
                 .tooltip({ placement: "bottom" })
                 .make_text_editable({
-                    on_finish: function(newName) {
+                    on_finish: function (newName) {
                         var previousName = panel.model.get("name");
                         if (newName && newName !== previousName) {
                             panel.$el.find(nameSelector).text(newName);
@@ -239,14 +239,14 @@ var HistoryViewEdit = _super.extend(
                         } else {
                             panel.$el.find(nameSelector).text(previousName);
                         }
-                    }
+                    },
                 });
         },
 
         /** return a new popup menu for choosing a multi selection action
          *  ajax calls made for multiple datasets are queued
          */
-        multiselectActions: function() {
+        multiselectActions: function () {
             var Galaxy = getGalaxyInstance();
             var panel = this;
 
@@ -254,14 +254,14 @@ var HistoryViewEdit = _super.extend(
                 const actionModels = {};
                 const items = panel
                     .getSelectedModels()
-                    .filter(model => {
+                    .filter((model) => {
                         console.log(model.attributes[key]);
                         return model.attributes[key] != value;
                     })
-                    .map(model => {
+                    .map((model) => {
                         const res = {
                             history_content_type: model.attributes.history_content_type,
-                            id: model.attributes.id
+                            id: model.attributes.id,
                         };
                         actionModels[model.id] = model;
                         // Tried "optimistically" deleting the dataset - but it didn't quite work -
@@ -297,45 +297,45 @@ var HistoryViewEdit = _super.extend(
             var actions = [
                 {
                     html: _l("Hide datasets"),
-                    func: function() {
+                    func: function () {
                         batchUpdate("visible", false);
-                    }
+                    },
                 },
                 {
                     html: _l("Unhide datasets"),
-                    func: function() {
+                    func: function () {
                         batchUpdate("visible", true);
-                    }
+                    },
                 },
                 {
                     html: _l("Delete datasets"),
                     func: () => {
                         batchUpdate("deleted", true);
-                    }
+                    },
                 },
                 {
                     html: _l("Undelete datasets"),
-                    func: function() {
+                    func: function () {
                         batchUpdate("deleted", false);
-                    }
-                }
+                    },
+                },
             ];
 
             if (panel.purgeAllowed) {
                 actions.push({
                     html: _l("Permanently delete datasets"),
-                    func: function() {
+                    func: function () {
                         if (
                             window.confirm(_l("This will permanently remove the data in your datasets. Are you sure?"))
                         ) {
                             var action = HDA_MODEL.HistoryDatasetAssociation.prototype.purge;
                             const historyContents = panel.getSelectedModels();
                             const selectedDatasets = historyContents.filter(
-                                c => c.get("history_content_type") == "dataset"
+                                (c) => c.get("history_content_type") == "dataset"
                             );
                             historyContents.ajaxQueue(action, {}, selectedDatasets);
                         }
-                    }
+                    },
                 });
             }
             actions = actions.concat(panel._collectionActions());
@@ -343,30 +343,30 @@ var HistoryViewEdit = _super.extend(
         },
 
         /**   */
-        _collectionActions: function() {
+        _collectionActions: function () {
             var panel = this;
             return [
                 {
                     html: _l("Build Dataset List"),
-                    func: () => panel.buildCollection("list")
+                    func: () => panel.buildCollection("list"),
                 },
                 // TODO: Only show quick pair if two things selected.
                 {
                     html: _l("Build Dataset Pair"),
-                    func: () => panel.buildCollection("paired")
+                    func: () => panel.buildCollection("paired"),
                 },
                 {
                     html: _l("Build List of Dataset Pairs"),
-                    func: () => panel.buildCollection("list:paired")
+                    func: () => panel.buildCollection("list:paired"),
                 },
                 {
                     html: _l("Build Collection from Rules"),
-                    func: () => panel.buildCollection("rules")
-                }
+                    func: () => panel.buildCollection("rules"),
+                },
             ];
         },
 
-        buildCollection: function(collectionType, selection, hideSourceItems) {
+        buildCollection: function (collectionType, selection, hideSourceItems) {
             var panel = this;
             selection = selection || panel.getSelectedModels();
             hideSourceItems = hideSourceItems || false;
@@ -389,12 +389,12 @@ var HistoryViewEdit = _super.extend(
 
         // ------------------------------------------------------------------------ sub-views
         /** In this override, add purgeAllowed and whether tags/annotation editors should be shown */
-        _getItemViewOptions: function(model) {
+        _getItemViewOptions: function (model) {
             var options = _super.prototype._getItemViewOptions.call(this, model);
             _.extend(options, {
                 purgeAllowed: this.purgeAllowed,
                 tagsEditorShown: this.tagsEditor && !this.tagsEditor.hidden,
-                annotationEditorShown: this.annotationEditor && !this.annotationEditor.hidden
+                annotationEditorShown: this.annotationEditor && !this.annotationEditor.hidden,
             });
             return options;
         },
@@ -402,7 +402,7 @@ var HistoryViewEdit = _super.extend(
         /** If this item is deleted and we're not showing deleted items, remove the view
          *  @param {Model} the item model to check
          */
-        _handleItemDeletedChange: function(itemModel) {
+        _handleItemDeletedChange: function (itemModel) {
             if (itemModel.get("deleted")) {
                 this._handleItemDeletion(itemModel);
             } else {
@@ -411,7 +411,7 @@ var HistoryViewEdit = _super.extend(
             this._renderCounts();
         },
 
-        _handleItemDeletion: function(itemModel) {
+        _handleItemDeletion: function (itemModel) {
             var contentsShown = this.model.get("contents_active");
             contentsShown.deleted += 1;
             contentsShown.active -= 1;
@@ -421,7 +421,7 @@ var HistoryViewEdit = _super.extend(
             this.model.set("contents_active", contentsShown);
         },
 
-        _handleItemUndeletion: function(itemModel) {
+        _handleItemUndeletion: function (itemModel) {
             var contentsShown = this.model.get("contents_active");
             contentsShown.deleted -= 1;
             if (!this.model.contents.includeDeleted) {
@@ -433,7 +433,7 @@ var HistoryViewEdit = _super.extend(
         /** If this item is hidden and we're not showing hidden items, remove the view
          *  @param {Model} the item model to check
          */
-        _handleItemVisibleChange: function(itemModel) {
+        _handleItemVisibleChange: function (itemModel) {
             if (itemModel.hidden()) {
                 this._handleItemHidden(itemModel);
             } else {
@@ -442,7 +442,7 @@ var HistoryViewEdit = _super.extend(
             this._renderCounts();
         },
 
-        _handleItemHidden: function(itemModel) {
+        _handleItemHidden: function (itemModel) {
             var contentsShown = this.model.get("contents_active");
             contentsShown.hidden += 1;
             contentsShown.active -= 1;
@@ -452,7 +452,7 @@ var HistoryViewEdit = _super.extend(
             this.model.set("contents_active", contentsShown);
         },
 
-        _handleItemUnhidden: function(itemModel) {
+        _handleItemUnhidden: function (itemModel) {
             var contentsShown = this.model.get("contents_active");
             contentsShown.hidden -= 1;
             if (!this.model.contents.includeHidden) {
@@ -471,8 +471,8 @@ var HistoryViewEdit = _super.extend(
         // },
 
         /** toggle the visibility of each content's annotationEditor applying all the args sent to this function */
-        toggleHDAAnnotationEditors: function(showOrHide, speed) {
-            _.each(this.views, view => {
+        toggleHDAAnnotationEditors: function (showOrHide, speed) {
+            _.each(this.views, (view) => {
                 if (view.annotationEditor) {
                     view.annotationEditor.toggle(showOrHide, speed);
                 }
@@ -483,16 +483,16 @@ var HistoryViewEdit = _super.extend(
         /** event map */
         events: _.extend(_.clone(_super.prototype.events), {
             "click .show-selectors-btn": "toggleSelectors",
-            "click .toggle-deleted-link": function(ev) {
+            "click .toggle-deleted-link": function (ev) {
                 this.toggleShowDeleted();
             },
-            "click .toggle-hidden-link": function(ev) {
+            "click .toggle-hidden-link": function (ev) {
                 this.toggleShowHidden();
-            }
+            },
         }),
 
         // ------------------------------------------------------------------------ search
-        _renderSearchProgress: function(limit, offset) {
+        _renderSearchProgress: function (limit, offset) {
             var stop = limit + offset;
             return this.$("> .controls .subtitle").html(
                 ["<i>", _l("Searching "), stop, "/", this.model.contentsShown(), "</i>"].join("")
@@ -500,7 +500,7 @@ var HistoryViewEdit = _super.extend(
         },
 
         /** override to display number found in subtitle */
-        _renderSearchFindings: function($whereTo) {
+        _renderSearchFindings: function ($whereTo) {
             $whereTo = $whereTo instanceof jQuery ? $whereTo : this.$el;
             var html = this.templates.found(this.model.toJSON(), this);
             $whereTo.find("> .controls .subtitle").html(html);
@@ -509,7 +509,7 @@ var HistoryViewEdit = _super.extend(
 
         // ------------------------------------------------------------------------ as drop target
         /** turn all the drag and drop handlers on and add some help text above the drop area */
-        dropTargetOn: function() {
+        dropTargetOn: function () {
             if (this.dropTarget) {
                 return this;
             }
@@ -520,7 +520,7 @@ var HistoryViewEdit = _super.extend(
                 dragenter: _.bind(this.dragenter, this),
                 dragover: _.bind(this.dragover, this),
                 dragleave: _.bind(this.dragleave, this),
-                drop: _.bind(this.drop, this)
+                drop: _.bind(this.drop, this),
             };
 
             var $dropTarget = this._renderDropTarget();
@@ -534,13 +534,13 @@ var HistoryViewEdit = _super.extend(
         },
 
         /** render a box to serve as a 'drop here' area on the history */
-        _renderDropTarget: function() {
+        _renderDropTarget: function () {
             this.$(".history-drop-target").remove();
             return $("<div/>").addClass("history-drop-target");
         },
 
         /** tell the user how it works  */
-        _renderDropTargetHelp: function() {
+        _renderDropTargetHelp: function () {
             this.$(".history-drop-target-help").remove();
             return $("<div/>")
                 .addClass("history-drop-target-help")
@@ -548,7 +548,7 @@ var HistoryViewEdit = _super.extend(
         },
 
         /** shut down drag and drop event handlers and remove drop target */
-        dropTargetOff: function() {
+        dropTargetOff: function () {
             if (!this.dropTarget) {
                 return this;
             }
@@ -565,7 +565,7 @@ var HistoryViewEdit = _super.extend(
             return this;
         },
         /** toggle the target on/off */
-        dropTargetToggle: function() {
+        dropTargetToggle: function () {
             if (this.dropTarget) {
                 this.dropTargetOff();
             } else {
@@ -574,24 +574,24 @@ var HistoryViewEdit = _super.extend(
             return this;
         },
 
-        dragenter: function(ev) {
+        dragenter: function (ev) {
             //console.debug( 'dragenter:', this, ev );
             ev.preventDefault();
             ev.stopPropagation();
             this.$(".history-drop-target").css("border", "2px solid black");
         },
-        dragover: function(ev) {
+        dragover: function (ev) {
             ev.preventDefault();
             ev.stopPropagation();
         },
-        dragleave: function(ev) {
+        dragleave: function (ev) {
             //console.debug( 'dragleave:', this, ev );
             ev.preventDefault();
             ev.stopPropagation();
             this.$(".history-drop-target").css("border", "1px dashed black");
         },
         /** when (text) is dropped try to parse as json and trigger an event */
-        drop: function(ev) {
+        drop: function (ev) {
             ev.preventDefault();
             //ev.stopPropagation();
             var dataTransfer = ev.dataTransfer;
@@ -609,7 +609,7 @@ var HistoryViewEdit = _super.extend(
         },
 
         /** handler that copies data into the contents */
-        dataDropped: function(data) {
+        dataDropped: function (data) {
             // HDA: dropping will copy it to the history
             if (_.isObject(data) && data.model_class === "HistoryDatasetAssociation" && data.id) {
                 if (this.contents.currentPage !== 0) {
@@ -622,9 +622,9 @@ var HistoryViewEdit = _super.extend(
 
         // ........................................................................ misc
         /** Return a string rep of the history */
-        toString: function() {
+        toString: function () {
             return `HistoryViewEdit(${this.model ? this.model.get("name") : ""})`;
-        }
+        },
     }
 );
 
@@ -668,7 +668,7 @@ HistoryViewEdit.prototype.templates = (() => {
             "</a>",
             "<% } %>",
             "</span>",
-            "<% } %>"
+            "<% } %>",
         ],
         "history"
     );
@@ -700,18 +700,18 @@ HistoryViewEdit.prototype.templates = (() => {
             _l("show hidden"),
             "</a>",
             "<% } %>",
-            "<% } %>"
+            "<% } %>",
         ],
         "history"
     );
 
     return _.extend(_.clone(_super.prototype.templates), {
         counts: countsTemplate,
-        found: foundTemplate
+        found: foundTemplate,
     });
 })();
 
 //==============================================================================
 export default {
-    HistoryViewEdit: HistoryViewEdit
+    HistoryViewEdit: HistoryViewEdit,
 };

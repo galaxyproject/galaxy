@@ -11,8 +11,10 @@ Build a mulled image with:
 from __future__ import print_function
 
 import json
+import logging
 import os
 import shutil
+import stat
 import string
 import subprocess
 import sys
@@ -24,13 +26,20 @@ try:
 except ImportError:
     yaml = None
 
-from galaxy.tool_util.deps import commands, installable
-from galaxy.util import safe_makedirs
+from galaxy.tool_util.deps import installable
+from galaxy.tool_util.deps.conda_util import best_search_result
+from galaxy.tool_util.deps.docker_util import command_list as docker_command_list
+from galaxy.util import (
+    commands,
+    safe_makedirs,
+    unicodify,
+)
 from ._cli import arg_parser
 from .util import (
     build_target,
     conda_build_target_str,
     create_repository,
+    get_file_from_recipe_url,
     PrintProgress,
     quay_repository,
     v1_image_name,
@@ -38,7 +47,11 @@ from .util import (
 )
 from ..conda_compat import MetaData
 
+log = logging.getLogger(__name__)
+
 DIRNAME = os.path.dirname(__file__)
+DEFAULT_BASE_IMAGE = "bgruening/busybox-bash:0.1"
+DEFAULT_EXTENDED_BASE_IMAGE = "bioconda/extended-base-image:latest"
 DEFAULT_CHANNELS = ["conda-forge", "bioconda"]
 DEFAULT_REPOSITORY_TEMPLATE = "quay.io/${namespace}/${image}"
 DEFAULT_BINDS = ["build/dist:/usr/local/"]
@@ -49,7 +62,7 @@ DEST_BASE_IMAGE = os.environ.get('DEST_BASE_IMAGE', None)
 CONDA_IMAGE = os.environ.get('CONDA_IMAGE', None)
 
 SINGULARITY_TEMPLATE = """Bootstrap: docker
-From: bgruening/busybox-bash:0.1
+From: %(base_image)s
 
 %%setup
 
@@ -58,6 +71,7 @@ From: bgruening/busybox-bash:0.1
     cp -r /data/dist/* /tmp/conda/
 
 %%post
+    rm -R /usr/local || true
     mkdir -p /usr/local
     cp -R /tmp/conda/* /usr/local/
 
@@ -116,8 +130,8 @@ def get_affected_packages(args):
     recipes_dir = args.recipes_dir
     hours = args.diff_hours
     cmd = ['git', 'log', '--diff-filter=ACMRTUXB', '--name-only', '--pretty=""', '--since="%s hours ago"' % hours]
-    changed_files = subprocess.check_output(cmd, cwd=recipes_dir).strip().split('\n')
-    pkg_list = set([x for x in changed_files if x.startswith('recipes/') and x.endswith('meta.yaml')])
+    changed_files = unicodify(subprocess.check_output(cmd, cwd=recipes_dir)).splitlines()
+    pkg_list = {x for x in changed_files if x.startswith('recipes/') and x.endswith('meta.yaml')}
     for pkg in pkg_list:
         if pkg and os.path.exists(os.path.join(recipes_dir, pkg)):
             yield (get_pkg_name(args, pkg), get_tests(args, pkg))
@@ -131,6 +145,26 @@ def conda_versions(pkg_name, file_name):
         if pkg['name'] == pkg_name:
             ret.append('%s--%s' % (pkg['version'], pkg['build']))
     return ret
+
+
+def get_conda_hits_for_targets(targets, conda_context):
+    search_results = (best_search_result(t, conda_context, platform='linux-64')[0] for t in targets)
+    return [r for r in search_results if r]
+
+
+def base_image_for_targets(targets, conda_context=None):
+    hits = get_conda_hits_for_targets(targets, conda_context or CondaInDockerContext())
+    for hit in hits:
+        try:
+            tarball = get_file_from_recipe_url(hit['url'])
+            meta_content = unicodify(tarball.extractfile('info/about.json').read())
+            if json.loads(meta_content).get('extra', {}).get('container', {}).get('extended-base', False):
+                return DEFAULT_EXTENDED_BASE_IMAGE
+            elif yaml.safe_load(unicodify(tarball.extractfile('info/recipe/meta.yaml').read())).get('extra', {}).get('container', {}).get('extended-base', False):
+                return DEFAULT_EXTENDED_BASE_IMAGE
+        except Exception:
+            log.warning("Could not load metadata.yaml for '%s', version '%s'", hit['name'], hit['version'], exc_info=True)
+    return DEFAULT_BASE_IMAGE
 
 
 class BuildExistsException(Exception):
@@ -148,7 +182,8 @@ def mull_targets(
     repository_template=DEFAULT_REPOSITORY_TEMPLATE, dry_run=False,
     conda_version=None, verbose=False, binds=DEFAULT_BINDS, rebuild=True,
     oauth_token=None, hash_func="v2", singularity=False,
-    singularity_image_dir="singularity_import",
+    singularity_image_dir="singularity_import", base_image=None,
+    determine_base_image=True,
 ):
     targets = list(targets)
     if involucro_context is None:
@@ -194,29 +229,36 @@ def mull_targets(
     bind_str = ",".join(binds)
     involucro_args = [
         '-f', '%s/invfile.lua' % DIRNAME,
-        '-set', "CHANNELS='%s'" % channels,
-        '-set', "TARGETS='%s'" % target_str,
-        '-set', "REPO='%s'" % repo,
-        '-set', "BINDS='%s'" % bind_str,
+        '-set', "CHANNELS=%s" % channels,
+        '-set', "TARGETS=%s" % target_str,
+        '-set', "REPO=%s" % repo,
+        '-set', "BINDS=%s" % bind_str,
     ]
+    dest_base_image = None
+    if base_image:
+        dest_base_image = base_image
+    elif DEST_BASE_IMAGE:
+        dest_base_image = DEST_BASE_IMAGE
+    elif determine_base_image:
+        dest_base_image = base_image_for_targets(targets)
 
-    if DEST_BASE_IMAGE:
-        involucro_args.extend(["-set", "DEST_BASE_IMAGE='%s'" % DEST_BASE_IMAGE])
+    if dest_base_image:
+        involucro_args.extend(["-set", "DEST_BASE_IMAGE=%s" % dest_base_image])
     if CONDA_IMAGE:
-        involucro_args.extend(["-set", "CONDA_IMAGE='%s'" % CONDA_IMAGE])
+        involucro_args.extend(["-set", "CONDA_IMAGE=%s" % CONDA_IMAGE])
     if verbose:
-        involucro_args.extend(["-set", "VERBOSE='1'"])
+        involucro_args.extend(["-set", "VERBOSE=1"])
     if singularity:
         singularity_image_name = repo_template_kwds['image']
-        involucro_args.extend(["-set", "SINGULARITY='1'"])
-        involucro_args.extend(["-set", "SINGULARITY_IMAGE_NAME='%s'" % singularity_image_name])
-        involucro_args.extend(["-set", "SINGULARITY_IMAGE_DIR='%s'" % singularity_image_dir])
-        involucro_args.extend(["-set", "USER_ID='%s:%s'" % (os.getuid(), os.getgid())])
+        involucro_args.extend(["-set", "SINGULARITY=1"])
+        involucro_args.extend(["-set", "SINGULARITY_IMAGE_NAME=%s" % singularity_image_name])
+        involucro_args.extend(["-set", "SINGULARITY_IMAGE_DIR=%s" % singularity_image_dir])
+        involucro_args.extend(["-set", "USER_ID=%s:%s" % (os.getuid(), os.getgid())])
     if test:
-        involucro_args.extend(["-set", "TEST=%s" % shlex_quote(test)])
+        involucro_args.extend(["-set", "TEST=%s" % test])
     if conda_version is not None:
         verbose = "--verbose" if verbose else "--quiet"
-        involucro_args.extend(["-set", "PREINSTALL='conda install %s --yes conda=%s'" % (verbose, conda_version)])
+        involucro_args.extend(["-set", "PREINSTALL=conda install %s --yes conda=%s" % (verbose, conda_version)])
     involucro_args.append(command)
     if test_files:
         test_bind = []
@@ -229,29 +271,45 @@ def mull_targets(
                     test_bind.append(test_file)
         if test_bind:
             involucro_args.insert(6, '-set')
-            involucro_args.insert(7, "TEST_BINDS='%s'" % ",".join(test_bind))
-    print(" ".join(involucro_context.build_command(involucro_args)))
-    if not dry_run:
-        ensure_installed(involucro_context, True)
-        if singularity:
-            if not os.path.exists(singularity_image_dir):
-                safe_makedirs(singularity_image_dir)
-            with open(os.path.join(singularity_image_dir, 'Singularity.def'), 'w+') as sin_def:
-                fill_template = SINGULARITY_TEMPLATE % {'container_test': test}
-                sin_def.write(fill_template)
-        with PrintProgress():
-            ret = involucro_context.exec_command(involucro_args)
-        if singularity:
-            # we can not remove this folder as it contains the image wich is owned by root
-            pass
-            # shutil.rmtree('./singularity_import')
-        return ret
-    return 0
+            involucro_args.insert(7, "TEST_BINDS=%s" % ",".join(test_bind))
+    cmd = involucro_context.build_command(involucro_args)
+    print('Executing: ' + ' '.join(shlex_quote(_) for _ in cmd))
+    if dry_run:
+        return 0
+    ensure_installed(involucro_context, True)
+    if singularity:
+        if not os.path.exists(singularity_image_dir):
+            safe_makedirs(singularity_image_dir)
+        with open(os.path.join(singularity_image_dir, 'Singularity.def'), 'w+') as sin_def:
+            fill_template = SINGULARITY_TEMPLATE % {'container_test': test, 'base_image': dest_base_image or DEFAULT_BASE_IMAGE}
+            sin_def.write(fill_template)
+    with PrintProgress():
+        ret = involucro_context.exec_command(involucro_args)
+    if singularity:
+        # we can not remove this folder as it contains the image wich is owned by root
+        pass
+        # shutil.rmtree('./singularity_import')
+    return ret
 
 
 def context_from_args(args):
     verbose = "2" if not args.verbose else "3"
     return InvolucroContext(involucro_bin=args.involucro_path, verbose=verbose)
+
+
+class CondaInDockerContext(object):
+
+    @property
+    def conda_exec(self):
+        conda_image = CONDA_IMAGE or 'continuumio/miniconda3:latest'
+        return docker_command_list('run', [conda_image, 'conda'])
+
+    @property
+    def _override_channels_args(self):
+        override_channels_args = ['--override-channels']
+        for channel in DEFAULT_CHANNELS:
+            override_channels_args.extend(["--channel", channel])
+        return override_channels_args
 
 
 class InvolucroContext(installable.InstallableContext):
@@ -280,7 +338,7 @@ class InvolucroContext(installable.InstallableContext):
             created_build_dir = True
             os.mkdir('./build')
         try:
-            res = self.shell_exec(" ".join(cmd))
+            res = self.shell_exec(cmd)
         finally:
             # delete build directory in any case
             if created_build_dir:
@@ -302,12 +360,19 @@ def ensure_installed(involucro_context, auto_init):
     return installable.ensure_installed(involucro_context, install_involucro, auto_init)
 
 
-def install_involucro(involucro_context=None, to_path=None):
+def install_involucro(involucro_context):
     install_path = os.path.abspath(involucro_context.involucro_bin)
     involucro_context.involucro_bin = install_path
-    download_cmd = " ".join(commands.download_command(involucro_link(), to=install_path, quote_url=True))
-    full_cmd = "%s && chmod +x %s" % (download_cmd, install_path)
-    return involucro_context.shell_exec(full_cmd)
+    download_cmd = commands.download_command(involucro_link(), to=install_path)
+    exit_code = involucro_context.shell_exec(download_cmd)
+    if exit_code:
+        return exit_code
+    try:
+        os.chmod(install_path, os.stat(install_path).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+        return 0
+    except Exception:
+        log.exception("Failed to make file '%s' executable", install_path)
+        return 1
 
 
 def add_build_arguments(parser):
@@ -348,7 +413,9 @@ def target_str_to_targets(targets_raw):
         if "=" in target_str:
             package_name, version = target_str.split("=", 1)
             build = None
-            if "--" in version:
+            if "=" in version:
+                version, build = version.split('=')
+            elif "--" in version:
                 version, build = version.split('--')
             target = build_target(package_name, version, build)
         else:

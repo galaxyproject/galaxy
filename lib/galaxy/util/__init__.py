@@ -26,31 +26,34 @@ import xml.dom.minidom
 from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from functools import partial
 from hashlib import md5
 from os.path import relpath
-from xml.etree import ElementInclude, ElementTree
-from xml.etree.ElementTree import ParseError
 
+import requests
 try:
     import grp
 except ImportError:
     # For Pulsar on Windows (which does not use the function that uses grp)
     grp = None
-
 from boltons.iterutils import (
     default_enter,
     remap,
 )
+LXML_AVAILABLE = True
+try:
+    from lxml import etree
+except ImportError:
+    LXML_AVAILABLE = False
+    import xml.etree.ElementTree as etree
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 from six import binary_type, iteritems, PY2, string_types, text_type
 from six.moves import (
     xrange,
     zip
 )
-from six.moves.urllib import (
-    parse as urlparse,
-    request as urlrequest
-)
-from six.moves.urllib.request import urlopen
+from six.moves.urllib import parse as urlparse
 
 try:
     import docutils.core as docutils_core
@@ -64,8 +67,8 @@ try:
 except ImportError:
     uwsgi = None
 
+from .custom_logging import get_logger
 from .inflection import English, Inflector
-from .logging import get_logger
 from .path import safe_contains, safe_makedirs, safe_relpath  # noqa: F401
 
 inflector = Inflector(English)
@@ -87,6 +90,11 @@ NULL_CHAR = b'\x00'
 BINARY_CHARS = [NULL_CHAR]
 FILENAME_VALID_CHARS = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
+RW_R__R__ = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
+RWXR_XR_X = stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH
+RWXRWXRWX = stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO
+
+XML = etree.XML
 
 defaultdict = collections.defaultdict
 
@@ -188,19 +196,12 @@ def synchronized(func):
     return caller
 
 
-def file_iter(fname, sep=None):
+def iter_start_of_line(fh, chunk_size=None):
     """
-    This generator iterates over a file and yields its lines
-    splitted via the C{sep} parameter. Skips empty lines and lines starting with
-    the C{#} character.
-
-    >>> lines = [ line for line in file_iter(__file__) ]
-    >>> len(lines) !=  0
-    True
+    Iterate over fh and call readline(chunk_size)
     """
-    for line in open(fname):
-        if line and line[0] != '#':
-            yield line.split(sep)
+    for line in iter(partial(fh.readline, chunk_size), ""):
+        yield line
 
 
 def file_reader(fp, chunk_size=CHUNK_SIZE):
@@ -225,34 +226,47 @@ def unique_id(KEY_SIZE=128):
     return md5(random_bits).hexdigest()
 
 
-def parse_xml(fname):
+def parse_xml(fname, strip_whitespace=True, remove_comments=True):
     """Returns a parsed xml tree"""
-    # handle deprecation warning for XMLParsing a file with DOCTYPE
-    class DoctypeSafeCallbackTarget(ElementTree.TreeBuilder):
-        def doctype(*args):
-            pass
-    tree = ElementTree.ElementTree()
+    parser = None
+    if remove_comments and LXML_AVAILABLE:
+        # If using stdlib etree comments are always removed,
+        # but lxml doesn't do this by default
+        parser = etree.XMLParser(remove_comments=remove_comments)
     try:
-        root = tree.parse(fname, parser=ElementTree.XMLParser(target=DoctypeSafeCallbackTarget()))
-        for elem in root.iter('*'):
+        tree = etree.parse(fname, parser=parser)
+        root = tree.getroot()
+        if strip_whitespace:
+            for elem in root.iter('*'):
+                if elem.text is not None:
+                    elem.text = elem.text.strip()
+                if elem.tail is not None:
+                    elem.tail = elem.tail.strip()
+    except IOError as e:
+        if e.errno is None and not os.path.exists(fname):
+            # lxml doesn't set errno
+            e.errno = errno.ENOENT
+        raise
+    except etree.ParseError:
+        log.exception("Error parsing file %s", fname)
+        raise
+    return tree
+
+
+def parse_xml_string(xml_string, strip_whitespace=True):
+    try:
+        tree = etree.fromstring(xml_string)
+    except ValueError as e:
+        if 'strings with encoding declaration are not supported' in unicodify(e):
+            tree = etree.fromstring(xml_string.encode('utf-8'))
+        else:
+            raise e
+    if strip_whitespace:
+        for elem in tree.iter('*'):
             if elem.text is not None:
                 elem.text = elem.text.strip()
             if elem.tail is not None:
                 elem.tail = elem.tail.strip()
-    except ParseError:
-        log.exception("Error parsing file %s", fname)
-        raise
-    ElementInclude.include(root)
-    return tree
-
-
-def parse_xml_string(xml_string):
-    tree = ElementTree.fromstring(xml_string)
-    for elem in tree.iter('*'):
-        if elem.text is not None:
-            elem.text = elem.text.strip()
-        if elem.tail is not None:
-            elem.tail = elem.tail.strip()
     return tree
 
 
@@ -263,20 +277,20 @@ def xml_to_string(elem, pretty=False):
     try:
         if elem is not None:
             if PY2:
-                xml_str = ElementTree.tostring(elem, encoding='utf-8')
+                xml_str = etree.tostring(elem, encoding='utf-8')
             else:
-                xml_str = ElementTree.tostring(elem, encoding='unicode')
+                xml_str = etree.tostring(elem, encoding='unicode')
         else:
             xml_str = ''
     except TypeError as e:
         # we assume this is a comment
         if hasattr(elem, 'text'):
-            return "<!-- %s -->\n" % elem.text
+            return u"<!-- %s -->\n" % elem.text
         else:
             raise e
     if xml_str and pretty:
         pretty_string = xml.dom.minidom.parseString(xml_str).toprettyxml(indent='    ')
-        return "\n".join([line for line in pretty_string.split('\n') if not re.match(r'^[\s\\nb\']*$', line)])
+        return "\n".join(line for line in pretty_string.split('\n') if not re.match(r'^[\s\\nb\']*$', line))
     return xml_str
 
 
@@ -918,8 +932,8 @@ def parse_resource_parameters(resource_param_file):
 
 
 # asbool implementation pulled from PasteDeploy
-truthy = frozenset(['true', 'yes', 'on', 'y', 't', '1'])
-falsy = frozenset(['false', 'no', 'off', 'n', 'f', '0'])
+truthy = frozenset({'true', 'yes', 'on', 'y', 't', '1'})
+falsy = frozenset({'false', 'no', 'off', 'n', 'f', '0'})
 
 
 def asbool(obj):
@@ -1481,10 +1495,9 @@ def send_mail(frm, to, subject, body, config, html=None):
 
     smtp_ssl = asbool(getattr(config, 'smtp_ssl', False))
     if smtp_ssl:
-        s = smtplib.SMTP_SSL()
+        s = smtplib.SMTP_SSL(config.smtp_server)
     else:
-        s = smtplib.SMTP()
-    s.connect(config.smtp_server)
+        s = smtplib.SMTP(config.smtp_server)
     if not smtp_ssl:
         try:
             s.starttls()
@@ -1663,32 +1676,23 @@ def build_url(base_url, port=80, scheme='http', pathspec=None, params=None, dose
     return url
 
 
-def url_get(base_url, password_mgr=None, pathspec=None, params=None):
+def url_get(base_url, auth=None, pathspec=None, params=None, max_retries=5, backoff_factor=1):
     """Make contact with the uri provided and return any contents."""
-    # Uses system proxy settings if they exist.
-    proxy = urlrequest.ProxyHandler()
-    if password_mgr is not None:
-        auth = urlrequest.HTTPDigestAuthHandler(password_mgr)
-        urlopener = urlrequest.build_opener(proxy, auth)
-    else:
-        urlopener = urlrequest.build_opener(proxy)
-    urlrequest.install_opener(urlopener)
     full_url = build_url(base_url, pathspec=pathspec, params=params)
-    response = urlopener.open(full_url)
-    content = response.read()
-    response.close()
-    return unicodify(content)
+    s = requests.Session()
+    retries = Retry(total=max_retries, backoff_factor=backoff_factor, status_forcelist=[429])
+    s.mount(base_url, HTTPAdapter(max_retries=retries))
+    response = s.get(full_url, auth=auth)
+    response.raise_for_status()
+    return response.text
 
 
 def download_to_file(url, dest_file_path, timeout=30, chunk_size=2 ** 20):
     """Download a URL to a file in chunks."""
-    src = urlopen(url, timeout=timeout)
-    with open(dest_file_path, 'wb') as f:
-        while True:
-            chunk = src.read(chunk_size)
-            if not chunk:
-                break
-            f.write(chunk)
+    with requests.get(url, timeout=timeout, stream=True) as r, open(dest_file_path, 'wb') as f:
+        for chunk in r.iter_content(chunk_size):
+            if chunk:
+                f.write(chunk)
 
 
 def get_executable():

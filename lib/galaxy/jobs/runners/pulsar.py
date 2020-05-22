@@ -54,6 +54,7 @@ __all__ = (
     'PulsarRESTJobRunner',
     'PulsarMQJobRunner',
     'PulsarEmbeddedJobRunner',
+    'PulsarEmbeddedMQJobRunner',
 )
 
 MINIMUM_PULSAR_VERSIONS = {
@@ -102,6 +103,9 @@ PULSAR_PARAM_SPECS = dict(
     ),
     pulsar_config=dict(
         map=specs.to_str_or_none,
+        default=None,
+    ),
+    pulsar_app_config=dict(
         default=None,
     ),
     manager=dict(
@@ -184,6 +188,8 @@ class PulsarJobRunner(AsynchronousJobRunner):
 
     runner_name = "PulsarJobRunner"
     default_build_pulsar_app = False
+    use_mq = False
+    poll = True
 
     def __init__(self, app, nworkers, **kwds):
         """Start the job runner."""
@@ -199,11 +205,19 @@ class PulsarJobRunner(AsynchronousJobRunner):
         self._monitor()
 
     def _monitor(self):
-        # Extension point allow MQ variant to setup callback instead
-        self._init_monitor_thread()
+        if self.use_mq:
+            # This is a message queue driven runner, don't monitor
+            # just setup required callback.
+            self.client_manager.ensure_has_status_update_callback(self.__async_update)
+            self.client_manager.ensure_has_ack_consumers()
+
+        if self.poll:
+            self._init_monitor_thread()
+        else:
+            self._init_noop_monitor()
 
     def __init_client_manager(self):
-        pulsar_conf = self.runner_params.get('app', None)
+        pulsar_conf = self.runner_params.get('pulsar_app_config', None)
         pulsar_conf_file = None
         if pulsar_conf is None:
             pulsar_conf_file = self.runner_params.get('pulsar_config', None)
@@ -250,6 +264,23 @@ class PulsarJobRunner(AsynchronousJobRunner):
         return JobDestination(runner="pulsar", params=url_to_destination_params(url))
 
     def check_watched_item(self, job_state):
+        if self.use_mq:
+            # Might still need to check pod IPs.
+            job_wrapper = job_state.job_wrapper
+            guest_ports = job_wrapper.guest_ports
+            if len(guest_ports) > 0:
+                client = self.get_client_from_state(job_state)
+                job_ip = client.job_ip()
+                if job_ip:
+                    ports_dict = {}
+                    for guest_port in guest_ports:
+                        ports_dict[str(guest_port)] = dict(host=job_ip, port=guest_port, protocol="http")
+                    self.app.interactivetool_manager.configure_entry_points(job_wrapper.get_job(), ports_dict)
+            return job_state
+        else:
+            return self.check_watched_item_state(job_state)
+
+    def check_watched_item_state(self, job_state):
         try:
             client = self.get_client_from_state(job_state)
             status = client.get_status()
@@ -354,11 +385,14 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 remote_pulsar_app_config=remote_pulsar_app_config,
                 job_directory_files=job_directory_files,
                 container=None if not remote_container else remote_container.container_id,
+                guest_ports=job_wrapper.guest_ports,
             )
             job_id = pulsar_submit_job(client, client_job_description, remote_job_config)
             log.info("Pulsar job submitted with job_id %s" % job_id)
-            job_wrapper.set_job_destination(job_destination, job_id)
-            job_wrapper.change_state(model.Job.states.QUEUED)
+            job = job_wrapper.get_job()
+            # Flush with change_state.
+            job_wrapper.set_external_id(job_id, job=job, flush=False)
+            job_wrapper.change_state(model.Job.states.QUEUED, job=job)
         except Exception:
             job_wrapper.fail("failure running job", exception=True)
             log.exception("failure running job %d", job_wrapper.job_id)
@@ -810,36 +844,6 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 metadata_kwds['datatypes_config'] = datatypes_config
         return metadata_kwds
 
-
-class PulsarLegacyJobRunner(PulsarJobRunner):
-    """Flavor of Pulsar job runner mimicking behavior of old LWR runner."""
-
-    destination_defaults = dict(
-        rewrite_parameters="false",
-        dependency_resolution="local",
-    )
-
-
-class PulsarMQJobRunner(PulsarJobRunner):
-    """Flavor of Pulsar job runner with sensible defaults for message queue communication."""
-
-    destination_defaults = dict(
-        default_file_action="remote_transfer",
-        rewrite_parameters="true",
-        dependency_resolution="remote",
-        jobs_directory=PARAMETER_SPECIFICATION_REQUIRED,
-        url=PARAMETER_SPECIFICATION_IGNORED,
-        private_token=PARAMETER_SPECIFICATION_IGNORED
-    )
-
-    def _monitor(self):
-        # This is a message queue driven runner, don't monitor
-        # just setup required callback.
-        self._init_noop_monitor()
-
-        self.client_manager.ensure_has_status_update_callback(self.__async_update)
-        self.client_manager.ensure_has_ack_consumers()
-
     def __async_update(self, full_status):
         galaxy_job_id = None
         try:
@@ -859,11 +863,35 @@ class PulsarMQJobRunner(PulsarJobRunner):
             # Nothing else to do? - Attempt to fail the job?
 
 
+class PulsarLegacyJobRunner(PulsarJobRunner):
+    """Flavor of Pulsar job runner mimicking behavior of old LWR runner."""
+
+    destination_defaults = dict(
+        rewrite_parameters="false",
+        dependency_resolution="local",
+    )
+
+
+class PulsarMQJobRunner(PulsarJobRunner):
+    """Flavor of Pulsar job runner with sensible defaults for message queue communication."""
+    use_mq = True
+    poll = False
+
+    destination_defaults = dict(
+        default_file_action="remote_transfer",
+        rewrite_parameters="true",
+        dependency_resolution="remote",
+        jobs_directory=PARAMETER_SPECIFICATION_REQUIRED,
+        url=PARAMETER_SPECIFICATION_IGNORED,
+        private_token=PARAMETER_SPECIFICATION_IGNORED
+    )
+
+
 KUBERNETES_DESTINATION_DEFAULTS = {
     "default_file_action": "remote_transfer",
     "rewrite_parameters": "true",
     "jobs_directory": "/pulsar_staging",
-    "pulsar_container_image": "galaxy/pulsar-pod-staging:0.13.0",
+    "pulsar_container_image": "galaxy/pulsar-pod-staging:0.14.0",
     "remote_container_handling": True,
     "k8s_enabled": True,
     "url": PARAMETER_SPECIFICATION_IGNORED,
@@ -873,6 +901,7 @@ KUBERNETES_DESTINATION_DEFAULTS = {
 
 class PulsarKubernetesJobRunner(PulsarMQJobRunner):
     destination_defaults = KUBERNETES_DESTINATION_DEFAULTS
+    poll = True  # Poll so we can check API for pod IP for ITs.
 
     def _populate_parameter_defaults(self, job_destination):
         super(PulsarKubernetesJobRunner, self)._populate_parameter_defaults(job_destination)
@@ -898,7 +927,7 @@ class PulsarRESTJobRunner(PulsarJobRunner):
 
 
 class PulsarEmbeddedJobRunner(PulsarJobRunner):
-    """Flavor of Puslar job runnner that runs Pulsar's server code directly within Galaxy.
+    """Flavor of Puslar job runner that runs Pulsar's server code directly within Galaxy.
 
     This is an appropriate job runner for when the desire is to use Pulsar staging
     but their is not need to run a remote service.
@@ -909,6 +938,10 @@ class PulsarEmbeddedJobRunner(PulsarJobRunner):
         rewrite_parameters="true",
         dependency_resolution="remote",
     )
+    default_build_pulsar_app = True
+
+
+class PulsarEmbeddedMQJobRunner(PulsarMQJobRunner):
     default_build_pulsar_app = True
 
 

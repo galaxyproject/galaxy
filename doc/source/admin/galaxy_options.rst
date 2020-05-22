@@ -10,6 +10,20 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~
+``managed_config_dir``
+~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The directory that will be prepended to relative paths in options
+    specifying config files controlled by Galaxy (such as
+    shed_tool_config_file, etc.). Must be writable by the user running
+    Galaxy.  Defaults to `<config_dir>/` if running Galaxy from source
+    or `<data_dir>/config` otherwise.
+:Default: ``None``
+:Type: str
+
+
 ~~~~~~~~~~~~
 ``data_dir``
 ~~~~~~~~~~~~
@@ -226,7 +240,7 @@
     Where dataset files are stored. It must be accessible at the same
     path on any cluster nodes that will run Galaxy jobs, unless using
     Pulsar.
-:Default: ``files``
+:Default: ``objects``
 :Type: str
 
 
@@ -272,7 +286,7 @@
     upon tool installation, whereas Galaxy will fail to start if any
     files in tool_config_file cannot be read.
     The value of this option will be resolved with respect to
-    <mutable_config_dir>.
+    <managed_config_dir>.
 :Default: ``shed_tool_conf.xml``
 :Type: str
 
@@ -282,9 +296,9 @@
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Enable / disable checking if any tools defined in the above non-
-    shed tool_config_files (i.e., tool_conf.xml) have been migrated
-    from the Galaxy code distribution to the Tool Shed. This
+    Enable / disable checking if any tools defined in the above
+    non-shed tool_config_files (i.e., tool_conf.xml) have been
+    migrated from the Galaxy code distribution to the Tool Shed. This
     functionality is largely untested in modern Galaxy releases and
     has serious issues such as #7273 and the possibility of slowing
     down Galaxy startup, so the default and recommended value is
@@ -303,7 +317,7 @@
     tool shed upon a new release, they will be added to this tool
     config file.
     The value of this option will be resolved with respect to
-    <config_dir>.
+    <managed_config_dir>.
 :Default: ``migrated_tools_conf.xml``
 :Type: str
 
@@ -318,6 +332,8 @@
     tool panel layout.  This file can be changed by the Galaxy
     administrator to alter the layout of the tool panel.  If not
     present, Galaxy will create it.
+    The value of this option will be resolved with respect to
+    <managed_config_dir>.
 :Default: ``integrated_tool_panel.xml``
 :Type: str
 
@@ -409,8 +425,8 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    conda channels to enable by default (https://conda.io/docs/user-
-    guide/tasks/manage-channels.html)
+    conda channels to enable by default
+    (https://conda.io/docs/user-guide/tasks/manage-channels.html)
 :Default: ``iuc,conda-forge,bioconda,defaults``
 :Type: str
 
@@ -695,19 +711,6 @@
 :Type: int
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``manage_dependency_relationships``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Enable use of an in-memory registry with bi-directional
-    relationships between repositories (i.e., in addition to lists of
-    dependencies for a repository, keep an in-memory registry of
-    dependent items for each repository.
-:Default: ``false``
-:Type: bool
-
-
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``tool_data_table_config_path``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -733,7 +736,7 @@
     following file, which is parsed and applied to the
     ToolDataTableManager at server start up.
     The value of this option will be resolved with respect to
-    <mutable_config_dir>.
+    <managed_config_dir>.
 :Default: ``shed_tool_data_table_conf.xml``
 :Type: str
 
@@ -777,6 +780,31 @@
     which will use a less efficient monitoring scheme that may work in
     wider range of scenarios than the watchdog default.
 :Default: ``false``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~
+``refgenie_config_file``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    File containing refgenie configuration, e.g.
+    /path/to/genome_config.yaml. Can be used by refgenie backed tool
+    data tables.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``build_sites_config_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    File that defines the builds (dbkeys) available at sites used by
+    display applications and the URL to those sites.
+    The value of this option will be resolved with respect to
+    <config_dir>.
+:Default: ``build_sites.yml``
 :Type: str
 
 
@@ -880,8 +908,8 @@
     definition files. Galaxy ships with several basic interface tours
     enabled, though a different directory with custom tours can be
     specified here. The path is relative to the Galaxy root dir.  To
-    use an absolute path begin the path with '/'.  This is a comma-
-    separated list.
+    use an absolute path begin the path with '/'.  This is a
+    comma-separated list.
 :Default: ``config/plugins/tours``
 :Type: str
 
@@ -894,8 +922,8 @@
     Webhooks directory: where to store webhooks - plugins to extend
     the Galaxy UI. By default none will be loaded.  Set to
     config/plugins/webhooks/demo to load Galaxy's demo webhooks.  To
-    use an absolute path begin the path with '/'.  This is a comma-
-    separated list. Add test/functional/webhooks to this list to
+    use an absolute path begin the path with '/'.  This is a
+    comma-separated list. Add test/functional/webhooks to this list to
     include the demo webhooks used to test the webhook framework.
 :Default: ``config/plugins/webhooks``
 :Type: str
@@ -987,6 +1015,41 @@
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~
+``tool_cache_data_dir``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Tool related caching. Fully expanded tools and metadata will be
+    stored at this path. Per tool_conf cache locations can be
+    configured in (shed_)tool_conf.xml files using the
+    tool_cache_data_dir attribute.
+:Default: ``tool_cache``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~
+``tool_search_index_dir``
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Directory in which the toolbox search index is stored.
+:Default: ``tool_search_index``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``delay_tool_initialization``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set this to true to delay parsing of tool inputs and outputs until
+    they are needed. This results in faster startup times but uses
+    more memory when using forked Galaxy processes.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~
 ``citation_cache_type``
 ~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1025,6 +1088,40 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``mulled_resolution_cache_type``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Mulled resolution caching. Mulled resolution uses external APIs of
+    quay.io, these requests are caching using this and the following
+    parameters
+:Default: ``file``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``mulled_resolution_cache_data_dir``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Data directory used by beaker for caching mulled resolution
+    requests.
+:Default: ``mulled/data``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``mulled_resolution_cache_lock_dir``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Lock directory used by beaker for caching mulled resolution
+    requests.
+:Default: ``mulled/locks``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``object_store_config_file``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1044,9 +1141,12 @@
 
 :Description:
     What Dataset attribute is used to reference files in an
-    ObjectStore implementation, default is 'id' but can also be set to
-    'uuid' for more de-centralized usage.
-:Default: ``id``
+    ObjectStore implementation, this can be 'uuid' or 'id'. The
+    default will depend on how the object store is configured,
+    starting with 20.05 Galaxy will try to default to 'uuid' if it can
+    be sure this is a new Galaxy instance - but the default will be
+    'id' in many cases.
+:Default: ``None``
 :Type: str
 
 
@@ -1188,8 +1288,8 @@
     Email address to use in the 'From' field when sending emails for
     account activations, workflow step notifications and password
     resets. We recommend using string in the following format: Galaxy
-    Project <galaxy-no-reply@example.com> If not configured, '<galaxy-
-    no-reply@HOSTNAME>' will be used.
+    Project <galaxy-no-reply@example.com> If not configured,
+    '<galaxy-no-reply@HOSTNAME>' will be used.
 :Default: ``None``
 :Type: str
 
@@ -1212,10 +1312,31 @@
 
 :Description:
     E-mail domains blacklist is used for filtering out users that are
-    using disposable email address during the registration.  If their
-    address domain matches any domain in the blacklist, they are
-    refused the registration.
-    Example value 'config/disposable_email_blacklist.conf'
+    using disposable email addresses at registration.  If their
+    address domain matches any domain on the list, they are refused
+    registration.
+    Example value 'email_blacklist.conf'
+    The value of this option will be resolved with respect to
+    <config_dir>.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~
+``whitelist_file``
+~~~~~~~~~~~~~~~~~~
+
+:Description:
+    E-mail domains whitelist is used to specify allowed email address
+    domains. If the list is non-empty and a user attempts registration
+    using an email address belonging to a domain that is not on the
+    list, registration will be denied. This is a more restrictive
+    option than <blacklist_file>, and therefore, in case
+    <whitelist_file> is set and is not empty, <blacklist_file> will be
+    ignored.
+    Example value 'email_whitelist.conf'
+    The value of this option will be resolved with respect to
+    <config_dir>.
 :Default: ``None``
 :Type: str
 
@@ -1340,10 +1461,10 @@
     Set this to false to disable the old-style display applications
     that are hardcoded into datatype classes. This may be desirable
     due to using the new-style, XML-defined, display applications that
-    have been defined for many of the datatypes that have the old-
-    style. There is also a potential security concern with the old-
-    style applications, where a malicious party could provide a link
-    that appears to reference the Galaxy server, but contains a
+    have been defined for many of the datatypes that have the
+    old-style. There is also a potential security concern with the
+    old-style applications, where a malicious party could provide a
+    link that appears to reference the Galaxy server, but contains a
     redirect to a third-party server, tricking a Galaxy user to access
     said site.
 :Default: ``true``
@@ -1358,6 +1479,40 @@
     Enable InteractiveTools.
 :Default: ``false``
 :Type: bool
+
+
+~~~~~~~~~~~~~~~~
+``aws_estimate``
+~~~~~~~~~~~~~~~~
+
+:Description:
+    This flag enables an AWS cost estimate for every job based on
+    their runtime matrices. CPU, RAM and runtime usage is mapped
+    against AWS pricing table. Please note, that those numbers are
+    only estimates.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``interactivetools_proxy_host``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Proxy host - assumed to just be hosted on the same hostname and
+    port as Galaxy by default.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~
+``interactivetools_map``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Map for interactivetool proxy.
+:Default: ``interactivetools_map.sqlite``
+:Type: str
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1406,9 +1561,19 @@
 ~~~~~~~~~
 
 :Description:
-    Append "/{brand}" to the "Galaxy" text in the masthead.
+    Append "{brand}" text to the masthead.
 :Default: ``None``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~
+``display_galaxy_brand``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Display the "Galaxy" text in the masthead.
+:Default: ``true``
+:Type: bool
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1581,17 +1746,6 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~
-``genomespace_ui_url``
-~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Points to the GenomeSpace UI service which will be used by the
-    GenomeSpace importer and exporter tools
-:Default: ``https://gsui.genomespace.org/jsui/``
-:Type: str
-
-
 ~~~~~~~~~~~~~
 ``terms_url``
 ~~~~~~~~~~~~~
@@ -1703,7 +1857,7 @@
     it via a proxy server.  These options should be self explanatory
     and so are not documented individually.  You can use these paths
     (or ones in the proxy server) to point to your own styles.
-:Default: ``static/june_2007_style/blue``
+:Default: ``static/style``
 :Type: str
 
 
@@ -1749,10 +1903,10 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    The same download handling can be done by nginx using X-Accel-
-    Redirect.  This should be set to the path defined in the nginx
-    config as an internal redirect with access to Galaxy's data files
-    (see documentation linked above).
+    The same download handling can be done by nginx using
+    X-Accel-Redirect.  This should be set to the path defined in the
+    nginx config as an internal redirect with access to Galaxy's data
+    files (see documentation linked above).
 :Default: ``None``
 :Type: str
 
@@ -1872,8 +2026,9 @@
 
 :Description:
     As of 16.04 Galaxy supports multiple proxy types. The original
-    NodeJS implementation, alongside a new Golang single-binary-no-
-    dependencies version. Valid values are (node, golang)
+    NodeJS implementation, alongside a new Golang
+    single-binary-no-dependencies version. Valid values are (node,
+    golang)
 :Default: ``node``
 :Type: str
 
@@ -1942,8 +2097,8 @@
     Additionally, when the dynamic proxy is proxied by an upstream
     server, you'll want to specify a prefixed URL so both Galaxy and
     the proxy reside under the same path that your cookies are under.
-    This will result in a url like https://FQDN/galaxy-
-    prefix/gie_proxy for proxying
+    This will result in a url like
+    https://FQDN/galaxy-prefix/gie_proxy for proxying
 :Default: ``gie_proxy``
 :Type: str
 
@@ -2136,7 +2291,9 @@
     this file are trusted and will not have their HTML sanitized on
     display.  This can be manually edited or manipulated through the
     Admin control panel -- see "Manage Display Whitelist"
-:Default: ``config/sanitize_whitelist.txt``
+    The value of this option will be resolved with respect to
+    <mutable_config_dir>.
+:Default: ``sanitize_whitelist.txt``
 :Type: str
 
 
@@ -2278,8 +2435,7 @@
 :Description:
     Heartbeat log filename. Can accept the template variables
     {server_name} and {pid}
-    Sample default 'heartbeat_{server_name}.log'
-:Default: ``None``
+:Default: ``heartbeat_{server_name}.log``
 :Type: str
 
 
@@ -2387,8 +2543,8 @@
 :Description:
     Add an option to the library upload form which allows authorized
     non-administrators to upload a directory of files.  The configured
-    directory must contain sub-directories named the same as the non-
-    admin user's Galaxy login ( email ).  The non-admin user is
+    directory must contain sub-directories named the same as the
+    non-admin user's Galaxy login ( email ).  The non-admin user is
     restricted to uploading files or sub-directories of files
     contained in their directory.
 :Default: ``None``
@@ -2609,12 +2765,13 @@
 
 :Description:
     Set tool test data directory. The test framework sets this value
-    to 'test-data,https://github.com/galaxyproject/galaxy-test-
-    data.git' which will cause Galaxy to clone down extra test data on
-    the fly for certain tools distributed with Galaxy but this is
-    likely not appropriate for production systems. Instead one can
-    simply clone that repository directly and specify a path here
-    instead of a Git HTTP repository.
+    to
+    'test-data,https://github.com/galaxyproject/galaxy-test-data.git'
+    which will cause Galaxy to clone down extra test data on the fly
+    for certain tools distributed with Galaxy but this is likely not
+    appropriate for production systems. Instead one can simply clone
+    that repository directly and specify a path here instead of a Git
+    HTTP repository.
 :Default: ``test-data``
 :Type: str
 
@@ -2803,8 +2960,8 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    When using LDAP for authentication, allow administrators to pre-
-    populate users using an additional form on 'Create new user'
+    When using LDAP for authentication, allow administrators to
+    pre-populate users using an additional form on 'Create new user'
 :Default: ``false``
 :Type: bool
 
@@ -3256,6 +3413,19 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``job_metrics_config_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    XML config file that contains the job metric collection
+    configuration.
+    The value of this option will be resolved with respect to
+    <config_dir>.
+:Default: ``job_metrics_conf.xml``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``expose_potentially_sensitive_job_metrics``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -3306,7 +3476,7 @@
     File where Tool Shed based Data Managers are configured. This file
     will be created automatically upon data manager installation.
     The value of this option will be resolved with respect to
-    <mutable_config_dir>.
+    <managed_config_dir>.
 :Default: ``shed_data_manager_conf.xml``
 :Type: str
 
@@ -3553,9 +3723,9 @@
 
 :Description:
     When running DRMAA jobs as the Galaxy user
-    (https://docs.galaxyproject.org/en/master/admin/cluster.html
-    #submitting-jobs-as-the-real-user) this script is used to run the
-    job script Galaxy generates for a tool execution.
+    (https://docs.galaxyproject.org/en/master/admin/cluster.html#submitting-jobs-as-the-real-user)
+    this script is used to run the job script Galaxy generates for a
+    tool execution.
     Example value 'sudo -E scripts/drmaa_external_runner.py
     --assign_all_groups'
 :Default: ``None``
@@ -3568,9 +3738,9 @@
 
 :Description:
     When running DRMAA jobs as the Galaxy user
-    (https://docs.galaxyproject.org/en/master/admin/cluster.html
-    #submitting-jobs-as-the-real-user) this script is used to kill
-    such jobs by Galaxy (e.g. if the user cancels the job).
+    (https://docs.galaxyproject.org/en/master/admin/cluster.html#submitting-jobs-as-the-real-user)
+    this script is used to kill such jobs by Galaxy (e.g. if the user
+    cancels the job).
     Example value 'sudo -E scripts/drmaa_external_killer.py'
 :Default: ``None``
 :Type: str
@@ -3582,10 +3752,9 @@
 
 :Description:
     When running DRMAA jobs as the Galaxy user
-    (https://docs.galaxyproject.org/en/master/admin/cluster.html
-    #submitting-jobs-as-the-real-user) this script is used transfer
-    permissions back and forth between the Galaxy user and the user
-    that is running the job.
+    (https://docs.galaxyproject.org/en/master/admin/cluster.html#submitting-jobs-as-the-real-user)
+    this script is used transfer permissions back and forth between
+    the Galaxy user and the user that is running the job.
     Example value 'sudo -E scripts/external_chown_script.py'
 :Default: ``None``
 :Type: str
@@ -3597,16 +3766,15 @@
 
 :Description:
     When running DRMAA jobs as the Galaxy user
-    (https://docs.galaxyproject.org/en/master/admin/cluster.html
-    #submitting-jobs-as-the-real-user) Galaxy can extract the user
-    name from the email address (actually the local-part before the @)
-    or the username which are both stored in the Galaxy data base. The
-    latter option is particularly useful for installations that get
-    the authentication from LDAP. Also, Galaxy can accept the name of
-    a common system user (eg. galaxy_worker) who can run every job
-    being submitted. This user should not be the same user running the
-    galaxy system. Possible values are user_email (default), username
-    or <common_system_user>
+    (https://docs.galaxyproject.org/en/master/admin/cluster.html#submitting-jobs-as-the-real-user)
+    Galaxy can extract the user name from the email address (actually
+    the local-part before the @) or the username which are both stored
+    in the Galaxy data base. The latter option is particularly useful
+    for installations that get the authentication from LDAP. Also,
+    Galaxy can accept the name of a common system user (eg.
+    galaxy_worker) who can run every job being submitted. This user
+    should not be the same user running the galaxy system. Possible
+    values are user_email (default), username or <common_system_user>
 :Default: ``user_email``
 :Type: str
 
@@ -3627,6 +3795,120 @@
     for running jobs as the actual user, to remove the need to
     configure each user's environment individually.
 :Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_beta_markdown_export``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable export of Galaxy Markdown documents (pages and workflow
+    reports) to PDF. Requires manual installation and setup of
+    weasyprint (latest version available for Python 2.7 is 0.42).
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~
+``markdown_export_css``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    CSS file to apply to all Markdown exports to PDF - currently used
+    by WeasyPrint during rendering an HTML export of the document to
+    PDF.
+:Default: ``markdown_export.css``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``markdown_export_css_pages``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    CSS file to apply to "Galaxy Page" exports to PDF. Generally
+    prefer markdown_export_css, but this is here for deployments that
+    would like to tailor different kinds of exports.
+:Default: ``markdown_export_pages.css``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``markdown_export_css_invocation_reports``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    CSS file to apply to invocation report exports to PDF. Generally
+    prefer markdown_export_css, but this is here for deployments that
+    would like to tailor different kinds of exports.
+:Default: ``markdown_export_invocation_reports.css``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``markdown_export_prologue``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Prologue Markdown/HTML to apply to markdown exports to PDF.
+    Allowing branded headers.
+:Default: ````
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``markdown_export_epilogue``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Prologue Markdown/HTML to apply to markdown exports to PDF.
+    Allowing branded footers.
+:Default: ````
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``markdown_export_prologue_pages``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Alternative to markdown_export_prologue that applies just to page
+    exports.
+:Default: ````
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``markdown_export_prologue_invocation_reports``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Alternative to markdown_export_prologue that applies just to
+    invocation report exports.
+:Default: ````
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``markdown_export_epilogue_pages``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Alternative to markdown_export_epilogue that applies just to page
+    exports.
+:Default: ````
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``markdown_export_epilogue_invocation_reports``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Alternative to markdown_export_epilogue that applies just to
+    invocation report exports.
+:Default: ````
 :Type: str
 
 
@@ -3671,11 +3953,13 @@
     from workflow_resource_params_file). If this this is a function
     reference it will be passed various inputs (workflow model object
     and user) and it should produce a list of input IDs. If it is a
-    path it is expected to an XML or YAML file describing how to map
-    group names to parameter descriptions (additional types of
+    path it is expected to be an XML or YAML file describing how to
+    map group names to parameter descriptions (additional types of
     mappings via these files could be implemented but haven't yet -
     for instance using workflow tags to do the mapping).
-:Default: ``config/workflow_resource_mapper_conf.yml``
+    Sample default path
+    'config/workflow_resource_mapper_conf.yml.sample'
+:Default: ``None``
 :Type: str
 
 
@@ -3715,9 +3999,9 @@
 ~~~~~~~~~~~~~~~~
 
 :Description:
-    Define toolbox filters (https://galaxyproject.org/user-defined-
-    toolbox-filters/) that admins may use to restrict the tools to
-    display.
+    Define toolbox filters
+    (https://galaxyproject.org/user-defined-toolbox-filters/) that
+    admins may use to restrict the tools to display.
 :Default: ``None``
 :Type: str
 
@@ -3727,9 +4011,9 @@
 ~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Define toolbox filters (https://galaxyproject.org/user-defined-
-    toolbox-filters/) that admins may use to restrict the tool labels
-    to display.
+    Define toolbox filters
+    (https://galaxyproject.org/user-defined-toolbox-filters/) that
+    admins may use to restrict the tool labels to display.
 :Default: ``None``
 :Type: str
 
@@ -3739,9 +4023,9 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Define toolbox filters (https://galaxyproject.org/user-defined-
-    toolbox-filters/) that admins may use to restrict the tool
-    sections to display.
+    Define toolbox filters
+    (https://galaxyproject.org/user-defined-toolbox-filters/) that
+    admins may use to restrict the tool sections to display.
 :Default: ``None``
 :Type: str
 
@@ -3751,9 +4035,9 @@
 ~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Define toolbox filters (https://galaxyproject.org/user-defined-
-    toolbox-filters/) that users may use to restrict the tools to
-    display.
+    Define toolbox filters
+    (https://galaxyproject.org/user-defined-toolbox-filters/) that
+    users may use to restrict the tools to display.
 :Default: ``examples:restrict_upload_to_admins, examples:restrict_encode``
 :Type: str
 
@@ -3763,9 +4047,9 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Define toolbox filters (https://galaxyproject.org/user-defined-
-    toolbox-filters/) that users may use to restrict the tool sections
-    to display.
+    Define toolbox filters
+    (https://galaxyproject.org/user-defined-toolbox-filters/) that
+    users may use to restrict the tool sections to display.
 :Default: ``examples:restrict_text``
 :Type: str
 
@@ -3775,9 +4059,9 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Define toolbox filters (https://galaxyproject.org/user-defined-
-    toolbox-filters/) that users may use to restrict the tool labels
-    to display.
+    Define toolbox filters
+    (https://galaxyproject.org/user-defined-toolbox-filters/) that
+    users may use to restrict the tool labels to display.
 :Default: ``examples:restrict_upload_to_admins, examples:restrict_encode``
 :Type: str
 
@@ -3788,8 +4072,9 @@
 
 :Description:
     The base module(s) that are searched for modules for toolbox
-    filtering (https://galaxyproject.org/user-defined-toolbox-
-    filters/) functions.
+    filtering
+    (https://galaxyproject.org/user-defined-toolbox-filters/)
+    functions.
 :Default: ``galaxy.tools.filters,galaxy.tools.toolbox.filters``
 :Type: str
 
@@ -3879,6 +4164,85 @@
     unique session cookie shared by all subdomains.
 :Default: ``None``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``select_type_workflow_threshold``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Due to performance considerations (select2 fields are pretty
+    'expensive' in terms of memory usage) Galaxy uses the regular
+    select fields for non-dataset selectors in the workflow run form.
+    use 0 in order to always use select2 fields, use -1 (default) in
+    order to always use the regular select fields, use any other
+    positive number as threshold (above threshold: regular select
+    fields will be used)
+:Default: ``-1``
+:Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_tool_recommendations``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Allow the display of tool recommendations in workflow editor and
+    after tool execution. If it is enabled and set to true, please
+    enable 'tool_recommendation_model_path' as well
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``tool_recommendation_model_path``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set remote path of the trained model (HDF5 file) for tool
+    recommendation.
+:Default: ``https://github.com/galaxyproject/galaxy-test-data/raw/master/tool_recommendation_model.hdf5``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~
+``topk_recommendations``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set the number of predictions/recommendations to be made by the
+    model
+:Default: ``10``
+:Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``admin_tool_recommendations_path``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set path to the additional tool preferences from Galaxy admins. It
+    has two blocks. One for listing deprecated tools which will be
+    removed from the recommendations and another is for adding
+    additional tools to be recommended along side those from the deep
+    learning model.
+:Default: ``tool_recommendations_overwrite.yml``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``overwrite_model_recommendations``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Overwrite or append to the tool recommendations by the deep
+    learning model. When set to true, all the recommendations by the
+    deep learning model are overwritten by the recommendations set by
+    an admin in a config file 'tool_recommendations_overwrite.yml'.
+    When set to false, the recommended tools by admins and predicted
+    by the deep learning model are shown.
+:Default: ``false``
+:Type: bool
 
 
 

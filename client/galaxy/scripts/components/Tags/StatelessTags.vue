@@ -11,7 +11,7 @@ upstream component or environment that is accessed through props and events -->
             class="toggle-link"
             @click.prevent="toggleTagDisplay"
         >
-            {{ linkText | localize }}
+            {{ linkText }}
         </a>
         <vue-tags-input
             v-if="tagsVisible"
@@ -20,7 +20,7 @@ upstream component or environment that is accessed through props and events -->
             :tags="tagModels"
             :autocomplete-items="autocompleteTags"
             :disabled="disabled"
-            :placeholder="'Add Tags' | localize"
+            placeholder="Add Tags"
             :add-on-key="triggerKeys"
             @before-adding-tag="beforeAddingTag"
             @before-deleting-tag="beforeDeletingTag"
@@ -39,14 +39,14 @@ import { createTag } from "./model";
 
 export default {
     components: {
-        VueTagsInput
+        VueTagsInput,
     },
     props: {
         value: { type: Array, required: false, default: () => [] },
         autocompleteItems: { type: Array, required: false, default: () => [] },
         maxVisibleTags: { type: Number, required: false, default: 5 },
         useToggleLink: { type: Boolean, required: false, default: true },
-        disabled: { type: Boolean, required: false, default: false }
+        disabled: { type: Boolean, required: false, default: false },
     },
     data() {
         // initialize toggle value
@@ -55,13 +55,13 @@ export default {
         return {
             tagText: "",
             tagToggle: !isClosed,
-            triggerKeys: [13, " "]
+            triggerKeys: [13, " "],
         };
     },
     computed: {
         tagContainerClasses() {
             return {
-                disabled: this.disabled
+                disabled: this.disabled,
             };
         },
         tagModels() {
@@ -78,19 +78,19 @@ export default {
         },
         tagsVisible() {
             return this.useToggleLink ? this.tagToggle : true;
-        }
+        },
     },
     watch: {
         tagText(newValue) {
             this.$emit("tag-input-changed", newValue);
-        }
+        },
     },
     methods: {
         tagsChanged(newTags) {
             this.$emit("input", this.pluckLabels(newTags));
         },
         pluckLabels(newTags) {
-            return newTags.map(t => createTag(t).toString());
+            return newTags.map((t) => createTag(t).toString());
         },
         toggleTagDisplay() {
             this.tagToggle = !this.tagToggle;
@@ -117,8 +117,8 @@ export default {
         },
         hasHandler(eventName) {
             return Object.keys(this.$listeners).includes(eventName);
-        }
-    }
+        },
+    },
 };
 </script>
 

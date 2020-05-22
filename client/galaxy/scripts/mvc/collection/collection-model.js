@@ -58,11 +58,11 @@ var DatasetCollectionElementMixin = {
         model_class: "DatasetCollectionElement",
         element_identifier: null,
         element_index: null,
-        element_type: null
+        element_type: null,
     },
 
     /** merge the attributes of the sub-object 'object' into this model */
-    _mergeObject: function(attributes) {
+    _mergeObject: function (attributes) {
         // Don't let the dataset ID replace the DCE's ID so record it as the
         // element_id and when fetching dataset details below use the element_id
         // instead of this.id.
@@ -73,14 +73,14 @@ var DatasetCollectionElementMixin = {
             delete attributes.object.id;
         }
         _.extend(attributes, attributes.object, {
-            element_id: elementId
+            element_id: elementId,
         });
         delete attributes.object;
         return attributes;
     },
 
     /** override to merge this.object into this */
-    constructor: function(attributes, options) {
+    constructor: function (attributes, options) {
         // console.debug( '\t DatasetCollectionElement.constructor:', attributes, options );
         attributes = this._mergeObject(attributes);
         this.idAttribute = "element_id";
@@ -88,11 +88,11 @@ var DatasetCollectionElementMixin = {
     },
 
     /** when the model is fetched, merge this.object into this */
-    parse: function(response, options) {
+    parse: function (response, options) {
         var attributes = response;
         attributes = this._mergeObject(attributes);
         return attributes;
-    }
+    },
 };
 
 /** @class Concrete class of Generic DatasetCollectionElement */
@@ -112,9 +112,9 @@ var DCECollection = Backbone.Collection.extend(BASE_MVC.LoggableMixin).extend(
         model: DatasetCollectionElement,
 
         /** String representation. */
-        toString: function() {
+        toString: function () {
             return ["DatasetCollectionElementCollection(", this.length, ")"].join("");
-        }
+        },
     }
 );
 
@@ -126,7 +126,7 @@ var DatasetDCE = DATASET_MODEL.DatasetAssociation.extend(
         DatasetCollectionElementMixin,
         /** @lends DatasetDCE.prototype */ {
             /** url fn */
-            url: function() {
+            url: function () {
                 // won't always be an hda
                 if (!this.has("history_id")) {
                     console.warn("no endpoint for non-hdas within a collection yet");
@@ -137,7 +137,7 @@ var DatasetDCE = DATASET_MODEL.DatasetAssociation.extend(
                 return `${getAppRoot()}api/histories/${this.get("history_id")}/contents/${datasetId}`;
             },
 
-            _getDatasetId: function() {
+            _getDatasetId: function () {
                 // I'm a DCE acting as dataset, this URL needs to be the dataset URL so
                 // use element_id instead of id. See note above in _mergeObject and
                 // discussion on #3782 for more context.
@@ -150,7 +150,7 @@ var DatasetDCE = DATASET_MODEL.DatasetAssociation.extend(
                 DatasetCollectionElementMixin.defaults
             ),
 
-            _downloadQueryParameters: function() {
+            _downloadQueryParameters: function () {
                 // Setting the file extension to just 'data' defers that
                 // decision to the serverside, setting based on the datatype.
                 var fileExt = this.get("file_ext") || "data";
@@ -163,22 +163,22 @@ var DatasetDCE = DATASET_MODEL.DatasetAssociation.extend(
             //  the constructor in hcontentMixin won't be attached by BASE_MVC.mixin to this model
             //  - re-apply manually for now
             /** call the mixin constructor */
-            constructor: function(attributes, options) {
+            constructor: function (attributes, options) {
                 this.debug("\t DatasetDCE.constructor:", attributes, options);
                 //DATASET_MODEL.DatasetAssociation.prototype.constructor.call( this, attributes, options );
                 DatasetCollectionElementMixin.constructor.call(this, attributes, options);
             },
 
             /** Does this model already contain detailed data (as opposed to just summary level data)? */
-            hasDetails: function() {
+            hasDetails: function () {
                 return this.elements && this.elements.length;
             },
 
             /** String representation. */
-            toString: function() {
+            toString: function () {
                 var objStr = this.get("element_identifier");
                 return `DatasetDCE(${objStr})`;
-            }
+            },
         }
     )
 );
@@ -191,9 +191,9 @@ var DatasetDCECollection = DCECollection.extend(
         model: DatasetDCE,
 
         /** String representation. */
-        toString: function() {
+        toString: function () {
             return ["DatasetDCECollection(", this.length, ")"].join("");
-        }
+        },
     }
 );
 
@@ -217,11 +217,11 @@ var DatasetCollection = Backbone.Model.extend(BASE_MVC.LoggableMixin)
                 /* 'list', 'paired', or 'list:paired' */
                 collection_type: null,
                 //??
-                deleted: false
+                deleted: false,
             },
 
             /** Which class to use for elements */
-            collectionClass: function() {
+            collectionClass: function () {
                 if (this.attributes.collection_type.indexOf(":") > 0) {
                     return NestedDCDCECollection;
                 } else {
@@ -230,10 +230,10 @@ var DatasetCollection = Backbone.Model.extend(BASE_MVC.LoggableMixin)
             },
 
             /** set up: create elements instance var and (on changes to elements) update them  */
-            initialize: function(model, options) {
+            initialize: function (model, options) {
                 this.debug(`${this}(DatasetCollection).initialize:`, model, options, this);
                 this.elements = this._createElementsModel();
-                this.on("change:elements", function() {
+                this.on("change:elements", function () {
                     this.log("change:elements");
                     //TODO: prob. better to update the collection instead of re-creating it
                     this.elements = this._createElementsModel();
@@ -241,7 +241,7 @@ var DatasetCollection = Backbone.Model.extend(BASE_MVC.LoggableMixin)
             },
 
             /** move elements model attribute to full collection */
-            _createElementsModel: function() {
+            _createElementsModel: function () {
                 var collectionClass = this.collectionClass();
                 this.debug(`${this}._createElementsModel`, collectionClass, this.get("elements"), this.elements);
                 //TODO: same patterns as DatasetCollectionElement _createObjectModel - refactor to BASE_MVC.hasSubModel?
@@ -250,7 +250,7 @@ var DatasetCollection = Backbone.Model.extend(BASE_MVC.LoggableMixin)
                 var parentHdcaId = this.get("parent_hdca_id") || this.get("id");
                 _.each(elements, (element, index) => {
                     _.extend(element, {
-                        parent_hdca_id: parentHdcaId
+                        parent_hdca_id: parentHdcaId,
                     });
                 });
                 this.elements = new collectionClass(elements);
@@ -260,7 +260,7 @@ var DatasetCollection = Backbone.Model.extend(BASE_MVC.LoggableMixin)
 
             // ........................................................................ common queries
             /** pass the elements back within the model json when this is serialized */
-            toJSON: function() {
+            toJSON: function () {
                 var json = Backbone.Model.prototype.toJSON.call(this);
                 if (this.elements) {
                     json.elements = this.elements.toJSON();
@@ -271,26 +271,26 @@ var DatasetCollection = Backbone.Model.extend(BASE_MVC.LoggableMixin)
             /** Is this collection in a 'ready' state no processing (for the collection) is left
              *  to do on the server.
              */
-            inReadyState: function() {
+            inReadyState: function () {
                 var populated = this.get("populated");
                 return this.isDeletedOrPurged() || populated;
             },
 
             //TODO:?? the following are the same interface as DatasetAssociation - can we combine?
             /** Does the DC contain any elements yet? Is a fetch() required? */
-            hasDetails: function() {
+            hasDetails: function () {
                 return this.elements.length !== 0;
             },
 
             /** Given the filters, what models in this.elements would be returned? */
-            getVisibleContents: function(filters) {
+            getVisibleContents: function (filters) {
                 // filters unused for now
                 return this.elements;
             },
 
             // ........................................................................ ajax
             /** override to use actual Dates objects for create/update times */
-            parse: function(response, options) {
+            parse: function (response, options) {
                 var parsed = Backbone.Model.prototype.parse.call(this, response, options);
                 if (parsed.create_time) {
                     parsed.create_time = new Date(parsed.create_time);
@@ -302,7 +302,7 @@ var DatasetCollection = Backbone.Model.extend(BASE_MVC.LoggableMixin)
             },
 
             /** save this collection, _Mark_ing it as deleted (just a flag) */
-            delete: function(recursive, purge, options) {
+            delete: function (recursive, purge, options) {
                 recursive = recursive || false;
                 purge = purge || false;
                 if (this.get("deleted")) {
@@ -312,7 +312,7 @@ var DatasetCollection = Backbone.Model.extend(BASE_MVC.LoggableMixin)
                 return this.save({ deleted: true, recursive: recursive, purge: purge }, options);
             },
             /** save this collection, _Mark_ing it as undeleted */
-            undelete: function(options) {
+            undelete: function (options) {
                 if (!this.get("deleted")) {
                     return $.when();
                 }
@@ -320,7 +320,7 @@ var DatasetCollection = Backbone.Model.extend(BASE_MVC.LoggableMixin)
             },
 
             /** Is this collection deleted or purged? */
-            isDeletedOrPurged: function() {
+            isDeletedOrPurged: function () {
                 return this.get("deleted") || this.get("purged");
             },
 
@@ -330,10 +330,10 @@ var DatasetCollection = Backbone.Model.extend(BASE_MVC.LoggableMixin)
 
             // ........................................................................ misc
             /** String representation */
-            toString: function() {
+            toString: function () {
                 var idAndName = [this.get("id"), this.get("name") || this.get("element_identifier")];
                 return `DatasetCollection(${idAndName.join(",")})`;
-            }
+            },
         }
     );
 
@@ -352,16 +352,16 @@ var NestedDCDCE = DatasetCollection.extend(
             //  the constructor in hcontentMixin won't be attached by BASE_MVC.mixin to this model
             //  - re-apply manually it now
             /** call the mixin constructor */
-            constructor: function(attributes, options) {
+            constructor: function (attributes, options) {
                 this.debug("\t NestedDCDCE.constructor:", attributes, options);
                 DatasetCollectionElementMixin.constructor.call(this, attributes, options);
             },
 
             /** String representation. */
-            toString: function() {
+            toString: function () {
                 var objStr = this.object ? `${this.object}` : this.get("element_identifier");
                 return ["NestedDCDCE(", objStr, ")"].join("");
-            }
+            },
         }
     )
 );
@@ -375,13 +375,13 @@ var NestedDCDCECollection = DCECollection.extend(
         model: NestedDCDCE,
 
         /** String representation. */
-        toString: function() {
+        toString: function () {
             return ["NestedDCDCECollection(", this.length, ")"].join("");
-        }
+        },
     }
 );
 
 //==============================================================================
 export default {
-    DatasetCollection: DatasetCollection
+    DatasetCollection: DatasetCollection,
 };

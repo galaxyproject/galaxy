@@ -146,7 +146,7 @@ class GenomeGraphs(Tabular):
                 out.append('</tr>')
             for row in d:
                 out.append('<tr>')
-                out.append(''.join(['<td>%s</td>' % x for x in row.split()]))
+                out.append(''.join('<td>%s</td>' % x for x in row.split()))
                 out.append('</tr>')
             out.append('</table>')
             out = "".join(out)

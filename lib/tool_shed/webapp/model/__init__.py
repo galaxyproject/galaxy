@@ -1,5 +1,6 @@
 import logging
 import os
+import weakref
 from datetime import (
     datetime,
     timedelta
@@ -17,8 +18,11 @@ from tool_shed.util import (
     hg_util,
     metadata_util
 )
+from tool_shed.util.hgweb_config import hgweb_config_manager
 
 log = logging.getLogger(__name__)
+
+WEAK_HG_REPO_CACHE = weakref.WeakKeyDictionary()
 
 
 class APIKeys(object):
@@ -174,7 +178,8 @@ class Repository(Dictifiable):
 
     def __init__(self, id=None, name=None, type=None, remote_repository_url=None, homepage_url=None,
                  description=None, long_description=None, user_id=None, private=False,
-                 deleted=None, email_alerts=None, times_downloaded=0, deprecated=False):
+                 deleted=None, email_alerts=None, times_downloaded=0, deprecated=False,
+                 create_time=None):
         self.id = id
         self.name = name or "Unnamed repository"
         self.type = type
@@ -188,6 +193,17 @@ class Repository(Dictifiable):
         self.email_alerts = email_alerts
         self.times_downloaded = times_downloaded
         self.deprecated = deprecated
+        self.create_time = create_time
+
+    @property
+    def hg_repo(self):
+        from mercurial import (
+            hg,
+            ui
+        )
+        if not WEAK_HG_REPO_CACHE.get(self):
+            WEAK_HG_REPO_CACHE[self] = hg.cachedlocalrepo(hg.repository(ui.ui(), self.repo_path().encode('utf-8')))
+        return WEAK_HG_REPO_CACHE[self].fetch()[0]
 
     @property
     def admin_role(self):
@@ -199,14 +215,18 @@ class Repository(Dictifiable):
         raise Exception('Repository %s owned by %s is not associated with a required administrative role.' %
                         (str(self.name), str(self.user.username)))
 
-    def allow_push(self, app):
-        repo = hg_util.get_repo_for_repository(app, repository=self)
-        return repo.ui.config('web', 'allow_push')
+    def allow_push(self):
+        hgrc_file = hg_util.get_hgrc_path(self.repo_path())
+        with open(hgrc_file, 'r') as fh:
+            for line in fh.read().splitlines():
+                if line.startswith('allow_push = '):
+                    return line[len('allow_push = '):]
+        return ''
 
-    def can_change_type(self, app):
+    def can_change_type(self):
         # Allow changing the type only if the repository has no contents, has never been installed, or has
         # never been changed from the default type.
-        if self.is_new(app):
+        if self.is_new():
             return True
         if self.times_downloaded == 0:
             return True
@@ -217,9 +237,9 @@ class Repository(Dictifiable):
     def can_change_type_to(self, app, new_type_label):
         if self.type == new_type_label:
             return False
-        if self.can_change_type(app):
+        if self.can_change_type():
             new_type = app.repository_types_registry.get_class_by_label(new_type_label)
-            if new_type.is_valid_for_type(app, self):
+            if new_type.is_valid_for_type(self):
                 return True
         return False
 
@@ -258,21 +278,21 @@ class Repository(Dictifiable):
     def installable_revisions(self, app, sort_revisions=True):
         return metadata_util.get_metadata_revisions(app, self, sort_revisions=sort_revisions)
 
-    def is_new(self, app):
-        repo = hg_util.get_repo_for_repository(app, repository=self)
-        tip_rev = repo.changelog.tiprev()
+    def is_new(self):
+        tip_rev = self.hg_repo.changelog.tiprev()
         return tip_rev < 0
 
-    def repo_path(self, app):
-        return app.hgweb_config_manager.get_entry(os.path.join("repos", self.user.username, self.name))
+    def repo_path(self, app=None):
+        # Keep app argument for compatibility with tool_shed_install Repository model
+        return hgweb_config_manager.get_entry(os.path.join("repos", self.user.username, self.name))
 
-    def revision(self, app):
-        repo = hg_util.get_repo_for_repository(app, repository=self)
+    def revision(self):
+        repo = self.hg_repo
         tip_ctx = repo[repo.changelog.tip()]
         return "%s:%s" % (str(tip_ctx.rev()), str(tip_ctx))
 
-    def set_allow_push(self, app, usernames, remove_auth=''):
-        allow_push = util.listify(self.allow_push(app))
+    def set_allow_push(self, usernames, remove_auth=''):
+        allow_push = util.listify(self.allow_push())
         if remove_auth:
             allow_push.remove(remove_auth)
         else:
@@ -282,19 +302,19 @@ class Repository(Dictifiable):
         allow_push = '%s\n' % ','.join(allow_push)
         # Why doesn't the following work?
         # repo.ui.setconfig('web', 'allow_push', allow_push)
-        repo_dir = self.repo_path(app)
+        repo_dir = self.repo_path()
         hgrc_file = hg_util.get_hgrc_path(repo_dir)
-        with open(hgrc_file, 'rb') as fh:
+        with open(hgrc_file, 'r') as fh:
             lines = fh.readlines()
-        with open(hgrc_file, 'wb') as fh:
+        with open(hgrc_file, 'w') as fh:
             for line in lines:
                 if line.startswith('allow_push'):
                     fh.write('allow_push = %s' % allow_push)
                 else:
                     fh.write(line)
 
-    def tip(self, app):
-        repo = hg_util.get_repo_for_repository(app, repository=self)
+    def tip(self):
+        repo = self.hg_repo
         return str(repo[repo.changelog.tip()])
 
     def to_dict(self, view='collection', value_mapper=None):

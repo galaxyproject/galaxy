@@ -1,3 +1,4 @@
+import Vue from "vue";
 import { mount } from "@vue/test-utils";
 import RepositoryTools from "./RepositoryTools";
 
@@ -9,10 +10,10 @@ describe("RepositoryTools", () => {
                     {
                         guid: "guid",
                         id: "id",
-                        version: "version"
-                    }
-                ]
-            }
+                        version: "version",
+                    },
+                ],
+            },
         });
         const $el = wrapper.findAll("td");
         const $first = $el.at(0);
@@ -21,27 +22,27 @@ describe("RepositoryTools", () => {
         expect($second.text()).to.equal("version");
     });
 
-    it("test collapsing tool version list in repository details", () => {
+    it("test collapsing tool version list in repository details", async () => {
         const wrapper = mount(RepositoryTools, {
             propsData: {
                 tools: [
                     {
                         guid: "guid_1",
                         id: "id_1",
-                        version: "version_1"
+                        version: "version_1",
                     },
                     {
                         guid: "guid_2",
                         id: "id_2",
-                        version: "version_2"
+                        version: "version_2",
                     },
                     {
                         guid: "guid_3",
                         id: "id_3",
-                        version: "version_3"
-                    }
-                ]
-            }
+                        version: "version_3",
+                    },
+                ],
+            },
         });
         const $el = wrapper.findAll("tr");
         expect($el.length).to.equal(3);
@@ -56,6 +57,8 @@ describe("RepositoryTools", () => {
         expect($third.find("td:last-child").text()).to.equal("");
         const $link = wrapper.find("a");
         $link.trigger("click");
+        await Vue.nextTick();
+
         const $elExpanded = wrapper.findAll("tr");
         expect($elExpanded.length).to.equal(4);
         const $thirdExpanded = $elExpanded.at(3);
@@ -66,6 +69,8 @@ describe("RepositoryTools", () => {
         expect($forthExpanded.find("td:last-child").text()).to.equal("");
         const $linkExpanded = wrapper.find("a");
         $linkExpanded.trigger("click");
+        await Vue.nextTick();
+
         const $elCollapsed = wrapper.findAll("tr");
         expect($elCollapsed.length).to.equal(3);
         const $thirdCollapsed = $elCollapsed.at(2);

@@ -18,11 +18,11 @@ var View = Backbone.View.extend({
         minimumInputLength: 0,
         maximumTextLength: 100,
         // example format of initial data: "id:name,55:anotherrole@role.com,27:role@role.com"
-        initialData: ""
+        initialData: "",
     },
 
     // initialize
-    initialize: function(options) {
+    initialize: function (options) {
         // configure options
         this.options = Utils.merge(options, this.optionsDefault);
 
@@ -61,7 +61,7 @@ var View = Backbone.View.extend({
     },
 
     // value
-    value: function(new_value) {
+    value: function (new_value) {
         // get current id/value
         var before = this._getValue();
 
@@ -83,31 +83,31 @@ var View = Backbone.View.extend({
     },
 
     // label
-    text: function() {
+    text: function () {
         return this.$el.select2("data").text;
     },
 
     // disabled
-    disabled: function() {
+    disabled: function () {
         return !this.$el.select2("enable");
     },
 
     // enable
-    enable: function() {
+    enable: function () {
         this.$el.select2("enable", true);
     },
 
     // disable
-    disable: function() {
+    disable: function () {
         this.$el.select2("enable", false);
     },
 
     // add
-    add: function(options) {
+    add: function (options) {
         // add options
         this.select_data.push({
             id: options.id,
-            text: options.text
+            text: options.text,
         });
 
         // refresh
@@ -115,7 +115,7 @@ var View = Backbone.View.extend({
     },
 
     // remove
-    del: function(id) {
+    del: function (id) {
         // search option
         var index = this._getIndex(id);
 
@@ -130,12 +130,12 @@ var View = Backbone.View.extend({
     },
 
     // remove
-    remove: function() {
+    remove: function () {
         this.$el.select2("destroy");
     },
 
     // update
-    update: function(options) {
+    update: function (options) {
         // copy options
         this.select_data = [];
         for (var key in options.data) {
@@ -147,12 +147,12 @@ var View = Backbone.View.extend({
     },
 
     // refresh
-    _refresh: function() {
+    _refresh: function () {
         let select_opt;
         // add select2 data based on type of input
         if (!this.options.multiple) {
             if (this.select_data) {
-                this.select_data.map(value => {
+                this.select_data.map((value) => {
                     const mx = this.options.maximumTextLength + 3;
                     if (value.text && value.text.length > mx) {
                         let pos = value.text.indexOf(`(${value.id})`);
@@ -167,7 +167,7 @@ var View = Backbone.View.extend({
                 data: this.select_data,
                 containerCssClass: this.options.css,
                 placeholder: this.options.placeholder,
-                dropdownAutoWidth: true
+                dropdownAutoWidth: true,
             };
             this.$el.select2(select_opt);
             // select previous value (if exists)
@@ -184,25 +184,25 @@ var View = Backbone.View.extend({
                 formatResult: this.options.formatResult,
                 formatSelection: this.options.formatSelection,
                 initSelection: this.options.initSelection,
-                initialData: this.options.initialData
+                initialData: this.options.initialData,
             };
             this.$el.select2(select_opt);
         }
     },
 
     // get index
-    _getIndex: function(value) {
+    _getIndex: function (value) {
         // returns the index of the searched value
         _.findIndex(this.select_data, { id: value });
     },
 
     // get value
-    _getValue: function() {
+    _getValue: function () {
         return this.$el.select2("val");
     },
 
     // set value
-    _setValue: function(new_value) {
+    _setValue: function (new_value) {
         var index = this._getIndex(new_value);
         if (index == -1) {
             if (this.select_data.length > 0) {
@@ -213,11 +213,11 @@ var View = Backbone.View.extend({
     },
 
     // element
-    _template: function(options) {
+    _template: function (options) {
         return `<input type="hidden" value="${this.options.initialData}"/>`;
-    }
+    },
 });
 
 export default {
-    View: View
+    View: View,
 };

@@ -5,13 +5,17 @@ from __future__ import print_function
 
 import sys
 from os.path import dirname, join
-from xml.etree import ElementTree
 
 import pkg_resources
 import yaml
 
 from galaxy.containers import parse_containers_config
-from galaxy.util import asbool
+from galaxy.util import (
+    asbool,
+    etree,
+    parse_xml,
+    which,
+)
 from galaxy.util.properties import (
     find_config_file,
     load_app_properties
@@ -55,17 +59,17 @@ class ConditionalDependencies(object):
             if '.xml' in job_conf_path:
                 try:
                     try:
-                        for plugin in ElementTree.parse(job_conf_path).find('plugins').findall('plugin'):
+                        for plugin in parse_xml(job_conf_path).find('plugins').findall('plugin'):
                             if 'load' in plugin.attrib:
                                 self.job_runners.append(plugin.attrib['load'])
                     except (OSError, IOError):
                         pass
                     try:
-                        for plugin in ElementTree.parse(job_conf_path).findall('.//destination/param[@id="rules_module"]'):
+                        for plugin in parse_xml(job_conf_path).findall('.//destination/param[@id="rules_module"]'):
                             self.job_rule_modules.append(plugin.text)
                     except (OSError, IOError):
                         pass
-                except ElementTree.ParseError:
+                except etree.ParseError:
                     pass
             else:
                 try:
@@ -79,7 +83,7 @@ class ConditionalDependencies(object):
             "object_store_config_file",
             join(dirname(self.config_file), 'object_store_conf.xml'))
         try:
-            for store in ElementTree.parse(object_store_conf_xml).iter('object_store'):
+            for store in parse_xml(object_store_conf_xml).iter('object_store'):
                 if 'type' in store.attrib:
                     self.object_stores.append(store.attrib['type'])
         except (OSError, IOError):
@@ -90,7 +94,7 @@ class ConditionalDependencies(object):
             "auth_config_file",
             join(dirname(self.config_file), 'auth_conf.xml'))
         try:
-            for auth in ElementTree.parse(auth_conf_xml).findall('authenticator'):
+            for auth in parse_xml(auth_conf_xml).findall('authenticator'):
                 auth_type = auth.find('type')
                 if auth_type is not None:
                     self.authenticators.append(auth_type.text)
@@ -145,7 +149,7 @@ class ConditionalDependencies(object):
         return "galaxy.jobs.runners.pbs:PBSJobRunner" in self.job_runners
 
     def check_pykube(self):
-        return "galaxy.jobs.runners.kubernetes:KubernetesJobRunner" in self.job_runners
+        return "galaxy.jobs.runners.kubernetes:KubernetesJobRunner" in self.job_runners or which('kubectl')
 
     def check_chronos_python(self):
         return "galaxy.jobs.runners.chronos:ChronosJobRunner" in self.job_runners
@@ -172,6 +176,9 @@ class ConditionalDependencies(object):
     def check_kamaki(self):
         return 'pithos' in self.object_stores
 
+    def check_python_irodsclient(self):
+        return 'irods' in self.object_stores
+
     def check_watchdog(self):
         install_set = {'auto', 'True', 'true', 'polling'}
         return (self.config['watch_tools'] in install_set or
@@ -191,10 +198,16 @@ class ConditionalDependencies(object):
     def check_influxdb(self):
         return 'influxdb' in self.error_report_modules
 
+    def check_keras(self):
+        return asbool(self.config["enable_tool_recommendations"])
+
+    def check_tensorflow(self):
+        return asbool(self.config["enable_tool_recommendations"])
+
 
 def optional(config_file=None):
     if not config_file:
-        config_file = find_config_file(['galaxy', 'universe_wsgi'])
+        config_file = find_config_file(['galaxy', 'universe_wsgi'], include_samples=True)
     if not config_file:
         print("galaxy.dependencies.optional: no config file found", file=sys.stderr)
         return []

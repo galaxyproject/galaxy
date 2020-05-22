@@ -522,6 +522,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             dataset_collection_instance = service.create(
                 trans,
                 parent=history,
+                history=history,
                 **create_params
             )
         elif source == "hdca":
@@ -903,7 +904,12 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         view = serialization_params.pop('view')
 
         contents = self.history_contents_manager.contents(history,
-            filters=filters, limit=limit, offset=offset, order_by=order_by)
+            filters=filters,
+            limit=limit,
+            offset=offset,
+            order_by=order_by,
+            serialization_params=serialization_params)
+
         for content in contents:
 
             # TODO: remove split
@@ -926,7 +932,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
     def encode_type_id(self, type_id):
         TYPE_ID_SEP = '-'
         split = type_id.split(TYPE_ID_SEP, 1)
-        return TYPE_ID_SEP.join([split[0], self.app.security.encode_id(split[1])])
+        return TYPE_ID_SEP.join((split[0], self.app.security.encode_id(split[1])))
 
     @expose_api_raw
     def archive(self, trans, history_id, filename='', format='tgz', dry_run=True, **kwd):
@@ -1040,7 +1046,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         for file_path, archive_path in paths_and_files:
             archive.add(file_path, archive_path)
 
-        archive_name = '.'.join([archive_base_name, archive_ext])
+        archive_name = '.'.join((archive_base_name, archive_ext))
         trans.response.set_content_type("application/x-tar")
         trans.response.headers["Content-Disposition"] = 'attachment; filename="{}"'.format(archive_name)
         archive.wsgi_status = trans.response.wsgi_status()

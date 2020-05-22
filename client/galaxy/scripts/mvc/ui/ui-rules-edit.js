@@ -11,7 +11,7 @@ import RulesDisplay from "components/RulesDisplay.vue";
  * Bridge rule based builder and the tool form.
  */
 var View = Backbone.View.extend({
-    initialize: function(options) {
+    initialize: function (options) {
         this.model = new Backbone.Model();
         this.target = options.target;
         const view = this;
@@ -27,7 +27,7 @@ var View = Backbone.View.extend({
                 } else {
                     view._showRuleEditor(null);
                 }
-            }
+            },
         });
 
         // add change event. fires on trigger
@@ -47,52 +47,55 @@ var View = Backbone.View.extend({
             propsData: {
                 initialRules: {
                     rules: [],
-                    mapping: []
-                }
-            }
+                    mapping: [],
+                },
+            },
         });
         this.instance.$mount(vm);
         this.collapsible_disabled = true;
     },
 
-    _fetcCollectionAndEdit: function() {
+    _fetcCollectionAndEdit: function () {
         const view = this;
         const url = `${getAppRoot()}api/dataset_collections/${view.target.id}?instance_type=history`;
         axios
             .get(url)
-            .then(response => this._showCollection(response))
+            .then((response) => this._showCollection(response))
             .catch(view._renderFetchError);
     },
 
-    _showCollection: function(response) {
+    _showCollection: function (response) {
         const elements = response.data;
         this._showRuleEditor(elements);
     },
 
-    _showRuleEditor: function(elements) {
+    _showRuleEditor: function (elements) {
         const elementsType = "collection_contents";
         const importType = "collections";
         const value = this._value;
         const options = {
-            saveRulesFn: rules => this._handleRulesSave(rules),
-            initialRules: value
+            saveRulesFn: (rules) => this._handleRulesSave(rules),
+            initialRules: value,
         };
-        ListCollectionCreator.ruleBasedCollectionCreatorModal(elements, elementsType, importType, options).done(
-            () => {}
-        );
+        ListCollectionCreator.ruleBasedCollectionCreatorModal(
+            elements,
+            elementsType,
+            importType,
+            options
+        ).done(() => {});
     },
 
-    _handleRulesSave: function(rules) {
+    _handleRulesSave: function (rules) {
         this._setValue(rules);
     },
 
-    _renderFetchError: function(e) {
+    _renderFetchError: function (e) {
         console.log(e);
         console.log("problem fetching collection");
     },
 
     /** Main Template */
-    _template: function(options) {
+    _template: function (options) {
         return `
             <div class="ui-rules-edit clearfix">
                 <span class="ui-rules-preview" />
@@ -102,7 +105,7 @@ var View = Backbone.View.extend({
     },
 
     /** Return/Set current value */
-    value: function(new_value) {
+    value: function (new_value) {
         if (new_value !== undefined) {
             this._setValue(new_value);
         } else {
@@ -111,17 +114,17 @@ var View = Backbone.View.extend({
     },
 
     /** Update input element options */
-    update: function(input_def) {
+    update: function (input_def) {
         this.target = input_def.target;
     },
 
     /** Returns current value */
-    _getValue: function() {
+    _getValue: function () {
         return this._value;
     },
 
     /** Sets current value */
-    _setValue: function(new_value) {
+    _setValue: function (new_value) {
         if (new_value) {
             if (typeof new_value == "string") {
                 new_value = JSON.parse(new_value);
@@ -134,7 +137,7 @@ var View = Backbone.View.extend({
     },
 
     /** Validate input element value */
-    validate: function() {
+    validate: function () {
         const value = this._value;
         let message = null;
         if (!value || value.rules.length === 0) {
@@ -150,9 +153,9 @@ var View = Backbone.View.extend({
             }
         }
         return message;
-    }
+    },
 });
 
 export default {
-    View: View
+    View: View,
 };

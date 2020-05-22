@@ -7,6 +7,7 @@ import tempfile
 from six import string_types
 
 from galaxy import model
+from galaxy.job_execution.setup import ensure_configs_directory
 from galaxy.model.none_like import NoneDataset
 from galaxy.tools import global_tool_errors
 from galaxy.tools.parameters import (
@@ -36,6 +37,7 @@ from galaxy.tools.wrappers import (
 from galaxy.util import (
     find_instance_nested,
     listify,
+    RW_R__R__,
     safe_makedirs,
     unicodify,
 )
@@ -316,6 +318,7 @@ class ToolEvaluator(object):
             wrapper_kwds = dict(
                 datatypes_registry=self.app.datatypes_registry,
                 compute_environment=self.compute_environment,
+                io_type='output',
                 tool=tool,
                 name=name
             )
@@ -349,8 +352,7 @@ class ToolEvaluator(object):
             # TODO: move compute path logic into compute environment, move setting files_path
             # logic into DatasetFilenameWrapper. Currently this sits in the middle and glues
             # stuff together inconsistently with the way the rest of path rewriting works.
-            store_by = getattr(hda.dataset.object_store, "store_by", "id")
-            file_name = "dataset_%s_files" % getattr(hda.dataset, store_by)
+            file_name = hda.dataset.extra_files_path_name
             param_dict[name].files_path = os.path.abspath(os.path.join(job_working_directory, "working", file_name))
         for out_name, output in self.tool.outputs.items():
             if out_name not in param_dict and output.filters:
@@ -521,10 +523,10 @@ class ToolEvaluator(object):
         for name, filename, content in self.tool.config_files:
             config_text, is_template = self.__build_config_file_text(content)
             # If a particular filename was forced by the config use it
-            directory = os.path.join(self.local_working_directory, "configs")
-            if not os.path.exists(directory):
-                os.makedirs(directory)
+            directory = ensure_configs_directory(self.local_working_directory)
             if filename is not None:
+                # Explicit filename was requested, needs to be placed in tool working directory
+                directory = os.path.join(self.local_working_directory, "working")
                 config_filename = os.path.join(directory, filename)
             else:
                 fd, config_filename = tempfile.mkstemp(dir=directory)
@@ -582,14 +584,13 @@ class ToolEvaluator(object):
         if self.tool.profile < 16.04 and command and "$param_file" in command:
             fd, param_filename = tempfile.mkstemp(dir=directory)
             os.close(fd)
-            f = open(param_filename, "w")
-            for key, value in param_dict.items():
-                # parameters can be strings or lists of strings, coerce to list
-                if not isinstance(value, list):
-                    value = [value]
-                for elem in value:
-                    f.write('%s=%s\n' % (key, elem))
-            f.close()
+            with open(param_filename, "w") as f:
+                for key, value in param_dict.items():
+                    # parameters can be strings or lists of strings, coerce to list
+                    if not isinstance(value, list):
+                        value = [value]
+                    for elem in value:
+                        f.write('%s=%s\n' % (key, elem))
             self.__register_extra_file('param_file', param_filename)
             return param_filename
         else:
@@ -621,7 +622,7 @@ class ToolEvaluator(object):
         with io.open(config_filename, "w", encoding='utf-8') as f:
             f.write(value)
         # For running jobs as the actual user, ensure the config file is globally readable
-        os.chmod(config_filename, 0o644)
+        os.chmod(config_filename, RW_R__R__)
 
     def __register_extra_file(self, name, local_config_path):
         """

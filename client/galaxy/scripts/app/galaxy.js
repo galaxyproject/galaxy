@@ -7,7 +7,7 @@ import metricsLogger from "utils/metrics-logger";
 import addLogging from "utils/add-logging";
 import localize from "utils/localization";
 import { getGalaxyInstance } from "app";
-import { create, dialog } from "utils/data.js";
+import { create, dialog } from "utils/data";
 
 // ============================================================================
 /** Base galaxy client-side application.
@@ -39,7 +39,7 @@ try {
 }
 
 /** initalize options and sub-components */
-GalaxyApp.prototype._init = function(options, bootstrapped) {
+GalaxyApp.prototype._init = function (options, bootstrapped) {
     _.extend(this, Backbone.Events);
     if (localDebugging) {
         this.logger = console;
@@ -98,7 +98,7 @@ GalaxyApp.prototype.defaultOptions = {
     patchExisting: true,
     /** root url of this app */
     root: "/",
-    session_csrf_token: null
+    session_csrf_token: null,
 };
 
 /** filter to options present in defaultOptions (and default to them) */
@@ -162,8 +162,8 @@ GalaxyApp.prototype._initLogger = function _initLogger(loggerOptions) {
 
     this.logger = new metricsLogger.MetricsLogger(loggerOptions);
     this.emit = {};
-    ["log", "debug", "info", "warn", "error", "metric"].map(i => {
-        this.emit[i] = data => {
+    ["log", "debug", "info", "warn", "error", "metric"].map((i) => {
+        this.emit[i] = (data) => {
             this.logger.emit(i, arguments[0], Array.prototype.slice.call(arguments, 1));
         };
     });
@@ -188,7 +188,10 @@ GalaxyApp.prototype._initLocale = function _initLocale(options) {
 /** add the localize fn to this object and the window namespace (as '_l') */
 GalaxyApp.prototype._initUserLocale = function _initUserLocale(options) {
     // Choose best locale
-    const global_locale = this.config.default_locale ? this.config.default_locale.toLowerCase() : false;
+    const global_locale =
+        this.config.default_locale && this.config.default_locale != "auto"
+            ? this.config.default_locale.toLowerCase()
+            : false;
 
     let extra_user_preferences = {};
     if (this.user && this.user.attributes.preferences && "extra_user_preferences" in this.user.attributes.preferences) {
@@ -209,7 +212,7 @@ GalaxyApp.prototype._initUserLocale = function _initUserLocale(options) {
             ? "__root"
             : (navigator.language || navigator.userLanguage || "__root").toLowerCase();
 
-    const locale = user_locale || global_locale || nav_locale;
+    const locale = user_locale || nav_locale || global_locale;
 
     sessionStorage.setItem("currentLocale", locale);
 };
@@ -237,7 +240,7 @@ GalaxyApp.prototype._setUpListeners = function _setUpListeners() {
 
         this.lastAjax = {
             url: location.href.slice(0, -1) + options.url,
-            data: data
+            data: data,
         };
         //TODO:?? we might somehow manage to *retry* ajax using either this hook or Backbone.sync
     });
@@ -298,5 +301,5 @@ GalaxyApp.prototype.toString = function toString() {
 
 // ============================================================================
 export default {
-    GalaxyApp: GalaxyApp
+    GalaxyApp: GalaxyApp,
 };

@@ -165,7 +165,7 @@ def jsonrpc_request(method, params=None, id=None, jsonrpc='2.0'):
     if params:
         request['params'] = params
     if id is not None and id is True:
-        request['id'] = ''.join([random.choice(string.hexdigits) for i in range(16)])
+        request['id'] = ''.join(random.choice(string.hexdigits) for i in range(16))
     elif id is not None:
         request['id'] = id
     return request

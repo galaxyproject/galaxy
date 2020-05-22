@@ -6,7 +6,7 @@
     </div>
 </template>
 <script>
-import { getErrorStack } from "./AdminServices.js";
+import { getErrorStack } from "./AdminServices";
 
 export default {
     data() {
@@ -17,32 +17,32 @@ export default {
                 { key: "time", sortable: true },
                 { key: "phase", sortable: true },
                 { key: "file", sortable: true },
-                { key: "error" }
+                { key: "error" },
             ],
-            messageText: null
+            messageText: null,
         };
     },
     computed: {
-        errorStackVisible: function() {
+        errorStackVisible: function () {
             return this.errorStack.length > 0;
         },
-        messageVisible: function() {
+        messageVisible: function () {
             return this.messageText != null;
         },
-        infoVisible: function() {
+        infoVisible: function () {
             return !this.errorStackVisible && this.errorStackLoaded;
-        }
+        },
     },
     created() {
         getErrorStack()
-            .then(response => {
+            .then((response) => {
                 this.errorStack = response.data;
                 this.errorStackLoaded = true;
             })
-            .catch(e => {
+            .catch((e) => {
                 const message = e && e.response && e.response.data && e.response.data.err_msg;
                 this.messageText = message || "Request failed for an unknown reason.";
             });
-    }
+    },
 };
 </script>

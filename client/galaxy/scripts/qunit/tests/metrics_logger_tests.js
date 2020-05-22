@@ -7,11 +7,11 @@ import sinon from "sinon";
 import metrics from "utils/metrics-logger";
 import testApp from "qunit/test-app";
 
-var MockConsole = function() {
+var MockConsole = function () {
     var self = this;
     self.lastMessage = null;
-    ["log", "debug", "info", "warn", "error"].forEach(function(fnName) {
-        self[fnName] = function() {
+    ["log", "debug", "info", "warn", "error"].forEach(function (fnName) {
+        self[fnName] = function () {
             var args = Array.prototype.slice.call(arguments, 0);
             self.lastMessage = { level: fnName, args: args };
         };
@@ -20,20 +20,20 @@ var MockConsole = function() {
 };
 
 (window.bootstrapped = {}).user = {
-    id: "test"
+    id: "test",
 };
 
 QUnit.module("Metrics logger tests", {
-    beforeEach: function() {
+    beforeEach: function () {
         testApp.create();
     },
-    afterEach: function() {
+    afterEach: function () {
         testApp.destroy();
-    }
+    },
 });
 
 // ======================================================================== MetricsLogger
-QUnit.test("logger construction/initializiation defaults", function(assert) {
+QUnit.test("logger construction/initializiation defaults", function (assert) {
     var logger = new metrics.MetricsLogger({});
     assert.equal(logger.consoleLogger, null);
     assert.equal(logger.options.logLevel, metrics.MetricsLogger.NONE);
@@ -51,7 +51,7 @@ QUnit.test("logger construction/initializiation defaults", function(assert) {
     assert.equal(logger.cache.constructor, metrics.LoggingCache);
 });
 
-QUnit.test("_parseLevel", function(assert) {
+QUnit.test("_parseLevel", function (assert) {
     var logger = new metrics.MetricsLogger({});
     assert.equal(logger._parseLevel("all"), metrics.MetricsLogger.ALL);
     assert.equal(logger._parseLevel("debug"), metrics.MetricsLogger.DEBUG);
@@ -63,14 +63,14 @@ QUnit.test("_parseLevel", function(assert) {
     assert.equal(logger._parseLevel(15), 15);
 
     assert.throws(
-        function() {
+        function () {
             logger._parseLevel(undefined);
         },
         /Unknown log level/,
         "Unknown log level throws error"
     );
     assert.throws(
-        function() {
+        function () {
             logger._parseLevel("nope");
         },
         /Unknown log level/,
@@ -79,9 +79,9 @@ QUnit.test("_parseLevel", function(assert) {
 });
 
 // ------------------------------------------------------------------------ Emit to cache
-QUnit.test("emit to cache at level", function(assert) {
+QUnit.test("emit to cache at level", function (assert) {
     var logger = new metrics.MetricsLogger({
-        logLevel: "metric"
+        logLevel: "metric",
     });
     logger.cache.empty();
 
@@ -99,9 +99,9 @@ QUnit.test("emit to cache at level", function(assert) {
     assert.ok(cached.time === new Date(cached.time).toISOString());
 });
 
-QUnit.test("emit to cache below does not cache", function(assert) {
+QUnit.test("emit to cache below does not cache", function (assert) {
     var logger = new metrics.MetricsLogger({
-        logLevel: "metric"
+        logLevel: "metric",
     });
     logger.cache.empty();
 
@@ -109,9 +109,9 @@ QUnit.test("emit to cache below does not cache", function(assert) {
     assert.equal(logger.cache.length(), 0);
 });
 
-QUnit.test("emit to cache (silently) drops non-parsable", function(assert) {
+QUnit.test("emit to cache (silently) drops non-parsable", function (assert) {
     var logger = new metrics.MetricsLogger({
-        logLevel: "metric"
+        logLevel: "metric",
     });
     logger.cache.empty();
 
@@ -124,19 +124,19 @@ function metricsFromRequestBody(request) {
     return JSON.parse(decodeURIComponent(request.requestBody.replace("metrics=", "")));
 }
 
-QUnit.test("_postCache success", function(assert) {
+QUnit.test("_postCache success", function (assert) {
     var callback = sinon.spy(),
         logger = new metrics.MetricsLogger({
             logLevel: "metric",
-            onServerResponse: function(response) {
+            onServerResponse: function (response) {
                 callback();
-            }
+            },
         });
     logger.cache.empty();
 
     var server = sinon.fakeServer.create(),
         metricsOnServer;
-    server.respondWith("POST", "/api/metrics", function(request) {
+    server.respondWith("POST", "/api/metrics", function (request) {
         metricsOnServer = metricsFromRequestBody(request);
         //console.debug( 'requestBody:', request.requestBody );
         //console.debug( 'metricsOnServer:', JSON.stringify( metricsOnServer, null, '  ' ) );
@@ -144,7 +144,7 @@ QUnit.test("_postCache success", function(assert) {
             200,
             { "Content-Type": "application/json" },
             JSON.stringify({
-                fakeResponse: "yes"
+                fakeResponse: "yes",
             })
         );
     });
@@ -170,23 +170,23 @@ QUnit.test("_postCache success", function(assert) {
     server.restore();
 });
 
-QUnit.test("_postCache failure", function(assert) {
+QUnit.test("_postCache failure", function (assert) {
     var callback = sinon.spy(),
         logger = new metrics.MetricsLogger({
             logLevel: "metric",
-            onServerResponse: function(response) {
+            onServerResponse: function (response) {
                 callback();
-            }
+            },
         });
     logger.cache.empty();
 
     var server = sinon.fakeServer.create();
-    server.respondWith("POST", "/api/metrics", function(request) {
+    server.respondWith("POST", "/api/metrics", function (request) {
         request.respond(
             500,
             { "Content-Type": "application/json" },
             JSON.stringify({
-                err_msg: "NoooOPE!"
+                err_msg: "NoooOPE!",
             })
         );
     });
@@ -203,11 +203,11 @@ QUnit.test("_postCache failure", function(assert) {
 });
 
 // ------------------------------------------------------------------------ Emit to console
-QUnit.test("emit to console at level", function(assert) {
+QUnit.test("emit to console at level", function (assert) {
     var mockConsole = new MockConsole(),
         logger = new metrics.MetricsLogger({
             consoleLevel: "debug",
-            consoleLogger: mockConsole
+            consoleLogger: mockConsole,
         });
     assert.equal(logger.options.consoleLevel, metrics.MetricsLogger.DEBUG);
     assert.equal(logger.consoleLogger.constructor, MockConsole);
@@ -221,20 +221,20 @@ QUnit.test("emit to console at level", function(assert) {
     assert.equal(mockConsole.lastMessage.args[3].three, 3);
 });
 
-QUnit.test("emit to console below does not output", function(assert) {
+QUnit.test("emit to console below does not output", function (assert) {
     var mockConsole = new MockConsole(),
         logger = new metrics.MetricsLogger({
             consoleLevel: "error",
-            consoleLogger: mockConsole
+            consoleLogger: mockConsole,
         });
     logger.emit("debug", "test", [1, 2, { three: 3 }]);
     assert.equal(mockConsole.lastMessage, null);
 });
 
 // ------------------------------------------------------------------------ Shortcuts
-QUnit.test("logger shortcuts emit to default namespace properly", function(assert) {
+QUnit.test("logger shortcuts emit to default namespace properly", function (assert) {
     var logger = new metrics.MetricsLogger({
-        logLevel: "all"
+        logLevel: "all",
     });
     logger.cache.empty();
 
@@ -250,7 +250,7 @@ QUnit.test("logger shortcuts emit to default namespace properly", function(asser
     var cached = logger.cache.remove(6),
         entry;
 
-    cached.forEach(function(entry) {
+    cached.forEach(function (entry) {
         assert.ok(entry.namespace === logger.options.clientPrefix + logger.options.defaultNamespace);
         assert.ok(jQuery.type(entry.args) === "array");
         assert.ok(typeof entry.time === "string");
@@ -261,7 +261,7 @@ QUnit.test("logger shortcuts emit to default namespace properly", function(asser
     assert.ok(entry.level === 1);
     assert.ok(entry.args[0] === 0);
 
-    ["debug", "info", "warn", "error", "metric"].forEach(function(level, i) {
+    ["debug", "info", "warn", "error", "metric"].forEach(function (level, i) {
         entry = cached[i + 1];
         assert.ok(entry.level === logger._parseLevel(level));
         assert.ok(entry.args[0] === i + 1);
@@ -269,23 +269,23 @@ QUnit.test("logger shortcuts emit to default namespace properly", function(asser
 });
 
 // ======================================================================== LoggingCache
-QUnit.test("cache construction/initializiation defaults", function(assert) {
+QUnit.test("cache construction/initializiation defaults", function (assert) {
     // use empty to prevent tests stepping on one another due to persistence
     var cache = new metrics.LoggingCache({ key: "logs-test" }).empty();
     assert.equal(cache.maxSize, 5000);
     assert.equal(window.localStorage.getItem("logs-test"), "[]");
 });
 
-QUnit.test("cache construction/initializiation failure", function(assert) {
+QUnit.test("cache construction/initializiation failure", function (assert) {
     ////TODO: doesn't work - readonly
     //window.localStorage = null;
     //console.debug( 'localStorage:', window.localStorage );
     var oldFn = metrics.LoggingCache.prototype._hasStorage;
-    metrics.LoggingCache.prototype._hasStorage = function() {
+    metrics.LoggingCache.prototype._hasStorage = function () {
         return false;
     };
     assert.throws(
-        function() {
+        function () {
             return new metrics.LoggingCache({ key: "logs-test" });
         },
         /LoggingCache needs localStorage/,
@@ -294,7 +294,7 @@ QUnit.test("cache construction/initializiation failure", function(assert) {
     metrics.LoggingCache.prototype._hasStorage = oldFn;
 
     assert.throws(
-        function() {
+        function () {
             return new metrics.LoggingCache();
         },
         /LoggingCache needs key for localStorage/,
@@ -302,15 +302,15 @@ QUnit.test("cache construction/initializiation failure", function(assert) {
     );
 });
 
-QUnit.test("cache construction/initializiation setting max cache size", function(assert) {
+QUnit.test("cache construction/initializiation setting max cache size", function (assert) {
     var cache = new metrics.LoggingCache({
         key: "logs-test",
-        maxSize: 5
+        maxSize: 5,
     }).empty();
     assert.equal(cache.maxSize, 5);
 });
 
-QUnit.test("cache plays well with no data", function(assert) {
+QUnit.test("cache plays well with no data", function (assert) {
     var cache = new metrics.LoggingCache({ key: "logs-test" }).empty();
 
     assert.equal(cache.length(), 0);
@@ -321,10 +321,10 @@ QUnit.test("cache plays well with no data", function(assert) {
     assert.equal(cache.length(), 0);
 });
 
-QUnit.test("cache add properly adds and removes data", function(assert) {
+QUnit.test("cache add properly adds and removes data", function (assert) {
     var cache = new metrics.LoggingCache({
         key: "logs-test",
-        maxSize: 5
+        maxSize: 5,
     }).empty();
 
     var entry1 = [{ one: 1 }, "two"];
@@ -346,10 +346,10 @@ QUnit.test("cache add properly adds and removes data", function(assert) {
     assert.ok(jQuery.type(returned0) === "array" && JSON.stringify(returned0) === JSON.stringify(entry1));
 });
 
-QUnit.test("cache past max loses oldest", function(assert) {
+QUnit.test("cache past max loses oldest", function (assert) {
     var cache = new metrics.LoggingCache({
         key: "logs-test",
-        maxSize: 5
+        maxSize: 5,
     }).empty();
 
     for (var i = 0; i < 10; i += 1) {
@@ -364,7 +364,7 @@ QUnit.test("cache past max loses oldest", function(assert) {
     assert.ok(get[4].index === 9);
 });
 
-QUnit.test("cache is properly persistent", function(assert) {
+QUnit.test("cache is properly persistent", function (assert) {
     var cache1 = new metrics.LoggingCache({ key: "logs-test" }).empty(),
         entry = [{ one: 1 }, "two"];
     cache1.add(entry);

@@ -8,13 +8,13 @@ describe("Categories", () => {
             data: [
                 {
                     col_0: "col_0_0",
-                    col_1: "col_0_1"
+                    col_1: "col_0_1",
                 },
                 {
                     col_0: "col_0_2",
-                    col_1: "col_0_3"
-                }
-            ]
+                    col_1: "col_0_3",
+                },
+            ],
         };
     };
     const setter = async () => {
@@ -29,8 +29,8 @@ describe("Categories", () => {
                 success: "success",
                 fields: ["execute", "col_0", "col_1"],
                 getter: getter,
-                setter: setter
-            }
+                setter: setter,
+            },
         });
         await Vue.nextTick();
         expect(wrapper.find(".card-header").text()).contains("There are 2");

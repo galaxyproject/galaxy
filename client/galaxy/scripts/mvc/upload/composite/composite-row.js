@@ -16,10 +16,10 @@ export default Backbone.View.extend({
         ready: "upload-mode fa fa-check text-success",
         running: "upload-mode fa fa-spinner fa-spin",
         success: "upload-mode fa fa-check",
-        error: "upload-mode fa fa-exclamation-triangle"
+        error: "upload-mode fa fa-exclamation-triangle",
     },
 
-    initialize: function(app, options) {
+    initialize: function (app, options) {
         var self = this;
         this.app = app;
         this.model = options.model;
@@ -39,88 +39,88 @@ export default Backbone.View.extend({
 
         // build upload functions
         this.uploadinput = this.$el.uploadinput({
-            ondragover: function() {
+            ondragover: function () {
                 self.model.get("enabled") && self.$el.addClass("alert-success");
             },
-            ondragleave: function() {
+            ondragleave: function () {
                 self.$el.removeClass("alert-success");
             },
-            onchange: function(files) {
+            onchange: function (files) {
                 if (self.model.get("status") != "running" && files && files.length > 0) {
                     self.model.reset({
                         file_data: files[0],
                         file_name: files[0].name,
                         file_size: files[0].size,
-                        file_mode: files[0].mode || "local"
+                        file_mode: files[0].mode || "local",
                     });
                     self._refreshReady();
                 }
-            }
+            },
         });
 
         // source selection popup
         this.button_menu = new Ui.ButtonMenu({
             icon: "fa-caret-down",
             title: _l("Select"),
-            pull: "left"
+            pull: "left",
         });
         this.$source.append(this.button_menu.$el);
         this.button_menu.addMenu({
             icon: "fa-laptop",
             title: _l("Choose local file"),
-            onclick: function() {
+            onclick: function () {
                 self.uploadinput.dialog();
-            }
+            },
         });
-        if (this.app.ftp_upload_site) {
+        if (this.app.ftpUploadSite) {
             this.button_menu.addMenu({
                 icon: "fa-folder-open-o",
                 title: _l("Choose FTP file"),
-                onclick: function() {
+                onclick: function () {
                     self._showFtp();
-                }
+                },
             });
         }
         this.button_menu.addMenu({
             icon: "fa-edit",
             title: "Paste/Fetch data",
-            onclick: function() {
+            onclick: function () {
                 self.model.reset({
                     file_mode: "new",
-                    file_name: "New File"
+                    file_name: "New File",
                 });
-            }
+            },
         });
 
         // add ftp file viewer
         this.ftp = new Popover({
             title: "Select a file",
             container: this.$source.find(".dropdown"),
-            placement: "right"
+            placement: "right",
         });
 
         // append popup to settings icon
         this.settings = new Popover({
             title: _l("Upload configuration"),
             container: this.$settings,
-            placement: "bottom"
+            placement: "bottom",
         });
 
         // handle text editing event
-        this.$text_content.on("change input", e => {
+        this.$text_content.on("change input", (e) => {
             self.model.set({
                 url_paste: $(e.target).val(),
-                file_size: $(e.target).val().length
+                file_size: $(e.target).val().length,
             });
             self._refreshReady();
         });
 
         // handle settings popover
         this.$settings
-            .on("click", e => {
+            .on("click", (e) => {
                 self._showSettings();
             })
-            .on("mousedown", e => {
+            .on("mousedown", (e) => {
                 e.preventDefault();
             });
 
@@ -151,7 +151,7 @@ export default Backbone.View.extend({
         });
     },
 
-    render: function() {
+    render: function () {
         this.$el.attr("id", `upload-row-${this.model.id}`);
         this.$file_name.html(_.escape(this.model.get("file_name") || "-"));
         this.$file_desc.html(this.model.get("file_desc") || "Unavailable");
@@ -160,7 +160,7 @@ export default Backbone.View.extend({
     },
 
     /** Remove view */
-    remove: function() {
+    remove: function () {
         // call the base class remove method
         Backbone.View.prototype.remove.apply(this);
     },
@@ -170,21 +170,21 @@ export default Backbone.View.extend({
     //
 
     /** Refresh ready or not states */
-    _refreshReady: function() {
-        this.app.collection.each(model => {
+    _refreshReady: function () {
+        this.app.collection.each((model) => {
             model.set("status", (model.get("file_size") > 0 && "ready") || "init");
         });
     },
 
     /** Refresh mode and e.g. show/hide textarea field */
-    _refreshMode: function() {
+    _refreshMode: function () {
         var file_mode = this.model.get("file_mode");
         if (file_mode == "new") {
             this.height = this.$el.height();
             this.$text
                 .css({
                     width: `${this.$el.width() - 16}px`,
-                    top: `${this.$el.height() - 8}px`
+                    top: `${this.$el.height() - 8}px`,
                 })
                 .show();
             this.$el.height(this.$el.height() - 8 + this.$text.height() + 16);
@@ -196,7 +196,7 @@ export default Backbone.View.extend({
     },
 
     /** Refresh information */
-    _refreshInfo: function() {
+    _refreshInfo: function () {
         var info = this.model.get("info");
         if (info) {
             this.$info_text.html(`<strong>Failed: </strong>${info}`).show();
@@ -206,7 +206,7 @@ export default Backbone.View.extend({
     },
 
     /** Refresh percentage */
-    _refreshPercentage: function() {
+    _refreshPercentage: function () {
         var percentage = parseInt(this.model.get("percentage"));
         if (percentage != 0) {
             this.$progress_bar.css({ width: `${percentage}%` });
@@ -220,7 +220,7 @@ export default Backbone.View.extend({
     },
 
     /** Refresh status */
-    _refreshStatus: function() {
+    _refreshStatus: function () {
         var status = this.model.get("status");
         this.$status.removeClass().addClass(this.status_classes[status]);
         this.model.set("enabled", status != "running");
@@ -247,44 +247,44 @@ export default Backbone.View.extend({
     },
 
     /** File name */
-    _refreshFileName: function() {
+    _refreshFileName: function () {
         this.$file_name.html(this.model.get("file_name") || "-");
     },
 
     /** File size */
-    _refreshFileSize: function() {
+    _refreshFileSize: function () {
         this.$file_size.html(Utils.bytesToString(this.model.get("file_size")));
     },
 
     /** Show/hide ftp popup */
-    _showFtp: function() {
+    _showFtp: function () {
         var self = this;
         this.ftp.show(
             new UploadFtp({
-                ftp_upload_site: this.app.ftp_upload_site,
-                onchange: function(ftp_file) {
+                ftp_upload_site: this.app.ftpUploadSite,
+                onchange: function (ftp_file) {
                     self.ftp.hide();
                     if (self.model.get("status") != "running" && ftp_file) {
                         self.model.reset({
                             file_mode: "ftp",
                             file_name: ftp_file.path,
                             file_size: ftp_file.size,
-                            file_path: ftp_file.path
+                            file_path: ftp_file.path,
                         });
                         self._refreshReady();
                     }
-                }
+                },
             }).$el
         );
     },
 
     /** Show/hide settings popup */
-    _showSettings: function() {
+    _showSettings: function () {
         this.settings.show(new UploadSettings(this).$el);
     },
 
     /** Template */
-    _template: function() {
+    _template: function () {
         return `<tr class="upload-row">
                 <td>
                     <div class="upload-source"/>
@@ -320,5 +320,5 @@ export default Backbone.View.extend({
                     </div>
                 </td>
             </tr>`;
-    }
+    },
 });

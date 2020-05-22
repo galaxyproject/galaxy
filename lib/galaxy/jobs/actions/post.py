@@ -11,7 +11,7 @@ from galaxy.util import (
     send_mail,
     unicodify,
 )
-from galaxy.util.logging import get_logger
+from galaxy.util.custom_logging import get_logger
 
 log = get_logger(__name__)
 
@@ -44,18 +44,18 @@ class EmailAction(DefaultJobAction):
 
     @classmethod
     def execute(cls, app, sa_session, action, job, replacement_dict):
-        frm = app.config.email_from
-        if frm is None:
-            if action.action_arguments and 'host' in action.action_arguments:
-                host = action.action_arguments['host']
-            else:
-                host = socket.getfqdn()
-            frm = 'galaxy-no-reply@%s' % host
-        to = job.user.email
-        subject = "Galaxy workflow step notification '%s'" % (job.history.name)
-        outdata = ', '.join(ds.dataset.display_name() for ds in job.output_datasets)
-        body = "Your Galaxy job generating dataset '%s' is complete as of %s." % (outdata, datetime.datetime.now().strftime("%I:%M"))
         try:
+            frm = app.config.email_from
+            if frm is None:
+                if action.action_arguments and 'host' in action.action_arguments:
+                    host = action.action_arguments['host']
+                else:
+                    host = socket.getfqdn()
+                frm = 'galaxy-no-reply@%s' % host
+            to = job.user.email
+            subject = "Galaxy job completion notification from history '%s'" % (job.history.name)
+            outdata = ', '.join(ds.dataset.display_name() for ds in job.output_datasets)
+            body = "Your Galaxy job generating dataset '%s' is complete as of %s." % (outdata, datetime.datetime.now().strftime("%I:%M"))
             send_mail(frm, to, subject, body, app.config)
         except Exception as e:
             log.error("EmailAction PJA Failed, exception: %s", unicodify(e))

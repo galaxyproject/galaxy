@@ -1,7 +1,7 @@
 <template>
     <markdown :markdown-config="markdownConfig" v-if="!edit"></markdown>
     <markdown-editor
-        :initialMarkdown="markdownConfig.invocation_markdown"
+        :initial-markdown="markdownConfig.invocation_markdown"
         :onupdate="onupdate"
         v-else
     ></markdown-editor>
@@ -16,30 +16,30 @@ import MarkdownEditor from "components/Markdown/MarkdownEditor.vue";
 export default {
     components: {
         Markdown,
-        MarkdownEditor
+        MarkdownEditor,
     },
     props: {
         invocationId: {
             type: String,
-            required: true
-        }
+            required: true,
+        },
     },
     data() {
         return {
             markdownConfig: {},
             invocationMarkdown: null,
-            edit: false
+            edit: false,
         };
     },
-    created: function() {
+    created: function () {
         this.loadMarkdownConfig();
         window.addEventListener("keyup", this.keyListener);
     },
-    destroyed: function() {
+    destroyed: function () {
         window.removeEventListener("keyup", this.keyListener);
     },
     methods: {
-        keyListener: function(event) {
+        keyListener: function (event) {
             const which = event.which || event.keyCode;
             // ctrl + e
             if (event.ctrlKey && which == 69) {
@@ -50,17 +50,17 @@ export default {
                 }
             }
         },
-        viewReport: function() {
+        viewReport: function () {
             this.edit = false;
             this.loadMarkdownConfig();
         },
-        editReport: function() {
+        editReport: function () {
             this.edit = true;
         },
-        onupdate: function(newMarkdown) {
+        onupdate: function (newMarkdown) {
             this.invocationMarkdown = newMarkdown;
         },
-        loadMarkdownConfig: function() {
+        loadMarkdownConfig: function () {
             const invocationId = this.invocationId;
             const url = getAppRoot() + `api/invocations/${invocationId}/report`;
             const params = {};
@@ -69,13 +69,13 @@ export default {
             }
             axios
                 .get(url, { params: params })
-                .then(response => {
+                .then((response) => {
                     this.markdownConfig = response.data;
                 })
-                .catch(e => {
+                .catch((e) => {
                     console.error(e);
                 });
-        }
-    }
+        },
+    },
 };
 </script>

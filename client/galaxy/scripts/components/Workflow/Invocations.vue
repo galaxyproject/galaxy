@@ -30,7 +30,7 @@
                 <template v-slot:row-details="row">
                     <b-card>
                         <!-- set provideContext to false, since the table itself provides this information -->
-                        <workflow-invocation-state :invocationId="row.item.id" :provideContext="false" />
+                        <workflow-invocation-state :invocation-id="row.item.id" :provide-context="false" />
                     </b-card>
                 </template>
                 <template v-slot:cell(details)="data">
@@ -84,14 +84,14 @@ export default {
         WorkflowInvocationState,
         LoadingSpan,
         WorkflowDropdown,
-        HistoryDropdown
+        HistoryDropdown,
     },
     props: {
         invocationItems: { type: Array, default: () => [] },
         loading: { type: Boolean, default: true },
         noInvocationsMessage: { type: String },
         headerMessage: { type: String, default: "" },
-        ownerGrid: { type: Boolean, default: true }
+        ownerGrid: { type: Boolean, default: true },
     },
     data() {
         const fields = [
@@ -101,19 +101,19 @@ export default {
             { key: "id", label: "Invocation ID" },
             { key: "state" },
             { key: "update_time", label: "Last Update" },
-            { key: "create_time", label: "Invocation Time" }
+            { key: "create_time", label: "Invocation Time" },
         ];
         return {
             invocationItemsModel: [],
             invocationFields: fields,
-            status: ""
+            status: "",
         };
     },
     computed: {
         ...mapGetters(["getWorkflowByInstanceId", "getHistoryById"]),
         invocationItemsComputed() {
             return this.computeItems(this.invocationItems);
-        }
+        },
     },
     methods: {
         ...mapCacheActions(["fetchWorkflowForInstanceId", "fetchHistoryForId"]),
@@ -121,7 +121,7 @@ export default {
             return getRootFromIndexLink() + "workflow/editor?id=" + this.getWorkflowByInstanceId(workflowId).id;
         },
         computeItems(items) {
-            return items.map(invocation => {
+            return items.map((invocation) => {
                 if (this.ownerGrid) {
                     this.fetchWorkflowForInstanceId(invocation["workflow_id"]);
                     this.fetchHistoryForId(invocation["history_id"]);
@@ -133,7 +133,7 @@ export default {
                     workflow_id: invocation["workflow_id"],
                     history_id: invocation["history_id"],
                     state: invocation["state"],
-                    _showDetails: false
+                    _showDetails: false,
                 };
             });
         },
@@ -142,7 +142,7 @@ export default {
         },
         handleError(error) {
             console.error(error);
-        }
-    }
+        },
+    },
 };
 </script>

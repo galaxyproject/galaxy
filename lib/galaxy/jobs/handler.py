@@ -28,7 +28,7 @@ from galaxy.jobs import (
 )
 from galaxy.jobs.mapper import JobNotReadyException
 from galaxy.util import unicodify
-from galaxy.util.logging import get_logger
+from galaxy.util.custom_logging import get_logger
 from galaxy.util.monitors import Monitors
 from galaxy.web_stack.handlers import HANDLER_ASSIGNMENT_METHODS
 from galaxy.web_stack.message import JobHandlerMessage
@@ -96,10 +96,10 @@ class JobHandlerQueue(Monitors):
         self.__initialize_job_grabbing()
 
     def __initialize_job_grabbing(self):
-        grabbable_methods = set([
+        grabbable_methods = {
             HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION,
             HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED,
-        ])
+        }
         try:
             method = [m for m in self.app.job_config.handler_assignment_methods if m in grabbable_methods][0]
         except IndexError:
@@ -121,7 +121,7 @@ class JobHandlerQueue(Monitors):
             self.__grab_conn_opts['isolation_level'] = 'SERIALIZABLE'
         log.info(
             "Handler job grabber initialized with '%s' assignment method for handler '%s', tag(s): %s", method,
-            self.app.config.server_name, ', '.join([str(x) for x in self.app.job_config.handler_tags])
+            self.app.config.server_name, ', '.join(str(x) for x in self.app.job_config.handler_tags)
         )
 
     def start(self):
@@ -267,7 +267,7 @@ class JobHandlerQueue(Monitors):
             try:
                 rows = conn.execute(self.__grab_query).fetchall()
                 if rows:
-                    log.debug('Grabbed job(s): %s', ', '.join([str(row[0]) for row in rows]))
+                    log.debug('Grabbed job(s): %s', ', '.join(str(row[0]) for row in rows))
                     trans.commit()
                 else:
                     trans.rollback()

@@ -275,6 +275,9 @@ class JSAppLauncher(BaseUIController):
         self._check_require_login(trans)
         return self._bootstrapped_client(trans, **kwd)
 
+    # This includes contextualized user options in the bootstrapped data; we
+    # don't want to cache it.
+    @web.do_not_cache
     def _bootstrapped_client(self, trans, app_name='analysis', **kwd):
         js_options = self._get_js_options(trans)
         js_options['config'].update(self._get_extended_config(trans))
@@ -302,9 +305,7 @@ class JSAppLauncher(BaseUIController):
             'active_view'                   : 'analysis',
             'enable_cloud_launch'           : trans.app.config.get_bool('enable_cloud_launch', False),
             'enable_webhooks'               : True if trans.app.webhooks_registry.webhooks else False,
-            # TODO: next two should be redundant - why can't we build one from the other?
-            'toolbox'                       : trans.app.toolbox.to_dict(trans, in_panel=False),
-            'toolbox_in_panel'              : trans.app.toolbox.to_dict(trans),
+            'toolbox'                       : trans.app.toolbox.to_dict(trans),
             'message_box_visible'           : trans.app.config.message_box_visible,
             'show_inactivity_warning'       : trans.app.config.user_activation_on and trans.user and not trans.user.active,
             'tool_shed_urls'                : list(trans.app.tool_shed_registry.tool_sheds.values()) if trans.app.tool_shed_registry else [],
@@ -312,15 +313,17 @@ class JSAppLauncher(BaseUIController):
         }
 
         # TODO: move to user
-        stored_workflow_menu_entries = config['stored_workflow_menu_entries'] = []
+        stored_workflow_menu_index = {}
+        stored_workflow_menu_entries = []
         for menu_item in getattr(trans.user, 'stored_workflow_menu_entries', []):
-            stored_workflow_menu_entries.append({
-                'encoded_stored_workflow_id': trans.security.encode_id(menu_item.stored_workflow_id),
-                'stored_workflow': {
+            encoded_stored_workflow_id = trans.security.encode_id(menu_item.stored_workflow_id)
+            if encoded_stored_workflow_id not in stored_workflow_menu_index:
+                stored_workflow_menu_index[encoded_stored_workflow_id] = True
+                stored_workflow_menu_entries.append({
+                    'id': encoded_stored_workflow_id,
                     'name': util.unicodify(menu_item.stored_workflow.name)
-                }
-            })
-
+                })
+        config['stored_workflow_menu_entries'] = stored_workflow_menu_entries
         return config
 
     def _get_site_configuration(self, trans):
@@ -901,11 +904,12 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
             bookmarks = unpack_bookmarks(config['bookmarks'])
             vis_rev.config = {"view": view_content, "bookmarks": bookmarks}
             # Viewport from payload
-            if 'viewport' in config:
-                chrom = config['viewport']['chrom']
-                start = config['viewport']['start']
-                end = config['viewport']['end']
-                overview = config['viewport']['overview']
+            viewport = config.get('viewport')
+            if viewport:
+                chrom = viewport['chrom']
+                start = viewport['start']
+                end = viewport['end']
+                overview = viewport['overview']
                 vis_rev.config["viewport"] = {'chrom': chrom, 'start': start, 'end': end, 'overview': overview}
         else:
             # Default action is to save the config as is with no validation.
@@ -1024,7 +1028,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
                         tracks.append(pack_collection(drawable_dict))
 
             config = {"title": visualization.title,
-                      "vis_id": trans.security.encode_id(visualization.id),
+                      "vis_id": trans.security.encode_id(visualization.id) if visualization.id is not None else None,
                       "tracks": tracks,
                       "bookmarks": bookmarks,
                       "chrom": "",
@@ -1249,7 +1253,7 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
         session.flush()
         return imported_stored
 
-    def _workflow_from_dict(self, trans, data, source=None, add_to_menu=False, publish=False, exact_tools=True, fill_defaults=False):
+    def _workflow_from_dict(self, trans, data, source=None, add_to_menu=False, publish=False, exact_tools=True, fill_defaults=False, from_tool_form=False):
         """
         Creates a workflow from a dict. Created workflow is stored in the database and returned.
         """
@@ -1264,6 +1268,7 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
             publish=publish,
             exact_tools=exact_tools,
             fill_defaults=fill_defaults,
+            from_tool_form=from_tool_form,
         )
         return created_workflow.stored_workflow, created_workflow.missing_tools
 

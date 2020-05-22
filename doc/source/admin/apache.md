@@ -150,7 +150,6 @@ SSLStaplingCache        shmcb:/var/run/ocsp(128000)
 
     # serve framework static content
     RewriteEngine On
-    RewriteRule ^/static/style/(.*) ${galaxy_root}/static/style/blue/$1 [L]
     RewriteRule ^/static/(.*) ${galaxy_root}/static/$1 [L]
     RewriteRule ^/favicon.ico ${galaxy_root}/static/favicon.ico [L]
     RewriteRule ^/robots.txt ${galaxy_root}/static/robots.txt [L]
@@ -216,7 +215,6 @@ previous section:
         # serve framework static content
         RewriteEngine On
         RewriteRule ^/galaxy/$ /galaxy [R,L]
-        RewriteRule ^/galaxy/static/style/(.*) ${galaxy_root}/static/style/blue/$1 [L]
         RewriteRule ^/galaxy/static/(.*) ${galaxy_root}/static/$1 [L]
         RewriteRule ^/galaxy/favicon.ico ${galaxy_root}/static/favicon.ico [L]
     RewriteRule ^/galaxy/robots.txt ${galaxy_root}/static/robots.txt [L]

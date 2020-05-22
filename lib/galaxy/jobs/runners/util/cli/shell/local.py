@@ -34,6 +34,8 @@ class LocalShell(BaseShellExec):
     True
     >>> exec_result.stdout.strip() == u'Hello World'
     True
+    >>> exec_result.returncode
+    0
     >>> exec_result = exec_python("import time; time.sleep(10)", timeout=1, timeout_check_interval=.1)
     >>> exec_result.stdout == u''
     True
@@ -63,6 +65,8 @@ class LocalShell(BaseShellExec):
             kill_pg(p.pid)
             return Bunch(stdout=u'', stderr=TIMEOUT_ERROR_MESSAGE, returncode=TIMEOUT_RETURN_CODE)
         outf.seek(0)
+        # Need to poll once to establish return code
+        p.poll()
         return Bunch(stdout=_read_str(outf), stderr=_read_str(p.stderr), returncode=p.returncode)
 
 

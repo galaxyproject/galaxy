@@ -1,20 +1,25 @@
 <tool id="laj_1" name="LAJ" version="1.0.0">
 <description>Pairwise Alignment Viewer</description>
-  <command interpreter="python">LAJ.py $maf_input $out_file1</command>
-  <inputs>
-      <param name="maf_input" type="data" format="lav" label="Alignment File" optional="False"/>
-      <param name="seq_file1" type="data" format="fasta" label="First Sequence File" optional="True"/>
-      <param name="seq_file2" type="data" format="fasta" label="Second Sequence File" optional="True"/>
-      <param name="exonfile" type="data" format="txt" label="Exon File" optional="True"/>
-      <param name="repeatfile" type="data" format="txt" label="Repeat File" optional="True"/>
-      <param name="annotationfile" type="data" format="txt" label="Annotation File" optional="True"/>
-      <param name="underlayfile" type="data" format="txt" label="Underlay File" optional="True"/>
-      <param name="highlightfile" type="data" format="txt" label="Highlight File" optional="True"/>
-  </inputs>
-  <outputs>
-    <data name="out_file1" format="laj"/>
-  </outputs>
-<help>
+    <code file="LAJ_code.py"/>
+    <command><![CDATA[
+python '$__tool_directory__/LAJ.py' '$maf_input' '$out_file1'
+    ]]></command>
+    <inputs>
+        <param name="maf_input" type="data" format="lav" label="Alignment File"/>
+        <param name="seq_file1" type="data" format="fasta" optional="true" label="First Sequence File"/>
+        <param name="seq_file2" type="data" format="fasta" optional="true" label="Second Sequence File"/>
+        <param name="exonfile" type="data" format="txt" optional="true" label="Exon File"/>
+        <param name="repeatfile" type="data" format="txt" optional="true" label="Repeat File"/>
+        <param name="annotationfile" type="data" format="txt" optional="true" label="Annotation File"/>
+        <param name="underlayfile" type="data" format="txt" optional="true" label="Underlay File"/>
+        <param name="highlightfile" type="data" format="txt" optional="true" label="Highlight File"/>
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="laj"/>
+    </outputs>
+    <tests>
+    </tests>
+    <help><![CDATA[
 You can use this tool to view a set of LAV alignments.  You may include FASTA formatted sequences for both species.
 
 For detailed information on LAJ, click here_.
@@ -26,17 +31,15 @@ Laj is a tool for viewing and manipulating the output from pairwise alignment pr
 .. class:: infomark
 
 **Note:** If you save output from the applet, you will need to manually refresh your history.
-
-  </help>
-  <code file="LAJ_code.py"/>
-  <citations>
-    <citation type="bibtex">
-      @misc{Miller2005,
-author = {Miller Lab},
-year = {2005},
-title = {Laj},
-url = {http://globin.bx.psu.edu/dist/laj/},
+    ]]></help>
+    <citations>
+        <citation type="bibtex">
+@misc{Miller2005,
+    author = {Miller Lab},
+    year = {2005},
+    title = {Laj},
+    url = {http://globin.bx.psu.edu/dist/laj/},
 }
-    </citation>
-  </citations>
+        </citation>
+    </citations>
 </tool>

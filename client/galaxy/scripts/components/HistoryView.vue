@@ -7,11 +7,11 @@
                         <button id="import" class="btn btn-secondary">Import and start using history</button>
                     </span>
                     <span v-if="historyData.user_is_owner && historyData.history_is_current == false">
-                        <button id="switch-history" class="btn btn-secondary" v-on:click="switchHistory">
+                        <button id="switch-history" class="btn btn-secondary" @click="switchHistory">
                             Switch to this history
                         </button>
                     </span>
-                    <button id="show-structure" class="btn btn-secondary" v-on:click="showStructure">
+                    <button id="show-structure" class="btn btn-secondary" @click="showStructure">
                         Show structure
                     </button>
                 </span>
@@ -47,45 +47,45 @@ export default {
     props: {
         id: {
             type: String,
-            required: true
-        }
+            required: true,
+        },
     },
     data() {
         return {
             historyData: {},
             historyHistory: {},
             // TODO: Pick a standard messaging convention and use a child component for it here.
-            errorMessages: []
+            errorMessages: [],
         };
     },
-    created: function() {
+    created: function () {
         const url = getAppRoot() + "history/view/" + this.id;
         this.ajaxCall(url, this.updateHistoryView);
     },
     methods: {
-        ajaxCall: function(url, callBack) {
+        ajaxCall: function (url, callBack) {
             axios
                 .get(url)
-                .then(response => {
+                .then((response) => {
                     callBack(response);
                 })
-                .catch(e => {
+                .catch((e) => {
                     this.showError(
                         "Error fetching histories -- reload the page to retry this request.  Please contact an administrator if the problem persists.",
                         e
                     );
                 });
         },
-        updateHistoryView: function(response) {
+        updateHistoryView: function (response) {
             this.historyData = response.data;
             this.historyHistory = response.data.history;
         },
-        showError: function(errorMsg, verbose) {
+        showError: function (errorMsg, verbose) {
             console.error(verbose);
             this.errorMessages.push(errorMsg);
         },
-        makeHistoryView: function(history) {
-            $(function() {
+        makeHistoryView: function (history) {
+            $(function () {
                 const options = {
                     hasMasthead: history.use_panels ? "true" : "false",
                     userIsOwner: history.user_is_owner ? "true" : "false",
@@ -95,7 +95,7 @@ export default {
                     showHiddenJson: history.show_hidden,
                     initialModeDeleted: history.show_deleted ? "showing_deleted" : "not_showing_deleted",
                     initialModeHidden: history.show_hidden ? "showing_hidden" : "not_showing_hidden",
-                    allowUserDatasetPurge: history.allow_user_dataset_purge ? "true" : "false"
+                    allowUserDatasetPurge: history.allow_user_dataset_purge ? "true" : "false",
                 };
                 options.viewToUse = options.userIsOwner
                     ? { location: "mvc/history/history-view-edit", className: "HistoryViewEdit" }
@@ -103,24 +103,24 @@ export default {
                 HistoryView.historyEntry(options);
             });
         },
-        showStructure: function() {
+        showStructure: function () {
             const Galaxy = getGalaxyInstance();
-            const displayStructureInstance = Vue.extend(DisplayStructure),
-                mountView = document.createElement("div");
+            const displayStructureInstance = Vue.extend(DisplayStructure);
+            const mountView = document.createElement("div");
             Galaxy.page.center.display(mountView);
             new displayStructureInstance({ propsData: { id: QueryStringParsing.get("id") } }).$mount(mountView);
         },
-        switchHistory: function() {
+        switchHistory: function () {
             const url = getAppRoot() + "history/switch_to_history?hist_id=" + this.historyHistory["id"];
             this.ajaxCall(url, this.reloadPage);
         },
-        reloadPage: function() {
+        reloadPage: function () {
             window.location.reload();
-        }
+        },
     },
-    updated: function() {
+    updated: function () {
         this.makeHistoryView(this.historyData);
-    }
+    },
 };
 </script>
 

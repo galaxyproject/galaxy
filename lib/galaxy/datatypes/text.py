@@ -570,7 +570,7 @@ class SnpEffDb(Text):
     def getSnpeffVersionFromFile(self, path):
         snpeff_version = None
         try:
-            with gzip.open(path, 'rb') as fh:
+            with gzip.open(path, 'rt') as fh:
                 buf = fh.read(100)
                 lines = buf.splitlines()
                 m = re.match(r'^(SnpEff)\s+(\d+\.\d+).*$', lines[0].strip())
@@ -682,7 +682,7 @@ class SnpSiftDbNSFP(Text):
                     if fname.endswith('.gz'):
                         dataset.metadata.bgzip = fname
                         try:
-                            with gzip.open(os.path.join(efp, fname), 'r') as fh:
+                            with gzip.open(os.path.join(efp, fname), 'rt') as fh:
                                 buf = fh.read(5000)
                                 lines = buf.splitlines()
                                 headers = lines[0].split('\t')
@@ -730,3 +730,84 @@ class IQTree(Text):
         False
         """
         return file_prefix.startswith("IQ-TREE")
+
+
+@build_sniff_from_prefix
+class Paf(Text):
+    """
+    PAF: a Pairwise mApping Format
+
+    https://github.com/lh3/miniasm/blob/master/PAF.md
+    """
+    file_ext = "paf"
+
+    def sniff_prefix(self, file_prefix):
+        """
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('A-3105.paf')
+        >>> Paf().sniff(fname)
+        True
+        """
+        found_valid_lines = False
+        for line in iter_headers(file_prefix, "\t"):
+            if len(line) < 12:
+                return False
+            for i in (1, 2, 3, 6, 7, 8, 9, 10, 11):
+                int(line[i])
+            if line[4] not in ('+', '-'):
+                return False
+            if not (0 <= int(line[11]) <= 255):
+                return False
+            # Check that the optional columns after the 12th contain SAM-like typed key-value pairs
+            for i in range(12, len(line)):
+                if len(line[i].split(':')) != 3:
+                    return False
+            found_valid_lines = True
+        return found_valid_lines
+
+
+@build_sniff_from_prefix
+class Gfa1(Text):
+    """
+    Graphical Fragment Assembly (GFA) 1.0
+
+    http://gfa-spec.github.io/GFA-spec/GFA1.html
+    """
+    file_ext = "gfa1"
+
+    def sniff_prefix(self, file_prefix):
+        """
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('big.gfa1')
+        >>> Gfa1().sniff(fname)
+        True
+        """
+        found_valid_lines = False
+        for line in iter_headers(file_prefix, "\t"):
+            if line[0].startswith('#'):
+                continue
+            if line[0] == 'H':
+                return len(line) == 2 and line[1] == 'VN:Z:1.0'
+            elif line[0] == 'S':
+                if len(line) < 3:
+                    return False
+            elif line[0] == 'L':
+                if len(line) < 6:
+                    return False
+                for i in (2, 4):
+                    if line[i] not in ('+', '-'):
+                        return False
+            elif line[0] == 'C':
+                if len(line) < 7:
+                    return False
+                for i in (2, 4):
+                    if line[i] not in ('+', '-'):
+                        return False
+                int(line[5])
+            elif line[0] == 'P':
+                if len(line) < 4:
+                    return False
+            else:
+                return False
+            found_valid_lines = True
+        return found_valid_lines

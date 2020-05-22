@@ -5,13 +5,13 @@ import _l from "utils/localization";
 import { getGalaxyInstance } from "app";
 
 const AdminPanel = Backbone.View.extend({
-    initialize: function(page, options) {
+    initialize: function (page, options) {
         this.page = page;
         this.root = options.root;
         this.config = options.config;
         this.settings = options.settings;
         this.model = new Backbone.Model({
-            title: `Galaxy version ${getGalaxyInstance().config.version_major}`
+            title: `Galaxy version ${getGalaxyInstance().config.version_major}`,
         });
         this.categories = new Backbone.Collection([
             {
@@ -21,39 +21,39 @@ const AdminPanel = Backbone.View.extend({
                         title: _l("Data Types"),
                         url: "admin/data_types",
                         target: "__use_router__",
-                        id: "admin-link-datatypes"
+                        id: "admin-link-datatypes",
                     },
                     {
                         title: _l("Data Tables"),
                         url: "admin/data_tables",
                         target: "__use_router__",
-                        id: "admin-link-data-tables"
+                        id: "admin-link-data-tables",
                     },
                     {
                         title: _l("Display Applications"),
                         url: "admin/display_applications",
                         target: "__use_router__",
-                        id: "admin-link-display-applications"
+                        id: "admin-link-display-applications",
                     },
                     {
                         title: _l("Jobs"),
                         url: "admin/jobs",
                         target: "__use_router__",
-                        id: "admin-link-jobs"
+                        id: "admin-link-jobs",
                     },
                     {
                         title: _l("Workflow Invocations"),
                         url: "admin/invocations",
                         target: "__use_router__",
-                        id: "admin-link-invocations"
+                        id: "admin-link-invocations",
                     },
                     {
                         title: _l("Local Data"),
                         url: "admin/data_manager",
                         target: "__use_router__",
-                        id: "admin-link-local-data"
-                    }
-                ]
+                        id: "admin-link-local-data",
+                    },
+                ],
             },
             {
                 title: _l("User Management"),
@@ -62,33 +62,34 @@ const AdminPanel = Backbone.View.extend({
                         title: _l("Users"),
                         url: "admin/users",
                         target: "__use_router__",
-                        id: "admin-link-users"
+                        id: "admin-link-users",
                     },
                     {
                         title: _l("Quotas"),
                         url: "admin/quotas",
                         target: "__use_router__",
                         enabled: this.config.enable_quotas,
-                        id: "admin-link-quotas"
+                        id: "admin-link-quotas",
                     },
                     {
                         title: _l("Groups"),
                         url: "admin/groups",
                         target: "__use_router__",
-                        id: "admin-link-groups"
+                        id: "admin-link-groups",
                     },
                     {
                         title: _l("Roles"),
                         url: "admin/roles",
                         target: "__use_router__",
-                        id: "admin-link-roles"
+                        id: "admin-link-roles",
                     },
                     {
                         title: _l("Forms"),
                         url: "admin/forms",
-                        target: "__use_router__"
-                    }
-                ]
+                        target: "__use_router__",
+                        id: "admin-link-forms",
+                    },
+                ],
             },
             {
                 title: _l("Tool Management"),
@@ -97,59 +98,60 @@ const AdminPanel = Backbone.View.extend({
                         title: _l("Install and Uninstall"),
                         url: "admin/toolshed",
                         target: "__use_router__",
-                        enabled: this.settings.is_tool_shed_installed
+                        id: "admin-link-toolshed",
+                        enabled: this.settings.is_tool_shed_installed,
                     },
                     {
-                        title: _l("Monitor installation"),
-                        url: "admin_toolshed/monitor_repository_installation",
-                        enabled: this.settings.installing_repository_ids
-                    },
-                    {
-                        title: _l("Manage metadata"),
+                        title: _l("Manage Metadata"),
                         url: "admin/reset_metadata",
+                        id: "admin-link-metadata",
                         enabled: this.settings.is_repo_installed,
-                        target: "__use_router__"
+                        target: "__use_router__",
                     },
                     {
                         title: _l("Manage Whitelist"),
-                        url: "admin/sanitize_whitelist"
+                        url: "admin/sanitize_whitelist",
+                        id: "admin-link-whitelist",
                     },
                     {
                         title: _l("Manage Dependencies"),
                         url: "admin/toolbox_dependencies",
                         target: "__use_router__",
-                        id: "admin-link-manage-dependencies"
+                        id: "admin-link-manage-dependencies",
                     },
                     {
                         title: _l("Manage Dependencies (legacy)"),
-                        url: "admin/manage_tool_dependencies"
+                        url: "admin/manage_tool_dependencies",
                     },
                     {
                         title: _l("View Lineage"),
                         url: "admin/tool_versions",
-                        target: "__use_router__"
+                        target: "__use_router__",
+                        id: "admin-link-tool-versions",
                     },
                     {
                         title: _l("View Migration Stages"),
-                        url: "admin/review_tool_migration_stages"
+                        url: "admin/review_tool_migration_stages",
+                        id: "admin-link-migrations",
                     },
                     {
                         title: _l("View Error Logs"),
                         url: "admin/error_stack",
-                        target: "__use_router__"
-                    }
-                ]
-            }
+                        id: "admin-link-error-stack",
+                        target: "__use_router__",
+                    },
+                ],
+            },
         ]);
         this.setElement(this._template());
     },
 
-    render: function() {
+    render: function () {
         this.$el.empty();
-        this.categories.each(category => {
+        this.categories.each((category) => {
             const $section = $(this._templateSection(category.attributes));
             const $entries = $section.find(".toolSectionBody");
-            _.each(category.get("items"), item => {
+            _.each(category.get("items"), (item) => {
                 if (item.enabled === undefined || item.enabled) {
                     const $link = $("<a/>")
                         .attr({ href: this.root + item.url })
@@ -158,38 +160,34 @@ const AdminPanel = Backbone.View.extend({
                         $link.attr("id", item.id);
                     }
                     if (item.target == "__use_router__") {
-                        $link.on("click", e => {
+                        $link.on("click", (e) => {
                             e.preventDefault();
                             this.page.router.push(item.url);
                         });
                     } else {
                         $link.attr("target", "galaxy_main");
                     }
-                    $entries.append(
-                        $("<div/>")
-                            .addClass("toolTitle")
-                            .append($link)
-                    );
+                    $entries.append($("<div/>").addClass("toolTitle").append($link));
                 }
             });
             this.$el.append($section);
         });
     },
 
-    _templateSection: function(options) {
+    _templateSection: function (options) {
         return `<div class="toolSectionWrapper">
                     <div class="toolSectionTitle pt-1 px-3">${_l(options.title)}</div>
                     <div class="toolSectionBody"/>
                 </div>`;
     },
 
-    _template: function() {
+    _template: function () {
         return '<div class="toolMenuContainer"/>';
     },
 
-    toString: function() {
+    toString: function () {
         return "adminPanel";
-    }
+    },
 });
 
 export default AdminPanel;

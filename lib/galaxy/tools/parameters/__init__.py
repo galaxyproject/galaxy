@@ -19,7 +19,7 @@ REPLACE_ON_TRUTHY = object()
 __all__ = ('DataCollectionToolParameter', 'DataToolParameter', 'SelectToolParameter')
 
 
-def visit_input_values(inputs, input_values, callback, name_prefix='', label_prefix='', parent_prefix='', context=None, no_replacement_value=REPLACE_ON_TRUTHY):
+def visit_input_values(inputs, input_values, callback, name_prefix='', label_prefix='', parent_prefix='', context=None, no_replacement_value=REPLACE_ON_TRUTHY, replace_optional_connections=False):
     """
     Given a tools parameter definition (`inputs`) and a specific set of
     parameter `values`, call `callback` for each non-grouping parameter,
@@ -29,7 +29,7 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
     If the callback returns a value, it will be replace the old value.
 
     >>> from collections import OrderedDict
-    >>> from xml.etree.ElementTree import XML
+    >>> from galaxy.util import XML
     >>> from galaxy.util.bunch import Bunch
     >>> from galaxy.tools.parameters.basic import TextToolParameter, BooleanToolParameter
     >>> from galaxy.tools.parameters.grouping import Repeat
@@ -116,10 +116,11 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
     No value found for 'b 1 > d 1 > j'.
     """
     def callback_helper(input, input_values, name_prefix, label_prefix, parent_prefix, context=None, error=None):
+        value = input_values.get(input.name)
         args = {
             'input'             : input,
             'parent'            : input_values,
-            'value'             : input_values.get(input.name),
+            'value'             : value,
             'prefixed_name'     : '%s%s' % (name_prefix, input.name),
             'prefixed_label'    : '%s%s' % (label_prefix, input.label or input.name),
             'prefix'            : parent_prefix,
@@ -135,6 +136,8 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
             replace = new_value != no_replacement_value
         if replace:
             input_values[input.name] = new_value
+        elif replace_optional_connections and is_runtime_value(value) and hasattr(input, 'value'):
+            input_values[input.name] = input.value
 
     def get_current_case(input, input_values):
         try:
@@ -270,7 +273,7 @@ def populate_state(request_context, inputs, incoming, state, errors={}, prefix='
     """
     Populates nested state dict from incoming parameter values.
     >>> from collections import OrderedDict
-    >>> from xml.etree.ElementTree import XML
+    >>> from galaxy.util import XML
     >>> from galaxy.util.bunch import Bunch
     >>> from galaxy.tools.parameters.basic import TextToolParameter, BooleanToolParameter
     >>> from galaxy.tools.parameters.grouping import Repeat

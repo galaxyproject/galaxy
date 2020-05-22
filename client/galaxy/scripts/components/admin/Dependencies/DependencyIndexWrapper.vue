@@ -17,21 +17,21 @@ import LoadingSpan from "components/LoadingSpan";
 
 export default {
     components: {
-        LoadingSpan
+        LoadingSpan,
     },
     props: {
         loading: {
             type: Boolean,
-            required: true
+            required: true,
         },
         loadingMessage: {
             type: String,
-            required: true
+            required: true,
         },
         error: {
             type: String,
-            default: null
-        }
-    }
+            default: null,
+        },
+    },
 };
 </script>

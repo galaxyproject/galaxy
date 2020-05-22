@@ -23,6 +23,8 @@
     <!--- base/base_panels.mako stylesheets() -->
     ${h.css(
         'bootstrap-tour',
+    )}
+    ${h.dist_css(
         'base'
     )}
 </%def>
@@ -31,16 +33,11 @@
 ## TODO: remove when all libs are required directly in modules
 <%def name="javascripts()">
     <!--- base/base_panels.mako javascripts() -->
-    ${h.js(
-        'bundled/libs.chunk',
-        'bundled/base.chunk'
+    ${h.dist_js(
+        'libs.chunk',
+        'base.chunk',
+        'generic.bundled'
     )}
-    ${ javascript_entry() }
-</%def>
-
-<%def name="javascript_entry()">
-    <!-- base/base_panels.mako javascript_entry -->
-    ${ h.js('bundled/generic.bundled')}
 </%def>
 
 <%def name="javascript_app()">

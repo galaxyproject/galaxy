@@ -42,7 +42,7 @@ def send_local_control_task(app, task, get_response=False, kwargs=None):
     """
     if kwargs is None:
         kwargs = {}
-    log.info("Queuing async task %s for %s." % (task, app.config.server_name))
+    log.info("Queuing %s task %s for %s." % ("sync" if get_response else "async", task, app.config.server_name))
     payload = {'task': task,
                'kwargs': kwargs}
     routing_key = 'control.%s@%s' % (app.config.server_name, socket.gethostname())
@@ -114,7 +114,7 @@ class ControlTask(object):
             callback_queue = [self.callback_queue]
             self.correlation_id = uuid()
         try:
-            with producers[self.connection].acquire(block=True) as producer:
+            with producers[self.connection].acquire(block=True, timeout=10) as producer:
                 producer.publish(
                     payload,
                     exchange=None if local else self.exchange,
@@ -163,19 +163,19 @@ def reload_tool(app, **kwargs):
         log.error("Reload tool invoked without tool id.")
 
 
-def reload_toolbox(app, **kwargs):
+def reload_toolbox(app, save_integrated_tool_panel=True, **kwargs):
     reload_timer = util.ExecutionTimer()
     log.debug("Executing toolbox reload on '%s'", app.config.server_name)
     reload_count = app.toolbox._reload_count
     if hasattr(app, 'tool_cache'):
         app.tool_cache.cleanup()
-    _get_new_toolbox(app)
+    _get_new_toolbox(app, save_integrated_tool_panel)
     app.toolbox._reload_count = reload_count + 1
     send_local_control_task(app, 'rebuild_toolbox_search_index')
     log.debug("Toolbox reload %s", reload_timer)
 
 
-def _get_new_toolbox(app):
+def _get_new_toolbox(app, save_integrated_tool_panel=True):
     """
     Generate a new toolbox, by constructing a toolbox from the config files,
     and then adding pre-existing data managers from the old toolbox to the new toolbox.
@@ -186,7 +186,7 @@ def _get_new_toolbox(app):
         app.tool_shed_repository_cache.rebuild()
     tool_configs = app.config.tool_configs
 
-    new_toolbox = tools.ToolBox(tool_configs, app.config.tool_path, app)
+    new_toolbox = tools.ToolBox(tool_configs, app.config.tool_path, app, save_integrated_tool_panel=save_integrated_tool_panel)
     new_toolbox.data_manager_tools = app.toolbox.data_manager_tools
     app.datatypes_registry.load_datatype_converters(new_toolbox, use_cached=True)
     app.datatypes_registry.load_external_metadata_tool(new_toolbox)
@@ -247,8 +247,11 @@ def reload_tool_data_tables(app, **kwargs):
 
 
 def rebuild_toolbox_search_index(app, **kwargs):
-    if app.toolbox_search.index_count < app.toolbox._reload_count:
-        app.reindex_tool_search()
+    if app.is_webapp:
+        if app.toolbox_search.index_count < app.toolbox._reload_count:
+            app.reindex_tool_search()
+    else:
+        log.debug("App is not a webapp, not building a search index")
 
 
 def reload_job_rules(app, **kwargs):
@@ -274,7 +277,7 @@ def reload_tour(app, **kwargs):
 
 
 def __job_rule_module_names(app):
-    rules_module_names = set(['galaxy.jobs.rules'])
+    rules_module_names = {'galaxy.jobs.rules'}
     if app.job_config.dynamic_params is not None:
         module_name = app.job_config.dynamic_params.get('rules_module')
         if module_name:
@@ -352,8 +355,8 @@ class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):
     def send_control_task(self, task, noop_self=False, get_response=False, routing_key='control.*', kwargs=None):
         return send_control_task(app=self.app, task=task, noop_self=noop_self, get_response=get_response, routing_key=routing_key, kwargs=kwargs)
 
-    def send_local_control_task(self, task, kwargs=None):
-        return send_local_control_task(app=self.app, task=task, kwargs=kwargs)
+    def send_local_control_task(self, task, get_response=False, kwargs=None):
+        return send_local_control_task(app=self.app, get_response=get_response, task=task, kwargs=kwargs)
 
     @property
     def declare_queues(self):

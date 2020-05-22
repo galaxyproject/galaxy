@@ -393,4 +393,6 @@ class HistoryFilters(sharable.SharableModelFilters, deletable.PurgableFiltersMix
             # history specific
             'name'          : {'op': ('eq', 'contains', 'like')},
             'genome_build'  : {'op': ('eq', 'contains', 'like')},
+            'create_time'   : {'op': ('le', 'ge', 'gt', 'lt'), 'val': self.parse_date},
+            'update_time'   : {'op': ('le', 'ge', 'gt', 'lt'), 'val': self.parse_date},
         })

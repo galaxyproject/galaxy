@@ -7,7 +7,7 @@ import { keyedColorScheme } from "utils/color";
 
 export default {
     props: {
-        tag: { type: String, required: true }
+        tag: { type: String, required: true },
     },
     computed: {
         tagLabel() {
@@ -18,10 +18,10 @@ export default {
             return {
                 "background-color": primary,
                 color: contrasting,
-                "border-color": darker
+                "border-color": darker,
             };
-        }
-    }
+        },
+    },
 };
 </script>
 

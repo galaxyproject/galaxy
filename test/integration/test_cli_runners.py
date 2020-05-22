@@ -3,6 +3,7 @@ import collections
 import os
 import string
 import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -11,11 +12,9 @@ from galaxy_test.base.ssh_util import generate_ssh_keys
 from galaxy_test.driver import integration_util
 from .test_job_environments import BaseJobEnvironmentIntegrationTestCase
 
+RemoteConnection = collections.namedtuple('remote_connection', ['hostname', 'username', 'port', 'private_key', 'public_key'])
 
-RemoteConnection = collections.namedtuple('remote_connection', ['hostname', 'username', 'password', 'port', 'private_key', 'public_key'])
 
-
-@integration_util.skip_unless_docker()
 def start_ssh_docker(container_name, jobs_directory, port=10022, image='agaveapi/slurm'):
     ssh_keys = generate_ssh_keys()
     START_SLURM_DOCKER = ['docker',
@@ -28,6 +27,7 @@ def start_ssh_docker(container_name, jobs_directory, port=10022, image='agaveapi
                           '--name',
                           container_name,
                           '--rm',
+                          '--privileged',  # for torque
                           '-v',
                           "{jobs_directory}:{jobs_directory}".format(jobs_directory=jobs_directory),
                           "-v",
@@ -36,7 +36,9 @@ def start_ssh_docker(container_name, jobs_directory, port=10022, image='agaveapi
                           'nofile=2048:2048',
                           image]
     subprocess.check_call(START_SLURM_DOCKER)
-    return RemoteConnection('localhost', 'testuser', 'testuser', port, ssh_keys.private_key_file, ssh_keys.public_key_file)
+    if sys.platform != 'darwin':
+        subprocess.check_call(['docker', 'exec', container_name, 'usermod', '-u', str(os.getuid()), 'testuser'])
+    return RemoteConnection('localhost', 'testuser', port, ssh_keys.private_key_file, ssh_keys.public_key_file)
 
 
 def stop_ssh_docker(container_name, remote_connection):
@@ -58,6 +60,7 @@ def cli_job_config(remote_connection, shell_plugin='ParamikoShell', job_plugin='
             <param id="shell_private_key">$private_key</param>
             <param id="shell_hostname">$hostname</param>
             <param id="shell_port">$port</param>
+            <param id="shell_strict_host_key_checking">False</param>
             <param id="embed_metadata_in_job">False</param>
             <env id="SOME_ENV_VAR">42</env>
         </destination>
@@ -72,6 +75,7 @@ def cli_job_config(remote_connection, shell_plugin='ParamikoShell', job_plugin='
     return job_conf.name
 
 
+@integration_util.skip_unless_docker()
 class BaseCliIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):
 
     @classmethod
@@ -91,7 +95,7 @@ class BaseCliIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):
         super(BaseCliIntegrationTestCase, cls).tearDownClass()
 
     @classmethod
-    def handle_galaxy_config_kwds(cls, config, ):
+    def handle_galaxy_config_kwds(cls, config):
         config["jobs_directory"] = cls.jobs_directory
         config["file_path"] = cls.jobs_directory
         config["job_config_file"] = cli_job_config(remote_connection=cls.remote_connection,

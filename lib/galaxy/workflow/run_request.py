@@ -82,17 +82,24 @@ def _normalize_inputs(steps, inputs, inputs_by):
         for possible_input_key in possible_input_keys:
             if possible_input_key in inputs:
                 inputs_key = possible_input_key
-        if not inputs_key:
-            message = "Workflow cannot be run because an expected input step '%s' has no input dataset." % step.id
+        default_value = step.tool_inputs.get("default")
+        optional = step.tool_inputs.get("optional") or False
+        # Need to be careful here to make sure 'default' has correct type - not sure how to do that
+        # but asserting 'optional' is definitely a bool and not a String->Bool or something is a good
+        # start to ensure tool state is being preserved and loaded in a type safe way.
+        assert isinstance(optional, bool)
+        if not inputs_key and default_value is None and not optional:
+            message = "Workflow cannot be run because an expected input step '%s' (%s) is not optional and no input." % (step.id, step.label)
             raise exceptions.MessageException(message)
-        normalized_inputs[step.id] = inputs[inputs_key]
+        if inputs_key:
+            normalized_inputs[step.id] = inputs[inputs_key]
     return normalized_inputs
 
 
 def _normalize_step_parameters(steps, param_map, legacy=False, already_normalized=False):
     """ Take a complex param_map that can reference parameters by
     step_id in the new flexible way or in the old one-parameter
-    per tep fashion or by tool id and normalize the parameters so
+    per step fashion or by tool id and normalize the parameters so
     everything is referenced by a numeric step id.
     """
     normalized_param_map = {}

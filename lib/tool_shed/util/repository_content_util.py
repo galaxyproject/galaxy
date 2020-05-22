@@ -2,14 +2,15 @@ import os
 import shutil
 
 import tool_shed.repository_types.util as rt_util
-from tool_shed.util import commit_util, hg_util, xml_util
+from tool_shed.util import (
+    commit_util,
+    xml_util,
+)
 
 
 def upload_tar(trans, rdah, tdah, repository, tar, uploaded_file, upload_point, remove_repo_files_not_in_tar,
                commit_message, new_repo_alert):
     # Upload a tar archive of files.
-    repo_dir = repository.repo_path(trans.app)
-    hg_util.get_repo_for_repository(trans.app, repo_path=repo_dir)
     undesirable_dirs_removed = 0
     undesirable_files_removed = 0
     check_results = commit_util.check_archive(repository, tar)
@@ -20,6 +21,8 @@ def upload_tar(trans, rdah, tdah, repository, tar, uploaded_file, upload_point, 
             ' '.join(check_results.errors), ', '.join(check_results.invalid))
         return False, message, [], '', undesirable_dirs_removed, undesirable_files_removed
     else:
+        repository.hg_repo
+        repo_dir = repository.repo_path(trans.app)
         if upload_point is not None:
             full_path = os.path.abspath(os.path.join(repo_dir, upload_point))
         else:

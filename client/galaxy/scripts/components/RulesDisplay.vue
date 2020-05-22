@@ -3,16 +3,16 @@
         <ol class="rules">
             <rule-display-preview
                 v-for="(rule, index) in rules"
-                v-bind:rule="rule"
-                v-bind:index="index"
-                v-bind:key="index"
+                :rule="rule"
+                :index="index"
+                :key="index"
                 :col-headers="columnData.colHeadersPerRule[index]"
             />
             <identifier-display-preview
                 v-for="(map, index) in mapping"
                 v-bind="map"
-                v-bind:index="index"
-                v-bind:key="map.type"
+                :index="index"
+                :key="map.type"
                 :col-headers="colHeaders"
             />
         </ol>
@@ -38,20 +38,20 @@ const RuleDisplayPreview = {
     props: {
         rule: {
             required: true,
-            type: Object
+            type: Object,
         },
         colHeaders: {
             type: Array,
-            required: false
-        }
+            required: false,
+        },
     },
     computed: {
         title() {
             const ruleType = this.rule.type;
             return RuleDefs.RULES[ruleType].display(this.rule, this.colHeaders);
-        }
+        },
     },
-    methods: {}
+    methods: {},
 };
 
 const IdentifierDisplayPreview = {
@@ -63,15 +63,15 @@ const IdentifierDisplayPreview = {
     props: {
         type: {
             type: String,
-            required: true
+            required: true,
         },
         columns: {
-            required: true
+            required: true,
         },
         colHeaders: {
             type: Array,
-            required: true
-        }
+            required: true,
+        },
     },
     computed: {
         typeDisplay() {
@@ -82,40 +82,40 @@ const IdentifierDisplayPreview = {
         },
         columnsLabel() {
             return RuleDefs.columnDisplay(this.columns, this.colHeaders);
-        }
-    }
+        },
+    },
 };
 
 export default {
-    data: function() {
+    data: function () {
         return {};
     },
     computed: {
-        mapping: function() {
+        mapping: function () {
             return this.inputRules ? this.inputRules.mapping : [];
         },
-        rules: function() {
+        rules: function () {
             return this.inputRules ? this.inputRules.rules : [];
         },
-        columnData: function() {
+        columnData: function () {
             const colHeadersPerRule = [];
             const hotData = RuleDefs.applyRules([], [], [], this.rules, colHeadersPerRule);
             return { colHeadersPerRule: colHeadersPerRule, columns: hotData.columns };
         },
-        colHeaders: function() {
+        colHeaders: function () {
             const columns = this.columnData.columns;
             return RuleDefs.colHeadersFor([], columns);
-        }
+        },
     },
     props: {
         inputRules: {
             required: false,
-            type: Object
-        }
+            type: Object,
+        },
     },
     components: {
         RuleDisplayPreview,
-        IdentifierDisplayPreview
-    }
+        IdentifierDisplayPreview,
+    },
 };
 </script>

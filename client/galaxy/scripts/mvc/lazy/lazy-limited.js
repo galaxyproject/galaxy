@@ -4,7 +4,7 @@ import _ from "underscore";
 import Backbone from "backbone";
 
 export default Backbone.View.extend({
-    initialize: function(options) {
+    initialize: function (options) {
         this.$container = options.$container;
         this.collection = options.collection;
         this.new_content = options.new_content;
@@ -21,15 +21,15 @@ export default Backbone.View.extend({
     },
 
     /** Checks if the limit has been reached */
-    _done: function() {
-        var done = _.size(this.content_list) > this.max;
+    _done: function () {
+        var done = _.size(this.content_list) >= this.max;
         this.$message[done ? "show" : "hide"]();
         return done;
     },
 
     /** Remove all content */
-    _reset: function() {
-        _.each(this.content_list, content => {
+    _reset: function () {
+        _.each(this.content_list, (content) => {
             content.remove();
         });
         this.content_list = {};
@@ -37,7 +37,7 @@ export default Backbone.View.extend({
     },
 
     /** Remove content */
-    _remove: function(model) {
+    _remove: function (model) {
         var model_id = model.id;
         var content = this.content_list[model_id];
         if (content) {
@@ -48,7 +48,7 @@ export default Backbone.View.extend({
     },
 
     /** Refreshes container content by adding new views if visible */
-    _refresh: function() {
+    _refresh: function () {
         if (!this._done()) {
             for (var i in this.collection.models) {
                 var model = this.collection.models[i];
@@ -62,5 +62,5 @@ export default Backbone.View.extend({
                 }
             }
         }
-    }
+    },
 });

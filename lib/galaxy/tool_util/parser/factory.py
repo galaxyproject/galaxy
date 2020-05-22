@@ -2,28 +2,26 @@
 from __future__ import absolute_import
 
 import logging
-from collections import OrderedDict
-
-import yaml
 
 from galaxy.tool_util.loader import load_tool_with_refereces
+from galaxy.util.yaml_util import ordered_load
 from .cwl import CwlToolSource
 from .interface import InputSource
 from .xml import XmlInputSource, XmlToolSource
-from .yaml import YamlToolSource
+from .yaml import YamlInputSource, YamlToolSource
 from ..fetcher import ToolLocationFetcher
 
 log = logging.getLogger(__name__)
 
 
-def get_tool_source(config_file=None, xml_tree=None, enable_beta_formats=True, tool_location_fetcher=None):
+def get_tool_source(config_file=None, xml_tree=None, enable_beta_formats=True, tool_location_fetcher=None, macro_paths=None):
     """Return a ToolSource object corresponding to supplied source.
 
     The supplied source may be specified as a file path (using the config_file
     parameter) or as an XML object loaded with load_tool_with_refereces.
     """
     if xml_tree is not None:
-        return XmlToolSource(xml_tree, source_path=config_file)
+        return XmlToolSource(xml_tree, source_path=config_file, macro_paths=macro_paths)
     elif config_file is None:
         raise ValueError("get_tool_source called with invalid config_file None.")
 
@@ -48,21 +46,6 @@ def get_tool_source(config_file=None, xml_tree=None, enable_beta_formats=True, t
         return XmlToolSource(tree, source_path=config_file, macro_paths=macro_paths)
 
 
-def ordered_load(stream):
-    class OrderedLoader(yaml.Loader):
-        pass
-
-    def construct_mapping(loader, node):
-        loader.flatten_mapping(node)
-        return OrderedDict(loader.construct_pairs(node))
-
-    OrderedLoader.add_constructor(
-        yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
-        construct_mapping)
-
-    return yaml.load(stream, OrderedLoader)
-
-
 def get_tool_source_from_representation(tool_format, tool_representation):
     # TODO: make sure whatever is consuming this method uses ordered load.
     log.info("Loading dynamic tool - this is experimental - tool may not function in future.")
@@ -75,14 +58,17 @@ def get_tool_source_from_representation(tool_format, tool_representation):
 
 
 def get_input_source(content):
-    """Wrap an XML element in a XmlInputSource if needed.
+    """Wrap dicts or XML elements as InputSource if needed.
 
     If the supplied content is already an InputSource object,
     it is simply returned. This allow Galaxy to uniformly
     consume using the tool input source interface.
     """
     if not isinstance(content, InputSource):
-        content = XmlInputSource(content)
+        if isinstance(content, dict):
+            content = YamlInputSource(content)
+        else:
+            content = XmlInputSource(content)
     return content
 
 

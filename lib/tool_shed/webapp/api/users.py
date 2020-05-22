@@ -106,11 +106,7 @@ class UsersController(BaseAPIController):
         """
         user = None
         # user is requesting data about themselves
-        if id == "current" and trans.user:
-            user = trans.user
-        else:
-            user = suc.get_user(trans.app, id)
-
+        user = trans.user if id == 'current' else suc.get_user(trans.app, id)
         if user is None:
             user_dict = dict(message='Unable to locate user record for id %s.' % (str(id)),
                              status='error')
@@ -125,7 +121,7 @@ class UsersController(BaseAPIController):
     def __validate(self, trans, email, password, confirm, username):
         if username in ['repos']:
             return "The term '%s' is a reserved word in the Tool Shed, so it cannot be used as a public user name." % username
-        message = "\n".join([validate_email(trans, email),
+        message = "\n".join((validate_email(trans, email),
                              validate_password(trans, password, confirm),
-                             validate_publicname(trans, username)]).rstrip()
+                             validate_publicname(trans, username))).rstrip()
         return message

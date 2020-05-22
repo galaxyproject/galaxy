@@ -120,3 +120,19 @@ class DatasetsApiTestCase(ApiTestCase):
         })
         self._assert_status_code_is(display_response, 200)
         assert display_response.text == contents
+
+    def test_tag_change(self):
+        hda_id = self.dataset_populator.new_dataset(self.history_id)['id']
+        payload = {
+            'item_id': hda_id,
+            'item_class': 'HistoryDatasetAssociation',
+            'item_tags': ['cool:tag_a', 'cool:tag_b', 'tag_c', 'name:tag_d', '#tag_e'],
+        }
+        self._put("tags", payload).json()
+        updated_hda = self._get(
+            "histories/{history_id}/contents/{hda_id}".format(history_id=self.history_id, hda_id=hda_id)).json()
+        assert 'cool:tag_a' in updated_hda['tags']
+        assert 'cool:tag_b' in updated_hda['tags']
+        assert 'tag_c' in updated_hda['tags']
+        assert 'name:tag_d' in updated_hda['tags']
+        assert 'name:tag_e' in updated_hda['tags']

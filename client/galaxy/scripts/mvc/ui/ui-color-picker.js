@@ -16,11 +16,11 @@ export default Backbone.View.extend({
             ["d8d8d8", "595959", "c4bd97", "8db3e2", "b8cce4", "e5b9b7", "d7e3bc", "ccc1d9", "b7dde8", "fbd5b5"],
             ["bfbfbf", "3f3f3f", "938953", "548dd4", "95b3d7", "d99694", "c3d69b", "b2a2c7", "92cddc", "fac08f"],
             ["a5a5a5", "262626", "494429", "17365d", "366092", "953734", "76923c", "5f497a", "31859b", "e36c09"],
-            ["7f7f7e", "0c0c0c", "1d1b10", "0f243e", "244061", "632423", "4f6128", "3f3151", "205867", "974806"]
-        ]
+            ["7f7f7e", "0c0c0c", "1d1b10", "0f243e", "244061", "632423", "4f6128", "3f3151", "205867", "974806"],
+        ],
     },
 
-    initialize: function(options) {
+    initialize: function (options) {
         this.options = Utils.merge(options, {});
         this.setElement(this._template());
         this.$panel = this.$(".ui-color-picker-panel");
@@ -32,7 +32,7 @@ export default Backbone.View.extend({
         this.value(this.options.value);
         this.$boxes = this.$(".ui-color-picker-box");
         var self = this;
-        this.$boxes.on("click", function() {
+        this.$boxes.on("click", function () {
             self.value($(this).css("background-color"));
             self.$header.trigger("click");
         });
@@ -47,7 +47,7 @@ export default Backbone.View.extend({
     },
 
     /** Get/set value */
-    value: function(new_val) {
+    value: function (new_val) {
         if (new_val !== undefined && new_val !== null) {
             this.$value.css("background-color", new_val);
             this.$(".ui-color-picker-box").empty();
@@ -58,7 +58,7 @@ export default Backbone.View.extend({
     },
 
     /** Get value from dom */
-    _getValue: function() {
+    _getValue: function () {
         var rgb = this.$value.css("background-color");
         rgb = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
         if (rgb) {
@@ -69,7 +69,7 @@ export default Backbone.View.extend({
     },
 
     /** Build color panel */
-    _build: function() {
+    _build: function () {
         this._content({ colors: this.colors.base });
         for (var i in this.colors.theme) {
             var line_def = {};
@@ -88,7 +88,7 @@ export default Backbone.View.extend({
     },
 
     /** Create content */
-    _content: function(options) {
+    _content: function (options) {
         var colors = options.colors;
         var $content = $(this._templateContent());
         var $line = $content.find(".line");
@@ -111,22 +111,22 @@ export default Backbone.View.extend({
     },
 
     /** Check icon */
-    _templateCheck: function() {
+    _templateCheck: function () {
         return '<div class="ui-color-picker-check fa fa-check"/>';
     },
 
     /** Content template */
-    _templateContent: function() {
+    _templateContent: function () {
         return '<div class="ui-color-picker-content"><div class="line"/></div>';
     },
 
     /** Box template */
-    _templateBox: function(color) {
+    _templateBox: function (color) {
         return `<div id="${color}" class="ui-color-picker-box" style="background-color: #${color};"/>`;
     },
 
     /** Main template */
-    _template: function() {
+    _template: function () {
         return `
             <div class="ui-color-picker">
                 <div class="ui-color-picker-header">
@@ -138,5 +138,5 @@ export default Backbone.View.extend({
                 </div>
             </div>
             `;
-    }
+    },
 });

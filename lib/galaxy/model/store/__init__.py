@@ -82,6 +82,7 @@ class ModelImportStore(object):
             self.sessionless = True
         self.user = user
         self.import_options = import_options or ImportOptions()
+        self.dataset_state_serialized = True
 
     @abc.abstractmethod
     def defines_new_history(self):
@@ -183,6 +184,9 @@ class ModelImportStore(object):
         object_key = self.object_key
 
         for dataset_attrs in datasets_attrs:
+
+            if 'state' not in dataset_attrs:
+                self.dataset_state_serialized = False
 
             def handle_dataset_object_edit(dataset_instance):
                 if "dataset" in dataset_attrs:
@@ -321,14 +325,13 @@ class ModelImportStore(object):
                         dataset_instance.dataset.deleted = True
                         dataset_instance.dataset.purged = True
                     else:
-                        dataset_instance.state = dataset_instance.states.OK
+                        dataset_instance.state = dataset_attrs.get('state', dataset_instance.states.OK)
                         self.object_store.update_from_file(dataset_instance.dataset, file_name=temp_dataset_file_name, create=True)
 
                         # Import additional files if present. Histories exported previously might not have this attribute set.
                         dataset_extra_files_path = dataset_attrs.get('extra_files_path', None)
                         if dataset_extra_files_path:
-                            store_by = self.object_store.store_by
-                            dir_name = 'dataset_%s_files' % getattr(dataset_instance.dataset, store_by)
+                            dir_name = dataset_instance.dataset.extra_files_path_name
                             dataset_extra_files_path = os.path.join(self.archive_dir, dataset_extra_files_path)
                             for root, dirs, files in safe_walk(dataset_extra_files_path):
                                 extra_dir = os.path.join(dir_name, root.replace(dataset_extra_files_path, '', 1).lstrip(os.path.sep))
@@ -692,7 +695,8 @@ class ModelImportStore(object):
             for order_index, job in enumerate(icj_attrs["jobs"]):
                 icja = model.ImplicitCollectionJobsJobAssociation()
                 icja.implicit_collection_jobs = icj
-                icja.job = object_import_tracker.jobs_by_key[job]
+                if job in object_import_tracker.jobs_by_key:
+                    icja.job = object_import_tracker.jobs_by_key[job]
                 icja.order_index = order_index
                 icj.jobs.append(icja)
                 self._session_add(icja)
@@ -828,6 +832,9 @@ class DirectoryImportModelStore1901(BaseDirectoryImportModelStore):
         for output_key in job_attrs['output_datasets']:
             output_hda = _find_hda(output_key)
             if output_hda:
+                if not self.dataset_state_serialized:
+                    # dataset state has not been serialized, get state from job
+                    output_hda.state = imported_job.state
                 imported_job.add_output_dataset(output_hda.name, output_hda)
 
         if 'input_mapping' in job_attrs:
@@ -890,6 +897,9 @@ class DirectoryImportModelStoreLatest(BaseDirectoryImportModelStore):
                 for output_key in output_keys:
                     output_hda = _find_hda(output_key)
                     if output_hda:
+                        if not self.dataset_state_serialized:
+                            # dataset state has not been serialized, get state from job
+                            output_hda.state = imported_job.state
                         imported_job.add_output_dataset(output_name, output_hda)
 
         if 'output_dataset_collection_mapping' in job_attrs:

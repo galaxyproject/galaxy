@@ -22,7 +22,7 @@
 </template>
 <script>
 import DependencyIndexWrapper from "./DependencyIndexWrapper";
-import { getDependencyUnusedPaths, deletedUnusedPaths } from "../AdminServices.js";
+import { getDependencyUnusedPaths, deletedUnusedPaths } from "../AdminServices";
 
 export default {
     components: { DependencyIndexWrapper },
@@ -31,31 +31,31 @@ export default {
             error: null,
             loading: true,
             fields: [{ key: "selected", label: "" }, { key: "path" }],
-            paths: []
+            paths: [],
         };
     },
-    created: function() {
+    created: function () {
         this.load();
     },
     computed: {
-        items: function() {
-            return this.paths.map(path => {
+        items: function () {
+            return this.paths.map((path) => {
                 return { path: path, selected: false, _showDetails: false };
             });
         },
-        hasSelectedPaths: function() {
+        hasSelectedPaths: function () {
             for (const item of this.items) {
                 if (item["selected"]) {
                     return true;
                 }
             }
             return false;
-        }
+        },
     },
     methods: {
         load() {
             getDependencyUnusedPaths()
-                .then(response => {
+                .then((response) => {
                     this.paths = response;
                     this.loading = false;
                 })
@@ -77,7 +77,7 @@ export default {
         },
         handleError(e) {
             this.error = e;
-        }
-    }
+        },
+    },
 };
 </script>

@@ -1,5 +1,6 @@
 @import "sprite-history-states.scss";
 @import "sprite-history-buttons.scss";
+@import "~@fortawesome/fontawesome-free/scss/_variables";
 
 // ---------------------------------------------------------------------------- dataset states
 //.dataset .state-icon {
@@ -72,7 +73,7 @@
                 transform: translate(0px, -16px);
             }
         }
-        content: $fa-var-arrow-up;
+        content: fa-content($fa-var-arrow-up);
     }
 }
 
@@ -83,7 +84,7 @@
         font-size: 20px;
         line-height: 16px;
         color: red;
-        content: $fa-var-times-circle;
+        content: fa-content($fa-var-times-circle);
     }
 }
 
@@ -117,7 +118,7 @@
         background: $state-default-bg;
         .state-icon {
             &:before {
-                content: $fa-var-clock-o;
+                content: fa-content($fa-var-clock);
             }
         }
     }
@@ -134,7 +135,7 @@
         background: $state-paused-bg;
         .state-icon {
             &:before {
-                content: $fa-var-pause;
+                content: fa-content($fa-var-pause);
             }
         }
     }
@@ -143,7 +144,7 @@
         background: $state-default-bg;
         .state-icon {
             &:before {
-                content: $fa-var-trash-o;
+                content: fa-content($fa-var-trash);
             }
         }
     }
@@ -156,7 +157,7 @@
         .state-icon {
             font-size: 20px;
             &:before {
-                content: $fa-var-lock;
+                content: fa-content($fa-var-lock);
             }
         }
     }
@@ -165,7 +166,7 @@
         background: $state-default-bg;
         .state-icon {
             &:before {
-                content: $fa-var-clock-o;
+                content: fa-content($fa-var-clock);
             }
         }
     }

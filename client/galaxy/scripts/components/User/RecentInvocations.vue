@@ -1,9 +1,9 @@
 <template>
     <invocations
-        :invocationItems="invocationItems"
+        :invocation-items="invocationItems"
         :loading="loading"
-        headerMessage="Your most recent workflow invocations are displayed on this page."
-        noInvocationsMessage="There are no workflow invocations to show."
+        header-message="Your most recent workflow invocations are displayed on this page."
+        no-invocations-message="There are no workflow invocations to show."
     >
     </invocations>
 </template>
@@ -14,17 +14,17 @@ import { getRecentInvocations } from "./UserServices";
 
 export default {
     components: {
-        Invocations
+        Invocations,
     },
     data() {
         return {
             invocationItems: [],
-            loading: true
+            loading: true,
         };
     },
     created() {
         getRecentInvocations()
-            .then(response => {
+            .then((response) => {
                 this.invocationItems = response.data;
                 this.loading = false;
             })
@@ -33,7 +33,7 @@ export default {
     methods: {
         handleError(error) {
             console.error(error);
-        }
-    }
+        },
+    },
 };
 </script>

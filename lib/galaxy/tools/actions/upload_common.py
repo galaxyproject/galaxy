@@ -3,7 +3,6 @@ import logging
 import os
 import shlex
 import socket
-import subprocess
 import tempfile
 from collections import OrderedDict
 from json import dump, dumps
@@ -20,7 +19,10 @@ from galaxy.exceptions import (
     RequestParameterInvalidException,
 )
 from galaxy.model import tags
-from galaxy.util import unicodify
+from galaxy.util import (
+    commands,
+    unicodify
+)
 
 log = logging.getLogger(__name__)
 
@@ -82,7 +84,7 @@ def validate_url(url, ip_whitelist):
     #   AF_* family: It will resolve to AF_INET or AF_INET6, getaddrinfo(3) doesn't even mention AF_UNIX,
     #   socktype: We don't care if a stream/dgram/raw protocol
     #   protocol: we don't care if it is tcp or udp.
-    addrinfo_results = set([info[4][0] for info in addrinfo])
+    addrinfo_results = {info[4][0] for info in addrinfo}
     # There may be multiple (e.g. IPv4 + IPv6 or DNS round robin). Any one of these
     # could resolve to a local addresses (and could be returned by chance),
     # therefore we must check them all.
@@ -323,12 +325,15 @@ def create_paramfile(trans, uploaded_datasets):
             pwent = trans.user.system_user_pwent(trans.app.config.real_system_username)
             cmd = shlex.split(trans.app.config.external_chown_script)
             cmd.extend([path, pwent[0], str(pwent[3])])
-            log.debug('Changing ownership of %s with: %s' % (path, ' '.join(cmd)))
-            p = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            stdout, stderr = p.communicate()
-            assert p.returncode == 0, stderr
         except Exception as e:
-            log.warning('Changing ownership of uploaded file %s failed: %s', path, unicodify(e))
+            log.debug('Failed to construct command to change ownership %s' %
+                      unicodify(e))
+        log.debug('Changing ownership of %s with: %s' % (path, ' '.join(cmd)))
+        try:
+            commands.execute(cmd)
+        except commands.CommandLineException as e:
+            log.warning('Changing ownership of uploaded file %s failed: %s',
+                        path, unicodify(e))
 
     tool_params = []
     json_file_path = None

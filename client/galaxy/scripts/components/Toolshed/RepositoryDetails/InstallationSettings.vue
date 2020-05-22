@@ -1,5 +1,5 @@
 <template>
-    <b-modal :static="modalStatic" v-model="modalShow" @ok="onOk" @hide="onHide">
+    <b-modal id="repo-install-settings" :static="modalStatic" v-model="modalShow" @ok="onOk" @hide="onHide">
         <template v-slot:modal-header>
             <h4 class="title m-0">
                 {{ modalTitle }}
@@ -68,7 +68,7 @@ export default {
             toolConfigs: [],
             toolConfig: null,
             toolSections: [],
-            toolSection: null
+            toolSection: null,
         };
     },
     computed: {
@@ -80,16 +80,16 @@ export default {
         },
         showConfig() {
             return this.toolConfigs.length > 1;
-        }
+        },
     },
     created() {
         this.load();
     },
     methods: {
-        findSection: function(name) {
+        findSection: function (name) {
             const result = ["", ""];
             if (name) {
-                const found = this.toolSections.find(s => {
+                const found = this.toolSections.find((s) => {
                     return s.name.toLowerCase().trim() == name.toLowerCase().trim();
                 });
                 if (found) {
@@ -100,21 +100,21 @@ export default {
             }
             return result;
         },
-        load: function() {
+        load: function () {
             const galaxy = getGalaxyInstance();
-            const sections = galaxy.config.toolbox_in_panel;
+            const sections = galaxy.config.toolbox;
             if (sections) {
-                this.toolSections = sections.filter(x => x.model_class == "ToolSection");
+                this.toolSections = sections.filter((x) => x.elems);
             }
             this.toolConfigs = galaxy.config.tool_dynamic_configs || [];
             if (this.toolConfigs.length > 0) {
                 this.toolConfig = this.toolConfigs[0];
             }
         },
-        onAdvanced: function() {
+        onAdvanced: function () {
             this.advancedShow = !this.advancedShow;
         },
-        onOk: function() {
+        onOk: function () {
             const [sectionId, sectionLabel] = this.findSection(this.toolSection);
             this.$emit("ok", {
                 tool_shed_url: this.toolshedUrl,
@@ -126,12 +126,12 @@ export default {
                 shed_tool_conf: this.toolConfig,
                 install_resolver_dependencies: this.installResolverDependencies,
                 install_tool_dependencies: this.installToolDependencies,
-                install_repository_dependencies: this.installRepositoryDependencies
+                install_repository_dependencies: this.installRepositoryDependencies,
             });
         },
-        onHide: function() {
+        onHide: function () {
             this.$emit("hide");
-        }
-    }
+        },
+    },
 };
 </script>

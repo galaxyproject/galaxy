@@ -32,10 +32,10 @@ Enhancements
 * Add ``regex_replace`` tool dependency install action.
   `Pull Request 457`_
 * Document Galaxy interactive environments (GIEs).
-  (Thanks to `@erasche <https://github.com/erasche>`__.)
+  (Thanks to `@hexylena <https://github.com/hexylena>`__.)
   `Pull Request 803`_
-* Explicit project procedure language on reversions and WIP. (Thanks to `@erasche
-  <https://github.com/erasche>`__.)
+* Explicit project procedure language on reversions and WIP. (Thanks to `@hexylena
+  <https://github.com/hexylena>`__.)
   `Pull Request 556`_
 * Readme improvemenets - GitHub issues, security email contact and CI testing
   (Thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
@@ -97,7 +97,7 @@ Enhancements
 * Expose tool config file path to admins via the API.
   `Pull Request 652`_
 * Add Galaxy developer documentation section to docs.
-  (Thanks to `@erasche <https://github.com/erasche>`__.)
+  (Thanks to `@hexylena <https://github.com/hexylena>`__.)
   `Pull Request 654`_
 * Password reset improvements.
   `Pull Request 655`_
@@ -115,7 +115,7 @@ Enhancements
 * Set a default value for copy history dialog radio input (to copy *all*).
   `Pull Request 693`_
 * Remove various code duplication.
-  (Thanks to `@erasche <https://github.com/erasche>`__.)
+  (Thanks to `@hexylena <https://github.com/hexylena>`__.)
   `Pull Request 694`_
 * Use ``setup.py`` for Python all installations during dependency installation.
   (Thanks to `@bgruening <https://github.com/bgruening>`__.)
@@ -163,13 +163,13 @@ Enhancements
   <https://github.com/scholtalbers>`__.)
   `Pull Request 777`_
 * Unify the docker command, command_inject, and command_wrapper (Thanks to
-  `@erasche <https://github.com/erasche>`__.)
+  `@hexylena <https://github.com/hexylena>`__.)
   `Pull Request 782`_
 * Test case to prevent regression of `#753
   <https://github.com/galaxyproject/galaxy/issues/753>`__.
   `Pull Request 784`_
 * Refactor interactive environment launching to use Docker's ``-P`` option.
-  (Thanks to `@erasche <https://github.com/erasche>`__.)
+  (Thanks to `@hexylena <https://github.com/hexylena>`__.)
   `Pull Request 790`_
 * Print ``has_metrics`` class name instead of object memory address. (Thanks to
   `@nsoranzo <https://github.com/nsoranzo>`__.)
@@ -205,7 +205,7 @@ Enhancements
   `Pull Request 847`_
 * Remove unused ``echo`` tool
   `Pull Request 848`_
-* Update interactive environments for this release. (Thanks to `@erasche <https://github.com/erasche>`__.)
+* Update interactive environments for this release. (Thanks to `@hexylena <https://github.com/hexylena>`__.)
   `Pull Request 849`_
 * Enhancements for IPython interactive environment allowing it run in certain
   deployments.
@@ -296,10 +296,10 @@ Fixes
   (Thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
   `Pull Request 596`_
 * Fix bug in reload API where id wasn't recognised.
-  (Thanks to `@erasche <https://github.com/erasche>`__.)
+  (Thanks to `@hexylena <https://github.com/hexylena>`__.)
   `Pull Request 619`_
 * Correct typo in tool shed action handler code.
-  (Thanks to `@erasche <https://github.com/erasche>`__.)
+  (Thanks to `@hexylena <https://github.com/hexylena>`__.)
   `Pull Request 561`_
 * Small fixes for UI functional tests.
   `Pull Request 485`_, `Pull Request 487`_
@@ -404,7 +404,7 @@ Fixes
 * Tool form error messages and rerun fixes.
   `Pull Request 766`_
 * Quote value to fix configparser error in interactive environments.
-  (Thanks to `@erasche <https://github.com/erasche>`__.)
+  (Thanks to `@hexylena <https://github.com/hexylena>`__.)
   `Pull Request 775`_
 * Fix upload event binding.
   `Pull Request 778`_
@@ -425,7 +425,7 @@ Fixes
   (Thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
   `Pull Request 838`_
 * Expose all API keys to admins under ``REMOTE_USER``.
-  (Thanks to `@erasche <https://github.com/erasche>`__.)
+  (Thanks to `@hexylena <https://github.com/hexylena>`__.)
   `Pull Request 873`_
 * Various fixes for data libraries.
   `Pull Request 878`_

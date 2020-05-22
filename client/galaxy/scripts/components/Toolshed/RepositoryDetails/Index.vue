@@ -40,9 +40,9 @@
                     <InstallationSettings
                         v-if="showSettings"
                         :repo="repo"
-                        :toolshedUrl="toolshedUrl"
-                        :changesetRevision="selectedChangeset"
-                        :requiresPanel="selectedRequiresPanel"
+                        :toolshed-url="toolshedUrl"
+                        :changeset-revision="selectedChangeset"
+                        :requires-panel="selectedRequiresPanel"
                         @hide="onHide"
                         @ok="onOk"
                     />
@@ -54,7 +54,7 @@
 <script>
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { Services } from "../services.js";
+import { Services } from "../services";
 import InstallationSettings from "./InstallationSettings.vue";
 import InstallationButton from "./InstallationButton.vue";
 import RepositoryTools from "./RepositoryTools.vue";
@@ -65,7 +65,7 @@ export default {
     components: {
         InstallationSettings,
         InstallationButton,
-        RepositoryTools
+        RepositoryTools,
     },
     props: ["repo", "toolshedUrl"],
     data() {
@@ -80,12 +80,12 @@ export default {
                 { key: "tools", label: "Tools and Versions" },
                 { key: "profile", label: "Requires" },
                 { key: "missing_test_components", label: "Tests" },
-                { key: "actions", label: "" }
+                { key: "actions", label: "" },
             ],
             showSettings: false,
             error: null,
             loading: true,
-            delay: 2000
+            delay: 2000,
         };
     },
     created() {
@@ -110,11 +110,11 @@ export default {
         load() {
             this.services
                 .getRepository(this.toolshedUrl, this.repo.id)
-                .then(response => {
+                .then((response) => {
                     this.repoTable = response;
                     this.loadInstalledRepositories();
                 })
-                .catch(error => {
+                .catch((error) => {
                     this.error = error;
                     this.loading = false;
                 });
@@ -122,9 +122,9 @@ export default {
         loadInstalledRepositories() {
             this.services
                 .getInstalledRepositoriesByName(this.repo.name, this.repo.owner)
-                .then(revisions => {
+                .then((revisions) => {
                     let changed = false;
-                    this.repoTable.forEach(x => {
+                    this.repoTable.forEach((x) => {
                         const revision = revisions[x.changeset_revision];
                         if (revision && revision.status !== x.status) {
                             x.status = revision.status;
@@ -139,43 +139,43 @@ export default {
                     this.setTimeout();
                     this.loading = false;
                 })
-                .catch(error => {
+                .catch((error) => {
                     this.error = error;
                     this.loading = false;
                 });
         },
-        onOk: function(details) {
+        onOk: function (details) {
             this.services
                 .installRepository(details)
-                .then(response => {
+                .then((response) => {
                     this.showSettings = false;
                 })
-                .catch(error => {
+                .catch((error) => {
                     console.log(error);
                 });
         },
-        onHide: function() {
+        onHide: function () {
             this.showSettings = false;
         },
-        setupRepository: function(details) {
+        setupRepository: function (details) {
             this.selectedChangeset = details.changeset_revision;
             this.selectedRequiresPanel =
                 details.includes_tools_for_display_in_tool_panel ||
                 details.repository.type == "repository_suite_definition";
             this.showSettings = true;
         },
-        uninstallRepository: function(details) {
+        uninstallRepository: function (details) {
             this.services
                 .uninstallRepository({
                     tool_shed_url: this.toolshedUrl,
                     name: this.repo.name,
                     owner: this.repo.owner,
-                    changeset_revision: details.changeset_revision
+                    changeset_revision: details.changeset_revision,
                 })
-                .catch(error => {
+                .catch((error) => {
                     this.error = error;
                 });
-        }
-    }
+        },
+    },
 };
 </script>

@@ -50,6 +50,10 @@ WAIT_TYPES = Bunch(
     JOB_COMPLETION=WaitType("job_completion", 30),
     # Wait time for a GIE to spawn.
     GIE_SPAWN=WaitType("gie_spawn", 30),
+    # Wait time for toolshed search
+    SHED_SEARCH=WaitType('shed_search', 30),
+    # Wait time for repository installation
+    REPO_INSTALL=WaitType('repo_install', 60),
 )
 
 # Choose a moderate wait type for operations that don't specify a type.
@@ -207,20 +211,28 @@ class NavigatesGalaxy(HasDriver):
     def history_panel_name(self):
         return self.history_panel_name_element().text
 
+    def history_contents(self, history_id=None, view='summary', datasets_only=True):
+        if history_id is None:
+            history_id = self.current_history_id()
+        histories = self.api_get('histories?keys=id')
+        if history_id not in [h['id'] for h in histories]:
+            return {}
+        if datasets_only:
+            endpoint = 'histories/%s/contents?view=%s' % (history_id, view)
+        else:
+            endpoint = 'histories/%s?view=%s' % (history_id, view)
+        return self.api_get(endpoint)
+
     def current_history(self):
-        history = self.api_get("histories")[0]
-        return history
+        full_url = self.build_url("history/current_history_json", for_selenium=False)
+        response = requests.get(full_url, cookies=self.selenium_to_requests_cookies())
+        return response.json()
 
     def current_history_id(self):
         return self.current_history()["id"]
 
-    def current_history_contents(self):
-        current_history_id = self.current_history_id()
-        history_contents = self.api_get("histories/%s/contents" % current_history_id)
-        return history_contents
-
     def latest_history_item(self):
-        history_contents = self.current_history_contents()
+        history_contents = self.history_contents()
         assert len(history_contents) > 0
         return history_contents[-1]
 
@@ -350,7 +362,7 @@ class NavigatesGalaxy(HasDriver):
 
     def published_grid_search_for(self, search_term=None):
         return self._inline_search_for(
-            '#input-free-text-search-filter',
+            self.navigation.grids.free_text_search,
             search_term,
         )
 
@@ -362,7 +374,9 @@ class NavigatesGalaxy(HasDriver):
 
     @retry_during_transitions
     def _inline_search_for(self, selector, search_term=None):
-        search_box = self.wait_for_and_click_selector(selector)
+        # Clear tooltip resulting from clicking on the masthead to get here.
+        self.clear_tooltips()
+        search_box = self.wait_for_and_click(selector)
         search_box.clear()
         if search_term is not None:
             search_box.send_keys(search_term)
@@ -381,6 +395,12 @@ class NavigatesGalaxy(HasDriver):
         domain = domain or 'test.test'
         return self._get_random_name(prefix=username, suffix="@" + domain)
 
+    # Creates a random password of length len by creating an array with all ASCII letters and the numbers 0 to 9,
+    # then using the random number generator to pick one elemenent to concatinate it to the end of the password string until
+    # we have a password of length len.
+    def _get_random_password(self, len=6):
+        return ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(len))
+
     def submit_login(self, email, password=None, assert_valid=True, retries=0):
         if password is None:
             password = self.default_password
@@ -388,7 +408,7 @@ class NavigatesGalaxy(HasDriver):
             'login': email,
             'password': password,
         }
-        self.click_masthead_user()
+        self.components.masthead.register_or_login.wait_for_and_click()
         self.sleep_for(WAIT_TYPES.UX_RENDER)
         form = self.wait_for_visible(self.navigation.login.selectors.form)
         self.fill(form, login_info)
@@ -417,7 +437,7 @@ class NavigatesGalaxy(HasDriver):
             username = email.split("@")[0]
 
         self.home()
-        self.click_masthead_user()
+        self.components.masthead.register_or_login.wait_for_and_click()
         self.wait_for_and_click(self.navigation.registration.selectors.toggle)
         form = self.wait_for_visible(self.navigation.registration.selectors.form)
         self.fill(form, dict(
@@ -452,8 +472,8 @@ class NavigatesGalaxy(HasDriver):
             assert email in text
             assert self.get_logged_in_user()["email"] == email
 
-            # Hide masthead menu click
-            self.click_center()
+            # clicking away no longer closes menu post Masthead -> VueJS
+            self.click_masthead_user()
 
     def wait_for_logged_in(self):
         try:
@@ -816,7 +836,7 @@ class NavigatesGalaxy(HasDriver):
         return self.wait_for_and_click_selector("#workflow-options-button")
 
     def workflow_editor_options_menu_element(self):
-        return self.wait_for_selector_visible("#workflow-options-button-menu")
+        return self.wait_for_selector_visible("#workflow-options-button")
 
     def workflow_editor_click_run(self):
         return self.wait_for_and_click_selector("#workflow-run-button")
@@ -936,6 +956,12 @@ class NavigatesGalaxy(HasDriver):
         self.wait_for_selector_absent_or_hidden(".ui-modal", wait_type=WAIT_TYPES.UX_POPUP)
         self.wait_for_selector_absent_or_hidden(".toast", wait_type=WAIT_TYPES.UX_POPUP)
 
+    def clear_tooltips(self):
+        action_chains = self.action_chains()
+        center_element = self.driver.find_element_by_css_selector("#center")
+        action_chains.move_to_element(center_element).perform()
+        self.wait_for_selector_absent_or_hidden(".b-tooltip", wait_type=WAIT_TYPES.UX_POPUP)
+
     def workflow_index_open(self):
         self.home()
         self.click_masthead_workflow()
@@ -959,7 +985,7 @@ class NavigatesGalaxy(HasDriver):
 
     def workflow_index_search_for(self, search_term=None):
         return self._inline_search_for(
-            "#workflow-search",
+            self.navigation.workflows.search_box,
             search_term,
         )
 

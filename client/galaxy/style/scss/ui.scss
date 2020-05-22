@@ -1,3 +1,5 @@
+@import "~@fortawesome/fontawesome-free/scss/_variables";
+
 // prevents highlighting i.e. text selection on double click
 .no-highlight {
     -webkit-user-select: none; /* webkit (safari, chrome) browsers */
@@ -191,6 +193,7 @@ $ui-margin-horizontal-large: $margin-v * 2;
         @extend .card-header;
         @extend .rounded;
         background: $portlet-bg-color;
+        border-color: transparent;
         .portlet-title {
             .portlet-title-text.collapsible {
                 cursor: pointer;
@@ -303,32 +306,20 @@ $ui-margin-horizontal-large: $margin-v * 2;
             margin-left: 25px;
         }
         input[type="checkbox"] + label:before {
-            font-family: FontAwesome;
-            display: inline-block;
-            font-style: normal;
-            font-size: 1.2em;
+            @extend .far;
             margin-right: 5px;
-            position: relative;
-            top: 1px;
-            width: 10px;
-            content: "\f096";
+            content: fa-content($fa-var-square);
         }
         input[type="checkbox"]:checked + label:before {
-            content: "\f046";
+            content: fa-content($fa-var-check-square);
         }
         input[type="radio"] + label:before {
-            font-family: FontAwesome;
-            display: inline-block;
-            font-style: normal;
-            font-size: 1.2em;
+            @extend .far;
             margin-right: 5px;
-            position: relative;
-            top: 1px;
-            width: 10px;
-            content: "\f1db";
+            content: fa-content($fa-var-circle);
         }
         input[type="radio"]:checked + label:before {
-            content: "\f192";
+            content: fa-content($fa-var-check-circle);
         }
     }
 }

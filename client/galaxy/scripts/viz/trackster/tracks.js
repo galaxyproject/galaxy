@@ -11,7 +11,7 @@ import slotting from "viz/trackster/slotting";
 import painters from "viz/trackster/painters";
 import filters_mod from "viz/trackster/filters";
 import { Dataset } from "mvc/dataset/data";
-import tools_mod from "mvc/tool/tools";
+import tools_mod from "viz/tools";
 import config_mod from "utils/config";
 import bbi from "viz/bbi-data-manager";
 import "ui/editable-text";
@@ -51,7 +51,7 @@ function moveable(element, handle_class, container_selector, element_js_obj) {
 
     // Need to provide selector for handle, not class.
     element
-        .bind("drag", { handle: `.${handle_class}`, relative: true }, function(e, d) {
+        .bind("drag", { handle: `.${handle_class}`, relative: true }, function (e, d) {
             var element = $(this);
             var parent = element.parent();
             // Only sorting amongst tracks and groups.
@@ -141,10 +141,10 @@ function moveable(element, handle_class, container_selector, element_js_obj) {
                 html_elt_js_obj_dict[parent.attr("id")].move_drawable(this_obj, d.deltaY > 0 ? i - 1 : i);
             }
         })
-        .bind("dragstart", function() {
+        .bind("dragstart", function () {
             $(this).addClass("dragging");
         })
-        .bind("dragend", function() {
+        .bind("dragend", function () {
             $(this).removeClass("dragging");
         });
 }
@@ -210,12 +210,12 @@ function supportsByteRanges(url) {
     $.ajax({
         type: "HEAD",
         url: url,
-        beforeSend: function(xhr) {
+        beforeSend: function (xhr) {
             xhr.setRequestHeader("Range", "bytes=0-10");
         },
-        success: function(result, status, xhr) {
+        success: function (result, status, xhr) {
             promise.resolve(xhr.status === 206);
-        }
+        },
     });
 
     return promise;
@@ -240,7 +240,7 @@ function supportsByteRanges(url) {
  *
  * They optionally have a drag handle class.
  */
-var Drawable = function(view, container, obj_dict) {
+var Drawable = function (view, container, obj_dict) {
     if (!Drawable.id_counter) {
         Drawable.id_counter = 0;
     }
@@ -274,7 +274,7 @@ var Drawable = function(view, container, obj_dict) {
     if (obj_dict.header !== false) {
         var header_view = new viz_views.TrackHeaderView({
             model: this,
-            id: this.id
+            id: this.id,
         });
 
         this.header_div = header_view.$el;
@@ -301,7 +301,7 @@ Drawable.prototype.action_icons_def = [
         name: "toggle_icon",
         title: "Hide/show content",
         css_class: "toggle",
-        on_click_fn: function(drawable) {
+        on_click_fn: function (drawable) {
             if (drawable.config.get_value("content_visible")) {
                 drawable.action_icons.toggle_icon.addClass("toggle-expand").removeClass("toggle");
                 drawable.hide_contents();
@@ -311,31 +311,31 @@ Drawable.prototype.action_icons_def = [
                 drawable.config.set_value("content_visible", true);
                 drawable.show_contents();
             }
-        }
+        },
     },
     // Edit settings.
     {
         name: "settings_icon",
         title: _l("Edit settings"),
         css_class: "gear",
-        on_click_fn: function(drawable) {
+        on_click_fn: function (drawable) {
             var view = new config_mod.ConfigSettingCollectionView({
-                collection: drawable.config
+                collection: drawable.config,
             });
             view.render_in_modal("Configure Track");
-        }
+        },
     },
     // Remove.
     {
         name: "remove_icon",
         title: _l("Remove"),
         css_class: "remove-icon",
-        on_click_fn: function(drawable) {
+        on_click_fn: function (drawable) {
             // Tooltip for remove icon must be deleted when drawable is deleted.
             $(".tooltip").remove();
             drawable.remove();
-        }
-    }
+        },
+    },
 ];
 
 extend(Drawable.prototype, {
@@ -345,23 +345,23 @@ extend(Drawable.prototype, {
             key: "content_visible",
             type: "bool",
             default_value: true,
-            hidden: true
-        }
+            hidden: true,
+        },
     ],
 
-    build_config_params: function() {
+    build_config_params: function () {
         return this.config_params;
     },
 
-    config_onchange: function() {},
+    config_onchange: function () {},
 
-    init: function() {},
+    init: function () {},
 
-    changed: function() {
+    changed: function () {
         this.view.changed();
     },
 
-    can_draw: function() {
+    can_draw: function () {
         if (this.enabled && this.config.get_value("content_visible")) {
             return true;
         }
@@ -369,20 +369,20 @@ extend(Drawable.prototype, {
         return false;
     },
 
-    request_draw: function() {},
+    request_draw: function () {},
 
-    _draw: function(options) {},
+    _draw: function (options) {},
 
     /**
      * Returns representation of object in a dictionary for easy saving.
      * Use from_dict to recreate object.
      */
-    to_dict: function() {},
+    to_dict: function () {},
 
     /**
      * Set drawable name.
      */
-    set_name: function(new_name) {
+    set_name: function (new_name) {
         this.old_name = this.config.get_value("name");
         this.config.set_value("name", new_name);
     },
@@ -390,7 +390,7 @@ extend(Drawable.prototype, {
     /**
      * Revert track name; currently name can be reverted only once.
      */
-    revert_name: function() {
+    revert_name: function () {
         if (this.old_name) {
             this.config.set_value("name", this.old_name);
         }
@@ -399,12 +399,12 @@ extend(Drawable.prototype, {
     /**
      * Remove drawable (a) from its container and (b) from the HTML.
      */
-    remove: function() {
+    remove: function () {
         this.changed();
 
         this.container.remove_drawable(this);
         var view = this.view;
-        this.container_div.hide(0, function() {
+        this.container_div.hide(0, function () {
             $(this).remove();
             // HACK: is there a better way to update the view?
             view.update_intro_div();
@@ -414,33 +414,33 @@ extend(Drawable.prototype, {
     /**
      * Build drawable's container div; this is the parent div for all drawable's elements.
      */
-    build_container_div: function() {},
+    build_container_div: function () {},
 
     /**
      * Update icons.
      */
-    update_icons: function() {},
+    update_icons: function () {},
 
     /**
      * Hide drawable's contents.
      */
-    hide_contents: function() {},
+    hide_contents: function () {},
 
     /**
      * Show drawable's contents.
      */
-    show_contents: function() {},
+    show_contents: function () {},
 
     /**
      * Returns a shallow copy of all drawables in this drawable.
      */
-    get_drawables: function() {}
+    get_drawables: function () {},
 });
 
 /**
  * A collection of drawable objects.
  */
-var DrawableCollection = function(view, container, obj_dict) {
+var DrawableCollection = function (view, container, obj_dict) {
     Drawable.call(this, view, container, obj_dict);
 
     // Attribute init.
@@ -452,7 +452,7 @@ extend(DrawableCollection.prototype, Drawable.prototype, {
     /**
      * Unpack and add drawables to the collection.
      */
-    unpack_drawables: function(drawables_array) {
+    unpack_drawables: function (drawables_array) {
         // Add drawables to collection.
         this.drawables = [];
         var drawable;
@@ -465,7 +465,7 @@ extend(DrawableCollection.prototype, Drawable.prototype, {
     /**
      * Init each drawable in the collection.
      */
-    init: function() {
+    init: function () {
         for (var i = 0; i < this.drawables.length; i++) {
             this.drawables[i].init();
         }
@@ -474,7 +474,7 @@ extend(DrawableCollection.prototype, Drawable.prototype, {
     /**
      * Draw each drawable in the collection.
      */
-    _draw: function(options) {
+    _draw: function (options) {
         for (var i = 0; i < this.drawables.length; i++) {
             this.drawables[i]._draw(options);
         }
@@ -484,7 +484,7 @@ extend(DrawableCollection.prototype, Drawable.prototype, {
      * Returns representation of object in a dictionary for easy saving.
      * Use from_dict to recreate object.
      */
-    to_dict: function() {
+    to_dict: function () {
         var dictified_drawables = [];
         for (var i = 0; i < this.drawables.length; i++) {
             dictified_drawables.push(this.drawables[i].to_dict());
@@ -492,14 +492,14 @@ extend(DrawableCollection.prototype, Drawable.prototype, {
         return {
             prefs: this.config.to_key_value_dict(),
             obj_type: this.obj_type,
-            drawables: dictified_drawables
+            drawables: dictified_drawables,
         };
     },
 
     /**
      * Add a drawable to the end of the collection.
      */
-    add_drawable: function(drawable) {
+    add_drawable: function (drawable) {
         this.drawables.push(drawable);
         drawable.container = this;
         this.changed();
@@ -508,7 +508,7 @@ extend(DrawableCollection.prototype, Drawable.prototype, {
     /**
      * Add a drawable before another drawable.
      */
-    add_drawable_before: function(drawable, other) {
+    add_drawable_before: function (drawable, other) {
         this.changed();
         var index = this.drawables.indexOf(other);
         if (index !== -1) {
@@ -521,7 +521,7 @@ extend(DrawableCollection.prototype, Drawable.prototype, {
     /**
      * Replace one drawable with another.
      */
-    replace_drawable: function(old_drawable, new_drawable, update_html) {
+    replace_drawable: function (old_drawable, new_drawable, update_html) {
         var index = this.drawables.indexOf(old_drawable);
         if (index !== -1) {
             this.drawables[index] = new_drawable;
@@ -536,7 +536,7 @@ extend(DrawableCollection.prototype, Drawable.prototype, {
     /**
      * Remove drawable from this collection.
      */
-    remove_drawable: function(drawable) {
+    remove_drawable: function (drawable) {
         var index = this.drawables.indexOf(drawable);
         if (index !== -1) {
             // Found drawable to remove.
@@ -551,7 +551,7 @@ extend(DrawableCollection.prototype, Drawable.prototype, {
     /**
      * Move drawable to another location in collection.
      */
-    move_drawable: function(drawable, new_position) {
+    move_drawable: function (drawable, new_position) {
         var index = this.drawables.indexOf(drawable);
         if (index !== -1) {
             // Remove from current position:
@@ -567,14 +567,14 @@ extend(DrawableCollection.prototype, Drawable.prototype, {
     /**
      * Returns all drawables in this drawable.
      */
-    get_drawables: function() {
+    get_drawables: function () {
         return this.drawables;
     },
 
     /**
      * Returns all <track_type> tracks in collection.
      */
-    get_tracks: function(track_type) {
+    get_tracks: function (track_type) {
         // Initialize queue with copy of drawables array.
         var queue = this.drawables.slice(0);
 
@@ -589,16 +589,16 @@ extend(DrawableCollection.prototype, Drawable.prototype, {
             }
         }
         return tracks;
-    }
+    },
 });
 
 /**
  * A group of drawables that are moveable, visible.
  */
-var DrawableGroup = function(view, container, obj_dict) {
+var DrawableGroup = function (view, container, obj_dict) {
     extend(obj_dict, {
         obj_type: "DrawableGroup",
-        drag_handle_class: "group-handle"
+        drag_handle_class: "group-handle",
     });
     DrawableCollection.call(this, view, container, obj_dict);
 
@@ -650,17 +650,17 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
             name: "composite_icon",
             title: _l("Show composite track"),
             css_class: "layers-stack",
-            on_click_fn: function(group) {
+            on_click_fn: function (group) {
                 $(".tooltip").remove();
                 group.show_composite_track();
-            }
+            },
         },
         // Toggle track filters.
         {
             name: "filters_icon",
             title: _l("Filters"),
             css_class: "ui-slider-050",
-            on_click_fn: function(group) {
+            on_click_fn: function (group) {
                 // TODO: update Tooltip text.
                 if (group.filters_manager.visible()) {
                     // Hiding filters.
@@ -675,33 +675,31 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
                     group.request_draw({ clear_tile_cache: true });
                 }
                 group.filters_manager.toggle();
-            }
+            },
         },
-        Drawable.prototype.action_icons_def[2]
+        Drawable.prototype.action_icons_def[2],
     ],
 
-    build_container_div: function() {
-        var container_div = $("<div/>")
-            .addClass("group")
-            .attr("id", `group_${this.id}`);
+    build_container_div: function () {
+        var container_div = $("<div/>").addClass("group").attr("id", `group_${this.id}`);
         if (this.container) {
             this.container.content_div.append(container_div);
         }
         return container_div;
     },
 
-    hide_contents: function() {
+    hide_contents: function () {
         this.tiles_div.hide();
     },
 
-    show_contents: function() {
+    show_contents: function () {
         // Show the contents div and labels (if present)
         this.tiles_div.show();
         // Request a redraw of the content
         this.request_draw();
     },
 
-    update_icons: function() {
+    update_icons: function () {
         //
         // Handle update when there are no tracks.
         //
@@ -789,7 +787,7 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
                         // FIXME: can filter.copy() be used?
                         const new_filter = new filters_mod.NumberFilter({
                             name: filters[0].name,
-                            index: filters[0].index
+                            index: filters[0].index,
                         });
                         this.filters_manager.add_filter(new_filter);
                     }
@@ -806,7 +804,7 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
     /**
      * Restore individual track filter managers.
      */
-    _restore_filter_managers: function() {
+    _restore_filter_managers: function () {
         for (var i = 0; i < this.drawables.length; i++) {
             this.drawables[i].filters_manager = this.saved_filters_managers[i];
         }
@@ -816,7 +814,7 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
     /**
      *
      */
-    setup_multitrack_filtering: function() {
+    setup_multitrack_filtering: function () {
         // Save tracks' managers and set up shared manager.
         if (this.filters_manager.filters.length > 0) {
             // For all tracks, save current filter manager and set manager to shared (this object's) manager.
@@ -835,33 +833,33 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
     /**
      * Replace group with a single composite track that includes all group's tracks.
      */
-    show_composite_track: function() {
+    show_composite_track: function () {
         var composite_track = new CompositeTrack(this.view, this.view, {
             name: this.config.get_value("name"),
-            drawables: this.drawables
+            drawables: this.drawables,
         });
         this.container.replace_drawable(this, composite_track, true);
         composite_track.request_draw();
     },
 
-    add_drawable: function(drawable) {
+    add_drawable: function (drawable) {
         DrawableCollection.prototype.add_drawable.call(this, drawable);
         this.update_icons();
     },
 
-    remove_drawable: function(drawable) {
+    remove_drawable: function (drawable) {
         DrawableCollection.prototype.remove_drawable.call(this, drawable);
         this.update_icons();
     },
 
-    to_dict: function() {
+    to_dict: function () {
         // If filters are visible, need to restore original filter managers before converting to dict.
         if (this.filters_manager.visible()) {
             this._restore_filter_managers();
         }
 
         var obj_dict = extend(DrawableCollection.prototype.to_dict.call(this), {
-            filters: this.filters_manager.to_dict()
+            filters: this.filters_manager.to_dict(),
         });
 
         // Setup multi-track filtering again.
@@ -872,11 +870,11 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
         return obj_dict;
     },
 
-    request_draw: function(options) {
-        _.each(this.drawables, d => {
+    request_draw: function (options) {
+        _.each(this.drawables, (d) => {
             d.request_draw(options);
         });
-    }
+    },
 });
 
 /**
@@ -885,9 +883,9 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
  *      navigate: when browser view changes to a new locations
  */
 var TracksterView = Backbone.View.extend({
-    initialize: function(obj_dict) {
+    initialize: function (obj_dict) {
         extend(obj_dict, {
-            obj_type: "View"
+            obj_type: "View",
         });
         DrawableCollection.call(this, "View", obj_dict.container, obj_dict);
         this.chrom = null;
@@ -914,44 +912,44 @@ var TracksterView = Backbone.View.extend({
                     key: "name",
                     label: "Name",
                     type: "text",
-                    default_value: ""
+                    default_value: "",
                 },
                 {
                     key: "a_color",
                     label: "A Color",
                     type: "color",
-                    default_value: "#FF0000"
+                    default_value: "#FF0000",
                 },
                 {
                     key: "c_color",
                     label: "C Color",
                     type: "color",
-                    default_value: "#00FF00"
+                    default_value: "#00FF00",
                 },
                 {
                     key: "g_color",
                     label: "G Color",
                     type: "color",
-                    default_value: "#0000FF"
+                    default_value: "#0000FF",
                 },
                 {
                     key: "t_color",
                     label: "T Color",
                     type: "color",
-                    default_value: "#FF00FF"
+                    default_value: "#FF00FF",
                 },
                 {
                     key: "n_color",
                     label: "N Color",
                     type: "color",
-                    default_value: "#AAAAAA"
-                }
+                    default_value: "#AAAAAA",
+                },
             ],
             { name: obj_dict.name }
         );
     },
 
-    render: function() {
+    render: function () {
         // Attribute init.
         this.requested_redraw = false;
 
@@ -960,21 +958,13 @@ var TracksterView = Backbone.View.extend({
 
         var view = this;
         // Top container for things that are fixed at the top
-        this.top_container = $("<div/>")
-            .addClass("top-container")
-            .appendTo(parent_element);
+        this.top_container = $("<div/>").addClass("top-container").appendTo(parent_element);
         // Browser content, primary tracks are contained in here
-        this.browser_content_div = $("<div/>")
-            .addClass("content")
-            .appendTo(parent_element);
+        this.browser_content_div = $("<div/>").addClass("content").appendTo(parent_element);
         // Bottom container for things that are fixed at the bottom
-        this.bottom_container = $("<div/>")
-            .addClass("bottom-container")
-            .appendTo(parent_element);
+        this.bottom_container = $("<div/>").addClass("bottom-container").appendTo(parent_element);
         // Label track fixed at top
-        this.top_labeltrack = $("<div/>")
-            .addClass("top-labeltrack")
-            .appendTo(this.top_container);
+        this.top_labeltrack = $("<div/>").addClass("top-labeltrack").appendTo(this.top_container);
         // Viewport for dragging tracks in center
         this.viewport_container = $("<div/>")
             .addClass("viewport-container")
@@ -984,17 +974,15 @@ var TracksterView = Backbone.View.extend({
         this.content_div = this.viewport_container;
         is_container(this.viewport_container, view);
         // Introduction div shown when there are no tracks.
-        this.intro_div = $("<div/>")
-            .addClass("intro")
-            .appendTo(this.viewport_container);
+        this.intro_div = $("<div/>").addClass("intro").appendTo(this.viewport_container);
         // Add tracks button
         $("<div/>")
             .text("Add Datasets to Visualization")
             .addClass("action-button")
             .appendTo(this.intro_div)
             .click(() => {
-                visualization.select_datasets({ dbkey: view.dbkey }, tracks => {
-                    _.each(tracks, track => {
+                visualization.select_datasets({ dbkey: view.dbkey }, (tracks) => {
+                    _.each(tracks, (track) => {
                         view.add_drawable(object_from_template(track, view, view));
                     });
                 });
@@ -1002,14 +990,10 @@ var TracksterView = Backbone.View.extend({
 
         // We break out of the parent container with nav (and potentially other
         // things?) so we need to override any overflow settings here.
-        parent_element.css("overflow", "visible");
+        parent_element.attr("style", "overflow: visible !important");
         // Navigation at top
-        this.nav_container = $("<div/>")
-            .addClass("trackster-nav-container")
-            .prependTo(this.top_container);
-        this.nav = $("<div/>")
-            .addClass("trackster-nav")
-            .appendTo(this.nav_container);
+        this.nav_container = $("<div/>").addClass("trackster-nav-container").prependTo(this.top_container);
+        this.nav = $("<div/>").addClass("trackster-nav").appendTo(this.nav_container);
 
         if (this.stand_alone) {
             this.nav_container.addClass("stand-alone");
@@ -1017,38 +1001,25 @@ var TracksterView = Backbone.View.extend({
         }
 
         // Overview (scrollbar and overview plot) at bottom
-        this.overview = $("<div/>")
-            .addClass("overview")
-            .appendTo(this.bottom_container);
-        this.overview_viewport = $("<div/>")
-            .addClass("overview-viewport")
-            .appendTo(this.overview);
+        this.overview = $("<div/>").addClass("overview").appendTo(this.bottom_container);
+        this.overview_viewport = $("<div/>").addClass("overview-viewport").appendTo(this.overview);
         this.overview_close = $("<a/>")
             .attr("title", "Close overview")
             .addClass("icon-button overview-close tooltip")
             .hide()
             .appendTo(this.overview_viewport);
-        this.overview_highlight = $("<div/>")
-            .addClass("overview-highlight")
-            .hide()
-            .appendTo(this.overview_viewport);
-        this.overview_box_background = $("<div/>")
-            .addClass("overview-boxback")
-            .appendTo(this.overview_viewport);
-        this.overview_box = $("<div/>")
-            .addClass("overview-box")
-            .appendTo(this.overview_viewport);
+        this.overview_highlight = $("<div/>").addClass("overview-highlight").hide().appendTo(this.overview_viewport);
+        this.overview_box_background = $("<div/>").addClass("overview-boxback").appendTo(this.overview_viewport);
+        this.overview_box = $("<div/>").addClass("overview-box").appendTo(this.overview_viewport);
         this.default_overview_height = this.overview_box.height();
 
-        this.nav_controls = $("<div/>")
-            .addClass("nav-controls")
-            .appendTo(this.nav);
+        this.nav_controls = $("<div/>").addClass("nav-controls").appendTo(this.nav);
         this.chrom_select = $("<select/>")
             .attr({ name: "chrom" })
             .addClass("chrom-nav")
             .append("<option value=''>Loading</option>")
             .appendTo(this.nav_controls);
-        var submit_nav = function(e) {
+        var submit_nav = function (e) {
             if (e.type === "focusout" || (e.keyCode || e.which) === 13 || (e.keyCode || e.which) === 27) {
                 if ((e.keyCode || e.which) !== 27) {
                     // Not escape key
@@ -1082,12 +1053,12 @@ var TracksterView = Backbone.View.extend({
             view.nav_input.focus();
             // Set up autocomplete for tracks' features.
             view.nav_input.autocomplete({
-                source: function(request, response) {
+                source: function (request, response) {
                     // Using current text, query each track and create list of all matching features.
                     var all_features = [];
 
-                    var feature_search_deferreds = $.map(view.get_tracks(FeatureTrack), t =>
-                        t.data_manager.search_features(request.term).success(dataset_features => {
+                    var feature_search_deferreds = $.map(view.get_tracks(FeatureTrack), (t) =>
+                        t.data_manager.search_features(request.term).success((dataset_features) => {
                             all_features = all_features.concat(dataset_features);
                         })
                     );
@@ -1095,21 +1066,18 @@ var TracksterView = Backbone.View.extend({
                     // When all searching is done, fill autocomplete.
                     $.when.apply($, feature_search_deferreds).done(() => {
                         response(
-                            $.map(all_features, feature => ({
+                            $.map(all_features, (feature) => ({
                                 label: feature[0],
-                                value: feature[1]
+                                value: feature[1],
                             }))
                         );
                     });
                 },
-                minLength: 2
+                minLength: 2,
             });
         });
         if (this.vis_id !== undefined) {
-            this.hidden_input = $("<input/>")
-                .attr("type", "hidden")
-                .val(this.vis_id)
-                .appendTo(this.nav_controls);
+            this.hidden_input = $("<input/>").attr("type", "hidden").val(this.vis_id).appendTo(this.nav_controls);
         }
 
         this.zo_link = $("<a/>")
@@ -1150,23 +1118,21 @@ var TracksterView = Backbone.View.extend({
         */
 
         // Blur tool/filter inputs when user clicks on content div.
-        this.browser_content_div.click(function(e) {
-            $(this)
-                .find("input")
-                .trigger("blur");
+        this.browser_content_div.click(function (e) {
+            $(this).find("input").trigger("blur");
         });
 
         // Double clicking zooms in
-        this.browser_content_div.bind("dblclick", function(e) {
+        this.browser_content_div.bind("dblclick", function (e) {
             view.zoom_in(e.pageX, this.viewport_container);
         });
 
         // Dragging the overview box (~ horizontal scroll bar)
         this.overview_box
-            .bind("dragstart", function(e, d) {
+            .bind("dragstart", function (e, d) {
                 this.current_x = d.offsetX;
             })
-            .bind("drag", function(e, d) {
+            .bind("drag", function (e, d) {
                 var delta = d.offsetX - this.current_x;
                 this.current_x = d.offsetX;
                 var delta_chrom = Math.round(
@@ -1192,7 +1158,7 @@ var TracksterView = Backbone.View.extend({
                 d.current_height = e.clientY;
                 d.current_x = d.offsetX;
             })
-            .bind("drag", function(e, d) {
+            .bind("drag", function (e, d) {
                 var container = $(this);
                 var delta = d.offsetX - d.current_x;
                 var new_scroll = container.scrollTop() - (e.clientY - d.current_height);
@@ -1219,7 +1185,7 @@ var TracksterView = Backbone.View.extend({
 
         // Dragging in the top label track allows selecting a region to zoom in on selected region.
         this.top_labeltrack
-            .bind("dragstart", function(e, d) {
+            .bind("dragstart", function (e, d) {
                 return $("<div/>")
                     .addClass("zoom-area")
                     .css("height", view.browser_content_div.height() + view.top_labeltrack.height() + 1)
@@ -1228,7 +1194,7 @@ var TracksterView = Backbone.View.extend({
             .bind("drag", (e, d) => {
                 $(d.proxy).css({
                     left: Math.min(e.pageX, d.startX) - view.container.offset().left,
-                    width: Math.abs(e.pageX - d.startX)
+                    width: Math.abs(e.pageX - d.startX),
                 });
 
                 var min = Math.min(e.pageX, d.startX) - view.container.offset().left;
@@ -1279,7 +1245,7 @@ var TracksterView = Backbone.View.extend({
 
         this.add_label_track(new LabelTrack(this, { content_div: this.top_labeltrack }));
 
-        $(window).bind("resize", function() {
+        $(window).bind("resize", function () {
             // Stop previous timer.
             if (this.resize_timer) {
                 window.clearTimeout(this.resize_timer);
@@ -1298,19 +1264,19 @@ var TracksterView = Backbone.View.extend({
         $(window).trigger("resize");
     },
 
-    get_base_color: function(base) {
+    get_base_color: function (base) {
         return this.config.get_value(`${base.toLowerCase()}_color`) || this.config.get_value("n_color");
-    }
+    },
 });
 
 // FIXME: need to use this approach to enable inheritance of DrawableCollection functions.
 extend(TracksterView.prototype, DrawableCollection.prototype, {
-    changed: function() {
+    changed: function () {
         this.has_changes = true;
     },
 
     /** Add or remove intro div depending on view state. */
-    update_intro_div: function() {
+    update_intro_div: function () {
         this.intro_div.toggle(this.drawables.length === 0);
     },
 
@@ -1318,7 +1284,7 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
      * Triggers navigate events as needed. If there is a delay,
      * then event is triggered only after navigation has stopped.
      */
-    trigger_navigate: function(new_chrom, new_low, new_high, delay) {
+    trigger_navigate: function (new_chrom, new_low, new_high, delay) {
         // Stop previous timer.
         if (this.timer) {
             window.clearTimeout(this.timer);
@@ -1335,7 +1301,7 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
         }
     },
 
-    update_location: function(low, high) {
+    update_location: function (low, high) {
         this.location_span.text(`${util.commatize(low)} - ${util.commatize(high)}`);
         this.nav_input.val(`${this.chrom}:${util.commatize(low)}-${util.commatize(high)}`);
 
@@ -1351,7 +1317,7 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
      * Load chrom data for the view. Returns a jQuery Deferred.
      */
     // FIXME: instead of loading chrom data, should load and store genome object.
-    load_chroms: function(url_parms) {
+    load_chroms: function (url_parms) {
         url_parms.num = MAX_CHROMS_SELECTABLE;
 
         var chrom_data = $.Deferred();
@@ -1359,7 +1325,7 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
             url: `${getAppRoot()}api/genomes/${this.dbkey}`,
             data: url_parms,
             dataType: "json",
-            success: result => {
+            success: (result) => {
                 // Do nothing if could not load chroms.
                 if (result.chrom_info.length === 0) {
                     return;
@@ -1393,14 +1359,14 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
 
                 chrom_data.resolve(result.chrom_info);
             },
-            error: function() {
+            error: function () {
                 alert(`Could not load chroms for this dbkey: ${this.dbkey}`);
-            }
+            },
         });
         return chrom_data;
     },
 
-    change_chrom: function(chrom, low, high) {
+    change_chrom: function (chrom, low, high) {
         var view = this;
         // If chrom data is still loading, wait for it.
         if (!view.chrom_data) {
@@ -1420,13 +1386,13 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
         //
         if (chrom === "previous") {
             view.load_chroms({
-                low: this.chrom_start_index - MAX_CHROMS_SELECTABLE
+                low: this.chrom_start_index - MAX_CHROMS_SELECTABLE,
             });
             return;
         }
         if (chrom === "next") {
             view.load_chroms({
-                low: this.chrom_start_index + MAX_CHROMS_SELECTABLE
+                low: this.chrom_start_index + MAX_CHROMS_SELECTABLE,
             });
             return;
         }
@@ -1496,7 +1462,7 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
      * chr7 89999
      * chr8 90000 990000
      */
-    go_to: function(str) {
+    go_to: function (str) {
         // Remove commas.
         str = str.replace(/,/g, "");
 
@@ -1513,13 +1479,13 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
         this.change_chrom(chrom, new_low, new_high);
     },
 
-    move_fraction: function(fraction) {
+    move_fraction: function (fraction) {
         var view = this;
         var span = view.high - view.low;
         this.move_delta(fraction * span);
     },
 
-    move_delta: function(delta_chrom) {
+    move_delta: function (delta_chrom) {
         //
         // Update low, high.
         //
@@ -1562,7 +1528,7 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
     /**
      * Add a drawable to the view.
      */
-    add_drawable: function(drawable) {
+    add_drawable: function (drawable) {
         DrawableCollection.prototype.add_drawable.call(this, drawable);
         drawable.init();
         this.changed();
@@ -1576,7 +1542,7 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
         });
     },
 
-    add_label_track: function(label_track) {
+    add_label_track: function (label_track) {
         label_track.view = this;
         label_track.init();
         this.label_tracks.push(label_track);
@@ -1585,18 +1551,18 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
     /**
      * Remove drawable from the view.
      */
-    remove_drawable: function(drawable, hide) {
+    remove_drawable: function (drawable, hide) {
         DrawableCollection.prototype.remove_drawable.call(this, drawable);
         if (hide) {
             var view = this;
-            drawable.container_div.hide(0, function() {
+            drawable.container_div.hide(0, function () {
                 $(this).remove();
                 view.update_intro_div();
             });
         }
     },
 
-    reset: function() {
+    reset: function () {
         this.low = this.max_low;
         this.high = this.max_high;
         this.viewport_container.find(".yaxislabel").remove();
@@ -1606,15 +1572,15 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
      * Request that view redraw one or more of view's drawables. If drawable is not specified,
      * all drawables are redrawn.
      */
-    request_redraw: function(options, drawable) {
+    request_redraw: function (options, drawable) {
         var view = this;
 
         var // Either redrawing a single drawable or all view's drawables.
             track_list = drawable ? [drawable] : view.drawables;
 
         // Add/update tracks in track list to redraw list.
-        _.each(track_list, track => {
-            var track_options = _.find(view.tracks_to_be_redrawn, to => to[0] === track);
+        _.each(track_list, (track) => {
+            var track_options = _.find(view.tracks_to_be_redrawn, (to) => to[0] === track);
 
             if (track_options) {
                 // Track already in list; update options.
@@ -1639,7 +1605,7 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
      * NOTE: this method should never be called directly; request_redraw() should be used so
      * that requestAnimationFrame can manage redrawing.
      */
-    _redraw: function() {
+    _redraw: function () {
         // TODO: move this code to function that does location setting.
 
         // Clear because requested redraw is being handled now.
@@ -1676,7 +1642,7 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
         this.overview_box
             .css({
                 left: left_px,
-                width: Math.max(min_width_px, width_px)
+                width: Math.max(min_width_px, width_px),
             })
             .show();
         if (width_px < min_width_px) {
@@ -1685,12 +1651,12 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
         if (this.overview_highlight) {
             this.overview_highlight.css({
                 left: left_px,
-                width: width_px
+                width: width_px,
             });
         }
 
         // Draw data tracks.
-        _.each(this.tracks_to_be_redrawn, track_options => {
+        _.each(this.tracks_to_be_redrawn, (track_options) => {
             var track = track_options[0];
             var options = track_options[1];
             if (track) {
@@ -1700,12 +1666,12 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
         this.tracks_to_be_redrawn = [];
 
         // Draw label tracks.
-        _.each(this.label_tracks, label_track => {
+        _.each(this.label_tracks, (label_track) => {
             label_track._draw();
         });
     },
 
-    zoom_in: function(point, container) {
+    zoom_in: function (point, container) {
         if (this.max_high === 0 || this.high - this.low <= this.min_separation) {
             return;
         }
@@ -1722,7 +1688,7 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
         this.request_redraw();
     },
 
-    zoom_out: function() {
+    zoom_out: function () {
         if (this.max_high === 0) {
             return;
         }
@@ -1736,20 +1702,20 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
     },
 
     /** Resize viewport. Use this method if header/footer content has changed in size. */
-    resize_viewport: function() {
+    resize_viewport: function () {
         this.viewport_container.height(
             this.container.height() - this.top_container.height() - this.bottom_container.height()
         );
     },
 
     /** Called when window is resized. */
-    resize_window: function() {
+    resize_window: function () {
         this.resize_viewport();
         this.request_redraw();
     },
 
     /** Show a Drawable in the overview. */
-    set_overview: function(drawable) {
+    set_overview: function (drawable) {
         if (this.overview_drawable) {
             // If drawable to be set as overview is already in overview, do nothing.
             // Otherwise, remove overview.
@@ -1761,7 +1727,7 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
 
         // Set new overview.
         var overview_drawable = drawable.copy({
-            content_div: this.overview_viewport
+            content_div: this.overview_viewport,
         });
 
         var view = this;
@@ -1781,7 +1747,7 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
     },
 
     /** Close and reset overview. */
-    reset_overview: function() {
+    reset_overview: function () {
         // Update UI.
         $(".tooltip").remove();
         this.overview_viewport.find(".track-tile").remove();
@@ -1791,7 +1757,7 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
         this.overview_highlight.hide();
         this.resize_window();
         this.overview_drawable = null;
-    }
+    },
 });
 
 /**
@@ -1799,10 +1765,10 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
  */
 var TracksterTool = tools_mod.Tool.extend({
     defaults: {
-        track: null
+        track: null,
     },
 
-    initialize: function(options) {
+    initialize: function (options) {
         tools_mod.Tool.prototype.initialize.call(this, options);
 
         // Restore tool visibility from state; default to hidden.
@@ -1818,11 +1784,11 @@ var TracksterTool = tools_mod.Tool.extend({
         this.remove_inputs(["data", "hidden_data", "conditional"]);
     },
 
-    state_dict: function(options) {
+    state_dict: function (options) {
         return _.extend(this.get_inputs_dict(), {
-            hidden: !this.is_visible()
+            hidden: !this.is_visible(),
         });
-    }
+    },
 });
 
 /**
@@ -1830,23 +1796,17 @@ var TracksterTool = tools_mod.Tool.extend({
  */
 var ToolParameterView = Backbone.View.extend({
     events: {
-        "change :input": "update_value"
+        "change :input": "update_value",
     },
 
-    render: function() {
+    render: function () {
         var param_div = this.$el.addClass("param-row");
         var param = this.model;
 
         // Param label.
-        $("<div>")
-            .addClass("param-label")
-            .text(param.get("label"))
-            .appendTo(param_div);
+        $("<div>").addClass("param-label").text(param.get("label")).appendTo(param_div);
         // Param HTML.
-        var html_div = $("<div/>")
-            .addClass("param-input")
-            .html(param.get("html"))
-            .appendTo(param_div);
+        var html_div = $("<div/>").addClass("param-input").html(param.get("html")).appendTo(param_div);
         // Set initial value.
         html_div.find(":input").val(param.get("value"));
 
@@ -1854,47 +1814,45 @@ var ToolParameterView = Backbone.View.extend({
         $("<div style='clear: both;'/>").appendTo(param_div);
     },
 
-    update_value: function(update_event) {
+    update_value: function (update_event) {
         this.model.set_value($(update_event.target).val());
-    }
+    },
 });
 
 /**
  * View for TracksterTool.
  */
 var TracksterToolView = Backbone.View.extend({
-    initialize: function(options) {
+    initialize: function (options) {
         this.model.on("change:hidden", this.set_visible, this);
     },
 
     /**
      * Render tool UI.
      */
-    render: function() {
+    render: function () {
         var self = this;
         var tool = this.model;
         var parent_div = this.$el.addClass("dynamic-tool").hide();
 
         // Prevent div events from propogating to other elements.
         parent_div
-            .bind("drag", e => {
+            .bind("drag", (e) => {
                 e.stopPropagation();
             })
-            .click(e => {
+            .click((e) => {
                 e.stopPropagation();
             })
-            .bind("dblclick", e => {
+            .bind("dblclick", (e) => {
                 e.stopPropagation();
             })
-            .keydown(e => {
+            .keydown((e) => {
                 e.stopPropagation();
             });
 
         // Add name, inputs.
-        $("<div class='tool-name'>")
-            .appendTo(parent_div)
-            .text(tool.get("name"));
-        tool.get("inputs").each(param => {
+        $("<div class='tool-name'>").appendTo(parent_div).text(tool.get("name"));
+        tool.get("inputs").each((param) => {
             // Render parameter.
             var param_view = new ToolParameterView({ model: param });
             param_view.render();
@@ -1902,14 +1860,12 @@ var TracksterToolView = Backbone.View.extend({
         });
 
         // Highlight value for inputs for easy replacement.
-        parent_div.find("input").click(function() {
+        parent_div.find("input").click(function () {
             $(this).select();
         });
 
         // Add buttons for running on dataset, region.
-        var run_tool_row = $("<div>")
-            .addClass("param-row")
-            .appendTo(parent_div);
+        var run_tool_row = $("<div>").addClass("param-row").appendTo(parent_div);
         var run_on_dataset_button = $("<input type='submit'>")
             .attr("value", "Run on complete dataset")
             .appendTo(run_tool_row);
@@ -1932,14 +1888,14 @@ var TracksterToolView = Backbone.View.extend({
     /**
      * Show or hide tool depending on tool visibility state.
      */
-    set_visible: function() {
+    set_visible: function () {
         this.$el.toggle(this.model.is_visible());
     },
 
     /**
      * Update tool parameters.
      */
-    update_params: function() {
+    update_params: function () {
         for (var i = 0; i < this.params.length; i++) {
             this.params[i].update_value();
         }
@@ -1948,7 +1904,7 @@ var TracksterToolView = Backbone.View.extend({
     /**
      * Run tool on dataset. Output is placed in dataset's history and no changes to viz are made.
      */
-    run_on_dataset: function() {
+    run_on_dataset: function () {
         var tool = this.model;
         const Galaxy = getGalaxyInstance();
         this.run(
@@ -1956,20 +1912,20 @@ var TracksterToolView = Backbone.View.extend({
             {
                 target_dataset_id: this.model.get("track").dataset.id,
                 action: "rerun",
-                tool_id: tool.id
+                tool_id: tool.id,
             },
             null,
-            track_data => {
+            (track_data) => {
                 Galaxy.modal.show({
                     title: `${tool.get("name")} is Running`,
                     body: `${tool.get(
                         "name"
                     )} is running on the complete dataset. Tool outputs are in dataset's history.`,
                     buttons: {
-                        Close: function() {
+                        Close: function () {
                             Galaxy.modal.hide();
-                        }
-                    }
+                        },
+                    },
                 });
             }
         );
@@ -1979,7 +1935,7 @@ var TracksterToolView = Backbone.View.extend({
      * Run dataset on visible region. This creates a new track and sets the track's contents
      * to the tool's output.
      */
-    run_on_region: function() {
+    run_on_region: function () {
         //
         // Create track for tool's output immediately to provide user feedback.
         //
@@ -1990,14 +1946,14 @@ var TracksterToolView = Backbone.View.extend({
         var region = new visualization.GenomeRegion({
             chrom: track.view.chrom,
             start: track.view.low,
-            end: track.view.high
+            end: track.view.high,
         });
 
         var url_params = {
             target_dataset_id: track.dataset.id,
             action: "rerun",
             tool_id: tool.id,
-            regions: [region.toJSON()]
+            regions: [region.toJSON()],
         };
 
         // Set name of track to include tool name, parameters, and region used.
@@ -2010,7 +1966,7 @@ var TracksterToolView = Backbone.View.extend({
         if (track.container === track.view) {
             // Create new group.
             var group = new DrawableGroup(track.view, track.view, {
-                name: track.config.get_value("name")
+                name: track.config.get_value("name"),
             });
 
             // Replace track with group.
@@ -2031,7 +1987,7 @@ var TracksterToolView = Backbone.View.extend({
         // Create and init new track.
         var new_track = new track.constructor(track.view, container, {
             name: track_name,
-            hda_ldda: "hda"
+            hda_ldda: "hda",
         });
         new_track.init_for_tool_data();
         new_track.change_mode(track.mode);
@@ -2041,7 +1997,7 @@ var TracksterToolView = Backbone.View.extend({
         new_track.tiles_div.text("Starting job.");
 
         // Run tool.
-        this.run(url_params, new_track, track_data => {
+        this.run(url_params, new_track, (track_data) => {
             new_track.set_dataset(new Dataset(track_data));
             new_track.tiles_div.text("Running job.");
             new_track.init();
@@ -2051,7 +2007,7 @@ var TracksterToolView = Backbone.View.extend({
     /**
      * Run tool using a set of URL params and a success callback.
      */
-    run: function(url_params, new_track, success_callback) {
+    run: function (url_params, new_track, success_callback) {
         // Run tool.
         url_params.inputs = this.model.get_inputs_dict();
         var ss_deferred = new util.ServerStateDeferred({
@@ -2060,19 +2016,19 @@ var TracksterToolView = Backbone.View.extend({
                 data: JSON.stringify(url_params),
                 dataType: "json",
                 contentType: "application/json",
-                type: "POST"
+                type: "POST",
             },
             interval: 2000,
-            success_fn: function(response) {
+            success_fn: function (response) {
                 return response !== "pending";
-            }
+            },
         });
 
         // Start with this status message.
         //new_track.container_div.addClass("pending");
         //new_track.content_div.html(DATA_PENDING);
 
-        $.when(ss_deferred.go()).then(response => {
+        $.when(ss_deferred.go()).then((response) => {
             if (response === "no converter") {
                 // No converter available for input datasets, so cannot run tool.
                 new_track.container_div.addClass("error");
@@ -2086,18 +2042,18 @@ var TracksterToolView = Backbone.View.extend({
                 success_callback(response);
             }
         });
-    }
+    },
 });
 
 /**
  * Generates scale values based on filter and feature's value for filter.
  */
-var FilterScaler = function(filter, default_val) {
+var FilterScaler = function (filter, default_val) {
     painters.Scaler.call(this, default_val);
     this.filter = filter;
 };
 
-FilterScaler.prototype.gen_val = function(feature_data) {
+FilterScaler.prototype.gen_val = function (feature_data) {
     // If filter is not initalized yet, return default val.
     if (
         this.filter.high === Number.MAX_VALUE ||
@@ -2114,7 +2070,7 @@ FilterScaler.prototype.gen_val = function(feature_data) {
 /**
  * Tiles drawn by tracks.
  */
-var Tile = function(track, region, w_scale, canvas, data) {
+var Tile = function (track, region, w_scale, canvas, data) {
     this.track = track;
     this.region = region;
     this.low = region.get("start");
@@ -2132,12 +2088,12 @@ var Tile = function(track, region, w_scale, canvas, data) {
  */
 Tile.prototype.predisplay_actions = () => {};
 
-var LineTrackTile = function(track, region, w_scale, canvas, data) {
+var LineTrackTile = function (track, region, w_scale, canvas, data) {
     Tile.call(this, track, region, w_scale, canvas, data);
 };
 LineTrackTile.prototype.predisplay_actions = () => {};
 
-var FeatureTrackTile = function(
+var FeatureTrackTile = function (
     track,
     region,
     w_scale,
@@ -2332,10 +2288,10 @@ FeatureTrackTile.prototype.predisplay_actions = () => {
  * -------> ReadTrack
  * ----> VariantTrack
  */
-var Track = function(view, container, obj_dict) {
+var Track = function (view, container, obj_dict) {
     // For now, track's container is always view.
     extend(obj_dict, {
-        drag_handle_class: "draghandle"
+        drag_handle_class: "draghandle",
     });
     Drawable.call(this, view, container, obj_dict);
 
@@ -2363,11 +2319,11 @@ var Track = function(view, container, obj_dict) {
                   genome: new visualization.Genome({
                       key: view.dbkey,
                       chroms_info: {
-                          chrom_info: view.chrom_data
-                      }
+                          chrom_info: view.chrom_data,
+                      },
                   }),
                   data_mode_compatible: this.data_and_mode_compatible,
-                  can_subset: this.can_subset
+                  can_subset: this.can_subset,
               });
 
     // Height attributes: min height, max height, and visible height.
@@ -2394,7 +2350,7 @@ extend(Track.prototype, Drawable.prototype, {
             name: "mode_icon",
             title: _l("Set display mode"),
             css_class: "chevron-expand",
-            on_click_fn: function() {}
+            on_click_fn: function () {},
         },
         // Hide/show content.
         Drawable.prototype.action_icons_def[0],
@@ -2403,9 +2359,9 @@ extend(Track.prototype, Drawable.prototype, {
             name: "overview_icon",
             title: _l("Set as overview"),
             css_class: "application-dock-270",
-            on_click_fn: function(track) {
+            on_click_fn: function (track) {
                 track.view.set_overview(track);
-            }
+            },
         },
         // Edit config.
         Drawable.prototype.action_icons_def[1],
@@ -2414,7 +2370,7 @@ extend(Track.prototype, Drawable.prototype, {
             name: "filters_icon",
             title: _l("Filters"),
             css_class: "ui-slider-050",
-            on_click_fn: function(drawable) {
+            on_click_fn: function (drawable) {
                 // TODO: update Tooltip text.
                 if (drawable.filters_manager.visible()) {
                     drawable.filters_manager.clear_filters();
@@ -2422,14 +2378,14 @@ extend(Track.prototype, Drawable.prototype, {
                     drawable.filters_manager.init_filters();
                 }
                 drawable.filters_manager.toggle();
-            }
+            },
         },
         // Toggle track tool.
         {
             name: "tools_icon",
             title: _l("Tool"),
             css_class: "hammer",
-            on_click_fn: function(track) {
+            on_click_fn: function (track) {
                 // TODO: update Tooltip text.
 
                 track.tool.toggle();
@@ -2442,14 +2398,14 @@ extend(Track.prototype, Drawable.prototype, {
                 }
                 // HACK: name change modifies icon placement, which leaves tooltip incorrectly placed.
                 $(".tooltip").remove();
-            }
+            },
         },
         // Go to parameter exploration visualization.
         {
             name: "param_space_viz_icon",
             title: _l("Tool parameter space visualization"),
             css_class: "arrow-split",
-            on_click_fn: track => {
+            on_click_fn: (track) => {
                 const Galaxy = getGalaxyInstance();
 
                 var html = `
@@ -2474,15 +2430,13 @@ extend(Track.prototype, Drawable.prototype, {
                     var view_region = new visualization.GenomeRegion({
                         chrom: this.view.chrom,
                         start: this.view.low,
-                        end: this.view.high
+                        end: this.view.high,
                     });
                     var bookmarked_regions = _.map(
                         $(".bookmark"),
-                        elt =>
+                        (elt) =>
                             new visualization.GenomeRegion({
-                                from_str: $(elt)
-                                    .children(".position")
-                                    .text()
+                                from_str: $(elt).children(".position").text(),
                             })
                     );
 
@@ -2504,7 +2458,7 @@ extend(Track.prototype, Drawable.prototype, {
                     window.top.location.href = `${getAppRoot()}visualization/sweepster?${$.param({
                         dataset_id: track.dataset.id,
                         hda_ldda: track.dataset.get("hda_ldda"),
-                        regions: JSON.stringify(new Backbone.Collection(regions).toJSON())
+                        regions: JSON.stringify(new Backbone.Collection(regions).toJSON()),
                     })}`;
                 };
 
@@ -2525,28 +2479,26 @@ extend(Track.prototype, Drawable.prototype, {
                 Galaxy.modal.show({
                     title: "Visualize tool parameter space and output from different parameter settings?",
                     body: html,
-                    buttons: { No: cancel_fn, Yes: ok_fn }
+                    buttons: { No: cancel_fn, Yes: ok_fn },
                 });
-            }
+            },
         },
         // Remove track.
-        Drawable.prototype.action_icons_def[2]
+        Drawable.prototype.action_icons_def[2],
     ],
 
-    can_draw: function() {
+    can_draw: function () {
         return this.dataset && Drawable.prototype.can_draw.call(this);
     },
 
-    build_container_div: function() {
-        return $("<div/>")
-            .addClass("track")
-            .attr("id", `track_${this.id}`);
+    build_container_div: function () {
+        return $("<div/>").addClass("track").attr("id", `track_${this.id}`);
     },
 
     /**
      * Set track's dataset.
      */
-    set_dataset: function(dataset) {
+    set_dataset: function (dataset) {
         this.dataset = dataset;
         this.data_manager.set("dataset", dataset);
     },
@@ -2554,14 +2506,14 @@ extend(Track.prototype, Drawable.prototype, {
     /**
      * Action to take during resize.
      */
-    on_resize: function() {
+    on_resize: function () {
         this.request_draw({ clear_tile_cache: true });
     },
 
     /**
      * Add resizing handle to drawable's container_div.
      */
-    add_resize_handle: function() {
+    add_resize_handle: function () {
         var track = this;
         var in_handle = false;
         var in_drag = false;
@@ -2614,14 +2566,14 @@ extend(Track.prototype, Drawable.prototype, {
      * Hide any elements that are part of the tracks contents area. Should
      * remove as approprite, the track will be redrawn by show_contents.
      */
-    hide_contents: function() {
+    hide_contents: function () {
         // Hide tiles.
         this.tiles_div.hide();
         // Hide any y axis labels (common to several track types)
         this.container_div.find(".yaxislabel, .track-resize").hide();
     },
 
-    show_contents: function() {
+    show_contents: function () {
         // Show the contents div and labels (if present)
         this.tiles_div.show();
         this.container_div.find(".yaxislabel, .track-resize").show();
@@ -2632,7 +2584,7 @@ extend(Track.prototype, Drawable.prototype, {
     /**
      * Returns track type.
      */
-    get_type: function() {
+    get_type: function () {
         // Order is important: start with most-specific classes and go up the track hierarchy.
         if (this instanceof LabelTrack) {
             return "LabelTrack";
@@ -2655,18 +2607,15 @@ extend(Track.prototype, Drawable.prototype, {
     /**
      * Remove visualization content and display message.
      */
-    show_message: function(msg_html) {
+    show_message: function (msg_html) {
         this.tiles_div.remove();
-        return $("<span/>")
-            .addClass("message")
-            .html(msg_html)
-            .appendTo(this.content_div);
+        return $("<span/>").addClass("message").html(msg_html).appendTo(this.content_div);
     },
 
     /**
      * Initialize and draw the track.
      */
-    init: function(retry) {
+    init: function (retry) {
         // FIXME: track should have a 'state' attribute that is checked on load; this state attribute should be
         // used in this function to determine what action(s) to take.
 
@@ -2683,9 +2632,7 @@ extend(Track.prototype, Drawable.prototype, {
         track.content_div.children().remove();
         track.container_div.removeClass("nodata error pending");
 
-        track.tiles_div = $("<div/>")
-            .addClass("tiles")
-            .appendTo(track.content_div);
+        track.tiles_div = $("<div/>").addClass("tiles").appendTo(track.content_div);
 
         //
         // Tracks with no dataset id are handled differently.
@@ -2703,10 +2650,10 @@ extend(Track.prototype, Drawable.prototype, {
             hda_ldda: track.dataset.get("hda_ldda"),
             data_type: this.dataset_check_type,
             chrom: track.view.chrom,
-            retry: retry
+            retry: retry,
         };
 
-        $.getJSON(this.dataset.url(), params, result => {
+        $.getJSON(this.dataset.url(), params, (result) => {
             if (!result || result === "error" || result.kind === "error") {
                 // Dataset is in error state.
                 track.container_div.addClass("error");
@@ -2722,10 +2669,10 @@ extend(Track.prototype, Drawable.prototype, {
                                     title: _l("Trackster Error"),
                                     body: `<pre>${result.message}</pre>`,
                                     buttons: {
-                                        Close: function() {
+                                        Close: function () {
                                             Galaxy.modal.hide();
-                                        }
-                                    }
+                                        },
+                                    },
                                 });
                             })
                     );
@@ -2783,7 +2730,7 @@ extend(Track.prototype, Drawable.prototype, {
     /**
      * Additional initialization required before drawing track for the first time.
      */
-    predraw_init: function() {
+    predraw_init: function () {
         var track = this;
         return $.getJSON(
             track.dataset.url(),
@@ -2793,9 +2740,9 @@ extend(Track.prototype, Drawable.prototype, {
                 chrom: track.view.chrom,
                 low: 0,
                 high: track.view.max_high,
-                hda_ldda: track.dataset.get("hda_ldda")
+                hda_ldda: track.dataset.get("hda_ldda"),
             },
-            result => {
+            (result) => {
                 var data = result.data;
 
                 // Tracks may not have stat data either because there is no data or data is not yet ready.
@@ -2821,12 +2768,12 @@ extend(Track.prototype, Drawable.prototype, {
     /**
      * Returns all drawables in this drawable.
      */
-    get_drawables: function() {
+    get_drawables: function () {
         return this;
-    }
+    },
 });
 
-var TiledTrack = function(view, container, obj_dict) {
+var TiledTrack = function (view, container, obj_dict) {
     Track.call(this, view, container, obj_dict);
 
     var track = this;
@@ -2844,7 +2791,7 @@ var TiledTrack = function(view, container, obj_dict) {
         ? new TracksterTool(
               _.extend(obj_dict.tool, {
                   track: this,
-                  tool_state: obj_dict.tool_state
+                  tool_state: obj_dict.tool_state,
               })
           )
         : null;
@@ -2869,15 +2816,11 @@ var TiledTrack = function(view, container, obj_dict) {
     }
 
     // Add tiles_div, overlay_div to content_div.
-    this.tiles_div = $("<div/>")
-        .addClass("tiles")
-        .appendTo(this.content_div);
+    this.tiles_div = $("<div/>").addClass("tiles").appendTo(this.content_div);
     if (!this.config.get_value("content_visible")) {
         this.tiles_div.hide();
     }
-    this.overlay_div = $("<div/>")
-        .addClass("overlay")
-        .appendTo(this.content_div);
+    this.overlay_div = $("<div/>").addClass("overlay").appendTo(this.content_div);
 
     if (obj_dict.mode) {
         this.change_mode(obj_dict.mode);
@@ -2890,23 +2833,23 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             name: "show_more_rows_icon",
             title: "To minimize track height, not all feature rows are displayed. Click to display more rows.",
             css_class: "exclamation",
-            on_click_fn: function(track) {
+            on_click_fn: function (track) {
                 $(".tooltip").remove();
                 track.slotters[track.view.resolution_px_b].max_rows *= 2;
                 track.request_draw({ clear_tile_cache: true });
             },
-            hide: true
-        }
+            hide: true,
+        },
     ]),
 
     /**
      * Returns a copy of the track. The copy uses the same data manager so that the tracks can share data.
      */
-    copy: function(container) {
+    copy: function (container) {
         // Create copy.
         var obj_dict = this.to_dict();
         extend(obj_dict, {
-            data_manager: this.data_manager
+            data_manager: this.data_manager,
         });
         var new_track = new this.constructor(this.view, container, obj_dict);
         // Misc. init and return.
@@ -2918,7 +2861,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     /**
      * Set filters manager + HTML elements.
      */
-    set_filters_manager: function(filters_manager) {
+    set_filters_manager: function (filters_manager) {
         this.filters_manager = filters_manager;
         this.header_div.after(this.filters_manager.parent_div);
     },
@@ -2927,24 +2870,24 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      * Returns representation of object in a dictionary for easy saving.
      * Use from_dict to recreate object.
      */
-    to_dict: function() {
+    to_dict: function () {
         return {
             track_type: this.get_type(),
             dataset: {
                 id: this.dataset.id,
-                hda_ldda: this.dataset.get("hda_ldda")
+                hda_ldda: this.dataset.get("hda_ldda"),
             },
             prefs: this.config.to_key_value_dict(),
             mode: this.mode,
             filters: this.filters_manager.to_dict(),
-            tool_state: this.tool ? this.tool.state_dict() : {}
+            tool_state: this.tool ? this.tool.state_dict() : {},
         };
     },
 
     /**
      * Set track bounds for current chromosome.
      */
-    set_min_max: function() {
+    set_min_max: function () {
         var track = this;
 
         return $.getJSON(
@@ -2955,9 +2898,9 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
                 chrom: track.view.chrom,
                 low: 0,
                 high: track.view.max_high,
-                hda_ldda: track.dataset.get("hda_ldda")
+                hda_ldda: track.dataset.get("hda_ldda"),
             },
-            result => {
+            (result) => {
                 var data = result.data;
                 if (
                     isNaN(parseFloat(track.config.get_value("min_value"))) ||
@@ -2982,7 +2925,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     /**
      * Change track's mode.
      */
-    change_mode: function(new_mode) {
+    change_mode: function (new_mode) {
         var track = this;
         // TODO: is it necessary to store the mode in two places (.mode and track_config)?
         track.mode = new_mode;
@@ -3001,7 +2944,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     /**
      * Update track's buttons.
      */
-    update_icons: function() {
+    update_icons: function () {
         var track = this;
 
         //
@@ -3020,14 +2963,14 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      * Generate a key for the tile cache.
      * TODO: create a TileCache object (like DataCache) and generate key internally.
      */
-    _gen_tile_cache_key: function(w_scale, tile_region) {
+    _gen_tile_cache_key: function (w_scale, tile_region) {
         return `${w_scale}_${tile_region}`;
     },
 
     /**
      * Request that track be drawn.
      */
-    request_draw: function(options) {
+    request_draw: function (options) {
         if (options && options.clear_tile_cache) {
             this.tile_cache.clear();
         }
@@ -3037,7 +2980,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     /**
      * Actions to be taken before drawing.
      */
-    before_draw: function() {
+    before_draw: function () {
         // Clear because this is set when drawing.
         this.max_height_px = 0;
     },
@@ -3051,7 +2994,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      * NOTE: this function should never be called directly; use request_draw() so that drawing
      * management can be used.
      */
-    _draw: function(options) {
+    _draw: function (options) {
         if (!this.can_draw()) {
             return;
         }
@@ -3103,11 +3046,11 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
                 chrom: this.view.chrom,
                 start: tile_index * tile_width,
                 // Tile high cannot be larger than view.max_high, which the chromosome length.
-                end: Math.min((tile_index + 1) * tile_width, this.view.max_high)
+                end: Math.min((tile_index + 1) * tile_width, this.view.max_high),
             });
             tile_promise = this.draw_helper(tile_region, w_scale, options);
             tile_promises.push(tile_promise);
-            $.when(tile_promise).then(tile => {
+            $.when(tile_promise).then((tile) => {
                 tiles.push(tile);
             });
 
@@ -3117,10 +3060,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
 
         // Step (c) for (re)moving tiles when clear_after is false.
         if (!clear_after) {
-            this.tiles_div
-                .children(".remove")
-                .removeClass("remove")
-                .remove();
+            this.tiles_div.children(".remove").removeClass("remove").remove();
         }
 
         // When all tiles are drawn, call post-draw actions.
@@ -3131,7 +3071,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             // Only do postdraw actions for tiles; instances where tiles may not be drawn include:
             // (a) ReferenceTrack without sufficient resolution;
             // (b) data_fetch = false.
-            tiles = _.filter(tiles, t => t !== null);
+            tiles = _.filter(tiles, (t) => t !== null);
             if (tiles.length !== 0) {
                 this.postdraw_actions(tiles, width, w_scale, clear_after);
             }
@@ -3141,7 +3081,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     /**
      * Add a maximum/minimum label to track.
      */
-    _add_yaxis_label: function(type, on_change) {
+    _add_yaxis_label: function (type, on_change) {
         var css_class = type === "max" ? "top" : "bottom";
         var text = type === "max" ? "max" : "min";
         var pref_name = type === "max" ? "max_value" : "min_value";
@@ -3164,12 +3104,12 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
                 .text(value)
                 .make_text_editable({
                     num_cols: 12,
-                    on_finish: function(new_val) {
+                    on_finish: function (new_val) {
                         $(".tooltip").remove();
                         this.config.set_value(pref_name, round(new_val, 1));
                         on_change();
                     },
-                    help_text: `Set ${text} value`
+                    help_text: `Set ${text} value`,
                 })
                 .addClass(`yaxislabel ${css_class}`)
                 .css("color", this.config.get_value("label_color"));
@@ -3181,8 +3121,8 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      * Actions to be taken after draw has been completed. Draw is completed when all tiles have been
      * drawn/fetched and shown.
      */
-    postdraw_actions: function(tiles, width, w_scale, clear_after) {
-        var line_track_tiles = _.filter(tiles, tile => tile instanceof LineTrackTile);
+    postdraw_actions: function (tiles, width, w_scale, clear_after) {
+        var line_track_tiles = _.filter(tiles, (tile) => tile instanceof LineTrackTile);
 
         //
         // Take different actions depending on whether there are LineTrack/Coverage tiles.
@@ -3193,12 +3133,12 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
 
             // Clear because this is set when drawing.
             this.max_height_px = 0;
-            _.each(tiles, tile => {
+            _.each(tiles, (tile) => {
                 if (!(tile instanceof LineTrackTile)) {
                     tile.html_elt.remove();
                     this.draw_helper(tile.region, w_scale, {
                         force: true,
-                        mode: "Coverage"
+                        mode: "Coverage",
                     });
                 }
             });
@@ -3213,10 +3153,10 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             //
             // If some tiles have icons, set padding of tiles without icons so features and rows align.
             //
-            var icons_present = _.find(tiles, tile => tile.has_icons);
+            var icons_present = _.find(tiles, (tile) => tile.has_icons);
 
             if (icons_present) {
-                _.each(tiles, tile => {
+                _.each(tiles, (tile) => {
                     if (!tile.has_icons) {
                         // Need to align with other tile(s) that have icons.
                         tile.html_elt.css("padding-top", ERROR_PADDING);
@@ -3229,21 +3169,21 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     /**
      * Returns appropriate display mode based on data.
      */
-    get_mode: function(data) {
+    get_mode: function (data) {
         return this.mode;
     },
 
     /**
      * Update track interface to show display mode being used.
      */
-    update_auto_mode: function(display_mode) {
+    update_auto_mode: function (display_mode) {
         // FIXME: needs to be implemented.
     },
 
     /**
      * Returns a list of drawables to draw. Defaults to current track.
      */
-    _get_drawables: function() {
+    _get_drawables: function () {
         return [this];
     },
 
@@ -3253,7 +3193,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      * -force: force a redraw rather than use cached tiles (default: false)
      * -data_fetch: fetch data if necessary (default: true)
      */
-    draw_helper: function(region, w_scale, options) {
+    draw_helper: function (region, w_scale, options) {
         // Init options if necessary to avoid having to check if options defined.
         if (!options) {
             options = {};
@@ -3266,7 +3206,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         var drawables = this._get_drawables();
         var key = this._gen_tile_cache_key(w_scale, region);
 
-        var is_tile = o => o && "track" in o;
+        var is_tile = (o) => o && "track" in o;
 
         // Check tile cache, if found show existing tile in correct position
         var tile = force ? undefined : this.tile_cache.get_elt(key);
@@ -3285,7 +3225,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         // Function that returns data/Deferreds needed to draw tile.
         var get_tile_data = () => {
             // HACK: if display mode (mode) is in continuous data modes, data mode must be coverage to get coverage data.
-            var data_mode = _.find(CONTINUOUS_DATA_MODES, m => m === mode) ? "Coverage" : mode;
+            var data_mode = _.find(CONTINUOUS_DATA_MODES, (m) => m === mode) ? "Coverage" : mode;
 
             // Map drawable object to data needed for drawing.
             var tile_data = _.map(drawables, (
@@ -3321,9 +3261,9 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             // that cannot be subsetted. This may occur if the superset has a message. If there is a
             // Deferred, try again from the top. NOTE: this condition could (should?) be handled by the
             // GenomeDataManager in visualization module.
-            if (_.find(tile_data, d => util.is_deferred(d))) {
+            if (_.find(tile_data, (d) => util.is_deferred(d))) {
                 this.tile_cache.set_elt(key, undefined);
-                $.when(this.draw_helper(region, w_scale, options)).then(tile => {
+                $.when(this.draw_helper(region, w_scale, options)).then((tile) => {
                     tile_drawn.resolve(tile);
                 });
                 return;
@@ -3387,14 +3327,14 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      * Returns canvas height needed to display data; return value is an integer that denotes the
      * number of pixels required.
      */
-    get_canvas_height: function(result, mode, w_scale, canvas_width) {
+    get_canvas_height: function (result, mode, w_scale, canvas_width) {
         return this.visible_height_px;
     },
 
     /**
      * Draw line (bigwig) data onto tile.
      */
-    _draw_line_track_tile: function(result, ctx, mode, region, w_scale) {
+    _draw_line_track_tile: function (result, ctx, mode, region, w_scale) {
         // Set min/max if they are not already set.
         // FIXME: checking for different null/undefined/0 is messy; it would be nice to
         // standardize this.
@@ -3402,7 +3342,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             this.config.set_value("min_value", 0);
         }
         if ([undefined, null, 0].indexOf(this.config.get_value("max_value")) !== -1) {
-            this.config.set_value("max_value", _.max(_.map(result.data, d => d[1])) || 0);
+            this.config.set_value("max_value", _.max(_.map(result.data, (d) => d[1])) || 0);
         }
 
         var canvas = ctx.canvas;
@@ -3429,13 +3369,13 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      * @param w_scale pixels per base
      * @param ref_seq reference sequence data
      */
-    draw_tile: function(result, ctx, mode, region, w_scale, ref_seq) {},
+    draw_tile: function (result, ctx, mode, region, w_scale, ref_seq) {},
 
     /**
      * Show track tile and perform associated actions. Showing tile may actually move
      * an existing tile rather than reshowing it.
      */
-    show_tile: function(tile, w_scale) {
+    show_tile: function (tile, w_scale) {
         var tile_element = tile.html_elt;
 
         // -- Show/move tile element. --
@@ -3468,10 +3408,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         this.max_height_px = Math.max(this.max_height_px, tile_element.height() - 2);
 
         // Update height for all tiles based on max height.
-        tile_element
-            .parent()
-            .children()
-            .css("height", `${this.max_height_px}px`);
+        tile_element.parent().children().css("height", `${this.max_height_px}px`);
 
         // Update track height based on max height and visible height.
         var track_height = this.max_height_px;
@@ -3484,7 +3421,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     /**
      * Utility function that creates a label string describing the region and parameters of a track's tool.
      */
-    tool_region_and_parameters_str: function(region) {
+    tool_region_and_parameters_str: function (region) {
         var track = this;
         var region_str = region !== undefined ? region.toString() : "all";
         var param_str = _.values(track.tool.get_inputs_dict()).join(", ");
@@ -3494,7 +3431,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     /**
      * Returns true if data is compatible with a given mode.
      */
-    data_and_mode_compatible: function(data, mode) {
+    data_and_mode_compatible: function (data, mode) {
         // Only handle modes that user can set.
         if (mode === "Auto") {
             return true;
@@ -3512,7 +3449,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     /**
      * Returns true if entry can be subsetted.
      */
-    can_subset: function(entry) {
+    can_subset: function (entry) {
         // Do not subset entries with a message or data with no detail.
         if (entry.message || entry.extra_info === "no_detail") {
             return false;
@@ -3527,7 +3464,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     /**
      * Set up track to receive tool data.
      */
-    init_for_tool_data: function() {
+    init_for_tool_data: function () {
         // Set up track to fetch raw data rather than converted data.
         this.data_manager.set("data_type", "raw_data");
         this.data_query_wait = 1000;
@@ -3570,18 +3507,18 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             self.postdraw_actions = self.normal_postdraw_actions;
         };
         */
-    }
+    },
 });
 
-var LabelTrack = function(view, container) {
+var LabelTrack = function (view, container) {
     Track.call(this, view, container, {
         resize: false,
-        header: false
+        header: false,
     });
     this.container_div.addClass("label-track");
 };
 extend(LabelTrack.prototype, Track.prototype, {
-    init: function() {
+    init: function () {
         // Enable by default because there should always be data when drawing track.
         this.enabled = true;
     },
@@ -3589,9 +3526,9 @@ extend(LabelTrack.prototype, Track.prototype, {
     /**
      * Additional initialization required before drawing track for the first time.
      */
-    predraw_init: function() {},
+    predraw_init: function () {},
 
-    _draw: function(options) {
+    _draw: function (options) {
         var view = this.view;
         var range = view.high - view.low;
 
@@ -3603,18 +3540,15 @@ extend(LabelTrack.prototype, Track.prototype, {
         while (position < view.high) {
             var screenPosition = Math.floor(((position - view.low) / range) * width);
             new_div.append(
-                $("<div/>")
-                    .addClass("pos-label")
-                    .text(util.commatize(position))
-                    .css({
-                        left: screenPosition
-                    })
+                $("<div/>").addClass("pos-label").text(util.commatize(position)).css({
+                    left: screenPosition,
+                })
             );
             position += tickDistance;
         }
         this.content_div.children(":first").remove();
         this.content_div.append(new_div);
-    }
+    },
 });
 
 // FIXME: Composite tracks have code for showing composite tracks with line tracks and
@@ -3625,7 +3559,7 @@ extend(LabelTrack.prototype, Track.prototype, {
  * A tiled track composed of multiple other tracks. Composite tracks only work with
  * bigwig data for now.
  */
-var CompositeTrack = function(view, container, obj_dict) {
+var CompositeTrack = function (view, container, obj_dict) {
     TiledTrack.call(this, view, container, obj_dict);
 
     // Init drawables; each drawable is a copy so that config/preferences
@@ -3646,7 +3580,7 @@ var CompositeTrack = function(view, container, obj_dict) {
     }
 
     // Set all feature tracks to use Coverage mode.
-    _.each(this.drawables, d => {
+    _.each(this.drawables, (d) => {
         if (d instanceof FeatureTrack || d instanceof ReadTrack) {
             d.change_mode("Coverage");
         }
@@ -3662,32 +3596,32 @@ var CompositeTrack = function(view, container, obj_dict) {
 extend(CompositeTrack.prototype, TiledTrack.prototype, {
     display_modes: CONTINUOUS_DATA_MODES,
 
-    build_config_params: function() {
+    build_config_params: function () {
         return _.union(Drawable.prototype.config_params, [
             {
                 key: "min_value",
                 label: "Min Value",
                 type: "float",
-                default_value: undefined
+                default_value: undefined,
             },
             {
                 key: "max_value",
                 label: "Max Value",
                 type: "float",
-                default_value: undefined
+                default_value: undefined,
             },
             {
                 key: "mode",
                 type: "string",
                 default_value: this.mode,
-                hidden: true
+                hidden: true,
             },
             {
                 key: "height",
                 type: "int",
                 default_value: 30,
-                hidden: true
-            }
+                hidden: true,
+            },
         ]);
     },
 
@@ -3697,11 +3631,11 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
             name: "composite_icon",
             title: _l("Show individual tracks"),
             css_class: "layers-stack",
-            on_click_fn: function(track) {
+            on_click_fn: function (track) {
                 $(".tooltip").remove();
                 track.show_group();
-            }
-        }
+            },
+        },
     ].concat(TiledTrack.prototype.action_icons_def),
 
     // HACK: CompositeTrack should inherit from DrawableCollection as well.
@@ -3715,7 +3649,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
 
     unpack_drawables: DrawableCollection.prototype.unpack_drawables,
 
-    config_onchange: function() {
+    config_onchange: function () {
         this.set_name(this.config.get_value("name"));
         this.request_draw({ clear_tile_cache: true });
     },
@@ -3723,10 +3657,10 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
     /**
      * Action to take during resize.
      */
-    on_resize: function() {
+    on_resize: function () {
         // Propogate visible height to other tracks.
         var visible_height = this.visible_height_px;
-        _.each(this.drawables, d => {
+        _.each(this.drawables, (d) => {
             d.visible_height_px = visible_height;
         });
         Track.prototype.on_resize.call(this);
@@ -3735,7 +3669,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
     /**
      * Change mode for all tracks.
      */
-    change_mode: function(new_mode) {
+    change_mode: function (new_mode) {
         TiledTrack.prototype.change_mode.call(this, new_mode);
         for (var i = 0; i < this.drawables.length; i++) {
             this.drawables[i].change_mode(new_mode);
@@ -3745,7 +3679,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
     /**
      * Initialize component tracks and draw composite track when all components are initialized.
      */
-    init: function() {
+    init: function () {
         // Init components.
         var init_deferreds = [];
         for (var i = 0; i < this.drawables.length; i++) {
@@ -3760,7 +3694,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
         });
     },
 
-    update_icons: function() {
+    update_icons: function () {
         // For now, hide filters and tool.
         this.action_icons.filters_icon.hide();
         this.action_icons.tools_icon.hide();
@@ -3769,17 +3703,17 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
 
     can_draw: Drawable.prototype.can_draw,
 
-    _get_drawables: function() {
+    _get_drawables: function () {
         return this.drawables;
     },
 
     /**
      * Replace this track with group that includes individual tracks.
      */
-    show_group: function() {
+    show_group: function () {
         // Create group with individual tracks.
         var group = new DrawableGroup(this.view, this.container, {
-            name: this.config.get_value("name")
+            name: this.config.get_value("name"),
         });
 
         var track;
@@ -3799,7 +3733,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
     /**
      * Actions taken before drawing.
      */
-    before_draw: function() {
+    before_draw: function () {
         // FIXME: this is needed only if there are feature tracks in the composite track.
         // TiledTrack.prototype.before_draw.call(this);
 
@@ -3808,15 +3742,15 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
         //
 
         // Get smallest min, biggest max.
-        var min = _.min(_.map(this.drawables, d => d.config.get_value("min_value")));
+        var min = _.min(_.map(this.drawables, (d) => d.config.get_value("min_value")));
 
-        var max = _.max(_.map(this.drawables, d => d.config.get_value("max_value")));
+        var max = _.max(_.map(this.drawables, (d) => d.config.get_value("max_value")));
 
         this.config.set_value("min_value", min);
         this.config.set_value("max_value", max);
 
         // Set all tracks to smallest min, biggest max.
-        _.each(this.drawables, d => {
+        _.each(this.drawables, (d) => {
             d.config.set_value("min_value", min);
             d.config.set_value("max_value", max);
         });
@@ -3825,10 +3759,10 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
     /**
      * Update minimum, maximum for component tracks.
      */
-    update_all_min_max: function() {
+    update_all_min_max: function () {
         var min_value = this.config.get_value("min_value");
         var max_value = this.config.get_value("max_value");
-        _.each(this.drawables, d => {
+        _.each(this.drawables, (d) => {
             d.config.set_value("min_value", min_value);
             d.config.set_value("max_value", max_value);
         });
@@ -3839,7 +3773,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
      * Actions to be taken after draw has been completed. Draw is completed when all tiles have been
      * drawn/fetched and shown.
      */
-    postdraw_actions: function(tiles, width, w_scale, clear_after) {
+    postdraw_actions: function (tiles, width, w_scale, clear_after) {
         // All tiles must be the same height in order to draw LineTracks, so redraw tiles as needed.
         var max_height = -1;
 
@@ -3856,7 +3790,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
             if (tile.html_elt.find("canvas").height() !== max_height) {
                 this.draw_helper(tile.region, w_scale, {
                     force: true,
-                    height: max_height
+                    height: max_height,
                 });
                 tile.html_elt.remove();
             }
@@ -3872,13 +3806,13 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
         // Add min, max labels.
         this._add_yaxis_label("min", t);
         this._add_yaxis_label("max", t);
-    }
+    },
 });
 
 /**
  * Displays reference genome data.
  */
-var ReferenceTrack = function(view) {
+var ReferenceTrack = function (view) {
     TiledTrack.call(this, view, { content_div: view.top_labeltrack }, { resize: false, header: false });
 
     // Use offset to ensure that bases at tile edges are drawn.
@@ -3888,23 +3822,23 @@ var ReferenceTrack = function(view) {
     this.data_url_extra_params = { reference: true };
     this.data_manager = new visualization.GenomeReferenceDataManager({
         data_url: this.data_url,
-        can_subset: this.can_subset
+        can_subset: this.can_subset,
     });
     this.hide_contents();
 };
 extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
-    build_config_params: function() {
+    build_config_params: function () {
         return _.union(Drawable.prototype.config_params, [
             {
                 key: "height",
                 type: "int",
                 default_value: 13,
-                hidden: true
-            }
+                hidden: true,
+            },
         ]);
     },
 
-    init: function() {
+    init: function () {
         this.data_manager.clear();
         // Enable by default because there should always be data when drawing track.
         this.enabled = true;
@@ -3913,14 +3847,14 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     /**
      * Additional initialization required before drawing track for the first time.
      */
-    predraw_init: function() {},
+    predraw_init: function () {},
 
     can_draw: Drawable.prototype.can_draw,
 
     /**
      * Draws and shows tile if reference data can be displayed; otherwise track is hidden.
      */
-    draw_helper: function(region, w_scale, options) {
+    draw_helper: function (region, w_scale, options) {
         var cur_visible = this.tiles_div.is(":visible");
         var new_visible;
         var tile = null;
@@ -3946,14 +3880,14 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         return tile;
     },
 
-    can_subset: function(entry) {
+    can_subset: function (entry) {
         return true;
     },
 
     /**
      * Draw ReferenceTrack tile.
      */
-    draw_tile: function(data, ctx, mode, region, w_scale) {
+    draw_tile: function (data, ctx, mode, region, w_scale) {
         // Try to subset data.
         var subset = this.data_manager.subset_entry(data, region);
 
@@ -3968,13 +3902,13 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             ctx.fillText(seq_data[c], Math.floor(c * w_scale), 10);
         }
         return new Tile(this, region, w_scale, canvas, subset);
-    }
+    },
 });
 
 /**
  * Track displays continuous/numerical data. Track expects position data in 1-based format, i.e. wiggle format.
  */
-var LineTrack = function(view, container, obj_dict) {
+var LineTrack = function (view, container, obj_dict) {
     this.mode = "Histogram";
     TiledTrack.call(this, view, container, obj_dict);
     // Need left offset for drawing overlap near tile boundaries.
@@ -3983,10 +3917,10 @@ var LineTrack = function(view, container, obj_dict) {
     // If server has byte-range support, use BBI data manager to read directly from the BBI file.
     // FIXME: there should be a flag to wait for this check to complete before loading the track.
     var self = this;
-    $.when(supportsByteRanges(`${getAppRoot()}datasets/${this.dataset.id}/display`)).then(supportsByteRanges => {
+    $.when(supportsByteRanges(`${getAppRoot()}datasets/${this.dataset.id}/display`)).then((supportsByteRanges) => {
         if (supportsByteRanges) {
             self.data_manager = new bbi.BBIDataManager({
-                dataset: self.dataset
+                dataset: self.dataset,
             });
         }
     });
@@ -3995,37 +3929,37 @@ var LineTrack = function(view, container, obj_dict) {
 extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     display_modes: CONTINUOUS_DATA_MODES,
 
-    build_config_params: function() {
+    build_config_params: function () {
         return _.union(Drawable.prototype.config_params, [
             { key: "color", label: "Color", type: "color" },
             {
                 key: "min_value",
                 label: "Min Value",
                 type: "float",
-                default_value: undefined
+                default_value: undefined,
             },
             {
                 key: "max_value",
                 label: "Max Value",
                 type: "float",
-                default_value: undefined
+                default_value: undefined,
             },
             {
                 key: "mode",
                 type: "string",
                 default_value: this.mode,
-                hidden: true
+                hidden: true,
             },
             {
                 key: "height",
                 type: "int",
                 default_value: 30,
-                hidden: true
-            }
+                hidden: true,
+            },
         ]);
     },
 
-    config_onchange: function() {
+    config_onchange: function () {
         this.set_name(this.config.get_value("name"));
         this.request_draw({ clear_tile_cache: true });
     },
@@ -4034,36 +3968,36 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
      * Actions to be taken before drawing.
      */
     // FIXME: can the default behavior be used; right now it breaks during resize.
-    before_draw: function() {},
+    before_draw: function () {},
 
     /**
      * Draw track tile.
      */
-    draw_tile: function(result, ctx, mode, region, w_scale) {
+    draw_tile: function (result, ctx, mode, region, w_scale) {
         return this._draw_line_track_tile(result, ctx, mode, region, w_scale);
     },
 
     /**
      * Subset data only if data is at single-base pair resolution.
      */
-    can_subset: function(entry) {
+    can_subset: function (entry) {
         return entry.data[1][0] - entry.data[0][0] === 1;
     },
 
     /**
      * Add min, max labels.
      */
-    postdraw_actions: function(tiles, width, w_scale, clear_after) {
+    postdraw_actions: function (tiles, width, w_scale, clear_after) {
         // Add min, max labels.
         this._add_yaxis_label("max");
         this._add_yaxis_label("min");
-    }
+    },
 });
 
 /**
  * Diagonal heatmap for showing interactions data.
  */
-var DiagonalHeatmapTrack = function(view, container, obj_dict) {
+var DiagonalHeatmapTrack = function (view, container, obj_dict) {
     this.mode = "Heatmap";
     TiledTrack.call(this, view, container, obj_dict);
 };
@@ -4071,48 +4005,48 @@ var DiagonalHeatmapTrack = function(view, container, obj_dict) {
 extend(DiagonalHeatmapTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     display_modes: ["Heatmap"],
 
-    build_config_params: function() {
+    build_config_params: function () {
         return _.union(Drawable.prototype.config_params, [
             {
                 key: "pos_color",
                 label: "Positive Color",
                 type: "color",
-                default_value: "#FF8C00"
+                default_value: "#FF8C00",
             },
             {
                 key: "neg_color",
                 label: "Negative Color",
                 type: "color",
-                default_value: "#4169E1"
+                default_value: "#4169E1",
             },
             {
                 key: "min_value",
                 label: "Min Value",
                 type: "int",
-                default_value: undefined
+                default_value: undefined,
             },
             {
                 key: "max_value",
                 label: "Max Value",
                 type: "int",
-                default_value: undefined
+                default_value: undefined,
             },
             {
                 key: "mode",
                 type: "string",
                 default_value: this.mode,
-                hidden: true
+                hidden: true,
             },
             {
                 key: "height",
                 type: "int",
                 default_value: 500,
-                hidden: true
-            }
+                hidden: true,
+            },
         ]);
     },
 
-    config_onchange: function() {
+    config_onchange: function () {
         this.set_name(this.config.get_value("name"));
         this.request_draw({ clear_tile_cache: true });
     },
@@ -4120,7 +4054,7 @@ extend(DiagonalHeatmapTrack.prototype, Drawable.prototype, TiledTrack.prototype,
     /**
      * Additional initialization required before drawing track for the first time.
      */
-    predraw_init: function() {
+    predraw_init: function () {
         var track = this;
         return $.getJSON(
             track.dataset.url(),
@@ -4130,9 +4064,9 @@ extend(DiagonalHeatmapTrack.prototype, Drawable.prototype, TiledTrack.prototype,
                 chrom: track.view.chrom,
                 low: 0,
                 high: track.view.max_high,
-                hda_ldda: track.dataset.get("hda_ldda")
+                hda_ldda: track.dataset.get("hda_ldda"),
             },
-            result => {
+            (result) => {
                 // What does this do?  Is it meant to be attached to some higher scope state object?
                 // var data = result.data;
             }
@@ -4142,7 +4076,7 @@ extend(DiagonalHeatmapTrack.prototype, Drawable.prototype, TiledTrack.prototype,
     /**
      * Draw tile.
      */
-    draw_tile: function(result, ctx, mode, region, w_scale) {
+    draw_tile: function (result, ctx, mode, region, w_scale) {
         // Paint onto canvas.
         var canvas = ctx.canvas;
 
@@ -4157,13 +4091,13 @@ extend(DiagonalHeatmapTrack.prototype, Drawable.prototype, TiledTrack.prototype,
         painter.draw(ctx, canvas.width, canvas.height, w_scale);
 
         return new Tile(this, region, w_scale, canvas, result.data);
-    }
+    },
 });
 
 /**
  * A track that displays features/regions. Track expects position data in BED format, i.e. 0-based, half-open.
  */
-var FeatureTrack = function(view, container, obj_dict) {
+var FeatureTrack = function (view, container, obj_dict) {
     TiledTrack.call(this, view, container, obj_dict);
     this.container_div.addClass("feature-track");
     this.summary_draw_height = 30;
@@ -4176,44 +4110,44 @@ var FeatureTrack = function(view, container, obj_dict) {
 extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     display_modes: ["Auto", "Coverage", "Dense", "Squish", "Pack"],
 
-    build_config_params: function() {
+    build_config_params: function () {
         return _.union(Drawable.prototype.config_params, [
             {
                 key: "block_color",
                 label: "Block color",
-                type: "color"
+                type: "color",
             },
             {
                 key: "reverse_strand_color",
                 label: "Antisense strand color",
-                type: "color"
+                type: "color",
             },
             {
                 key: "label_color",
                 label: "Label color",
                 type: "color",
-                default_value: "black"
+                default_value: "black",
             },
             {
                 key: "show_counts",
                 label: "Show summary counts",
                 type: "bool",
                 default_value: true,
-                help: "Show the number of items in each bin when drawing summary histogram"
+                help: "Show the number of items in each bin when drawing summary histogram",
             },
             {
                 key: "min_value",
                 label: "Histogram minimum",
                 type: "float",
                 default_value: undefined,
-                help: "clear value to set automatically"
+                help: "clear value to set automatically",
             },
             {
                 key: "max_value",
                 label: "Histogram maximum",
                 type: "float",
                 default_value: undefined,
-                help: "clear value to set automatically"
+                help: "clear value to set automatically",
             },
             {
                 key: "connector_style",
@@ -4223,33 +4157,33 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                 options: [
                     {
                         label: "Line with arrows",
-                        value: "fishbone"
+                        value: "fishbone",
                     },
-                    { label: "Arcs", value: "arcs" }
-                ]
+                    { label: "Arcs", value: "arcs" },
+                ],
             },
             {
                 key: "mode",
                 type: "string",
                 default_value: this.mode,
-                hidden: true
+                hidden: true,
             },
             {
                 key: "height",
                 type: "int",
                 default_value: 0,
-                hidden: true
-            }
+                hidden: true,
+            },
         ]);
     },
 
-    config_onchange: function() {
+    config_onchange: function () {
         this.set_name(this.config.get_value("name"));
         this.set_painter_from_config();
         this.request_draw({ clear_tile_cache: true });
     },
 
-    set_painter_from_config: function() {
+    set_painter_from_config: function () {
         if (this.config.get_value("connector_style") === "arcs") {
             this.painter = painters.ArcLinkedFeaturePainter;
         } else {
@@ -4261,10 +4195,10 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
      * Actions to be taken after draw has been completed. Draw is completed when all tiles have been
      * drawn/fetched and shown.
      */
-    postdraw_actions: function(tiles, width, w_scale, clear_after) {
+    postdraw_actions: function (tiles, width, w_scale, clear_after) {
         TiledTrack.prototype.postdraw_actions.call(this, tiles, width, w_scale, clear_after);
 
-        var line_track_tiles = _.filter(tiles, t => t instanceof LineTrackTile);
+        var line_track_tiles = _.filter(tiles, (t) => t instanceof LineTrackTile);
 
         //
         // Finish drawing of features that span multiple tiles. Features that span multiple tiles
@@ -4273,18 +4207,18 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         if (line_track_tiles.length === 0) {
             // Gather incomplete features together.
             var all_incomplete_features = {};
-            _.each(_.pluck(tiles, "incomplete_features"), inc_features => {
-                _.each(inc_features, feature => {
+            _.each(_.pluck(tiles, "incomplete_features"), (inc_features) => {
+                _.each(inc_features, (feature) => {
                     all_incomplete_features[feature[0]] = feature;
                 });
             });
 
             // Draw incomplete features on each tile.
-            _.each(tiles, tile => {
+            _.each(tiles, (tile) => {
                 // Remove features already drawn on tile originally.
                 var tile_incomplete_features = _.omit(
                     all_incomplete_features,
-                    _.map(tile.incomplete_features, f => f[0])
+                    _.map(tile.incomplete_features, (f) => f[0])
                 );
 
                 // Remove features already drawn on tile in past postdraw actions.
@@ -4295,7 +4229,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                     // To draw incomplete features, create new canvas, copy original canvas/tile onto new
                     // canvas, and then draw incomplete features on the new canvas.
                     var features = {
-                        data: _.values(tile_incomplete_features)
+                        data: _.values(tile_incomplete_features),
                     };
 
                     var new_canvas = this.view.canvas_manager.new_canvas();
@@ -4406,7 +4340,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     /**
      * Update track interface to show display mode being used.
      */
-    update_auto_mode: function(mode) {
+    update_auto_mode: function (mode) {
         if (this.mode === "Auto") {
             if (mode === "no_detail") {
                 mode = "feature spans";
@@ -4420,7 +4354,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
      * this.slotters[level] is created in this method. this.slotters[level]
      * is a Slotter object. Returns the number of slots used to pack features.
      */
-    incremental_slots: function(level, features, mode) {
+    incremental_slots: function (level, features, mode) {
         // Get/create incremental slots for level. If display mode changed,
         // need to create new slots.
 
@@ -4428,7 +4362,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
 
         var slotter = this.slotters[level];
         if (!slotter || slotter.mode !== mode) {
-            slotter = new slotting.FeatureSlotter(level, mode, MAX_FEATURE_DEPTH, x => dummy_context.measureText(x));
+            slotter = new slotting.FeatureSlotter(level, mode, MAX_FEATURE_DEPTH, (x) => dummy_context.measureText(x));
             this.slotters[level] = slotter;
         }
 
@@ -4438,7 +4372,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     /**
      * Returns appropriate display mode based on data.
      */
-    get_mode: function(data) {
+    get_mode: function (data) {
         var mode;
         // HACK: use no_detail mode track is in overview to prevent overview from being too large.
         if (data.extra_info === "no_detail" || this.is_overview) {
@@ -4469,7 +4403,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
      * Returns canvas height needed to display data; return value is an integer that denotes the
      * number of pixels required.
      */
-    get_canvas_height: function(result, mode, w_scale, canvas_width) {
+    get_canvas_height: function (result, mode, w_scale, canvas_width) {
         if (mode === "Coverage" || result.dataset_type === "bigwig") {
             return this.summary_draw_height;
         } else {
@@ -4492,7 +4426,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
      * @param ref_seq reference sequence data
      * @param cur_tile true if drawing is occurring on a currently visible tile.
      */
-    draw_tile: function(result, ctx, mode, region, w_scale, ref_seq, cur_tile) {
+    draw_tile: function (result, ctx, mode, region, w_scale, ref_seq, cur_tile) {
         var track = this;
         var canvas = ctx.canvas;
         var tile_low = region.get("start");
@@ -4555,7 +4489,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             filter_height_scaler,
             // HACK: ref_seq only be defined for ReadTracks, and only the ReadPainter accepts that argument
             ref_seq,
-            b => track.view.get_base_color(b)
+            (b) => track.view.get_base_color(b)
         );
 
         var feature_mapper = null;
@@ -4589,13 +4523,13 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                 ref_seq
             );
         }
-    }
+    },
 });
 
 /**
  * Displays variant data.
  */
-var VariantTrack = function(view, container, obj_dict) {
+var VariantTrack = function (view, container, obj_dict) {
     TiledTrack.call(this, view, container, obj_dict);
     this.painter = painters.VariantPainter;
     this.summary_draw_height = 30;
@@ -4608,47 +4542,47 @@ var VariantTrack = function(view, container, obj_dict) {
 extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     display_modes: ["Auto", "Coverage", "Dense", "Squish", "Pack"],
 
-    build_config_params: function() {
+    build_config_params: function () {
         return _.union(Drawable.prototype.config_params, [
             {
                 key: "color",
                 label: "Histogram color",
-                type: "color"
+                type: "color",
             },
             {
                 key: "show_sample_data",
                 label: "Show sample data",
                 type: "bool",
-                default_value: true
+                default_value: true,
             },
             {
                 key: "show_labels",
                 label: "Show summary and sample labels",
                 type: "bool",
-                default_value: true
+                default_value: true,
             },
             {
                 key: "summary_height",
                 label: "Locus summary height",
                 type: "float",
-                default_value: 20
+                default_value: 20,
             },
             {
                 key: "mode",
                 type: "string",
                 default_value: this.mode,
-                hidden: true
+                hidden: true,
             },
             {
                 key: "height",
                 type: "int",
                 default_value: 0,
-                hidden: true
-            }
+                hidden: true,
+            },
         ]);
     },
 
-    config_onchange: function() {
+    config_onchange: function () {
         this.set_name(this.config.get_value("name"));
         this.request_draw({ clear_tile_cache: true });
     },
@@ -4656,7 +4590,7 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     /**
      * Draw tile.
      */
-    draw_tile: function(result, ctx, mode, region, w_scale) {
+    draw_tile: function (result, ctx, mode, region, w_scale) {
         // Data could be coverage data or variant data.
         if (result.dataset_type === "bigwig") {
             return this._draw_line_track_tile(result, ctx, "Histogram", region, w_scale);
@@ -4670,7 +4604,7 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                 region.get("end"),
                 this.config.to_key_value_dict(),
                 mode,
-                b => view.get_base_color(b)
+                (b) => view.get_base_color(b)
             );
 
             painter.draw(ctx, ctx.canvas.width, ctx.canvas.height, w_scale);
@@ -4682,7 +4616,7 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
      * Returns canvas height needed to display data; return value is an integer that denotes the
      * number of pixels required.
      */
-    get_canvas_height: function(result, mode, w_scale, canvas_width) {
+    get_canvas_height: function (result, mode, w_scale, canvas_width) {
         if (result.dataset_type === "bigwig") {
             return this.summary_draw_height;
         } else {
@@ -4711,7 +4645,7 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     /**
      * Additional initialization required before drawing track for the first time.
      */
-    predraw_init: function() {
+    predraw_init: function () {
         var deferreds = [Track.prototype.predraw_init.call(this)];
         // FIXME: updating dataset metadata is only needed for visual analysis. Can
         // this be moved somewhere else?
@@ -4725,10 +4659,10 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
      * Actions to be taken after draw has been completed. Draw is completed when all tiles have been
      * drawn/fetched and shown.
      */
-    postdraw_actions: function(tiles, width, w_scale, clear_after) {
+    postdraw_actions: function (tiles, width, w_scale, clear_after) {
         TiledTrack.prototype.postdraw_actions.call(this, tiles, width, w_scale, clear_after);
 
-        var line_track_tiles = _.filter(tiles, t => t instanceof LineTrackTile);
+        var line_track_tiles = _.filter(tiles, (t) => t instanceof LineTrackTile);
 
         // Add summary/sample labels if needed and not already included.
         var sample_names = this.dataset.get_metadata("sample_names");
@@ -4752,7 +4686,7 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                         .addClass("yaxislabel variant top")
                         .css({
                             "font-size": `${font_size}px`,
-                            top: `${(this.config.get_value("summary_height") - font_size) / 2}px`
+                            top: `${(this.config.get_value("summary_height") - font_size) / 2}px`,
                         })
                 );
 
@@ -4765,7 +4699,7 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                             .html(samples_div_html)
                             .addClass("yaxislabel variant top sample")
                             .css({
-                                top: this.config.get_value("summary_height")
+                                top: this.config.get_value("summary_height"),
                             })
                     );
                 }
@@ -4775,109 +4709,105 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
 
             // Match sample font size to mode.
             font_size = `${this.mode === "Squish" ? 5 : 10}px`;
-            $(this.tiles_div)
-                .find(".sample")
-                .css({
-                    "font-size": font_size,
-                    "line-height": font_size
-                });
+            $(this.tiles_div).find(".sample").css({
+                "font-size": font_size,
+                "line-height": font_size,
+            });
             // Color labels to preference color.
-            $(this.tiles_div)
-                .find(".yaxislabel")
-                .css("color", this.config.get_value("label_color"));
+            $(this.tiles_div).find(".yaxislabel").css("color", this.config.get_value("label_color"));
         } else {
             // Remove all labels.
             this.container_div.find(".yaxislabel.variant").remove();
         }
-    }
+    },
 });
 
 /**
  * Track that displays mapped reads. Track expects position data in 1-based, closed format, i.e. SAM/BAM format.
  */
-var ReadTrack = function(view, container, obj_dict) {
+var ReadTrack = function (view, container, obj_dict) {
     FeatureTrack.call(this, view, container, obj_dict);
     this.painter = painters.ReadPainter;
     this.update_icons();
 };
 
 extend(ReadTrack.prototype, Drawable.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
-    build_config_params: function() {
+    build_config_params: function () {
         return _.union(Drawable.prototype.config_params, [
             {
                 key: "block_color",
                 label: "Histogram color",
-                type: "color"
+                type: "color",
             },
             {
                 key: "detail_block_color",
                 label: "Sense strand block color",
                 type: "color",
-                default_value: "#AAAAAA"
+                default_value: "#AAAAAA",
             },
             {
                 key: "reverse_strand_color",
                 label: "Antisense strand block color",
                 type: "color",
-                default_value: "#DDDDDD"
+                default_value: "#DDDDDD",
             },
             {
                 key: "label_color",
                 label: "Label color",
                 type: "color",
-                default_value: "black"
+                default_value: "black",
             },
             {
                 key: "show_insertions",
                 label: "Show insertions",
                 type: "bool",
-                default_value: false
+                default_value: false,
             },
             {
                 key: "show_differences",
                 label: "Show differences only",
                 type: "bool",
-                default_value: true
+                default_value: true,
             },
             {
                 key: "show_counts",
                 label: "Show summary counts",
                 type: "bool",
-                default_value: true
+                default_value: true,
             },
             {
                 key: "mode",
                 type: "string",
                 default_value: this.mode,
-                hidden: true
+                hidden: true,
             },
             {
                 key: "min_value",
                 label: "Histogram minimum",
                 type: "float",
                 default_value: undefined,
-                help: "clear value to set automatically"
+                help: "clear value to set automatically",
             },
             {
                 key: "max_value",
                 label: "Histogram maximum",
                 type: "float",
                 default_value: undefined,
-                help: "clear value to set automatically"
+                help: "clear value to set automatically",
             },
             {
                 key: "height",
                 type: "int",
                 default_value: 0,
-                hidden: true
-            }
+                hidden: true,
+            },
         ]);
     },
 
-    config_onchange: function() {
+    config_onchange: function () {
         this.set_name(this.config.get_value("name"));
         this.request_draw({ clear_tile_cache: true });
-    }
+    },
 });
 
 /**
@@ -4892,7 +4822,7 @@ var addable_objects = {
     ReadTrack: ReadTrack,
     VariantTrack: VariantTrack,
     // For backward compatibility, map vcf track to variant.
-    VcfTrack: VariantTrack
+    VcfTrack: VariantTrack,
 };
 
 /**
@@ -4923,5 +4853,5 @@ export default {
     ReadTrack: ReadTrack,
     VariantTrack: VariantTrack,
     CompositeTrack: CompositeTrack,
-    object_from_template: object_from_template
+    object_from_template: object_from_template,
 };

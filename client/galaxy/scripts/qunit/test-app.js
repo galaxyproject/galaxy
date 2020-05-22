@@ -13,29 +13,33 @@ import galaxyOptions from "qunit/test-data/bootstrapped";
 import serverdata from "qunit/test-data/fakeserver";
 import "./assets/base.css";
 
+export function setupTestGalaxy(galaxyOptions_ = null) {
+    galaxyOptions_ = galaxyOptions_ || galaxyOptions;
+    setGalaxyInstance((GalaxyApp) => {
+        let galaxy = new GalaxyApp(galaxyOptions_);
+        galaxy.currHistoryPanel = {
+            model: new Backbone.Model(),
+        };
+        galaxy.emit = {
+            debug: function () {},
+            error: function (v) {
+                window.console.error(v);
+            },
+        };
+        return galaxy;
+    });
+}
+
 export default {
     create() {
-        setGalaxyInstance(GalaxyApp => {
-            let galaxy = new GalaxyApp(galaxyOptions);
-            galaxy.currHistoryPanel = {
-                model: new Backbone.Model()
-            };
-            galaxy.emit = {
-                debug: function() {},
-                error: function(v) {
-                    window.console.error(v);
-                }
-            };
-            return galaxy;
-        });
-
+        setupTestGalaxy(galaxyOptions);
         window.WAIT_FADE = 300;
         window.fakeserver = sinon.fakeServer.create();
         for (var route in serverdata) {
             window.fakeserver.respondWith("GET", getAppRoot() + route, [
                 200,
                 { "Content-Type": "application/json" },
-                serverdata[route].data
+                serverdata[route].data,
             ]);
         }
     },
@@ -45,5 +49,5 @@ export default {
             window.fakeserver.restore();
             delete window.fakeserver;
         }
-    }
+    },
 };

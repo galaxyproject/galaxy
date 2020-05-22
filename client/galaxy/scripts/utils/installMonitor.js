@@ -68,7 +68,7 @@ export function installObjectWatcher(globalProp, getter = null, setter = null) {
                 logger.warn(err);
             }
             logger.groupEnd();
-        }
+        },
     });
 }
 

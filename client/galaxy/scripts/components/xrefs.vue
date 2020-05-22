@@ -6,7 +6,7 @@
             </h4>
         </template>
         <table>
-            <tr v-for="(xref, index) in xrefs" v-bind:key="index">
+            <tr v-for="(xref, index) in xrefs" :key="index">
                 <th>- {{ xref.reftype }}:</th>
                 <td>
                     <template v-if="xref.reftype == 'bio.tools'">
@@ -28,28 +28,28 @@ export default {
     props: {
         source: {
             type: String,
-            required: true
+            required: true,
         },
         id: {
             type: String,
-            required: true
-        }
+            required: true,
+        },
     },
     data() {
         return {
             xrefs: [],
-            errors: []
+            errors: [],
         };
     },
-    created: function() {
+    created: function () {
         axios
             .get(`${getAppRoot()}api/${this.source}/${this.id}/xrefs`)
-            .then(response => {
+            .then((response) => {
                 this.xrefs = response.data;
             })
-            .catch(e => {
+            .catch((e) => {
                 console.error(e);
             });
-    }
+    },
 };
 </script>

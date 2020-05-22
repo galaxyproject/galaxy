@@ -31,7 +31,7 @@ var STATES = {
     /** deleted while uploading */
     DISCARDED: "discarded",
     /** the tool producing this dataset failed */
-    ERROR: "error"
+    ERROR: "error",
 };
 
 STATES.READY_STATES = [
@@ -41,7 +41,7 @@ STATES.READY_STATES = [
     STATES.FAILED_METADATA,
     STATES.NOT_VIEWABLE,
     STATES.DISCARDED,
-    STATES.ERROR
+    STATES.ERROR,
 ];
 
 STATES.NOT_READY_STATES = [STATES.UPLOAD, STATES.QUEUED, STATES.RUNNING, STATES.SETTING_METADATA, STATES.NEW];

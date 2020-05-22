@@ -41,6 +41,7 @@ from galaxy.workflow.extract import (
     summarize
 )
 from galaxy.workflow.modules import (
+    load_module_sections,
     module_factory,
     WorkflowModuleInjector
 )
@@ -573,7 +574,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             return {'id': trans.security.encode_id(stored_workflow.id), 'message': 'Workflow %s has been created.' % workflow_name}
 
     @web.json
-    def save_workflow_as(self, trans, workflow_name, workflow_data, workflow_annotation=""):
+    def save_workflow_as(self, trans, workflow_name, workflow_data, workflow_annotation="", from_tool_form=False):
         """
             Creates a new workflow based on Save As command. It is a new workflow, but
             is created with workflow_data already present.
@@ -603,6 +604,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
                     trans,
                     stored_workflow,
                     workflow_data,
+                    from_tool_form=from_tool_form,
                 )
             except workflows.MissingToolsException as e:
                 return dict(
@@ -655,11 +657,63 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             version = len(stored.workflows) - 1
         else:
             version = int(version)
-        return trans.fill_template("workflow/editor.mako",
-                                   workflows=workflows,
-                                   stored=stored,
-                                   version=version,
-                                   annotation=self.get_item_annotation_str(trans.sa_session, trans.user, stored))
+
+        # create workflow module models
+        module_sections = []
+        for section_name, module_section in load_module_sections(trans).items():
+            module_sections.append({
+                "title": module_section.get("title"),
+                "name": module_section.get("name"),
+                "elems": [{
+                    "name": elem.get("name"),
+                    "title": elem.get("title"),
+                    "description": elem.get("description")
+                } for elem in module_section.get("modules")]
+            })
+
+        # create data manager tool models
+        data_managers = []
+        if trans.user_is_admin and trans.app.data_managers.data_managers:
+            for data_manager_id, data_manager_val in trans.app.data_managers.data_managers.items():
+                tool = data_manager_val.tool
+                if not tool.hidden:
+                    data_managers.append({
+                        "id": tool.id,
+                        "name": tool.name,
+                        "hidden": tool.hidden,
+                        "description": tool.description,
+                        "is_workflow_compatible": tool.is_workflow_compatible
+                    })
+
+        # create workflow models
+        workflows = [{
+            'id'                  : trans.security.encode_id(workflow.id),
+            'latest_id'           : trans.security.encode_id(workflow.latest_workflow.id),
+            'step_count'          : len(workflow.latest_workflow.steps),
+            'name'                : workflow.name
+        } for workflow in workflows if workflow.id != stored.id]
+
+        # identify item tags
+        item_tags = [tag for tag in stored.tags if tag.user == trans.user]
+        item_tag_names = []
+        for ta in item_tags:
+            item_tag_names.append(escape(ta.tag.name))
+
+        # build workflow editor model
+        editor_config = {
+            'id'                      : trans.security.encode_id(stored.id),
+            'name'                    : stored.name,
+            'tags'                    : item_tag_names,
+            'version'                 : version,
+            'annotation'              : self.get_item_annotation_str(trans.sa_session, trans.user, stored),
+            'toolbox'                 : trans.app.toolbox.to_dict(trans),
+            'moduleSections'          : module_sections,
+            'dataManagers'            : data_managers,
+            'workflows'               : workflows
+        }
+
+        # parse to mako
+        return trans.fill_template("workflow/editor.mako", editor_config=editor_config)
 
     @web.json
     def load_workflow(self, trans, id, version=None):

@@ -202,7 +202,7 @@ class LinePainter extends Painter {
             max_value: undefined,
             mode: "Histogram",
             color: "#000",
-            overflow_color: "#F66"
+            overflow_color: "#F66",
         };
     }
 
@@ -369,7 +369,7 @@ class FeaturePositionMapper {
         this.feature_positions[slot].push({
             data: feature_data,
             x_start: x_start,
-            x_end: x_end
+            x_end: x_end,
         });
     }
 
@@ -414,7 +414,7 @@ class FeaturePainter extends Painter {
     static get default_prefs() {
         return {
             block_color: "#FFF",
-            connector_color: "#FFF"
+            connector_color: "#FFF",
         };
     }
     get_required_height(rows_required, width) {
@@ -463,7 +463,8 @@ class FeaturePainter extends Painter {
             // (b) there's overlap between the feature and drawing region.
             if (
                 (this.mode === "Dense" || slot !== null) &&
-                (feature_start < this.view_end && feature_end > this.view_start)
+                feature_start < this.view_end &&
+                feature_end > this.view_start
             ) {
                 x_draw_coords = this.draw_element(
                     ctx,
@@ -490,7 +491,7 @@ class FeaturePainter extends Painter {
         feature_mapper.y_translation = this.get_top_padding(width);
         return new DrawResults({
             incomplete_features: incomplete_features,
-            feature_mapper: feature_mapper
+            feature_mapper: feature_mapper,
         });
     }
 
@@ -815,10 +816,10 @@ class ReadPainter extends FeaturePainter {
         var base_pos = 0;
 
         var // Parse cigar operations out and update/create blocks as needed.
-            parsed_cigar = _.map(cigar_str.match(/[0-9]+[MIDNSHP=X]/g), op => {
+            parsed_cigar = _.map(cigar_str.match(/[0-9]+[MIDNSHP=X]/g), (op) => {
                 // Get operation length, character.
-                var op_len = parseInt(op.slice(0, -1), 10),
-                    op_char = op.slice(-1);
+                var op_len = parseInt(op.slice(0, -1), 10);
+                var op_char = op.slice(-1);
 
                 // Update drawing block.
                 if (op_char === "N") {
@@ -840,7 +841,7 @@ class ReadPainter extends FeaturePainter {
 
         return {
             blocks: blocks,
-            cigar: parsed_cigar
+            cigar: parsed_cigar,
         };
     }
 
@@ -1037,7 +1038,7 @@ class ReadPainter extends FeaturePainter {
                                 ctx.fillRect(x_center - gap, y_start - 9, s_end - s_start, 9);
                                 draw_last[draw_last.length] = {
                                     type: "triangle",
-                                    data: [insert_x_coord, y_start + 4, 5]
+                                    data: [insert_x_coord, y_start + 4, 5],
                                 };
                                 ctx.fillStyle = CONNECTOR_COLOR;
                                 // Based on overlap b/t sequence and tile, get sequence to be drawn.
@@ -1080,7 +1081,7 @@ class ReadPainter extends FeaturePainter {
                                 // Show insertions with a single number at the insertion point.
                                 draw_last.push({
                                     type: "text",
-                                    data: [seq.length, insert_x_coord, y_start + 9]
+                                    data: [seq.length, insert_x_coord, y_start + 9],
                                 });
                             } else {
                                 // TODO: probably can merge this case with code above.
@@ -1274,14 +1275,14 @@ class Color {
         if (Array.isArray(rgb)) {
             this.rgb = rgb;
         } else if (rgb.length == 6) {
-            this.rgb = rgb.match(/.{2}/g).map(c => parseInt(c, 16));
+            this.rgb = rgb.match(/.{2}/g).map((c) => parseInt(c, 16));
         } else if (rgb.length == 7) {
             this.rgb = rgb
                 .substring(1, 7)
                 .match(/.{2}/g)
-                .map(c => parseInt(c, 16));
+                .map((c) => parseInt(c, 16));
         } else {
-            this.rgb = rgb.split("").map(c => parseInt(c + c, 16));
+            this.rgb = rgb.split("").map((c) => parseInt(c + c, 16));
         }
         this.alpha = typeof a === "number" ? a : 1;
     }
@@ -1299,12 +1300,12 @@ class Color {
     toCSS() {
         if (this.alpha < 1.0) {
             return `rgba(${this.rgb
-                .map(c => Math.round(c))
+                .map((c) => Math.round(c))
                 .concat(this.alpha)
                 .join(", ")})`;
         } else {
             return `#${this.rgb
-                .map(i => {
+                .map((i) => {
                     i = Math.round(i);
                     i = (i > 255 ? 255 : i < 0 ? 0 : i).toString(16);
                     return i.length === 1 ? `0${i}` : i;
@@ -1349,7 +1350,7 @@ class Color {
     toARGB() {
         var argb = [Math.round(this.alpha * 255)].concat(this.rgb);
         return `#${argb
-            .map(i => {
+            .map((i) => {
                 i = Math.round(i);
                 i = (i > 255 ? 255 : i < 0 ? 0 : i).toString(16);
                 return i.length === 1 ? `0${i}` : i;
@@ -1370,7 +1371,7 @@ class Color {
         var rgb = [
             color1.rgb[0] * w1 + color2.rgb[0] * w2,
             color1.rgb[1] * w1 + color2.rgb[1] * w2,
-            color1.rgb[2] * w1 + color2.rgb[2] * w2
+            color1.rgb[2] * w1 + color2.rgb[2] * w2,
         ];
 
         var alpha = color1.alpha * p + color2.alpha * (1 - p);
@@ -1453,7 +1454,7 @@ class DiagonalHeatmapPainter extends Painter {
             max_value: undefined,
             mode: "Heatmap",
             pos_color: "#FF8C00",
-            neg_color: "#4169E1"
+            neg_color: "#4169E1",
         };
     }
 
@@ -1472,7 +1473,7 @@ class DiagonalHeatmapPainter extends Painter {
         var e2;
         var value;
 
-        var scale = p => (p - view_start) * w_scale;
+        var scale = (p) => (p - view_start) * w_scale;
 
         ctx.save();
 
@@ -1660,11 +1661,11 @@ class VariantPainter extends Painter {
             allele_counts = locus_data.slice(8);
 
             // Process alterate values to derive information about each alt.
-            alt = _.map(_.flatten(alt), a => {
+            alt = _.map(_.flatten(alt), (a) => {
                 var alt_info = {
                     type: "snp",
                     value: a,
-                    start: 0
+                    start: 0,
                 };
 
                 var indel_info = get_indel_info(ref, a);
@@ -1756,5 +1757,5 @@ export default {
     ReadPainter: ReadPainter,
     ArcLinkedFeaturePainter: ArcLinkedFeaturePainter,
     DiagonalHeatmapPainter: DiagonalHeatmapPainter,
-    VariantPainter: VariantPainter
+    VariantPainter: VariantPainter,
 };

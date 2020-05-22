@@ -18,7 +18,7 @@
 <script>
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { Services } from "../services.js";
+import { Services } from "../services";
 import LoadingSpan from "components/LoadingSpan";
 
 Vue.use(BootstrapVue);
@@ -32,8 +32,8 @@ export default {
             fields: [
                 { key: "name", label: "Category", sortable: true },
                 { key: "description", sortable: false },
-                { key: "repositories", sortable: true }
-            ]
+                { key: "repositories", sortable: true },
+            ],
         };
     },
     created() {
@@ -43,27 +43,27 @@ export default {
     watch: {
         toolshedUrl() {
             this.load();
-        }
+        },
     },
     methods: {
         load() {
             this.$emit("onLoading", true);
             this.services
                 .getCategories(this.toolshedUrl)
-                .then(categories => {
+                .then((categories) => {
                     this.categories = categories;
                     const reducer = (value, entry) => value + entry.repositories;
                     this.$emit("onTotal", this.categories.reduce(reducer, 0));
                     this.$emit("onLoading", false);
                 })
-                .catch(errorMessage => {
+                .catch((errorMessage) => {
                     this.$emit("onError", errorMessage);
                     this.$emit("onLoading", false);
                 });
         },
         onCategory(category) {
             this.$emit("onCategory", `category:'${category}'`);
-        }
-    }
+        },
+    },
 };
 </script>

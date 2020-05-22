@@ -7,7 +7,7 @@ import CurrentHistoryView from "mvc/history/history-view-edit-current";
 
 /** the right hand panel in the analysis page that shows the current history */
 const HistoryPanel = Backbone.View.extend({
-    initialize: function(page, options) {
+    initialize: function (page, options) {
         const Galaxy = getGalaxyInstance();
         const panelHeaderButtons = [];
 
@@ -19,7 +19,7 @@ const HistoryPanel = Backbone.View.extend({
         this.historyView = new CurrentHistoryView.CurrentHistoryView({
             className: `${CurrentHistoryView.CurrentHistoryView.prototype.className} middle`,
             purgeAllowed: this.allow_user_dataset_purge,
-            linkTarget: "galaxy_main"
+            linkTarget: "galaxy_main",
         });
 
         // add history panel to Galaxy object
@@ -34,7 +34,7 @@ const HistoryPanel = Backbone.View.extend({
             icon: "fa fa-refresh",
             onclick: () => {
                 this.historyView.loadCurrentHistory();
-            }
+            },
         });
         panelHeaderButtons.push(this.buttonRefresh);
 
@@ -44,9 +44,9 @@ const HistoryPanel = Backbone.View.extend({
                 title: _l("Create new history"),
                 cls: "panel-header-button",
                 icon: "fa fa-plus",
-                onclick: function() {
+                onclick: function () {
                     Galaxy.currHistoryPanel.createNewHistory();
-                }
+                },
             });
             panelHeaderButtons.push(this.buttonNew);
         }
@@ -56,7 +56,7 @@ const HistoryPanel = Backbone.View.extend({
             title: _l("View all histories"),
             cls: "panel-header-button",
             icon: "fa fa-columns",
-            href: `${this.root}history/view_multiple`
+            href: `${this.root}history/view_multiple`,
         });
         panelHeaderButtons.push(this.buttonViewMulti);
 
@@ -66,7 +66,7 @@ const HistoryPanel = Backbone.View.extend({
             cls: "panel-header-button",
             target: "galaxy_main",
             icon: "fa fa-cog",
-            href: `${this.root}root/history_options`
+            href: `${this.root}root/history_options`,
         });
         panelHeaderButtons.push(this.buttonOptions);
 
@@ -74,7 +74,7 @@ const HistoryPanel = Backbone.View.extend({
             // define components
             cls: "history-right-panel",
             title: _l("History"),
-            buttons: panelHeaderButtons
+            buttons: panelHeaderButtons,
         });
 
         // build body template and connect history view
@@ -86,28 +86,28 @@ const HistoryPanel = Backbone.View.extend({
         // fetch to update the quota meter adding 'current' for any anon-user's id
         Galaxy.listenTo(this.historyView, "history-size-change", () => {
             Galaxy.user.fetch({
-                url: `${Galaxy.user.urlRoot()}/${Galaxy.user.id || "current"}`
+                url: `${Galaxy.user.urlRoot()}/${Galaxy.user.id || "current"}`,
             });
         });
     },
 
-    render: function() {
+    render: function () {
         this.optionsMenu = historyOptionsMenu(this.buttonOptions.$el, {
             anonymous: this.userIsAnonymous,
             purgeAllowed: this.allow_user_dataset_purge,
-            root: this.root
+            root: this.root,
         });
         this.buttonViewMulti.$el[!this.userIsAnonymous ? "show" : "hide"]();
     },
 
     /** add history view div */
-    _template: function(data) {
+    _template: function (data) {
         return ['<div id="current-history-panel" class="history-panel middle"/>'].join("");
     },
 
-    toString: function() {
+    toString: function () {
         return "historyPanel";
-    }
+    },
 });
 
 export default HistoryPanel;

@@ -6,10 +6,11 @@ from datetime import datetime, timedelta
 
 import jwt
 import requests
-from six.moves.urllib.parse import parse_qs, urlparse
+from six.moves.urllib.parse import parse_qs, quote, urlparse
 
 from galaxy.authnz import custos_authnz
 from galaxy.model import CustosAuthnzToken, User
+from ..unittest_utils.galaxy_mock import MockApp
 
 
 class CustosAuthnzTestCase(unittest.TestCase):
@@ -32,7 +33,8 @@ class CustosAuthnzTestCase(unittest.TestCase):
         requests.get = self.mockRequest(self._get_idp_url(), {
             "authorization_endpoint": "https://test-auth-endpoint",
             "token_endpoint": "https://test-token-endpoint",
-            "userinfo_endpoint": "https://test-userinfo-endpoint"
+            "userinfo_endpoint": "https://test-userinfo-endpoint",
+            "end_session_endpoint": "https://test-end-session-endpoint"
         })
         self.custos_authnz = custos_authnz.CustosAuthnz('Custos', {
             'VERIFY_SSL': True
@@ -146,9 +148,13 @@ class CustosAuthnzTestCase(unittest.TestCase):
             provider = None
             custos_authnz_token = None
 
-            def filter_by(self, external_user_id=None, provider=None):
+            def filter_by(self, email=None, external_user_id=None, provider=None, username=None):
                 self.external_user_id = external_user_id
                 self.provider = provider
+                if username:
+                    # This is only called with a specific username to check if it
+                    # already exists in the database.  Say no, for testing.
+                    return QueryResult()
                 if self.custos_authnz_token:
                     return QueryResult([self.custos_authnz_token])
                 else:
@@ -177,6 +183,7 @@ class CustosAuthnzTestCase(unittest.TestCase):
             cookies_args = {}
             request = Request()
             sa_session = Session()
+            app = MockApp()
             user = None
 
             def set_cookie(self, value, name=None, **kwargs):
@@ -222,7 +229,7 @@ class CustosAuthnzTestCase(unittest.TestCase):
         authorization_url = self.custos_authnz.authenticate(self.trans)
         parsed = urlparse(authorization_url)
         param1_value = parse_qs(parsed.query)['kc_idp_hint'][0]
-        self.assertEqual(param1_value, 'cilogon')
+        self.assertEqual(param1_value, 'oidc')
 
     def test_authenticate_sets_env_var_when_localhost_redirect(self):
         """Verify that OAUTHLIB_INSECURE_TRANSPORT var is set with localhost redirect."""
@@ -474,3 +481,10 @@ class CustosAuthnzTestCase(unittest.TestCase):
         self.assertFalse(success)
         self.assertNotEqual("", message)
         self.assertIsNone(redirect_uri)
+
+    def test_logout_with_redirect(self):
+
+        logout_redirect_url = "http://localhost:8080/post-logout"
+        redirect_url = self.custos_authnz.logout(self.trans, logout_redirect_url)
+
+        self.assertEqual(redirect_url, "https://test-end-session-endpoint?redirect_uri=" + quote(logout_redirect_url))

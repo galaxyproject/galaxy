@@ -13,17 +13,17 @@ import Utils from "utils/utils";
 import { getAppRoot } from "onload/loadConfig";
 
 QUnit.module("Form test", {
-    beforeEach: function() {
+    beforeEach: function () {
         testApp.create();
         $.fx.off = true;
     },
-    afterEach: function() {
+    afterEach: function () {
         testApp.destroy();
         $.fx.off = false;
-    }
+    },
 });
 
-QUnit.test("tool-form", function(assert) {
+QUnit.test("tool-form", function (assert) {
     var toolform = new ToolForm.View({ id: "test" });
     $("body").prepend(toolform.$el);
     window.fakeserver.respond();
@@ -38,7 +38,7 @@ QUnit.test("tool-form", function(assert) {
         "Title correct"
     );
     var tour_ids = [];
-    $("[tour_id]").each(function() {
+    $("[tour_id]").each(function () {
         tour_ids.push($(this).attr("tour_id"));
     });
     assert.ok(
@@ -51,7 +51,7 @@ QUnit.test("tool-form", function(assert) {
         "Created data correct"
     );
     var mapped_ids = [];
-    form.data.matchModel(form.model.attributes, function(input, id) {
+    form.data.matchModel(form.model.attributes, function (input, id) {
         mapped_ids.push($("#" + id).attr("tour_id"));
     });
     assert.ok(
@@ -60,10 +60,7 @@ QUnit.test("tool-form", function(assert) {
     );
     var dropdown = form.$("#menu > .dropdown-menu");
     assert.ok(dropdown.children().length == 2, "Found two menu items");
-    dropdown
-        .find(".fa-info-circle")
-        .parent()
-        .click();
+    dropdown.find(".fa-info-circle").parent().click();
     assert.ok(
         form.$(".alert").html() ===
             '<span>This tool requires req_name_a (Version req_version_a) and req_name_b (Version req_version_b). Click <a target="_blank" href="https://galaxyproject.org/tools/requirements/">here</a> for more information.</span>',
@@ -74,7 +71,7 @@ QUnit.test("tool-form", function(assert) {
     assert.ok(!$add.attr("disabled"), "Adding new repeat possible");
     $add.click();
     assert.ok($add.attr("disabled"), "Adding new repeat has been disabled");
-    form.$(".form-repeat-delete").each(function(i, d) {
+    form.$(".form-repeat-delete").each(function (i, d) {
         assert.ok($(d).css("display") == "block", "Delete buttons " + i + " enabled");
     });
     assert.ok(
@@ -91,15 +88,15 @@ QUnit.test("tool-form", function(assert) {
     );
 });
 
-QUnit.test("data", function(assert) {
+QUnit.test("data", function (assert) {
     var visits = [];
     Utils.get({
         url: getAppRoot() + "api/tools/test/build",
-        success: function(response) {
-            FormData.visitInputs(response.inputs, function(node, name, context) {
+        success: function (response) {
+            FormData.visitInputs(response.inputs, function (node, name, context) {
                 visits.push({ name: name, node: node });
             });
-        }
+        },
     });
     window.fakeserver.respond();
     assert.ok(
@@ -109,11 +106,11 @@ QUnit.test("data", function(assert) {
     );
 });
 
-QUnit.test("input", function(assert) {
+QUnit.test("input", function (assert) {
     var input = new InputElement(
         {},
         {
-            field: new Ui.Input({})
+            field: new Ui.Input({}),
         }
     );
     $("body").prepend(input.$el);

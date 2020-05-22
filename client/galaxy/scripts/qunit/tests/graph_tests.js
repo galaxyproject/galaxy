@@ -3,12 +3,12 @@ import testApp from "qunit/test-app";
 import GRAPH from "utils/graph";
 
 QUnit.module("utils/graph.js library tests", {
-    beforeEach: function() {
+    beforeEach: function () {
         testApp.create();
     },
-    afterEach: function() {
+    afterEach: function () {
         testApp.destroy();
-    }
+    },
 });
 
 ///*
@@ -18,7 +18,7 @@ function testEmptyObject(assert, o) {
 }
 
 // ------------------------------------------------------------------------ vertices
-QUnit.test("Empty vertex construction", function(assert) {
+QUnit.test("Empty vertex construction", function (assert) {
     var vert = new GRAPH.Vertex();
     assert.ok(vert instanceof GRAPH.Vertex);
     assert.ok(vert.name === "(unnamed)");
@@ -29,7 +29,7 @@ QUnit.test("Empty vertex construction", function(assert) {
     assert.deepEqual(vert.toJSON(), { name: "(unnamed)", data: null });
 });
 
-QUnit.test("Vertex construction", function(assert) {
+QUnit.test("Vertex construction", function (assert) {
     var vert = new GRAPH.Vertex("blah", { blorp: 1, bleep: 2 });
     assert.ok(vert instanceof GRAPH.Vertex);
     assert.ok(vert.name === "blah");
@@ -41,7 +41,7 @@ QUnit.test("Vertex construction", function(assert) {
 });
 
 // ------------------------------------------------------------------------ edges
-QUnit.test("Empty edge construction", function(assert) {
+QUnit.test("Empty edge construction", function (assert) {
     var edge = new GRAPH.Edge();
     assert.ok(edge instanceof GRAPH.Edge);
     assert.ok(edge.source === null);
@@ -51,7 +51,7 @@ QUnit.test("Empty edge construction", function(assert) {
     assert.deepEqual(edge.toJSON(), { source: null, target: null });
 });
 
-QUnit.test("Edge construction", function(assert) {
+QUnit.test("Edge construction", function (assert) {
     var edge = new GRAPH.Edge("A", "B", { one: 1, two: 2 });
     assert.ok(edge instanceof GRAPH.Edge);
     assert.ok(edge.source === "A");
@@ -68,7 +68,7 @@ function testEmptyGraph(assert, graph) {
     assert.ok(graph.numEdges === 0);
 }
 
-QUnit.test("Empty graph construction", function(assert) {
+QUnit.test("Empty graph construction", function (assert) {
     var graph = new GRAPH.Graph();
 
     assert.ok(graph.directed === false);
@@ -77,7 +77,7 @@ QUnit.test("Empty graph construction", function(assert) {
     testEmptyGraph(assert, graph);
 });
 
-QUnit.test("Bad data graph construction", function(assert) {
+QUnit.test("Bad data graph construction", function (assert) {
     var graph = new GRAPH.Graph(false, {});
     testEmptyGraph(assert, graph);
 
@@ -85,7 +85,7 @@ QUnit.test("Bad data graph construction", function(assert) {
     testEmptyGraph(assert, graph);
 });
 
-QUnit.test("Test directed and options", function(assert) {
+QUnit.test("Test directed and options", function (assert) {
     var graph = new GRAPH.Graph(true, {}, { allowReflexiveEdges: true });
 
     assert.ok(graph.directed);
@@ -144,40 +144,56 @@ function testSampleNonDirectedGraph(assert, graph) {
 }
 
 var nodeLinkData = {
-    nodes: [{ name: "A", data: 100 }, { name: "B", data: 200 }, { name: "C", data: 300 }],
-    links: [{ source: 0, target: 1 }, { source: 0, target: 2 }, { source: 1, target: 2 }]
+    nodes: [
+        { name: "A", data: 100 },
+        { name: "B", data: 200 },
+        { name: "C", data: 300 },
+    ],
+    links: [
+        { source: 0, target: 1 },
+        { source: 0, target: 2 },
+        { source: 1, target: 2 },
+    ],
 };
 
-QUnit.test("Test nodes and links data input on *non-directed* graph", function(assert) {
+QUnit.test("Test nodes and links data input on *non-directed* graph", function (assert) {
     var graph = new GRAPH.Graph(false, nodeLinkData);
     testSampleDirectedGraph(assert, graph);
 });
 
-QUnit.test("Test nodes and links data input on *directed* graph", function(assert) {
+QUnit.test("Test nodes and links data input on *directed* graph", function (assert) {
     var graph = new GRAPH.Graph(true, nodeLinkData);
     testSampleNonDirectedGraph(assert, graph);
 });
 
 var vertexEdgeData = {
-    vertices: [{ name: "A", data: 100 }, { name: "B", data: 200 }, { name: "C", data: 300 }],
-    edges: [{ source: "A", target: "B" }, { source: "A", target: "C" }, { source: "B", target: "C" }]
+    vertices: [
+        { name: "A", data: 100 },
+        { name: "B", data: 200 },
+        { name: "C", data: 300 },
+    ],
+    edges: [
+        { source: "A", target: "B" },
+        { source: "A", target: "C" },
+        { source: "B", target: "C" },
+    ],
 };
 
-QUnit.test("Test vertex and edge data input on *non-directed* graph", function(assert) {
+QUnit.test("Test vertex and edge data input on *non-directed* graph", function (assert) {
     var graph = new GRAPH.Graph(false, vertexEdgeData);
     testSampleDirectedGraph(assert, graph);
 });
 
-QUnit.test("Test vertex and edge data input on *directed* graph", function(assert) {
+QUnit.test("Test vertex and edge data input on *directed* graph", function (assert) {
     var graph = new GRAPH.Graph(true, vertexEdgeData);
     testSampleNonDirectedGraph(assert, graph);
 });
 
-QUnit.test("Test vertex eachEdge", function(assert) {
+QUnit.test("Test vertex eachEdge", function (assert) {
     var graph = new GRAPH.Graph(false, nodeLinkData);
     assert.ok(typeof graph.vertices.A.eachEdge === "function");
     assert.deepEqual(
-        graph.vertices.A.eachEdge(function(e) {
+        graph.vertices.A.eachEdge(function (e) {
             return e.target;
         }),
         ["B", "C"]
@@ -185,19 +201,23 @@ QUnit.test("Test vertex eachEdge", function(assert) {
     assert.ok(graph.vertices.A.eachEdge({ target: "B" }).length === 1);
 });
 
-QUnit.test("Test graph eachVertex", function(assert) {
+QUnit.test("Test graph eachVertex", function (assert) {
     var graph = new GRAPH.Graph(true, nodeLinkData);
     assert.ok(typeof graph.eachVertex === "function");
     assert.deepEqual(
-        graph.eachVertex(function(v) {
+        graph.eachVertex(function (v) {
             return { n: v.name, d: v.degree };
         }),
-        [{ n: "A", d: 2 }, { n: "B", d: 1 }, { n: "C", d: 0 }]
+        [
+            { n: "A", d: 2 },
+            { n: "B", d: 1 },
+            { n: "C", d: 0 },
+        ]
     );
     assert.ok(graph.eachVertex({ degree: 2 })[0] === graph.vertices.A);
 });
 
-QUnit.test("Test createVertex", function(assert) {
+QUnit.test("Test createVertex", function (assert) {
     var graph = new GRAPH.Graph();
     var vert1 = graph.createVertex("A", { blah: 1 });
     assert.ok(vert1 instanceof GRAPH.Vertex);
@@ -205,7 +225,7 @@ QUnit.test("Test createVertex", function(assert) {
     assert.ok(graph.createVertex("A", { blah: 1 }) === vert1);
 });
 
-QUnit.test("Test createEdge", function(assert) {
+QUnit.test("Test createEdge", function (assert) {
     var graph, A, B, edge;
 
     graph = new GRAPH.Graph();
@@ -254,11 +274,11 @@ QUnit.test("Test createEdge", function(assert) {
     assert.ok(A.edges.A);
 });
 
-QUnit.test("Test graph.edges", function(assert) {
+QUnit.test("Test graph.edges", function (assert) {
     var graph = new GRAPH.Graph(false, nodeLinkData);
     assert.ok(graph.edges().length === 6);
     assert.deepEqual(
-        graph.edges(function(e) {
+        graph.edges(function (e) {
             return e.source;
         }),
         ["A", "A", "B", "B", "C", "C"]
@@ -268,7 +288,7 @@ QUnit.test("Test graph.edges", function(assert) {
     graph = new GRAPH.Graph(true, nodeLinkData);
     assert.ok(graph.edges().length === 3);
     assert.deepEqual(
-        graph.edges(function(e) {
+        graph.edges(function (e) {
             return e.source;
         }),
         ["A", "A", "B"]
@@ -276,17 +296,17 @@ QUnit.test("Test graph.edges", function(assert) {
     assert.deepEqual(graph.edges({ source: "A" }), [graph.vertices.A.edges.B, graph.vertices.A.edges.C]);
 });
 
-QUnit.test("Test graph.adjacent", function(assert) {
+QUnit.test("Test graph.adjacent", function (assert) {
     var graph = new GRAPH.Graph(true, nodeLinkData);
     assert.deepEqual(graph.adjacent(graph.vertices.A), [graph.vertices.B, graph.vertices.C]);
     assert.deepEqual(graph.adjacent(graph.vertices.B), [graph.vertices.C]);
     assert.deepEqual(graph.adjacent(graph.vertices.C), []);
 });
 
-QUnit.test("Test graph.eachAdjacent", function(assert) {
+QUnit.test("Test graph.eachAdjacent", function (assert) {
     var graph = new GRAPH.Graph(true, nodeLinkData);
     assert.deepEqual(
-        graph.eachAdjacent(graph.vertices.A, function(v, e) {
+        graph.eachAdjacent(graph.vertices.A, function (v, e) {
             return v;
         }),
         [graph.vertices.B, graph.vertices.C]
@@ -294,7 +314,7 @@ QUnit.test("Test graph.eachAdjacent", function(assert) {
 });
 
 // ------------------------------------------------------------------------ breadth first search
-QUnit.test("Empty BreadthFirstSearch", function(assert) {
+QUnit.test("Empty BreadthFirstSearch", function (assert) {
     var search = new GRAPH.BreadthFirstSearch();
     assert.ok(search instanceof GRAPH.BreadthFirstSearch);
     assert.ok(search.graph === undefined);
@@ -305,7 +325,7 @@ QUnit.test("Empty BreadthFirstSearch", function(assert) {
     assert.ok(typeof search._cache === "object");
 });
 
-QUnit.test("BreadthFirstSearch on undirected graph", function(assert) {
+QUnit.test("BreadthFirstSearch on undirected graph", function (assert) {
     var graph = new GRAPH.Graph(false, nodeLinkData),
         bfs = new GRAPH.BreadthFirstSearch(graph);
     assert.ok(bfs instanceof GRAPH.BreadthFirstSearch);
@@ -315,24 +335,33 @@ QUnit.test("BreadthFirstSearch on undirected graph", function(assert) {
         tree = bfs.searchTree("A");
     assert.deepEqual(search, {
         discovered: { A: true, B: true, C: true },
-        edges: [{ source: "A", target: "B" }, { source: "A", target: "C" }]
+        edges: [
+            { source: "A", target: "B" },
+            { source: "A", target: "C" },
+        ],
     });
     assert.ok(tree instanceof GRAPH.Graph);
     assert.deepEqual(tree.vertices.A.toJSON(), graph.vertices.A.toJSON());
     assert.deepEqual(
-        tree.eachVertex(function(v) {
+        tree.eachVertex(function (v) {
             return v.degree;
         }),
         [2, 0, 0]
     );
 
-    assert.deepEqual(bfs.search("B").edges, [{ source: "B", target: "A" }, { source: "B", target: "C" }]);
-    assert.deepEqual(bfs.search("C").edges, [{ source: "C", target: "A" }, { source: "C", target: "B" }]);
+    assert.deepEqual(bfs.search("B").edges, [
+        { source: "B", target: "A" },
+        { source: "B", target: "C" },
+    ]);
+    assert.deepEqual(bfs.search("C").edges, [
+        { source: "C", target: "A" },
+        { source: "C", target: "B" },
+    ]);
     assert.ok(typeof bfs._cache.A === "object");
     assert.deepEqual(Object.keys(bfs._cache), ["A", "B", "C"]);
 });
 
-QUnit.test("BreadthFirstSearch on directed graph", function(assert) {
+QUnit.test("BreadthFirstSearch on directed graph", function (assert) {
     var graph = new GRAPH.Graph(true, nodeLinkData),
         bfs = new GRAPH.BreadthFirstSearch(graph);
     assert.ok(bfs instanceof GRAPH.BreadthFirstSearch);
@@ -342,12 +371,15 @@ QUnit.test("BreadthFirstSearch on directed graph", function(assert) {
         tree = bfs.searchTree("A");
     assert.deepEqual(search, {
         discovered: { A: true, B: true, C: true },
-        edges: [{ source: "A", target: "B" }, { source: "A", target: "C" }]
+        edges: [
+            { source: "A", target: "B" },
+            { source: "A", target: "C" },
+        ],
     });
     assert.ok(tree instanceof GRAPH.Graph);
     assert.deepEqual(tree.vertices.A.toJSON(), graph.vertices.A.toJSON());
     assert.deepEqual(
-        tree.eachVertex(function(v) {
+        tree.eachVertex(function (v) {
             return v.degree;
         }),
         [2, 0, 0]
@@ -371,11 +403,11 @@ var DFSData = {
         { source: "A", target: "E" },
         { source: "E", target: "F" },
         // confound it
-        { source: "F", target: "A" }
-    ]
+        { source: "F", target: "A" },
+    ],
 };
 
-QUnit.test("Empty DepthFirstSearch", function(assert) {
+QUnit.test("Empty DepthFirstSearch", function (assert) {
     var search = new GRAPH.DepthFirstSearch();
     assert.ok(search instanceof GRAPH.DepthFirstSearch);
     assert.ok(search.graph === undefined);
@@ -386,7 +418,7 @@ QUnit.test("Empty DepthFirstSearch", function(assert) {
     assert.ok(typeof search._cache === "object");
 });
 
-QUnit.test("DepthFirstSearch on undirected graph", function(assert) {
+QUnit.test("DepthFirstSearch on undirected graph", function (assert) {
     var graph = new GRAPH.Graph(false, DFSData),
         dfs = new GRAPH.DepthFirstSearch(graph);
     assert.ok(dfs instanceof GRAPH.DepthFirstSearch);
@@ -401,15 +433,15 @@ QUnit.test("DepthFirstSearch on undirected graph", function(assert) {
             { source: "B", target: "C" },
             { source: "C", target: "D" },
             { source: "A", target: "E" },
-            { source: "E", target: "F" }
+            { source: "E", target: "F" },
         ],
         entryTimes: { A: 0, B: 1, C: 2, D: 3, E: 7, F: 8 },
-        exitTimes: { A: 11, B: 6, C: 5, D: 4, E: 10, F: 9 }
+        exitTimes: { A: 11, B: 6, C: 5, D: 4, E: 10, F: 9 },
     });
     assert.ok(tree instanceof GRAPH.Graph);
     assert.deepEqual(tree.vertices.A.toJSON(), graph.vertices.A.toJSON());
     assert.deepEqual(
-        tree.eachVertex(function(v) {
+        tree.eachVertex(function (v) {
             return v.degree;
         }),
         [2, 1, 1, 0, 1, 0]
@@ -420,14 +452,14 @@ QUnit.test("DepthFirstSearch on undirected graph", function(assert) {
         { source: "A", target: "C" },
         { source: "C", target: "D" },
         { source: "A", target: "E" },
-        { source: "E", target: "F" }
+        { source: "E", target: "F" },
     ]);
 
     assert.ok(typeof dfs._cache.A === "object");
     assert.deepEqual(Object.keys(dfs._cache), ["A", "B"]);
 });
 
-QUnit.test("DepthFirstSearch on directed graph", function(assert) {
+QUnit.test("DepthFirstSearch on directed graph", function (assert) {
     var graph = new GRAPH.Graph(true, DFSData),
         dfs = new GRAPH.DepthFirstSearch(graph);
     assert.ok(dfs instanceof GRAPH.DepthFirstSearch);
@@ -442,21 +474,24 @@ QUnit.test("DepthFirstSearch on directed graph", function(assert) {
             { source: "B", target: "C" },
             { source: "C", target: "D" },
             { source: "A", target: "E" },
-            { source: "E", target: "F" }
+            { source: "E", target: "F" },
         ],
         entryTimes: { A: 0, B: 1, C: 2, D: 3, E: 7, F: 8 },
-        exitTimes: { A: 11, B: 6, C: 5, D: 4, E: 10, F: 9 }
+        exitTimes: { A: 11, B: 6, C: 5, D: 4, E: 10, F: 9 },
     });
     assert.ok(tree instanceof GRAPH.Graph);
     assert.deepEqual(tree.vertices.A.toJSON(), graph.vertices.A.toJSON());
     assert.deepEqual(
-        tree.eachVertex(function(v) {
+        tree.eachVertex(function (v) {
             return v.degree;
         }),
         [2, 1, 1, 0, 1, 0]
     );
 
-    assert.deepEqual(dfs.search("B").edges, [{ source: "B", target: "C" }, { source: "C", target: "D" }]);
+    assert.deepEqual(dfs.search("B").edges, [
+        { source: "B", target: "C" },
+        { source: "C", target: "D" },
+    ]);
 
     assert.ok(typeof dfs._cache.A === "object");
     assert.deepEqual(Object.keys(dfs._cache), ["A", "B"]);
@@ -464,21 +499,27 @@ QUnit.test("DepthFirstSearch on directed graph", function(assert) {
 
 // ------------------------------------------------------------------------ components
 //*/
-QUnit.test("weakComponents on undirected graph", function(assert) {
+QUnit.test("weakComponents on undirected graph", function (assert) {
     var graph = new GRAPH.Graph(false, {
         vertices: [{ name: "A" }, { name: "B" }, { name: "C" }, { name: "D" }, { name: "E" }],
-        edges: [{ source: "A", target: "B" }, { source: "C", target: "D" }]
+        edges: [
+            { source: "A", target: "B" },
+            { source: "C", target: "D" },
+        ],
     });
     assert.equal(graph.numEdges, 4);
     var components = graph.weakComponents();
     assert.equal(components.length, 3);
 });
 
-QUnit.test("weakComponents on directed graph", function(assert) {
+QUnit.test("weakComponents on directed graph", function (assert) {
     var graph, components;
     graph = new GRAPH.Graph(true, {
         vertices: [{ name: "A" }, { name: "B" }, { name: "C" }, { name: "D" }, { name: "E" }],
-        edges: [{ source: "A", target: "B" }, { source: "D", target: "C" }]
+        edges: [
+            { source: "A", target: "B" },
+            { source: "D", target: "C" },
+        ],
     });
     assert.equal(graph.numEdges, 2);
 
@@ -493,14 +534,14 @@ QUnit.test("weakComponents on directed graph", function(assert) {
             { name: "D", data: 40 },
             { name: "E", data: 500 },
             { name: "F", data: 600 },
-            { name: "G", data: 7 }
+            { name: "G", data: 7 },
         ],
         edges: [
             { source: "A", target: "B" },
             { source: "D", target: "C" },
             { source: "E", target: "A" },
-            { source: "F", target: "E" }
-        ]
+            { source: "F", target: "E" },
+        ],
     });
     components = graph.weakComponents();
     assert.equal(components.length, 3);
@@ -511,7 +552,7 @@ QUnit.test("weakComponents on directed graph", function(assert) {
     assert.deepEqual(components[0].edges, [
         { source: "A", target: "B" },
         { source: "E", target: "A" },
-        { source: "F", target: "E" }
+        { source: "F", target: "E" },
     ]);
 
     assert.equal(components[1].vertices.length, 2);

@@ -11,11 +11,11 @@
 </template>
 <script>
 import BaseList from "./BaseList";
-import { getDisplayApplications, reloadDisplayApplications } from "./AdminServices.js";
+import { getDisplayApplications, reloadDisplayApplications } from "./AdminServices";
 
 export default {
     components: {
-        BaseList
+        BaseList,
     },
     data() {
         return {
@@ -24,11 +24,11 @@ export default {
                 { key: "name", sortable: true },
                 { key: "id", sortable: true },
                 { key: "version" },
-                { key: "links" }
+                { key: "links" },
             ],
             getter: getDisplayApplications,
-            setter: reloadDisplayApplications
+            setter: reloadDisplayApplications,
         };
-    }
+    },
 };
 </script>

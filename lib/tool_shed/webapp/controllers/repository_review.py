@@ -82,7 +82,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
         status = kwd.get('status', 'done')
         review = review_util.get_review(trans.app, kwd['id'])
         repository = review.repository
-        repo = hg_util.get_repo_for_repository(trans.app, repository=repository)
+        repo = repository.hg_repo
         rev, changeset_revision_label = hg_util.get_rev_label_from_changeset_revision(repo, review.changeset_revision)
         return trans.fill_template('/webapps/tool_shed/repository_review/browse_review.mako',
                                    repository=repository,
@@ -244,7 +244,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
         for component in review_util.get_components(trans.app):
             components_dict[component.name] = dict(component=component, component_review=None)
         repository = review.repository
-        repo = hg_util.get_repo_for_repository(trans.app, repository=repository)
+        repo = repository.hg_repo
         for component_review in review.component_reviews:
             if component_review and component_review.component:
                 component_name = component_review.component.name
@@ -483,7 +483,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
         repository_id = kwd.get('id', None)
         if repository_id:
             repository = suc.get_repository_in_tool_shed(trans.app, repository_id)
-            repo = hg_util.get_repo_for_repository(trans.app, repository=repository)
+            repo = repository.hg_repo
             metadata_revision_hashes = [metadata_revision.changeset_revision for metadata_revision in repository.metadata_revisions]
             reviewed_revision_hashes = [review.changeset_revision for review in repository.reviews]
             reviews_dict = OrderedDict()
@@ -531,7 +531,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
         repository_id = kwd.get('id', None)
         changeset_revision = kwd.get('changeset_revision', None)
         repository = repository_util.get_repository_in_tool_shed(trans.app, repository_id)
-        repo = hg_util.get_repo_for_repository(trans.app, repository=repository)
+        repo = repository.hg_repo
         installable = changeset_revision in [metadata_revision.changeset_revision for metadata_revision in repository.metadata_revisions]
         rev, changeset_revision_label = hg_util.get_rev_label_from_changeset_revision(repo, changeset_revision)
         reviews = review_util.get_reviews_by_repository_id_changeset_revision(trans.app,
@@ -594,7 +594,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
         status = kwd.get('status', 'done')
         repository = repository_util.get_repository_in_tool_shed(trans.app, kwd['id'])
         changeset_revision = kwd.get('changeset_revision', None)
-        repo = hg_util.get_repo_for_repository(trans.app, repository=repository)
+        repo = repository.hg_repo
         previous_reviews_dict = review_util.get_previous_repository_reviews(trans.app,
                                                                             repository,
                                                                             changeset_revision)

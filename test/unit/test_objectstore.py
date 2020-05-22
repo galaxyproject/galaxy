@@ -4,7 +4,6 @@ from shutil import rmtree
 from string import Template
 from tempfile import mkdtemp
 from uuid import uuid4
-from xml.etree import ElementTree
 
 import yaml
 from six import StringIO
@@ -15,7 +14,10 @@ from galaxy.objectstore.azure_blob import AzureBlobObjectStore
 from galaxy.objectstore.cloud import Cloud
 from galaxy.objectstore.pithos import PithosObjectStore
 from galaxy.objectstore.s3 import S3ObjectStore
-from galaxy.util import directory_hash_id
+from galaxy.util import (
+    directory_hash_id,
+    XML,
+)
 
 
 DISK_TEST_CONFIG = """<?xml version="1.0"?>
@@ -200,6 +202,23 @@ def test_disk_store_alt_name_abspath():
             pass
 
 
+MIXED_STORE_BY_HIERARCHICAL_TEST_CONFIG = """<?xml version="1.0"?>
+<object_store type="hierarchical">
+    <backends>
+        <backend id="files1" type="disk" weight="1" order="0" store_by="id">
+            <files_dir path="${temp_directory}/files1"/>
+            <extra_dir type="temp" path="${temp_directory}/tmp1"/>
+            <extra_dir type="job_work" path="${temp_directory}/job_working_directory1"/>
+        </backend>
+        <backend id="files2" type="disk" weight="1" order="1" store_by="uuid">
+            <files_dir path="${temp_directory}/files2"/>
+            <extra_dir type="temp" path="${temp_directory}/tmp2"/>
+            <extra_dir type="job_work" path="${temp_directory}/job_working_directory2"/>
+        </backend>
+    </backends>
+</object_store>
+"""
+
 HIERARCHICAL_TEST_CONFIG = """<?xml version="1.0"?>
 <object_store type="hierarchical">
     <backends>
@@ -216,7 +235,6 @@ HIERARCHICAL_TEST_CONFIG = """<?xml version="1.0"?>
     </backends>
 </object_store>
 """
-
 
 HIERARCHICAL_TEST_CONFIG_YAML = """
 type: hierarchical
@@ -269,6 +287,13 @@ def test_hierarchical_store():
             as_dict = object_store.to_dict()
             _assert_has_keys(as_dict, ["backends", "extra_dirs", "type"])
             _assert_key_has_value(as_dict, "type", "hierarchical")
+
+
+def test_mixed_store_by():
+    with TestConfig(MIXED_STORE_BY_HIERARCHICAL_TEST_CONFIG) as (directory, object_store):
+        as_dict = object_store.to_dict()
+        assert as_dict["backends"][0]["store_by"] == "id"
+        assert as_dict["backends"][1]["store_by"] == "uuid"
 
 
 DISTRIBUTED_TEST_CONFIG = """<?xml version="1.0"?>
@@ -751,7 +776,7 @@ class TestConfig(object):
         if clazz is None:
             self.object_store = objectstore.build_object_store_from_config(config)
         elif config_file == "store.xml":
-            self.object_store = clazz.from_xml(config, ElementTree.fromstring(config_str))
+            self.object_store = clazz.from_xml(config, XML(config_str))
         else:
             self.object_store = clazz(config, yaml.safe_load(StringIO(config_str)))
 

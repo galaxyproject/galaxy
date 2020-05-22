@@ -11,11 +11,11 @@
 </template>
 <script>
 import BaseList from "./BaseList";
-import { getInstalledRepositories, resetRepositoryMetadata } from "./AdminServices.js";
+import { getInstalledRepositories, resetRepositoryMetadata } from "./AdminServices";
 
 export default {
     components: {
-        BaseList
+        BaseList,
     },
     data() {
         return {
@@ -23,11 +23,11 @@ export default {
                 { key: "execute", label: "Reset" },
                 { key: "name", label: "Metadata", sortable: true },
                 { key: "owner", sortable: true },
-                { key: "ctx_rev", label: "Revision" }
+                { key: "ctx_rev", label: "Revision" },
             ],
             getter: getInstalledRepositories,
-            setter: resetRepositoryMetadata
+            setter: resetRepositoryMetadata,
         };
-    }
+    },
 };
 </script>

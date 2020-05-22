@@ -3,7 +3,7 @@
         <div v-if="error" class="alert alert-danger" show>{{ error }}</div>
         <div v-else>
             <span v-if="loading">
-                <span class="fa fa-spinner fa-spin" />
+                <font-awesome-icon icon="spinner" spin />
                 Loading workflows...
             </span>
             <div v-else>
@@ -23,11 +23,11 @@
                     <b-col>
                         <span class="float-right">
                             <b-button id="workflow-create" class="m-1" @click="createWorkflow">
-                                <span class="fa fa-plus" />
+                                <font-awesome-icon icon="plus" />
                                 Create
                             </b-button>
                             <b-button id="workflow-import" class="m-1" @click="importWorkflow">
-                                <span class="fa fa-upload" />
+                                <font-awesome-icon icon="upload" />
                                 Import
                             </b-button>
                         </span>
@@ -42,7 +42,7 @@
                     @filtered="filtered"
                 >
                     <template v-slot:cell(name)="row">
-                        <workflowdropdown
+                        <WorkflowDropdown
                             :workflow="row.item"
                             @onAdd="onAdd"
                             @onRemove="onRemove"
@@ -52,13 +52,14 @@
                         />
                     </template>
                     <template v-slot:cell(tags)="row">
-                        <workflowtags :workflow="row.item" @onError="onError" />
+                        <Tags :index="row.index" :tags="row.item.tags" @input="onTags" />
                     </template>
-
                     <template v-slot:cell(bookmark)="row">
                         <b-form-checkbox v-model="row.item.show_in_tool_panel" @change="bookmarkWorkflow(row.item)" />
                     </template>
-
+                    <template v-slot:cell(update_time)="data">
+                        <UtcDate :date="data.value" mode="elapsed" />
+                    </template>
                     <template v-slot:cell(execute)="row">
                         <b-button
                             v-b-tooltip.hover.bottom
@@ -80,15 +81,28 @@
     </div>
 </template>
 <script>
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faPlus } from "@fortawesome/free-solid-svg-icons";
+import { faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { faUpload } from "@fortawesome/free-solid-svg-icons";
+
 import { getAppRoot } from "onload/loadConfig";
-import { Services } from "./services.js";
-import WorkflowTags from "./WorkflowTags.vue";
-import WorkflowDropdown from "./WorkflowDropdown.vue";
+import { Services } from "./services";
+import Tags from "components/Common/Tags";
+import WorkflowDropdown from "./WorkflowDropdown";
+import UtcDate from "components/UtcDate";
+
+library.add(faPlus);
+library.add(faUpload);
+library.add(faSpinner);
 
 export default {
     components: {
-        workflowtags: WorkflowTags,
-        workflowdropdown: WorkflowDropdown
+        FontAwesomeIcon,
+        UtcDate,
+        Tags,
+        WorkflowDropdown,
     },
     data() {
         return {
@@ -96,26 +110,31 @@ export default {
             fields: [
                 {
                     key: "name",
-                    sortable: true
+                    sortable: true,
                 },
                 {
                     key: "tags",
-                    sortable: true
+                    sortable: true,
                 },
                 {
-                    key: "bookmark"
+                    label: "Updated",
+                    key: "update_time",
+                    sortable: true,
+                },
+                {
+                    key: "bookmark",
                 },
                 {
                     key: "execute",
-                    label: ""
-                }
+                    label: "",
+                },
             ],
             filter: "",
             loading: true,
             message: null,
             messageVariant: null,
             nWorkflows: 0,
-            workflows: []
+            workflows: [],
         };
     },
     computed: {
@@ -127,7 +146,7 @@ export default {
         },
         showMessage() {
             return !!this.message;
-        }
+        },
     },
     created() {
         this.root = getAppRoot();
@@ -140,28 +159,28 @@ export default {
             this.filter = "";
             this.services
                 .getWorkflows()
-                .then(workflows => {
+                .then((workflows) => {
                     this.workflows = workflows;
                     this.nWorkflows = workflows.length;
                     this.loading = false;
                 })
-                .catch(error => {
+                .catch((error) => {
                     this.error = error;
                 });
         },
-        filtered: function(items) {
+        filtered: function (items) {
             this.nWorkflows = items.length;
         },
-        createWorkflow: function(workflow) {
+        createWorkflow: function (workflow) {
             window.location = `${this.root}workflows/create`;
         },
-        importWorkflow: function(workflow) {
+        importWorkflow: function (workflow) {
             window.location = `${this.root}workflows/import`;
         },
-        executeWorkflow: function(workflow) {
+        executeWorkflow: function (workflow) {
             window.location = `${this.root}workflows/run?id=${workflow.id}`;
         },
-        bookmarkWorkflow: function(workflow) {
+        bookmarkWorkflow: function (workflow) {
             // This reloads the whole page, so that the workflow appears in the tool panel.
             // Ideally we would notify only the tool panel of a change
             const id = workflow.id;
@@ -169,38 +188,50 @@ export default {
             const tags = workflow.tags;
             const data = {
                 show_in_tool_panel: !show_in_tool_panel,
-                tags: tags
+                tags: tags,
             };
             this.services
                 .updateWorkflow(id, data)
                 .then(() => {
                     window.location = `${getAppRoot()}workflows/list`;
                 })
-                .catch(error => {
+                .catch((error) => {
                     this.onError(error);
                 });
         },
-        onAdd: function(workflow) {
+        onTags: function (tags, index) {
+            const workflow = this.workflows[index];
+            workflow.tags = tags;
+            this.services
+                .updateWorkflow(workflow.id, {
+                    show_in_tool_panel: workflow.show_in_tool_panel,
+                    tags: workflow.tags,
+                })
+                .catch((error) => {
+                    this.onError(error);
+                });
+        },
+        onAdd: function (workflow) {
             this.workflows.unshift(workflow);
             this.nWorkflows = this.workflows.length;
         },
-        onRemove: function(id) {
-            this.workflows = this.workflows.filter(item => item.id !== id);
+        onRemove: function (id) {
+            this.workflows = this.workflows.filter((item) => item.id !== id);
             this.nWorkflows = this.workflows.length;
         },
-        onUpdate: function(id, data) {
-            const workflow = this.workflows.find(item => item.id === id);
+        onUpdate: function (id, data) {
+            const workflow = this.workflows.find((item) => item.id === id);
             Object.assign(workflow, data);
             this.workflows = [...this.workflows];
         },
-        onSuccess: function(message) {
+        onSuccess: function (message) {
             this.message = message;
             this.messageVariant = "success";
         },
-        onError: function(message) {
+        onError: function (message) {
             this.message = message;
             this.messageVariant = "danger";
-        }
-    }
+        },
+    },
 };
 </script>
