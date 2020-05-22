@@ -222,6 +222,7 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
     - [ ] Deploy to usegalaxy.org (${freeze_date} + 1 week).
     - [ ] Deploy to toolshed.g2.bx.psu.edu (${freeze_date} + 1 week).
     - [ ] [Update BioBlend CI testing](https://github.com/galaxyproject/bioblend/commit/b74b1c302a1b8fed86786b40d7ecc3520cbadcd3) to include a ``release_${version}`` target: add ``- TOX_ENV=py27 GALAXY_VERSION=release_${version}`` to the ``env`` list in ``.travis.yml`` .
+    - [ ] Update GALAXY_RELEASE in https://github.com/galaxyproject/tools-iuc/blob/master/.github/workflows/ci.yaml
 
 - [ ] **Create Release Notes**
 
@@ -266,7 +267,7 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
 
 - [ ] **Ensure Tool Tests use Latest Release**
 
-    - [ ]  Update GALAXY_RELEASE in https://github.com/galaxyproject/tools-iuc/blob/master/.travis.yml#L6
+    - [ ]  Update GALAXY_RELEASE in https://github.com/galaxyproject/tools-iuc/blob/master/.github/workflows/pr.yaml
     - [ ]  Update GALAXY_RELEASE in https://github.com/galaxyproject/tools-devteam/blob/master/.travis.yml#L6
 
 - [ ] **Announce Release**
