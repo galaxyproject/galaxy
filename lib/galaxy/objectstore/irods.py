@@ -211,7 +211,11 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
     def shutdown(self):
         # This call will cleanup all the connections in the connection pool
         log.debug("In __shutdown__ Number of active connections: %s, Number of idle connections: %s", len(self.session.pool.active), len(self.session.pool.idle))
-        self.session.cleanup()
+        # OSError sometimes happens on GitHub Actions, after the test has successfully completed. Ignore it if it happens.
+        try:
+            self.session.cleanup()
+        except OSError:
+            pass
 
     def _initialize(self):
         reload_timer = ExecutionTimer()
