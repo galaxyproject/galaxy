@@ -16,7 +16,7 @@ else:
 try:
     import gitlab
 except ImportError:
-    pass
+    gitlab = None
     
 from galaxy.util import string_as_bool
 from .base_git import BaseGitPlugin
@@ -46,14 +46,11 @@ class GitLabPlugin(BaseGitPlugin):
         self.gitlab_labels = kwargs.get("gitlab_labels", [])
 
         try:
-            if 'gitlab' not in sys.modules:
-                raise ImportError
+            if gitlab is None:
+                raise Exception("GitLab error reporting plugin is configured, but gitlab is not installed. Please install python-gitlab.")
             self.gitlab = self.gitlab_connect()
             self.gitlab.auth()
 
-        except ImportError:
-            log.error("GitLab error reporting - Please install python-gitlab to submit bug reports to GitLab.", exc_info=True)
-            self.gitlab = None
         except gitlab.GitlabAuthenticationError:
             log.error("GitLab error reporting - Could not authenticate with GitLab.", exc_info=True)
             self.gitlab = None
