@@ -9,6 +9,7 @@ MetaCyto analysis datatypes.
 """
 
 import logging
+
 from galaxy.datatypes.tabular import Tabular
 from . import data
 
