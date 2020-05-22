@@ -283,5 +283,14 @@ export default {
                 }
             });
         },
+        getUploadedModels: function () {
+            const Galaxy = getGalaxyInstance();
+            const allHids = [];
+            this.collection.models.forEach((upload) => {
+                allHids.push.apply(allHids, upload.get("hids"));
+            });
+            const models = allHids.map((hid) => Galaxy.currHistoryPanel.collection.getByHid(hid));
+            return models;
+        },
     },
 };
