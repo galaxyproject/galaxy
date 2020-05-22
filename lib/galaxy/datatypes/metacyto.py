@@ -9,9 +9,7 @@ MetaCyto analysis datatypes.
 """
 
 import logging
-
 from galaxy.datatypes.tabular import Tabular
-
 from . import data
 
 log = logging.getLogger(__name__)
@@ -32,7 +30,7 @@ class mStats(Tabular):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "MetaCyto Cluster Stats file (%s)" % (data.nice_size(dataset.get_size()))
 
     def sniff(self, filename):
