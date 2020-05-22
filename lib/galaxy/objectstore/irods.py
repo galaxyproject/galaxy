@@ -210,7 +210,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
 
     def shutdown(self):
         # This call will cleanup all the connections in the connection pool
-        log.debug("In __del__ Number of active connections: %s, Number of idle connections: %s", len(self.session.pool.active), len(self.session.pool.idle))
+        log.debug("In __shutdown__ Number of active connections: %s, Number of idle connections: %s", len(self.session.pool.active), len(self.session.pool.idle))
         self.session.cleanup()
 
     def _initialize(self):
