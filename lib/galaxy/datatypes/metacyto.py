@@ -11,9 +11,7 @@ MetaCyto analysis datatypes.
 import logging
 
 from galaxy.datatypes.tabular import Tabular
-from galaxy.datatypes.data import get_file_peek, Text
-from galaxy.datatypes.metadata import MetadataElement
-from galaxy.util import nice_size, string_as_bool
+
 from . import data
 
 log = logging.getLogger(__name__)
@@ -40,11 +38,11 @@ class mStats(Tabular):
     def sniff(self, filename):
         """Quick test on file headings"""
         with open(filename, "r") as f:
-            #last one == fraction
+            # last one == fraction
             headers = f.readline().strip().split("\t")
             if headers[-1] != "fraction":
                 return False
-            hdrs = ["fcs_files","cluster_id","label","fcs_names"]
+            hdrs = ["fcs_files", "cluster_id", "label", "fcs_names"]
             for h in hdrs:
                 if h not in headers:
                     return False
@@ -70,7 +68,7 @@ class mClrList(Tabular):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "MetaCyto Cluster Definitions List file (%s)" % (data.nice_size(dataset.get_size()))
 
     def get_mime(self):
@@ -93,7 +91,7 @@ class mSummary(Tabular):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "MetaCyto Preprocessing Summary file (%s)" % (data.nice_size(dataset.get_size()))
 
     def sniff(self, filename):
