@@ -1597,7 +1597,7 @@ class Tool(Dictifiable):
                 completed_job=completed_job,
                 collection_info=collection_info,
             )
-        except webob.exc.HTTPFound as e:
+        except (webob.exc.HTTPFound, exceptions.MessageException) as e:
             # if it's a webob redirect exception, pass it up the stack
             raise e
         except ToolInputsNotReadyException as e:

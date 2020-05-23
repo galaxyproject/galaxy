@@ -577,10 +577,7 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
         })
         self._job_search(tool_id='multi_data_param', history_id=history_id, inputs=inputs)
 
-    # This endpoint is not great, but I think we need this for now.
-    @skip_without_tool("collection_paired_test")
-    @uses_test_history(require_new=False)
-    def test_job_build_for_rerun(self, history_id):
+    def _get_simple_rerun_params(self, history_id, private=False):
         list_id_a = self.__history_with_ok_collection(collection_type='list:pair', history_id=history_id)
         inputs = {'f1': {'batch': True, 'values': [{'src': 'hdca', 'id': list_id_a, 'map_over_type': 'paired'}]}}
         run_response = self._run(
@@ -595,13 +592,38 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
         # which is a dataset collection element (and not the list:pair hdca that was used as input to the original
         # job).
         assert rerun_params['state_inputs']['f1']['values'][0]['src'] == 'dce'
-        run_response = self._run(
+        if private:
+            hdca = self.dataset_populator.get_history_collection_details(history_id=history_id, content_id=list_id_a)
+            for element in hdca['elements'][0]['object']['elements']:
+                self.dataset_populator.make_private(history_id, element['object']['id'])
+        return rerun_params
+
+    @skip_without_tool("collection_paired_test")
+    @uses_test_history(require_new=False)
+    def test_job_build_for_rerun(self, history_id):
+        rerun_params = self._get_simple_rerun_params(history_id)
+        self._run(
             history_id=history_id,
             tool_id="collection_paired_test",
             inputs=rerun_params['state_inputs'],
             wait_for_job=True,
             assert_ok=True,
         )
+
+    @skip_without_tool("collection_paired_test")
+    @uses_test_history(require_new=False)
+    def test_dce_submission_security(self, history_id):
+        rerun_params = self._get_simple_rerun_params(history_id, private=True)
+        with self._different_user():
+            other_history_id = self.dataset_populator.new_history()
+            response = self._run(
+                history_id=other_history_id,
+                tool_id="collection_paired_test",
+                inputs=rerun_params['state_inputs'],
+                wait_for_job=False,
+                assert_ok=False,
+            )
+            assert response.status_code == 403
 
     @skip_without_tool("identifier_collection")
     @uses_test_history(require_new=False)

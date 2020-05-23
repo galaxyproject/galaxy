@@ -8,6 +8,7 @@ from json import dumps
 from six import string_types
 
 from galaxy import model
+from galaxy.exceptions import ItemAccessibilityException
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.model import LibraryDatasetDatasetAssociation, WorkflowRequestInputParameter
 from galaxy.model.dataset_collections.builder import CollectionBuilder
@@ -100,12 +101,12 @@ class DefaultToolAction(object):
                 if collection_info and collection_info.is_mapped_over(input_name):
                     action_tuples = collection_info.map_over_action_tuples(input_name)
                     if not trans.app.security_agent.can_access_datasets(current_user_roles, action_tuples):
-                        raise Exception("User does not have permission to use a dataset provided for input.")
+                        raise ItemAccessibilityException("User does not have permission to use a dataset provided for input.")
                     for action, role_id in action_tuples:
                         record_permission(action, role_id)
                 else:
                     if not trans.app.security_agent.can_access_dataset(current_user_roles, data.dataset):
-                        raise Exception("User does not have permission to use a dataset (%s) provided for input." % data.id)
+                        raise ItemAccessibilityException("User does not have permission to use a dataset (%s) provided for input." % data.id)
                     permissions = trans.app.security_agent.get_permissions(data.dataset)
                     for action, roles in permissions.items():
                         for role in roles:
@@ -172,7 +173,7 @@ class DefaultToolAction(object):
 
                 action_tuples = collection.dataset_action_tuples
                 if not trans.app.security_agent.can_access_datasets(current_user_roles, action_tuples):
-                    raise Exception("User does not have permission to use a dataset provided for input.")
+                    raise ItemAccessibilityException("User does not have permission to use a dataset provided for input.")
                 for action, role_id in action_tuples:
                     record_permission(action, role_id)
 
