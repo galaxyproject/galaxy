@@ -14,7 +14,7 @@ const View = Backbone.View.extend({
         const Galaxy = getGalaxyInstance();
         const self = this;
         this.options = options;
-
+        this._component = null;
         // build tabs
         this.collection = new Menu.Collection();
         this.collection
@@ -75,7 +75,7 @@ const View = Backbone.View.extend({
         const tabs = this.collection.models.map((el) => {
             return el.toJSON();
         });
-        mountVueComponent(Masthead)(
+        this._component = mountVueComponent(Masthead)(
             {
                 brandTitle: brandTitle,
                 brandLink: this.options.logo_url,
@@ -90,6 +90,10 @@ const View = Backbone.View.extend({
             el
         );
         return this;
+    },
+
+    addItem(item) {
+        this._component.addItem(item);
     },
 
     highlight: function (id) {

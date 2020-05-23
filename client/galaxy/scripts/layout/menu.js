@@ -8,6 +8,16 @@ import { CommunicationServerView } from "layout/communication-server-view";
 import Webhooks from "mvc/webhooks";
 import Utils from "utils/utils";
 
+function appendToPageMenu(item) {
+    const Galaxy = getGalaxyInstance();
+    // Galaxy.page is undefined for data libraries, workflows pages
+    if (Galaxy.page) {
+        Galaxy.page.masthead.addItem(item);
+    } else if (Galaxy.masthead) {
+        Galaxy.masthead.addItem(item);
+    }
+}
+
 export function logoutClick() {
     const galaxy = getGalaxyInstance();
     const session_csrf_token = galaxy.session_csrf_token;
@@ -153,16 +163,13 @@ const Collection = Backbone.Collection.extend({
                                 tooltip: webhook.config.tooltip,
                                 /*jslint evil: true */
                                 onclick: webhook.config.function && new Function(webhook.config.function),
+                                // fill in model defaults because this isn't added to
+                                // collection first, will make more sense when other
+                                // items aren't defined using backbone
+                                visible: true,
+                                target: "_parent",
                             };
-
-                            // Galaxy.page is undefined for data libraries, workflows pages
-                            const Galaxy = getGalaxyInstance();
-                            if (Galaxy.page) {
-                                Galaxy.page.masthead.collection.add(obj);
-                            } else if (Galaxy.masthead) {
-                                Galaxy.masthead.collection.add(obj);
-                            }
-
+                            appendToPageMenu(obj);
                             // Append masthead script and styles to Galaxy main
                             Utils.appendScriptStyle(webhook);
                         }
