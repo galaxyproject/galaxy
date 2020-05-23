@@ -1,6 +1,6 @@
 import $ from "jquery";
 import Backbone from "backbone";
-import Menu from "layout/menu";
+import { fetchMenu } from "layout/menu";
 import Scratchbook from "layout/scratchbook";
 import QuotaMeter from "mvc/user/user-quotameter";
 import { getGalaxyInstance } from "app";
@@ -15,14 +15,7 @@ const View = Backbone.View.extend({
         this.options = options;
         this._component = null;
         // build tabs
-        this.collection = new Menu.Collection();
-        this.collection
-            .on("dispatch", (callback) => {
-                self.collection.each((m) => {
-                    callback(m);
-                });
-            })
-            .fetch(this.options);
+        this.collection = fetchMenu(options);
 
         // scratchbook
         Galaxy.frame = this.frame = new Scratchbook({
@@ -68,8 +61,18 @@ const View = Backbone.View.extend({
         if (this.options.brand) {
             brandTitle += this.options.brand;
         }
-        const tabs = this.collection.models.map((el) => {
-            return el.toJSON();
+        const defaults = {
+            visible: true,
+            target: "_parent",
+        };
+        const tabs = this.collection.map((el) => {
+            let asJson;
+            if (el.toJSON instanceof Function) {
+                asJson = el.toJSON();
+            } else {
+                asJson = el;
+            }
+            return Object.assign({}, defaults, asJson);
         });
         this._component = mountVueComponent(Masthead)(
             {

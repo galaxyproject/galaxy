@@ -16,13 +16,13 @@ export default Backbone.View.extend({
         this.frames = new Frames.View({ visible: false });
         this.setElement(this.frames.$el);
         this.active = false;
-        this.buttonActive = options.collection.add({
+        this.buttonActive = options.collection.push({
             id: "enable-scratchbook",
             icon: "fa-th",
             tooltip: _l("Enable/Disable Scratchbook"),
             onclick: () => {
                 this.active = !this.active;
-                this.buttonActive.set({
+                Object.assign(this.buttonActive, {
                     toggle: this.active,
                     show_note: this.active,
                     note_cls: this.active && "fa fa-check",
@@ -37,7 +37,7 @@ export default Backbone.View.extend({
                 }
             },
         });
-        this.buttonLoad = options.collection.add({
+        this.buttonLoad = options.collection.push({
             id: "show-scratchbook",
             icon: "fa-eye",
             tooltip: _l("Show/Hide Scratchbook"),
