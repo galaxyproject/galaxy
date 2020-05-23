@@ -51,22 +51,6 @@ export default Backbone.View.extend({
                 }
             },
         });
-        this.frames
-            .on("add remove", () => {
-                if (this.frames.visible && this.frames.length() === 0) {
-                    this.frames.hide();
-                }
-                this.buttonLoad.set({
-                    note: this.frames.length(),
-                    visible: this.frames.length() > 0,
-                });
-            })
-            .on("show hide ", () => {
-                this.buttonLoad.set({
-                    toggle: this.frames.visible,
-                    icon: (this.frames.visible && "fa-eye") || "fa-eye-slash",
-                });
-            });
         this.history_cache = {};
     },
 
