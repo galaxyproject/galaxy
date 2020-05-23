@@ -300,8 +300,11 @@ class BaseObjectStore(ObjectStore):
             # job working directories.
             return obj.id
 
-    def _invoke(self, delegate, obj=None, **kwargs):
-        return self.__getattribute__("_" + delegate)(obj=obj, **kwargs)
+    def _invoke(self, delegate, obj=None, ignore_media=False, **kwargs):
+        media = self
+        if hasattr(obj, "active_storage_media_associations") and obj.has_active_storage_media() and not ignore_media:
+            media = UserObjectStore(self.config, obj.active_storage_media_associations, self)
+        return media.__getattribute__("_" + delegate)(obj=obj, **kwargs)
 
     def exists(self, obj, **kwargs):
         return self._invoke('exists', obj, **kwargs)
@@ -662,13 +665,7 @@ class NestedObjectStore(BaseObjectStore):
 
     def _create(self, obj, ignore_media=False, **kwargs):
         """Create a backing file in a random backend."""
-        if hasattr(obj, "active_storage_media_associations") and \
-                obj.has_active_storage_media() and \
-                not ignore_media:
-            media = UserObjectStore(obj.active_storage_media_associations, self)
-            return media.call_method("create", obj, **kwargs)
-        else:
-            random.choice(list(self.backends.values())).create(obj, **kwargs)
+        random.choice(list(self.backends.values())).create(obj, **kwargs)
 
     def _empty(self, obj, **kwargs):
         """For the first backend that has this `obj`, determine if it is empty."""
@@ -723,12 +720,6 @@ class NestedObjectStore(BaseObjectStore):
         return None
 
     def _call_method(self, method, obj, default, default_is_exception, ignore_media=False, **kwargs):
-        if hasattr(obj, "active_storage_media_associations") and \
-                obj.has_active_storage_media() and \
-                not ignore_media:
-            media = UserObjectStore(obj.active_storage_media_associations, self)
-            return media.call_method(method, obj, default, default_is_exception, **kwargs)
-
         backend = self._get_backend(obj, **kwargs)
         if backend is not None:
             return backend.__getattribute__(method)(obj, **kwargs)
@@ -972,11 +963,6 @@ class HierarchicalObjectStore(NestedObjectStore):
 
     def _exists(self, obj, ignore_media=False, **kwargs):
         """Check all child object stores."""
-        if hasattr(obj, "active_storage_media_associations") and \
-                obj.has_active_storage_media() and \
-                not ignore_media:
-            media = UserObjectStore(obj.active_storage_media_associations, self)
-            return media.call_method("exists", obj, **kwargs)
         for store in self.backends.values():
             if store.exists(obj, **kwargs):
                 return True
@@ -984,23 +970,13 @@ class HierarchicalObjectStore(NestedObjectStore):
 
     def _create(self, obj, ignore_media=False, **kwargs):
         """Call the primary object store."""
-        # very confusing why job is passed here, hence
-        # the following check is necessary because the
-        # `obj` object can be of either of the following
-        # types:
-        # - `galaxy.model.Dataset`
-        # - `galaxy.model.Job`
-        if hasattr(obj, "active_storage_media_associations") and \
-                obj.has_active_storage_media() and \
-                not ignore_media:
-            media = UserObjectStore(obj.active_storage_media_associations, self)
-            return media.call_method("create", obj, **kwargs)
-        else:
-            self.backends[0].create(obj, **kwargs)
+        self.backends[0].create(obj, **kwargs)
 
 
-class UserObjectStore(ObjectStore):
-    def __init__(self, media_associations, instance_wide_objectstore):
+class UserObjectStore(NestedObjectStore):
+
+    def __init__(self, config, media_associations, instance_wide_objectstore):
+        super(UserObjectStore, self).__init__(config)
         self.media_associations = media_associations
         self.backends = {}
         self.__configure_store()
@@ -1038,24 +1014,26 @@ class UserObjectStore(ObjectStore):
     def __call_instance_wide_backend_method(self, method, obj, default, default_is_exception, ignore_media=True, **kwargs):
         return self.instance_wide_objectstore.__getattribute__(method)(obj, default, default_is_exception, ignore_media=ignore_media, **kwargs)
 
-    def exists(self, obj, **kwargs):
+    def _exists(self, obj, **kwargs):
         for backend in self.backends.values():
-            if backend.exists(obj, **kwargs):
+            if backend._exists(obj, **kwargs):
                 return True
         return False
 
-    def size(self, obj, media=None, **kwargs):
+    def _create(self, obj, **kwargs):
+        return self._call_method("_create", obj, **kwargs)
+
+    def _size(self, obj, media=None, **kwargs):
         backend = self.__get_containing_media(obj, media, **kwargs)
         if backend is None:
             return 0
         else:
-            return backend.size(obj, **kwargs)
+            return backend._size(obj, **kwargs)
 
-    def call_method(self, method, obj, default=None, default_is_exception=False, **kwargs):
+    def _call_method(self, method, obj, default=None, default_is_exception=None, ignore_media=False, **kwargs):
         picked_media = obj.active_storage_media_associations[0].storage_media
         backend = self.backends[picked_media.id]
-        rtv = backend.__getattribute__(method)(obj, **kwargs)
-        return rtv
+        return backend.__getattribute__(method)(obj, **kwargs)
 
 
 def type_to_object_store_class(store, fsmon=False):
