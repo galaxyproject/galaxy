@@ -168,6 +168,8 @@ class JobSearch:
         data_types = []
         used_ids = []
         for k, input_list in input_data.items():
+            # k will be matched against the JobParameter.name column, which is never prefixed
+            k = k.split('|')[-1]
             for type_values in input_list:
                 t = type_values['src']
                 v = type_values['id']
@@ -238,6 +240,15 @@ class JobSearch:
                             )
                     ))
                     used_ids.append(a.dataset_collection_id)
+                elif t == 'dce':
+                    a = aliased(model.JobToInputDatasetCollectionElementAssociation)
+                    b = aliased(model.DatasetCollectionElement)
+                    conditions.append(and_(
+                        model.Job.id == a.job_id,
+                        a.name == k,
+                        a.dataset_collection_element_id == b.id,
+                    ))
+                    used_ids.append(a.dataset_collection_element_id)
                 else:
                     return []
 
