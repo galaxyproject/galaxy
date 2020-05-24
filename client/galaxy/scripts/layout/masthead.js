@@ -12,7 +12,6 @@ import { getAppRoot } from "onload/loadConfig";
 const View = Backbone.View.extend({
     initialize: function (options) {
         const Galaxy = getGalaxyInstance();
-        const self = this;
         this.options = options;
         this._component = null;
         // build tabs
@@ -50,7 +49,7 @@ const View = Backbone.View.extend({
             })
             .on("beforeunload", () => {
                 let text = "";
-                self.collection.each((model) => {
+                this.collection.each((model) => {
                     const q = model.get("onbeforeunload") && model.get("onbeforeunload")();
                     if (q) {
                         text += `${q} `;
