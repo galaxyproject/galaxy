@@ -300,9 +300,9 @@ class BaseObjectStore(ObjectStore):
             # job working directories.
             return obj.id
 
-    def _invoke(self, delegate, obj=None, ignore_media=False, **kwargs):
+    def _invoke(self, delegate, obj=None, **kwargs):
         media = self
-        if hasattr(obj, "active_storage_media_associations") and obj.has_active_storage_media() and not ignore_media:
+        if hasattr(obj, "active_storage_media_associations") and obj.has_active_storage_media():
             media = UserObjectStore(self.config, obj.active_storage_media_associations, self)
         return media.__getattribute__("_" + delegate)(obj=obj, **kwargs)
 
@@ -437,14 +437,14 @@ class DiskObjectStore(ConcreteObjectStore):
 
         This is regardless of whether or not the file exists.
         """
-        path = self._construct_path(obj, base_dir=base_dir, dir_only=dir_only,
-                                    extra_dir=extra_dir, extra_dir_at_root=extra_dir_at_root, alt_name=alt_name,
+        path = self._construct_path(obj, base_dir=base_dir, dir_only=dir_only, extra_dir=extra_dir,
+                                    extra_dir_at_root=extra_dir_at_root, alt_name=alt_name,
                                     obj_dir=False, old_style=True)
         # For backward compatibility: check the old style root path first;
         # otherwise construct hashed path.
         if not os.path.exists(path):
-            return self._construct_path(obj, base_dir=base_dir, dir_only=dir_only,
-                                        extra_dir=extra_dir, extra_dir_at_root=extra_dir_at_root, alt_name=alt_name)
+            return self._construct_path(obj, base_dir=base_dir, dir_only=dir_only, extra_dir=extra_dir,
+                                        extra_dir_at_root=extra_dir_at_root, alt_name=alt_name)
 
     # TODO: rename to _disk_path or something like that to avoid conflicts with
     # children that'll use the local_extra_dirs decorator, e.g. S3
@@ -663,7 +663,7 @@ class NestedObjectStore(BaseObjectStore):
         """Determine if the file for `obj` is ready to be used by any of the backends."""
         return self._call_method('file_ready', obj, False, False, **kwargs)
 
-    def _create(self, obj, ignore_media=False, **kwargs):
+    def _create(self, obj, **kwargs):
         """Create a backing file in a random backend."""
         random.choice(list(self.backends.values())).create(obj, **kwargs)
 
@@ -709,20 +709,12 @@ class NestedObjectStore(BaseObjectStore):
         except AttributeError:
             return str(obj)
 
-    def _get_backend(self, obj, **kwargs):
-        """
-        Check all children object stores for the first one with the dataset;
-        it first checks storage media, if given, then evaluates other backends.
-        """
-        for key, backend in self.backends.items():
-            if backend.exists(obj, **kwargs):
-                return backend
-        return None
-
-    def _call_method(self, method, obj, default, default_is_exception, ignore_media=False, **kwargs):
-        backend = self._get_backend(obj, **kwargs)
-        if backend is not None:
-            return backend.__getattribute__(method)(obj, **kwargs)
+    def _call_method(self, method, obj, default, default_is_exception,
+            **kwargs):
+        """Check all children object stores for the first one with the dataset."""
+        for key, store in self.backends.items():
+            if store.exists(obj, **kwargs):
+                return store.__getattribute__(method)(obj, **kwargs)
         if default_is_exception:
             raise default('objectstore, _call_method failed: %s on %s, kwargs: %s'
                           % (method, self._repr_object_for_exception(obj), str(kwargs)))
@@ -961,14 +953,14 @@ class HierarchicalObjectStore(NestedObjectStore):
         as_dict["backends"] = backends
         return as_dict
 
-    def _exists(self, obj, ignore_media=False, **kwargs):
+    def _exists(self, obj, **kwargs):
         """Check all child object stores."""
         for store in self.backends.values():
             if store.exists(obj, **kwargs):
                 return True
         return False
 
-    def _create(self, obj, ignore_media=False, **kwargs):
+    def _create(self, obj, **kwargs):
         """Call the primary object store."""
         self.backends[0].create(obj, **kwargs)
 
@@ -1011,8 +1003,8 @@ class UserObjectStore(NestedObjectStore):
                         return self.backends[m.id]
         return None
 
-    def __call_instance_wide_backend_method(self, method, obj, default, default_is_exception, ignore_media=True, **kwargs):
-        return self.instance_wide_objectstore.__getattribute__(method)(obj, default, default_is_exception, ignore_media=ignore_media, **kwargs)
+    def __call_instance_wide_backend_method(self, method, obj, default, default_is_exception, **kwargs):
+        return self.instance_wide_objectstore.__getattribute__(method)(obj, default, default_is_exception, **kwargs)
 
     def _exists(self, obj, **kwargs):
         for backend in self.backends.values():
@@ -1030,7 +1022,7 @@ class UserObjectStore(NestedObjectStore):
         else:
             return backend._size(obj, **kwargs)
 
-    def _call_method(self, method, obj, default=None, default_is_exception=None, ignore_media=False, **kwargs):
+    def _call_method(self, method, obj, default=None, default_is_exception=None, **kwargs):
         picked_media = obj.active_storage_media_associations[0].storage_media
         backend = self.backends[picked_media.id]
         return backend.__getattribute__(method)(obj, **kwargs)
