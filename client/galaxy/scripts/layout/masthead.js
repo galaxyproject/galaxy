@@ -25,9 +25,6 @@ const View = Backbone.View.extend({
             })
             .fetch(this.options);
 
-        // highlight initial active view
-        this.highlight(options.active_view); // covered
-
         // scratchbook
         Galaxy.frame = this.frame = new Scratchbook({
             collection: this.collection,
@@ -96,11 +93,8 @@ const View = Backbone.View.extend({
         this._component.addItem(item);
     },
 
-    highlight: function (id) {
-        this.activeView = id;
-        this.collection.forEach(function (model) {
-            model.set("active", model.id == id);
-        });
+    highlight(activeTab) {
+        this._component.highlight(activeTab);
     },
 });
 

@@ -90,6 +90,9 @@ export default {
         addItem(item) {
             this.tabs.push(item);
         },
+        highlight(activeTab) {
+            this.activeTab = activeTab;
+        },
     },
     mounted() {
         this.quotaMeter.setElement(this.$refs["quota-meter-container"]);
