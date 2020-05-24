@@ -72,13 +72,17 @@ export default {
     },
     computed: {
         outputStyle() {
-            return this.outputBibtex ? "bibtex" : "citation-apa";
+            return this.outputBibtex ? "bibtex" : "bibliography";
         },
         formattedCitations() {
             return this.citations.length === 0
                 ? []
                 : this.citations.map((c) => {
-                      return c.get({ format: "string", type: "html", style: this.outputStyle });
+                      return c.cite.format(this.outputStyle, {
+                          format: "html",
+                          template: "apa",
+                          lang: "en-US",
+                      });
                   });
         },
     },
@@ -94,7 +98,7 @@ export default {
                 response.data.forEach((rawCitation) => {
                     try {
                         const cite = new Cite(rawCitation.content);
-                        this.citations.push(cite);
+                        this.citations.push({ raw: rawCitation.content, cite: cite });
                     } catch (err) {
                         console.warn(`Error parsing bibtex: ${err}`);
                     }
