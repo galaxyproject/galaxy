@@ -1,9 +1,6 @@
 <template>
     <div>
-        <a v-if="!directoryContent && !isImage" :href="fileLink" title="test" target="_blank">{{ linkLabel }}</a>
-        <div v-if="directoryContent && !isImage" class="directory-content">
-            <div v-html="directoryContent"></div>
-        </div>
+        <a v-if="!isImage" :href="fileLink" title="test" target="_blank">{{ linkLabel }}</a>
         <img v-if="isImage" :src="fileLink" />
     </div>
 </template>
@@ -27,7 +24,7 @@ div.directory-content {
 
 <script>
 import { getAppRoot } from "onload/loadConfig";
-import { Services } from "./services";
+import { Services } from "components/Dataset/services";
 
 export default {
     props: {
@@ -58,11 +55,11 @@ export default {
                 });
 
                 if (datasetEntry) {
+                    if (datasetEntry.class === "Directory") {
+                        this.isDirectory = true;
+                        return;
+                    }
                     this.fileLink = this.getCompositeDatasetLink(this.history_dataset_id, datasetEntry.path);
-                    if (datasetEntry.class === "Directory")
-                        this.services.getCompositeDatasetDirectory(this.fileLink).then((response) => {
-                            this.directoryContent = response;
-                        });
                 }
             });
         } else {
@@ -75,12 +72,14 @@ export default {
     data() {
         return {
             fileLink: false,
-            directoryContent: false,
             datasetRootDir: "",
         };
     },
     computed: {
         linkLabel() {
+            // if directory, we could potentially implement subdir compression
+            if (this.isDirectory) return `Path: ${this.path} is a directory!`;
+
             if (!this.fileLink) return `Path: ${this.path} was not found!`;
 
             if (this.label !== undefined && this.label !== "undefined") {
@@ -99,7 +98,7 @@ export default {
     },
     methods: {
         getCompositeDatasetLink(history_dataset_id, path) {
-            return `${this.root}api/histories/${this.history_dataset_id}/contents/${history_dataset_id}/display?filename=${path}`;
+            return `${this.root}api/histories/${history_dataset_id}/contents/${history_dataset_id}/display?filename=${path}`;
         },
     },
 };

@@ -102,6 +102,10 @@ class GalaxyInternalMarkdownDirectiveHandler(object):
                 assert object_id is not None
                 hda = hda_manager.get_accessible(object_id, trans.user)
                 rval = self.handle_dataset_display(line, hda)
+            elif container == "history_dataset_index":
+                assert object_id is not None
+                hda = hda_manager.get_accessible(object_id, trans.user)
+                rval = self.handle_dataset_display(line, hda)
             elif container == "history_dataset_embedded":
                 assert object_id is not None
                 hda = hda_manager.get_accessible(object_id, trans.user)
