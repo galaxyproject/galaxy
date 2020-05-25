@@ -168,8 +168,9 @@ class JobSearch:
         data_types = []
         used_ids = []
         for k, input_list in input_data.items():
-            # k will be matched against the JobParameter.name column, which is never prefixed
-            k = k.split('|')[-1]
+            # k will be matched against the JobParameter.name column. This can be prefixed depending on whethter
+            # the input is in a repeat, or not (section and conditional)
+            k = {k, k.split('|')[-1]}
             for type_values in input_list:
                 t = type_values['src']
                 v = type_values['id']
@@ -184,7 +185,7 @@ class JobSearch:
                     e = aliased(model.HistoryDatasetAssociationHistory)
                     conditions.append(and_(
                         model.Job.id == a.job_id,
-                        a.name == k,
+                        a.name.in_(k),
                         a.dataset_id == b.id,  # b is the HDA use for the job
                         c.dataset_id == b.dataset_id,
                         c.id == v,  # c is the requested job input HDA
@@ -211,14 +212,14 @@ class JobSearch:
                     ))
                     if identifier:
                         conditions.append(and_(model.Job.id == d.job_id,
-                                             d.name == "%s|__identifier__" % k,
+                                             d.name.in_({"%s|__identifier__" % _ for _ in k}),
                                              d.value == json.dumps(identifier)))
                     used_ids.append(a.dataset_id)
                 elif t == 'ldda':
                     a = aliased(model.JobToInputLibraryDatasetAssociation)
                     conditions.append(and_(
                         model.Job.id == a.job_id,
-                        a.name == k,
+                        a.name.in_(k),
                         a.ldda_id == v
                     ))
                     used_ids.append(a.ldda_id)
@@ -228,7 +229,7 @@ class JobSearch:
                     c = aliased(model.HistoryDatasetCollectionAssociation)
                     conditions.append(and_(
                         model.Job.id == a.job_id,
-                        a.name == k,
+                        a.name.in_(k),
                         b.id == a.dataset_collection_id,
                         c.id == v,
                         b.name == c.name,
@@ -245,7 +246,7 @@ class JobSearch:
                     b = aliased(model.DatasetCollectionElement)
                     conditions.append(and_(
                         model.Job.id == a.job_id,
-                        a.name == k,
+                        a.name.in_(k),
                         a.dataset_collection_element_id == b.id,
                     ))
                     used_ids.append(a.dataset_collection_element_id)
@@ -267,7 +268,7 @@ class JobSearch:
         ))
 
         query = self.sa_session.query(model.Job.id, *used_ids).filter(and_(*conditions))
-        for job in query.all():
+        for job in query.limit(100).all():
             # We found a job that is equal in terms of tool_id, user, state and input datasets,
             # but to be able to verify that the parameters match we need to modify all instances of
             # dataset_ids (HDA, LDDA, HDCA) in the incoming param_dump to point to those used by the
@@ -308,7 +309,7 @@ class JobSearch:
                 if parameter.name in {'chromInfo', 'dbkey'} or parameter.name.endswith('|__identifier__'):
                     continue
                 n_parameters += 1
-            if not n_parameters == len(param_dump):
+            if not n_parameters == sum(1 for k in param_dump if not k.startswith('__')):
                 continue
             log.info("Found equivalent job %s", search_timer)
             return job
