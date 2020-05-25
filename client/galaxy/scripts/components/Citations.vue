@@ -75,15 +75,23 @@ export default {
             return this.outputBibtex ? "bibtex" : "bibliography";
         },
         formattedCitations() {
-            return this.citations.length === 0
-                ? []
-                : this.citations.map((c) => {
-                      return c.cite.format(this.outputStyle, {
-                          format: "html",
-                          template: "apa",
-                          lang: "en-US",
-                      });
-                  });
+            const processed = [];
+            if (this.citations.length !== 0) {
+                for (const c of this.citations) {
+                    let link = "";
+                    if (c.cite.data && c.cite.data[0] && c.cite.data[0].URL) {
+                        link = `&nbsp<a href="${c.cite.data[0].URL}">[Link]</a>`;
+                    }
+                    const formattedCitation = c.cite.format(this.outputStyle, {
+                        format: "html",
+                        template: "apa",
+                        lang: "en-US",
+                        append: link,
+                    });
+                    processed.push(formattedCitation);
+                }
+            }
+            return processed;
         },
     },
     updated() {
