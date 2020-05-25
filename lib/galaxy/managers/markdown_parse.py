@@ -21,6 +21,7 @@ GALAXY_FLAVORED_MARKDOWN_CONTAINERS = [
     "history_dataset_peek",
     "history_dataset_info",
     "history_dataset_link",
+    "history_dataset_index",
     "workflow_display",
     "job_metrics",
     "job_parameters",
