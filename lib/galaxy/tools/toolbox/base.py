@@ -679,7 +679,11 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             if labels is not None:
                 tool.labels = labels
         except (IOError, OSError) as exc:
-            log.error("Error reading tool configuration file from path '%s': %s", path, unicodify(exc))
+            msg = "Error reading tool configuration file from path '%s': %s", path, unicodify(exc)
+            if exc.errno == ENOENT:
+                log.error(msg)
+            else:
+                log.exception(msg)
         except Exception:
             log.exception("Error reading tool from path: %s", path)
 
