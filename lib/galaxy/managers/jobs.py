@@ -254,7 +254,15 @@ class JobSearch:
                     return []
 
         for k, v in wildcard_param_dump.items():
-            wildcard_value = json.dumps(v, sort_keys=True).replace('"id": "__id_wildcard__"', '"id": %')
+            wildcard_value = None
+            if v == {'__class__': 'RuntimeValue'}:
+                # TODO: verify this is always None. e.g. run with runtime input input
+                v = None
+            elif k == 'chromInfo' and '?.len' in v:
+                continue
+                wildcard_value = '"%?.len"'
+            if not wildcard_value:
+                wildcard_value = json.dumps(v, sort_keys=True).replace('"id": "__id_wildcard__"', '"id": %')
             a = aliased(model.JobParameter)
             conditions.append(and_(
                 model.Job.id == a.job_id,
@@ -287,6 +295,14 @@ class JobSearch:
                 # new_param_dump has its dataset ids remapped to those used by the job.
                 # We now ask if the remapped job parameters match the current job.
                 for k, v in new_param_dump.items():
+                    if v == {'__class__': 'RuntimeValue'}:
+                        # TODO: verify this is always None. e.g. run with runtime input input
+                        v = None
+                    elif k == 'chromInfo' and '?.len' in v:
+                        continue
+                        wildcard_value = '"%?.len"'
+                    if not wildcard_value:
+                        wildcard_value = json.dumps(v, sort_keys=True).replace('"id": "__id_wildcard__"', '"id": %')
                     a = aliased(model.JobParameter)
                     job_parameter_conditions.append(and_(
                         a.name == k,
