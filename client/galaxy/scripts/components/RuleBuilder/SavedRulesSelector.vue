@@ -14,7 +14,7 @@
                 v-for="session in savedRules"
                 :key="session.dateTime"
                 @click="$emit('update-rules', session.rule)"
-                >{{ session.dateTime }}</a
+                >Saved Rule: {{ session.dateTime }}</a
             >
         </div>
     </div>
@@ -34,13 +34,16 @@ export default {
     },
     created() {
         let counter = 0;
-        const regExpForSavedRules = /Saved Rule:.*/;
         for (let i = 0; i < localStorage.length; i++) {
-            if (regExpForSavedRules.test(localStorage.key(i))) {
-                this.savedRules.push({
-                    dateTime: localStorage.key(i),
-                    rule: localStorage.getItem(localStorage.key(i)),
-                });
+            if (localStorage.key(i).startsWith(this.prefix)) {
+                var savedSession = localStorage.getItem(localStorage.key(i));
+                if (savedSession) {
+                    var key = localStorage.key(i);
+                    this.savedRules.push({
+                        dateTime: key.substring(this.prefix.length - 1),
+                        rule: savedSession,
+                    });
+                }
                 counter++;
                 if (counter == 10) {
                     break;
@@ -52,6 +55,10 @@ export default {
         builder: {
             required: true,
         },
+        prefix: {
+            type: String,
+            default: "galaxy_rules_",
+        },
     },
     computed: {
         numOfSavedRules: function () {
@@ -59,12 +66,13 @@ export default {
         },
     },
     methods: {
-        saveSession(jsonRules) {
-            var dateTimeString = "Saved Rule: " + new Date().toISOString();
-            localStorage.setItem(dateTimeString, jsonRules);
+        saveSession(jsonRulesString) {
+            var dateTimeString = new Date().toISOString();
+            var key = this.prefix + dateTimeString;
+            localStorage.setItem(key, jsonRulesString);
             this.savedRules.push({
                 dateTime: dateTimeString,
-                rule: jsonRules,
+                rule: jsonRulesString,
             });
         },
     },

@@ -5,8 +5,12 @@ import SavedRulesSelector from "components/RuleBuilder/SavedRulesSelector";
 describe("SavedRulesSelector", () => {
     let wrapper, emitted;
     beforeEach(async () => {
-        wrapper = mount(SavedRulesSelector);
-
+        wrapper = mount(SavedRulesSelector, {
+            propsData: {
+                // Add a unique prefix for this test run so the test is not affected by local storage values
+                prefix: "test_prefix_" + new Date().toISOString() + "_",
+            },
+        });
         await Vue.nextTick();
     });
 
@@ -17,12 +21,7 @@ describe("SavedRulesSelector", () => {
     });
 
     it("disables history icon if there is no history", async () => {
-        wrapper = mount(SavedRulesSelector, {
-            propsData: {
-                numOfSavedRules: 0,
-            },
-        });
-        await Vue.nextTick();
+        // Expect button to be disabled if we haven't saved a session
         expect(wrapper.find("#savedRulesButton").classes()).to.contain("disabled");
     });
 
