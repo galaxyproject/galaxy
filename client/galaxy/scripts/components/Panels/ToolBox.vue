@@ -50,7 +50,8 @@ import ToolSection from "./Common/ToolSection";
 import ToolSearch from "./Common/ToolSearch";
 import UploadButton from "./Buttons/UploadButton";
 import FavoritesButton from "./Buttons/FavoritesButton";
-import { filterToolSections, filterTools } from "./utilities";
+import { filterToolSections, filterTools, resizePanel } from "./utilities";
+import { getToolPredictions } from "components/Workflow/Editor/modules/services"; //might move to tool.vue
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
 import _l from "utils/localization";
@@ -67,6 +68,7 @@ export default {
         return {
             query: null,
             results: null,
+            savedWidth: null,
             queryFilter: null,
             showSections: false,
             buttonText: "",
@@ -98,6 +100,9 @@ export default {
             const Galaxy = getGalaxyInstance();
             return !!(Galaxy.user && Galaxy.user.id);
         },
+        isRecEnabled() {
+            return getGalaxyInstance().config.enable_tool_recommendations;
+        },
         workflows() {
             return [
                 {
@@ -124,8 +129,36 @@ export default {
         },
         onResults(results) {
             this.results = results;
+            if (this.results) {
+                this.onResultsResize();
+                //this.getRelatedTools(this.results[0]);
+            }
+        },
+        onResultsResize() {
+            if (this.results) {
+                this.savedWidth = parseInt(document.getElementById("left").style["width"]);
+                resizePanel(this.savedWidth * 2);
+            } else {
+                resizePanel(this.savedWidth);
+            }
             this.queryFilter = this.hasResults ? this.query : null;
             this.setButtonText();
+        },
+        getRelatedTools(toolId) {
+            const requestData = {
+                tool_sequence: toolId,
+            };
+            console.log("\n\nREQUEST DATA: ", requestData);
+            getToolPredictions(requestData)
+                .then((responsePred) => {
+                    console.log("\n\nPREDICTION: ", responsePred);
+
+                    const predData = responsePred.predicted_data;
+                    console.log("\n\nPREDICTed tools: ", predData);
+                })
+                .catch((e) => {
+                    console.error(e);
+                });
         },
         onFavorites(term) {
             this.query = term;
