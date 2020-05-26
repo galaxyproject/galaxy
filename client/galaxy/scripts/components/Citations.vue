@@ -3,8 +3,16 @@
         <b-card class="citation-card" v-if="!simple" header-tag="nav">
             <template v-slot:header>
                 <b-nav card-header tabs>
-                    <b-nav-item :active="!outputBibtex" @click="toggleOutput">Citations (APA)</b-nav-item>
-                    <b-nav-item :active="outputBibtex" @click="toggleOutput">BibTeX</b-nav-item>
+                    <b-nav-item
+                        :active="outputFormat === outputFormats.CITATION"
+                        @click="outputFormat = outputFormats.CITATION"
+                        >Citations (APA)</b-nav-item
+                    >
+                    <b-nav-item
+                        :active="outputFormat === outputFormats.BIBTEX"
+                        @click="outputFormat = outputFormats.BIBTEX"
+                        >BibTeX</b-nav-item
+                    >
                 </b-nav>
             </template>
             <div v-if="source === 'histories'" class="infomessage">
@@ -46,6 +54,12 @@ import { getAppRoot } from "onload/loadConfig";
 
 Vue.use(BootstrapVue);
 
+const outputFormats = Object.freeze({
+    CITATION: "bibliography",
+    BIBTEX: "bibtex",
+    RAW: "raw",
+});
+
 export default {
     props: {
         source: {
@@ -67,13 +81,11 @@ export default {
             citations: [],
             errors: [],
             showCollapse: false,
-            outputBibtex: false,
+            outputFormats,
+            outputFormat: outputFormats.CITATION,
         };
     },
     computed: {
-        outputStyle() {
-            return this.outputBibtex ? "bibtex" : "bibliography";
-        },
         formattedCitations() {
             const processed = [];
             if (this.citations.length !== 0) {
@@ -82,7 +94,7 @@ export default {
                     if (c.cite.data && c.cite.data[0] && c.cite.data[0].URL) {
                         link = `&nbsp<a href="${c.cite.data[0].URL}" target="_blank">[Link]</a>`;
                     }
-                    const formattedCitation = c.cite.format(this.outputStyle, {
+                    const formattedCitation = c.cite.format(this.outputFormat, {
                         format: "html",
                         template: "apa",
                         lang: "en-US",
@@ -115,11 +127,6 @@ export default {
             .catch((e) => {
                 console.error(e);
             });
-    },
-    methods: {
-        toggleOutput() {
-            this.outputBibtex = !this.outputBibtex;
-        },
     },
 };
 </script>
