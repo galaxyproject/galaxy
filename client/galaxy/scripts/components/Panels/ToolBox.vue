@@ -34,7 +34,7 @@
                 <div class="toolPanelLabel" id="title_XXinternalXXworkflow">
                     <a>{{ workflowTitle }}</a>
                 </div>
-                <div id="internal-workflows" class="toolSectionBody" v-if="workflow">
+                <div id="internal-workflows" class="toolSectionBody">
                     <div class="toolSectionBg" />
                     <div class="toolTitle" v-for="wf in workflows" :key="wf.id">
                         <a :href="wf.href">{{ wf.title }}</a>
@@ -50,7 +50,8 @@ import ToolSection from "./Common/ToolSection";
 import ToolSearch from "./Common/ToolSearch";
 import UploadButton from "./Buttons/UploadButton";
 import FavoritesButton from "./Buttons/FavoritesButton";
-import { filterToolsinCats, filterTools, resizePanel } from "./utilities";
+import { filterToolSections, filterTools, resizePanel } from "./utilities";
+import { getToolPredictions } from "components/Workflow/Editor/modules/services"; //might move to tool.vue
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
 import _l from "utils/localization";
@@ -99,8 +100,11 @@ export default {
             const Galaxy = getGalaxyInstance();
             return !!(Galaxy.user && Galaxy.user.id);
         },
+        isRecEnabled() {
+            return getGalaxyInstance().config.enable_tool_recommendations;
+        },
         workflows() {
-            this.workflow = [
+            return [
                 {
                     title: _l("All workflows"),
                     href: `${getAppRoot()}workflows/list`,
@@ -114,7 +118,6 @@ export default {
                     };
                 }),
             ];
-            return this.workflow;
         },
         hasResults() {
             return this.results && this.results.length > 0;
@@ -126,7 +129,10 @@ export default {
         },
         onResults(results) {
             this.results = results;
-            this.onResultsResize();
+            if (this.results) {
+                this.onResultsResize();
+                //this.getRelatedTools(this.results[0]);
+            }
         },
         onResultsResize() {
             if (this.results) {
@@ -137,6 +143,22 @@ export default {
             }
             this.queryFilter = this.hasResults ? this.query : null;
             this.setButtonText();
+        },
+        getRelatedTools(toolId) {
+            const requestData = {
+                tool_sequence: toolId,
+            };
+            console.log("\n\nREQUEST DATA: ", requestData);
+            getToolPredictions(requestData)
+                .then((responsePred) => {
+                    console.log("\n\nPREDICTION: ", responsePred);
+
+                    const predData = responsePred.predicted_data;
+                    console.log("\n\nPREDICTed tools: ", predData);
+                })
+                .catch((e) => {
+                    console.error(e);
+                });
         },
         onFavorites(term) {
             this.query = term;

@@ -1,4 +1,7 @@
-export function filterToolsinCats(layout, results) {
+import { getGalaxyInstance } from "app";
+import axios from "axios";
+
+export function filterToolSections(layout, results) {
     if (results) {
         const filteredLayout = layout.map((section) => {
             var toolRes = [];
@@ -66,4 +69,35 @@ export function filterTools(layout, results) {
 export function resizePanel(newWidth) {
     document.getElementById("left").style["width"] = newWidth + "px";
     document.getElementById("center").style["left"] = newWidth + "px";
+}
+
+/*export function onFavorite(toolId) {
+    //Add tool to user's favorites
+    const Galaxy = getGalaxyInstance();
+    axios.put(`${Galaxy.root}api/users/${Galaxy.user.id}/favorites/tools`, { object_id: toolId }).then((response) => {
+        this.inFavorites = !this.inFavorites;
+        Galaxy.user.updateFavorites("tools", response.data);
+        ariaAlert("added to favorites");
+    });
+}
+
+export function onUnfavorite(toolId) {
+    //Remove tool from user's favorites
+    const Galaxy = getGalaxyInstance();
+    console.log("TOOL ID UNFAV:", toolId);
+    axios
+        .delete(`${Galaxy.root}api/users/${Galaxy.user.id}/favorites/tools/${encodeURIComponent(toolId)}`)
+        .then((response) => {
+            this.inFavorites = !this.inFavorites;
+            Galaxy.user.updateFavorites("tools", response.data);
+            ariaAlert("removed from favorites");
+        });
+}*/
+
+export function getToolInputs(toolId) {
+    const Galaxy = getGalaxyInstance();
+    axios.get(`${Galaxy.root}api/tools/${toolId}/?io_details=true`).then((response) => {
+        const firstInput = response.data.inputs[0];
+        //this.inputTypes = firstInput.extensions ? firstInput.extensions : [];
+    });
 }
