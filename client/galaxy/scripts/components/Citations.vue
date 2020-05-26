@@ -80,7 +80,7 @@ export default {
                 for (const c of this.citations) {
                     let link = "";
                     if (c.cite.data && c.cite.data[0] && c.cite.data[0].URL) {
-                        link = `&nbsp<a href="${c.cite.data[0].URL}">[Link]</a>`;
+                        link = `&nbsp<a href="${c.cite.data[0].URL}" target="_blank">[Link]</a>`;
                     }
                     const formattedCitation = c.cite.format(this.outputStyle, {
                         format: "html",
