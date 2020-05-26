@@ -44,9 +44,9 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
     )
 
     if invocation_step is None:
-        execution_tracker = ToolExecutionTracker(trans, tool, mapping_params, collection_info)
+        execution_tracker = ToolExecutionTracker(trans, tool, mapping_params, collection_info, completed_jobs=completed_jobs)
     else:
-        execution_tracker = WorkflowStepExecutionTracker(trans, tool, mapping_params, collection_info, invocation_step, job_callback=job_callback)
+        execution_tracker = WorkflowStepExecutionTracker(trans, tool, mapping_params, collection_info, invocation_step, job_callback=job_callback, completed_jobs=completed_jobs)
     execution_cache = ToolExecutionCache(trans)
 
     def execute_single_job(execution_slice, completed_job):
@@ -137,12 +137,13 @@ class ExecutionSlice:
 
 class ExecutionTracker:
 
-    def __init__(self, trans, tool, mapping_params, collection_info):
+    def __init__(self, trans, tool, mapping_params, collection_info, completed_jobs=None):
         # Known ahead of time...
         self.trans = trans
         self.tool = tool
         self.mapping_params = mapping_params
         self.collection_info = collection_info
+        self.completed_jobs = completed_jobs
 
         self._on_text = None
 
@@ -304,6 +305,13 @@ class ExecutionTracker:
             collection_instance.implicit_collection_jobs = implicit_collection_jobs
             collection_instances[output_name] = collection_instance
             trans.sa_session.add(collection_instance)
+            if self.completed_jobs and self.completed_jobs[0] is not None and self.job_count == len(self.completed_jobs):
+                # Collection should be exatly the same, so add elements and finalize
+                implicit_jobs_assoc = self.completed_jobs[0].implicit_collection_jobs_association
+                if implicit_jobs_assoc:
+                    completed_collection_instance = next(c for c in implicit_jobs_assoc.implicit_collection_jobs.history_dataset_collection_associations if c.implicit_output_name == output_name)
+                    collection_instance.collection = completed_collection_instance.collection
+                    collection_instance.copied_from_history_dataset_collection_association = completed_collection_instance
         # Needed to flush the association created just above with
         # job.add_output_dataset_collection.
         trans.sa_session.flush()
@@ -385,8 +393,8 @@ class ExecutionTracker:
 # in the database immediately and they can be recovered.
 class ToolExecutionTracker(ExecutionTracker):
 
-    def __init__(self, trans, tool, mapping_params, collection_info):
-        super().__init__(trans, tool, mapping_params, collection_info)
+    def __init__(self, trans, tool, mapping_params, collection_info, completed_jobs=None):
+        super().__init__(trans, tool, mapping_params, collection_info, completed_jobs=completed_jobs)
 
         # New to track these things for tool output API response in the tool case,
         # in the workflow case we just write stuff to the database and forget about
@@ -414,8 +422,8 @@ class ToolExecutionTracker(ExecutionTracker):
 
 class WorkflowStepExecutionTracker(ExecutionTracker):
 
-    def __init__(self, trans, tool, mapping_params, collection_info, invocation_step, job_callback):
-        super().__init__(trans, tool, mapping_params, collection_info)
+    def __init__(self, trans, tool, mapping_params, collection_info, invocation_step, job_callback, completed_jobs=None):
+        super().__init__(trans, tool, mapping_params, collection_info, completed_jobs=completed_jobs)
         self.invocation_step = invocation_step
         self.job_callback = job_callback
 

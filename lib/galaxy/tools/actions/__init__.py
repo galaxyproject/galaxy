@@ -511,6 +511,7 @@ class DefaultToolAction:
                         name=name,
                         set_hid=True if flush_job else False,
                         flush=flush_job,
+                        completed_job=completed_job,
                         **element_kwds
                     )
                     if hdca:
@@ -817,7 +818,7 @@ class OutputCollections:
         self.out_collection_instances = {}
         self.tags = tags
 
-    def create_collection(self, output, name, collection_type=None, set_hid=True, flush=True, **element_kwds):
+    def create_collection(self, output, name, collection_type=None, set_hid=True, flush=True, completed_job=None, **element_kwds):
         input_collections = self.input_collections
         collections_manager = self.trans.app.dataset_collections_service
         collection_type = collection_type or output.structure.collection_type
@@ -900,6 +901,11 @@ class OutputCollections:
                 flush=flush,
                 **element_kwds
             )
+            if completed_job:
+                jtodca = next(a for a in completed_job.output_dataset_collection_instances if a.name == name)
+                hdca.copied_from_history_dataset_collection_association = jtodca.dataset_collection_instance
+                hdca.collection.elements = jtodca.dataset_collection_instance.collection.elements
+                hdca.collection.mark_as_populated()
             # name here is name of the output element - not name
             # of the hdca.
             self.out_collection_instances[name] = hdca
