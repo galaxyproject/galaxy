@@ -24,12 +24,19 @@ from galaxy.util.hash_util import md5_hash_file
 
 log = logging.getLogger(__name__)
 
+CURRENT_TOOL_CACHE_VERSION = 1
+
 
 class JSONBackend(ProxyBackend):
 
     def set(self, key, value):
         with self.proxied._dbm_file(True) as dbm:
-            dbm[key] = json.dumps({'metadata': value.metadata, 'payload': self.value_encode(value), 'macro_paths': value.payload.macro_paths()})
+            dbm[key] = json.dumps({
+                'metadata': value.metadata,
+                'payload': self.value_encode(value),
+                'macro_paths': value.payload.macro_paths(),
+                'tool_cache_version': CURRENT_TOOL_CACHE_VERSION
+            })
 
     def get(self, key):
         with self.proxied._dbm_file(False) as dbm:
@@ -50,6 +57,8 @@ class JSONBackend(ProxyBackend):
             return NO_VALUE
         # v is returned as bytestring, so we need to `unicodify` on python < 3.6 before we can use json.loads
         v = json.loads(unicodify(v))
+        if v.get('tool_cache_version', 0) != CURRENT_TOOL_CACHE_VERSION:
+            return NO_VALUE
         payload = get_tool_source(
             config_file=k,
             xml_tree=etree.ElementTree(etree.fromstring(v['payload'].encode('utf-8'))),
