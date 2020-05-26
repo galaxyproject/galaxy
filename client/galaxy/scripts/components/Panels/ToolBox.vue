@@ -12,36 +12,31 @@
         <div class="unified-panel-controls">
             <tool-search :query="query" placeholder="search tools" @onQuery="onQuery" @onResults="onResults" />
 
-            <div class="float-none" v-if="results">
-                <button
-                    class="btn btn-secondary btn-sm"
-                    v-if="!show"
-                    @click="onToggle"
-                >Show Categories</button>
-                <button
-                    class="btn btn-secondary btn-sm"
-                    v-if="show"
-                    @click="onToggle"
-                >Hide Categories</button>
+            <div class="py-2" v-if="hasResults">
+                <b-button @click="onToggle">{{ buttonText }}</b-button>
+            </div>
+            <div class="py-2" v-else-if="query">
+                <span v-if="query.length < 3" class="font-weight-bold">***Search string too short***</span>
+                <span v-else class="font-weight-bold">***No Results Found***</span>
             </div>
         </div>
         <div class="unified-panel-body">
             <div class="toolMenuContainer">
                 <div class="toolMenu">
                     <tool-section
-                        v-for="category in categories"
-                        :category="category"
-                        :query-filter="query"
-                        :key="category.id"
+                        v-for="section in sections"
+                        :category="section"
+                        :query-filter="queryFilter"
+                        :key="section.id"
                         @onClick="onOpen"
                     />
                 </div>
-                <div class="toolSectionTitle" id="title_XXinternalXXworkflow" v-if="workflow">
+                <div class="toolPanelLabel" id="title_XXinternalXXworkflow">
                     <a>{{ workflowTitle }}</a>
                 </div>
                 <div id="internal-workflows" class="toolSectionBody" v-if="workflow">
                     <div class="toolSectionBg" />
-                    <div class="toolTitle" v-for="wf in this.workflow" :key="wf.id">
+                    <div class="toolTitle" v-for="wf in workflows" :key="wf.id">
                         <a :href="wf.href">{{ wf.title }}</a>
                     </div>
                 </div>
@@ -72,9 +67,10 @@ export default {
         return {
             query: null,
             results: null,
-            workflow: null,
-            show: false,
             savedWidth: null,
+            queryFilter: null,
+            showSections: false,
+            buttonText: "",
         };
     },
     props: {
@@ -92,9 +88,9 @@ export default {
         },
     },
     computed: {
-        categories() {
-            if (this.show) {
-                return filterToolsinCats(this.toolbox, this.results);
+        sections() {
+            if (this.showSections) {
+                return filterToolSections(this.toolbox, this.results);
             } else {
                 return filterTools(this.toolbox, this.results);
             }
@@ -120,6 +116,9 @@ export default {
             ];
             return this.workflow;
         },
+        hasResults() {
+            return this.results && this.results.length > 0;
+        },
     },
     methods: {
         onQuery(query) {
@@ -136,6 +135,8 @@ export default {
             } else {
                 resizePanel(this.savedWidth);
             }
+            this.queryFilter = this.hasResults ? this.query : null;
+            this.setButtonText();
         },
         onFavorites(term) {
             this.query = term;
@@ -154,7 +155,11 @@ export default {
             }
         },
         onToggle() {
-            this.show = !this.show;
+            this.showSections = !this.showSections;
+            this.setButtonText();
+        },
+        setButtonText() {
+            this.buttonText = this.showSections ? "Hide Sections" : "Show Sections";
         },
     },
 };

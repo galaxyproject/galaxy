@@ -783,6 +783,18 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~
+``refgenie_config_file``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    File containing refgenie configuration, e.g.
+    /path/to/genome_config.yaml. Can be used by refgenie backed tool
+    data tables.
+:Default: ``None``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``build_sites_config_file``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1015,6 +1027,16 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~
+``tool_search_index_dir``
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Directory in which the toolbox search index is stored.
+:Default: ``tool_search_index``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``delay_tool_initialization``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1238,10 +1260,12 @@
 
 :Description:
     E-mail domains blacklist is used for filtering out users that are
-    using disposable email address during the registration.  If their
-    address domain matches any domain in the blacklist, they are
-    refused the registration.
-    Example value 'config/disposable_email_blacklist.conf'
+    using disposable email addresses at registration.  If their
+    address domain matches any domain on the list, they are refused
+    registration.
+    Example value 'email_blacklist.conf'
+    The value of this option will be resolved with respect to
+    <config_dir>.
 :Default: ``None``
 :Type: str
 
@@ -1254,10 +1278,14 @@
     E-mail domains whitelist is used to specify allowed email address
     domains. If the list is non-empty and a user attempts registration
     using an email address belonging to a domain that is not on the
-    list, registration will be enied. This is a more restrictive
+    list, registration will be denied. This is a more restrictive
     option than <blacklist_file>, and therefore, in case
-    <whitelist_file> is defined, <blacklist_file> will be ignored.
-:Default: ``disposable_email_whitelist.conf``
+    <whitelist_file> is set and is not empty, <blacklist_file> will be
+    ignored.
+    Example value 'email_whitelist.conf'
+    The value of this option will be resolved with respect to
+    <config_dir>.
+:Default: ``None``
 :Type: str
 
 
@@ -4132,7 +4160,7 @@
 :Description:
     Set the number of predictions/recommendations to be made by the
     model
-:Default: ``20``
+:Default: ``10``
 :Type: int
 
 

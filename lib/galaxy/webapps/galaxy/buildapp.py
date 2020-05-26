@@ -75,6 +75,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_route('/authnz/{provider}/logout', controller='authnz', action='logout', provider=None)
     # Returns the provider specific logout url for currently logged in provider
     webapp.add_route('/authnz/logout', controller='authnz', action='get_logout_url')
+    webapp.add_route('/authnz/get_cilogon_idps', controller='authnz', action='get_cilogon_idps')
 
     # These two routes handle our simple needs at the moment
     webapp.add_route('/async/{tool_id}/{data_id}/{data_secret}', controller='async', action='index', tool_id=None, data_id=None, data_secret=None)
@@ -317,7 +318,13 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('/api/tool_data/{id:.+?}/fields/{value:.+?}/files/{path:.+?}', action='download_field_file', controller="tool_data")
     webapp.mapper.connect('/api/tool_data/{id:.+?}/fields/{value:.+?}', action='show_field', controller="tool_data")
     webapp.mapper.connect('/api/tool_data/{id:.+?}/reload', action='reload', controller="tool_data")
-    webapp.mapper.resource('dataset_collection', 'dataset_collections', path_prefix='/api/')
+
+    webapp.mapper.resource('dataset_collection', 'dataset_collections', path_prefix='/api')
+    webapp.mapper.connect('contents_dataset_collection',
+        '/api/dataset_collections/{hdca_id}/contents/{parent_id}',
+        controller="dataset_collections",
+        action="contents")
+
     webapp.mapper.resource('form', 'forms', path_prefix='/api')
     webapp.mapper.resource('role', 'roles', path_prefix='/api')
     webapp.mapper.resource('upload', 'uploads', path_prefix='/api')

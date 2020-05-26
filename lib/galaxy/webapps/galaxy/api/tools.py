@@ -496,6 +496,8 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
 
         # Set up inputs.
         inputs = payload.get('inputs', {})
+        if not isinstance(inputs, dict):
+            raise exceptions.RequestParameterInvalidException("inputs invalid %s" % inputs)
 
         # Find files coming in as multipart file data and add to inputs.
         for k, v in payload.items():

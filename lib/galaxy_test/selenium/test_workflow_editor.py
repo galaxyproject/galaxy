@@ -68,14 +68,14 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("workflow_editor_data_input_filled_in")
         self.workflow_editor_click_save()
+
         self.workflow_index_open_with_name(name)
         data_input_node = editor.node._(label="input1")
         data_input_node.title.wait_for_and_click()
-
         label = editor.label_input.wait_for_value()
         assert label == "input1", label
-        # should work but Galaxy is broken.
-        # assert editor.annotation_input.wait_for_value() == "my cool annotation"
+        annotation = editor.annotation_input.wait_for_value()
+        assert annotation == "my cool annotation"
         data_input_node.destroy.wait_for_and_click()
         data_input_node.wait_for_absent()
         self.screenshot("workflow_editor_data_input_deleted")
@@ -93,14 +93,14 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("workflow_editor_data_collection_input_filled_in")
         self.workflow_editor_click_save()
+
         self.workflow_index_open_with_name(name)
         data_input_node = editor.node._(label="input1")
         data_input_node.title.wait_for_and_click()
-
         label = editor.label_input.wait_for_value()
         assert label == "input1", label
-        # should work but Galaxy is broken.
-        # assert editor.annotation_input.wait_for_value() == "my cool annotation"
+        annotation = editor.annotation_input.wait_for_value()
+        assert annotation == "my cool annotation"
         data_input_node.destroy.wait_for_and_click()
         data_input_node.wait_for_absent()
         self.screenshot("workflow_editor_data_collection_input_deleted")
@@ -112,21 +112,20 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         name = self.workflow_create_new()
         self.workflow_editor_add_input(item_name="parameter_input")
         self.screenshot("workflow_editor_parameter_input_new")
-
         editor.label_input.wait_for_and_send_keys("input1")
         editor.annotation_input.wait_for_and_send_keys("my cool annotation")
         editor.label_input.wait_for_and_click()  # Seems to help force the save of whole annotation.
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("workflow_editor_parameter_input_filled_in")
         self.workflow_editor_click_save()
+
         self.workflow_index_open_with_name(name)
         data_input_node = editor.node._(label="input1")
         data_input_node.title.wait_for_and_click()
-
         label = editor.label_input.wait_for_value()
         assert label == "input1", label
-        # should work but Galaxy is broken.
-        # assert editor.annotation_input.wait_for_value() == "my cool annotation"
+        annotation = editor.annotation_input.wait_for_value()
+        assert annotation == "my cool annotation"
         data_input_node.destroy.wait_for_and_click()
         data_input_node.wait_for_absent()
         self.screenshot("workflow_editor_parameter_input_deleted")
@@ -229,7 +228,6 @@ steps:
         self.open_in_workflow_editor(WORKFLOW_WITH_RULES_1)
         rule_output = "apply#output"
         random_lines_input = "random_lines#input"
-
         self.workflow_editor_maximize_center_pane()
         self.screenshot("workflow_editor_rules_1")
         self.assert_connected(rule_output, random_lines_input)

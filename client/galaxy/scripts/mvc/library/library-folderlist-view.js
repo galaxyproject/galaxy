@@ -72,28 +72,32 @@ var FolderListView = Backbone.View.extend({
         if (this.options.include_deleted) {
             this.folderContainer.url = `${this.folderContainer.url}?include_deleted=true`;
         }
-        this.folderContainer.fetch({
-            success: function (folder_container) {
-                self.folder_container = folder_container;
-                self.render();
-            },
-            error: function (model, response) {
-                const Galaxy = getGalaxyInstance();
-                if (typeof response.responseJSON !== "undefined") {
-                    Toast.error(`${response.responseJSON.err_msg} Click this to go back.`, "", {
-                        onclick: function () {
-                            Galaxy.libraries.library_router.back();
-                        },
-                    });
-                } else {
-                    Toast.error("An error occurred. Click this to go back.", "", {
-                        onclick: function () {
-                            Galaxy.libraries.library_router.back();
-                        },
-                    });
-                }
-            },
-        });
+        this.listenTo(this.folderContainer, "fetch:started", this.drawSpinner());
+
+        this.folderContainer
+            .fetch({
+                success: function (folder_container) {
+                    self.folder_container = folder_container;
+                    self.render();
+                },
+                error: function (model, response) {
+                    const Galaxy = getGalaxyInstance();
+                    if (typeof response.responseJSON !== "undefined") {
+                        Toast.error(`${response.responseJSON.err_msg} Click this to go back.`, "", {
+                            onclick: function () {
+                                Galaxy.libraries.library_router.back();
+                            },
+                        });
+                    } else {
+                        Toast.error("An error occurred. Click this to go back.", "", {
+                            onclick: function () {
+                                Galaxy.libraries.library_router.back();
+                            },
+                        });
+                    }
+                },
+            })
+            .always(self.removeSpinner);
     },
 
     render: function (options) {
@@ -217,6 +221,19 @@ var FolderListView = Backbone.View.extend({
             self.renderOne(model);
         });
         this.postRender();
+    },
+
+    drawSpinner: function (options) {
+        const spinner = `<div id="folder_items_spinner" style="text-align: center;">
+                            <span class="fa fa-spinner fa-spin fa-5x"/>
+                       </div>`;
+        $("#folder_items_element").append(spinner);
+        $(".page_size").hide();
+    },
+
+    removeSpinner: function (options) {
+        $("#folder_items_spinner").remove();
+        $(".page_size").show();
     },
 
     /**

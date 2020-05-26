@@ -8,7 +8,7 @@ module.exports = {
     entry: "./src/index.js",
     output: {
         filename: "script.js",
-        path: path.resolve(__dirname, "static")
+        path: path.resolve(__dirname, "static/dist")
     },
     plugins: [
         new MiniCssExtractPlugin(),

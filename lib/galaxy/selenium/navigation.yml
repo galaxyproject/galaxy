@@ -31,21 +31,19 @@ masthead:
   selectors:
     _: '#masthead'
 
-    user:
-      type: xpath
-      selector: '//li[@id="user"]'
+    # bootstrap-vue a tag doesn't work as link target, need to hit span inside
+    user: '#user.loggedin-only > a.nav-link.dropdown-toggle > span'
+    register_or_login: '#user.loggedout-only > .nav-link'
 
-    user_menu: 'li#user .dropdown-menu'
-    workflow:
-      type: xpath
-      selector: '//li[@id="workflow"]'
+    user_menu: '#user .dropdown-menu a'
+    workflow: '#workflow .nav-link'
 
     user_email:
       type: xpath
       selector: '//a[contains(text(), "Logged in as")]'
 
-    logged_in_only: 'a.loggedin-only'
-    logged_out_only: 'a.loggedout-only'
+    logged_in_only: '.loggedin-only'
+    logged_out_only: '.loggedout-only'
 
   labels:
     # top-level menus
@@ -303,6 +301,7 @@ workflows:
     new_button: '#workflow-create'
     import_button: '#workflow-import'
     save_button: '#workflow-save-button'
+    search_box: "#workflow-search"
 
 workflow_run:
 
@@ -325,7 +324,7 @@ workflow_editor:
       output_terminal: "${_} [output-name='${name}']"
       input_terminal: "${_} [input-name='${name}']"
 
-      input_mapping_icon: "${_} [name='${name}'] .multiple"
+      input_mapping_icon: "${_} [input-name='${name}'].multiple"
 
   selectors:
     canvas_body: '#workflow-canvas'
@@ -342,7 +341,7 @@ workflow_editor:
     label_input: "[tour_id='__label'] input"
     annotation_input: "[tour_id='__annotation'] textarea"
 
-    connector_for: "div[handle1-id='${source_id}'][handle2-id='${sink_id}']"
+    connector_for: "div[output-handle-id='${source_id}'][input-handle-id='${sink_id}']"
 
     connector_destroy_callout: '.delete-terminal'
 
@@ -358,6 +357,15 @@ tour:
       end: '${_} button[data-role="end"]'
 
 admin:
+
+  manage_dependencies:
+    selectors:
+      dependencies: 'a[contains(text(), "Dependencies")]'
+      containers: 'a[contains(text(), "Containers")]'
+      unused: 'a[contains(text(), "Unused")]'
+      resolver_type: '#manage-resolver-type'
+      container_type: '#manage-container-type'
+      unused_paths: '#unused-paths-table'
 
   toolshed:
     selectors:

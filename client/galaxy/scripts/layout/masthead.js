@@ -4,30 +4,20 @@ import Menu from "layout/menu";
 import Scratchbook from "layout/scratchbook";
 import QuotaMeter from "mvc/user/user-quotameter";
 import { getGalaxyInstance } from "app";
+import Masthead from "../components/Masthead/Masthead";
+import { mountVueComponent } from "../utils/mountVueComponent";
+import { getAppRoot } from "onload/loadConfig";
 
 /** Masthead **/
 const View = Backbone.View.extend({
     initialize: function (options) {
         const Galaxy = getGalaxyInstance();
-
         const self = this;
         this.options = options;
-        this.setElement(this._template());
-        this.$navbarBrandLink = this.$(".navbar-brand");
-        this.$navbarBrandImage = this.$(".navbar-brand-image");
-        this.$navbarBrandTitle = this.$(".navbar-brand-title");
-        this.$navbarTabs = this.$(".navbar-nav");
-        this.$quoteMeter = this.$(".quota-meter-container");
 
         // build tabs
         this.collection = new Menu.Collection();
         this.collection
-            .on("add", (model) => {
-                self.$navbarTabs.append(new Menu.Tab({ model: model }).render().$el);
-            })
-            .on("reset", () => {
-                self.$navbarTabs.empty();
-            })
             .on("dispatch", (callback) => {
                 self.collection.each((m) => {
                     callback(m);
@@ -36,7 +26,7 @@ const View = Backbone.View.extend({
             .fetch(this.options);
 
         // highlight initial active view
-        this.highlight(options.active_view);
+        this.highlight(options.active_view); // covered
 
         // scratchbook
         Galaxy.frame = this.frame = new Scratchbook({
@@ -47,7 +37,6 @@ const View = Backbone.View.extend({
         // add quota meter to masthead
         Galaxy.quotaMeter = this.quotaMeter = new QuotaMeter.UserQuotaMeter({
             model: Galaxy.user,
-            el: this.$quoteMeter,
         });
 
         // loop through beforeunload functions if the user attempts to unload the page
@@ -77,34 +66,37 @@ const View = Backbone.View.extend({
     },
 
     render: function () {
-        let brand = this.options.display_galaxy_brand ? "Galaxy " : "";
+        const el = document.createElement("div");
+        this.el.appendChild(el); // use this.el directly when feature parity is accomplished
+        let brandTitle = this.options.display_galaxy_brand ? "Galaxy " : "";
         if (this.options.brand) {
-            brand += this.options.brand;
+            brandTitle += this.options.brand;
         }
-        this.$navbarBrandTitle.html(brand);
-        this.$navbarBrandLink.attr("href", this.options.logo_url);
-        this.$navbarBrandImage.attr("src", this.options.logo_src);
-        this.quotaMeter.render();
+        const tabs = this.collection.models.map((el) => {
+            return el.toJSON();
+        });
+        mountVueComponent(Masthead)(
+            {
+                brandTitle: brandTitle,
+                brandLink: this.options.logo_url,
+                brandImage: this.options.logo_src,
+                quotaMeter: this.quotaMeter,
+                activeTab: this.activeView,
+                tabs: tabs,
+                frames: this.frame.getFrames(),
+                appRoot: getAppRoot(),
+                Galaxy: getGalaxyInstance(),
+            },
+            el
+        );
         return this;
     },
 
     highlight: function (id) {
+        this.activeView = id;
         this.collection.forEach(function (model) {
             model.set("active", model.id == id);
         });
-    },
-
-    /** body template */
-    _template: function () {
-        return `
-            <nav id="masthead" class="navbar navbar-expand justify-content-center navbar-dark" role="navigation" aria-label="Main">
-                <a class="navbar-brand" aria-label="homepage">
-                    <img alt="logo" class="navbar-brand-image"/>
-                    <span class="navbar-brand-title"/>
-                </a>
-                <ul class="navbar-nav"/>
-                <div class="quota-meter-container"/>
-            </nav>`;
     },
 });
 

@@ -55,6 +55,7 @@
   <tool file="qc_stdout.xml" />
   <tool file="md5sum.xml" />
   <tool file="checksum.xml" />
+  <tool file="sim_size_delta.xml" />
   <tool file="composite_shapefile.xml" />
   <tool file="is_valid_xml.xml" />
   <tool file="param_value_from_file.xml"/>
@@ -202,6 +203,7 @@
   <tool file="mulled_example_conflict.xml" />
   <tool file="mulled_example_simple.xml" />
   <tool file="mulled_example_explicit.xml" />
+  <tool file="mulled_example_invalid_case.xml" />
   <tool file="mulled_example_broken_no_requirements.xml" />
 
   <tool file="simple_constructs.yml" />

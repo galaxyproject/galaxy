@@ -19,7 +19,6 @@ from abc import (
     abstractmethod,
 )
 from json import loads
-from xml.etree import ElementTree
 
 import packaging.version
 import six
@@ -60,6 +59,7 @@ from galaxy.tool_util.output_checker import (
 )
 from galaxy.util import (
     commands,
+    parse_xml_string,
     RWXRWXRWX,
     safe_makedirs,
     unicodify,
@@ -522,7 +522,7 @@ class JobConfiguration(ConfiguresHandlers):
         """Loads the new-style job configuration from options in the job config file (by default, job_conf.xml).
 
         :param tree: Object representing the root ``<job_conf>`` object in the job config file.
-        :type tree: ``xml.etree.ElementTree.Element``
+        :type tree: ``lxml.etree._Element``
         """
         root = tree.getroot()
         log.debug('Loading job configuration from %s' % self.app.config.job_config_file)
@@ -573,7 +573,7 @@ class JobConfiguration(ConfiguresHandlers):
                 fields_names = self.resource_groups[resource_group]
                 fields = [self.resource_parameters[n] for n in fields_names]
                 if fields:
-                    conditional_element = ElementTree.fromstring(self.JOB_RESOURCE_CONDITIONAL_XML)
+                    conditional_element = parse_xml_string(self.JOB_RESOURCE_CONDITIONAL_XML)
                     when_yes_elem = conditional_element.findall('when')[1]
                     for parameter in fields:
                         when_yes_elem.append(parameter)
@@ -607,7 +607,7 @@ class JobConfiguration(ConfiguresHandlers):
         """Parses any child <param> tags in to a dictionary suitable for persistence.
 
         :param parent: Parent element in which to find child <param> tags.
-        :type parent: ``xml.etree.ElementTree.Element``
+        :type parent: ``lxml.etree._Element``
 
         :returns: dict
         """
@@ -618,7 +618,7 @@ class JobConfiguration(ConfiguresHandlers):
         """Parses any child <env> tags in to a dictionary suitable for persistence.
 
         :param parent: Parent element in which to find child <env> tags.
-        :type parent: ``xml.etree.ElementTree.Element``
+        :type parent: ``lxml.etree._Element``
 
         :returns: dict
         """
@@ -638,7 +638,7 @@ class JobConfiguration(ConfiguresHandlers):
         """Parses any child <resubmit> tags in to a dictionary suitable for persistence.
 
         :param parent: Parent element in which to find child <resubmit> tags.
-        :type parent: ``xml.etree.ElementTree.Element``
+        :type parent: ``lxml.etree._Element``
 
         :returns: dict
         """
@@ -1422,6 +1422,14 @@ class JobWrapper(HasResourceParameters):
         if flush:
             self.sa_session.flush()
 
+    def set_external_id(self, external_id, job=None, flush=True):
+        if job is None:
+            job = self.get_job()
+        job.job_runner_external_id = external_id
+        self.sa_session.add(job)
+        if flush:
+            self.sa_session.flush()
+
     @property
     def home_target(self):
         home_target = self.tool.home_target
@@ -1749,7 +1757,7 @@ class JobWrapper(HasResourceParameters):
         # dataset creation, and will allow us to eliminate force_history_refresh.
         job.set_final_state(final_job_state)
         if not job.tasks:
-            # If job was composed of tasks, don't attempt to recollect statisitcs
+            # If job was composed of tasks, don't attempt to recollect statistics
             self._collect_metrics(job, job_metrics_directory)
         self.sa_session.flush()
         if job.state == job.states.ERROR:
@@ -2069,7 +2077,7 @@ class JobWrapper(HasResourceParameters):
             safe_makedirs(os.path.join(self.working_directory, 'metadata'))
             self.app.datatypes_registry.to_xml_file(path=datatypes_config)
 
-        inp_data, out_data, out_collections = job.io_dicts()
+        inp_data, out_data, out_collections = job.io_dicts(exclude_implicit_outputs=True)
         job_metadata = os.path.join(self.tool_working_directory, self.tool.provided_metadata_file)
         object_store_conf = self.object_store.to_dict()
         command = self.external_output_metadata.setup_external_metadata(out_data,
