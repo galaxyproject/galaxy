@@ -1,5 +1,5 @@
 /**
- * Endpoint for mounting dataset link from non-Vue environment.
+ * Endpoint for mounting dataset components from non-Vue environment.
  */
 import $ from "jquery";
 import DatasetLink from "./DatasetLink/DatasetLink";
