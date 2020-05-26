@@ -79,13 +79,8 @@ export class Services {
         }
     }
 
-    async getCompositeDatasetDirectory(url) {
-        try {
-            const response = await axios.get(url);
-            return response.data;
-        } catch (e) {
-            rethrowSimple(e);
-        }
+    getCompositeDatasetLink(history_dataset_id, path) {
+        return `${this.root}api/histories/${history_dataset_id}/contents/${history_dataset_id}/display?filename=${path}`;
     }
 
     async getCompositeDatasetInfo(id) {
