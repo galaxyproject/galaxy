@@ -244,7 +244,7 @@ def _imported_macro_paths_from_el(macros_el):
 
 
 def _load_macro_file(path, xml_base_dir):
-    tree = parse_xml(path)
+    tree = parse_xml(path, strip_whitespace=False)
     root = tree.getroot()
     return _load_macros(root, xml_base_dir)
 
