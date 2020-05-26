@@ -1,6 +1,9 @@
 <template>
     <div>
-        <img :src="imgUrl" />
+        <img v-if="imgUrl" :src="imgUrl" />
+        <div v-else>
+            <b>Image is not found</b>
+        </div>
     </div>
 </template>
 
