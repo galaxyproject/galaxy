@@ -1,10 +1,10 @@
 import logging
-import xml.etree.ElementTree
 from collections import (
     namedtuple,
     OrderedDict,
 )
 
+from galaxy.util import parse_xml_string
 from galaxy.util.tool_shed.common_util import remove_protocol_from_tool_shed_url
 from galaxy.util.tool_shed.xml_util import parse_xml
 
@@ -32,7 +32,7 @@ class Registry(object):
                 return
             root = tree.getroot()
         else:
-            root = xml.etree.ElementTree.fromstring(DEFAULT_TOOL_SHEDS_CONF_XML)
+            root = parse_xml_string(DEFAULT_TOOL_SHEDS_CONF_XML)
             config = "internal default config"
         log.debug('Loading references to tool sheds from %s' % config)
         for elem in root.findall('tool_shed'):

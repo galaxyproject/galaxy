@@ -326,7 +326,7 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
 
     def configure_fluent_log(self):
         if self.config.fluent_log:
-            from galaxy.util.logging.fluent_log import FluentTraceLogger
+            from galaxy.util.custom_logging.fluent_log import FluentTraceLogger
             self.trace_logger = FluentTraceLogger('galaxy', self.config.fluent_host, self.config.fluent_port)
         else:
             self.trace_logger = None
@@ -344,7 +344,7 @@ class StatsdStructuredExecutionTimer(StructuredExecutionTimer):
 
     def to_str(self, **kwd):
         self.galaxy_statsd_client.timing(self.timer_id, self.elapsed * 1000., kwd)
-        return super(StatsdStructuredExecutionTimer, self).to_str()
+        return super(StatsdStructuredExecutionTimer, self).to_str(**kwd)
 
 
 class ExecutionTimerFactory(object):

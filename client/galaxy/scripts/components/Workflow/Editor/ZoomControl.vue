@@ -36,7 +36,7 @@
 <script>
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { zoomLevels } from "mvc/workflow/workflow-canvas";
+import { zoomLevels } from "./modules/canvas";
 
 Vue.use(BootstrapVue);
 

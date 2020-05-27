@@ -187,7 +187,7 @@ class VisualizationsConfigParser(object):
             raise ParsingException('template or entry_point required')
 
         # parse by returning a sub-object and simply copying any attributes unused here
-        entry_point_attrib = entry_point.attrib.copy()
+        entry_point_attrib = dict(entry_point.attrib)
         entry_point_type = entry_point_attrib.pop('entry_point_type', 'mako')
         if entry_point_type not in self.ALLOWED_ENTRY_POINT_TYPES:
             raise ParsingException('Unknown entry_point type: ' + entry_point_type)

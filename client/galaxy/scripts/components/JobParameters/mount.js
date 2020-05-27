@@ -9,10 +9,12 @@ export const mountJobParameters = (propsData = {}) => {
     $(".job-parameters").each((index, el) => {
         const jobId = $(el).attr("job_id");
         const datasetId = $(el).attr("dataset_id");
+        const param = $(el).attr("param");
         const datasetType = $(el).attr("dataset_type") || "hda";
         const component = Vue.extend(JobParameters);
         propsData.jobId = jobId;
         propsData.datasetId = datasetId;
+        propsData.param = param;
         propsData.datasetType = datasetType;
         return new component({ propsData: propsData }).$mount(el);
     });

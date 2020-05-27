@@ -20,6 +20,7 @@ from galaxy.datatypes.sniff import (
 )
 from galaxy.datatypes.tabular import Tabular
 from galaxy.datatypes.util.gff_util import parse_gff3_attributes, parse_gff_attributes
+from galaxy.util import compression_utils
 from . import (
     data,
     dataproviders
@@ -83,58 +84,59 @@ class Interval(Tabular):
         if dataset.has_data():
             empty_line_count = 0
             num_check_lines = 100  # only check up to this many non empty lines
-            for i, line in enumerate(open(dataset.file_name)):
-                line = line.rstrip('\r\n')
-                if line:
-                    if (first_line_is_header or line[0] == '#'):
-                        self.init_meta(dataset)
-                        line = line.strip('#')
-                        elems = line.split('\t')
-                        for meta_name, header_list in alias_spec.items():
-                            for header_val in header_list:
-                                if header_val in elems:
-                                    # found highest priority header to meta_name
-                                    setattr(dataset.metadata, meta_name, elems.index(header_val) + 1)
-                                    break  # next meta_name
-                        break  # Our metadata is set, so break out of the outer loop
+            with compression_utils.get_fileobj(dataset.file_name) as in_fh:
+                for i, line in enumerate(in_fh):
+                    line = line.rstrip('\r\n')
+                    if line:
+                        if (first_line_is_header or line[0] == '#'):
+                            self.init_meta(dataset)
+                            line = line.strip('#')
+                            elems = line.split('\t')
+                            for meta_name, header_list in alias_spec.items():
+                                for header_val in header_list:
+                                    if header_val in elems:
+                                        # found highest priority header to meta_name
+                                        setattr(dataset.metadata, meta_name, elems.index(header_val) + 1)
+                                        break  # next meta_name
+                            break  # Our metadata is set, so break out of the outer loop
+                        else:
+                            # Header lines in Interval files are optional. For example, BED is Interval but has no header.
+                            # We'll make a best guess at the location of the metadata columns.
+                            elems = line.split('\t')
+                            if len(elems) > 2:
+                                if overwrite or not dataset.metadata.element_is_set('chromCol'):
+                                    dataset.metadata.chromCol = 1
+                                try:
+                                    int(elems[1])
+                                    if overwrite or not dataset.metadata.element_is_set('startCol'):
+                                        dataset.metadata.startCol = 2
+                                except Exception:
+                                    pass  # Metadata default will be used
+                                try:
+                                    int(elems[2])
+                                    if overwrite or not dataset.metadata.element_is_set('endCol'):
+                                        dataset.metadata.endCol = 3
+                                except Exception:
+                                    pass  # Metadata default will be used
+                                # we no longer want to guess that this column is the 'name', name must now be set manually for interval files
+                                # we will still guess at the strand, as we can make a more educated guess
+                                # if len( elems ) > 3:
+                                #    try:
+                                #        int( elems[3] )
+                                #    except Exception:
+                                #        if overwrite or not dataset.metadata.element_is_set( 'nameCol' ):
+                                #            dataset.metadata.nameCol = 4
+                                if len(elems) < 6 or elems[5] not in data.valid_strand:
+                                    if overwrite or not dataset.metadata.element_is_set('strandCol'):
+                                        dataset.metadata.strandCol = 0
+                                else:
+                                    if overwrite or not dataset.metadata.element_is_set('strandCol'):
+                                        dataset.metadata.strandCol = 6
+                                break
+                            if (i - empty_line_count) > num_check_lines:
+                                break  # Our metadata is set or we examined 100 non-empty lines, so break out of the outer loop
                     else:
-                        # Header lines in Interval files are optional. For example, BED is Interval but has no header.
-                        # We'll make a best guess at the location of the metadata columns.
-                        elems = line.split('\t')
-                        if len(elems) > 2:
-                            if overwrite or not dataset.metadata.element_is_set('chromCol'):
-                                dataset.metadata.chromCol = 1
-                            try:
-                                int(elems[1])
-                                if overwrite or not dataset.metadata.element_is_set('startCol'):
-                                    dataset.metadata.startCol = 2
-                            except Exception:
-                                pass  # Metadata default will be used
-                            try:
-                                int(elems[2])
-                                if overwrite or not dataset.metadata.element_is_set('endCol'):
-                                    dataset.metadata.endCol = 3
-                            except Exception:
-                                pass  # Metadata default will be used
-                            # we no longer want to guess that this column is the 'name', name must now be set manually for interval files
-                            # we will still guess at the strand, as we can make a more educated guess
-                            # if len( elems ) > 3:
-                            #    try:
-                            #        int( elems[3] )
-                            #    except Exception:
-                            #        if overwrite or not dataset.metadata.element_is_set( 'nameCol' ):
-                            #            dataset.metadata.nameCol = 4
-                            if len(elems) < 6 or elems[5] not in data.valid_strand:
-                                if overwrite or not dataset.metadata.element_is_set('strandCol'):
-                                    dataset.metadata.strandCol = 0
-                            else:
-                                if overwrite or not dataset.metadata.element_is_set('strandCol'):
-                                    dataset.metadata.strandCol = 6
-                            break
-                        if (i - empty_line_count) > num_check_lines:
-                            break  # Our metadata is set or we examined 100 non-empty lines, so break out of the outer loop
-                else:
-                    empty_line_count += 1
+                        empty_line_count += 1
 
     def displayable(self, dataset):
         try:
@@ -167,7 +169,7 @@ class Interval(Tabular):
             start = sys.maxsize
             end = 0
             max_col = max(chrom_col, start_col, end_col)
-            with open(dataset.file_name) as fh:
+            with compression_utils.get_fileobj(dataset.file_name) as fh:
                 for line in util.iter_start_of_line(fh, VIEWPORT_READLINE_BUFFER_SIZE):
                     # Skip comment lines
                     if not line.startswith('#'):
@@ -210,7 +212,7 @@ class Interval(Tabular):
             c, s, e, t, n = dataset.metadata.chromCol, dataset.metadata.startCol, dataset.metadata.endCol, dataset.metadata.strandCol or 0, dataset.metadata.nameCol or 0
             c, s, e, t, n = int(c) - 1, int(s) - 1, int(e) - 1, int(t) - 1, int(n) - 1
             if t >= 0:  # strand column (should) exists
-                for i, elems in enumerate(util.file_iter(dataset.file_name)):
+                for i, elems in enumerate(compression_utils.file_iter(dataset.file_name)):
                     strand = "+"
                     name = "region_%i" % i
                     if n >= 0 and n < len(elems):
@@ -220,17 +222,17 @@ class Interval(Tabular):
                     tmp = [elems[c], elems[s], elems[e], name, '0', strand]
                     fh.write('%s\n' % '\t'.join(tmp))
             elif n >= 0:  # name column (should) exists
-                for i, elems in enumerate(util.file_iter(dataset.file_name)):
+                for i, elems in enumerate(compression_utils.file_iter(dataset.file_name)):
                     name = "region_%i" % i
                     if n >= 0 and n < len(elems):
                         name = elems[n]
                     tmp = [elems[c], elems[s], elems[e], name]
                     fh.write('%s\n' % '\t'.join(tmp))
             else:
-                for elems in util.file_iter(dataset.file_name):
+                for elems in compression_utils.file_iter(dataset.file_name):
                     tmp = [elems[c], elems[s], elems[e]]
                     fh.write('%s\n' % '\t'.join(tmp))
-            return open(fh.name, 'rb')
+            return compression_utils.get_fileobj(fh.name, mode='rb')
 
     def display_peek(self, dataset):
         """Returns formated html of peek"""
@@ -270,7 +272,7 @@ class Interval(Tabular):
         """Validate an interval file using the bx GenomicIntervalReader"""
         c, s, e, t = dataset.metadata.chromCol, dataset.metadata.startCol, dataset.metadata.endCol, dataset.metadata.strandCol
         c, s, e, t = int(c) - 1, int(s) - 1, int(e) - 1, int(t) - 1
-        with open(dataset.file_name, "r") as infile:
+        with compression_utils.get_fileobj(dataset.file_name, "r") as infile:
             reader = GenomicIntervalReader(
                 infile,
                 chrom_col=c,
@@ -645,31 +647,32 @@ class Gff(Tabular, _RemoteCallMixin):
         # not found in the first N lines will not have metadata.
         num_lines = 200
         attribute_types = {}
-        for i, line in enumerate(open(dataset.file_name)):
-            if line and not line.startswith('#'):
-                elems = line.split('\t')
-                if len(elems) == 9:
-                    try:
-                        # Loop through attributes to set types.
-                        for name, value in parse_gff_attributes(elems[8]).items():
-                            # Default type is string.
-                            value_type = "str"
-                            try:
-                                # Try int.
-                                int(value)
-                                value_type = "int"
-                            except ValueError:
+        with compression_utils.get_fileobj(dataset.file_name) as in_fh:
+            for i, line in enumerate(in_fh):
+                if line and not line.startswith('#'):
+                    elems = line.split('\t')
+                    if len(elems) == 9:
+                        try:
+                            # Loop through attributes to set types.
+                            for name, value in parse_gff_attributes(elems[8]).items():
+                                # Default type is string.
+                                value_type = "str"
                                 try:
-                                    # Try float.
-                                    float(value)
-                                    value_type = "float"
+                                    # Try int.
+                                    int(value)
+                                    value_type = "int"
                                 except ValueError:
-                                    pass
-                            attribute_types[name] = value_type
-                    except Exception:
-                        pass
-                if i + 1 == num_lines:
-                    break
+                                    try:
+                                        # Try float.
+                                        float(value)
+                                        value_type = "float"
+                                    except ValueError:
+                                        pass
+                                attribute_types[name] = value_type
+                        except Exception:
+                            pass
+                    if i + 1 == num_lines:
+                        break
 
         # Set attribute metadata and then set additional metadata.
         dataset.metadata.attribute_types = attribute_types
@@ -679,17 +682,18 @@ class Gff(Tabular, _RemoteCallMixin):
         self.set_attribute_metadata(dataset)
 
         i = 0
-        for i, line in enumerate(open(dataset.file_name)):
-            line = line.rstrip('\r\n')
-            if line and not line.startswith('#'):
-                elems = line.split('\t')
-                if len(elems) == 9:
-                    try:
-                        int(elems[3])
-                        int(elems[4])
-                        break
-                    except Exception:
-                        pass
+        with compression_utils.get_fileobj(dataset.file_name) as in_fh:
+            for i, line in enumerate(in_fh):
+                line = line.rstrip('\r\n')
+                if line and not line.startswith('#'):
+                    elems = line.split('\t')
+                    if len(elems) == 9:
+                        try:
+                            int(elems[3])
+                            int(elems[4])
+                            break
+                        except Exception:
+                            pass
         Tabular.set_meta(self, dataset, overwrite=overwrite, skip=i)
 
     def display_peek(self, dataset):
@@ -708,7 +712,7 @@ class Gff(Tabular, _RemoteCallMixin):
                 seqid = None
                 start = sys.maxsize
                 stop = 0
-                with open(dataset.file_name) as fh:
+                with compression_utils.get_fileobj(dataset.file_name) as fh:
                     for line in util.iter_start_of_line(fh, VIEWPORT_READLINE_BUFFER_SIZE):
                         try:
                             if line.startswith('##sequence-region'):  # ##sequence-region IV 6000000 6030000
@@ -883,31 +887,31 @@ class Gff3(Gff):
 
     def set_meta(self, dataset, overwrite=True, **kwd):
         self.set_attribute_metadata(dataset)
-
         i = 0
-        for i, line in enumerate(open(dataset.file_name)):
-            line = line.rstrip('\r\n')
-            if line and not line.startswith('#'):
-                elems = line.split('\t')
-                valid_start = False
-                valid_end = False
-                if len(elems) == 9:
-                    try:
-                        start = int(elems[3])
-                        valid_start = True
-                    except Exception:
-                        if elems[3] == '.':
+        with compression_utils.get_fileobj(dataset.file_name) as in_fh:
+            for i, line in enumerate(in_fh):
+                line = line.rstrip('\r\n')
+                if line and not line.startswith('#'):
+                    elems = line.split('\t')
+                    valid_start = False
+                    valid_end = False
+                    if len(elems) == 9:
+                        try:
+                            start = int(elems[3])
                             valid_start = True
-                    try:
-                        end = int(elems[4])
-                        valid_end = True
-                    except Exception:
-                        if elems[4] == '.':
+                        except Exception:
+                            if elems[3] == '.':
+                                valid_start = True
+                        try:
+                            end = int(elems[4])
                             valid_end = True
-                    strand = elems[6]
-                    phase = elems[7]
-                    if valid_start and valid_end and start < end and strand in self.valid_gff3_strand and phase in self.valid_gff3_phase:
-                        break
+                        except Exception:
+                            if elems[4] == '.':
+                                valid_end = True
+                        strand = elems[6]
+                        phase = elems[7]
+                        if valid_start and valid_end and start < end and strand in self.valid_gff3_strand and phase in self.valid_gff3_phase:
+                            break
         Tabular.set_meta(self, dataset, overwrite=overwrite, skip=i)
 
     def sniff_prefix(self, file_prefix):

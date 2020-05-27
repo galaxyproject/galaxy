@@ -65,6 +65,21 @@ TOOL_WITH_TOKEN = r"""
 </tool>
 """
 
+TOOL_WTIH_TOKEN_FROM_MACRO_FILE = r"""
+<tool id="tool_with_token" name="Token" version="1">
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <command detect_errors="exit_code"><![CDATA[@CATS@]]></command>
+</tool>
+"""
+
+MACRO_CONTENTS = r"""<?xml version="1.0"?>
+<macros>
+    <token name="@CATS@">cat   </token>
+</macros>
+"""
+
 TOOL_WITH_RECURSIVE_TOKEN = r"""
 <tool id="tool_with_recursive_token" name="Token" version="1">
     <macros>
@@ -181,17 +196,24 @@ class BaseLoaderTestCase(unittest.TestCase):
     def _tool_source(self):
         return self._get_tool_source()
 
-    def _get_tool_source(self, source_file_name=None, source_contents=None):
+    def _get_tool_source(self, source_file_name=None, source_contents=None, macro_contents=None):
+        macro_path = None
         if source_file_name is None:
             source_file_name = self.source_file_name
         if source_contents is None:
             source_contents = self.source_contents
         if not os.path.isabs(source_file_name):
             path = os.path.join(self.temp_directory, source_file_name)
-            open(path, "w").write(source_contents)
+            with open(path, "w") as out:
+                out.write(source_contents)
+            if macro_contents:
+                macro_path = os.path.join(self.temp_directory, 'macros.xml')
+                with open(macro_path, "w") as out:
+                    out.write(macro_contents)
+
         else:
             path = source_file_name
-        tool_source = get_tool_source(path)
+        tool_source = get_tool_source(path, macro_paths=[macro_path])
         return tool_source
 
 
@@ -353,6 +375,12 @@ class XmlLoaderTestCase(BaseLoaderTestCase):
         tool_source = self._get_tool_source(source_contents=TOOL_WITH_TOKEN)
         command = tool_source.parse_command()
         assert command
+        assert '@' not in command
+
+    def test_token_significant_whitespace(self):
+        tool_source = self._get_tool_source(source_contents=TOOL_WTIH_TOKEN_FROM_MACRO_FILE, macro_contents=MACRO_CONTENTS)
+        command = tool_source.parse_command()
+        assert command == 'cat   '
         assert '@' not in command
 
     def test_recursive_token(self):

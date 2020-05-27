@@ -10,6 +10,9 @@
     "url": "https://github.com/galaxyproject/galaxy.git"
   },
   "license": "AFL-3.0",
+  "resolutions": {
+    "**/chokidar": "3.4.0"
+  },
   "dependencies": {
     "@babel/polyfill": "^7.8.3",
     "@fortawesome/fontawesome-free": "^5.13.0",
@@ -40,6 +43,7 @@
     "jquery.cookie": "^1.4.1",
     "latex-parser": "^0.6.2",
     "latex-to-unicode-converter": "^0.5.2",
+    "linkifyjs": "^2.1.9",
     "markdown-it": "^8.4.2",
     "moment": "2.24.0",
     "popper.js": "^1.16.1",
@@ -84,6 +88,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.8.4",
+    "@babel/helper-validator-identifier": "^7.9.5",
     "@babel/plugin-syntax-dynamic-import": "^7.8.3",
     "@babel/preset-env": "^7.8.4",
     "@vue/test-utils": "^1.0.0-beta.31",
@@ -96,6 +101,7 @@
     "babel-plugin-transform-inline-environment-variables": "^0.4.3",
     "babel-plugin-transform-vue-template": "^0.4.2",
     "chai": "^4.2.0",
+    "chokidar": "^3.4.0",
     "css-loader": "^3.4.2",
     "del": "^5.1.0",
     "duplicate-package-checker-webpack-plugin": "^3.0.0",
@@ -118,7 +124,6 @@
     "karma-webpack": "^4.0.2",
     "mini-css-extract-plugin": "^0.9.0",
     "mocha": "^7.0.1",
-    "node-sass": "^4.13.1",
     "optimize-css-assets-webpack-plugin": "^5.0.3",
     "phantomjs-polyfill": "0.0.2",
     "phantomjs-prebuilt": "^2.1.7",
@@ -126,6 +131,7 @@
     "prettier": "^2.0.1",
     "qunit": "^2.9.3",
     "raw-loader": "^4.0.0",
+    "sass": "^1.26.5",
     "sass-loader": "^8.0.2",
     "sinon": "^8.1.1",
     "store": "^2.0.12",

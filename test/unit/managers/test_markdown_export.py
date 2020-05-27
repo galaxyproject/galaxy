@@ -288,6 +288,7 @@ history_dataset_display(history_dataset_id=2)
         hdca.collection = self._new_pair_collection()
         hdca.id = 1
         hdca.history_id = 1
+        hdca.collection_id = hdca.collection.id
 
         self.trans.app.dataset_collections_service.get_dataset_collection_instance.return_value = hdca
         example = """# Example

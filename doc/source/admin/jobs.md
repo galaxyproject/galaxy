@@ -222,7 +222,7 @@ def ncbi_blastn_wrapper(job):
         walltime_str = "walltime=24:00:00/"
     else:
         walltime_str = "walltime=12:00:00/"
-    return JobDestination(runner="pbs", params={"Resource_List": walltime_str})
+    return JobDestination(id="ncbi_blastn_wrapper", runner="pbs", params={"Resource_List": walltime_str})
 
 ```
 
@@ -238,7 +238,7 @@ def ncbi_blastn_wrapper(app, user_email):
      params = {}
      if user_email in admin_users:
          params["nativeSpecification"] = "-P bigNodes"
-    return JobDestination(runner="drmaa", params=params)
+    return JobDestination(id="ncbi_blastn_wrapper", runner="drmaa", params=params)
 ```
 
 
@@ -351,7 +351,7 @@ DEV_EMAILS = ["mary@example.com"]
 
 def dev_only(user_email):
     if user_email in DEV_EMAILS
-       return JobDestination(runner="drmaa")
+       return JobDestination(id="dev_only", runner="drmaa")
     else:
        raise JobMappingException("This tool is under development and you are not authorized to it.")
 ```

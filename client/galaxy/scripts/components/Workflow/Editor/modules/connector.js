@@ -14,7 +14,7 @@ const ribbonInnerMultiple = 1;
 const ribbonOuterMultiple = 3;
 
 class Connector {
-    constructor(manager = {}, handle1 = null, handle2 = null) {
+    constructor(manager = {}, outputHandle = null, inputHandle = null) {
         this.manager = manager;
         this.dragging = false;
         this.innerClass = "ribbon-inner";
@@ -24,31 +24,31 @@ class Connector {
         container.appendChild(this.canvas);
         this.svg = d3.select(this.canvas).append("svg");
         this.svg.attr("class", "ribbon");
-        if (handle1 && handle2) {
-            this.connect(handle1, handle2);
+        if (outputHandle && inputHandle) {
+            this.connect(outputHandle, inputHandle);
         }
     }
     connect(t1, t2) {
-        this.handle1 = t1;
-        if (this.handle1) {
-            this.handle1.connect(this);
+        this.outputHandle = t1;
+        if (this.outputHandle) {
+            this.outputHandle.connect(this);
         }
-        this.handle2 = t2;
-        if (this.handle2) {
-            this.handle2.connect(this);
+        this.inputHandle = t2;
+        if (this.inputHandle) {
+            this.inputHandle.connect(this);
         }
     }
     destroy() {
-        if (this.handle1) {
-            this.handle1.disconnect(this);
+        if (this.outputHandle) {
+            this.outputHandle.disconnect(this);
         }
-        if (this.handle2) {
-            this.handle2.disconnect(this);
+        if (this.inputHandle) {
+            this.inputHandle.disconnect(this);
         }
         this.canvas.remove();
     }
     destroyIfInvalid(warn) {
-        if (this.handle1 && this.handle2 && !this.handle2.attachable(this.handle1).canAccept) {
+        if (this.outputHandle && this.inputHandle && !this.inputHandle.attachable(this.outputHandle).canAccept) {
             if (warn) {
                 Toast.warning("Destroying a connection because collection type has changed.");
             }
@@ -67,32 +67,31 @@ class Connector {
     }
     redraw() {
         // Identify handles
-        const handle1 = this.handle1;
-        const handle2 = this.handle2;
+        const outputHandle = this.outputHandle;
+        const inputHandle = this.inputHandle;
+        if (!outputHandle || !inputHandle) {
+            return;
+        }
         const canvas_container = $("#canvas-container");
         const canvasZoom = this.manager.canvasZoom;
         if (this.dragging) {
             this.canvas.style.zIndex = zIndex;
         }
-        this.canvas.setAttribute(
-            "handle1-id",
-            handle1 && handle1.element.getAttribute ? handle1.element.getAttribute("id") : ""
-        );
-        this.canvas.setAttribute(
-            "handle2-id",
-            handle2 && handle2.element.getAttribute ? handle2.element.getAttribute("id") : ""
-        );
         const relativeLeft = (e) => ($(e).offset().left - canvas_container.offset().left) / canvasZoom;
         const relativeTop = (e) => ($(e).offset().top - canvas_container.offset().top) / canvasZoom;
-        if (!handle1 || !handle2) {
+        if (!outputHandle || !inputHandle) {
             return;
         }
 
+        // Set handle ids, used in test cases
+        this.canvas.setAttribute("output-handle-id", outputHandle.element.getAttribute("id"));
+        this.canvas.setAttribute("input-handle-id", inputHandle.element.getAttribute("id"));
+
         // Find the position of each handle
-        let start_x = relativeLeft(handle1.element) + handleMarginX;
-        let start_y = relativeTop(handle1.element) + 0.5 * $(handle1.element).height();
-        let end_x = relativeLeft(handle2.element) + handleMarginX;
-        let end_y = relativeTop(handle2.element) + 0.5 * $(handle2.element).height();
+        let start_x = relativeLeft(outputHandle.element) + handleMarginX;
+        let start_y = relativeTop(outputHandle.element) + 0.5 * $(outputHandle.element).height();
+        let end_x = relativeLeft(inputHandle.element) + handleMarginX;
+        let end_y = relativeTop(inputHandle.element) + 0.5 * $(inputHandle.element).height();
 
         // Calculate canvas area
         const canvas_min_x = Math.min(start_x, end_x);
@@ -122,12 +121,12 @@ class Connector {
         const cp_shift = Math.min(Math.max(Math.abs(canvas_max_y - canvas_min_y) / 2, cpFactor), 3 * cpFactor);
 
         // Draw ribbons
-        this.drawRibbon(handle1, handle2, cp_shift, start_x, start_y, end_x, end_y);
+        this.drawRibbon(outputHandle, inputHandle, cp_shift, start_x, start_y, end_x, end_y);
     }
-    drawRibbon(handle1, handle2, cp_shift, start_x, start_y, end_x, end_y) {
+    drawRibbon(outputHandle, inputHandle, cp_shift, start_x, start_y, end_x, end_y) {
         // Check ribbon type
-        const startRibbon = handle1 && handle1.isMappedOver();
-        const endRibbon = handle2 && handle2.isMappedOver();
+        const startRibbon = outputHandle && outputHandle.isMappedOver();
+        const endRibbon = inputHandle && inputHandle.isMappedOver();
 
         // Draw the line
         let start_offsets = [0];

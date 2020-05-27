@@ -22,7 +22,7 @@
 </template>
 
 <script>
-import { getToolPredictions } from "./services";
+import { getToolPredictions } from "./modules/services";
 import LoadingSpan from "components/LoadingSpan";
 import _l from "utils/localization";
 

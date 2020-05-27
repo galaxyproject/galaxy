@@ -362,7 +362,7 @@ class NavigatesGalaxy(HasDriver):
 
     def published_grid_search_for(self, search_term=None):
         return self._inline_search_for(
-            '#input-free-text-search-filter',
+            self.navigation.grids.free_text_search,
             search_term,
         )
 
@@ -374,7 +374,9 @@ class NavigatesGalaxy(HasDriver):
 
     @retry_during_transitions
     def _inline_search_for(self, selector, search_term=None):
-        search_box = self.wait_for_and_click_selector(selector)
+        # Clear tooltip resulting from clicking on the masthead to get here.
+        self.clear_tooltips()
+        search_box = self.wait_for_and_click(selector)
         search_box.clear()
         if search_term is not None:
             search_box.send_keys(search_term)
@@ -406,7 +408,7 @@ class NavigatesGalaxy(HasDriver):
             'login': email,
             'password': password,
         }
-        self.click_masthead_user()
+        self.components.masthead.register_or_login.wait_for_and_click()
         self.sleep_for(WAIT_TYPES.UX_RENDER)
         form = self.wait_for_visible(self.navigation.login.selectors.form)
         self.fill(form, login_info)
@@ -435,7 +437,7 @@ class NavigatesGalaxy(HasDriver):
             username = email.split("@")[0]
 
         self.home()
-        self.click_masthead_user()
+        self.components.masthead.register_or_login.wait_for_and_click()
         self.wait_for_and_click(self.navigation.registration.selectors.toggle)
         form = self.wait_for_visible(self.navigation.registration.selectors.form)
         self.fill(form, dict(
@@ -470,8 +472,8 @@ class NavigatesGalaxy(HasDriver):
             assert email in text
             assert self.get_logged_in_user()["email"] == email
 
-            # Hide masthead menu click
-            self.click_center()
+            # clicking away no longer closes menu post Masthead -> VueJS
+            self.click_masthead_user()
 
     def wait_for_logged_in(self):
         try:
@@ -954,6 +956,12 @@ class NavigatesGalaxy(HasDriver):
         self.wait_for_selector_absent_or_hidden(".ui-modal", wait_type=WAIT_TYPES.UX_POPUP)
         self.wait_for_selector_absent_or_hidden(".toast", wait_type=WAIT_TYPES.UX_POPUP)
 
+    def clear_tooltips(self):
+        action_chains = self.action_chains()
+        center_element = self.driver.find_element_by_css_selector("#center")
+        action_chains.move_to_element(center_element).perform()
+        self.wait_for_selector_absent_or_hidden(".b-tooltip", wait_type=WAIT_TYPES.UX_POPUP)
+
     def workflow_index_open(self):
         self.home()
         self.click_masthead_workflow()
@@ -977,7 +985,7 @@ class NavigatesGalaxy(HasDriver):
 
     def workflow_index_search_for(self, search_term=None):
         return self._inline_search_for(
-            "#workflow-search",
+            self.navigation.workflows.search_box,
             search_term,
         )
 

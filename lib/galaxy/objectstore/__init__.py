@@ -13,7 +13,6 @@ import shutil
 import threading
 import time
 from collections import OrderedDict
-from xml.etree import ElementTree
 
 import yaml
 try:
@@ -25,6 +24,7 @@ from galaxy.exceptions import ObjectInvalid, ObjectNotFound
 from galaxy.util import (
     directory_hash_id,
     force_symlink,
+    parse_xml,
     umask_fix_perms,
 )
 from galaxy.util.bunch import Bunch
@@ -790,7 +790,7 @@ class DistributedObjectStore(NestedObjectStore):
                 "'distributed_object_store_config_file')"
 
             log.debug('Loading backends for distributed object store from %s', distributed_config)
-            config_xml = ElementTree.parse(distributed_config).getroot()
+            config_xml = parse_xml(distributed_config).getroot()
             legacy = True
         else:
             log.debug('Loading backends for distributed object store from %s', config_xml.get('id'))
@@ -992,7 +992,7 @@ def build_object_store_from_config(config, fsmon=False, config_xml=None, config_
                 # This is a top level invocation of build_object_store_from_config, and
                 # we have an object_store_conf.xml -- read the .xml and build
                 # accordingly
-                config_xml = ElementTree.parse(config.object_store_config_file).getroot()
+                config_xml = parse_xml(config.object_store_config_file).getroot()
                 store = config_xml.get('type')
             else:
                 with open(config_file, "rt") as f:

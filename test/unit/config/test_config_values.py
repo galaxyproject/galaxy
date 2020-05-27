@@ -102,7 +102,6 @@ class ExpectedValues:
             'tool_sheds_config_file': self._in_config_dir('tool_sheds_conf.xml'),
             'tool_test_data_directories': self._in_root_dir('test-data'),
             'user_preferences_extra_conf_path': self._in_config_dir('user_preferences_extra_conf.yml'),
-            'whitelist_file': self._in_config_dir('disposable_email_whitelist.conf'),
             'workflow_resource_params_file': self._in_config_dir('workflow_resource_params_conf.xml'),
             'workflow_schedulers_config_file': self._in_config_dir('workflow_schedulers_conf.xml'),
         }
