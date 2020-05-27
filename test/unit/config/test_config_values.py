@@ -64,6 +64,8 @@ class ExpectedValues:
             'data_dir': self._in_data_dir(),
             'data_manager_config_file': self._in_config_dir('data_manager_conf.xml'),
             'datatypes_config_file': self._in_sample_dir('datatypes_conf.xml.sample'),
+            'default_storage_media_cache_path': self._in_data_dir('storage_media_cache'),
+            'default_storage_media_jobs_directory': self._in_data_dir('job_working_directory_storage_media'),
             'dependency_resolvers_config_file': self._in_config_dir('dependency_resolvers_conf.xml'),
             'dynamic_proxy_session_map': self._in_data_dir('session_map.sqlite'),
             'file_path': self._in_data_dir('objects'),
