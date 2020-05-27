@@ -9,7 +9,7 @@
 
 <script>
 import { getAppRoot } from "onload/loadConfig";
-import { getPathDestination } from "components/Dataset/compositeDatasetUtils";
+import { mapCacheActions } from "vuex-cache";
 
 export default {
     props: {
@@ -23,7 +23,8 @@ export default {
     },
     created() {
         if (this.path) {
-            getPathDestination(this.history_dataset_id, this.path).then((pathDestination) => {
+            this.fetchPathDestination({ history_dataset_id: this.history_dataset_id, path: this.path }).then(() => {
+                const pathDestination = this.$store.getters.pathDestination(this.history_dataset_id, this.path);
                 this.imgUrl = pathDestination.fileLink;
             });
         } else this.imgUrl = `${getAppRoot()}dataset/display?dataset_id=${this.history_dataset_id}`;
@@ -32,6 +33,9 @@ export default {
         return {
             imgUrl: undefined,
         };
+    },
+    methods: {
+        ...mapCacheActions(["fetchPathDestination"]),
     },
 };
 </script>
