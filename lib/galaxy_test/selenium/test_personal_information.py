@@ -6,7 +6,6 @@ from .framework import (
 
 class ManageInformationTestCase(SeleniumTestCase):
 
-
     @selenium_test
     def test_api_key(self):
         '''
