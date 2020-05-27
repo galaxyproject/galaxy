@@ -15,6 +15,7 @@ import { historyStore } from "./historyStore";
 import { userStore } from "./userStore";
 import { configStore } from "./configStore";
 import { workflowStore } from "./workflowStore";
+import { datasetPathDestinationStore } from "./datasetPathDestinationStore";
 
 Vue.use(Vuex);
 
@@ -33,6 +34,7 @@ export function createStore() {
             tags: tagStore,
             jobMetrics: jobMetricsStore,
             destinationParameters: jobDestinationParametersStore,
+            datasetPathDestination: datasetPathDestinationStore,
             invocations: invocationStore,
             user: userStore,
             config: configStore,
