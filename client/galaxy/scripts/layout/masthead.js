@@ -41,14 +41,8 @@ const View = Backbone.View.extend({
                 }
             })
             .on("beforeunload", () => {
-                let text = "";
-                this.collection.each((model) => {
-                    const q = model.get("onbeforeunload") && model.get("onbeforeunload")();
-                    if (q) {
-                        text += `${q} `;
-                    }
-                });
-                if (text !== "") {
+                const text = this.frame.beforeUnload();
+                if(text) {
                     return text;
                 }
             });

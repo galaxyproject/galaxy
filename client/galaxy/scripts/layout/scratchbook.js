@@ -31,11 +31,6 @@ export default Backbone.View.extend({
                     this.frames.hide();
                 }
             },
-            onbeforeunload: () => {
-                if (this.frames.length() > 0) {
-                    return `You opened ${this.frames.length()} frame(s) which will be lost.`;
-                }
-            },
         });
         this.buttonLoad = options.collection.push({
             id: "show-scratchbook",
@@ -57,6 +52,14 @@ export default Backbone.View.extend({
     getFrames() {
         // needed for Vue.js integration
         return this.frames;
+    },
+
+    beforeUnload() {
+        let confirmText = '';
+        if (this.frames.length() > 0) {
+            confirmText = `You opened ${this.frames.length()} frame(s) which will be lost.`;
+        }
+        return confirmText;
     },
 
     /** Add a dataset to the frames */
