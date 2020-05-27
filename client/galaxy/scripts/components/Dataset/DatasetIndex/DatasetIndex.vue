@@ -16,7 +16,7 @@
 </template>
 
 <script>
-import { getPathDestination } from "components/Dataset/compositeDatasetUtils";
+import { mapCacheActions } from "vuex-cache";
 
 export default {
     props: {
@@ -29,7 +29,8 @@ export default {
         },
     },
     created() {
-        getPathDestination(this.history_dataset_id, this.path).then((pathDestination) => {
+        this.fetchPathDestination({ history_dataset_id: this.history_dataset_id, path: this.path }).then(() => {
+            const pathDestination = this.$store.getters.pathDestination(this.history_dataset_id, this.path);
             if (!pathDestination) {
                 this.errorMessage = `Dataset is not composite!`;
                 return;
@@ -72,6 +73,8 @@ export default {
         };
     },
     methods: {
+        ...mapCacheActions(["fetchPathDestination"]),
+
         removeParentDirectory(datasetContent, filepath) {
             return datasetContent.filter((entry) => {
                 if (entry.path.startsWith(`${filepath}/`)) {
