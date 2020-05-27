@@ -69,6 +69,16 @@ describe("Masthead.vue", () => {
         });
     });
 
+    it("should disable brand when displayGalaxyBrand is true", async () => {
+        expect(wrapper.find(".navbar-brand-title").text()).to.equals("Galaxy");
+        wrapper.setProps({ brand: "Foo "});
+        await localVue.nextTick();
+        expect(wrapper.find(".navbar-brand-title").text()).to.equals("Galaxy Foo");
+        wrapper.setProps({displayGalaxyBrand: false});
+        await localVue.nextTick();
+        expect(wrapper.find(".navbar-brand-title").text()).to.equals("Foo");
+    });
+
     it("set quota element and renders it", () => {
         expect(quotaEl).to.not.equals(null);
         expect(quotaRendered).to.equals(true);

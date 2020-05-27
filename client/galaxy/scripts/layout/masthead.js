@@ -46,15 +46,40 @@ const View = Backbone.View.extend({
                     return text;
                 }
             });
+    }
+
+}
+
+export function mountMasthead(el, options, mastheadState) {
+
+}
+
+
+/** Masthead **/
+const View = Backbone.View.extend({
+    initialize: function (options) {
+        const Galaxy = getGalaxyInstance();
+        this.options = options;
+        this._component = null;
+        // build tabs
+        this.collection = fetchMenu(options);
+
+        // scratchbook
+        Galaxy.frame = this.frame = new Scratchbook({
+            collection: this.collection,
+        });
+
+        // set up the quota meter (And fetch the current user data from trans)
+        // add quota meter to masthead
+        Galaxy.quotaMeter = this.quotaMeter = new QuotaMeter.UserQuotaMeter({
+            model: Galaxy.user,
+        });
+
     },
 
     render: function () {
         const el = document.createElement("div");
         this.el.appendChild(el); // use this.el directly when feature parity is accomplished
-        let brandTitle = this.options.display_galaxy_brand ? "Galaxy " : "";
-        if (this.options.brand) {
-            brandTitle += this.options.brand;
-        }
         const defaults = {
             visible: true,
             target: "_parent",
@@ -70,7 +95,8 @@ const View = Backbone.View.extend({
         });
         this._component = mountVueComponent(Masthead)(
             {
-                brandTitle: brandTitle,
+                displayGalaxyBrand: this.options.display_galaxy_brand,
+                brand: this.options.brand,
                 brandLink: this.options.logo_url,
                 brandImage: this.options.logo_src,
                 quotaMeter: this.quotaMeter,

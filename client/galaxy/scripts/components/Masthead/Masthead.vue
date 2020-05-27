@@ -38,7 +38,11 @@ import _ from "underscore";
 export default {
     name: "Masthead",
     props: {
-        brandTitle: {
+        displayGalaxyBrand: {
+            type: Boolean,
+            default: true,
+        },
+        brand: {
             type: String,
         },
         brandLink: {
@@ -93,6 +97,15 @@ export default {
         highlight(activeTab) {
             this.activeTab = activeTab;
         },
+    },
+    computed: {
+        brandTitle() {
+            let brandTitle = this.displayGalaxyBrand ? "Galaxy " : "";
+            if (this.brand) {
+                brandTitle += this.brand;
+            }
+            return brandTitle;
+        }
     },
     mounted() {
         this.quotaMeter.setElement(this.$refs["quota-meter-container"]);
