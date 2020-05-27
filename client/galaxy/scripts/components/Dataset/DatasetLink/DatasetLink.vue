@@ -7,7 +7,7 @@
 <script>
 import { getAppRoot } from "onload/loadConfig";
 import { Services } from "components/Dataset/services";
-import { getPathDestination } from "components/Dataset/compositeDatasetUtils";
+import { mapCacheActions } from "vuex-cache";
 
 export default {
     props: {
@@ -27,8 +27,8 @@ export default {
         this.pathDestination = {};
         if (this.path && this.path !== "undefined") {
             // download individual file from composite dataset
-            getPathDestination(this.history_dataset_id, this.path).then((pathDestination) => {
-                this.pathDestination = pathDestination;
+            this.fetchPathDestination({ history_dataset_id: this.history_dataset_id, path: this.path }).then((resp) => {
+                this.pathDestination = this.$store.getters.pathDestination(this.history_dataset_id, this.path);
             });
         } else {
             // download whole dataset
@@ -59,9 +59,9 @@ export default {
                 } `;
             }
         },
-        isImage() {
-            return (this.image && this.image === true) || this.image === "true";
-        },
+    },
+    methods: {
+        ...mapCacheActions(["fetchPathDestination"]),
     },
 };
 </script>
