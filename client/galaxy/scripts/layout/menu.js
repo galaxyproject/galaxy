@@ -1,4 +1,3 @@
-import $ from "jquery";
 import axios from "axios";
 import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
@@ -310,6 +309,14 @@ export function fetchMenu(options = {}) {
     return menu;
 }
 
+// https://stackoverflow.com/questions/799981/document-ready-equivalent-without-jquery
+function ready(callback){
+    // in case the document is already rendered
+    if (document.readyState!='loading') callback();
+    // modern browsers
+    else if (document.addEventListener) document.addEventListener('DOMContentLoaded', callback);
+}
+
 function loadWebhookMenuItems() {
     //
     // Webhooks
@@ -317,7 +324,7 @@ function loadWebhookMenuItems() {
     Webhooks.load({
         type: "masthead",
         callback: function (webhooks) {
-            $(document).ready(() => {
+            ready(() => {
                 webhooks.each((model) => {
                     const webhook = model.toJSON();
                     if (webhook.activate) {
