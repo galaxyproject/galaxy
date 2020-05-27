@@ -27,7 +27,7 @@ export default {
         this.pathDestination = {};
         if (this.path && this.path !== "undefined") {
             // download individual file from composite dataset
-            this.fetchPathDestination({ history_dataset_id: this.history_dataset_id, path: this.path }).then((resp) => {
+            this.fetchPathDestination({ history_dataset_id: this.history_dataset_id, path: this.path }).then(() => {
                 this.pathDestination = this.$store.getters.pathDestination(this.history_dataset_id, this.path);
             });
         } else {
