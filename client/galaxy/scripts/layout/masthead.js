@@ -1,6 +1,4 @@
 import $ from "jquery";
-import Backbone from "backbone";
-import { fetchMenu } from "layout/menu";
 import Scratchbook from "layout/scratchbook";
 import QuotaMeter from "mvc/user/user-quotameter";
 import { getGalaxyInstance } from "app";
@@ -8,19 +6,14 @@ import Masthead from "../components/Masthead/Masthead";
 import { mountVueComponent } from "../utils/mountVueComponent";
 import { getAppRoot } from "onload/loadConfig";
 
-/** Masthead **/
-const View = Backbone.View.extend({
-    initialize: function (options) {
-        const Galaxy = getGalaxyInstance();
-        this.options = options;
-        this._component = null;
-        // build tabs
-        this.collection = fetchMenu(options);
+export class MastheadState {
+    // Used to be a Backbone View - not pretty but keep all window wide listeners,
+    // global state, etc... related to the Masthead here to keep the VueJS component
+    // more isolated, testable, etc.. (clean)
 
-        // scratchbook
-        Galaxy.frame = this.frame = new Scratchbook({
-            collection: this.collection,
-        });
+    constructor(Galaxy = null) {
+        Galaxy = Galaxy || getGalaxyInstance();
+        Galaxy.frame = this.frame = new Scratchbook();
 
         // set up the quota meter (And fetch the current user data from trans)
         // add quota meter to masthead
@@ -42,84 +35,26 @@ const View = Backbone.View.extend({
             })
             .on("beforeunload", () => {
                 const text = this.frame.beforeUnload();
-                if(text) {
+                if (text) {
                     return text;
                 }
             });
     }
-
 }
 
 export function mountMasthead(el, options, mastheadState) {
-
+    return mountVueComponent(Masthead)(
+        {
+            el: el,
+            mastheadState: mastheadState,
+            displayGalaxyBrand: options.display_galaxy_brand,
+            brand: options.brand,
+            brandLink: options.logo_url,
+            brandImage: options.logo_src,
+            appRoot: getAppRoot(),
+            Galaxy: getGalaxyInstance(),
+            menuOptions: options,
+        },
+        el
+    );
 }
-
-
-/** Masthead **/
-const View = Backbone.View.extend({
-    initialize: function (options) {
-        const Galaxy = getGalaxyInstance();
-        this.options = options;
-        this._component = null;
-        // build tabs
-        this.collection = fetchMenu(options);
-
-        // scratchbook
-        Galaxy.frame = this.frame = new Scratchbook({
-            collection: this.collection,
-        });
-
-        // set up the quota meter (And fetch the current user data from trans)
-        // add quota meter to masthead
-        Galaxy.quotaMeter = this.quotaMeter = new QuotaMeter.UserQuotaMeter({
-            model: Galaxy.user,
-        });
-
-    },
-
-    render: function () {
-        const el = document.createElement("div");
-        this.el.appendChild(el); // use this.el directly when feature parity is accomplished
-        const defaults = {
-            visible: true,
-            target: "_parent",
-        };
-        const tabs = this.collection.map((el) => {
-            let asJson;
-            if (el.toJSON instanceof Function) {
-                asJson = el.toJSON();
-            } else {
-                asJson = el;
-            }
-            return Object.assign({}, defaults, asJson);
-        });
-        this._component = mountVueComponent(Masthead)(
-            {
-                displayGalaxyBrand: this.options.display_galaxy_brand,
-                brand: this.options.brand,
-                brandLink: this.options.logo_url,
-                brandImage: this.options.logo_src,
-                quotaMeter: this.quotaMeter,
-                activeTab: this.activeView,
-                tabs: tabs,
-                frames: this.frame.getFrames(),
-                appRoot: getAppRoot(),
-                Galaxy: getGalaxyInstance(),
-            },
-            el
-        );
-        return this;
-    },
-
-    addItem(item) {
-        this._component.addItem(item);
-    },
-
-    highlight(activeTab) {
-        this._component.highlight(activeTab);
-    },
-});
-
-export default {
-    View: View,
-};

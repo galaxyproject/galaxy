@@ -3,7 +3,7 @@ import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
-import Masthead from "layout/masthead";
+import { MastheadState, mountMasthead } from "layout/masthead";
 import Panel from "layout/panel";
 import Modal from "mvc/ui/ui-modal";
 import Utils from "utils/utils";
@@ -28,7 +28,7 @@ const View = Backbone.View.extend({
         const Galaxy = getGalaxyInstance();
         Galaxy.modal = this.modal = new Modal.View();
         Galaxy.router = this.router = options.Router && new options.Router(this, options);
-        this.masthead = new Masthead.View(this.config);
+        const mastheadState = new MastheadState();
         this.center = new Panel.CenterPanel();
 
         // display helper
@@ -59,10 +59,10 @@ const View = Backbone.View.extend({
             this.$masthead.remove();
             this.$center.css("top", 0);
         } else {
-            this.$masthead.replaceWith(this.masthead.$el);
+            this.masthead = mountMasthead(this.$masthead[0], this.config, mastheadState);
         }
         this.$center.append(this.center.$el);
-        this.$el.append(this.masthead.frame.$el);
+        this.$el.append(mastheadState.frame.$el);
         this.$el.append(this.modal.$el);
 
         // build panels
@@ -101,7 +101,7 @@ const View = Backbone.View.extend({
         // TODO: Remove this line after select2 update
         $(".select2-hidden-accessible").remove();
         if (!this.config.hide_masthead) {
-            this.masthead.render();
+            // this.masthead.render();
             this.renderMessageBox();
             this.renderInactivityBox();
         }

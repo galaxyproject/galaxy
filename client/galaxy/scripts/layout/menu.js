@@ -2,18 +2,6 @@ import axios from "axios";
 import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import { CommunicationServerView } from "layout/communication-server-view";
-import Webhooks from "mvc/webhooks";
-import Utils from "utils/utils";
-
-function appendToPageMenu(item) {
-    const Galaxy = getGalaxyInstance();
-    // Galaxy.page is undefined for data libraries, workflows pages
-    if (Galaxy.page) {
-        Galaxy.page.masthead.addItem(item);
-    } else if (Galaxy.masthead) {
-        Galaxy.masthead.addItem(item);
-    }
-}
 
 export function logoutClick() {
     const galaxy = getGalaxyInstance();
@@ -302,48 +290,5 @@ export function fetchMenu(options = {}) {
         });
     }
     menu.push(helpTab);
-
-    // Load Webhook menu items, find better place to put this.
-    loadWebhookMenuItems();
-
     return menu;
-}
-
-// https://stackoverflow.com/questions/799981/document-ready-equivalent-without-jquery
-function ready(callback){
-    // in case the document is already rendered
-    if (document.readyState!='loading') callback();
-    // modern browsers
-    else if (document.addEventListener) document.addEventListener('DOMContentLoaded', callback);
-}
-
-function loadWebhookMenuItems() {
-    //
-    // Webhooks
-    //
-    Webhooks.load({
-        type: "masthead",
-        callback: function (webhooks) {
-            ready(() => {
-                webhooks.each((model) => {
-                    const webhook = model.toJSON();
-                    if (webhook.activate) {
-                        const obj = {
-                            id: webhook.id,
-                            icon: webhook.config.icon,
-                            url: webhook.config.url,
-                            tooltip: webhook.config.tooltip,
-                            /*jslint evil: true */
-                            onclick: webhook.config.function && new Function(webhook.config.function),
-                            visible: true,
-                            target: "_parent",
-                        };
-                        appendToPageMenu(obj);
-                        // Append masthead script and styles to Galaxy main
-                        Utils.appendScriptStyle(webhook);
-                    }
-                });
-            });
-        },
-    });
 }

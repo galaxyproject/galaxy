@@ -16,28 +16,28 @@ export default Backbone.View.extend({
         this.frames = new Frames.View({ visible: false });
         this.setElement(this.frames.$el);
         this.active = false;
-        this.buttonActive = options.collection.push({
+        this.buttonActive = {
             id: "enable-scratchbook",
             icon: "fa-th",
             tooltip: _l("Enable/Disable Scratchbook"),
+            toggle: false,
             onclick: () => {
                 this.active = !this.active;
-                Object.assign(this.buttonActive, {
-                    toggle: this.active,
-                    show_note: this.active,
-                    note_cls: this.active && "fa fa-check",
-                });
+                this.buttonActive.toggle = this.active;
+                this.buttonActive.show_note = this.active;
+                this.buttonActive.note_cls = this.active && "fa fa-check";
                 if (!this.active) {
                     this.frames.hide();
                 }
             },
-        });
-        this.buttonLoad = options.collection.push({
+        };
+        this.buttonLoad = {
             id: "show-scratchbook",
             icon: "fa-eye",
             tooltip: _l("Show/Hide Scratchbook"),
             show_note: true,
             visible: false,
+            note: "",
             onclick: (e) => {
                 if (this.frames.visible) {
                     this.frames.hide();
@@ -45,7 +45,7 @@ export default Backbone.View.extend({
                     this.frames.show();
                 }
             },
-        });
+        };
         this.history_cache = {};
     },
 
@@ -55,7 +55,7 @@ export default Backbone.View.extend({
     },
 
     beforeUnload() {
-        let confirmText = '';
+        let confirmText = "";
         if (this.frames.length() > 0) {
             confirmText = `You opened ${this.frames.length()} frame(s) which will be lost.`;
         }
