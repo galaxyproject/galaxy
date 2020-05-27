@@ -578,19 +578,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         assert self.object_store_store_by in ['id', 'uuid'], "Invalid value for object_store_store_by [%s]" % self.object_store_store_by
         self.object_store_cache_path = self.resolve_path(kwargs.get("object_store_cache_path", os.path.join(self.data_dir, "object_store_cache")))
 
-        # Configuration options for new storage media uses can plug-in.
-        self.enable_user_based_object_store = kwargs.get(
-            "enable_user_based_object_store", False)
-        self.default_storage_media_jobs_directory = self.resolve_path(kwargs.get(
-            "default_storage_media_jobs_directory",
-            os.path.join(self.data_dir, "job_working_directory_storage_media")))
-        self.default_storage_media_cache_path = self.resolve_path(kwargs.get(
-            "default_storage_media_cache_path",
-            os.path.join(self.data_dir, "storage_media_cache")))
-        self.default_storage_media_cache_size = kwargs.get(
-            "default_storage_media_cache_size",
-            100)
-
         # Handle AWS-specific config options for backward compatibility
         if kwargs.get('aws_access_key') is not None:
             self.os_access_key = kwargs.get('aws_access_key')
