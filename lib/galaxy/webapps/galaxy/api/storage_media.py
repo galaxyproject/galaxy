@@ -107,7 +107,7 @@ class StorageMediaController(BaseAPIController):
         try:
             usage = float(payload.get("usage", "0.0"))
         except ValueError:
-            return "Expect a float number for the `usage` attribute, but received `{}`.".format(payload.get("usage"))
+            return "Expected a floating-point number for the `usage` attribute, but received `{}`.".format(payload.get("usage"))
 
         if category != trans.app.model.StorageMedia.categories.LOCAL:
             raise exceptions.RequestParameterInvalidException(
@@ -200,7 +200,7 @@ class StorageMediaController(BaseAPIController):
 
     @expose_api
     def update(self, trans, encoded_media_id, payload, **kwargs):
-        msg_template = "Rejected user `" + str(trans.user.id) + "`'s request to updade storage media config because of {}."
+        msg_template = "Rejected user `" + str(trans.user.id) + "`'s request to update storage media config because of {}."
 
         decoded_id = self.decode_id(encoded_media_id)
 
