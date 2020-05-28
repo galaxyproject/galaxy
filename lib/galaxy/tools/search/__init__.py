@@ -19,11 +19,10 @@ from whoosh.fields import (
     Schema,
     TEXT
 )
-from whoosh.qparser import MultifieldParser
-from whoosh.qparser import FuzzyTermPlugin
-from whoosh.qparser import OrGroup
+from whoosh.qparser import MultifieldParser, FuzzyTermPlugin, OrGroup
 from whoosh.scoring import BM25F
 from whoosh.writing import AsyncWriter
+from whoosh.query import FuzzyTerm
 
 from galaxy.util import ExecutionTimer
 from galaxy.web.framework.helpers import to_unicode
@@ -52,6 +51,7 @@ class ToolBoxSearch:
 
     def __init__(self, toolbox, index_dir=None, index_help=True):
         self.schema = Schema(id=ID(stored=True, unique=True),
+                             old_id=ID,
                              stub=KEYWORD,
                              name=TEXT(analyzer=analysis.SimpleAnalyzer()),
                              description=TEXT,
@@ -172,8 +172,9 @@ class ToolBoxSearch:
         # would have a higher score than a document with 'bowtie arthur' which is usually unexpected for a user.
         # Hence we introduce a bonus on multi-hits using the 'factory()' method using a scaling factor between 0-1.
         # https://whoosh.readthedocs.io/en/latest/parsing.html#searching-for-any-terms-instead-of-all-terms-by-default
+        # Adding the FuzzyTermPlugin to account for misspellings and typos, using a max distance of 2
         og = OrGroup.factory(0.9)
-        self.parser = MultifieldParser(['name', 'id', 'description', 'section', 'help', 'labels', 'stub'], schema=self.schema, group=og)
+        self.parser = MultifieldParser(['name', 'old_id', 'description', 'section', 'help', 'labels', 'stub'], schema=self.schema, group=og)  # , termclass=FuzzyTerm)
         self.parser.add_plugin(FuzzyTermPlugin())
 
         cleaned_query = q.lower()
@@ -184,8 +185,10 @@ class ToolBoxSearch:
             cleaned_query = ' '.join(token.text for token in self.rex(cleaned_query))
             # Use asterisk Whoosh wildcard so e.g. 'bow' easily matches 'bowtie'
             #parsed_query = self.parser.parse('*' + cleaned_query + '*' + '~2')
-            parsed_query = self.parser.parse(cleaned_query + '~2')
+            parsed_query = self.parser.parse('*' + cleaned_query + '*' + ' ' + cleaned_query + '~2')
+            #parsed_query = self.parser.parse('*' + cleaned_query + '*')
             hits = self.searcher.search(parsed_query, limit=float(tool_search_limit), sortedby='')
+            print("\n\n\nHITSSS: ", hits)
             return [hit['id'] for hit in hits]
 
     def _search_ngrams(self, cleaned_query, tool_ngram_minsize, tool_ngram_maxsize, tool_search_limit):
