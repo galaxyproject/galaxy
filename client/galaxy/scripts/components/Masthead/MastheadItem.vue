@@ -103,7 +103,6 @@ export default {
             };
         },
         iconClasses() {
-            console.log("in iconClasses...");
             return Object.fromEntries([
                 ["fa", true],
                 ["toggle", this.tab.toggle],
