@@ -256,12 +256,11 @@ const View = Backbone.View.extend({
 
     /** Change of current select field */
     _changeCurrent: function () {
-        const self = this;
         _.each(this.fields, (field, i) => {
-            const cnf = self.config[i];
-            if (self.model.get("current") == i) {
+            const cnf = this.config[i];
+            if (this.model.get("current") == i) {
                 field.$el.show();
-                _.each(self.$batch, ($batchfield, batchmode) => {
+                _.each(this.$batch, ($batchfield, batchmode) => {
                     if (cnf.batch == batchmode) {
                         $batchfield.show();
                     } else {
@@ -269,11 +268,11 @@ const View = Backbone.View.extend({
                     }
                 });
                 if (cnf.src == "hda") {
-                    self.button_dialog.show();
+                    this.button_dialog.show();
                 } else {
-                    self.button_dialog.hide();
+                    this.button_dialog.hide();
                 }
-                self.button_type.value(i);
+                this.button_type.value(i);
             } else {
                 field.$el.hide();
             }

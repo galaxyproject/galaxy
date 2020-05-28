@@ -247,12 +247,8 @@ export default {
 
         _eventBuild: function () {
             const Galaxy = getGalaxyInstance();
-            var allHids = [];
-            _.forEach(this.collection.models, (upload) => {
-                allHids.push.apply(allHids, upload.get("hids"));
-            });
-            var models = _.map(allHids, (hid) => Galaxy.currHistoryPanel.collection.getByHid(hid));
-            var selection = new Galaxy.currHistoryPanel.collection.constructor(models);
+            const models = this.getUploadedModels();
+            const selection = new Galaxy.currHistoryPanel.collection.constructor(models);
             // I'm building the selection wrong because I need to set this historyId directly.
             selection.historyId = Galaxy.currHistoryPanel.collection.historyId;
             Galaxy.currHistoryPanel.buildCollection(this.collectionType, selection, true);

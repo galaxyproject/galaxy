@@ -1,9 +1,8 @@
 import $ from "jquery";
 import Backbone from "backbone";
-import UploadModal from "components/Upload/UploadModal";
+import { UploadModal, initializeUploadDefaults } from "components/Upload";
 import _l from "utils/localization";
 import { getGalaxyInstance } from "app";
-import { getAppRoot } from "onload";
 import Vue from "vue";
 import ToolBox from "../../components/Panels/ToolBox";
 import SidePanel from "../../components/Panels/SidePanel";
@@ -12,17 +11,10 @@ import { mountVueComponent } from "../../utils/mountVueComponent";
 const ToolPanel = Backbone.View.extend({
     initialize: function () {
         const Galaxy = getGalaxyInstance();
-        const appRoot = getAppRoot();
 
         // add upload modal
         const modalInstance = Vue.extend(UploadModal);
-        const propsData = {
-            uploadPath: Galaxy.config.nginx_upload_path || `${appRoot}api/tools`,
-            chunkUploadSize: Galaxy.config.chunk_upload_size,
-            ftpUploadSite: Galaxy.config.ftp_upload_site,
-            defaultGenome: Galaxy.config.default_genome,
-            defaultExtension: Galaxy.config.default_extension,
-        };
+        const propsData = initializeUploadDefaults();
         const vm = document.createElement("div");
         $("body").append(vm);
         const upload = new modalInstance({
