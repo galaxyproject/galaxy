@@ -103,6 +103,7 @@ export default {
             };
         },
         iconClasses() {
+            console.log("in iconClasses...");
             return Object.fromEntries([
                 ["fa", true],
                 ["toggle", this.tab.toggle],
@@ -117,13 +118,6 @@ export default {
         galaxyIframe() {
             return document.getElementById("galaxy_main");
         },
-    },
-    created() {
-        if (this.tab.onbeforeunload) {
-            document.addEventListener("beforeunload", () => {
-                this.tab.onbeforeunload();
-            });
-        }
     },
     mounted() {
         if (this.galaxyIframe) {

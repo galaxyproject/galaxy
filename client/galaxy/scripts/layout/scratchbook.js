@@ -16,33 +16,28 @@ export default Backbone.View.extend({
         this.frames = new Frames.View({ visible: false });
         this.setElement(this.frames.$el);
         this.active = false;
-        this.buttonActive = options.collection.add({
+        this.buttonActive = {
             id: "enable-scratchbook",
             icon: "fa-th",
             tooltip: _l("Enable/Disable Scratchbook"),
+            toggle: false,
             onclick: () => {
                 this.active = !this.active;
-                this.buttonActive.set({
-                    toggle: this.active,
-                    show_note: this.active,
-                    note_cls: this.active && "fa fa-check",
-                });
+                this.buttonActive.toggle = this.active;
+                this.buttonActive.show_note = this.active;
+                this.buttonActive.note_cls = this.active && "fa fa-check";
                 if (!this.active) {
                     this.frames.hide();
                 }
             },
-            onbeforeunload: () => {
-                if (this.frames.length() > 0) {
-                    return `You opened ${this.frames.length()} frame(s) which will be lost.`;
-                }
-            },
-        });
-        this.buttonLoad = options.collection.add({
+        };
+        this.buttonLoad = {
             id: "show-scratchbook",
             icon: "fa-eye",
             tooltip: _l("Show/Hide Scratchbook"),
             show_note: true,
             visible: false,
+            note: "",
             onclick: (e) => {
                 if (this.frames.visible) {
                     this.frames.hide();
@@ -50,29 +45,21 @@ export default Backbone.View.extend({
                     this.frames.show();
                 }
             },
-        });
-        this.frames
-            .on("add remove", () => {
-                if (this.frames.visible && this.frames.length() === 0) {
-                    this.frames.hide();
-                }
-                this.buttonLoad.set({
-                    note: this.frames.length(),
-                    visible: this.frames.length() > 0,
-                });
-            })
-            .on("show hide ", () => {
-                this.buttonLoad.set({
-                    toggle: this.frames.visible,
-                    icon: (this.frames.visible && "fa-eye") || "fa-eye-slash",
-                });
-            });
+        };
         this.history_cache = {};
     },
 
     getFrames() {
         // needed for Vue.js integration
         return this.frames;
+    },
+
+    beforeUnload() {
+        let confirmText = "";
+        if (this.frames.length() > 0) {
+            confirmText = `You opened ${this.frames.length()} frame(s) which will be lost.`;
+        }
+        return confirmText;
     },
 
     /** Add a dataset to the frames */

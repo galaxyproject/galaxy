@@ -1,4 +1,4 @@
-import Masthead from "./Masthead.vue";
+import { default as Masthead, __RewireAPI__ as rewire } from "./Masthead.vue";
 import { mount, createLocalVue } from "@vue/test-utils";
 import Scratchbook from "layout/scratchbook";
 
@@ -7,8 +7,25 @@ describe("Masthead.vue", () => {
     let localVue;
     let scratchbook;
     let quotaRendered, quotaEl;
+    let tabs;
+
+    function stubFetchMenu() {
+        return tabs;
+    }
+
+    function stubLoadWebhooks(items) {
+        items.push({
+            id: "extension",
+            title: "Extension Point",
+            menu: false,
+            url: "extension_url",
+        });
+    }
 
     beforeEach(() => {
+        rewire.__Rewire__("fetchMenu", stubFetchMenu);
+        rewire.__Rewire__("loadWebhookMenuItems", stubLoadWebhooks);
+
         localVue = createLocalVue();
         quotaRendered = false;
         quotaEl = null;
@@ -22,7 +39,7 @@ describe("Masthead.vue", () => {
             },
         };
 
-        const tabs = [
+        tabs = [
             // Main Analysis Tab..
             {
                 id: "analysis",
@@ -51,16 +68,15 @@ describe("Masthead.vue", () => {
             tabs.push(x);
             return x;
         };
-        scratchbook = new Scratchbook({
-            collection: tabs,
-        });
-        const frames = scratchbook.getFrames();
+        scratchbook = new Scratchbook({});
+        const mastheadState = {
+            quotaMeter,
+            frame: scratchbook,
+        };
 
         wrapper = mount(Masthead, {
             propsData: {
-                quotaMeter,
-                frames,
-                tabs,
+                mastheadState,
                 activeTab,
                 appRoot: "prefix/",
             },
@@ -69,13 +85,23 @@ describe("Masthead.vue", () => {
         });
     });
 
+    it("should disable brand when displayGalaxyBrand is true", async () => {
+        expect(wrapper.find(".navbar-brand-title").text()).to.equals("Galaxy");
+        wrapper.setProps({ brand: "Foo " });
+        await localVue.nextTick();
+        expect(wrapper.find(".navbar-brand-title").text()).to.equals("Galaxy Foo");
+        wrapper.setProps({ displayGalaxyBrand: false });
+        await localVue.nextTick();
+        expect(wrapper.find(".navbar-brand-title").text()).to.equals("Foo");
+    });
+
     it("set quota element and renders it", () => {
         expect(quotaEl).to.not.equals(null);
         expect(quotaRendered).to.equals(true);
     });
 
     it("should render simple tab item links", () => {
-        expect(wrapper.findAll("li.nav-item").length).to.equals(5);
+        expect(wrapper.findAll("li.nav-item").length).to.equals(6);
         // Ensure specified link title respected.
         expect(wrapper.find("#analysis a").text()).to.equals("Analyze");
         expect(wrapper.find("#analysis a").attributes("href")).to.equals("prefix/root");
@@ -108,5 +134,9 @@ describe("Masthead.vue", () => {
         // wrapper.find("#enable-scratchbook a").trigger("click");
         // await localVue.nextTick();
         // expect(scratchbook.active).to.equals(true);
+    });
+
+    it("should load webhooks on creation", async () => {
+        expect(wrapper.find("#extension a").text()).to.equals("Extension Point");
     });
 });
