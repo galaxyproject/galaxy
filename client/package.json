@@ -14,7 +14,7 @@
     "**/chokidar": "3.4.0"
   },
   "dependencies": {
-    "@babel/polyfill": "^7.8.7",
+    "@babel/polyfill": "^7.10.1",
     "@fortawesome/fontawesome-free": "^5.13.0",
     "@fortawesome/fontawesome-svg-core": "^1.2.28",
     "@fortawesome/free-regular-svg-icons": "^5.13.0",
@@ -87,10 +87,10 @@
     "eslint": "eslint -c .eslintrc.js galaxy/scripts --ext .js,.vue"
   },
   "devDependencies": {
-    "@babel/core": "^7.9.6",
-    "@babel/helper-validator-identifier": "^7.9.5",
+    "@babel/core": "^7.10.1",
+    "@babel/helper-validator-identifier": "^7.10.1",
     "@babel/plugin-syntax-dynamic-import": "^7.8.3",
-    "@babel/preset-env": "^7.9.6",
+    "@babel/preset-env": "^7.10.1",
     "@vue/test-utils": "^1.0.3",
     "amdi18n-loader": "^0.9.3",
     "autoprefixer": "^9.8.0",
