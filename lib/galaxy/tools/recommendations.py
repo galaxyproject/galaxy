@@ -100,12 +100,31 @@ class ToolRecommendations():
             for k in tool_pos_sorted:
                 self.tool_weights_sorted[k] = tool_weights[str(k)]
             # collect ids and names of all the installed tools
+            all_t = dict()
             for tool_id, tool in trans.app.toolbox.tools():
                 t_id_renamed = tool_id
                 if t_id_renamed.find("/") > -1:
                     t_id_renamed = t_id_renamed.split("/")[-2]
-                self.all_tools[t_id_renamed] = (tool_id, tool.name)
+                if t_id_renamed not in all_t:
+                    all_t[t_id_renamed] = list()
+                all_t[t_id_renamed].append((tool_id, tool.version_object, tool.name))
+            self.all_tools = self.__get_latest_tool(all_t)
         return True
+
+    def __get_latest_tool(self, a_tools):
+        """
+        Sort tool versions and take the latest one
+        """
+        all_tools = dict()
+        for t in a_tools:
+            t_versions = list()
+            for t_v in a_tools[t]:
+                t_versions.append(t_v[1])
+            s_t_v = sorted(t_versions)
+            # get tool with the latest version
+            latest_t = a_tools[t][t_versions.index(s_t_v[-1])]
+            all_tools[t] = (latest_t[0], latest_t[2])
+        return all_tools
 
     def __collect_admin_preferences(self, admin_path):
         """
