@@ -20,6 +20,7 @@ from whoosh.fields import (
     TEXT
 )
 from whoosh.qparser import MultifieldParser
+from whoosh.qparser import FuzzyTermPlugin
 from whoosh.qparser import OrGroup
 from whoosh.scoring import BM25F
 from whoosh.writing import AsyncWriter
@@ -173,6 +174,8 @@ class ToolBoxSearch:
         # https://whoosh.readthedocs.io/en/latest/parsing.html#searching-for-any-terms-instead-of-all-terms-by-default
         og = OrGroup.factory(0.9)
         self.parser = MultifieldParser(['name', 'id', 'description', 'section', 'help', 'labels', 'stub'], schema=self.schema, group=og)
+        self.parser.add_plugin(FuzzyTermPlugin())
+
         cleaned_query = q.lower()
         if tool_enable_ngram_search is True:
             rval = self._search_ngrams(cleaned_query, tool_ngram_minsize, tool_ngram_maxsize, tool_search_limit)
@@ -180,7 +183,8 @@ class ToolBoxSearch:
         else:
             cleaned_query = ' '.join(token.text for token in self.rex(cleaned_query))
             # Use asterisk Whoosh wildcard so e.g. 'bow' easily matches 'bowtie'
-            parsed_query = self.parser.parse('*' + cleaned_query + '*')
+            #parsed_query = self.parser.parse('*' + cleaned_query + '*' + '~2')
+            parsed_query = self.parser.parse(cleaned_query + '~2')
             hits = self.searcher.search(parsed_query, limit=float(tool_search_limit), sortedby='')
             return [hit['id'] for hit in hits]
 
