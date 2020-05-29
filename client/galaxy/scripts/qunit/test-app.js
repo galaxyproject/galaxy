@@ -16,7 +16,7 @@ import "./assets/base.css";
 export function setupTestGalaxy(galaxyOptions_ = null) {
     galaxyOptions_ = galaxyOptions_ || galaxyOptions;
     setGalaxyInstance((GalaxyApp) => {
-        let galaxy = new GalaxyApp(galaxyOptions_);
+        const galaxy = new GalaxyApp(galaxyOptions_);
         galaxy.currHistoryPanel = {
             model: new Backbone.Model(),
         };

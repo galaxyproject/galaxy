@@ -101,7 +101,6 @@ const View = Backbone.View.extend({
         // TODO: Remove this line after select2 update
         $(".select2-hidden-accessible").remove();
         if (!this.config.hide_masthead) {
-            // this.masthead.render();
             this.renderMessageBox();
             this.renderInactivityBox();
         }

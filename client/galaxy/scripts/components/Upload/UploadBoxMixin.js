@@ -1,5 +1,4 @@
 import _l from "utils/localization";
-import _ from "underscore";
 import $ from "jquery";
 import Select2 from "components/Select2";
 import Popover from "mvc/ui/ui-popover";
@@ -9,6 +8,7 @@ import UploadWrapper from "./UploadWrapper";
 import { getGalaxyInstance } from "app";
 import UploadFtp from "mvc/upload/upload-ftp";
 import LazyLimited from "mvc/lazy/lazy-limited";
+import { findExtension } from "./utils";
 
 export default {
     components: {
@@ -61,12 +61,12 @@ export default {
                     data: this.app.toData(list),
                     url: this.app.uploadPath,
                     success: (message) => {
-                        _.each(list, (model) => {
+                        list.forEach((model) => {
                             this._eventSuccess(model.id, message);
                         });
                     },
                     error: (message) => {
-                        _.each(list, (model) => {
+                        list.forEach((model) => {
                             self._eventError(model.id, message);
                         });
                     },
@@ -225,10 +225,7 @@ export default {
             return $(this.$refs.uploadTable);
         },
         extensionDetails(extension) {
-            var details = _.findWhere(this.listExtensions, {
-                id: extension,
-            });
-            return details;
+            return findExtension(this.listExtensions, extension);
         },
         initExtensionInfo() {
             $(this.$refs.footerExtensionInfo)
@@ -285,6 +282,15 @@ export default {
                     model.set("genome", genome);
                 }
             });
+        },
+        getUploadedModels: function () {
+            const Galaxy = getGalaxyInstance();
+            const allHids = [];
+            this.collection.models.forEach((upload) => {
+                allHids.push.apply(allHids, upload.get("hids"));
+            });
+            const models = allHids.map((hid) => Galaxy.currHistoryPanel.collection.getByHid(hid));
+            return models;
         },
     },
 };
