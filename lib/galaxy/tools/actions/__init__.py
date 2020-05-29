@@ -496,10 +496,15 @@ class DefaultToolAction(object):
                         trans.sa_session.add(element)
                         current_element_identifiers.append({
                             "__object__": element,
+                            "__skip_object_session_check__": True,
                             "name": output_part_def.element_identifier,
                         })
-
-                    history.add_datasets(trans.sa_session, created_element_datasets, set_hid=set_output_hid, quota=False, flush=True)
+                    reserve_hid_for_parent = output_collections.creating_hdca
+                    history.add_datasets(trans.sa_session, created_element_datasets, set_hid=set_output_hid, quota=False, flush=False, reserve_hid_for_parent=reserve_hid_for_parent)
+                    if reserve_hid_for_parent:
+                        hid = created_element_datasets[-1].hid + 1
+                    else:
+                        hid = None
                     if output.dynamic_structure:
                         assert not element_identifiers  # known_outputs must have been empty
                         element_kwds = dict(elements=collections_manager.ELEMENTS_UNINITIALIZED)
@@ -508,6 +513,7 @@ class DefaultToolAction(object):
                     output_collections.create_collection(
                         output=output,
                         name=name,
+                        hid=hid,
                         **element_kwds
                     )
                     log.info("Handled collection output named %s for tool %s %s" % (name, tool.id, handle_output_timer))
@@ -804,7 +810,12 @@ class OutputCollections(object):
         self.out_collection_instances = {}
         self.tags = tags
 
-    def create_collection(self, output, name, collection_type=None, **element_kwds):
+    @property
+    def creating_hdca(self):
+        # return True if we're creating HDCAs, False if creating DCs
+        return not bool(self.dataset_collection_elements)
+
+    def create_collection(self, output, name, collection_type=None, hid=None, **element_kwds):
         input_collections = self.input_collections
         collections_manager = self.trans.app.dataset_collections_service
         collection_type = collection_type or output.structure.collection_type
@@ -853,8 +864,8 @@ class OutputCollections(object):
 
             elements = element_kwds["elements"]
             check_elements(elements)
-
         if self.dataset_collection_elements is not None:
+            assert hid is None
             dc = collections_manager.create_dataset_collection(
                 self.trans,
                 collection_type=collection_type,
@@ -883,6 +894,8 @@ class OutputCollections(object):
                 collection_type=collection_type,
                 trusted_identifiers=True,
                 tags=self.tags,
+                flush=False,
+                hid=hid,
                 **element_kwds
             )
             # name here is name of the output element - not name

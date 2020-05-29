@@ -1673,14 +1673,14 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName, RepresentById):
         dataset.history_id = self.id
         return dataset
 
-    def add_datasets(self, sa_session, datasets, parent_id=None, genome_build=None, set_hid=True, quota=True, flush=False):
+    def add_datasets(self, sa_session, datasets, parent_id=None, genome_build=None, set_hid=True, quota=True, flush=False, reserve_hid_for_parent=False):
         """ Optimized version of add_dataset above that minimizes database
         interactions when adding many datasets to history at once.
         """
         all_hdas = all(is_hda(_) for _ in datasets)
         optimize = len(datasets) > 1 and parent_id is None and all_hdas and set_hid
         if optimize:
-            self.__add_datasets_optimized(datasets, genome_build=genome_build)
+            self.__add_datasets_optimized(datasets, genome_build=genome_build, reserve_hid_for_parent=reserve_hid_for_parent)
             if quota and self.user:
                 disk_usage = sum([d.get_total_size() for d in datasets])
                 self.user.adjust_total_disk_usage(disk_usage)
@@ -1694,12 +1694,14 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName, RepresentById):
                 if flush:
                     sa_session.flush()
 
-    def __add_datasets_optimized(self, datasets, genome_build=None):
+    def __add_datasets_optimized(self, datasets, genome_build=None, reserve_hid_for_parent=False):
         """ Optimized version of add_dataset above that minimizes database
         interactions when adding many datasets to history at once under
         certain circumstances.
         """
         n = len(datasets)
+        if reserve_hid_for_parent:
+            n += 1
 
         base_hid = self._next_hid(n=n)
         set_genome = genome_build not in [None, '?']
@@ -1711,12 +1713,15 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName, RepresentById):
                 self.genome_build = genome_build
         return datasets
 
-    def add_dataset_collection(self, history_dataset_collection, set_hid=True):
+    def add_dataset_collection(self, history_dataset_collection, set_hid=True, hid=None):
         if set_hid:
-            history_dataset_collection.hid = self._next_hid()
+            history_dataset_collection.hid = hid or self._next_hid()
         history_dataset_collection.history = self
         # TODO: quota?
-        self.dataset_collections.append(history_dataset_collection)
+        if hid is None:
+            # if we're on some path through the code that has set the hid - this is
+            # very optimized and assume this in memory object doesn't need to be maintained
+            self.dataset_collections.append(history_dataset_collection)
         return history_dataset_collection
 
     def copy(self, name=None, target_user=None, activatable=False, all_datasets=False):

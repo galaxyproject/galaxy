@@ -91,7 +91,8 @@ class DatasetCollectionManager(object):
 
     def create(self, trans, parent, name, collection_type, element_identifiers=None,
                elements=None, implicit_collection_info=None, trusted_identifiers=None,
-               hide_source_items=False, tags=None, copy_elements=False, history=None):
+               hide_source_items=False, tags=None, copy_elements=False, history=None,
+               flush=True, hid=None):
         """
         PRECONDITION: security checks on ability to add to parent
         occurred during load.
@@ -121,11 +122,12 @@ class DatasetCollectionManager(object):
         if implicit_collection_info:
             implicit_output_name = implicit_collection_info["implicit_output_name"]
 
-        return self._create_instance_for_collection(
-            trans, parent, name, dataset_collection, implicit_inputs=implicit_inputs, implicit_output_name=implicit_output_name, tags=tags
+        rval = self._create_instance_for_collection(
+            trans, parent, name, dataset_collection, implicit_inputs=implicit_inputs, implicit_output_name=implicit_output_name, tags=tags, flush=flush, hid=hid
         )
+        return rval
 
-    def _create_instance_for_collection(self, trans, parent, name, dataset_collection, implicit_output_name=None, implicit_inputs=None, tags=None, flush=True):
+    def _create_instance_for_collection(self, trans, parent, name, dataset_collection, implicit_output_name=None, implicit_inputs=None, tags=None, flush=True, hid=None):
         if isinstance(parent, model.History):
             dataset_collection_instance = self.model.HistoryDatasetCollectionAssociation(
                 collection=dataset_collection,
@@ -139,8 +141,7 @@ class DatasetCollectionManager(object):
                 dataset_collection_instance.implicit_output_name = implicit_output_name
 
             log.debug("Created collection with %d elements" % (len(dataset_collection_instance.collection.elements)))
-            # Handle setting hid
-            parent.add_dataset_collection(dataset_collection_instance)
+            parent.add_dataset_collection(dataset_collection_instance, hid=hid)
 
         elif isinstance(parent, model.LibraryFolder):
             dataset_collection_instance = self.model.LibraryDatasetCollectionAssociation(
@@ -410,7 +411,8 @@ class DatasetCollectionManager(object):
         # through as is.
         if "__object__" in element_identifier:
             the_object = element_identifier["__object__"]
-            if the_object is not None and the_object.id:
+            skip_object_session_check = element_identifier.get("__skip_object_session_check__", False)
+            if not skip_object_session_check and the_object is not None and the_object.id:
                 context = self.model.context
                 if the_object not in context:
                     the_object = context.query(type(the_object)).get(the_object.id)
