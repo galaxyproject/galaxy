@@ -73,7 +73,6 @@ preferences:
     manage_information: '#edit-preferences-information'
     manage_api_key: '#edit-preferences-api-key'
     current_email: "#user-preferences-current-email"
-    api_key: "[data-label='Current API key:'] > input"
     get_new_key: '#submit'
 
 change_user_email:
