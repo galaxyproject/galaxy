@@ -2,6 +2,7 @@
 
 import json
 import logging
+import operator
 import os
 
 import h5py
@@ -117,12 +118,10 @@ class ToolRecommendations():
         """
         all_tools = dict()
         for t in a_tools:
-            t_versions = list()
-            for t_v in a_tools[t]:
-                t_versions.append(t_v[1])
-            s_t_v = sorted(t_versions)
+            t_versions = [t_v[1] for t_v in a_tools[t]]
+            max_index, _ = max(enumerate(t_versions), key=operator.itemgetter(1))
             # get tool with the latest version
-            latest_t = a_tools[t][t_versions.index(s_t_v[-1])]
+            latest_t = a_tools[t][max_index]
             all_tools[t] = (latest_t[0], latest_t[2])
         return all_tools
 
