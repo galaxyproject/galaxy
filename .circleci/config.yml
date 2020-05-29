@@ -146,17 +146,21 @@ jobs:
       - run: tox -e check_py3_compatibility
   js_unit:
     docker:
-      - image: circleci/node:10-browsers
+      - image: circleci/node:12-browsers
     <<: *set_workdir
     steps:
       - *restore_yarn_cache
       - run: cd client && yarn install --frozen-lockfile
       - *save_yarn_cache
-      - run: cd client && yarn run build
+      - run:
+          name: Build client
+          command: cd client && yarn run build
+          environment:
+              NODE_OPTIONS: --max_old_space_size=4096
       - run: cd client && yarn run test
   js_lint:
     docker:
-      - image: circleci/node:10-browsers
+      - image: circleci/node:12-browsers
     <<: *set_workdir
     steps:
       - *restore_yarn_cache
