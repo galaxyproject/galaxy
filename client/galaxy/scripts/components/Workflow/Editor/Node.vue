@@ -167,6 +167,9 @@ export default {
             return getGalaxyInstance().config.enable_tool_recommendations;
         },
     },
+    created() { //might not need this later
+        this.onCreate();
+    },
     methods: {
         onChange() {
             this.manager.nodeChanged(this);
@@ -193,15 +196,20 @@ export default {
             this.activeOutputs.toggle(name);
             this.manager.has_changes = true;
         },
-        onCreate(toolId, event) {
+        //onCreate(toolId, event) {
+        onCreate(event) {
+            const toolId = this.contentId;
             const requestData = {
                 tool_id: toolId,
                 type: "tool",
                 _: "true",
             };
+            console.log("\n\n\nON CREATE");
             getModule(requestData).then((response) => {
-                const node = this.manager.createNode("tool", response.name, toolId);
-                this.manager.setNode(node, response);
+                console.log("\n\n\nNODE.VUE");
+                console.log("\n\n\nTOOL ID", toolId);
+                this.node = this.manager.createNode("tool", response.name, toolId);
+                this.manager.setNode(this.node, response);
                 this.popoverShow = false;
             });
         },
