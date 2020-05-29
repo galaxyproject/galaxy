@@ -305,13 +305,21 @@ class ExecutionTracker:
             collection_instance.implicit_collection_jobs = implicit_collection_jobs
             collection_instances[output_name] = collection_instance
             trans.sa_session.add(collection_instance)
-            if self.completed_jobs and self.completed_jobs[0] is not None and self.job_count == len(self.completed_jobs):
-                # Collection should be exatly the same, so add elements and finalize
-                implicit_jobs_assoc = self.completed_jobs[0].implicit_collection_jobs_association
-                if implicit_jobs_assoc:
-                    completed_collection_instance = next(c for c in implicit_jobs_assoc.implicit_collection_jobs.history_dataset_collection_associations if c.implicit_output_name == output_name)
-                    collection_instance.collection = completed_collection_instance.collection
-                    collection_instance.copied_from_history_dataset_collection_association = completed_collection_instance
+            replacement_collections = []
+            for i, completed_job in enumerate(self.completed_jobs.values()):
+                if completed_job is not None:
+                    elements = collection_instance.collection.elements
+                    if elements:
+                        completed_collection = next(jtodca.dataset_collection_instance.collection for jtodca in completed_job.output_dataset_collection_instances if jtodca.name == output_name)
+                        elements[i].dataset_collection_id = completed_collection.id
+                        trans.sa_session.add(elements[i].collection)
+            # if self.completed_jobs and self.completed_jobs[0] is not None and self.job_count == sum(1 for _ in self.completed_jobs.values() if _ is not None):
+            #     # Collection should be exatly the same, so add elements and finalize
+            #     implicit_jobs_assoc = self.completed_jobs[0].implicit_collection_jobs_association
+            #     if implicit_jobs_assoc:
+            #         completed_collection_instance = next(c for c in implicit_jobs_assoc.implicit_collection_jobs.history_dataset_collection_associations if c.implicit_output_name == output_name)
+            #         collection_instance.collection = completed_collection_instance.collection
+            #         collection_instance.copied_from_history_dataset_collection_association = completed_collection_instance
         # Needed to flush the association created just above with
         # job.add_output_dataset_collection.
         trans.sa_session.flush()

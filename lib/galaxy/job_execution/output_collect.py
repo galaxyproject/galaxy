@@ -160,7 +160,6 @@ def collect_dynamic_outputs(
             log.exception("Problem gathering output collection.")
             collection.handle_population_failed("Problem building datasets for collection.")
 
-        has_collection.finalize(collection_builder._collection_type_description)
         job_context.add_dataset_collection(has_collection)
 
 
