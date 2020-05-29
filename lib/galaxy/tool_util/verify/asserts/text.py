@@ -1,10 +1,14 @@
 import re
 
 
-def assert_has_text(output, text):
+def assert_has_text(output, text, n=None):
     """ Asserts specified output contains the substring specified by
     the argument text."""
-    assert output.find(text) >= 0, "Output file did not contain expected text '%s' (output '%s')" % (text, output)
+    if not n:
+        assert output.find(text) >= 0, "Output file did not contain expected text '%s' (output '%s')" % (text, output)
+    else:
+        matches = re.findall(re.escape(text), output)
+        assert len(matches) == int(n), "Expected %s matches for '%s' in output file (output '%s'); found %s" % (n, text, output, len(matches))
 
 
 def assert_not_has_text(output, text):
@@ -13,11 +17,15 @@ def assert_not_has_text(output, text):
     assert output.find(text) < 0, "Output file contains unexpected text '%s'" % text
 
 
-def assert_has_line(output, line):
+def assert_has_line(output, line, n=None):
     """ Asserts the specified output contains the line specified the
     argument line."""
-    match = re.search("^%s$" % re.escape(line), output, flags=re.MULTILINE)
-    assert match is not None, "No line of output file was '%s' (output was '%s') " % (line, output)
+    if not n:
+        match = re.search("^%s$" % re.escape(line), output, flags=re.MULTILINE)
+        assert match is not None, "No line of output file was '%s' (output was '%s') " % (line, output)
+    else:
+        matches = re.findall("^%s$" % re.escape(line), output, flags=re.MULTILINE)
+        assert len(matches) == int(n), "Expected %s lines matching '%s' in output file (output was '%s'); found %s" % (n, line, output, len(matches))
 
 
 def assert_has_n_lines(output, n):
