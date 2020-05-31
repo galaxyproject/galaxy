@@ -17,3 +17,22 @@ class ToolShedToolTestIntegrationTestCase(integration_util.IntegrationTestCase, 
     def test_tool_test(self):
         self.install_repository("devteam", "fastqc", "ff9530579d1f")
         self._run_tool_test("toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc/0.71")
+
+
+class ToolShedDatatypeTestIntegrationTestCase(integration_util.IntegrationTestCase, UsesShed):
+
+    """Test datatype installation"""
+
+    framework_tool_and_types = True
+
+    @skip_if_toolshed_down
+    def test_datatype_installation(self):
+        datatypes = self._get("datatypes").json()
+        assert "cond" not in datatypes
+        self.install_repository("sblanck", "smagexp_datatypes", "f174dc3d2641")
+        datatypes = self._get("datatypes").json()
+        assert "cond" in datatypes
+        # Make sure datatype survives restart
+        self.restart()
+        datatypes = self._get("datatypes").json()
+        assert "cond" in datatypes
