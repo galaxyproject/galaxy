@@ -16,7 +16,14 @@ var View = Options.BaseIcons.extend({
     },
 
     /** Set states for selected values */
+    _getValue: function () {
+        const value = Options.BaseIcons.prototype._getValue.call(this);
+        return {value: value || this.last_clicked_node, last_clicked_node: this.last_clicked_node};
+    },
+
+    /** Set states for selected values */
     _setValue: function (new_value) {
+        new_value = (new_value && 'last_clicked_node' in new_value) ? new_value['value'] : new_value;
         Options.BaseIcons.prototype._setValue.call(this, new_value);
         if (new_value !== undefined && new_value !== null && this.header_index) {
             var self = this;
@@ -35,6 +42,7 @@ var View = Options.BaseIcons.extend({
         var $button = this.$(`.button-${header_id}`);
         var $subgroup = this.$(`.subgroup-${header_id}`);
         $button.data("is_expanded", is_expanded);
+        this.last_clicked_node = $button.attr('value');
         if (is_expanded) {
             $subgroup.show();
             $button.removeClass("fa-plus-square").addClass("fa-minus-square");
@@ -54,6 +62,7 @@ var View = Options.BaseIcons.extend({
             var $button = $el.find(`.button-${header_id}`);
             $button.on("click", () => {
                 self._setState(header_id, !$button.data("is_expanded"));
+                self.trigger("change");
             });
         }
 
@@ -69,8 +78,10 @@ var View = Options.BaseIcons.extend({
                 if (has_options) {
                     var header_id = Utils.uid();
                     var $button = $("<span/>")
+                        .attr('value', level.value)
+                        .data('is_expanded', level.expanded)
                         .addClass(`button-${header_id}`)
-                        .addClass("ui-drilldown-button fa fa-plus-square");
+                        .addClass("ui-drilldown-button fa " + (level.expanded ? "fa-minus-square": "fa-plus-square"));
                     var $subgroup = $("<div/>").addClass(`subgroup-${header_id}`).addClass("ui-drilldown-subgroup");
                     $group.append(
                         $("<div/>")
@@ -86,6 +97,10 @@ var View = Options.BaseIcons.extend({
                     iterate($subgroup, level.options, new_header);
                     $group.append($subgroup);
                     attach($group, header_id);
+                    if (level.expanded) {
+                        $group.show();
+                        $subgroup.show();
+                    }
                 } else {
                     $group.append(
                         self._templateOption({

@@ -1412,6 +1412,8 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         return self.options
 
     def get_legal_values(self, trans, other_values):
+        if self.is_dynamic:
+            return None
         def recurse_options(legal_values, options):
             for option in options:
                 legal_values.append(option['value'])
@@ -1433,18 +1435,23 @@ class DrillDownSelectToolParameter(SelectToolParameter):
             if self.optional:
                 return None
             raise ValueError("parameter '%s': an invalid option (%r) was selected" % (self.name, value))
-        elif not legal_values:
+        elif not legal_values and not self.is_dynamic:
             raise ValueError("parameter '%s': requires a value, but no legal values defined" % (self.name))
+        if isinstance(value, dict):
+            clicked_node = value.get('last_clicked_node')
+            value = value.get('value')
+        else:
+            clicked_node = None
         if not isinstance(value, list):
             value = [value]
         if len(value) > 1 and not self.multiple:
             raise ValueError("parameter '%s': multiple values provided but parameter is not expecting multiple values" % (self.name))
-        rval = []
-        for val in value:
-            if val not in legal_values:
-                raise ValueError("parameter '%s': an invalid option (%r) was selected (valid options: %s)" % (self.name, val, ",".join(legal_values)))
-            rval.append(val)
-        return rval
+        if not self.is_dynamic:
+            for val in value:
+                if val not in legal_values:
+                    raise ValueError("parameter '%s': an invalid option (%r) was selected (valid options: %s)" %
+                                     (self.name, val, ",".join(legal_values)))
+        return {'last_clicked_node': clicked_node, 'value': list(value)}
 
     def to_param_dict_string(self, value, other_values={}):
         def get_options_list(value):
