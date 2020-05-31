@@ -1,3 +1,5 @@
+import os
+
 from galaxy_test.base.populators import skip_if_toolshed_down
 from galaxy_test.driver import integration_util
 from .uses_shed import UsesShed
@@ -25,6 +27,13 @@ class ToolShedDatatypeTestIntegrationTestCase(integration_util.IntegrationTestCa
 
     framework_tool_and_types = True
 
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        cls.configure_shed(config)
+
+    def handle_reconfigure_galaxy_config_kwds(self, config):
+        config["tool_shed_config_file"] = os.path.join(self.shed_tools_dir, "shed_tool_conf.xml")
+
     @skip_if_toolshed_down
     def test_datatype_installation(self):
         datatypes = self._get("datatypes").json()
@@ -33,6 +42,6 @@ class ToolShedDatatypeTestIntegrationTestCase(integration_util.IntegrationTestCa
         datatypes = self._get("datatypes").json()
         assert "cond" in datatypes
         # Make sure datatype survives restart
-        self.restart()
+        self.restart(handle_reconfig=self.handle_reconfigure_galaxy_config_kwds)
         datatypes = self._get("datatypes").json()
         assert "cond" in datatypes
