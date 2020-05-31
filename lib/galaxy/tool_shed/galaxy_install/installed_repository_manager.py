@@ -577,7 +577,7 @@ class InstalledRepositoryManager(object):
     def get_repository_install_dir(self, tool_shed_repository):
         for tree in self.tool_trees:
             if tree is None:
-                return None
+                continue
             root = tree.getroot()
             tool_path = root.get('tool_path', None)
             if tool_path:
