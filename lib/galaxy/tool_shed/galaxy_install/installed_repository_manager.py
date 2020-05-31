@@ -41,15 +41,7 @@ class InstalledRepositoryManager(object):
         self.context = self.install_model.context
         self.tool_configs = self.app.config.tool_configs
 
-        self.tool_paths = []
-        for tool_config in self.tool_configs:
-            tree, error_message = parse_xml(tool_config)
-            if error_message:
-                log.error(error_message)
-            else:
-                tool_path = tree.getroot().get('tool_path')
-                if tool_path:
-                    self.tool_paths.append(tool_path)
+        self._tool_paths = []
 
         self.installed_repository_dicts = []
         # Keep an in-memory dictionary whose keys are tuples defining tool_shed_repository objects (whose status is 'Installed')
@@ -82,6 +74,24 @@ class InstalledRepositoryManager(object):
         # whose values are a list of tuples defining tool_dependency objects (whose status is 'Installed') that require the key
         # at runtime.  The value defines the entire tool dependency tree.
         self.installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies = {}
+
+    @property
+    def tool_paths(self):
+        """Return all possible tool_path attributes of all tool config files."""
+        if len(self._tool_paths) != len(self.tool_configs):
+            # This could be happen at startup or after the creation of a new shed_tool_conf.xml file
+            # before the installation of the first repository
+            tool_paths = []
+            for tool_config in self.tool_configs:
+                tree, error_message = parse_xml(tool_config)
+                if error_message:
+                    log.error(error_message)
+                else:
+                    tool_path = tree.getroot().get('tool_path')
+                    if tool_path:
+                        tool_paths.append(tool_path)
+            self._tool_paths = tool_paths
+        return self._tool_paths
 
     def activate_repository(self, repository):
         """Activate an installed tool shed repository that has been marked as deactivated."""
