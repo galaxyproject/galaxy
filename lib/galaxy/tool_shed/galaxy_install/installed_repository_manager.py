@@ -41,12 +41,15 @@ class InstalledRepositoryManager(object):
         self.context = self.install_model.context
         self.tool_configs = self.app.config.tool_configs
 
-        self.tool_trees = []
+        self.tool_paths = []
         for tool_config in self.tool_configs:
             tree, error_message = parse_xml(tool_config)
             if error_message:
                 log.error(error_message)
-            self.tool_trees.append(tree)
+            else:
+                tool_path = tree.getroot().get('tool_path')
+                if tool_path:
+                    self.tool_paths.append(tool_path)
 
         self.installed_repository_dicts = []
         # Keep an in-memory dictionary whose keys are tuples defining tool_shed_repository objects (whose status is 'Installed')
@@ -575,21 +578,16 @@ class InstalledRepositoryManager(object):
                 str(repository.installed_changeset_revision))
 
     def get_repository_install_dir(self, tool_shed_repository):
-        for tree in self.tool_trees:
-            if tree is None:
-                continue
-            root = tree.getroot()
-            tool_path = root.get('tool_path', None)
-            if tool_path:
-                ts = common_util.remove_port_from_tool_shed_url(str(tool_shed_repository.tool_shed))
-                relative_path = os.path.join(tool_path,
-                                             ts,
-                                             'repos',
-                                             str(tool_shed_repository.owner),
-                                             str(tool_shed_repository.name),
-                                             str(tool_shed_repository.installed_changeset_revision))
-                if os.path.exists(relative_path):
-                    return relative_path
+        for tool_path in self.tool_paths:
+            ts = common_util.remove_port_from_tool_shed_url(str(tool_shed_repository.tool_shed))
+            relative_path = os.path.join(tool_path,
+                                         ts,
+                                         'repos',
+                                         str(tool_shed_repository.owner),
+                                         str(tool_shed_repository.name),
+                                         str(tool_shed_repository.installed_changeset_revision))
+            if os.path.exists(relative_path):
+                return relative_path
         return None
 
     def get_runtime_dependent_tool_dependency_tuples(self, tool_dependency, status=None):
