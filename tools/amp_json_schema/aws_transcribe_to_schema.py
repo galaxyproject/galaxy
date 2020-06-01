@@ -4,12 +4,16 @@ import json
 import os
 import sys
 
+import hmgm_utils
+
 from speech_to_text_schema import SpeechToText, SpeechToTextMedia, SpeechToTextResult, SpeechToTextScore, SpeechToTextWord
 from segmentation_schema import SegmentationSchema, SegmentationSchemaMedia, SegmentationSchemaSegment
 
 def main():
 	(media_file, transcribe_file, output_stt_json_file, output_seg_json_file) = sys.argv[1:5]
-	
+		
+	hmgm_utils.exit_if_output_not_ready(transcribe_file)
+
 	# Open the transcribe output
 	with open(transcribe_file) as json_file:
 		data = json.load(json_file)

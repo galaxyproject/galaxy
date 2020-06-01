@@ -28,10 +28,12 @@ def main():
     output_json = sys.argv[4]   # output file for HMGM task in json format
     task_json = sys.argv[5]     # json file storing information about the HMGM task, such as ticket # etc
     context_json = sys.argv[6]  # context info as json string needed for creating HMGM tasks
+#     context_json = '{ "submittedBy": "yingfeng", "unitId": "1", "unitName": "Test%27s Unit", "collectionId": "2", "collectionName": "Test%22s Collection", "taskManager": "Jira", "itemId": "3", "itemName": "Test%27s Item", "primaryfileId": "4", "primaryfileName": "Test%22s primaryfile", "primaryfileUrl": "http://techslides.com/demos/sample-videos/small.mp4", "primaryfileMediaInfo": "/tmp/hmgm/mediaInfo.json", "workflowId": "123456789", "workflowName": "Test%27%22 Workflow" }'
 
     try:
         config = config_hmgm(root_dir);
         context = json.loads(context_json)
+        context = desanitize_context(context)
         print ("Started HMGM task job ...")
         
         if not task_created(task_json):
@@ -61,6 +63,25 @@ def config_hmgm(root_dir):
     config = configparser.ConfigParser()
     config.read(root_dir + "/config/hmgm.ini")    
     return config
+
+
+# Desanitize all the names in the given context.
+def desanitize_context(context):
+    # all the names were sanitized before passed to context, thus need to be decoded to original values
+    context["unitName"] = desanitize_text(context["unitName"])
+    context["collectionName"] = desanitize_text(context["collectionName"])
+    context["itemName"] = desanitize_text(context["itemName"])
+    context["primaryfileName"] = desanitize_text(context["primaryfileName"])
+    context["workflowName"] = desanitize_text(context["workflowName"])
+    return context
+
+
+# Decode the given text which has been encoded with sanitizing rule for context JSON string,
+# i.e. single/double quotes were replaced with % followed by the hex code of the quote.
+def desanitize_text(text):
+    text = text.replace("%27", "'");      
+    text = text.replace('%22', '"');      
+    return text
 
  
 # Return true if HMGM task has already been created, i.e. the file containing the HMGM task info exists.
