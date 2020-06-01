@@ -273,7 +273,7 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase):
         self._assert_status_code_is(show_response, 400)
 
     def test_cannot_show_private_workflow(self):
-        workflow_id = self.workflow_populator.simple_workflow("test_not_importportable")
+        workflow_id = self.workflow_populator.simple_workflow("test_not_importable")
         with self._different_user():
             show_response = self._get("workflows/%s" % workflow_id)
             self._assert_status_code_is(show_response, 403)
@@ -283,7 +283,7 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase):
             assert get(workflows_url).status_code == 403
 
     def test_cannot_download_private_workflow(self):
-        workflow_id = self.workflow_populator.simple_workflow("test_not_importportable")
+        workflow_id = self.workflow_populator.simple_workflow("test_not_downloadable")
         with self._different_user():
             with pytest.raises(AssertionError) as excinfo:
                 self._download_workflow(workflow_id)
@@ -292,7 +292,7 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase):
         assert get(workflows_url).status_code == 403
 
     def test_anon_can_download_public_workflow(self):
-        workflow_id = self.workflow_populator.simple_workflow("test_not_importportable", publish=True)
+        workflow_id = self.workflow_populator.simple_workflow("test_downloadable", publish=True)
         workflows_url = self._api_url("workflows/%s/download" % workflow_id)
         response = get(workflows_url)
         response.raise_for_status()
