@@ -60,14 +60,17 @@ class CondorJobRunner(AsynchronousJobRunner):
     def __old_state_paths(self, cjs):
         """For recovery of jobs started prior to standardizing the naming of
         files in the AsychronousJobState object
+        
+        Remove this function in 21.01
         """
         if cjs.job_wrapper is not None:
             job_file = "%s/galaxy_%s.sh" % (self.app.config.cluster_files_directory, cjs.job_wrapper.job_id)
             if not os.path.exists(cjs.job_file) and os.path.exists(job_file):
-                cjs.output_file = "%s/galaxy_%s.o" % (self.app.config.cluster_files_directory, cjs.job_wrapper.get_id_tag())
-                cjs.error_file = "%s/galaxy_%s.e" % (self.app.config.cluster_files_directory, cjs.job_wrapper.get_id_tag())
-                cjs.exit_code_file = "%s/galaxy_%s.ec" % (self.app.config.cluster_files_directory, cjs.job_wrapper.get_id_tag())
-                cjs.user_log = "%s/galaxy_%s.condor.log" % (self.app.config.cluster_files_directory, cjs.job_wrapper.get_id_tag())
+                cluster_files_dir_and_id = (self.app.config.cluster_files_directory, cjs.job_wrapper.get_id_tag())
+                cjs.output_file = "%s/galaxy_%s.o" % cluster_files_dir_and_id
+                cjs.error_file = "%s/galaxy_%s.e" % cluster_files_dir_and_id
+                cjs.exit_code_file = "%s/galaxy_%s.ec" % cluster_files_dir_and_id
+                cjs.user_log = "%s/galaxy_%s.condor.log" % cluster_files_dir_and_id
                 cjs.job_file = job_file
 
     def queue_job(self, job_wrapper):
