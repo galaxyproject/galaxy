@@ -30,7 +30,7 @@ def create_repository(namespace, repo_name, oauth_token):
         "description": "",
         "visibility": "public",
     }
-    requests.post("https://quay.io/api/v1/repository", json=data, headers=headers)
+    requests.post("https://quay.io/api/v1/repository", json=data, headers=headers, timeout=QUAY_IO_TIMEOUT)
 
 
 def quay_versions(namespace, pkg_name):
