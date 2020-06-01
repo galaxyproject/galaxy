@@ -1127,6 +1127,7 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
 
     def set_final_state(self, final_state):
         self.set_state(final_state)
+        # TODO: migrate to where-in subqueries?
         statements = ['''
             UPDATE history_dataset_collection_association
             SET update_time = :update_time
@@ -1181,6 +1182,7 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
             return dataset_assoc.dataset.tool_version
 
     def update_output_states(self):
+        # TODO: migrate to where-in subqueries?
         statements = ['''
             UPDATE history_dataset_collection_association
             SET update_time = :update_time
@@ -1247,7 +1249,6 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         }
         for statement in statements:
             sa_session.execute(statement, params)
-        # sa_session.flush()
 
 
 class Task(JobLike, RepresentById):
@@ -5330,9 +5331,6 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
 
         return rval
 
-    def update(self):
-        self.update_time = galaxy.model.orm.now.now()
-
     def add_input(self, content, step_id=None, step=None):
         assert step_id is not None or step is not None
 
@@ -5406,9 +5404,6 @@ class WorkflowInvocationStep(Dictifiable, RepresentById):
         # CANCELLED='cancelled',  TODO: implement and expose
         # FAILED='failed',  TODO: implement and expose
     )
-
-    def update(self):
-        self.workflow_invocation.update()
 
     @property
     def is_new(self):

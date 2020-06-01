@@ -1719,8 +1719,7 @@ class JobWrapper(HasResourceParameters):
         # Once datasets are collected, set the total dataset size (includes extra files)
         for dataset_assoc in job.output_datasets:
             if not dataset_assoc.dataset.dataset.purged:
-                # don't call get_total_size - forces a flush we don't want in here.
-                collected_bytes += dataset_assoc.dataset.dataset.set_total_size()
+                collected_bytes += dataset_assoc.dataset.set_total_size()
 
         if job.user:
             job.user.adjust_total_disk_usage(collected_bytes)
