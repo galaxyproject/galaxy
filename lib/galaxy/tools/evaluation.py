@@ -607,7 +607,10 @@ class ToolEvaluator(object):
             message = template % content_format
             raise Exception(message)
 
-        return json.dumps(wrapped_json.json_wrap(self.tool.inputs, self.param_dict, handle_files=handle_files)), False
+        return json.dumps(wrapped_json.json_wrap(self.tool.inputs,
+                                                 self.param_dict,
+                                                 self.tool.profile,
+                                                 handle_files=handle_files)), False
 
     def __write_workdir_file(self, config_filename, content, context, is_template=True, strip=False):
         parent_dir = os.path.dirname(config_filename)

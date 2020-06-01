@@ -1,6 +1,4 @@
 import $ from "jquery";
-import Backbone from "backbone";
-import Menu from "layout/menu";
 import Scratchbook from "layout/scratchbook";
 import QuotaMeter from "mvc/user/user-quotameter";
 import { getGalaxyInstance } from "app";
@@ -8,30 +6,14 @@ import Masthead from "../components/Masthead/Masthead";
 import { mountVueComponent } from "../utils/mountVueComponent";
 import { getAppRoot } from "onload/loadConfig";
 
-/** Masthead **/
-const View = Backbone.View.extend({
-    initialize: function (options) {
-        const Galaxy = getGalaxyInstance();
-        const self = this;
-        this.options = options;
+export class MastheadState {
+    // Used to be a Backbone View - not pretty but keep all window wide listeners,
+    // global state, etc... related to the Masthead here to keep the VueJS component
+    // more isolated, testable, etc.. (clean)
 
-        // build tabs
-        this.collection = new Menu.Collection();
-        this.collection
-            .on("dispatch", (callback) => {
-                self.collection.each((m) => {
-                    callback(m);
-                });
-            })
-            .fetch(this.options);
-
-        // highlight initial active view
-        this.highlight(options.active_view); // covered
-
-        // scratchbook
-        Galaxy.frame = this.frame = new Scratchbook({
-            collection: this.collection,
-        });
+    constructor(Galaxy = null) {
+        Galaxy = Galaxy || getGalaxyInstance();
+        Galaxy.frame = this.frame = new Scratchbook();
 
         // set up the quota meter (And fetch the current user data from trans)
         // add quota meter to masthead
@@ -52,54 +34,27 @@ const View = Backbone.View.extend({
                 }
             })
             .on("beforeunload", () => {
-                let text = "";
-                self.collection.each((model) => {
-                    const q = model.get("onbeforeunload") && model.get("onbeforeunload")();
-                    if (q) {
-                        text += `${q} `;
-                    }
-                });
-                if (text !== "") {
+                const text = this.frame.beforeUnload();
+                if (text) {
                     return text;
                 }
             });
-    },
+    }
+}
 
-    render: function () {
-        const el = document.createElement("div");
-        this.el.appendChild(el); // use this.el directly when feature parity is accomplished
-        let brandTitle = this.options.display_galaxy_brand ? "Galaxy " : "";
-        if (this.options.brand) {
-            brandTitle += this.options.brand;
-        }
-        const tabs = this.collection.models.map((el) => {
-            return el.toJSON();
-        });
-        mountVueComponent(Masthead)(
-            {
-                brandTitle: brandTitle,
-                brandLink: this.options.logo_url,
-                brandImage: this.options.logo_src,
-                quotaMeter: this.quotaMeter,
-                activeTab: this.activeView,
-                tabs: tabs,
-                frames: this.frame.getFrames(),
-                appRoot: getAppRoot(),
-                Galaxy: getGalaxyInstance(),
-            },
-            el
-        );
-        return this;
-    },
-
-    highlight: function (id) {
-        this.activeView = id;
-        this.collection.forEach(function (model) {
-            model.set("active", model.id == id);
-        });
-    },
-});
-
-export default {
-    View: View,
-};
+export function mountMasthead(el, options, mastheadState) {
+    return mountVueComponent(Masthead)(
+        {
+            el: el,
+            mastheadState: mastheadState,
+            displayGalaxyBrand: options.display_galaxy_brand,
+            brand: options.brand,
+            brandLink: options.logo_url,
+            brandImage: options.logo_src,
+            appRoot: getAppRoot(),
+            Galaxy: getGalaxyInstance(),
+            menuOptions: options,
+        },
+        el
+    );
+}
