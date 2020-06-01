@@ -7,17 +7,13 @@
         <div v-if="compatibleTools.length > 0 && !isDeprecated">
             <div v-for="tool in compatibleTools" :key="tool.id">
                 <i class="fa mr-1 fa-wrench"></i>
-                <a href="#" title="Open tool" :id="tool.id" @click="$emit('onCreate', tool.id, $event)">
-                    {{ tool.name }}
-                </a>
+                <a href="#" title="Open tool" :id="tool.id" @click="$emit('onCreate', tool.id, $event)">{{
+                    tool.name
+                }}</a>
             </div>
         </div>
-        <div v-else-if="isDeprecated">
-            {{ deprecatedMessage }}
-        </div>
-        <div v-if="compatibleTools.length === 0 && !showLoading">
-            {{ noRecommendationsMessage }}
-        </div>
+        <div v-else-if="isDeprecated">{{ deprecatedMessage }}</div>
+        <div v-if="compatibleTools.length === 0 && !showLoading">{{ noRecommendationsMessage }}</div>
     </div>
 </template>
 
@@ -103,20 +99,16 @@ export default {
             return stepNameList.join(",");
         },
         loadRecommendations() {
-            console.log ("\n\nLOAD RECS: ");
-            console.log ("\n\nNODE: ", this.node);
-            console.log ("\n\nNODE.APP: ", this.node.app);
-            const workflowSimple = this.node.app.to_simple(); //source of error, this.node is null
+            const manager = this.node.manager;
+            const workflowSimple = manager.toSimple();
             const node = this.node;
             const toolSequence = this.getWorkflowPath(workflowSimple, node.id);
             const requestData = { tool_sequence: toolSequence };
-            console.log ("\n\nREQUEST DATA: ", predictedData);
             getToolPredictions(requestData).then((responsePred) => {
                 const predictedData = responsePred.predicted_data;
-                console.log ("\n\nPREDICTED DATA: ", predictedData);
                 const outputDatatypes = predictedData.o_extensions;
                 const predictedDataChildren = predictedData.children;
-                const app = this.node.app;
+                const app = manager;
                 this.isDeprecated = predictedData.is_deprecated;
                 this.deprecatedMessage = predictedData.message;
                 if (predictedDataChildren.length > 0) {

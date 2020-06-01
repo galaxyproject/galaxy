@@ -23,7 +23,7 @@
                 <i class="fa fa-arrow-right" />
             </b-button>
             <b-popover :target="popoverId" triggers="hover" placement="bottom" :show.sync="popoverShow">
-                <WorkflowRecommendations :node="node" @onCreate="onCreate" />
+                <WorkflowRecommendations :node="this" :get-manager="getManager" @onCreate="onCreate" />
             </b-popover>
             <b-button
                 v-if="canClone"
@@ -40,9 +40,7 @@
             <i :class="iconClass" />
             <span class="node-title">{{ title }}</span>
         </div>
-        <b-alert v-if="!!errors" variant="danger" show class="node-error">
-            {{ errors }}
-        </b-alert>
+        <b-alert v-if="!!errors" variant="danger" show class="node-error">{{ errors }}</b-alert>
         <div v-else class="node-body">
             <loading-span v-if="showLoading" message="Loading details" />
             <node-input
@@ -167,9 +165,6 @@ export default {
             return getGalaxyInstance().config.enable_tool_recommendations;
         },
     },
-    created() { //might not need this later
-        this.onCreate();
-    },
     methods: {
         onChange() {
             this.manager.nodeChanged(this);
@@ -196,20 +191,15 @@ export default {
             this.activeOutputs.toggle(name);
             this.manager.has_changes = true;
         },
-        //onCreate(toolId, event) {
-        onCreate(event) {
-            const toolId = this.contentId;
+        onCreate(toolId, event) {
             const requestData = {
                 tool_id: toolId,
                 type: "tool",
                 _: "true",
             };
-            console.log("\n\n\nON CREATE");
             getModule(requestData).then((response) => {
-                console.log("\n\n\nNODE.VUE");
-                console.log("\n\n\nTOOL ID", toolId);
-                this.node = this.manager.createNode("tool", response.name, toolId);
-                this.manager.setNode(this.node, response);
+                const node = this.manager.createNode("tool", response.name, toolId);
+                this.manager.setNode(node, response);
                 this.popoverShow = false;
             });
         },
