@@ -60,7 +60,6 @@ class CondorJobRunner(AsynchronousJobRunner):
     def __old_state_paths(self, cjs):
         """For recovery of jobs started prior to standardizing the naming of
         files in the AsychronousJobState object
-        
         Remove this function in 21.01
         """
         if cjs.job_wrapper is not None:
