@@ -10,7 +10,7 @@
             <workflow-run-success
                 v-else-if="invocations != null"
                 :invocations="invocations"
-                :workflowName="workflowName"
+                :workflow-name="workflowName"
             />
             <div v-else class="ui-form-composite">
                 <div class="ui-form-composite-messages mb-4">
@@ -35,7 +35,7 @@
                         variant="primary"
                         :disabled="!runButtonEnabled"
                         :waiting="!runButtonEnabled"
-                        :waitText="runButtonWaitText"
+                        :wait-text="runButtonWaitText"
                         :percentage="runButtonPercentage"
                         @click="execute"
                     >
@@ -44,7 +44,7 @@
                 <workflow-run-form
                     ref="runform"
                     :model="model"
-                    :setRunButtonStatus="setRunButtonStatus"
+                    :set-run-button-status="setRunButtonStatus"
                     @submissionSuccess="handleInvocations"
                 />
             </div>

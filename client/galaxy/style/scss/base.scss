@@ -408,7 +408,6 @@ body {
         text-decoration: none;
         .navbar-brand-image {
             display: inline;
-            height: 1.8rem;
             margin-right: 0.3rem;
             border: none;
         }
@@ -874,8 +873,7 @@ div.debug {
     border: solid 1px #aaaaaa;
     padding: 1px 2px 1px 3px;
     margin-right: 5px;
-    -moz-border-radius: 0.5em;
-    -webkit-border-radius: 0.5em;
+    border-radius: 0.5em;
     font-style: italic;
 }
 .page-link-grid a,
@@ -1137,17 +1135,6 @@ a.action-button {
 
 .menubutton.background-none {
     background: none;
-}
-
-// A split menu button, the main button has an action, the arrow causes the
-// popup menu to appear
-
-.menubutton.popup.split {
-    // padding-right: 2em;
-}
-
-.menubutton.popup.split:hover {
-    //background: url(../../images/ddarrowsplit.png) no-repeat right -39px;
 }
 
 // Popup menu styles
