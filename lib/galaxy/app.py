@@ -91,10 +91,6 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         check_migrate_tools = self.config.check_migrate_tools
         self._configure_models(check_migrate_databases=self.config.check_migrate_databases, check_migrate_tools=check_migrate_tools, config_file=config_file)
 
-        self.installed_repository_manager = InstalledRepositoryManager(self)
-        self._configure_datatypes_registry(self.installed_repository_manager)
-        galaxy.model.set_datatypes_registry(self.datatypes_registry)
-
         # Security helper
         self._configure_security()
         # Tag handler
@@ -134,6 +130,11 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         self.tool_shed_repository_cache = ToolShedRepositoryCache(self)
         # Watch various config files for immediate reload
         self.watchers = ConfigWatchers(self)
+        self._configure_tool_config_files()
+        self.installed_repository_manager = InstalledRepositoryManager(self)
+        self._configure_datatypes_registry(self.installed_repository_manager)
+        galaxy.model.set_datatypes_registry(self.datatypes_registry)
+
         self._configure_toolbox()
 
         # Load Data Manager
