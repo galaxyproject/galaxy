@@ -2413,7 +2413,7 @@ class ExpressionTool(Tool):
             raise Exception("Internal error - param_dict is empty.")
 
         job = {}
-        json_wrap(self.inputs, param_dict, job, handle_files='OBJECT')
+        json_wrap(self.inputs, param_dict, self.profile, job, handle_files='OBJECT')
         expression_inputs = {
             'job': job,
             'script': self._expression,
