@@ -33,6 +33,7 @@ from galaxy.web import (
     expose_api,
     expose_api_anonymous_and_sessionless,
     expose_api_raw,
+    expose_api_raw_anonymous_and_sessionless,
     format_return_as_json,
 )
 from galaxy.webapps.base.controller import (
@@ -441,7 +442,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         invocation_response.update(rval)
         return invocation_response
 
-    @expose_api_raw
+    @expose_api_raw_anonymous_and_sessionless
     def workflow_dict(self, trans, workflow_id, **kwd):
         """
         GET /api/workflows/{encoded_workflow_id}/download
