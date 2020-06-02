@@ -1127,8 +1127,39 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
 
     def set_final_state(self, final_state):
         self.set_state(final_state)
-        if self.workflow_invocation_step:
-            self.workflow_invocation_step.update()
+        # TODO: migrate to where-in subqueries?
+        statements = ['''
+            UPDATE history_dataset_collection_association
+            SET update_time = :update_time
+            WHERE id in (
+                SELECT hdca.id
+                FROM history_dataset_collection_association hdca
+                INNER JOIN implicit_collection_jobs icj
+                    on icj.id = hdca.implicit_collection_jobs_id
+                INNER JOIN implicit_collection_jobs_job_association icjja
+                    on icj.id = icjja.implicit_collection_jobs_id
+                WHERE icjja.job_id = :job_id
+                UNION
+                SELECT hdca2.id
+                FROM history_dataset_collection_association hdca2
+                WHERE hdca2.job_id = :job_id
+            );
+        ''', '''
+            UPDATE workflow_invocation_step
+            SET update_time = :update_time
+            WHERE id in (
+                SELECT workflow_invocation_step.id
+                FROM workflow_invocation_step wis
+                WHERE wis.job_id = :job_id
+            );
+        ''']
+        sa_session = object_session(self)
+        params = {
+            'job_id': self.id,
+            'update_time': galaxy.model.orm.now.now()
+        }
+        for statement in statements:
+            sa_session.execute(statement, params)
 
     def get_destination_configuration(self, dest_params, config, key, default=None):
         """ Get a destination parameter that can be defaulted back
@@ -1149,6 +1180,75 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         # TODO: make actual database property and track properly - we should be recording this on the job and not on the datasets
         for dataset_assoc in self.output_datasets:
             return dataset_assoc.dataset.tool_version
+
+    def update_output_states(self):
+        # TODO: migrate to where-in subqueries?
+        statements = ['''
+            UPDATE history_dataset_collection_association
+            SET update_time = :update_time
+            WHERE id in (
+                SELECT hdca.id
+                FROM history_dataset_collection_association hdca
+                INNER JOIN implicit_collection_jobs icj
+                    on icj.id = hdca.implicit_collection_jobs_id
+                INNER JOIN implicit_collection_jobs_job_association icjja
+                    on icj.id = icjja.implicit_collection_jobs_id
+                WHERE icjja.job_id = :job_id
+                UNION
+                SELECT hdca2.id
+                FROM history_dataset_collection_association hdca2
+                WHERE hdca2.job_id = :job_id
+            );
+        ''', '''
+            UPDATE dataset
+            SET
+                state = :state,
+                update_time = :update_time
+            WHERE id IN (
+                SELECT hda.dataset_id FROM history_dataset_association hda
+                INNER JOIN job_to_output_dataset jtod
+                ON jtod.dataset_id = hda.id AND jtod.job_id = :job_id
+            );
+        ''', '''
+            UPDATE dataset
+            SET
+                state = :state,
+                update_time = :update_time
+            WHERE id IN (
+                SELECT ldda.dataset_id FROM library_dataset_dataset_association ldda
+                INNER JOIN job_to_output_library_dataset jtold
+                ON jtold.ldda_id = ldda.id AND jtold.job_id = :job_id
+            );
+        ''', '''
+            UPDATE history_dataset_association
+            SET
+                info = :info,
+                update_time = :update_time
+            WHERE id IN (
+                SELECT jtod.dataset_id
+                FROM job_to_output_dataset jtod
+                WHERE jtod.job_id = :job_id
+            );
+        ''', '''
+            UPDATE library_dataset_dataset_association
+            SET
+                info = :info,
+                update_time = :update_time
+            WHERE id IN (
+                SELECT jtold.ldda_id
+                FROM job_to_output_library_dataset jtold
+                WHERE jtold.job_id = :job_id
+            );
+        ''']
+        sa_session = object_session(self)
+        params = {
+            'job_id': self.id,
+            'state': self.state,
+            'info': self.info,
+            'update_time': galaxy.model.orm.now.now()
+        }
+        for statement in statements:
+            sa_session.execute(statement, params)
 
 
 class Task(JobLike, RepresentById):
@@ -2331,6 +2431,7 @@ class Dataset(StorableObject, RepresentById):
             if self.object_store.exists(self, extra_dir=rel_path, dir_only=True):
                 for root, dirs, files in os.walk(self.extra_files_path):
                     self.total_size += sum([os.path.getsize(os.path.join(root, file)) for file in files if os.path.exists(os.path.join(root, file))])
+        return self.total_size
 
     def has_data(self):
         """Detects whether there is any data"""
@@ -5230,9 +5331,6 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
 
         return rval
 
-    def update(self):
-        self.update_time = galaxy.model.orm.now.now()
-
     def add_input(self, content, step_id=None, step=None):
         assert step_id is not None or step is not None
 
@@ -5306,9 +5404,6 @@ class WorkflowInvocationStep(Dictifiable, RepresentById):
         # CANCELLED='cancelled',  TODO: implement and expose
         # FAILED='failed',  TODO: implement and expose
     )
-
-    def update(self):
-        self.workflow_invocation.update()
 
     @property
     def is_new(self):
