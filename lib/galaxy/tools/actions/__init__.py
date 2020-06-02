@@ -501,7 +501,7 @@ class DefaultToolAction(object):
                         })
                     reserve_hid_for_parent = output_collections.creating_hdca
                     history.add_datasets(trans.sa_session, created_element_datasets, set_hid=set_output_hid, quota=False, flush=False, reserve_hid_for_parent=reserve_hid_for_parent)
-                    if reserve_hid_for_parent:
+                    if reserve_hid_for_parent and len(created_element_datasets) > 0:
                         hid = created_element_datasets[-1].hid + 1
                     else:
                         hid = None
