@@ -185,6 +185,15 @@ class UserManagerTestCase(BaseTestCase):
         response = json.loads(controller.login(self.trans, payload={"login": user2.username, "password": default_password}))
         self.assertEqual(response["message"], "Success.")
 
+    def test_empty_password(self):
+        self.log("should be able to create a user with no password")
+        user = self.user_manager.create(email='user@nopassword.com', username='nopassword')
+        self.assertIsNotNone(user.id)
+        self.assertIsNotNone(user.password)
+        # should not be able to login with a null or empty password
+        self.assertFalse(check_password("", user.password))
+        self.assertFalse(check_password(None, user.password))
+
 
 # =============================================================================
 class UserSerializerTestCase(BaseTestCase):
