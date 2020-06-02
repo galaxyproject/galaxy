@@ -23,7 +23,7 @@
                 <i class="fa fa-arrow-right" />
             </b-button>
             <b-popover :target="popoverId" triggers="hover" placement="bottom" :show.sync="popoverShow">
-                <WorkflowRecommendations :node="this" :get-manager="getManager" @onCreate="onCreate" />
+                <WorkflowRecommendations :node="getNode()" :get-manager="getManager" @onCreate="onCreate" />
             </b-popover>
             <b-button
                 v-if="canClone"

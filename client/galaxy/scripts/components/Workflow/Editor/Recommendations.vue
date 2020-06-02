@@ -99,9 +99,9 @@ export default {
             return stepNameList.join(",");
         },
         loadRecommendations() {
-            const manager = this.node.manager;
-            const workflowSimple = manager.toSimple();
             const node = this.node;
+            const manager = node.getManager();
+            const workflowSimple = manager.toSimple();
             const toolSequence = this.getWorkflowPath(workflowSimple, node.id);
             const requestData = { tool_sequence: toolSequence };
             getToolPredictions(requestData).then((responsePred) => {
