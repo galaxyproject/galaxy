@@ -1,0 +1,105 @@
+
+===========================================================
+May 2020 Galaxy Release (v 20.05)
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+**Mass-Spec datatypes**
+  @bernt-matthias, can you write a bit about this?
+
+**New Interactive tools**
+  @astrovsky01, can you write this ?
+
+**Feature3**
+  Any suggestions ? Maybe startup speedup ? New tool test improvements ?
+
+
+New Visualizations
+===========================================================
+
+.. visualizations
+* Update charts entrypoint inclusion of dist artifacts
+  `Pull Request 9511`_
+* Editor as visualization
+  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
+  `Pull Request 9531`_
+* Chira visualization for Chimeras
+  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
+  `Pull Request 9562`_
+* Skip visualization build, if no changes were registered
+  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
+  `Pull Request 9634`_
+
+New Datatypes
+===========================================================
+
+.. datatypes
+* new data types for OpenMS
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 8109`_
+* Add tpr datatype
+  (thanks to `@simonbray <https://github.com/simonbray>`__).
+  `Pull Request 9244`_
+* Python3 compatible SnpEff and SnpSift metadata detection
+  (thanks to `@wm75 <https://github.com/wm75>`__).
+  `Pull Request 9282`_
+* Add datatypes for xcms and camera
+  (thanks to `@computational-metabolomics <https://github.com/computational-metabolomics>`__).
+  `Pull Request 9470`_
+* index with -c flag for large bam (one region larger than 2**29 - 1)
+  (thanks to `@FredericBGA <https://github.com/FredericBGA>`__).
+  `Pull Request 9570`_
+* Add PAF, GFA1 and odgi datatypes
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9592`_
+* Add xg, vg and protobuf datatypes
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 9593`_
+* Sniffer for multi-member zip archives
+  (thanks to `@lecorguille <https://github.com/lecorguille>`__).
+  `Pull Request 9595`_
+* Fix gff3.gz and gff3.bz2 datatypes
+  `Pull Request 9731`_
+* Use right extension in bz2_to_uncompressed.xml
+  `Pull Request 9734`_
+* Fix disappearing datatypes after restart
+  `Pull Request 9835`_
+
+Builtin Tool Updates
+===========================================================
+
+.. tools
+* Tool recommendation
+  (thanks to `@anuprulez <https://github.com/anuprulez>`__).
+  `Pull Request 9440`_
+* Followup to shed tool static fixes
+  `Pull Request 9450`_
+* Remove deprecated ``interpreter`` attribute from tools ``<command>``
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9490`_
+* Resize D3 tree and make it responsive
+  (thanks to `@anuprulez <https://github.com/anuprulez>`__).
+  `Pull Request 9547`_
+* Datasource tool for SRA manifest
+  `Pull Request 9613`_
+* Fix ITs to work in remote Kubernetes
+  `Pull Request 9614`_
+* fix error in bundled tool: shrimp_color_wrapper
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 9665`_
+* extract_genomic_dna.py: import Comment, Header from bx.tabular.io instead of bx.intervals.io
+  (thanks to `@cat-bro <https://github.com/cat-bro>`__).
+  `Pull Request 9748`_
+
+Release Notes
+===========================================================
+
+Please see the `full release notes <20.05_announce.html>`_ for more details.
+
+.. include:: 20.05_prs.rst
+
+.. include:: _thanks.rst

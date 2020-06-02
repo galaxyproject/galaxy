@@ -1,0 +1,47 @@
+
+===========================================================
+May 2020 Galaxy Release (v 20.05)
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+**Workflow Editor and Workflow Run Form in Vue.js**
+  @jmchilton, @guerler, can you fill this in ?
+  Feature description.
+
+**Data Tables can now be backed by refgenie**
+  @blankenberg, can you write a line about this
+
+**Tool Shed is now Python3 ready**
+  @mvdbeek will fill this
+
+**Many new Interactive Tools**
+  @astrovsky01 can you write a bit abbout this ?
+
+Get Galaxy
+==========
+
+The code lives at `GitHub <https://github.com/galaxyproject/galaxy>`__ and you should have `Git <https://git-scm.com/>`__ to obtain it.
+
+To get a new Galaxy repository run:
+  .. code-block:: shell
+
+      $ git clone -b release_20.05 https://github.com/galaxyproject/galaxy.git
+
+To update an existing Galaxy repository run:
+  .. code-block:: shell
+
+      $ git fetch origin && git checkout release_20.05 && git pull --ff-only origin release_20.05
+
+See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
+
+Release Notes
+===========================================================
+
+.. include:: 20.05.rst
+   :start-after: announce_start
+
+.. include:: _thanks.rst
