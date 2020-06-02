@@ -17,7 +17,6 @@ TEST_DBKEY_TEXT = 'Honeybee (Apis mellifera): apiMel3 (apiMel3)'
 
 
 class HistoryDatasetStateTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
-
     hid = 1
 
     @selenium_test
@@ -33,7 +32,8 @@ class HistoryDatasetStateTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         item.dbkey_button.wait_for_and_click()
         toolhelp_title_text = item.toolhelp_title.wait_for_visible().text
         # assert tool helptext
-        assert EXPECTED_TOOLHELP_TITLE_TEXT == toolhelp_title_text, "Toolhelp title [%s] was not expected text [%s]." % (EXPECTED_TOOLHELP_TITLE_TEXT, toolhelp_title_text)
+        assert EXPECTED_TOOLHELP_TITLE_TEXT == toolhelp_title_text, "Toolhelp title [%s] was not expected text [%s]." % (
+            EXPECTED_TOOLHELP_TITLE_TEXT, toolhelp_title_text)
 
         self.screenshot("history_panel_dataset_expanded")
 
@@ -46,11 +46,11 @@ class HistoryDatasetStateTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         item.dbkey.wait_for_and_click()
         self.components.edit_dataset_attributes.database_build_dropdown.wait_for_and_click()
         # choose database option from 'Database/Build' dropdown, that equals to dbkey_text
-        self.components.edit_dataset_attributes.dbkey_dropdown_results.dbkey_dropdown_option(dbkey_text=TEST_DBKEY_TEXT).wait_for_and_click()
+        self.components.edit_dataset_attributes.dbkey_dropdown_results.dbkey_dropdown_option(
+            dbkey_text=TEST_DBKEY_TEXT).wait_for_and_click()
         self.components.edit_dataset_attributes.save_btn.wait_for_and_click()
         self.history_panel_wait_for_hid_ok(hid)
         self.assert_item_dbkey_displayed_as(hid, "apiMel3")
-
 
     def _prepare_dataset(self, hid):
         self.register()
@@ -63,7 +63,6 @@ class HistoryDatasetStateTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         # Expand HDA and wait for details to show up.
         return self.history_panel_click_item_title(hid=hid, wait=True)
 
-
     def _assert_title_buttons(self, hid, expected_buttons=['display', 'edit', 'delete']):
         self._assert_buttons(hid, expected_buttons)
 
@@ -75,11 +74,11 @@ class HistoryDatasetStateTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         for i in range(len(expected_buttons)):
 
             # ensure old tooltip expired
-            if(i > 0):
-               previous_button = item_button["%s_button" % expected_buttons[i - 1]].wait_for_visible()
-               if previous_button.get_attribute("aria-describedby") != None:
-                   # wait for tooltip to disappear
-                   self.components._.tooltip_balloon.wait_for_absent()
+            if i > 0:
+                previous_button = item_button["%s_button" % expected_buttons[i - 1]].wait_for_visible()
+                if previous_button.get_attribute("aria-describedby") is not None:
+                    # wait for tooltip to disappear
+                    self.components._.tooltip_balloon.wait_for_absent()
 
             button = item_button["%s_button" % expected_buttons[i]]
             self.assert_tooltip_text(button.wait_for_visible(), BUTTON_TOOLTIPS[expected_buttons[i]])
